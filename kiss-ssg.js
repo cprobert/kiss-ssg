@@ -95,21 +95,69 @@ class Page {
 
 module.exports = (config) => {
   console.log(colors.white("Starting Kiss", config));
+  let srcDir = "./src";
+  if (config.folders && config.folders.src) srcDir = config.folders.src;
 
   let folders = {
-    src: "./src",
-    layouts: `./src/layouts`,
-    pages: `./src/pages`,
-    components: `./src/components`,
-    models: `./src/content`,
+    src: srcDir,
+    layouts: `${srcDir}/layouts`,
+    pages: `${srcDir}/pages`,
+    components: `${srcDir}/components`,
+    models: `${srcDir}/content`,
     build: "./public",
   };
+
+  folders = {
+    ...folders,
+    ...config,
+  };
+
   console.debug("folders: ".grey, folders);
+  fileSystem.mkDir(folders.src);
+  fileSystem.mkDir(folders.layouts);
+  fileSystem.mkDir(folders.pages);
+  fileSystem.mkDir(folders.pages);
+  fileSystem.mkDir(folders.components);
+  fileSystem.mkDir(folders.models);
+  try {
+    rimraf.sync(folders.build);
+  } catch (err) {
+    console.log(colors.red(err.message));
+  }
+  fileSystem.mkDir(folders.build);
+
+  registerPartials(folders.layouts);
+  registerPartials(folders.components);
 
   let state = {
     pages: [],
     views: [],
   };
+
+  function registerPartials(folder) {
+    console.log("Registering partials: ".yellow);
+    const hbs = glob.sync(`${folder}/**/*.hbs`);
+    hbs.forEach((path) => {
+      const source = fs.readFileSync(path, "utf8");
+      const reStart = new RegExp(`^${folder}`, "g");
+      const reEnd = new RegExp(`\.hbs$`, "g");
+      let name = path.replace(reStart, "").replace(reEnd, "");
+      if (name.startsWith("/")) {
+        name = name.substring(1, name.length);
+      }
+      handlebars.registerPartial(name, source);
+      console.log(name.blue);
+    });
+  }
+
+  function readModel(file) {
+    const model = `${folders.models}/${file}`;
+    if (fileSystem.exists(model)) {
+      return JSON.parse(fs.readFileSync(model, "utf8"));
+    }
+    console.error("Can not find model on file system".red, model);
+    return {};
+  }
 
   function generate(options, optionMapper) {
     if (typeof optionMapper === "function") {
@@ -145,31 +193,6 @@ module.exports = (config) => {
     } else {
       console.error("Data in dynamic model must be an array".red);
     }
-  }
-
-  function registerPartials(folder) {
-    console.log("Registering partials: ".yellow);
-    const hbs = glob.sync(`${folder}/**/*.hbs`);
-    hbs.forEach((path) => {
-      const source = fs.readFileSync(path, "utf8");
-      const reStart = new RegExp(`^${folder}`, "g");
-      const reEnd = new RegExp(`\.hbs$`, "g");
-      let name = path.replace(reStart, "").replace(reEnd, "");
-      if (name.startsWith("/")) {
-        name = name.substring(1, name.length);
-      }
-      handlebars.registerPartial(name, source);
-      console.log(name.blue);
-    });
-  }
-
-  function readModel(file) {
-    const model = `${folders.models}/${file}`;
-    if (fileSystem.exists(model)) {
-      return JSON.parse(fs.readFileSync(model, "utf8"));
-    }
-    console.error("Can not find model on file system".red, model);
-    return {};
   }
 
   const kiss = {
@@ -216,7 +239,7 @@ module.exports = (config) => {
       state.views.push(options.view);
       return this;
     },
-    async auto() {
+    async scan() {
       const pages = glob.sync(`${folders.pages}/**/*.hbs`);
       pages.forEach((pagePath) => {
         const view = pagePath.replace(
@@ -232,20 +255,9 @@ module.exports = (config) => {
       });
     },
   };
-
-  try {
-    rimraf.sync(folders.build);
-  } catch (err) {
-    console.log(colors.red(err.message));
-  }
-  fileSystem.mkDir(folders.build);
-
-  registerPartials(folders.layouts);
-  registerPartials(folders.components);
-
   return {
     page: kiss.page,
     pages: kiss.pages,
-    auto: kiss.auto,
+    scan: kiss.scan,
   };
 };
