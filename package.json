@@ -1,0 +1,27 @@
+{
+  "name": "kiss-ssg",
+  "version": "0.0.5",
+  "description": "Simple Static Website Generator",
+  "main": "kiss-ssg.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cprobert/kiss-ssg.git"
+  },
+  "author": "Courtenay Probert",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/cprobert/kiss-ssg/issues"
+  },
+  "homepage": "https://github.com/cprobert/kiss-ssg#readme",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "glob": "^7.1.6",
+    "handlebars": "^4.7.6",
+    "handlebars-layouts": "^3.1.4",
+    "node-fetch": "^2.6.1",
+    "rimraf": "^3.0.2"
+  }
+}
