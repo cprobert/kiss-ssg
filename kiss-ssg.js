@@ -105,7 +105,7 @@ class Kiss {
 
   constructor(config) {
     console.log(colors.white('Starting Kiss'))
-    if (config.folders) {
+    if (config && config.folders) {
       if (config.folders.src) this.srcDir = config.folders.src
       this.folders = {
         ...this.folders,
