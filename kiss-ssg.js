@@ -1,263 +1,272 @@
-const fs = require("fs");
-const glob = require("glob");
-const rimraf = require("rimraf");
-const colors = require("colors");
-const handlebars = require("handlebars"); // https://handlebarsjs.com/
-const layouts = require("handlebars-layouts");
-const fetch = require("node-fetch");
+const fs = require('fs')
+const glob = require('glob')
+const rimraf = require('rimraf')
+const colors = require('colors')
+const handlebars = require('handlebars') // https://handlebarsjs.com/
+const layouts = require('handlebars-layouts')
+const fetch = require('node-fetch')
 
-handlebars.registerHelper(layouts(handlebars));
-
-const fileSystem = {
-  mkDir(dir) {
-    dir = dir.toLowerCase();
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-    }
-  },
-  exists(dir) {
-    return fs.existsSync(dir);
-  },
-};
+handlebars.registerHelper(layouts(handlebars))
 
 class Page {
-  _path = "";
-  _slug = "index";
-  _title = "Kiss page";
+  _path = ''
+  _slug = 'index'
+  _title = 'Kiss page'
 
-  view = null;
-  model = {};
+  view = null
+  model = {}
 
-  buildDir = "./public";
-  pageDir = "./src/pages";
+  // defaults
+  buildDir = './public'
+  pageDir = './src/pages'
 
   constructor(view) {
-    this.view = view;
-
-    this._path = view.substring(0, view.lastIndexOf("/"));
+    this.view = view
+    this._path = view.substring(0, view.lastIndexOf('/'))
     this._slug = view
-      .substring(view.lastIndexOf("/") + 1, view.length)
-      .replace(".hbs", "");
-    this._title = this._slug;
+      .substring(view.lastIndexOf('/') + 1, view.length)
+      .replace('.hbs', '')
+    this._title = this._slug
   }
 
   set title(title) {
-    if (title) this._title = title;
+    if (title) this._title = title
   }
 
   set path(path) {
     if (path) {
-      if (path.startsWith("/")) path = path.substring(1, path.length);
-      if (path.endsWith("/")) path = path.substring(0, path.length - 1);
-      this._path = path;
+      if (path.startsWith('/')) path = path.substring(1, path.length)
+      if (path.endsWith('/')) path = path.substring(0, path.length - 1)
+      this._path = path
     }
   }
 
   get slug() {
-    return this._slug;
+    return this._slug
   }
   set slug(slug) {
-    if (slug) this._slug = slug;
+    if (slug) this._slug = slug
   }
 
   getTemplate(view) {
     return handlebars.compile(
-      fs.readFileSync(`${this.pageDir}/${view}`, "utf8")
-    );
+      fs.readFileSync(`${this.pageDir}/${view}`, 'utf8')
+    )
   }
 
   generate() {
-    let filePath = this.buildDir;
+    let filePath = this.buildDir
     if (this._path) {
-      filePath = `${this.buildDir}/${this._path}`;
-      fileSystem.mkDir(filePath);
+      filePath = `${this.buildDir}/${this._path}`
+      if (!fs.existsSync(filePath)) {
+        fs.mkdirSync(filePath)
+      }
     }
 
-    const template = this.getTemplate(this.view);
-    const output = template({
-      title: this._title,
-      path: this._path,
-      slug: this._slug,
-      model: this.model,
-    });
+    const template = this.getTemplate(this.view)
+    let model = {
+      ...{
+        title: this._title,
+        path: this._path,
+        slug: this._slug,
+      },
+      ...this.model,
+    }
+    const output = template(model)
 
-    const generate = `${filePath}/${this._slug}.html`;
-    console.log(generate.green);
-    fs.writeFileSync(generate, output);
+    const pageToGenerate = `${filePath}/${this._slug}.html`
+    console.log(pageToGenerate.green)
+    fs.writeFileSync(pageToGenerate, output)
     if (this.model) {
       fs.writeFileSync(
-        generate.replace(".html", ".json"),
+        pageToGenerate.replace('.html', '.json'),
         JSON.stringify(this.model, null, 1)
-      );
+      )
     }
   }
 }
 
-module.exports = (config) => {
-  console.log(colors.white("Starting Kiss", config));
-  let srcDir = "./src";
-  if (config.folders && config.folders.src) srcDir = config.folders.src;
-
-  let folders = {
-    src: srcDir,
-    layouts: `${srcDir}/layouts`,
-    pages: `${srcDir}/pages`,
-    components: `${srcDir}/components`,
-    models: `${srcDir}/content`,
-    build: "./public",
-  };
-
+class Kiss {
+  srcDir = './src'
+  config = { name: 'Kiss SSG' }
   folders = {
-    ...folders,
-    ...config,
-  };
-
-  console.debug("folders: ".grey, folders);
-  fileSystem.mkDir(folders.src);
-  fileSystem.mkDir(folders.layouts);
-  fileSystem.mkDir(folders.pages);
-  fileSystem.mkDir(folders.pages);
-  fileSystem.mkDir(folders.components);
-  fileSystem.mkDir(folders.models);
-  try {
-    rimraf.sync(folders.build);
-  } catch (err) {
-    console.log(colors.red(err.message));
+    src: this.srcDir,
+    layouts: `${this.srcDir}/layouts`,
+    pages: `${this.srcDir}/pages`,
+    components: `${this.srcDir}/components`,
+    models: `${this.srcDir}/content`,
+    build: './public',
   }
-  fileSystem.mkDir(folders.build);
 
-  registerPartials(folders.layouts);
-  registerPartials(folders.components);
-
-  let state = {
+  state = {
     pages: [],
     views: [],
-  };
+  }
 
-  function registerPartials(folder) {
-    console.log("Registering partials: ".yellow);
-    const hbs = glob.sync(`${folder}/**/*.hbs`);
-    hbs.forEach((path) => {
-      const source = fs.readFileSync(path, "utf8");
-      const reStart = new RegExp(`^${folder}`, "g");
-      const reEnd = new RegExp(`\.hbs$`, "g");
-      let name = path.replace(reStart, "").replace(reEnd, "");
-      if (name.startsWith("/")) {
-        name = name.substring(1, name.length);
+  constructor(config) {
+    console.log(colors.white('Starting Kiss'))
+    if (config.folders) {
+      if (config.folders.src) this.srcDir = config.folders.src
+      this.folders = {
+        ...this.folders,
+        ...config.folders,
       }
-      handlebars.registerPartial(name, source);
-      console.log(name.blue);
-    });
-  }
-
-  function readModel(file) {
-    const model = `${folders.models}/${file}`;
-    if (fileSystem.exists(model)) {
-      return JSON.parse(fs.readFileSync(model, "utf8"));
     }
-    console.error("Can not find model on file system".red, model);
-    return {};
+    config.folders = this.folders
+    this.config = config
+
+    console.debug('folders: '.grey, this.folders)
+    this.fileSystem.mkDir(this.folders.src)
+    this.fileSystem.mkDir(this.folders.layouts)
+    this.fileSystem.mkDir(this.folders.pages)
+    this.fileSystem.mkDir(this.folders.pages)
+    this.fileSystem.mkDir(this.folders.components)
+    this.fileSystem.mkDir(this.folders.models)
+    try {
+      rimraf.sync(this.folders.build)
+    } catch (err) {
+      console.log(colors.red(err.message))
+    }
+    this.fileSystem.mkDir(this.folders.build)
+
+    this.registerPartials(this.folders.layouts)
+    this.registerPartials(this.folders.components)
   }
 
-  function generate(options, optionMapper) {
-    if (typeof optionMapper === "function") {
-      let mappedOptions = optionMapper(options);
+  fileSystem = {
+    mkDir(dir) {
+      dir = dir.toLowerCase()
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir)
+      }
+    },
+    exists(dir) {
+      return fs.existsSync(dir)
+    },
+  }
+
+  registerPartials(folder) {
+    console.log('Registering partials: '.yellow)
+    const hbs = glob.sync(`${folder}/**/*.hbs`)
+    hbs.forEach((path) => {
+      const source = fs.readFileSync(path, 'utf8')
+      const reStart = new RegExp(`^${folder}`, 'g')
+      const reEnd = new RegExp(`\.hbs$`, 'g')
+      let name = path.replace(reStart, '').replace(reEnd, '')
+      if (name.startsWith('/')) {
+        name = name.substring(1, name.length)
+      }
+      handlebars.registerPartial(name, source)
+      console.log(name.blue)
+    })
+  }
+
+  readModel(file) {
+    const model = `${this.folders.models}/${file}`
+    if (this.fileSystem.exists(model)) {
+      return JSON.parse(fs.readFileSync(model, 'utf8'))
+    }
+    console.error('Can not find model on file system'.red, model)
+    return {}
+  }
+
+  generate(options, optionMapper) {
+    if (typeof optionMapper === 'function') {
+      let mappedOptions = optionMapper(options)
       options = {
         ...options,
         ...mappedOptions,
-      };
+      }
     }
-    // console.debug('options:'.grey, options)
-    const kissPage = new Page(options.view);
-    kissPage.buildDir = folders.build;
-    kissPage.pageDir = folders.pages;
-    kissPage.title = options.title;
-    kissPage.slug = options.slug;
-    kissPage.path = options.path;
-    kissPage.model = options.model;
-    kissPage.generate();
+    //console.debug('options:'.grey, options)
+    const kissPage = new Page(options.view)
+    kissPage.buildDir = this.folders.build
+    kissPage.pageDir = this.folders.pages
+    kissPage.title = options.title
+    kissPage.slug = options.slug
+    kissPage.path = options.path
+    kissPage.model = options
+    kissPage.generate()
     // console.debug(kissPage)
-    state.pages.push(kissPage);
+    this.state.pages.push(kissPage)
   }
 
-  function generateDynamic(options, data, optionMapper) {
-    let i = 1;
-    const slug = options.slug;
+  generateDynamic(options, data, optionMapper) {
+    let i = 1
+    const slug = options.slug
     if (Array.isArray(data)) {
       data.forEach((model) => {
-        options.slug = slug + "-" + i;
-        options.model = model;
-        generate(options, optionMapper);
-        i++;
-      });
+        options.slug = slug + '-' + i
+        options.model = model
+        this.generate(options, optionMapper)
+        i++
+      })
     } else {
-      console.error("Data in dynamic model must be an array".red);
+      console.error('Data in dynamic model must be an array'.red)
     }
   }
 
-  const kiss = {
-    page(options, optionMapper) {
-      if (!options.view) {
-        console.error("No view specified", red, options);
-        return this;
-      }
+  page(options, optionMapper) {
+    if (!options.view) {
+      console.error('No view specified', red, options)
+      return this
+    }
 
-      if (typeof options.model === "string") {
-        if (options.model.startsWith("http")) {
-          const url = options.model;
-          fetch(url)
-            .then((response) => response.json())
-            .then((data) => {
-              if (options.dynamic) {
-                generateDynamic(options, data, optionMapper);
-              } else {
-                options.model = data;
-                generate(options, optionMapper);
-              }
-            });
-        } else if (options.model.endsWith(".json")) {
-          const data = readModel(options.model);
-          if (options.dynamic) {
-            generateDynamic(options, data, optionMapper);
-          } else {
-            options.model = data;
-            generate(options, optionMapper);
-          }
+    options.config = this.config
+    if (typeof options.model === 'string') {
+      if (options.model.startsWith('http')) {
+        const url = options.model
+        fetch(url)
+          .then((response) => response.json())
+          .then((data) => {
+            if (options.dynamic) {
+              this.generateDynamic(options, data, optionMapper)
+            } else {
+              options.model = data
+              this.generate(options, optionMapper)
+            }
+          })
+      } else if (options.model.endsWith('.json')) {
+        const data = this.readModel(options.model)
+        if (options.dynamic) {
+          this.generateDynamic(options, data, optionMapper)
         } else {
-          console.error("Invalid model".red);
+          options.model = data
+          this.generate(options, optionMapper)
         }
       } else {
-        generate(options, optionMapper);
+        console.error('Invalid model'.red)
       }
+    } else {
+      this.generate(options, optionMapper)
+    }
 
-      state.views.push(options.view);
-      return this;
-    },
-    pages(options, optionMapper) {
-      options.dynamic = true;
-      this.page(options, optionMapper);
-      state.views.push(options.view);
-      return this;
-    },
-    async scan() {
-      const pages = glob.sync(`${folders.pages}/**/*.hbs`);
-      pages.forEach((pagePath) => {
-        const view = pagePath.replace(
-          new RegExp(`^${folders.pages}/`, "g"),
-          ""
-        );
-        if (!state.views.some((v) => v === view)) {
-          console.log(`Auto added:`.grey, view.blue);
-          this.page({
-            view: view,
-          });
-        }
-      });
-    },
-  };
-  return {
-    page: kiss.page,
-    pages: kiss.pages,
-    scan: kiss.scan,
-  };
-};
+    this.state.views.push(options.view)
+    return this
+  }
+
+  pages(options, optionMapper) {
+    options.dynamic = true
+    this.page(options, optionMapper)
+    this.state.views.push(options.view)
+    return this
+  }
+
+  scan() {
+    const pages = glob.sync(`${this.folders.pages}/**/*.hbs`)
+    pages.forEach((pagePath) => {
+      const view = pagePath.replace(
+        new RegExp(`^${this.folders.pages}/`, 'g'),
+        ''
+      )
+      if (!this.state.views.some((v) => v === view)) {
+        console.log(`Auto added:`.grey, view.blue)
+        this.page({
+          view: view,
+        })
+      }
+    })
+  }
+}
+
+module.exports = Kiss

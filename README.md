@@ -12,33 +12,37 @@ Install with `npm install kiss-ssg`, or just drop [kiss-ssg.js](https://github.c
 
 ## Usage
 
-The simplest usage is to use .auto() to scan your pages folder. This is usefull if you
+kiss-ssg has 3 methods
+
+.page()
+.pages()
+.scan()
+
+The simplest usage is to use .scan() to scan your pages folder. This is usefull if you
 
 ```js
-const kiss = new require("kiss-ssg")({
+const Kiss = require('kiss-ssg')
+const kiss = new Kiss({
   folders: {
-    layouts: `./src/layouts`,
-    pages: `./src/pages`,
-    components: `./src/components`,
-    build: "./public",
+    pages: './src/pages',
+    build: './public',
   },
-});
-
-kiss.auto(); // Scans 'pages directory' for *.hbs files and generates them to the 'build folder'
+})
+kiss.scan() // Scans 'pages directory' for *.hbs files and generates them to the 'build folder'
 ```
 
 Alternativly you can pass a model to the view using the .page() method. The model is then available in the handlebar template {{model.name}}
 
 ```js
-const kiss = new require("kiss-ssg")();
-
+const Kiss = require('kiss-ssg')
+const kiss = new Kiss() // accept default folder locations
 kiss.page({
-  title: "My Page Title",
-  view: "index.hbs",
+  title: 'My Page Title',
+  view: 'index.hbs',
   model: {
-    name: "Courtenay Probert",
+    name: 'Courtenay Probert',
   },
-});
+})
 ```
 
 ## Todo
