@@ -87,14 +87,13 @@ class Page {
 }
 
 class Kiss {
-  srcDir = './src'
   config = { name: 'Kiss SSG' }
   folders = {
-    src: this.srcDir,
-    layouts: `${this.srcDir}/layouts`,
-    pages: `${this.srcDir}/pages`,
-    components: `${this.srcDir}/components`,
-    models: `${this.srcDir}/content`,
+    src: './src',
+    layouts: './src/layouts',
+    pages: './src/pages',
+    components: './src/components',
+    models: './src/content',
     build: './public',
   }
 
@@ -107,11 +106,17 @@ class Kiss {
     console.log(colors.white('Starting Kiss'))
     if (!config) config = {}
     if (config.folders) {
-      if (config.folders.src) this.srcDir = config.folders.src
-      this.folders = {
-        ...this.folders,
-        ...config.folders,
+      if (config.folders.src) {
+        this.folders = {
+          src: config.folders.src,
+          layouts: `${config.folders.src}/layouts`,
+          pages: `${config.folders.src}/pages`,
+          components: `${config.folders.src}/components`,
+          models: `${config.folders.src}/content`,
+          build: './public',
+        }
       }
+      this.folders = { ...this.folders, ...config.folders }
     }
     config.folders = this.folders
     this.config = config
@@ -138,7 +143,7 @@ class Kiss {
     mkDir(dir) {
       dir = dir.toLowerCase()
       if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir)
+        fs.mkdirSync(dir, { recursive: true })
       }
     },
     exists(dir) {
