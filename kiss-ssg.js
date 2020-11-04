@@ -64,9 +64,14 @@ class Page {
   }
 
   getTemplate(view) {
-    return handlebars.compile(
-      fs.readFileSync(`${this.pageDir}/${view}`, 'utf8')
-    )
+    let viewText = ''
+    try {
+      viewText = fs.readFileSync(`${this.pageDir}/${view}`, 'utf8')
+    } catch (error) {
+      console.log('Error reading view'.red)
+      console.error(colors.yellow(error.message))
+    }
+    return handlebars.compile(viewText)
   }
 
   generate() {
@@ -201,7 +206,7 @@ class Kiss {
         }
       } catch (err) {
         console.log(`Error in controller for ${options.view}`.red)
-        console.error(err.message.yellow)
+        console.error(colors.yellow(err))
       }
     }
     //console.debug('options:'.grey, options)
@@ -251,6 +256,10 @@ class Kiss {
               options.model = data
               this.generate(options, optionMapper)
             }
+          })
+          .catch((error) => {
+            console.log(`Error getting model from ${url}`.red)
+            console.error(colors.yellow(error))
           })
       } else if (options.model.endsWith('.json')) {
         const data = this.readModel(options.model)
