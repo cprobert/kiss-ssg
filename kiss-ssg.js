@@ -1,10 +1,13 @@
 const fs = require('fs')
 const glob = require('glob')
 const rimraf = require('rimraf')
-const colors = require('colors')
+
 const handlebars = require('handlebars') // https://handlebarsjs.com/
 const layouts = require('handlebars-layouts')
+handlebars.registerHelper('markdown', require('helper-markdown'))
+
 const fetch = require('node-fetch')
+const colors = require('colors')
 
 handlebars.registerHelper(layouts(handlebars))
 

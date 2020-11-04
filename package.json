@@ -21,6 +21,7 @@
     "glob": "^7.1.6",
     "handlebars": "^4.7.6",
     "handlebars-layouts": "^3.1.4",
+    "helper-markdown": "^1.0.0",
     "node-fetch": "^2.6.1",
     "rimraf": "^3.0.2"
   },

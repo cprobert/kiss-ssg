@@ -128,3 +128,19 @@ kiss
     }
   )
 ```
+
+## Markdown
+
+You can also parse markdown like this:
+
+```handlebars
+<div>
+{{#markdown}}
+# Heading
+
+> this is markdown
+
+foo bar baz
+{{/markdown}}
+</div>
+```
