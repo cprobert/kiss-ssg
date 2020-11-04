@@ -93,7 +93,7 @@ class Kiss {
     layouts: './src/layouts',
     pages: './src/pages',
     components: './src/components',
-    models: './src/content',
+    models: './src/models',
     build: './public',
   }
 
