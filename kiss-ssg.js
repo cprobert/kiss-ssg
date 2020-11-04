@@ -23,7 +23,7 @@ class Page {
   constructor(view) {
     this.view = view
     this._path = view.substring(0, view.lastIndexOf('/'))
-    this._slug = utils.toSlug(
+    this._slug = this.utils.toSlug(
       view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
     )
     this._title = this._slug
@@ -33,9 +33,8 @@ class Page {
     toSlug(slug) {
       return slug
         .toLowerCase()
-        .replace(/\s/g, '-')
-        .replace(/[\W_]+/g, ' ')
         .trim()
+        .replace(/[\W_]+/g, '-')
     },
   }
 
@@ -55,7 +54,10 @@ class Page {
     return this._slug
   }
   set slug(slug) {
-    if (slug) this._slug = utils.toSlug(slug)
+    if (slug) {
+      this._slug = this.utils.toSlug(slug)
+      // console.debug('Set slug: '.gray, this._slug)
+    }
   }
 
   getTemplate(view) {
@@ -183,7 +185,7 @@ class Kiss {
       return JSON.parse(fs.readFileSync(model, 'utf8'))
     }
     console.error('Can not find model on file system'.red, model)
-    return {}
+    return null
   }
 
   generate(options, optionMapper) {
@@ -244,11 +246,15 @@ class Kiss {
           })
       } else if (options.model.endsWith('.json')) {
         const data = this.readModel(options.model)
-        if (options.dynamic) {
-          this.generateDynamic(options, data, optionMapper)
+        if (data) {
+          if (options.dynamic) {
+            this.generateDynamic(options, data, optionMapper)
+          } else {
+            options.model = data
+            this.generate(options, optionMapper)
+          }
         } else {
-          options.model = data
-          this.generate(options, optionMapper)
+          console.log('Skipping: ', options.view)
         }
       } else {
         console.error('Invalid model'.red)
