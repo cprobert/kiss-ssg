@@ -23,5 +23,16 @@
     "handlebars-layouts": "^3.1.4",
     "node-fetch": "^2.6.1",
     "rimraf": "^3.0.2"
-  }
+  },
+  "keywords": [
+    "generator",
+    "markdown",
+    "ssg",
+    "static",
+    "website",
+    "jekyll",
+    "gatsby",
+    "hugo",
+    "gridsome"
+  ]
 }
