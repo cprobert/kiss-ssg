@@ -193,10 +193,15 @@ class Kiss {
 
   generate(options, optionMapper) {
     if (typeof optionMapper === 'function') {
-      let mappedOptions = optionMapper(options)
-      options = {
-        ...options,
-        ...mappedOptions,
+      try {
+        let mappedOptions = optionMapper(options)
+        options = {
+          ...options,
+          ...mappedOptions,
+        }
+      } catch (err) {
+        console.log(`Error in controller for ${options.view}`.red)
+        console.error(err.message.yellow)
       }
     }
     //console.debug('options:'.grey, options)
