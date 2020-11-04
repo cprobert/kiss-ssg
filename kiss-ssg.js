@@ -23,10 +23,20 @@ class Page {
   constructor(view) {
     this.view = view
     this._path = view.substring(0, view.lastIndexOf('/'))
-    this._slug = view
-      .substring(view.lastIndexOf('/') + 1, view.length)
-      .replace('.hbs', '')
+    this._slug = utils.toSlug(
+      view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
+    )
     this._title = this._slug
+  }
+
+  utils = {
+    toSlug(slug) {
+      return slug
+        .toLowerCase()
+        .replace(/\s/g, '-')
+        .replace(/[\W_]+/g, ' ')
+        .trim()
+    },
   }
 
   set title(title) {
@@ -45,7 +55,7 @@ class Page {
     return this._slug
   }
   set slug(slug) {
-    if (slug) this._slug = slug
+    if (slug) this._slug = utils.toSlug(slug)
   }
 
   getTemplate(view) {
@@ -214,7 +224,7 @@ class Kiss {
 
   page(options, optionMapper) {
     if (!options.view) {
-      console.error('No view specified', red, options)
+      console.error('No view specified'.red, options)
       return this
     }
 
