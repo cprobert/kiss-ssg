@@ -5,6 +5,9 @@ const rimraf = require('rimraf')
 const handlebars = require('handlebars') // https://handlebarsjs.com/
 const layouts = require('handlebars-layouts')
 handlebars.registerHelper('markdown', require('helper-markdown'))
+handlebars.registerHelper('stringify', function (obj) {
+  return JSON.stringify(obj, null, 3)
+})
 
 const fetch = require('node-fetch')
 const colors = require('colors')
@@ -300,8 +303,20 @@ class Kiss {
       )
       if (!this.state.views.some((v) => v === view)) {
         console.log(`Auto added:`.grey, view.blue)
-        this.page({
+        const options = {
           view: view,
+        }
+
+        const matchingModel = view.replace(/\.hbs$/, '.json')
+        if (this.fileSystem.exists(`${this.folders.models}/${matchingModel}`)) {
+          console.log('Found matching model: '.grey, matchingModel)
+          options.model = matchingModel
+        }
+
+        this.page(options, ({ model }) => {
+          if (model && model.title) {
+            return { title: model.title }
+          }
         })
       }
     })
