@@ -42,6 +42,25 @@ class Page {
         .trim()
         .replace(/[\W_]+/g, '-')
     },
+    trimPath(path) {
+      if (path.startsWith('/')) path = path.substring(1, path.length)
+      if (path.endsWith('/')) path = path.substring(0, path.length - 1)
+      return path
+    },
+    sanitizePath(path) {
+      if (path) {
+        path = this.trimPath(path)
+
+        let pathSegments = path.split('/')
+        const cleanedSegments = []
+        pathSegments.forEach((segment) => {
+          const slugifiedSegment = this.toSlug(segment)
+          cleanedSegments.push(slugifiedSegment.trim())
+        })
+        path = cleanedSegments.join('/')
+      }
+      return path
+    },
   }
 
   set title(title) {
@@ -50,9 +69,9 @@ class Page {
 
   set path(path) {
     if (path) {
-      if (path.startsWith('/')) path = path.substring(1, path.length)
-      if (path.endsWith('/')) path = path.substring(0, path.length - 1)
-      this._path = path
+      // if (path.startsWith('/')) path = path.substring(1, path.length)
+      // if (path.endsWith('/')) path = path.substring(0, path.length - 1)
+      this._path = this.utils.sanitizePath(path)
     }
   }
 
@@ -82,7 +101,7 @@ class Page {
     if (this._path) {
       filePath = `${this.buildDir}/${this._path}`
       if (!fs.existsSync(filePath)) {
-        fs.mkdirSync(filePath)
+        fs.mkdirSync(filePath, { recursive: true })
       }
     }
 
