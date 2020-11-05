@@ -144,3 +144,9 @@ foo bar baz
 {{/markdown}}
 </div>
 ```
+
+If you want to take a peek at whats properties you have available to to in a handlebars file you can use this helper:
+
+```handlebars
+{{{stringify this}}}
+```
