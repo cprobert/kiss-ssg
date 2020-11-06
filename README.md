@@ -8,7 +8,7 @@ Kiss Static Site Generator, is an open-source MVC html website builder (for node
 
 In addition you can use reusable [handlebar partials](https://handlebarsjs.com/guide/partials.html#partials) (components) and [handlebar-layouts](https://www.npmjs.com/package/handlebars-layouts) (themes) to
 
-Install with `npm install kiss-ssg`, or just drop [kiss-ssg.js](https://github.com/cprobert/kiss-ssg/blob/main/kiss-ssg.js) somewhere.
+Install with `npm install kiss-ssg --save-dev`, or just drop [kiss-ssg.js](https://github.com/cprobert/kiss-ssg/blob/main/kiss-ssg.js) somewhere.
 
 ## Usage
 

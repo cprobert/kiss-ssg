@@ -7,6 +7,8 @@
 
 ## Features
 
+- What is the best way to deal with SEO meta data?
+- Sould controllers have an option to be imported/required?
 - Add .completed() support so we can chain dependent page generation (for index creation, etc.)
 - Create a nav array
 - Add isActive support

@@ -1,18 +1,19 @@
 const fs = require('fs')
 const glob = require('glob')
 const rimraf = require('rimraf')
-const ncp = require('ncp').ncp
+const ncp = require('ncp').ncp // https://www.npmjs.com/package/ncp
+
 const handlebars = require('handlebars') // https://handlebarsjs.com/
-const layouts = require('handlebars-layouts')
-handlebars.registerHelper('markdown', require('helper-markdown'))
+const markdown = require('helper-markdown') // https://github.com/helpers/helper-markdown
+handlebars.registerHelper('markdown', markdown)
 handlebars.registerHelper('stringify', function (obj) {
   return JSON.stringify(obj, null, 3)
 })
+const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/handlebars-layouts
+handlebars.registerHelper(layouts(handlebars))
 
 const fetch = require('node-fetch')
 const colors = require('colors')
-
-handlebars.registerHelper(layouts(handlebars))
 
 class Page {
   _path = ''
@@ -130,8 +131,9 @@ class Page {
           )
         }
       } catch (error) {
-        console.log('Error processing view'.red)
+        console.log(`Error processing view ${this.view}`.red)
         console.error(colors.yellow(error.message))
+        //console.debug(colors.grey(error))
       }
     }
   }
@@ -152,6 +154,7 @@ class Kiss {
   state = {
     pages: [],
     views: [],
+    promises: [],
   }
 
   constructor(config) {
@@ -384,6 +387,12 @@ class Kiss {
         })
       }
     })
+    return this
+  }
+
+  state() {
+    console.log(JSON.stringify(this.state))
+    return this
   }
 }
 
