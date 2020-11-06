@@ -90,11 +90,12 @@ class Page {
     let viewText = ''
     try {
       viewText = fs.readFileSync(`${this.pageDir}/${view}`, 'utf8')
+      return handlebars.compile(viewText)
     } catch (error) {
       console.log('Error reading view'.red)
       console.error(colors.yellow(error.message))
     }
-    return handlebars.compile(viewText)
+    return null
   }
 
   generate() {
@@ -107,24 +108,31 @@ class Page {
     }
 
     const template = this.getTemplate(this.view)
-    let model = {
-      ...{
-        title: this._title,
-        path: this._path,
-        slug: this._slug,
-      },
-      ...this.model,
-    }
-    const output = template(model)
+    if (template) {
+      try {
+        let model = {
+          ...{
+            title: this._title,
+            path: this._path,
+            slug: this._slug,
+          },
+          ...this.model,
+        }
+        const output = template(model)
 
-    const pageToGenerate = `${filePath}/${this._slug}.html`
-    console.log(pageToGenerate.green)
-    fs.writeFileSync(pageToGenerate, output)
-    if (this.model && this.debug) {
-      fs.writeFileSync(
-        pageToGenerate.replace('.html', '.json'),
-        JSON.stringify(this.model, null, 1)
-      )
+        const pageToGenerate = `${filePath}/${this._slug}.html`
+        console.log(pageToGenerate.green)
+        fs.writeFileSync(pageToGenerate, output)
+        if (this.model && this.debug) {
+          fs.writeFileSync(
+            pageToGenerate.replace('.html', '.json'),
+            JSON.stringify(this.model, null, 1)
+          )
+        }
+      } catch (error) {
+        console.log('Error processing view'.red)
+        console.error(colors.yellow(error.message))
+      }
     }
   }
 }
@@ -209,7 +217,7 @@ class Kiss {
   }
 
   registerPartials(folder) {
-    console.log('Registering partials: '.yellow)
+    console.log('Registering partials: '.grey)
     const hbs = glob.sync(`${folder}/**/*.hbs`)
     hbs.forEach((path) => {
       const source = fs.readFileSync(path, 'utf8')
