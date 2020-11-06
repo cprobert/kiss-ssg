@@ -1,7 +1,7 @@
 const fs = require('fs')
 const glob = require('glob')
 const rimraf = require('rimraf')
-
+const ncp = require('ncp').ncp
 const handlebars = require('handlebars') // https://handlebarsjs.com/
 const layouts = require('handlebars-layouts')
 handlebars.registerHelper('markdown', require('helper-markdown'))
@@ -19,6 +19,7 @@ class Page {
   _slug = 'index'
   _title = 'Kiss page'
 
+  debug = false
   view = null
   model = {}
 
@@ -119,7 +120,7 @@ class Page {
     const pageToGenerate = `${filePath}/${this._slug}.html`
     console.log(pageToGenerate.green)
     fs.writeFileSync(pageToGenerate, output)
-    if (this.model) {
+    if (this.model && this.debug) {
       fs.writeFileSync(
         pageToGenerate.replace('.html', '.json'),
         JSON.stringify(this.model, null, 1)
@@ -132,6 +133,7 @@ class Kiss {
   config = { name: 'Kiss SSG' }
   folders = {
     src: './src',
+    assets: './src/assets',
     layouts: './src/layouts',
     pages: './src/pages',
     components: './src/components',
@@ -145,12 +147,14 @@ class Kiss {
   }
 
   constructor(config) {
+    const self = this
     console.log(colors.white('Starting Kiss'))
     if (!config) config = {}
     if (config.folders) {
       if (config.folders.src) {
         this.folders = {
           src: config.folders.src,
+          assets: `${config.folders.src}/assets`,
           layouts: `${config.folders.src}/layouts`,
           pages: `${config.folders.src}/pages`,
           components: `${config.folders.src}/components`,
@@ -161,10 +165,13 @@ class Kiss {
       this.folders = { ...this.folders, ...config.folders }
     }
     config.folders = this.folders
+    this.config.dev = false
+    if (config.dev) this.config.dev = true
     this.config = config
 
     console.debug('folders: '.grey, this.folders)
     this.fileSystem.mkDir(this.folders.src)
+    this.fileSystem.mkDir(this.folders.assets)
     this.fileSystem.mkDir(this.folders.layouts)
     this.fileSystem.mkDir(this.folders.pages)
     this.fileSystem.mkDir(this.folders.pages)
@@ -176,6 +183,14 @@ class Kiss {
       console.log(colors.red(err.message))
     }
     this.fileSystem.mkDir(this.folders.build)
+
+    ncp(this.folders.assets, this.folders.build, function (err) {
+      if (err) {
+        console.error('Error: '.red, err)
+      }
+
+      console.log(`Copied ${self.folders.assets} to ${self.folders.build}`.grey)
+    })
 
     this.registerPartials(this.folders.layouts)
     this.registerPartials(this.folders.components)
@@ -239,6 +254,7 @@ class Kiss {
     kissPage.slug = options.slug
     kissPage.path = options.path
     kissPage.model = options
+    kissPage.debug = this.config.dev
     kissPage.generate()
     // console.debug(kissPage)
     this.state.pages.push(kissPage)
@@ -301,7 +317,7 @@ class Kiss {
           const models = glob.sync(`${modelPath}/*.json`)
           const modelArray = []
           models.forEach((model) => {
-            console.debug(model.grey)
+            // console.debug(model.grey)
             const data = this.readModel(
               model.replace(`${this.folders.models}/`, '')
             )

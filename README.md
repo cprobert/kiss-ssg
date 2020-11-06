@@ -34,6 +34,7 @@ You can overwrite the folder locations bay passing a config to the kiss construc
 {
   folders: {
     src: './src',
+    assets: './src/assets',
     layouts: './src/layouts',
     pages: './src/pages',
     components: './src/components',
@@ -43,11 +44,17 @@ You can overwrite the folder locations bay passing a config to the kiss construc
 }
 ```
 
+### Assets
+
+Any statif files you have in the assets directory will be copied to the build directory
+
+### .page()
+
 Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g. {{model.name}}
 
 ```js
 const Kiss = require('kiss-ssg')
-const kiss = new Kiss()
+const kiss = new Kiss({ dev: true }) // export model with .html
 kiss.page({
   view: 'index.hbs',
   title: 'My Page Title',
@@ -81,6 +88,8 @@ page and path create the url, i.e. /{path}/{slug}.html
 
 _Note:_ If you don't pass a path or a slug they will be inferred from the view
 
+### .pages()
+
 In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:
 
 ```js
@@ -102,6 +111,8 @@ kiss.page(
   }
 )
 ```
+
+### Controller
 
 The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.
 
@@ -129,7 +140,7 @@ kiss
   )
 ```
 
-## Markdown
+### Markdown
 
 You can also parse markdown like this:
 
