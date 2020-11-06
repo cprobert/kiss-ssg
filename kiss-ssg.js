@@ -295,8 +295,29 @@ class Kiss {
         } else {
           console.log('Skipping: ', options.view)
         }
+      } else if (fs.existsSync(`${this.folders.models}/${options.model}`)) {
+        const modelPath = `${this.folders.models}/${options.model}`
+        if (fs.lstatSync(modelPath).isDirectory()) {
+          const models = glob.sync(`${modelPath}/*.json`)
+          const modelArray = []
+          models.forEach((model) => {
+            console.debug(model.grey)
+            const data = this.readModel(
+              model.replace(`${this.folders.models}/`, '')
+            )
+            if (data) modelArray.push(data)
+          })
+          if (options.dynamic) {
+            this.generateDynamic(options, modelArray, optionMapper)
+          } else {
+            options.model = data
+            this.generate(options, optionMapper)
+          }
+        } else {
+          console.error('Model is not a .json file'.red, options.model)
+        }
       } else {
-        console.error('Invalid model'.red)
+        console.error('Invalid model'.red, options.model)
       }
     } else {
       this.generate(options, optionMapper)
