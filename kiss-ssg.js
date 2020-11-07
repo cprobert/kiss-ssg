@@ -22,7 +22,7 @@ class Page {
 
   debug = false
   view = null
-  model = {}
+  options = {}
 
   // defaults
   buildDir = './public'
@@ -63,10 +63,6 @@ class Page {
       }
       return path
     },
-  }
-
-  set title(title) {
-    if (title) this._title = title
   }
 
   set path(path) {
@@ -111,23 +107,23 @@ class Page {
     const template = this.getTemplate(this.view)
     if (template) {
       try {
-        let model = {
+        let options = {
           ...{
             title: this._title,
             path: this._path,
             slug: this._slug,
           },
-          ...this.model,
+          ...this.options,
         }
-        const output = template(model)
+        const output = template(options)
 
         const pageToGenerate = `${filePath}/${this._slug}.html`
         console.log(pageToGenerate.green)
         fs.writeFileSync(pageToGenerate, output)
-        if (this.model && this.debug) {
+        if (this.options && this.debug) {
           fs.writeFileSync(
             pageToGenerate.replace('.html', '.json'),
-            JSON.stringify(this.model, null, 1)
+            JSON.stringify(this.options, null, 1)
           )
         }
       } catch (error) {
@@ -148,6 +144,7 @@ class Kiss {
     pages: './src/pages',
     components: './src/components',
     models: './src/models',
+    controllers: './src/controllers',
     build: './public',
   }
 
@@ -169,6 +166,7 @@ class Kiss {
           pages: `${config.folders.src}/pages`,
           components: `${config.folders.src}/components`,
           models: `${config.folders.src}/content`,
+          controllers: `${config.folders.src}/controllers`,
           build: './public',
         }
       }
@@ -187,6 +185,8 @@ class Kiss {
     this.fileSystem.mkDir(this.folders.pages)
     this.fileSystem.mkDir(this.folders.components)
     this.fileSystem.mkDir(this.folders.models)
+    this.fileSystem.mkDir(this.folders.controllers)
+
     try {
       rimraf.sync(this.folders.build)
     } catch (err) {
@@ -244,7 +244,7 @@ class Kiss {
     return null
   }
 
-  generate(options, optionMapper) {
+  configOptionMapper(options, optionMapper) {
     if (typeof optionMapper === 'function') {
       try {
         let mappedOptions = optionMapper(options)
@@ -257,14 +257,34 @@ class Kiss {
         console.error(colors.yellow(err))
       }
     }
-    //console.debug('options:'.grey, options)
+    return options
+  }
+
+  generate(options, optionMapper) {
+    if (options.controller) {
+      const controllerPath = `${this.folders.controllers}/${options.controller}`
+      if (this.fileSystem.exists(controllerPath)) {
+        const controller = require.main.require(controllerPath)
+        options = this.configOptionMapper(options, controller)
+      }
+    }
+    if (optionMapper) {
+      options = this.configOptionMapper(options, optionMapper)
+    }
+    // if the user didn't specify a title auto map title from model if it exists
+    if (!options.title) {
+      if (options.model && options.model.title) {
+        options.title = options.model.title
+      }
+    }
+
+    // console.debug('options:'.grey, options)
     const kissPage = new Page(options.view)
     kissPage.buildDir = this.folders.build
     kissPage.pageDir = this.folders.pages
-    kissPage.title = options.title
     kissPage.slug = options.slug
     kissPage.path = options.path
-    kissPage.model = options
+    kissPage.options = options
     kissPage.debug = this.config.dev
     kissPage.generate()
     // console.debug(kissPage)
@@ -299,8 +319,8 @@ class Kiss {
       console.error('No view specified'.red, options)
       return this
     }
-
     options.config = this.config
+
     if (typeof options.model === 'string') {
       if (options.model.startsWith('http')) {
         const url = options.model
