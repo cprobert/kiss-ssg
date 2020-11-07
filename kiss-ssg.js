@@ -364,6 +364,9 @@ class Kiss {
           // console.debug('Model is object'.grey)
           resolve(model)
           break
+        case 'undefined':
+          resolve({})
+          break
         default:
           reject({ message: `Unexpected model type: ${typeof model}` })
       }
