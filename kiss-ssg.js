@@ -407,20 +407,18 @@ class Kiss {
 
     if (!this._state.views.includes(options.view)) {
       this._state.views.push(options.view)
-
-      this._processPageModel(options.model)
-        .then((data) => {
-          this._generateSelector(options, optionMapper, data)
-        })
-        .catch((error) => {
-          console.log(colors.red(error.message))
-          if (error.error) {
-            console.error(colors.yellow(error.error))
-          }
-        })
-    } else {
-      console.error('View already processed'.red)
     }
+
+    this._processPageModel(options.model)
+      .then((data) => {
+        this._generateSelector(options, optionMapper, data)
+      })
+      .catch((error) => {
+        console.log(colors.red(error.message))
+        if (error.error) {
+          console.error(colors.yellow(error.error))
+        }
+      })
 
     return this
   }
