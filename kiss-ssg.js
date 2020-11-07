@@ -152,7 +152,6 @@ class Kiss {
   }
 
   state = {
-    pages: [],
     views: [],
     promises: [],
   }
@@ -203,8 +202,8 @@ class Kiss {
       console.log(`Copied ${self.folders.assets} to ${self.folders.build}`.grey)
     })
 
-    this.registerPartials(this.folders.layouts)
     this.registerPartials(this.folders.components)
+    this.registerPartials(this.folders.layouts)
   }
 
   fileSystem = {
@@ -223,6 +222,7 @@ class Kiss {
     console.log('Registering partials: '.grey)
     const hbs = glob.sync(`${folder}/**/*.hbs`)
     hbs.forEach((path) => {
+      // console.debug('partial: '.grey, path)
       const source = fs.readFileSync(path, 'utf8')
       const reStart = new RegExp(`^${folder}`, 'g')
       const reEnd = new RegExp(`\.hbs$`, 'g')
@@ -268,7 +268,6 @@ class Kiss {
     kissPage.debug = this.config.dev
     kissPage.generate()
     // console.debug(kissPage)
-    this.state.pages.push(kissPage)
   }
 
   generateDynamic(options, data, optionMapper) {
@@ -286,6 +285,15 @@ class Kiss {
     }
   }
 
+  generator(options, optionMapper, data, controller) {
+    if (options.dynamic) {
+      this.generateDynamic(options, data, optionMapper)
+    } else {
+      options.model = data
+      this.generate(options, optionMapper)
+    }
+  }
+
   page(options, optionMapper) {
     if (!options.view) {
       console.error('No view specified'.red, options)
@@ -299,12 +307,7 @@ class Kiss {
         fetch(url)
           .then((response) => response.json())
           .then((data) => {
-            if (options.dynamic) {
-              this.generateDynamic(options, data, optionMapper)
-            } else {
-              options.model = data
-              this.generate(options, optionMapper)
-            }
+            this.generator(options, optionMapper, data)
           })
           .catch((error) => {
             console.log(`Error getting model from ${url}`.red)
@@ -313,12 +316,7 @@ class Kiss {
       } else if (options.model.endsWith('.json')) {
         const data = this.readModel(options.model)
         if (data) {
-          if (options.dynamic) {
-            this.generateDynamic(options, data, optionMapper)
-          } else {
-            options.model = data
-            this.generate(options, optionMapper)
-          }
+          this.generator(options, optionMapper, data)
         } else {
           console.log('Skipping: ', options.view)
         }
@@ -334,12 +332,7 @@ class Kiss {
             )
             if (data) modelArray.push(data)
           })
-          if (options.dynamic) {
-            this.generateDynamic(options, modelArray, optionMapper)
-          } else {
-            options.model = data
-            this.generate(options, optionMapper)
-          }
+          this.generator(options, optionMapper, modelArray)
         } else {
           console.error('Model is not a .json file'.red, options.model)
         }
@@ -390,8 +383,9 @@ class Kiss {
     return this
   }
 
-  state() {
-    console.log(JSON.stringify(this.state))
+  viewState() {
+    // console.log(JSON.stringify(this.state, null, 1))
+    console.log(this.state)
     return this
   }
 }
