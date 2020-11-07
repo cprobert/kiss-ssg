@@ -26,12 +26,15 @@ class KissPage {
 
   // defaults
   buildDir = './public'
+  pagesDir = './src/pages'
 
   constructor(view) {
     this.view = view
     this._slug = this._utils.toSlug(
       view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
     )
+    this.path = view.substring(0, view.lastIndexOf('.'))
+    // console.debug('Auto path: ', this._path)
     this._title = this._utils.toTitleCase(this._slug)
   }
 
@@ -133,11 +136,12 @@ class KissPage {
 
   _getTemplate(view) {
     let viewText = ''
+    let viewPath = `${this.pagesDir}/${view}`
     try {
-      viewText = fs.readFileSync(view, 'utf8')
+      viewText = fs.readFileSync(viewPath, 'utf8')
       return handlebars.compile(viewText)
     } catch (error) {
-      console.log('Error reading view'.red)
+      console.log('Error reading view: '.red, viewPath)
       console.error(colors.yellow(error.message))
     }
     return null
@@ -292,9 +296,10 @@ class Kiss {
 
   _generate(options) {
     // console.debug('options:'.grey, options)
-    const kissPage = new KissPage(`${this._folders.pages}/${options.view}`)
+    const kissPage = new KissPage(options.view)
     kissPage.options = options
     kissPage.buildDir = this._folders.build
+    kissPage.pagesDir = this._folders.pages
     kissPage.path = options.path
     kissPage.slug = options.slug
     kissPage.debug = this.config.dev
