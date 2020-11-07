@@ -33,8 +33,8 @@ class KissPage {
     this._slug = this._utils.toSlug(
       view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
     )
-    this.path = view.substring(0, view.lastIndexOf('.'))
-    // console.debug('Auto path: ', this._path)
+    this.path = view.substring(0, view.lastIndexOf('/'))
+    console.debug('Auto path: ', this._path)
     this._title = this._utils.toTitleCase(this._slug)
   }
 
@@ -60,6 +60,8 @@ class KissPage {
 
   generate() {
     let filePath = this.buildDir
+    let pageToGenerate = `${filePath}/${this.slug}.html`
+
     if (this._path) {
       filePath = `${this.buildDir}/${this._path}`
       if (!fs.existsSync(filePath)) {
@@ -80,13 +82,13 @@ class KissPage {
         }
         const output = template(options)
 
-        const pageToGenerate = `${filePath}/${this._slug}.html`
+        pageToGenerate = `${filePath}/${options.slug}.html`
         console.log(pageToGenerate.green)
         fs.writeFileSync(pageToGenerate, output)
-        if (this.options && this._debug) {
+        if (options && this._debug) {
           fs.writeFileSync(
             pageToGenerate.replace('.html', '.json'),
-            JSON.stringify(this.options, null, 1)
+            JSON.stringify(options, null, 1)
           )
         }
       } catch (error) {
@@ -95,6 +97,8 @@ class KissPage {
         //console.debug(colors.grey(error))
       }
     }
+
+    return pageToGenerate
   }
 
   _utils = {
@@ -162,6 +166,7 @@ class Kiss {
 
   _state = {
     views: [],
+    pages: [],
     promises: [],
   }
 
