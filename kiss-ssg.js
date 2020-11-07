@@ -203,7 +203,7 @@ class Kiss {
 
   constructor(config) {
     const self = this
-    console.log('            Starting Kiss            '.zebra)
+    console.log('            Starting Kiss            \n'.zebra)
     if (!config) config = { dev: false }
     this.config = config
 
@@ -404,18 +404,23 @@ class Kiss {
       return this
     }
     options.config = this.config
-    this._state.views.push(options.view)
 
-    this._processPageModel(options.model)
-      .then((data) => {
-        this._generateSelector(options, optionMapper, data)
-      })
-      .catch((error) => {
-        console.log(colors.red(error.message))
-        if (error.error) {
-          console.error(colors.yellow(error.error))
-        }
-      })
+    if (!this._state.views.includes(options.view)) {
+      this._state.views.push(options.view)
+
+      this._processPageModel(options.model)
+        .then((data) => {
+          this._generateSelector(options, optionMapper, data)
+        })
+        .catch((error) => {
+          console.log(colors.red(error.message))
+          if (error.error) {
+            console.error(colors.yellow(error.error))
+          }
+        })
+    } else {
+      console.error('View already processed'.red)
+    }
 
     return this
   }
@@ -459,7 +464,10 @@ class Kiss {
 
   viewState() {
     // console.log(JSON.stringify(this._state, null, 1))
-    console.log(this._state)
+    console.log({
+      views: this._state.views.length,
+      promise: this._state.promises.length,
+    })
     return this
   }
 
