@@ -26,50 +26,18 @@ class Page {
 
   // defaults
   buildDir = './public'
-  pageDir = './src/pages'
 
   constructor(view) {
     this.view = view
-    this._path = view.substring(0, view.lastIndexOf('/'))
-    this._slug = this.utils.toSlug(
+    this._slug = this._utils.toSlug(
       view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
     )
-    this._title = this._slug
-  }
-
-  utils = {
-    toSlug(slug) {
-      return slug
-        .toLowerCase()
-        .trim()
-        .replace(/[\W_]+/g, '-')
-    },
-    trimPath(path) {
-      if (path.startsWith('/')) path = path.substring(1, path.length)
-      if (path.endsWith('/')) path = path.substring(0, path.length - 1)
-      return path
-    },
-    sanitizePath(path) {
-      if (path) {
-        path = this.trimPath(path)
-
-        let pathSegments = path.split('/')
-        const cleanedSegments = []
-        pathSegments.forEach((segment) => {
-          const slugifiedSegment = this.toSlug(segment)
-          cleanedSegments.push(slugifiedSegment.trim())
-        })
-        path = cleanedSegments.join('/')
-      }
-      return path
-    },
+    this._title = this._utils.toTitleCase(this._slug)
   }
 
   set path(path) {
     if (path) {
-      // if (path.startsWith('/')) path = path.substring(1, path.length)
-      // if (path.endsWith('/')) path = path.substring(0, path.length - 1)
-      this._path = this.utils.sanitizePath(path)
+      this._path = this._utils.sanitizePath(path)
     }
   }
 
@@ -78,21 +46,9 @@ class Page {
   }
   set slug(slug) {
     if (slug) {
-      this._slug = this.utils.toSlug(slug)
+      this._slug = this._utils.toSlug(slug)
       // console.debug('Set slug: '.gray, this._slug)
     }
-  }
-
-  getTemplate(view) {
-    let viewText = ''
-    try {
-      viewText = fs.readFileSync(`${this.pageDir}/${view}`, 'utf8')
-      return handlebars.compile(viewText)
-    } catch (error) {
-      console.log('Error reading view'.red)
-      console.error(colors.yellow(error.message))
-    }
-    return null
   }
 
   generate() {
@@ -104,7 +60,7 @@ class Page {
       }
     }
 
-    const template = this.getTemplate(this.view)
+    const template = this._getTemplate(this.view)
     if (template) {
       try {
         let options = {
@@ -132,6 +88,55 @@ class Page {
         //console.debug(colors.grey(error))
       }
     }
+  }
+
+  _utils = {
+    toSlug(slug) {
+      return slug
+        .toLowerCase()
+        .trim()
+        .replace(/[\W_]+/g, '-')
+    },
+    toTitleCase(str) {
+      return str
+        .toLowerCase()
+        .split(' ')
+        .map(function (word) {
+          return word.charAt(0).toUpperCase() + word.slice(1)
+        })
+        .join(' ')
+    },
+    trimPath(path) {
+      if (path.startsWith('/')) path = path.substring(1, path.length)
+      if (path.endsWith('/')) path = path.substring(0, path.length - 1)
+      return path
+    },
+    sanitizePath(path) {
+      if (path) {
+        path = this.trimPath(path)
+
+        let pathSegments = path.split('/')
+        const cleanedSegments = []
+        pathSegments.forEach((segment) => {
+          const slugifiedSegment = this.toSlug(segment)
+          cleanedSegments.push(slugifiedSegment.trim())
+        })
+        path = cleanedSegments.join('/')
+      }
+      return path
+    },
+  }
+
+  _getTemplate(view) {
+    let viewText = ''
+    try {
+      viewText = fs.readFileSync(view, 'utf8')
+      return handlebars.compile(viewText)
+    } catch (error) {
+      console.log('Error reading view'.red)
+      console.error(colors.yellow(error.message))
+    }
+    return null
   }
 }
 
@@ -204,6 +209,8 @@ class Kiss {
 
     this.registerPartials(this.folders.components)
     this.registerPartials(this.folders.layouts)
+
+    console.log('Generating:'.grey)
   }
 
   fileSystem = {
@@ -219,7 +226,7 @@ class Kiss {
   }
 
   registerPartials(folder) {
-    console.log('Registering partials: '.grey)
+    console.log(`Registering ${folder.replace(this.folders.src, '')}: `.grey)
     const hbs = glob.sync(`${folder}/**/*.hbs`)
     hbs.forEach((path) => {
       // console.debug('partial: '.grey, path)
@@ -279,12 +286,11 @@ class Kiss {
     }
 
     // console.debug('options:'.grey, options)
-    const kissPage = new Page(options.view)
-    kissPage.buildDir = this.folders.build
-    kissPage.pageDir = this.folders.pages
-    kissPage.slug = options.slug
-    kissPage.path = options.path
+    const kissPage = new Page(`${this.folders.pages}/${options.view}`)
     kissPage.options = options
+    kissPage.buildDir = this.folders.build
+    kissPage.path = options.path
+    kissPage.slug = options.slug
     kissPage.debug = this.config.dev
     kissPage.generate()
     // console.debug(kissPage)
