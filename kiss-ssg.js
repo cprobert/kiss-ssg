@@ -404,11 +404,11 @@ class Kiss {
       return this
     }
     options.config = this.config
+    this._state.views.push(options.view)
 
     this._processPageModel(options.model)
       .then((data) => {
         this._generateSelector(options, optionMapper, data)
-        this._state.views.push(options.view)
       })
       .catch((error) => {
         console.log(colors.red(error.message))
@@ -423,7 +423,6 @@ class Kiss {
   pages(options, optionMapper) {
     options.dynamic = true
     this.page(options, optionMapper)
-    this._state.views.push(options.view)
     return this
   }
 
