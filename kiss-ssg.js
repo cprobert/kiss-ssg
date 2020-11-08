@@ -34,7 +34,7 @@ class KissPage {
       view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
     )
     this.path = view.substring(0, view.lastIndexOf('/'))
-    console.debug('Auto path: ', this._path)
+    // console.debug('Auto path: ', this._path)
     this._title = this._utils.toTitleCase(this._slug)
   }
 
@@ -308,7 +308,7 @@ class Kiss {
     kissPage.path = options.path
     kissPage.slug = options.slug
     kissPage.debug = this.config.dev
-    kissPage.generate()
+    this._state.pages.push(kissPage.generate())
     // console.debug(kissPage)
   }
 
@@ -414,6 +414,14 @@ class Kiss {
       this._state.views.push(options.view)
     }
 
+    // const pageName = `${this._folders.pages}/${options.view.replace(
+    //   '.hbs',
+    //   '.html'
+    // )}`
+    // if (this._state.pages.includes(pageName)) {
+    //   console.log('Page already processed'.red)
+    // }
+
     this._processPageModel(options.model)
       .then((data) => {
         this._generateSelector(options, optionMapper, data)
@@ -470,13 +478,14 @@ class Kiss {
     console.log({
       views: this._state.views.length,
       promise: this._state.promises.length,
+      pages: this._state.pages.length,
     })
     return this
   }
 
   complete(callback) {
     return Promise.all(this._state.promises).then(() => {
-      callback()
+      callback.call(this)
     })
   }
 }
