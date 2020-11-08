@@ -179,7 +179,7 @@ class Kiss {
           layouts: `${config.folders.src}/layouts`,
           pages: `${config.folders.src}/pages`,
           components: `${config.folders.src}/components`,
-          models: `${config.folders.src}/content`,
+          models: `${config.folders.src}/models`,
           controllers: `${config.folders.src}/controllers`,
           build: './public',
         }
