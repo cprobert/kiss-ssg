@@ -65,7 +65,8 @@ class Kiss {
     this._fileSystem.mkDir(this._folders.controllers)
 
     try {
-      rimraf.sync(this._folders.build)
+      // rimraf.sync(this._folders.build)
+      rimraf.sync(this._folders.build + '/*')
     } catch (err) {
       console.error(colors.red(err.message))
     }
