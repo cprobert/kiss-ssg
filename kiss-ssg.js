@@ -163,6 +163,7 @@ class Kiss {
     kissPage.pagesDir = this._folders.pages
     kissPage.path = options.path
     kissPage.slug = options.slug
+    if (options.ext) kissPage.ext = options.ext
     kissPage.debug = this.config.dev
     this._state.pages.push(kissPage.generate())
     // console.debug(kissPage)

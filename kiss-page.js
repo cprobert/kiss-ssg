@@ -13,6 +13,7 @@ const colors = require('colors')
 class KissPage {
   _path = ''
   _slug = 'index'
+  _ext = 'html'
   _title = 'Kiss page'
 
   _debug = false
@@ -48,6 +49,11 @@ class KissPage {
       // console.debug('Set slug: '.gray, this._slug)
     }
   }
+  set ext(extension) {
+    if (extension) {
+      this._ext = extension.replace('.', '')
+    }
+  }
 
   set debug(dev) {
     this._debug = !!dev
@@ -55,7 +61,7 @@ class KissPage {
 
   generate() {
     let filePath = this.buildDir
-    let pageToGenerate = `${filePath}/${this.slug}.html`
+    let pageToGenerate = `${filePath}/${this.slug}.${this._ext}`
 
     if (this._path) {
       filePath = `${this.buildDir}/${this._path}`
@@ -77,12 +83,12 @@ class KissPage {
         }
         const output = template(options)
 
-        pageToGenerate = `${filePath}/${options.slug}.html`
+        pageToGenerate = `${filePath}/${options.slug}.${this._ext}`
         console.log(pageToGenerate.green)
         fs.writeFileSync(pageToGenerate, output)
         if (options && this._debug) {
           fs.writeFileSync(
-            pageToGenerate.replace('.html', '.json'),
+            pageToGenerate.replace(this._ext, '.json'),
             JSON.stringify(options, null, 1)
           )
         }
