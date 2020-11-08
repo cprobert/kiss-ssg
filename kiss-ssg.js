@@ -1,3 +1,12 @@
+const handlebars = require('handlebars') // https://handlebarsjs.com/
+const markdown = require('helper-markdown') // https://github.com/helpers/helper-markdown
+handlebars.registerHelper('markdown', markdown)
+handlebars.registerHelper('stringify', function (obj) {
+  return JSON.stringify(obj, null, 3)
+})
+const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/handlebars-layouts
+handlebars.registerHelper(layouts(handlebars))
+
 const KissPage = require('./kiss-page')
 
 const fs = require('fs')
