@@ -119,10 +119,10 @@ class Kiss {
     })
   }
 
-  _optionMapper(options, optionMapper) {
-    if (typeof optionMapper === 'function') {
+  _controller(options, controller) {
+    if (typeof controller === 'function') {
       try {
-        let mappedOptions = optionMapper(options)
+        let mappedOptions = controller(options)
         options = {
           ...options,
           ...mappedOptions,
@@ -131,20 +131,32 @@ class Kiss {
         console.log(`Error in controller for ${options.view}`.red)
         console.error(colors.yellow(err))
       }
+    } else {
+      console.error('Invalid controller - not a function'.red)
     }
     return options
   }
 
-  _kissController(options, optionMapper) {
+  _kissController(options) {
     if (options.controller) {
-      const controllerPath = `${this._folders.controllers}/${options.controller}`
-      if (this._fileSystem.exists(controllerPath)) {
-        const controller = require.main.require(controllerPath)
-        options = this._optionMapper(options, controller)
+      switch (typeof options.controller) {
+        case 'string':
+          const controllerPath = `${this._folders.controllers}/${options.controller}`
+          if (this._fileSystem.exists(controllerPath)) {
+            const controller = require.main.require(controllerPath)
+            options = this._controller(options, controller)
+          }
+          break
+        case 'function':
+          options = this._controller(options, options.controller)
+          break
+        default:
+          console.error(
+            'Unknown controller type: '.red,
+            options.controller,
+            typeof options.controller
+          )
       }
-    }
-    if (optionMapper) {
-      options = this._optionMapper(options, optionMapper)
     }
     // if the user didn't specify a title auto map title from model if it exists
     if (!options.title) {
@@ -169,14 +181,14 @@ class Kiss {
     // console.debug(kissPage)
   }
 
-  _generateMultiple(options, data, optionMapper) {
+  _generateMultiple(options, data) {
     let i = 1
     const slug = options.slug
     if (Array.isArray(data)) {
       data.forEach((model) => {
         options.slug = slug + '-' + i
         options.model = model
-        options = this._kissController(options, optionMapper)
+        options = this._kissController(options)
         this._generate(options)
         i++
       })
@@ -185,12 +197,12 @@ class Kiss {
     }
   }
 
-  _generateSelector(options, optionMapper, data, controller) {
+  _generateSelector(options, data, controller) {
     if (options.dynamic) {
-      this._generateMultiple(options, data, optionMapper)
+      this._generateMultiple(options, data)
     } else {
       options.model = data
-      options = this._kissController(options, optionMapper)
+      options = this._kissController(options)
       this._generate(options)
     }
   }
@@ -260,7 +272,7 @@ class Kiss {
     return modelArray
   }
 
-  page(options, optionMapper) {
+  page(options, callbackController) {
     if (!options.view) {
       console.error('No view specified'.red, options)
       return this
@@ -282,7 +294,12 @@ class Kiss {
         options.model = matchingModel
       }
     }
-    // Auto map controller if one isn't specified
+
+    // Use the call back as a controller if present
+    if (typeof callbackController === 'function') {
+      options.controller = callbackController
+    }
+    // See id we can auto map controller if one isn't specified
     if (!options.controller) {
       const matchingController = options.view.replace(/\.hbs$/, '.js')
       if (
@@ -303,7 +320,7 @@ class Kiss {
       // Detect all the different types of model options and process appropriately
       this._processPageModel(options.model)
         .then((data) => {
-          this._generateSelector(options, optionMapper, data)
+          this._generateSelector(options, data)
         })
         .catch((error) => {
           // If there was any issues processing the model let the user know
@@ -317,9 +334,9 @@ class Kiss {
     return this
   }
 
-  pages(options, optionMapper) {
+  pages(options, callbackController) {
     options.dynamic = true
-    this.page(options, optionMapper)
+    this.page(options, callbackController)
     return this
   }
 
@@ -335,12 +352,7 @@ class Kiss {
         const options = {
           view: view,
         }
-
-        this.page(options, ({ model }) => {
-          if (model && model.title) {
-            return { title: model.title }
-          }
-        })
+        this.page(options)
       }
     })
     return this

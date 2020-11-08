@@ -9,7 +9,18 @@ const kiss = new Kiss({
     view: 'index.hbs',
   })
   .page({
+    view: 'about.hbs',
+    model: 'about.json',
+    controller: 'about.js',
+  })
+  .page({
     view: 'xml.hbs',
     ext: 'xml',
     model: { name: 'I am XML' },
+    controller: ({ model }) => {
+      console.log('Running inline xml controller'.cyan)
+      return {
+        title: model.name,
+      }
+    },
   })
