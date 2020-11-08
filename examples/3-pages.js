@@ -7,10 +7,11 @@ const kiss = new Kiss({
   dev: true,
 })
   .pages({
-    view: 'courses.hbs',
+    view: 'course.hbs',
     model: 'https://learna-cms.herokuapp.com/courses',
     controller: ({ model }) => {
       return {
+        slug: model.slug,
         model: model,
       }
     },

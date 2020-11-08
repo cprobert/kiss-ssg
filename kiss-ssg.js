@@ -186,7 +186,7 @@ class Kiss {
 
   _generateMultiple(options, data) {
     let i = 1
-    const slug = options.slug
+    const slug = options.slug ? options.slug : options.view.replace('.hbs', '')
     if (Array.isArray(data)) {
       data.forEach((model) => {
         options.slug = slug + '-' + i
@@ -200,15 +200,15 @@ class Kiss {
     }
   }
 
-  _generateSelector(options, data) {
-    if (options.dynamic) {
-      this._generateMultiple(options, data)
-    } else {
-      options.model = data
-      options = this._kissController(options)
-      this._generate(options)
-    }
-  }
+  // _generateSelector(options, data) {
+  //   if (options.dynamic) {
+  //     this._generateMultiple(options, data)
+  //   } else {
+  //     options.model = data
+  //     options = this._kissController(options)
+  //     this._generate(options)
+  //   }
+  // }
 
   _processPageModel(model) {
     const p = new Promise((resolve, reject) => {
@@ -327,7 +327,13 @@ class Kiss {
       // Detect all the different types of model options and process appropriately
       this._processPageModel(options.model)
         .then((response) => {
-          this._generateSelector(options, response.data)
+          if (options.dynamic) {
+            this._generateMultiple(options, response.data)
+          } else {
+            options.model = response.data
+            options = this._kissController(options)
+            this._generate(options)
+          }
         })
         .catch((error) => {
           // If there was any issues processing the model let the user know
