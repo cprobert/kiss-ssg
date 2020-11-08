@@ -6,7 +6,6 @@
 
 ## Features
 
-- Create a nav array
 - Add isActive support
 - Add file or folder option, e.g. /about/index.html or about.html
 - Cache http models to speed up build

@@ -22,6 +22,7 @@ class Kiss {
 
   _state = {
     views: [],
+    models: [],
     pages: [],
     promises: [],
   }
@@ -44,7 +45,7 @@ class Kiss {
     }
     config.folders = this._folders
 
-    console.debug('folders: '.grey, this._folders)
+    console.log('folders: '.grey, this._folders)
     this._fileSystem.mkDir(this._folders.src)
     this._fileSystem.mkDir(this._folders.assets)
     this._fileSystem.mkDir(this._folders.layouts)
@@ -57,7 +58,7 @@ class Kiss {
     try {
       rimraf.sync(this._folders.build)
     } catch (err) {
-      console.log(colors.red(err.message))
+      console.error(colors.red(err.message))
     }
     this._fileSystem.mkDir(this._folders.build)
   }
@@ -65,8 +66,10 @@ class Kiss {
   constructor(config) {
     const self = this
     console.log('            Starting Kiss            \n'.zebra)
-    if (!config) config = { dev: false }
+    if (!config) config = { dev: false, verbose: false }
     this.config = config
+    this.verbose = !!this.config.verbose
+    if (this.verbose) console.log('Verbose: ', this.verbose)
 
     this._setupFolders(config)
     ncp(this._folders.assets, this._folders.build, function (err) {
@@ -128,7 +131,7 @@ class Kiss {
           ...mappedOptions,
         }
       } catch (err) {
-        console.log(`Error in controller for ${options.view}`.red)
+        console.error(`Error in controller for ${options.view}`.red)
         console.error(colors.yellow(err))
       }
     } else {
@@ -197,7 +200,7 @@ class Kiss {
     }
   }
 
-  _generateSelector(options, data, controller) {
+  _generateSelector(options, data) {
     if (options.dynamic) {
       this._generateMultiple(options, data)
     } else {
@@ -216,16 +219,16 @@ class Kiss {
             fetch(model)
               .then((response) => response.json())
               .then((data) => {
-                resolve(data)
+                resolve({ id: model, data: data })
               })
               .catch((error) => {
-                console.log(`Error getting model from ${model}`.red)
+                console.error(`Error getting model from ${model}`.red)
                 reject({ message: error.message, error: error })
               })
           } else if (model.endsWith('.json')) {
             const data = this._readModel(model)
             if (data) {
-              resolve(data)
+              resolve({ id: model, data: data })
             } else {
               reject({ message: `Skipping: ${model}` })
             }
@@ -233,7 +236,7 @@ class Kiss {
             // See if the model is a folder
             const returnModel = this._folderModel(model)
             if (returnModel.length > 0) {
-              resolve(returnModel)
+              resolve({ id: model, data: returnModel })
             } else {
               reject({ message: `Invalid model ${model}` })
             }
@@ -241,10 +244,11 @@ class Kiss {
           break
         case 'object':
           // console.debug('Model is object'.grey)
-          resolve(model)
+          resolve({ id: this._state.models.length, data: model })
+          // resolve({ data: model })
           break
         case 'undefined':
-          resolve({})
+          resolve({ data: {} })
           break
         default:
           reject({ message: `Unexpected model type: ${typeof model}` })
@@ -277,7 +281,7 @@ class Kiss {
       console.error('No view specified'.red, options)
       return this
     }
-    console.log('Processing view: '.grey, options.view)
+    if (this.verbose) console.log('Processing view: '.grey, options.view)
     // Map the global kiss config to the page config
     options.config = this.config
 
@@ -290,10 +294,12 @@ class Kiss {
     if (!options.model) {
       const matchingModel = options.view.replace(/\.hbs$/, '.json')
       if (this._fileSystem.exists(`${this._folders.models}/${matchingModel}`)) {
-        console.log('Found matching model: '.grey, matchingModel)
+        if (this.verbose)
+          console.log('Found matching model: '.grey, matchingModel)
         options.model = matchingModel
       }
     }
+    if (options.model) this._state.models.push(options.model)
 
     // Use the call back as a controller if present
     if (typeof callbackController === 'function') {
@@ -307,7 +313,8 @@ class Kiss {
           `${this._folders.controllers}/${matchingController}`
         )
       ) {
-        console.log('Found matching controller: '.grey, matchingController)
+        if (this.verbose)
+          console.log('Found matching controller: '.grey, matchingController)
         options.controller = matchingController
       }
     }
@@ -319,12 +326,12 @@ class Kiss {
     } else {
       // Detect all the different types of model options and process appropriately
       this._processPageModel(options.model)
-        .then((data) => {
-          this._generateSelector(options, data)
+        .then((response) => {
+          this._generateSelector(options, response.data)
         })
         .catch((error) => {
           // If there was any issues processing the model let the user know
-          console.log(colors.red(error.message))
+          console.error(colors.red(error.message))
           if (error.error) {
             console.error(colors.yellow(error.error))
           }
@@ -359,9 +366,10 @@ class Kiss {
   }
 
   viewState() {
-    // console.log(JSON.stringify(this._state, null, 1))
+    if (this.verbose) console.log(JSON.stringify(this._state, null, 1))
     console.log({
       views: this._state.views.length,
+      models: this._state.models.length,
       promise: this._state.promises.length,
       pages: this._state.pages.length,
     })
@@ -369,9 +377,13 @@ class Kiss {
   }
 
   complete(callback) {
-    return Promise.all(this._state.promises).then(() => {
-      callback.call(this)
+    return Promise.all(this._state.promises).then((data) => {
+      if (callback) callback.call(this, data)
     })
+  }
+
+  getModelByID(id, data) {
+    return data.find((d) => d.id === id)
   }
 }
 

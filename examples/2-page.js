@@ -4,6 +4,7 @@ const kiss = new Kiss({
     src: './2-page',
     build: '../public/2-page',
   },
+  verbose: false,
 })
   .page({
     view: 'index.hbs',
@@ -23,4 +24,9 @@ const kiss = new Kiss({
         title: model.name,
       }
     },
+  })
+  .complete(function (data) {
+    //console.log(data)
+    console.log(this.getModelByID('about.json', data))
+    // this.viewState()
   })
