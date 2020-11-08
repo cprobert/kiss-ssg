@@ -414,24 +414,21 @@ class Kiss {
       this._state.views.push(options.view)
     }
 
-    // const pageName = `${this._folders.pages}/${options.view.replace(
-    //   '.hbs',
-    //   '.html'
-    // )}`
-    // if (this._state.pages.includes(pageName)) {
-    //   console.log('Page already processed'.red)
-    // }
-
-    this._processPageModel(options.model)
-      .then((data) => {
-        this._generateSelector(options, optionMapper, data)
-      })
-      .catch((error) => {
-        console.log(colors.red(error.message))
-        if (error.error) {
-          console.error(colors.yellow(error.error))
-        }
-      })
+    let pageToGenerate = `${this._folders.build}/${options.slug}.html`
+    if (this._state.pages.includes(pageToGenerate)) {
+      console.log('Page already processed'.red, pageToGenerate)
+    } else {
+      this._processPageModel(options.model)
+        .then((data) => {
+          this._generateSelector(options, optionMapper, data)
+        })
+        .catch((error) => {
+          console.log(colors.red(error.message))
+          if (error.error) {
+            console.error(colors.yellow(error.error))
+          }
+        })
+    }
 
     return this
   }
