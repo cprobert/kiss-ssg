@@ -15,13 +15,25 @@ const kiss = new Kiss({
         model: model,
       }
     },
+    path: 'courses',
   })
   .complete(function (data) {
-    // console.log(data)
+    // data is an array of models from all promises
+    // this.getModelByID is a helper to rehydrate the model on completion
     const courseModel = this.getModelByID(
       'https://learna-cms.herokuapp.com/courses',
       data
     )
-    console.log(courseModel.data[0].title)
-    this.viewState()
+    // It can then be reused for pages such as indexes
+    this.page({
+      model: courseModel,
+      view: 'courses/index.hbs',
+      controller: ({ model }) => {
+        return {
+          title: 'List of courses',
+          model: model,
+        }
+      },
+      slug: 'courses',
+    })
   })

@@ -29,7 +29,6 @@ class KissPage {
     this._slug = this._utils.toSlug(
       view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
     )
-    console.log('constructa a slug: ', this._slug)
     this.path = view.substring(0, view.lastIndexOf('/'))
     // console.debug('Auto path: ', this._path)
     this._title = this._utils.toTitleCase(this._slug)

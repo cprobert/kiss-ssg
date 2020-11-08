@@ -28,5 +28,5 @@ const kiss = new Kiss({
   .complete(function (data) {
     //console.log(data)
     console.log(this.getModelByID('about.json', data))
-    // this.viewState()
+    // this.viewStats()
   })

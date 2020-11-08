@@ -371,8 +371,8 @@ class Kiss {
     return this
   }
 
-  viewState() {
-    if (this.verbose) console.log(JSON.stringify(this._state, null, 1))
+  viewStats() {
+    // if (this.verbose) console.log(JSON.stringify(this._state, null, 1))
     console.log({
       views: this._state.views.length,
       models: this._state.models.length,
@@ -389,7 +389,9 @@ class Kiss {
   }
 
   getModelByID(id, data) {
-    return data.find((d) => d.id === id)
+    const result = data.find((d) => d.id === id)
+    if (result) return result.data
+    return { error: 'No data found for: ' + id }
   }
 }
 
