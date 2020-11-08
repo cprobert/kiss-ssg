@@ -265,28 +265,55 @@ class Kiss {
       console.error('No view specified'.red, options)
       return this
     }
+    console.log('Processing view: '.grey, options.view)
+    // Map the global kiss config to the page config
     options.config = this.config
 
+    // Prevent views that have already been processed from being picked up be .scan()
     if (!this._state.views.includes(options.view)) {
       this._state.views.push(options.view)
     }
 
+    // Auto map model if one isn't specified
+    if (!options.model) {
+      const matchingModel = options.view.replace(/\.hbs$/, '.json')
+      if (this._fileSystem.exists(`${this._folders.models}/${matchingModel}`)) {
+        console.log('Found matching model: '.grey, matchingModel)
+        options.model = matchingModel
+      }
+    }
+    // Auto map controller if one isn't specified
+    if (!options.controller) {
+      const matchingController = options.view.replace(/\.hbs$/, '.js')
+      if (
+        this._fileSystem.exists(
+          `${this._folders.controllers}/${matchingController}`
+        )
+      ) {
+        console.log('Found matching controller: '.grey, matchingController)
+        options.controller = matchingController
+      }
+    }
+
+    // Check if the page has been already generated
     let pageToGenerate = `${this._folders.build}/${options.slug}.html`
     if (this._state.pages.includes(pageToGenerate)) {
       console.log('Page already processed'.red, pageToGenerate)
     } else {
+      // Detect all the different types of model options and process appropriately
       this._processPageModel(options.model)
         .then((data) => {
           this._generateSelector(options, optionMapper, data)
         })
         .catch((error) => {
+          // If there was any issues processing the model let the user know
           console.log(colors.red(error.message))
           if (error.error) {
             console.error(colors.yellow(error.error))
           }
         })
     }
-
+    // Facilitate chaining
     return this
   }
 
@@ -307,14 +334,6 @@ class Kiss {
         console.log(`Auto added:`.grey, view.blue)
         const options = {
           view: view,
-        }
-
-        const matchingModel = view.replace(/\.hbs$/, '.json')
-        if (
-          this._fileSystem.exists(`${this._folders.models}/${matchingModel}`)
-        ) {
-          console.log('Found matching model: '.grey, matchingModel)
-          options.model = matchingModel
         }
 
         this.page(options, ({ model }) => {
