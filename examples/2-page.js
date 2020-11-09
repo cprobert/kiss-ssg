@@ -26,7 +26,7 @@ const kiss = new Kiss({
     },
   })
   .page({
-    view: 'Hello {{model.name}}',
+    view: 'Hello {{model.name}} / Hows it going',
     model: {
       name: 'world',
     },

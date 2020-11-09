@@ -324,15 +324,6 @@ class Kiss {
       }
     }
 
-    // options.view, accepts both a file reference and a string thats the template
-    if (!options.view.endsWith('.hbs') && !options.slug) {
-      options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
-      console.log(
-        'A string view had been provided without an accompanying slug'.red
-      )
-      console.log(`generating random slug: ${options.slug}`.grey)
-    }
-
     // Prevent views that have already been processed from being picked up be .scan()
     // Don't add to array if it's text - only add if its a file
     if (

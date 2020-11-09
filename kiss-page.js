@@ -27,10 +27,23 @@ class KissPage {
 
   constructor(view) {
     this.view = view
-    this._slug = this._utils.toSlug(
-      view.substring(view.lastIndexOf('/') + 1, view.length).replace('.hbs', '')
-    )
-    this.path = view.substring(0, view.lastIndexOf('/'))
+
+    // options.view, accepts both a file reference and a string thats the template
+    if (!view.endsWith('.hbs')) {
+      this._slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
+      console.log(
+        'A string view had been provided without an accompanying slug'.red
+      )
+      console.log(`generating random slug: ${this._slug}`.grey)
+    } else {
+      this._slug = this._utils.toSlug(
+        view
+          .substring(view.lastIndexOf('/') + 1, view.length)
+          .replace('.hbs', '')
+      )
+      this.path = view.substring(0, view.lastIndexOf('/'))
+    }
+
     // console.debug('Auto path: ', this._path)
     this._title = this._utils.toTitleCase(this._slug)
   }
