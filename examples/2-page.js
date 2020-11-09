@@ -25,6 +25,13 @@ const kiss = new Kiss({
       }
     },
   })
+  .page({
+    view: 'Hello {{model.name}}',
+    model: {
+      name: 'world',
+    },
+    slug: 'hello-snippet',
+  })
   .complete(function (data) {
     //console.log(data)
     console.log(this.getModelByID('about.json', data))

@@ -1,10 +1,12 @@
 {
   "name": "kiss-ssg",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Simple Static Website Generator",
   "main": "kiss-ssg.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "eg1": "cd examples && node 1-scan",
+    "eg2": "cd examples && node 2-page",
+    "eg3": "cd examples && node 3-pages"
   },
   "repository": {
     "type": "git",

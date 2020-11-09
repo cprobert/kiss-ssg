@@ -141,13 +141,22 @@ class KissPage {
   }
 
   _getTemplate(view) {
-    let viewText = ''
-    let viewPath = `${this.pagesDir}/${view}`
+    let viewText = view
+    if (view.endsWith('.hbs')) {
+      let viewPath = `${this.pagesDir}/${view}`
+      try {
+        viewText = fs.readFileSync(viewPath, 'utf8')
+      } catch (error) {
+        console.log('Error reading view: '.red, viewPath)
+        console.error(colors.yellow(error.message))
+      }
+    }
+
     try {
-      viewText = fs.readFileSync(viewPath, 'utf8')
       return handlebars.compile(viewText)
     } catch (error) {
-      console.log('Error reading view: '.red, viewPath)
+      console.log('Error rendering view: '.red)
+      // console.debug(view)
       console.error(colors.yellow(error.message))
     }
     return null

@@ -295,11 +295,6 @@ class Kiss {
     // Map the global kiss config to the page config
     options.config = this.config
 
-    // Prevent views that have already been processed from being picked up be .scan()
-    if (!this._state.views.includes(options.view)) {
-      this._state.views.push(options.view)
-    }
-
     // Auto map model if one isn't specified
     if (!options.model) {
       const matchingModel = options.view.replace(/\.hbs$/, '.json')
@@ -327,6 +322,24 @@ class Kiss {
           console.log('Found matching controller: '.grey, matchingController)
         options.controller = matchingController
       }
+    }
+
+    // options.view, accepts both a file reference and a string thats the template
+    if (!options.view.endsWith('.hbs') && !options.slug) {
+      options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
+      console.log(
+        'A string view had been provided without an accompanying slug'.red
+      )
+      console.log(`generating random slug: ${options.slug}`.grey)
+    }
+
+    // Prevent views that have already been processed from being picked up be .scan()
+    // Don't add to array if it's text - only add if its a file
+    if (
+      options.view.endsWith('.hbs') &&
+      !this._state.views.includes(options.view)
+    ) {
+      this._state.views.push(options.view) // [cp] only add if ending with .hbs
     }
 
     // Check if the page has been already generated
