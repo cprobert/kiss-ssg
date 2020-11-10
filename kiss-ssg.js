@@ -1,11 +1,26 @@
 const handlebars = require('handlebars') // https://handlebarsjs.com/
-const markdown = require('helper-markdown') // https://github.com/helpers/helper-markdown
-handlebars.registerHelper('markdown', markdown)
+const { Remarkable } = require('remarkable')
+var md = new Remarkable({
+  html: false, // Enable HTML tags in source
+  xhtmlOut: false, // Use '/' to close single tags (<br />)
+  breaks: false, // Convert '\n' in paragraphs into <br>
+  langPrefix: 'language-', // CSS language prefix for fenced blocks
+
+  // Enable some language-neutral replacement + quotes beautification
+  typographer: false,
+
+  // Double + single quotes replacement pairs, when typographer enabled,
+  // and smartquotes on. Set doubles to '«»' for Russian, '„“' for German.
+  quotes: '“”‘’',
+})
+
 handlebars.registerHelper('stringify', function (obj) {
   return JSON.stringify(obj, null, 3)
 })
-const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/handlebars-layouts
-handlebars.registerHelper(layouts(handlebars))
+
+// [cp] I dont think I need layouts to register the partials
+// const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/handlebars-layouts
+// handlebars.registerHelper(layouts(handlebars))
 
 const KissPage = require('./kiss-page')
 
@@ -23,7 +38,7 @@ class Kiss {
     assets: './src/assets',
     layouts: './src/layouts',
     pages: './src/pages',
-    components: './src/components',
+    partials: './src/partials',
     models: './src/models',
     controllers: './src/controllers',
     build: './public',
@@ -44,7 +59,7 @@ class Kiss {
           assets: `${config.folders.src}/assets`,
           layouts: `${config.folders.src}/layouts`,
           pages: `${config.folders.src}/pages`,
-          components: `${config.folders.src}/components`,
+          partials: `${config.folders.src}/partials`,
           models: `${config.folders.src}/models`,
           controllers: `${config.folders.src}/controllers`,
           build: './public',
@@ -60,7 +75,7 @@ class Kiss {
     this._fileSystem.mkDir(this._folders.layouts)
     this._fileSystem.mkDir(this._folders.pages)
     this._fileSystem.mkDir(this._folders.pages)
-    this._fileSystem.mkDir(this._folders.components)
+    this._fileSystem.mkDir(this._folders.partials)
     this._fileSystem.mkDir(this._folders.models)
     this._fileSystem.mkDir(this._folders.controllers)
 
@@ -88,7 +103,8 @@ class Kiss {
       console.log(msg.grey)
     })
 
-    this._registerPartials(this._folders.components)
+    this._registerPartials(this._folders.partials, 'hbs')
+    this._registerPartials(this._folders.partials, 'md')
     this._registerPartials(this._folders.layouts)
 
     console.log('Generating:'.grey)
@@ -115,18 +131,25 @@ class Kiss {
     return null
   }
 
-  _registerPartials(folder) {
+  _registerPartials(folder, ext) {
     console.log(`Registering ${folder.replace(this._folders.src, '')}: `.grey)
-    const hbs = glob.sync(`${folder}/**/*.hbs`)
+    if (!ext) ext = 'hbs'
+    const hbs = glob.sync(`${folder}/**/*.${ext}`)
     hbs.forEach((path) => {
       // console.debug('partial: '.grey, path)
-      const source = fs.readFileSync(path, 'utf8')
       const reStart = new RegExp(`^${folder}`, 'g')
-      const reEnd = new RegExp(`\.hbs$`, 'g')
+      const reEnd = new RegExp(`\.${ext}$`, 'g')
       let name = path.replace(reStart, '').replace(reEnd, '')
+
       if (name.startsWith('/')) {
         name = name.substring(1, name.length)
       }
+      let source = fs.readFileSync(path, 'utf8')
+      if (ext === 'md') {
+        console.debug('Rendering Markdown')
+        source = md.render(source)
+      }
+
       handlebars.registerPartial(name, source)
       console.log(name.blue)
     })

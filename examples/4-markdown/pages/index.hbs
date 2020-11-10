@@ -1,0 +1,13 @@
+I am handlebars{{title}}
+
+<div>
+{{#if  model.partials.dynamic}}
+    {{> (lookup model.partials 'dynamic')}}
+{{/if}}
+</div>
+
+<div>
+{{#if  model.partials.markdown}}
+    {{> (lookup model.partials 'markdown')}}
+{{/if}}
+</div>

@@ -37,7 +37,7 @@ You can overwrite the folder locations bay passing a config to the kiss construc
     assets: './src/assets',
     layouts: './src/layouts',
     pages: './src/pages',
-    components: './src/components',
+    partials: './src/partials',
     models: './src/models',
     build: './public',
   }

@@ -6,7 +6,8 @@
   "scripts": {
     "eg1": "cd examples && node 1-scan",
     "eg2": "cd examples && node 2-page",
-    "eg3": "cd examples && node 3-pages"
+    "eg3": "cd examples && node 3-pages",
+    "eg4": "cd examples && node 4-markdown"
   },
   "repository": {
     "type": "git",
@@ -23,9 +24,9 @@
     "glob": "^7.1.6",
     "handlebars": "^4.7.6",
     "handlebars-layouts": "^3.1.4",
-    "helper-markdown": "^1.0.0",
     "ncp": "^2.0.0",
     "node-fetch": "^2.6.1",
+    "remarkable": "^2.0.1",
     "rimraf": "^3.0.2"
   },
   "keywords": [
