@@ -1,4 +1,16 @@
-I am handlebars{{title}}
+<h1>I am handlebars {{title}}</h1>
+
+<div>
+ {{#markdown}}
+  ## Inline markdown
+
+  Look I'm markdown
+ {{/markdown}}
+</div>
+
+<div>
+ {{#markdown model.markdown}}{{/markdown}}
+</div>
 
 <div>
 {{#if  model.partials.dynamic}}

@@ -1,17 +1,22 @@
 const handlebars = require('handlebars') // https://handlebarsjs.com/
+// Used to parse markdown partials
 const { Remarkable } = require('remarkable')
 var md = new Remarkable({
-  html: false, // Enable HTML tags in source
+  html: true, // Enable HTML tags in source
   xhtmlOut: false, // Use '/' to close single tags (<br />)
   breaks: false, // Convert '\n' in paragraphs into <br>
-  langPrefix: 'language-', // CSS language prefix for fenced blocks
-
-  // Enable some language-neutral replacement + quotes beautification
-  typographer: false,
-
-  // Double + single quotes replacement pairs, when typographer enabled,
-  // and smartquotes on. Set doubles to '«»' for Russian, '„“' for German.
-  quotes: '“”‘’',
+})
+handlebars.registerHelper('markdown', function (obj) {
+  let returnVal = ''
+  if (typeof obj === 'object') {
+    returnVal = obj.fn(this)
+  } else if (typeof obj === 'string') {
+    returnVal = obj
+  } else {
+    console.error('Unexpected object in the bagging area!'.red)
+  }
+  // return new handlebars.SafeString(md.render(returnVal))
+  return md.render(returnVal)
 })
 
 handlebars.registerHelper('stringify', function (obj) {

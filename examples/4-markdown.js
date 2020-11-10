@@ -8,6 +8,7 @@ const kiss = new Kiss({
 }).page({
   view: 'index.hbs',
   model: {
+    markdown: '## Im markdown from a model',
     partials: {
       dynamic: 'hb',
       markdown: 'md',
