@@ -106,7 +106,7 @@ class KissPage {
         console.log(pageToGenerate.green)
         let formattedOutput = pretty(output)
         if (!this._dev) {
-          console.debug('Minifying output')
+          // console.debug('Minifying output')
           formattedOutput = minify(output, {
             collapseWhitespace: true,
             conservativeCollapse: true,
