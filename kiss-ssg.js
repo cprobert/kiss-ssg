@@ -108,8 +108,10 @@ class Kiss {
       console.log(msg.grey)
     })
 
-    this._registerPartials(this._folders.partials, 'hbs')
+    this._registerPartials(this._folders.partials, 'html')
     this._registerPartials(this._folders.partials, 'md')
+    this._registerPartials(this._folders.partials, 'hbs')
+
     this._registerPartials(this._folders.layouts)
 
     console.log('Generating:'.grey)

@@ -1,17 +1,16 @@
 const Kiss = require('../kiss-ssg')
 const kiss = new Kiss({
   folders: {
-    src: './4-markdown',
-    build: '../public/4-markdown',
+    src: './4-layouts-and-partials',
+    build: '../public/4-layouts-and-partials',
   },
   verbose: false,
 }).page({
   view: 'index.hbs',
   model: {
-    markdown: '## Im markdown from a model',
+    name: 'World',
     partials: {
-      dynamic: 'hb',
-      markdown: 'md',
+      dynamic: 'dynamic',
     },
   },
 })
