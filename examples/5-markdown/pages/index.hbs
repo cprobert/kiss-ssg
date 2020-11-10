@@ -2,9 +2,10 @@
 
 <div>
  {{#markdown}}
-  ## Inline markdown
+  ## I'm a inline markdown
 
-  Look I'm markdown
+  - I make lists
+  - Easy
  {{/markdown}}
 </div>
 
@@ -13,13 +14,11 @@
 </div>
 
 <div>
-{{#if  model.partials.dynamic}}
-    {{> (lookup model.partials 'dynamic')}}
-{{/if}}
+ {{> "markdown"}}
 </div>
 
 <div>
-{{#if  model.partials.markdown}}
-    {{> (lookup model.partials 'markdown')}}
+{{#if  model.partials.dynamic}}
+    {{> (lookup model.partials 'dynamic')}}
 {{/if}}
 </div>

@@ -4,6 +4,7 @@ const kiss = new Kiss({
     src: './3-pages',
     build: '../public/3-pages',
   },
+  verbose: true,
   dev: true,
 })
   .pages({

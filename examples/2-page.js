@@ -4,7 +4,8 @@ const kiss = new Kiss({
     src: './2-page',
     build: '../public/2-page',
   },
-  verbose: false,
+  verbose: true,
+  dev: true,
 })
   .page({
     view: 'index.hbs',

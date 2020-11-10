@@ -99,7 +99,10 @@ class Kiss {
     if (!config) config = { dev: false, verbose: false }
     this.config = config
     this.verbose = !!this.config.verbose
-    if (this.verbose) console.log('Verbose: ', this.verbose)
+    if (this.verbose) {
+      console.debug('Verbose: ', this.verbose)
+      console.debug('config: '.grey, config)
+    }
 
     this._setupFolders(config)
     ncp(this._folders.assets, this._folders.build, function (err) {
@@ -219,7 +222,8 @@ class Kiss {
     kissPage.path = options.path
     kissPage.slug = options.slug
     if (options.ext) kissPage.ext = options.ext
-    kissPage.debug = this.config.dev
+    kissPage.debug = this.config.verbose
+    kissPage.isDev = this.config.dev
     this._state.pages.push(kissPage.generate())
     // console.debug(kissPage)
   }

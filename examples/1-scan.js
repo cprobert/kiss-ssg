@@ -4,4 +4,6 @@ const kiss = new Kiss({
     src: './1-scan',
     build: '../public/1-scan',
   },
+  verbose: true,
+  dev: true,
 }).scan()

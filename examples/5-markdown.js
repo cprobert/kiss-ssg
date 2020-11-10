@@ -4,14 +4,14 @@ const kiss = new Kiss({
     src: './5-markdown',
     build: '../public/5-markdown',
   },
-  verbose: false,
+  verbose: true,
+  dev: true,
 }).page({
   view: 'index.hbs',
   model: {
-    markdown: '## Im markdown from a model',
+    markdown: '## Im markdown pulled from a model',
     partials: {
-      dynamic: 'hb',
-      markdown: 'md',
+      dynamic: 'dynamic',
     },
   },
 })

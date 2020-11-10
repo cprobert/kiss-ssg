@@ -7,6 +7,9 @@ handlebars.registerHelper('stringify', function (obj) {
 const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/handlebars-layouts
 handlebars.registerHelper(layouts(handlebars))
 
+const pretty = require('pretty')
+const minify = require('html-minifier').minify // https://www.npmjs.com/package/html-minifier
+
 const colors = require('colors')
 
 class KissPage {
@@ -14,6 +17,7 @@ class KissPage {
   _slug = 'index'
   _ext = 'html'
   _title = 'Kiss page'
+  _dev = false
 
   _debug = false
   view = null
@@ -67,6 +71,9 @@ class KissPage {
     }
   }
 
+  set isDev(dev) {
+    this._dev = !!dev
+  }
   set debug(dev) {
     this._debug = !!dev
   }
@@ -97,7 +104,20 @@ class KissPage {
 
         pageToGenerate = `${filePath}/${options.slug}.${this._ext}`
         console.log(pageToGenerate.green)
-        fs.writeFileSync(pageToGenerate, output)
+        let formattedOutput = pretty(output)
+        if (!this._dev) {
+          console.debug('Minifying output')
+          formattedOutput = minify(output, {
+            collapseWhitespace: true,
+            conservativeCollapse: true,
+            removeComments: true,
+            removeEmptyAttributes: true,
+            minifyCSS: true,
+            minifyJS: true,
+          })
+        }
+
+        fs.writeFileSync(pageToGenerate, formattedOutput)
         if (options && this._debug) {
           fs.writeFileSync(
             pageToGenerate.replace(this._ext, '.json'),
