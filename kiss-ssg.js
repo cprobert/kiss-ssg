@@ -368,9 +368,14 @@ class Kiss {
     }
 
     // Check if the page has been already generated
-    let pageToGenerate = `${this._folders.build}/${options.slug}.html`
+    let pathSlug = options.slug
+    if (options.path !== '/') pathSlug = `${options.path}/${options.slug}`
+    let pageToGenerate = `${this._folders.build}/${pathSlug}.html`
+    // console.debug(this._state.pages)
+    // console.debug(pageToGenerate, options.path)
     if (this._state.pages.includes(pageToGenerate)) {
       console.log('Page already processed'.red, pageToGenerate)
+      // console.debug(options)
     } else {
       // Detect all the different types of model options and process appropriately
       this._processPageModel(options.model)
