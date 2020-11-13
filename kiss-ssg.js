@@ -631,6 +631,11 @@ class Kiss {
     if (result) return result.data
     return { error: 'No data found for: ' + id }
   }
+
+  registerHelper(name, functionality) {
+    handlebars.registerHelper(name, functionality)
+    return this
+  }
 }
 
 module.exports = Kiss
