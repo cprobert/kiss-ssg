@@ -84,11 +84,14 @@ class Kiss {
     this._fileSystem.mkDir(this._folders.models)
     this._fileSystem.mkDir(this._folders.controllers)
 
-    try {
-      // rimraf.sync(this._folders.build)
-      rimraf.sync(this._folders.build + '/*')
-    } catch (err) {
-      console.error(colors.red(err.message))
+    console.debug('cleanBuild: ', this.config.cleanBuild)
+    if (this.config.cleanBuild) {
+      try {
+        // rimraf.sync(this._folders.build)
+        rimraf.sync(this._folders.build + '/*')
+      } catch (err) {
+        console.error(colors.red(err.message))
+      }
     }
     this._fileSystem.mkDir(this._folders.build)
   }
@@ -96,9 +99,13 @@ class Kiss {
   constructor(config) {
     const self = this
     console.log('            Starting Kiss            \n'.zebra)
-    if (!config) config = { dev: false, verbose: false }
+    // Setup defaults
+    if (!config) config = { dev: false, verbose: false, cleanBuild: true }
+    if (typeof config.cleanBuild === 'undefined') config.cleanBuild = true
+
     this.config = config
     this.verbose = !!this.config.verbose
+
     if (this.verbose) {
       console.debug('Verbose: ', this.verbose)
       console.debug('config: '.grey, config)
