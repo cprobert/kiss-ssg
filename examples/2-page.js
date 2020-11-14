@@ -15,6 +15,9 @@ const kiss = new Kiss({
     model: 'about.json',
     controller: 'about.js',
   })
+  // .page({
+  //   view: 'index.hbs',
+  // })
   .page({
     view: 'xml.hbs',
     ext: 'xml',

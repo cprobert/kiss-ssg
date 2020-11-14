@@ -11,6 +11,11 @@ module.exports = async (httpRoot) => {
     next()
   })
 
+  app.use(function onerror(err, req, res, next) {
+    console.error('Server error'.red)
+    console.log(err)
+  })
+
   app.use(
     static(httpRoot, {
       cacheControl: false,

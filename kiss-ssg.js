@@ -13,6 +13,7 @@ const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/h
 handlebars.registerHelper(layouts(handlebars))
 
 const { Remarkable } = require('remarkable')
+const { createCipher } = require('crypto')
 var md = new Remarkable({
   html: true, // Enable HTML tags in source
   xhtmlOut: false, // Use '/' to close single tags (<br />)
@@ -90,12 +91,6 @@ class KissPage {
 
   constructor(view) {
     this.view = view
-
-    // options.view, accepts both a file reference and a string thats the template
-    if (view.endsWith('.hbs')) {
-      this.path = view.substring(0, view.lastIndexOf('/'))
-    }
-
     // console.debug('Auto path: ', this._path)
     this._title = utils.toTitleCase(this._slug)
   }
@@ -122,6 +117,9 @@ class KissPage {
   }
 
   get buildTo() {
+    if (this._path) {
+      return `${this.buildDir}/${this._path}/${this.slug}.${this._ext}`
+    }
     return `${this.buildDir}/${this.slug}.${this._ext}`
   }
 
@@ -139,7 +137,7 @@ class KissPage {
         fs.mkdirSync(filePath, { recursive: true })
       }
     }
-    this._options = {
+    this.options = {
       ...{
         title: this._title,
         path: this._path,
@@ -154,7 +152,7 @@ class KissPage {
     const template = this._getTemplate(this.view)
     if (template) {
       try {
-        const output = template(this._options)
+        const output = template(this.options)
         console.log(this.buildTo.green)
         let formattedOutput = pretty(output)
         if (this._dev) {
@@ -176,10 +174,10 @@ class KissPage {
         }
 
         fs.writeFileSync(this.buildTo, formattedOutput)
-        if (this._options && this._debug) {
+        if (this.options && this._debug) {
           fs.writeFileSync(
             this.buildTo.replace(this._ext, '.json'),
-            JSON.stringify(this._options, null, 1)
+            JSON.stringify(this.options, null, 1)
           )
         }
       } catch (error) {
@@ -305,6 +303,19 @@ class Kiss {
     this._registerPartials(this._folders.layouts)
 
     console.log('Generating:'.grey)
+
+    if (this.config.dev) {
+      const kissServe = require('./kiss-serve')
+      var publicDir = path.resolve(this.config.folders.build)
+      // console.log('this.config.build', this.config.folders.build)
+      try {
+        kissServe(publicDir)
+      } catch (error) {
+        console.error('Error running live reload server'.red)
+        console.log(error.message)
+      }
+      this.watch()
+    }
   }
 
   _fileSystem = {
@@ -329,7 +340,7 @@ class Kiss {
   }
 
   _registerPartials(folder, ext) {
-    console.log(`Registering ${folder.replace(this._folders.src, '')}: `.grey)
+    //console.log(`Registering ${folder.replace(this._folders.src, '')}: `.grey)
     if (!ext) ext = 'hbs'
     const hbs = glob.sync(`${folder}/**/*.${ext}`)
     hbs.forEach((path) => {
@@ -343,7 +354,7 @@ class Kiss {
       }
       let source = fs.readFileSync(path, 'utf8')
       if (ext === 'md') {
-        console.debug('Rendering Markdown')
+        // console.debug('Rendering Markdown')
         source = md.render(source)
       }
 
@@ -352,7 +363,7 @@ class Kiss {
     })
   }
 
-  _controller(options, controller) {
+  _controllerRun(options, controller) {
     if (typeof controller === 'function') {
       try {
         let mappedOptions = controller(options)
@@ -377,11 +388,11 @@ class Kiss {
           const controllerPath = `${this._folders.controllers}/${options.controller}`
           if (this._fileSystem.exists(controllerPath)) {
             const controller = require.main.require(controllerPath)
-            options = this._controller(options, controller)
+            options = this._controllerRun(options, controller)
           }
           break
         case 'function':
-          options = this._controller(options, options.controller)
+          options = this._controllerRun(options, options.controller)
           break
         default:
           console.error(
@@ -507,25 +518,9 @@ class Kiss {
       console.error('No view specified'.red, options)
       return this
     }
-    if (this.verbose) console.log('Processing view: '.grey, options.view)
+    // if (this.verbose) console.log('Processing view: '.grey, options.view)
 
     options.config = this.config // Map the global kiss config to the page config
-
-    if (!options.slug) {
-      if (options.view.endsWith('.hbs')) {
-        options.slug = utils.toSlug(
-          options.view
-            .substring(options.view.lastIndexOf('/') + 1, options.view.length)
-            .replace('.hbs', '')
-        )
-      } else {
-        options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
-        console.log(
-          'A string view had been provided without an accompanying slug'.red
-        )
-        console.log(`generating random slug: ${options.slug}`.grey)
-      }
-    }
 
     // Auto map model if one isn't specified
     if (!options.model) {
@@ -561,35 +556,66 @@ class Kiss {
       this._state.views.push(options.view)
     }
 
-    // Check if the page has been already generated
-    let pathSlug = options.slug
-    if (options.path && options.path !== '/')
-      pathSlug = `${options.path}/${options.slug}`
-    let pageToGenerate = `${this._folders.build}/${pathSlug}.html`
-    // console.debug(pageToGenerate.magenta)
-    const existingPage = this._stack.find((p) => p.buildTo === pageToGenerate)
-    if (existingPage) {
-      console.log('Page already processed'.red, pageToGenerate)
-    } else {
-      // Detect all the different types of model options and process appropriately
-      this._processPageModel(options.model)
-        .then((response) => {
-          if (options.dynamic) {
-            this._prepareMultiplePages(options, response.data)
+    // Detect all the different types of model options and process appropriately
+    this._processPageModel(options.model)
+      .then((response) => {
+        if (options.dynamic) {
+          this._prepareMultiplePages(options, response.data)
+        } else {
+          options.model = response.data
+          options = this._detectControllerType(options)
+
+          if (!options.slug) {
+            if (options.view.endsWith('.hbs')) {
+              options.slug = utils.toSlug(
+                options.view
+                  .substring(
+                    options.view.lastIndexOf('/') + 1,
+                    options.view.length
+                  )
+                  .replace('.hbs', '')
+              )
+            } else {
+              options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
+              console.log(
+                'A string view had been provided without an accompanying slug'
+                  .red
+              )
+              console.log(`generating random slug: ${options.slug}`.grey)
+            }
+          }
+
+          if (!options.path) {
+            options.path = options.view.substring(
+              0,
+              options.view.lastIndexOf('/')
+            )
+          }
+
+          // Check if the page has been already generated
+          let pathSlug = options.slug
+          if (options.path && options.path !== '/')
+            pathSlug = `${options.path}/${options.slug}`
+          let pageToGenerate = `${this._folders.build}/${pathSlug}.html`
+          // console.debug(pageToGenerate.magenta)
+          const existingPage = this._stack.find(
+            (p) => p.buildTo === pageToGenerate
+          )
+          if (existingPage) {
+            console.log('Page already processed'.red, pageToGenerate)
           } else {
-            options.model = response.data
-            options = this._detectControllerType(options)
             this._preparePage(options)
           }
-        })
-        .catch((error) => {
-          // If there was any issues processing the model let the user know
-          console.error(colors.red(error.message))
-          if (error.error) {
-            console.error(colors.yellow(error.error))
-          }
-        })
-    }
+        }
+      })
+      .catch((error) => {
+        // If there was any issues processing the model let the user know
+        console.error(colors.red(error.message))
+        if (error.error) {
+          console.error(colors.yellow(error.error))
+        }
+      })
+
     // Facilitate chaining
     return this
   }
@@ -648,13 +674,6 @@ class Kiss {
       })
       this._stack = stack
       if (callback) callback.call(this, data)
-      if (this.config.dev) {
-        const kissServe = require('./kiss-serve')
-        var publicDir = path.resolve(this.config.folders.build)
-        // console.log('this.config.build', this.config.folders.build)
-        kissServe(publicDir)
-        this.watch()
-      }
     })
     return this
   }
