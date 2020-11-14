@@ -6,12 +6,19 @@ const kiss = new Kiss({
   },
   verbose: true,
   dev: true,
-}).page({
-  view: 'index.hbs',
-  model: {
-    markdown: '## Im markdown pulled from a model',
-    partials: {
-      dynamic: 'dynamic',
-    },
-  },
 })
+  .page({
+    view: 'index.hbs',
+    model: {
+      markdown: '## Im markdown pulled from a model',
+      partials: {
+        dynamic: 'dynamic',
+      },
+    },
+  })
+  .generate(() => {
+    console.log('Generated')
+  })
+  .complete(() => {
+    console.log('Complete')
+  })

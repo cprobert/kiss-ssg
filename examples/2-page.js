@@ -33,7 +33,7 @@ const kiss = new Kiss({
     },
     slug: 'hello-snippet',
   })
-  .complete(function (data) {
+  .generate(function (data) {
     //console.log(data)
     console.log(this.getModelByID('about.json', data))
     // this.viewStats()

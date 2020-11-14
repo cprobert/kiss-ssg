@@ -37,6 +37,7 @@ class KissPage {
   _path = ''
   _slug = 'index'
   _ext = 'html'
+  _buildTo = ''
   _title = 'Kiss page'
   _dev = false
 
@@ -52,13 +53,7 @@ class KissPage {
     this.view = view
 
     // options.view, accepts both a file reference and a string thats the template
-    if (!view.endsWith('.hbs')) {
-      this._slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
-      console.log(
-        'A string view had been provided without an accompanying slug'.red
-      )
-      console.log(`generating random slug: ${this._slug}`.grey)
-    } else {
+    if (view.endsWith('.hbs')) {
       this._slug = this._utils.toSlug(
         view
           .substring(view.lastIndexOf('/') + 1, view.length)
@@ -92,6 +87,10 @@ class KissPage {
     }
   }
 
+  get buildTo() {
+    return `${this.buildDir}/${this.slug}.${this._ext}`
+  }
+
   set isDev(dev) {
     this._dev = !!dev
   }
@@ -99,32 +98,30 @@ class KissPage {
     this._debug = !!dev
   }
 
-  generate() {
-    let filePath = this.buildDir
-    let pageToGenerate = `${filePath}/${this.slug}.${this._ext}`
-
+  prepare() {
     if (this._path) {
-      filePath = `${this.buildDir}/${this._path}`
+      const filePath = `${this.buildDir}/${this._path}`
       if (!fs.existsSync(filePath)) {
         fs.mkdirSync(filePath, { recursive: true })
       }
     }
+    this._options = {
+      ...{
+        title: this._title,
+        path: this._path,
+        slug: this._slug,
+      },
+      ...this.options,
+    }
+    return this
+  }
 
+  generate() {
     const template = this._getTemplate(this.view)
     if (template) {
       try {
-        let options = {
-          ...{
-            title: this._title,
-            path: this._path,
-            slug: this._slug,
-          },
-          ...this.options,
-        }
-        const output = template(options)
-
-        pageToGenerate = `${filePath}/${options.slug}.${this._ext}`
-        console.log(pageToGenerate.green)
+        const output = template(this._options)
+        console.log(this.buildTo.green)
         let formattedOutput = pretty(output)
         if (!this._dev) {
           // console.debug('Minifying output')
@@ -138,21 +135,20 @@ class KissPage {
           })
         }
 
-        fs.writeFileSync(pageToGenerate, formattedOutput)
-        if (options && this._debug) {
+        fs.writeFileSync(this.buildTo, formattedOutput)
+        if (this._options && this._debug) {
           fs.writeFileSync(
-            pageToGenerate.replace(this._ext, '.json'),
-            JSON.stringify(options, null, 1)
+            this.buildTo.replace(this._ext, '.json'),
+            JSON.stringify(this._options, null, 1)
           )
         }
       } catch (error) {
         console.log(`Error processing view ${this.view}`.red)
         console.error(colors.yellow(error.message))
-        //console.debug(colors.grey(error))
+        if (this._debug) console.debug(colors.grey(error))
       }
     }
-
-    return pageToGenerate
+    return this.buildTo
   }
 
   _utils = {
@@ -227,6 +223,8 @@ class Kiss {
     build: './public',
   }
 
+  _stack = []
+
   _state = {
     views: [],
     models: [],
@@ -290,6 +288,7 @@ class Kiss {
     }
 
     this._setupFolders(config)
+    // Copy assets to build folder
     ncp(this._folders.assets, this._folders.build, function (err) {
       if (err) console.error('Error: '.red, err)
       const msg = `Copied ${self._folders.assets} to ${self._folders.build}`
@@ -368,7 +367,7 @@ class Kiss {
     return options
   }
 
-  _kissController(options) {
+  _detectControllerType(options) {
     if (options.controller) {
       switch (typeof options.controller) {
         case 'string':
@@ -398,7 +397,7 @@ class Kiss {
     return options
   }
 
-  _generate(options) {
+  _prepare(options) {
     // console.debug('options:'.grey, options)
     const kissPage = new KissPage(options.view)
     kissPage.options = options
@@ -409,35 +408,31 @@ class Kiss {
     if (options.ext) kissPage.ext = options.ext
     kissPage.debug = this.config.verbose
     kissPage.isDev = this.config.dev
-    this._state.pages.push(kissPage.generate())
-    // console.debug(kissPage)
+
+    const preparedPage = kissPage.prepare()
+    this._stack.push({
+      view: preparedPage.view,
+      buildTo: preparedPage.buildTo,
+      page: preparedPage,
+      runCount: 0,
+    })
   }
 
-  _generateMultiple(options, data) {
+  _prepareMultiplePages(options, data) {
     let i = 1
     const slug = options.slug ? options.slug : options.view.replace('.hbs', '')
     if (Array.isArray(data)) {
       data.forEach((model) => {
         options.slug = slug + '-' + i
         options.model = model
-        options = this._kissController(options)
-        this._generate(options)
+        options = this._detectControllerType(options)
+        this._prepare(options)
         i++
       })
     } else {
       console.error('Data in dynamic model must be an array'.red)
     }
   }
-
-  // _generateSelector(options, data) {
-  //   if (options.dynamic) {
-  //     this._generateMultiple(options, data)
-  //   } else {
-  //     options.model = data
-  //     options = this._kissController(options)
-  //     this._generate(options)
-  //   }
-  // }
 
   _processPageModel(model) {
     const p = new Promise((resolve, reject) => {
@@ -463,7 +458,7 @@ class Kiss {
             }
           } else {
             // See if the model is a folder
-            const returnModel = this._folderModel(model)
+            const returnModel = this._prepareModelsFromFolder(model)
             if (returnModel.length > 0) {
               resolve({ id: model, data: returnModel })
             } else {
@@ -487,7 +482,7 @@ class Kiss {
     return p
   }
 
-  _folderModel(folderModel) {
+  _prepareModelsFromFolder(folderModel) {
     const modelArray = []
     if (fs.existsSync(`${this._folders.models}/${folderModel}`)) {
       const modelPath = `${this._folders.models}/${folderModel}`
@@ -514,6 +509,16 @@ class Kiss {
     // Map the global kiss config to the page config
     options.config = this.config
 
+    if (!options.slug) {
+      if (!options.view.endsWith('.hbs')) {
+        options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
+        console.log(
+          'A string view had been provided without an accompanying slug'.red
+        )
+        console.log(`generating random slug: ${options.slug}`.grey)
+      }
+    }
+
     // Auto map model if one isn't specified
     if (!options.model) {
       const matchingModel = options.view.replace(/\.hbs$/, '.json')
@@ -529,7 +534,7 @@ class Kiss {
     if (typeof callbackController === 'function') {
       options.controller = callbackController
     }
-    // See id we can auto map controller if one isn't specified
+    // See if we can auto map controller if one isn't specified
     if (!options.controller) {
       const matchingController = options.view.replace(/\.hbs$/, '.js')
       if (
@@ -549,7 +554,7 @@ class Kiss {
       options.view.endsWith('.hbs') &&
       !this._state.views.includes(options.view)
     ) {
-      this._state.views.push(options.view) // [cp] only add if ending with .hbs
+      this._state.views.push(options.view)
     }
 
     // Check if the page has been already generated
@@ -566,11 +571,11 @@ class Kiss {
       this._processPageModel(options.model)
         .then((response) => {
           if (options.dynamic) {
-            this._generateMultiple(options, response.data)
+            this._prepareMultiplePages(options, response.data)
           } else {
             options.model = response.data
-            options = this._kissController(options)
-            this._generate(options)
+            options = this._detectControllerType(options)
+            this._prepare(options)
           }
         })
         .catch((error) => {
@@ -610,12 +615,31 @@ class Kiss {
   }
 
   viewStats() {
-    // if (this.verbose) console.log(JSON.stringify(this._state, null, 1))
+    if (this.verbose) {
+      this._stack.forEach((p) => {
+        console.log(p.buildTo)
+      })
+    }
+
     console.log({
       views: this._state.views.length,
       models: this._state.models.length,
       promise: this._state.promises.length,
       pages: this._state.pages.length,
+      stack: this._stack.length,
+    })
+    return this
+  }
+
+  generate(callback) {
+    Promise.all(this._state.promises).then((data) => {
+      let stack = this._stack
+      stack.forEach(function (p, index) {
+        if (p.runCount === 0) p.page.generate()
+        stack[index].runCount++
+      })
+      this._stack = stack
+      if (callback) callback.call(this, data)
     })
     return this
   }
@@ -632,10 +656,7 @@ class Kiss {
     return { error: 'No data found for: ' + id }
   }
 
-  registerHelper(name, functionality) {
-    handlebars.registerHelper(name, functionality)
-    return this
-  }
+  handlebars = handlebars
 }
 
 module.exports = Kiss

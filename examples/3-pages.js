@@ -18,7 +18,7 @@ const kiss = new Kiss({
     },
     path: 'courses',
   })
-  .complete(function (data) {
+  .generate(function (data) {
     // data is an array of models from all promises
     // this.getModelByID is a helper to rehydrate the model on completion
     const courseModel = this.getModelByID(
@@ -35,6 +35,6 @@ const kiss = new Kiss({
           model: model,
         }
       },
-      slug: 'courses',
-    })
+      slug: 'index',
+    }).generate()
   })

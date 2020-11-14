@@ -6,12 +6,14 @@ const kiss = new Kiss({
   },
   verbose: true,
   dev: true,
-}).page({
-  view: 'index.hbs',
-  model: {
-    name: 'World',
-    partials: {
-      dynamic: 'dynamic',
-    },
-  },
 })
+  .page({
+    view: 'index.hbs',
+    model: {
+      name: 'World',
+      partials: {
+        dynamic: 'dynamic',
+      },
+    },
+  })
+  .generate()

@@ -6,4 +6,6 @@ const kiss = new Kiss({
   },
   verbose: true,
   dev: true,
-}).scan()
+})
+  .scan()
+  .generate()
