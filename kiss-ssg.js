@@ -3,6 +3,7 @@ const glob = require('glob')
 const rimraf = require('rimraf')
 const ncp = require('ncp').ncp // https://www.npmjs.com/package/ncp
 const chokidar = require('chokidar')
+const path = require('path')
 const pretty = require('pretty')
 const minify = require('html-minifier').minify // https://www.npmjs.com/package/html-minifier
 const colors = require('colors')
@@ -156,7 +157,13 @@ class KissPage {
         const output = template(this._options)
         console.log(this.buildTo.green)
         let formattedOutput = pretty(output)
-        if (!this._dev) {
+        if (this._dev) {
+          const liveReload = `<script src="http://localhost:35729/livereload.js?snipver=1"></script>`
+          formattedOutput = formattedOutput.replace(
+            '</body>',
+            liveReload + '</body>'
+          )
+        } else {
           // console.debug('Minifying output')
           formattedOutput = minify(output, {
             collapseWhitespace: true,
@@ -614,9 +621,9 @@ class Kiss {
 
   viewStats() {
     if (this.verbose) {
-      this._stack.forEach((p) => {
-        console.log(p.buildTo)
-      })
+      // this._stack.forEach((p) => {
+      //   console.log(p.buildTo)
+      // })
 
       fs.writeFileSync(
         `${this._folders.build}/debug.json`,
@@ -643,6 +650,10 @@ class Kiss {
       this._stack = stack
       if (callback) callback.call(this, data)
       if (this.config.dev) {
+        const kissServe = require('./kiss-serve')
+        var publicDir = path.resolve(this.config.folders.build)
+        // console.log('this.config.build', this.config.folders.build)
+        kissServe(publicDir)
         this.watch()
       }
     })
