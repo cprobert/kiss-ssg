@@ -35,6 +35,7 @@ const kiss = new Kiss({
   })
   .generate(function (data) {
     //console.log(data)
+    this.viewStats()
     console.log(this.getModelByID('about.json', data))
     // this.viewStats()
   })

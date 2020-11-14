@@ -36,5 +36,7 @@ const kiss = new Kiss({
         }
       },
       slug: 'index',
-    }).generate()
+    }).generate(function () {
+      this.viewStats()
+    })
   })

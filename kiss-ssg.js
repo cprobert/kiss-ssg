@@ -2,6 +2,7 @@ const fs = require('fs')
 const glob = require('glob')
 const rimraf = require('rimraf')
 const ncp = require('ncp').ncp // https://www.npmjs.com/package/ncp
+const chokidar = require('chokidar')
 const pretty = require('pretty')
 const minify = require('html-minifier').minify // https://www.npmjs.com/package/html-minifier
 const colors = require('colors')
@@ -33,6 +34,43 @@ handlebars.registerHelper('stringify', function (obj) {
   return JSON.stringify(obj, null, 3)
 })
 
+const utils = {
+  toSlug(slug) {
+    return slug
+      .toLowerCase()
+      .trim()
+      .replace(/[\W_]+/g, '-')
+  },
+  toTitleCase(str) {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(function (word) {
+        return word.charAt(0).toUpperCase() + word.slice(1)
+      })
+      .join(' ')
+  },
+  trimPath(path) {
+    if (path.startsWith('/')) path = path.substring(1, path.length)
+    if (path.endsWith('/')) path = path.substring(0, path.length - 1)
+    return path
+  },
+  sanitizePath(path) {
+    if (path) {
+      path = this.trimPath(path)
+
+      let pathSegments = path.split('/')
+      const cleanedSegments = []
+      pathSegments.forEach((segment) => {
+        const slugifiedSegment = this.toSlug(segment)
+        cleanedSegments.push(slugifiedSegment.trim())
+      })
+      path = cleanedSegments.join('/')
+    }
+    return path
+  },
+}
+
 class KissPage {
   _path = ''
   _slug = 'index'
@@ -54,21 +92,16 @@ class KissPage {
 
     // options.view, accepts both a file reference and a string thats the template
     if (view.endsWith('.hbs')) {
-      this._slug = this._utils.toSlug(
-        view
-          .substring(view.lastIndexOf('/') + 1, view.length)
-          .replace('.hbs', '')
-      )
       this.path = view.substring(0, view.lastIndexOf('/'))
     }
 
     // console.debug('Auto path: ', this._path)
-    this._title = this._utils.toTitleCase(this._slug)
+    this._title = utils.toTitleCase(this._slug)
   }
 
   set path(path) {
     if (path) {
-      this._path = this._utils.sanitizePath(path)
+      this._path = utils.sanitizePath(path)
     }
   }
 
@@ -77,7 +110,7 @@ class KissPage {
   }
   set slug(slug) {
     if (slug) {
-      this._slug = this._utils.toSlug(slug)
+      this._slug = utils.toSlug(slug)
       // console.debug('Set slug: '.gray, this._slug)
     }
   }
@@ -149,43 +182,6 @@ class KissPage {
       }
     }
     return this.buildTo
-  }
-
-  _utils = {
-    toSlug(slug) {
-      return slug
-        .toLowerCase()
-        .trim()
-        .replace(/[\W_]+/g, '-')
-    },
-    toTitleCase(str) {
-      return str
-        .toLowerCase()
-        .split(' ')
-        .map(function (word) {
-          return word.charAt(0).toUpperCase() + word.slice(1)
-        })
-        .join(' ')
-    },
-    trimPath(path) {
-      if (path.startsWith('/')) path = path.substring(1, path.length)
-      if (path.endsWith('/')) path = path.substring(0, path.length - 1)
-      return path
-    },
-    sanitizePath(path) {
-      if (path) {
-        path = this.trimPath(path)
-
-        let pathSegments = path.split('/')
-        const cleanedSegments = []
-        pathSegments.forEach((segment) => {
-          const slugifiedSegment = this.toSlug(segment)
-          cleanedSegments.push(slugifiedSegment.trim())
-        })
-        path = cleanedSegments.join('/')
-      }
-      return path
-    },
   }
 
   _getTemplate(view) {
@@ -500,17 +496,23 @@ class Kiss {
     return modelArray
   }
 
-  page(options, callbackController) {
+  page(options, callback) {
     if (!options.view) {
       console.error('No view specified'.red, options)
       return this
     }
     if (this.verbose) console.log('Processing view: '.grey, options.view)
-    // Map the global kiss config to the page config
-    options.config = this.config
+
+    options.config = this.config // Map the global kiss config to the page config
 
     if (!options.slug) {
-      if (!options.view.endsWith('.hbs')) {
+      if (options.view.endsWith('.hbs')) {
+        options.slug = utils.toSlug(
+          options.view
+            .substring(options.view.lastIndexOf('/') + 1, options.view.length)
+            .replace('.hbs', '')
+        )
+      } else {
         options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
         console.log(
           'A string view had been provided without an accompanying slug'.red
@@ -530,10 +532,6 @@ class Kiss {
     }
     if (options.model) this._state.models.push(options.model)
 
-    // Use the call back as a controller if present
-    if (typeof callbackController === 'function') {
-      options.controller = callbackController
-    }
     // See if we can auto map controller if one isn't specified
     if (!options.controller) {
       const matchingController = options.view.replace(/\.hbs$/, '.js')
@@ -559,13 +557,13 @@ class Kiss {
 
     // Check if the page has been already generated
     let pathSlug = options.slug
-    if (options.path !== '/') pathSlug = `${options.path}/${options.slug}`
+    if (options.path && options.path !== '/')
+      pathSlug = `${options.path}/${options.slug}`
     let pageToGenerate = `${this._folders.build}/${pathSlug}.html`
-    // console.debug(this._state.pages)
-    // console.debug(pageToGenerate, options.path)
-    if (this._state.pages.includes(pageToGenerate)) {
+    // console.debug(pageToGenerate.magenta)
+    const existingPage = this._stack.find((p) => p.buildTo === pageToGenerate)
+    if (existingPage) {
       console.log('Page already processed'.red, pageToGenerate)
-      // console.debug(options)
     } else {
       // Detect all the different types of model options and process appropriately
       this._processPageModel(options.model)
@@ -590,9 +588,9 @@ class Kiss {
     return this
   }
 
-  pages(options, callbackController) {
+  pages(options, callback) {
     options.dynamic = true
-    this.page(options, callbackController)
+    this.page(options, callback)
     return this
   }
 
@@ -619,13 +617,17 @@ class Kiss {
       this._stack.forEach((p) => {
         console.log(p.buildTo)
       })
+
+      fs.writeFileSync(
+        `${this._folders.build}/debug.json`,
+        JSON.stringify(this._stack, null, 1)
+      )
     }
 
     console.log({
       views: this._state.views.length,
       models: this._state.models.length,
       promise: this._state.promises.length,
-      pages: this._state.pages.length,
       stack: this._stack.length,
     })
     return this
@@ -640,6 +642,9 @@ class Kiss {
       })
       this._stack = stack
       if (callback) callback.call(this, data)
+      if (this.config.dev) {
+        this.watch()
+      }
     })
     return this
   }
@@ -654,6 +659,35 @@ class Kiss {
     const result = data.find((d) => d.id === id)
     if (result) return result.data
     return { error: 'No data found for: ' + id }
+  }
+
+  watch() {
+    console.log(
+      'Watching for file changes'.cyan,
+      colors.grey(this._folders.src)
+    )
+    chokidar.watch(this._folders.src).on('all', (event, path) => {
+      if (!event.includes('add')) {
+        const pagesDir = this._folders.pages.replace(/^.\//, '')
+        const reStart = new RegExp(`^${pagesDir}\/`, 'g')
+        const lookup = path.replace(/\\/g, '/').replace(reStart, '')
+        //console.log('lookup ', lookup)
+        const results = this._stack.filter((p) => p.view === lookup)
+        console.log(`${event}: ${path} - `.grey, results.length)
+        if (results.length > 0) {
+          results.forEach((result) => {
+            // console.log('Rebuilding:'.grey, result.page.slug)
+            result.page.generate()
+          })
+        } else {
+          // If we can't identify a specific view rebuild the whole site
+          console.log('Rebuilding site:'.cyan)
+          this._stack.forEach((result) => {
+            result.page.generate()
+          })
+        }
+      }
+    })
   }
 
   handlebars = handlebars
