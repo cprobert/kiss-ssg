@@ -231,7 +231,6 @@ class Kiss {
   _state = {
     views: [],
     models: [],
-    pages: [],
     promises: [],
   }
 
@@ -281,6 +280,7 @@ class Kiss {
     // Setup defaults
     if (!config) config = { dev: false, verbose: false, cleanBuild: true }
     if (typeof config.cleanBuild === 'undefined') config.cleanBuild = true
+    if (typeof config.noExt === 'undefined') config.noExt = true
 
     this.config = config
     this.verbose = !!this.config.verbose
@@ -400,7 +400,7 @@ class Kiss {
     return options
   }
 
-  _prepare(options) {
+  _preparePage(options) {
     // console.debug('options:'.grey, options)
     const kissPage = new KissPage(options.view)
     kissPage.options = options
@@ -429,7 +429,7 @@ class Kiss {
         options.slug = slug + '-' + i
         options.model = model
         options = this._detectControllerType(options)
-        this._prepare(options)
+        this._preparePage(options)
         i++
       })
     } else {
@@ -472,7 +472,6 @@ class Kiss {
         case 'object':
           // console.debug('Model is object'.grey)
           resolve({ id: this._state.models.length, data: model })
-          // resolve({ data: model })
           break
         case 'undefined':
           resolve({ data: {} })
@@ -580,7 +579,7 @@ class Kiss {
           } else {
             options.model = response.data
             options = this._detectControllerType(options)
-            this._prepare(options)
+            this._preparePage(options)
           }
         })
         .catch((error) => {

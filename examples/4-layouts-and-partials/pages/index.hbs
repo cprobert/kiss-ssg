@@ -1,19 +1,23 @@
-<h1>I am handlebars {{title}}</h1>
+{{#extend "layout"}}
+    {{#content "body"}}
+    <h1>{{title}}</h1>
 
-<div>
-{{>"hbeg"}}
-</div>
+    <div>
+    {{>"hbeg"}}
+    </div>
 
-<div>
-{{>"htmleg"}}
-</div>
+    <div>
+    {{>"htmleg"}}
+    </div>
 
-<div>
-{{>"mdeg"}}
-</div>
+    <div>
+    {{>"mdeg"}}
+    </div>
 
-<div>
-{{#if  model.partials.dynamic}}
-    {{> (lookup model.partials 'dynamic')}}
-{{/if}}
-</div>
+    <div>
+    {{#if  model.partials.dynamic}}
+        {{> (lookup model.partials 'dynamic')}}
+    {{/if}}
+    </div>
+    {{/content}}
+{{/extend}}
