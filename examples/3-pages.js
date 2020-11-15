@@ -3,12 +3,18 @@ const kiss = new Kiss({
   folders: {
     src: './3-pages',
     build: '../public/3-pages',
+    assets: null,
+    layouts: null,
+    models: null,
+    controllers: null,
+    partials: null,
   },
+  addPagesOnGenerate: false,
   verbose: true,
   dev: true,
 })
   .pages({
-    view: 'course.hbs',
+    view: 'courses/course.hbs',
     model: 'https://learna-cms.herokuapp.com/courses',
     controller: ({ model }) => {
       return {
@@ -37,6 +43,7 @@ const kiss = new Kiss({
       },
       slug: 'index',
     }).generate(function () {
+      this.scan()
       this.viewStats()
     })
   })

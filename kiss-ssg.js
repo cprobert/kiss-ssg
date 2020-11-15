@@ -1,3 +1,4 @@
+const md5 = require('md5')
 const fs = require('fs')
 const glob = require('glob')
 const rimraf = require('rimraf')
@@ -215,21 +216,29 @@ class Kiss {
   _stack = []
 
   _state = {
-    views: [],
-    models: [],
     promises: [],
   }
 
   _setupFolders() {
     // console.log('folders: '.grey, this.config.folders)
     this._fileSystem.mkDir(this.config.folders.src)
-    this._fileSystem.mkDir(this.config.folders.assets)
-    this._fileSystem.mkDir(this.config.folders.layouts)
     this._fileSystem.mkDir(this.config.folders.pages)
-    this._fileSystem.mkDir(this.config.folders.pages)
-    this._fileSystem.mkDir(this.config.folders.partials)
-    this._fileSystem.mkDir(this.config.folders.models)
-    this._fileSystem.mkDir(this.config.folders.controllers)
+    this._fileSystem.mkDir(this.config.folders.build)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.assets)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.layouts)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.partials)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.models)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.controllers)
 
     //console.debug('cleanBuild: ', this.config.cleanBuild)
     if (this.config.cleanBuild) {
@@ -247,13 +256,13 @@ class Kiss {
     // Setup defaults
     let folders = {
       src: './src',
+      pages: './src/pages',
+      build: './public',
       assets: './src/assets',
       layouts: './src/layouts',
-      pages: './src/pages',
       partials: './src/partials',
       models: './src/models',
       controllers: './src/controllers',
-      build: './public',
     }
 
     if (config.folders && config.folders.src) {
@@ -278,7 +287,6 @@ class Kiss {
         dev: false,
         verbose: false,
         cleanBuild: true,
-        noExt: false,
       },
       ...config,
     }
@@ -292,9 +300,7 @@ class Kiss {
     this._setupFolders(config)
 
     this.copyAssets()
-    this.loadPartials()
-
-    console.log('Generating:'.grey)
+    this.registerPartials()
 
     if (this.config.dev) {
       const kissServe = require('./kiss-serve')
@@ -307,9 +313,12 @@ class Kiss {
       }
       this.watch()
     }
+
+    console.log('Generating:'.grey)
   }
 
-  loadPartials() {
+  registerPartials() {
+    console.log('Registering partials:'.gray)
     // partials
     this._registerPartials(this.config.folders.partials, 'html')
     this._registerPartials(this.config.folders.partials, 'md')
@@ -326,7 +335,7 @@ class Kiss {
         err
       ) {
         if (err) console.error('Error: '.red, err)
-        const msg = `Copied ${self.config.folders.assets} to ${self.config.folders.build}`
+        const msg = `Copied assets: ${self.config.folders.assets} to ${self.config.folders.build}`
         console.log(msg.grey)
       })
     }
@@ -496,7 +505,7 @@ class Kiss {
           break
         case 'object':
           // console.debug('Model is object'.grey)
-          resolve({ id: this._state.models.length, data: model })
+          resolve({ id: md5(model), data: model })
           break
         case 'undefined':
           resolve({ data: {} })
@@ -549,7 +558,6 @@ class Kiss {
         options.model = matchingModel
       }
     }
-    if (options.model) this._state.models.push(options.model)
 
     // See if we can auto map controller if one isn't specified
     if (!options.controller) {
@@ -563,15 +571,6 @@ class Kiss {
           console.log('Found matching controller: '.grey, matchingController)
         options.controller = matchingController
       }
-    }
-
-    // Prevent views that have already been processed from being picked up be .scan()
-    // Don't add to array if it's text - only add if its a file
-    if (
-      options.view.endsWith('.hbs') &&
-      !this._state.views.includes(options.view)
-    ) {
-      this._state.views.push(options.view)
     }
 
     // Detect all the different types of model options and process appropriately
@@ -651,7 +650,12 @@ class Kiss {
         new RegExp(`^${this.config.folders.pages}/`, 'g'),
         ''
       )
-      if (!this._state.views.some((v) => v === view)) {
+
+      const viewInStack = this._stack.filter((p) => {
+        return p.view == view
+      })
+
+      if (viewInStack.length === 0) {
         console.log(`Auto added:`.grey, view.blue)
         const options = {
           view: view,
@@ -675,8 +679,6 @@ class Kiss {
     }
 
     console.log({
-      views: this._state.views.length,
-      models: this._state.models.length,
       promise: this._state.promises.length,
       stack: this._stack.length,
     })
@@ -684,8 +686,6 @@ class Kiss {
   }
 
   generate(callback) {
-    this.scan()
-
     Promise.all(this._state.promises).then((data) => {
       let stack = this._stack
       stack.forEach(function (p, index) {
@@ -731,7 +731,7 @@ class Kiss {
         } else {
           // If we can't identify a specific view rebuild the whole site
           console.log('Rebuilding site:'.cyan)
-          this.loadPartials()
+          this.registerPartials()
           this._stack.forEach((result) => {
             result.page.generate()
           })

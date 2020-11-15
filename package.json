@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "Simple Static Website Generator",
   "main": "kiss-ssg.js",
   "scripts": {
@@ -29,6 +29,7 @@
     "handlebars-layouts": "^3.1.4",
     "html-minifier": "^4.0.0",
     "livereload": "^0.9.1",
+    "md5": "^2.3.0",
     "ncp": "^2.0.0",
     "node-fetch": "^2.6.1",
     "pretty": "^2.0.0",

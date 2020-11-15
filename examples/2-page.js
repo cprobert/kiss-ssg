@@ -36,9 +36,6 @@ const kiss = new Kiss({
     },
     slug: 'hello-snippet',
   })
-  .generate(function (data) {
-    //console.log(data)
+  .generate(function () {
     this.viewStats()
-    console.log(this.getModelByID('about.json', data))
-    // this.viewStats()
   })
