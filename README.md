@@ -2,11 +2,7 @@
 
 Kiss Static Site Generator, is an open-source MVC html website builder (for node), that leverages handlebar templates to make quick, simple and blisteringly fast websites.
 
-- Create a .hbs view
-- Specify a data source (JSON object, JSON file on file system, or URL)
-- Optionally map data from the model to the page options in the controller (option mapper)
-
-In addition you can use reusable [handlebar partials](https://handlebarsjs.com/guide/partials.html#partials) (components) and [handlebar-layouts](https://www.npmjs.com/package/handlebars-layouts) (themes) to
+Kiss-ssg uses [handlebar partials](https://handlebarsjs.com/guide/partials.html#partials) and [handlebar-layouts](https://www.npmjs.com/package/handlebars-layouts) to help you make DRY static websites.
 
 Install with `npm install kiss-ssg --save-dev`, or just drop [kiss-ssg.js](https://github.com/cprobert/kiss-ssg/blob/main/kiss-ssg.js) somewhere.
 
@@ -22,31 +18,49 @@ The simplest usage is to use .scan() to scan your 'pages directory' for \*.hbs f
 
 ```js
 const Kiss = require('kiss-ssg')
-const kiss = new Kiss() // accept default folder locations
+const kiss = new Kiss()
 kiss.scan()
+kiss.generate()
 ```
 
-Note: kiss will generate the default folders for you wnen you first run the script.
+**Note**: kiss will generate the default folders for you when you first run the script. You can overwrite the folder locations bay passing a config to the kiss constructor.
 
-You can overwrite the folder locations bay passing a config to the kiss constructor. The config options are:
+The default config options are:
 
 ```js
 {
+  dev: false,
+  verbose: false,
+  cleanBuild: true,
   folders: {
     src: './src',
+    build: './public',
     assets: './src/assets',
     layouts: './src/layouts',
     pages: './src/pages',
     partials: './src/partials',
     models: './src/models',
-    build: './public',
+    controllers: './src/controllers'
   }
 }
 ```
 
+Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
+
+| Option     |  Default  |                                  Purpose                                   |
+| ---------- | :-------: | :------------------------------------------------------------------------: |
+| dev        |   false   | Dev mode will start a local live-reload server and rebuild on file change. |
+| verbose    |   false   |        Enables additional output on the terminal, when set to true         |
+| cleanBuild |   true    |          Removed all files from the build dir before generating.           |
+| folders    | see above |               A JSON object of alternative folder locations                |
+
+<br />
+
+**Note**: All config settings are available in the view under "this.config"
+
 ### Assets
 
-Any statif files you have in the assets directory will be copied to the build directory
+Any static files you have in the assets directory will be copied to the build directory
 
 ### .page()
 
@@ -54,35 +68,45 @@ Instead (in in conjunction) of using the .scan() method you can pass a model to 
 
 ```js
 const Kiss = require('kiss-ssg')
-const kiss = new Kiss({ dev: true }) // export model with .html
-kiss.page({
-  view: 'index.hbs',
-  title: 'My Page Title',
-  model: {
-    name: 'Courtenay Probert',
-  },
-})
+const kiss = new Kiss({ dev: true })
+kiss
+  .page({
+    view: 'index.hbs',
+    model: 'index.json',
+    controller: 'index.js',
+    title: 'My Page Title',
+  })
+  .generate()
 ```
 
-The config options that you can pass to .page() & pages() are:
+**Note**: The file locations of the models, views, and controllers are relative to the folder locations defined in the kiss configuration. Alternatively, instead of passing a file location you can pass a native object for that setting.
+
+Views: can se a .hbs file or a string
+Models: can be a .json file, a http api endpoint, or a JSON object
+Controllers: can be a .js file or a function that returns a page option JSON to be merged into the page options
+
+The options that you can pass to .page() & pages() are:
 
 ```js
   {
     view: 'index.hbs',
+    model: {}
+    controller: ({model})=>{return {model: model}},
     title: 'Page Title',
+    description: 'A description of the page (useful for meta data)'
     path: '/',
     slug: 'index',
-    model: {}
   }
 ```
 
 These options are both used internally by kiss and are available in view.
 
-- view = the name of the handlebars file relative to the pages folder
+- view = A handlebars view.
+- model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.
+- controller = A function that returns a page options object - used for manipulating data in the model.
 - title = The page title
 - path = the folder path to the page
 - slug = the name of the file without the extension
-- model = a json object, the name of the json file relative to the models folder or a URL for an API endpoint
 
 page and path create the url, i.e. /{path}/{slug}.html
 
@@ -96,20 +120,20 @@ In addition to passing page options you can also pass a option mapper to act as 
 const Kiss = require('kiss-ssg')
 
 const kiss = new Kiss()
-kiss.page(
-  {
+kiss
+  .page({
     title: 'My Team Page',
     view: 'about/index.hbs',
     model: 'departments.json',
-  },
-  ({ model }) => {
-    return {
-      model: model.sort(
-        (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order)
-      ),
-    }
-  }
-)
+    controller: ({ model }) => {
+      return {
+        model: model.sort(
+          (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order)
+        ),
+      }
+    },
+  })
+  .generate()
 ```
 
 ### Controller
@@ -124,25 +148,25 @@ kiss
   .page({
     title: 'Page Title',
     view: 'index.hbs',
-    },
   })
-  .pages(
-    {
-      path: 'courses',
-      view: 'course.hbs',
-      model: 'https://{my-cool-api}/courses',
-    },
-    ({ model }) => {
+  .pages({
+    view: 'course.hbs',
+    model: 'https://{my-cool-api}/courses',
+    controller: ({ model }) => {
       return {
         slug: model.slug,
       }
-    }
-  )
+    },
+    path: 'courses',
+  })
+  .generate()
 ```
 
-### Markdown
+### Helpers
 
-You can also parse markdown like this:
+Kiss-ssg registers a few useful helpers by default including:
+
+You can parse markdown like this:
 
 ```handlebars
 <div>
@@ -153,6 +177,10 @@ You can also parse markdown like this:
 
 foo bar baz
 {{/markdown}}
+
+or
+
+{{markdown model.introduction}}
 </div>
 ```
 
@@ -160,4 +188,12 @@ If you want to take a peek at whats properties you have available to to in a han
 
 ```handlebars
 {{{stringify this}}}
+```
+
+Kiss exposes the handlebars object so you can register your own helpers, e.g.
+
+```js
+kiss.handlebars.registerHelper('stringify', function (obj) {
+  return JSON.stringify(obj, null, 3)
+})
 ```
