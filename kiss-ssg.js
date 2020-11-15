@@ -91,7 +91,6 @@ class KissPage {
 
   constructor(view) {
     this.view = view
-    // console.debug('Auto path: ', this._path)
     this._title = utils.toTitleCase(this._slug)
   }
 
@@ -213,17 +212,6 @@ class KissPage {
 }
 
 class Kiss {
-  _folders = {
-    src: './src',
-    assets: './src/assets',
-    layouts: './src/layouts',
-    pages: './src/pages',
-    partials: './src/partials',
-    models: './src/models',
-    controllers: './src/controllers',
-    build: './public',
-  }
-
   _stack = []
 
   _state = {
@@ -232,70 +220,78 @@ class Kiss {
     promises: [],
   }
 
-  _setupFolders(config) {
-    if (config.folders) {
-      if (config.folders.src) {
-        this._folders = {
-          src: config.folders.src,
-          assets: `${config.folders.src}/assets`,
-          layouts: `${config.folders.src}/layouts`,
-          pages: `${config.folders.src}/pages`,
-          partials: `${config.folders.src}/partials`,
-          models: `${config.folders.src}/models`,
-          controllers: `${config.folders.src}/controllers`,
-          build: './public',
-        }
-      }
-      this._folders = { ...this._folders, ...config.folders }
-    }
-    config.folders = this._folders
+  _setupFolders() {
+    // console.log('folders: '.grey, this.config.folders)
+    this._fileSystem.mkDir(this.config.folders.src)
+    this._fileSystem.mkDir(this.config.folders.assets)
+    this._fileSystem.mkDir(this.config.folders.layouts)
+    this._fileSystem.mkDir(this.config.folders.pages)
+    this._fileSystem.mkDir(this.config.folders.pages)
+    this._fileSystem.mkDir(this.config.folders.partials)
+    this._fileSystem.mkDir(this.config.folders.models)
+    this._fileSystem.mkDir(this.config.folders.controllers)
 
-    console.log('folders: '.grey, this._folders)
-    this._fileSystem.mkDir(this._folders.src)
-    this._fileSystem.mkDir(this._folders.assets)
-    this._fileSystem.mkDir(this._folders.layouts)
-    this._fileSystem.mkDir(this._folders.pages)
-    this._fileSystem.mkDir(this._folders.pages)
-    this._fileSystem.mkDir(this._folders.partials)
-    this._fileSystem.mkDir(this._folders.models)
-    this._fileSystem.mkDir(this._folders.controllers)
-
-    console.debug('cleanBuild: ', this.config.cleanBuild)
+    //console.debug('cleanBuild: ', this.config.cleanBuild)
     if (this.config.cleanBuild) {
       try {
-        // rimraf.sync(this._folders.build)
-        rimraf.sync(this._folders.build + '/*')
+        rimraf.sync(this.config.folders.build + '/*')
       } catch (err) {
         console.error(colors.red(err.message))
       }
     }
-    this._fileSystem.mkDir(this._folders.build)
+    this._fileSystem.mkDir(this.config.folders.build)
   }
 
   constructor(config) {
-    const self = this
     console.log('            Starting Kiss            \n'.zebra)
     // Setup defaults
-    if (!config) config = { dev: false, verbose: false, cleanBuild: true }
-    if (typeof config.cleanBuild === 'undefined') config.cleanBuild = true
-    if (typeof config.noExt === 'undefined') config.noExt = true
+    let folders = {
+      src: './src',
+      assets: './src/assets',
+      layouts: './src/layouts',
+      pages: './src/pages',
+      partials: './src/partials',
+      models: './src/models',
+      controllers: './src/controllers',
+      build: './public',
+    }
 
-    this.config = config
+    if (config.folders && config.folders.src) {
+      // Set new base folder for all dependent subfolders
+      if (this.verbose)
+        console.log(`Setting base src folder to: ${config.folders.src}`.grey)
+
+      folders = {
+        src: config.folders.src,
+        assets: `${config.folders.src}/assets`,
+        layouts: `${config.folders.src}/layouts`,
+        pages: `${config.folders.src}/pages`,
+        partials: `${config.folders.src}/partials`,
+        models: `${config.folders.src}/models`,
+        controllers: `${config.folders.src}/controllers`,
+        build: './public',
+      }
+    }
+    folders = { ...folders, ...config.folders }
+    this.config = {
+      ...{
+        dev: false,
+        verbose: false,
+        cleanBuild: true,
+        noExt: false,
+      },
+      ...config,
+    }
+    this.config.folders = folders
     this.verbose = !!this.config.verbose
 
     if (this.verbose) {
-      console.debug('Verbose: ', this.verbose)
-      console.debug('config: '.grey, config)
+      console.debug('config: '.grey, this.config)
     }
 
     this._setupFolders(config)
-    // Copy assets to build folder
-    ncp(this._folders.assets, this._folders.build, function (err) {
-      if (err) console.error('Error: '.red, err)
-      const msg = `Copied ${self._folders.assets} to ${self._folders.build}`
-      console.log(msg.grey)
-    })
 
+    this.copyAssets()
     this.loadPartials()
 
     console.log('Generating:'.grey)
@@ -303,7 +299,6 @@ class Kiss {
     if (this.config.dev) {
       const kissServe = require('./kiss-serve')
       var publicDir = path.resolve(this.config.folders.build)
-      // console.log('this.config.build', this.config.folders.build)
       try {
         kissServe(publicDir)
       } catch (error) {
@@ -316,11 +311,25 @@ class Kiss {
 
   loadPartials() {
     // partials
-    this._registerPartials(this._folders.partials, 'html')
-    this._registerPartials(this._folders.partials, 'md')
-    this._registerPartials(this._folders.partials, 'hbs')
+    this._registerPartials(this.config.folders.partials, 'html')
+    this._registerPartials(this.config.folders.partials, 'md')
+    this._registerPartials(this.config.folders.partials, 'hbs')
     // layouts
-    this._registerPartials(this._folders.layouts)
+    this._registerPartials(this.config.folders.layouts)
+  }
+
+  copyAssets() {
+    const self = this
+    // Copy assets to build folder
+    if (this.config.folders.assets) {
+      ncp(this.config.folders.assets, this.config.folders.build, function (
+        err
+      ) {
+        if (err) console.error('Error: '.red, err)
+        const msg = `Copied ${self.config.folders.assets} to ${self.config.folders.build}`
+        console.log(msg.grey)
+      })
+    }
   }
 
   _fileSystem = {
@@ -336,7 +345,7 @@ class Kiss {
   }
 
   _readModel(file) {
-    const model = `${this._folders.models}/${file}`
+    const model = `${this.config.folders.models}/${file}`
     if (this._fileSystem.exists(model)) {
       return JSON.parse(fs.readFileSync(model, 'utf8'))
     }
@@ -345,7 +354,7 @@ class Kiss {
   }
 
   _registerPartials(folder, ext) {
-    //console.log(`Registering ${folder.replace(this._folders.src, '')}: `.grey)
+    //console.log(`Registering ${folder.replace(this.config.folders.src, '')}: `.grey)
     if (!ext) ext = 'hbs'
     const hbs = glob.sync(`${folder}/**/*.${ext}`)
     hbs.forEach((path) => {
@@ -390,7 +399,7 @@ class Kiss {
     if (options.controller) {
       switch (typeof options.controller) {
         case 'string':
-          const controllerPath = `${this._folders.controllers}/${options.controller}`
+          const controllerPath = `${this.config.folders.controllers}/${options.controller}`
           if (this._fileSystem.exists(controllerPath)) {
             const controller = require.main.require(controllerPath)
             options = this._controllerRun(options, controller)
@@ -420,8 +429,8 @@ class Kiss {
     // console.debug('options:'.grey, options)
     const kissPage = new KissPage(options.view)
     kissPage.options = options
-    kissPage.buildDir = this._folders.build
-    kissPage.pagesDir = this._folders.pages
+    kissPage.buildDir = this.config.folders.build
+    kissPage.pagesDir = this.config.folders.pages
     kissPage.path = options.path
     kissPage.slug = options.slug
     if (options.ext) kissPage.ext = options.ext
@@ -502,14 +511,14 @@ class Kiss {
 
   _prepareModelsFromFolder(folderModel) {
     const modelArray = []
-    if (fs.existsSync(`${this._folders.models}/${folderModel}`)) {
-      const modelPath = `${this._folders.models}/${folderModel}`
+    if (fs.existsSync(`${this.config.folders.models}/${folderModel}`)) {
+      const modelPath = `${this.config.folders.models}/${folderModel}`
       if (fs.lstatSync(modelPath).isDirectory()) {
         const models = glob.sync(`${modelPath}/*.json`)
         models.forEach((model) => {
           // console.debug(model.grey)
           const data = this._readModel(
-            model.replace(`${this._folders.models}/`, '')
+            model.replace(`${this.config.folders.models}/`, '')
           )
           if (data) modelArray.push(data)
         })
@@ -530,7 +539,11 @@ class Kiss {
     // Auto map model if one isn't specified
     if (!options.model) {
       const matchingModel = options.view.replace(/\.hbs$/, '.json')
-      if (this._fileSystem.exists(`${this._folders.models}/${matchingModel}`)) {
+      if (
+        this._fileSystem.exists(
+          `${this.config.folders.models}/${matchingModel}`
+        )
+      ) {
         if (this.verbose)
           console.log('Found matching model: '.grey, matchingModel)
         options.model = matchingModel
@@ -543,7 +556,7 @@ class Kiss {
       const matchingController = options.view.replace(/\.hbs$/, '.js')
       if (
         this._fileSystem.exists(
-          `${this._folders.controllers}/${matchingController}`
+          `${this.config.folders.controllers}/${matchingController}`
         )
       ) {
         if (this.verbose)
@@ -601,7 +614,7 @@ class Kiss {
           let pathSlug = options.slug
           if (options.path && options.path !== '/')
             pathSlug = `${options.path}/${options.slug}`
-          let pageToGenerate = `${this._folders.build}/${pathSlug}.html`
+          let pageToGenerate = `${this.config.folders.build}/${pathSlug}.html`
           // console.debug(pageToGenerate.magenta)
           const existingPage = this._stack.find(
             (p) => p.buildTo === pageToGenerate
@@ -632,10 +645,10 @@ class Kiss {
   }
 
   scan() {
-    const pages = glob.sync(`${this._folders.pages}/**/*.hbs`)
+    const pages = glob.sync(`${this.config.folders.pages}/**/*.hbs`)
     pages.forEach((pagePath) => {
       const view = pagePath.replace(
-        new RegExp(`^${this._folders.pages}/`, 'g'),
+        new RegExp(`^${this.config.folders.pages}/`, 'g'),
         ''
       )
       if (!this._state.views.some((v) => v === view)) {
@@ -656,7 +669,7 @@ class Kiss {
       // })
 
       fs.writeFileSync(
-        `${this._folders.build}/debug.json`,
+        `${this.config.folders.build}/debug.json`,
         JSON.stringify(this._stack, null, 1)
       )
     }
@@ -671,6 +684,8 @@ class Kiss {
   }
 
   generate(callback) {
+    this.scan()
+
     Promise.all(this._state.promises).then((data) => {
       let stack = this._stack
       stack.forEach(function (p, index) {
@@ -698,11 +713,11 @@ class Kiss {
   watch() {
     console.log(
       'Watching for file changes'.cyan,
-      colors.grey(this._folders.src)
+      colors.grey(this.config.folders.src)
     )
-    chokidar.watch(this._folders.src).on('all', (event, path) => {
+    chokidar.watch(this.config.folders.src).on('all', (event, path) => {
       if (!event.includes('add')) {
-        const pagesDir = this._folders.pages.replace(/^.\//, '')
+        const pagesDir = this.config.folders.pages.replace(/^.\//, '')
         const reStart = new RegExp(`^${pagesDir}\/`, 'g')
         const lookup = path.replace(/\\/g, '/').replace(reStart, '')
         //console.log('lookup ', lookup)
