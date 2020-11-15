@@ -296,11 +296,7 @@ class Kiss {
       console.log(msg.grey)
     })
 
-    this._registerPartials(this._folders.partials, 'html')
-    this._registerPartials(this._folders.partials, 'md')
-    this._registerPartials(this._folders.partials, 'hbs')
-
-    this._registerPartials(this._folders.layouts)
+    this.loadPartials()
 
     console.log('Generating:'.grey)
 
@@ -316,6 +312,15 @@ class Kiss {
       }
       this.watch()
     }
+  }
+
+  loadPartials() {
+    // partials
+    this._registerPartials(this._folders.partials, 'html')
+    this._registerPartials(this._folders.partials, 'md')
+    this._registerPartials(this._folders.partials, 'hbs')
+    // layouts
+    this._registerPartials(this._folders.layouts)
   }
 
   _fileSystem = {
@@ -711,6 +716,7 @@ class Kiss {
         } else {
           // If we can't identify a specific view rebuild the whole site
           console.log('Rebuilding site:'.cyan)
+          this.loadPartials()
           this._stack.forEach((result) => {
             result.page.generate()
           })
