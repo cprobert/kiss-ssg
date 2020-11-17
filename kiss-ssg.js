@@ -332,15 +332,32 @@ class Kiss {
   copyAssets() {
     const self = this
     // Copy assets to build folder
-    if (this.config.folders.assets) {
-      ncp(this.config.folders.assets, this.config.folders.build, function (
-        err
-      ) {
-        if (err) console.error('Error: '.red, err)
-        const msg = `Copied assets: ${self.config.folders.assets} to ${self.config.folders.build}`
-        console.log(msg.grey)
-      })
-    }
+    const p = new Promise((resolve, reject) => {
+      if (self.config.folders.assets) {
+        ncp(
+          self.config.folders.assets,
+          self.config.folders.build,
+          { clobber: true, dereference: true },
+          function (err) {
+            if (err) {
+              console.error(
+                `Error copying assets (${self.config.folders.assets} => ${self.config.folders.build}): `
+                  .red
+              )
+              console.error(err)
+            } else {
+              const msg = `Copied assets: ${self.config.folders.assets} to ${self.config.folders.build}`
+              console.log(msg.grey)
+              resolve(msg)
+            }
+          }
+        )
+      } else {
+        resolve()
+      }
+    })
+    this._state.promises.push(p)
+    return p
   }
 
   _fileSystem = {
