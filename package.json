@@ -20,7 +20,7 @@
   "bugs": {
     "url": "https://github.com/cprobert/kiss-ssg/issues"
   },
-  "homepage": "https://github.com/cprobert/kiss-ssg#readme",
+  "homepage": "https://courtenay.probert.me.uk/kiss-ssg",
   "dependencies": {
     "chokidar": "^3.4.3",
     "colors": "^1.4.0",

@@ -1,4 +1,4 @@
-### Controller
+## Controllers
 
 The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.
 

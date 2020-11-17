@@ -1,4 +1,4 @@
-### Helpers
+## Helpers
 
 Kiss-ssg registers a few useful helpers by default including a markdown parser.
 

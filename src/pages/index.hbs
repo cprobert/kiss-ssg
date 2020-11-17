@@ -5,14 +5,19 @@
   {{/content}}
 
   {{#content "body"}}
-  <div class="blog-post">
-    <h2 class="blog-post-title">Methods</h2>
-    <p class="blog-post-meta">There are 3 primary methods to the kiss class.</p>
-    
-    {{> "methods/scan"}}
-    {{> "methods/page"}}
-    {{> "methods/controllers"}}
-    {{> "methods/helpers"}}
+
+  <h3 class="pb-4 mb-4 font-italic border-bottom">
+    Usage
+  </h3>
+
+  <div class="blog-post">   
+    {{> "usage/setup"}}
+    <hr />
+    {{> "usage/methods"}}
+    <hr />
+    {{> "usage/controllers"}}
+    <hr />
+    {{> "usage/helpers"}}
   </div>
   {{/content}}
 {{/extend}}

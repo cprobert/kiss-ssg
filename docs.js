@@ -7,5 +7,5 @@ const kiss = new Kiss({
     build: 'docs',
   },
 })
-
-kiss.scan().generate()
+  .scan()
+  .generate()

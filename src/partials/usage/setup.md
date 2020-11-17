@@ -1,10 +1,6 @@
-kiss-ssg has 3 methods
+## Setup
 
-- .page()
-- .pages()
-- .scan()
-
-The simplest usage is to use .scan() to scan your 'pages directory' for \*.hbs files and outputs them to the 'build folder'.
+Kiss is an object so will need to be instantiated. In its simplest form kiss will scan your pages directory and use file based routing to generate the html output.
 
 ```js
 const Kiss = require('kiss-ssg')

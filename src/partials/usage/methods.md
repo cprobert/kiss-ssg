@@ -1,3 +1,13 @@
+## Methods
+
+kiss-ssg has 3 methods
+
+- .page()
+- .pages()
+- .scan()
+
+The simplest usage is to use .scan() to scan your 'pages directory' for \*.hbs files and outputs them to the 'build folder'.
+
 ### .page()
 
 Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g. {{model.name}}

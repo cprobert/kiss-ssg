@@ -84,20 +84,14 @@
       <div class="row">
 
         <div class="col-md-8 blog-main">
+
           <h3 class="pb-4 mb-4 font-italic border-bottom">
             Usage
           </h3>
-          <div class="blog-post">
-            <h2 class="blog-post-title">Methods</h2>
-            <p class="blog-post-meta">There are 3 primary methods to the kiss class.</p>
 
-            <p>kiss-ssg has 3 methods</p>
-            <ul>
-              <li>.page()</li>
-              <li>.pages()</li>
-              <li>.scan()</li>
-            </ul>
-            <p>The simplest usage is to use .scan() to scan your 'pages directory' for *.hbs files and outputs them to the 'build folder'.</p>
+          <div class="blog-post">
+            <h2>Setup</h2>
+            <p>Kiss is an object so will need to be instantiated. In its simplest form kiss will scan your pages directory and use file based routing to generate the html output.</p>
             <pre><code class="language-js">const Kiss = require('kiss-ssg')
     const kiss = new Kiss()
     kiss.scan()
@@ -157,6 +151,15 @@
             <p><strong>Note</strong>: All config settings are available in the view under &quot;this.config&quot;</p>
             <h3>Assets</h3>
             <p>Any static files you have in the assets directory will be copied to the build directory</p>
+            <hr />
+            <h2>Methods</h2>
+            <p>kiss-ssg has 3 methods</p>
+            <ul>
+              <li>.page()</li>
+              <li>.pages()</li>
+              <li>.scan()</li>
+            </ul>
+            <p>The simplest usage is to use .scan() to scan your 'pages directory' for *.hbs files and outputs them to the 'build folder'.</p>
             <h3>.page()</h3>
             <p>Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g. </p>
             <pre><code class="language-js">const Kiss = require('kiss-ssg')
@@ -216,7 +219,8 @@
       })
       .generate()
     </code></pre>
-            <h3>Controller</h3>
+            <hr />
+            <h2>Controllers</h2>
             <p>The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.</p>
             <pre><code class="language-js">const Kiss = require('kiss-ssg')
     const kiss = new Kiss({ test: '123' })
@@ -238,7 +242,8 @@
       })
       .generate()
     </code></pre>
-            <h3>Helpers</h3>
+            <hr />
+            <h2>Helpers</h2>
             <p>Kiss-ssg registers a few useful helpers by default including a markdown parser.</p>
             <p>Kiss exposes the handlebars object so you can register your own helpers, e.g.</p>
             <pre><code class="language-js">//  Extending handlebars
