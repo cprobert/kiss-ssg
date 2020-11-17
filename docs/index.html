@@ -1,1 +1,280 @@
-Todo: Write documentation
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <title>Index</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="Courtenay Probert">
+    <meta name="generator" content="kiss-ssg">
+    <title>Kiss-SSG</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    <!-- Custom styles for this template -->
+    <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="/css/blog.css" rel="stylesheet">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.2/styles/github.min.css">
+
+    <!-- jQuery and JS bundle w/ Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.2/highlight.min.js"></script>
+    <script>
+      hljs.initHighlightingOnLoad();
+    </script>
+  </head>
+
+  <body>
+    <div class="container">
+      <header class="blog-header py-3">
+        <div class="row flex-nowrap justify-content-between align-items-center">
+          <div class="col-4 pt-1">
+            <a class="btn btn-sm btn-outline-secondary" href="https://github.com/cprobert/kiss-ssg">Source</a>
+          </div>
+          <div class="col-4 text-center">
+            <a class="blog-header-logo text-dark" href="#">Kiss-SSG</a>
+          </div>
+          <div class="col-4 d-flex justify-content-end align-items-center">
+            <a class="btn btn-sm btn-outline-secondary" href="https://www.npmjs.com/package/kiss-ssg">NPM</a>
+          </div>
+        </div>
+      </header>
+      <div class="nav-scroller py-1 mb-2">
+        <nav class="nav d-flex justify-content-between">
+          <a class="p-2 text-muted" href="#">Setup</a>
+          <a class="p-2 text-muted" href="#">Folders</a>
+          <a class="p-2 text-muted" href="#">Scan/Generate</a>
+          <a class="p-2 text-muted" href="#">Page/Pages</a>
+          <a class="p-2 text-muted" href="#">Helpers</a>
+        </nav>
+      </div>
+
+      <div class="jumbotron p-4 p-md-5 text-white rounded bg-dark">
+        <div class="col-md-12 px-0">
+          <h1 class="display-4 font-italic">Keep it Simple Static Site Generator</h1>
+          <p class="lead my-3">
+            Kiss Static Site Generator, is an open-source MVC html website builder (for node), that leverages handlebar templates to make quick, simple and blisteringly fast websites.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <main role="main" class="container">
+      <div class="row">
+
+        <div class="col-md-8 blog-main">
+          <h3 class="pb-4 mb-4 font-italic border-bottom">
+            Usage
+          </h3>
+          <div class="blog-post">
+            <h2 class="blog-post-title">Methods</h2>
+            <p class="blog-post-meta">There are 3 primary methods to the kiss class.</p>
+
+            <p>kiss-ssg has 3 methods</p>
+            <ul>
+              <li>.page()</li>
+              <li>.pages()</li>
+              <li>.scan()</li>
+            </ul>
+            <p>The simplest usage is to use .scan() to scan your 'pages directory' for *.hbs files and outputs them to the 'build folder'.</p>
+            <pre><code class="language-js">const Kiss = require('kiss-ssg')
+    const kiss = new Kiss()
+    kiss.scan()
+    kiss.generate()
+    </code></pre>
+            <p><strong>Note</strong>: kiss will generate the default folders for you when you first run the script. You can overwrite the folder locations bay passing a config to the kiss constructor.</p>
+            <p>The default config options are:</p>
+            <pre><code class="language-js">{
+      dev: false,
+      verbose: false,
+      cleanBuild: true,
+      folders: {
+        src: './src',
+        build: './public',
+        assets: './src/assets',
+        layouts: './src/layouts',
+        pages: './src/pages',
+        partials: './src/partials',
+        models: './src/models',
+        controllers: './src/controllers'
+      }
+    }
+    </code></pre>
+            <p>Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Option</th>
+                  <th style="text-align:center">Default</th>
+                  <th style="text-align:center">Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>dev</td>
+                  <td style="text-align:center">false</td>
+                  <td style="text-align:center">Dev mode will start a local live-reload server and rebuild on file change.</td>
+                </tr>
+                <tr>
+                  <td>verbose</td>
+                  <td style="text-align:center">false</td>
+                  <td style="text-align:center">Enables additional output on the terminal, when set to true</td>
+                </tr>
+                <tr>
+                  <td>cleanBuild</td>
+                  <td style="text-align:center">true</td>
+                  <td style="text-align:center">Removed all files from the build dir before generating.</td>
+                </tr>
+                <tr>
+                  <td>folders</td>
+                  <td style="text-align:center">see above</td>
+                  <td style="text-align:center">A JSON object of alternative folder locations</td>
+                </tr>
+              </tbody>
+            </table>
+            <p><br /></p>
+            <p><strong>Note</strong>: All config settings are available in the view under &quot;this.config&quot;</p>
+            <h3>Assets</h3>
+            <p>Any static files you have in the assets directory will be copied to the build directory</p>
+            <h3>.page()</h3>
+            <p>Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g. </p>
+            <pre><code class="language-js">const Kiss = require('kiss-ssg')
+    const kiss = new Kiss({ dev: true })
+    kiss
+      .page({
+        view: 'index.hbs',
+        model: 'index.json',
+        controller: 'index.js',
+        title: 'My Page Title',
+      })
+      .generate()
+    </code></pre>
+            <p><strong>Note</strong>: The file locations of the models, views, and controllers are relative to the folder locations defined in the kiss configuration. Alternatively, instead of passing a file location you can pass a native object for that setting.</p>
+            <p>Views: can se a .hbs file or a string
+              Models: can be a .json file, a http api endpoint, or a JSON object
+              Controllers: can be a .js file or a function that returns a page option JSON to be merged into the page options</p>
+            <p>The options that you can pass to .page() &amp; pages() are:</p>
+            <pre><code class="language-js">  {
+        view: 'index.hbs',
+        model: {}
+        controller: ({model})=&gt;{return {model: model}},
+        title: 'Page Title',
+        description: 'A description of the page (useful for meta data)'
+        path: '/',
+        slug: 'index',
+      }
+    </code></pre>
+            <p>These options are both used internally by kiss and are available in view.</p>
+            <ul>
+              <li>view = A handlebars view.</li>
+              <li>model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.</li>
+              <li>controller = A function that returns a page options object - used for manipulating data in the model.</li>
+              <li>title = The page title</li>
+              <li>path = the folder path to the page</li>
+              <li>slug = the name of the file without the extension</li>
+            </ul>
+            <p>page and path create the url, i.e. /{path}/{slug}.html</p>
+            <p><em>Note:</em> If you don't pass a path or a slug they will be inferred from the view</p>
+            <h3>.pages()</h3>
+            <p>In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:</p>
+            <pre><code class="language-js">const Kiss = require('kiss-ssg')
+    
+    const kiss = new Kiss()
+    kiss
+      .page({
+        title: 'My Team Page',
+        view: 'about/index.hbs',
+        model: 'departments.json',
+        controller: ({ model }) =&gt; {
+          return {
+            model: model.sort(
+              (a, b) =&gt; parseInt(a.sort_order) - parseInt(b.sort_order)
+            ),
+          }
+        },
+      })
+      .generate()
+    </code></pre>
+            <h3>Controller</h3>
+            <p>The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.</p>
+            <pre><code class="language-js">const Kiss = require('kiss-ssg')
+    const kiss = new Kiss({ test: '123' })
+    
+    kiss
+      .page({
+        title: 'Page Title',
+        view: 'index.hbs',
+      })
+      .pages({
+        view: 'course.hbs',
+        model: 'https://{my-cool-api}/courses',
+        controller: ({ model }) =&gt; {
+          return {
+            slug: model.slug,
+          }
+        },
+        path: 'courses',
+      })
+      .generate()
+    </code></pre>
+            <h3>Helpers</h3>
+            <p>Kiss-ssg registers a few useful helpers by default including a markdown parser.</p>
+            <p>Kiss exposes the handlebars object so you can register your own helpers, e.g.</p>
+            <pre><code class="language-js">//  Extending handlebars
+    kiss.handlebars.registerHelper('stringify', function (obj) {
+      return JSON.stringify(obj, null, 3)
+    })
+    </code></pre>
+          </div>
+
+        </div>
+
+        <aside class="col-md-4 blog-sidebar">
+          <div class="p-4 mb-3 bg-light rounded">
+            <h4 class="font-italic">Quick and Easy</h4>
+            <p class="mb-0">Sometimes you just don't need the overhead of Gatsby, Nuxt or Jekyll</p>
+          </div>
+
+          <div class="p-4">
+            <h4 class="font-italic">Sites that use Kiss-SSG</h4>
+            <ol class="list-unstyled mb-0">
+              <li><a href="https://www.a1k9training.co.uk/">A1K9 Training</a></li>
+              <li><a href="https://www.learna.ac.uk/">Learna Ltd</a></li>
+            </ol>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="blog-footer">
+      <p>
+
+      </p>
+      <p>
+        <a href="#">Back to top</a>
+      </p>
+    </footer>
+  <script src="http://localhost:35729/livereload.js?snipver=1"></script></body>
+
+</html>

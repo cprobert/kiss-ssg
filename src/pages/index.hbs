@@ -1,1 +1,18 @@
-Todo: Write documentation
+{{#extend "layout"}}
+
+  {{#content "jumbotron"}}
+    {{> "home/jumbotron"}}
+  {{/content}}
+
+  {{#content "body"}}
+  <div class="blog-post">
+    <h2 class="blog-post-title">Methods</h2>
+    <p class="blog-post-meta">There are 3 primary methods to the kiss class.</p>
+    
+    {{> "methods/scan"}}
+    {{> "methods/page"}}
+    {{> "methods/controllers"}}
+    {{> "methods/helpers"}}
+  </div>
+  {{/content}}
+{{/extend}}

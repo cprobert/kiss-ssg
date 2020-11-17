@@ -1,0 +1,22 @@
+{
+ "title": "Index",
+ "path": "",
+ "slug": "index",
+ "view": "index.hbs",
+ "config": {
+  "dev": true,
+  "verbose": true,
+  "cleanBuild": true,
+  "folders": {
+   "src": "./src",
+   "pages": "./src/pages",
+   "build": "docs",
+   "assets": "./src/assets",
+   "layouts": "./src/layouts",
+   "partials": "./src/partials",
+   "models": "./src/models",
+   "controllers": "./src/controllers"
+  }
+ },
+ "model": {}
+}

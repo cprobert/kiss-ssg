@@ -14,8 +14,7 @@ const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/h
 handlebars.registerHelper(layouts(handlebars))
 
 const { Remarkable } = require('remarkable')
-const { createCipher } = require('crypto')
-var md = new Remarkable({
+var remarkable = new Remarkable({
   html: true, // Enable HTML tags in source
   xhtmlOut: false, // Use '/' to close single tags (<br />)
   breaks: false, // Convert '\n' in paragraphs into <br>
@@ -29,8 +28,8 @@ handlebars.registerHelper('markdown', function (obj) {
   } else {
     console.error('Unexpected object in the bagging area!'.red)
   }
-  // return new handlebars.SafeString(md.render(returnVal))
-  return md.render(returnVal)
+  // return new handlebars.SafeString(remarkable.render(returnVal))
+  return remarkable.render(returnVal)
 })
 
 handlebars.registerHelper('stringify', function (obj) {
@@ -219,37 +218,8 @@ class Kiss {
     promises: [],
   }
 
-  _setupFolders() {
-    // console.log('folders: '.grey, this.config.folders)
-    this._fileSystem.mkDir(this.config.folders.src)
-    this._fileSystem.mkDir(this.config.folders.pages)
-    this._fileSystem.mkDir(this.config.folders.build)
-
-    if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.assets)
-
-    if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.layouts)
-
-    if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.partials)
-
-    if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.models)
-
-    if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.controllers)
-
-    //console.debug('cleanBuild: ', this.config.cleanBuild)
-    if (this.config.cleanBuild) {
-      try {
-        rimraf.sync(this.config.folders.build + '/*')
-      } catch (err) {
-        console.error(colors.red(err.message))
-      }
-    }
-    this._fileSystem.mkDir(this.config.folders.build)
-  }
+  handlebars = handlebars
+  remarkable = remarkable
 
   constructor(config) {
     console.log('            Starting Kiss            \n'.zebra)
@@ -317,6 +287,38 @@ class Kiss {
     console.log('Generating:'.grey)
   }
 
+  _setupFolders() {
+    // console.log('folders: '.grey, this.config.folders)
+    this._fileSystem.mkDir(this.config.folders.src)
+    this._fileSystem.mkDir(this.config.folders.pages)
+    this._fileSystem.mkDir(this.config.folders.build)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.assets)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.layouts)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.partials)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.models)
+
+    if (this.config.folders.assets)
+      this._fileSystem.mkDir(this.config.folders.controllers)
+
+    //console.debug('cleanBuild: ', this.config.cleanBuild)
+    if (this.config.cleanBuild) {
+      try {
+        rimraf.sync(this.config.folders.build + '/*')
+      } catch (err) {
+        console.error(colors.red(err.message))
+      }
+    }
+    this._fileSystem.mkDir(this.config.folders.build)
+  }
+
   registerPartials() {
     console.log('Registering partials:'.gray)
     // partials
@@ -378,7 +380,7 @@ class Kiss {
       let source = fs.readFileSync(path, 'utf8')
       if (ext === 'md') {
         // console.debug('Rendering Markdown')
-        source = md.render(source)
+        source = remarkable.render(source)
       }
 
       handlebars.registerPartial(name, source)
@@ -739,8 +741,6 @@ class Kiss {
       }
     })
   }
-
-  handlebars = handlebars
 }
 
 module.exports = Kiss
