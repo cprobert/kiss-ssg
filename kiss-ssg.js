@@ -333,6 +333,7 @@ class Kiss {
     const self = this
     // Copy assets to build folder
     const p = new Promise((resolve, reject) => {
+      const assetID = md5(`${sourceDir} - ${targetDir}`)
       if (sourceDir && targetDir) {
         ncp(
           sourceDir,
@@ -347,12 +348,12 @@ class Kiss {
             } else {
               const msg = `Copied assets: ${sourceDir} to ${targetDir}`
               console.log(msg.grey)
-              resolve(msg)
+              resolve({ id: assetID, data: msg })
             }
           }
         )
       } else {
-        resolve()
+        resolve({ id: assetID, data: null })
       }
     })
     this._state.promises.push(p)
