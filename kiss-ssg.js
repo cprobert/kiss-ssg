@@ -269,7 +269,7 @@ class Kiss {
 
     this._setupFolders(config)
 
-    this.copyAssets()
+    this.copyAssets(this.config.folders.assets, this.config.folders.build)
     this.registerPartials()
 
     if (this.config.dev) {
@@ -329,24 +329,23 @@ class Kiss {
     this._registerPartials(this.config.folders.layouts)
   }
 
-  copyAssets() {
+  copyAssets(sourceDir, targetDir) {
     const self = this
     // Copy assets to build folder
     const p = new Promise((resolve, reject) => {
-      if (self.config.folders.assets) {
+      if (sourceDir && targetDir) {
         ncp(
-          self.config.folders.assets,
-          self.config.folders.build,
+          sourceDir,
+          targetDir,
           { clobber: true, dereference: true },
           function (err) {
             if (err) {
               console.error(
-                `Error copying assets (${self.config.folders.assets} => ${self.config.folders.build}): `
-                  .red
+                `Error copying assets (${sourceDir} => ${targetDir}): `.red
               )
               console.error(err)
             } else {
-              const msg = `Copied assets: ${self.config.folders.assets} to ${self.config.folders.build}`
+              const msg = `Copied assets: ${sourceDir} to ${targetDir}`
               console.log(msg.grey)
               resolve(msg)
             }
@@ -357,7 +356,7 @@ class Kiss {
       }
     })
     this._state.promises.push(p)
-    return p
+    return this
   }
 
   _fileSystem = {
