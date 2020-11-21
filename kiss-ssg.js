@@ -76,6 +76,7 @@ class KissPage {
   _path = ''
   _slug = 'index'
   _ext = 'html'
+  _extLess = false
   _buildTo = ''
   _title = 'Kiss page'
   _dev = false
@@ -114,11 +115,21 @@ class KissPage {
     }
   }
 
+  set extLess(val) {
+    this._extLess = !!val
+  }
+
   get buildTo() {
+    let buildPath = this.buildDir
     if (this._path) {
-      return `${this.buildDir}/${this._path}/${this.slug}.${this._ext}`
+      buildPath = `${this.buildDir}/${this._path}`
     }
-    return `${this.buildDir}/${this.slug}.${this._ext}`
+    // Fake extension less pages
+    if (this._extLess && this.slug !== 'index') {
+      return `${buildPath}/${this.slug}/index.${this._ext}`
+    }
+
+    return `${buildPath}/${this.slug}.${this._ext}`
   }
 
   set isDev(dev) {
@@ -264,6 +275,7 @@ class Kiss {
         dev: false,
         verbose: false,
         cleanBuild: true,
+        extensionLess: false,
       },
       ...config,
     }
@@ -486,6 +498,7 @@ class Kiss {
     if (options.ext) kissPage.ext = options.ext
     kissPage.debug = this.config.verbose
     kissPage.isDev = this.config.dev
+    kissPage.extLess = this.config.extensionLess
 
     const preparedPage = kissPage.prepare()
     this._stack.push({
