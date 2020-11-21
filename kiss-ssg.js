@@ -103,12 +103,14 @@ class KissPage {
   get slug() {
     return this._slug
   }
+
   set slug(slug) {
     if (slug) {
       this._slug = utils.toSlug(slug)
       // console.debug('Set slug: '.gray, this._slug)
     }
   }
+
   set ext(extension) {
     if (extension) {
       this._ext = extension.replace('.', '')
@@ -235,10 +237,7 @@ class KissPage {
 
 class Kiss {
   _stack = []
-
-  _state = {
-    promises: [],
-  }
+  _promises = []
 
   handlebars = handlebars
   remarkable = remarkable
@@ -412,7 +411,7 @@ class Kiss {
         resolve({ id: assetID, data: null })
       }
     })
-    this._state.promises.push(p)
+    this._promises.push(p)
     return this
   }
 
@@ -578,7 +577,7 @@ class Kiss {
           reject({ message: `Unexpected model type: ${typeof model}` })
       }
     })
-    this._state.promises.push(p)
+    this._promises.push(p)
     return p
   }
 
@@ -743,14 +742,14 @@ class Kiss {
     }
 
     console.log({
-      promise: this._state.promises.length,
+      promise: this._promises.length,
       stack: this._stack.length,
     })
     return this
   }
 
   generate(callback) {
-    Promise.all(this._state.promises).then((data) => {
+    Promise.all(this._promises).then((data) => {
       let stack = this._stack
       stack.forEach(function (p, index) {
         if (p.runCount === 0) p.page.generate()
@@ -763,7 +762,7 @@ class Kiss {
   }
 
   complete(callback) {
-    return Promise.all(this._state.promises).then((data) => {
+    return Promise.all(this._promises).then((data) => {
       if (callback) callback.call(this, data)
     })
   }
