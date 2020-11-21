@@ -1,8 +1,7 @@
 const md5 = require('md5')
-const fs = require('fs')
+const fs = require('fs-extra')
 const glob = require('glob')
-const rimraf = require('rimraf')
-const ncp = require('ncp').ncp // https://www.npmjs.com/package/ncp
+const sass = require('sass')
 const chokidar = require('chokidar')
 const path = require('path')
 const pretty = require('pretty')
@@ -130,12 +129,6 @@ class KissPage {
   }
 
   prepare() {
-    if (this._path) {
-      const filePath = `${this.buildDir}/${this._path}`
-      if (!fs.existsSync(filePath)) {
-        fs.mkdirSync(filePath, { recursive: true })
-      }
-    }
     this.options = {
       ...{
         title: this._title,
@@ -172,11 +165,25 @@ class KissPage {
           })
         }
 
-        fs.writeFileSync(this.buildTo, formattedOutput)
+        // fs.writeFileSync(this.buildTo, formattedOutput)
+        fs.outputFile(this.buildTo, formattedOutput, (err) => {
+          if (err) {
+            console.error(`Error creating ${this.buildTo}`.red)
+            console.error(colors.yellow(err))
+          }
+        })
+
         if (this.options && this._debug) {
-          fs.writeFileSync(
+          fs.outputJson(
             this.buildTo.replace(this._ext, '.json'),
-            JSON.stringify(this.options, null, 1)
+            this.options,
+            { spaces: 2 },
+            (err) => {
+              if (err) {
+                console.error(`Error creating ${this.buildTo}`.red)
+                console.error(colors.yellow(err))
+              }
+            }
           )
         }
       } catch (error) {
@@ -289,34 +296,33 @@ class Kiss {
 
   _setupFolders() {
     // console.log('folders: '.grey, this.config.folders)
-    this._fileSystem.mkDir(this.config.folders.src)
-    this._fileSystem.mkDir(this.config.folders.pages)
-    this._fileSystem.mkDir(this.config.folders.build)
+    fs.ensureDirSync(this.config.folders.src)
+    fs.ensureDirSync(this.config.folders.pages)
+    fs.ensureDirSync(this.config.folders.build)
+
+    if (this.config.folders.assets) fs.ensureDirSync(this.config.folders.assets)
 
     if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.assets)
+      fs.ensureDirSync(this.config.folders.layouts)
 
     if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.layouts)
+      fs.ensureDirSync(this.config.folders.partials)
+
+    if (this.config.folders.assets) fs.ensureDirSync(this.config.folders.models)
 
     if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.partials)
-
-    if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.models)
-
-    if (this.config.folders.assets)
-      this._fileSystem.mkDir(this.config.folders.controllers)
+      fs.ensureDirSync(this.config.folders.controllers)
 
     //console.debug('cleanBuild: ', this.config.cleanBuild)
     if (this.config.cleanBuild) {
       try {
-        rimraf.sync(this.config.folders.build + '/*')
+        // fs.removeSync(this.config.folders.build)
+        fs.emptyDirSync(this.config.folders.build)
       } catch (err) {
         console.error(colors.red(err.message))
       }
     }
-    this._fileSystem.mkDir(this.config.folders.build)
+    fs.ensureDirSync(this.config.folders.build)
   }
 
   registerPartials() {
@@ -330,16 +336,44 @@ class Kiss {
   }
 
   copyAssets(sourceDir, targetDir) {
-    const self = this
-    // Copy assets to build folder
+    const assetID = md5(`${sourceDir} - ${targetDir}`)
+
+    const sassFiles = glob.sync(`${sourceDir}/**/*.+(scss|sass)`)
+    sassFiles.forEach((sassFile) => {
+      // console.debug('Processing: '.grey, sassFile)
+
+      let cssFile = sassFile.replace(sourceDir, targetDir)
+      cssFile = cssFile.substr(0, cssFile.lastIndexOf('.'))
+
+      const sassOutput = sass.renderSync({ file: sassFile })
+      fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {
+        if (err) {
+          console.error('Error parsing sass file'.red)
+          console.error(err)
+        } else {
+          console.log(`${cssFile}.css`.green)
+        }
+      })
+    })
+
+    const filterDynamicAssets = (src, dest) => {
+      const ext = src.substring(src.lastIndexOf('.', src.length))
+      switch (ext.toLowerCase()) {
+        case '.scss':
+        case '.sass':
+          return false
+        default:
+          return true
+      }
+    }
+
     const p = new Promise((resolve, reject) => {
-      const assetID = md5(`${sourceDir} - ${targetDir}`)
       if (sourceDir && targetDir) {
-        ncp(
+        fs.copy(
           sourceDir,
           targetDir,
-          { clobber: true, dereference: true },
-          function (err) {
+          { filter: filterDynamicAssets },
+          (err) => {
             if (err) {
               console.error(
                 `Error copying assets (${sourceDir} => ${targetDir}): `.red
@@ -360,21 +394,9 @@ class Kiss {
     return this
   }
 
-  _fileSystem = {
-    mkDir(dir) {
-      dir = dir.toLowerCase()
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true })
-      }
-    },
-    exists(dir) {
-      return fs.existsSync(dir)
-    },
-  }
-
   _readModel(file) {
     const model = `${this.config.folders.models}/${file}`
-    if (this._fileSystem.exists(model)) {
+    if (fs.existsSync(model)) {
       return JSON.parse(fs.readFileSync(model, 'utf8'))
     }
     console.error('Can not find model on file system'.red, model)
@@ -428,7 +450,7 @@ class Kiss {
       switch (typeof options.controller) {
         case 'string':
           const controllerPath = `${this.config.folders.controllers}/${options.controller}`
-          if (this._fileSystem.exists(controllerPath)) {
+          if (fs.existsSync(controllerPath)) {
             const controller = require.main.require(controllerPath)
             options = this._controllerRun(options, controller)
           }
@@ -567,11 +589,7 @@ class Kiss {
     // Auto map model if one isn't specified
     if (!options.model) {
       const matchingModel = options.view.replace(/\.hbs$/, '.json')
-      if (
-        this._fileSystem.exists(
-          `${this.config.folders.models}/${matchingModel}`
-        )
-      ) {
+      if (fs.existsSync(`${this.config.folders.models}/${matchingModel}`)) {
         if (this.verbose)
           console.log('Found matching model: '.grey, matchingModel)
         options.model = matchingModel
@@ -582,7 +600,7 @@ class Kiss {
     if (!options.controller) {
       const matchingController = options.view.replace(/\.hbs$/, '.js')
       if (
-        this._fileSystem.exists(
+        fs.existsSync(
           `${this.config.folders.controllers}/${matchingController}`
         )
       ) {
@@ -691,9 +709,13 @@ class Kiss {
       //   console.log(p.buildTo)
       // })
 
-      fs.writeFileSync(
+      fs.outputJson(
         `${this.config.folders.build}/debug.json`,
-        JSON.stringify(this._stack, null, 1)
+        this._stack,
+        { spaces: 2 },
+        (err) => {
+          if (err) console.log(err)
+        }
       )
     }
 
