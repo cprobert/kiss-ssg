@@ -276,6 +276,9 @@ class Kiss {
         verbose: false,
         cleanBuild: true,
         extensionLess: false,
+        sass: {
+          includePaths: [],
+        },
       },
       ...config,
     }
@@ -357,7 +360,10 @@ class Kiss {
       let cssFile = sassFile.replace(sourceDir, targetDir)
       cssFile = cssFile.substr(0, cssFile.lastIndexOf('.'))
 
-      const sassOutput = sass.renderSync({ file: sassFile })
+      const sassOutput = sass.renderSync({
+        file: sassFile,
+        includePaths: this.config.sass.includePaths,
+      })
       fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {
         if (err) {
           console.error('Error parsing sass file'.red)
