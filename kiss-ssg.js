@@ -35,6 +35,38 @@ handlebars.registerHelper('stringify', function (obj) {
   return JSON.stringify(obj, null, 3)
 })
 
+handlebars.registerHelper('isActive', function (pageOptions, options) {
+  let context = { href: '', active: 'active', folderMatch: false }
+  if (options && options.hash) {
+    context = {
+      ...context,
+      ...options.hash,
+    }
+  }
+  const activeClass = context.active
+  context.active = ''
+  // Sanitize page URLs, to match index.html to /
+  let pageURL = pageOptions.pageURL
+  pageURL = pageURL.replace(/index.html$/, '')
+
+  context.pageURL = pageURL
+  const noSlashHref = context.href.replace(/^\//, '')
+  if (context.folderMatch) {
+    if (pageURL.includes(noSlashHref)) {
+      context.active = activeClass
+    }
+  } else {
+    // console.log({
+    //   optionsURL: pageOptions.pageURL,
+    //   pageURL: pageURL,
+    //   noSlashHref: noSlashHref,
+    // })
+    if (pageURL == noSlashHref) context.active = activeClass
+  }
+
+  return options.fn(context)
+})
+
 const utils = {
   toSlug(slug) {
     return slug
