@@ -120,16 +120,19 @@ class KissPage {
   }
 
   get buildTo() {
-    let buildPath = this.buildDir
-    if (this._path) {
-      buildPath = `${this.buildDir}/${this._path}`
-    }
-    // Fake extension less pages
-    if (this._extLess && this.slug !== 'index') {
-      return `${buildPath}/${this.slug}/index.${this._ext}`
-    }
+    return `${this.buildDir}/${this.pageURL()}`
+  }
 
-    return `${buildPath}/${this.slug}.${this._ext}`
+  pageURL() {
+    // Fake extension less pages
+    let pagePath = ''
+    if (this._extLess && this.slug !== 'index') {
+      pagePath = `${this._path}/${this.slug}/index.${this._ext}`
+    } else {
+      pagePath = `${this._path}/${this.slug}.${this._ext}`
+    }
+    if (pagePath.startsWith('/')) pagePath = pagePath.replace(/^\//, '')
+    return pagePath
   }
 
   set isDev(dev) {
@@ -155,6 +158,7 @@ class KissPage {
     const template = this._getTemplate(this.view)
     if (template) {
       try {
+        this.options.pageURL = this.pageURL()
         const output = template(this.options)
         console.log(this.buildTo.green)
         let formattedOutput = pretty(output)
