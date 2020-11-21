@@ -47,7 +47,8 @@ handlebars.registerHelper('isActive', function (pageOptions, options) {
   context.active = ''
   // Sanitize page URLs, to match index.html to /
   let pageURL = pageOptions.pageURL
-  pageURL = pageURL.replace(/index.html$/, '')
+  pageURL = pageURL.substring(0, pageURL.lastIndexOf('.')) // Strip the extention
+  pageURL = pageURL.replace(/index$/, '') // change /index to /
 
   context.pageURL = pageURL
   const noSlashHref = context.href.replace(/^\//, '')
