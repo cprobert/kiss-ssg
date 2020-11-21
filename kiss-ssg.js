@@ -396,18 +396,25 @@ class Kiss {
       let cssFile = sassFile.replace(sourceDir, targetDir)
       cssFile = cssFile.substr(0, cssFile.lastIndexOf('.'))
 
-      const sassOutput = sass.renderSync({
-        file: sassFile,
-        includePaths: this.config.sass.includePaths,
-      })
-      fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {
-        if (err) {
-          console.error('Error parsing sass file'.red)
-          console.error(err)
-        } else {
-          console.log(`${cssFile}.css`.green)
-        }
-      })
+      try{
+        const sassOutput = sass.renderSync({
+          file: sassFile,
+          includePaths: this.config.sass.includePaths,
+        })
+
+        fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {
+          if (err) {
+            console.error('Error parsing sass file'.red)
+            console.error(err)
+          } else {
+            console.log(`${cssFile}.css`.green)
+          }
+        })
+      }
+      catch(err){
+        console.error('Error parsing sass file: '.red, sassFile)
+        console.error(err.message.yellow)
+      }
     })
 
     const filterDynamicAssets = (src, dest) => {
