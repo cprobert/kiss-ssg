@@ -18,6 +18,7 @@ var remarkable = new Remarkable({
   xhtmlOut: false, // Use '/' to close single tags (<br />)
   breaks: false, // Convert '\n' in paragraphs into <br>
 })
+
 handlebars.registerHelper('markdown', function (obj) {
   let returnVal = ''
   if (typeof obj === 'object') {
@@ -29,6 +30,11 @@ handlebars.registerHelper('markdown', function (obj) {
   }
   // return new handlebars.SafeString(remarkable.render(returnVal))
   return remarkable.render(returnVal)
+})
+
+handlebars.registerHelper('offset', function (index) {
+  index++
+  return index
 })
 
 handlebars.registerHelper('stringify', function (obj) {
@@ -396,7 +402,7 @@ class Kiss {
       let cssFile = sassFile.replace(sourceDir, targetDir)
       cssFile = cssFile.substr(0, cssFile.lastIndexOf('.'))
 
-      try{
+      try {
         const sassOutput = sass.renderSync({
           file: sassFile,
           includePaths: this.config.sass.includePaths,
@@ -410,8 +416,7 @@ class Kiss {
             console.log(`${cssFile}.css`.green)
           }
         })
-      }
-      catch(err){
+      } catch (err) {
         console.error('Error parsing sass file: '.red, sassFile)
         console.error(err.message.yellow)
       }
@@ -514,6 +519,8 @@ class Kiss {
           if (fs.existsSync(controllerPath)) {
             const controller = require.main.require(controllerPath)
             options = this._controllerRun(options, controller)
+          } else {
+            console.log(`Failed to find "controller: ${controllerPath}`.red)
           }
           break
         case 'function':
@@ -814,17 +821,33 @@ class Kiss {
   }
 
   watch() {
+    const self = this
     console.log(
       'Watching for file changes'.cyan,
-      colors.grey(this.config.folders.src)
+      colors.grey(self.config.folders.src)
     )
-    chokidar.watch(this.config.folders.src).on('all', (event, path) => {
+    function rebuildSite() {
+      console.log('Rebuilding site:'.cyan)
+      self.registerPartials()
+      self._stack.forEach((result) => {
+        result.page.generate()
+      })
+    }
+    if (module.parent.filename) {
+      console.log('Caller: '.cyan, module.parent.filename)
+      chokidar.watch(module.parent.filename).on('change', (event, path) => {
+        console.log(`Calling file ${event}: `.cyan, path)
+        rebuildSite()
+      })
+    }
+
+    chokidar.watch(self.config.folders.src).on('all', (event, path) => {
       if (!event.includes('add')) {
-        const pagesDir = this.config.folders.pages.replace(/^.\//, '')
+        const pagesDir = self.config.folders.pages.replace(/^.\//, '')
         const reStart = new RegExp(`^${pagesDir}\/`, 'g')
         const lookup = path.replace(/\\/g, '/').replace(reStart, '')
         //console.log('lookup ', lookup)
-        const results = this._stack.filter((p) => p.view === lookup)
+        const results = self._stack.filter((p) => p.view === lookup)
         console.log(`${event}: ${path} - `.grey, results.length)
         if (results.length > 0) {
           results.forEach((result) => {
@@ -833,11 +856,7 @@ class Kiss {
           })
         } else {
           // If we can't identify a specific view rebuild the whole site
-          console.log('Rebuilding site:'.cyan)
-          this.registerPartials()
-          this._stack.forEach((result) => {
-            result.page.generate()
-          })
+          rebuildSite()
         }
       }
     })
