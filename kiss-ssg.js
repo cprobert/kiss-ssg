@@ -835,8 +835,8 @@ class Kiss {
     }
     if (module.parent.filename) {
       console.log('Caller: '.cyan, module.parent.filename)
-      chokidar.watch(module.parent.filename).on('change', (event, path) => {
-        console.log(`Calling file ${event}: `.cyan, path)
+      chokidar.watch(module.parent.filename).on('change', (path, stats) => {
+        console.log(`Changed: ${path}: `.cyan)
         rebuildSite()
       })
     }
