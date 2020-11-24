@@ -28,8 +28,7 @@ handlebars.registerHelper('markdown', function (obj) {
   } else {
     console.error('Unexpected object in the bagging area!'.red)
   }
-  // return new handlebars.SafeString(remarkable.render(returnVal))
-  return remarkable.render(returnVal)
+  return new handlebars.SafeString(remarkable.render(returnVal))
 })
 
 handlebars.registerHelper('offset', function (index) {
