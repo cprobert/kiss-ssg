@@ -188,6 +188,7 @@ class KissPage {
         title: this._title,
         path: this._path,
         slug: this._slug,
+        generate: true,
       },
       ...this.options,
     }
@@ -196,9 +197,8 @@ class KissPage {
 
   generate() {
     const template = this._getTemplate(this.view)
-    if (template && this.options.config.generate) {
+    if (template && this.options.generate) {
       try {
-        console.log(this.options.config)
         this.options.pageURL = this.pageURL()
         const output = template(this.options)
         console.log(this.buildTo.green)
@@ -247,6 +247,8 @@ class KissPage {
         console.error(colors.yellow(error.message))
         if (this._debug) console.debug(colors.grey(error))
       }
+    } else {
+      console.log('Skipping page generate: '.grey, this.options.generate)
     }
     return this.buildTo
   }
@@ -545,28 +547,25 @@ class Kiss {
 
   _preparePage(options) {
     // console.debug('options:'.grey, options)
-    if (options.generate) {
-      const kissPage = new KissPage(options.view)
-      kissPage.options = options
-      kissPage.buildDir = this.config.folders.build
-      kissPage.pagesDir = this.config.folders.pages
-      kissPage.path = options.path
-      kissPage.slug = options.slug
-      if (options.ext) kissPage.ext = options.ext
-      kissPage.debug = this.config.verbose
-      kissPage.isDev = this.config.dev
-      kissPage.extLess = this.config.extensionLess
 
-      const preparedPage = kissPage.prepare()
-      this._stack.push({
-        view: preparedPage.view,
-        buildTo: preparedPage.buildTo,
-        page: preparedPage,
-        runCount: 0,
-      })
-    } else {
-      console.log('Skipping generate', options.title)
-    }
+    const kissPage = new KissPage(options.view)
+    kissPage.options = options
+    kissPage.buildDir = this.config.folders.build
+    kissPage.pagesDir = this.config.folders.pages
+    kissPage.path = options.path
+    kissPage.slug = options.slug
+    if (options.ext) kissPage.ext = options.ext
+    kissPage.debug = this.config.verbose
+    kissPage.isDev = this.config.dev
+    kissPage.extLess = this.config.extensionLess
+
+    const preparedPage = kissPage.prepare()
+    this._stack.push({
+      view: preparedPage.view,
+      buildTo: preparedPage.buildTo,
+      page: preparedPage,
+      runCount: 0,
+    })
   }
 
   _prepareMultiplePages(options, data) {
@@ -656,7 +655,6 @@ class Kiss {
       return this
     }
     // if (this.verbose) console.log('Processing view: '.grey, options.view)
-    options.generate = true // Default is to process every page
     options.config = this.config // Map the global kiss config to the page config
 
     // Auto map model if one isn't specified
@@ -845,24 +843,36 @@ class Kiss {
       })
     }
 
-    chokidar.watch(self.config.folders.src).on('all', (event, path) => {
-      if (!event.includes('add')) {
-        const pagesDir = self.config.folders.pages.replace(/^.\//, '')
-        const reStart = new RegExp(`^${pagesDir}\/`, 'g')
-        const lookup = path.replace(/\\/g, '/').replace(reStart, '')
-        //console.log('lookup ', lookup)
-        const results = self._stack.filter((p) => p.view === lookup)
-        console.log(`${event}: ${path} - `.grey, results.length)
-        if (results.length > 0) {
-          results.forEach((result) => {
-            // console.log('Rebuilding:'.grey, result.page.slug)
-            result.page.generate()
-          })
-        } else {
-          // If we can't identify a specific view rebuild the whole site
-          rebuildSite()
+    let assetsDir = self.config.folders.assets
+    if (!assetsDir) assetsDir = './src/assets'
+
+    chokidar
+      .watch(self.config.folders.src, {
+        ignored: `${assetsDir}/*`,
+      })
+      .on('all', (event, path) => {
+        if (!event.includes('add')) {
+          const pagesDir = self.config.folders.pages.replace(/^.\//, '')
+          const reStart = new RegExp(`^${pagesDir}\/`, 'g')
+          const lookup = path.replace(/\\/g, '/').replace(reStart, '')
+          //console.log('lookup ', lookup)
+          const results = self._stack.filter((p) => p.view === lookup)
+          console.log(`${event}: ${path}: `.grey, results.length)
+          if (results.length > 0) {
+            results.forEach((result) => {
+              console.log('Rebuilding:'.grey, result.page.view)
+              result.page.generate()
+            })
+          } else {
+            // If we can't identify a specific view rebuild the whole site
+            rebuildSite()
+          }
         }
-      }
+      })
+
+    chokidar.watch(assetsDir).on('change', (path) => {
+      console.log('Asset changed: '.grey, path)
+      self.copyAssets(self.config.folders.assets, self.config.folders.build)
     })
   }
 }
