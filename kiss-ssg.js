@@ -196,8 +196,9 @@ class KissPage {
 
   generate() {
     const template = this._getTemplate(this.view)
-    if (template) {
+    if (template && this.options.config.generate) {
       try {
+        console.log(this.options.config)
         this.options.pageURL = this.pageURL()
         const output = template(this.options)
         console.log(this.buildTo.green)
@@ -544,24 +545,28 @@ class Kiss {
 
   _preparePage(options) {
     // console.debug('options:'.grey, options)
-    const kissPage = new KissPage(options.view)
-    kissPage.options = options
-    kissPage.buildDir = this.config.folders.build
-    kissPage.pagesDir = this.config.folders.pages
-    kissPage.path = options.path
-    kissPage.slug = options.slug
-    if (options.ext) kissPage.ext = options.ext
-    kissPage.debug = this.config.verbose
-    kissPage.isDev = this.config.dev
-    kissPage.extLess = this.config.extensionLess
+    if (options.generate) {
+      const kissPage = new KissPage(options.view)
+      kissPage.options = options
+      kissPage.buildDir = this.config.folders.build
+      kissPage.pagesDir = this.config.folders.pages
+      kissPage.path = options.path
+      kissPage.slug = options.slug
+      if (options.ext) kissPage.ext = options.ext
+      kissPage.debug = this.config.verbose
+      kissPage.isDev = this.config.dev
+      kissPage.extLess = this.config.extensionLess
 
-    const preparedPage = kissPage.prepare()
-    this._stack.push({
-      view: preparedPage.view,
-      buildTo: preparedPage.buildTo,
-      page: preparedPage,
-      runCount: 0,
-    })
+      const preparedPage = kissPage.prepare()
+      this._stack.push({
+        view: preparedPage.view,
+        buildTo: preparedPage.buildTo,
+        page: preparedPage,
+        runCount: 0,
+      })
+    } else {
+      console.log('Skipping generate', options.title)
+    }
   }
 
   _prepareMultiplePages(options, data) {
@@ -651,7 +656,7 @@ class Kiss {
       return this
     }
     // if (this.verbose) console.log('Processing view: '.grey, options.view)
-
+    options.generate = true // Default is to process every page
     options.config = this.config // Map the global kiss config to the page config
 
     // Auto map model if one isn't specified
