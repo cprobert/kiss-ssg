@@ -25,8 +25,14 @@ handlebars.registerHelper('markdown', function (obj) {
     returnVal = obj.fn(this)
   } else if (typeof obj === 'string') {
     returnVal = obj
+  } else if (typeof obj === 'undefined') {
+    console.log('Undefined value passed to markdown helper:'.yellow)
   } else {
     console.error('Unexpected object in the bagging area!'.red)
+    console.error(
+      'Markdown helper has an unexpected object type of:'.yellow,
+      typeof obj
+    )
   }
   return new handlebars.SafeString(remarkable.render(returnVal))
 })
@@ -229,7 +235,7 @@ class KissPage {
           }
         })
 
-        if (this.options && this._debug) {
+        if (this.options && this._dev) {
           fs.outputJson(
             this.buildTo.replace(this._ext, '.json'),
             this.options,
@@ -248,7 +254,7 @@ class KissPage {
         if (this._debug) console.debug(colors.grey(error))
       }
     } else {
-      console.log('Skipping page generate: '.grey, this.options.generate)
+      console.log('Skipping page generation: '.grey, this.view)
     }
     return this.buildTo
   }
