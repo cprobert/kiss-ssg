@@ -237,7 +237,7 @@ class KissPage {
 
         if (this.options && this._dev) {
           fs.outputJson(
-            this.buildTo.replace(this._ext, '.json'),
+            this.buildTo.replace(this._ext, 'json'),
             this.options,
             { spaces: 2 },
             (err) => {
