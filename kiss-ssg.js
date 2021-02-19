@@ -19,7 +19,7 @@ var remarkable = new Remarkable({
   breaks: false, // Convert '\n' in paragraphs into <br>
 })
 
-function registerHandlebarsHelpers(config){
+function registerHandlebarsHelpers(config) {
   handlebars.registerHelper('markdown', function (obj) {
     let returnVal = ''
     if (typeof obj === 'object') {
@@ -39,10 +39,8 @@ function registerHandlebarsHelpers(config){
   })
 
   handlebars.registerHelper('sass', function (context, options) {
+    // console.log('params: ', typeof options, options, context)
     let output = ''
-    // console.log('__dirname: ', __dirname )
-    // console.log('Working Dir: ', process.cwd())
-
     if (typeof context === 'string') {
       const sassOutput = sass.renderSync({
         file: path.join(process.cwd(), context),
@@ -50,22 +48,22 @@ function registerHandlebarsHelpers(config){
       })
       output = `${output} \n${sassOutput.css}`
     }
-
-    if (typeof options === 'object' || typeof context === 'object') {
+    if (
+      (typeof options === 'object' && options.fn) ||
+      (typeof context === 'object' && context.fn)
+    ) {
       let input = ''
-      if (typeof options === 'undefined'){
+      if (typeof options === 'undefined') {
         input = context.fn(this)
       } else {
         input = options.fn(this)
       }
-
       const sassOutput = sass.renderSync({
         data: input,
         includePaths: config.sass.includePaths,
       })
       output = `${output} \n${sassOutput.css}`
-    } 
-
+    }
     return new handlebars.SafeString(output)
   })
 
@@ -109,7 +107,7 @@ function registerHandlebarsHelpers(config){
     }
 
     return options.fn(context)
-  }) 
+  })
 }
 
 const utils = {
@@ -390,7 +388,6 @@ class Kiss {
       this.watch()
     }
 
-    
     console.log('Generating:'.grey)
   }
 

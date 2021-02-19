@@ -13,6 +13,10 @@
  {{#markdown model.markdown}}{{/markdown}}
 </div>
 
+<div id="property">
+ {{markdown model.markdown}}
+</div>
+
 <div >
  {{> "markdown"}}
 </div>
@@ -24,13 +28,13 @@
 </div>
 
 <style>
-  {{#sass "5-markdown/assets/sass.scss"}}
-
+  {{#sass "5-helpers/assets/sass.scss"}}
     #inline {
         h2 {
             color: red;
         }
     }
-
   {{/sass}}
+
+  {{sass "5-helpers/assets/sass.scss"}}
 </style>

@@ -1,8 +1,8 @@
 const Kiss = require('../kiss-ssg')
 const kiss = new Kiss({
   folders: {
-    src: './5-markdown',
-    build: '../public/5-markdown',
+    src: './5-helpers',
+    build: '../public/5-helpers',
   },
   verbose: true,
   dev: true,
