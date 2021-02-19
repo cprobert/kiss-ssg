@@ -38,27 +38,35 @@ function registerHandlebarsHelpers(config){
     return new handlebars.SafeString(remarkable.render(returnVal))
   })
 
-  handlebars.registerHelper('sass', function (obj) {
-    let input = ''
-    if (typeof obj === 'object') {
-      input = obj.fn(this)
-    } else if (typeof obj === 'string') {
-      input = obj
-    } else if (typeof obj === 'undefined') {
-      console.log('Undefined value passed to sass helper:'.yellow)
-    } else {
-      console.error(
-        'Sass helper has an unexpected object type of:'.yellow,
-        typeof obj
-      )
+  handlebars.registerHelper('sass', function (context, options) {
+    let output = ''
+    // console.log('__dirname: ', __dirname )
+    // console.log('Working Dir: ', process.cwd())
+
+    if (typeof context === 'string') {
+      const sassOutput = sass.renderSync({
+        file: path.join(process.cwd(), context),
+        includePaths: config.sass.includePaths,
+      })
+      output = `${output} \n${sassOutput.css}`
     }
 
-    const sassOutput = sass.renderSync({
-      data: input,
-      includePaths: config.sass.includePaths,
-    })
+    if (typeof options === 'object' || typeof context === 'object') {
+      let input = ''
+      if (typeof options === 'undefined'){
+        input = context.fn(this)
+      } else {
+        input = options.fn(this)
+      }
 
-    return new handlebars.SafeString(sassOutput.css)
+      const sassOutput = sass.renderSync({
+        data: input,
+        includePaths: config.sass.includePaths,
+      })
+      output = `${output} \n${sassOutput.css}`
+    } 
+
+    return new handlebars.SafeString(output)
   })
 
   handlebars.registerHelper('offset', function (index) {

@@ -1,6 +1,6 @@
 <h1>I am handlebars {{title}}</h1>
 
-<div>
+<div id="inline">
  {{#markdown}}
   ## I'm a inline markdown
 
@@ -9,11 +9,11 @@
  {{/markdown}}
 </div>
 
-<div>
+<div id="property">
  {{#markdown model.markdown}}{{/markdown}}
 </div>
 
-<div>
+<div >
  {{> "markdown"}}
 </div>
 
@@ -24,10 +24,10 @@
 </div>
 
 <style>
-  {{#sass}}
+  {{#sass "5-markdown/assets/sass.scss"}}
 
-    #parent {
-        .child {
+    #inline {
+        h2 {
             color: red;
         }
     }
