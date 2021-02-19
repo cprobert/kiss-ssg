@@ -19,65 +19,90 @@ var remarkable = new Remarkable({
   breaks: false, // Convert '\n' in paragraphs into <br>
 })
 
-handlebars.registerHelper('markdown', function (obj) {
-  let returnVal = ''
-  if (typeof obj === 'object') {
-    returnVal = obj.fn(this)
-  } else if (typeof obj === 'string') {
-    returnVal = obj
-  } else if (typeof obj === 'undefined') {
-    console.log('Undefined value passed to markdown helper:'.yellow)
-  } else {
-    console.error('Unexpected object in the bagging area!'.red)
-    console.error(
-      'Markdown helper has an unexpected object type of:'.yellow,
-      typeof obj
-    )
-  }
-  return new handlebars.SafeString(remarkable.render(returnVal))
-})
-
-handlebars.registerHelper('offset', function (index) {
-  index++
-  return index
-})
-
-handlebars.registerHelper('stringify', function (obj) {
-  return JSON.stringify(obj, null, 3)
-})
-
-handlebars.registerHelper('isActive', function (pageOptions, options) {
-  let context = { href: '', active: 'active', folderMatch: false }
-  if (options && options.hash) {
-    context = {
-      ...context,
-      ...options.hash,
+function registerHandlebarsHelpers(config){
+  handlebars.registerHelper('markdown', function (obj) {
+    let returnVal = ''
+    if (typeof obj === 'object') {
+      returnVal = obj.fn(this)
+    } else if (typeof obj === 'string') {
+      returnVal = obj
+    } else if (typeof obj === 'undefined') {
+      console.log('Undefined value passed to markdown helper:'.yellow)
+    } else {
+      console.error('Unexpected object in the bagging area!'.red)
+      console.error(
+        'Markdown helper has an unexpected object type of:'.yellow,
+        typeof obj
+      )
     }
-  }
-  const activeClass = context.active
-  context.active = ''
-  // Sanitize page URLs, to match index.html to /
-  let pageURL = pageOptions.pageURL
-  pageURL = pageURL.substring(0, pageURL.lastIndexOf('.')) // Strip the extention
-  pageURL = pageURL.replace(/index$/, '') // change /index to /
+    return new handlebars.SafeString(remarkable.render(returnVal))
+  })
 
-  context.pageURL = pageURL
-  const noSlashHref = context.href.replace(/^\//, '')
-  if (context.folderMatch) {
-    if (pageURL.includes(noSlashHref)) {
-      context.active = activeClass
+  handlebars.registerHelper('sass', function (obj) {
+    let input = ''
+    if (typeof obj === 'object') {
+      input = obj.fn(this)
+    } else if (typeof obj === 'string') {
+      input = obj
+    } else if (typeof obj === 'undefined') {
+      console.log('Undefined value passed to sass helper:'.yellow)
+    } else {
+      console.error(
+        'Sass helper has an unexpected object type of:'.yellow,
+        typeof obj
+      )
     }
-  } else {
-    // console.log({
-    //   optionsURL: pageOptions.pageURL,
-    //   pageURL: pageURL,
-    //   noSlashHref: noSlashHref,
-    // })
-    if (pageURL == noSlashHref) context.active = activeClass
-  }
 
-  return options.fn(context)
-})
+    const sassOutput = sass.renderSync({
+      data: input,
+      includePaths: config.sass.includePaths,
+    })
+
+    return new handlebars.SafeString(sassOutput.css)
+  })
+
+  handlebars.registerHelper('offset', function (index) {
+    index++
+    return index
+  })
+
+  handlebars.registerHelper('stringify', function (obj) {
+    return JSON.stringify(obj, null, 3)
+  })
+
+  handlebars.registerHelper('isActive', function (pageOptions, options) {
+    let context = { href: '', active: 'active', folderMatch: false }
+    if (options && options.hash) {
+      context = {
+        ...context,
+        ...options.hash,
+      }
+    }
+    const activeClass = context.active
+    context.active = ''
+    // Sanitize page URLs, to match index.html to /
+    let pageURL = pageOptions.pageURL
+    pageURL = pageURL.substring(0, pageURL.lastIndexOf('.')) // Strip the extention
+    pageURL = pageURL.replace(/index$/, '') // change /index to /
+
+    context.pageURL = pageURL
+    const noSlashHref = context.href.replace(/^\//, '')
+    if (context.folderMatch) {
+      if (pageURL.includes(noSlashHref)) {
+        context.active = activeClass
+      }
+    } else {
+      // console.log({
+      //   optionsURL: pageOptions.pageURL,
+      //   pageURL: pageURL,
+      //   noSlashHref: noSlashHref,
+      // })
+      if (pageURL == noSlashHref) context.active = activeClass
+    }
+
+    return options.fn(context)
+  }) 
+}
 
 const utils = {
   toSlug(slug) {
@@ -342,6 +367,7 @@ class Kiss {
     this._setupFolders(config)
 
     this.copyAssets(this.config.folders.assets, this.config.folders.build)
+    registerHandlebarsHelpers(this.config)
     this.registerPartials()
 
     if (this.config.dev) {
@@ -356,6 +382,7 @@ class Kiss {
       this.watch()
     }
 
+    
     console.log('Generating:'.grey)
   }
 

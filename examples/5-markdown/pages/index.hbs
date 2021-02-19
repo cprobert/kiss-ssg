@@ -22,3 +22,15 @@
     {{> (lookup model.partials 'dynamic')}}
 {{/if}}
 </div>
+
+<style>
+  {{#sass}}
+
+    #parent {
+        .child {
+            color: red;
+        }
+    }
+
+  {{/sass}}
+</style>
