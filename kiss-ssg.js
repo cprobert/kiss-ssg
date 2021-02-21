@@ -4,8 +4,8 @@ const glob = require('glob')
 const sass = require('sass')
 const chokidar = require('chokidar')
 const path = require('path')
-const pretty = require('pretty')
-const minify = require('html-minifier').minify // https://www.npmjs.com/package/html-minifier
+const htmlMinify = require('html-minifier').minify // https://www.npmjs.com/package/html-minifier
+const { minify } = require('terser')
 const colors = require('colors')
 const fetch = require('node-fetch')
 const handlebars = require('handlebars') // https://handlebarsjs.com/
@@ -19,7 +19,7 @@ var remarkable = new Remarkable({
   breaks: false, // Convert '\n' in paragraphs into <br>
 })
 
-function registerHandlebarsHelpers(config) {
+async function registerHandlebarsHelpers(config) {
   handlebars.registerHelper('markdown', function (obj) {
     let returnVal = ''
     if (typeof obj === 'object') {
@@ -108,6 +108,86 @@ function registerHandlebarsHelpers(config) {
 
     return options.fn(context)
   })
+
+  handlebars.registerHelper('scripts', async function (context, options) {
+    const returnLines = []
+    const scripts = {}
+    let scriptFolder = ''
+    function stripStartingSlash(path) {
+      if (path.startsWith('/')) {
+        path = path.substring(1, path.length)
+        path = stripStartingSlash(path)
+      }
+      return path
+    }
+    context
+      .fn(this)
+      .split(/\r?\n/)
+      .filter((line) => line.includes('src'))
+      .forEach((line) => {
+        let script = line.substring(line.search(/src=[',\"]/) + 5, line.length)
+        script = script.substring(0, script.search(/[',\"]/))
+        scriptFolder = script.substring(0, script.lastIndexOf('/'))
+        scriptFolder = scriptFolder.replace('assets', '')
+        scriptFolder = stripStartingSlash(scriptFolder)
+        if (!scriptFolder) scriptFolder = 'bundles'
+
+        const scriptPath = path.join(
+          process.cwd(),
+          this.config.folders.src,
+          script
+        )
+
+        try {
+          if (fs.existsSync(scriptPath)) {
+            scripts[script] = fs.readFileSync(scriptPath, 'utf8')
+            returnLines.push(line)
+          } else {
+            console.error(`404: ${scriptPath}`.red)
+          }
+        } catch (err) {
+          console.error(err.yellow)
+        }
+      })
+
+    const genRandomHex = (size) =>
+      [...Array(size)]
+        .map(() => Math.floor(Math.random() * 16).toString(16))
+        .join('')
+
+    const scriptPath = `${
+      config.folders.build
+    }/${scriptFolder}/bundle-${genRandomHex(12)}.js`
+
+    console.log('Compressing scripts to:'.grey, scriptPath.green)
+    //path.join(process.cwd(), this.config.folders.build, 'bar.js')
+
+    const result = await minify(scripts, {
+      output: {
+        comments: false,
+      },
+      compress: {
+        typeofs: false,
+      },
+      sourceMap: false,
+    })
+
+    fs.writeFileSync(scriptPath, result.code, 'utf8')
+
+    if (this.config.dev) {
+      return returnLines.join('\n')
+    } else {
+      return `<script src='${scriptPath}'></script>`
+    }
+  })
+
+  // handlebars.registerHelper('helperMissing', function () {
+  //   var options = arguments[arguments.length - 1]
+  //   var args = Array.prototype.slice.call(arguments, 0, arguments.length - 1)
+  //   return new handlebars.SafeString(
+  //     `<!-- Missing: ${options.name} (${args}) -->`
+  //   )
+  // })
 }
 
 const utils = {
@@ -237,29 +317,24 @@ class KissPage {
     if (template && this.options.generate) {
       try {
         this.options.pageURL = this.pageURL()
-        const output = template(this.options)
-        console.log(this.buildTo.green)
-        let formattedOutput = pretty(output)
+        let output = template(this.options)
+
         if (this._dev) {
-          const liveReload = `<script src="http://localhost:35729/livereload.js?snipver=1"></script>`
-          formattedOutput = formattedOutput.replace(
-            '</body>',
-            liveReload + '</body>'
-          )
-        } else {
-          // console.debug('Minifying output')
-          formattedOutput = minify(output, {
-            collapseWhitespace: true,
-            conservativeCollapse: true,
-            removeComments: true,
-            removeEmptyAttributes: true,
-            minifyCSS: true,
-            minifyJS: true,
-          })
+          const liveReload = `\n<script src='http://localhost:35729/livereload.js?snipver=1'></script>`
+          output = output.replace('</body>', liveReload + '\n</body>')
         }
 
-        // fs.writeFileSync(this.buildTo, formattedOutput)
-        fs.outputFile(this.buildTo, formattedOutput, (err) => {
+        const minOptions = {
+          collapseWhitespace: !this._dev,
+          conservativeCollapse: false,
+          removeComments: true,
+          removeEmptyAttributes: true,
+          minifyCSS: true,
+          minifyJS: true,
+        }
+
+        var minifiedHtml = htmlMinify(output, minOptions)
+        fs.outputFile(this.buildTo, minifiedHtml, (err) => {
           if (err) {
             console.error(`Error creating ${this.buildTo}`.red)
             console.error(colors.yellow(err))

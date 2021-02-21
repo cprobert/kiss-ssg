@@ -1,40 +1,54 @@
-<h1>I am handlebars {{title}}</h1>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Helpers</title>
+  <style>
+    {{#sass "5-helpers/assets/sass.scss"}}
+      #inline {
+          h2 {
+              color: red;
+          }
+      }
+    {{/sass}}
 
-<div id="inline">
- {{#markdown}}
-  ## I'm a inline markdown
+    {{sass "5-helpers/assets/sass.scss"}}
+  </style>
+</head>
+<body>
+  <h1>I am handlebars {{title}}</h1>
 
-  - I make lists
-  - Easy
- {{/markdown}}
-</div>
+  <div id="inline">
+  {{#markdown}}
+    ## I'm a inline markdown
 
-<div id="property">
- {{#markdown model.markdown}}{{/markdown}}
-</div>
+    - I make lists
+    - Easy
+  {{/markdown}}
+  </div>
 
-<div id="property">
- {{markdown model.markdown}}
-</div>
+  <div id="property">
+  {{#markdown model.markdown}}{{/markdown}}
+  </div>
 
-<div >
- {{> "markdown"}}
-</div>
+  <div id="property">
+  {{markdown model.markdown}}
+  </div>
 
-<div>
-{{#if  model.partials.dynamic}}
-    {{> (lookup model.partials 'dynamic')}}
-{{/if}}
-</div>
+  <div >
+  {{> "markdown"}}
+  </div>
 
-<style>
-  {{#sass "5-helpers/assets/sass.scss"}}
-    #inline {
-        h2 {
-            color: red;
-        }
-    }
-  {{/sass}}
+  <div>
+  {{#if  model.partials.dynamic}}
+      {{> (lookup model.partials 'dynamic')}}
+  {{/if}}
+  </div>
 
-  {{sass "5-helpers/assets/sass.scss"}}
-</style>
+  {{#scripts}}
+  <p>not rendered</p>
+  <script src='/assets/js/sub/script2.js'></script>
+  <script src="assets/script3.js"></script>
+  <script src="/assets/js/script1.js"></script>
+  {{/scripts}}
+</body>
+</html>
