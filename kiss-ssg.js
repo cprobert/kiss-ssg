@@ -109,8 +109,8 @@ async function registerHandlebarsHelpers(config) {
     return options.fn(context)
   })
 
-  handlebars.registerHelper('scripts', async function (context, options) {
-    const returnLines = []
+  handlebars.registerHelper('scripts', function (context, options) {
+    const returnLines = ['<!--Dev Script Output-->']
     const scripts = {}
     let scriptFolder = ''
     function stripStartingSlash(path) {
@@ -162,7 +162,7 @@ async function registerHandlebarsHelpers(config) {
     console.log('Compressing scripts to:'.grey, scriptPath.green)
     //path.join(process.cwd(), this.config.folders.build, 'bar.js')
 
-    const result = await minify(scripts, {
+    minify(scripts, {
       output: {
         comments: false,
       },
@@ -170,9 +170,9 @@ async function registerHandlebarsHelpers(config) {
         typeofs: false,
       },
       sourceMap: false,
+    }).then((compressedJS) => {
+      fs.writeFileSync(scriptPath, compressedJS.code, 'utf8')
     })
-
-    fs.writeFileSync(scriptPath, result.code, 'utf8')
 
     if (this.config.dev) {
       return returnLines.join('\n')
