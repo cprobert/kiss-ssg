@@ -109,7 +109,7 @@ async function registerHandlebarsHelpers(config) {
     return options.fn(context)
   })
 
-  handlebars.registerHelper('scripts', function (context, options) {
+  handlebars.registerHelper('script-bundler', function (context, options) {
     const returnLines = ['<!--Dev Script Output-->']
     const scripts = {}
     let scriptFolder = ''
