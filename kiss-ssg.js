@@ -159,24 +159,26 @@ async function registerHandlebarsHelpers(config) {
       config.folders.build
     }/${scriptFolder}/bundle-${genRandomHex(12)}.js`
 
-    console.log('Compressing scripts to:'.grey, scriptPath.green)
-    //path.join(process.cwd(), this.config.folders.build, 'bar.js')
-
-    minify(scripts, {
-      output: {
-        comments: false,
-      },
-      compress: {
-        typeofs: false,
-      },
-      sourceMap: false,
-    }).then((compressedJS) => {
-      fs.writeFileSync(scriptPath, compressedJS.code, 'utf8')
-    })
-
-    if (this.config.dev) {
+    if (config.dev) {
       return returnLines.join('\n')
     } else {
+      console.log('Compressing scripts to:'.grey, scriptPath.green)
+      minify(scripts, {
+        output: {
+          comments: false,
+        },
+        compress: {
+          typeofs: false,
+        },
+        sourceMap: false,
+      })
+        .then((compressedScripts) => {
+          fs.writeFileSync(scriptPath, compressedScripts.code, 'utf8')
+        })
+        .catch((error) => {
+          console.error('Error compressing scripts'.red)
+          console.error(color.yellow(error.message))
+        })
       return `<script src='${scriptPath}'></script>`
     }
   })
@@ -324,16 +326,15 @@ class KissPage {
           output = output.replace('</body>', liveReload + '\n</body>')
         }
 
-        const minOptions = {
+        var minifiedHtml = htmlMinify(output, {
           collapseWhitespace: !this._dev,
           conservativeCollapse: false,
           removeComments: true,
           removeEmptyAttributes: true,
           minifyCSS: true,
           minifyJS: true,
-        }
+        })
 
-        var minifiedHtml = htmlMinify(output, minOptions)
         fs.outputFile(this.buildTo, minifiedHtml, (err) => {
           if (err) {
             console.error(`Error creating ${this.buildTo}`.red)
