@@ -44,6 +44,12 @@
   {{/if}}
   </div>
 
+  {{#isDev}}
+  <p>Is Dev</p>
+  {{else}}
+  <p>Is Not Dev</p>
+  {{/isDev}}
+
   {{#script-bundler}}
   <p>not rendered</p>
   <script src='~~/node_modules/highlight.js/lib/highlight.js'></script>

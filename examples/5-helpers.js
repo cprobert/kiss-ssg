@@ -6,7 +6,7 @@ const kiss = new Kiss({
     build: '../public/5-helpers',
   },
   verbose: true,
-  dev: false,
+  dev: true,
 })
   .page({
     view: 'index.hbs',
