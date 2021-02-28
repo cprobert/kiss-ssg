@@ -15,14 +15,15 @@ handlebars.registerHelper(layouts(handlebars))
 const { Remarkable } = require('remarkable')
 var remarkable = new Remarkable({
   html: true, // Enable HTML tags in source
-  xhtmlOut: false, // Use '/' to close single tags (<br />)
-  breaks: false, // Convert '\n' in paragraphs into <br>
+  xhtmlOut: true, // Use '/' to close single tags (<br />)
+  breaks: true, // Convert '\n' in paragraphs into <br>
 })
 
 async function registerHandlebarsHelpers(config) {
   handlebars.registerHelper('markdown', function (obj) {
     let returnVal = ''
     if (typeof obj === 'object') {
+      console.log('obj')
       returnVal = obj.fn(this)
     } else if (typeof obj === 'string') {
       returnVal = obj
@@ -35,16 +36,24 @@ async function registerHandlebarsHelpers(config) {
         typeof obj
       )
     }
-    return new handlebars.SafeString(remarkable.render(returnVal))
+    const md = remarkable.render(utils.trimLines(returnVal))
+    console.log(returnVal)
+    console.log(md)
+    console.log('-------------------------------')
+    return new handlebars.SafeString(md)
   })
 
   handlebars.registerHelper('sass', function (context, options) {
     // console.log('params: ', typeof options, options, context)
     let output = ''
+    let outputStyle = 'expanded'
+    if (!config.dev) outputStyle = 'compressed'
+
     if (typeof context === 'string') {
       const sassOutput = sass.renderSync({
         file: path.join(process.cwd(), context),
         includePaths: config.sass.includePaths,
+        outputStyle: outputStyle,
       })
       output = `${output} \n${sassOutput.css}`
     }
@@ -112,14 +121,8 @@ async function registerHandlebarsHelpers(config) {
   handlebars.registerHelper('script-bundler', function (context, options) {
     const returnLines = ['<!--Dev Script Output-->']
     const scripts = {}
-    let scriptFolder = ''
-    function stripStartingSlash(path) {
-      if (path.startsWith('/')) {
-        path = path.substring(1, path.length)
-        path = stripStartingSlash(path)
-      }
-      return path
-    }
+    // let scriptFolder = ''
+
     context
       .fn(this)
       .split(/\r?\n/)
@@ -127,23 +130,50 @@ async function registerHandlebarsHelpers(config) {
       .forEach((line) => {
         let script = line.substring(line.search(/src=[',\"]/) + 5, line.length)
         script = script.substring(0, script.search(/[',\"]/))
-        scriptFolder = script.substring(0, script.lastIndexOf('/'))
-        scriptFolder = scriptFolder.replace('assets', '')
-        scriptFolder = stripStartingSlash(scriptFolder)
-        if (!scriptFolder) scriptFolder = 'bundles'
-
-        const scriptPath = path.join(
-          process.cwd(),
-          this.config.folders.src,
-          script
-        )
+        // scriptFolder = script.substring(0, script.lastIndexOf('/'))
+        const scriptPath = utils.resolve.alias(script, config)
+        const fullScriptPath = path.join(process.cwd(), scriptPath)
 
         try {
-          if (fs.existsSync(scriptPath)) {
-            scripts[script] = fs.readFileSync(scriptPath, 'utf8')
-            returnLines.push(line)
+          if (fs.existsSync(fullScriptPath)) {
+            scripts[script] = fs.readFileSync(fullScriptPath, 'utf8')
+
+            // Root Dir
+            console.log('script', script)
+            if (script.startsWith('~~/')) {
+              const rootScriptPath = `${config.folders.root}/${script.substring(
+                3,
+                script.length
+              )}`
+
+              try {
+                const rootPubPath = 'kiss'
+                const rootScript = rootScriptPath.substr(
+                  rootScriptPath.lastIndexOf('/') + 1,
+                  rootScriptPath.length
+                )
+
+                fs.ensureDirSync(`${config.folders.build}/${rootPubPath}`)
+                fs.copyFileSync(
+                  rootScriptPath,
+                  `${config.folders.build}/${rootPubPath}/${rootScript}`
+                )
+
+                script = `/${rootPubPath}/${rootScript}`
+              } catch (error) {
+                console.error('Error copying root script in bundler'.red)
+                console.error(error.message)
+              }
+            }
+
+            returnLines.push(
+              `<script src='${utils.resolve.deployAlias(
+                script,
+                config
+              )}'></script>`
+            )
           } else {
-            console.error(`404: ${scriptPath}`.red)
+            console.error(`404: ${fullScriptPath}`.red)
           }
         } catch (err) {
           console.error(err.yellow)
@@ -155,9 +185,8 @@ async function registerHandlebarsHelpers(config) {
         .map(() => Math.floor(Math.random() * 16).toString(16))
         .join('')
 
-    const scriptPath = `${
-      config.folders.build
-    }/${scriptFolder}/bundle-${genRandomHex(12)}.js`
+    // const scriptPath = `${scriptFolder}/bundle-${genRandomHex(12)}.js`
+    const scriptPath = `/kiss/bundle-${genRandomHex(12)}.js`
 
     if (config.dev) {
       return returnLines.join('\n')
@@ -173,7 +202,17 @@ async function registerHandlebarsHelpers(config) {
         sourceMap: false,
       })
         .then((compressedScripts) => {
-          fs.writeFileSync(scriptPath, compressedScripts.code, 'utf8')
+          fs.ensureDirSync(
+            `${config.folders.build}/${scriptPath.substring(
+              0,
+              scriptPath.lastIndexOf('/')
+            )}`
+          )
+          fs.writeFileSync(
+            `${config.folders.build}/${scriptPath}`,
+            compressedScripts.code,
+            'utf8'
+          )
         })
         .catch((error) => {
           console.error('Error compressing scripts'.red)
@@ -193,6 +232,13 @@ async function registerHandlebarsHelpers(config) {
 }
 
 const utils = {
+  trimLines(lines) {
+    let text = ''
+    lines.split('\n').forEach((line) => {
+      text = text + line.trim() + '\n'
+    })
+    return text
+  },
   toSlug(slug) {
     return slug
       .toLowerCase()
@@ -224,6 +270,44 @@ const utils = {
         cleanedSegments.push(slugifiedSegment.trim())
       })
       path = cleanedSegments.join('/')
+    }
+    return path
+  },
+  resolve: {
+    alias: function (path, config) {
+      // console.log('Resolving Alias for: ', path)
+      // Root Dir
+      if (path.startsWith('~~/')) {
+        return `${config.folders.root}/${path.substring(3, path.length)}`
+      }
+      // Assets Dir
+      if (path.startsWith('~/assets')) {
+        return `${config.folders.assets}/${path.substring(8, path.length)}`
+      }
+      // Src Dir
+      if (path.startsWith('~/')) {
+        return `${config.folders.src}/${path.substring(2, path.length)}`
+      }
+
+      return `${config.folders.assets}/${utils.stripStartingSlash(path)}`
+    },
+    deployAlias: function (path, config) {
+      // Assets Dir
+      if (path.startsWith('~/assets')) {
+        return `${path.substring(8, path.length)}`
+      }
+      // Src Dir
+      if (path.startsWith('~/')) {
+        return `/${path.substring(2, path.length)}`
+      }
+      // console.log('No match for', path)
+      return path
+    },
+  },
+  stripStartingSlash: function (path) {
+    if (path.startsWith('/')) {
+      path = path.substring(1, path.length)
+      path = utils.stripStartingSlash(path)
     }
     return path
   },
@@ -331,8 +415,8 @@ class KissPage {
           conservativeCollapse: false,
           removeComments: true,
           removeEmptyAttributes: true,
-          minifyCSS: true,
-          minifyJS: true,
+          minifyCSS: !this._dev,
+          minifyJS: !this._dev,
         })
 
         fs.outputFile(this.buildTo, minifiedHtml, (err) => {
@@ -400,10 +484,12 @@ class Kiss {
     console.log('            Starting Kiss            \n'.zebra)
     // Setup defaults
     let folders = {
+      root: './',
       src: './src',
       pages: './src/pages',
       build: './public',
       assets: './src/assets',
+      static: './src/static',
       layouts: './src/layouts',
       partials: './src/partials',
       models: './src/models',
@@ -415,17 +501,16 @@ class Kiss {
       if (this.verbose)
         console.log(`Setting base src folder to: ${config.folders.src}`.grey)
 
-      folders = {
-        src: config.folders.src,
-        assets: `${config.folders.src}/assets`,
-        layouts: `${config.folders.src}/layouts`,
-        pages: `${config.folders.src}/pages`,
-        partials: `${config.folders.src}/partials`,
-        models: `${config.folders.src}/models`,
-        controllers: `${config.folders.src}/controllers`,
-        build: './public',
-      }
+      folders.src = config.folders.src
+      folders.assets = `${config.folders.src}/assets`
+      folders.static = `${config.folders.src}/static`
+      folders.layouts = `${config.folders.src}/layouts`
+      folders.pages = `${config.folders.src}/pages`
+      folders.partials = `${config.folders.src}/partials`
+      folders.models = `${config.folders.src}/models`
+      folders.controllers = `${config.folders.src}/controllers`
     }
+
     folders = { ...folders, ...config.folders }
     this.config = {
       ...{
@@ -518,10 +603,16 @@ class Kiss {
       let cssFile = sassFile.replace(sourceDir, targetDir)
       cssFile = cssFile.substr(0, cssFile.lastIndexOf('.'))
 
+      let outputStyle = 'expanded'
+      if (!this.config.dev) {
+        outputStyle = 'compressed'
+      }
+
       try {
         const sassOutput = sass.renderSync({
           file: sassFile,
           includePaths: this.config.sass.includePaths,
+          outputStyle: outputStyle,
         })
 
         fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {

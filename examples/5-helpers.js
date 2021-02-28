@@ -1,11 +1,12 @@
 const Kiss = require('../kiss-ssg')
 const kiss = new Kiss({
   folders: {
+    root: '..',
     src: './5-helpers',
     build: '../public/5-helpers',
   },
   verbose: true,
-  dev: true,
+  dev: false,
 })
   .page({
     view: 'index.hbs',
