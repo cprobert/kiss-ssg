@@ -1,0 +1,114 @@
+  {{#script-bundler}}
+  <p>not rendered</p>
+  <script src='~~/node_modules/highlight.js/lib/highlight.js'></script>
+  <script src='~/assets/js/sub/script2.js'></script>
+  <script src="script3.js"></script>
+  <script src="/js/script1.js"></script>
+  {{/script-bundler}}
+
+const { minify } = require('terser')
+
+
+    handlebars.registerHelper('script-bundler', function (context, options) {
+//     const returnLines = ['<!--Dev Script Output-->']
+//     const scripts = {}
+//     // let scriptFolder = ''
+
+//     context
+//       .fn(this)
+//       .split(/\r?\n/)
+//       .filter((line) => line.includes('src'))
+//       .forEach((line) => {
+//         let script = line.substring(line.search(/src=[',\"]/) + 5, line.length)
+//         script = script.substring(0, script.search(/[',\"]/))
+//         // scriptFolder = script.substring(0, script.lastIndexOf('/'))
+//         const scriptPath = utils.resolve.alias(script, config)
+//         const fullScriptPath = path.join(process.cwd(), scriptPath)
+
+//         try {
+//           if (fs.existsSync(fullScriptPath)) {
+//             scripts[script] = fs.readFileSync(fullScriptPath, 'utf8')
+
+//             // Root Dir
+//             console.log('script', script)
+//             if (script.startsWith('~~/')) {
+//               const rootScriptPath = `${config.folders.root}/${script.substring(
+//                 3,
+//                 script.length
+//               )}`
+
+//               try {
+//                 const rootPubPath = 'kiss'
+//                 const rootScript = rootScriptPath.substr(
+//                   rootScriptPath.lastIndexOf('/') + 1,
+//                   rootScriptPath.length
+//                 )
+
+//                 fs.ensureDirSync(`${config.folders.build}/${rootPubPath}`)
+//                 fs.copyFileSync(
+//                   rootScriptPath,
+//                   `${config.folders.build}/${rootPubPath}/${rootScript}`
+//                 )
+
+//                 script = `/${rootPubPath}/${rootScript}`
+//               } catch (error) {
+//                 console.error('Error copying root script in bundler'.red)
+//                 console.error(error.message)
+//               }
+//             }
+
+//             returnLines.push(
+//               `<script src='${utils.resolve.deployAlias(
+//                 script,
+//                 config
+//               )}'></script>`
+//             )
+//           } else {
+//             console.error(`404: ${fullScriptPath}`.red)
+//           }
+//         } catch (err) {
+//           console.error(err.yellow)
+//         }
+//       })
+
+//     const genRandomHex = (size) =>
+//       [...Array(size)]
+//         .map(() => Math.floor(Math.random() * 16).toString(16))
+//         .join('')
+
+//     // const scriptPath = `${scriptFolder}/bundle-${genRandomHex(12)}.js`
+//     const scriptPath = `/kiss/bundle-${genRandomHex(12)}.js`
+
+//     if (config.dev) {
+//       return returnLines.join('\n')
+//     } else {
+//       console.log('Compressing scripts to:'.grey, scriptPath.green)
+//       minify(scripts, {
+//         output: {
+//           comments: false,
+//         },
+//         compress: {
+//           typeofs: false,
+//         },
+//         sourceMap: false,
+//       })
+//         .then((compressedScripts) => {
+//           fs.ensureDirSync(
+//             `${config.folders.build}/${scriptPath.substring(
+//               0,
+//               scriptPath.lastIndexOf('/')
+//             )}`
+//           )
+//           fs.writeFileSync(
+//             `${config.folders.build}/${scriptPath}`,
+//             compressedScripts.code,
+//             'utf8'
+//           )
+//         })
+//         .catch((error) => {
+//           console.error('Error compressing scripts'.red)
+//           console.error(color.yellow(error.message))
+//         })
+//       return `<script src='${scriptPath}'></script>`
+//     }
+//   })

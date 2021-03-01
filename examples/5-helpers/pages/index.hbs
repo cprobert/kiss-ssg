@@ -44,18 +44,17 @@
   {{/if}}
   </div>
 
-  {{#isDev}}
-  <p>Is Dev</p>
+  {{#env is="development"}}
+    <p>Is Dev</p>
   {{else}}
-  <p>Is Not Dev</p>
-  {{/isDev}}
+    <p>Is NOT Dev</p>
+  {{/env}}
 
-  {{#script-bundler}}
-  <p>not rendered</p>
-  <script src='~~/node_modules/highlight.js/lib/highlight.js'></script>
-  <script src='~/assets/js/sub/script2.js'></script>
-  <script src="script3.js"></script>
-  <script src="/js/script1.js"></script>
-  {{/script-bundler}}
+  {{#env is="production"}}
+    <p>Is Production</p>
+  {{else}}
+    <p>Is NOT Production</p>
+  {{/env}}
+
 </body>
 </html>

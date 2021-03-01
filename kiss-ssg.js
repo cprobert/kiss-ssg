@@ -5,7 +5,6 @@ const sass = require('sass')
 const chokidar = require('chokidar')
 const path = require('path')
 const htmlMinify = require('html-minifier').minify // https://www.npmjs.com/package/html-minifier
-const { minify } = require('terser')
 const colors = require('colors')
 const fetch = require('node-fetch')
 const handlebars = require('handlebars') // https://handlebarsjs.com/
@@ -117,125 +116,24 @@ function registerHandlebarsHelpers(config) {
     return options.fn(context)
   })
 
-  handlebars.registerHelper('isDev', function (options) {
-    if (config.dev) {
-      return options.fn(this)
+  handlebars.registerHelper('env', function (options) {
+    if (options.hash.is) {
+      const envIs = options.hash.is.toLowerCase()
+      if (envIs.includes('dev') && config.dev) {
+        return options.fn(this)
+      } else if (envIs.includes('prod') && !config.dev) {
+        return options.fn(this)
+      } else {
+        return options.inverse(this)
+      }
     } else {
-      return options.inverse(this)
+      console.error(
+        'Environment helper missing "is" property'.red,
+        '{{#env}'.grey
+      )
+      return ''
     }
   })
-
-  handlebars.registerHelper('script-bundler', function (context, options) {
-    const returnLines = ['<!--Dev Script Output-->']
-    const scripts = {}
-    // let scriptFolder = ''
-
-    context
-      .fn(this)
-      .split(/\r?\n/)
-      .filter((line) => line.includes('src'))
-      .forEach((line) => {
-        let script = line.substring(line.search(/src=[',\"]/) + 5, line.length)
-        script = script.substring(0, script.search(/[',\"]/))
-        // scriptFolder = script.substring(0, script.lastIndexOf('/'))
-        const scriptPath = utils.resolve.alias(script, config)
-        const fullScriptPath = path.join(process.cwd(), scriptPath)
-
-        try {
-          if (fs.existsSync(fullScriptPath)) {
-            scripts[script] = fs.readFileSync(fullScriptPath, 'utf8')
-
-            // Root Dir
-            console.log('script', script)
-            if (script.startsWith('~~/')) {
-              const rootScriptPath = `${config.folders.root}/${script.substring(
-                3,
-                script.length
-              )}`
-
-              try {
-                const rootPubPath = 'kiss'
-                const rootScript = rootScriptPath.substr(
-                  rootScriptPath.lastIndexOf('/') + 1,
-                  rootScriptPath.length
-                )
-
-                fs.ensureDirSync(`${config.folders.build}/${rootPubPath}`)
-                fs.copyFileSync(
-                  rootScriptPath,
-                  `${config.folders.build}/${rootPubPath}/${rootScript}`
-                )
-
-                script = `/${rootPubPath}/${rootScript}`
-              } catch (error) {
-                console.error('Error copying root script in bundler'.red)
-                console.error(error.message)
-              }
-            }
-
-            returnLines.push(
-              `<script src='${utils.resolve.deployAlias(
-                script,
-                config
-              )}'></script>`
-            )
-          } else {
-            console.error(`404: ${fullScriptPath}`.red)
-          }
-        } catch (err) {
-          console.error(err.yellow)
-        }
-      })
-
-    const genRandomHex = (size) =>
-      [...Array(size)]
-        .map(() => Math.floor(Math.random() * 16).toString(16))
-        .join('')
-
-    // const scriptPath = `${scriptFolder}/bundle-${genRandomHex(12)}.js`
-    const scriptPath = `/kiss/bundle-${genRandomHex(12)}.js`
-
-    if (config.dev) {
-      return returnLines.join('\n')
-    } else {
-      console.log('Compressing scripts to:'.grey, scriptPath.green)
-      minify(scripts, {
-        output: {
-          comments: false,
-        },
-        compress: {
-          typeofs: false,
-        },
-        sourceMap: false,
-      })
-        .then((compressedScripts) => {
-          fs.ensureDirSync(
-            `${config.folders.build}/${scriptPath.substring(
-              0,
-              scriptPath.lastIndexOf('/')
-            )}`
-          )
-          fs.writeFileSync(
-            `${config.folders.build}/${scriptPath}`,
-            compressedScripts.code,
-            'utf8'
-          )
-        })
-        .catch((error) => {
-          console.error('Error compressing scripts'.red)
-          console.error(color.yellow(error.message))
-        })
-      return `<script src='${scriptPath}'></script>`
-    }
-  })
-
-  // handlebars.registerHelper('helperMissing', function () {
-  //   var options = arguments[arguments.length - 1]
-  //   var args = Array.prototype.slice.call(arguments, 0, arguments.length - 1)
-  //   return new handlebars.SafeString(
-  //     `<!-- Missing: ${options.name} (${args}) -->`
-  //   )
-  // })
 }
 
 class KissPage {
@@ -966,7 +864,7 @@ class Kiss {
       })
     }
     if (module.parent.filename) {
-      console.log('Caller: '.cyan, module.parent.filename)
+      // console.log('Caller: '.cyan, module.parent.filename)
       chokidar.watch(module.parent.filename).on('change', (path, stats) => {
         console.log(`Changed: ${path}: `.cyan)
         rebuildSite()
