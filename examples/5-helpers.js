@@ -7,6 +7,7 @@ const kiss = new Kiss({
   },
   verbose: true,
   dev: true,
+  port: 8080,
 })
   .page({
     view: 'index.hbs',

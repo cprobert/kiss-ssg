@@ -4,8 +4,10 @@ const static = require('serve-static')
 const colors = require('colors')
 const app = connect()
 
-module.exports = async (httpRoot) => {
+module.exports = async (httpRoot, port) => {
   if (!httpRoot) httpRoot = '/public'
+  if (!port) port = 3000
+
   app.use(function (req, res, next) {
     console.log(req.url)
     next()
@@ -26,9 +28,9 @@ module.exports = async (httpRoot) => {
 
   console.log(
     `Serving (${httpRoot}): `.grey,
-    colors.yellow('http://localhost:3000')
+    colors.yellow('http://localhost:' + port)
   )
-  app.listen(3000)
+  app.listen(port)
 
   const livereload = require('livereload')
   const server = livereload.createServer()

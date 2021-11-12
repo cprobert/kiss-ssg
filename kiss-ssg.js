@@ -344,6 +344,7 @@ class Kiss {
         sass: {
           includePaths: [],
         },
+        port: 3001,
       },
       ...config,
     }
@@ -364,7 +365,7 @@ class Kiss {
       const kissServe = require('./kiss-serve')
       var publicDir = path.resolve(this.config.folders.build)
       try {
-        kissServe(publicDir)
+        kissServe(publicDir, this.config.port)
       } catch (error) {
         console.error('Error running live reload server'.red)
         console.log(error.message)
