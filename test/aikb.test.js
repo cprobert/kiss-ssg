@@ -18,6 +18,10 @@ describe('AIKB stays in sync with lib/', () => {
     expect(claudeMd).toContain(`AIKB/${d}.md`)
   })
 
+  it.each(docs.filter((d) => d !== 'testing'))('AIKB/%s.md has a matching lib/%s.js', (d) => {
+    expect(modules).toContain(d)
+  })
+
   it.each(docs.filter((d) => d !== 'testing'))('AIKB/%s.md follows the module template', (d) => {
     const text = fs.readFileSync(path.join(root, 'AIKB', `${d}.md`), 'utf8')
     let last = -1

@@ -8,7 +8,10 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
 
 - `class KissPage`
   - `new KissPage(view, { hbs, logger } = {})` — `view` is a `.hbs` path (relative to `pagesDir`) or an inline template string.
-  - `set path(path)` / `set slug(slug)` / `get slug()` / `set ext(extension)` / `set extLess(val)` / `set isDev(dev)` / `set debug(dev)` — setters sanitize/normalize via `lib/utils.js`; falsy values are ignored (existing default kept).
+  - `set path(path)` — sanitizes via `sanitizePath` (`./utils.js`); falsy values are ignored (default `''` kept).
+  - `set slug(slug)` / `get slug()` — setter normalizes via `toSlug` (`./utils.js`); falsy values are ignored (default `'index'` kept).
+  - `set ext(extension)` — strips a leading `.` inline (no `utils` call); falsy values are ignored (default `'html'` kept).
+  - `set extLess(val)` / `set isDev(dev)` / `set debug(dev)` — each unconditionally coerces with `!!val` and assigns (`this._extLess = !!val`, etc.) — unlike `path`/`slug`/`ext`, these do **not** ignore falsy values; e.g. `page.debug = false` overwrites the existing value rather than being skipped.
   - `get buildTo()` — `${buildDir}/${pageURL()}`, the absolute-ish output path and the dedupe key `Kiss._preparePage` checks.
   - `pageURL()` — the page's URL/relative-path, honoring `extLess` (writes `slug/index.ext` instead of `slug.ext`, except for `slug === 'index'`).
   - `prepare()` — merges default options (`title`, `path`, `slug`, `generate: true`) under any already set on `this.options`; returns `this`.

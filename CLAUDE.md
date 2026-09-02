@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture knowledge base
 
-Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is missing from this table, or a doc drops a template heading.
+Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
 
 | Module | File | AIKB doc |
 |---|---|---|
