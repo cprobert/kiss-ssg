@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`kiss-ssg` is a small, dependency-driven static site generator for Node. The entire engine lives in one file, `kiss-ssg.js` (~900 lines, two classes: `Kiss` and `KissPage`); there is no build step, bundler, or transpilation — it runs directly on Node.
+`kiss-ssg` is a small, dependency-driven static site generator for Node. The entire engine lives in one file, `kiss-ssg.js` (~975 lines, two classes: `Kiss` and `KissPage`); there is no build step, bundler, or transpilation — it runs directly on Node.
+
+`llms.txt` at the repo root is an LLM-oriented API cheat-sheet (per the [llmstxt.org](https://llmstxt.org) convention) — it ships automatically in the published npm package (no `files`/`.npmignore` config needed) so an agent working in a project that depends on `kiss-ssg` can read `node_modules/kiss-ssg/llms.txt` instead of the full source. Keep it in sync with `kiss-ssg.js` when the public API changes — it duplicates method signatures/config shape by design, for exactly the cases where reading source would be slower.
 
 ## Requirements
 

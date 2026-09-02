@@ -1,0 +1,54 @@
+# kiss-ssg
+
+> A small, dependency-driven static site generator for Node. MVC-style: Handlebars views, JSON/HTTP/function models, JS controllers. Single-file engine (`kiss-ssg.js`), no build step, no bundler.
+
+Install: `npm install kiss-ssg --save-dev`. Everything is driven by a `Kiss` instance built with `new Kiss(config)` and used via a chainable API. Pages are queued (not rendered) by `.page()`/`.pages()`/`.scan()`; `.generate()` renders and writes them; `.sitemap()`/`.watch()` are opt-in extras. `config` and its resolved values are available in every view as `this.config`.
+
+## API
+
+- `.page(options)` — register one page. `options.view` (required): a `.hbs` filename relative to `config.folders.pages`, or a template string. `options.model`: a `.json` filename (relative to `config.folders.models`), an `http(s)://` URL, a plain object, or a folder name (loads every `*.json` in it as an array). `options.controller`: a function `({model}) => optionsPatch`, or a `.js` filename relative to `config.folders.controllers`, run after the model resolves — commonly used to reshape/sort the model or derive `slug`. `options.title`, `options.description`, `options.path`, `options.slug`, `options.ext` (default `html`). `slug`/`path` are inferred from `view`'s file path if omitted.
+- `.pages(options)` — same as `.page()`, but `options.model` must resolve to an array (or a models folder), and it fans out one page per item, appending `-N` to the slug per item unless the controller sets an explicit `slug`.
+- `.scan()` — auto-discovers every `.hbs` under `config.folders.pages` not already queued, and calls `.page()` on each with default options. The simplest way to build a whole site: `kiss.scan().generate()`.
+- `.generate(callback)` — waits for every queued page's model to resolve, then renders and writes each page exactly once (HTML minified via `html-minifier-terser`, CSS/JS minified outside dev mode). `callback(data)` fires once all writes are scheduled. Chainable — returns the `Kiss` instance immediately, does not await file writes.
+- `.complete(callback)` — same wait as `.generate()`, without rendering; returns a Promise instead of `this`. Use when you need every page's model settled before doing something else (e.g. building a sitemap or index from `this._stack`).
+- `.sitemap(options, callback)` — writes `sitemap.xml` to `config.folders.build`, derived from every registered page. Requires `config.siteUrl` (logs an error and skips, does not throw, if unset). Can be called before or after `.generate()` — both just wait on the same internal promise queue. Per-page opt-out: `ignoreSitemap: true` in that page's `.page()`/`.pages()` options. Per-page overrides: `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted from the XML unless set), `sitemapLastmod` (default: one timestamp shared by all pages, captured when `.sitemap()` runs). `options.overwrite` (default `true`) — set `false` to skip (re)writing if `sitemap.xml` already exists; only has an effect if `cleanBuild: false` too, since the default `cleanBuild: true` already empties the whole build dir — including any prior `sitemap.xml` — before `.sitemap()` ever runs.
+- `.watch()` — starts a `chokidar` watcher on `config.folders.src` (only meaningful with `dev: true`, which also starts a livereload dev server on `config.port`, default `3001`); rebuilds just the affected page(s), or the whole site if a changed file can't be matched to a queued page.
+- `.copyAssets(sourceDir, targetDir)` — compiles every `*.scss`/`*.sass` under `sourceDir` to a sibling `.css` and copies everything else straight through to `targetDir`. Runs automatically once at construction time for `config.folders.assets` → `config.folders.build`; callable again for extra asset directories.
+- `kiss.handlebars` — the shared Handlebars instance; register custom helpers on it directly. Built-in helpers: `markdown`, `sass` (inline block or file path, via the modern `sass.compile`/`compileString` API), `offset`, `stringify`, `isActive` (nav active-state matching), `env` (`{{#env is="dev"}}`/`"prod"` blocks).
+- `kiss.remarkable` — the shared Markdown renderer instance (used for `.md` partials and the `markdown` helper).
+
+## Config
+
+Passed to `new Kiss(config)`. Defaults:
+
+```js
+{
+  dev: false,          // starts a livereload dev server + file watcher; skips minification
+  verbose: false,
+  cleanBuild: true,     // empties config.folders.build before generating
+  extensionLess: false, // true: non-index pages build to <path>/<slug>/index.html instead of <path>/<slug>.html
+  siteUrl: undefined,   // required by .sitemap()
+  sass: { includePaths: [] },
+  port: 3001,
+  folders: {
+    root: './',
+    src: './src',
+    pages: './src/pages',
+    build: './public',
+    assets: './src/assets',
+    static: './src/static',
+    layouts: './src/layouts',
+    partials: './src/partials',
+    models: './src/models',
+    controllers: './src/controllers',
+  },
+}
+```
+
+Setting `folders.src` re-derives every other `folders.*` entry from it, unless that entry is also set explicitly.
+
+## Docs
+
+- [README.md](README.md): full usage docs, worked examples for `.page()`/`.pages()`/`.sitemap()`, the helpers list.
+- [examples/](examples/): 6 runnable, self-contained demos (`node examples/<N>-name.js`, or `npm run eg<N>`) — scan, page+controller, dynamic pages from a fetched model, layouts/partials, custom helpers, sitemap.
+- [kiss-ssg.js](kiss-ssg.js): the entire engine (~975 lines, two classes — `Kiss` the orchestrator, `KissPage` one page's render logic). No other source files matter except `libs/utils.js` (slug/path helpers) and `kiss-serve.js` (the dev server).
