@@ -2,7 +2,6 @@ import fs from 'fs-extra'
 import glob from 'glob'
 import chokidar from 'chokidar'
 import path from 'node:path'
-import { minify as htmlMinify } from 'html-minifier-terser' // https://www.npmjs.com/package/html-minifier-terser
 import Handlebars from 'handlebars' // https://handlebarsjs.com/
 import layouts from 'handlebars-layouts' // https://www.npmjs.com/package/handlebars-layouts
 import { Remarkable } from 'remarkable'
@@ -15,165 +14,7 @@ import { copyAssets } from './lib/assets.js'
 import { resolveModel } from './lib/model-resolver.js'
 import { applyController } from './lib/controller-resolver.js'
 import { writeSitemap } from './lib/sitemap.js'
-
-class KissPage {
-  _path = ''
-  _slug = 'index'
-  _ext = 'html'
-  _extLess = false
-  _buildTo = ''
-  _title = 'Kiss page'
-  _dev = false
-
-  _debug = false
-  view = null
-  options = {}
-  logger = createLogger()
-  hbs = null // the owning Kiss instance's Handlebars environment
-
-  // defaults
-  buildDir = './public'
-  pagesDir = './src/pages'
-
-  constructor(view) {
-    this.view = view
-    this._title = utils.toTitleCase(this._slug)
-  }
-
-  set path(path) {
-    if (path) {
-      this._path = utils.sanitizePath(path)
-    }
-  }
-
-  get slug() {
-    return this._slug
-  }
-
-  set slug(slug) {
-    if (slug) {
-      this._slug = utils.toSlug(slug)
-    }
-  }
-
-  set ext(extension) {
-    if (extension) {
-      this._ext = extension.replace('.', '')
-    }
-  }
-
-  set extLess(val) {
-    this._extLess = !!val
-  }
-
-  get buildTo() {
-    return `${this.buildDir}/${this.pageURL()}`
-  }
-
-  pageURL() {
-    // Fake extension less pages
-    let pagePath
-    if (this._extLess && this.slug !== 'index') {
-      pagePath = `${this._path}/${this.slug}/index.${this._ext}`
-    } else {
-      pagePath = `${this._path}/${this.slug}.${this._ext}`
-    }
-    if (pagePath.startsWith('/')) pagePath = pagePath.replace(/^\//, '')
-    return pagePath
-  }
-
-  set isDev(dev) {
-    this._dev = !!dev
-  }
-  set debug(dev) {
-    this._debug = !!dev
-  }
-
-  prepare() {
-    this.options = {
-      ...{
-        title: this._title,
-        path: this._path,
-        slug: this._slug,
-        generate: true,
-      },
-      ...this.options,
-    }
-    return this
-  }
-
-  async generate() {
-    const template = this._getTemplate(this.view)
-    if (template && this.options.generate) {
-      try {
-        this.options.pageURL = this.pageURL()
-        let output = template(this.options)
-
-        if (this._dev) {
-          const liveReload = `\n<script src='http://localhost:35729/livereload.js?snipver=1'></script>`
-          output = output.replace('</body>', liveReload + '\n</body>')
-        }
-
-        var minifiedHtml = await htmlMinify(output, {
-          collapseWhitespace: !this._dev,
-          conservativeCollapse: false,
-          removeComments: true,
-          removeEmptyAttributes: true,
-          minifyCSS: !this._dev,
-          minifyJS: !this._dev,
-        })
-
-        try {
-          await fs.outputFile(this.buildTo, minifiedHtml)
-        } catch (err) {
-          this.logger.error(`Error creating ${this.buildTo}`)
-          this.logger.error(err)
-        }
-
-        if (this.options && this._dev) {
-          try {
-            await fs.outputJson(
-              this.buildTo.replace(this._ext, 'json'),
-              this.options,
-              { spaces: 2 },
-            )
-          } catch (err) {
-            this.logger.error(`Error creating ${this.buildTo}`)
-            this.logger.error(err)
-          }
-        }
-      } catch (error) {
-        this.logger.error(`Error processing view ${this.view}`)
-        this.logger.error(error.message)
-        if (this._debug) this.logger.debug(error)
-      }
-    } else {
-      this.logger.info('Skipping page generation: ', this.view)
-    }
-    return this.buildTo
-  }
-
-  _getTemplate(view) {
-    let viewText = view
-    if (view.endsWith('.hbs')) {
-      let viewPath = `${this.pagesDir}/${view}`
-      try {
-        viewText = fs.readFileSync(viewPath, 'utf8')
-      } catch (error) {
-        this.logger.error('Error reading view: ', viewPath)
-        this.logger.error(error.message)
-      }
-    }
-
-    try {
-      return this.hbs.compile(viewText)
-    } catch (error) {
-      this.logger.error('Error rendering view: ')
-      this.logger.error(error.message)
-    }
-    return null
-  }
-}
+import { KissPage } from './lib/kiss-page.js'
 
 class Kiss {
   _stack = []
@@ -255,10 +96,11 @@ class Kiss {
   }
 
   _preparePage(options) {
-    const kissPage = new KissPage(options.view)
+    const kissPage = new KissPage(options.view, {
+      hbs: this.handlebars,
+      logger: this.logger,
+    })
     kissPage.options = options
-    kissPage.logger = this.logger
-    kissPage.hbs = this.handlebars
     kissPage.buildDir = this.config.folders.build
     kissPage.pagesDir = this.config.folders.pages
     kissPage.path = options.path
@@ -269,12 +111,19 @@ class Kiss {
     kissPage.extLess = this.config.extensionLess
 
     const preparedPage = kissPage.prepare()
-    this._stack.push({
+    const buildTo = preparedPage.buildTo
+    if (this._stack.some((entry) => entry.buildTo === buildTo)) {
+      this.logger.error('Page already processed', buildTo)
+      return null
+    }
+    const entry = {
       view: preparedPage.view,
-      buildTo: preparedPage.buildTo,
+      buildTo,
       page: preparedPage,
       runCount: 0,
-    })
+    }
+    this._stack.push(entry)
+    return entry
   }
 
   async _prepareMultiplePages(options, data) {
@@ -368,19 +217,7 @@ class Kiss {
             )
           }
 
-          // Check if the page has been already generated
-          let pathSlug = options.slug
-          if (options.path && options.path !== '/')
-            pathSlug = `${options.path}/${options.slug}`
-          let pageToGenerate = `${this.config.folders.build}/${pathSlug}.html`
-          const existingPage = this._stack.find(
-            (p) => p.buildTo === pageToGenerate,
-          )
-          if (existingPage) {
-            this.logger.error('Page already processed', pageToGenerate)
-          } else {
-            this._preparePage(options)
-          }
+          this._preparePage(options)
         }
         return response
       })
