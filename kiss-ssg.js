@@ -2,7 +2,6 @@ import fs from 'fs-extra'
 import glob from 'glob'
 import chokidar from 'chokidar'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { minify as htmlMinify } from 'html-minifier-terser' // https://www.npmjs.com/package/html-minifier-terser
 import Handlebars from 'handlebars' // https://handlebarsjs.com/
 import layouts from 'handlebars-layouts' // https://www.npmjs.com/package/handlebars-layouts
@@ -13,6 +12,8 @@ import { resolveConfig, foldersToEnsure } from './lib/config.js'
 import { registerHandlebarsHelpers } from './lib/handlebars-helpers.js'
 import { registerPartials } from './lib/partials.js'
 import { copyAssets } from './lib/assets.js'
+import { resolveModel } from './lib/model-resolver.js'
+import { applyController } from './lib/controller-resolver.js'
 
 class KissPage {
   _path = ''
@@ -252,68 +253,6 @@ class Kiss {
     return this
   }
 
-  _readModel(file) {
-    const model = `${this.config.folders.models}/${file}`
-    if (fs.existsSync(model)) {
-      return JSON.parse(fs.readFileSync(model, 'utf8'))
-    }
-    this.logger.error('Can not find model on file system', model)
-    return null
-  }
-
-  _controllerRun(options, controller) {
-    if (typeof controller === 'function') {
-      try {
-        let mappedOptions = controller(options)
-        options = {
-          ...options,
-          ...mappedOptions,
-        }
-      } catch (err) {
-        this.logger.error(`Error in controller for ${options.view}`)
-        this.logger.error(err)
-      }
-    } else {
-      this.logger.error('Invalid controller - not a function')
-    }
-    return options
-  }
-
-  async _detectControllerType(options) {
-    if (options.controller) {
-      switch (typeof options.controller) {
-        case 'string': {
-          const controllerPath = path.resolve(
-            `${this.config.folders.controllers}/${options.controller}`,
-          )
-          if (fs.existsSync(controllerPath)) {
-            const mod = await import(pathToFileURL(controllerPath).href)
-            options = this._controllerRun(options, mod.default ?? mod)
-          } else {
-            this.logger.error(`Failed to find "controller: ${controllerPath}`)
-          }
-          break
-        }
-        case 'function':
-          options = this._controllerRun(options, options.controller)
-          break
-        default:
-          this.logger.error(
-            'Unknown controller type: ',
-            options.controller,
-            typeof options.controller,
-          )
-      }
-    }
-    // if the user didn't specify a title auto map title from model if it exists
-    if (!options.title) {
-      if (options.model && options.model.title) {
-        options.title = options.model.title
-      }
-    }
-    return options
-  }
-
   _preparePage(options) {
     const kissPage = new KissPage(options.view)
     kissPage.options = options
@@ -344,74 +283,16 @@ class Kiss {
       for (const model of data) {
         options.slug = slug + '-' + i
         options.model = model
-        options = await this._detectControllerType(options)
+        options = await applyController(options, {
+          controllersDir: this.config.folders.controllers,
+          logger: this.logger,
+        })
         this._preparePage(options)
         i++
       }
     } else {
       this.logger.error('Data in dynamic model must be an array')
     }
-  }
-
-  _processPageModel(model) {
-    const p = new Promise((resolve, reject) => {
-      switch (typeof model) {
-        case 'string':
-          if (model.startsWith('http')) {
-            fetch(model)
-              .then((response) => response.json())
-              .then((data) => {
-                resolve({ id: model, data: data })
-              })
-              .catch((error) => {
-                this.logger.error(`Error getting model from ${model}`)
-                reject({ message: error.message, error: error })
-              })
-          } else if (model.endsWith('.json')) {
-            const data = this._readModel(model)
-            if (data) {
-              resolve({ id: model, data: data })
-            } else {
-              reject({ message: `Skipping: ${model}` })
-            }
-          } else {
-            // See if the model is a folder
-            const returnModel = this._prepareModelsFromFolder(model)
-            if (returnModel.length > 0) {
-              resolve({ id: model, data: returnModel })
-            } else {
-              reject({ message: `Invalid model ${model}` })
-            }
-          }
-          break
-        case 'object':
-          resolve({ id: utils.hashId(model), data: model })
-          break
-        case 'undefined':
-          resolve({ data: {} })
-          break
-        default:
-          reject({ message: `Unexpected model type: ${typeof model}` })
-      }
-    })
-    return p
-  }
-
-  _prepareModelsFromFolder(folderModel) {
-    const modelArray = []
-    if (fs.existsSync(`${this.config.folders.models}/${folderModel}`)) {
-      const modelPath = `${this.config.folders.models}/${folderModel}`
-      if (fs.lstatSync(modelPath).isDirectory()) {
-        const models = glob.sync(`${modelPath}/*.json`)
-        models.forEach((model) => {
-          const data = this._readModel(
-            model.replace(`${this.config.folders.models}/`, ''),
-          )
-          if (data) modelArray.push(data)
-        })
-      }
-    }
-    return modelArray
   }
 
   page(options, callback) {
@@ -446,13 +327,19 @@ class Kiss {
     // Detect all the different types of model options and process appropriately.
     // The whole chain (model -> controller -> prepared page) is tracked, and it
     // never rejects: failures resolve to { id, data: null, error }.
-    const chain = this._processPageModel(options.model)
+    const chain = resolveModel(options.model, {
+      modelsDir: this.config.folders.models,
+      logger: this.logger,
+    })
       .then(async (response) => {
         if (options.dynamic) {
           await this._prepareMultiplePages(options, response.data)
         } else {
           options.model = response.data
-          options = await this._detectControllerType(options)
+          options = await applyController(options, {
+            controllersDir: this.config.folders.controllers,
+            logger: this.logger,
+          })
 
           if (!options.slug) {
             if (options.view.endsWith('.hbs')) {
