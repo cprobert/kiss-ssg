@@ -49,10 +49,10 @@ Preserved (cheap, and every example/`llms.txt` consumer depends on them):
   (`import Kiss, { utils } from 'kiss-ssg'`) instead of the deep path
   `kiss-ssg/libs/utils.js`. `examples/3-pages.js` is updated accordingly.
 
-Accepted breaks (documented in a "Migrating from v1" note in README and
-`llms.txt`):
+Accepted breaks (documented in a "Migrating from v1" section in `README.md`
+and a note in `llms.txt`):
 - ESM-only package (`"type": "module"`). `import Kiss from 'kiss-ssg'` is
-  the supported form. As a courtesy, `src/kiss.js` also does
+  the supported form. As a courtesy, `lib/kiss.js` also does
   `export { Kiss as 'module.exports' }` so `const Kiss = require('kiss-ssg')`
   keeps returning `Kiss` via Node's `require(esm)`; this needs
   `engines.node >= 22.12.0` (where `require(esm)` is unflagged), so the pin
@@ -63,14 +63,18 @@ Accepted breaks (documented in a "Migrating from v1" note in README and
   that is itself `"type": "module"` is the consumer's problem, not ours.
 - Deep imports of internal files (`kiss-ssg/kiss-ssg.js`, `kiss-ssg/libs/...`)
   no longer exist.
+- `generate(cb)`'s callback now fires **after** the page files are written
+  (v1 fired it before). No example depends on the old timing.
 
 Additive API (new in v2, non-breaking): `async close()` — stops file
 watchers and the dev server. Needed for tests to exit and useful for
-consumers embedding Kiss in a longer-lived process.
+consumers embedding Kiss in a longer-lived process. `watch()` gains an
+optional `{ entry }` option (defaults to `process.argv[1]`) naming the
+script whose change triggers a full rebuild.
 
 ## Non-goals
 
-- No new SSG features beyond the additive `close()`.
+- No new SSG features beyond the additive `close()` / `watch({ entry })`.
 - No full dependency-injection framework. Testability comes from Vitest's
   `vi.mock()` on `fs-extra`/`glob`/`sass` at the module boundary, plus one
   injected `logger`, not from constructor-injecting every collaborator.
@@ -81,8 +85,14 @@ consumers embedding Kiss in a longer-lived process.
 
 ### File layout
 
+The engine lives in **`lib/`**, not `src/`: in kiss-ssg's own vocabulary
+`src` is *the user's site source* (`config.folders.src`, default `./src`),
+and this repo's `src/` is exactly that — the docs site that `docs.js`
+builds. Engine code must not squat on that name or `.watch()` in docs dev
+mode would watch the engine.
+
 ```
-src/
+lib/
   kiss.js               # orchestrator, public API (was kiss-ssg.js's Kiss class)
   kiss-page.js           # KissPage class (page-level render/write)
   logger.js              # injectable logger; the ONLY module that imports `colors`
@@ -97,28 +107,33 @@ src/
   watcher.js             # watch(); returns a handle with close()
   utils.js               # was libs/utils.js; resolve.alias/deployAlias/stripStartingSlash dropped (dead code)
 test/
+  helpers/               # temp-dir site fixture, waitFor, engine entry re-export
   integration/           # real Kiss against temp dirs; fixtures shaped like examples/*
-  unit/                  # one spec per src/ module
-  aikb.test.js           # src/*.js ↔ AIKB/*.md ↔ CLAUDE.md table sync check
+  unit/                  # one spec per lib/ module
+  aikb.test.js           # lib/*.js ↔ AIKB/*.md ↔ CLAUDE.md table sync check
 AIKB/                    # see "AIKB knowledge base"
 ```
 
 `package.json`:
-- `"version": "2.0.0-alpha.0"`, `"type": "module"`, `"main": "src/kiss.js"`,
+- `"version": "2.0.0-alpha.0"`, `"type": "module"`, `"main": "lib/kiss.js"`,
   `"engines": { "node": ">=22.12.0" }`.
-- Scripts: `test` (vitest run), `test:watch`, existing `docs`/`eg1..eg6`.
+- Scripts: `test` (vitest run), `test:watch`, `test:coverage`, `lint`,
+  existing `docs`/`eg1..eg6`.
 - Dependencies removed: `node-fetch` (native `fetch`), `pretty` (never
   referenced), `md5` (replaced by `node:crypto`; today `md5(model)` on an
   object hashes `"[object Object]"`, so every object model got the same id),
   `highlight.js` devDependency (`docs.js` imports it as `hljs` and never uses
   it; the docs layout loads highlight.js from a CDN).
-- Dev dependencies added: `vitest`, `@vitest/coverage-v8`.
+- Dev dependencies added: `vitest`, `@vitest/coverage-v8`, `eslint`,
+  `@eslint/js`, `globals`, and `eslint-config-prettier` bumped to a
+  flat-config-compatible version.
 
 Removed files: root `kiss-ssg.js`, `kiss-serve.js`, the whole `libs/` folder
 (including `libs/on-ice/`, already-dead shelved code). `.eslintrc.js` is CJS
-and would break under `"type": "module"` → renamed `.eslintrc.cjs`; its
-references to `babel-eslint` and `eslint-plugin-prettier` (not installed) are
-fixed at the same time so `npx eslint .` actually runs.
+(would break under `"type": "module"`) and references `babel-eslint` and
+`eslint-plugin-prettier`, neither installed, so `npx eslint .` cannot run
+today → replaced by a flat `eslint.config.js` (ESM) that actually works, with
+an `npm run lint` script.
 
 `examples/*.js`, `examples/2-page/controllers/*.js`, and `docs.js` are
 converted to ESM (`import` / `export default`); their behavior and output
@@ -126,52 +141,62 @@ are unchanged.
 
 ### Module responsibilities
 
-- **`kiss.js`** — thin orchestrator. Owns `_stack`/`_promises`, the
-  per-instance Handlebars and Remarkable environments, the watcher/dev-server
-  handles, and composes the other modules. Exposes the public API listed
-  above. `export default Kiss`, `export { Kiss as 'module.exports' }`,
+- **`kiss.js`** — thin orchestrator. Owns `_stack`/`_promises`/`_generating`,
+  the per-instance Handlebars and Remarkable environments, the watcher and
+  dev-server handles, and composes the other modules. Exposes the public API
+  listed above. `export default Kiss`, `export { Kiss as 'module.exports' }`,
   `export { utils }`.
-- **`kiss-page.js`** — one page's render lifecycle: template compilation,
-  slug/path/extension inference (`buildTo` / `pageURL()`), minification,
-  livereload injection, and **awaited** writes of the output file and the
-  dev-mode debug JSON.
-- **`logger.js`** — wraps `console` + `colors` behind `info`/`warn`/
-  `error`/`debug` (matching the severities used today). Default export is the
-  coloured-console logger so runtime output is unchanged; tests inject a
-  silent/spy logger. Injected into `Kiss` and passed down — the one real DI
-  seam. No other module imports `colors` or uses the `'text'.red`
-  prototype-extension style, so no module silently depends on that
-  side-effect import having run.
-- **`config.js`** — pure functions: default config, folder derivation from
-  `config.folders.src`, merge with user config, and the list of folders to
-  `ensureDir`. Fixes the copy-paste bug where layouts/partials/models/
-  controllers are only created `if (folders.assets)`.
+- **`kiss-page.js`** — one page's render lifecycle: template compilation on
+  the instance's Handlebars environment, slug/path/extension inference
+  (`buildTo` / `pageURL()`), minification, livereload injection, and
+  **awaited** writes of the output file and the dev-mode debug JSON.
+- **`logger.js`** — wraps `console` + `colors` behind `info`/`success`/
+  `highlight`/`notice`/`warn`/`error`/`debug`/`banner`/`plain` (covering the
+  colours used today). `createLogger({ verbose, silent })`; default export
+  is the coloured-console logger so runtime output is unchanged; tests use
+  `silentLogger` or a spy. Injected into `Kiss` via `config.logger` and
+  passed down — the one real DI seam. No other module imports `colors` or
+  uses the `'text'.red` prototype-extension style, so no module silently
+  depends on that side-effect import having run.
+- **`config.js`** — pure functions: `DEFAULT_CONFIG`, `DEFAULT_FOLDERS`,
+  `resolveFolders`, `resolveConfig`, `foldersToEnsure`. Fixes the copy-paste
+  bug where layouts/partials/models/controllers are only created
+  `if (folders.assets)`.
 - **`handlebars-helpers.js`** — `registerHandlebarsHelpers(hbs, config,
   { markdown, logger })` registering `markdown`, `sass`, `offset`,
   `stringify`, `isActive`, `env` onto the **given** Handlebars environment.
-- **`partials.js`** — registers `.hbs`/`.html`/`.md` partials and layouts
-  from the configured folders onto the given Handlebars environment.
-- **`assets.js`** — compiles `*.scss`/`*.sass` under the assets folder and
-  copies the rest straight through to build, excluding raw Sass sources.
-  Returns a promise resolving to `{ id, data }` so `generate(cb)`'s `data`
+- **`partials.js`** — `registerPartials(hbs, config, { markdown, logger })`
+  registers `.hbs`/`.html`/`.md` partials and layouts from the configured
+  folders onto the given Handlebars environment; skips `null` folders.
+- **`assets.js`** — `copyAssets(sourceDir, targetDir, { config, logger })`
+  compiles `*.scss`/`*.sass` under the assets folder and copies the rest
+  straight through, excluding raw Sass sources. Returns a promise that
+  **always resolves** to `{ id, data }` (today an `fs.copy` error leaves the
+  promise pending forever, hanging `generate()`), so `generate(cb)`'s `data`
   keeps its v1 shape.
-- **`model-resolver.js`** — resolves `options.model` (JSON filename / URL /
-  plain object / folder-of-JSON). Native `fetch`. Returns an
-  **already-handled** promise (see Behavior fixes).
-- **`controller-resolver.js`** — resolves and runs `options.controller`:
-  a function, or a filename loaded via `await import(pathToFileURL(p).href)`
-  with `mod.default ?? mod`. Same title-from-model fallback as today.
-- **`sitemap.js`** — builds and writes `sitemap.xml` from the page stack;
-  same per-page overrides (`ignoreSitemap`, `sitemapPriority`,
-  `sitemapChangefreq`, `sitemapLastmod`) and `overwrite` behavior. Write is
-  awaited.
-- **`dev-server.js`** — `connect` + `serve-static` + `livereload`; returns
-  `{ close() }` that shuts both down.
-- **`watcher.js`** — `chokidar` rebuild-on-change, including the
-  entry-script-changed → full rebuild case; returns `{ close() }`.
+- **`model-resolver.js`** — `resolveModel(model, { modelsDir, logger,
+  fetchImpl })` resolves `options.model` (JSON filename / URL / plain object /
+  folder-of-JSON). Native `fetch`. Rejects with an `Error` on failure; `Kiss`
+  wraps it (see Behavior fixes).
+- **`controller-resolver.js`** — `applyController(options, { controllersDir,
+  logger })` resolves and runs `options.controller`: a function, or a
+  filename loaded via `await import(pathToFileURL(p).href)` with
+  `mod.default ?? mod`. Same title-from-model fallback as today.
+- **`sitemap.js`** — `buildSitemapEntries`, `renderSitemapXml`,
+  `writeSitemap(stack, { config, logger, overwrite })`; same per-page
+  overrides (`ignoreSitemap`, `sitemapPriority`, `sitemapChangefreq`,
+  `sitemapLastmod`) and `overwrite` behavior. Write is awaited.
+- **`dev-server.js`** — `startDevServer(httpRoot, port, { logger })`:
+  `connect` + `serve-static` + `livereload`; returns `{ close() }` that shuts
+  both down.
+- **`watcher.js`** — `createWatcher({ config, getStack, entry, rebuildSite,
+  rebuildPage, assetsChanged, logger })`: `chokidar` rebuild-on-change,
+  including the entry-script-changed → full rebuild case; returns
+  `{ ready, close() }`.
 - **`utils.js`** — pure `trimLines`, `toSlug`, `toTitleCase`, `trimPath`,
-  `sanitizePath`. Dead alias-resolution code removed (confirmed unused
-  anywhere except by itself).
+  `sanitizePath`, plus `hashId` (the `md5` replacement). Dead
+  alias-resolution code removed (confirmed unused anywhere except by
+  itself).
 
 ### Per-instance Handlebars / Remarkable
 
@@ -192,16 +217,21 @@ Each is an existing defect, fixed deliberately with a test that proves it.
    `generate()`/`complete()`/`sitemap()` call `Promise.all(this._promises)`
    with no catch. A missing `.json` model or failed fetch therefore ends the
    process with an unhandled rejection instead of the intended
-   "log, skip that page, keep building". Fix: `_promises` only ever holds
-   handled promises (`p.catch(err => ({ id, data: null, error }))`).
+   "log, skip that page, keep building". Fix: `_promises` holds the **whole
+   `page()` chain** (model → controller → prepare), already caught and
+   resolving to `{ id, data: null, error }` on failure. Tracking the whole
+   chain also matters once controller loading is async (dynamic `import()`):
+   the raw model promise alone would resolve before the page is stacked.
    Test: a site with one bad model still builds its other pages and exits 0.
 2. **`generate()` is fire-and-forget.** `KissPage.generate()` is async but
    never awaited and uses callback-style `fs.outputFile`, so the
    `generate(cb)` callback runs before any file exists. Fix: page writes are
    awaited; `Kiss.generate()` awaits all page renders before invoking `cb`
-   and still returns `this` for chaining; `complete()` also awaits any
-   in-flight `generate()` so callers/tests can `await kiss.complete()`.
-   Test: files exist when `cb` fires / after `await complete()`.
+   and still returns `this` for chaining; `complete()` drains both
+   `_promises` and in-flight `generate()`/`sitemap()` work (re-checking until
+   no new work was queued, since callbacks may queue more pages) so
+   callers/tests can `await kiss.complete()`. Test: files exist when `cb`
+   fires / after `await complete()`.
 3. **Folder creation guard** (`_setupFolders` checks `folders.assets` for
    every folder) — fixed in `config.js`. Test: with `assets: null`, the
    partials/layouts/models/controllers folders are still created.
@@ -215,17 +245,20 @@ Each is an existing defect, fixed deliberately with a test that proves it.
 
 - `node-fetch` → native `fetch` in `model-resolver.js`.
 - `module.parent.filename` (used in `watch()` to find the caller's entry
-  script) does not exist under ESM → `process.argv[1]`, equivalent for the
-  real usage (`node examples/1-scan.js`). Covered by an integration test that
+  script) does not exist under ESM → `process.argv[1]` by default,
+  overridable via `watch({ entry })`. Covered by an integration test that
   touches the entry file and asserts a full rebuild.
 - `require.main.require(controllerPath)` → `await import(pathToFileURL(
   controllerPath).href)`, `mod.default ?? mod`. Controller loading becomes
-  properly async, inside the already-async model chain.
+  properly async, inside the already-async (and now fully tracked) page
+  chain. Note `require.main` is undefined under Vitest's ESM workers, so
+  file-controller tests can only exist after this change.
 - `export { Kiss as 'module.exports' }` for CJS consumers (see Compatibility).
 - No `__dirname`/`__filename` usage exists, so nothing to shim.
 - `colors` is imported for its `String.prototype` side effects in
   `logger.js` only.
-- `.eslintrc.js` → `.eslintrc.cjs`; example controllers → `export default`.
+- `.eslintrc.js` → `eslint.config.js` (flat, ESM); example controllers →
+  `export default`.
 
 ## Testing (Vitest)
 
@@ -233,25 +266,31 @@ Order matters: characterization tests come **first**, before any
 extraction, so every later step is checked against recorded behavior.
 
 - **Integration / characterization** (`test/integration/`): a real `Kiss`
-  against a temp directory, fixtures shaped like `examples/*`, asserting on
-  the files actually written — covering `.page()`/`.pages()`/`.scan()`/
-  `.generate()`/`.complete()`/`.sitemap()`/`.watch()`, the `generate(cb)`
-  `data` shape, extension-less mode, dev-mode debug JSON, and the four
-  behavior fixes above. `dev-server.js` is `vi.mock`ed; `close()` runs in
-  `afterEach`.
-- **Unit** (`test/unit/`), one spec per `src/` module: `utils`, `config`
+  against a temp directory (paths normalised to forward slashes — `glob` v7
+  does not accept backslashes on Windows), fixtures shaped like
+  `examples/*`, asserting on the files actually written — covering
+  `.page()`/`.pages()`/`.scan()`/`.generate()`/`.complete()`/`.sitemap()`/
+  `.watch()`, the `generate(cb)` `data` shape, extension-less mode, the four
+  behavior fixes above, file controllers (both `export default` and legacy
+  `module.exports`), and a spawned-`node` check that `require()` of the
+  package still returns `Kiss`. `dev-server.js` is `vi.mock`ed; `close()`
+  runs in `afterEach`. Dev-mode-only behaviour (livereload injection, debug
+  JSON) is covered at the `KissPage` unit level rather than by starting a
+  server.
+- **Unit** (`test/unit/`), one spec per `lib/` module: `utils`, `config`
   (pure, no mocking); `model-resolver` (fetch + fs mocked), `controller-
   resolver` (function / file / missing / `default ?? module`), `sitemap`
   (XML shape, overrides, `overwrite: false`), `handlebars-helpers` (each
   helper against a throwaway `Handlebars.create()`), `partials`, `assets`,
-  `kiss-page` (slug/path/ext inference, extension-less, minifier invoked),
-  `logger` (interface lock), `watcher` / `dev-server` (handles close).
+  `kiss-page` (slug/path/ext inference, extension-less, minifier invoked,
+  livereload injection, debug JSON), `logger` (interface lock), `watcher` /
+  `dev-server` (handles close).
 - **`test/aikb.test.js`** — see below.
 - `examples/*.js` remain as manual demos; not replaced by the suite.
 
 ## AIKB knowledge base
 
-`AIKB/` at repo root, one doc per `src/` module (1:1 with the file layout)
+`AIKB/` at repo root, one doc per `lib/` module (1:1 with the file layout)
 plus exactly one cross-cutting doc:
 
 ```
@@ -272,28 +311,29 @@ AIKB/
   testing.md              # cross-cutting: mocking conventions, temp-dir fixtures, running one spec
 ```
 
-Each module doc follows a fixed template: **Responsibility** (one
-paragraph) · **Public interface** · **Depends on** · **Depended on by** ·
-**Non-obvious behavior / gotchas** (the *why*, not the *what* — e.g. why
-`watcher.js` uses `process.argv[1]`, why `_promises` must only hold handled
-promises). Short by design: knowledge not derivable from the module's own
-code.
+Each module doc follows a fixed template of five headings: **Responsibility**
+(one paragraph) · **Public interface** · **Depends on** · **Depended on by** ·
+**Non-obvious behavior** (the *why*, not the *what* — e.g. why `watcher.js`
+uses `process.argv[1]`, why `_promises` must only hold handled promises).
+Short by design: knowledge not derivable from the module's own code.
 
 `CLAUDE.md` gets an "Architecture knowledge base" section: one intro
 sentence and a lookup table (module → file → AIKB doc, plus a
 "Cross-cutting" row for `testing.md`). The existing narrative sections are
-trimmed to the `src/` layout (the "Node 12–14 era syntax, no ESM" line
+trimmed to the `lib/` layout (the "Node 12–14 era syntax, no ESM" line
 goes); the table supplements them.
 
-**Enforcement:** `test/aikb.test.js` asserts every `src/*.js` has a
-matching `AIKB/*.md`, and every AIKB doc appears as a row in the
-`CLAUDE.md` table. This is what stops the knowledge base rotting.
+**Enforcement:** `test/aikb.test.js` asserts every `lib/*.js` has a
+matching `AIKB/*.md`, every AIKB doc appears as a row in the `CLAUDE.md`
+table, and every module doc has the five template headings. This is what
+stops the knowledge base rotting.
 
-`llms.txt` §Docs is rewritten for the `src/` layout (it currently describes a
-"single-file engine" and links a `README.md` that does not exist at the repo
-root — the docs source is `src/partials/readme.md`). A root `README.md` is
-added (generated or copied from that source) so the link resolves, with the
-"Migrating from v1" note.
+`llms.txt` is rewritten for the `lib/` layout and ESM (it currently describes
+a "single-file engine", `kiss-ssg.js`, `libs/utils.js`, `kiss-serve.js`, and
+says `generate(cb)` does not await writes). `README.md` (which exists at the
+repo root and is what `llms.txt` links to) gets its `require` examples
+switched to `import`, the "or just drop kiss-ssg.js somewhere" line removed,
+and a "Migrating from v1" section.
 
 ## Rollout order
 
@@ -301,21 +341,22 @@ Each step leaves `npm test` and the six examples green.
 
 1. Vitest harness + `package.json` scripts; **characterization tests
    against the current monolith** (`test/integration/`).
-2. Behavior fixes 1 and 2 (handled `_promises`, awaited writes /
+2. Behavior fixes 1 and 2 (tracked/handled page chains, awaited writes /
    `generate()` / `complete()`) — needed so those tests are deterministic.
 3. ESM-convert the monolith in place: `kiss-ssg.js`, `libs/utils.js`,
-   `kiss-serve.js`, `docs.js`, `examples/**`, `.eslintrc.cjs`; the
-   `process.argv[1]`, `import()`, and `'module.exports'` substitutions;
-   dependency pruning.
-4. Extract modules **directly as ESM**, one batch at a time with unit
-   tests: (a) `utils`, `logger`, `config` (+ fix 3); (b) `handlebars-
-   helpers`, `partials`, `assets` with per-instance Handlebars/Remarkable;
-   (c) `model-resolver`, `controller-resolver`, `sitemap`; (d) `kiss-page`
-   (+ fix 4), `dev-server`, `watcher` with handles and `close()`.
-5. Reduce `kiss.js` to the orchestrator; delete root `kiss-ssg.js`,
-   `kiss-serve.js`, `libs/`; point `main` at `src/kiss.js`.
+   `kiss-serve.js`, `docs.js`, `examples/**`; the `process.argv[1]`,
+   `import()`, and `'module.exports'` substitutions; then `eslint.config.js`
+   and dependency pruning.
+4. Extract modules into `lib/` **directly as ESM**, one batch at a time with
+   unit tests: (a) `utils`, `logger`, `config` (+ fix 3) and route every
+   log call through the logger; (b) `handlebars-helpers`, `partials`,
+   `assets` with per-instance Handlebars/Remarkable; (c) `model-resolver`,
+   `controller-resolver`; `sitemap`; (d) `kiss-page` (+ fix 4);
+   `dev-server`, `watcher` with handles and `close()`.
+5. Move the orchestrator to `lib/kiss.js`; delete root `kiss-ssg.js`,
+   `kiss-serve.js`, `libs/`; point `main` at `lib/kiss.js`.
 6. `AIKB/*.md`, `CLAUDE.md` table + trim, `test/aikb.test.js`, `llms.txt`,
-   root `README.md`.
+   `README.md`.
 
 ## Model delegation
 
@@ -327,9 +368,9 @@ next task. Every task in the implementation plan carries a `model:` tag.
 
 | Tier | Work items |
 |---|---|
-| **Sonnet** — mechanical, well-specified, pure | Vitest harness + scripts; dependency pruning; `.eslintrc.cjs` + fixing its plugin refs; `utils`, `logger`, `config` (+ fix 3), `sitemap` extractions with unit tests; ESM syntax conversion of `examples/**` and `docs.js`; AIKB docs from the template; `CLAUDE.md` table; `test/aikb.test.js`; `llms.txt` / `README.md` |
-| **Opus** — judgment about current behavior, mocking design | Characterization test suite (fixtures, what to assert); ESM conversion of the engine (`process.argv[1]`, `import()` with `default ?? module`, `'module.exports'` export); `handlebars-helpers` / `partials` / `assets` with per-instance Handlebars+Remarkable; `model-resolver` / `controller-resolver`; `kiss-page` with awaited writes + fix 4 |
-| **Fable** — async/lifecycle semantics, cross-cutting | Behavior fixes 1 and 2 (`_promises` handling, awaited `generate()`, `complete()` awaiting in-flight renders); `watcher` + `dev-server` handles and `close()`; final `kiss.js` orchestrator reduction with the full suite green |
+| **Sonnet** — mechanical, well-specified, pure | Vitest harness + scripts; `eslint.config.js` + dependency pruning; `utils`, `logger`, `config` (+ fix 3) extraction and routing log calls through the logger; `sitemap` extraction; AIKB docs from the template; `CLAUDE.md` table; `test/aikb.test.js`; `llms.txt` / `README.md` |
+| **Opus** — judgment about current behavior, mocking design | Characterization test suite (fixtures, what to assert); ESM conversion of the engine + examples (`process.argv[1]`, `import()` with `default ?? module`, `'module.exports'` export); `handlebars-helpers` / `partials` / `assets` with per-instance Handlebars+Remarkable; `model-resolver` / `controller-resolver`; `kiss-page` with awaited writes + fix 4 |
+| **Fable** — async/lifecycle semantics, cross-cutting | Behavior fixes 1 and 2 (tracked page chains, awaited `generate()`, draining `complete()`); `watcher` + `dev-server` handles and `close()`; final `lib/kiss.js` orchestrator with the full suite green |
 | **Fable — oversight** | Review every subagent result before the next dispatch; own this spec; final end-to-end check (`npm test` + all six examples) |
 
 Token rules for the executor: one task per subagent; a self-contained
@@ -348,3 +389,6 @@ output rather than re-reading whole files.
 - Per-instance Handlebars breaks any consumer that registered helpers on
   the global `handlebars` module instead of `kiss.handlebars`. The docs have
   never suggested that; called out in the migration note anyway.
+- Dynamic `import()` caches controller modules per URL, exactly as
+  `require` did; controllers still do not hot-reload in watch mode. Not a
+  regression, but worth an AIKB note.
