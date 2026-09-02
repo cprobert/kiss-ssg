@@ -18,4 +18,14 @@ describe('startDevServer', () => {
     await handle.close()
     await expect(fetch(`http://127.0.0.1:${port}/`)).rejects.toThrow()
   })
+
+  it('rejects ready (without crashing) when the port is already in use', async () => {
+    const first = startDevServer('public', 0, { logger: silentLogger })
+    await first.ready
+    const { port } = first.server.address()
+    const second = startDevServer('public', port, { logger: silentLogger })
+    await expect(second.ready).rejects.toThrow()
+    await expect(second.close()).resolves.toBeUndefined()
+    await first.close()
+  })
 })

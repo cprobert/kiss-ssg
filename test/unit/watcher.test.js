@@ -1,4 +1,4 @@
-import { describe, it, afterEach } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { createWatcher } from '../../lib/watcher.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
@@ -33,8 +33,10 @@ describe('createWatcher', () => {
     await waitFor(() => calls.page.includes('index.hbs'))
     await site.touch('src/partials/p.hbs', 'q')
     await waitFor(() => calls.site >= 1)
+    const siteBefore = calls.site
     await site.touch('src/assets/x.txt', 'y')
     await waitFor(() => calls.assets >= 1)
+    expect(calls.site).toBe(siteBefore)
     const before = calls.site
     await site.touch('entry.js', '// changed')
     await waitFor(() => calls.site > before)

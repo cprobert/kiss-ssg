@@ -59,6 +59,10 @@ class Kiss {
           this.config.port,
           { logger: this.logger },
         )
+        this._devServer.ready.catch((err) => {
+          this.logger.error('Error running live reload server')
+          this.logger.plain(err.message)
+        })
       } catch (error) {
         this.logger.error('Error running live reload server')
         this.logger.plain(error.message)
@@ -357,14 +361,14 @@ class Kiss {
     const rebuildSite = () => {
       this.logger.notice('Rebuilding site:')
       this.registerPartials()
-      this._stack.forEach((entry) => entry.page.generate())
+      this._stack.forEach((stackEntry) => stackEntry.page.generate())
     }
     this._watcher = createWatcher({
       config: this.config,
       getStack: () => this._stack,
       entry,
       rebuildSite,
-      rebuildPage: (entry) => entry.page.generate(),
+      rebuildPage: (stackEntry) => stackEntry.page.generate(),
       assetsChanged: () =>
         this.copyAssets(this.config.folders.assets, this.config.folders.build),
       logger: this.logger,
