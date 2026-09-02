@@ -13,7 +13,7 @@ The simplest usage is to use .scan() to scan your 'pages directory' for \*.hbs f
 Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g. {{model.name}}
 
 ```js
-const Kiss = require('kiss-ssg')
+import Kiss from 'kiss-ssg'
 const kiss = new Kiss({ dev: true })
 kiss
   .page({
@@ -63,7 +63,7 @@ _Note:_ If you don't pass a path or a slug they will be inferred from the view
 In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:
 
 ```js
-const Kiss = require('kiss-ssg')
+import Kiss from 'kiss-ssg'
 
 const kiss = new Kiss()
 kiss

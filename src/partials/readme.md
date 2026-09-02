@@ -4,7 +4,7 @@ Kiss Static Site Generator, is an open-source MVC html website builder (for node
 
 Kiss-ssg uses [handlebar partials](https://handlebarsjs.com/guide/partials.html#partials) and [handlebar-layouts](https://www.npmjs.com/package/handlebars-layouts) to help you make DRY static websites.
 
-Install with `npm install kiss-ssg --save-dev`, or just drop [kiss-ssg.js](https://github.com/cprobert/kiss-ssg/blob/main/kiss-ssg.js) somewhere.
+Install with `npm install kiss-ssg --save-dev`, or grab the [source](https://github.com/cprobert/kiss-ssg) and point at its `lib/kiss.js`.
 
 ## Usage
 
@@ -17,7 +17,7 @@ kiss-ssg has 3 methods
 The simplest usage is to use .scan() to scan your 'pages directory' for \*.hbs files and outputs them to the 'build folder'.
 
 ```js
-const Kiss = require('kiss-ssg')
+import Kiss from 'kiss-ssg'
 const kiss = new Kiss()
 kiss.scan()
 kiss.generate()
@@ -67,7 +67,7 @@ Any static files you have in the assets directory will be copied to the build di
 Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g. {{model.name}}
 
 ```js
-const Kiss = require('kiss-ssg')
+import Kiss from 'kiss-ssg'
 const kiss = new Kiss({ dev: true })
 kiss
   .page({
@@ -117,7 +117,7 @@ _Note:_ If you don't pass a path or a slug they will be inferred from the view
 In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:
 
 ```js
-const Kiss = require('kiss-ssg')
+import Kiss from 'kiss-ssg'
 
 const kiss = new Kiss()
 kiss
@@ -141,7 +141,7 @@ kiss
 The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.
 
 ```js
-const Kiss = require('kiss-ssg')
+import Kiss from 'kiss-ssg'
 const kiss = new Kiss({ test: '123' })
 
 kiss

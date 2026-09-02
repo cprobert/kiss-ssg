@@ -3,7 +3,7 @@
 Kiss is an object so will need to be instantiated. In its simplest form kiss will scan your pages directory and use file based routing to generate the html output.
 
 ```js
-const Kiss = require('kiss-ssg')
+import Kiss from 'kiss-ssg'
 const kiss = new Kiss()
 kiss.scan()
 kiss.generate()
