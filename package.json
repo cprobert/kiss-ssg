@@ -2,7 +2,7 @@
   "name": "kiss-ssg",
   "version": "2.0.0-alpha.0",
   "description": "Simple Static Website Generator",
-  "main": "kiss-ssg.js",
+  "main": "lib/kiss.js",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

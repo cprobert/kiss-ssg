@@ -1,4 +1,4 @@
-import Kiss from '../kiss-ssg.js'
+import Kiss from '../lib/kiss.js'
 const kiss = new Kiss({
   folders: {
     root: '..',

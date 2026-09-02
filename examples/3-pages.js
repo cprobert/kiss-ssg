@@ -1,4 +1,4 @@
-import Kiss, { utils } from '../kiss-ssg.js'
+import Kiss, { utils } from '../lib/kiss.js'
 const kiss = new Kiss({
   folders: {
     src: './3-pages',
