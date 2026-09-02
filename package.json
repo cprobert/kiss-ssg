@@ -3,6 +3,9 @@
   "version": "1.4.4",
   "description": "Simple Static Website Generator",
   "main": "kiss-ssg.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "docs": "node docs",
     "eg1": "cd examples && node 1-scan",
@@ -29,7 +32,7 @@
     "glob": "^7.1.6",
     "handlebars": "^4.7.7",
     "handlebars-layouts": "^3.1.4",
-    "html-minifier": "^4.0.0",
+    "html-minifier-terser": "^7.2.0",
     "livereload": "^0.9.1",
     "md5": "^2.3.0",
     "node-fetch": "^2.6.1",

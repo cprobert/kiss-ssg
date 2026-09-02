@@ -4,7 +4,7 @@ const glob = require('glob')
 const sass = require('sass')
 const chokidar = require('chokidar')
 const path = require('path')
-const htmlMinify = require('html-minifier').minify // https://www.npmjs.com/package/html-minifier
+const htmlMinify = require('html-minifier-terser').minify // https://www.npmjs.com/package/html-minifier-terser
 const colors = require('colors')
 const fetch = require('node-fetch')
 const handlebars = require('handlebars') // https://handlebarsjs.com/
@@ -48,10 +48,9 @@ function registerHandlebarsHelpers(config) {
     if (!config.dev) outputStyle = 'compressed'
 
     if (typeof context === 'string') {
-      const sassOutput = sass.renderSync({
-        file: path.join(process.cwd(), context),
-        includePaths: config.sass.includePaths,
-        outputStyle: outputStyle,
+      const sassOutput = sass.compile(path.join(process.cwd(), context), {
+        loadPaths: config.sass.includePaths,
+        style: outputStyle,
       })
       output = `${output} \n${sassOutput.css}`
     }
@@ -65,9 +64,8 @@ function registerHandlebarsHelpers(config) {
       } else {
         input = options.fn(this)
       }
-      const sassOutput = sass.renderSync({
-        data: input,
-        includePaths: config.sass.includePaths,
+      const sassOutput = sass.compileString(input, {
+        loadPaths: config.sass.includePaths,
       })
       output = `${output} \n${sassOutput.css}`
     }
@@ -221,7 +219,7 @@ class KissPage {
     return this
   }
 
-  generate() {
+  async generate() {
     const template = this._getTemplate(this.view)
     if (template && this.options.generate) {
       try {
@@ -233,7 +231,7 @@ class KissPage {
           output = output.replace('</body>', liveReload + '\n</body>')
         }
 
-        var minifiedHtml = htmlMinify(output, {
+        var minifiedHtml = await htmlMinify(output, {
           collapseWhitespace: !this._dev,
           conservativeCollapse: false,
           removeComments: true,
@@ -433,10 +431,9 @@ class Kiss {
       }
 
       try {
-        const sassOutput = sass.renderSync({
-          file: sassFile,
-          includePaths: this.config.sass.includePaths,
-          outputStyle: outputStyle,
+        const sassOutput = sass.compile(sassFile, {
+          loadPaths: this.config.sass.includePaths,
+          style: outputStyle,
         })
 
         fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {

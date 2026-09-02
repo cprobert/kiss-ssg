@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `kiss-ssg` is a small, dependency-driven static site generator for Node. The entire engine lives in one file, `kiss-ssg.js` (~900 lines, two classes: `Kiss` and `KissPage`); there is no build step, bundler, or transpilation — it runs directly on Node.
 
+## Requirements
+
+`package.json` pins `engines.node` to `>=22` (anything older is EOL). Written originally against Node 12–14 era syntax (public class fields, no ESM), but verified working end-to-end on Node 24.
+
+Dependencies are kept at their latest in-range (`^`) versions and currently audit clean (`npm audit` → 0 vulnerabilities). `html-minifier` was swapped for its maintained fork `html-minifier-terser` (same options, but `minify()` is async — `KissPage.generate()` is `async` and `await`s it). Sass compilation uses the modern `sass.compile`/`compileString` API (not the deprecated legacy `renderSync`); the `config.sass.includePaths` option name is kept as the public config key for backwards compatibility and mapped internally to the modern API's `loadPaths`.
+
 ## Commands
 
 There is no test suite and no `lint`/`build`/`start` script defined in `package.json`. What exists:
@@ -40,7 +46,7 @@ Each example under `examples/*.js` is a minimal, runnable `Kiss` config — the 
 
 **Partials/layouts**: registered globally into the shared `handlebars` instance from `config.folders.partials` and `config.folders.layouts`, supporting `.hbs`, `.html`, and `.md` (Markdown is rendered to HTML via `remarkable` at registration time, not render time). Layout composition uses `handlebars-layouts`.
 
-**Built-in Handlebars helpers** (registered per-`Kiss`-instance in `registerHandlebarsHelpers`, not global): `markdown`, `sass` (inline or file, compiled via `sass.renderSync`, compressed outside dev), `offset`, `stringify`, `isActive` (nav active-state matching against `pageOptions.pageURL`), `env` (`{{#env is="dev"}}`/`"prod"` blocks). The `Kiss` instance also exposes `.handlebars` directly so consumers can register their own helpers.
+**Built-in Handlebars helpers** (registered per-`Kiss`-instance in `registerHandlebarsHelpers`, not global): `markdown`, `sass` (inline or file, compiled via `sass.compile`/`compileString`, compressed outside dev), `offset`, `stringify`, `isActive` (nav active-state matching against `pageOptions.pageURL`), `env` (`{{#env is="dev"}}`/`"prod"` blocks). The `Kiss` instance also exposes `.handlebars` directly so consumers can register their own helpers.
 
 **Assets**: `copyAssets()` compiles every `*.scss`/`*.sass` under `assets` to a sibling `.css` (via `sass`) and copies everything else straight through to `build`, excluding raw Sass sources.
 

@@ -1,4 +1,5 @@
 const Kiss = require('../kiss-ssg')
+const utils = require('../libs/utils.js')
 const kiss = new Kiss({
   folders: {
     src: './3-pages',
@@ -12,11 +13,16 @@ const kiss = new Kiss({
   addPagesOnGenerate: false,
   verbose: true,
   dev: true,
+  extensionLess: true,
 })
   .pages({
     view: 'courses/course.hbs',
-    model: 'https://learna-cms.herokuapp.com/courses',
+    model: 'https://jsonplaceholder.typicode.com/users',
     controller: ({ model }) => {
+      // Map the demo API's user shape onto the fields the views expect
+      model.title = model.name
+      model.introduction = model.company.catchPhrase
+      model.slug = utils.toSlug(model.username)
       return {
         slug: model.slug,
         model: model,
@@ -28,13 +34,14 @@ const kiss = new Kiss({
     // data is an array of models from all promises
     // this.getModelByID is a helper to rehydrate the model on completion
     const courseModel = this.getModelByID(
-      'https://learna-cms.herokuapp.com/courses',
+      'https://jsonplaceholder.typicode.com/users',
       data
     )
     // It can then be reused for pages such as indexes
     this.page({
       model: courseModel,
       view: 'courses/index.hbs',
+      path: '/',
       controller: ({ model }) => {
         return {
           title: 'List of courses',
