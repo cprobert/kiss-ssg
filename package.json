@@ -4,6 +4,11 @@
   "description": "Simple Static Website Generator",
   "main": "lib/kiss.js",
   "type": "module",
+  "files": [
+    "lib",
+    "llms.txt",
+    "AIKB"
+  ],
   "engines": {
     "node": ">=22.12.0"
   },
@@ -25,7 +30,7 @@
     "url": "git+https://github.com/cprobert/kiss-ssg.git"
   },
   "author": "Courtenay Probert",
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/cprobert/kiss-ssg/issues"
   },

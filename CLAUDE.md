@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `llms.txt` at the repo root is an LLM-oriented API cheat-sheet (per the [llmstxt.org](https://llmstxt.org) convention) that ships in the npm package so an agent working in a project that depends on `kiss-ssg` can read `node_modules/kiss-ssg/llms.txt` instead of the source. Keep it in sync with `lib/kiss.js` when the public API changes.
 
+`package.json`'s `files` whitelist keeps the published tarball to `lib/`, `llms.txt` and `AIKB/` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `AIKB/` ships deliberately, so an agent in a consuming project can read the per-module notes alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/`, `examples/` and the configs are all excluded.
+
 `src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`). Treat `docs/` as build output. Design specs and implementation plans live in `planning/` (never under `docs/`, which `docs.js` empties).
 
 ## Architecture knowledge base
@@ -50,7 +52,7 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes).
 
 ## Rules
 
-- Engine code goes in `lib/`, one responsibility per file, with a unit test in `test/unit/` and an `AIKB/` doc.
+- Engine code goes in `lib/`, one responsibility per file, with a unit test in `test/unit/` (the orchestrator `lib/kiss.js` is covered by `test/integration/` instead) and an `AIKB/` doc.
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
 - Public API changes: update `llms.txt` and `README.md` in the same commit.
