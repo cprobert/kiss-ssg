@@ -25,7 +25,7 @@ describe('a bad model', () => {
     expect(await site.exists('public/broken.html')).toBe(false)
     const failed = data.find((d) => d.id === 'missing.json')
     expect(failed.data).toBeNull()
-    expect(failed.error).toBeInstanceOf(Object)
+    expect(failed.error.message).toBe('Skipping: missing.json')
   })
 })
 

@@ -13,7 +13,7 @@ The orchestrator and public API. `Kiss` owns config, a per-instance Handlebars e
 - `.page(options, callback)` — resolves the page's model, runs its controller, prepares a `KissPage`, pushes it onto `_stack`; returns `this`.
 - `.pages(options, callback)` — same as `.page()` with `options.dynamic = true` (one page per model in an array); returns `this`.
 - `.scan()` — globs every `.hbs` under `config.folders.pages` and calls `.page()` for any not already in `_stack`; returns `this`.
-- `.viewStats()` — logs `{ promise, stack }` counts (and, if `verbose`, writes `debug.json`); returns `this`.
+- `.viewStats()` — logs `{ promise, stack }` counts (and, if `verbose`, writes `debug.json` to the build folder); returns `this`.
 - `.generate(callback)` — awaits `_promises`, renders every stack entry with `runCount === 0` once, awaits the writes, invokes `callback`; returns `this`.
 - `.complete(callback)` — awaits `_drain()` (repeated `Promise.all` over `_promises` + `_generating`), invokes `callback` with the resolved data, and returns that data (a `Promise`, unlike the other chainable methods).
 - `.sitemap(options, callback)` — awaits `_promises`, writes `sitemap.xml` via `writeSitemap()`; returns `this`.
@@ -42,4 +42,5 @@ Nothing in `lib/` — it is the entry point (`package.json`'s `main`).
 - `_drain()` only catches work queued *synchronously* by a settled callback's continuation — a `setTimeout`-deferred `.page()` call (or anything else that queues work on a later tick) escapes it, because the `while` loop's re-check only sees array-length growth that happened before its next `Promise.all` starts.
 - The `modelId` used in `.page()`'s `.catch()` failure entry is captured *before* the `.then()` chain runs, because `options.model` is reassigned to the resolved data inside `.then()` — reading `options.model` inside `.catch()` for a post-resolution failure would report the data, not the original id.
 - Dedupe by `buildTo` (in `_preparePage`) also applies to `.pages()` fan-out, since each fanned-out page still goes through `_preparePage` individually — v1 never deduped fan-out output.
+- `viewStats()`'s `debug.json` serialises a *projection* of `_stack` (`{ view, buildTo, runCount, options }`), never the entries themselves: a stack entry's `page` holds the Handlebars environment (internally cyclic) and the logger, so `JSON.stringify` on the raw stack throws "Converting circular structure to JSON" and the file silently never gets written. The write is not awaited — `test/integration/view-stats.test.js` polls for the file with `waitFor`.
 - Rebuilds triggered by the watcher (`rebuildSite`, `rebuildPage`) call `page.generate()` without awaiting it — fire-and-forget, matching v1's behavior. Watched rebuilds are not tracked on `_promises`/`_generating`.

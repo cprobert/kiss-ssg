@@ -15,6 +15,7 @@ describe('createWatcher', () => {
       'src/pages/index.hbs': 'a',
       'src/partials/p.hbs': 'p',
       'src/assets/x.txt': 'x',
+      'src/assets/sub/y.txt': 'y',
       'entry.js': '// entry',
     })
     const calls = { page: [], site: 0, assets: 0 }
@@ -29,14 +30,19 @@ describe('createWatcher', () => {
       logger: silentLogger,
     })
     await handle.ready
+
+    // Assets first, while calls.site is still provably 0: the src watcher
+    // ignores `${assets}/**`, so neither a top-level nor a nested asset write
+    // may reach rebuildSite().
+    await site.touch('src/assets/x.txt', 'x2')
+    await site.touch('src/assets/sub/y.txt', 'y2')
+    await waitFor(() => calls.assets >= 2)
+    expect(calls.site).toBe(0)
+
     await site.touch('src/pages/index.hbs', 'b')
     await waitFor(() => calls.page.includes('index.hbs'))
     await site.touch('src/partials/p.hbs', 'q')
     await waitFor(() => calls.site >= 1)
-    const siteBefore = calls.site
-    await site.touch('src/assets/x.txt', 'y')
-    await waitFor(() => calls.assets >= 1)
-    expect(calls.site).toBe(siteBefore)
     const before = calls.site
     await site.touch('entry.js', '// changed')
     await waitFor(() => calls.site > before)

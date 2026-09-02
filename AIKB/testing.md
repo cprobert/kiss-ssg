@@ -23,7 +23,7 @@ npm run lint                    # eslint . (flat config, eslint.config.js)
 ## Conventions
 
 - Pass `logger: silentLogger` (from `lib/logger.js`) into `new Kiss(...)` in any test that doesn't specifically assert on log output — keeps `npm test` output clean.
-- Dev-mode / watcher tests mock the dev server rather than binding a real port for every test: `vi.mock('../../lib/dev-server.js', () => ({ startDevServer: () => ({ close: async () => {} }) }))` before importing `Kiss`.
+- Dev-mode / watcher tests mock the dev server rather than binding a real port for every test: `vi.mock('../../lib/dev-server.js', () => ({ startDevServer: () => ({ ready: Promise.resolve(), close: async () => {} }) }))` before importing `Kiss`. The mock must include `ready` — the `Kiss` constructor does `this._devServer.ready.catch(...)`, and a mock without it throws a `TypeError` that the surrounding `try/catch` swallows into the (silent) logger, so the dev-mode test would pass for the wrong reason.
 - Any test that calls `.watch()` (directly or via `{ dev: true }`) must `await kiss.close()` in `afterEach` — otherwise chokidar's open watchers keep the process/worker alive and can hang the test run.
 - `watch({ entry: null })` is the standard way to disable the entry-script watcher in tests (see `lib/watcher.js` — there's no real "entry script" when `Kiss` is constructed from a test helper).
 - `test/integration/esm.test.js` verifies `require('kiss-ssg')` still works from CommonJS by spawning a real `node` process on a generated `.cjs` file (via `execFile`) — this can't be tested in-process because Vitest itself runs under ESM.

@@ -16,6 +16,6 @@ export default [
     },
   },
   {
-    ignores: ['docs/**', 'public/**', 'examples/**/assets/**', 'src/**', 'coverage/**', 'libs/on-ice/**'],
+    ignores: ['docs/**', 'public/**', 'examples/**/assets/**', 'src/**', 'coverage/**'],
   },
 ]

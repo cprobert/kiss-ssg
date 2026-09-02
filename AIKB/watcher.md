@@ -9,7 +9,7 @@ Sets up `chokidar` watchers over the entry script, `config.folders.src` (pages a
 - `createWatcher({ config, getStack, entry = process.argv[1], rebuildSite, rebuildPage, assetsChanged, logger })` → `{ ready, close }`.
   - `ready` — `Promise` that resolves once every underlying chokidar watcher has fired its own `'ready'` event.
   - `close()` — `async`; closes every watcher. Required for the Node process to be able to exit (chokidar watchers otherwise keep the event loop alive).
-  - Watches (up to three, depending on `entry`): the `entry` file (`'change'` → `rebuildSite()`); `config.folders.src`, ignoring `posix(assetsDir)/**` (`'all'` events other than `add*` → matches the changed path against `getStack()` by `view`; no match → `rebuildSite()`, one or more matches → `rebuildPage(entry)` per match); `assetsDir` (`'change'` → `assetsChanged()`).
+  - Watches (up to three, depending on `entry`): the `entry` file (`'change'` → `rebuildSite()`); `config.folders.src`, ignoring `posix(assetsDir)/**` (`'all'` events other than `add*` → matches the changed path against `getStack()` by `view`; no match → `rebuildSite()`, one or more matches → `rebuildPage(entry)` per match); `assetsDir` (`'change'` → `assetsChanged()`). Each also has an `'error'` handler that logs via `logger.error`.
 
 ## Depends on
 
@@ -26,4 +26,5 @@ Sets up `chokidar` watchers over the entry script, `config.folders.src` (pages a
 - `add`/`addDir` events are ignored (`if (event.includes('add')) return`) — only changes to already-existing files trigger a rebuild; newly created files require a fresh `scan()`/process restart to be picked up.
 - The `src` watcher's `ignored` option excludes `posix(assetsDir)/**` (nested assets included, via the `**` glob) so an asset change fires only `assetsChanged()` from the dedicated assets watcher, never a full-site `rebuildSite()` from the `src` watcher too.
 - A change under `pages/` looks up matching stack entries by `view` (path relative to `pagesDir`) and rebuilds only those; a change anywhere else under `src/` that can't be matched to any stack entry rebuilds the *entire* site, on the assumption it might be a partial/layout/model/controller affecting multiple pages.
+- Every watcher registers `'error'` → `logger.error('Watcher error', err.message)`. Chokidar emits `'error'` on things like an `EPERM`/`ENOSPC` from the underlying OS watcher; without a listener that is an unhandled `'error'` event, which crashes the process.
 - `ready` resolves only when *all* chokidar watchers (entry, src, assets) have individually fired `'ready'` — callers should await it before relying on watch behavior (see `test/integration/watch.test.js`, which awaits `kiss._watcher.ready`).

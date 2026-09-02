@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 
 vi.mock('../../lib/dev-server.js', () => ({
-  startDevServer: () => ({ close: async () => {} }),
+  startDevServer: () => ({ ready: Promise.resolve(), close: async () => {} }),
 }))
 
 import Kiss from '../helpers/kiss.js'
