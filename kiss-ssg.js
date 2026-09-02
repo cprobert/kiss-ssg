@@ -240,25 +240,24 @@ class KissPage {
           minifyJS: !this._dev,
         })
 
-        fs.outputFile(this.buildTo, minifiedHtml, (err) => {
-          if (err) {
+        try {
+          await fs.outputFile(this.buildTo, minifiedHtml)
+        } catch (err) {
+          console.error(`Error creating ${this.buildTo}`.red)
+          console.error(colors.yellow(err))
+        }
+
+        if (this.options && this._dev) {
+          try {
+            await fs.outputJson(
+              this.buildTo.replace(this._ext, 'json'),
+              this.options,
+              { spaces: 2 }
+            )
+          } catch (err) {
             console.error(`Error creating ${this.buildTo}`.red)
             console.error(colors.yellow(err))
           }
-        })
-
-        if (this.options && this._dev) {
-          fs.outputJson(
-            this.buildTo.replace(this._ext, 'json'),
-            this.options,
-            { spaces: 2 },
-            (err) => {
-              if (err) {
-                console.error(`Error creating ${this.buildTo}`.red)
-                console.error(colors.yellow(err))
-              }
-            }
-          )
         }
       } catch (error) {
         console.log(`Error processing view ${this.view}`.red)
@@ -297,6 +296,7 @@ class KissPage {
 class Kiss {
   _stack = []
   _promises = []
+  _generating = []
 
   handlebars = handlebars
   remarkable = remarkable
@@ -473,6 +473,7 @@ class Kiss {
                 `Error copying assets (${sourceDir} => ${targetDir}): `.red
               )
               console.error(err)
+              resolve({ id: assetID, data: null, error: err })
             } else {
               const msg = `Copied assets: ${sourceDir} to ${targetDir}`
               console.log(msg.grey)
@@ -653,7 +654,6 @@ class Kiss {
           reject({ message: `Unexpected model type: ${typeof model}` })
       }
     })
-    this._promises.push(p)
     return p
   }
 
@@ -707,8 +707,10 @@ class Kiss {
       }
     }
 
-    // Detect all the different types of model options and process appropriately
-    this._processPageModel(options.model)
+    // Detect all the different types of model options and process appropriately.
+    // The whole chain (model -> controller -> prepared page) is tracked, and it
+    // never rejects: failures resolve to { id, data: null, error }.
+    const chain = this._processPageModel(options.model)
       .then((response) => {
         if (options.dynamic) {
           this._prepareMultiplePages(options, response.data)
@@ -758,14 +760,19 @@ class Kiss {
             this._preparePage(options)
           }
         }
+        return response
       })
       .catch((error) => {
         // If there was any issues processing the model let the user know
-        console.error(colors.red(error.message))
-        if (error.error) {
-          console.error(colors.yellow(error.error))
+        console.error(colors.red(error.message || error))
+        if (error.error) console.error(colors.yellow(error.error))
+        return {
+          id: typeof options.model === 'string' ? options.model : undefined,
+          data: null,
+          error,
         }
       })
+    this._promises.push(chain)
 
     // Facilitate chaining
     return this
@@ -823,22 +830,40 @@ class Kiss {
     return this
   }
 
+  // Waits until every queued promise (page chains, assets, generate/sitemap
+  // runs) has settled, re-checking because callbacks can queue more work.
+  async _drain() {
+    let seen = -1
+    while (seen !== this._promises.length + this._generating.length) {
+      seen = this._promises.length + this._generating.length
+      await Promise.all([...this._promises, ...this._generating])
+    }
+  }
+
   generate(callback) {
-    Promise.all(this._promises).then((data) => {
-      let stack = this._stack
-      stack.forEach(function (p, index) {
-        if (p.runCount === 0) p.page.generate()
-        stack[index].runCount++
+    const run = Promise.all(this._promises)
+      .then(async (data) => {
+        const pending = []
+        this._stack.forEach((entry) => {
+          if (entry.runCount === 0) pending.push(entry.page.generate())
+          entry.runCount++
+        })
+        await Promise.all(pending)
+        if (callback) callback.call(this, data)
       })
-      this._stack = stack
-      if (callback) callback.call(this, data)
-    })
+      .catch((err) => {
+        console.error('Error generating site'.red)
+        console.error(colors.yellow(err))
+      })
+    this._generating.push(run)
     return this
   }
 
   complete(callback) {
-    return Promise.all(this._promises).then((data) => {
+    return this._drain().then(async () => {
+      const data = await Promise.all(this._promises)
       if (callback) callback.call(this, data)
+      return data
     })
   }
 
@@ -846,67 +871,67 @@ class Kiss {
     options = options || {}
     const overwrite = options.overwrite !== false
 
-    Promise.all(this._promises).then(() => {
-      if (!this.config.siteUrl) {
-        console.error(
-          'Cannot generate sitemap.xml: config.siteUrl is not set'.red
-        )
-        return
-      }
-
-      const buildDir = this.config.folders.build
-      const sitemapPath = `${buildDir}/sitemap.xml`
-
-      if (!overwrite && fs.existsSync(sitemapPath)) {
-        console.log('Skipping sitemap.xml: already exists'.grey)
-        if (callback) callback.call(this, null)
-        return
-      }
-
-      const baseUrl = this.config.siteUrl.replace(/\/$/, '')
-      const now = new Date().toISOString()
-
-      const urls = this._stack
-        .filter((entry) => !entry.page.options.ignoreSitemap)
-        .map((entry) => {
-          const pageOptions = entry.page.options
-          let urlPath = entry.buildTo.slice(buildDir.length)
-          urlPath = urlPath.replace(/\.[^./]+$/, '')
-          urlPath = urlPath.replace(/\/index$/, '') || '/'
-
-          return {
-            loc: `${baseUrl}${urlPath}`,
-            lastmod: pageOptions.sitemapLastmod || now,
-            priority: pageOptions.sitemapPriority || '1.00',
-            changefreq: pageOptions.sitemapChangefreq,
-          }
-        })
-
-      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-      xml +=
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-      urls.forEach((url) => {
-        xml += '  <url>\n'
-        xml += `    <loc>${url.loc}</loc>\n`
-        xml += `    <lastmod>${url.lastmod}</lastmod>\n`
-        if (url.changefreq)
-          xml += `    <changefreq>${url.changefreq}</changefreq>\n`
-        xml += `    <priority>${url.priority}</priority>\n`
-        xml += '  </url>\n'
-      })
-      xml += '</urlset>'
-
-      fs.outputFile(sitemapPath, xml, (err) => {
-        if (err) {
-          console.error('Error creating sitemap.xml'.red)
-          console.error(colors.yellow(err))
-        } else {
-          console.log(sitemapPath.green)
+    const run = Promise.all(this._promises)
+      .then(async () => {
+        if (!this.config.siteUrl) {
+          console.error(
+            'Cannot generate sitemap.xml: config.siteUrl is not set'.red
+          )
+          return
         }
-      })
 
-      if (callback) callback.call(this, urls)
-    })
+        const buildDir = this.config.folders.build
+        const sitemapPath = `${buildDir}/sitemap.xml`
+
+        if (!overwrite && fs.existsSync(sitemapPath)) {
+          console.log('Skipping sitemap.xml: already exists'.grey)
+          if (callback) callback.call(this, null)
+          return
+        }
+
+        const baseUrl = this.config.siteUrl.replace(/\/$/, '')
+        const now = new Date().toISOString()
+
+        const urls = this._stack
+          .filter((entry) => !entry.page.options.ignoreSitemap)
+          .map((entry) => {
+            const pageOptions = entry.page.options
+            let urlPath = entry.buildTo.slice(buildDir.length)
+            urlPath = urlPath.replace(/\.[^./]+$/, '')
+            urlPath = urlPath.replace(/\/index$/, '') || '/'
+
+            return {
+              loc: `${baseUrl}${urlPath}`,
+              lastmod: pageOptions.sitemapLastmod || now,
+              priority: pageOptions.sitemapPriority || '1.00',
+              changefreq: pageOptions.sitemapChangefreq,
+            }
+          })
+
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml +=
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        urls.forEach((url) => {
+          xml += '  <url>\n'
+          xml += `    <loc>${url.loc}</loc>\n`
+          xml += `    <lastmod>${url.lastmod}</lastmod>\n`
+          if (url.changefreq)
+            xml += `    <changefreq>${url.changefreq}</changefreq>\n`
+          xml += `    <priority>${url.priority}</priority>\n`
+          xml += '  </url>\n'
+        })
+        xml += '</urlset>'
+
+        await fs.outputFile(sitemapPath, xml)
+        console.log(sitemapPath.green)
+
+        if (callback) callback.call(this, urls)
+      })
+      .catch((err) => {
+        console.error('Error creating sitemap.xml'.red)
+        console.error(colors.yellow(err))
+      })
+    this._generating.push(run)
     return this
   }
 
