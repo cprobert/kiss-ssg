@@ -18,6 +18,6 @@ const kiss = new Kiss({
     sitemapChangefreq: 'weekly',
   })
   .generate()
-  .sitemap(function (urls) {
+  .sitemap({}, function (urls) {
     console.log('Sitemap URLs:'.cyan, urls)
   })

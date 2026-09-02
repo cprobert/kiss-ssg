@@ -842,7 +842,10 @@ class Kiss {
     })
   }
 
-  sitemap(callback) {
+  sitemap(options, callback) {
+    options = options || {}
+    const overwrite = options.overwrite !== false
+
     Promise.all(this._promises).then(() => {
       if (!this.config.siteUrl) {
         console.error(
@@ -851,23 +854,31 @@ class Kiss {
         return
       }
 
-      const baseUrl = this.config.siteUrl.replace(/\/$/, '')
       const buildDir = this.config.folders.build
+      const sitemapPath = `${buildDir}/sitemap.xml`
+
+      if (!overwrite && fs.existsSync(sitemapPath)) {
+        console.log('Skipping sitemap.xml: already exists'.grey)
+        if (callback) callback.call(this, null)
+        return
+      }
+
+      const baseUrl = this.config.siteUrl.replace(/\/$/, '')
       const now = new Date().toISOString()
 
       const urls = this._stack
         .filter((entry) => !entry.page.options.ignoreSitemap)
         .map((entry) => {
-          const options = entry.page.options
+          const pageOptions = entry.page.options
           let urlPath = entry.buildTo.slice(buildDir.length)
           urlPath = urlPath.replace(/\.[^./]+$/, '')
           urlPath = urlPath.replace(/\/index$/, '') || '/'
 
           return {
             loc: `${baseUrl}${urlPath}`,
-            lastmod: options.sitemapLastmod || now,
-            priority: options.sitemapPriority || '1.00',
-            changefreq: options.sitemapChangefreq,
+            lastmod: pageOptions.sitemapLastmod || now,
+            priority: pageOptions.sitemapPriority || '1.00',
+            changefreq: pageOptions.sitemapChangefreq,
           }
         })
 
@@ -885,12 +896,12 @@ class Kiss {
       })
       xml += '</urlset>'
 
-      fs.outputFile(`${buildDir}/sitemap.xml`, xml, (err) => {
+      fs.outputFile(sitemapPath, xml, (err) => {
         if (err) {
           console.error('Error creating sitemap.xml'.red)
           console.error(colors.yellow(err))
         } else {
-          console.log(`${buildDir}/sitemap.xml`.green)
+          console.log(sitemapPath.green)
         }
       })
 

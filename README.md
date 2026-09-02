@@ -193,6 +193,14 @@ kiss.page({
 })
 ```
 
+`sitemap.xml` is overwritten on every call by default. Pass `{ overwrite: false }` to skip writing (and skip the callback firing with data) if one already exists at the build path:
+
+```js
+kiss.sitemap({ overwrite: false })
+```
+
+**Note**: `overwrite: false` only has an effect if you also set `cleanBuild: false` on the Kiss config. With the default `cleanBuild: true`, the whole build folder — including any previous `sitemap.xml` — is emptied before generation starts, so there's never an existing file left for `.sitemap()` to find.
+
 ### Helpers
 
 Kiss-ssg registers a few useful helpers by default including:
