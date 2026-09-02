@@ -14,6 +14,7 @@ import { registerPartials } from './lib/partials.js'
 import { copyAssets } from './lib/assets.js'
 import { resolveModel } from './lib/model-resolver.js'
 import { applyController } from './lib/controller-resolver.js'
+import { writeSitemap } from './lib/sitemap.js'
 
 class KissPage {
   _path = ''
@@ -485,67 +486,20 @@ class Kiss {
   }
 
   sitemap(options, callback) {
-    options = options || {}
-    const overwrite = options.overwrite !== false
-
+    const overwrite = !options || options.overwrite !== false
     const run = Promise.all(this._promises)
       .then(async () => {
-        if (!this.config.siteUrl) {
-          this.logger.error(
-            'Cannot generate sitemap.xml: config.siteUrl is not set',
-          )
-          return
-        }
-
-        const buildDir = this.config.folders.build
-        const sitemapPath = `${buildDir}/sitemap.xml`
-
-        if (!overwrite && fs.existsSync(sitemapPath)) {
-          this.logger.info('Skipping sitemap.xml: already exists')
-          if (callback) callback.call(this, null)
-          return
-        }
-
-        const baseUrl = this.config.siteUrl.replace(/\/$/, '')
-        const now = new Date().toISOString()
-
-        const urls = this._stack
-          .filter((entry) => !entry.page.options.ignoreSitemap)
-          .map((entry) => {
-            const pageOptions = entry.page.options
-            let urlPath = entry.buildTo.slice(buildDir.length)
-            urlPath = urlPath.replace(/\.[^./]+$/, '')
-            urlPath = urlPath.replace(/\/index$/, '') || '/'
-
-            return {
-              loc: `${baseUrl}${urlPath}`,
-              lastmod: pageOptions.sitemapLastmod || now,
-              priority: pageOptions.sitemapPriority || '1.00',
-              changefreq: pageOptions.sitemapChangefreq,
-            }
-          })
-
-        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        urls.forEach((url) => {
-          xml += '  <url>\n'
-          xml += `    <loc>${url.loc}</loc>\n`
-          xml += `    <lastmod>${url.lastmod}</lastmod>\n`
-          if (url.changefreq)
-            xml += `    <changefreq>${url.changefreq}</changefreq>\n`
-          xml += `    <priority>${url.priority}</priority>\n`
-          xml += '  </url>\n'
+        const { status, urls } = await writeSitemap(this._stack, {
+          config: this.config,
+          logger: this.logger,
+          overwrite,
         })
-        xml += '</urlset>'
-
-        await fs.outputFile(sitemapPath, xml)
-        this.logger.success(sitemapPath)
-
+        if (status === 'no-site-url') return
         if (callback) callback.call(this, urls)
       })
       .catch((err) => {
         this.logger.error('Error creating sitemap.xml')
-        this.logger.error(err)
+        this.logger.warn(err)
       })
     this._generating.push(run)
     return this
