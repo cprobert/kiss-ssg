@@ -7,7 +7,7 @@ export default defineConfig({
     testTimeout: 15000,
     coverage: {
       provider: 'v8',
-      include: ['lib/**', 'kiss-ssg.js', 'kiss-serve.js'],
+      include: ['lib/**', 'kiss-ssg.js'],
     },
   },
 })

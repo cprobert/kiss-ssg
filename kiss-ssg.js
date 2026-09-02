@@ -1,6 +1,5 @@
 import fs from 'fs-extra'
 import glob from 'glob'
-import chokidar from 'chokidar'
 import path from 'node:path'
 import Handlebars from 'handlebars' // https://handlebarsjs.com/
 import layouts from 'handlebars-layouts' // https://www.npmjs.com/package/handlebars-layouts
@@ -15,11 +14,15 @@ import { resolveModel } from './lib/model-resolver.js'
 import { applyController } from './lib/controller-resolver.js'
 import { writeSitemap } from './lib/sitemap.js'
 import { KissPage } from './lib/kiss-page.js'
+import { startDevServer } from './lib/dev-server.js'
+import { createWatcher } from './lib/watcher.js'
 
 class Kiss {
   _stack = []
   _promises = []
   _generating = []
+  _watcher = null
+  _devServer = null
 
   constructor(config) {
     this.config = resolveConfig(config)
@@ -50,15 +53,16 @@ class Kiss {
     this.registerPartials()
 
     if (this.config.dev) {
-      const publicDir = path.resolve(this.config.folders.build)
-      import('./kiss-serve.js')
-        .then(({ default: kissServe }) =>
-          kissServe(publicDir, this.config.port, this.logger),
+      try {
+        this._devServer = startDevServer(
+          path.resolve(this.config.folders.build),
+          this.config.port,
+          { logger: this.logger },
         )
-        .catch((error) => {
-          this.logger.error('Error running live reload server')
-          this.logger.plain(error.message)
-        })
+      } catch (error) {
+        this.logger.error('Error running live reload server')
+        this.logger.plain(error.message)
+      }
       this.watch()
     }
 
@@ -348,54 +352,31 @@ class Kiss {
     return { error: 'No data found for: ' + id }
   }
 
-  watch() {
-    const self = this
-    self.logger.notice('Watching for file changes', self.config.folders.src)
-    function rebuildSite() {
-      self.logger.notice('Rebuilding site:')
-      self.registerPartials()
-      self._stack.forEach((result) => {
-        result.page.generate()
-      })
+  watch({ entry = process.argv[1] } = {}) {
+    if (this._watcher) return this
+    const rebuildSite = () => {
+      this.logger.notice('Rebuilding site:')
+      this.registerPartials()
+      this._stack.forEach((entry) => entry.page.generate())
     }
-    const entry = process.argv[1]
-    if (entry) {
-      chokidar.watch(entry).on('change', (path, stats) => {
-        self.logger.notice(`Changed: ${path}: `)
-        rebuildSite()
-      })
-    }
-
-    let assetsDir = self.config.folders.assets
-    if (!assetsDir) assetsDir = './src/assets'
-
-    chokidar
-      .watch(self.config.folders.src, {
-        ignored: `${assetsDir}/*`,
-      })
-      .on('all', (event, path) => {
-        if (!event.includes('add')) {
-          const pagesDir = self.config.folders.pages.replace(/^.\//, '')
-          const reStart = new RegExp(`^${pagesDir}\\/`, 'g')
-          const lookup = path.replace(/\\/g, '/').replace(reStart, '')
-          const results = self._stack.filter((p) => p.view === lookup)
-          self.logger.info(`${event}: ${path}: `, results.length)
-          if (results.length > 0) {
-            results.forEach((result) => {
-              self.logger.info('Rebuilding:', result.page.view)
-              result.page.generate()
-            })
-          } else {
-            // If we can't identify a specific view rebuild the whole site
-            rebuildSite()
-          }
-        }
-      })
-
-    chokidar.watch(assetsDir).on('change', (path) => {
-      self.logger.info('Asset changed: ', path)
-      self.copyAssets(self.config.folders.assets, self.config.folders.build)
+    this._watcher = createWatcher({
+      config: this.config,
+      getStack: () => this._stack,
+      entry,
+      rebuildSite,
+      rebuildPage: (entry) => entry.page.generate(),
+      assetsChanged: () =>
+        this.copyAssets(this.config.folders.assets, this.config.folders.build),
+      logger: this.logger,
     })
+    return this
+  }
+
+  async close() {
+    if (this._watcher) await this._watcher.close()
+    this._watcher = null
+    if (this._devServer) await this._devServer.close()
+    this._devServer = null
   }
 }
 
