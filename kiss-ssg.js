@@ -1,21 +1,25 @@
-const md5 = require('md5')
-const fs = require('fs-extra')
-const glob = require('glob')
-const sass = require('sass')
-const chokidar = require('chokidar')
-const path = require('path')
-const htmlMinify = require('html-minifier-terser').minify // https://www.npmjs.com/package/html-minifier-terser
-const colors = require('colors')
-const fetch = require('node-fetch')
-const handlebars = require('handlebars') // https://handlebarsjs.com/
-const layouts = require('handlebars-layouts') // https://www.npmjs.com/package/handlebars-layouts
+import fs from 'fs-extra'
+import glob from 'glob'
+import * as sass from 'sass'
+import chokidar from 'chokidar'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { createHash } from 'node:crypto'
+import { minify as htmlMinify } from 'html-minifier-terser' // https://www.npmjs.com/package/html-minifier-terser
+import colors from 'colors'
+import handlebars from 'handlebars' // https://handlebarsjs.com/
+import layouts from 'handlebars-layouts' // https://www.npmjs.com/package/handlebars-layouts
+import { Remarkable } from 'remarkable'
+import utils from './libs/utils.js'
+
 handlebars.registerHelper(layouts(handlebars))
 
-const utils = require('./libs/utils.js')
-console.log(typeof utils.trimLines)
+const md5 = (input) =>
+  createHash('md5')
+    .update(typeof input === 'string' ? input : JSON.stringify(input))
+    .digest('hex')
 
-const { Remarkable } = require('remarkable')
-var remarkable = new Remarkable({
+const remarkable = new Remarkable({
   html: true, // Enable HTML tags in source
   xhtmlOut: true, // Use '/' to close single tags (<br />)
   breaks: true, // Convert '\n' in paragraphs into <br>
@@ -360,14 +364,15 @@ class Kiss {
     this.registerPartials()
 
     if (this.config.dev) {
-      const kissServe = require('./kiss-serve')
-      var publicDir = path.resolve(this.config.folders.build)
-      try {
-        kissServe(publicDir, this.config.port)
-      } catch (error) {
-        console.error('Error running live reload server'.red)
-        console.log(error.message)
-      }
+      const publicDir = path.resolve(this.config.folders.build)
+      import('./kiss-serve.js')
+        .then(({ default: kissServe }) =>
+          kissServe(publicDir, this.config.port)
+        )
+        .catch((error) => {
+          console.error('Error running live reload server'.red)
+          console.log(error.message)
+        })
       this.watch()
     }
 
@@ -540,18 +545,21 @@ class Kiss {
     return options
   }
 
-  _detectControllerType(options) {
+  async _detectControllerType(options) {
     if (options.controller) {
       switch (typeof options.controller) {
-        case 'string':
-          const controllerPath = `${this.config.folders.controllers}/${options.controller}`
+        case 'string': {
+          const controllerPath = path.resolve(
+            `${this.config.folders.controllers}/${options.controller}`
+          )
           if (fs.existsSync(controllerPath)) {
-            const controller = require.main.require(controllerPath)
-            options = this._controllerRun(options, controller)
+            const mod = await import(pathToFileURL(controllerPath).href)
+            options = this._controllerRun(options, mod.default ?? mod)
           } else {
             console.log(`Failed to find "controller: ${controllerPath}`.red)
           }
           break
+        }
         case 'function':
           options = this._controllerRun(options, options.controller)
           break
@@ -595,17 +603,17 @@ class Kiss {
     })
   }
 
-  _prepareMultiplePages(options, data) {
+  async _prepareMultiplePages(options, data) {
     let i = 1
     const slug = options.slug ? options.slug : options.view.replace('.hbs', '')
     if (Array.isArray(data)) {
-      data.forEach((model) => {
+      for (const model of data) {
         options.slug = slug + '-' + i
         options.model = model
-        options = this._detectControllerType(options)
+        options = await this._detectControllerType(options)
         this._preparePage(options)
         i++
-      })
+      }
     } else {
       console.error('Data in dynamic model must be an array'.red)
     }
@@ -711,12 +719,12 @@ class Kiss {
     // The whole chain (model -> controller -> prepared page) is tracked, and it
     // never rejects: failures resolve to { id, data: null, error }.
     const chain = this._processPageModel(options.model)
-      .then((response) => {
+      .then(async (response) => {
         if (options.dynamic) {
-          this._prepareMultiplePages(options, response.data)
+          await this._prepareMultiplePages(options, response.data)
         } else {
           options.model = response.data
-          options = this._detectControllerType(options)
+          options = await this._detectControllerType(options)
 
           if (!options.slug) {
             if (options.view.endsWith('.hbs')) {
@@ -954,9 +962,10 @@ class Kiss {
         result.page.generate()
       })
     }
-    if (module.parent.filename) {
-      // console.log('Caller: '.cyan, module.parent.filename)
-      chokidar.watch(module.parent.filename).on('change', (path, stats) => {
+    const entry = process.argv[1]
+    if (entry) {
+      // console.log('Caller: '.cyan, entry)
+      chokidar.watch(entry).on('change', (path, stats) => {
         console.log(`Changed: ${path}: `.cyan)
         rebuildSite()
       })
@@ -996,4 +1005,6 @@ class Kiss {
   }
 }
 
-module.exports = Kiss
+export default Kiss
+export { Kiss as 'module.exports' }
+export { utils }

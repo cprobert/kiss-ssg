@@ -1,11 +1,9 @@
-const Kiss = require('./kiss-ssg')
-const hljs = require('highlight.js')
-const kiss = new Kiss({
+import Kiss from './kiss-ssg.js'
+
+new Kiss({
   dev: true,
   verbose: true,
-  folders: {
-    build: 'docs',
-  },
+  folders: { build: 'docs' },
 })
   .scan()
   .generate()

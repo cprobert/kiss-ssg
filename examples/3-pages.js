@@ -1,5 +1,4 @@
-const Kiss = require('../kiss-ssg')
-const utils = require('../libs/utils.js')
+import Kiss, { utils } from '../kiss-ssg.js'
 const kiss = new Kiss({
   folders: {
     src: './3-pages',

@@ -1,4 +1,4 @@
-const Kiss = require('../kiss-ssg')
+import Kiss from '../kiss-ssg.js'
 const kiss = new Kiss({
   folders: {
     src: './6-sitemap',

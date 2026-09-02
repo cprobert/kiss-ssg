@@ -40,44 +40,6 @@ const utils = {
     }
     return path
   },
-  resolve: {
-    alias: function (path, config) {
-      // console.log('Resolving Alias for: ', path)
-      // Root Dir
-      if (path.startsWith('~~/')) {
-        return `${config.folders.root}/${path.substring(3, path.length)}`
-      }
-      // Assets Dir
-      if (path.startsWith('~/assets')) {
-        return `${config.folders.assets}/${path.substring(8, path.length)}`
-      }
-      // Src Dir
-      if (path.startsWith('~/')) {
-        return `${config.folders.src}/${path.substring(2, path.length)}`
-      }
-
-      return `${config.folders.assets}/${utils.stripStartingSlash(path)}`
-    },
-    deployAlias: function (path, config) {
-      // Assets Dir
-      if (path.startsWith('~/assets')) {
-        return `${path.substring(8, path.length)}`
-      }
-      // Src Dir
-      if (path.startsWith('~/')) {
-        return `/${path.substring(2, path.length)}`
-      }
-      // console.log('No match for', path)
-      return path
-    },
-  },
-  stripStartingSlash: function (path) {
-    if (path.startsWith('/')) {
-      path = path.substring(1, path.length)
-      path = utils.stripStartingSlash(path)
-    }
-    return path
-  },
 }
 
-module.exports = utils
+export default utils
