@@ -1,128 +1,18 @@
 import fs from 'fs-extra'
 import glob from 'glob'
-import * as sass from 'sass'
 import chokidar from 'chokidar'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { minify as htmlMinify } from 'html-minifier-terser' // https://www.npmjs.com/package/html-minifier-terser
-import handlebars from 'handlebars' // https://handlebarsjs.com/
+import Handlebars from 'handlebars' // https://handlebarsjs.com/
 import layouts from 'handlebars-layouts' // https://www.npmjs.com/package/handlebars-layouts
 import { Remarkable } from 'remarkable'
 import utils from './lib/utils.js'
 import { createLogger } from './lib/logger.js'
 import { resolveConfig, foldersToEnsure } from './lib/config.js'
-
-handlebars.registerHelper(layouts(handlebars))
-
-const remarkable = new Remarkable({
-  html: true, // Enable HTML tags in source
-  xhtmlOut: true, // Use '/' to close single tags (<br />)
-  breaks: true, // Convert '\n' in paragraphs into <br>
-})
-
-function registerHandlebarsHelpers(config, logger = createLogger()) {
-  handlebars.registerHelper('markdown', function (obj) {
-    let returnVal = ''
-    if (typeof obj === 'object') {
-      returnVal = obj.fn(this)
-    } else if (typeof obj === 'string') {
-      returnVal = obj
-    } else if (typeof obj === 'undefined') {
-      logger.warn('Undefined value passed to markdown helper:')
-    } else {
-      logger.error('Unexpected object in the bagging area!')
-      logger.error(
-        'Markdown helper has an unexpected object type of:',
-        typeof obj,
-      )
-    }
-    const md = remarkable.render(utils.trimLines(returnVal))
-    return new handlebars.SafeString(md)
-  })
-
-  handlebars.registerHelper('sass', function (context, options) {
-    let output = ''
-    let outputStyle = 'expanded'
-    if (!config.dev) outputStyle = 'compressed'
-
-    if (typeof context === 'string') {
-      const sassOutput = sass.compile(path.join(process.cwd(), context), {
-        loadPaths: config.sass.includePaths,
-        style: outputStyle,
-      })
-      output = `${output} \n${sassOutput.css}`
-    }
-    if (
-      (typeof options === 'object' && options.fn) ||
-      (typeof context === 'object' && context.fn)
-    ) {
-      let input
-      if (typeof options === 'undefined') {
-        input = context.fn(this)
-      } else {
-        input = options.fn(this)
-      }
-      const sassOutput = sass.compileString(input, {
-        loadPaths: config.sass.includePaths,
-      })
-      output = `${output} \n${sassOutput.css}`
-    }
-    return new handlebars.SafeString(output)
-  })
-
-  handlebars.registerHelper('offset', function (index) {
-    index++
-    return index
-  })
-
-  handlebars.registerHelper('stringify', function (obj) {
-    return JSON.stringify(obj, null, 3)
-  })
-
-  handlebars.registerHelper('isActive', function (pageOptions, options) {
-    let context = { href: '', active: 'active', folderMatch: false }
-    if (options && options.hash) {
-      context = {
-        ...context,
-        ...options.hash,
-      }
-    }
-    const activeClass = context.active
-    context.active = ''
-    // Sanitize page URLs, to match index.html to /
-    let pageURL = pageOptions.pageURL
-    pageURL = pageURL.substring(0, pageURL.lastIndexOf('.')) // Strip the extention
-    pageURL = pageURL.replace(/index$/, '') // change /index to /
-
-    context.pageURL = pageURL
-    const noSlashHref = context.href.replace(/^\//, '')
-    if (context.folderMatch) {
-      if (pageURL.includes(noSlashHref)) {
-        context.active = activeClass
-      }
-    } else {
-      if (pageURL == noSlashHref) context.active = activeClass
-    }
-
-    return options.fn(context)
-  })
-
-  handlebars.registerHelper('env', function (options) {
-    if (options.hash.is) {
-      const envIs = options.hash.is.toLowerCase()
-      if (envIs.includes('dev') && config.dev) {
-        return options.fn(this)
-      } else if (envIs.includes('prod') && !config.dev) {
-        return options.fn(this)
-      } else {
-        return options.inverse(this)
-      }
-    } else {
-      logger.error('Environment helper missing "is" property', '{{#env}')
-      return ''
-    }
-  })
-}
+import { registerHandlebarsHelpers } from './lib/handlebars-helpers.js'
+import { registerPartials } from './lib/partials.js'
+import { copyAssets } from './lib/assets.js'
 
 class KissPage {
   _path = ''
@@ -137,6 +27,7 @@ class KissPage {
   view = null
   options = {}
   logger = createLogger()
+  hbs = null // the owning Kiss instance's Handlebars environment
 
   // defaults
   buildDir = './public'
@@ -273,7 +164,7 @@ class KissPage {
     }
 
     try {
-      return handlebars.compile(viewText)
+      return this.hbs.compile(viewText)
     } catch (error) {
       this.logger.error('Error rendering view: ')
       this.logger.error(error.message)
@@ -287,21 +178,32 @@ class Kiss {
   _promises = []
   _generating = []
 
-  handlebars = handlebars
-  remarkable = remarkable
-
   constructor(config) {
     this.config = resolveConfig(config)
     this.logger =
       this.config.logger || createLogger({ verbose: this.config.verbose })
     this.verbose = !!this.config.verbose
+
+    // Each Kiss owns its own Handlebars environment and Markdown renderer, so
+    // partials and helpers never leak between instances.
+    this.handlebars = Handlebars.create()
+    this.handlebars.registerHelper(layouts(this.handlebars))
+    this.remarkable = new Remarkable({
+      html: true, // Enable HTML tags in source
+      xhtmlOut: true, // Use '/' to close single tags (<br />)
+      breaks: true, // Convert '\n' in paragraphs into <br>
+    })
+
     this.logger.banner('            Starting Kiss            \n')
     this.logger.debug('config: ', this.config)
 
     this._setupFolders(config)
 
     this.copyAssets(this.config.folders.assets, this.config.folders.build)
-    registerHandlebarsHelpers(this.config, this.logger)
+    registerHandlebarsHelpers(this.handlebars, this.config, {
+      markdown: this.remarkable,
+      logger: this.logger,
+    })
     this.registerPartials()
 
     if (this.config.dev) {
@@ -334,84 +236,19 @@ class Kiss {
   }
 
   registerPartials() {
-    this.logger.info('Registering partials:')
-    // partials
-    this._registerPartials(this.config.folders.partials, 'html')
-    this._registerPartials(this.config.folders.partials, 'md')
-    this._registerPartials(this.config.folders.partials, 'hbs')
-    // layouts
-    this._registerPartials(this.config.folders.layouts)
+    return registerPartials(this.handlebars, this.config, {
+      markdown: this.remarkable,
+      logger: this.logger,
+    })
   }
 
   copyAssets(sourceDir, targetDir) {
-    const assetID = utils.hashId(`${sourceDir} - ${targetDir}`)
-
-    const sassFiles = glob.sync(`${sourceDir}/**/*.+(scss|sass)`)
-    sassFiles.forEach((sassFile) => {
-      let cssFile = sassFile.replace(sourceDir, targetDir)
-      cssFile = cssFile.substr(0, cssFile.lastIndexOf('.'))
-
-      let outputStyle = 'expanded'
-      if (!this.config.dev) {
-        outputStyle = 'compressed'
-      }
-
-      try {
-        const sassOutput = sass.compile(sassFile, {
-          loadPaths: this.config.sass.includePaths,
-          style: outputStyle,
-        })
-
-        fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {
-          if (err) {
-            this.logger.error('Error parsing sass file')
-            this.logger.error(err)
-          } else {
-            this.logger.success(`${cssFile}.css`)
-          }
-        })
-      } catch (err) {
-        this.logger.error('Error parsing sass file: ', sassFile)
-        this.logger.error(err.message)
-      }
-    })
-
-    const filterDynamicAssets = (src, dest) => {
-      const ext = src.substring(src.lastIndexOf('.', src.length))
-      switch (ext.toLowerCase()) {
-        case '.scss':
-        case '.sass':
-          return false
-        default:
-          return true
-      }
-    }
-
-    const p = new Promise((resolve, reject) => {
-      if (sourceDir && targetDir) {
-        fs.copy(
-          sourceDir,
-          targetDir,
-          { filter: filterDynamicAssets },
-          (err) => {
-            if (err) {
-              this.logger.error(
-                `Error copying assets (${sourceDir} => ${targetDir}): `,
-              )
-              this.logger.error(err)
-              resolve({ id: assetID, data: null, error: err })
-            } else {
-              const msg = `Copied assets: ${sourceDir} to ${targetDir}`
-              this.logger.info(msg)
-              resolve({ id: assetID, data: msg })
-            }
-          },
-        )
-      } else {
-        resolve({ id: assetID, data: null })
-      }
-    })
-    this._promises.push(p)
+    this._promises.push(
+      copyAssets(sourceDir, targetDir, {
+        config: this.config,
+        logger: this.logger,
+      }),
+    )
     return this
   }
 
@@ -422,27 +259,6 @@ class Kiss {
     }
     this.logger.error('Can not find model on file system', model)
     return null
-  }
-
-  _registerPartials(folder, ext) {
-    if (!ext) ext = 'hbs'
-    const hbs = glob.sync(`${folder}/**/*.${ext}`)
-    hbs.forEach((path) => {
-      const reStart = new RegExp(`^${folder}`, 'g')
-      const reEnd = new RegExp(`\\.${ext}$`, 'g')
-      let name = path.replace(reStart, '').replace(reEnd, '')
-
-      if (name.startsWith('/')) {
-        name = name.substring(1, name.length)
-      }
-      let source = fs.readFileSync(path, 'utf8')
-      if (ext === 'md') {
-        source = remarkable.render(source)
-      }
-
-      handlebars.registerPartial(name, source)
-      this.logger.highlight(name)
-    })
   }
 
   _controllerRun(options, controller) {
@@ -502,6 +318,7 @@ class Kiss {
     const kissPage = new KissPage(options.view)
     kissPage.options = options
     kissPage.logger = this.logger
+    kissPage.hbs = this.handlebars
     kissPage.buildDir = this.config.folders.build
     kissPage.pagesDir = this.config.folders.pages
     kissPage.path = options.path
