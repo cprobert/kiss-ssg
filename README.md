@@ -258,4 +258,5 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 - Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module.
 - `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`.
 - Controller files may use `export default` (legacy `module.exports` still works).
+- Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are now skipped with a "Page already processed" log instead of being written twice.
 - New: `kiss.close()` stops the dev server and file watcher.
