@@ -1,13 +1,13 @@
 import connect from 'connect'
 import serveStatic from 'serve-static'
-import colors from 'colors'
+import { createLogger } from './lib/logger.js'
 
-export default async (httpRoot, port) => {
+export default async (httpRoot, port, logger = createLogger()) => {
   if (!httpRoot) httpRoot = '/public'
   if (!port) port = 3000
   const app = connect()
   app.use(function (req, res, next) {
-    console.log(req.url)
+    logger.plain(req.url)
     next()
   })
   app.use(
@@ -15,12 +15,9 @@ export default async (httpRoot, port) => {
       cacheControl: false,
       extensions: ['html', 'htm'],
       index: ['index.html', 'index.htm'],
-    })
+    }),
   )
-  console.log(
-    `Serving (${httpRoot}): `.grey,
-    colors.yellow('http://localhost:' + port)
-  )
+  logger.info(`Serving (${httpRoot}): `, 'http://localhost:' + port)
   app.listen(port)
   const { default: livereload } = await import('livereload')
   const server = livereload.createServer()

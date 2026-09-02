@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import utils from '../../libs/utils.js'
+import utils from '../../lib/utils.js'
 
 describe('utils.toSlug', () => {
   it('lower-cases and replaces runs of non-word characters with a dash', () => {

@@ -5,11 +5,12 @@ import chokidar from 'chokidar'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { minify as htmlMinify } from 'html-minifier-terser' // https://www.npmjs.com/package/html-minifier-terser
-import colors from 'colors'
 import handlebars from 'handlebars' // https://handlebarsjs.com/
 import layouts from 'handlebars-layouts' // https://www.npmjs.com/package/handlebars-layouts
 import { Remarkable } from 'remarkable'
-import utils from './libs/utils.js'
+import utils from './lib/utils.js'
+import { createLogger } from './lib/logger.js'
+import { resolveConfig, foldersToEnsure } from './lib/config.js'
 
 handlebars.registerHelper(layouts(handlebars))
 
@@ -19,7 +20,7 @@ const remarkable = new Remarkable({
   breaks: true, // Convert '\n' in paragraphs into <br>
 })
 
-function registerHandlebarsHelpers(config) {
+function registerHandlebarsHelpers(config, logger = createLogger()) {
   handlebars.registerHelper('markdown', function (obj) {
     let returnVal = ''
     if (typeof obj === 'object') {
@@ -27,12 +28,12 @@ function registerHandlebarsHelpers(config) {
     } else if (typeof obj === 'string') {
       returnVal = obj
     } else if (typeof obj === 'undefined') {
-      console.log('Undefined value passed to markdown helper:'.yellow)
+      logger.warn('Undefined value passed to markdown helper:')
     } else {
-      console.error('Unexpected object in the bagging area!'.red)
-      console.error(
-        'Markdown helper has an unexpected object type of:'.yellow,
-        typeof obj
+      logger.error('Unexpected object in the bagging area!')
+      logger.error(
+        'Markdown helper has an unexpected object type of:',
+        typeof obj,
       )
     }
     const md = remarkable.render(utils.trimLines(returnVal))
@@ -40,7 +41,6 @@ function registerHandlebarsHelpers(config) {
   })
 
   handlebars.registerHelper('sass', function (context, options) {
-    // console.log('params: ', typeof options, options, context)
     let output = ''
     let outputStyle = 'expanded'
     if (!config.dev) outputStyle = 'compressed'
@@ -101,11 +101,6 @@ function registerHandlebarsHelpers(config) {
         context.active = activeClass
       }
     } else {
-      // console.log({
-      //   optionsURL: pageOptions.pageURL,
-      //   pageURL: pageURL,
-      //   noSlashHref: noSlashHref,
-      // })
       if (pageURL == noSlashHref) context.active = activeClass
     }
 
@@ -123,10 +118,7 @@ function registerHandlebarsHelpers(config) {
         return options.inverse(this)
       }
     } else {
-      console.error(
-        'Environment helper missing "is" property'.red,
-        '{{#env}'.grey
-      )
+      logger.error('Environment helper missing "is" property', '{{#env}')
       return ''
     }
   })
@@ -144,6 +136,7 @@ class KissPage {
   _debug = false
   view = null
   options = {}
+  logger = createLogger()
 
   // defaults
   buildDir = './public'
@@ -167,7 +160,6 @@ class KissPage {
   set slug(slug) {
     if (slug) {
       this._slug = utils.toSlug(slug)
-      // console.debug('Set slug: '.gray, this._slug)
     }
   }
 
@@ -241,8 +233,8 @@ class KissPage {
         try {
           await fs.outputFile(this.buildTo, minifiedHtml)
         } catch (err) {
-          console.error(`Error creating ${this.buildTo}`.red)
-          console.error(colors.yellow(err))
+          this.logger.error(`Error creating ${this.buildTo}`)
+          this.logger.error(err)
         }
 
         if (this.options && this._dev) {
@@ -250,20 +242,20 @@ class KissPage {
             await fs.outputJson(
               this.buildTo.replace(this._ext, 'json'),
               this.options,
-              { spaces: 2 }
+              { spaces: 2 },
             )
           } catch (err) {
-            console.error(`Error creating ${this.buildTo}`.red)
-            console.error(colors.yellow(err))
+            this.logger.error(`Error creating ${this.buildTo}`)
+            this.logger.error(err)
           }
         }
       } catch (error) {
-        console.log(`Error processing view ${this.view}`.red)
-        console.error(colors.yellow(error.message))
-        if (this._debug) console.debug(colors.grey(error))
+        this.logger.error(`Error processing view ${this.view}`)
+        this.logger.error(error.message)
+        if (this._debug) this.logger.debug(error)
       }
     } else {
-      console.log('Skipping page generation: '.grey, this.view)
+      this.logger.info('Skipping page generation: ', this.view)
     }
     return this.buildTo
   }
@@ -275,17 +267,16 @@ class KissPage {
       try {
         viewText = fs.readFileSync(viewPath, 'utf8')
       } catch (error) {
-        console.log('Error reading view: '.red, viewPath)
-        console.error(colors.yellow(error.message))
+        this.logger.error('Error reading view: ', viewPath)
+        this.logger.error(error.message)
       }
     }
 
     try {
       return handlebars.compile(viewText)
     } catch (error) {
-      console.log('Error rendering view: '.red)
-      // console.debug(view)
-      console.error(colors.yellow(error.message))
+      this.logger.error('Error rendering view: ')
+      this.logger.error(error.message)
     }
     return null
   }
@@ -300,112 +291,50 @@ class Kiss {
   remarkable = remarkable
 
   constructor(config) {
-    console.log('            Starting Kiss            \n'.zebra)
-    // Setup defaults
-    let folders = {
-      root: './',
-      src: './src',
-      pages: './src/pages',
-      build: './public',
-      assets: './src/assets',
-      static: './src/static',
-      layouts: './src/layouts',
-      partials: './src/partials',
-      models: './src/models',
-      controllers: './src/controllers',
-    }
-
-    if (config.folders && config.folders.src) {
-      // Set new base folder for all dependent subfolders
-      if (this.verbose)
-        console.log(`Setting base src folder to: ${config.folders.src}`.grey)
-
-      folders.src = config.folders.src
-      folders.assets = `${config.folders.src}/assets`
-      folders.static = `${config.folders.src}/static`
-      folders.layouts = `${config.folders.src}/layouts`
-      folders.pages = `${config.folders.src}/pages`
-      folders.partials = `${config.folders.src}/partials`
-      folders.models = `${config.folders.src}/models`
-      folders.controllers = `${config.folders.src}/controllers`
-    }
-
-    folders = { ...folders, ...config.folders }
-    this.config = {
-      ...{
-        dev: false,
-        verbose: false,
-        cleanBuild: true,
-        extensionLess: false,
-        sass: {
-          includePaths: [],
-        },
-        port: 3001,
-      },
-      ...config,
-    }
-    this.config.folders = folders
+    this.config = resolveConfig(config)
+    this.logger =
+      this.config.logger || createLogger({ verbose: this.config.verbose })
     this.verbose = !!this.config.verbose
-
-    if (this.verbose) {
-      console.debug('config: '.grey, this.config)
-    }
+    this.logger.banner('            Starting Kiss            \n')
+    this.logger.debug('config: ', this.config)
 
     this._setupFolders(config)
 
     this.copyAssets(this.config.folders.assets, this.config.folders.build)
-    registerHandlebarsHelpers(this.config)
+    registerHandlebarsHelpers(this.config, this.logger)
     this.registerPartials()
 
     if (this.config.dev) {
       const publicDir = path.resolve(this.config.folders.build)
       import('./kiss-serve.js')
         .then(({ default: kissServe }) =>
-          kissServe(publicDir, this.config.port)
+          kissServe(publicDir, this.config.port, this.logger),
         )
         .catch((error) => {
-          console.error('Error running live reload server'.red)
-          console.log(error.message)
+          this.logger.error('Error running live reload server')
+          this.logger.plain(error.message)
         })
       this.watch()
     }
 
-    console.log('Generating:'.grey)
+    this.logger.info('Generating:')
   }
 
   _setupFolders() {
-    // console.log('folders: '.grey, this.config.folders)
-    fs.ensureDirSync(this.config.folders.src)
-    fs.ensureDirSync(this.config.folders.pages)
-    fs.ensureDirSync(this.config.folders.build)
+    foldersToEnsure(this.config.folders).forEach((f) => fs.ensureDirSync(f))
 
-    if (this.config.folders.assets) fs.ensureDirSync(this.config.folders.assets)
-
-    if (this.config.folders.assets)
-      fs.ensureDirSync(this.config.folders.layouts)
-
-    if (this.config.folders.assets)
-      fs.ensureDirSync(this.config.folders.partials)
-
-    if (this.config.folders.assets) fs.ensureDirSync(this.config.folders.models)
-
-    if (this.config.folders.assets)
-      fs.ensureDirSync(this.config.folders.controllers)
-
-    //console.debug('cleanBuild: ', this.config.cleanBuild)
     if (this.config.cleanBuild) {
       try {
-        // fs.removeSync(this.config.folders.build)
         fs.emptyDirSync(this.config.folders.build)
       } catch (err) {
-        console.error(colors.red(err.message))
+        this.logger.error(err.message)
       }
     }
     fs.ensureDirSync(this.config.folders.build)
   }
 
   registerPartials() {
-    console.log('Registering partials:'.gray)
+    this.logger.info('Registering partials:')
     // partials
     this._registerPartials(this.config.folders.partials, 'html')
     this._registerPartials(this.config.folders.partials, 'md')
@@ -419,8 +348,6 @@ class Kiss {
 
     const sassFiles = glob.sync(`${sourceDir}/**/*.+(scss|sass)`)
     sassFiles.forEach((sassFile) => {
-      // console.debug('Processing: '.grey, sassFile)
-
       let cssFile = sassFile.replace(sourceDir, targetDir)
       cssFile = cssFile.substr(0, cssFile.lastIndexOf('.'))
 
@@ -437,15 +364,15 @@ class Kiss {
 
         fs.outputFile(`${cssFile}.css`, sassOutput.css, (err) => {
           if (err) {
-            console.error('Error parsing sass file'.red)
-            console.error(err)
+            this.logger.error('Error parsing sass file')
+            this.logger.error(err)
           } else {
-            console.log(`${cssFile}.css`.green)
+            this.logger.success(`${cssFile}.css`)
           }
         })
       } catch (err) {
-        console.error('Error parsing sass file: '.red, sassFile)
-        console.error(err.message.yellow)
+        this.logger.error('Error parsing sass file: ', sassFile)
+        this.logger.error(err.message)
       }
     })
 
@@ -468,17 +395,17 @@ class Kiss {
           { filter: filterDynamicAssets },
           (err) => {
             if (err) {
-              console.error(
-                `Error copying assets (${sourceDir} => ${targetDir}): `.red
+              this.logger.error(
+                `Error copying assets (${sourceDir} => ${targetDir}): `,
               )
-              console.error(err)
+              this.logger.error(err)
               resolve({ id: assetID, data: null, error: err })
             } else {
               const msg = `Copied assets: ${sourceDir} to ${targetDir}`
-              console.log(msg.grey)
+              this.logger.info(msg)
               resolve({ id: assetID, data: msg })
             }
-          }
+          },
         )
       } else {
         resolve({ id: assetID, data: null })
@@ -493,16 +420,14 @@ class Kiss {
     if (fs.existsSync(model)) {
       return JSON.parse(fs.readFileSync(model, 'utf8'))
     }
-    console.error('Can not find model on file system'.red, model)
+    this.logger.error('Can not find model on file system', model)
     return null
   }
 
   _registerPartials(folder, ext) {
-    //console.log(`Registering ${folder.replace(this.config.folders.src, '')}: `.grey)
     if (!ext) ext = 'hbs'
     const hbs = glob.sync(`${folder}/**/*.${ext}`)
     hbs.forEach((path) => {
-      // console.debug('partial: '.grey, path)
       const reStart = new RegExp(`^${folder}`, 'g')
       const reEnd = new RegExp(`\\.${ext}$`, 'g')
       let name = path.replace(reStart, '').replace(reEnd, '')
@@ -512,12 +437,11 @@ class Kiss {
       }
       let source = fs.readFileSync(path, 'utf8')
       if (ext === 'md') {
-        // console.debug('Rendering Markdown')
         source = remarkable.render(source)
       }
 
       handlebars.registerPartial(name, source)
-      console.log(name.blue)
+      this.logger.highlight(name)
     })
   }
 
@@ -530,11 +454,11 @@ class Kiss {
           ...mappedOptions,
         }
       } catch (err) {
-        console.error(`Error in controller for ${options.view}`.red)
-        console.error(colors.yellow(err))
+        this.logger.error(`Error in controller for ${options.view}`)
+        this.logger.error(err)
       }
     } else {
-      console.error('Invalid controller - not a function'.red)
+      this.logger.error('Invalid controller - not a function')
     }
     return options
   }
@@ -544,13 +468,13 @@ class Kiss {
       switch (typeof options.controller) {
         case 'string': {
           const controllerPath = path.resolve(
-            `${this.config.folders.controllers}/${options.controller}`
+            `${this.config.folders.controllers}/${options.controller}`,
           )
           if (fs.existsSync(controllerPath)) {
             const mod = await import(pathToFileURL(controllerPath).href)
             options = this._controllerRun(options, mod.default ?? mod)
           } else {
-            console.log(`Failed to find "controller: ${controllerPath}`.red)
+            this.logger.error(`Failed to find "controller: ${controllerPath}`)
           }
           break
         }
@@ -558,10 +482,10 @@ class Kiss {
           options = this._controllerRun(options, options.controller)
           break
         default:
-          console.error(
-            'Unknown controller type: '.red,
+          this.logger.error(
+            'Unknown controller type: ',
             options.controller,
-            typeof options.controller
+            typeof options.controller,
           )
       }
     }
@@ -575,10 +499,9 @@ class Kiss {
   }
 
   _preparePage(options) {
-    // console.debug('options:'.grey, options)
-
     const kissPage = new KissPage(options.view)
     kissPage.options = options
+    kissPage.logger = this.logger
     kissPage.buildDir = this.config.folders.build
     kissPage.pagesDir = this.config.folders.pages
     kissPage.path = options.path
@@ -609,7 +532,7 @@ class Kiss {
         i++
       }
     } else {
-      console.error('Data in dynamic model must be an array'.red)
+      this.logger.error('Data in dynamic model must be an array')
     }
   }
 
@@ -617,7 +540,6 @@ class Kiss {
     const p = new Promise((resolve, reject) => {
       switch (typeof model) {
         case 'string':
-          // console.debug('Model is string'.grey)
           if (model.startsWith('http')) {
             fetch(model)
               .then((response) => response.json())
@@ -625,7 +547,7 @@ class Kiss {
                 resolve({ id: model, data: data })
               })
               .catch((error) => {
-                console.error(`Error getting model from ${model}`.red)
+                this.logger.error(`Error getting model from ${model}`)
                 reject({ message: error.message, error: error })
               })
           } else if (model.endsWith('.json')) {
@@ -646,7 +568,6 @@ class Kiss {
           }
           break
         case 'object':
-          // console.debug('Model is object'.grey)
           resolve({ id: utils.hashId(model), data: model })
           break
         case 'undefined':
@@ -666,9 +587,8 @@ class Kiss {
       if (fs.lstatSync(modelPath).isDirectory()) {
         const models = glob.sync(`${modelPath}/*.json`)
         models.forEach((model) => {
-          // console.debug(model.grey)
           const data = this._readModel(
-            model.replace(`${this.config.folders.models}/`, '')
+            model.replace(`${this.config.folders.models}/`, ''),
           )
           if (data) modelArray.push(data)
         })
@@ -679,18 +599,16 @@ class Kiss {
 
   page(options, callback) {
     if (!options.view) {
-      console.error('No view specified'.red, options)
+      this.logger.error('No view specified', options)
       return this
     }
-    // if (this.verbose) console.log('Processing view: '.grey, options.view)
     options.config = this.config // Map the global kiss config to the page config
 
     // Auto map model if one isn't specified
     if (!options.model) {
       const matchingModel = options.view.replace(/\.hbs$/, '.json')
       if (fs.existsSync(`${this.config.folders.models}/${matchingModel}`)) {
-        if (this.verbose)
-          console.log('Found matching model: '.grey, matchingModel)
+        this.logger.debug('Found matching model: ', matchingModel)
         options.model = matchingModel
       }
     }
@@ -700,11 +618,10 @@ class Kiss {
       const matchingController = options.view.replace(/\.hbs$/, '.js')
       if (
         fs.existsSync(
-          `${this.config.folders.controllers}/${matchingController}`
+          `${this.config.folders.controllers}/${matchingController}`,
         )
       ) {
-        if (this.verbose)
-          console.log('Found matching controller: '.grey, matchingController)
+        this.logger.debug('Found matching controller: ', matchingController)
         options.controller = matchingController
       }
     }
@@ -726,24 +643,23 @@ class Kiss {
                 options.view
                   .substring(
                     options.view.lastIndexOf('/') + 1,
-                    options.view.length
+                    options.view.length,
                   )
-                  .replace('.hbs', '')
+                  .replace('.hbs', ''),
               )
             } else {
               options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
-              console.log(
-                'A string view had been provided without an accompanying slug'
-                  .red
+              this.logger.error(
+                'A string view had been provided without an accompanying slug',
               )
-              console.log(`generating random slug: ${options.slug}`.grey)
+              this.logger.info(`generating random slug: ${options.slug}`)
             }
           }
 
           if (!options.path) {
             options.path = options.view.substring(
               0,
-              options.view.lastIndexOf('/')
+              options.view.lastIndexOf('/'),
             )
           }
 
@@ -752,12 +668,11 @@ class Kiss {
           if (options.path && options.path !== '/')
             pathSlug = `${options.path}/${options.slug}`
           let pageToGenerate = `${this.config.folders.build}/${pathSlug}.html`
-          // console.debug(pageToGenerate.magenta)
           const existingPage = this._stack.find(
-            (p) => p.buildTo === pageToGenerate
+            (p) => p.buildTo === pageToGenerate,
           )
           if (existingPage) {
-            console.log('Page already processed'.red, pageToGenerate)
+            this.logger.error('Page already processed', pageToGenerate)
           } else {
             this._preparePage(options)
           }
@@ -766,8 +681,8 @@ class Kiss {
       })
       .catch((error) => {
         // If there was any issues processing the model let the user know
-        console.error(colors.red(error.message || error))
-        if (error.error) console.error(colors.yellow(error.error))
+        this.logger.error(error.message || error)
+        if (error.error) this.logger.error(error.error)
         return {
           id: typeof options.model === 'string' ? options.model : undefined,
           data: null,
@@ -791,7 +706,7 @@ class Kiss {
     pages.forEach((pagePath) => {
       const view = pagePath.replace(
         new RegExp(`^${this.config.folders.pages}/`, 'g'),
-        ''
+        '',
       )
 
       const viewInStack = this._stack.filter((p) => {
@@ -799,7 +714,7 @@ class Kiss {
       })
 
       if (viewInStack.length === 0) {
-        console.log(`Auto added:`.grey, view.blue)
+        this.logger.info(`Auto added:`, view)
         const options = {
           view: view,
         }
@@ -811,21 +726,17 @@ class Kiss {
 
   viewStats() {
     if (this.verbose) {
-      // this._stack.forEach((p) => {
-      //   console.log(p.buildTo)
-      // })
-
       fs.outputJson(
         `${this.config.folders.build}/debug.json`,
         this._stack,
         { spaces: 2 },
         (err) => {
-          if (err) console.log(err)
-        }
+          if (err) this.logger.plain(err)
+        },
       )
     }
 
-    console.log({
+    this.logger.plain({
       promise: this._promises.length,
       stack: this._stack.length,
     })
@@ -854,8 +765,8 @@ class Kiss {
         if (callback) callback.call(this, data)
       })
       .catch((err) => {
-        console.error('Error generating site'.red)
-        console.error(colors.yellow(err))
+        this.logger.error('Error generating site')
+        this.logger.error(err)
       })
     this._generating.push(run)
     return this
@@ -876,8 +787,8 @@ class Kiss {
     const run = Promise.all(this._promises)
       .then(async () => {
         if (!this.config.siteUrl) {
-          console.error(
-            'Cannot generate sitemap.xml: config.siteUrl is not set'.red
+          this.logger.error(
+            'Cannot generate sitemap.xml: config.siteUrl is not set',
           )
           return
         }
@@ -886,7 +797,7 @@ class Kiss {
         const sitemapPath = `${buildDir}/sitemap.xml`
 
         if (!overwrite && fs.existsSync(sitemapPath)) {
-          console.log('Skipping sitemap.xml: already exists'.grey)
+          this.logger.info('Skipping sitemap.xml: already exists')
           if (callback) callback.call(this, null)
           return
         }
@@ -911,8 +822,7 @@ class Kiss {
           })
 
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        xml +=
-          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         urls.forEach((url) => {
           xml += '  <url>\n'
           xml += `    <loc>${url.loc}</loc>\n`
@@ -925,13 +835,13 @@ class Kiss {
         xml += '</urlset>'
 
         await fs.outputFile(sitemapPath, xml)
-        console.log(sitemapPath.green)
+        this.logger.success(sitemapPath)
 
         if (callback) callback.call(this, urls)
       })
       .catch((err) => {
-        console.error('Error creating sitemap.xml'.red)
-        console.error(colors.yellow(err))
+        this.logger.error('Error creating sitemap.xml')
+        this.logger.error(err)
       })
     this._generating.push(run)
     return this
@@ -945,12 +855,9 @@ class Kiss {
 
   watch() {
     const self = this
-    console.log(
-      'Watching for file changes'.cyan,
-      colors.grey(self.config.folders.src)
-    )
+    self.logger.notice('Watching for file changes', self.config.folders.src)
     function rebuildSite() {
-      console.log('Rebuilding site:'.cyan)
+      self.logger.notice('Rebuilding site:')
       self.registerPartials()
       self._stack.forEach((result) => {
         result.page.generate()
@@ -958,9 +865,8 @@ class Kiss {
     }
     const entry = process.argv[1]
     if (entry) {
-      // console.log('Caller: '.cyan, entry)
       chokidar.watch(entry).on('change', (path, stats) => {
-        console.log(`Changed: ${path}: `.cyan)
+        self.logger.notice(`Changed: ${path}: `)
         rebuildSite()
       })
     }
@@ -977,12 +883,11 @@ class Kiss {
           const pagesDir = self.config.folders.pages.replace(/^.\//, '')
           const reStart = new RegExp(`^${pagesDir}\\/`, 'g')
           const lookup = path.replace(/\\/g, '/').replace(reStart, '')
-          //console.log('lookup ', lookup)
           const results = self._stack.filter((p) => p.view === lookup)
-          console.log(`${event}: ${path}: `.grey, results.length)
+          self.logger.info(`${event}: ${path}: `, results.length)
           if (results.length > 0) {
             results.forEach((result) => {
-              console.log('Rebuilding:'.grey, result.page.view)
+              self.logger.info('Rebuilding:', result.page.view)
               result.page.generate()
             })
           } else {
@@ -993,7 +898,7 @@ class Kiss {
       })
 
     chokidar.watch(assetsDir).on('change', (path) => {
-      console.log('Asset changed: '.grey, path)
+      self.logger.info('Asset changed: ', path)
       self.copyAssets(self.config.folders.assets, self.config.folders.build)
     })
   }
