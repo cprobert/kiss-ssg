@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node ≥22.12 (ESM), Vitest, Handlebars + handlebars-layouts, Remarkable, sass, fs-extra, glob v7, chokidar, html-minifier-terser, connect/serve-static/livereload.
 
-**Spec:** `docs/superpowers/specs/2026-09-02-v2-solid-refactor-design.md` — read it first; every task below argues from it.
+**Spec:** `planning/specs/2026-09-02-v2-solid-refactor-design.md` — read it first; every task below argues from it.
 
 ## Model delegation
 
@@ -3159,4 +3159,4 @@ git commit -m "Document v2: ESM, awaited generate, close(), utils export, migrat
 - `npm run test:coverage` — every `lib/*.js` appears with non-trivial coverage.
 - All six examples build their output (Task 12 Step 3 loop) and `node docs.js` regenerates `docs/index.html`.
 - `git ls-files | grep -E "^(kiss-ssg.js|kiss-serve.js|libs/|.eslintrc.js)"` — empty.
-- Spec coverage check against `docs/superpowers/specs/2026-09-02-v2-solid-refactor-design.md`: Compatibility list, four behavior fixes, per-instance Handlebars, `close()`, ESM notes, dependency removals, AIKB enforcement, docs — each has a task above.
+- Spec coverage check against `planning/specs/2026-09-02-v2-solid-refactor-design.md`: Compatibility list, four behavior fixes, per-instance Handlebars, `close()`, ESM notes, dependency removals, AIKB enforcement, docs — each has a task above.
