@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import fs from 'fs-extra'
 import { buildSitemapEntries, renderSitemapXml, writeSitemap } from '../../lib/sitemap.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -63,5 +64,14 @@ describe('writeSitemap', () => {
     expect(written.status).toBe('written')
     expect(written.urls[0].loc).toBe('https://e.com/')
     expect(await site.read('public/sitemap.xml')).toContain('<loc>https://e.com/</loc>')
+  })
+
+  it('rejects when sitemap.xml cannot be written, so the caller can report it', async () => {
+    site = await makeSite({})
+    await fs.ensureDir(`${site.build}/sitemap.xml`)
+    const config = { siteUrl: 'https://e.com', folders: { build: site.build } }
+    await expect(
+      writeSitemap([entry(`${site.build}/index.html`)], { config, logger: silentLogger })
+    ).rejects.toThrow()
   })
 })
