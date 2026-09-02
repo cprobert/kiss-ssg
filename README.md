@@ -53,6 +53,7 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 | verbose    |   false   |        Enables additional output on the terminal, when set to true         |
 | cleanBuild |   true    |          Removed all files from the build dir before generating.           |
 | folders    | see above |               A JSON object of alternative folder locations                |
+| siteUrl    | undefined |         The site's base URL, required by `.sitemap()` (see below)          |
 
 <br />
 
@@ -160,6 +161,36 @@ kiss
     path: 'courses',
   })
   .generate()
+```
+
+### .sitemap()
+
+Generates a `sitemap.xml` in the root of the build folder from every page you've registered, so you don't need to hand-roll one yourself. Requires `siteUrl` to be set on the Kiss config; it logs an error and skips writing if it isn't.
+
+```js
+const Kiss = require('kiss-ssg')
+const kiss = new Kiss({ siteUrl: 'https://example.com' })
+kiss
+  .scan()
+  .generate()
+  .sitemap()
+```
+
+It can be called before or after `.generate()` — both just wait for all your pages to be registered before doing their own thing.
+
+Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages):
+
+```js
+kiss.page({
+  view: 'private/index.hbs',
+  ignoreSitemap: true,
+})
+
+kiss.page({
+  view: 'landing-page.hbs',
+  sitemapPriority: '0.9',
+  sitemapChangefreq: 'weekly',
+})
 ```
 
 ### Helpers

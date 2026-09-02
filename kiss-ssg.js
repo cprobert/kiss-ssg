@@ -842,6 +842,63 @@ class Kiss {
     })
   }
 
+  sitemap(callback) {
+    Promise.all(this._promises).then(() => {
+      if (!this.config.siteUrl) {
+        console.error(
+          'Cannot generate sitemap.xml: config.siteUrl is not set'.red
+        )
+        return
+      }
+
+      const baseUrl = this.config.siteUrl.replace(/\/$/, '')
+      const buildDir = this.config.folders.build
+      const now = new Date().toISOString()
+
+      const urls = this._stack
+        .filter((entry) => !entry.page.options.ignoreSitemap)
+        .map((entry) => {
+          const options = entry.page.options
+          let urlPath = entry.buildTo.slice(buildDir.length)
+          urlPath = urlPath.replace(/\.[^./]+$/, '')
+          urlPath = urlPath.replace(/\/index$/, '') || '/'
+
+          return {
+            loc: `${baseUrl}${urlPath}`,
+            lastmod: options.sitemapLastmod || now,
+            priority: options.sitemapPriority || '1.00',
+            changefreq: options.sitemapChangefreq,
+          }
+        })
+
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      xml +=
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+      urls.forEach((url) => {
+        xml += '  <url>\n'
+        xml += `    <loc>${url.loc}</loc>\n`
+        xml += `    <lastmod>${url.lastmod}</lastmod>\n`
+        if (url.changefreq)
+          xml += `    <changefreq>${url.changefreq}</changefreq>\n`
+        xml += `    <priority>${url.priority}</priority>\n`
+        xml += '  </url>\n'
+      })
+      xml += '</urlset>'
+
+      fs.outputFile(`${buildDir}/sitemap.xml`, xml, (err) => {
+        if (err) {
+          console.error('Error creating sitemap.xml'.red)
+          console.error(colors.yellow(err))
+        } else {
+          console.log(`${buildDir}/sitemap.xml`.green)
+        }
+      })
+
+      if (callback) callback.call(this, urls)
+    })
+    return this
+  }
+
   getModelByID(id, data) {
     const result = data.find((d) => d.id === id)
     if (result) return result.data

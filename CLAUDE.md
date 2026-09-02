@@ -27,7 +27,7 @@ Each example under `examples/*.js` is a minimal, runnable `Kiss` config — the 
 ## Architecture
 
 **Two-class core** (`kiss-ssg.js`):
-- `Kiss` — the orchestrator. Holds config, a `_stack` of pages to build, and a `_promises` queue for async model loading. Public chainable API: `.page()`, `.pages()`, `.scan()`, `.generate()`, `.complete()`, `.watch()`.
+- `Kiss` — the orchestrator. Holds config, a `_stack` of pages to build, and a `_promises` queue for async model loading. Public chainable API: `.page()`, `.pages()`, `.scan()`, `.generate()`, `.complete()`, `.sitemap()`, `.watch()`.
 - `KissPage` — one page's render logic (title/slug/path/extension handling, template compilation, HTML minification, writing the output file).
 
 **Build pipeline**: calling `.page()`/`.pages()`/`.scan()` does *not* render immediately — it resolves the page's model (see below) asynchronously and pushes a prepared `KissPage` onto `_stack`. `.generate()` waits on `Promise.all(this._promises)`, then calls `.generate()` on every stacked page exactly once (`runCount` guards against double-render). `.complete()` is the same wait without triggering render — used when you need all promises settled before doing something else.
@@ -49,6 +49,8 @@ Each example under `examples/*.js` is a minimal, runnable `Kiss` config — the 
 **Built-in Handlebars helpers** (registered per-`Kiss`-instance in `registerHandlebarsHelpers`, not global): `markdown`, `sass` (inline or file, compiled via `sass.compile`/`compileString`, compressed outside dev), `offset`, `stringify`, `isActive` (nav active-state matching against `pageOptions.pageURL`), `env` (`{{#env is="dev"}}`/`"prod"` blocks). The `Kiss` instance also exposes `.handlebars` directly so consumers can register their own helpers.
 
 **Assets**: `copyAssets()` compiles every `*.scss`/`*.sass` under `assets` to a sibling `.css` (via `sass`) and copies everything else straight through to `build`, excluding raw Sass sources.
+
+**`.sitemap(callback)`**: writes `sitemap.xml` to `config.folders.build`, built from `_stack` — no need for consumers to hand-roll it (a pattern several downstream sites used to do themselves). Requires `config.siteUrl`; logs an error and skips (no crash) if unset. Waits on the same `Promise.all(this._promises)` as `.generate()`/`.complete()`, so it can be called before or after `.generate()` in the chain with identical results. Per-page opt-out via `ignoreSitemap: true`; per-page `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted if unset), `sitemapLastmod` (default: one build-time timestamp shared across all pages) overrides. See `examples/6-sitemap.js`.
 
 **Dev mode** (`config.dev: true`): starts `kiss-serve.js` (a `connect` + `serve-static` static server plus `livereload`) on `config.port` (default `3001`), injects the livereload `<script>` tag before `</body>`, skips HTML/CSS/JS minification, and writes a sibling `.json` debug file per page with its fully-resolved options. `.watch()` uses `chokidar` on `config.folders.src` (assets watched separately) to rebuild just the affected page(s), or the whole site if the changed file can't be matched to a stacked view.
 

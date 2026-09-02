@@ -12,7 +12,8 @@
     "eg2": "cd examples && node 2-page",
     "eg3": "cd examples && node 3-pages",
     "eg4": "cd examples && node 4-layouts-and-partials",
-    "eg5": "cd examples && node 5-helpers"
+    "eg5": "cd examples && node 5-helpers",
+    "eg6": "cd examples && node 6-sitemap"
   },
   "repository": {
     "type": "git",
