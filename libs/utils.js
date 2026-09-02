@@ -1,4 +1,10 @@
+import { createHash } from 'node:crypto'
+
 const utils = {
+  hashId(input) {
+    const text = typeof input === 'string' ? input : JSON.stringify(input)
+    return createHash('md5').update(text).digest('hex')
+  },
   trimLines(lines) {
     let text = ''
     lines.split('\n').forEach((line) => {

@@ -4,7 +4,6 @@ import * as sass from 'sass'
 import chokidar from 'chokidar'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { createHash } from 'node:crypto'
 import { minify as htmlMinify } from 'html-minifier-terser' // https://www.npmjs.com/package/html-minifier-terser
 import colors from 'colors'
 import handlebars from 'handlebars' // https://handlebarsjs.com/
@@ -13,11 +12,6 @@ import { Remarkable } from 'remarkable'
 import utils from './libs/utils.js'
 
 handlebars.registerHelper(layouts(handlebars))
-
-const md5 = (input) =>
-  createHash('md5')
-    .update(typeof input === 'string' ? input : JSON.stringify(input))
-    .digest('hex')
 
 const remarkable = new Remarkable({
   html: true, // Enable HTML tags in source
@@ -62,7 +56,7 @@ function registerHandlebarsHelpers(config) {
       (typeof options === 'object' && options.fn) ||
       (typeof context === 'object' && context.fn)
     ) {
-      let input = ''
+      let input
       if (typeof options === 'undefined') {
         input = context.fn(this)
       } else {
@@ -193,7 +187,7 @@ class KissPage {
 
   pageURL() {
     // Fake extension less pages
-    let pagePath = ''
+    let pagePath
     if (this._extLess && this.slug !== 'index') {
       pagePath = `${this._path}/${this.slug}/index.${this._ext}`
     } else {
@@ -421,7 +415,7 @@ class Kiss {
   }
 
   copyAssets(sourceDir, targetDir) {
-    const assetID = md5(`${sourceDir} - ${targetDir}`)
+    const assetID = utils.hashId(`${sourceDir} - ${targetDir}`)
 
     const sassFiles = glob.sync(`${sourceDir}/**/*.+(scss|sass)`)
     sassFiles.forEach((sassFile) => {
@@ -510,7 +504,7 @@ class Kiss {
     hbs.forEach((path) => {
       // console.debug('partial: '.grey, path)
       const reStart = new RegExp(`^${folder}`, 'g')
-      const reEnd = new RegExp(`\.${ext}$`, 'g')
+      const reEnd = new RegExp(`\\.${ext}$`, 'g')
       let name = path.replace(reStart, '').replace(reEnd, '')
 
       if (name.startsWith('/')) {
@@ -653,7 +647,7 @@ class Kiss {
           break
         case 'object':
           // console.debug('Model is object'.grey)
-          resolve({ id: md5(model), data: model })
+          resolve({ id: utils.hashId(model), data: model })
           break
         case 'undefined':
           resolve({ data: {} })
@@ -981,7 +975,7 @@ class Kiss {
       .on('all', (event, path) => {
         if (!event.includes('add')) {
           const pagesDir = self.config.folders.pages.replace(/^.\//, '')
-          const reStart = new RegExp(`^${pagesDir}\/`, 'g')
+          const reStart = new RegExp(`^${pagesDir}\\/`, 'g')
           const lookup = path.replace(/\\/g, '/').replace(reStart, '')
           //console.log('lookup ', lookup)
           const results = self._stack.filter((p) => p.view === lookup)
