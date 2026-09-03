@@ -171,6 +171,34 @@ describe('watch()', () => {
     expect(await site.read('public/item-1.html')).toBe('a')
   })
 
+  it('does not delete a live page whose output is the .json sibling of a removed orphan', async () => {
+    // Orphan cleanup swaps the trailing extension to `.json` to remove the
+    // dev-mode debug sibling too. If a currently registered page happens to
+    // build to that exact `.json` path, it must survive the cleanup.
+    site = await makeSite({
+      'src/pages/item.hbs': '{{model.n}}',
+      'src/pages/x.hbs': 'x',
+      'src/models/team/a.json': '{ "n": "a" }',
+      'src/models/team/b.json': '{ "n": "b" }',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .pages({ view: 'item.hbs', model: 'team' })
+      .page({ view: 'x.hbs', slug: 'item-2', ext: 'json' })
+      .generate()
+    await kiss.complete()
+    expect(await site.exists('public/item-1.html')).toBe(true)
+    expect(await site.exists('public/item-2.html')).toBe(true)
+    expect(await site.exists('public/item-2.json')).toBe(true)
+
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await fs.remove(`${site.src}/models/team/b.json`)
+
+    await waitFor(async () => !(await site.exists('public/item-2.html')))
+    expect(await site.read('public/item-1.html')).toBe('a')
+    expect(await site.exists('public/item-2.json')).toBe(true)
+  })
+
   it('re-runs the sitemap on rebuild and drops the old slug', async () => {
     site = await makeSite({
       'src/pages/about.hbs': '{{title}}',

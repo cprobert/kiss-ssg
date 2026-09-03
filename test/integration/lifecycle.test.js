@@ -76,7 +76,7 @@ describe('build failures', () => {
     kiss.scan().generate()
 
     await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: index\.hbs/,
+      /1 page\(s\) failed to build: .*index\.html/,
     )
     expect(await site.exists('public/about.html')).toBe(true)
 
@@ -103,7 +103,7 @@ describe('build failures', () => {
       .generate()
 
     await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: broken\.hbs/,
+      /1 page\(s\) failed to build: .*broken\.html/,
     )
     expect(await site.exists('public/good.html')).toBe(true)
     expect(await site.exists('public/broken.html')).toBe(false)

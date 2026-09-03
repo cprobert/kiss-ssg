@@ -207,7 +207,7 @@ kiss.sitemap({ overwrite: false })
 
 ### Waiting for the build
 
-`.generate()` is chainable and returns immediately; its callback fires once every page has been written. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
+`.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
 
 ```js
 await kiss.scan().generate().sitemap().complete()
@@ -219,7 +219,7 @@ If any page fails to render or write, the other pages still build but `.complete
 try {
   await kiss.scan().generate().complete()
 } catch (err) {
-  console.error(err.message) // e.g. 1 page(s) failed to build: about.hbs
+  console.error(err.message) // e.g. 1 page(s) failed to build: public/about.html
   process.exitCode = 1
 }
 ```
@@ -228,7 +228,7 @@ A bad model or controller is not a build failure — it is logged, that page is 
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server.
 
-Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, or one dropped from a `.pages()` fan-out — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`.
+Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, or one dropped from a `.pages()` fan-out — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
 
 ### Helpers
 
