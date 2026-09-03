@@ -14,8 +14,8 @@ The orchestrator and public API. `Kiss` owns config, a per-instance Handlebars e
 - `.pages(options, callback)` — same as `.page()` with `options.dynamic = true` (one page per model in an array); returns `this`.
 - `.scan()` — globs every `.hbs` under `config.folders.pages` and calls `.page()` for any not already in `_stack`; returns `this`.
 - `.viewStats()` — logs `{ promise, stack }` counts (and, if `verbose`, writes `debug.json` to the build folder); returns `this`.
-- `.generate(callback)` — awaits `_promises`, renders every stack entry with `runCount === 0` once, awaits the writes, invokes `callback`; returns `this`.
-- `.complete(callback)` — awaits `_drain()` (repeated `Promise.all` over `_promises` + `_generating`), invokes `callback` with the resolved data, and returns that data (a `Promise`, unlike the other chainable methods).
+- `.generate(callback)` — awaits `_promises`, renders every stack entry with `runCount === 0` once (each render caught, failures collected on `_failures`), awaits the writes, invokes `callback`; returns `this`.
+- `.complete(callback)` — awaits `_drain()` (repeated `Promise.all` over `_promises` + `_generating`), then **rejects with an `AggregateError`** if `_failures` is non-empty; otherwise invokes `callback` with the resolved data and returns that data (a `Promise`, unlike the other chainable methods).
 - `.sitemap(options, callback)` — awaits `_promises`, writes `sitemap.xml` via `writeSitemap()`; returns `this`.
 - `.getModelByID(id, data)` — looks up `{ id }` in a resolved-models array; returns `.data` or an error object.
 - `.watch({ entry = process.argv[1] } = {})` — starts (once) a `createWatcher()` wired to rebuild pages/site/assets; a site rebuild goes through `_requestReplay()`/`_replay()` (below), a page rebuild is a plain re-render; returns `this`.
@@ -33,6 +33,8 @@ Nothing in `lib/` — it is the entry point (`package.json`'s `main`).
 ## Non-obvious behavior
 
 - Pipeline: `.page()`/`.pages()`/`.scan()` queue work (model → controller → `_preparePage`) as one caught promise per page on `_promises`; nothing renders until `.generate()`. `.generate()` awaits `_promises`, renders every stack entry whose `runCount` is 0, awaits the writes, then fires the callback. `_generating` tracks `generate()`/`sitemap()` runs. `complete()` drains both lists repeatedly because callbacks may queue more work.
+- Build failures are collected, not thrown at the page: `KissPage.generate()` rethrows a render/minify/write error, `generate()` catches it per page into `_failures` (`{ view, buildTo, error }`) so the remaining pages still build, and `complete()` rejects once with an `AggregateError` (`err.failures` = that array, message `"N page(s) failed to build: <views>"`). `generate()`'s own callback still fires either way — callbacks are not the error channel; `complete()` is. `complete()` does not invoke its callback on failure (same rule as `sitemap()`'s callback), and re-rejects on every subsequent call in the same build because `_failures` is only reset by `_replay()`.
+- Model and controller failures are *not* build failures: they keep the documented log-and-skip behaviour and appear in `complete()`'s resolved data as `{ id, data: null, error }`. The page is simply never prepared, so there is nothing to render and nothing lands in `_failures`.
 - `_promises` must only ever contain *handled* (caught) promises — a bad model rejecting unhandled crashed the process in v1. The `.page()` chain's `.catch()` always resolves to `{ id, data: null, error }` instead of rejecting.
 - Handlebars and Remarkable are created fresh per `Kiss` instance so partials/helpers from one instance never leak into another (matters for tests that build multiple sites in one process).
 - `export { Kiss as 'module.exports' }` exists purely so CJS `require('kiss-ssg')` returns the class itself on Node ≥22.12, not `{ default: Kiss }`.

@@ -213,6 +213,19 @@ kiss.sitemap({ overwrite: false })
 await kiss.scan().generate().sitemap().complete()
 ```
 
+If any page fails to render or write, the other pages still build but `.complete()` **rejects** with an `AggregateError`; `err.failures` lists them as `{ view, buildTo, error }`. That makes a broken build fail your script instead of silently shipping a site with a page missing:
+
+```js
+try {
+  await kiss.scan().generate().complete()
+} catch (err) {
+  console.error(err.message) // e.g. 1 page(s) failed to build: about.hbs
+  process.exitCode = 1
+}
+```
+
+A bad model or controller is not a build failure — it is logged, that page is skipped, and it appears in the resolved data as `{ id, data: null, error }`.
+
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server.
 
 Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`).

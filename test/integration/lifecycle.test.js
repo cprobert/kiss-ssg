@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'fs-extra'
 import Kiss from '../helpers/kiss.js'
+import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
 let site
@@ -58,5 +59,61 @@ describe('generate()', () => {
       .sitemap()
     await kiss.complete()
     expect(await site.exists('public/sitemap.xml')).toBe(true)
+  })
+})
+
+describe('build failures', () => {
+  it('complete() rejects when a page cannot be written; other pages still build', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'x',
+      'src/pages/about.hbs': 'y',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    // A directory sitting where the output file must go makes the write fail.
+    // Created after construction: cleanBuild empties the build dir in there.
+    await fs.ensureDir(`${site.build}/index.html`)
+
+    kiss.scan().generate()
+
+    await expect(kiss.complete()).rejects.toThrow(
+      /1 page\(s\) failed to build: index\.hbs/,
+    )
+    expect(await site.exists('public/about.html')).toBe(true)
+
+    let caught = null
+    try {
+      await kiss.complete()
+    } catch (err) {
+      caught = err
+    }
+    expect(caught.failures).toHaveLength(1)
+    expect(caught.failures[0].view).toBe('index.hbs')
+    expect(caught.failures[0].error).toBeInstanceOf(Error)
+  })
+
+  it('complete() rejects when a page fails to render; other pages still build', async () => {
+    site = await makeSite({
+      // An unknown block helper with an argument: Handlebars compiles it, then
+      // throws `Missing helper: "nope"` at render time.
+      'src/pages/broken.hbs': '{{#nope 1}}x{{/nope}}',
+      'src/pages/good.hbs': 'fine',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+
+    await expect(kiss.complete()).rejects.toThrow(
+      /1 page\(s\) failed to build: broken\.hbs/,
+    )
+    expect(await site.exists('public/good.html')).toBe(true)
+    expect(await site.exists('public/broken.html')).toBe(false)
+  })
+
+  it('complete() resolves normally when nothing failed', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'x' })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).resolves.toBeInstanceOf(Array)
   })
 })
