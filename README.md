@@ -228,7 +228,7 @@ A bad model or controller is not a build failure — it is logged, that page is 
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server.
 
-Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`).
+Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, or one dropped from a `.pages()` fan-out — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`.
 
 ### Helpers
 

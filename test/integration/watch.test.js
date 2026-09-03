@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import fs from 'fs-extra'
 
 vi.mock('../../lib/dev-server.js', () => ({
   startDevServer: () => ({ ready: Promise.resolve(), close: async () => {} }),
@@ -116,6 +117,58 @@ describe('watch()', () => {
       'Page already processed',
       expect.anything(),
     )
+  })
+
+  it('removes output for pages that are no longer registered', async () => {
+    site = await makeSite({
+      'src/pages/item.hbs': '{{model.n}}',
+      'src/models/team/a.json': '{ "n": "a" }',
+      'src/models/team/b.json': '{ "n": "b" }',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .pages({ view: 'item.hbs', model: 'team' })
+      .generate()
+    await kiss.complete()
+    expect(await site.exists('public/item-1.html')).toBe(true)
+    expect(await site.exists('public/item-2.html')).toBe(true)
+
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await fs.remove(`${site.src}/models/team/b.json`)
+
+    await waitFor(async () => !(await site.exists('public/item-2.html')))
+    expect(await site.read('public/item-1.html')).toBe('a')
+  })
+
+  it('re-runs the sitemap on rebuild and drops the old slug', async () => {
+    site = await makeSite({
+      'src/pages/about.hbs': '{{title}}',
+      'src/controllers/about.mjs': "export default () => ({ slug: 's1' })",
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://e.com',
+      logger: silentLogger,
+    })
+      .page({ view: 'about.hbs', controller: 'about.mjs' })
+      .generate()
+      .sitemap()
+    await kiss.complete()
+    expect(await site.exists('public/s1.html')).toBe(true)
+    expect(await site.read('public/sitemap.xml')).toContain('/s1')
+
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch(
+      'src/controllers/about.mjs',
+      "export default () => ({ slug: 's2' })",
+    )
+
+    await waitFor(async () => await site.exists('public/s2.html'))
+    expect(await site.exists('public/s1.html')).toBe(false)
+    const sitemap = await site.read('public/sitemap.xml')
+    expect(sitemap).toContain('/s2')
+    expect(sitemap).not.toContain('/s1')
   })
 
   it('dev mode starts the (mocked) server and watcher; close() stops both', async () => {
