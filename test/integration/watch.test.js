@@ -119,6 +119,37 @@ describe('watch()', () => {
     )
   })
 
+  it('waits for an in-flight build before replaying', async () => {
+    // A replay that resets _stack while the first build's page chain is still
+    // pending lets that stale chain fill the new stack, so the replay's own
+    // page loses the buildTo dedupe and the old model's output survives.
+    let version = 'v1'
+    vi.stubGlobal('fetch', async () => {
+      const body = { title: version } // as at request time, like a real server
+      await sleep(150)
+      return { json: async () => body }
+    })
+    site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
+    const logger = { ...silentLogger, error: vi.fn() }
+    kiss = new Kiss({ folders: site.folders, logger })
+      .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
+      .generate() // deliberately not awaited: the first build is still running
+
+    version = 'v2'
+    await kiss._requestReplay()
+
+    await waitFor(
+      async () =>
+        (await site.exists('public/index.html')) &&
+        (await site.read('public/index.html')) === 'v2',
+    )
+    expect(kiss._stack).toHaveLength(1)
+    expect(logger.error).not.toHaveBeenCalledWith(
+      'Page already processed',
+      expect.anything(),
+    )
+  })
+
   it('removes output for pages that are no longer registered', async () => {
     site = await makeSite({
       'src/pages/item.hbs': '{{model.n}}',
@@ -164,8 +195,13 @@ describe('watch()', () => {
       "export default () => ({ slug: 's2' })",
     )
 
-    await waitFor(async () => await site.exists('public/s2.html'))
-    expect(await site.exists('public/s1.html')).toBe(false)
+    // Stale output is removed after the rebuild completes, so wait for both:
+    // s2.html can exist for a moment while s1.html is still there.
+    await waitFor(
+      async () =>
+        (await site.exists('public/s2.html')) &&
+        !(await site.exists('public/s1.html')),
+    )
     const sitemap = await site.read('public/sitemap.xml')
     expect(sitemap).toContain('/s2')
     expect(sitemap).not.toContain('/s1')
