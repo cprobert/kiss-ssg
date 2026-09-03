@@ -1,5 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { applyController } from '../../lib/controller-resolver.js'
+import {
+  applyController,
+  loadController,
+} from '../../lib/controller-resolver.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
@@ -70,5 +73,74 @@ describe('applyController', () => {
       deps(),
     )
     expect(out.title).toBe('From model')
+  })
+})
+
+describe('loadController fresh', () => {
+  // Rewrites need a distinct mtime for the ESM cache-buster to differ.
+  const settle = () => new Promise((r) => setTimeout(r, 15))
+
+  it('reloads an edited CommonJS controller when fresh', async () => {
+    site = await makeSite({
+      'c/cjs-fresh.js': 'module.exports = () => ({ title: "before" })',
+    })
+    const dir = `${site.root}/c`
+    const first = await loadController(dir, 'cjs-fresh.js', {
+      logger: silentLogger,
+      fresh: true,
+    })
+    expect(first().title).toBe('before')
+    await settle()
+    await site.touch(
+      'c/cjs-fresh.js',
+      'module.exports = () => ({ title: "after" })',
+    )
+    const second = await loadController(dir, 'cjs-fresh.js', {
+      logger: silentLogger,
+      fresh: true,
+    })
+    expect(second().title).toBe('after')
+  })
+
+  it('reloads an edited ESM controller when fresh', async () => {
+    site = await makeSite({
+      'c/esm-fresh.mjs': 'export default () => ({ title: "before" })',
+    })
+    const dir = `${site.root}/c`
+    const first = await loadController(dir, 'esm-fresh.mjs', {
+      logger: silentLogger,
+      fresh: true,
+    })
+    expect(first().title).toBe('before')
+    await settle()
+    await site.touch(
+      'c/esm-fresh.mjs',
+      'export default () => ({ title: "after" })',
+    )
+    const second = await loadController(dir, 'esm-fresh.mjs', {
+      logger: silentLogger,
+      fresh: true,
+    })
+    expect(second().title).toBe('after')
+  })
+
+  it('serves the cached CommonJS controller without fresh', async () => {
+    site = await makeSite({
+      'c/cjs-cached.js': 'module.exports = () => ({ title: "before" })',
+    })
+    const dir = `${site.root}/c`
+    const first = await loadController(dir, 'cjs-cached.js', {
+      logger: silentLogger,
+    })
+    expect(first().title).toBe('before')
+    await settle()
+    await site.touch(
+      'c/cjs-cached.js',
+      'module.exports = () => ({ title: "after" })',
+    )
+    const second = await loadController(dir, 'cjs-cached.js', {
+      logger: silentLogger,
+    })
+    expect(second().title).toBe('before')
   })
 })

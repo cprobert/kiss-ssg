@@ -53,7 +53,7 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 
 | Option     |  Default  |                                  Purpose                                   |
 | ---------- | :-------: | :------------------------------------------------------------------------: |
-| dev        |   false   | Dev mode will start a local live-reload server and rebuild on file change. |
+| dev        |   false   | Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk. |
 | verbose    |   false   |        Enables additional output on the terminal, when set to true         |
 | cleanBuild |   true    |          Removed all files from the build dir before generating.           |
 | folders    | see above |               A JSON object of alternative folder locations                |
@@ -214,6 +214,8 @@ await kiss.scan().generate().sitemap().complete()
 ```
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server.
+
+Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`).
 
 ### Helpers
 
