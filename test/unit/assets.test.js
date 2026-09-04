@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { copyAssets } from '../../lib/assets.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -24,6 +24,29 @@ describe('copyAssets', () => {
     expect(await site.read('out/css/x.css')).toContain('color:red')
     expect(await site.read('out/robots.txt')).toBe('ok')
     expect(await site.exists('out/css/x.scss')).toBe(false)
+  })
+
+  it('does not trigger the "import sass from \'sass\'" deprecation warning', async () => {
+    // lib/assets.js must prefer the named `sass.compile` export (present on
+    // current sass) over `sassModule.default` — reaching for `.default` on a
+    // modern sass namespace logs "`import sass from 'sass'` is deprecated"
+    // on every compile. Spy on the channels sass warns through and assert
+    // silence across a real (unmocked) compile.
+    const stderrSpy = vi
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      site = await makeSite({ 'a/css/x.scss': '$c: red; b { color: $c }' })
+      await copyAssets(`${site.root}/a`, `${site.root}/out`, deps)
+    } finally {
+      stderrSpy.mockRestore()
+      warnSpy.mockRestore()
+    }
+    const written = [...stderrSpy.mock.calls, ...warnSpy.mock.calls]
+      .map((args) => String(args[0]))
+      .join('\n')
+    expect(written).not.toMatch(/deprecated/i)
   })
 
   it('resolves (does not reject or hang) when the source is missing', async () => {
