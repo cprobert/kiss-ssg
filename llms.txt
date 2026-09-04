@@ -60,7 +60,7 @@ Setting `folders.src` re-derives every other `folders.*` entry from it, unless t
 - ESM-only (`import Kiss from 'kiss-ssg'`); CJS `require()` still works on Node ≥22.12.
 - The `generate` callback now fires after files are written, not before.
 - v1 logged a page's render/write failure and resolved anyway; v2's `complete()` rejects with an `AggregateError` listing the failed views.
-- Handlebars is per-instance — register helpers on `kiss.handlebars`, not the global `handlebars` module.
+- Handlebars is per-instance — register helpers on `kiss.handlebars`, not the global `handlebars` module. Partials are registered there too, so a helper reading the global `handlebars.partials` renders nothing; use `kiss.handlebars.partials` or the native dynamic partial `{{> (lookup this "name")}}`.
 - `utils` is a named export (`import { utils } from 'kiss-ssg'`), not `kiss-ssg/libs/utils.js`.
 - Controllers may `export default` instead of `module.exports =`.
 - Duplicate output paths, including `.pages()` fan-out where a controller yields the same slug twice, are skipped with a "Page already processed" log instead of being written twice.

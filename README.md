@@ -270,7 +270,7 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 
 - v2 is ESM-only (`import Kiss from 'kiss-ssg'`). `require()` still works on Node ≥22.12.
 - The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build.
-- Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module.
+- Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module. Partials live there too: a helper that reads `require('handlebars').partials` finds nothing in v2 — read `kiss.handlebars.partials`, or drop the helper and use Handlebars' native dynamic partial, `{{> (lookup this "partialName")}}`.
 - `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`.
 - Controller files may use `export default` (legacy `module.exports` still works).
 - Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are now skipped with a "Page already processed" log instead of being written twice.
