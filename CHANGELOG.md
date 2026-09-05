@@ -40,4 +40,7 @@ this file's `## 2.0.0` entry when the line is released._
   produced `public/abuot.html` containing the text `abuot.hbs`, and the build
   reported success.
 - Deleting a page template while watching now rebuilds the whole site, instead of
-  re-rendering the deleted page over its own output.
+  re-rendering the deleted page over its own output. If `.scan()` found that
+  page, it is dropped from the site and its output file is deleted; a page you
+  registered by name with `.page()` keeps failing the build until you remove the
+  call.

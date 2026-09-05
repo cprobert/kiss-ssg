@@ -347,20 +347,50 @@ describe('watch()', () => {
     expect(Object.keys(kiss.handlebars.partials)).not.toContain('nav')
   })
 
-  it('deleting a page view fails the replay loudly and never rewrites the output', async () => {
-    // Flipped by the B3 fix (planning/reviews/2026-09-05-v2-engine-review.md):
-    // _getTemplate used to fall through with `viewText` still set to the view
-    // filename, so a page whose view was deleted "built successfully" with its
-    // own filename as its body. It now throws, the unlink triggers a full
-    // replay, and that replay reports the page as a failure. The stale output
-    // survives untouched: the registration is still replayed, so its buildTo
-    // is in the new stack and the orphan sweep does not remove it.
+  it('deleting a scanned page view removes its output on the next replay', async () => {
+    // scan() discovered the page from the file tree, so the file going away
+    // takes the page with it: the registration is dropped, its buildTo is
+    // absent from the new stack, and the orphan sweep removes the output and
+    // the dev-mode .json sibling. Nothing is reported as a failure.
     site = await makeSite({
       'src/pages/index.hbs': 'home',
       'src/pages/gone.hbs': 'SECRET DRAFT',
     })
     const logger = { ...silentLogger, error: vi.fn() }
-    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+    kiss = new Kiss({ folders: site.folders, dev: true, logger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.exists('public/gone.html')).toBe(true)
+    expect(await site.exists('public/gone.json')).toBe(true)
+    await kiss._watcher.ready
+    await fs.remove(`${site.src}/pages/gone.hbs`)
+    await waitFor(async () => !(await site.exists('public/gone.html')))
+    expect(await site.exists('public/gone.json')).toBe(false)
+    expect(await site.read('public/index.html')).toContain('home')
+    expect(logger.error).not.toHaveBeenCalledWith(
+      'Error rebuilding site',
+      expect.anything(),
+    )
+  })
+
+  it('deleting an explicitly registered page view fails the replay loudly and keeps the stale output', async () => {
+    // Flipped by the B3 fix (planning/reviews/2026-09-05-v2-engine-review.md):
+    // _getTemplate used to fall through with `viewText` still set to the view
+    // filename, so a page whose view was deleted "built successfully" with its
+    // own filename as its body. It now throws, the unlink triggers a full
+    // replay, and that replay reports the page as a failure. An explicitly
+    // registered page is never dropped — the author asked for it by name — so
+    // its buildTo stays in the stack and the stale output survives untouched.
+    site = await makeSite({
+      'src/pages/index.hbs': 'home',
+      'src/pages/gone.hbs': 'SECRET DRAFT',
+    })
+    const logger = { ...silentLogger, error: vi.fn() }
+    kiss = new Kiss({ folders: site.folders, logger })
+      .page({ view: 'index.hbs' })
+      .page({ view: 'gone.hbs' })
+      .generate()
     await kiss.complete()
     expect(await site.read('public/gone.html')).toBe('SECRET DRAFT')
     kiss.watch({ entry: null })
