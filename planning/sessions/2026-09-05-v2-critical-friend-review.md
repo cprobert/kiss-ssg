@@ -36,6 +36,8 @@ opened: 2026-09-05
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-09-05 — Triage received; implementation phase opens.** Operator's decisions: implement **everything, including P3**; **A-04 and F-01 flip to "failures fail the build"** (`complete()` rejects, the pinning tests are flipped deliberately, llms.txt states the rule); **`folders.root` is deleted** rather than implemented; the watch-mode spec's **step 2** (serial rebuild queue + partial-edit fast path) lands on this branch after step 1, step 3 stays unbuilt pending measurement. Accepted as-is: E3, E7. **Impact surface amended to "public API additions"**: `config.livereloadPort` and `config.devHost` are new keys and `folders.root` is removed, so the close proposes the prerelease bump with the removal called out in CHANGELOG. Implementation success criteria: every triaged row lands with a regression test shown failing on the unfixed code; every `lib/` change ships its AIKB doc, and every consumer-visible change its llms.txt/README/CHANGELOG line, in the same commit; `npm run gates` green after every commit; spec steps 1–2 landed with the replay-equivalence test; the report's Triage column filled. Work plan: `/root/.claude/plans/fable-pickup-from-opus-atomic-dewdrop.md` Part 2 (waves 1–3, one Opus/Sonnet item at a time, Fable reviews every diff).
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
