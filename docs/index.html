@@ -187,7 +187,7 @@
         controller: ({ model }) =&gt; {
           return {
             model: model.sort(
-              (a, b) =&gt; parseInt(a.sort_order) - parseInt(b.sort_order)
+              (a, b) =&gt; parseInt(a.sort_order) - parseInt(b.sort_order),
             ),
           }
         },
