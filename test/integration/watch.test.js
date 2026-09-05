@@ -301,37 +301,39 @@ describe('watch()', () => {
     await waitFor(async () => (await site.read('public/index.html')) === 'L2X')
   })
 
-  it('deleting a partial leaves its stale content in rendered output', async () => {
-    // Pins B1 (planning/reviews/2026-09-05-v2-engine-review.md): registerPartials()
-    // only ever adds to the Handlebars env, so a partial deleted from disk keeps
-    // rendering with its last-known content forever. Flipped deliberately by the fix.
+  it('deleting a partial unregisters it and fails the pages that used it', async () => {
+    // Flipped by the B1 fix (planning/reviews/2026-09-05-v2-engine-review.md):
+    // registerPartials() used to only ever add to the Handlebars env, so a
+    // partial deleted from disk kept rendering its last-known content forever.
+    // The registered set now mirrors disk, so the page that still references
+    // the deleted partial fails loudly on the replay instead of rendering a
+    // ghost, and its stale output is left untouched rather than rewritten.
     site = await makeSite({
       'src/pages/index.hbs': 'PAGE[{{> foo}}]',
       'src/partials/foo.hbs': 'FOO-V1',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
-      .scan()
-      .generate()
+    const logger = { ...silentLogger, error: vi.fn() }
+    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
     await kiss.complete()
     expect(await site.read('public/index.html')).toBe('PAGE[FOO-V1]')
     kiss.watch({ entry: null })
     await kiss._watcher.ready
     await fs.remove(`${site.src}/partials/foo.hbs`)
-    // The unlink alone matches no stack entry (rebuildSite/_replay), so touch
-    // the page too to force a rebuild that definitely completes.
-    await site.touch('src/pages/index.hbs', 'PAGE2[{{> foo}}]')
-    await waitFor(
-      async () => (await site.read('public/index.html')) === 'PAGE2[FOO-V1]',
+    await waitFor(() =>
+      logger.error.mock.calls.some(
+        ([first]) => first === 'Error rebuilding site',
+      ),
     )
-    expect(Object.keys(kiss.handlebars.partials)).toContain('foo')
+    expect(Object.keys(kiss.handlebars.partials)).not.toContain('foo')
+    expect(await site.read('public/index.html')).toBe('PAGE[FOO-V1]')
   })
 
-  it('adding a partial is ignored and a page referencing it stays frozen', async () => {
-    // Pins B2 (planning/reviews/2026-09-05-v2-engine-review.md): the watcher
-    // ignores every `add` event, so a partial created mid-session is never
-    // registered; a page edited to reference it fails to render and the
-    // rendering error is swallowed, leaving the page's output frozen at its
-    // previous content. Flipped deliberately by the fix.
+  it('adding a partial registers it and a page can then reference it', async () => {
+    // Flipped by the B2 fix (planning/reviews/2026-09-05-v2-engine-review.md):
+    // the watcher used to ignore every `add` event, so a partial created
+    // mid-session was never registered and the next edit to a page referencing
+    // it failed to render, leaving that page frozen at its previous content.
+    // The `add` now triggers a rebuild, which re-registers the partial.
     site = await makeSite({ 'src/pages/index.hbs': 'home' })
     kiss = new Kiss({ folders: site.folders, logger: silentLogger })
       .scan()
@@ -340,11 +342,11 @@ describe('watch()', () => {
     kiss.watch({ entry: null })
     await kiss._watcher.ready
     await site.touch('src/partials/nav.hbs', 'NAV')
-    await sleep(1000) // settle window for the (ignored) `add` event
+    await waitFor(() => Object.keys(kiss.handlebars.partials).includes('nav'))
     await site.touch('src/pages/index.hbs', 'home[{{> nav}}]')
-    await sleep(1000) // settle window for the failed, swallowed re-render
-    expect(await site.read('public/index.html')).toBe('home')
-    expect(Object.keys(kiss.handlebars.partials)).not.toContain('nav')
+    await waitFor(
+      async () => (await site.read('public/index.html')) === 'home[NAV]',
+    )
   })
 
   it('deleting a scanned page view removes its output on the next replay', async () => {
@@ -405,10 +407,11 @@ describe('watch()', () => {
   })
 
   it('adding a page view to a scanned site does nothing until restart', async () => {
-    // Pins B2 (planning/reviews/2026-09-05-v2-engine-review.md), page side: the
-    // watcher ignores `add` events, so a new page file that `.scan()` would
-    // pick up on a fresh process is never built while watching. Flipped
-    // deliberately by the fix.
+    // Still nothing after the B2 fix, for a different reason. The `add` now
+    // reaches rebuildSite, but a replay re-runs `_registrations` — the page
+    // list `.scan()` produced at registration time — and never calls `.scan()`
+    // again, so a view that did not exist then is in no registration and is
+    // never built. Only a restart re-scans the pages folder.
     site = await makeSite({ 'src/pages/index.hbs': 'home' })
     kiss = new Kiss({ folders: site.folders, logger: silentLogger })
       .scan()

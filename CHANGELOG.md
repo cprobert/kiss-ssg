@@ -44,3 +44,12 @@ this file's `## 2.0.0` entry when the line is released._
   page, it is dropped from the site and its output file is deleted; a page you
   registered by name with `.page()` keeps failing the build until you remove the
   call.
+- Deleting a partial or layout while watching now removes it from the site.
+  Previously it kept rendering its last-known content until you restarted, so
+  the dev server and a fresh production build disagreed; a page that still
+  references the deleted partial now fails the rebuild instead.
+- Creating a partial or layout while watching now registers it straight away.
+  Previously new files were invisible until you restarted, and the next edit to
+  a page referencing one failed silently, leaving that page's output frozen. (A
+  brand-new page template still needs a restart — a rebuild replays the pages
+  `.scan()` already found rather than scanning again.)

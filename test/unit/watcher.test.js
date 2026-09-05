@@ -55,6 +55,48 @@ describe('createWatcher', () => {
     await waitFor(() => calls.site > before)
   })
 
+  it('routes an add and an addDir under src to rebuildSite, once ready', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'a',
+      'src/partials/p.hbs': 'p',
+    })
+    const calls = { page: [], site: 0 }
+    const stack = [{ view: 'new.hbs', buildTo: 'x', page: {}, runCount: 0 }]
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          pages: `${site.src}/pages`,
+          assets: `${site.src}/assets`,
+        },
+      },
+      getStack: () => stack,
+      entry: null,
+      rebuildSite: () => calls.site++,
+      rebuildPage: (e) => calls.page.push(e.view),
+      assetsChanged: () => {},
+      logger: silentLogger,
+    })
+    await handle.ready
+    // chokidar's initial scan emits an `add` for every existing file: none of
+    // that burst is a rebuild.
+    expect(calls.site).toBe(0)
+
+    await site.touch('src/partials/nav.hbs', 'NAV')
+    await waitFor(() => calls.site >= 1)
+
+    // An added page view goes to rebuildSite too, even when its name matches a
+    // stack entry: only a replay can register a page that did not exist before.
+    const afterPartial = calls.site
+    await site.touch('src/pages/new.hbs', 'new')
+    await waitFor(() => calls.site > afterPartial)
+
+    const afterPage = calls.site
+    await fs.ensureDir(`${site.src}/pages/blog`)
+    await waitFor(() => calls.site > afterPage)
+    expect(calls.page).toEqual([])
+  })
+
   it('sends an unlink under pagesDir to rebuildSite, not rebuildPage', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',
