@@ -90,6 +90,13 @@ describe('startDevServer with a real livereload server', () => {
       host: '127.0.0.1',
       ...options,
     })
+    // livereload watches with chokidar's ignoreInitial, so a file written
+    // before the initial scan finishes counts as pre-existing and never emits
+    // 'add'. 'ready' is one-shot, so the listener is attached here — in the
+    // same synchronous turn as chokidar.watch() — where it cannot be missed.
+    handle.watching = new Promise((resolve) =>
+      handle.livereload.watcher.once('ready', resolve),
+    )
     handles.push(handle)
     return handle
   }
@@ -163,16 +170,19 @@ describe('startDevServer with a real livereload server', () => {
       livereloadPort: 35816,
     })
     await handle.ready
+    await handle.watching
     const refresh = vi.spyOn(handle.livereload, 'refresh')
 
+    // The .json is written first, so its refresh — were it watched — would be
+    // queued on the same delay ahead of the .svg's. Seeing the .svg refresh is
+    // therefore proof the .json's was never queued, with nothing to sleep for.
     await site.touch('public/x.json', '{}')
     await site.touch('public/x.svg', '<svg></svg>')
-    await waitFor(() => refresh.mock.calls.length > 0)
-    await new Promise((r) => setTimeout(r, 200))
+    const refreshed = () =>
+      refresh.mock.calls.map(([f]) => f.replace(/\\/g, '/'))
+    await waitFor(() => refreshed().some((f) => f.endsWith('x.svg')))
 
-    const refreshed = refresh.mock.calls.map(([f]) => f.replace(/\\/g, '/'))
-    expect(refreshed.some((f) => f.endsWith('x.svg'))).toBe(true)
-    expect(refreshed.some((f) => f.endsWith('x.json'))).toBe(false)
+    expect(refreshed().some((f) => f.endsWith('x.json'))).toBe(false)
   })
 
   it('binds the configured host and names it in the log line', async () => {
