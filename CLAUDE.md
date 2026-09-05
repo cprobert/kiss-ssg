@@ -57,7 +57,7 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettie
 
 ## Git workflow
 
-There is **no CI and no pre-commit hook** in this repo. Every check runs because the branch ritual runs it, so pushing without the ritual skips all of them.
+Two automated nets, and they run the same script. A **pre-commit hook** (`.githooks/pre-commit`, activated per-clone by the npm `prepare` script) blocks a commit whose staged files fail prettier — it checks staged blob content, not the working tree, so it is immune to the CRLF noise of a Windows checkout. **CI** (`.github/workflows/ci.yml`) runs `npm run gates` on every push and PR to `main` and `v2`. Neither replaces the ritual below: CI tells you a branch is broken, the ritual is what sweeps the docs, checks coverage, bumps the version and writes the reflection.
 
 **The base branch is resolved, not assumed.** `node scripts/base-branch.mjs` prints the integration branch the current work merges back into — `main`, or the major line in development (`v2` today). Every skill and script below uses it, so nothing has to be edited when v2 lands on main. Override with `git config kiss.baseBranch <name>`.
 
@@ -78,7 +78,7 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 ## Rules
 
 - Engine code goes in `lib/`, one responsibility per file, with a unit test in `test/unit/` (the orchestrator `lib/kiss.js` is covered by `test/integration/` instead) and an `AIKB/` doc.
-- Dev tooling in `scripts/` gets a `test/unit/` test too — there is no CI, so those tests are its only safety net. Exempt a genuinely thin file with `// @test-exempt: <reason>` near the top.
+- Dev tooling in `scripts/` gets a `test/unit/` test too — it is outside the engine, so nothing else exercises it. Exempt a genuinely thin file with `// @test-exempt: <reason>` near the top.
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
 - Public API changes: update `llms.txt` and `README.md` in the same commit.

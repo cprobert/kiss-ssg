@@ -23,8 +23,18 @@ describe('parsePackedFiles', () => {
     expect(parsePackedFiles(JSON.stringify([{ name: 'kiss-ssg' }]))).toEqual([])
   })
 
-  it('returns null on unparsable output so the gate reports rather than fails', () => {
-    expect(parsePackedFiles('npm warn something\n')).toBeNull()
+  it('finds the JSON behind npm lifecycle-script banners', () => {
+    const stdout = [
+      '> kiss-ssg@2.0.0-alpha.0 prepare',
+      '> git config core.hooksPath .githooks || exit 0',
+      '',
+      JSON.stringify([{ files: [{ path: 'llms.txt' }] }]),
+    ].join('\n')
+    expect(parsePackedFiles(stdout)).toEqual(['llms.txt'])
+  })
+
+  it('returns null when there is no JSON at all, so the gate can fail loudly', () => {
+    expect(parsePackedFiles('npm error code ENOENT\n')).toBeNull()
   })
 })
 

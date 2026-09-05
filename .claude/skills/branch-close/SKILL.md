@@ -153,7 +153,7 @@ npm run gates
 
 `scripts/gates.mjs` runs four gates — **test** (`vitest run`, which includes `test/aikb.test.js`'s docs-sync check), **lint** (`eslint .`), **format** (`prettier --check` on the files this branch changed), and **pack** (`npm pack --dry-run`, proving `lib/`, `llms.txt` and `AIKB/` are all still in the published tarball) — printing a compact pass/fail line per gate with the salient tail on failure, and exiting non-zero if any fail.
 
-kiss-ssg has **no CI and no pre-commit hook**, so this is not a parity check against a pipeline — it is the only thing standing between the branch and a broken published package. Treat a red gate as a hard stop: fix, commit, and re-run `/branch-close` (docs-sweep is idempotent and corpse-collector is read-only, so re-running the earlier steps is cheap). Do not run the retrospective or push until green.
+CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so green here is green there — running it now just means you find out in seconds rather than after the push. Treat a red gate as a hard stop: fix, commit, and re-run `/branch-close` (docs-sweep is idempotent and corpse-collector is read-only, so re-running the earlier steps is cheap). Do not run the retrospective or push until green.
 
 ### Step 7 — Codex review (judgment call)
 
@@ -236,4 +236,4 @@ Return the PR URL to the user. One line confirming: gates passed, docs swept, re
 | `codex-companion.mjs review --wait`   | Run by `/branch-close` (judgment call)     | Codex Review step     |
 | `/retrospective`                      | Invoked by `/branch-close`                 | Retrospective step    |
 
-There is no CI workflow and no pre-commit hook in this repo — every one of these runs because this ritual runs it. Pushing without `/branch-close` skips all of them.
+The pre-commit hook and CI cover formatting and the gate battery on their own. Everything else in this table — the secrets scan, the docs sweep, the coverage gate, the version bump, the reflection — runs only because this ritual runs it. Pushing without `/branch-close` skips all of those.

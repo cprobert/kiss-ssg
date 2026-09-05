@@ -32,7 +32,7 @@ The gate scope is narrower deliberately: `CLAUDE.md`'s rule is "engine code goes
 **Where tests live.** Unlike a sibling-file convention, this repo puts every unit test in `test/unit/`, named after the module: `lib/sitemap.js` → `test/unit/sitemap.test.js`. Two standing exceptions, both from `CLAUDE.md` and `AIKB/testing.md`:
 
 - **`lib/kiss.js` has no unit test on purpose** — the orchestrator is covered end-to-end through its public API in `test/integration/`. Never flag it, and never propose writing `test/unit/kiss.test.js`.
-- **`scripts/*.mjs` is in scope too.** The obligation is about logic, not location. `scripts/` holds the dev tooling this whole ritual depends on — the gate battery and the base-branch resolver — and a wrong predicate there fails silently in exactly the place nothing else is watching. There is no CI in this repo, so `test/unit/` is the only safety net these files have.
+- **`scripts/*.mjs` is in scope too.** The obligation is about logic, not location. `scripts/` holds the dev tooling this whole ritual depends on — the gate battery and the base-branch resolver — and a wrong predicate there fails silently in exactly the place nothing else is watching. CI runs `npm run gates`, but nothing tests the gate script itself — `test/unit/` is the only safety net these files have.
 
 ---
 
@@ -100,7 +100,7 @@ Prioritise the failure modes that are **silent in production**: a page that quie
   > - Write the missing tests in `test/unit/` (run `npm test` to confirm they pass), then re-run `/branch-close`, **or**
   > - Add `// @test-exempt: <reason>` near the top of each file if the module is genuinely exempt, then re-run `/branch-close`.
   >
-  > There is no CI here — an undocumented omission ships.
+  > CI runs the tests that exist; it cannot know about the ones that don't. An undocumented omission ships.
 
 ---
 

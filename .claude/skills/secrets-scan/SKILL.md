@@ -21,7 +21,7 @@ Then proceed.
 
 Run `/secrets-scan` before pushing any branch. `/branch-close` invokes it automatically at the Secrets Scan step.
 
-kiss-ssg is a published package with no CI and no pre-commit hook, so nothing else looks. And a secret committed here does not just leak into a repository — the next `npm publish` puts whatever is inside `lib/`, `llms.txt` or `AIKB/` into a public tarball.
+Neither CI nor the pre-commit hook looks for credentials — they check formatting, tests, lint and the tarball's contents. This is the only step that looks. And a secret committed here does not just leak into a repository: the next `npm publish` puts whatever is inside `lib/`, `llms.txt` or `AIKB/` into a public tarball.
 
 Two operations, always in this order:
 

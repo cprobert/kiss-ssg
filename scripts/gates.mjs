@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // The gate battery /branch-close runs before opening a PR.
 //
-// kiss-ssg has no CI and no pre-commit hook, so this script is the only thing
-// standing between a branch and a broken published package. Four gates, cheapest
-// first, each printing one pass/fail line plus the salient tail on failure.
-// Exits non-zero if any gate fails.
+// Four gates, cheapest first, each printing one pass/fail line plus the salient
+// tail on failure. Exits non-zero if any fail. The same script runs locally from
+// /branch-close and in CI (.github/workflows/ci.yml), so green here is green
+// there.
 import { execFileSync, spawnSync } from 'node:child_process'
 import { resolveBaseBranch } from './base-branch.mjs'
 
@@ -20,11 +20,14 @@ export function missingPackedFiles(packedFiles, required = REQUIRED_PACKED) {
 }
 
 // `npm pack --dry-run --json` emits one entry per tarball, each with a `files`
-// array of { path }. Tolerant of shape drift: a parse failure returns null so
-// the gate reports "could not read" rather than failing a healthy branch.
+// array of { path } — but npm prints lifecycle-script banners (the `prepare`
+// script that installs our git hook) ahead of it, so the JSON has to be found
+// rather than assumed to start at byte zero.
 export function parsePackedFiles(stdout) {
+  const start = stdout.search(/[[{]/)
+  if (start === -1) return null
   try {
-    const parsed = JSON.parse(stdout)
+    const parsed = JSON.parse(stdout.slice(start))
     const entries = Array.isArray(parsed) ? parsed : [parsed]
     return entries.flatMap((e) => (e.files ?? []).map((f) => f.path))
   } catch {
@@ -38,7 +41,9 @@ const run = (cmd, args) => {
     shell: process.platform === 'win32',
   })
   const output = `${r.stdout ?? ''}${r.stderr ?? ''}`.trim()
-  return { ok: r.status === 0, output }
+  // `stdout` is kept separate for the pack gate: npm writes its lifecycle-script
+  // banners to stderr, and merging them in leaves trailing text after the JSON.
+  return { ok: r.status === 0, stdout: (r.stdout ?? '').trim(), output }
 }
 
 const tail = (output, lines = 12) => output.split('\n').slice(-lines).join('\n')
@@ -54,12 +59,10 @@ function changedFiles(base) {
       out
         .split('\n')
         .map((f) => f.trim())
-        // Code and manifests only. Markdown is deliberately out of scope: the
-        // repo's existing docs (README, CLAUDE.md, every AIKB note) predate any
-        // prettier pass over them, so checking .md here would fail every branch
-        // that honours a documentation obligation. Bringing the docs in is a
-        // deliberate one-off reformat, not something a gate should force.
-        .filter((f) => /\.(js|mjs|cjs|json)$/.test(f))
+        // No extension filter: `.prettierignore` decides what is out of scope
+        // and `--ignore-unknown` (below) drops anything prettier cannot parse,
+        // so the two live in one place instead of drifting apart here.
+        .filter(Boolean)
     )
   } catch {
     return null
@@ -86,12 +89,17 @@ const GATES = [
   },
   {
     name: 'pack',
-    fix: "restore the dropped path in package.json's `files`",
+    fix: "restore the dropped path in package.json's `files`, or fix `npm pack --dry-run --json`",
     run: () => {
       const r = run('npm', ['pack', '--dry-run', '--json'])
-      const packed = parsePackedFiles(r.output)
+      const packed = parsePackedFiles(r.stdout)
+      // A gate guarding the published tarball must not pass when it cannot see
+      // one. Unreadable output is a failure, not a skip.
       if (packed === null)
-        return { ok: true, note: 'skipped — could not read npm pack output' }
+        return {
+          ok: false,
+          output: `could not read npm pack output:\n${r.output}`,
+        }
       const missing = missingPackedFiles(packed)
       return missing.length === 0
         ? { ok: true, note: `${packed.length} files in tarball` }
