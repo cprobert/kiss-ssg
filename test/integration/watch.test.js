@@ -11,6 +11,21 @@ import { makeSite, waitFor } from '../helpers/site.js'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+// A silent logger that records every call made once `afterClose.on` is set, so
+// a test can assert an instance went quiet at the moment it claimed to.
+const recordingLogger = () => {
+  const afterClose = { on: false, calls: [] }
+  const logger = { ...silentLogger }
+  for (const [name, fn] of Object.entries(silentLogger)) {
+    if (typeof fn !== 'function') continue
+    logger[name] = (...args) => {
+      if (afterClose.on) afterClose.calls.push([name, ...args])
+      fn(...args)
+    }
+  }
+  return { logger, afterClose }
+}
+
 let site, kiss
 afterEach(async () => {
   if (kiss) await kiss.close()
@@ -487,14 +502,43 @@ describe('watch()', () => {
     await waitFor(async () => (await site.read('public/index.html')) === 'v2')
   })
 
-  it('close() returns while a replay is still running', async () => {
-    // Pins B6 (planning/reviews/2026-09-05-v2-engine-review.md): close() closes
-    // the watcher and dev server but never waits on `_replayInFlight`, so a
-    // replay requested just before close() keeps running (and writing to the
-    // build dir) after close() has already resolved. Flipped deliberately by
-    // the fix.
+  it('close() waits for an in-flight rebuild before resolving', async () => {
+    // Flipped by the B6 fix (planning/reviews/2026-09-05-v2-engine-review.md):
+    // close() used to close the watcher and dev server without ever waiting on
+    // the rebuild queue, so a replay requested just before close() kept running
+    // — and writing to the build dir — after close() had resolved. close() now
+    // quiesces: nothing is written, and nothing is logged, once it returns.
     vi.stubGlobal('fetch', async () => {
       await sleep(300)
+      return { json: async () => ({ title: 'remote' }) }
+    })
+    site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
+    const { logger, afterClose } = recordingLogger()
+    kiss = new Kiss({ folders: site.folders, logger })
+      .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
+      .generate()
+    await kiss.complete()
+
+    kiss._requestReplay() // fire-and-forget, exactly as rebuildSite does
+    await sleep(50) // replay is now mid-fetch
+    await kiss.close()
+
+    // Remove the build dir, as a deploy/clean step racing the shutdown might:
+    // an orphaned replay would resurrect it once its write landed.
+    await fs.remove(site.build)
+    afterClose.on = true
+    await sleep(800) // longer than the in-flight fetch would have taken
+    expect(await site.exists('public')).toBe(false)
+    expect(afterClose.calls).toEqual([])
+  })
+})
+
+describe('rebuild queue', () => {
+  // One in-flight slot and one pending slot. A slow remote model keeps the
+  // first run in flight long enough to fill the pending slot deliberately.
+  const slowModelSite = async () => {
+    vi.stubGlobal('fetch', async () => {
+      await sleep(150)
       return { json: async () => ({ title: 'remote' }) }
     })
     site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
@@ -502,19 +546,71 @@ describe('watch()', () => {
       .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
       .generate()
     await kiss.complete()
+    const entry = kiss._stack[0]
+    return { entry, rendered: vi.spyOn(entry.page, 'generate') }
+  }
+  const drained = () =>
+    waitFor(
+      () =>
+        !kiss._rebuildInFlight &&
+        !kiss._pendingReplay &&
+        kiss._pendingTargets.size === 0,
+    )
 
-    kiss._requestReplay() // fire-and-forget, exactly as rebuildSite does
-    await sleep(50) // replay is now mid-fetch
-    await kiss.close() // returns even though the replay above is still in flight
+  it('a replay supersedes a scoped rebuild waiting in the queue', async () => {
+    const { entry, rendered } = await slowModelSite()
 
-    // Remove the build dir, as a deploy/clean step racing the shutdown might:
-    // the orphaned replay resurrects it once its write lands. (Only the build
-    // dir — since the B3 fix, removing the view too would fail the page
-    // instead, and this test is about close(), not about a missing view.)
-    await fs.remove(site.build)
-    await waitFor(async () => site.exists('public/index.html'), {
-      timeout: 2000,
-    })
-    expect(await site.exists('public')).toBe(true)
+    const a = kiss._requestReplay() // occupies the in-flight slot
+    await sleep(20)
+    kiss._requestRebuild([entry])
+    expect(kiss._pendingTargets.size).toBe(1)
+    kiss._requestReplay()
+    expect(kiss._pendingTargets.size).toBe(0)
+    expect(kiss._pendingReplay).toBe(true)
+
+    await a
+    await drained()
+    expect(rendered).not.toHaveBeenCalled()
+    expect(await site.read('public/index.html')).toBe('remote')
+  })
+
+  it('coalesces two scoped rebuilds of the same entry into one re-render', async () => {
+    const { entry, rendered } = await slowModelSite()
+
+    const a = kiss._requestReplay() // occupies the in-flight slot
+    await sleep(20)
+    kiss._requestRebuild([entry])
+    kiss._requestRebuild([entry])
+    expect(kiss._pendingTargets.size).toBe(1)
+
+    await a
+    await drained()
+    expect(rendered).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a scoped rebuild requested while a replay is pending', async () => {
+    const { entry, rendered } = await slowModelSite()
+
+    const a = kiss._requestReplay() // occupies the in-flight slot
+    await sleep(20)
+    const b = kiss._requestReplay() // fills the pending slot
+    expect(b).toBe(a)
+    kiss._requestRebuild([entry])
+    expect(kiss._pendingTargets.size).toBe(0)
+
+    await a
+    await drained()
+    expect(rendered).not.toHaveBeenCalled()
+  })
+
+  it('starts nothing once close() has been called', async () => {
+    const { entry, rendered } = await slowModelSite()
+    await kiss.close()
+
+    kiss._requestReplay()
+    kiss._requestRebuild([entry])
+    expect(kiss._rebuildInFlight).toBeNull()
+    await sleep(100)
+    expect(rendered).not.toHaveBeenCalled()
   })
 })

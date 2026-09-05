@@ -57,3 +57,7 @@ this file's `## 2.0.0` entry when the line is released._
 - `.scan()` no longer registers a view a second time when you called `.page()`
   for it earlier in the same chain — that produced a `Page already processed`
   error on the build.
+- `await kiss.close()` no longer returns while a rebuild is still writing. A
+  rebuild requested just before you closed kept running afterwards, so a clean
+  or deploy step that ran once `close()` resolved raced files still being
+  written — and could see the build folder recreated after it deleted it.
