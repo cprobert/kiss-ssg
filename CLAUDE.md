@@ -43,7 +43,7 @@ npm run lint             # ESLint (flat config, eslint.config.js)
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the four pre-PR gates: test, lint, format, pack
 node scripts/base-branch.mjs   # print the integration branch this work merges into
-node docs                # regenerate docs/ (dev mode, starts a server — does not exit on its own, Ctrl-C to stop)
+node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg6        # run an example (examples/*.js); most start a dev server and don't exit on their own
 ```
 

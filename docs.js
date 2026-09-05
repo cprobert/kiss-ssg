@@ -1,9 +1,15 @@
 import Kiss from './lib/kiss.js'
 
-new Kiss({
-  dev: true,
+const dev = process.argv.includes('--dev')
+
+const kiss = new Kiss({
+  dev,
   verbose: true,
   folders: { build: 'docs' },
 })
-  .scan()
-  .generate()
+
+kiss.scan().generate()
+
+if (!dev) {
+  await kiss.complete()
+}
