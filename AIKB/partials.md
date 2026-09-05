@@ -11,7 +11,7 @@ Registers Handlebars partials and layouts from `config.folders.partials` and `co
 
 ## Depends on
 
-`fs-extra`, `glob`; markdown renderer and logger are passed in via `deps`, not imported.
+`fs-extra`; `./utils.js` (`globFiles`, `posixPath`). The markdown renderer and logger are passed in via `deps`, not imported.
 
 ## Depended on by
 
@@ -20,7 +20,7 @@ Registers Handlebars partials and layouts from `config.folders.partials` and `co
 ## Non-obvious behavior
 
 - A partial's registered name is its path relative to the globbed folder with the extension stripped (leading `/` trimmed) — e.g. `partials/nav/header.hbs` under `folders.partials` registers as `nav/header`.
-- `.md` files are rendered to HTML *at registration time*, not at render time — editing a Markdown partial requires re-registering (i.e. a rebuild), not just re-rendering the page.
+- `.md` files are rendered to HTML _at registration time_, not at render time — editing a Markdown partial requires re-registering (i.e. a rebuild), not just re-rendering the page.
 - Registration order is html, then md, then hbs (from `partials/`), then hbs (from `layouts/`) — since `hbs.registerPartial` overwrites by name, a layout `.hbs` with the same name as a partial `.hbs` wins, and later-registered extensions in general win over earlier ones for a colliding name.
 - `registerPartialsFrom` returns `[]` (not an error) when `folder` is falsy, matching `config.js`'s "folders may be `null`" contract — a `null` `folders.layouts`, for example, silently skips layout registration.
-- Partials are registered on the *instance* environment (`kiss.handlebars`), never the global `handlebars` module. A consumer helper that does `require('handlebars').partials[name]` (v1 sites did this to render a partial chosen by name — diploma-msc's `renderPartial`) silently gets `undefined` in v2. The migration notes point such sites at `kiss.handlebars.partials` or Handlebars' built-in dynamic partial syntax `{{> (lookup this "name")}}`, which needs no helper at all (verified against diploma-msc on 2026-09-04).
+- Partials are registered on the _instance_ environment (`kiss.handlebars`), never the global `handlebars` module. A consumer helper that does `require('handlebars').partials[name]` (v1 sites did this to render a partial chosen by name — diploma-msc's `renderPartial`) silently gets `undefined` in v2. The migration notes point such sites at `kiss.handlebars.partials` or Handlebars' built-in dynamic partial syntax `{{> (lookup this "name")}}`, which needs no helper at all (verified against diploma-msc on 2026-09-04).

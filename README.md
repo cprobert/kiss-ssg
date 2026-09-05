@@ -51,13 +51,13 @@ The default config options are:
 
 Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
 
-| Option     |  Default  |                                  Purpose                                   |
-| ---------- | :-------: | :------------------------------------------------------------------------: |
+| Option     |  Default  |                                                                                                         Purpose                                                                                                          |
+| ---------- | :-------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | dev        |   false   | Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk. |
-| verbose    |   false   |        Enables additional output on the terminal, when set to true         |
-| cleanBuild |   true    |          Removed all files from the build dir before generating.           |
-| folders    | see above |               A JSON object of alternative folder locations                |
-| siteUrl    | undefined |         The site's base URL, required by `.sitemap()` (see below)          |
+| verbose    |   false   |                                                                               Enables additional output on the terminal, when set to true                                                                                |
+| cleanBuild |   true    |                                                                                 Removed all files from the build dir before generating.                                                                                  |
+| folders    | see above |                                                                                      A JSON object of alternative folder locations                                                                                       |
+| siteUrl    | undefined |                                                                                The site's base URL, required by `.sitemap()` (see below)                                                                                 |
 
 <br />
 
@@ -133,7 +133,7 @@ kiss
     controller: ({ model }) => {
       return {
         model: model.sort(
-          (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order)
+          (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order),
         ),
       }
     },
@@ -174,10 +174,7 @@ Generates a `sitemap.xml` in the root of the build folder from every page you've
 ```js
 import Kiss from 'kiss-ssg'
 const kiss = new Kiss({ siteUrl: 'https://example.com' })
-kiss
-  .scan()
-  .generate()
-  .sitemap()
+kiss.scan().generate().sitemap()
 ```
 
 It can be called before or after `.generate()` — both just wait for all your pages to be registered before doing their own thing.
@@ -238,17 +235,13 @@ You can parse markdown like this:
 
 ```handlebars
 <div>
-{{#markdown}}
-# Heading
+  {{#markdown}}
+    # Heading > this is markdown foo bar baz
+  {{/markdown}}
 
-> this is markdown
+  or
 
-foo bar baz
-{{/markdown}}
-
-or
-
-{{markdown model.introduction}}
+  {{markdown model.introduction}}
 </div>
 ```
 

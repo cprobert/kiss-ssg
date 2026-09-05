@@ -21,7 +21,9 @@ afterEach(async () => {
 describe('watch()', () => {
   it('rebuilds a changed page and can be closed', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger }).scan().generate()
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
     await kiss.complete()
     kiss.watch({ entry: null })
     await kiss._watcher.ready
@@ -237,7 +239,9 @@ describe('watch()', () => {
 
   it('dev mode starts the (mocked) server and watcher; close() stops both', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'x' })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger }).scan().generate()
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+      .scan()
+      .generate()
     await kiss.complete()
     expect(kiss._devServer).toBeTruthy()
     expect(kiss._watcher).toBeTruthy()

@@ -74,6 +74,16 @@ describe('applyController', () => {
     )
     expect(out.title).toBe('From model')
   })
+
+  it('does not write the fallback title onto the options it was given', async () => {
+    // A caller reusing one options object across a `.pages()` fan-out would
+    // otherwise have the first item's title stick for every later page: the
+    // fallback above only fills a title that is not already set.
+    const options = { model: { title: 'From model' } }
+    const out = await applyController(options, deps())
+    expect(out.title).toBe('From model')
+    expect(options.title).toBeUndefined()
+  })
 })
 
 describe('loadController fresh', () => {

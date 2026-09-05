@@ -34,7 +34,7 @@ const kiss = new Kiss({
     // this.getModelByID is a helper to rehydrate the model on completion
     const courseModel = this.getModelByID(
       'https://jsonplaceholder.typicode.com/users',
-      data
+      data,
     )
     // It can then be reused for pages such as indexes
     this.page({
