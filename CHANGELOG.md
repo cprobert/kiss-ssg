@@ -50,6 +50,10 @@ this file's `## 2.0.0` entry when the line is released._
   references the deleted partial now fails the rebuild instead.
 - Creating a partial or layout while watching now registers it straight away.
   Previously new files were invisible until you restarted, and the next edit to
-  a page referencing one failed silently, leaving that page's output frozen. (A
-  brand-new page template still needs a restart — a rebuild replays the pages
-  `.scan()` already found rather than scanning again.)
+  a page referencing one failed silently, leaving that page's output frozen.
+- Creating a page template while watching now builds it, on a site that uses
+  `.scan()`. Previously it needed a restart, because a rebuild replayed the
+  pages the first scan found rather than scanning again.
+- `.scan()` no longer registers a view a second time when you called `.page()`
+  for it earlier in the same chain — that produced a `Page already processed`
+  error on the build.

@@ -406,12 +406,11 @@ describe('watch()', () => {
     expect(await site.read('public/gone.html')).toBe('SECRET DRAFT')
   })
 
-  it('adding a page view to a scanned site does nothing until restart', async () => {
-    // Still nothing after the B2 fix, for a different reason. The `add` now
-    // reaches rebuildSite, but a replay re-runs `_registrations` — the page
-    // list `.scan()` produced at registration time — and never calls `.scan()`
-    // again, so a view that did not exist then is in no registration and is
-    // never built. Only a restart re-scans the pages folder.
+  it('adding a page view to a scanned site builds it on the next rebuild', async () => {
+    // Flipped by W1-2b: a replay used to re-run only `_registrations` — the
+    // page list `.scan()` produced when it ran — so a view created while
+    // watching was in no registration and never built. `.scan()` is now
+    // remembered and re-run at the start of every replay.
     site = await makeSite({ 'src/pages/index.hbs': 'home' })
     kiss = new Kiss({ folders: site.folders, logger: silentLogger })
       .scan()
@@ -420,8 +419,31 @@ describe('watch()', () => {
     kiss.watch({ entry: null })
     await kiss._watcher.ready
     await site.touch('src/pages/new.hbs', 'new page')
-    await sleep(1200) // bounded settle window; no positive condition to poll for
-    expect(await site.exists('public/new.html')).toBe(false)
+    await waitFor(() => site.exists('public/new.html'))
+    expect(await site.read('public/new.html')).toBe('new page')
+    expect(await site.read('public/index.html')).toBe('home')
+  })
+
+  it('does not double-register a view that .page() already took when .scan() follows it', async () => {
+    // `.scan()`'s dedupe used to filter against `_stack`, which is still empty
+    // during a synchronous `.page(…).scan()` chain (pages are queued, not
+    // prepared), so the same view was registered twice and the second one was
+    // rejected by `_preparePage`'s buildTo dedupe with an error. It now checks
+    // `_registrations`, which is written synchronously by `page()`.
+    site = await makeSite({ 'src/pages/index.hbs': 'home' })
+    const logger = { ...silentLogger, error: vi.fn() }
+    kiss = new Kiss({ folders: site.folders, logger })
+      .page({ view: 'index.hbs' })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(logger.error).not.toHaveBeenCalledWith(
+      'Page already processed',
+      expect.anything(),
+    )
+    expect(kiss._stack).toHaveLength(1)
+    expect(kiss._registrations).toHaveLength(1)
+    expect(await site.read('public/index.html')).toBe('home')
   })
 
   it('adding a page view to an explicitly registered site does nothing', async () => {
