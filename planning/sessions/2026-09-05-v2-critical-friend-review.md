@@ -42,6 +42,8 @@ opened: 2026-09-05
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-05** — criteria 1–6 met: every `lib/`/`scripts/` module lane-covered once the in-context addendum F swept `controller-resolver.js` and `logger.js` (report `506e33d`); every row has a repro path or a "reasoning only" label; verdict ledger in the appendix; report committed; four carried-over items each carry a recommendation; spec at `dd64029` mirrors the v2 spec's sections, states the sync-render invariant (marker in the render seam, after critique) and puts characterisation tests first. Criterion 7 not yet — blocked on operator triage (3 P1, 22 P2, 19 P3). Trajectory is three `planning/` files, no engine change, impact surface unchanged, no drift. Decision: continue — hand the backlog to the operator.
+
 ---
 
 <!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
