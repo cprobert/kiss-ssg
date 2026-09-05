@@ -112,6 +112,24 @@ describe('pages()', () => {
     expect(await site.read('public/course-2.html')).toBe('b')
   })
 
+  it('derives a page option from every item, not just the first', async () => {
+    site = await makeSite({
+      'src/pages/course.hbs': '{{title}}|{{model.name}}',
+    })
+    const kiss = new Kiss({ folders: site.folders })
+      .pages({
+        view: 'course.hbs',
+        model: [
+          { title: 'One', name: 'a' },
+          { title: 'Two', name: 'b' },
+        ],
+      })
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/course-1.html')).toBe('One|a')
+    expect(await site.read('public/course-2.html')).toBe('Two|b')
+  })
+
   it('lets the controller derive the slug from the model', async () => {
     site = await makeSite({ 'src/pages/course.hbs': '{{model.name}}' })
     const kiss = new Kiss({ folders: site.folders })

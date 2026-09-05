@@ -8,7 +8,7 @@ Resolves `options.controller` (a function, or a filename to load) and runs it ag
 
 - `runController(options, controller, { logger })` → `options` merged with `controller(options)`'s return value (`{ ...options, ...controller(options) }`). Returns `options` unchanged if `controller` isn't a function, or if the controller throws (error is caught and logged, not propagated).
 - `async loadController(controllersDir, file, { logger, fresh = false })` → the controller function, or `null` if the file doesn't exist. Resolves `${controllersDir}/${file}` to an absolute path with `path.resolve`, `import()`s it via `pathToFileURL(...).href`, and returns `mod.default ?? mod` (so both `export default fn` and legacy `module.exports = fn` work). `fresh: true` bypasses the module caches so an edited file is re-read.
-- `async applyController(options, { controllersDir, logger, fresh = false })` → `options`, with the controller applied (if `options.controller` is a string filename or a function) and `options.title` defaulted from `options.model.title` if neither is already set. `fresh` is passed straight through to `loadController`.
+- `async applyController(options, { controllersDir, logger, fresh = false })` → an options object, with the controller applied (if `options.controller` is a string filename or a function) and `title` defaulted from `options.model.title` if neither is already set. Never mutates the object it was given. `fresh` is passed straight through to `loadController`.
 
 ## Depends on
 
@@ -27,3 +27,4 @@ Resolves `options.controller` (a function, or a filename to load) and runs it ag
 - Accepts both `export default fn` and CommonJS-style `module.exports = fn` (`import()` surfaces the latter as `mod.default`), via `mod.default ?? mod`.
 - A throwing controller leaves `options` completely untouched (`runController`'s catch returns the original `options`, not a partial merge) — the page still builds with whatever options it already had.
 - `options.title` only falls back to `options.model.title` when `options.title` is unset _after_ the controller runs, so a controller that removes/clears `title` will still get the model's title as a fallback.
+- That fallback returns a **new** object rather than assigning onto the caller's `options`. It used to mutate in place, which broke `.pages()`: the fan-out reused one options object per loop, item one set the title, and the "unless already set" guard then skipped every item after it — so every page in the fan-out rendered the first item's title while `{{model.x}}` looked correct. `lib/kiss.js` now also builds a fresh options object per fanned-out page; either fix alone would have closed the observed bug, and both are kept because the aliasing was the real hazard.
