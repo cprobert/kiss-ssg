@@ -11,6 +11,16 @@ import { makeSite, waitFor } from '../helpers/site.js'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+// A replay's orphan sweep removes an output and its dev-mode `.json` sibling
+// one `await` apart, so a file disappearing is a mid-sweep state, not the end
+// of the rebuild: a test that waits on it and then asserts on the sibling is
+// racing the sweep's own interleaving. This is the queue's drain (the loop
+// `close()` uses) — awaiting it once the sweep has visibly started puts every
+// later assertion after the whole replay.
+const rebuildSettled = async () => {
+  while (kiss._rebuildInFlight) await kiss._rebuildInFlight
+}
+
 // A silent logger that records every call made once `afterClose.on` is set, so
 // a test can assert an instance went quiet at the moment it claimed to.
 const recordingLogger = () => {
@@ -212,6 +222,7 @@ describe('watch()', () => {
     await fs.remove(`${site.src}/models/team/b.json`)
 
     await waitFor(async () => !(await site.exists('public/item-2.html')))
+    await rebuildSettled()
     expect(await site.read('public/item-1.html')).toBe('a')
     expect(await site.exists('public/item-2.json')).toBe(true)
   })
@@ -383,6 +394,7 @@ describe('watch()', () => {
     await kiss._watcher.ready
     await fs.remove(`${site.src}/pages/gone.hbs`)
     await waitFor(async () => !(await site.exists('public/gone.html')))
+    await rebuildSettled()
     expect(await site.exists('public/gone.json')).toBe(false)
     expect(await site.read('public/index.html')).toContain('home')
     expect(logger.error).not.toHaveBeenCalledWith(
@@ -421,6 +433,79 @@ describe('watch()', () => {
     expect(await site.read('public/gone.html')).toBe('SECRET DRAFT')
   })
 
+  it('a replay that throws before re-queuing keeps the last good build, and the next one sweeps it', async () => {
+    // The orphan sweep reads "in `previous`, absent from the new stack" as
+    // stale. That only holds once the pages have been re-queued: a replay that
+    // threw before the page loop has an empty stack because it failed, not
+    // because the site shrank, so sweeping on it would delete the whole build
+    // under a dev server that is still serving it. The paths are carried to
+    // the next replay instead — dropping them stranded the deleted page's
+    // output on disk for the life of the process, since every later replay
+    // snapshots `previous` from a stack that no longer mentions it.
+    site = await makeSite({
+      'src/pages/index.hbs': 'home',
+      'src/pages/gone.hbs': 'SECRET DRAFT',
+    })
+    const logger = { ...silentLogger, error: vi.fn() }
+    kiss = new Kiss({ folders: site.folders, dev: true, logger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    await kiss._watcher.ready
+
+    vi.spyOn(kiss, 'registerPartials').mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
+    await fs.remove(`${site.src}/pages/gone.hbs`)
+    await waitFor(() =>
+      logger.error.mock.calls.some(
+        ([first]) => first === 'Error rebuilding site',
+      ),
+    )
+    await rebuildSettled()
+
+    expect(await site.exists('public/index.html')).toBe(true)
+    expect(await site.exists('public/gone.html')).toBe(true)
+
+    await kiss._requestReplay()
+    await rebuildSettled()
+
+    expect(await site.exists('public/gone.html')).toBe(false)
+    expect(await site.exists('public/gone.json')).toBe(false)
+    expect(await site.read('public/index.html')).toContain('home')
+  })
+
+  it('a replay that fails while rendering still sweeps the pages it dropped', async () => {
+    // The other side of the gate above: once the pages are re-queued, every
+    // one of them has a buildTo in the stack (`_preparePage` runs before the
+    // render), so `previous` minus the stack is genuinely stale even though
+    // the rebuild went on to fail. Deleting the partial fails index's render;
+    // deleting the view drops gone from the registrations entirely.
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE[{{> foo}}]',
+      'src/pages/gone.hbs': 'SECRET DRAFT',
+      'src/partials/foo.hbs': 'FOO',
+    })
+    const logger = { ...silentLogger, error: vi.fn() }
+    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('PAGE[FOO]')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await fs.remove(`${site.src}/partials/foo.hbs`)
+    await fs.remove(`${site.src}/pages/gone.hbs`)
+    await waitFor(async () => !(await site.exists('public/gone.html')))
+    await rebuildSettled()
+
+    expect(logger.error).toHaveBeenCalledWith(
+      'Error rebuilding site',
+      expect.anything(),
+    )
+    // Never rewritten, so never removed: index kept its buildTo in the stack.
+    expect(await site.read('public/index.html')).toBe('PAGE[FOO]')
+  })
+
   it('adding a page view to a scanned site builds it on the next rebuild', async () => {
     // Flipped by W1-2b: a replay used to re-run only `_registrations` — the
     // page list `.scan()` produced when it ran — so a view created while
@@ -434,7 +519,13 @@ describe('watch()', () => {
     kiss.watch({ entry: null })
     await kiss._watcher.ready
     await site.touch('src/pages/new.hbs', 'new page')
-    await waitFor(() => site.exists('public/new.html'))
+    // The content, not the existence: `fs.outputFile` creates the file before
+    // it writes, so waiting on existence alone can read it back empty.
+    await waitFor(
+      async () =>
+        (await site.exists('public/new.html')) &&
+        (await site.read('public/new.html')) === 'new page',
+    )
     expect(await site.read('public/new.html')).toBe('new page')
     expect(await site.read('public/index.html')).toBe('home')
   })
