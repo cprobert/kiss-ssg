@@ -31,7 +31,13 @@ _Inferred retrospectively — the harness auto-created this branch, so intent wa
 
 ### Amendments
 
+- **2026-09-05** — CI (`.github/workflows/ci.yml`) and a pre-commit format hook were added at the operator's direction, reversing the earlier "local gate only" decision once `npm run gates` existed and was green. Adding the hook's npm `prepare` script broke the pack gate (npm runs lifecycle scripts during `npm pack`, and the banner polluted the JSON the gate parsed) — caught because the gate reported a silent skip, which has since been changed to a hard failure.
+- **2026-09-05** — Dependency modernisation absorbed onto this branch at the operator's direction: glob 7 → current (deprecated upstream, and its v7 path/ordering quirks are worked around in `lib/partials.js` and `test/helpers/site.js`), fs-extra 9 → 11, chokidar 3 → 5, serve-static 1 → 2, plus the dev toolchain. This moves the branch's impact surface from "tooling & docs" to **engine internals** — the public API is unchanged, but `lib/` is. Recorded rather than split because the operator authorised it explicitly; it is the one thing on this branch that could change runtime behaviour.
 - **2026-09-05** — `scripts/base-branch.mjs` and `scripts/gates.mjs` were not in the original ask. Both turned out to be load-bearing: without a resolver every skill would hard-code `main` and silently diff against the wrong base while v2 is the line of development, and `/branch-close` had no gate to run. Absorbed on this branch as tooling, in surface with the rest.
+
+## Findings surfaced, not acted on
+
+- **2026-09-05 — `.pages()` fan-out shares one mutated options object.** `Kiss._prepareMultiplePages` reuses a single `options` object across the loop (`options.slug = …; options.model = model`) and `_preparePage` stores that reference (`kissPage.options = options`, `lib/kiss.js:122`) rather than a copy. `{{model.x}}` renders correctly because the model is re-read per page, but a page option derived from the model — `title` is the one observed — is fixed at the first item's value for every page in the fan-out. Reproduced on a stock-config site: three models, three output files, all rendering the first model's title. **Not a regression from this branch's dependency upgrade** — it reproduces identically on a pristine `origin/v2` worktree with glob 7 installed. The existing `pages()` characterization tests miss it because they all assert `{{model.name}}`, never a model-derived option. Left for the operator to schedule: it is engine behaviour, outside this branch's remit, and fixing it needs a decision about whether `_preparePage` should snapshot its options.
 
 ## Pulse log
 

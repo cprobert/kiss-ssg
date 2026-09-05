@@ -11,7 +11,7 @@ Registers Handlebars partials and layouts from `config.folders.partials` and `co
 
 ## Depends on
 
-`fs-extra`, `glob`; markdown renderer and logger are passed in via `deps`, not imported.
+`fs-extra`; `./utils.js` (`globFiles`, `posixPath`). The markdown renderer and logger are passed in via `deps`, not imported.
 
 ## Depended on by
 

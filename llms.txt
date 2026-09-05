@@ -17,7 +17,7 @@ Install: `npm install kiss-ssg --save-dev`. `import Kiss from 'kiss-ssg'` (CJS `
 - `.copyAssets(sourceDir, targetDir)` — compiles every `*.scss`/`*.sass` under `sourceDir` to a sibling `.css` and copies everything else straight through to `targetDir`. Runs automatically once at construction time for `config.folders.assets` → `config.folders.build`; callable again for extra asset directories. Calls run one after another in registration order, not concurrently.
 - `kiss.handlebars` — this instance's own Handlebars environment (`Handlebars.create()`, created per `Kiss`, so helpers and partials never leak between instances, and helpers registered on the global `handlebars` module are not seen); register custom helpers on it directly. Built-in helpers: `markdown`, `sass` (inline block or file path, via the modern `sass.compile`/`compileString` API), `offset`, `stringify`, `isActive` (nav active-state matching), `env` (`{{#env is="dev"}}`/`"prod"` blocks).
 - `kiss.remarkable` — this instance's own Markdown renderer (used for `.md` partials and the `markdown` helper).
-- `import { utils } from 'kiss-ssg'` — `toSlug`, `sanitizePath`, `toTitleCase`, `trimLines`, `trimPath`, `hashId`.
+- `import { utils } from 'kiss-ssg'` — `toSlug`, `sanitizePath`, `toTitleCase`, `trimLines`, `trimPath`, `posixPath`, `globFiles`, `hashId`.
 
 ## Config
 

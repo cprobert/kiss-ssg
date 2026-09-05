@@ -12,7 +12,7 @@ The orchestrator and public API. `Kiss` owns config, a per-instance Handlebars e
 - `.registerPartials()` — re-runs `registerPartials()` against the current Handlebars env; returns its result.
 - `.page(options, callback)` — resolves the page's model, runs its controller, prepares a `KissPage`, pushes it onto `_stack`; returns `this`.
 - `.pages(options, callback)` — same as `.page()` with `options.dynamic = true` (one page per model in an array); returns `this`.
-- `.scan()` — globs every `.hbs` under `config.folders.pages` and calls `.page()` for any not already in `_stack`; returns `this`.
+- `.scan()` — globs every `.hbs` under `config.folders.pages` (via `utils.globFiles`, so the list is sorted and posix-normalised) and calls `.page()` for any not already in `_stack`; returns `this`.
 - `.viewStats()` — logs `{ promise, stack }` counts (and, if `verbose`, writes `debug.json` to the build folder); returns `this`.
 - `.generate(callback)` — awaits `_promises`, renders every stack entry with `runCount === 0` once (each render caught, failures collected on `_failures`), awaits the writes, invokes `callback`; returns `this`.
 - `.complete(callback)` — awaits `_drain()` (repeated `Promise.all` over `_promises` + `_generating`), then **rejects with an `AggregateError`** if `_failures` is non-empty; otherwise invokes `callback` with the resolved data and returns that data (a `Promise`, unlike the other chainable methods).
@@ -24,7 +24,7 @@ The orchestrator and public API. `Kiss` owns config, a per-instance Handlebars e
 
 ## Depends on
 
-`fs-extra`, `glob`, `node:path`, `handlebars`, `handlebars-layouts`, `remarkable`; and `./utils.js`, `./logger.js`, `./config.js`, `./handlebars-helpers.js`, `./partials.js`, `./assets.js`, `./model-resolver.js`, `./controller-resolver.js`, `./sitemap.js`, `./kiss-page.js`, `./dev-server.js`, `./watcher.js`.
+`fs-extra`, `node:path`, `handlebars`, `handlebars-layouts`, `remarkable`; and `./utils.js`, `./logger.js`, `./config.js`, `./handlebars-helpers.js`, `./partials.js`, `./assets.js`, `./model-resolver.js`, `./controller-resolver.js`, `./sitemap.js`, `./kiss-page.js`, `./dev-server.js`, `./watcher.js`.
 
 ## Depended on by
 

@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 // Creates an isolated site under the OS temp dir. Paths are returned with
-// forward slashes because glob v7 (used by the engine) rejects backslashes.
+// forward slashes because the engine compares and slices paths as posix.
 export async function makeSite(files = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-'))
   const root = dir.replace(/\\/g, '/')

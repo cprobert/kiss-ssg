@@ -11,7 +11,7 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 ## Depends on
 
-`fs-extra`, `glob`, `sass`; `./utils.js` (`hashId`).
+`fs-extra`, `sass`; `./utils.js` (`globFiles`, `posixPath`, `hashId`).
 
 ## Depended on by
 

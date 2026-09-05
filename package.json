@@ -40,27 +40,27 @@
   },
   "homepage": "https://courtenay.probert.me.uk/kiss-ssg",
   "dependencies": {
-    "chokidar": "^3.5.1",
+    "chokidar": "^5.0.0",
     "colors": "^1.4.0",
     "connect": "^3.7.0",
-    "fs-extra": "^9.1.0",
-    "glob": "^7.1.6",
+    "fs-extra": "^11.4.0",
+    "glob": "^13.0.6",
     "handlebars": "^4.7.7",
     "handlebars-layouts": "^3.1.4",
     "html-minifier-terser": "^7.2.0",
-    "livereload": "^0.9.1",
+    "livereload": "^0.10.3",
     "remarkable": "^2.0.1",
-    "sass": "^1.45.0",
-    "serve-static": "^1.14.1"
+    "sass": "^1.104.0",
+    "serve-static": "^2.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^4.1.11",
-    "eslint": "^10.9.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
     "prettier": "^3.9.6",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "keywords": [
     "generator",

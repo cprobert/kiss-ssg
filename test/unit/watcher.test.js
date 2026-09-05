@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { createWatcher } from '../../lib/watcher.js'
+import { createWatcher, isInside } from '../../lib/watcher.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
 
@@ -52,5 +52,25 @@ describe('createWatcher', () => {
     const before = calls.site
     await site.touch('entry.js', '// changed')
     await waitFor(() => calls.site > before)
+  })
+})
+
+describe('isInside', () => {
+  const inAssets = isInside('./src/assets')
+
+  it('matches the directory itself and everything under it', () => {
+    expect(inAssets('src/assets')).toBe(true)
+    expect(inAssets('src/assets/css/site.scss')).toBe(true)
+  })
+
+  it('does not match a sibling that merely shares the prefix', () => {
+    expect(inAssets('src/assets-backup/x.txt')).toBe(false)
+    expect(inAssets('src/pages/index.hbs')).toBe(false)
+  })
+
+  it('normalises the leading ./ and Windows separators on both sides', () => {
+    expect(inAssets('./src/assets/x.txt')).toBe(true)
+    expect(inAssets('src\\assets\\x.txt')).toBe(true)
+    expect(isInside('src\\assets')('src/assets/x.txt')).toBe(true)
   })
 })
