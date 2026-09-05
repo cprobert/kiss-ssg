@@ -5,7 +5,7 @@ description: Start-of-branch ritual, the mirror of /branch-close. Run on the bas
 
 # Open Branch
 
-`/branch-open` is the front bookend of the dev loop. `/branch-close` evaluates whether we did what we set out to do — so something has to *record* what we set out to do. That's this skill: capture intent up front, as a committed artefact, so the brief is real (not reconstructed from memory at the end), seeds the PR, and is the baseline the closing reflection scores against.
+`/branch-open` is the front bookend of the dev loop. `/branch-close` evaluates whether we did what we set out to do — so something has to _record_ what we set out to do. That's this skill: capture intent up front, as a committed artefact, so the brief is real (not reconstructed from memory at the end), seeds the PR, and is the baseline the closing reflection scores against.
 
 The captured intent lives in one `planning/sessions/<date>-<slug>.md` file per branch. `/branch-open` writes its **Intent** half; `/branch-close` → `/retrospective` writes its **Reflection** half into the same file. Open and close are two ends of one artefact.
 
@@ -86,7 +86,7 @@ git checkout -b <branch-name>
 
 ### Step 5 — Write the intent artefact
 
-Create `planning/sessions/<date>-<slug>.md` using the template below. `<date>` is today. The frontmatter binds the file to the branch — that is how `/branch-close` later finds *this* session among many (match `branch:` to the current branch; `status: open`). Leave the Reflection half as a marked placeholder for the close.
+Create `planning/sessions/<date>-<slug>.md` using the template below. `<date>` is today. The frontmatter binds the file to the branch — that is how `/branch-close` later finds _this_ session among many (match `branch:` to the current branch; `status: open`). Leave the Reflection half as a marked placeholder for the close.
 
 ### Step 6 — Commit the intent
 
@@ -118,6 +118,7 @@ opened: <YYYY-MM-DD>
 **Objective:** <one sentence>
 
 **Success criteria:**
+
 - [ ] <observable condition for done>
 - [ ] <…>
 
@@ -128,12 +129,14 @@ opened: <YYYY-MM-DD>
 **Expected shape:** planned | emergent | between — <one line why>
 
 ### Amendments
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
 ## Pulse log
+
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->

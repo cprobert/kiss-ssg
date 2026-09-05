@@ -10,7 +10,7 @@ afterEach(async () => {
 })
 
 describe('asset copy queue', () => {
-  it('runs queued copies sequentially so a later copy into an earlier copy\'s source tree cannot race it', async () => {
+  it("runs queued copies sequentially so a later copy into an earlier copy's source tree cannot race it", async () => {
     site = await makeSite({
       'src/assets/sub/a.txt': 'old',
       'extra/a.txt': 'new',

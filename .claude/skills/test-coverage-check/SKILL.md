@@ -22,12 +22,12 @@ Then proceed.
 - Run `/test-coverage-check` mid-branch for advisory suggestions — surfaces every module you've touched that lacks tests, with two tiers of urgency.
 - `/branch-close` invokes `/test-coverage-check --gate` at the Test Coverage step — harder scope, hard block.
 
-| Mode | Flag | Scope | Behaviour on an uncovered module |
-|---|---|---|---|
-| Advisory | _(none)_ | Added **and** modified | Two-tier: strong suggestion for added, softer FYI for modified |
-| Gate | `--gate` | Added only | Hard stop — write tests or add an exemption marker, then re-run `/branch-close` |
+| Mode     | Flag     | Scope                  | Behaviour on an uncovered module                                                |
+| -------- | -------- | ---------------------- | ------------------------------------------------------------------------------- |
+| Advisory | _(none)_ | Added **and** modified | Two-tier: strong suggestion for added, softer FYI for modified                  |
+| Gate     | `--gate` | Added only             | Hard stop — write tests or add an exemption marker, then re-run `/branch-close` |
 
-The gate scope is narrower deliberately: `CLAUDE.md`'s rule is "engine code goes in `lib/`, one responsibility per file, **with a unit test in `test/unit/`**" — an obligation that lands on the commit that *adds* the module. Modified files may carry a pre-existing deficit you didn't create; advisory surfaces them, the gate doesn't enforce them.
+The gate scope is narrower deliberately: `CLAUDE.md`'s rule is "engine code goes in `lib/`, one responsibility per file, **with a unit test in `test/unit/`**" — an obligation that lands on the commit that _adds_ the module. Modified files may carry a pre-existing deficit you didn't create; advisory surfaces them, the gate doesn't enforce them.
 
 **Where tests live.** Unlike a sibling-file convention, this repo puts every unit test in `test/unit/`, named after the module: `lib/sitemap.js` → `test/unit/sitemap.test.js`. Two standing exceptions, both from `CLAUDE.md` and `AIKB/testing.md`:
 
@@ -73,12 +73,12 @@ For each uncovered file:
 1. Check the first 15 lines for `// @test-exempt: <reason>`.
 2. Read the first ~40 lines to classify the module.
 
-| Bucket | Examples | Gate behaviour |
-|---|---|---|
-| ✅ **Covered** | Has `test/unit/<name>.test.js` | Pass |
-| 🔕 **Exempt** | Has `// @test-exempt: <reason>` | Pass — show the reason |
-| ⚠️ **Uncovered logic** | Path/slug derivation; model or controller resolution; dedupe and replay predicates; anything deciding *whether* something rebuilds, writes, or is skipped; parsers of external input (a fetched JSON model, `npm pack` output); date/ordering logic | Gate: stop. Advisory: strong suggestion |
-| ℹ️ **Thin / glue** | A module that only wires two others together; a pure constant table; an I/O wrapper whose decision core is already tested elsewhere | Advisory-only in both modes — never gates |
+| Bucket                 | Examples                                                                                                                                                                                                                                            | Gate behaviour                            |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| ✅ **Covered**         | Has `test/unit/<name>.test.js`                                                                                                                                                                                                                      | Pass                                      |
+| 🔕 **Exempt**          | Has `// @test-exempt: <reason>`                                                                                                                                                                                                                     | Pass — show the reason                    |
+| ⚠️ **Uncovered logic** | Path/slug derivation; model or controller resolution; dedupe and replay predicates; anything deciding _whether_ something rebuilds, writes, or is skipped; parsers of external input (a fetched JSON model, `npm pack` output); date/ordering logic | Gate: stop. Advisory: strong suggestion   |
+| ℹ️ **Thin / glue**     | A module that only wires two others together; a pure constant table; an I/O wrapper whose decision core is already tested elsewhere                                                                                                                 | Advisory-only in both modes — never gates |
 
 Prioritise the failure modes that are **silent in production**: a page that quietly stops rebuilding on watch, a dedupe that drops a page, an asset copy that races. Those are this engine's history — `AIKB/*.md`'s Non-obvious behavior sections are a list of them.
 
@@ -96,6 +96,7 @@ Prioritise the failure modes that are **silent in production**: a page that quie
 - If any ⚠️ files remain: **stop**. Do not proceed with `/branch-close`.
 
   > These modules are missing tests and carry no exemption marker. Before continuing:
+  >
   > - Write the missing tests in `test/unit/` (run `npm test` to confirm they pass), then re-run `/branch-close`, **or**
   > - Add `// @test-exempt: <reason>` near the top of each file if the module is genuinely exempt, then re-run `/branch-close`.
   >
@@ -117,8 +118,8 @@ The reason is visible in the PR diff, co-located with the code, and requires no 
 
 ## Relationship to other gates
 
-| Gate | When |
-|---|---|
-| `/test-coverage-check` (advisory) | Mid-branch, on developer initiative or from `/branch-pulse` — added + modified |
-| `/test-coverage-check --gate` | Test Coverage step of `/branch-close` — added only, hard block |
-| `npm run gates` → test | Gates step of `/branch-close` — validates that existing tests pass, but cannot detect missing tests on new files |
+| Gate                              | When                                                                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `/test-coverage-check` (advisory) | Mid-branch, on developer initiative or from `/branch-pulse` — added + modified                                   |
+| `/test-coverage-check --gate`     | Test Coverage step of `/branch-close` — added only, hard block                                                   |
+| `npm run gates` → test            | Gates step of `/branch-close` — validates that existing tests pass, but cannot detect missing tests on new files |

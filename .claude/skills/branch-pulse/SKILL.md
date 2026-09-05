@@ -5,7 +5,7 @@ description: Mid-branch checkpoint — the Steer beat between /branch-open and /
 
 # Pulse — Mid-Branch Checkpoint
 
-`/branch-pulse` is the **Steer** beat of the dev loop — the middle the bookends left empty. `/branch-open` frames intent; `/branch-close` verifies and ships. Between them, work drifts in the gap where nothing checks it. The pulse closes that gap: it reads the **success criteria** captured at open and asks, with evidence rather than vibes, *are we converging on them, and are we still inside the remit?*
+`/branch-pulse` is the **Steer** beat of the dev loop — the middle the bookends left empty. `/branch-open` frames intent; `/branch-close` verifies and ships. Between them, work drifts in the gap where nothing checks it. The pulse closes that gap: it reads the **success criteria** captured at open and asks, with evidence rather than vibes, _are we converging on them, and are we still inside the remit?_
 
 It is **formative**, not summative: cheap, repeatable, run every 20–30 minutes or at each natural slice boundary. It is the opposite of rushing to close — and the opposite of abandoning a session that has gone sideways. It catches the edge case while the work is still warm, and it makes the decision to continue, adjust, or stop a **deliberate** one.
 
@@ -43,7 +43,7 @@ grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
 
 If on the base branch: stop — the pulse is a mid-branch beat. If the `grep` finds the branch's intent artefact (the file `/branch-open` wrote, `status: open`): read its **Intent** — Objective, Success criteria, Non-goals, Impact surface, Expected shape. These are the baseline; **read them, never rewrite them** (the Intent block is immutable).
 
-If no intent file (the harness auto-created the branch, or it wasn't opened with `/branch-open`): offer to **capture intent retrospectively**. Infer the Objective, Success criteria, Non-goals, Impact surface, and (almost always) an *emergent* shape from the conversation so far, and write them to a `planning/sessions/<date>-<slug>.md` bound to the current branch by `branch:` frontmatter — the same artefact `/branch-open` writes, with its Intent heading marked _inferred retrospectively_ so the honesty is on the record. This rescues the session's intent from the ephemeral context window so the close, the reflection, and the next developer inherit it instead of losing it. If the user declines, proceed loosely against a checklist they give you.
+If no intent file (the harness auto-created the branch, or it wasn't opened with `/branch-open`): offer to **capture intent retrospectively**. Infer the Objective, Success criteria, Non-goals, Impact surface, and (almost always) an _emergent_ shape from the conversation so far, and write them to a `planning/sessions/<date>-<slug>.md` bound to the current branch by `branch:` frontmatter — the same artefact `/branch-open` writes, with its Intent heading marked _inferred retrospectively_ so the honesty is on the record. This rescues the session's intent from the ephemeral context window so the close, the reflection, and the next developer inherit it instead of losing it. If the user declines, proceed loosely against a checklist they give you.
 
 ### Step 2 — Read the trajectory
 
@@ -74,7 +74,7 @@ Speak in the supervision rubric's vocabulary (`.claude/skills/retrospective/rubr
 
 Compare the trajectory against the **Non-goals**, the **Objective**, and the declared **Impact surface**. A branch opened as "engine internals" that has started editing `llms.txt` has moved surface — that is a real signal, not a formality, because it changes the semver bump at close.
 
-If the remit has *legitimately* expanded (adjacent, shares the theme), append a dated entry to the intent file's `### Amendments` list — the one sanctioned channel for scope drift. If it looks like scope **creep** (a genuinely different subsystem or objective), say so and recommend stopping or deferring; never absorb it silently, and never spawn a new branch on initiative (the operator's call).
+If the remit has _legitimately_ expanded (adjacent, shares the theme), append a dated entry to the intent file's `### Amendments` list — the one sanctioned channel for scope drift. If it looks like scope **creep** (a genuinely different subsystem or objective), say so and recommend stopping or deferring; never absorb it silently, and never spawn a new branch on initiative (the operator's call).
 
 ### Step 5 — Decide, out loud
 
@@ -99,10 +99,10 @@ git commit -m "Pulse: <YYYY-MM-DD> <one-line decision>"
 
 ## Relationship to the other beats
 
-| Beat | Skill | Role | Verification |
-|---|---|---|---|
-| **Frame** | `/branch-open` | Capture intent + success criteria as the baseline | — |
-| **Steer** | `/branch-pulse` (here) | Re-check criteria vs evidence; catch drift; decide continue/adjust/amend/close | Formative — `npm test`, advisory coverage, a bounded example run |
-| **Verify & close** | `/branch-close` | Verify against the original criteria + reflect + ship | Summative — the full `npm run gates` battery |
+| Beat               | Skill                  | Role                                                                           | Verification                                                     |
+| ------------------ | ---------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **Frame**          | `/branch-open`         | Capture intent + success criteria as the baseline                              | —                                                                |
+| **Steer**          | `/branch-pulse` (here) | Re-check criteria vs evidence; catch drift; decide continue/adjust/amend/close | Formative — `npm test`, advisory coverage, a bounded example run |
+| **Verify & close** | `/branch-close`        | Verify against the original criteria + reflect + ship                          | Summative — the full `npm run gates` battery                     |
 
 The pulse and the close are the formative/summative pair — the same split as `/test-coverage-check`'s advisory-vs-`--gate` modes. Evidence the pulse accrues in the `## Pulse log` is what `/branch-close` and `/retrospective` read at the end, so the Verdict scores a criteria list that was checked all along, not one reconstructed cold.

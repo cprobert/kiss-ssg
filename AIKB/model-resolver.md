@@ -27,6 +27,6 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 ## Non-obvious behavior
 
 - The four model shapes and the `id` each produces: filename (`id` = filename), URL (`id` = URL), plain object (`id` = `hashId(object)`), folder name (`id` = folder name, `data` is an array — this is the shape `.pages()` fan-out expects).
-- Uses the *global* `fetch` by default (`globalThis.fetch`, Node's built-in) rather than importing a fetch library.
+- Uses the _global_ `fetch` by default (`globalThis.fetch`, Node's built-in) rather than importing a fetch library.
 - `fetchImpl` is an injectable dependency specifically so tests can stub network calls without mocking global `fetch`.
 - Every failure path rejects with an `Error` (not a plain string/object) whose `.message` `Kiss.page()`'s `.catch()` logs; the HTTP failure path additionally attaches the original `error` as `err.error` so both messages get logged.

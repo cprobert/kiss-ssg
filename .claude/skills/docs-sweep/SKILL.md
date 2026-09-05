@@ -7,7 +7,7 @@ description: Pre-PR documentation sweep. Scans all commits since the base branch
 
 ## When to use
 
-Run `/docs-sweep` before opening a PR. `test/aikb.test.js` enforces the hard contracts at test time — every `lib/` module has an `AIKB/` doc, every doc is listed in `CLAUDE.md`, no doc is orphaned, no doc drops a template heading — but it cannot tell whether the *prose inside* those docs is still true. The full shape of a change, and the connections between commits, only becomes clear at the PR boundary. This skill does the holistic sweep the test cannot.
+Run `/docs-sweep` before opening a PR. `test/aikb.test.js` enforces the hard contracts at test time — every `lib/` module has an `AIKB/` doc, every doc is listed in `CLAUDE.md`, no doc is orphaned, no doc drops a template heading — but it cannot tell whether the _prose inside_ those docs is still true. The full shape of a change, and the connections between commits, only becomes clear at the PR boundary. This skill does the holistic sweep the test cannot.
 
 ---
 
@@ -72,7 +72,11 @@ Update order (so you don't read docs you are about to change):
 
 ### Step 4 — Verify
 
-docs-sweep edits Markdown and `llms.txt`, so there is nothing here for the gates to check — the format gate covers code and manifests only, because this repo's existing docs predate any prettier pass and checking them would fail every branch that honours a documentation obligation.
+docs-sweep edits Markdown and `llms.txt`, so the heavy gates don't apply. Prettier-check the files you actually edited:
+
+```bash
+npx prettier --check <files you edited>
+```
 
 Do **not** run `npm test` here. Within `/branch-close`, `npm run gates` runs right after this step as the final validation. The one exception worth a fast local check: if you added or removed a `lib/` module or an `AIKB/` doc, run the sync test now so a missing table row is caught before you commit rather than at the gate:
 
@@ -115,11 +119,11 @@ Do not guess at these — surface them explicitly in the report:
 
 ## Relationship to other gates
 
-| Gate | What it catches | When it runs |
-|---|---|---|
-| `test/aikb.test.js` | Hard failure: a `lib/` module with no doc, an orphaned doc, a doc missing from the `CLAUDE.md` table, a dropped template heading | Every `npm test` |
-| `npm run gates` (`scripts/gates.mjs`) | test, lint, format, pack | Gates step of `/branch-close`, after docs-sweep |
-| `/docs-sweep` | Holistic doc staleness across the full branch — the prose the test can't read | Docs Sweep step of `/branch-close` |
-| `/corpse-collector` | Dead references across the whole repo, not just this branch's diff | Judgment call in `/branch-close`, after docs-sweep |
+| Gate                                  | What it catches                                                                                                                  | When it runs                                       |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `test/aikb.test.js`                   | Hard failure: a `lib/` module with no doc, an orphaned doc, a doc missing from the `CLAUDE.md` table, a dropped template heading | Every `npm test`                                   |
+| `npm run gates` (`scripts/gates.mjs`) | test, lint, format, pack                                                                                                         | Gates step of `/branch-close`, after docs-sweep    |
+| `/docs-sweep`                         | Holistic doc staleness across the full branch — the prose the test can't read                                                    | Docs Sweep step of `/branch-close`                 |
+| `/corpse-collector`                   | Dead references across the whole repo, not just this branch's diff                                                               | Judgment call in `/branch-close`, after docs-sweep |
 
 `npm run gates` owns correctness; docs-sweep owns doc accuracy. They run back-to-back in `/branch-close` (docs-sweep, then gates as the final pass), which is exactly why docs-sweep must not re-run the suite — the gates do it, over the post-sweep state.

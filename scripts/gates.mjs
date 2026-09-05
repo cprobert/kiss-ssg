@@ -78,7 +78,10 @@ const GATES = [
         return { ok: true, note: `skipped — could not diff against ${base}` }
       if (files.length === 0)
         return { ok: true, note: 'no formattable files changed' }
-      return run('npx', ['prettier', '--check', ...files])
+      // `.prettierignore` decides what is out of scope (build output, .hbs);
+      // `--ignore-unknown` drops anything prettier has no parser for, so the
+      // gate can just hand it every changed file.
+      return run('npx', ['prettier', '--check', '--ignore-unknown', ...files])
     },
   },
   {

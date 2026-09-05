@@ -74,7 +74,7 @@ kiss
     controller: ({ model }) => {
       return {
         model: model.sort(
-          (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order)
+          (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order),
         ),
       }
     },

@@ -16,22 +16,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
 
-| Module | File | AIKB doc |
-|---|---|---|
-| Orchestrator / public API | `lib/kiss.js` | `AIKB/kiss.md` |
-| Page renderer | `lib/kiss-page.js` | `AIKB/kiss-page.md` |
-| Logger | `lib/logger.js` | `AIKB/logger.md` |
-| Config + folder derivation | `lib/config.js` | `AIKB/config.md` |
-| Built-in Handlebars helpers | `lib/handlebars-helpers.js` | `AIKB/handlebars-helpers.md` |
-| Partials / layouts registration | `lib/partials.js` | `AIKB/partials.md` |
-| Assets + Sass | `lib/assets.js` | `AIKB/assets.md` |
-| Model resolution | `lib/model-resolver.js` | `AIKB/model-resolver.md` |
-| Controller resolution | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
-| Sitemap | `lib/sitemap.js` | `AIKB/sitemap.md` |
-| Dev server | `lib/dev-server.js` | `AIKB/dev-server.md` |
-| File watcher | `lib/watcher.js` | `AIKB/watcher.md` |
-| String/path utils | `lib/utils.js` | `AIKB/utils.md` |
-| Cross-cutting: testing conventions | `test/` | `AIKB/testing.md` |
+| Module                             | File                         | AIKB doc                      |
+| ---------------------------------- | ---------------------------- | ----------------------------- |
+| Orchestrator / public API          | `lib/kiss.js`                | `AIKB/kiss.md`                |
+| Page renderer                      | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Logger                             | `lib/logger.js`              | `AIKB/logger.md`              |
+| Config + folder derivation         | `lib/config.js`              | `AIKB/config.md`              |
+| Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
+| Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
+| Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
+| Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
+| Dev server                         | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
+| File watcher                       | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| String/path utils                  | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: testing conventions | `test/`                      | `AIKB/testing.md`             |
 
 ## Commands
 
@@ -40,13 +40,14 @@ npm test                 # Vitest, single run
 npm run test:watch
 npm run test:coverage
 npm run lint             # ESLint (flat config, eslint.config.js)
+npm run format           # Prettier, write; format:check to verify
 npm run gates            # the four pre-PR gates: test, lint, format, pack
 node scripts/base-branch.mjs   # print the integration branch this work merges into
 node docs                # regenerate docs/ (dev mode, starts a server — does not exit on its own, Ctrl-C to stop)
 npm run eg1 … eg6        # run an example (examples/*.js); most start a dev server and don't exit on their own
 ```
 
-Prettier config is in `.prettierrc` (no semicolons, single quotes).
+Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettierignore`. `.hbs` templates are **not** prettier-formatted: its Handlebars parser rejects `{{> "partial"}}`, which every template here uses.
 
 ## Pipeline in one paragraph
 

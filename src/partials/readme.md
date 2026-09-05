@@ -128,7 +128,7 @@ kiss
     controller: ({ model }) => {
       return {
         model: model.sort(
-          (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order)
+          (a, b) => parseInt(a.sort_order) - parseInt(b.sort_order),
         ),
       }
     },
@@ -170,17 +170,13 @@ You can parse markdown like this:
 
 ```handlebars
 <div>
-{{#markdown}}
-# Heading
+  {{#markdown}}
+    # Heading > this is markdown foo bar baz
+  {{/markdown}}
 
-> this is markdown
+  or
 
-foo bar baz
-{{/markdown}}
-
-or
-
-{{markdown model.introduction}}
+  {{markdown model.introduction}}
 </div>
 ```
 

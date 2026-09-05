@@ -11,9 +11,10 @@ Run `/branch-close` when you are ready to open a pull request. This replaces man
 
 > **Sub-agent / fork hard stop.** This skill MUST only be invoked by the human operator typing `/branch-close`, or by Claude Code's main session acting on an explicit human instruction to close. It MUST NOT be invoked autonomously by any sub-agent, fork, or agent running a plan step. If you are a fork or sub-agent — STOP here. Return your findings to the main session and surface them to the user. The human decides when the branch closes, not the plan.
 
-`/branch-close` is the **Verify & close** beat — the summative end of the three-beat dev loop (**Frame** `/branch-open` → **Steer** `/branch-pulse` → **Verify & close**, here). The split is deliberate: the pulse is *formative* (`npm test`, run often mid-branch); the close is *summative* (the full `npm run gates` battery). If the branch was pulsed, its `## Pulse log` already holds evidence against the success criteria, so the verification here reads that trail rather than starting cold. A branch that reaches close having never been pulsed is doing all its verification in one batch at the boundary — exactly the drift the pulse exists to prevent.
+`/branch-close` is the **Verify & close** beat — the summative end of the three-beat dev loop (**Frame** `/branch-open` → **Steer** `/branch-pulse` → **Verify & close**, here). The split is deliberate: the pulse is _formative_ (`npm test`, run often mid-branch); the close is _summative_ (the full `npm run gates` battery). If the branch was pulsed, its `## Pulse log` already holds evidence against the success criteria, so the verification here reads that trail rather than starting cold. A branch that reaches close having never been pulsed is doing all its verification in one batch at the boundary — exactly the drift the pulse exists to prevent.
 
 Do not run if:
+
 - You are on the base branch — check first (`node scripts/base-branch.mjs`), stop if true
 - There are no commits since the base — nothing to PR
 - A PR is already open for this branch — use `/docs-sweep` + `/retrospective` alone to update it
@@ -34,13 +35,13 @@ Then proceed.
 
 ## Handling findings mid-ritual
 
-The ritual is designed to surface issues before they reach the PR. Pausing to discuss, brainstorm, or resolve a finding is the ritual *working* — not a failure. The steps are not a conveyor belt; they are checkpoints.
+The ritual is designed to surface issues before they reach the PR. Pausing to discuss, brainstorm, or resolve a finding is the ritual _working_ — not a failure. The steps are not a conveyor belt; they are checkpoints.
 
 **Two types of findings, two responses:**
 
-| Finding type | Examples | What to do |
-|---|---|---|
-| **Hard blocker** | A gate fails; the test coverage gate fires (uncovered logic, no exemption) | Stop. Fix. Commit. Rerun `/branch-close` from the top. |
+| Finding type                        | Examples                                                                                                                                                      | What to do                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **Hard blocker**                    | A gate fails; the test coverage gate fires (uncovered logic, no exemption)                                                                                    | Stop. Fix. Commit. Rerun `/branch-close` from the top.                       |
 | **Soft finding requiring judgment** | Codex flags a potential bug; corpse-collector surfaces a real dead reference; docs-sweep reveals something complex; the secrets scan hits a suspicious string | Pause. Discuss with the operator. Resolve. Then apply the resume rule below. |
 
 **Resume rule — simple and safe:**
@@ -59,7 +60,7 @@ The ritual is designed to surface issues before they reach the PR. Pausing to di
 The sequence follows two principles: **cheapest and most critical checks run first** (an early exit saves the most downstream work), and **fixes precede the gate that validates them** (so a single gate pass covers everything).
 
 - **Secrets scan (Step 2)** is the cheapest possible check and the hardest possible stop. If a real credential is in the diff, nothing else matters.
-- **Docs sweep (Step 3), version bump (Step 4a) and test coverage (Step 5)** all happen *before* the gates so that documentation fixes, the bumped manifest, and any newly written tests are validated in the same gate pass — not in a second run.
+- **Docs sweep (Step 3), version bump (Step 4a) and test coverage (Step 5)** all happen _before_ the gates so that documentation fixes, the bumped manifest, and any newly written tests are validated in the same gate pass — not in a second run.
 - **Gates (Step 6)** validate the complete final state: code, docs, tests, and the bumped version in one authoritative pass.
 - **Codex review (Step 7)** runs after the gates so expensive semantic review time is never spent on code a cheap gate would have rejected.
 - **Retrospective (Step 8)** runs last among the checks — there is no value in reflecting on a branch that does not pass.
@@ -111,11 +112,11 @@ kiss-ssg is a **published npm package**, so semver here is a promise to consumer
 
 Read the branch's **Impact surface** from its intent artefact (captured at `/branch-open`) — it was recorded to answer exactly this question. Then:
 
-| Bump | When |
-|---|---|
-| **patch** (x.y.**z**) | Engine internals with the API unchanged, bug fixes, dependency updates, tooling and docs. The default for most branches. |
+| Bump                  | When                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **patch** (x.y.**z**) | Engine internals with the API unchanged, bug fixes, dependency updates, tooling and docs. The default for most branches.                           |
 | **minor** (x.**y**.0) | A backwards-compatible addition to the public API — a new method, a new config option, a new built-in helper, a new file in the published tarball. |
-| **major** (**x**.0.0) | A breaking change — a removed or renamed method, a changed default, a raised `engines.node` floor, a dropped export. |
+| **major** (**x**.0.0) | A breaking change — a removed or renamed method, a changed default, a raised `engines.node` floor, a dropped export.                               |
 
 **While the version carries a prerelease tag** (`2.0.0-alpha.0` today), the line is not yet published as stable and the bump is `npm version prerelease --preid alpha` regardless of surface — unless the operator is deliberately cutting the release, which is their call to make explicitly, never yours to infer.
 
@@ -189,12 +190,15 @@ The PR body is the same in every case:
 
 ```markdown
 ## Summary
+
 <1-3 bullet points — seed from the intent's Objective if present>
 
 ## What's deferred
+
 <if nothing, omit this section>
 
 ## Test plan
+
 - [ ] `npm run gates` passes (test, lint, format, pack)
 - [ ] <the intent's Success criteria, if captured, each as a checkbox>
 ```
@@ -222,14 +226,14 @@ Return the PR URL to the user. One line confirming: gates passed, docs swept, re
 
 ## Relationship to other gates
 
-| Gate | Automated? | When |
-|---|---|---|
-| `/secrets-scan` | Invoked by `/branch-close` | Secrets Scan step |
-| `/docs-sweep` | Invoked by `/branch-close` | Docs Sweep step |
-| `/corpse-collector` | Invoked by `/branch-close` (judgment call) | Corpse Collector step |
-| `/test-coverage-check --gate` | Invoked by `/branch-close` | Test Coverage step |
-| `npm run gates` (`scripts/gates.mjs`) | Run by `/branch-close` | Gates step |
-| `codex-companion.mjs review --wait` | Run by `/branch-close` (judgment call) | Codex Review step |
-| `/retrospective` | Invoked by `/branch-close` | Retrospective step |
+| Gate                                  | Automated?                                 | When                  |
+| ------------------------------------- | ------------------------------------------ | --------------------- |
+| `/secrets-scan`                       | Invoked by `/branch-close`                 | Secrets Scan step     |
+| `/docs-sweep`                         | Invoked by `/branch-close`                 | Docs Sweep step       |
+| `/corpse-collector`                   | Invoked by `/branch-close` (judgment call) | Corpse Collector step |
+| `/test-coverage-check --gate`         | Invoked by `/branch-close`                 | Test Coverage step    |
+| `npm run gates` (`scripts/gates.mjs`) | Run by `/branch-close`                     | Gates step            |
+| `codex-companion.mjs review --wait`   | Run by `/branch-close` (judgment call)     | Codex Review step     |
+| `/retrospective`                      | Invoked by `/branch-close`                 | Retrospective step    |
 
 There is no CI workflow and no pre-commit hook in this repo — every one of these runs because this ritual runs it. Pushing without `/branch-close` skips all of them.

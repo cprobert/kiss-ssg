@@ -4,7 +4,7 @@ Cross-cutting notes on how tests in `test/` are organized and written — not a 
 
 ## Layout
 
-- `test/unit/` — one file per `lib/` module *except the orchestrator* (`lib/kiss.js` has no `test/unit/kiss.test.js`), exercising each in isolation (mostly pure functions, or a module with its dependencies passed in via DI).
+- `test/unit/` — one file per `lib/` module _except the orchestrator_ (`lib/kiss.js` has no `test/unit/kiss.test.js`), exercising each in isolation (mostly pure functions, or a module with its dependencies passed in via DI).
 - `test/integration/` — cross-module behavior driven through the public `Kiss` API: lifecycle (`generate`/`complete`), dedupe, config resolution, watch mode, ESM/CJS interop, and a broader "characterization" suite. This is where `lib/kiss.js` itself is covered — end-to-end through its public API rather than in a dedicated unit file.
 - `test/helpers/site.js` — `makeSite(files)` creates an isolated temp-dir site (under `os.tmpdir()`) and returns `{ root, src, build, folders, read, exists, touch, cleanup }`; `waitFor(predicate, { timeout, interval })` polls until a predicate is true (used for watch-mode assertions) or throws after `timeout`. Paths are returned with forward slashes because `glob` v7 (used throughout the engine) rejects backslashes on Windows.
 - `test/helpers/kiss.js` — re-exports `Kiss`/`utils` from `lib/kiss.js` and `ENTRY` (`path.resolve('lib/kiss.js')`), so integration tests import one thing instead of reaching into `lib/` directly.

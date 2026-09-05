@@ -42,7 +42,10 @@ describe('generate()', () => {
   })
 
   it('complete() resolves after pages queued by a generate callback are written too', async () => {
-    site = await makeSite({ 'src/pages/index.hbs': 'x', 'src/pages/later.hbs': 'y' })
+    site = await makeSite({
+      'src/pages/index.hbs': 'x',
+      'src/pages/later.hbs': 'y',
+    })
     const kiss = new Kiss({ folders: site.folders })
     kiss.page({ view: 'index.hbs' }).generate(function () {
       this.page({ view: 'later.hbs' }).generate()

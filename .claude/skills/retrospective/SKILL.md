@@ -43,7 +43,7 @@ grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
 
 The `grep` finds this branch's **intent artefact** — the session file `/branch-open` wrote (frontmatter `branch:` matches the current branch).
 
-- **If found** (it'll be `status: open`): write the Reflection *into that file*, beneath its marker (the Reflection goes **below** the marker; the Intent, Amendments, and Pulse log above it stay untouched). Its captured **Intent** is the brief your **Reflect** and **Verdict** sections evaluate against — don't reconstruct it. Its **`## Pulse log`** (if any) is the running evidence trail the mid-branch pulses left — read it for the Verdict's criteria check and for where supervision actually held. Flip `status: closed` when done. Do not create a new file.
+- **If found** (it'll be `status: open`): write the Reflection _into that file_, beneath its marker (the Reflection goes **below** the marker; the Intent, Amendments, and Pulse log above it stay untouched). Its captured **Intent** is the brief your **Reflect** and **Verdict** sections evaluate against — don't reconstruct it. Its **`## Pulse log`** (if any) is the running evidence trail the mid-branch pulses left — read it for the Verdict's criteria check and for where supervision actually held. Flip `status: closed` when done. Do not create a new file.
 - **If none** (the branch wasn't opened with `/branch-open`): reconstruct intent from the conversation and create a fresh file (Step 4). Still valuable — the brief is just self-reported rather than captured.
 
 If there are no commits either, reflect from the conversation history regardless.
@@ -68,9 +68,11 @@ _A Claude Code session is supervised collaboration: Claude generates, the human 
 **What we shipped:** [1–2 lines, with commit hashes / PR — the factual anchor everything else hangs on]
 
 ## Reflect — what the session was
+
 How clearly was the goal framed before work began, and what shape did the work take — **planned** (the destination known up front, the route largely mapped) or **emergent** (the goal and route revealed as we went)? It's a spectrum; name where this session sat, and whether that shape served the work or fought it — a planned task that kept being re-planned, or an exploratory one forced down a premature plan.
 
 ## Evaluate — how the human supervised the AI
+
 The heart of the reflection. Read the session against the **seven behavioural dimensions** of the supervision rubric (defined in [`rubric.md`](./rubric.md) — use those names, they are the shared vocabulary):
 
 - **Problem framing** — did the human scope before asking for code, or leave the ambiguity for Claude to guess?
@@ -81,7 +83,7 @@ The heart of the reflection. Read the session against the **seven behavioural di
 - **Architecture sense-making** — could the human explain what changed and why, afterwards?
 - **Harness leverage** — did the session reach for Claude Code's force-multipliers where they'd have helped — plan mode for ambiguous work, sub-agents for parallel search or fresh-context review, the right skill / slash command, MCP tools instead of guessing? This one is two-sided by construction: Claude should offer these proactively, not wait to be asked — so a miss is often a shared lesson, and it is the richest seam of "what could the operator learn" for the Feedback section.
 
-  **Reading plan-mode sessions:** invoking plan mode is itself the positive harness signal — a deliberate choice to structure the work before acting. The system's `"I approved the plan"` text is the UX output of that tool, not evidence of passive acceptance. For plan-mode sessions, Pushback & steering evaluates engagement *with the plan content* (scope challenges, questions before approval, changes requested); Verification & ownership evaluates supervision *after* approval (was execution reviewed, was drift caught?). The same logic applies to built-in tooling generally: reaching for `/branch-open`, a skill, or a slash command is leverage — read it as deliberate tool use, not passivity.
+  **Reading plan-mode sessions:** invoking plan mode is itself the positive harness signal — a deliberate choice to structure the work before acting. The system's `"I approved the plan"` text is the UX output of that tool, not evidence of passive acceptance. For plan-mode sessions, Pushback & steering evaluates engagement _with the plan content_ (scope challenges, questions before approval, changes requested); Verification & ownership evaluates supervision _after_ approval (was execution reviewed, was drift caught?). The same logic applies to built-in tooling generally: reaching for `/branch-open`, a skill, or a slash command is leverage — read it as deliberate tool use, not passivity.
 
 The rubric is a **lens, not a form**. Don't grind through all seven as a scorecard — that produces the generic reflection this skill exists to avoid. Lead with the two or three dimensions that actually discriminated _this_ session (where the supervision was notably strong or notably absent), and pass over the unremarkable ones in a line or skip them. Name the active-vs-passive evidence **from this session**, not the dimension's definition.
 
@@ -90,9 +92,11 @@ Then name the most important thing plainly: **where did the human intend to supe
 End with the **competency level** — one of **Passive delegator / Assisted operator / Active supervisor / Agentic engineering lead** — named explicitly, with the evidence that places the session there. No flattery: the level is earned by what happened, not aspired to.
 
 ## Feedback — recommendations for next session
+
 Honest, both directions, both partners — framed as **recommendations**, not observations. Anchor them to the dimensions that scored low in Evaluate: if learning engagement was thin, the recommendation is concrete ("ask Claude to explain the non-obvious block before accepting it"); if verification was waved through, name the check that should have run. **Harness leverage is usually the richest seam here** — it's where the operator has the most to learn: if plan mode, a sub-agent pass, a fitting skill, or an MCP tool would have made the session faster, safer, or more accurate and wasn't used, name the specific technique and when to reach for it next time. Keep the technical specifics: failure modes caught (and missed), and the fix each one points to. Every item ends in a concrete next-time change. This is the institutional-memory payload — don't let it go soft.
 
 ## Verdict — did we achieve the objective?
+
 The culmination. Re-state the brief, then a plain verdict against the original intent: **met**, **partially met**, or **the objective moved** (and was that good drift or scope creep?). If success criteria were captured at `/branch-open`, check each one off explicitly with `[x]` / `[ ]` and the evidence (the `## Pulse log` already records much of it, accrued mid-branch) — that turns this from a self-report into a checklist. This Verdict is where the criteria get ticked; the pulses left them untouched on purpose, so the baseline stayed pristine until now. State the measurable impact — what is concretely better now — and what remains open, so success can be evaluated rather than assumed.
 ```
 
@@ -151,7 +155,7 @@ Full reflection → `planning/sessions/{filename}`
 
 **Specific over generic.** "the pack gate caught `files` dropping `AIKB/` before it reached npm" is useful; "the tooling worked well" is not. Name the commit, the file, the failure mode.
 
-**Honest over flattering.** Evaluate is the trap: the competency level must be earned by the evidence, and "the sum beat the parts" must point to a *real* exchange that produced something neither input held alone — not mutual back-patting. Name where Claude over-reached or the human's steer was needed; name where the human accepted code blindly or waved a checkpoint through. Both directions.
+**Honest over flattering.** Evaluate is the trap: the competency level must be earned by the evidence, and "the sum beat the parts" must point to a _real_ exchange that produced something neither input held alone — not mutual back-patting. Name where Claude over-reached or the human's steer was needed; name where the human accepted code blindly or waved a checkpoint through. Both directions.
 
 **Two-sided.** It's a supervision reflection. If the whole thing reads as Claude's solo diary, the lens has failed — bring the human's inputs, decisions, and course-corrections into it.
 
@@ -161,8 +165,8 @@ Full reflection → `planning/sessions/{filename}`
 
 ## Relationship to other gates
 
-| Gate | When | What it captures |
-|---|---|---|
-| `npm run gates` | Gates step of `/branch-close` | Correctness: test, lint, format, pack |
-| `/docs-sweep` | Docs Sweep step of `/branch-close` | Doc accuracy across the branch |
+| Gate             | When                                                       | What it captures                                                                                                   |
+| ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `npm run gates`  | Gates step of `/branch-close`                              | Correctness: test, lint, format, pack                                                                              |
+| `/docs-sweep`    | Docs Sweep step of `/branch-close`                         | Doc accuracy across the branch                                                                                     |
 | `/retrospective` | Retrospective step of `/branch-close`, before context wipe | The supervision: how actively the human supervised, feedback for next time, and whether the objective was achieved |

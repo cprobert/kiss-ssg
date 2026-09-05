@@ -54,6 +54,7 @@ In the output, look for added lines (`+`) that match any of:
 - **Long alphanumeric string**: a quoted string value of 32+ characters composed primarily of alphanumeric characters, `+`, `/`, or `=` (a high-entropy indicator).
 
 **Do not flag:**
+
 - `package-lock.json` integrity hashes — excluded above, but they resurface if the exclusion is edited.
 - Content hashes in test fixtures or `AIKB/` examples (`utils.hashId` produces MD5 hex digests, which read as high-entropy).
 - Values that are clearly placeholders: `YOUR_KEY_HERE`, `<token>`, `example`, `changeme`, `xxxxxxxx`, `...`.
@@ -75,14 +76,14 @@ git diff --name-only "$BASE...HEAD" | grep -E '(lib/(model-resolver|controller-r
 
 Why each one:
 
-| Path | The concern |
-|---|---|
-| `lib/model-resolver.js` | Fetches models over `http(s)` and reads arbitrary JSON off disk — remote input reaching the render path |
-| `lib/controller-resolver.js` | Imports and executes a JS file resolved from page options — arbitrary code execution by path |
-| `lib/dev-server.js` | Binds a port and serves the build directory |
-| `lib/watcher.js` | Watches and re-reads files, and re-imports controllers on change |
+| Path                                                | The concern                                                                                                                 |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `lib/model-resolver.js`                             | Fetches models over `http(s)` and reads arbitrary JSON off disk — remote input reaching the render path                     |
+| `lib/controller-resolver.js`                        | Imports and executes a JS file resolved from page options — arbitrary code execution by path                                |
+| `lib/dev-server.js`                                 | Binds a port and serves the build directory                                                                                 |
+| `lib/watcher.js`                                    | Watches and re-reads files, and re-imports controllers on change                                                            |
 | `lib/assets.js`, `lib/kiss-page.js`, `lib/utils.js` | Compute output paths from user-supplied `slug` / `path` and write files there — the path-traversal surface (`sanitizePath`) |
-| `package.json` | A new or bumped dependency, or a changed `files` whitelist that could publish something unintended |
+| `package.json`                                      | A new or bumped dependency, or a changed `files` whitelist that could publish something unintended                          |
 
 If any match: this branch is **security-relevant**. Proceed to Step 3.
 
@@ -104,8 +105,8 @@ If the operator declines: note the decision and proceed.
 
 ## Relationship to other gates
 
-| Gate | When |
-|---|---|
-| `/secrets-scan` | Secrets Scan step of `/branch-close` (always runs) |
-| `/security-review` | Judgment call within `/secrets-scan` for security-relevant branches |
+| Gate                   | When                                                                       |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `/secrets-scan`        | Secrets Scan step of `/branch-close` (always runs)                         |
+| `/security-review`     | Judgment call within `/secrets-scan` for security-relevant branches        |
 | `npm run gates` → pack | Gates step of `/branch-close` — proves what the published tarball contains |

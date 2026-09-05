@@ -16,6 +16,12 @@ export default [
     },
   },
   {
-    ignores: ['docs/**', 'public/**', 'examples/**/assets/**', 'src/**', 'coverage/**'],
+    ignores: [
+      'docs/**',
+      'public/**',
+      'examples/**/assets/**',
+      'src/**',
+      'coverage/**',
+    ],
   },
 ]

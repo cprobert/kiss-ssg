@@ -30,39 +30,41 @@ Every task carries a `model:` tag. The executor dispatches each task to a subage
 
 ## File structure (end state)
 
-| File | Responsibility |
-|---|---|
-| `lib/kiss.js` | Orchestrator, public API, owns `_stack`/`_promises`/`_generating`, per-instance Handlebars/Remarkable, watcher/dev-server handles |
-| `lib/kiss-page.js` | One page's render/write lifecycle |
-| `lib/logger.js` | Coloured console logger factory (only `colors` importer) |
-| `lib/config.js` | Default config, folder derivation, folders-to-ensure (pure) |
-| `lib/utils.js` | Pure string/path helpers + `hashId` |
-| `lib/handlebars-helpers.js` | Registers the six built-in helpers on a given Handlebars env |
-| `lib/partials.js` | Registers partials/layouts on a given Handlebars env |
-| `lib/assets.js` | Sass compile + asset copy, always-resolving promise |
-| `lib/model-resolver.js` | `options.model` → `{ id, data }` |
-| `lib/controller-resolver.js` | `options.controller` → patched options |
-| `lib/sitemap.js` | Sitemap entries, XML, write |
-| `lib/dev-server.js` | connect + serve-static + livereload, `close()` |
-| `lib/watcher.js` | chokidar watchers, `ready`, `close()` |
-| `test/helpers/site.js` | Temp-dir site fixture + `waitFor` |
-| `test/helpers/kiss.js` | Re-exports the engine entry (path changes once, in Task 12) |
-| `test/integration/*.test.js` | Real `Kiss` against temp dirs |
-| `test/unit/*.test.js` | One per `lib/` module |
-| `test/aikb.test.js` | `lib/` ↔ `AIKB/` ↔ `CLAUDE.md` sync |
-| `AIKB/*.md` | One doc per `lib/` module + `testing.md` |
-| `eslint.config.js` | Flat ESLint config |
+| File                         | Responsibility                                                                                                                    |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/kiss.js`                | Orchestrator, public API, owns `_stack`/`_promises`/`_generating`, per-instance Handlebars/Remarkable, watcher/dev-server handles |
+| `lib/kiss-page.js`           | One page's render/write lifecycle                                                                                                 |
+| `lib/logger.js`              | Coloured console logger factory (only `colors` importer)                                                                          |
+| `lib/config.js`              | Default config, folder derivation, folders-to-ensure (pure)                                                                       |
+| `lib/utils.js`               | Pure string/path helpers + `hashId`                                                                                               |
+| `lib/handlebars-helpers.js`  | Registers the six built-in helpers on a given Handlebars env                                                                      |
+| `lib/partials.js`            | Registers partials/layouts on a given Handlebars env                                                                              |
+| `lib/assets.js`              | Sass compile + asset copy, always-resolving promise                                                                               |
+| `lib/model-resolver.js`      | `options.model` → `{ id, data }`                                                                                                  |
+| `lib/controller-resolver.js` | `options.controller` → patched options                                                                                            |
+| `lib/sitemap.js`             | Sitemap entries, XML, write                                                                                                       |
+| `lib/dev-server.js`          | connect + serve-static + livereload, `close()`                                                                                    |
+| `lib/watcher.js`             | chokidar watchers, `ready`, `close()`                                                                                             |
+| `test/helpers/site.js`       | Temp-dir site fixture + `waitFor`                                                                                                 |
+| `test/helpers/kiss.js`       | Re-exports the engine entry (path changes once, in Task 12)                                                                       |
+| `test/integration/*.test.js` | Real `Kiss` against temp dirs                                                                                                     |
+| `test/unit/*.test.js`        | One per `lib/` module                                                                                                             |
+| `test/aikb.test.js`          | `lib/` ↔ `AIKB/` ↔ `CLAUDE.md` sync                                                                                               |
+| `AIKB/*.md`                  | One doc per `lib/` module + `testing.md`                                                                                          |
+| `eslint.config.js`           | Flat ESLint config                                                                                                                |
 
 ---
 
 ### Task 1: Vitest harness — `model: sonnet`
 
 **Files:**
+
 - Modify: `package.json` (scripts, devDependencies)
 - Create: `vitest.config.mjs`
 - Create: `test/unit/utils.test.js`
 
 **Interfaces:**
+
 - Produces: `npm test` (single run), `npm run test:watch`, `npm run test:coverage`. Test files live under `test/**/*.test.js`.
 
 - [ ] **Step 1: Install Vitest**
@@ -137,10 +139,12 @@ git commit -m "Add Vitest harness with a smoke test against libs/utils"
 ### Task 2: Characterization tests against the monolith — `model: opus`
 
 **Files:**
+
 - Create: `test/helpers/site.js`, `test/helpers/kiss.js`
 - Create: `test/integration/characterization.test.js`
 
 **Interfaces:**
+
 - Produces: `makeSite(files) → { root, src, build, folders, read(rel), exists(rel), touch(rel, content), cleanup() }`, `waitFor(predicate, { timeout, interval })`; `test/helpers/kiss.js` default-exports the `Kiss` class and exports `ENTRY` (absolute path of the engine entry file).
 - Notes for the implementer: `Kiss` today is fire-and-forget (files appear some time after `generate()` returns) — every test polls with `waitFor`. Do **not** use `dev: true` (it starts a real HTTP server). Do **not** test file-based controllers here: `require.main` is undefined under Vitest so `require.main.require` throws until Task 4 replaces it. Do not assert on `title` for non-index pages (an existing quirk sets it to `'Index'`).
 
@@ -174,7 +178,10 @@ export async function makeSite(files = {}) {
   }
 }
 
-export async function waitFor(predicate, { timeout = 5000, interval = 25 } = {}) {
+export async function waitFor(
+  predicate,
+  { timeout = 5000, interval = 25 } = {},
+) {
   const start = Date.now()
   for (;;) {
     if (await predicate()) return
@@ -226,13 +233,17 @@ describe('scan + generate', () => {
     })
     new Kiss({ folders: site.folders }).scan().generate()
     await waitFor(() => site.exists('public/index.html'))
-    expect(await site.read('public/index.html')).toBe('<h1>Home</h1><p>kiss</p>')
+    expect(await site.read('public/index.html')).toBe(
+      '<h1>Home</h1><p>kiss</p>',
+    )
   })
 })
 
 describe('page()', () => {
   it('accepts an object model, a function controller, and explicit path/slug', async () => {
-    site = await makeSite({ 'src/pages/item.hbs': '<i>{{title}}|{{model.name}}</i>' })
+    site = await makeSite({
+      'src/pages/item.hbs': '<i>{{title}}|{{model.name}}</i>',
+    })
     new Kiss({ folders: site.folders })
       .page({
         view: 'item.hbs',
@@ -243,13 +254,19 @@ describe('page()', () => {
       })
       .generate()
     await waitFor(() => site.exists('public/things/one-thing.html'))
-    expect(await site.read('public/things/one-thing.html')).toBe('<i>KISS|kiss</i>')
+    expect(await site.read('public/things/one-thing.html')).toBe(
+      '<i>KISS|kiss</i>',
+    )
   })
 
   it('renders a string view with an explicit slug', async () => {
     site = await makeSite({})
     new Kiss({ folders: site.folders })
-      .page({ view: 'Hello {{model.name}}', model: { name: 'world' }, slug: 'hello-snippet' })
+      .page({
+        view: 'Hello {{model.name}}',
+        model: { name: 'world' },
+        slug: 'hello-snippet',
+      })
       .generate()
     await waitFor(() => site.exists('public/hello-snippet.html'))
     expect(await site.read('public/hello-snippet.html')).toBe('Hello world')
@@ -271,14 +288,18 @@ describe('page()', () => {
     })
     let seen = null
     const kiss = new Kiss({ folders: site.folders })
-    kiss.page({ view: 'index.hbs', model: 'index.json' }).generate(function (data) {
-      seen = { self: this, data }
-    })
+    kiss
+      .page({ view: 'index.hbs', model: 'index.json' })
+      .generate(function (data) {
+        seen = { self: this, data }
+      })
     await waitFor(() => seen)
     expect(seen.self).toBe(kiss)
     const entry = seen.data.find((d) => d.id === 'index.json')
     expect(entry.data).toEqual({ title: 'Home' })
-    expect(kiss.getModelByID('index.json', seen.data)).toEqual({ title: 'Home' })
+    expect(kiss.getModelByID('index.json', seen.data)).toEqual({
+      title: 'Home',
+    })
   })
 })
 
@@ -312,7 +333,9 @@ describe('pages()', () => {
       'src/models/team/a.json': { name: 'a' },
       'src/models/team/b.json': { name: 'b' },
     })
-    new Kiss({ folders: site.folders }).pages({ view: 'member.hbs', model: 'team' }).generate()
+    new Kiss({ folders: site.folders })
+      .pages({ view: 'member.hbs', model: 'team' })
+      .generate()
     await waitFor(() => site.exists('public/member-2.html'))
     expect(await site.read('public/member-1.html')).toBe('a')
   })
@@ -372,7 +395,9 @@ describe('partials, layouts and helpers', () => {
         '{{#isActive this href="/about"}}<a class="{{active}}">A</a>{{/isActive}}',
       ].join(''),
     })
-    new Kiss({ folders: site.folders }).page({ view: 'about.hbs', model: { a: 1 } }).generate()
+    new Kiss({ folders: site.folders })
+      .page({ view: 'about.hbs', model: { a: 1 } })
+      .generate()
     await waitFor(() => site.exists('public/about.html'))
     const html = await site.read('public/about.html')
     expect(html).toContain('<h1>Hi</h1>')
@@ -391,7 +416,11 @@ describe('sitemap()', () => {
     })
     new Kiss({ folders: site.folders, siteUrl: 'https://example.com/' })
       .page({ view: 'index.hbs' })
-      .page({ view: 'about.hbs', sitemapPriority: '0.5', sitemapChangefreq: 'weekly' })
+      .page({
+        view: 'about.hbs',
+        sitemapPriority: '0.5',
+        sitemapChangefreq: 'weekly',
+      })
       .page({ view: 'hidden.hbs', ignoreSitemap: true })
       .generate()
       .sitemap()
@@ -409,7 +438,7 @@ describe('sitemap()', () => {
 - [ ] **Step 3: Run the suite**
 
 Run: `npm test`
-Expected: all pass. If a test fails, first decide whether it records the engine's *actual* behaviour incorrectly (fix the test) or exposes a real defect (leave the test out and note it in the commit message — defects are fixed in Task 3, not here).
+Expected: all pass. If a test fails, first decide whether it records the engine's _actual_ behaviour incorrectly (fix the test) or exposes a real defect (leave the test out and note it in the commit message — defects are fixed in Task 3, not here).
 
 - [ ] **Step 4: Commit**
 
@@ -423,12 +452,14 @@ git commit -m "Add characterization tests for the v1 engine"
 ### Task 3: Lifecycle fixes — tracked page chains, awaited writes, draining `complete()` — `model: fable`
 
 **Files:**
+
 - Modify: `kiss-ssg.js` — `KissPage.generate()` (lines ~222–272), `Kiss` fields, `copyAssets` (~418–489), `_processPageModel` (~613–658), `page()` (~678–772), `generate()` (~826–837), `complete()` (~839–843), `sitemap()` (~845–911)
 - Create: `test/integration/lifecycle.test.js`
 
 **Interfaces:**
+
 - Consumes: `makeSite`, `waitFor`, `Kiss` from the Task 2 helpers.
-- Produces: `Kiss._promises` only ever holds handled promises resolving to `{ id, data, error? }`; `Kiss._generating` (array of in-flight `generate()`/`sitemap()` promises); `Kiss._drain()`; `complete(cb)` resolves only when everything queued (including work queued *by* callbacks) has finished. These carry over into `lib/kiss.js` in Task 12.
+- Produces: `Kiss._promises` only ever holds handled promises resolving to `{ id, data, error? }`; `Kiss._generating` (array of in-flight `generate()`/`sitemap()` promises); `Kiss._drain()`; `complete(cb)` resolves only when everything queued (including work queued _by_ callbacks) has finished. These carry over into `lib/kiss.js` in Task 12.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -478,7 +509,10 @@ describe('generate()', () => {
   })
 
   it('complete() resolves after pages queued by a generate callback are written too', async () => {
-    site = await makeSite({ 'src/pages/index.hbs': 'x', 'src/pages/later.hbs': 'y' })
+    site = await makeSite({
+      'src/pages/index.hbs': 'x',
+      'src/pages/later.hbs': 'y',
+    })
     const kiss = new Kiss({ folders: site.folders })
     kiss.page({ view: 'index.hbs' }).generate(function () {
       this.page({ view: 'later.hbs' }).generate()
@@ -509,25 +543,23 @@ Expected: the bad-model test fails with an unhandled rejection error reported by
 In `kiss-ssg.js` replace the two callback-style writes inside `KissPage.generate()`:
 
 ```js
-        try {
-          await fs.outputFile(this.buildTo, minifiedHtml)
-        } catch (err) {
-          console.error(`Error creating ${this.buildTo}`.red)
-          console.error(colors.yellow(err))
-        }
+try {
+  await fs.outputFile(this.buildTo, minifiedHtml)
+} catch (err) {
+  console.error(`Error creating ${this.buildTo}`.red)
+  console.error(colors.yellow(err))
+}
 
-        if (this.options && this._dev) {
-          try {
-            await fs.outputJson(
-              this.buildTo.replace(this._ext, 'json'),
-              this.options,
-              { spaces: 2 }
-            )
-          } catch (err) {
-            console.error(`Error creating ${this.buildTo}`.red)
-            console.error(colors.yellow(err))
-          }
-        }
+if (this.options && this._dev) {
+  try {
+    await fs.outputJson(this.buildTo.replace(this._ext, 'json'), this.options, {
+      spaces: 2,
+    })
+  } catch (err) {
+    console.error(`Error creating ${this.buildTo}`.red)
+    console.error(colors.yellow(err))
+  }
+}
 ```
 
 - [ ] **Step 4: Track the whole page chain, never a raw model promise**
@@ -545,21 +577,21 @@ In `_processPageModel` delete the line `this._promises.push(p)` (keep `return p`
 In `page()`, replace `this._processPageModel(options.model).then((response) => { ... }).catch((error) => { ... })` with a chain that is stored and tracked:
 
 ```js
-    const chain = this._processPageModel(options.model)
-      .then((response) => {
-        // ...existing body of the .then unchanged...
-        return response
-      })
-      .catch((error) => {
-        console.error(colors.red(error.message || error))
-        if (error.error) console.error(colors.yellow(error.error))
-        return {
-          id: typeof options.model === 'string' ? options.model : undefined,
-          data: null,
-          error,
-        }
-      })
-    this._promises.push(chain)
+const chain = this._processPageModel(options.model)
+  .then((response) => {
+    // ...existing body of the .then unchanged...
+    return response
+  })
+  .catch((error) => {
+    console.error(colors.red(error.message || error))
+    if (error.error) console.error(colors.yellow(error.error))
+    return {
+      id: typeof options.model === 'string' ? options.model : undefined,
+      data: null,
+      error,
+    }
+  })
+this._promises.push(chain)
 ```
 
 - [ ] **Step 5: Await renders in `generate()`, add `_generating` and `_drain()`, make `complete()` drain, track `sitemap()`**
@@ -622,10 +654,12 @@ git commit -m "Track whole page chains, await page writes, make complete() drain
 ### Task 4: ESM conversion of the engine, examples and docs.js — `model: opus`
 
 **Files:**
+
 - Modify: `package.json` (`type`, `engines`, remove `node-fetch`), `kiss-ssg.js`, `libs/utils.js`, `kiss-serve.js`, `docs.js`, `examples/1-scan.js` … `examples/6-sitemap.js`, `examples/2-page/controllers/index.js`, `examples/2-page/controllers/about.js`
 - Create: `test/integration/esm.test.js`
 
 **Interfaces:**
+
 - Produces: `kiss-ssg.js` is an ES module with `export default Kiss`, `export { Kiss as 'module.exports' }`, `export { utils }`. `_detectControllerType` and `_prepareMultiplePages` become `async`. `watch()` uses `process.argv[1]`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -663,7 +697,8 @@ describe('file controllers', () => {
   it('loads an explicit export-default controller', async () => {
     site = await makeSite({
       'src/pages/about.hbs': '{{title}}',
-      'src/controllers/about.mjs': 'export default () => ({ title: "From ESM" })',
+      'src/controllers/about.mjs':
+        'export default () => ({ title: "From ESM" })',
     })
     const kiss = new Kiss({ folders: site.folders })
       .page({ view: 'about.hbs', controller: 'about.mjs' })
@@ -678,7 +713,9 @@ describe('package entry', () => {
     site = await makeSite({
       'use.cjs': `const Kiss = require(${JSON.stringify(ENTRY)}); console.log(typeof Kiss, typeof Kiss.prototype.page)`,
     })
-    const { stdout } = await run(process.execPath, [path.join(site.root, 'use.cjs')])
+    const { stdout } = await run(process.execPath, [
+      path.join(site.root, 'use.cjs'),
+    ])
     expect(stdout.trim()).toBe('function function')
   })
 
@@ -730,9 +767,12 @@ export default async (httpRoot, port) => {
       cacheControl: false,
       extensions: ['html', 'htm'],
       index: ['index.html', 'index.htm'],
-    })
+    }),
   )
-  console.log(`Serving (${httpRoot}): `.grey, colors.yellow('http://localhost:' + port))
+  console.log(
+    `Serving (${httpRoot}): `.grey,
+    colors.yellow('http://localhost:' + port),
+  )
   app.listen(port)
   const { default: livereload } = await import('livereload')
   const server = livereload.createServer()
@@ -850,12 +890,14 @@ git commit -m "Convert the engine, examples and docs to ESM; load controllers wi
 ### Task 5: Flat ESLint config and dependency pruning — `model: sonnet`
 
 **Files:**
+
 - Delete: `.eslintrc.js`
 - Create: `eslint.config.js`
 - Modify: `package.json` (devDependencies, `lint` script, remove `pretty`, `highlight.js`, `md5`), `kiss-ssg.js` (the `md5` import is already gone in Task 4 — verify), `libs/utils.js` (add `hashId`)
 - Modify: `test/unit/utils.test.js`
 
 **Interfaces:**
+
 - Produces: `npm run lint`; `utils.hashId(input: string | object) → string` (md5 hex of the string, or of `JSON.stringify(object)`).
 
 - [ ] **Step 1: Write the failing `hashId` test**
@@ -919,7 +961,13 @@ export default [
     },
   },
   {
-    ignores: ['docs/**', 'public/**', 'examples/**/assets/**', 'src/**', 'coverage/**'],
+    ignores: [
+      'docs/**',
+      'public/**',
+      'examples/**/assets/**',
+      'src/**',
+      'coverage/**',
+    ],
   },
 ]
 ```
@@ -929,7 +977,7 @@ Add `"lint": "eslint ."` to `package.json` scripts.
 - [ ] **Step 4: Verify**
 
 Run: `npm test` — Expected: all pass.
-Run: `npm run lint` — Expected: exits 0 (warnings allowed, no errors). Fix any *error* it reports in files you touched; do not silence rules.
+Run: `npm run lint` — Expected: exits 0 (warnings allowed, no errors). Fix any _error_ it reports in files you touched; do not silence rules.
 Run: `grep -rn "require('md5')\|from 'md5'\|node-fetch\|pretty\|highlight.js" kiss-ssg.js libs docs.js examples/*.js package.json` — Expected: no matches.
 
 - [ ] **Step 5: Commit**
@@ -944,6 +992,7 @@ git commit -m "Replace .eslintrc with flat config; drop pretty, highlight.js, md
 ### Task 6: Extract `lib/utils.js`, `lib/logger.js`, `lib/config.js`; route all logging through the logger — `model: sonnet`
 
 **Files:**
+
 - Create: `lib/utils.js`, `lib/logger.js`, `lib/config.js`
 - Create: `test/unit/logger.test.js`, `test/unit/config.test.js`; move `test/unit/utils.test.js` import to `../../lib/utils.js`
 - Delete: `libs/` (whole folder, including `libs/on-ice/`)
@@ -951,6 +1000,7 @@ git commit -m "Replace .eslintrc with flat config; drop pretty, highlight.js, md
 - Create: `test/integration/config.test.js`
 
 **Interfaces:**
+
 - Produces:
   - `lib/utils.js`: named exports `trimLines`, `toSlug`, `toTitleCase`, `trimPath`, `sanitizePath`, `hashId`; default export is the object of all six.
   - `lib/logger.js`: `createLogger({ verbose = false, silent = false } = {})` → `{ verbose, banner, info, success, highlight, notice, warn, error, debug, plain }` (each `(...args) => void`); `silentLogger`; default export `createLogger()`.
@@ -965,7 +1015,17 @@ git commit -m "Replace .eslintrc with flat config; drop pretty, highlight.js, md
 import { describe, it, expect, vi } from 'vitest'
 import { createLogger, silentLogger } from '../../lib/logger.js'
 
-const METHODS = ['banner', 'info', 'success', 'highlight', 'notice', 'warn', 'error', 'debug', 'plain']
+const METHODS = [
+  'banner',
+  'info',
+  'success',
+  'highlight',
+  'notice',
+  'warn',
+  'error',
+  'debug',
+  'plain',
+]
 
 describe('createLogger', () => {
   it('exposes the full interface', () => {
@@ -1009,7 +1069,12 @@ describe('createLogger', () => {
 
 ```js
 import { describe, it, expect } from 'vitest'
-import { resolveConfig, resolveFolders, foldersToEnsure, DEFAULT_FOLDERS } from '../../lib/config.js'
+import {
+  resolveConfig,
+  resolveFolders,
+  foldersToEnsure,
+  DEFAULT_FOLDERS,
+} from '../../lib/config.js'
 
 describe('resolveFolders', () => {
   it('returns the defaults when nothing is given', () => {
@@ -1066,7 +1131,10 @@ afterEach(async () => {
 describe('folder creation', () => {
   it('creates partials/layouts/models/controllers even when assets is null', async () => {
     site = await makeSite({})
-    new Kiss({ folders: { ...site.folders, assets: null }, logger: silentLogger })
+    new Kiss({
+      folders: { ...site.folders, assets: null },
+      logger: silentLogger,
+    })
     expect(await site.exists('src/partials')).toBe(true)
     expect(await site.exists('src/layouts')).toBe(true)
     expect(await site.exists('src/models')).toBe(true)
@@ -1095,7 +1163,10 @@ export function trimLines(lines) {
 }
 
 export function toSlug(slug) {
-  return slug.toLowerCase().trim().replace(/[\W_]+/g, '-')
+  return slug
+    .toLowerCase()
+    .trim()
+    .replace(/[\W_]+/g, '-')
 }
 
 export function toTitleCase(str) {
@@ -1192,13 +1263,22 @@ export const DEFAULT_CONFIG = Object.freeze({
   port: 3001,
 })
 
-const DERIVED_FROM_SRC = ['assets', 'static', 'layouts', 'pages', 'partials', 'models', 'controllers']
+const DERIVED_FROM_SRC = [
+  'assets',
+  'static',
+  'layouts',
+  'pages',
+  'partials',
+  'models',
+  'controllers',
+]
 
 export function resolveFolders(userFolders = {}) {
   const folders = { ...DEFAULT_FOLDERS }
   if (userFolders.src) {
     folders.src = userFolders.src
-    for (const key of DERIVED_FROM_SRC) folders[key] = `${userFolders.src}/${key}`
+    for (const key of DERIVED_FROM_SRC)
+      folders[key] = `${userFolders.src}/${key}`
   }
   return { ...folders, ...userFolders }
 }
@@ -1216,7 +1296,16 @@ export function resolveConfig(userConfig = {}) {
 // Every folder Kiss creates on start-up. v1 only created most of these when
 // `assets` was set (a copy-paste bug); each folder now stands on its own.
 export function foldersToEnsure(folders) {
-  return ['src', 'pages', 'build', 'assets', 'layouts', 'partials', 'models', 'controllers']
+  return [
+    'src',
+    'pages',
+    'build',
+    'assets',
+    'layouts',
+    'partials',
+    'models',
+    'controllers',
+  ]
     .map((key) => folders[key])
     .filter(Boolean)
 }
@@ -1228,11 +1317,12 @@ export function foldersToEnsure(folders) {
 - Constructor: replace the hand-rolled defaults/folders block (from `let folders = {` through `this.verbose = !!this.config.verbose`) with:
 
 ```js
-    this.config = resolveConfig(config)
-    this.logger = this.config.logger || createLogger({ verbose: this.config.verbose })
-    this.verbose = !!this.config.verbose
-    this.logger.banner('            Starting Kiss            \n')
-    this.logger.debug('config: ', this.config)
+this.config = resolveConfig(config)
+this.logger =
+  this.config.logger || createLogger({ verbose: this.config.verbose })
+this.verbose = !!this.config.verbose
+this.logger.banner('            Starting Kiss            \n')
+this.logger.debug('config: ', this.config)
 ```
 
 - `_setupFolders`: replace the eight `ensureDirSync` calls with `foldersToEnsure(this.config.folders).forEach((f) => fs.ensureDirSync(f))`, keeping the `cleanBuild` block.
@@ -1259,12 +1349,14 @@ git commit -m "Extract utils, logger and config into lib/; route all output thro
 ### Task 7: Extract `handlebars-helpers`, `partials`, `assets`; per-instance Handlebars and Remarkable — `model: opus`
 
 **Files:**
+
 - Create: `lib/handlebars-helpers.js`, `lib/partials.js`, `lib/assets.js`
 - Create: `test/unit/handlebars-helpers.test.js`, `test/unit/partials.test.js`, `test/unit/assets.test.js`
 - Modify: `kiss-ssg.js` (delete `registerHandlebarsHelpers`, `registerPartials`/`_registerPartials`, `copyAssets` bodies; create per-instance envs; `KissPage` compiles on the instance env)
 - Create: `test/integration/isolation.test.js`
 
 **Interfaces:**
+
 - Produces:
   - `registerHandlebarsHelpers(hbs, config, { markdown, logger })` → `hbs`.
   - `registerPartials(hbs, config, { markdown, logger })` → `string[]` of registered partial names; `registerPartialsFrom(hbs, folder, ext, deps)`.
@@ -1287,41 +1379,58 @@ const render = (src, ctx = {}) => hbs.compile(src)(ctx)
 
 beforeEach(() => {
   hbs = Handlebars.create()
-  registerHandlebarsHelpers(hbs, { dev: false, sass: { includePaths: [] } }, {
-    markdown: new Remarkable({ html: true, xhtmlOut: true, breaks: true }),
-    logger: silentLogger,
-  })
+  registerHandlebarsHelpers(
+    hbs,
+    { dev: false, sass: { includePaths: [] } },
+    {
+      markdown: new Remarkable({ html: true, xhtmlOut: true, breaks: true }),
+      logger: silentLogger,
+    },
+  )
 })
 
 describe('markdown', () => {
   it('renders a block and an inline string', () => {
     expect(render('{{#markdown}}# Hi{{/markdown}}')).toContain('<h1>Hi</h1>')
-    expect(render('{{markdown text}}', { text: '**b**' })).toContain('<strong>b</strong>')
+    expect(render('{{markdown text}}', { text: '**b**' })).toContain(
+      '<strong>b</strong>',
+    )
   })
 })
 
 describe('sass', () => {
   it('compiles an inline block', () => {
-    expect(render('{{#sass}}$c: red; a { color: $c }{{/sass}}')).toContain('color: red')
+    expect(render('{{#sass}}$c: red; a { color: $c }{{/sass}}')).toContain(
+      'color: red',
+    )
   })
 })
 
 describe('offset and stringify', () => {
   it('offset adds one; stringify pretty-prints', () => {
     expect(render('{{offset i}}', { i: 0 })).toBe('1')
-    expect(render('{{{stringify o}}}', { o: { a: 1 } })).toBe(JSON.stringify({ a: 1 }, null, 3))
+    expect(render('{{{stringify o}}}', { o: { a: 1 } })).toBe(
+      JSON.stringify({ a: 1 }, null, 3),
+    )
   })
 })
 
 describe('isActive', () => {
   const tpl = '{{#isActive page href=href}}[{{active}}]{{/isActive}}'
   it('matches the page URL exactly, treating index as /', () => {
-    expect(render(tpl, { page: { pageURL: 'about.html' }, href: '/about' })).toBe('[active]')
-    expect(render(tpl, { page: { pageURL: 'index.html' }, href: '/' })).toBe('[active]')
-    expect(render(tpl, { page: { pageURL: 'about.html' }, href: '/contact' })).toBe('[]')
+    expect(
+      render(tpl, { page: { pageURL: 'about.html' }, href: '/about' }),
+    ).toBe('[active]')
+    expect(render(tpl, { page: { pageURL: 'index.html' }, href: '/' })).toBe(
+      '[active]',
+    )
+    expect(
+      render(tpl, { page: { pageURL: 'about.html' }, href: '/contact' }),
+    ).toBe('[]')
   })
   it('matches by folder when folderMatch is set', () => {
-    const t = '{{#isActive page href="/docs" folderMatch=true}}[{{active}}]{{/isActive}}'
+    const t =
+      '{{#isActive page href="/docs" folderMatch=true}}[{{active}}]{{/isActive}}'
     expect(render(t, { page: { pageURL: 'docs/intro.html' } })).toBe('[active]')
   })
 })
@@ -1330,10 +1439,14 @@ describe('env', () => {
   it('chooses the branch by config.dev', () => {
     expect(render('{{#env is="prod"}}P{{else}}D{{/env}}')).toBe('P')
     const dev = Handlebars.create()
-    registerHandlebarsHelpers(dev, { dev: true, sass: { includePaths: [] } }, {
-      markdown: new Remarkable(),
-      logger: silentLogger,
-    })
+    registerHandlebarsHelpers(
+      dev,
+      { dev: true, sass: { includePaths: [] } },
+      {
+        markdown: new Remarkable(),
+        logger: silentLogger,
+      },
+    )
     expect(dev.compile('{{#env is="dev"}}D{{else}}P{{/env}}')({})).toBe('D')
   })
 })
@@ -1365,8 +1478,13 @@ describe('registerPartials', () => {
     const hbs = Handlebars.create()
     const names = registerPartials(
       hbs,
-      { folders: { partials: `${site.src}/partials`, layouts: `${site.src}/layouts` } },
-      { markdown: new Remarkable(), logger: silentLogger }
+      {
+        folders: {
+          partials: `${site.src}/partials`,
+          layouts: `${site.src}/layouts`,
+        },
+      },
+      { markdown: new Remarkable(), logger: silentLogger },
     )
     expect(names.sort()).toEqual(['layout/footer', 'main', 'nav', 'note'])
     expect(hbs.partials['note']).toContain('<h1>Note</h1>')
@@ -1377,7 +1495,7 @@ describe('registerPartials', () => {
     const names = registerPartials(
       hbs,
       { folders: { partials: null, layouts: null } },
-      { markdown: new Remarkable(), logger: silentLogger }
+      { markdown: new Remarkable(), logger: silentLogger },
     )
     expect(names).toEqual([])
   })
@@ -1396,7 +1514,10 @@ let site
 afterEach(async () => {
   if (site) await site.cleanup()
 })
-const deps = { config: { dev: false, sass: { includePaths: [] } }, logger: silentLogger }
+const deps = {
+  config: { dev: false, sass: { includePaths: [] } },
+  logger: silentLogger,
+}
 
 describe('copyAssets', () => {
   it('compiles sass and copies the rest', async () => {
@@ -1414,7 +1535,11 @@ describe('copyAssets', () => {
 
   it('resolves (does not reject or hang) when the source is missing', async () => {
     site = await makeSite({})
-    const result = await copyAssets(`${site.root}/nope`, `${site.root}/out`, deps)
+    const result = await copyAssets(
+      `${site.root}/nope`,
+      `${site.root}/out`,
+      deps,
+    )
     expect(result.data).toBeNull()
     expect(result.error).toBeTruthy()
   })
@@ -1441,7 +1566,10 @@ afterEach(async () => {
 
 describe('per-instance Handlebars', () => {
   it('does not leak partials or helpers between Kiss instances', async () => {
-    const a = await makeSite({ 'src/partials/p.hbs': 'A', 'src/pages/index.hbs': '{{> p}}' })
+    const a = await makeSite({
+      'src/partials/p.hbs': 'A',
+      'src/pages/index.hbs': '{{> p}}',
+    })
     const b = await makeSite({ 'src/pages/index.hbs': '{{> p}}' })
     sites.push(a, b)
     const ka = new Kiss({ folders: a.folders, logger: silentLogger })
@@ -1479,7 +1607,10 @@ export function registerHandlebarsHelpers(hbs, config, { markdown, logger }) {
       logger.warn('Undefined value passed to markdown helper:')
     } else {
       logger.error('Unexpected object in the bagging area!')
-      logger.warn('Markdown helper has an unexpected object type of:', typeof obj)
+      logger.warn(
+        'Markdown helper has an unexpected object type of:',
+        typeof obj,
+      )
     }
     return new hbs.SafeString(markdown.render(trimLines(text)))
   })
@@ -1489,10 +1620,14 @@ export function registerHandlebarsHelpers(hbs, config, { markdown, logger }) {
     const loadPaths = config.sass.includePaths
     let output = ''
     if (typeof context === 'string') {
-      const result = sass.compile(path.join(process.cwd(), context), { loadPaths, style })
+      const result = sass.compile(path.join(process.cwd(), context), {
+        loadPaths,
+        style,
+      })
       output = `${output} \n${result.css}`
     }
-    const block = options && options.fn ? options : context && context.fn ? context : null
+    const block =
+      options && options.fn ? options : context && context.fn ? context : null
     if (block) {
       const result = sass.compileString(block.fn(this), { loadPaths })
       output = `${output} \n${result.css}`
@@ -1581,7 +1716,8 @@ const isSass = (file) => /\.(scss|sass)$/i.test(file)
 
 export function compileSassFiles(sourceDir, targetDir, { config, logger }) {
   return glob.sync(`${sourceDir}/**/*.+(scss|sass)`).map(async (sassFile) => {
-    const cssFile = sassFile.replace(sourceDir, targetDir).replace(/\.[^.]+$/, '') + '.css'
+    const cssFile =
+      sassFile.replace(sourceDir, targetDir).replace(/\.[^.]+$/, '') + '.css'
     try {
       const { css } = sass.compile(sassFile, {
         loadPaths: config.sass.includePaths,
@@ -1621,9 +1757,9 @@ export async function copyAssets(sourceDir, targetDir, { config, logger }) {
 - Class fields: remove `handlebars = handlebars` / `remarkable = remarkable`. In the constructor, right after the logger is set up:
 
 ```js
-    this.handlebars = handlebars.create()
-    this.handlebars.registerHelper(layouts(this.handlebars))
-    this.remarkable = new Remarkable({ html: true, xhtmlOut: true, breaks: true })
+this.handlebars = handlebars.create()
+this.handlebars.registerHelper(layouts(this.handlebars))
+this.remarkable = new Remarkable({ html: true, xhtmlOut: true, breaks: true })
 ```
 
 and replace `registerHandlebarsHelpers(this.config)` / `this.registerPartials()` with `registerHandlebarsHelpers(this.handlebars, this.config, { markdown: this.remarkable, logger: this.logger })` and `this.registerPartials()` where:
@@ -1663,11 +1799,13 @@ git commit -m "Extract handlebars helpers, partials and assets; isolate Handleba
 ### Task 8: Extract `model-resolver` and `controller-resolver` — `model: opus`
 
 **Files:**
+
 - Create: `lib/model-resolver.js`, `lib/controller-resolver.js`
 - Create: `test/unit/model-resolver.test.js`, `test/unit/controller-resolver.test.js`
 - Modify: `kiss-ssg.js` (delete `_readModel`, `_prepareModelsFromFolder`, `_processPageModel`, `_controllerRun`, `_detectControllerType`; call the modules)
 
 **Interfaces:**
+
 - Produces:
   - `resolveModel(model, { modelsDir, logger, fetchImpl = globalThis.fetch })` → `Promise<{ id?, data }>`; rejects with `Error` (message as v1: `Skipping: <file>`, `Invalid model <name>`, `Error getting model from <url>`, `Unexpected model type: <type>`; the fetch error is attached as `.error`).
   - `readModelFile(modelsDir, file, { logger })` → object | null; `readModelsFromFolder(modelsDir, folder, { logger })` → object[].
@@ -1687,33 +1825,48 @@ let site
 afterEach(async () => {
   if (site) await site.cleanup()
 })
-const deps = (modelsDir, extra = {}) => ({ modelsDir, logger: silentLogger, ...extra })
+const deps = (modelsDir, extra = {}) => ({
+  modelsDir,
+  logger: silentLogger,
+  ...extra,
+})
 
 describe('resolveModel', () => {
   it('reads a json file relative to modelsDir', async () => {
     site = await makeSite({ 'm/a.json': { x: 1 } })
-    await expect(resolveModel('a.json', deps(`${site.root}/m`))).resolves.toEqual({ id: 'a.json', data: { x: 1 } })
+    await expect(
+      resolveModel('a.json', deps(`${site.root}/m`)),
+    ).resolves.toEqual({ id: 'a.json', data: { x: 1 } })
   })
 
   it('rejects a missing json file with a Skipping message', async () => {
     site = await makeSite({})
-    await expect(resolveModel('nope.json', deps(`${site.root}/m`))).rejects.toThrow('Skipping: nope.json')
+    await expect(
+      resolveModel('nope.json', deps(`${site.root}/m`)),
+    ).rejects.toThrow('Skipping: nope.json')
   })
 
   it('loads every json in a folder as an array', async () => {
-    site = await makeSite({ 'm/team/a.json': { n: 'a' }, 'm/team/b.json': { n: 'b' } })
+    site = await makeSite({
+      'm/team/a.json': { n: 'a' },
+      'm/team/b.json': { n: 'b' },
+    })
     const { data } = await resolveModel('team', deps(`${site.root}/m`))
     expect(data).toEqual([{ n: 'a' }, { n: 'b' }])
   })
 
   it('rejects an unknown folder', async () => {
     site = await makeSite({})
-    await expect(resolveModel('ghost', deps(`${site.root}/m`))).rejects.toThrow('Invalid model ghost')
+    await expect(resolveModel('ghost', deps(`${site.root}/m`))).rejects.toThrow(
+      'Invalid model ghost',
+    )
   })
 
   it('fetches http(s) models with the injected fetch', async () => {
     const fetchImpl = async (url) => ({ json: async () => ({ url }) })
-    await expect(resolveModel('https://x/y', deps('m', { fetchImpl }))).resolves.toEqual({
+    await expect(
+      resolveModel('https://x/y', deps('m', { fetchImpl })),
+    ).resolves.toEqual({
       id: 'https://x/y',
       data: { url: 'https://x/y' },
     })
@@ -1723,7 +1876,9 @@ describe('resolveModel', () => {
     const fetchImpl = async () => {
       throw new Error('boom')
     }
-    await expect(resolveModel('http://x', deps('m', { fetchImpl }))).rejects.toMatchObject({ message: 'boom' })
+    await expect(
+      resolveModel('http://x', deps('m', { fetchImpl })),
+    ).rejects.toMatchObject({ message: 'boom' })
   })
 
   it('passes objects through with a content hash id, and undefined as {}', async () => {
@@ -1731,11 +1886,15 @@ describe('resolveModel', () => {
     const b = await resolveModel({ k: 1 }, deps('m'))
     expect(a.data).toEqual({ k: 1 })
     expect(a.id).toBe(b.id)
-    await expect(resolveModel(undefined, deps('m'))).resolves.toEqual({ data: {} })
+    await expect(resolveModel(undefined, deps('m'))).resolves.toEqual({
+      data: {},
+    })
   })
 
   it('rejects other types', async () => {
-    await expect(resolveModel(42, deps('m'))).rejects.toThrow('Unexpected model type: number')
+    await expect(resolveModel(42, deps('m'))).rejects.toThrow(
+      'Unexpected model type: number',
+    )
   })
 })
 ```
@@ -1752,11 +1911,17 @@ let site
 afterEach(async () => {
   if (site) await site.cleanup()
 })
-const deps = (controllersDir = 'c') => ({ controllersDir, logger: silentLogger })
+const deps = (controllersDir = 'c') => ({
+  controllersDir,
+  logger: silentLogger,
+})
 
 describe('applyController', () => {
   it('merges what a function controller returns', async () => {
-    const out = await applyController({ view: 'v', controller: () => ({ title: 'T' }) }, deps())
+    const out = await applyController(
+      { view: 'v', controller: () => ({ title: 'T' }) },
+      deps(),
+    )
     expect(out.title).toBe('T')
     expect(out.view).toBe('v')
   })
@@ -1766,23 +1931,48 @@ describe('applyController', () => {
       'c/legacy.js': 'module.exports = () => ({ title: "legacy" })',
       'c/modern.mjs': 'export default () => ({ title: "modern" })',
     })
-    expect((await applyController({ controller: 'legacy.js' }, deps(`${site.root}/c`))).title).toBe('legacy')
-    expect((await applyController({ controller: 'modern.mjs' }, deps(`${site.root}/c`))).title).toBe('modern')
+    expect(
+      (
+        await applyController(
+          { controller: 'legacy.js' },
+          deps(`${site.root}/c`),
+        )
+      ).title,
+    ).toBe('legacy')
+    expect(
+      (
+        await applyController(
+          { controller: 'modern.mjs' },
+          deps(`${site.root}/c`),
+        )
+      ).title,
+    ).toBe('modern')
   })
 
   it('leaves options alone when the file is missing or the controller throws', async () => {
     site = await makeSite({})
-    const missing = await applyController({ controller: 'nope.js', title: 'keep' }, deps(`${site.root}/c`))
+    const missing = await applyController(
+      { controller: 'nope.js', title: 'keep' },
+      deps(`${site.root}/c`),
+    )
     expect(missing.title).toBe('keep')
     const thrown = await applyController(
-      { title: 'keep', controller: () => { throw new Error('x') } },
-      deps()
+      {
+        title: 'keep',
+        controller: () => {
+          throw new Error('x')
+        },
+      },
+      deps(),
     )
     expect(thrown.title).toBe('keep')
   })
 
   it('falls back to model.title when no title is set', async () => {
-    const out = await applyController({ model: { title: 'From model' } }, deps())
+    const out = await applyController(
+      { model: { title: 'From model' } },
+      deps(),
+    )
     expect(out.title).toBe('From model')
   })
 })
@@ -1801,21 +1991,28 @@ import { hashId } from './utils.js'
 
 export function readModelFile(modelsDir, file, { logger }) {
   const modelPath = `${modelsDir}/${file}`
-  if (fs.existsSync(modelPath)) return JSON.parse(fs.readFileSync(modelPath, 'utf8'))
+  if (fs.existsSync(modelPath))
+    return JSON.parse(fs.readFileSync(modelPath, 'utf8'))
   logger.error('Can not find model on file system', modelPath)
   return null
 }
 
 export function readModelsFromFolder(modelsDir, folder, { logger }) {
   const folderPath = `${modelsDir}/${folder}`
-  if (!fs.existsSync(folderPath) || !fs.lstatSync(folderPath).isDirectory()) return []
+  if (!fs.existsSync(folderPath) || !fs.lstatSync(folderPath).isDirectory())
+    return []
   return glob
     .sync(`${folderPath}/*.json`)
-    .map((file) => readModelFile(modelsDir, file.slice(modelsDir.length + 1), { logger }))
+    .map((file) =>
+      readModelFile(modelsDir, file.slice(modelsDir.length + 1), { logger }),
+    )
     .filter(Boolean)
 }
 
-export async function resolveModel(model, { modelsDir, logger, fetchImpl = globalThis.fetch }) {
+export async function resolveModel(
+  model,
+  { modelsDir, logger, fetchImpl = globalThis.fetch },
+) {
   switch (typeof model) {
     case 'string': {
       if (model.startsWith('http')) {
@@ -1923,10 +2120,12 @@ git commit -m "Extract model and controller resolution into lib/"
 ### Task 9: Extract `sitemap` — `model: sonnet`
 
 **Files:**
+
 - Create: `lib/sitemap.js`, `test/unit/sitemap.test.js`
 - Modify: `kiss-ssg.js` (`sitemap()` becomes a thin wrapper)
 
 **Interfaces:**
+
 - Produces: `buildSitemapEntries(stack, { siteUrl, buildDir, now })` → `[{ loc, lastmod, priority, changefreq? }]`; `renderSitemapXml(urls)` → string; `writeSitemap(stack, { config, logger, overwrite = true })` → `Promise<{ status: 'written' | 'skipped' | 'no-site-url', urls: array | null }>`.
 - Consumes: stack entries shaped `{ view, buildTo, page: { options }, runCount }`.
 
@@ -1936,32 +2135,57 @@ git commit -m "Extract model and controller resolution into lib/"
 
 ```js
 import { describe, it, expect, afterEach } from 'vitest'
-import { buildSitemapEntries, renderSitemapXml, writeSitemap } from '../../lib/sitemap.js'
+import {
+  buildSitemapEntries,
+  renderSitemapXml,
+  writeSitemap,
+} from '../../lib/sitemap.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
-const entry = (buildTo, options = {}) => ({ view: 'v', buildTo, page: { options }, runCount: 0 })
+const entry = (buildTo, options = {}) => ({
+  view: 'v',
+  buildTo,
+  page: { options },
+  runCount: 0,
+})
 
 describe('buildSitemapEntries', () => {
   it('maps build paths to site URLs, treating index as the folder root', () => {
     const urls = buildSitemapEntries(
-      [entry('out/index.html'), entry('out/about/us.html'), entry('out/blog/index.html')],
-      { siteUrl: 'https://e.com/', buildDir: 'out', now: 'T' }
+      [
+        entry('out/index.html'),
+        entry('out/about/us.html'),
+        entry('out/blog/index.html'),
+      ],
+      { siteUrl: 'https://e.com/', buildDir: 'out', now: 'T' },
     )
-    expect(urls.map((u) => u.loc)).toEqual(['https://e.com/', 'https://e.com/about/us', 'https://e.com/blog'])
+    expect(urls.map((u) => u.loc)).toEqual([
+      'https://e.com/',
+      'https://e.com/about/us',
+      'https://e.com/blog',
+    ])
     expect(urls[0]).toMatchObject({ lastmod: 'T', priority: '1.00' })
   })
 
   it('honours per-page overrides and ignoreSitemap', () => {
     const urls = buildSitemapEntries(
       [
-        entry('out/a.html', { sitemapPriority: '0.2', sitemapChangefreq: 'daily', sitemapLastmod: 'L' }),
+        entry('out/a.html', {
+          sitemapPriority: '0.2',
+          sitemapChangefreq: 'daily',
+          sitemapLastmod: 'L',
+        }),
         entry('out/b.html', { ignoreSitemap: true }),
       ],
-      { siteUrl: 'https://e.com', buildDir: 'out' }
+      { siteUrl: 'https://e.com', buildDir: 'out' },
     )
     expect(urls).toHaveLength(1)
-    expect(urls[0]).toMatchObject({ priority: '0.2', changefreq: 'daily', lastmod: 'L' })
+    expect(urls[0]).toMatchObject({
+      priority: '0.2',
+      changefreq: 'daily',
+      lastmod: 'L',
+    })
   })
 })
 
@@ -1971,7 +2195,9 @@ describe('renderSitemapXml', () => {
       { loc: 'a', lastmod: 'T', priority: '1.00' },
       { loc: 'b', lastmod: 'T', priority: '0.5', changefreq: 'weekly' },
     ])
-    expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    expect(xml).toContain(
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    )
     expect(xml.match(/<changefreq>/g)).toHaveLength(1)
     expect(xml).toContain('<loc>a</loc>')
   })
@@ -1985,7 +2211,10 @@ describe('writeSitemap', () => {
 
   it('reports no-site-url without writing', async () => {
     site = await makeSite({})
-    const r = await writeSitemap([], { config: { folders: { build: site.build } }, logger: silentLogger })
+    const r = await writeSitemap([], {
+      config: { folders: { build: site.build } },
+      logger: silentLogger,
+    })
     expect(r.status).toBe('no-site-url')
     expect(await site.exists('public/sitemap.xml')).toBe(false)
   })
@@ -1993,13 +2222,22 @@ describe('writeSitemap', () => {
   it('writes, and skips when overwrite is false and a file exists', async () => {
     site = await makeSite({ 'public/sitemap.xml': 'old' })
     const config = { siteUrl: 'https://e.com', folders: { build: site.build } }
-    const skipped = await writeSitemap([entry(`${site.build}/index.html`)], { config, logger: silentLogger, overwrite: false })
+    const skipped = await writeSitemap([entry(`${site.build}/index.html`)], {
+      config,
+      logger: silentLogger,
+      overwrite: false,
+    })
     expect(skipped.status).toBe('skipped')
     expect(await site.read('public/sitemap.xml')).toBe('old')
-    const written = await writeSitemap([entry(`${site.build}/index.html`)], { config, logger: silentLogger })
+    const written = await writeSitemap([entry(`${site.build}/index.html`)], {
+      config,
+      logger: silentLogger,
+    })
     expect(written.status).toBe('written')
     expect(written.urls[0].loc).toBe('https://e.com/')
-    expect(await site.read('public/sitemap.xml')).toContain('<loc>https://e.com/</loc>')
+    expect(await site.read('public/sitemap.xml')).toContain(
+      '<loc>https://e.com/</loc>',
+    )
   })
 })
 ```
@@ -2011,7 +2249,10 @@ Run: `npx vitest run test/unit/sitemap.test.js` — Expected: FAIL, module missi
 ```js
 import fs from 'fs-extra'
 
-export function buildSitemapEntries(stack, { siteUrl, buildDir, now = new Date().toISOString() }) {
+export function buildSitemapEntries(
+  stack,
+  { siteUrl, buildDir, now = new Date().toISOString() },
+) {
   const baseUrl = siteUrl.replace(/\/$/, '')
   return stack
     .filter((entry) => !entry.page.options.ignoreSitemap)
@@ -2036,14 +2277,18 @@ export function renderSitemapXml(urls) {
     xml += '  <url>\n'
     xml += `    <loc>${url.loc}</loc>\n`
     xml += `    <lastmod>${url.lastmod}</lastmod>\n`
-    if (url.changefreq) xml += `    <changefreq>${url.changefreq}</changefreq>\n`
+    if (url.changefreq)
+      xml += `    <changefreq>${url.changefreq}</changefreq>\n`
     xml += `    <priority>${url.priority}</priority>\n`
     xml += '  </url>\n'
   }
   return xml + '</urlset>'
 }
 
-export async function writeSitemap(stack, { config, logger, overwrite = true }) {
+export async function writeSitemap(
+  stack,
+  { config, logger, overwrite = true },
+) {
   if (!config.siteUrl) {
     logger.error('Cannot generate sitemap.xml: config.siteUrl is not set')
     return { status: 'no-site-url', urls: null }
@@ -2106,11 +2351,13 @@ git commit -m "Extract sitemap generation into lib/sitemap.js"
 ### Task 10: Extract `kiss-page.js` with the dedupe fix — `model: opus`
 
 **Files:**
+
 - Create: `lib/kiss-page.js`, `test/unit/kiss-page.test.js`
 - Modify: `kiss-ssg.js` (delete the `KissPage` class; `_preparePage` returns the stack entry or `null` on duplicate; `page()` no longer computes `pageToGenerate`)
 - Create: `test/integration/dedupe.test.js`
 
 **Interfaces:**
+
 - Produces: `export class KissPage` — `new KissPage(view, { hbs, logger })`; fields `options`, `buildDir`, `pagesDir`; setters `path`, `slug`, `ext`, `extLess`, `isDev`, `debug`; getters `slug`, `buildTo`; `pageURL()`; `prepare()` → this; `async generate()` → `buildTo`. Identical semantics to v1 except writes are awaited.
 - `Kiss._preparePage(options)` → stack entry `{ view, buildTo, page, runCount }` or `null` if an entry with the same `buildTo` already exists.
 
@@ -2126,7 +2373,10 @@ import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
 const make = (view, opts = {}) => {
-  const page = new KissPage(view, { hbs: Handlebars.create(), logger: silentLogger })
+  const page = new KissPage(view, {
+    hbs: Handlebars.create(),
+    logger: silentLogger,
+  })
   page.buildDir = opts.buildDir || 'out'
   page.pagesDir = opts.pagesDir || 'pages'
   page.path = opts.path
@@ -2140,7 +2390,11 @@ const make = (view, opts = {}) => {
 
 describe('url inference', () => {
   it('builds <path>/<slug>.<ext> with a slugified path and slug', () => {
-    const p = make('v.hbs', { path: '/About Us/', slug: 'Our Team', ext: '.xml' })
+    const p = make('v.hbs', {
+      path: '/About Us/',
+      slug: 'Our Team',
+      ext: '.xml',
+    })
     expect(p.pageURL()).toBe('about-us/our-team.xml')
     expect(p.buildTo).toBe('out/about-us/our-team.xml')
   })
@@ -2150,8 +2404,12 @@ describe('url inference', () => {
   })
 
   it('extension-less mode nests non-index pages under <slug>/index.html', () => {
-    expect(make('v.hbs', { slug: 'about', extLess: true }).pageURL()).toBe('about/index.html')
-    expect(make('v.hbs', { slug: 'index', extLess: true }).pageURL()).toBe('index.html')
+    expect(make('v.hbs', { slug: 'about', extLess: true }).pageURL()).toBe(
+      'about/index.html',
+    )
+    expect(make('v.hbs', { slug: 'index', extLess: true }).pageURL()).toBe(
+      'index.html',
+    )
   })
 
   it('prepare() fills default title/path/slug/generate without clobbering options', () => {
@@ -2168,7 +2426,11 @@ describe('generate', () => {
 
   it('renders a string view, minifies, and resolves after the file is written', async () => {
     site = await makeSite({})
-    const p = make('<p>  {{model.a}}  </p>', { buildDir: site.build, slug: 's', options: { model: { a: 1 } } })
+    const p = make('<p>  {{model.a}}  </p>', {
+      buildDir: site.build,
+      slug: 's',
+      options: { model: { a: 1 } },
+    })
     const out = await p.generate()
     expect(out).toBe(`${site.build}/s.html`)
     expect(await site.read('public/s.html')).toBe('<p>1</p>')
@@ -2176,7 +2438,12 @@ describe('generate', () => {
 
   it('in dev mode injects livereload, keeps whitespace, and writes a debug json', async () => {
     site = await makeSite({})
-    const p = make('<body>\n<p>x</p>\n</body>', { buildDir: site.build, slug: 'd', dev: true, options: { model: {} } })
+    const p = make('<body>\n<p>x</p>\n</body>', {
+      buildDir: site.build,
+      slug: 'd',
+      dev: true,
+      options: { model: {} },
+    })
     await p.generate()
     const html = await site.read('public/d.html')
     expect(html).toContain('livereload.js')
@@ -2186,14 +2453,23 @@ describe('generate', () => {
 
   it('reads .hbs views from pagesDir', async () => {
     site = await makeSite({ 'pages/a.hbs': 'A={{title}}' })
-    const p = make('a.hbs', { buildDir: site.build, pagesDir: `${site.root}/pages`, slug: 'a', options: { title: 'T' } })
+    const p = make('a.hbs', {
+      buildDir: site.build,
+      pagesDir: `${site.root}/pages`,
+      slug: 'a',
+      options: { title: 'T' },
+    })
     await p.generate()
     expect(await site.read('public/a.html')).toBe('A=T')
   })
 
   it('skips when options.generate is false', async () => {
     site = await makeSite({})
-    const p = make('x', { buildDir: site.build, slug: 'n', options: { generate: false } })
+    const p = make('x', {
+      buildDir: site.build,
+      slug: 'n',
+      options: { generate: false },
+    })
     await p.generate()
     expect(await site.exists('public/n.html')).toBe(false)
   })
@@ -2215,8 +2491,15 @@ afterEach(async () => {
 
 describe('duplicate pages', () => {
   it('are stacked once, including in extension-less mode and for non-html ext', async () => {
-    site = await makeSite({ 'src/pages/about.hbs': 'x', 'src/pages/feed.hbs': 'y' })
-    const kiss = new Kiss({ folders: site.folders, extensionLess: true, logger: silentLogger })
+    site = await makeSite({
+      'src/pages/about.hbs': 'x',
+      'src/pages/feed.hbs': 'y',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      extensionLess: true,
+      logger: silentLogger,
+    })
       .page({ view: 'about.hbs' })
       .page({ view: 'about.hbs' })
       .page({ view: 'feed.hbs', ext: 'xml' })
@@ -2249,15 +2532,20 @@ Export with `export class KissPage`. All log lines use `this.logger.*` (they alr
 `import { KissPage } from './lib/kiss-page.js'`. Change `_preparePage` to construct with `new KissPage(options.view, { hbs: this.handlebars, logger: this.logger })`, and end with:
 
 ```js
-    const preparedPage = kissPage.prepare()
-    const buildTo = preparedPage.buildTo
-    if (this._stack.some((entry) => entry.buildTo === buildTo)) {
-      this.logger.error('Page already processed', buildTo)
-      return null
-    }
-    const entry = { view: preparedPage.view, buildTo, page: preparedPage, runCount: 0 }
-    this._stack.push(entry)
-    return entry
+const preparedPage = kissPage.prepare()
+const buildTo = preparedPage.buildTo
+if (this._stack.some((entry) => entry.buildTo === buildTo)) {
+  this.logger.error('Page already processed', buildTo)
+  return null
+}
+const entry = {
+  view: preparedPage.view,
+  buildTo,
+  page: preparedPage,
+  runCount: 0,
+}
+this._stack.push(entry)
+return entry
 ```
 
 In `page()`, delete the `pathSlug` / `pageToGenerate` / `existingPage` block and just call `this._preparePage(options)`.
@@ -2276,12 +2564,14 @@ git commit -m "Extract KissPage into lib/; dedupe pages by their real build path
 ### Task 11: Extract `dev-server` and `watcher` with handles; add `close()` — `model: fable`
 
 **Files:**
+
 - Create: `lib/dev-server.js`, `lib/watcher.js`
 - Create: `test/unit/dev-server.test.js`, `test/unit/watcher.test.js`, `test/integration/watch.test.js`
 - Delete: `kiss-serve.js`
 - Modify: `kiss-ssg.js` (`watch({ entry })`, `close()`, constructor dev branch), `vitest.config.mjs` (coverage include drop `kiss-serve.js`)
 
 **Interfaces:**
+
 - Produces:
   - `startDevServer(httpRoot, port, { logger })` → `{ server, livereload, ready: Promise<void>, close(): Promise<void> }` (`ready` resolves on the HTTP server's `listening` event; port `0` picks a free port).
   - `createWatcher({ config, getStack, entry = process.argv[1], rebuildSite, rebuildPage, assetsChanged, logger })` → `{ ready: Promise<void>, close(): Promise<void> }`. `rebuildPage(entry)` receives a stack entry.
@@ -2340,7 +2630,13 @@ describe('createWatcher', () => {
     const calls = { page: [], site: 0, assets: 0 }
     const stack = [{ view: 'index.hbs', buildTo: 'x', page: {}, runCount: 0 }]
     handle = createWatcher({
-      config: { folders: { src: site.src, pages: `${site.src}/pages`, assets: `${site.src}/assets` } },
+      config: {
+        folders: {
+          src: site.src,
+          pages: `${site.src}/pages`,
+          assets: `${site.src}/assets`,
+        },
+      },
       getStack: () => stack,
       entry: `${site.root}/entry.js`,
       rebuildSite: () => calls.site++,
@@ -2384,7 +2680,9 @@ afterEach(async () => {
 describe('watch()', () => {
   it('rebuilds a changed page and can be closed', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger }).scan().generate()
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
     await kiss.complete()
     kiss.watch({ entry: null })
     await kiss._watcher.ready
@@ -2394,7 +2692,9 @@ describe('watch()', () => {
 
   it('dev mode starts the (mocked) server and watcher; close() stops both', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'x' })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger }).scan().generate()
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+      .scan()
+      .generate()
     await kiss.complete()
     expect(kiss._devServer).toBeTruthy()
     expect(kiss._watcher).toBeTruthy()
@@ -2427,7 +2727,7 @@ export function startDevServer(httpRoot = 'public', port = 3000, { logger }) {
       cacheControl: false,
       extensions: ['html', 'htm'],
       index: ['index.html', 'index.htm'],
-    })
+    }),
   )
   const server = app.listen(port)
   const ready = new Promise((resolve) => server.once('listening', resolve))
@@ -2474,36 +2774,42 @@ export function createWatcher({
       chokidar.watch(entry).on('change', (p) => {
         logger.notice(`Changed: ${p}: `)
         rebuildSite()
-      })
+      }),
     )
   }
 
   const assetsDir = config.folders.assets || './src/assets'
   const pagesDir = posix(config.folders.pages)
   watchers.push(
-    chokidar.watch(config.folders.src, { ignored: `${assetsDir}/*` }).on('all', (event, p) => {
-      if (event.includes('add')) return
-      const changed = posix(p)
-      const lookup = changed.startsWith(`${pagesDir}/`) ? changed.slice(pagesDir.length + 1) : changed
-      const matches = getStack().filter((e) => e.view === lookup)
-      logger.info(`${event}: ${p}: `, matches.length)
-      if (matches.length === 0) return rebuildSite()
-      matches.forEach((m) => {
-        logger.info('Rebuilding:', m.page.view)
-        rebuildPage(m)
-      })
-    })
+    chokidar
+      .watch(config.folders.src, { ignored: `${assetsDir}/*` })
+      .on('all', (event, p) => {
+        if (event.includes('add')) return
+        const changed = posix(p)
+        const lookup = changed.startsWith(`${pagesDir}/`)
+          ? changed.slice(pagesDir.length + 1)
+          : changed
+        const matches = getStack().filter((e) => e.view === lookup)
+        logger.info(`${event}: ${p}: `, matches.length)
+        if (matches.length === 0) return rebuildSite()
+        matches.forEach((m) => {
+          logger.info('Rebuilding:', m.page.view)
+          rebuildPage(m)
+        })
+      }),
   )
 
   watchers.push(
     chokidar.watch(assetsDir).on('change', (p) => {
       logger.info('Asset changed: ', p)
       assetsChanged()
-    })
+    }),
   )
 
   return {
-    ready: Promise.all(watchers.map((w) => new Promise((r) => w.on('ready', r)))),
+    ready: Promise.all(
+      watchers.map((w) => new Promise((r) => w.on('ready', r))),
+    ),
     close: async () => {
       await Promise.all(watchers.map((w) => w.close()))
     },
@@ -2516,17 +2822,21 @@ export function createWatcher({
 Add fields `_watcher = null` and `_devServer = null`. Constructor dev branch becomes:
 
 ```js
-    if (this.config.dev) {
-      try {
-        this._devServer = startDevServer(path.resolve(this.config.folders.build), this.config.port, {
-          logger: this.logger,
-        })
-      } catch (error) {
-        this.logger.error('Error running live reload server')
-        this.logger.plain(error.message)
-      }
-      this.watch()
-    }
+if (this.config.dev) {
+  try {
+    this._devServer = startDevServer(
+      path.resolve(this.config.folders.build),
+      this.config.port,
+      {
+        logger: this.logger,
+      },
+    )
+  } catch (error) {
+    this.logger.error('Error running live reload server')
+    this.logger.plain(error.message)
+  }
+  this.watch()
+}
 ```
 
 Replace `watch()` with:
@@ -2575,11 +2885,13 @@ git commit -m "Extract dev server and watcher into lib/ with close() handles"
 ### Task 12: Move the orchestrator to `lib/kiss.js`; delete `kiss-ssg.js` — `model: fable`
 
 **Files:**
+
 - Create: `lib/kiss.js`
 - Delete: `kiss-ssg.js`
 - Modify: `package.json` (`main`), `test/helpers/kiss.js`, `docs.js`, `examples/*.js` (import path), `vitest.config.mjs`
 
 **Interfaces:**
+
 - Produces: `lib/kiss.js` — `export default Kiss`, `export { Kiss as 'module.exports' }`, `export { utils }`. Public API exactly as the spec's Compatibility list plus `close()`, `watch({ entry })`.
 
 - [ ] **Step 1: Repoint the entry (tests fail until the file exists)**
@@ -2629,14 +2941,19 @@ class Kiss {
 
   constructor(config = {}) {
     this.config = resolveConfig(config)
-    this.logger = this.config.logger || createLogger({ verbose: this.config.verbose })
+    this.logger =
+      this.config.logger || createLogger({ verbose: this.config.verbose })
     this.verbose = !!this.config.verbose
     this.logger.banner('            Starting Kiss            \n')
     this.logger.debug('config: ', this.config)
 
     this.handlebars = Handlebars.create()
     this.handlebars.registerHelper(layouts(this.handlebars))
-    this.remarkable = new Remarkable({ html: true, xhtmlOut: true, breaks: true })
+    this.remarkable = new Remarkable({
+      html: true,
+      xhtmlOut: true,
+      breaks: true,
+    })
 
     this._setupFolders()
     this.copyAssets(this.config.folders.assets, this.config.folders.build)
@@ -2648,9 +2965,13 @@ class Kiss {
 
     if (this.config.dev) {
       try {
-        this._devServer = startDevServer(path.resolve(this.config.folders.build), this.config.port, {
-          logger: this.logger,
-        })
+        this._devServer = startDevServer(
+          path.resolve(this.config.folders.build),
+          this.config.port,
+          {
+            logger: this.logger,
+          },
+        )
       } catch (error) {
         this.logger.error('Error running live reload server')
         this.logger.plain(error.message)
@@ -2661,7 +2982,9 @@ class Kiss {
   }
 
   _setupFolders() {
-    foldersToEnsure(this.config.folders).forEach((folder) => fs.ensureDirSync(folder))
+    foldersToEnsure(this.config.folders).forEach((folder) =>
+      fs.ensureDirSync(folder),
+    )
     if (this.config.cleanBuild) {
       try {
         fs.emptyDirSync(this.config.folders.build)
@@ -2680,12 +3003,20 @@ class Kiss {
   }
 
   copyAssets(sourceDir, targetDir) {
-    this._promises.push(copyAssets(sourceDir, targetDir, { config: this.config, logger: this.logger }))
+    this._promises.push(
+      copyAssets(sourceDir, targetDir, {
+        config: this.config,
+        logger: this.logger,
+      }),
+    )
     return this
   }
 
   _preparePage(options) {
-    const kissPage = new KissPage(options.view, { hbs: this.handlebars, logger: this.logger })
+    const kissPage = new KissPage(options.view, {
+      hbs: this.handlebars,
+      logger: this.logger,
+    })
     kissPage.options = options
     kissPage.buildDir = this.config.folders.build
     kissPage.pagesDir = this.config.folders.pages
@@ -2701,13 +3032,21 @@ class Kiss {
       this.logger.error('Page already processed', buildTo)
       return null
     }
-    const entry = { view: preparedPage.view, buildTo, page: preparedPage, runCount: 0 }
+    const entry = {
+      view: preparedPage.view,
+      buildTo,
+      page: preparedPage,
+      runCount: 0,
+    }
     this._stack.push(entry)
     return entry
   }
 
   _controllerDeps() {
-    return { controllersDir: this.config.folders.controllers, logger: this.logger }
+    return {
+      controllersDir: this.config.folders.controllers,
+      logger: this.logger,
+    }
   }
 
   async _prepareMultiplePages(options, data) {
@@ -2729,14 +3068,21 @@ class Kiss {
   _inferSlugAndPath(options) {
     if (!options.slug) {
       if (options.view.endsWith('.hbs')) {
-        options.slug = toSlug(options.view.substring(options.view.lastIndexOf('/') + 1).replace('.hbs', ''))
+        options.slug = toSlug(
+          options.view
+            .substring(options.view.lastIndexOf('/') + 1)
+            .replace('.hbs', ''),
+        )
       } else {
         options.slug = 'snippet-' + Math.floor(Math.random() * 1000000000)
-        this.logger.error('A string view had been provided without an accompanying slug')
+        this.logger.error(
+          'A string view had been provided without an accompanying slug',
+        )
         this.logger.info(`generating random slug: ${options.slug}`)
       }
     }
-    if (!options.path) options.path = options.view.substring(0, options.view.lastIndexOf('/'))
+    if (!options.path)
+      options.path = options.view.substring(0, options.view.lastIndexOf('/'))
     return options
   }
 
@@ -2756,13 +3102,20 @@ class Kiss {
     }
     if (!options.controller) {
       const matchingController = options.view.replace(/\.hbs$/, '.js')
-      if (fs.existsSync(`${this.config.folders.controllers}/${matchingController}`)) {
+      if (
+        fs.existsSync(
+          `${this.config.folders.controllers}/${matchingController}`,
+        )
+      ) {
         this.logger.debug('Found matching controller: ', matchingController)
         options.controller = matchingController
       }
     }
 
-    const chain = resolveModel(options.model, { modelsDir: this.config.folders.models, logger: this.logger })
+    const chain = resolveModel(options.model, {
+      modelsDir: this.config.folders.models,
+      logger: this.logger,
+    })
       .then(async (response) => {
         if (options.dynamic) {
           await this._prepareMultiplePages(options, response.data)
@@ -2776,7 +3129,11 @@ class Kiss {
       .catch((error) => {
         this.logger.error(error.message || error)
         if (error.error) this.logger.warn(error.error)
-        return { id: typeof options.model === 'string' ? options.model : undefined, data: null, error }
+        return {
+          id: typeof options.model === 'string' ? options.model : undefined,
+          data: null,
+          error,
+        }
       })
     this._promises.push(chain)
     return this
@@ -2801,11 +3158,14 @@ class Kiss {
 
   viewStats() {
     if (this.verbose) {
-      fs.outputJson(`${this.config.folders.build}/debug.json`, this._stack, { spaces: 2 }).catch((err) =>
-        this.logger.plain(err)
-      )
+      fs.outputJson(`${this.config.folders.build}/debug.json`, this._stack, {
+        spaces: 2,
+      }).catch((err) => this.logger.plain(err))
     }
-    this.logger.plain({ promise: this._promises.length, stack: this._stack.length })
+    this.logger.plain({
+      promise: this._promises.length,
+      stack: this._stack.length,
+    })
     return this
   }
 
@@ -2883,7 +3243,8 @@ class Kiss {
       entry,
       rebuildSite,
       rebuildPage: (entry) => entry.page.generate(),
-      assetsChanged: () => this.copyAssets(this.config.folders.assets, this.config.folders.build),
+      assetsChanged: () =>
+        this.copyAssets(this.config.folders.assets, this.config.folders.build),
       logger: this.logger,
     })
     return this
@@ -2902,7 +3263,7 @@ export { Kiss as 'module.exports' }
 export { utils }
 ```
 
-Where `kiss-ssg.js` (as left by Task 11) differs from the above in *behaviour*, keep `kiss-ssg.js`'s behaviour — the tests are the arbiter. Then `git rm kiss-ssg.js`.
+Where `kiss-ssg.js` (as left by Task 11) differs from the above in _behaviour_, keep `kiss-ssg.js`'s behaviour — the tests are the arbiter. Then `git rm kiss-ssg.js`.
 
 - [ ] **Step 3: Run everything, including the examples**
 
@@ -2922,11 +3283,13 @@ git commit -m "Move the orchestrator to lib/kiss.js and delete the monolith"
 ### Task 13: AIKB knowledge base, CLAUDE.md lookup table, sync test — `model: sonnet`
 
 **Files:**
+
 - Create: `AIKB/kiss.md`, `AIKB/kiss-page.md`, `AIKB/logger.md`, `AIKB/config.md`, `AIKB/handlebars-helpers.md`, `AIKB/partials.md`, `AIKB/assets.md`, `AIKB/model-resolver.md`, `AIKB/controller-resolver.md`, `AIKB/sitemap.md`, `AIKB/dev-server.md`, `AIKB/watcher.md`, `AIKB/utils.md`, `AIKB/testing.md`
 - Create: `test/aikb.test.js`
 - Modify: `CLAUDE.md` (rewrite)
 
 **Interfaces:**
+
 - Consumes: the final `lib/*.js` from Task 12 (read each module to fill Responsibility / Public interface / Depends on / Depended on by accurately).
 - Produces: every module doc has exactly these five H2 headings in this order: `## Responsibility`, `## Public interface`, `## Depends on`, `## Depended on by`, `## Non-obvious behavior`. `testing.md` is free-form.
 
@@ -2940,11 +3303,24 @@ import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 
 const root = path.resolve(import.meta.dirname, '..')
-const strip = (ext) => (f) => f.endsWith(ext) && f.replace(new RegExp(`\\${ext}$`), '')
-const modules = fs.readdirSync(path.join(root, 'lib')).map(strip('.js')).filter(Boolean)
-const docs = fs.readdirSync(path.join(root, 'AIKB')).map(strip('.md')).filter(Boolean)
+const strip = (ext) => (f) =>
+  f.endsWith(ext) && f.replace(new RegExp(`\\${ext}$`), '')
+const modules = fs
+  .readdirSync(path.join(root, 'lib'))
+  .map(strip('.js'))
+  .filter(Boolean)
+const docs = fs
+  .readdirSync(path.join(root, 'AIKB'))
+  .map(strip('.md'))
+  .filter(Boolean)
 const claudeMd = fs.readFileSync(path.join(root, 'CLAUDE.md'), 'utf8')
-const HEADINGS = ['## Responsibility', '## Public interface', '## Depends on', '## Depended on by', '## Non-obvious behavior']
+const HEADINGS = [
+  '## Responsibility',
+  '## Public interface',
+  '## Depends on',
+  '## Depended on by',
+  '## Non-obvious behavior',
+]
 
 describe('AIKB stays in sync with lib/', () => {
   it.each(modules)('lib/%s.js has AIKB/%s.md', (m) => {
@@ -2955,15 +3331,18 @@ describe('AIKB stays in sync with lib/', () => {
     expect(claudeMd).toContain(`AIKB/${d}.md`)
   })
 
-  it.each(docs.filter((d) => d !== 'testing'))('AIKB/%s.md follows the module template', (d) => {
-    const text = fs.readFileSync(path.join(root, 'AIKB', `${d}.md`), 'utf8')
-    let last = -1
-    for (const h of HEADINGS) {
-      const at = text.indexOf(h)
-      expect(at, `${d}.md missing "${h}"`).toBeGreaterThan(last)
-      last = at
-    }
-  })
+  it.each(docs.filter((d) => d !== 'testing'))(
+    'AIKB/%s.md follows the module template',
+    (d) => {
+      const text = fs.readFileSync(path.join(root, 'AIKB', `${d}.md`), 'utf8')
+      let last = -1
+      for (const h of HEADINGS) {
+        const at = text.indexOf(h)
+        expect(at, `${d}.md missing "${h}"`).toBeGreaterThan(last)
+        last = at
+      }
+    },
+  )
 })
 ```
 
@@ -2977,18 +3356,23 @@ Use this template for each of the 13 module docs, filling every section from the
 # <name>.js
 
 ## Responsibility
+
 <one paragraph>
 
 ## Public interface
+
 <each export with its signature and return value>
 
 ## Depends on
+
 <lib modules and npm packages it imports>
 
 ## Depended on by
+
 <lib modules that import it>
 
 ## Non-obvious behavior
+
 <bullets — the why, not the what>
 ```
 
@@ -2998,7 +3382,7 @@ The **Non-obvious behavior** sections must include at least these facts (add mor
 - `kiss-page.md`: `_title` is computed from the default slug in the constructor, so pages without a title/model get `'Index'` (v1 quirk, preserved); `buildTo` is the dedupe key used by `Kiss._preparePage`; writes are awaited; dev mode injects the livereload `<script>` before `</body>` and writes a sibling `.json` of the resolved options; minification is skipped in dev.
 - `logger.md`: only module that imports `colors`; strings are painted, non-strings passed through; `debug` is gated on `verbose`; `silentLogger` for tests.
 - `config.md`: `folders.src` re-derives seven subfolders unless each is set explicitly; `null` folders are legal (skip creation, skip partial scanning, skip asset copy); `foldersToEnsure` fixes the v1 copy-paste guard; `sass.includePaths` is the public key mapped to sass's `loadPaths` by the consumers.
-- `handlebars-helpers.md`: helpers register on the *given* env; `sass` file mode resolves relative to `process.cwd()`, block mode compiles the block; `isActive` strips the extension and a trailing `index` from `pageURL` before comparing; `env` reads `config.dev`.
+- `handlebars-helpers.md`: helpers register on the _given_ env; `sass` file mode resolves relative to `process.cwd()`, block mode compiles the block; `isActive` strips the extension and a trailing `index` from `pageURL` before comparing; `env` reads `config.dev`.
 - `partials.md`: partial names are the path relative to the folder without extension; `.md` is rendered to HTML at registration time, not render time; registration order is html, md, hbs, then layouts (later registrations with the same name win).
 - `assets.md`: always resolves (a rejected/pending promise here would hang `generate()`); Sass sources are excluded from the copy; the returned `{ id, data }` appears in `generate(cb)`'s data array.
 - `model-resolver.md`: the four model shapes and the id each produces (`filename`, URL, `hashId(object)`, folder name); uses global `fetch`; `fetchImpl` is injectable for tests; rejects with `Error`s whose messages `Kiss` logs.
@@ -3011,7 +3395,7 @@ The **Non-obvious behavior** sections must include at least these facts (add mor
 
 - [ ] **Step 3: Rewrite `CLAUDE.md`**
 
-```markdown
+````markdown
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -3028,22 +3412,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is missing from this table, or a doc drops a template heading.
 
-| Module | File | AIKB doc |
-|---|---|---|
-| Orchestrator / public API | `lib/kiss.js` | `AIKB/kiss.md` |
-| Page renderer | `lib/kiss-page.js` | `AIKB/kiss-page.md` |
-| Logger | `lib/logger.js` | `AIKB/logger.md` |
-| Config + folder derivation | `lib/config.js` | `AIKB/config.md` |
-| Built-in Handlebars helpers | `lib/handlebars-helpers.js` | `AIKB/handlebars-helpers.md` |
-| Partials / layouts registration | `lib/partials.js` | `AIKB/partials.md` |
-| Assets + Sass | `lib/assets.js` | `AIKB/assets.md` |
-| Model resolution | `lib/model-resolver.js` | `AIKB/model-resolver.md` |
-| Controller resolution | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
-| Sitemap | `lib/sitemap.js` | `AIKB/sitemap.md` |
-| Dev server | `lib/dev-server.js` | `AIKB/dev-server.md` |
-| File watcher | `lib/watcher.js` | `AIKB/watcher.md` |
-| String/path utils | `lib/utils.js` | `AIKB/utils.md` |
-| Cross-cutting: testing conventions | `test/` | `AIKB/testing.md` |
+| Module                             | File                         | AIKB doc                      |
+| ---------------------------------- | ---------------------------- | ----------------------------- |
+| Orchestrator / public API          | `lib/kiss.js`                | `AIKB/kiss.md`                |
+| Page renderer                      | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Logger                             | `lib/logger.js`              | `AIKB/logger.md`              |
+| Config + folder derivation         | `lib/config.js`              | `AIKB/config.md`              |
+| Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
+| Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
+| Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
+| Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
+| Dev server                         | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
+| File watcher                       | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| String/path utils                  | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: testing conventions | `test/`                      | `AIKB/testing.md`             |
 
 ## Commands
 
@@ -3055,6 +3439,7 @@ npm run lint             # ESLint (flat config, eslint.config.js)
 node docs                # regenerate docs/ (dev mode, starts a server — Ctrl-C to stop)
 npm run eg1 … eg6        # run an example (examples/*.js); most start a dev server
 ```
+````
 
 Prettier config is in `.prettierrc` (no semicolons, single quotes).
 
@@ -3068,7 +3453,8 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes).
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
 - Public API changes: update `llms.txt` and `README.md` in the same commit.
-```
+
+````
 
 - [ ] **Step 4: Run and commit**
 
@@ -3077,21 +3463,24 @@ Run: `npm test` — Expected: all pass including `test/aikb.test.js`.
 ```bash
 git add AIKB CLAUDE.md test/aikb.test.js
 git commit -m "Add AIKB knowledge base, CLAUDE.md lookup table and sync test"
-```
+````
 
 ---
 
 ### Task 14: `llms.txt` and `README.md` for v2 — `model: sonnet`
 
 **Files:**
+
 - Modify: `llms.txt`, `README.md`
 
 **Interfaces:**
+
 - Consumes: the public API of `lib/kiss.js` (Task 12) and the spec's Compatibility stance.
 
 - [ ] **Step 1: Rewrite `llms.txt`**
 
 Keep the existing structure (intro, `## API`, `## Config`, `## Docs`) and make these changes:
+
 - Intro: "Single-file engine (`kiss-ssg.js`)" → "ESM package (Node ≥22.12); engine in `lib/`, entry `lib/kiss.js`". Install line gains: `import Kiss from 'kiss-ssg'` (CJS `require('kiss-ssg')` also works on Node ≥22.12).
 - `.generate(callback)`: replace "fires once all writes are scheduled … does not await file writes" with "fires after every page file has been written. Chainable — returns the `Kiss` instance. To await the whole build use `await kiss.complete()`."
 - `.complete(callback)`: "resolves after every queued page (including pages queued from a `generate` callback) and any `sitemap()` call has finished writing; resolves with the same `data` array `generate` receives."
@@ -3116,7 +3505,7 @@ Node 22.12 or newer. kiss-ssg v2 is an ES module: use `import Kiss from 'kiss-ss
 
 - Add before `### Helpers`:
 
-```markdown
+````markdown
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been written. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -3124,9 +3513,11 @@ Node 22.12 or newer. kiss-ssg v2 is an ES module: use `import Kiss from 'kiss-ss
 ```js
 await kiss.scan().generate().sitemap().complete()
 ```
+````
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server.
-```
+
+````
 
 - Append at the end:
 
@@ -3139,7 +3530,7 @@ In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the 
 - `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`.
 - Controller files may use `export default` (legacy `module.exports` still works).
 - New: `kiss.close()` stops the dev server and file watcher.
-```
+````
 
 - [ ] **Step 3: Verify and commit**
 

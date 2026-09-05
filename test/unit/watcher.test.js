@@ -21,7 +21,13 @@ describe('createWatcher', () => {
     const calls = { page: [], site: 0, assets: 0 }
     const stack = [{ view: 'index.hbs', buildTo: 'x', page: {}, runCount: 0 }]
     handle = createWatcher({
-      config: { folders: { src: site.src, pages: `${site.src}/pages`, assets: `${site.src}/assets` } },
+      config: {
+        folders: {
+          src: site.src,
+          pages: `${site.src}/pages`,
+          assets: `${site.src}/assets`,
+        },
+      },
       getStack: () => stack,
       entry: `${site.root}/entry.js`,
       rebuildSite: () => calls.site++,

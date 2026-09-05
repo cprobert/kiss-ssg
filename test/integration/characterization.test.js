@@ -31,13 +31,17 @@ describe('scan + generate', () => {
     })
     const kiss = new Kiss({ folders: site.folders }).scan().generate()
     await kiss.complete()
-    expect(await site.read('public/index.html')).toBe('<h1>Home</h1><p>kiss</p>')
+    expect(await site.read('public/index.html')).toBe(
+      '<h1>Home</h1><p>kiss</p>',
+    )
   })
 })
 
 describe('page()', () => {
   it('accepts an object model, a function controller, and explicit path/slug', async () => {
-    site = await makeSite({ 'src/pages/item.hbs': '<i>{{title}}|{{model.name}}</i>' })
+    site = await makeSite({
+      'src/pages/item.hbs': '<i>{{title}}|{{model.name}}</i>',
+    })
     const kiss = new Kiss({ folders: site.folders })
       .page({
         view: 'item.hbs',
@@ -48,13 +52,19 @@ describe('page()', () => {
       })
       .generate()
     await kiss.complete()
-    expect(await site.read('public/things/one-thing.html')).toBe('<i>KISS|kiss</i>')
+    expect(await site.read('public/things/one-thing.html')).toBe(
+      '<i>KISS|kiss</i>',
+    )
   })
 
   it('renders a string view with an explicit slug', async () => {
     site = await makeSite({})
     const kiss = new Kiss({ folders: site.folders })
-      .page({ view: 'Hello {{model.name}}', model: { name: 'world' }, slug: 'hello-snippet' })
+      .page({
+        view: 'Hello {{model.name}}',
+        model: { name: 'world' },
+        slug: 'hello-snippet',
+      })
       .generate()
     await kiss.complete()
     expect(await site.read('public/hello-snippet.html')).toBe('Hello world')
@@ -76,14 +86,18 @@ describe('page()', () => {
     })
     let seen = null
     const kiss = new Kiss({ folders: site.folders })
-    kiss.page({ view: 'index.hbs', model: 'index.json' }).generate(function (data) {
-      seen = { self: this, data }
-    })
+    kiss
+      .page({ view: 'index.hbs', model: 'index.json' })
+      .generate(function (data) {
+        seen = { self: this, data }
+      })
     await kiss.complete()
     expect(seen.self).toBe(kiss)
     const entry = seen.data.find((d) => d.id === 'index.json')
     expect(entry.data).toEqual({ title: 'Home' })
-    expect(kiss.getModelByID('index.json', seen.data)).toEqual({ title: 'Home' })
+    expect(kiss.getModelByID('index.json', seen.data)).toEqual({
+      title: 'Home',
+    })
   })
 })
 
@@ -117,7 +131,9 @@ describe('pages()', () => {
       'src/models/team/a.json': { name: 'a' },
       'src/models/team/b.json': { name: 'b' },
     })
-    const kiss = new Kiss({ folders: site.folders }).pages({ view: 'member.hbs', model: 'team' }).generate()
+    const kiss = new Kiss({ folders: site.folders })
+      .pages({ view: 'member.hbs', model: 'team' })
+      .generate()
     await kiss.complete()
     expect(await site.read('public/member-1.html')).toBe('a')
   })
@@ -129,7 +145,9 @@ describe('extensionLess', () => {
       'src/pages/index.hbs': 'home',
       'src/pages/about/us.hbs': 'us',
     })
-    const kiss = new Kiss({ folders: site.folders, extensionLess: true }).scan().generate()
+    const kiss = new Kiss({ folders: site.folders, extensionLess: true })
+      .scan()
+      .generate()
     await kiss.complete()
     expect(await site.exists('public/about/us/index.html')).toBe(true)
     expect(await site.exists('public/index.html')).toBe(true)
@@ -178,7 +196,9 @@ describe('partials, layouts and helpers', () => {
         '{{#isActive this href="/about"}}<a class="{{active}}">A</a>{{/isActive}}',
       ].join(''),
     })
-    const kiss = new Kiss({ folders: site.folders }).page({ view: 'about.hbs', model: { a: 1 } }).generate()
+    const kiss = new Kiss({ folders: site.folders })
+      .page({ view: 'about.hbs', model: { a: 1 } })
+      .generate()
     await kiss.complete()
     const html = await site.read('public/about.html')
     expect(html).toContain('<h1>Hi</h1>')
@@ -195,9 +215,16 @@ describe('sitemap()', () => {
       'src/pages/about.hbs': 'x',
       'src/pages/hidden.hbs': 'x',
     })
-    const kiss = new Kiss({ folders: site.folders, siteUrl: 'https://example.com/' })
+    const kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://example.com/',
+    })
       .page({ view: 'index.hbs' })
-      .page({ view: 'about.hbs', sitemapPriority: '0.5', sitemapChangefreq: 'weekly' })
+      .page({
+        view: 'about.hbs',
+        sitemapPriority: '0.5',
+        sitemapChangefreq: 'weekly',
+      })
       .page({ view: 'hidden.hbs', ignoreSitemap: true })
       .generate()
       .sitemap()

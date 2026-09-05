@@ -23,7 +23,10 @@ export async function makeSite(files = {}) {
   }
 }
 
-export async function waitFor(predicate, { timeout = 5000, interval = 25 } = {}) {
+export async function waitFor(
+  predicate,
+  { timeout = 5000, interval = 25 } = {},
+) {
   const start = Date.now()
   for (;;) {
     if (await predicate()) return
