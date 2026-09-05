@@ -1,4 +1,4 @@
-const Kiss = require('../kiss-ssg')
+import Kiss from '../lib/kiss.js'
 const kiss = new Kiss({
   folders: {
     src: './4-layouts-and-partials',

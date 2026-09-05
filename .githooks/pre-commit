@@ -1,0 +1,5 @@
+#!/bin/sh
+# Format gate — blocks a commit whose staged files fail prettier.
+# Activated per-clone by `git config core.hooksPath .githooks`, which the npm
+# "prepare" script runs automatically on install.
+node scripts/check-staged-format.mjs

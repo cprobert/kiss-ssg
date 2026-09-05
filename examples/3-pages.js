@@ -1,5 +1,4 @@
-const Kiss = require('../kiss-ssg')
-const utils = require('../libs/utils.js')
+import Kiss, { utils } from '../lib/kiss.js'
 const kiss = new Kiss({
   folders: {
     src: './3-pages',
@@ -35,7 +34,7 @@ const kiss = new Kiss({
     // this.getModelByID is a helper to rehydrate the model on completion
     const courseModel = this.getModelByID(
       'https://jsonplaceholder.typicode.com/users',
-      data
+      data,
     )
     // It can then be reused for pages such as indexes
     this.page({

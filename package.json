@@ -1,13 +1,28 @@
 {
   "name": "kiss-ssg",
-  "version": "1.4.4",
+  "version": "2.0.0-alpha.1",
   "description": "Simple Static Website Generator",
-  "main": "kiss-ssg.js",
+  "main": "lib/kiss.js",
+  "type": "module",
+  "files": [
+    "lib",
+    "llms.txt",
+    "AIKB"
+  ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || exit 0",
+    "prepublishOnly": "npm run gates",
+    "test": "vitest run",
+    "gates": "node scripts/gates.mjs",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "docs": "node docs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "eg1": "cd examples && node 1-scan",
     "eg2": "cd examples && node 2-page",
     "eg3": "cd examples && node 3-pages",
@@ -20,31 +35,33 @@
     "url": "git+https://github.com/cprobert/kiss-ssg.git"
   },
   "author": "Courtenay Probert",
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/cprobert/kiss-ssg/issues"
   },
   "homepage": "https://courtenay.probert.me.uk/kiss-ssg",
   "dependencies": {
-    "chokidar": "^3.5.1",
+    "chokidar": "^5.0.0",
     "colors": "^1.4.0",
     "connect": "^3.7.0",
-    "fs-extra": "^9.1.0",
-    "glob": "^7.1.6",
+    "fs-extra": "^11.4.0",
+    "glob": "^13.0.6",
     "handlebars": "^4.7.7",
     "handlebars-layouts": "^3.1.4",
     "html-minifier-terser": "^7.2.0",
-    "livereload": "^0.9.1",
-    "md5": "^2.3.0",
-    "node-fetch": "^2.6.1",
-    "pretty": "^2.0.0",
+    "livereload": "^0.10.3",
     "remarkable": "^2.0.1",
-    "sass": "^1.32.8",
-    "serve-static": "^1.14.1"
+    "sass": "^1.104.0",
+    "serve-static": "^2.2.1"
   },
   "devDependencies": {
-    "eslint-config-prettier": "^6.15.0",
-    "highlight.js": "^10.6.0"
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6",
+    "vitest": "^5.0.0"
   },
   "keywords": [
     "generator",

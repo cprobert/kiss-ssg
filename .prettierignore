@@ -1,0 +1,14 @@
+# Build output — docs.js empties and regenerates docs/ on every run
+docs/
+public/
+examples/*/public/
+
+# Generated / vendored
+node_modules/
+coverage/
+package-lock.json
+
+# Prettier's Handlebars parser rejects `{{> "partial"}}`, which every template
+# in this repo relies on — it errors rather than formatting. Templates are
+# hand-formatted.
+*.hbs
