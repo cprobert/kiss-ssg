@@ -27,7 +27,7 @@ vi.mock('livereload', async (importOriginal) => {
 
 import { startDevServer } from '../../lib/dev-server.js'
 import { silentLogger } from '../../lib/logger.js'
-import { waitFor } from '../helpers/site.js'
+import { makeSite, waitFor } from '../helpers/site.js'
 
 const captureLogger = () => {
   const lines = []
@@ -84,8 +84,9 @@ describe('startDevServer', () => {
 // killed the whole dev process) was invisible to a suite that mocked it away.
 describe('startDevServer with a real livereload server', () => {
   const handles = []
-  const start = (options) => {
-    const handle = startDevServer('public', 0, {
+  let site
+  const start = ({ httpRoot = 'public', ...options } = {}) => {
+    const handle = startDevServer(httpRoot, 0, {
       host: '127.0.0.1',
       ...options,
     })
@@ -101,6 +102,10 @@ describe('startDevServer with a real livereload server', () => {
   })
   afterEach(async () => {
     while (handles.length) await handles.pop().close()
+    if (site) {
+      await site.cleanup()
+      site = undefined
+    }
   })
 
   it('survives a livereload port clash: logs it and keeps serving both sites', async () => {
@@ -135,6 +140,39 @@ describe('startDevServer with a real livereload server', () => {
     }
     expect(loggerA.lines.some((l) => l.startsWith('error:'))).toBe(false)
     expect(loggerB.lines.some((l) => l.startsWith('error:'))).toBe(false)
+  })
+
+  it('watches with a write-settle delay and the extra asset extensions', async () => {
+    const handle = start({ logger: silentLogger, livereloadPort: 35815 })
+    await handle.ready
+    const { config } = handle.livereload
+    expect(config.delay).toBe(100)
+    for (const ext of ['svg', 'webp', 'avif', 'ico', 'woff', 'woff2'])
+      expect(config.exts).toContain(ext)
+    // The dev-mode debug .json siblings and sitemap.xml are written on every
+    // build, so watching them would reload the browser on every build.
+    expect(config.exts).not.toContain('json')
+    expect(config.exts).not.toContain('xml')
+  })
+
+  it('refreshes on an extra-extension asset but not on a debug .json sibling', async () => {
+    site = await makeSite({ 'public/index.html': '<p>x</p>' })
+    const handle = start({
+      httpRoot: `${site.root}/public`,
+      logger: silentLogger,
+      livereloadPort: 35816,
+    })
+    await handle.ready
+    const refresh = vi.spyOn(handle.livereload, 'refresh')
+
+    await site.touch('public/x.json', '{}')
+    await site.touch('public/x.svg', '<svg></svg>')
+    await waitFor(() => refresh.mock.calls.length > 0)
+    await new Promise((r) => setTimeout(r, 200))
+
+    const refreshed = refresh.mock.calls.map(([f]) => f.replace(/\\/g, '/'))
+    expect(refreshed.some((f) => f.endsWith('x.svg'))).toBe(true)
+    expect(refreshed.some((f) => f.endsWith('x.json'))).toBe(false)
   })
 
   it('binds the configured host and names it in the log line', async () => {

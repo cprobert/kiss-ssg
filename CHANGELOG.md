@@ -11,6 +11,14 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Fixed**
 
+- Live reload now works when you preview the site from another device. With
+  `devHost: '0.0.0.0'`, a page opened on a phone or tablet asked that device's
+  own `localhost` for the reload script, so edits never reached it; the page now
+  reloads from whatever host it was loaded from.
+- A reload no longer races the file write, and more asset types trigger one.
+  The browser could previously be told to reload while a page was still being
+  written, and editing an `.svg`, `.webp`, `.avif`, `.ico`, `.woff` or `.woff2`
+  did not reload at all.
 - A trailing slash on a folder you configure is now tolerated. Previously
   `folders: { assets: './src/assets/' }` wrote the compiled CSS next to your
   build folder — `./publicmain.css` at the project root — and logged it as a

@@ -92,7 +92,10 @@ describe('generate', () => {
     expect(JSON.parse(await site.read('public/d.json')).pageURL).toBe('d.html')
   })
 
-  it('injects the configured livereload port into the dev snippet', async () => {
+  // Flipped: this used to assert the hardcoded 'http://localhost:<port>' URL.
+  // The snippet now resolves the host in the browser, so a page opened from
+  // another device reaches the livereload server it was served from.
+  it('builds the dev snippet URL from location.hostname and the configured port', async () => {
     site = await makeSite({})
     const p = make('<body>\n<p>x</p>\n</body>', {
       buildDir: site.build,
@@ -103,7 +106,9 @@ describe('generate', () => {
     })
     await p.generate()
     const html = await site.read('public/lr.html')
-    expect(html).toContain('http://localhost:41234/livereload.js')
+    expect(html).toContain('location.hostname')
+    expect(html).toContain(':41234/livereload.js?snipver=1')
+    expect(html).not.toContain('http://localhost:')
   })
 
   it('reads .hbs views from pagesDir', async () => {
