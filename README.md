@@ -65,6 +65,8 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 | folders        |  see above  |                                                                                                           A JSON object of alternative folder locations                                                                                                            |
 | siteUrl        |  undefined  |                                                                                                     The site's base URL, required by `.sitemap()` (see below)                                                                                                      |
 
+A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
+
 <br />
 
 **Note**: All config settings are available in the view under "this.config"

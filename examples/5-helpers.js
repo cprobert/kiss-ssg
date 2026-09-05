@@ -1,7 +1,6 @@
 import Kiss from '../lib/kiss.js'
 const kiss = new Kiss({
   folders: {
-    root: '..',
     src: './5-helpers',
     build: '../public/5-helpers',
   },

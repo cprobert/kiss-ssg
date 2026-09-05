@@ -38,7 +38,6 @@ Passed to `new Kiss(config)`. Defaults:
   livereloadPort: 35729, // live reload port; also the port injected into the dev-mode reload <script>
   devHost: '127.0.0.1',  // interface the dev + live reload servers bind to
   folders: {
-    root: './',
     src: './src',
     pages: './src/pages',
     build: './public',
@@ -53,6 +52,8 @@ Passed to `new Kiss(config)`. Defaults:
 ```
 
 `livereloadPort` lets two sites run side by side: give the second one its own value, or its pages would poll the first site's live reload server. A clash on the live reload port is logged and live reload is switched off for that site — the dev server keeps serving. `devHost` binds the dev and live reload servers to loopback only; set it to `'0.0.0.0'` to open the preview to other devices on your network.
+
+A key you pass explicitly as `undefined` takes its default (`port: process.env.PORT` with `PORT` unset gives 3001); `null` is a real value — it switches a folder off.
 
 Setting `folders.src` re-derives every other `folders.*` entry from it, unless that entry is also set explicitly. Folder strings are normalised on the way in — a trailing slash or a backslash separator is tolerated (`'./src/assets/'` and `'.\\src\\assets'` both resolve to `'./src/assets'`).
 

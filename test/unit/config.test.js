@@ -34,8 +34,13 @@ describe('resolveFolders', () => {
     expect(f.build).toBe('out/dist')
   })
 
-  it('keeps the root folder usable when it is only a slash', () => {
-    expect(resolveFolders({ root: '/' }).root).toBe('/')
+  it('keeps a folder usable when it is only a slash', () => {
+    expect(resolveFolders({ build: '/' }).build).toBe('/')
+    expect(resolveFolders({ build: './' }).build).toBe('./')
+  })
+
+  it('has no root key — it was documented but never read', () => {
+    expect(resolveFolders()).not.toHaveProperty('root')
   })
 })
 
@@ -50,6 +55,30 @@ describe('resolveConfig', () => {
     expect(c.verbose).toBe(true)
     expect(c.sass.includePaths).toEqual(['x'])
     expect(c.folders.pages).toBe('./src/pages')
+  })
+
+  it('takes the default for a key passed explicitly as undefined', () => {
+    expect(resolveConfig({ port: undefined }).port).toBe(3001)
+    expect(resolveConfig({ cleanBuild: undefined }).cleanBuild).toBe(true)
+    expect(
+      resolveConfig({ sass: { includePaths: undefined } }).sass.includePaths,
+    ).toEqual([])
+  })
+
+  it('takes the default for a folder passed explicitly as undefined', () => {
+    expect(
+      resolveConfig({ folders: { assets: undefined } }).folders.assets,
+    ).toBe('./src/assets')
+  })
+
+  it('keeps null as a value — it switches a folder off', () => {
+    expect(
+      resolveConfig({ folders: { assets: null } }).folders.assets,
+    ).toBeNull()
+  })
+
+  it('resolves no root folder', () => {
+    expect(resolveConfig({}).folders).not.toHaveProperty('root')
   })
 })
 

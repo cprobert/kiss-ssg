@@ -141,6 +141,18 @@ this file's `## 2.0.0` entry when the line is released._
   is now logged, live reload is switched off for that site, and its dev server
   keeps serving. Give the second site its own `livereloadPort` to get live
   reload back on both.
+- A config key you pass explicitly as `undefined` now takes its default instead
+  of blanking it. `new Kiss({ port: process.env.PORT })` with `PORT` unset left
+  the dev server on a random port logged as `http://localhost:undefined`, and
+  `{ cleanBuild: opts.clean }` with the flag absent quietly stopped emptying
+  your build folder. The same applies inside `folders` and `sass`. `null` is
+  still a real value — it is how you switch a folder off.
+
+**Removed**
+
+- `folders.root` is gone. It was in the documented default config but no part of
+  the engine ever read it, so setting it changed nothing and it was never even
+  created on disk. Delete it from your config; leaving it in is harmless.
 
 **Changed**
 
