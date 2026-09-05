@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { createWatcher, isInside } from '../../lib/watcher.js'
 import { silentLogger } from '../../lib/logger.js'
+import fs from 'fs-extra'
 import { makeSite, waitFor } from '../helpers/site.js'
 
 let site, handle
@@ -52,6 +53,35 @@ describe('createWatcher', () => {
     const before = calls.site
     await site.touch('entry.js', '// changed')
     await waitFor(() => calls.site > before)
+  })
+
+  it('sends an unlink under pagesDir to rebuildSite, not rebuildPage', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'a',
+      'src/pages/gone.hbs': 'g',
+    })
+    const calls = { page: [], site: 0 }
+    const stack = [{ view: 'gone.hbs', buildTo: 'x', page: {}, runCount: 0 }]
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          pages: `${site.src}/pages`,
+          assets: `${site.src}/assets`,
+        },
+      },
+      getStack: () => stack,
+      entry: null,
+      rebuildSite: () => calls.site++,
+      rebuildPage: (e) => calls.page.push(e.view),
+      assetsChanged: () => {},
+      logger: silentLogger,
+    })
+    await handle.ready
+
+    await fs.remove(`${site.src}/pages/gone.hbs`)
+    await waitFor(() => calls.site >= 1)
+    expect(calls.page).toEqual([])
   })
 })
 

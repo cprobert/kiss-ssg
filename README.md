@@ -221,11 +221,11 @@ try {
 }
 ```
 
-A bad model or controller is not a build failure — it is logged, that page is skipped, and it appears in the resolved data as `{ id, data: null, error }`.
+A bad model or controller is not a build failure — it is logged, that page is skipped, and it appears in the resolved data as `{ id, data: null, error }`. A missing or misspelled view file _is_ a build failure: the page fails and `.complete()` rejects.
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server.
 
-Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, or one dropped from a `.pages()` fan-out — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
+Editing a page template re-renders that page; deleting one rebuilds the whole site. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, or one dropped from a `.pages()` fan-out — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
 
 ### Helpers
 

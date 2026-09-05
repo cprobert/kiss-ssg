@@ -95,6 +95,29 @@ describe('generate', () => {
     expect(await site.read('public/a.html')).toBe('A=T')
   })
 
+  it('fails the page when a .hbs view cannot be read', async () => {
+    site = await makeSite({})
+    const p = make('missing.hbs', {
+      buildDir: site.build,
+      pagesDir: `${site.root}/pages`,
+      slug: 'missing',
+    })
+    await expect(p.generate()).rejects.toThrow(/missing\.hbs/)
+    expect(await site.exists('public/missing.html')).toBe(false)
+  })
+
+  it('compiles a view without a .hbs extension as an inline template', async () => {
+    site = await makeSite({})
+    const p = make('<p>{{title}}</p>', {
+      buildDir: site.build,
+      pagesDir: `${site.root}/pages`,
+      slug: 'inline',
+      options: { title: 'Inline' },
+    })
+    await p.generate()
+    expect(await site.read('public/inline.html')).toBe('<p>Inline</p>')
+  })
+
   it('skips when options.generate is false', async () => {
     site = await makeSite({})
     const p = make('x', {

@@ -347,27 +347,31 @@ describe('watch()', () => {
     expect(Object.keys(kiss.handlebars.partials)).not.toContain('nav')
   })
 
-  it('deleting a page view overwrites its output with the literal filename', async () => {
-    // Pins B3 (planning/reviews/2026-09-05-v2-engine-review.md): _getTemplate's
-    // read failure falls through with `viewText` still set to the view
-    // filename, so a page whose view was deleted "builds successfully" with
-    // its own filename as its body instead of failing or being removed.
-    // Flipped deliberately by the fix.
+  it('deleting a page view fails the replay loudly and never rewrites the output', async () => {
+    // Flipped by the B3 fix (planning/reviews/2026-09-05-v2-engine-review.md):
+    // _getTemplate used to fall through with `viewText` still set to the view
+    // filename, so a page whose view was deleted "built successfully" with its
+    // own filename as its body. It now throws, the unlink triggers a full
+    // replay, and that replay reports the page as a failure. The stale output
+    // survives untouched: the registration is still replayed, so its buildTo
+    // is in the new stack and the orphan sweep does not remove it.
     site = await makeSite({
       'src/pages/index.hbs': 'home',
       'src/pages/gone.hbs': 'SECRET DRAFT',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
-      .scan()
-      .generate()
+    const logger = { ...silentLogger, error: vi.fn() }
+    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
     await kiss.complete()
     expect(await site.read('public/gone.html')).toBe('SECRET DRAFT')
     kiss.watch({ entry: null })
     await kiss._watcher.ready
     await fs.remove(`${site.src}/pages/gone.hbs`)
-    await waitFor(
-      async () => (await site.read('public/gone.html')) === 'gone.hbs',
+    await waitFor(() =>
+      logger.error.mock.calls.some(
+        ([first]) => first === 'Error rebuilding site',
+      ),
     )
+    expect(await site.read('public/gone.html')).toBe('SECRET DRAFT')
   })
 
   it('adding a page view to a scanned site does nothing until restart', async () => {
@@ -448,9 +452,11 @@ describe('watch()', () => {
     await sleep(50) // replay is now mid-fetch
     await kiss.close() // returns even though the replay above is still in flight
 
-    // Remove the whole site dir, as a deploy/clean step racing the shutdown
-    // might: the orphaned replay resurrects it once its write lands.
-    await fs.remove(site.root)
+    // Remove the build dir, as a deploy/clean step racing the shutdown might:
+    // the orphaned replay resurrects it once its write lands. (Only the build
+    // dir — since the B3 fix, removing the view too would fail the page
+    // instead, and this test is about close(), not about a missing view.)
+    await fs.remove(site.build)
     await waitFor(async () => site.exists('public/index.html'), {
       timeout: 2000,
     })

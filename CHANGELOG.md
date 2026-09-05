@@ -32,3 +32,12 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 _v2 is in development on the `v2` branch. The v1 → v2 migration notes live in
 [`llms.txt`](llms.txt) § Migrating from v1 and in the README, and will become
 this file's `## 2.0.0` entry when the line is released._
+
+**Fixed**
+
+- A page whose view file is missing or misspelled now fails the build instead of
+  writing the filename into the output. Previously `.page({ view: 'abuot.hbs' })`
+  produced `public/abuot.html` containing the text `abuot.hbs`, and the build
+  reported success.
+- Deleting a page template while watching now rebuilds the whole site, instead of
+  re-rendering the deleted page over its own output.
