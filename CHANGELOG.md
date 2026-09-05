@@ -114,6 +114,26 @@ this file's `## 2.0.0` entry when the line is released._
   every path onto the working directory, so a path a controller had resolved
   became `<cwd>/abs/path/main.scss` and failed the build with
   `no such file or directory`.
+- `{{#isActive page href="/blog" folderMatch=true}}` now matches whole path
+  segments instead of any substring of the URL. A `/blog` nav item lit up on
+  `my-blog-post.html`, `/docs` on `news/docs-archive.html`, `/product` on
+  `products/index.html` — and with `href` left off, every item in the nav was
+  active on every page. An `href` of `""` under `folderMatch` now matches the
+  home page only.
+- The same `href` now works whether or not `extensionLess` is on. `href="/about"`
+  matched your about page with the flag off and nothing with it on (only
+  `href="/about/"` worked), so turning the flag on silently lost every nav
+  highlight but the home page. `/about` and `/about/` are now the same page
+  under either setting.
+- `{{#isActive}}` no longer fails the build over a template mistake. A
+  data-driven nav whose model has no `href` key, a page context without a
+  `pageURL`, or a forgotten page argument each threw and dropped the page from
+  the build; the block now renders as not-active and the reason is logged.
+- `{{markdown}}` no longer fails the build when the model field it is given is
+  `null`, an object or an array — one `null` field removed the whole page. It
+  logs the unexpected value and renders nothing, as it already did for a missing
+  field. `{{#env is=…}}` given something that is not a string does the same
+  instead of throwing.
 
 **Changed**
 
