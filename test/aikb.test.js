@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
+import Kiss from '../lib/kiss.js'
 
 const root = path.resolve(import.meta.dirname, '..')
 const strip = (ext) => (f) =>
@@ -14,6 +15,15 @@ const docs = fs
   .map(strip('.md'))
   .filter(Boolean)
 const claudeMd = fs.readFileSync(path.join(root, 'CLAUDE.md'), 'utf8')
+const llmsTxt = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8')
+// Every method that is not underscore-prefixed is part of the published
+// contract, so llms.txt (which ships in the tarball) has to name it.
+const publicMethods = Object.getOwnPropertyNames(Kiss.prototype).filter(
+  (name) =>
+    name !== 'constructor' &&
+    !name.startsWith('_') &&
+    typeof Kiss.prototype[name] === 'function',
+)
 const HEADINGS = [
   '## Responsibility',
   '## Public interface',
@@ -50,4 +60,10 @@ describe('AIKB stays in sync with lib/', () => {
       }
     },
   )
+})
+
+describe('llms.txt documents the public API', () => {
+  it.each(publicMethods)('llms.txt names .%s()', (name) => {
+    expect(llmsTxt).toContain(`\`.${name}(`)
+  })
 })

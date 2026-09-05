@@ -63,6 +63,8 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 
 **Note**: All config settings are available in the view under "this.config"
 
+Each page gets its **own shallow copy** of the resolved config, so a controller that mutates `options.config` changes that page only — never the other pages, `kiss.config`, or the sitemap. Pass `config` in a page's options to override settings for that page alone (nested objects such as `folders` are shared with the global config, and kiss never mutates them).
+
 ### Assets
 
 Any static files you have in the assets directory will be copied to the build directory
@@ -110,6 +112,7 @@ These options are both used internally by kiss and are available in view.
 - model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.
 - controller = A function that returns a page options object - used for manipulating data in the model.
 - title = The page title
+- config = Config overrides for this page only, merged over the global config
 - path = the folder path to the page
 - slug = the name of the file without the extension
 
@@ -228,6 +231,19 @@ A bad model is not a build failure — it is logged, that page is skipped, and i
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server. It waits for a rebuild that is already running to finish, so once it resolves nothing more is written and it is safe to clean or deploy the build folder.
 
 Editing a page template re-renders that page; deleting one, or creating any file under `src/`, rebuilds the whole site. Editing a partial or a layout re-renders every page, but nothing more: your models are not re-read, your controllers are not re-run, and a model you load from a URL is not fetched again — a partial cannot change which pages exist or where they are written, so there is nothing else to redo. Editing anything else under `src/` — a model JSON or a controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, one dropped from a `.pages()` fan-out, or a page `.scan()` had discovered whose template you deleted — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. A partial or layout you add mid-session is registered by that rebuild and usable straight away, and one you delete is unregistered — so a page still referencing a deleted partial fails the rebuild with `The partial <name> could not be found` rather than quietly rendering the deleted content until you restart. If you used `.scan()`, a rebuild scans your pages folder again, so a page template you create while watching is built without a restart; on a site where you registered pages by name with `.page()`, adding the file is not enough — add the call too. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
+
+### Other methods
+
+- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
+- `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
+- `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
+
+```js
+kiss.scan().generate(function (data) {
+  this.viewStats()
+  console.log(this.getModelByID('index.json', data))
+})
+```
 
 ### Helpers
 

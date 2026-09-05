@@ -70,6 +70,11 @@ this file's `## 2.0.0` entry when the line is released._
   after an `await`, as the docs always claimed. Previously it resolved before
   those pages were written, so a deploy or CI step could run against a site that
   was still being built.
+- A controller that changes `options.config` no longer changes the whole site.
+  Every page shared the one live config object, so a controller setting
+  `options.config.siteUrl` for its own page rewrote `kiss.config`, changed every
+  other page — including ones already prepared — and changed every `<loc>` in
+  `sitemap.xml`. Each page now renders with its own copy.
 
 **Changed**
 
@@ -94,3 +99,12 @@ this file's `## 2.0.0` entry when the line is released._
   re-reading your models, re-running your controllers or re-fetching a model
   from a URL — the slow half of a rebuild, and none of it can be affected by a
   partial. Every other non-page change is still a whole-site rebuild.
+
+**Added**
+
+- Pass `config` in a page's options to override config settings for that page
+  alone, e.g. `.page({ view: 'de.hbs', config: { siteUrl: 'https://de.example' } })`.
+  Previously the option was silently discarded.
+- `.registerPartials()`, `.viewStats()` and `.getModelByID(id, data)` are now
+  documented in the README and `llms.txt`. They were always public — two of them
+  are used in the shipped examples — but neither doc mentioned them.

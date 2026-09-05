@@ -255,3 +255,73 @@ describe('sitemap()', () => {
     expect(xml).toContain('<changefreq>weekly</changefreq>')
   })
 })
+
+describe('per-page config', () => {
+  it('keeps a controller mutating options.config out of every other page, the instance config and the sitemap', async () => {
+    site = await makeSite({
+      'src/pages/one.hbs': '<a>{{config.siteUrl}}</a>',
+      'src/pages/two.hbs': '<b>{{config.siteUrl}}</b>',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://good.example',
+    })
+      .page({
+        view: 'one.hbs',
+        controller: (options) => {
+          options.config.siteUrl = 'https://evil.example'
+          return {}
+        },
+      })
+      .page({ view: 'two.hbs' })
+      .generate()
+      .sitemap()
+    await kiss.complete()
+    expect(await site.read('public/one.html')).toBe(
+      '<a>https://evil.example</a>',
+    )
+    expect(await site.read('public/two.html')).toBe(
+      '<b>https://good.example</b>',
+    )
+    expect(kiss.config.siteUrl).toBe('https://good.example')
+    const xml = await site.read('public/sitemap.xml')
+    expect(xml).toContain('<loc>https://good.example/one</loc>')
+    expect(xml).not.toContain('evil.example')
+  })
+
+  it('honours a caller-supplied options.config as a per-page override', async () => {
+    site = await makeSite({
+      'src/pages/one.hbs': '<a>{{config.siteUrl}}</a>',
+      'src/pages/two.hbs': '<b>{{config.siteUrl}}</b>',
+    })
+    const kiss = new Kiss({ folders: site.folders, siteUrl: 'https://global' })
+      .page({ view: 'one.hbs', config: { siteUrl: 'https://per-page' } })
+      .page({ view: 'two.hbs' })
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/one.html')).toBe('<a>https://per-page</a>')
+    expect(await site.read('public/two.html')).toBe('<b>https://global</b>')
+    expect(kiss.config.siteUrl).toBe('https://global')
+  })
+
+  it('gives each fanned-out page its own config copy', async () => {
+    site = await makeSite({ 'src/pages/course.hbs': '{{config.siteUrl}}' })
+    const kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://good.example',
+    })
+      .pages({
+        view: 'course.hbs',
+        model: [{ name: 'a' }, { name: 'b' }],
+        controller: (options) => {
+          if (options.model.name === 'a')
+            options.config.siteUrl = 'https://evil.example'
+          return {}
+        },
+      })
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/course-1.html')).toBe('https://evil.example')
+    expect(await site.read('public/course-2.html')).toBe('https://good.example')
+  })
+})
