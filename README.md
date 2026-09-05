@@ -118,7 +118,9 @@ These options are both used internally by kiss and are available in view.
 
 page and path create the url, i.e. /{path}/{slug}.html
 
-_Note:_ If you don't pass a path or a slug they will be inferred from the view
+_Note:_ If you don't pass a path or a slug they will be inferred from the view — but only when the view is a `.hbs` filename. A view passed as a template string has no file path to infer from, so it gets a generated `snippet-N` slug and no folder; pass a `slug` (and a `path`, if you want one) yourself.
+
+_Note:_ Slugs and path segments are slugified: accented Latin letters are transliterated (`Über uns` → `uber-uns`), anything else outside `a-z0-9` becomes a `-`, and leading/trailing dashes are trimmed. A title written in a script with no Latin equivalent (Japanese, Korean, Cyrillic…) has nothing to transliterate, so it falls back to a short stable hash such as `p-9736ca69` — not pretty, but unique, which keeps each page in its own file. Pass an explicit `slug` when you want a readable URL for such a page. If two pages end up with the same output path the build fails and names the path — only one of them could ever exist on disk.
 
 ### .pages()
 
@@ -284,5 +286,5 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 - Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module. Partials live there too: a helper that reads `require('handlebars').partials` finds nothing in v2 — read `kiss.handlebars.partials`, or drop the helper and use Handlebars' native dynamic partial, `{{> (lookup this "partialName")}}`.
 - `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`.
 - Controller files may use `export default` (legacy `module.exports` still works).
-- Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are now skipped with a "Page already processed" log instead of being written twice.
+- Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are no longer written twice: the second page is not built, and the collision fails the build (`complete()` rejects, naming the path).
 - New: `kiss.close()` stops the dev server and file watcher.

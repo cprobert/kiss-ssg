@@ -70,6 +70,25 @@ this file's `## 2.0.0` entry when the line is released._
   after an `await`, as the docs always claimed. Previously it resolved before
   those pages were written, so a deploy or CI step could run against a site that
   was still being built.
+- A view passed as a template string no longer builds into a folder named after
+  its own markup. `.page({ view: '<p>hi</p>', slug: 'ok' })` wrote
+  `public/-p-hi-/ok.html` — the folder came from the last `/` in the template,
+  so any closing tag produced one — and the sitemap carried the same wrong URL.
+  Such a page now builds to `public/ok.html`.
+- A page's `ext` can no longer write outside your build folder. It was the one
+  page option that was never sanitised, so `ext: './../../../escaped/x.html'` —
+  reachable from model data through the usual "controller derives the page's
+  options" pattern — wrote above the build folder, where nothing cleans it up.
+  It is now slugified like `path` and `slug` (`.xml` still means `.xml`), and a
+  page that would still resolve outside the build folder fails the build.
+- Pages whose titles are not written in the Latin alphabet no longer collide.
+  Every Japanese, Korean or Cyrillic title slugified to `-`, so a `.pages()`
+  fan-out over such a model built one file and quietly lost the rest. Accented
+  Latin is now transliterated (`Über uns` → `uber-uns`) and a title with no
+  Latin equivalent falls back to a short stable hash (`p-9736ca69`), so every
+  page gets its own file. Slugs also no longer keep a trailing `-` when the
+  title ends in punctuation: `Hello World!` is now `hello-world`, not
+  `hello-world-`.
 - A controller that changes `options.config` no longer changes the whole site.
   Every page shared the one live config object, so a controller setting
   `options.config.siteUrl` for its own page rewrote `kiss.config`, changed every
@@ -95,6 +114,11 @@ this file's `## 2.0.0` entry when the line is released._
   "`complete()` from inside a `generate` callback" pattern makes two calls race
   one failure, and the second rejection had nothing attached to it, so it took
   the process down after the first had already been handled and reported.
+- Two pages that resolve to the same output path now fail the build. One of
+  them was dropped with a `Page already processed` log and the build reported
+  success, so a page you asked for was simply missing from the site — most
+  often in a `.pages()` fan-out whose controller derives the slug from model
+  data. `complete()` now rejects and names the path.
 - Editing a partial or a layout while watching now re-renders every page without
   re-reading your models, re-running your controllers or re-fetching a model
   from a URL — the slow half of a rebuild, and none of it can be affected by a

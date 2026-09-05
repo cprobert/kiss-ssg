@@ -2,6 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest'
 import Handlebars from 'handlebars'
 import { KissPage } from '../../lib/kiss-page.js'
 import { silentLogger } from '../../lib/logger.js'
+import fs from 'fs-extra'
+import path from 'node:path'
 import { makeSite } from '../helpers/site.js'
 
 const make = (view, opts = {}) => {
@@ -29,6 +31,12 @@ describe('url inference', () => {
     })
     expect(p.pageURL()).toBe('about-us/our-team.xml')
     expect(p.buildTo).toBe('out/about-us/our-team.xml')
+  })
+
+  it('sanitizes the extension so it cannot steer the output path', () => {
+    const p = make('v.hbs', { slug: 's', ext: '../../x' })
+    expect(p.buildTo).toBe('out/s.x')
+    expect(make('v.hbs', { slug: 's', ext: '.xml' }).buildTo).toBe('out/s.xml')
   })
 
   it('defaults to index.html at the root', () => {
@@ -116,6 +124,17 @@ describe('generate', () => {
     })
     await p.generate()
     expect(await site.read('public/inline.html')).toBe('<p>Inline</p>')
+  })
+
+  it('refuses to write outside the build folder', async () => {
+    site = await makeSite({})
+    const p = make('<p>x</p>', { buildDir: site.build, slug: 's' })
+    // Bypasses the setters deliberately: the guard is belt-and-braces behind
+    // them, so it can only be exercised by crafting the buildTo directly.
+    p._path = '../../escaped'
+    const escaped = path.resolve(p.buildTo)
+    await expect(p.generate()).rejects.toThrow(/build folder/)
+    expect(await fs.pathExists(escaped)).toBe(false)
   })
 
   it('skips when options.generate is false', async () => {

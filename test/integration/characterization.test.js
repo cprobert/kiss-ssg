@@ -4,6 +4,7 @@
 // writing, so there's no window where a file exists but its content isn't.
 import { describe, it, expect, afterEach } from 'vitest'
 import Kiss from '../helpers/kiss.js'
+import fs from 'fs-extra'
 import { makeSite } from '../helpers/site.js'
 
 let site
@@ -68,6 +69,20 @@ describe('page()', () => {
       .generate()
     await kiss.complete()
     expect(await site.read('public/hello-snippet.html')).toBe('Hello world')
+  })
+
+  it('does not derive an output folder from an inline template body', async () => {
+    site = await makeSite({})
+    const kiss = new Kiss({ folders: site.folders })
+      .page({ view: '<p>no slash here</p>', slug: 'ok' })
+      .page({
+        view: '<html><body><h1>{{title}}</h1></body></html>',
+        slug: 'about',
+      })
+      .generate()
+    await kiss.complete()
+    expect(await site.exists('public/ok.html')).toBe(true)
+    expect(await site.exists('public/about.html')).toBe(true)
   })
 
   it('honours a custom extension', async () => {
@@ -141,6 +156,28 @@ describe('pages()', () => {
       .generate()
     await kiss.complete()
     expect(await site.read('public/alpha.html')).toBe('alpha')
+  })
+
+  it('gives every item its own file when the titles are non-Latin', async () => {
+    site = await makeSite({ 'src/pages/post.hbs': '{{model.title}}' })
+    const kiss = new Kiss({ folders: site.folders })
+      .pages({
+        view: 'post.hbs',
+        model: [
+          { title: '日本語のページ' },
+          { title: '안녕하세요' },
+          { title: 'Über uns' },
+          { title: 'Notre équipe' },
+        ],
+        controller: ({ model }) => ({ slug: model.title }),
+      })
+      .generate()
+    await expect(kiss.complete()).resolves.toBeDefined()
+    const built = kiss._stack.map((entry) => entry.buildTo)
+    expect(new Set(built).size).toBe(4)
+    expect(built).toContain(`${site.build}/uber-uns.html`)
+    expect(built).toContain(`${site.build}/notre-equipe.html`)
+    for (const file of built) expect(await fs.pathExists(file)).toBe(true)
   })
 
   it('loads every *.json in a models folder as the array', async () => {
