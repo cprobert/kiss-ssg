@@ -35,6 +35,18 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Fixed**
 
+- A trailing slash on a folder you configure is now tolerated. Previously
+  `folders: { assets: './src/assets/' }` wrote the compiled CSS next to your
+  build folder — `./publicmain.css` at the project root — and logged it as a
+  success, so the deployed site had no stylesheet.
+- A trailing slash on `folders.models` no longer breaks a `.pages()` fan-out.
+  `folders: { models: './src/models/' }` made every model in the folder
+  unreadable and failed the build with `Invalid model <folder>`, an error that
+  blamed the folder name.
+- A project folder whose name contains `[`, `*` or another glob character (for
+  example `site[old]`) now builds. Previously `.scan()` found no pages, no Sass
+  was compiled, and the build finished reporting success with an empty output
+  folder.
 - A page whose view file is missing or misspelled now fails the build instead of
   writing the filename into the output. Previously `.page({ view: 'abuot.hbs' })`
   produced `public/abuot.html` containing the text `abuot.hbs`, and the build
@@ -97,6 +109,9 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Changed**
 
+- `utils.globFiles` now takes the directory and the pattern separately —
+  `globFiles(dir, pattern)` instead of `globFiles(pattern)`. The directory is
+  escaped, so a folder name containing a glob character is matched literally.
 - A controller that throws, a controller file that is missing, a controller
   module that does not export a function, and a `controller` option of an
   unrecognised type now fail the build. Previously each was logged and ignored,

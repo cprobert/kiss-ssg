@@ -20,7 +20,7 @@ Install: `npm install kiss-ssg --save-dev`. `import Kiss from 'kiss-ssg'` (CJS `
 - `.getModelByID(id, data)` — looks an entry up by `id` in the `[{ id, data }]` array `generate`/`complete` hand back, and returns its `.data` (or `{ error }` if there is no such id). The `id` is the model filename or URL you passed; object models get a hash instead. Use it to pull one page's resolved model out of the build data.
 - `kiss.handlebars` — this instance's own Handlebars environment (`Handlebars.create()`, created per `Kiss`, so helpers and partials never leak between instances, and helpers registered on the global `handlebars` module are not seen); register custom helpers on it directly. Built-in helpers: `markdown`, `sass` (inline block or file path, via the modern `sass.compile`/`compileString` API), `offset`, `stringify`, `isActive` (nav active-state matching), `env` (`{{#env is="dev"}}`/`"prod"` blocks).
 - `kiss.remarkable` — this instance's own Markdown renderer (used for `.md` partials and the `markdown` helper).
-- `import { utils } from 'kiss-ssg'` — `toSlug`, `sanitizePath`, `toTitleCase`, `trimLines`, `trimPath`, `posixPath`, `globFiles`, `hashId`.
+- `import { utils } from 'kiss-ssg'` — `toSlug`, `sanitizePath`, `toTitleCase`, `trimLines`, `trimPath`, `posixPath`, `globFiles(dir, pattern)`, `hashId`.
 
 ## Config
 
@@ -50,7 +50,7 @@ Passed to `new Kiss(config)`. Defaults:
 }
 ```
 
-Setting `folders.src` re-derives every other `folders.*` entry from it, unless that entry is also set explicitly.
+Setting `folders.src` re-derives every other `folders.*` entry from it, unless that entry is also set explicitly. Folder strings are normalised on the way in — a trailing slash or a backslash separator is tolerated (`'./src/assets/'` and `'.\\src\\assets'` both resolve to `'./src/assets'`).
 
 ## Docs
 

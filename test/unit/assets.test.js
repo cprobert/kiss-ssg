@@ -26,6 +26,19 @@ describe('copyAssets', () => {
     expect(await site.exists('out/css/x.scss')).toBe(false)
   })
 
+  it('compiles into the build folder when the source folder has a trailing slash', async () => {
+    site = await makeSite({ 'a/css/x.scss': '$c: red; b { color: $c }' })
+    await copyAssets(`${site.root}/a/`, `${site.root}/out`, deps)
+    expect(await site.read('out/css/x.css')).toContain('color:red')
+    expect(await site.exists('outcss/x.css')).toBe(false)
+  })
+
+  it('mirrors a nested folder that repeats the source folder name', async () => {
+    site = await makeSite({ 'a/nested/a/deep.scss': 'b { color: blue }' })
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, deps)
+    expect(await site.read('out/nested/a/deep.css')).toContain('color:blue')
+  })
+
   it('does not trigger the "import sass from \'sass\'" deprecation warning', async () => {
     // lib/assets.js must prefer the named `sass.compile` export (present on
     // current sass) over `sassModule.default` — reaching for `.default` on a

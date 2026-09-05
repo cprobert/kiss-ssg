@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import utils from '../../lib/utils.js'
+import { makeSite } from '../helpers/site.js'
+
+let site
+afterEach(async () => {
+  if (site) await site.cleanup()
+  site = null
+})
 
 describe('utils.toSlug', () => {
   it('lower-cases and replaces runs of non-word characters with a dash', () => {
@@ -45,5 +52,23 @@ describe('utils.hashId', () => {
     expect(utils.hashId('a')).toBe('0cc175b9c0f1b6a831c399e269772661')
     expect(utils.hashId({ a: 1 })).toBe(utils.hashId({ a: 1 }))
     expect(utils.hashId({ a: 1 })).not.toBe(utils.hashId({ a: 2 }))
+  })
+})
+
+describe('utils.globFiles', () => {
+  it('finds files under a directory, sorted and posix', async () => {
+    site = await makeSite({ 'v/b.hbs': 'b', 'v/a/c.hbs': 'c' })
+    expect(utils.globFiles(`${site.root}/v`, '**/*.hbs')).toEqual([
+      `${site.root}/v/a/c.hbs`,
+      `${site.root}/v/b.hbs`,
+    ])
+  })
+
+  it('treats glob metacharacters in the directory as literal characters', async () => {
+    site = await makeSite({ 'site[old]/a.hbs': 'a', 'site[old]/b.hbs': 'b' })
+    expect(utils.globFiles(`${site.root}/site[old]`, '*.hbs')).toEqual([
+      `${site.root}/site[old]/a.hbs`,
+      `${site.root}/site[old]/b.hbs`,
+    ])
   })
 })

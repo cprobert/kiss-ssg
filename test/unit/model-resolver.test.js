@@ -37,6 +37,15 @@ describe('resolveModel', () => {
     expect(data).toEqual([{ n: 'a' }, { n: 'b' }])
   })
 
+  it('loads a folder model when modelsDir has a trailing slash', async () => {
+    site = await makeSite({
+      'm/team/a.json': { n: 'a' },
+      'm/team/b.json': { n: 'b' },
+    })
+    const { data } = await resolveModel('team', deps(`${site.root}/m/`))
+    expect(data).toEqual([{ n: 'a' }, { n: 'b' }])
+  })
+
   it('rejects an unknown folder', async () => {
     site = await makeSite({})
     await expect(resolveModel('ghost', deps(`${site.root}/m`))).rejects.toThrow(

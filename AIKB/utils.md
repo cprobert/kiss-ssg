@@ -12,7 +12,7 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 - `trimPath(path)` → leading/trailing `/` stripped.
 - `sanitizePath(path)` → `trimPath`, split on `/`, each segment passed through `toSlug`, rejoined with `/`; returns the input unchanged (including falsy) if falsy.
 - `posixPath(path)` → backslashes converted to `/` and a leading `./` stripped.
-- `globFiles(pattern)` → every file matching `pattern`, each through `posixPath`, sorted. The engine's only glob call site.
+- `globFiles(dir, pattern)` → every file matching `pattern` under `dir`, each through `posixPath`, sorted. `dir` is a literal directory (glob-escaped), `pattern` is the glob. The engine's only glob call site.
 - `hashId(input)` → MD5 hex digest of `input` if it's a string, else of `JSON.stringify(input)`.
 - `export default { trimLines, toSlug, toTitleCase, trimPath, sanitizePath, posixPath, globFiles, hashId }` (also each function is a named export).
 
@@ -32,3 +32,5 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 - `hashId` hashes objects by `JSON.stringify(input)`, not by their `toString()` — this fixes a v1 bug where `md5(object)` implicitly called `.toString()` on the object first, hashing the literal string `"[object Object]"` for _every_ object regardless of content (so all object-model pages collided on the same id in v1).
 
 - `globFiles` exists because glob v9+ changed two behaviours the engine relied on: it strips a leading `./` from the paths it returns (while every `config.folders.*` default carries one, so a caller slicing the folder prefix off a result would slice the wrong number of characters), and it no longer sorts results — walk order would make page order, partial registration order and sitemap order depend on the machine. Routing every glob through here fixes both once. Do not call `globSync` directly from another module.
+
+- **The directory is taken separately from the pattern so it can be escaped** (`escape()` from `glob`). A project path is a literal name, not a pattern: a folder called `site[old]` interpolated straight into a pattern is read as a character class and matches nothing, so `scan()` found zero pages and Sass compiled nothing while the build still reported success (review finding A-07). Callers therefore pass `globFiles(folder, '**/*.hbs')`, never a pre-joined string — joining it yourself puts the folder back inside the pattern and reopens the bug.

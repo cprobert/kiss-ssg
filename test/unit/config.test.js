@@ -18,6 +18,25 @@ describe('resolveFolders', () => {
     expect(f.build).toBe('out')
     expect(f.models).toBeNull()
   })
+
+  it('strips trailing slashes from every folder, derived or explicit', () => {
+    const f = resolveFolders({ src: './site/', assets: './src/assets/' })
+    expect(f.src).toBe('./site')
+    expect(f.pages).toBe('./site/pages')
+    expect(f.partials).toBe('./site/partials')
+    expect(f.assets).toBe('./src/assets')
+  })
+
+  it('normalises separators and collapses repeated slashes', () => {
+    const f = resolveFolders({ src: '.\\site\\', build: 'out//dist/' })
+    expect(f.src).toBe('./site')
+    expect(f.models).toBe('./site/models')
+    expect(f.build).toBe('out/dist')
+  })
+
+  it('keeps the root folder usable when it is only a slash', () => {
+    expect(resolveFolders({ root: '/' }).root).toBe('/')
+  })
 })
 
 describe('resolveConfig', () => {
