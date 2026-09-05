@@ -25,6 +25,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
 | Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
 | Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
+| Sass binding                       | `lib/sass.js`                | `AIKB/sass.md`                |
 | Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
 | Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
 | Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |

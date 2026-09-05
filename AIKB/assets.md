@@ -11,7 +11,7 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 ## Depends on
 
-`fs-extra`, `sass`; `./utils.js` (`globFiles`, `posixPath`, `hashId`).
+`fs-extra`; `./sass.js` (the resolved sass binding); `./utils.js` (`globFiles`, `posixPath`, `hashId`).
 
 ## Depended on by
 
@@ -24,5 +24,5 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 - Sass sources (`.scss`/`.sass`) are explicitly excluded from the plain `fs.copy` pass — they're only ever emitted as compiled `.css`, never copied verbatim.
 - Sass compilation is `await`ed inside `copyAssets` (via `await Promise.all(compileSassFiles(...))`) and is therefore tracked as part of the single promise `Kiss.copyAssets()` pushes onto `_promises` — v1 fired the CSS write and never tracked it, so a build could finish (and `generate()`/`complete()` resolve) before Sass output existed.
 - The returned `{ id, data }` shape is the same shape `Kiss.generate(callback)`'s data array element takes — `id` lets `Kiss.getModelByID` (or manual inspection) find this asset-copy result among the other resolved `_promises`.
-- `import * as sassModule from 'sass'` then `const sass = typeof sassModule.compile === 'function' ? sassModule : sassModule.default` — not a plain `import sass from 'sass'` or `sassModule.default ?? sassModule`. Sass releases before 1.45 only put the modern `compile`/`compileString` API on the ESM namespace's `default` export (no named exports), so a bare namespace import leaves `sass.compile` undefined and every compile throws `TypeError: sass.compile is not a function`. But current sass exports both, _and_ logs an `import sass from 'sass'` is deprecated" warning the moment `.default` is touched — so the fallback must prefer the named export (`sassModule.compile` present) and only reach for `.default` when it's missing, or every build on a modern sass would print that deprecation warning on every compile.
+- The sass compiler is imported from `./sass.js`, never from `sass` directly: which export carries the modern API depends on the installed sass version, and that detection lives in one place (see `AIKB/sass.md`).
 - `copyAssets()` itself has no concurrency guard — two calls given overlapping source/target trees (e.g. one's target a subdirectory of the other's source) can run their `fs.copy` walks simultaneously and produce `ENOENT` failures mid-walk. `Kiss.copyAssets()` is the module's only caller and is responsible for serializing calls (via `_assetQueue`) so this function is never actually invoked concurrently in practice; this module makes no such guarantee on its own.

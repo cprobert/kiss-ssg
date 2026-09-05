@@ -106,6 +106,14 @@ this file's `## 2.0.0` entry when the line is released._
   `options.config.siteUrl` for its own page rewrote `kiss.config`, changed every
   other page — including ones already prepared — and changed every `<loc>` in
   `sitemap.xml`. Each page now renders with its own copy.
+- A `model` URL that answers with an error status now fails that page instead of
+  publishing the error. A `500` (or any non-2xx) whose body is the usual JSON
+  error envelope became the page's model, so the page rendered empty or garbage
+  content and the build reported success.
+- The `{{sass "path"}}` helper now accepts an absolute path. It used to join
+  every path onto the working directory, so a path a controller had resolved
+  became `<cwd>/abs/path/main.scss` and failed the build with
+  `no such file or directory`.
 
 **Changed**
 

@@ -54,7 +54,7 @@ describe('resolveModel', () => {
   })
 
   it('fetches http(s) models with the injected fetch', async () => {
-    const fetchImpl = async (url) => ({ json: async () => ({ url }) })
+    const fetchImpl = async (url) => ({ ok: true, json: async () => ({ url }) })
     await expect(
       resolveModel('https://x/y', deps('m', { fetchImpl })),
     ).resolves.toEqual({
@@ -70,6 +70,18 @@ describe('resolveModel', () => {
     await expect(
       resolveModel('http://x', deps('m', { fetchImpl })),
     ).rejects.toMatchObject({ message: 'boom' })
+  })
+
+  it('rejects an error response instead of using its JSON body as the model', async () => {
+    const fetchImpl = async () => ({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error',
+      json: async () => ({ error: 'upstream down' }),
+    })
+    await expect(
+      resolveModel('https://cms.example/api/posts', deps('m', { fetchImpl })),
+    ).rejects.toThrow(/https:\/\/cms\.example\/api\/posts.*500/)
   })
 
   it('passes objects through with a content hash id, and undefined as {}', async () => {

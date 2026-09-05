@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import Handlebars from 'handlebars'
 import { Remarkable } from 'remarkable'
 import { registerHandlebarsHelpers } from '../../lib/handlebars-helpers.js'
 import { silentLogger } from '../../lib/logger.js'
+import { makeSite } from '../helpers/site.js'
 
 let hbs
 const render = (src, ctx = {}) => hbs.compile(src)(ctx)
@@ -29,9 +30,22 @@ describe('markdown', () => {
 })
 
 describe('sass', () => {
+  let site
+  afterEach(async () => {
+    if (site) await site.cleanup()
+    site = undefined
+  })
+
   it('compiles an inline block', () => {
     expect(render('{{#sass}}$c: red; a { color: $c }{{/sass}}')).toContain(
       'color: red',
+    )
+  })
+
+  it('compiles a file given as an absolute path', async () => {
+    site = await makeSite({ 'css/main.scss': '$c: red; b { color: $c }' })
+    expect(render(`{{#sass "${site.root}/css/main.scss"}}{{/sass}}`)).toContain(
+      'color:red',
     )
   })
 })

@@ -16,7 +16,7 @@ Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`
 
 ## Depends on
 
-`node:path`, `sass`; `./utils.js` (`trimLines`).
+`node:path`; `./sass.js` (the resolved sass binding); `./utils.js` (`trimLines`).
 
 ## Depended on by
 
@@ -25,7 +25,7 @@ Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`
 ## Non-obvious behavior
 
 - Helpers register on whichever Handlebars environment (`hbs`) is passed in, not a global instance — each `Kiss` instance calls this against its own `this.handlebars`, so helpers never leak between instances.
-- The `sass` helper's file mode resolves the given path relative to `process.cwd()` (`path.join(process.cwd(), context)`), not relative to the view or the assets folder; block mode compiles the block content directly with `sass.compileString` (no `process.cwd()` involved).
+- The `sass` helper's file mode resolves a _relative_ path against `process.cwd()`, not against the view or the assets folder; an **absolute** path is passed to `sass.compile` untouched (`path.isAbsolute(context)` — an unconditional `path.join(process.cwd(), context)` mangled a path a controller had resolved into `<cwd>/abs/path/main.scss` and failed the build, review finding C7). Block mode compiles the block content directly with `sass.compileString` (no `process.cwd()` involved).
 - `isActive` strips the extension and a trailing `index` segment from `pageOptions.pageURL` before comparing it to `href`, so `/foo/index.html` and `/foo/index` both match `href: '/foo/'`.
 - `env` reads `config.dev` at _render_ time (helpers close over the `config` object, not a snapshot), so `{{#env is="dev"}}`/`{{#env is="prod"}}` blocks reflect the live config.
-- `import * as sassModule from 'sass'` then `const sass = typeof sassModule.compile === 'function' ? sassModule : sassModule.default` — not a plain `import sass from 'sass'` or `sassModule.default ?? sassModule`. Sass releases before 1.45 only put the modern `compile`/`compileString` API on the ESM namespace's `default` export (no named exports), so a bare namespace import leaves `sass.compile` undefined and the `sass` helper throws `TypeError: sass.compile is not a function`. But current sass exports both, _and_ logs an `import sass from 'sass'` is deprecated" warning the moment `.default` is touched — so the fallback must prefer the named export (`sassModule.compile` present) and only reach for `.default` when it's missing, or every render on a modern sass would print that deprecation warning.
+- The sass compiler is imported from `./sass.js`, never from `sass` directly: which export carries the modern API depends on the installed sass version, and that detection lives in one place (see `AIKB/sass.md`).

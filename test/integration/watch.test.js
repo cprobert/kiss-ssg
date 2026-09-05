@@ -108,7 +108,7 @@ describe('watch()', () => {
     vi.stubGlobal('fetch', async () => {
       const body = payload // as at request time, like a real server read
       await sleep(150)
-      return { json: async () => body }
+      return { ok: true, json: async () => body }
     })
     site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
     const logger = { ...silentLogger, error: vi.fn() }
@@ -144,7 +144,7 @@ describe('watch()', () => {
     vi.stubGlobal('fetch', async () => {
       const body = { title: version } // as at request time, like a real server
       await sleep(150)
-      return { json: async () => body }
+      return { ok: true, json: async () => body }
     })
     site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
     const logger = { ...silentLogger, error: vi.fn() }
@@ -510,7 +510,7 @@ describe('watch()', () => {
     // quiesces: nothing is written, and nothing is logged, once it returns.
     vi.stubGlobal('fetch', async () => {
       await sleep(300)
-      return { json: async () => ({ title: 'remote' }) }
+      return { ok: true, json: async () => ({ title: 'remote' }) }
     })
     site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
     const { logger, afterClose } = recordingLogger()
@@ -539,7 +539,7 @@ describe('rebuild queue', () => {
   const slowModelSite = async () => {
     vi.stubGlobal('fetch', async () => {
       await sleep(150)
-      return { json: async () => ({ title: 'remote' }) }
+      return { ok: true, json: async () => ({ title: 'remote' }) }
     })
     site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
     kiss = new Kiss({ folders: site.folders, logger: silentLogger })
@@ -634,7 +634,7 @@ describe('partial and layout fast path', () => {
     let fetches = 0
     vi.stubGlobal('fetch', async () => {
       fetches++
-      return { json: async () => ({ title: 'remote' }) }
+      return { ok: true, json: async () => ({ title: 'remote' }) }
     })
     site = await makeSite({
       'src/pages/index.hbs': '[{{> foo}}]{{title}}',
@@ -664,7 +664,7 @@ describe('partial and layout fast path', () => {
     vi.stubGlobal('fetch', async () => {
       fetches++
       await sleep(150)
-      return { json: async () => ({ title: 'remote' }) }
+      return { ok: true, json: async () => ({ title: 'remote' }) }
     })
     site = await makeSite({
       'src/pages/index.hbs': '[{{> foo}}]{{title}}',
