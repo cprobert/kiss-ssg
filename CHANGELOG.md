@@ -61,6 +61,15 @@ this file's `## 2.0.0` entry when the line is released._
   rebuild requested just before you closed kept running afterwards, so a clean
   or deploy step that ran once `close()` resolved raced files still being
   written — and could see the build folder recreated after it deleted it.
+- A page queued after the last `.generate()` call is now built instead of being
+  silently dropped from a build that reports success. `.complete()` renders
+  anything no `generate()` pass reached — the pages a callback's `.scan()`
+  discovers, or a page whose model resolved after `generate()` had already
+  started, which made the outcome depend on how fast that model loaded.
+- `.complete()` now waits for pages queued by an `async` `generate` callback
+  after an `await`, as the docs always claimed. Previously it resolved before
+  those pages were written, so a deploy or CI step could run against a site that
+  was still being built.
 
 **Changed**
 
@@ -73,8 +82,9 @@ this file's `## 2.0.0` entry when the line is released._
   too, and is reported as `<generate callback>` / `<sitemap callback>` in
   `err.failures`. Previously it was logged as "Error generating site" (or, more
   misleadingly, "Error creating sitemap.xml" after the file had been written
-  correctly) and `complete()` still resolved, so a build that lost pages exited 0. A callback that returns a promise is covered too, as long as it rejects
-  before `complete()` finishes draining.
+  correctly) and `complete()` still resolved, so a build that lost pages exited 0.
+  A callback that returns a promise is covered too: `complete()` waits for that
+  promise, so an `async` callback's rejection is reported by the same build.
 - `complete()` now reports a build's failures once. A second `complete()` call
   in the same build resolves instead of rejecting again — the documented
   "`complete()` from inside a `generate` callback" pattern makes two calls race

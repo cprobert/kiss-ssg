@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'fs-extra'
+import http from 'node:http'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -62,6 +63,120 @@ describe('generate()', () => {
       .sitemap()
     await kiss.complete()
     expect(await site.exists('public/sitemap.xml')).toBe(true)
+  })
+})
+
+describe('complete()', () => {
+  it('renders pages a generate callback scanned but never generated', async () => {
+    // The shape examples/3-pages.js ships: the callback scans, and those pages
+    // land on the stack after the only generate() pass has iterated it.
+    site = await makeSite({
+      'src/pages/index.hbs': 'i',
+      'src/pages/later.hbs': 'L',
+      'src/pages/extra.hbs': 'E',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss.page({ view: 'index.hbs' }).generate(function () {
+      this.scan()
+    })
+    await kiss.complete()
+    expect(await site.exists('public/later.html')).toBe(true)
+    expect(await site.exists('public/extra.html')).toBe(true)
+  })
+
+  it('renders a page queued after the last generate(), however slow its model', async () => {
+    // generate() snapshots _promises, so before the fix whether this page was
+    // rendered depended purely on how fast its model resolved.
+    const server = http.createServer((req, res) => {
+      setTimeout(() => {
+        res.setHeader('content-type', 'application/json')
+        res.end(JSON.stringify({ title: 'From API' }))
+      }, 50)
+    })
+    await new Promise((r) => server.listen(0, '127.0.0.1', r))
+    const url = `http://127.0.0.1:${server.address().port}/model.json`
+    try {
+      site = await makeSite({
+        'src/pages/index.hbs': 'i',
+        'src/pages/later.hbs': 'L {{model.title}}',
+      })
+      const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      kiss.page({ view: 'index.hbs', model: { a: 1 } }).generate()
+      kiss.page({ view: 'later.hbs', model: url })
+      await kiss.complete()
+      expect(await site.exists('public/later.html')).toBe(true)
+    } finally {
+      await new Promise((r) => server.close(r))
+    }
+  })
+
+  it('waits for pages an async generate callback queues after an await', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'i',
+      'src/pages/later.hbs': 'L',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss.page({ view: 'index.hbs' }).generate(async function () {
+      await new Promise((r) => setTimeout(r, 30))
+      this.page({ view: 'later.hbs' }).generate()
+    })
+    await kiss.complete()
+    expect(await site.exists('public/later.html')).toBe(true)
+  })
+
+  it('renders a page an async generate callback queued without generating it', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'i',
+      'src/pages/later.hbs': 'L',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss.page({ view: 'index.hbs' }).generate(async function () {
+      await new Promise((r) => setTimeout(r, 30))
+      this.page({ view: 'later.hbs' })
+    })
+    await kiss.complete()
+    expect(await site.exists('public/later.html')).toBe(true)
+  })
+
+  it('does not deadlock when an async generate callback awaits complete()', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'i' })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    let callbackDone = false
+    kiss.page({ view: 'index.hbs' }).generate(async function () {
+      await new Promise((r) => setTimeout(r, 30))
+      await this.complete()
+      callbackDone = true
+    })
+    await kiss.complete()
+    expect(callbackDone).toBe(true)
+  })
+
+  it('a nested complete() that settles last does not leave later builds treated as nested', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'i',
+      'src/pages/second.hbs': 's',
+      'src/pages/later.hbs': 'L',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    let inner
+    kiss.page({ view: 'index.hbs' }).generate(function () {
+      // Held rather than awaited by the callback, so this complete() settles
+      // after the outer one — the order that leaves a saved-and-restored flag
+      // stuck, and every later complete() wrongly reading as nested.
+      inner = this.complete()
+    })
+    await kiss.complete()
+    await inner
+
+    // A second build on the same instance: its async callback queues a page
+    // after an await, which only a complete() that knows it is not nested
+    // waits for.
+    kiss.page({ view: 'second.hbs' }).generate(async function () {
+      await new Promise((r) => setTimeout(r, 30))
+      this.page({ view: 'later.hbs' })
+    })
+    await kiss.complete()
+    expect(await site.exists('public/later.html')).toBe(true)
   })
 })
 
