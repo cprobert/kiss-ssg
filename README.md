@@ -36,6 +36,8 @@ The default config options are:
   dev: false,
   verbose: false,
   cleanBuild: true,
+  extensionLess: false,
+  sass: { includePaths: [] },
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -43,6 +45,7 @@ The default config options are:
     src: './src',
     build: './public',
     assets: './src/assets',
+    static: './src/static',
     layouts: './src/layouts',
     pages: './src/pages',
     partials: './src/partials',
@@ -54,16 +57,18 @@ The default config options are:
 
 Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
 
-| Option         |   Default   |                                                                                                                              Purpose                                                                                                                               |
-| -------------- | :---------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| dev            |    false    |                      Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                      |
-| verbose        |    false    |                                                                                                    Enables additional output on the terminal, when set to true                                                                                                     |
-| cleanBuild     |    true     |                                                                                                      Removed all files from the build dir before generating.                                                                                                       |
-| port           |    3001     |                                                                                                       The port the dev server listens on (`dev: true` only)                                                                                                        |
-| livereloadPort |    35729    | The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process. |
-| devHost        | '127.0.0.1' |                                                     The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network.                                                     |
-| folders        |  see above  |                                                                                                           A JSON object of alternative folder locations                                                                                                            |
-| siteUrl        |  undefined  |                                                                                                     The site's base URL, required by `.sitemap()` (see below)                                                                                                      |
+| Option         |        Default         |                                                                                                                              Purpose                                                                                                                               |
+| -------------- | :--------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| dev            |         false          |                      Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                      |
+| verbose        |         false          |                                                                                                    Enables additional output on the terminal, when set to true                                                                                                     |
+| cleanBuild     |          true          |                                                                                                      Removed all files from the build dir before generating.                                                                                                       |
+| extensionLess  |         false          |                                                        When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                         |
+| sass           | `{ includePaths: [] }` |                                                                            `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                            |
+| port           |          3001          |                                                                                                       The port the dev server listens on (`dev: true` only)                                                                                                        |
+| livereloadPort |         35729          | The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process. |
+| devHost        |      '127.0.0.1'       |                                                     The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network.                                                     |
+| folders        |       see above        |                                                                                                           A JSON object of alternative folder locations                                                                                                            |
+| siteUrl        |       undefined        |                                                                                                     The site's base URL, required by `.sitemap()` (see below)                                                                                                      |
 
 A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
 
@@ -180,6 +185,8 @@ kiss
   .generate()
 ```
 
+**Note**: a controller must be pure — return new values, never mutate `model` (or a nested option such as `config.folders`) in place. In `dev: true`, `.watch()` replays a page from a shallow snapshot of its original `.page()`/`.pages()` call, so an object model your controller mutated in place is still mutated on the next rebuild — an in-place `array.push(...)` or property assignment accumulates one more change with every save, and the dev server drifts further from what a fresh build would produce.
+
 ### .sitemap()
 
 Generates a `sitemap.xml` in the root of the build folder from every page you've registered, so you don't need to hand-roll one yourself. Requires `siteUrl` to be set on the Kiss config; it logs an error and skips writing if it isn't.
@@ -217,7 +224,7 @@ kiss.sitemap({ overwrite: false })
 
 ### Waiting for the build
 
-`.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
+`.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
 
 ```js
 await kiss.scan().generate().sitemap().complete()
@@ -240,7 +247,7 @@ A bad model is not a build failure — it is logged, that page is skipped, and i
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server. It waits for a rebuild that is already running to finish, so once it resolves nothing more is written and it is safe to clean or deploy the build folder.
 
-Editing a page template re-renders that page; deleting one, or creating any file under `src/`, rebuilds the whole site. Editing a partial or a layout re-renders every page, but nothing more: your models are not re-read, your controllers are not re-run, and a model you load from a URL is not fetched again — a partial cannot change which pages exist or where they are written, so there is nothing else to redo. Editing anything else under `src/` — a model JSON or a controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, one dropped from a `.pages()` fan-out, or a page `.scan()` had discovered whose template you deleted — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. A partial or layout you add mid-session is registered by that rebuild and usable straight away, and one you delete is unregistered — so a page still referencing a deleted partial fails the rebuild with `The partial <name> could not be found` rather than quietly rendering the deleted content until you restart. If you used `.scan()`, a rebuild scans your pages folder again, so a page template you create while watching is built without a restart; on a site where you registered pages by name with `.page()`, adding the file is not enough — add the call too. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
+Editing a page template re-renders that page; deleting one, or creating any file under `src/`, rebuilds the whole site. Editing a partial or a layout re-renders every page, but nothing more: your models are not re-read, your controllers are not re-run, and a model you load from a URL is not fetched again — a partial cannot change which pages exist or where they are written, so there is nothing else to redo. Editing anything else under `src/` — a model JSON or a controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A rebuild replays each page from a shallow snapshot of its original `.page()`/`.pages()` call, so keep controllers pure (see the note under "Controller" above) — one that mutates its model in place carries that mutation into every later rebuild. A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, one dropped from a `.pages()` fan-out, or a page `.scan()` had discovered whose template you deleted — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. A partial or layout you add mid-session is registered by that rebuild and usable straight away, and one you delete is unregistered — so a page still referencing a deleted partial fails the rebuild with `The partial <name> could not be found` rather than quietly rendering the deleted content until you restart. If you used `.scan()`, a rebuild scans your pages folder again, so a page template you create while watching is built without a restart; on a site where you registered pages by name with `.page()`, adding the file is not enough — add the call too. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
 
 ### Other methods
 
@@ -278,6 +285,52 @@ If you want to take a peek at whats properties you have available to to in a han
 ```handlebars
 {{{stringify this}}}
 ```
+
+You can compile Sass, either from a file or an inline block:
+
+```handlebars
+{{{sass 'src/assets/main.scss'}}}
+
+{{#sass}}
+  $color: red; body { color: $color; }
+{{/sass}}
+```
+
+A relative file path is resolved against `process.cwd()` — not the assets folder or the current view — so pass a path relative to where you run the build, or pass an absolute path (used as given). `loadPaths` for `@use`/`@import` comes from `config.sass.includePaths`; output is `'expanded'` in `dev: true` and `'compressed'` otherwise.
+
+`offset` turns a zero-based `@index` into a one-based number:
+
+```handlebars
+{{#each items}}
+  {{offset @index}}:
+  {{this}}
+{{/each}}
+```
+
+`isActive` renders its block only when the current page matches `href`, handy for highlighting the current nav item:
+
+```handlebars
+<nav>
+  {{#isActive page href='/about'}}<a
+      class='active'
+      href='/about'
+    >About</a>{{else}}<a href='/about'>About</a>{{/isActive}}
+</nav>
+```
+
+Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
+
+`env` renders one branch or the other depending on whether you're in dev mode:
+
+```handlebars
+{{#env is='dev'}}
+  <script src='http://localhost:35729/livereload.js'></script>
+{{else}}
+  <!-- production only -->
+{{/env}}
+```
+
+`is` must be a string containing `"dev"` or `"prod"` (case-insensitive) — checked against the Kiss instance's `dev` config option.
 
 Kiss exposes the handlebars object so you can register your own helpers, e.g.
 

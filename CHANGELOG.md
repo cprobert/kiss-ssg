@@ -185,6 +185,14 @@ this file's `## 2.0.0` entry when the line is released._
   re-reading your models, re-running your controllers or re-fetching a model
   from a URL — the slow half of a rebuild, and none of it can be affected by a
   partial. Every other non-page change is still a whole-site rebuild.
+- The shipped helper docs are now complete: `llms.txt` gains a `## Helpers`
+  section and README's `### Helpers` gains entries for `sass`, `offset`,
+  `isActive` and `env` (previously only `markdown` and `stringify` were
+  documented). Both also now state that the `generate`/`complete` `data` array
+  includes the automatic asset-copy result as its first entry, that a
+  controller must be pure because watch-mode replays a shallow snapshot of the
+  page's options, and precisely which `folders.*` keys `folders.src`
+  re-derives (`build` is not one of them).
 
 **Added**
 
