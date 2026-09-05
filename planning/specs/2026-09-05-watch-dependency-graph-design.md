@@ -1,6 +1,6 @@
 # kiss-ssg: watch-mode rebuild scoping (design)
 
-Status: READY FOR DECISION. Revised 2026-09-05 after an adversarial critique (scratchpad `spec-critique.md`, an Opus review commissioned against the first draft). The critique changed the recommendation; the first draft's dependency graph is now the _last_ of three steps and may never be built.
+Status: STEPS 1–2 LANDED (2026-09-05, branch review/v2-critical-friend). Step 3 pending the measurement in Rollout order step 5.
 
 ## Recommendation, up front
 

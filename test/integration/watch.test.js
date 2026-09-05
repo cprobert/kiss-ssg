@@ -575,17 +575,20 @@ describe('rebuild queue', () => {
   })
 
   it('coalesces two scoped rebuilds of the same entry into one re-render', async () => {
+    // The in-flight slot is filled by a scoped rebuild rather than a replay:
+    // a replay would discard the stack this entry belongs to, and `_rebuild`
+    // then skips it as a stale target — correct, but it would leave nothing
+    // for the coalescing this test is about to be visible in.
     const { entry, rendered } = await slowModelSite()
 
-    const a = kiss._requestReplay() // occupies the in-flight slot
-    await sleep(20)
+    const a = kiss._requestRebuild([entry]) // occupies the in-flight slot
     kiss._requestRebuild([entry])
     kiss._requestRebuild([entry])
     expect(kiss._pendingTargets.size).toBe(1)
 
     await a
     await drained()
-    expect(rendered).toHaveBeenCalledTimes(1)
+    expect(rendered).toHaveBeenCalledTimes(2) // the in-flight run, then one
   })
 
   it('ignores a scoped rebuild requested while a replay is pending', async () => {
@@ -611,6 +614,96 @@ describe('rebuild queue', () => {
     kiss._requestRebuild([entry])
     expect(kiss._rebuildInFlight).toBeNull()
     await sleep(100)
+    expect(rendered).not.toHaveBeenCalled()
+  })
+})
+
+describe('partial and layout fast path', () => {
+  const drained = () =>
+    waitFor(
+      () =>
+        !kiss._rebuildInFlight &&
+        !kiss._pendingReplay &&
+        kiss._pendingTargets.size === 0,
+    )
+
+  it('re-renders the whole stack on a partial edit without re-resolving models', async () => {
+    // The point of the fast path: a partial cannot change the page set or any
+    // page's options, so the models — a network round trip each — are not
+    // re-resolved, only the templates re-rendered.
+    let fetches = 0
+    vi.stubGlobal('fetch', async () => {
+      fetches++
+      return { json: async () => ({ title: 'remote' }) }
+    })
+    site = await makeSite({
+      'src/pages/index.hbs': '[{{> foo}}]{{title}}',
+      'src/partials/foo.hbs': 'V1',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('[V1]remote')
+    expect(fetches).toBe(1)
+
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/partials/foo.hbs', 'V2')
+    await waitFor(
+      async () => (await site.read('public/index.html')) === '[V2]remote',
+    )
+    await sleep(300)
+    expect(fetches).toBe(1)
+  })
+
+  it('upgrades a partial edit that arrives mid-rebuild to a full replay', async () => {
+    // Whether the in-flight run had already re-read the edited file is a race
+    // nobody can reason about, so the pessimistic answer is the right one.
+    let fetches = 0
+    vi.stubGlobal('fetch', async () => {
+      fetches++
+      await sleep(150)
+      return { json: async () => ({ title: 'remote' }) }
+    })
+    site = await makeSite({
+      'src/pages/index.hbs': '[{{> foo}}]{{title}}',
+      'src/partials/foo.hbs': 'V1',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
+      .generate()
+    await kiss.complete()
+    expect(fetches).toBe(1)
+
+    const a = kiss._requestReplay() // occupies the in-flight slot
+    await sleep(20)
+    await site.touch('src/partials/foo.hbs', 'V2')
+    kiss._handleChange('change', `${site.src}/partials/foo.hbs`)
+    expect(kiss._pendingReplay).toBe(true)
+    expect(kiss._pendingTargets.size).toBe(0)
+
+    await a
+    await drained()
+    expect(fetches).toBe(3) // initial build, the in-flight replay, the upgrade
+    expect(await site.read('public/index.html')).toBe('[V2]remote')
+  })
+
+  it('skips a queued rebuild target the stack no longer holds', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'v1' })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .page({ view: 'index.hbs' })
+      .generate()
+    await kiss.complete()
+    const stale = kiss._stack[0]
+    const rendered = vi.spyOn(stale.page, 'generate')
+
+    await kiss._requestReplay() // the replay discards the stack `stale` is from
+    await drained()
+    expect(kiss._stack[0]).not.toBe(stale)
+
+    await kiss._requestRebuild([stale])
+    await drained()
     expect(rendered).not.toHaveBeenCalled()
   })
 })

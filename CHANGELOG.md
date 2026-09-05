@@ -61,3 +61,10 @@ this file's `## 2.0.0` entry when the line is released._
   rebuild requested just before you closed kept running afterwards, so a clean
   or deploy step that ran once `close()` resolved raced files still being
   written — and could see the build folder recreated after it deleted it.
+
+**Changed**
+
+- Editing a partial or a layout while watching now re-renders every page without
+  re-reading your models, re-running your controllers or re-fetching a model
+  from a URL — the slow half of a rebuild, and none of it can be affected by a
+  partial. Every other non-page change is still a whole-site rebuild.
