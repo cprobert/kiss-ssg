@@ -59,7 +59,7 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettie
 
 Two automated nets, and they run the same script. A **pre-commit hook** (`.githooks/pre-commit`, activated per-clone by the npm `prepare` script) blocks a commit whose staged files fail prettier — it checks staged blob content, not the working tree, so it is immune to the CRLF noise of a Windows checkout. **CI** (`.github/workflows/ci.yml`) runs `npm run gates` on every push and PR to `main` and `v2`, and `prepublishOnly` runs the same gates before `npm publish` can ship anything. Neither replaces the ritual below: CI tells you a branch is broken, the ritual is what sweeps the docs, checks coverage, bumps the version and writes the reflection.
 
-**The base branch is resolved, not assumed.** `node scripts/base-branch.mjs` prints the integration branch the current work merges back into — `main`, or the major line in development (`v2` today). Every skill and script below uses it, so nothing has to be edited when v2 lands on main. Override with `git config kiss.baseBranch <name>`.
+**The base branch is resolved, not assumed.** `node scripts/base-branch.mjs` prints the integration branch the current work merges back into — `main`, or the major line in development (`v2` today). Every skill and script below uses it, so nothing has to be edited when v2 lands on main. Override with `git config kiss.baseBranch <name>` or `KISS_BASE_BRANCH` — an override in effect names itself on stderr (stdout stays the bare ref), and one that resolves to no ref is reported and ignored in favour of the algorithm.
 
 A branch runs as three beats, all reading one committed artefact — `planning/sessions/<date>-<slug>.md`:
 
