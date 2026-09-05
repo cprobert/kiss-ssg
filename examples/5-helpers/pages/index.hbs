@@ -1,60 +1,142 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Helpers</title>
+{{#extend "layout" showSource=true}}
+
+  {{!-- `sass` compiles a file and an inline block in one call, and the layout
+        keeps a head block open for exactly this. --}}
+  {{#content "head"}}
   <style>
-    {{#sass "5-helpers/assets/sass.scss"}}
-      #inline {
-          h2 {
-              color: red;
-          }
-      }
+    {{#sass "5-helpers/styles/board.scss"}}
+      $accent: #d9a066;
+      .chalkboard .price { color: $accent; }
     {{/sass}}
-
-    {{sass "5-helpers/assets/sass.scss"}}
   </style>
-</head>
-<body>
-  <h1>I am handlebars {{title}}</h1>
+  {{/content}}
 
-  <div id="inline">
-  {{#markdown}}
-    ## I'm a inline markdown
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 5 &middot; helpers</p>
+    <h1>Six built-in helpers</h1>
+    <p>
+      kiss registers six Handlebars helpers on every instance. Each one is doing real
+      work somewhere on this page.
+    </p>
+  </section>
 
-    - I make lists
-    - Easy
-  {{/markdown}}
+  <div class="grid">
+    <article class="card">
+      <h3>1. markdown</h3>
+      {{#markdown}}
+Written as a **block** in the page, straight to HTML:
+
+- no wrapper element needed
+- lists, emphasis and links all work
+      {{/markdown}}
+      <hr>
+      <p class="meta">And the same helper reading a string off the model:</p>
+      {{markdown model.tastingNotes}}
+      <hr>
+      {{> "tasting"}}
+    </article>
+
+    <article class="card chalkboard">
+      <h3>2. sass</h3>
+      <p>
+        The dark panel and the amber prices below are Sass, compiled during the render
+        and written into the page's own <code>&lt;style&gt;</code> tag —
+        a file on disk plus an inline block, in a single helper call.
+      </p>
+      <table>
+        <tbody>
+          <tr><td>Batch brew</td><td class="price">£2.60</td></tr>
+          <tr><td>Cortado</td><td class="price">£3.10</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="card">
+      <h3>3. offset</h3>
+      <p class="meta">
+        Handlebars counts from zero; <code>offset</code> turns that into a step number.
+      </p>
+      <ol style="list-style: none; padding-left: 0;">
+        {{#each model.steps}}
+        <li><strong>Step {{offset @index}}.</strong> {{this}}</li>
+        {{/each}}
+      </ol>
+    </article>
+
+    <article class="card">
+      <h3>4. isActive</h3>
+      <p class="meta">
+        The header nav uses it. Here it is again, spelled out — the same page, four
+        different links:
+      </p>
+      <table>
+        <thead><tr><th>href</th><th>folderMatch</th><th>on this page</th></tr></thead>
+        <tbody>
+          {{#isActive this href="index.html"}}
+          <tr><td><code>index.html</code></td><td>no</td><td>{{#if active}}<span class="tone-good">active</span>{{else}}—{{/if}}</td></tr>
+          {{/isActive}}
+          {{#isActive this href="/"}}
+          <tr><td><code>/</code></td><td>no</td><td>{{#if active}}<span class="tone-good">active</span>{{else}}—{{/if}}</td></tr>
+          {{/isActive}}
+          {{#isActive this href="brew-guide.html"}}
+          <tr><td><code>brew-guide.html</code></td><td>no</td><td>{{#if active}}<span class="tone-good">active</span>{{else}}—{{/if}}</td></tr>
+          {{/isActive}}
+          {{#isActive this href="" folderMatch=true}}
+          <tr><td><code>(site root)</code></td><td>yes</td><td>{{#if active}}<span class="tone-good">active</span>{{else}}—{{/if}}</td></tr>
+          {{/isActive}}
+        </tbody>
+      </table>
+    </article>
+
+    <article class="card">
+      <h3>5. env</h3>
+      {{#env is="dev"}}
+      <p class="tone-good">
+        <strong>Development.</strong> This build kept its whitespace, wrote a JSON sibling
+        beside every page and injected the live-reload script.
+      </p>
+      {{else}}
+      <p class="tone-note">
+        <strong>Production.</strong> This build was minified and nothing was injected.
+      </p>
+      {{/env}}
+      {{#env is="prod"}}
+      <p class="meta">The production branch of a second <code>env</code> block.</p>
+      {{else}}
+      <p class="meta">The development branch of a second <code>env</code> block.</p>
+      {{/env}}
+    </article>
+
+    <article class="card">
+      <h3>6. stringify</h3>
+      <p class="meta">Whatever is in scope, printed as JSON. Invaluable when a page is wrong.</p>
+      <pre><code>{{stringify model}}</code></pre>
+    </article>
   </div>
 
-  <div id="property">
-  {{#markdown model.markdown}}{{/markdown}}
+  <div class="card">
+    {{#if model.partials.dynamic}}
+    {{> (lookup model.partials 'dynamic')}}
+    {{/if}}
   </div>
+  {{/content}}
 
-  <div id="property">
-  {{markdown model.markdown}}
-  </div>
+  {{#content "demo"}}
+  <p>
+    Six helpers ship with kiss and all six are on this page: <code>markdown</code> renders
+    a block, a model string and a <code>.md</code> partial; <code>sass</code> compiles
+    <code>styles/board.scss</code> and an inline block into the page head;
+    <code>offset</code> numbers the brew steps from one; <code>isActive</code> lights the
+    nav and fills the little table above; <code>env</code> switches on
+    <code>dev</code>; and <code>stringify</code> dumps the model.
+  </p>
+  <p>
+    This example keeps its own partials folder — the Markdown card and the dynamic
+    partial live there — and takes only the layout and the stylesheet from
+    <code>_shared</code>. Register your own helpers on <code>kiss.handlebars</code>, which
+    is this instance's private Handlebars environment.
+  </p>
+  {{/content}}
 
-  <div >
-  {{> "markdown"}}
-  </div>
-
-  <div>
-  {{#if  model.partials.dynamic}}
-      {{> (lookup model.partials 'dynamic')}}
-  {{/if}}
-  </div>
-
-  {{#env is="development"}}
-    <p>Is Dev</p>
-  {{else}}
-    <p>Is NOT Dev</p>
-  {{/env}}
-
-  {{#env is="production"}}
-    <p>Is Production</p>
-  {{else}}
-    <p>Is NOT Production</p>
-  {{/env}}
-
-</body>
-</html>
+{{/extend}}

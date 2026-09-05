@@ -1,1 +1,54 @@
-<h1>Home</h1>
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 6 &middot; sitemap</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h3>Home</h3>
+      <p class="meta">Priority 1.00, no changefreq</p>
+      <p>The default treatment: every page is priority 1.00 unless it says otherwise.</p>
+    </article>
+    <article class="card">
+      <h3>About</h3>
+      <p class="meta">Priority 1.00, no changefreq</p>
+      <p><a href="about/index.html">Open the about page</a></p>
+    </article>
+    <article class="card">
+      <h3>Stockists</h3>
+      <p class="meta">Priority 0.50, changefreq weekly</p>
+      <p><a href="stockists/index.html">Open the stockists page</a></p>
+    </article>
+    <article class="card">
+      <h3>Roasting rota</h3>
+      <p class="meta tone-warn">Built and served, but not listed</p>
+      <p><a href="rota/index.html">Open the rota</a> — then look for it in the sitemap.</p>
+    </article>
+  </div>
+
+  <div class="callout">
+    <p><a href="sitemap.xml">Read the generated sitemap.xml</a></p>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <code>.sitemap()</code> writes <code>sitemap.xml</code> from the pages already
+    registered, so nothing is listed twice and nothing is invented. It needs
+    <code>siteUrl</code> in the config to turn each page into an absolute URL; without one
+    it logs an error and skips the file.
+  </p>
+  <p>
+    Two per-page options steer it. The rota sets <code>ignoreSitemap</code> and drops out
+    of the file entirely; the stockists page sets <code>sitemapPriority</code> and
+    <code>sitemapChangefreq</code> because it changes weekly and matters less than the
+    front page. <code>extensionLess</code> is a whole-site setting: pages build to
+    <code>about/index.html</code>, so the sitemap advertises tidy folder URLs.
+  </p>
+  {{/content}}
+
+{{/extend}}

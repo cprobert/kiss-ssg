@@ -1,4 +1,36 @@
 {
-  "title": "I am a title",
-  "name": "Courtenay Probert"
+  "title": "Today on the shelf",
+  "description": "What Aster & Oak has in stock this week.",
+  "heading": "Today on the shelf",
+  "lede": "Four coffees, roasted last Tuesday. When a bag count reaches zero we take the coffee down rather than restock it.",
+  "stock": [
+    {
+      "name": "Guji Uraga",
+      "origin": "Ethiopia",
+      "process": "Washed",
+      "price": "£11.50",
+      "bagsLeft": 42
+    },
+    {
+      "name": "Finca La Ilusión",
+      "origin": "Colombia",
+      "process": "Honey",
+      "price": "£12.00",
+      "bagsLeft": 9
+    },
+    {
+      "name": "Nyeri Gatomboya",
+      "origin": "Kenya",
+      "process": "Washed",
+      "price": "£13.25",
+      "bagsLeft": 17
+    },
+    {
+      "name": "Arch Blend",
+      "origin": "Brazil & Peru",
+      "process": "Natural",
+      "price": "£9.75",
+      "bagsLeft": 88
+    }
+  ]
 }

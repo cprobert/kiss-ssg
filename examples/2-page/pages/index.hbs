@@ -1,7 +1,59 @@
-<html>
-  <body>
-    <h1>Hello {{model.name}}</h1>
+{{#extend "layout" showSource=true}}
 
-    <p>I'm a handlebars page. Generated with data from  a model.</p>
-  </body>
-</html>
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 2 &middot; page</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Coffee</th><th>Origin</th><th>Process</th><th>Bags left</th><th>Price</th></tr>
+      </thead>
+      <tbody>
+        {{#each model.stock}}
+        <tr>
+          <td><strong>{{name}}</strong></td>
+          <td>{{origin}}</td>
+          <td><span class="tag">{{process}}</span></td>
+          <td>{{#if low}}<span class="tone-warn">{{bagsLeft}} — nearly out</span>{{else}}{{bagsLeft}}{{/if}}</td>
+          <td class="price">{{price}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <p class="meta">Ordered by the controller, scarcest first.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Roast notes feed</h3>
+      <p class="meta">The same page machinery, written out as XML instead of HTML.</p>
+      <p><a href="feed.xml">Open feed.xml</a></p>
+    </div>
+    <div class="card">
+      <h3>A page with no view file</h3>
+      <p class="meta">Its template is a string in the build script.</p>
+      <p><a href="hello-snippet.html">Open hello-snippet.html</a></p>
+    </div>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    Every page here is registered by hand with <code>.page()</code>. This one names only
+    its view: kiss looks for <code>models/index.json</code> and
+    <code>controllers/index.js</code> beside it and wires them up because the filenames
+    match. The roastery page names all three parts instead.
+  </p>
+  <p>
+    The other two show what a "page" can be. <code>feed.xml</code> takes an object model
+    and a controller written inline in the script, and sets <code>ext</code> so it lands as
+    XML. <code>hello-snippet.html</code> has no view file at all &mdash; its view <em>is</em>
+    the markup, which is why it has to be given a slug of its own.
+  </p>
+  {{/content}}
+
+{{/extend}}

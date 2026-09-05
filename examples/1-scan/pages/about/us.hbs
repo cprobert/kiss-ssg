@@ -1,4 +1,30 @@
-<p>
-  I'm your friendly
-  {{model.name}}
-</p>
+{{#extend "layout" root="../"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">About</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="grid">
+    {{#each model.team}}
+    <article class="card">
+      <h3>{{name}}</h3>
+      <p class="meta"><span class="tag">{{role}}</span></p>
+      <p>{{note}}</p>
+    </article>
+    {{/each}}
+  </div>
+
+  <div class="callout">
+    <p>
+      This page lives at <code>pages/about/us.hbs</code> and its model at
+      <code>models/about/us.json</code>. <code>.scan()</code> paired them by path and built
+      the page to <code>about/us.html</code> &mdash; one folder down, which is why this page
+      sets its climb back to the site root.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}

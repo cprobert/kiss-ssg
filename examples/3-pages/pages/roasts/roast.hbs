@@ -1,0 +1,41 @@
+{{#extend "layout" root="../"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">{{model.origin}}</p>
+    <h1>{{model.name}}</h1>
+    <p>{{model.description}}</p>
+  </section>
+
+  <div class="grid">
+    <div class="card">
+      <h3>In the cup</h3>
+      <p>{{#each model.tasting}}<span class="tag">{{this}}</span> {{/each}}</p>
+      <p class="price">{{model.price}} for 250 g</p>
+    </div>
+    <div class="card">
+      <h3>How we brew it</h3>
+      <p>{{model.brew}}</p>
+      <p class="meta">Roast level: {{model.roast}}</p>
+    </div>
+    <div class="card">
+      <h3>Where it comes from</h3>
+      <table>
+        <tbody>
+          <tr><th>Producer</th><td>{{model.producer}}</td></tr>
+          <tr><th>Altitude</th><td>{{model.altitude}}</td></tr>
+          <tr><th>Process</th><td>{{model.process}}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>
+      One view, <code>roasts/roast.hbs</code>, built this page and the five beside it.
+      <a href="index.html">Back to every roast</a>.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}

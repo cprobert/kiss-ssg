@@ -1,2 +1,35 @@
-<p>I am: {{model.name}}</p>
-<div>Hello World!</div>
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">The roastery</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="card">
+    <h3>This week on the drum</h3>
+    <table>
+      <thead><tr><th>Day</th><th>Coffee</th><th>Kilos</th></tr></thead>
+      <tbody>
+        {{#each model.batches}}
+        <tr><td>{{day}}</td><td>{{coffee}}</td><td>{{kilos}}</td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <p class="meta">
+      <strong>{{model.totalKilos}} kg</strong> in total — added up by
+      <code>controllers/about.js</code>, not by the template.
+    </p>
+  </div>
+
+  <div class="callout">
+    <p>
+      This page was registered with its view, model and controller all named
+      explicitly, which is what you want as soon as one model feeds more than one
+      page.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}

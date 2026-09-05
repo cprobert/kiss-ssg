@@ -68,7 +68,7 @@ describe('generate()', () => {
 
 describe('complete()', () => {
   it('renders pages a generate callback scanned but never generated', async () => {
-    // The shape examples/3-pages.js ships: the callback scans, and those pages
+    // A callback that scans: those pages
     // land on the stack after the only generate() pass has iterated it.
     site = await makeSite({
       'src/pages/index.hbs': 'i',

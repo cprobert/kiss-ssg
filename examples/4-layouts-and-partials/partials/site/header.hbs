@@ -1,0 +1,18 @@
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="brand" href="{{root}}index.html">
+      <span class="brand__mark" aria-hidden="true">A&amp;O</span>
+      <span class="brand__text">
+        <strong>{{config.site.name}}</strong>
+        <small>{{config.site.tagline}}</small>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Site">
+      {{#each config.nav}}
+      {{#isActive .. href=href label=label root=../root active="is-active"}}
+      <a class="nav__link{{#if active}} {{active}}{{/if}}" href="{{root}}{{href}}"{{#if active}} aria-current="page"{{/if}}>{{label}}</a>
+      {{/isActive}}
+      {{/each}}
+    </nav>
+  </div>
+</header>

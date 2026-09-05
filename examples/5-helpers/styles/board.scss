@@ -1,0 +1,19 @@
+// Compiled on the fly by the `sass` helper, straight into a <style> tag —
+// this file is never copied into the build.
+$chalk: #f4efe7;
+
+.chalkboard {
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  background: #2b2521;
+  color: $chalk;
+
+  h3 {
+    margin-top: 0;
+    color: $chalk;
+  }
+
+  td {
+    border-bottom-color: rgba(244, 239, 231, 0.18);
+  }
+}

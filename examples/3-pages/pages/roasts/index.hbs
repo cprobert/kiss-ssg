@@ -1,0 +1,22 @@
+{{#extend "layout" root="../"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">The list</p>
+    <h1>Every roast</h1>
+    <p>{{model.length}} coffees, each one built from its own file in <code>models/roasts</code>.</p>
+  </section>
+
+  <div class="grid">
+    {{#each model}}
+    <article class="card">
+      <h3><a href="{{slug}}.html">{{name}}</a></h3>
+      <p class="meta">{{origin}} &middot; {{process}} &middot; <span class="price">{{price}}</span></p>
+      <p>{{description}}</p>
+      <p>{{#each tasting}}<span class="tag">{{this}}</span> {{/each}}</p>
+    </article>
+    {{/each}}
+  </div>
+  {{/content}}
+
+{{/extend}}

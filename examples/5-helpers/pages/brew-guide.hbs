@@ -1,0 +1,34 @@
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Brew guide</p>
+    <h1>Three recipes, no arguing</h1>
+    <p>{{model.intro}}</p>
+  </section>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>#</th><th>Recipe</th><th>Ratio</th><th>Time</th></tr></thead>
+      <tbody>
+        {{#each model.recipes}}
+        <tr>
+          <td>{{offset @index}}</td>
+          <td><strong>{{name}}</strong></td>
+          <td>{{ratio}}</td>
+          <td>{{time}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p>
+      A second page so <code>isActive</code> has something to switch between — the nav
+      above marks this one, not the helpers page.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}

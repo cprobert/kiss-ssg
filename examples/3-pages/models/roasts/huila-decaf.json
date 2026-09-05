@@ -1,0 +1,12 @@
+{
+  "name": "Huila Decaf",
+  "origin": "Colombia",
+  "producer": "Sugarcane EA process",
+  "altitude": "1,650 m",
+  "process": "Decaffeinated",
+  "roast": "Medium",
+  "price": "£10.50",
+  "tasting": ["Dark cherry", "Almond", "Caramel"],
+  "description": "Decaf that does not taste like an apology. We roast it a shade darker to keep the body up.",
+  "brew": "Cafetiere, 60 g per litre, four minutes."
+}

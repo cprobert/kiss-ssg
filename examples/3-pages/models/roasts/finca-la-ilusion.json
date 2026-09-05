@@ -1,0 +1,12 @@
+{
+  "name": "Finca La Ilusion",
+  "origin": "Colombia",
+  "producer": "Marisol Vega",
+  "altitude": "1,720 m",
+  "process": "Honey",
+  "roast": "Light-medium",
+  "price": "£12.00",
+  "tasting": ["Red apple", "Toffee", "Cocoa nib"],
+  "description": "Marisol dries this one on raised beds for eighteen days. It rewards a slightly hotter brew than you would expect.",
+  "brew": "Aeropress, 17 g to 220 g, two minutes."
+}

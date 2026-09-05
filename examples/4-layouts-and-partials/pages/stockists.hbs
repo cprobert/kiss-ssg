@@ -1,0 +1,32 @@
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Stockists</p>
+    <h1>Where else to find us</h1>
+    <p>Fourteen cafes and two delis carry Aster & Oak. These are the ones with a grinder on the counter.</p>
+  </section>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Bristol</h3>
+      <p class="meta">Stokes Croft &middot; Bedminster &middot; Clifton Village</p>
+      <p>Deliveries on Wednesday morning, roasted the day before.</p>
+    </div>
+    <div class="card">
+      {{> (lookup model.partials 'board')}}
+    </div>
+    <div class="card">
+      {{> "sourcing"}}
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>
+      Same layout, same partials, different model — and no
+      <code>aside</code> block of its own, so the aside below is the layout's default.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}

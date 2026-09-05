@@ -1,4 +1,11 @@
 {
-  "title": "I am an about page",
-  "name": "About Me"
+  "title": "The roastery",
+  "description": "One drum roaster under a railway arch in Bristol.",
+  "heading": "One drum, three days a week",
+  "lede": "The arch is cold, the roaster is older than most of us, and the extractor is loud enough that we roast with the door open.",
+  "batches": [
+    { "day": "Tuesday", "coffee": "Guji Uraga", "kilos": 36 },
+    { "day": "Wednesday", "coffee": "Arch Blend", "kilos": 72 },
+    { "day": "Thursday", "coffee": "Nyeri Gatomboya", "kilos": 24 }
+  ]
 }

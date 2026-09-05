@@ -1,23 +1,64 @@
 {{#extend "layout"}}
-    {{#content "body"}}
-    <h1 style="color: red;">{{title}}</h1>
 
-    <div>
-    {{>"hbeg"}}
-    </div>
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 4 &middot; layouts and partials</p>
+    <h1>The bar under the arch</h1>
+    <p>
+      Two pages, one layout, five partials. Nothing on this page repeats markup that
+      another page already owns.
+    </p>
+  </section>
 
-    <div>
-    {{>"htmleg"}}
+  <div class="grid">
+    <div class="card">
+      {{!-- Chosen by the model, not by this template: swap the value in the
+            build script and a different board renders here. --}}
+      {{> (lookup model.partials 'board')}}
     </div>
+    <div class="card">
+      {{> "sourcing"}}
+    </div>
+  </div>
 
-    <div>
-    {{>"mdeg"}}
-    </div>
+  <section class="source-panel">
+    <h2>How this example works</h2>
+    <p>
+      The page you are reading is only the middle of a document.
+      <code>layouts/layout.hbs</code> holds the shell and marks four holes with
+      <code>block</code>; this page fills them with <code>content</code>. Blocks can carry
+      default markup, so the layout still renders when a page ignores one — the
+      <em>House notes</em> section below started as the layout's own text and this page
+      appended to it rather than replacing it.
+    </p>
+    <p>
+      Partials come in three flavours and all three are on this page:
+      <code>partials/site/header.hbs</code> and <code>site/footer.hbs</code> are Handlebars,
+      <code>partials/hours.html</code> is plain HTML, and <code>partials/sourcing.md</code>
+      is Markdown that kiss renders as it registers it — and which still reads the page's
+      model. The price board is a <em>dynamic</em> partial: the template does not name it,
+      the model does.
+    </p>
+    <details open>
+      <summary><code>{{config.script.file}}</code></summary>
+      <pre><code>{{config.script.text}}</code></pre>
+    </details>
+  </section>
+  {{/content}}
 
-    <div>
-    {{#if  model.partials.dynamic}}
-        {{> (lookup model.partials 'dynamic')}}
-    {{/if}}
-    </div>
-    {{/content}}
+  {{#content "aside"}}
+  <p>
+    This aside replaced the layout's default paragraph outright.
+    <a href="stockists.html">The stockists page</a> leaves it alone, so you can see the
+    default there.
+  </p>
+  {{/content}}
+
+  {{#content "notes" mode="append"}}
+  <p class="meta">
+    Appended by the home page, after the layout's own opening hours — that is
+    <code>mode="append"</code> rather than a straight replace.
+  </p>
+  {{/content}}
+
 {{/extend}}
