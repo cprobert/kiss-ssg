@@ -36,6 +36,9 @@ The default config options are:
   dev: false,
   verbose: false,
   cleanBuild: true,
+  port: 3001,
+  livereloadPort: 35729,
+  devHost: '127.0.0.1',
   folders: {
     src: './src',
     build: './public',
@@ -51,13 +54,16 @@ The default config options are:
 
 Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
 
-| Option     |  Default  |                                                                                                         Purpose                                                                                                          |
-| ---------- | :-------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| dev        |   false   | Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk. |
-| verbose    |   false   |                                                                               Enables additional output on the terminal, when set to true                                                                                |
-| cleanBuild |   true    |                                                                                 Removed all files from the build dir before generating.                                                                                  |
-| folders    | see above |                                                                                      A JSON object of alternative folder locations                                                                                       |
-| siteUrl    | undefined |                                                                                The site's base URL, required by `.sitemap()` (see below)                                                                                 |
+| Option         |   Default   |                                                                                                                              Purpose                                                                                                                               |
+| -------------- | :---------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| dev            |    false    |                      Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                      |
+| verbose        |    false    |                                                                                                    Enables additional output on the terminal, when set to true                                                                                                     |
+| cleanBuild     |    true     |                                                                                                      Removed all files from the build dir before generating.                                                                                                       |
+| port           |    3001     |                                                                                                       The port the dev server listens on (`dev: true` only)                                                                                                        |
+| livereloadPort |    35729    | The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process. |
+| devHost        | '127.0.0.1' |                                                     The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network.                                                     |
+| folders        |  see above  |                                                                                                           A JSON object of alternative folder locations                                                                                                            |
+| siteUrl        |  undefined  |                                                                                                     The site's base URL, required by `.sitemap()` (see below)                                                                                                      |
 
 <br />
 

@@ -134,6 +134,13 @@ this file's `## 2.0.0` entry when the line is released._
   logs the unexpected value and renders nothing, as it already did for a missing
   field. `{{#env is=…}}` given something that is not a string does the same
   instead of throwing.
+- Running a second site in dev mode no longer kills the process. Both sites'
+  live reload servers wanted the same port (35729) and the resulting
+  `EADDRINUSE` was an uncaught exception that took the whole dev process down —
+  even though `port` exists precisely so two sites can run side by side. A clash
+  is now logged, live reload is switched off for that site, and its dev server
+  keeps serving. Give the second site its own `livereloadPort` to get live
+  reload back on both.
 
 **Changed**
 
@@ -175,3 +182,12 @@ this file's `## 2.0.0` entry when the line is released._
 - `.registerPartials()`, `.viewStats()` and `.getModelByID(id, data)` are now
   documented in the README and `llms.txt`. They were always public — two of them
   are used in the shipped examples — but neither doc mentioned them.
+- `livereloadPort` (default `35729`) — the port the live reload server listens
+  on, and the one injected into the dev-mode reload `<script>`. Set it per site
+  so two sites can watch at once without fighting over the port, or pointing
+  each other's browsers at the wrong reload server.
+- `devHost` (default `'127.0.0.1'`) — the interface the dev and live reload
+  servers bind to. **Behaviour change:** dev mode used to bind every interface,
+  so the unbuilt site was reachable from anyone on your network even though the
+  log line said `localhost`; it is now loopback only. If you preview on your
+  phone or another machine, set `devHost: '0.0.0.0'`.

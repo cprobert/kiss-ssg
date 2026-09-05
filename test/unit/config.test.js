@@ -45,6 +45,8 @@ describe('resolveConfig', () => {
     expect(c.dev).toBe(false)
     expect(c.cleanBuild).toBe(true)
     expect(c.port).toBe(3001)
+    expect(c.livereloadPort).toBe(35729)
+    expect(c.devHost).toBe('127.0.0.1')
     expect(c.verbose).toBe(true)
     expect(c.sass.includePaths).toEqual(['x'])
     expect(c.folders.pages).toBe('./src/pages')

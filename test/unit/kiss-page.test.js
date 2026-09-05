@@ -18,6 +18,7 @@ const make = (view, opts = {}) => {
   if (opts.ext) page.ext = opts.ext
   page.extLess = !!opts.extLess
   page.isDev = !!opts.dev
+  if (opts.livereloadPort) page.livereloadPort = opts.livereloadPort
   page.options = opts.options || {}
   return page.prepare()
 }
@@ -89,6 +90,20 @@ describe('generate', () => {
     expect(html).toContain('livereload.js')
     expect(html).toContain('\n')
     expect(JSON.parse(await site.read('public/d.json')).pageURL).toBe('d.html')
+  })
+
+  it('injects the configured livereload port into the dev snippet', async () => {
+    site = await makeSite({})
+    const p = make('<body>\n<p>x</p>\n</body>', {
+      buildDir: site.build,
+      slug: 'lr',
+      dev: true,
+      livereloadPort: 41234,
+      options: { model: {} },
+    })
+    await p.generate()
+    const html = await site.read('public/lr.html')
+    expect(html).toContain('http://localhost:41234/livereload.js')
   })
 
   it('reads .hbs views from pagesDir', async () => {
