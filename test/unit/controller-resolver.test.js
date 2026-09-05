@@ -48,23 +48,31 @@ describe('applyController', () => {
     ).toBe('modern')
   })
 
-  it('leaves options alone when the file is missing or the controller throws', async () => {
+  it('rejects when the file is missing, the controller throws, or the type is unknown', async () => {
+    // Flipped by review finding F-01 (2026-09-05): all three used to be logged
+    // and ignored, so the page built with un-controlled options and the build
+    // still exited 0. A controller that cannot run is now a page failure.
     site = await makeSite({})
-    const missing = await applyController(
-      { controller: 'nope.js', title: 'keep' },
-      deps(`${site.root}/c`),
-    )
-    expect(missing.title).toBe('keep')
-    const thrown = await applyController(
-      {
-        title: 'keep',
-        controller: () => {
-          throw new Error('x')
+    await expect(
+      applyController(
+        { controller: 'nope.js', title: 'keep' },
+        deps(`${site.root}/c`),
+      ),
+    ).rejects.toThrow(/nope\.js/)
+    await expect(
+      applyController(
+        {
+          title: 'keep',
+          controller: () => {
+            throw new Error('x')
+          },
         },
-      },
-      deps(),
+        deps(),
+      ),
+    ).rejects.toThrow('x')
+    await expect(applyController({ controller: 42 }, deps())).rejects.toThrow(
+      /Unknown controller type/,
     )
-    expect(thrown.title).toBe('keep')
   })
 
   it('falls back to model.title when no title is set', async () => {

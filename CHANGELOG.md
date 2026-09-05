@@ -64,6 +64,21 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Changed**
 
+- A controller that throws, a controller file that is missing, and a controller
+  option of an unrecognised type now fail the build. Previously each was logged
+  and ignored, and the page was built and shipped from un-controlled options —
+  no derived slug, no reshaped model — with the build reporting success.
+- An error thrown by a `generate()` or `sitemap()` callback now fails the build
+  too, and is reported as `<generate callback>` / `<sitemap callback>` in
+  `err.failures`. Previously it was logged as "Error generating site" (or, more
+  misleadingly, "Error creating sitemap.xml" after the file had been written
+  correctly) and `complete()` still resolved, so a build that lost pages exited 0. A callback that returns a promise is covered too, as long as it rejects
+  before `complete()` finishes draining.
+- `complete()` now reports a build's failures once. A second `complete()` call
+  in the same build resolves instead of rejecting again — the documented
+  "`complete()` from inside a `generate` callback" pattern makes two calls race
+  one failure, and the second rejection had nothing attached to it, so it took
+  the process down after the first had already been handled and reported.
 - Editing a partial or a layout while watching now re-renders every page without
   re-reading your models, re-running your controllers or re-fetching a model
   from a URL — the slow half of a rebuild, and none of it can be affected by a
