@@ -47,6 +47,8 @@ node docs                # regenerate docs/ (dev mode, starts a server — does 
 npm run eg1 … eg6        # run an example (examples/*.js); most start a dev server and don't exit on their own
 ```
 
+`.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.
+
 Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettierignore`. `.hbs` templates are **not** prettier-formatted: its Handlebars parser rejects `{{> "partial"}}`, which every template here uses.
 
 ## Pipeline in one paragraph
@@ -64,6 +66,8 @@ A branch runs as three beats, all reading one committed artefact — `planning/s
 - **`/branch-open`** (Frame) — run on the base branch. Interviews for intent (objective, success criteria, non-goals, **impact surface**, expected shape), writes it to the session file, creates the branch. The impact surface (public API / engine internals / tooling & docs) is what `/branch-close` reads to propose the semver bump.
 - **`/branch-pulse`** (Steer) — run repeatedly mid-branch. Re-checks the captured success criteria with evidence (`npm test`, a `timeout`-bounded example run, a human eyeball), catches drift early, logs each checkpoint to the file's `## Pulse log`. Cheap and formative.
 - **`/branch-close`** (Verify & close) — the single end-of-branch command. Sequences `/secrets-scan`, `/docs-sweep`, `/corpse-collector`, the version bump, `/test-coverage-check --gate`, `npm run gates`, an optional Codex review, `/retrospective`, then pushes and opens the PR **against the base branch**. Never push manually without running it first.
+
+`/branch-close` also bumps the version in `package.json` and adds a `CHANGELOG.md` entry. Semver is a real promise here — this package is published — so the bump follows the branch's captured impact surface: public API additions are minor, breaking changes major, everything else patch. While the version carries a prerelease tag the bump is `npm version prerelease --preid alpha` unless the operator is deliberately cutting the release.
 
 **One open branch at a time.** Scope that drifts into adjacent work is absorbed on the current branch and recorded as a dated **Amendment** in the session file — never split into a new branch on Claude's initiative. Only the operator authorises a new branch.
 
