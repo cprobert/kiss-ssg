@@ -64,10 +64,11 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Changed**
 
-- A controller that throws, a controller file that is missing, and a controller
-  option of an unrecognised type now fail the build. Previously each was logged
-  and ignored, and the page was built and shipped from un-controlled options —
-  no derived slug, no reshaped model — with the build reporting success.
+- A controller that throws, a controller file that is missing, a controller
+  module that does not export a function, and a `controller` option of an
+  unrecognised type now fail the build. Previously each was logged and ignored,
+  and the page was built and shipped from un-controlled options — no derived
+  slug, no reshaped model — with the build reporting success.
 - An error thrown by a `generate()` or `sitemap()` callback now fails the build
   too, and is reported as `<generate callback>` / `<sitemap callback>` in
   `err.failures`. Previously it was logged as "Error generating site" (or, more

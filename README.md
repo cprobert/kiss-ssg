@@ -221,7 +221,7 @@ try {
 }
 ```
 
-A bad model is not a build failure — it is logged, that page is skipped, and it appears in the resolved data as `{ id, data: null, error }`. A bad controller _is_ a build failure: a controller that throws, one whose file is missing, and a `controller` option of an unrecognised type all fail that page and reject `.complete()`, rather than shipping a page built from un-controlled options. A missing or misspelled view file is a build failure too. So is an error thrown by a `.generate()` or `.sitemap()` callback — it is reported as `<generate callback>` / `<sitemap callback>` in `err.failures`. `.complete()` reports a build's failures once: a second call in the same build resolves rather than rejecting again.
+A bad model is not a build failure — it is logged, that page is skipped, and it appears in the resolved data as `{ id, data: null, error }`. A bad controller _is_ a build failure: a controller that throws, one whose file is missing, one whose module does not export a function, and a `controller` option of an unrecognised type all fail that page and reject `.complete()`, rather than shipping a page built from un-controlled options. A missing or misspelled view file is a build failure too. So is an error thrown by a `.generate()` or `.sitemap()` callback — it is reported as `<generate callback>` / `<sitemap callback>` in `err.failures`. `.complete()` reports a build's failures once: a second call in the same build resolves rather than rejecting again.
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server. It waits for a rebuild that is already running to finish, so once it resolves nothing more is written and it is safe to clean or deploy the build folder.
 

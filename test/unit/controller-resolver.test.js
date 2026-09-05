@@ -75,6 +75,23 @@ describe('applyController', () => {
     )
   })
 
+  it('rejects when the module does not export a function', async () => {
+    // The sibling of the three paths above (W2-1b): a controller file that
+    // loads but exports an object — or a falsy value, which the `if (fn)`
+    // guard used to drop before `runController` ever saw it — used to be
+    // logged and ignored, so the page built from un-controlled options.
+    site = await makeSite({
+      'c/object.js': 'module.exports = { title: "nope" }',
+      'c/falsy.mjs': 'export default 0',
+    })
+    await expect(
+      applyController({ controller: 'object.js' }, deps(`${site.root}/c`)),
+    ).rejects.toThrow(/not a function/)
+    await expect(
+      applyController({ controller: 'falsy.mjs' }, deps(`${site.root}/c`)),
+    ).rejects.toThrow(/not a function/)
+  })
+
   it('falls back to model.title when no title is set', async () => {
     const out = await applyController(
       { model: { title: 'From model' } },
