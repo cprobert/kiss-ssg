@@ -3,6 +3,31 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.0.0-alpha.5 — 2026-09-06
+
+**Faster, and safer under watch**
+
+Nothing about your site's output changes. Three follow-ups to the previous
+release's speed work, each measured on the same machine against the release
+before it:
+
+- **A template edit is always picked up under `watch`.** The compiled-template
+  cache now checks the view's content rather than its timestamp, so a save that
+  lands inside the same clock tick as the last one on a coarse-timestamp
+  filesystem (exFAT, some network and WSL2 mounts) no longer serves the old
+  template until your next save. A save that changes nothing no longer forces a
+  recompile either.
+- **A slow save no longer triggers a failed rebuild.** An editor that truncates
+  a file and writes it a moment later used to reach the watcher as an empty
+  file, fail the page with a spurious error, and then rebuild correctly. The
+  empty event is now ignored and only the real content rebuilds. The one trade:
+  a file you create empty is picked up once it has content.
+- **Larger production builds start a little sooner.** The HTML minifier now
+  starts loading as soon as `new Kiss()` runs rather than at the first page,
+  so its load overlaps model resolution. Around 5–11% off the build phase at 500
+  pages; no measurable change at 50, where there is too little work to hide it
+  behind. Dev builds never load it.
+
 ## 2.0.0-alpha.4 — 2026-09-06
 
 **Faster**
