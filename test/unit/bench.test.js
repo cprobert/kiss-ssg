@@ -11,6 +11,9 @@ import {
   fixturePlan,
   formatRow,
   parseArgs,
+  resolveSiteEntry,
+  scenariosToRun,
+  summariseReports,
   recordTarget,
   stats,
   summarise,
@@ -308,5 +311,119 @@ describe('recordTarget', () => {
 
   it('writes nothing when neither option is given', () => {
     expect(recordTarget({ json: null, baseline: null }, missing)).toBeNull()
+  })
+})
+
+describe('resolveSiteEntry', () => {
+  it('prefers an explicitly named entry over the package script', () => {
+    expect(
+      resolveSiteEntry({ scripts: { build: 'node site.js' } }, 'other.js'),
+    ).toBe('other.js')
+  })
+
+  it('reads a bare `node <script>` build script', () => {
+    expect(resolveSiteEntry({ scripts: { build: 'node build.js' } })).toBe(
+      'build.js',
+    )
+  })
+
+  it('tolerates surrounding whitespace', () => {
+    expect(resolveSiteEntry({ scripts: { build: '  node build.js  ' } })).toBe(
+      'build.js',
+    )
+  })
+
+  // Half-parsing a compound command would silently benchmark the wrong thing.
+  // Better to stop and make the operator name the script.
+  it.each([
+    'node build.js && node other.js',
+    'NODE_ENV=production node build.js',
+    'node build.js | tee log',
+    'npm run something',
+  ])('refuses to guess at %s', (build) => {
+    expect(resolveSiteEntry({ scripts: { build } })).toBeNull()
+  })
+
+  it('returns null when there is no package.json at all', () => {
+    expect(resolveSiteEntry(null)).toBeNull()
+    expect(resolveSiteEntry({})).toBeNull()
+  })
+})
+
+describe('summariseReports', () => {
+  const report = (over = {}) => ({
+    ok: true,
+    duration: 100,
+    pages: [{}, {}],
+    assets: [{}],
+    failures: [],
+    ...over,
+  })
+  const lines = (...rs) => rs.map((r) => JSON.stringify(r))
+
+  it('sums a single build report', () => {
+    expect(summariseReports(lines(report()))).toEqual({
+      builds: 1,
+      engine: 100,
+      pages: 2,
+      assets: 1,
+      failures: 0,
+      ok: true,
+    })
+  })
+
+  // A site that builds several Kiss instances (per-version outputs) must be
+  // summed, not reported as whichever build finished last.
+  it('sums across every instance a site built', () => {
+    const s = summariseReports(lines(report(), report({ duration: 50 })))
+    expect(s).toMatchObject({ builds: 2, engine: 150, pages: 4 })
+  })
+
+  it('is not ok when any instance failed', () => {
+    const s = summariseReports(
+      lines(report(), report({ ok: false, failures: [{}, {}] })),
+    )
+    expect(s.ok).toBe(false)
+    expect(s.failures).toBe(2)
+  })
+
+  it('skips blank and unparseable lines', () => {
+    expect(
+      summariseReports(['', '  ', 'not json', ...lines(report())]),
+    ).toMatchObject({ builds: 1 })
+  })
+
+  it('returns null when the run produced no report at all', () => {
+    expect(summariseReports([])).toBeNull()
+    expect(summariseReports(['', 'garbage'])).toBeNull()
+  })
+
+  it('tolerates a report missing its optional arrays', () => {
+    expect(summariseReports(lines({ ok: true, duration: 7 }))).toMatchObject({
+      builds: 1,
+      engine: 7,
+      pages: 0,
+      assets: 0,
+    })
+  })
+})
+
+describe('scenariosToRun', () => {
+  const opts = { site: [], scenario: ['scan', 'watch'] }
+
+  it('runs the fixture sweep when no site is named', () => {
+    expect(scenariosToRun(opts, false)).toEqual(['scan', 'watch'])
+  })
+
+  // Naming real sites means you want those, not a fixture sweep alongside them.
+  it('skips the fixture sweep when sites are named', () => {
+    expect(scenariosToRun({ ...opts, site: ['../a-site'] }, false)).toEqual([])
+  })
+
+  it('runs both when scenarios were asked for explicitly too', () => {
+    expect(scenariosToRun({ ...opts, site: ['../a-site'] }, true)).toEqual([
+      'scan',
+      'watch',
+    ])
   })
 })

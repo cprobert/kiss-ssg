@@ -59,6 +59,11 @@ npm run bench                  # benchmark harness: 5 scenarios over a generated
                                # --pages=50,500 --runs=5 --scenario=scan,watch
                                # --json=<f> records; --baseline=<f> compares against a record
                                # baseline for this branch: planning/benchmarks/baseline-main.json
+                               # --site=<path> times a REAL kiss-ssg site instead of the fixture:
+                               # runs its own build script, in its own cwd, with KISS_REPORT set;
+                               # nothing installed, linked or edited. Prints which kiss-ssg it
+                               # resolved, since two runs on different copies are not comparable.
+                               # --entry=<script> when package.json's build script isn't a bare `node x.js`
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg9        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```

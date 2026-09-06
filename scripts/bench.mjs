@@ -50,6 +50,18 @@ export const DEFAULTS = {
   loud: false,
   clean: false,
   profile: false,
+  // A comma-separated list of real kiss-ssg sites to time alongside (or instead
+  // of) the generated fixture. `--entry` names the build script when the site's
+  // package.json does not make it obvious.
+  site: [],
+  entry: null,
+}
+
+// Naming real sites means you want those sites, not a fixture sweep alongside
+// them — unless you asked for both by naming scenarios too.
+export function scenariosToRun(opts, scenarioWasExplicit) {
+  if (opts.site.length > 0 && !scenarioWasExplicit) return []
+  return opts.scenario
 }
 
 // `--json` always writes. `--baseline` compares against a file and writes it
@@ -423,6 +435,133 @@ async function until(predicate, timeout = 30000, interval = 2) {
 }
 
 // ---------------------------------------------------------------------------
+// Real sites
+// ---------------------------------------------------------------------------
+
+// A generated fixture is an argument about what a site looks like; a real site
+// is the thing itself. `--site=<path>` times a real one without touching it:
+// its own build script, in its own working directory, with `KISS_REPORT` set so
+// the engine reports what it built. Nothing is installed, linked or edited.
+//
+// Which kiss-ssg gets measured is whatever that site resolves — usually the
+// published one from its node_modules. The resolved path is printed with the
+// result, because a before/after where the two runs quietly measured different
+// copies of the engine is worse than no measurement at all.
+
+// package.json's build script is the site's own answer to "how is this built",
+// so prefer it over guessing a filename. Only a bare `node <script>` is read —
+// anything with a pipe, an env prefix or a chained command is left to the
+// operator to name explicitly, rather than half-parsed.
+export function resolveSiteEntry(pkg, explicit) {
+  if (explicit) return explicit
+  const script = pkg?.scripts?.build
+  const match = script && /^node\s+([^\s&|<>]+)\s*$/.exec(script.trim())
+  return match ? match[1] : null
+}
+
+// One line per settled build, so a site that constructs several Kiss instances
+// (an archive of per-version outputs, say) is summed rather than reported as
+// whichever build happened to finish last.
+export function summariseReports(lines) {
+  const reports = lines
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      try {
+        return JSON.parse(l)
+      } catch {
+        return null
+      }
+    })
+    .filter(Boolean)
+  if (reports.length === 0) return null
+  return {
+    builds: reports.length,
+    engine: reports.reduce((n, r) => n + (r.duration ?? 0), 0),
+    pages: reports.reduce((n, r) => n + (r.pages?.length ?? 0), 0),
+    assets: reports.reduce((n, r) => n + (r.assets?.length ?? 0), 0),
+    failures: reports.reduce((n, r) => n + (r.failures?.length ?? 0), 0),
+    ok: reports.every((r) => r.ok),
+  }
+}
+
+function resolveKissFrom(siteDir) {
+  const r = spawnSync(
+    process.execPath,
+    [
+      '-e',
+      "const{createRequire}=require('node:module');const rq=createRequire(process.cwd()+'/x.js');" +
+        "try{const p=rq.resolve('kiss-ssg');const pkg=rq('kiss-ssg/package.json');" +
+        "console.log(JSON.stringify({path:p,version:pkg.version}))}catch(e){console.log('null')}",
+    ],
+    { cwd: siteDir, encoding: 'utf8' },
+  )
+  try {
+    return JSON.parse(r.stdout.trim())
+  } catch {
+    return null
+  }
+}
+
+function benchSite(siteDir, opts) {
+  const dir = path.resolve(siteDir)
+  if (!fs.existsSync(dir)) throw new Error(`no such site directory: ${dir}`)
+  const pkgPath = path.join(dir, 'package.json')
+  const pkg = fs.existsSync(pkgPath)
+    ? JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+    : null
+  const entry = resolveSiteEntry(pkg, opts.entry)
+  if (!entry)
+    throw new Error(
+      `could not work out how to build ${dir} — name it with --entry=<script>`,
+    )
+  if (!fs.existsSync(path.join(dir, entry)))
+    throw new Error(`entry script not found: ${path.join(dir, entry)}`)
+
+  const resolved = resolveKissFrom(dir)
+  const reportFile = path.join(BENCH_DIR, `report-${process.pid}.jsonl`)
+  const samples = []
+  const run = () => {
+    fs.rmSync(reportFile, { force: true })
+    const started = now()
+    const r = spawnSync(process.execPath, [entry], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...process.env, KISS_REPORT: reportFile, NO_COLOR: '1' },
+      // A site that fetches URL models can sit for a long time; better a clear
+      // timeout than a bench that looks hung.
+      timeout: 600000,
+    })
+    const processMs = now() - started
+    const lines = fs.existsSync(reportFile)
+      ? fs.readFileSync(reportFile, 'utf8').split('\n')
+      : []
+    const summary = summariseReports(lines)
+    if (r.status !== 0 && !summary)
+      throw new Error(
+        `build failed in ${dir}:\n${(r.stderr || r.stdout || '').trim().split('\n').slice(-15).join('\n')}`,
+      )
+    return { process: processMs, ...(summary ?? {}) }
+  }
+
+  // Same warmup rule as the fixture scenarios: the first build of a checkout
+  // pays for a cold page cache no later run repeats.
+  run()
+  for (let i = 0; i < opts.runs; i++) samples.push(run())
+  fs.rmSync(reportFile, { force: true })
+
+  return {
+    site: path.basename(dir),
+    entry,
+    kiss: resolved,
+    builtPages: samples[0]?.pages ?? null,
+    builds: samples[0]?.builds ?? null,
+    ok: samples.every((s) => s.ok !== false),
+    phases: summarise(samples),
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Parent: spawn, aggregate, report
 // ---------------------------------------------------------------------------
 
@@ -499,10 +638,21 @@ async function main(argv) {
     scenarios: {},
   }
 
-  for (const pages of opts.pages) {
+  for (const site of opts.site) {
+    const key = `site:${path.basename(path.resolve(site))}`
+    process.stderr.write(`  running ${key} …`)
+    results.scenarios[key] = benchSite(site, opts)
+    process.stderr.write(' done\n')
+  }
+
+  const scenarios = scenariosToRun(
+    opts,
+    argv.some((a) => a.startsWith('--scenario')),
+  )
+  for (const pages of scenarios.length ? opts.pages : []) {
     const dir = path.join(BENCH_DIR, `fixture-${pages}`)
     buildFixture(dir, pages)
-    for (const scenario of opts.scenario) {
+    for (const scenario of scenarios) {
       const key = scenario === 'startup' ? 'startup' : `${scenario}@${pages}`
       if (results.scenarios[key]) continue
       process.stderr.write(`  running ${key} …`)
@@ -557,7 +707,15 @@ function print(results, baseline) {
     )
   for (const [key, result] of Object.entries(results.scenarios)) {
     const built = result.builtPages ? `, ${result.builtPages} pages built` : ''
-    console.log(`\n${key}${built}`)
+    const builds = result.builds > 1 ? `, ${result.builds} Kiss instances` : ''
+    console.log(`\n${key}${built}${builds}`)
+    // Which engine actually ran is part of the result, not a footnote: two runs
+    // that resolved different copies of kiss-ssg are not comparable.
+    if (result.kiss !== undefined)
+      console.log(
+        `  engine: ${result.kiss ? `kiss-ssg@${result.kiss.version} — ${result.kiss.path}` : 'kiss-ssg did not resolve from this site'}`,
+      )
+    if (result.entry) console.log(`  entry:  ${result.entry}`)
     console.log(
       `  ${'phase'.padEnd(28)} ${'median'.padStart(9)} ${'min'.padStart(9)} ${'max'.padStart(9)}${baseline ? `${'Δ'.padStart(11)}` : ''}`,
     )
