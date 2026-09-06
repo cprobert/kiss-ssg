@@ -12,7 +12,7 @@ Resolves `options.controller` (a function, or a filename to load) and runs it ag
 
 ## Depends on
 
-`fs-extra`, `node:path`, `node:url` (`pathToFileURL`).
+`fs-extra`, `node:path`, `node:url` (`pathToFileURL`), `node:module` (`createRequire`, used by the `fresh` cache-bust).
 
 ## Depended on by
 
