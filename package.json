@@ -32,6 +32,7 @@
     "prepublishOnly": "npm run gates",
     "test": "vitest run",
     "types": "node scripts/emit-types.mjs",
+    "version": "node scripts/sync-plugin-versions.mjs && git add .claude-plugin/marketplace.json plugins/kiss-ssg/.claude-plugin/plugin.json",
     "gates": "node scripts/gates.mjs",
     "bench": "node scripts/bench.mjs",
     "test:watch": "vitest",
