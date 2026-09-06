@@ -1,6 +1,6 @@
 export function createWatcher({ config, entry, rebuildSite, onChange, assetsChanged, logger, }: {
     config: any;
-    entry?: any;
+    entry?: string;
     rebuildSite: any;
     onChange: any;
     assetsChanged: any;

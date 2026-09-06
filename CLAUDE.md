@@ -47,8 +47,10 @@ npm test                 # Vitest, single run
 npm run test:watch
 npm run test:coverage
 npm run lint             # ESLint (flat config, eslint.config.js)
+npm run typecheck        # tsc --checkJs over lib/, scripts/ and bin/ — checks only, never emits
+                         # (tsconfig.check.json; tsconfig.types.json is the one that emits types/)
 npm run format           # Prettier, write; format:check to verify
-npm run gates            # the four pre-PR gates: test, lint, format, pack
+npm run gates            # the five pre-PR gates: test, lint, typecheck, format, pack
 npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing
                                # e.g. from examples/: `node ../bin/kiss-ssg.js check 8-data-fed-site.js`
                                # (exits 1 — example 8 fails one page on purpose)
@@ -107,3 +109,4 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
 - Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit.
+- JSDoc is the type source, and it is checked: `npm run typecheck` (a gate) runs `tsc --checkJs` over `lib/`, `scripts/` and `bin/`. A private class field annotated with `@type` needs `@private` in the _same_ JSDoc block — a second comment displaces it and the field lands in the published `types/`, which `test/unit/types.test.js` rejects.

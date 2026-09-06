@@ -211,7 +211,7 @@ declare class Kiss {
     private _watcher;
     /** @private */
     private _devServer;
-    /** @private */
+    /** @private @type {Promise<any>} */
     private _assetQueue;
     /** @private */
     private _stagingDir;

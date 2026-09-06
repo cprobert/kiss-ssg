@@ -38,6 +38,7 @@
     "test:coverage": "vitest run --coverage",
     "docs": "node docs",
     "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.check.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "eg1": "cd examples && node 1-scan",
@@ -76,6 +77,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.1",
     "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",

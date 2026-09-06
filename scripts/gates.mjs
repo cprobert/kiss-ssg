@@ -112,6 +112,20 @@ export function formatGate(base, diff, run) {
 const GATES = [
   { name: 'test', fix: 'npm test', run: () => run('npx', ['vitest', 'run']) },
   { name: 'lint', fix: 'npm run lint', run: () => run('npx', ['eslint', '.']) },
+  // Types are published, so they are worth checking rather than only emitting.
+  // `tsconfig.check.json` is a separate config from the emitting one on
+  // purpose: the emit has to stay tolerant (`checkJs: false`) to produce
+  // declarations at all, so a single config could not both emit and complain.
+  {
+    name: 'typecheck',
+    fix: 'npm run typecheck',
+    run: () =>
+      run('node', [
+        'node_modules/typescript/bin/tsc',
+        '-p',
+        'tsconfig.check.json',
+      ]),
+  },
   {
     name: 'format',
     fix: 'npx prettier --write <files>',

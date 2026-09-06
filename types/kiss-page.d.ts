@@ -1,5 +1,13 @@
 export class KissPage {
-    constructor(view: any, { hbs, logger }?: {});
+    /**
+     * @param {string} view a `.hbs` filename under `pagesDir`, or inline template
+     *   source
+     * @param {{ hbs?: any, logger?: any }} [deps]
+     */
+    constructor(view: string, { hbs, logger }?: {
+        hbs?: any;
+        logger?: any;
+    });
     _path: string;
     _slug: string;
     _ext: string;
@@ -12,7 +20,8 @@ export class KissPage {
     options: {};
     buildDir: string;
     pagesDir: string;
-    livereloadPort: 35729;
+    /** @type {number} */
+    livereloadPort: number;
     hbs: any;
     logger: any;
     set path(path: any);
