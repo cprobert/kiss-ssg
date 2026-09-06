@@ -52,3 +52,5 @@ Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`
 ## Types
 
 `registerHandlebarsHelpers` carries JSDoc for the generated `types/handlebars-helpers.d.ts` — `hbs` is `typeof import('handlebars')`, `config` is `KissConfig` from `lib/config.js`, and `deps.logger` is `ReturnType<typeof createLogger>`. The helpers themselves are Handlebars runtime (variadic argument lists whose last entry is Handlebars' own options object), so they are documented one line each rather than typed: the shape a template calls them with is not expressible as a function signature. `deps.markdown` is `any` because `remarkable` ships no types. Regenerate with `npm run types`.
+
+- **The `sass` helper loads the compiler through `loadSass()` on first use** — see `AIKB/sass.md`. Registering the helper does not load `sass`; calling it does, so a site whose templates never use `{{sass}}` never pays for the package.
