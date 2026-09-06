@@ -151,7 +151,7 @@ Use `/test-coverage-check` (no flag) mid-branch for advisory suggestions on what
 npm run gates
 ```
 
-`scripts/gates.mjs` runs four gates — **test** (`vitest run`, which includes `test/aikb.test.js`'s docs-sync check), **lint** (`eslint .`), **format** (`prettier --check` on the files this branch changed), and **pack** (`npm pack --dry-run`, proving `lib/`, `llms.txt` and `AIKB/` are all still in the published tarball) — printing a compact pass/fail line per gate with the salient tail on failure, and exiting non-zero if any fail.
+`scripts/gates.mjs` runs five gates — **test** (`vitest run`, which includes `test/aikb.test.js`'s docs-sync check), **lint** (`eslint .`), **typecheck** (`tsc -p tsconfig.check.json` — checks `lib/`, `scripts/` and `bin/` against their JSDoc, never emits), **format** (`prettier --check` on the files this branch changed), and **pack** (`npm pack --dry-run`, proving `lib/`, `llms.txt` and `AIKB/` are all still in the published tarball) — printing a compact pass/fail line per gate with the salient tail on failure, and exiting non-zero if any fail.
 
 CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so green here is green there — running it now just means you find out in seconds rather than after the push. Treat a red gate as a hard stop: fix, commit, and re-run `/branch-close` (docs-sweep is idempotent and corpse-collector is read-only, so re-running the earlier steps is cheap). Do not run the retrospective or push until green.
 
@@ -199,7 +199,7 @@ The PR body is the same in every case:
 
 ## Test plan
 
-- [ ] `npm run gates` passes (test, lint, format, pack)
+- [ ] `npm run gates` passes (test, lint, typecheck, format, pack)
 - [ ] <the intent's Success criteria, if captured, each as a checkbox>
 ```
 
