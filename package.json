@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.0.0-alpha.3",
+  "version": "2.0.0-alpha.4",
   "description": "Simple Static Website Generator",
   "main": "lib/kiss.js",
   "types": "./types/kiss.d.ts",
@@ -33,10 +33,12 @@
     "test": "vitest run",
     "types": "node scripts/emit-types.mjs",
     "gates": "node scripts/gates.mjs",
+    "bench": "node scripts/bench.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "docs": "node docs",
     "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.check.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "eg1": "cd examples && node 1-scan",
@@ -75,6 +77,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.1",
     "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",

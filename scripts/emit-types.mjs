@@ -32,6 +32,9 @@ export function quoteStringExportNames(declaration) {
   )
 }
 
+/**
+ * @param {{ outDir?: string }} [options] where to write; defaults to `types/`
+ */
 export function emitTypes({ outDir } = {}) {
   const target = outDir ? path.resolve(outDir) : path.join(ROOT, 'types')
   const result = spawnSync(

@@ -128,10 +128,13 @@ npm version patch|minor|major|prerelease --preid alpha --no-git-tag-version
 
 `--no-git-tag-version` edits `package.json` and `package-lock.json` without creating a git tag — the PR merge is the version event, and publishing is a separate deliberate act.
 
+Three files carry this version: `package.json` and the two plugin manifests (`.claude-plugin/marketplace.json`, `plugins/kiss-ssg/.claude-plugin/plugin.json`), and `test/unit/plugin-manifests.test.js` fails if they disagree. You do not have to edit them: npm's `version` lifecycle hook runs `scripts/sync-plugin-versions.mjs` as part of the command above — including under `--no-git-tag-version` — so the manifests move with the bump. `git add` them along with the manifest below.
+
 User-visible changes also get an entry in `CHANGELOG.md` at the repo root, written for someone building a site with kiss-ssg, not for someone maintaining it. Create the file if it does not exist yet (newest version first, `## <version> — <date>` headings). Write it alongside the bump, then commit both:
 
 ```bash
-git add package.json package-lock.json CHANGELOG.md
+git add package.json package-lock.json CHANGELOG.md \
+  .claude-plugin/marketplace.json plugins/kiss-ssg/.claude-plugin/plugin.json
 git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
 ```
 
@@ -151,7 +154,7 @@ Use `/test-coverage-check` (no flag) mid-branch for advisory suggestions on what
 npm run gates
 ```
 
-`scripts/gates.mjs` runs four gates — **test** (`vitest run`, which includes `test/aikb.test.js`'s docs-sync check), **lint** (`eslint .`), **format** (`prettier --check` on the files this branch changed), and **pack** (`npm pack --dry-run`, proving `lib/`, `llms.txt` and `AIKB/` are all still in the published tarball) — printing a compact pass/fail line per gate with the salient tail on failure, and exiting non-zero if any fail.
+`scripts/gates.mjs` runs five gates — **test** (`vitest run`, which includes `test/aikb.test.js`'s docs-sync check), **lint** (`eslint .`), **typecheck** (`tsc -p tsconfig.check.json` — checks `lib/`, `scripts/` and `bin/` against their JSDoc, never emits), **format** (`prettier --check` on the files this branch changed), and **pack** (`npm pack --dry-run`, proving `lib/`, `llms.txt` and `AIKB/` are all still in the published tarball) — printing a compact pass/fail line per gate with the salient tail on failure, and exiting non-zero if any fail.
 
 CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so green here is green there — running it now just means you find out in seconds rather than after the push. Treat a red gate as a hard stop: fix, commit, and re-run `/branch-close` (docs-sweep is idempotent and corpse-collector is read-only, so re-running the earlier steps is cheap). Do not run the retrospective or push until green.
 
@@ -199,7 +202,7 @@ The PR body is the same in every case:
 
 ## Test plan
 
-- [ ] `npm run gates` passes (test, lint, format, pack)
+- [ ] `npm run gates` passes (test, lint, typecheck, format, pack)
 - [ ] <the intent's Success criteria, if captured, each as a checkbox>
 ```
 

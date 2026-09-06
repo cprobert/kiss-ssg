@@ -97,6 +97,40 @@ describe('createWatcher', () => {
     await waitFor(() => calls.change.some(([event]) => event === 'addDir'))
   })
 
+  // Guards the `awaitWriteFinish` threshold. It is deliberately short — it is
+  // the whole of the dev loop's felt latency — so this pins the property that
+  // buys: an editor that writes in more than one syscall (truncate, then
+  // write) must never be observed mid-write. The content is captured *inside*
+  // the handler, because by the time an assertion runs the file is complete
+  // either way, and a test that read it later would pass even with no settle
+  // at all.
+  it('does not report a file that is still being written', async () => {
+    const complete = 'chunk-one/chunk-two'
+    site = await makeSite({ 'src/pages/index.hbs': 'seed' })
+    const seen = []
+    const { wiring } = spy()
+    handle = createWatcher({
+      config: folders(site),
+      entry: null,
+      ...wiring,
+      onChange: (event, p) => {
+        if (p.endsWith('pages/index.hbs')) seen.push(fs.readFileSync(p, 'utf8'))
+      },
+    })
+    await handle.ready
+
+    // Two syscalls, a gap far shorter than the settle threshold: chokidar has
+    // to coalesce them, so the half-written 'chunk-one/' is never reported.
+    const file = `${site.src}/pages/index.hbs`
+    fs.writeFileSync(file, 'chunk-one/')
+    await new Promise((r) => setTimeout(r, 2))
+    fs.appendFileSync(file, 'chunk-two')
+
+    await waitFor(() => seen.length >= 1)
+    expect(seen).not.toContain('chunk-one/')
+    expect(seen.every((body) => body === complete)).toBe(true)
+  })
+
   it('forwards an unlink like any other event', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',

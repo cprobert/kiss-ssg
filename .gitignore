@@ -108,3 +108,4 @@ docs/*.json
 
 # superpowers SDD scratch workspace (ledgers, briefs, review packages)
 .superpowers/
+.bench/

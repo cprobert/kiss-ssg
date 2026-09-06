@@ -47,13 +47,31 @@ npm test                 # Vitest, single run
 npm run test:watch
 npm run test:coverage
 npm run lint             # ESLint (flat config, eslint.config.js)
+npm run typecheck        # tsc --checkJs over lib/, scripts/ and bin/ — checks only, never emits
+                         # (tsconfig.check.json; tsconfig.types.json is the one that emits types/)
 npm run format           # Prettier, write; format:check to verify
-npm run gates            # the four pre-PR gates: test, lint, format, pack
+npm run gates            # the five pre-PR gates: test, lint, typecheck, format, pack
 npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing
                                # e.g. from examples/: `node ../bin/kiss-ssg.js check 8-data-fed-site.js`
                                # (exits 1 — example 8 fails one page on purpose)
 npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
+node scripts/sync-plugin-versions.mjs   # carry package.json's version into both plugin
+                               # manifests. Wired to npm's `version` lifecycle, so
+                               # `npm version` already ran it — this is the manual escape hatch.
+npm run bench                  # benchmark harness: 6 scenarios over a generated fixture,
+                               # fresh child process per iteration, median of N runs
+                               # --pages=50,500 --runs=5 --scenario=scan,watch
+                               # scenarios: startup, scan, models, fanout, watch, styled
+                               # (`styled` reproduces a real site's shape: a shared stylesheet
+                               # compiled by the {{sass}} helper on every page)
+                               # --json=<f> records; --baseline=<f> compares against a record
+                               # baseline for this branch: `planning/benchmarks/baseline-main.json`
+                               # --site=<path> times a REAL kiss-ssg site instead of the fixture:
+                               # runs its own build script, in its own cwd, with KISS_REPORT set;
+                               # nothing installed, linked or edited. Prints which kiss-ssg it
+                               # resolved, since two runs on different copies are not comparable.
+                               # --entry=<script> when package.json's build script isn't a bare `node x.js`
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg9        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```
@@ -94,3 +112,4 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
 - Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit.
+- JSDoc is the type source, and it is checked: `npm run typecheck` (a gate) runs `tsc --checkJs` over `lib/`, `scripts/` and `bin/`. A private class field annotated with `@type` needs `@private` in the _same_ JSDoc block — a second comment displaces it and the field lands in the published `types/`, which `test/unit/types.test.js` rejects.

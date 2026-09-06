@@ -168,3 +168,86 @@ describe('generate', () => {
     expect(await site.exists('public/n.html')).toBe(false)
   })
 })
+
+// The template cache is the reason `_getTemplate` no longer reads and compiles
+// on every render. These pin the three properties that make it safe rather
+// than the fact that it is fast.
+describe('template caching', () => {
+  let site
+  afterEach(async () => {
+    if (site) await site.cleanup()
+  })
+
+  const pageOn = (hbs, view, opts) => {
+    const page = new KissPage(view, { hbs, logger: silentLogger })
+    page.buildDir = opts.buildDir
+    page.pagesDir = opts.pagesDir
+    page.slug = opts.slug
+    page.options = opts.options || {}
+    return page.prepare()
+  }
+
+  it('compiles a repeated view once and renders each page with its own model', async () => {
+    site = await makeSite({ 'pages/item.hbs': '<p>{{model.a}}</p>' })
+    const hbs = Handlebars.create()
+    let compiles = 0
+    const realCompile = hbs.compile.bind(hbs)
+    hbs.compile = (text) => {
+      compiles++
+      return realCompile(text)
+    }
+    const opts = { buildDir: site.build, pagesDir: `${site.root}/pages` }
+
+    for (const a of [1, 2, 3])
+      await pageOn(hbs, 'item.hbs', {
+        ...opts,
+        slug: `s${a}`,
+        options: { model: { a } },
+      }).generate()
+
+    expect(compiles).toBe(1)
+    // The cached template is shared; the output must not be.
+    expect(await site.read('public/s1.html')).toBe('<p>1</p>')
+    expect(await site.read('public/s2.html')).toBe('<p>2</p>')
+    expect(await site.read('public/s3.html')).toBe('<p>3</p>')
+  })
+
+  // The reason the cache hangs off a WeakMap on the environment rather than a
+  // module-level Map: `hbs.compile` closes over the environment it was called
+  // on, so a template compiled against one instance's helpers must never be
+  // served to another's. Two environments, same view path, different helper.
+  it('does not share a compiled template between Handlebars environments', async () => {
+    site = await makeSite({ 'pages/v.hbs': '<p>{{shout}}</p>' })
+    const opts = { buildDir: site.build, pagesDir: `${site.root}/pages` }
+
+    const first = Handlebars.create()
+    first.registerHelper('shout', () => 'FIRST')
+    const second = Handlebars.create()
+    second.registerHelper('shout', () => 'SECOND')
+
+    await pageOn(first, 'v.hbs', { ...opts, slug: 'one' }).generate()
+    await pageOn(second, 'v.hbs', { ...opts, slug: 'two' }).generate()
+
+    expect(await site.read('public/one.html')).toBe('<p>FIRST</p>')
+    expect(await site.read('public/two.html')).toBe('<p>SECOND</p>')
+  })
+
+  it('recompiles after the view file changes', async () => {
+    site = await makeSite({ 'pages/e.hbs': '<p>before</p>' })
+    const hbs = Handlebars.create()
+    const opts = { buildDir: site.build, pagesDir: `${site.root}/pages` }
+
+    await pageOn(hbs, 'e.hbs', { ...opts, slug: 'a' }).generate()
+    expect(await site.read('public/a.html')).toBe('<p>before</p>')
+
+    // Stamped rather than raced: a filesystem's mtime granularity can be
+    // coarser than the gap between two writes in a test.
+    const file = path.join(site.root, 'pages/e.hbs')
+    await fs.outputFile(file, '<p>after</p>')
+    const future = new Date(Date.now() + 2000)
+    fs.utimesSync(file, future, future)
+
+    await pageOn(hbs, 'e.hbs', { ...opts, slug: 'b' }).generate()
+    expect(await site.read('public/b.html')).toBe('<p>after</p>')
+  })
+})

@@ -9,6 +9,6 @@
 
 ## Test plan
 
-- [ ] `npm run gates` passes (test, lint, format, pack)
+- [ ] `npm run gates` passes (test, lint, typecheck, format, pack)
 
 <!-- Then the success criteria captured at /branch-open, each as a checkbox. -->

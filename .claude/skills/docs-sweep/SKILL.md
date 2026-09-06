@@ -122,7 +122,7 @@ Do not guess at these — surface them explicitly in the report:
 | Gate                                  | What it catches                                                                                                                  | When it runs                                       |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | `test/aikb.test.js`                   | Hard failure: a `lib/` module with no doc, an orphaned doc, a doc missing from the `CLAUDE.md` table, a dropped template heading | Every `npm test`                                   |
-| `npm run gates` (`scripts/gates.mjs`) | test, lint, format, pack                                                                                                         | Gates step of `/branch-close`, after docs-sweep    |
+| `npm run gates` (`scripts/gates.mjs`) | test, lint, typecheck, format, pack                                                                                              | Gates step of `/branch-close`, after docs-sweep    |
 | `/docs-sweep`                         | Holistic doc staleness across the full branch — the prose the test can't read                                                    | Docs Sweep step of `/branch-close`                 |
 | `/corpse-collector`                   | Dead references across the whole repo, not just this branch's diff                                                               | Judgment call in `/branch-close`, after docs-sweep |
 

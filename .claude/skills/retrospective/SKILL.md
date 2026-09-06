@@ -167,6 +167,6 @@ Full reflection → `planning/sessions/{filename}`
 
 | Gate             | When                                                       | What it captures                                                                                                   |
 | ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `npm run gates`  | Gates step of `/branch-close`                              | Correctness: test, lint, format, pack                                                                              |
+| `npm run gates`  | Gates step of `/branch-close`                              | Correctness: test, lint, typecheck, format, pack                                                                   |
 | `/docs-sweep`    | Docs Sweep step of `/branch-close`                         | Doc accuracy across the branch                                                                                     |
 | `/retrospective` | Retrospective step of `/branch-close`, before context wipe | The supervision: how actively the human supervised, feedback for next time, and whether the objective was achieved |
