@@ -224,3 +224,52 @@ describe('env', () => {
     expect(errors).toHaveLength(2)
   })
 })
+
+describe('lookup', () => {
+  const obj = { present: 'yes' }
+
+  it('returns the value with no warning when the key is present', () => {
+    expect(render('{{lookup obj "present"}}', { obj })).toBe('yes')
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('renders nothing and warns naming the key when it is undefined', () => {
+    expect(render('{{lookup obj "missing"}}', { obj })).toBe('')
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0].join(' ')).toContain("'missing'")
+  })
+
+  it('names the page view when the root context carries one', () => {
+    render('{{lookup obj "missing"}}', { obj, view: 'handbooks/uob.hbs' })
+    expect(warnings[0].join(' ')).toContain('handbooks/uob.hbs')
+  })
+
+  it('warns once per page per key, however many times it is called', () => {
+    render('{{lookup obj "a"}}{{lookup obj "a"}}{{lookup obj "b"}}', { obj })
+    expect(warnings).toHaveLength(2)
+    render('{{lookup obj "a"}}', { obj })
+    expect(warnings).toHaveLength(3)
+  })
+
+  it('refuses prototype access exactly as the built-in does', () => {
+    const plain = Handlebars.create()
+    for (const key of ['__proto__', 'constructor']) {
+      const src = `[{{lookup obj "${key}"}}]`
+      expect(render(src, { obj })).toBe(plain.compile(src)({ obj }))
+    }
+  })
+
+  it('still renders a dynamic partial whose key is present', () => {
+    hbs.registerPartial('greeting', 'Hi')
+    expect(render('{{> (lookup . "p")}}', { p: 'greeting' })).toBe('Hi')
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('fails the render as before when a dynamic partial key is missing', () => {
+    expect(() => render('{{> (lookup . "p")}}', {})).toThrow(
+      'The partial undefined could not be found',
+    )
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0].join(' ')).toContain("'p'")
+  })
+})

@@ -146,6 +146,12 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Changed**
 
+- A dynamic partial whose key is missing now names the key. `{{> (lookup . 'moodleAccess')}}`
+  with no `moodleAccess` in the data failed with only `The partial undefined
+could not be found`, which told you neither the key nor the page; you now also
+  get `lookup: 'moodleAccess' is undefined in handbooks/uob.hbs`, once per page.
+  The build still fails exactly as it did.
+
 - A dev server that cannot start now fails the build instead of leaving you with
   a site nobody is serving. If `port` is already taken, the run used to print
   `Serving … http://127.0.0.1:3001`, log the clash twice — one of those as
