@@ -104,3 +104,63 @@ describe('registerPartials', () => {
     expect(names).toEqual([])
   })
 })
+
+// Layouts are the one kind of partial registered compiled rather than as
+// source. `handlebars-layouts`' `extend` helper reads `handlebars.partials[name]`
+// and compiles it when it finds a string, without writing the result back — so
+// a layout was recompiled on every single page render.
+describe('layouts are registered compiled', () => {
+  const deps = { markdown: new Remarkable(), logger: silentLogger }
+  const folders = (site) => ({
+    folders: {
+      partials: `${site.src}/partials`,
+      layouts: `${site.src}/layouts`,
+    },
+  })
+
+  it('registers a layout as a function and every other partial as a string', async () => {
+    site = await makeSite({
+      'src/partials/nav.hbs': '<nav/>',
+      'src/partials/note.md': '# Note',
+      'src/layouts/main.hbs': '<main>{{#block "body"}}{{/block}}</main>',
+    })
+    const hbs = Handlebars.create()
+    registerPartials(hbs, folders(site), deps)
+    // The compatibility line: consuming sites read `hbs.partials` in their own
+    // helpers, and at least one calls `handlebars.compile(partial)`
+    // unconditionally — which throws on a function. Only layouts change type.
+    expect(typeof hbs.partials['main']).toBe('function')
+    expect(typeof hbs.partials['nav']).toBe('string')
+    expect(typeof hbs.partials['note']).toBe('string')
+  })
+
+  it('compiles a layout once however many pages render it', async () => {
+    site = await makeSite({
+      'src/layouts/main.hbs': '<main>{{name}}</main>',
+    })
+    const hbs = Handlebars.create()
+    let compiles = 0
+    const real = hbs.compile.bind(hbs)
+    hbs.compile = (...a) => {
+      compiles++
+      return real(...a)
+    }
+    registerPartials(hbs, folders(site), deps)
+    compiles = 0
+    // Rendering through the registered layout many times must not recompile it.
+    const layout = hbs.partials['main']
+    for (let i = 0; i < 50; i++)
+      expect(layout({ name: `p${i}` })).toContain(`p${i}`)
+    expect(compiles).toBe(0)
+  })
+
+  // `hbs.compile` parses lazily, so registering eagerly moves no failure
+  // earlier: a broken layout still registers quietly and still throws at
+  // render, against the page that used it, exactly as before.
+  it("does not move a broken layout's failure from render to registration", async () => {
+    site = await makeSite({ 'src/layouts/broken.hbs': '{{#if}}unclosed' })
+    const hbs = Handlebars.create()
+    expect(() => registerPartials(hbs, folders(site), deps)).not.toThrow()
+    expect(() => hbs.partials['broken']({})).toThrow()
+  })
+})
