@@ -33,6 +33,7 @@
     "test": "vitest run",
     "types": "node scripts/emit-types.mjs",
     "gates": "node scripts/gates.mjs",
+    "bench": "node scripts/bench.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "docs": "node docs",

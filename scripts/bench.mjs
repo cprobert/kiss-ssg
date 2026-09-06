@@ -1,0 +1,598 @@
+#!/usr/bin/env node
+// The benchmark harness: what makes "faster" a number rather than a claim.
+//
+// Three design decisions worth knowing before reading the code.
+//
+// **Every iteration is a fresh child process.** A build is a one-shot `node
+// build.js` in real life, so measuring repeated builds inside one process would
+// flatter us with JIT warmup and a hot module graph that no user ever gets.
+// `--child` is how this file re-enters itself as that child; the parent only
+// spawns, aggregates and prints.
+//
+// **Page count is a parameter, not a constant.** A fix that wins on 2000 pages
+// can lose on 10 (a worker pool costs more than it saves on a small site), so
+// the fixture is generated at whatever `--pages` says and the default sweep
+// reports both ends.
+//
+// **Phases are measured at public API boundaries**, never by instrumenting
+// `lib/`. The engine under test is the published one, unmodified — otherwise
+// the harness measures a build that nobody ships. The cost is granularity:
+// this can say `build` is slow, not which line of it is. `--profile` hands that
+// question to `node --cpu-prof`.
+//
+// Usage:
+//   node scripts/bench.mjs                          # default sweep, human table
+//   node scripts/bench.mjs --pages=500 --runs=7
+//   node scripts/bench.mjs --scenario=scan,models
+//   node scripts/bench.mjs --json=baseline.json     # record
+//   node scripts/bench.mjs --baseline=baseline.json # record and compare
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
+
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.resolve(HERE, '..')
+const BENCH_DIR = path.join(ROOT, '.bench')
+
+// ---------------------------------------------------------------------------
+// Pure helpers (exported for test/unit/bench.test.js)
+// ---------------------------------------------------------------------------
+
+export const SCENARIOS = ['startup', 'scan', 'models', 'fanout', 'watch']
+
+export const DEFAULTS = {
+  pages: [50, 500],
+  runs: 5,
+  scenario: SCENARIOS,
+  json: null,
+  baseline: null,
+  loud: false,
+  clean: false,
+  profile: false,
+}
+
+// `--json` always writes. `--baseline` compares against a file and writes it
+// only when it is not there yet, so the first run bootstraps a baseline and no
+// later run can silently overwrite the number it is being judged against.
+export function recordTarget(opts, exists) {
+  if (opts.json) return opts.json
+  if (opts.baseline && !exists(opts.baseline)) return opts.baseline
+  return null
+}
+
+// `--pages=50,500` sweeps; `--runs=7` is scalar; `--loud` is a bare flag. Kept
+// deliberately small — a bench nobody can invoke from memory gets run once.
+export function parseArgs(argv, defaults = DEFAULTS) {
+  const opts = { ...defaults }
+  for (const arg of argv) {
+    const [rawKey, rawValue] = arg.replace(/^--/, '').split('=')
+    const key = rawKey.trim()
+    if (!(key in defaults)) throw new Error(`unknown option: --${key}`)
+    const fallback = defaults[key]
+    if (typeof fallback === 'boolean') {
+      opts[key] = rawValue === undefined ? true : rawValue !== 'false'
+    } else if (Array.isArray(fallback)) {
+      const parts = (rawValue ?? '').split(',').filter(Boolean)
+      if (parts.length === 0) throw new Error(`--${key} needs a value`)
+      opts[key] = typeof fallback[0] === 'number' ? parts.map(Number) : parts
+    } else {
+      if (rawValue === undefined) throw new Error(`--${key} needs a value`)
+      opts[key] = typeof fallback === 'number' ? Number(rawValue) : rawValue
+    }
+  }
+  const unknown = opts.scenario.filter((s) => !SCENARIOS.includes(s))
+  if (unknown.length) throw new Error(`unknown scenario: ${unknown.join(', ')}`)
+  if (opts.pages.some((n) => !Number.isFinite(n) || n < 1))
+    throw new Error('--pages must be positive numbers')
+  if (!Number.isFinite(opts.runs) || opts.runs < 1)
+    throw new Error('--runs must be a positive number')
+  return opts
+}
+
+// Median, not mean: one GC pause or one noisy-neighbour scheduling hiccup skews
+// a mean of five runs enough to invent or hide a 10% win. `min` is reported
+// beside it as the closest thing to an uncontended machine.
+export function stats(samples) {
+  const values = samples.filter((n) => Number.isFinite(n)).sort((a, b) => a - b)
+  if (values.length === 0) return null
+  const mid = Math.floor(values.length / 2)
+  return {
+    n: values.length,
+    min: values[0],
+    median:
+      values.length % 2 === 0
+        ? (values[mid - 1] + values[mid]) / 2
+        : values[mid],
+    max: values[values.length - 1],
+  }
+}
+
+// Run-to-run noise on a shared CI box is comfortably ±5%, so a delta inside
+// that band is reported as "=" rather than dressed up as a win. Being honest
+// here is the whole point of having a baseline.
+export const NOISE_FLOOR = 0.05
+
+export function compare(current, baseline, noiseFloor = NOISE_FLOOR) {
+  if (!baseline || !Number.isFinite(baseline.median)) return null
+  const ratio = (current.median - baseline.median) / baseline.median
+  return {
+    ratio,
+    verdict:
+      Math.abs(ratio) < noiseFloor ? 'same' : ratio < 0 ? 'faster' : 'slower',
+  }
+}
+
+const ms = (n) => (n >= 100 ? n.toFixed(0) : n.toFixed(1))
+
+export function formatRow(label, s, delta) {
+  const cells = [
+    label.padEnd(28),
+    `${ms(s.median)}ms`.padStart(9),
+    `${ms(s.min)}ms`.padStart(9),
+    `${ms(s.max)}ms`.padStart(9),
+  ]
+  if (delta) {
+    const pct = `${delta.ratio > 0 ? '+' : ''}${(delta.ratio * 100).toFixed(1)}%`
+    const mark = { faster: '↓', slower: '↑', same: '=' }[delta.verdict]
+    cells.push(`${mark} ${pct}`.padStart(10))
+  }
+  return cells.join(' ')
+}
+
+// ---------------------------------------------------------------------------
+// Fixture
+// ---------------------------------------------------------------------------
+
+// One generated site, deterministic for a given page count, so two runs
+// measure the engine rather than two different piles of markup. Nested a few
+// levels deep because a flat pages/ folder never exercises the `root` climb or
+// the path derivation that real sites lean on.
+export function fixturePlan(pages) {
+  const perSection = Math.max(1, Math.ceil(pages / 10))
+  return Array.from({ length: pages }, (_, i) => {
+    const section = Math.floor(i / perSection)
+    return {
+      index: i,
+      section: `section-${section}`,
+      name: `page-${i}`,
+      view: `section-${section}/page-${i}.hbs`,
+      depth: 1,
+    }
+  })
+}
+
+const LAYOUT = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{#if model.title}}{{model.title}}{{else}}{{title}}{{/if}} · {{config.site.name}}</title>
+  <meta name="description" content="{{config.site.tagline}}">
+  <link rel="stylesheet" href="{{root}}css/site.css">
+  {{#block "head"}}{{/block}}
+</head>
+<body>
+  <header>
+    {{> "nav"}}
+  </header>
+  <main>{{#block "main"}}{{/block}}</main>
+  {{> "footer"}}
+</body>
+</html>
+`
+
+const NAV = `<nav>
+{{#each config.nav}}
+  {{#isActive .. href=href label=label root=../root active="on"}}
+  <a class="{{active}}" href="{{root}}{{href}}">{{label}}</a>
+  {{/isActive}}
+{{/each}}
+</nav>
+`
+
+const FOOTER = `<footer>
+  <p>{{config.site.name}} — built by kiss-ssg</p>
+  {{> "note"}}
+</footer>
+`
+
+const NOTE = `A **markdown** partial, so the Remarkable render path is on the
+clock too — it is not free and real sites use it.
+`
+
+const CARD = `<article class="card">
+  <h3>{{title}}</h3>
+  <p>{{body}}</p>
+</article>
+`
+
+// Enough Handlebars to be representative: layout inheritance, three partials,
+// an {{#each}} over model data and two helpers. A one-line template would make
+// every render look free and send us optimising the wrong thing.
+const pageTemplate = (page) => `{{#extend "layout" root="../"}}
+  {{#content "main"}}
+  <h1>${page.name}</h1>
+  <p class="eyebrow">${page.section}</p>
+  {{#if model.body}}<div>{{{markdown model.body}}}</div>{{/if}}
+  <div class="grid">
+    {{#each model.items}}
+      {{> "card" title=this.title body=this.body}}
+    {{/each}}
+  </div>
+  <p class="meta">{{stringify model.meta}}</p>
+  {{/content}}
+{{/extend}}
+`
+
+// A fan-out view lives outside pages/ so the scan scenario cannot pick it up —
+// the two scenarios must measure different things, not overlapping page sets.
+const ITEM_VIEW = `{{#extend "layout" root="../"}}
+  {{#content "main"}}
+  <h1>{{model.title}}</h1>
+  <div>{{{markdown model.body}}}</div>
+  <p>{{stringify model.meta}}</p>
+  {{/content}}
+{{/extend}}
+`
+
+const model = (i) => ({
+  title: `Page ${i}`,
+  body: `Body copy for page ${i}, with *emphasis* and a [link](https://example.com).`,
+  meta: { index: i, tags: ['alpha', 'beta', 'gamma'], published: true },
+  items: Array.from({ length: 6 }, (_, k) => ({
+    title: `Item ${k}`,
+    body: `Supporting copy ${k} for page ${i}.`,
+  })),
+})
+
+// Regenerated whenever the page count changes; a marker file records what is on
+// disk so an unchanged sweep does not pay to rewrite thousands of files.
+export function buildFixture(dir, pages) {
+  const marker = path.join(dir, '.fixture.json')
+  const want = JSON.stringify({ pages, v: 1 })
+  if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8') === want) return
+  fs.rmSync(dir, { recursive: true, force: true })
+
+  const src = path.join(dir, 'src')
+  const write = (rel, body) => {
+    const file = path.join(src, rel)
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, body)
+  }
+
+  write('layouts/layout.hbs', LAYOUT)
+  write('partials/nav.hbs', NAV)
+  write('partials/footer.hbs', FOOTER)
+  write('partials/card.hbs', CARD)
+  write('partials/note.md', NOTE)
+  write('views/item.hbs', ITEM_VIEW)
+  write('assets/css/site.css', 'body{font:16px/1.5 system-ui;margin:0}\n')
+
+  for (const page of fixturePlan(pages)) {
+    write(`pages/${page.view}`, pageTemplate(page))
+    write(`models/${page.name}.json`, JSON.stringify(model(page.index)))
+    write(`models/items/${page.name}.json`, JSON.stringify(model(page.index)))
+  }
+
+  fs.writeFileSync(marker, want)
+}
+
+// ---------------------------------------------------------------------------
+// Child: one measured iteration, in its own process
+// ---------------------------------------------------------------------------
+
+const now = () => performance.now()
+
+async function runChild(scenario, dir, pages, loud) {
+  const { silentLogger } = await import('../lib/logger.js')
+  const src = path.join(dir, 'src')
+  const out = path.join(dir, `out-${scenario}`)
+
+  const baseConfig = (extra = {}) => ({
+    site: { name: 'Bench', tagline: 'measured, not guessed' },
+    nav: [{ href: 'index.html', label: 'Home' }],
+    folders: {
+      src,
+      build: out,
+      pages: path.join(src, 'pages'),
+      layouts: path.join(src, 'layouts'),
+      partials: path.join(src, 'partials'),
+      models: path.join(src, 'models'),
+      // Assets are out of scope this branch, and a Sass compile would dominate
+      // the clock. One plain stylesheet keeps the copy path honest without
+      // letting it own the measurement.
+      assets: path.join(src, 'assets'),
+    },
+    verbose: false,
+    ...(loud ? {} : { logger: silentLogger }),
+    ...extra,
+  })
+
+  // Import cost is a phase in its own right: `npx kiss-ssg check` pays it before
+  // any work happens, and so does every one-page site.
+  const t0 = now()
+  const { default: Kiss } = await import('../lib/kiss.js')
+  const importMs = now() - t0
+
+  if (scenario === 'startup') {
+    // `process` is filled in by the parent, which is the only side that can see
+    // node's own bootstrap.
+    return [{ import: importMs, process: null }]
+  }
+
+  const plan = fixturePlan(pages)
+  // The fan-out view sits in src/views, outside the scanned pages folder, so
+  // `.page()`'s view paths resolve against it for this scenario alone.
+  const scenarioConfig = {
+    fanout: { folders: { pages: path.join(src, 'views') } },
+    // dev:true is the point of the watch scenario; the ports are randomised so
+    // a previous iteration still releasing its socket cannot fail the next one.
+    watch: { dev: true, port: 0, livereloadPort: 0 },
+  }[scenario]
+  const config = baseConfig()
+  if (scenarioConfig?.folders)
+    Object.assign(config.folders, scenarioConfig.folders)
+  Object.assign(config, { ...scenarioConfig, folders: config.folders })
+
+  const tConstruct = now()
+  const kiss = new Kiss(config)
+  const construct = now() - tConstruct
+
+  const tRegister = now()
+  if (scenario === 'scan') {
+    kiss.scan()
+  } else if (scenario === 'models') {
+    for (const page of plan)
+      kiss.page({ view: page.view, model: `${page.name}.json` })
+  } else if (scenario === 'fanout' || scenario === 'watch') {
+    if (scenario === 'watch') kiss.scan()
+    else
+      kiss.pages({
+        view: 'item.hbs',
+        model: 'items',
+        path: 'items',
+        controller: ({ model }) => ({
+          model,
+          slug: `item-${model.meta.index}`,
+        }),
+      })
+  }
+  const register = now() - tRegister
+
+  const tBuild = now()
+  kiss.generate()
+  await kiss.complete()
+  const build = now() - tBuild
+  const report = kiss.report()
+
+  const sample = {
+    import: importMs,
+    construct,
+    register,
+    build,
+    total: now() - tConstruct,
+    engine: report?.duration ?? null,
+    pages: report?.pages.length ?? 0,
+    ok: report?.ok ?? false,
+  }
+
+  if (scenario !== 'watch') return [sample]
+
+  // Watch latency is measured end to end — edit saved, output on disk — because
+  // that is the loop a developer actually feels. Polling the output file (not a
+  // library hook) keeps the measurement on the public surface, and covers the
+  // scoped re-render, which produces no new build report to observe.
+  const samples = []
+  kiss.watch()
+  const first = plan[0]
+  const viewFile = path.join(src, 'pages', first.view)
+  const original = fs.readFileSync(viewFile, 'utf8')
+  const outFile = path.join(out, first.section, `${first.name}.html`)
+  try {
+    // One discarded warmup: chokidar's first event after startup pays for
+    // watcher registration that no later edit repeats.
+    for (let i = 0; i < 4; i++) {
+      const marker = `bench-marker-${i}-${Date.now()}`
+      const edited = original.replace('<h1>', `<h1>${marker} `)
+      const tTouch = now()
+      fs.writeFileSync(viewFile, edited)
+      await until(() => fs.readFileSync(outFile, 'utf8').includes(marker))
+      if (i > 0) samples.push({ ...sample, rerender: now() - tTouch })
+    }
+  } finally {
+    fs.writeFileSync(viewFile, original)
+    await kiss.close()
+  }
+  return samples
+}
+
+// Polls rather than subscribes: there is no public "rebuild finished" event,
+// and a 2ms poll against a rebuild measured in tens of ms costs less error than
+// reaching into private state would cost in honesty.
+async function until(predicate, timeout = 30000, interval = 2) {
+  const deadline = Date.now() + timeout
+  for (;;) {
+    try {
+      if (predicate()) return
+    } catch {
+      // The output file may not exist yet on the first poll of a replay.
+    }
+    if (Date.now() > deadline) throw new Error('timed out waiting for rebuild')
+    await new Promise((r) => setTimeout(r, interval))
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Parent: spawn, aggregate, report
+// ---------------------------------------------------------------------------
+
+const CHILD_MARKER = '__BENCH_JSON__'
+
+function spawnIteration(scenario, dir, pages, opts) {
+  const args = [
+    ...(opts.profile
+      ? ['--cpu-prof', '--cpu-prof-dir', path.join(BENCH_DIR, 'profiles')]
+      : []),
+    fileURLToPath(import.meta.url),
+    `--child=${scenario}`,
+    `--dir=${dir}`,
+    `--pages=${pages}`,
+    ...(opts.loud ? ['--loud'] : []),
+  ]
+  const started = now()
+  const r = spawnSync(process.execPath, args, { encoding: 'utf8' })
+  const processMs = now() - started
+  if (r.status !== 0)
+    throw new Error(
+      `${scenario} iteration failed:\n${(r.stderr || r.stdout || '').trim().split('\n').slice(-15).join('\n')}`,
+    )
+  const line = r.stdout.split('\n').find((l) => l.startsWith(CHILD_MARKER))
+  if (!line) throw new Error(`${scenario} iteration produced no result`)
+  return JSON.parse(line.slice(CHILD_MARKER.length)).map((s) => ({
+    ...s,
+    process: s.process ?? processMs,
+  }))
+}
+
+const PHASE_ORDER = [
+  'process',
+  'import',
+  'construct',
+  'register',
+  'build',
+  'total',
+  'engine',
+  'rerender',
+]
+
+export function summarise(samples) {
+  const out = {}
+  for (const phase of PHASE_ORDER) {
+    const s = stats(samples.map((x) => x[phase]))
+    if (s) out[phase] = s
+  }
+  return out
+}
+
+async function main(argv) {
+  const opts = parseArgs(argv)
+  // Fixtures are kept between runs on purpose — regenerating 2000 files to
+  // measure the same thing twice is pure waste, and buildFixture's marker makes
+  // reuse safe. `--clean` is the escape hatch when the generator itself changes.
+  if (opts.clean) fs.rmSync(BENCH_DIR, { recursive: true, force: true })
+  fs.mkdirSync(BENCH_DIR, { recursive: true })
+  const baseline =
+    opts.baseline && fs.existsSync(opts.baseline)
+      ? JSON.parse(fs.readFileSync(opts.baseline, 'utf8'))
+      : null
+
+  const results = {
+    meta: {
+      node: process.version,
+      platform: `${process.platform}-${process.arch}`,
+      cpus: (await import('node:os')).cpus().length,
+      commit: gitCommit(),
+      recordedAt: new Date().toISOString(),
+      runs: opts.runs,
+      loud: opts.loud,
+    },
+    scenarios: {},
+  }
+
+  for (const pages of opts.pages) {
+    const dir = path.join(BENCH_DIR, `fixture-${pages}`)
+    buildFixture(dir, pages)
+    for (const scenario of opts.scenario) {
+      const key = scenario === 'startup' ? 'startup' : `${scenario}@${pages}`
+      if (results.scenarios[key]) continue
+      process.stderr.write(`  running ${key} …`)
+      const samples = []
+      // One discarded warmup run: the first build of a fixture pays for a cold
+      // page cache that no later run repeats, and reporting it as a sample
+      // would make every scenario look worse than it is in a warm CI loop.
+      spawnIteration(scenario, dir, pages, opts)
+      for (let i = 0; i < opts.runs; i++)
+        samples.push(...spawnIteration(scenario, dir, pages, opts))
+      results.scenarios[key] = {
+        pages: scenario === 'startup' ? null : pages,
+        builtPages: samples[0]?.pages ?? null,
+        ok: samples.every((s) => s.ok !== false),
+        phases: summarise(samples),
+      }
+      process.stderr.write(' done\n')
+    }
+  }
+
+  print(results, baseline)
+
+  const target = recordTarget(opts, (f) => fs.existsSync(f))
+  if (target) {
+    fs.mkdirSync(path.dirname(path.resolve(target)), { recursive: true })
+    fs.writeFileSync(target, `${JSON.stringify(results, null, 2)}\n`)
+    console.log(`\nrecorded → ${path.relative(ROOT, path.resolve(target))}`)
+  }
+
+  const failed = Object.entries(results.scenarios).filter(([, r]) => !r.ok)
+  if (failed.length) {
+    console.error(`\n${failed.length} scenario(s) reported a failed build.`)
+    process.exit(1)
+  }
+}
+
+function gitCommit() {
+  const r = spawnSync('git', ['rev-parse', '--short', 'HEAD'], {
+    encoding: 'utf8',
+  })
+  return r.status === 0 ? r.stdout.trim() : null
+}
+
+function print(results, baseline) {
+  const { meta } = results
+  console.log(
+    `\nkiss-ssg bench — node ${meta.node}, ${meta.platform}, ${meta.cpus} cpus, ${meta.runs} runs${meta.commit ? `, @${meta.commit}` : ''}`,
+  )
+  if (baseline?.meta)
+    console.log(
+      `baseline — node ${baseline.meta.node}, ${baseline.meta.platform}${baseline.meta.commit ? `, @${baseline.meta.commit}` : ''}`,
+    )
+  for (const [key, result] of Object.entries(results.scenarios)) {
+    const built = result.builtPages ? `, ${result.builtPages} pages built` : ''
+    console.log(`\n${key}${built}`)
+    console.log(
+      `  ${'phase'.padEnd(28)} ${'median'.padStart(9)} ${'min'.padStart(9)} ${'max'.padStart(9)}${baseline ? `${'Δ'.padStart(11)}` : ''}`,
+    )
+    for (const [phase, s] of Object.entries(result.phases)) {
+      const base = baseline?.scenarios?.[key]?.phases?.[phase]
+      console.log(`  ${formatRow(phase, s, base ? compare(s, base) : null)}`)
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+if (import.meta.filename === process.argv[1]) {
+  const argv = process.argv.slice(2)
+  const childArg = argv.find((a) => a.startsWith('--child='))
+  if (childArg) {
+    const scenario = childArg.split('=')[1]
+    const dir = argv.find((a) => a.startsWith('--dir=')).split('=')[1]
+    const pages = Number(
+      argv.find((a) => a.startsWith('--pages=')).split('=')[1],
+    )
+    const samples = await runChild(
+      scenario,
+      dir,
+      pages,
+      argv.includes('--loud'),
+    )
+    console.log(CHILD_MARKER + JSON.stringify(samples))
+    // Explicit: a dev-mode scenario may leave a listening socket that would
+    // otherwise hold the child open past its measurement.
+    process.exit(0)
+  } else {
+    await main(argv).catch((err) => {
+      console.error(err.message)
+      process.exit(1)
+    })
+  }
+}
