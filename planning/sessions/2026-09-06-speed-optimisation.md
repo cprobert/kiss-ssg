@@ -208,6 +208,39 @@ Against the captured success criteria:
 - Harness documented in `CLAUDE.md`, `scripts/bench.mjs` has a `test/unit/`
   sibling — ✅.
 
+**2026-09-06 — dev skips minification; the Sass double-compress was tried and reverted.**
+
+Two changes were put up together. One landed, one did not, and the one that did
+not is the more useful record.
+
+**Landed: dev no longer minifies at all.** It used to call the minifier with
+every option off bar comment removal, still paying the parse and — since the
+minifier is imported at first render — still paying ~155ms to load the package.
+Over 9 runs: `watch@50` build **-32.7%**, `watch@500` build **-11.3%**. Mostly
+the fixed import, hence proportionally larger on the smaller site. It does _not_
+move the scoped re-render (~37ms, unchanged), so the save-to-refresh loop is no
+faster; the win is on full dev rebuilds and dev startup. Production output is
+untouched — the example suite still builds byte-identical to `main`.
+
+**Reverted: emitting expanded Sass and letting `minifyCSS` do the compressing.**
+The case looked airtight. On diploma-msc's real stylesheets the two paths land
+within 0.16% (`catalog.scss` 21904b vs 21939b, `about-us.scss` +0.02%,
+`faculty.scss` +0.00%), so the Sass-side compression appeared to be free work
+worth ~11ms a page — and the _block_ form of the helper already relied on the
+minifier, passing no `style` at all, so this only made the file form agree with
+it.
+
+Building it and measuring the whole pipeline killed it: **+19% output over 200
+pages.** Sass's `compressed` style converts percentage-form colours to hex
+(`rgb(80.4%,41.2%,21.6%)` → `#cd6937`); clean-css does not. The `styled` fixture
+is built on `color.adjust`, so it is full of them. The three real stylesheets
+contain zero, which is exactly why they showed nothing.
+
+The lesson worth keeping: the isolated experiment (compile a stylesheet, minify
+it, compare bytes) and the end-to-end build disagreed, and the end-to-end was
+right. Three sampled stylesheets are not the population a published default has
+to hold for.
+
 ### Findings recorded, deliberately not acted on
 
 1. **`html-minifier-terser` is 54% of a `styled` build** (1798ms of 3188ms at
