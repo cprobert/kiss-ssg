@@ -54,6 +54,11 @@ npx kiss-ssg check <script>    # dry-run a site's build script: report it, publi
                                # (exits 1 — example 8 fails one page on purpose)
 npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
+npm run bench                  # benchmark harness: 5 scenarios over a generated fixture,
+                               # fresh child process per iteration, median of N runs
+                               # --pages=50,500 --runs=5 --scenario=scan,watch
+                               # --json=<f> records; --baseline=<f> compares against a record
+                               # baseline for this branch: planning/benchmarks/baseline-main.json
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg9        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```

@@ -59,6 +59,72 @@ could be hoisted to once-per-build.
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+## Baseline (captured at 58d9407, before any `lib/` change)
+
+Recorded to `planning/benchmarks/baseline-main.json` — the file `--baseline=`
+compares against. Machine: node v22.22.2, linux-x64,
+4 cpus, 5 runs per figure, median reported.
+Numbers are only comparable to another sweep on the same machine; the shape of
+the findings below is what travels.
+
+| scenario     | process | import | build | construct | re-render |
+| ------------ | ------: | -----: | ----: | --------: | --------: |
+| `scan@50`    |     620 |    361 |   177 |      14.8 |         — |
+| `models@50`  |     667 |    376 |   206 |      15.7 |         — |
+| `fanout@50`  |     615 |    365 |   161 |      14.1 |         — |
+| `watch@50`   |    1150 |    383 |   214 |      22.0 |       107 |
+| `scan@500`   |    1637 |    371 |  1165 |      20.6 |         — |
+| `models@500` |    1852 |    378 |  1382 |      20.1 |         — |
+| `fanout@500` |    1610 |    375 |  1127 |      19.0 |         — |
+| `watch@500`  |    2506 |    362 |  1586 |      33.2 |       108 |
+
+`startup` alone: 435ms process, of which
+371ms is importing `lib/kiss.js`.
+
+### What the baseline says
+
+Five readings, in descending order of how much time they account for.
+
+1. **Import cost is the single biggest number on any small site — 371ms.**
+   A 50-page build spends 177ms building and
+   361ms getting ready to build. Measured per dependency,
+   it is concentrated in three eager imports: `sass` (200ms), `html-minifier-terser`
+   (114ms), and the dev-server trio `connect` + `serve-static` + `livereload`
+   (125ms). `lib/kiss.js` pulls in `dev-server.js` and `watcher.js` statically, and
+   `assets.js` / `handlebars-helpers.js` pull in `sass.js` statically — so a
+   production build with no `.scss` file and no dev server still pays for all of it,
+   and so does every `npx kiss-ssg check`.
+
+2. **Per-page cost is ~2.3ms at 500 pages** (1165ms for 500),
+   rising to ~3.5ms/page at 50 where fixed overhead is amortised over fewer pages.
+   Scaling is essentially linear across the range measured — no accidental
+   quadratic hiding in the page loop, which is the good news the baseline had to
+   rule out before anything else was worth doing.
+
+3. **Watch re-render is ~107ms and flat** — identical at
+   50 and 500 pages (107ms vs 108ms).
+   Flat means the scoped re-render is genuinely scoped (the design works), and that
+   the whole 107ms is fixed cost per keystroke-save, not
+   per-page work. That is the number a developer feels all day.
+
+4. **Model resolution costs ~0.43ms per page** — `models@500` is
+   217ms above `scan@500` for the
+   same page count, the price of one `readFileSync` and a parse per page. Real, but
+   an order of magnitude below the import finding.
+
+5. **Construction is 14.8–33.2ms** —
+   emptying the build folder, registering partials, queueing the asset copy. Small,
+   and not obviously worth attention yet.
+
+### What this reorders
+
+The suspicions logged at branch-open were sync `fs` in the page path, serial
+awaits, and per-page work that could hoist. The baseline does not refute them —
+reading 500 model files synchronously is finding 4 — but it puts them behind
+something none of them predicted: the biggest win available is work the engine
+does _before the build starts_, and it is paid by every site regardless of size.
+Small sites pay proportionally more, and small sites are most of them.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
