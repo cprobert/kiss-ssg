@@ -8,8 +8,8 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 
 - `readModelFile(modelsDir, file, { logger })` → parsed JSON object, or `null` (and a logged error) if the file doesn't exist.
 - `readModelsFromFolder(modelsDir, folder, { logger })` → array of parsed JSON objects from every `*.json` directly under `${modelsDir}/${folder}`, or `[]` if the folder doesn't exist.
-- `async resolveModel(model, { modelsDir, logger, fetchImpl = globalThis.fetch })` → `Promise<{ id, data }>`. Dispatches on `typeof model`:
-  - `string` starting with `http` → fetched via `fetchImpl`, `id` = the URL; a response whose `ok` is false rejects rather than resolving.
+- `async resolveModel(model, { modelsDir, logger, fetchImpl = globalThis.fetch, fetchConfig })` → `Promise<{ id, data }>`. `fetchConfig` is the resolved `config.fetch` block (`headers`, `timeout`, `retries`, `cache`), passed straight through to `fetchModel`; omitted, every key takes its `DEFAULT_FETCH` value. Dispatches on `typeof model`:
+  - `string` starting with `http` → fetched via `fetchModel` (`lib/fetch-policy.js`) around `fetchImpl`, `id` = the URL; a response whose `ok` is false rejects rather than resolving.
   - `string` ending `.json` → read via `readModelFile`, `id` = the filename.
   - other `string` → treated as a folder name, read via `readModelsFromFolder`, `id` = the folder name, `data` is an array.
   - `object` → `{ id: hashId(model), data: model }` (used as-is).
@@ -18,7 +18,7 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 
 ## Depends on
 
-`fs-extra`; `./utils.js` (`globFiles`, `posixPath`, `hashId`).
+`fs-extra`; `./utils.js` (`globFiles`, `posixPath`, `hashId`); `./fetch-policy.js` (`fetchModel`).
 
 ## Depended on by
 
@@ -28,7 +28,9 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 
 - The four model shapes and the `id` each produces: filename (`id` = filename), URL (`id` = URL), plain object (`id` = `hashId(object)`), folder name (`id` = folder name, `data` is an array — this is the shape `.pages()` fan-out expects).
 - **The relative model filename is `path.posix.relative(root, file)`, not `file.slice(root.length + 1)`.** The slice assumed `modelsDir` had no trailing slash; with one, every filename lost its first characters (`blog/a.json` → `log/a.json`), `readModelFile` logged "Can not find model on file system", every model was filtered out and `resolveModel` threw `Invalid model <folder>` — an error blaming the folder name for a path-arithmetic bug (review finding C4). `resolveFolders` normalises `folders.models` as well; this is the second line of defence for a caller passing `modelsDir` directly.
+- **The URL branch owns dispatch, not policy.** Headers, timeout, retries and the on-disk cache all live in `lib/fetch-policy.js`; this module passes `fetchConfig` and the injected `fetchImpl` through and keeps its one job (model shape → `{ id, data }`). The order the policy applies is cache read → fetch → non-2xx guard → retry → cache write; see `AIKB/fetch-policy.md`.
 - **A non-2xx response rejects before the body is parsed** (`Model fetch failed: <url> → <status> <statusText>`). Without that guard an error envelope — the normal shape an API returns with a 500 — parsed as JSON and became the page's model, so the page rendered empty or garbage content and the build reported success (review finding C2). Only an error body that is not JSON failed, and by accident: `response.json()` threw.
+- A cached URL model never reaches `fetchImpl` at all (`config.fetch.cache`), which is what stops a watch rebuild paying a network round trip per remote model — a cached model is a build input like a `.json` file on disk.
 - Uses the _global_ `fetch` by default (`globalThis.fetch`, Node's built-in) rather than importing a fetch library.
 - `fetchImpl` is an injectable dependency specifically so tests can stub network calls without mocking global `fetch`.
 - Every failure path rejects with an `Error` (not a plain string/object) whose `.message` `Kiss.page()`'s `.catch()` logs; the HTTP failure path additionally attaches the original `error` as `err.error` so both messages get logged.

@@ -7,9 +7,10 @@ Resolves a user-supplied config object against defaults: fills in `DEFAULT_CONFI
 ## Public interface
 
 - `DEFAULT_FOLDERS` — frozen object: `src`, `pages`, `build`, `assets`, `layouts`, `partials`, `models`, `controllers` (all `./src/...` or `./public`).
-- `DEFAULT_CONFIG` — frozen object: `dev`, `verbose`, `cleanBuild`, `extensionLess`, `sass: { includePaths: [] }`, `port` (3001), `livereloadPort` (35729), `devHost` (`'127.0.0.1'`).
+- `DEFAULT_CONFIG` — frozen object: `dev`, `verbose`, `cleanBuild`, `extensionLess`, `sass: { includePaths: [] }`, `fetch` (see `DEFAULT_FETCH`), `port` (3001), `livereloadPort` (35729), `devHost` (`'127.0.0.1'`).
+- `DEFAULT_FETCH` — frozen object, the URL-model fetch policy: `headers: {}`, `timeout: 10000`, `retries: 0`, `cache: false`. Exported so `lib/fetch-policy.js` fills its own gaps from the same object rather than repeating the numbers.
 - `resolveFolders(userFolders = {})` → folders object. If `userFolders.src` is set, every key in `DERIVED_FROM_SRC` (`assets`, `layouts`, `pages`, `partials`, `models`, `controllers`) is rewritten to `${src}/${key}` _before_ any explicit per-key override in `userFolders` is applied. Every resulting string value is then normalised: backslashes to `/`, repeated slashes collapsed, trailing slashes stripped.
-- `resolveConfig(userConfig = {})` → full config object with `folders` resolved via `resolveFolders` and `sass` shallow-merged with the default. Keys whose value is `undefined` are dropped from the user object first (at the top level, inside `folders` and inside `sass`), so they take their default.
+- `resolveConfig(userConfig = {})` → full config object with `folders` resolved via `resolveFolders` and `sass` and `fetch` shallow-merged with their defaults. Keys whose value is `undefined` are dropped from the user object first (at the top level, inside `folders`, inside `sass` and inside `fetch`), so they take their default.
 - `foldersToEnsure(folders)` → array of the folder paths `Kiss` should `fs.ensureDirSync` on startup (`src`, `pages`, `build`, `assets`, `layouts`, `partials`, `models`, `controllers`), filtered to drop falsy entries.
 
 ## Depends on
@@ -18,7 +19,7 @@ Nothing (no imports).
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/kiss.js`; `lib/fetch-policy.js` (`DEFAULT_FETCH`).
 
 ## Non-obvious behavior
 
@@ -31,3 +32,5 @@ Nothing (no imports).
 - `foldersToEnsure` fixes a v1 copy-paste bug where most folders were only created conditionally on `assets` being set; here each folder stands on its own regardless of the others.
 - **The three dev-server keys are defaulted here and nowhere else.** `lib/dev-server.js` takes `port`, `livereloadPort` and `host` as required parameters, so a reader has one place to look for their values. `livereloadPort` exists so two sites can run in dev mode at once (a clash used to kill the process — review finding D-01) and is also the port `lib/kiss-page.js` injects into the dev-mode reload `<script>`. `devHost` defaults to loopback: dev mode used to bind every interface while logging `localhost` (D-13); `'0.0.0.0'` is the documented opt-out for previewing on another device.
 - `sass.includePaths` is kept as the public config key (for backwards compatibility with v1 configs) even though the modern `sass` package API calls the equivalent option `loadPaths` — consumers (`lib/assets.js`, `lib/handlebars-helpers.js`) read `config.sass.includePaths` and pass it to `sass` as `loadPaths`.
+- **`fetch` is merged exactly one level deep, like `sass`.** `{ fetch: { timeout: 1 } }` keeps the default `headers`, `retries` and `cache`, but `{ fetch: { headers: { A: '1' } } }` replaces the whole header object rather than adding a key to it. The block is per instance: there is no per-page `fetch` override, so one site's remote models share one policy.
+- **The `fetch` defaults are deliberately inert.** No headers, no retries and no cache mean a site that never sets the block behaves as it did before the block existed — with the single exception of `timeout: 10000`, which is new behaviour: an upstream that accepts the connection and then says nothing used to hang a build for ever.

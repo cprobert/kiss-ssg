@@ -38,6 +38,12 @@ The default config options are:
   cleanBuild: true,
   extensionLess: false,
   sass: { includePaths: [] },
+  fetch: {
+    headers: {},
+    timeout: 10000,
+    retries: 0,
+    cache: false
+  },
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -63,6 +69,7 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 | cleanBuild     |          true          |                                                                                                      Removed all files from the build dir before generating.                                                                                                       |
 | extensionLess  |         false          |                                                        When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                         |
 | sass           | `{ includePaths: [] }` |                                                                            `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                            |
+| fetch          |       see below        |                  The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                  |
 | port           |          3001          |                       The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                        |
 | livereloadPort |         35729          | The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process. |
 | devHost        |      '127.0.0.1'       |        The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.        |
@@ -76,6 +83,32 @@ A key you pass explicitly as `undefined` takes its default — `new Kiss({ port:
 **Note**: All config settings are available in the view under "this.config"
 
 Each page gets its **own shallow copy** of the resolved config, so a controller that mutates `options.config` changes that page only — never the other pages, `kiss.config`, or the sitemap. Pass `config` in a page's options to override settings for that page alone (nested objects such as `folders` are shared with the global config, and kiss never mutates them).
+
+### Remote models
+
+A model can be a URL, and `config.fetch` is how you make that usable against a real API. It applies to every `http(s)` model of that site (it is per instance — there is no per-page override):
+
+```js
+const kiss = new Kiss({
+  fetch: {
+    headers: { Authorization: `Bearer ${process.env.API_TOKEN}` },
+    timeout: 15000,
+    retries: 2,
+    cache: './.kiss-cache',
+  },
+})
+```
+
+- **headers** — sent with every URL-model request. This is where an API token or an `Accept` header goes. Keep the token itself in an environment variable, not in the config you commit.
+- **timeout** — milliseconds. The request is aborted and that page fails, naming the URL and the timeout. It defaults to 10 seconds: an API that accepts your connection and then goes quiet no longer hangs your build for ever.
+- **retries** — extra attempts after a network error or a 5xx, with a short backoff. A 4xx is never retried: the server has already told you the request itself is wrong, so asking again only risks locking a key. If every attempt fails, the error says how many were made.
+- **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`:
+
+```
+.kiss-cache/
+```
+
+A cached model is a build input, exactly like a `.json` file in your models folder: what is in that directory is what your site is built from.
 
 ### Assets
 

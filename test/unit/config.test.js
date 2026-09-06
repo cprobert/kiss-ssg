@@ -62,12 +62,35 @@ describe('resolveConfig', () => {
     expect(c.folders.pages).toBe('./src/pages')
   })
 
+  it('defaults the fetch block for url models', () => {
+    const c = resolveConfig({})
+    expect(c.fetch).toEqual({
+      headers: {},
+      timeout: 10000,
+      retries: 0,
+      cache: false,
+    })
+  })
+
+  it('merges the fetch block one level deep, like sass', () => {
+    const c = resolveConfig({ fetch: { timeout: 1 } })
+    expect(c.fetch).toEqual({
+      headers: {},
+      timeout: 1,
+      retries: 0,
+      cache: false,
+    })
+  })
+
   it('takes the default for a key passed explicitly as undefined', () => {
     expect(resolveConfig({ port: undefined }).port).toBe(3001)
     expect(resolveConfig({ cleanBuild: undefined }).cleanBuild).toBe(true)
     expect(
       resolveConfig({ sass: { includePaths: undefined } }).sass.includePaths,
     ).toEqual([])
+    expect(resolveConfig({ fetch: { timeout: undefined } }).fetch.timeout).toBe(
+      10000,
+    )
   })
 
   it('takes the default for a folder passed explicitly as undefined', () => {

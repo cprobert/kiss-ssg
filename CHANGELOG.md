@@ -11,6 +11,19 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Added**
 
+- A fetch policy for models you load from a URL, so `model: 'https://…'` works
+  against a real API. `config.fetch` takes `headers` (sent with every
+  URL-model request — this is where an API token goes), `timeout` in
+  milliseconds, `retries` (extra attempts after a network error or a 5xx; a
+  4xx is never retried, and the error tells you how many attempts were made)
+  and `cache`. Set `cache` to a directory and every successful response is
+  saved there, keyed by the URL and the headers you sent, so the next build —
+  including every `dev`-mode rebuild, which until now re-fetched every remote
+  model on every save — reads the file instead of the network, and an offline
+  build still works. An error response is never cached. There is no expiry:
+  delete the directory when you want fresh data, and add it to your
+  `.gitignore`.
+
 - Two helpers for absolute URLs, so you stop hardcoding your domain in your
   templates. `{{canonical}}` is the current page's full URL — put it in
   `<link rel="canonical" href="{{canonical}}">` — and `{{absUrl '/img/card.png'}}`
@@ -22,6 +35,15 @@ this file's `## 2.0.0` entry when the line is released._
   one trailing slash, and it reads the same whether `extensionLess` is on or
   off. Without a `siteUrl` they render nothing and log one warning per page
   instead of failing your build.
+
+**Changed**
+
+- URL models now time out. `config.fetch.timeout` defaults to 10 seconds, where
+  before there was no limit at all — an API that accepted the connection and
+  then said nothing could hang a build for ever. If 10 seconds is too tight for
+  your API, raise it (`fetch: { timeout: 30000 }`); everything else about the
+  new `fetch` block is off by default, so a site that sets nothing behaves as
+  it did.
 
 **Fixed**
 

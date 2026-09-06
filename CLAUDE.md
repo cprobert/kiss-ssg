@@ -27,6 +27,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
 | Sass binding                       | `lib/sass.js`                | `AIKB/sass.md`                |
 | Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| URL-model fetch policy             | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
 | Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
 | Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
 | Dev server                         | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
