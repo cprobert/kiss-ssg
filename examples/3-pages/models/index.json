@@ -1,0 +1,20 @@
+{
+  "title": "Home",
+  "description": "Six coffees, six JSON files, six pages.",
+  "heading": "Six coffees on the list this month",
+  "lede": "Every coffee we sell is one JSON file in a folder. Adding the seventh means writing the seventh file — no new page, no new route, no change to the build script.",
+  "highlights": [
+    {
+      "name": "One file per coffee",
+      "note": "models/roasts holds six JSON files. Naming the folder as the model hands the whole array to .pages()."
+    },
+    {
+      "name": "One view for all six",
+      "note": "roasts/roast.hbs is rendered once per entry, and the controller gives each one a slug of its own."
+    },
+    {
+      "name": "One index, same data",
+      "note": "The listing page is built from the array the fan-out already resolved, so it cannot fall out of step."
+    }
+  ]
+}

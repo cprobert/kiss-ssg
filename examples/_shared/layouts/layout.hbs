@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{#if model.title}}{{model.title}}{{else}}{{title}}{{/if}} · {{config.site.name}}</title>
+  <meta name="description" content="{{#if model.description}}{{model.description}}{{else}}{{config.site.tagline}}{{/if}}">
+  <meta name="generator" content="kiss-ssg">
+  {{#if config.siteUrl}}<link rel="canonical" href="{{canonical}}">{{/if}}
+  {{!-- `root` is the climb back to the build root ("", "../", "../../"), set by
+        each page in its {{#extend}} hash, so every page works from the dev
+        server and straight off the file system. `asset` renders the name the
+        file was emitted under, site-relative and unprefixed, so it sits behind
+        `root` like any other link and the caching policy lives in the config
+        (example 6 turns hashing on) rather than in this line. --}}
+  <link rel="stylesheet" href="{{root}}{{asset 'css/site.css'}}">
+  {{#block "head"}}{{/block}}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a class="brand" href="{{root}}index.html">
+        <span class="brand__mark" aria-hidden="true">A&amp;O</span>
+        <span class="brand__text">
+          <strong>{{config.site.name}}</strong>
+          <small>{{config.site.tagline}}</small>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Site">
+        {{#each config.nav}}
+        {{#isActive .. href=href label=label root=../root folderMatch=folderMatch active="is-active"}}
+        <a class="nav__link{{#if active}} {{active}}{{/if}}" href="{{root}}{{href}}"{{#if active}} aria-current="page"{{/if}}>{{label}}</a>
+        {{/isActive}}
+        {{/each}}
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    {{#block "main"}}{{/block}}
+
+    {{#if showSource}}
+    <section class="source-panel">
+      <h2>How this example works</h2>
+      {{#block "demo"}}{{/block}}
+      <details open>
+        <summary><code>{{config.script.file}}</code></summary>
+        <pre><code>{{config.script.text}}</code></pre>
+      </details>
+    </section>
+    {{/if}}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap site-footer__inner">
+      <p>&copy; {{config.site.name}} — a fictional roastery, built with <strong>kiss-ssg</strong>.</p>
+      <p class="build-badge">
+        {{#env is="dev"}}dev build · live reload on{{else}}production build · minified{{/env}}
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,8 +1,40 @@
-<html>
-  <head>
-    <title>{{title}}</title>
-  </head>
-  <body>
-    {{#block "body"}}{{/block}}
-  </body>
+{{!-- The layout owns the page shell and hands the page four holes to fill:
+      head, main, aside and notes. Two of them carry default content, so a
+      page that ignores them still renders something sensible. --}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}} · {{config.site.name}}</title>
+  <meta name="description" content="{{config.site.tagline}}">
+  <link rel="stylesheet" href="{{root}}css/site.css">
+  {{#block "head"}}{{/block}}
+</head>
+<body>
+  {{> "site/header"}}
+
+  <main class="wrap" id="main">
+    {{#block "main"}}{{/block}}
+
+    <aside class="callout">
+      {{#block "aside"}}
+      <p>
+        This paragraph is the layout's own default. Any page that says nothing
+        about the <code>aside</code> block gets it as written here.
+      </p>
+      {{/block}}
+    </aside>
+
+    <section class="card">
+      <h2>House notes</h2>
+      {{#block "notes"}}
+      <p class="meta">Every page starts with the opening hours:</p>
+      {{> "hours"}}
+      {{/block}}
+    </section>
+  </main>
+
+  {{> "site/footer"}}
+</body>
 </html>

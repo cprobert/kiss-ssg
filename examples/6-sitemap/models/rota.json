@@ -1,0 +1,6 @@
+{
+  "title": "Roasting rota",
+  "description": "Internal page. Not linked, not indexed.",
+  "heading": "Roasting rota, week 8",
+  "lede": "An internal page. It is built and served like any other, but it is kept out of sitemap.xml."
+}

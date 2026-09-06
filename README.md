@@ -36,6 +36,21 @@ The default config options are:
   dev: false,
   verbose: false,
   cleanBuild: true,
+  extensionLess: false,
+  sass: { includePaths: [] },
+  fetch: {
+    headers: {},
+    timeout: 10000,
+    retries: 0,
+    cache: false
+  },
+  assets: {
+    hash: false,
+    version: null
+  },
+  port: 3001,
+  livereloadPort: 35729,
+  devHost: '127.0.0.1',
   folders: {
     src: './src',
     build: './public',
@@ -51,21 +66,137 @@ The default config options are:
 
 Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
 
-| Option     |  Default  |                                                                                                         Purpose                                                                                                          |
-| ---------- | :-------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| dev        |   false   | Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk. |
-| verbose    |   false   |                                                                               Enables additional output on the terminal, when set to true                                                                                |
-| cleanBuild |   true    |                                                                                 Removed all files from the build dir before generating.                                                                                  |
-| folders    | see above |                                                                                      A JSON object of alternative folder locations                                                                                       |
-| siteUrl    | undefined |                                                                                The site's base URL, required by `.sitemap()` (see below)                                                                                 |
+| Option         |             Default              |                                                                                                                                        Purpose                                                                                                                                        |
+| -------------- | :------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| dev            |              false               |                               Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                                |
+| verbose        |              false               |                                                                                                              Enables additional output on the terminal, when set to true                                                                                                              |
+| cleanBuild     |               true               |                   `true`, `false` or `'atomic'`. `true` empties the build dir — in the constructor, before anything is rendered. `'atomic'` builds into a staging folder and swaps it in only when `complete()` resolves. See **Cleaning the build folder** below.                    |
+| extensionLess  |              false               |                                                                  When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                                  |
+| sass           |      `{ includePaths: [] }`      |                                                                                     `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                                      |
+| fetch          |            see below             |                           The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                            |
+| assets         | `{ hash: false, version: null }` | Cache busting for the files copied into the build. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`. Both off is today's build, unchanged. See **Cache-busting asset URLs** below. |
+| port           |               3001               |                                 The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                                 |
+| livereloadPort |              35729               |          The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.           |
+| devHost        |           '127.0.0.1'            |                 The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                  |
+| folders        |            see above             |                                                                                                                     A JSON object of alternative folder locations                                                                                                                     |
+| siteUrl        |            undefined             |                                                                                          The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                          |
+
+A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
 
 <br />
 
 **Note**: All config settings are available in the view under "this.config"
 
+Each page gets its **own shallow copy** of the resolved config, so a controller that mutates `options.config` changes that page only — never the other pages, `kiss.config`, or the sitemap. Pass `config` in a page's options to override settings for that page alone (nested objects such as `folders` are shared with the global config, and kiss never mutates them).
+
+### Cleaning the build folder
+
+`cleanBuild` decides what happens to `folders.build`, and it takes three values.
+
+`true` (the default) empties the build folder **in the `Kiss` constructor** — before a single model has resolved or page rendered — and nothing puts it back if the build then fails. For a build folder you regenerate from scratch every time that is exactly right. For one that holds output you have already published, it is not: a re-run to fix one typo destroys the old output first, and a build that fails leaves the folder empty or half-built.
+
+`false` never cleans; files from earlier builds stay where they are.
+
+`'atomic'` is the safe re-run. The build goes into a staging folder beside the build folder, and the whole thing is swapped into place only when `complete()` resolves:
+
+```js
+const kiss = new Kiss({
+  cleanBuild: 'atomic',
+  folders: { build: `./handbooks/${cohort}` },
+})
+kiss.scan().generate()
+await kiss.complete() // the folder is replaced here, in one step
+```
+
+Until that line, the previous output is untouched — and if any page fails, `complete()` rejects, the staging folder is deleted and the old output is still there, byte for byte. Everything the build writes follows the staging folder: pages, copied assets, `sitemap.xml`, and a `.copyAssets()` you aimed explicitly at the build folder. The swap itself is two renames — your old output is renamed aside, the new build is renamed into place, and the old folder is then deleted — so there is no moment where the folder is half-copied, and a failed swap puts the old output straight back. A build killed mid-flight leaves a `.kiss-staging-…` or `.kiss-old-…` folder beside your build folder; the next build removes it and says so. Two things to know: only `complete()` promotes, so a chain that ends at `.generate()` swaps nothing in; and in `dev: true` it behaves as `true` and says so in one line, because the dev server has been serving the build folder since it started.
+
+Whatever `cleanBuild` is set to, kiss refuses to build into a folder that would swallow the site's own source — the build folder being the source folder, containing it, or being `'.'` or `'/'`. That is a floor, not a licence: if your build folder is built from a variable (`./handbooks/${cohort}`), validate it before you construct, because an empty value resolves to the parent folder.
+
+### Building more than one site from one source tree
+
+kiss has no notion of "versions" or "sites" — it is one `Kiss` instance building to one `folders.build`. That is enough to build several outputs from one shared `src/`, each frozen once and never touched again: an archive of per-intake handbooks, a menu rebuilt every season, a docs site published per release. Four things kiss already gives you, combined:
+
+1. **One `Kiss` instance per output, `folders.build` as the discriminator.** Everything else — pages, partials, models, controllers — is shared; only the build folder differs between runs:
+
+   ```js
+   const kiss = new Kiss({ folders: { build: `./menus/${season}` } })
+   ```
+
+2. **An arbitrary config key, carried into every view.** Pass whatever varies between outputs straight into `new Kiss({...})` and read it back as `config.<key>` — it is the only thing that needs to differ in the template:
+
+   ```js
+   new Kiss({ season, folders: { build: `./menus/${season}` } })
+   ```
+
+   ```hbs
+   <h1>The {{config.season}} menu</h1>
+   ```
+
+3. **`folders.assets: null` plus an explicit `copyAssets(src, buildDir)`** when each output must own its assets outright, rather than sharing a folder kiss would otherwise keep re-copying from:
+
+   ```js
+   const kiss = new Kiss({ folders: { build: menuDir, assets: null } })
+   kiss.copyAssets('./shared/assets', menuDir).scan().generate()
+   ```
+
+4. **`cleanBuild: 'atomic'`**, so a re-run that fixes a typo in this output can never destroy — or half-build — an output already published (see **Cleaning the build folder** above).
+
+The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
+
+See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. Every example under `examples/` builds and exits by default (`npm run eg1` … `eg7`); pass `--dev` to run examples 1–6 as a live dev server instead.
+
+### Remote models
+
+A model can be a URL, and `config.fetch` is how you make that usable against a real API. It applies to every `http(s)` model of that site (it is per instance — there is no per-page override):
+
+```js
+const kiss = new Kiss({
+  fetch: {
+    headers: { Authorization: `Bearer ${process.env.API_TOKEN}` },
+    timeout: 15000,
+    retries: 2,
+    cache: './.kiss-cache',
+  },
+})
+```
+
+- **headers** — sent with every URL-model request. This is where an API token or an `Accept` header goes. Keep the token itself in an environment variable, not in the config you commit.
+- **timeout** — milliseconds. The request is aborted and that page fails, naming the URL and the timeout. It defaults to 10 seconds: an API that accepts your connection and then goes quiet no longer hangs your build for ever.
+- **retries** — extra attempts after a network error or a 5xx, with a short backoff. A 4xx is never retried: the server has already told you the request itself is wrong, so asking again only risks locking a key. If every attempt fails, the error says how many were made.
+- **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`:
+
+```
+.kiss-cache/
+```
+
+A cached model is a build input, exactly like a `.json` file in your models folder: what is in that directory is what your site is built from.
+
 ### Assets
 
 Any static files you have in the assets directory will be copied to the build directory
+
+#### Cache-busting asset URLs
+
+Link an asset with the `asset` helper and the caching policy stops living in your template:
+
+```handlebars
+<link rel='stylesheet' href='/{{asset "css/site.css"}}' />
+```
+
+| `config.assets`        | What is emitted                | What the helper renders |
+| ---------------------- | ------------------------------ | ----------------------- |
+| _(default)_            | `public/css/site.css`          | `css/site.css`          |
+| `{ hash: true }`       | `public/css/site.a1b2c3d4.css` | `css/site.a1b2c3d4.css` |
+| `{ version: '1.4.5' }` | `public/css/site.css`          | `css/site.css?v=1.4.5`  |
+
+Ask for the path the file has when nothing is renaming it — a `.scss` source by its compiled `.css` name — and the same template line works under all three. The helper renders no leading slash, so the base is yours: `/{{asset …}}` for a root-relative link, or `{{root}}{{asset …}}` if your layout already climbs back to the build root (which is what makes a nested page work opened straight off the file system). The hash is taken over the bytes that were emitted (a stylesheet after sass compiled it), so the URL changes when, and only when, the file a browser downloads changes; the file it replaces is deleted as it is written, so a `dev` session leaves one stylesheet in the build rather than one per save. Only `.css` and `.js` are renamed: an image, a font or `robots.txt` is reached by URLs kiss does not rewrite — the ones inside a stylesheet, and the ones a host asks for by a fixed name — so those keep their names, and `{{asset}}` still resolves them.
+
+The other two forms, for a layout that climbs back to the build root and for an absolute URL — the hashed extension and the `?v=` query both survive the wrap:
+
+```handlebars
+<link rel='stylesheet' href='{{root}}{{asset "css/site.css"}}' />
+<link rel='preload' as='style' href='{{absUrl (asset "css/site.css")}}' />
+```
 
 ### .page()
 
@@ -110,12 +241,16 @@ These options are both used internally by kiss and are available in view.
 - model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.
 - controller = A function that returns a page options object - used for manipulating data in the model.
 - title = The page title
+- config = Config overrides for this page only, merged over the global config
 - path = the folder path to the page
 - slug = the name of the file without the extension
+- generate = whether to build this page at all (default `true`); set to `false` to skip it entirely — e.g. a fanned-out `.pages()` item that fails a check in its controller. Nothing is written for that page, and `.generate()`/`.complete()` still resolve normally.
 
 page and path create the url, i.e. /{path}/{slug}.html
 
-_Note:_ If you don't pass a path or a slug they will be inferred from the view
+_Note:_ If you don't pass a path or a slug they will be inferred from the view — but only when the view is a `.hbs` filename. A view passed as a template string has no file path to infer from, so it gets a generated `snippet-N` slug and no folder; pass a `slug` (and a `path`, if you want one) yourself.
+
+_Note:_ Slugs and path segments are slugified: accented Latin letters are transliterated (`Über uns` → `uber-uns`), anything else outside `a-z0-9` becomes a `-`, and leading/trailing dashes are trimmed. A title written in a script with no Latin equivalent (Japanese, Korean, Cyrillic…) has nothing to transliterate, so it falls back to a short stable hash such as `p-9736ca69` — not pretty, but unique, which keeps each page in its own file. Pass an explicit `slug` when you want a readable URL for such a page. If two pages end up with the same output path the build fails and names the path — only one of them could ever exist on disk.
 
 ### .pages()
 
@@ -167,6 +302,8 @@ kiss
   .generate()
 ```
 
+**Note**: controllers should stay pure — return new values rather than mutating `model` (or a nested option such as `config.folders`) in place. How much an in-place mutation costs you depends on the model kind: a `.json` file, a models folder, or an `http(s)://` URL model is re-resolved on every build and on every `.watch()` whole-site rebuild, so mutating one of those in place is contained to that single build. A **plain object** model is different — it is replayed from a shallow snapshot of the original `.page()`/`.pages()` call, so an object model your controller mutated in place is still mutated on the next rebuild: an in-place `array.push(...)` or property assignment on it accumulates one more change with every save, and the dev server drifts further from what a fresh build would produce. Returning new values sidesteps the distinction entirely.
+
 ### .sitemap()
 
 Generates a `sitemap.xml` in the root of the build folder from every page you've registered, so you don't need to hand-roll one yourself. Requires `siteUrl` to be set on the Kiss config; it logs an error and skips writing if it isn't.
@@ -204,11 +341,13 @@ kiss.sitemap({ overwrite: false })
 
 ### Waiting for the build
 
-`.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
+`.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
 
 ```js
 await kiss.scan().generate().sitemap().complete()
 ```
+
+`.complete()` waits for every page you queued, not just the ones `.generate()` had reached when it ran. Pages queued from a `.generate()` callback count — whether the callback queues them straight away or after an `await` — and so does a page queued after the last `.generate()` call, or one whose model was still loading when it ran: `.complete()` renders whatever is left before it resolves, so a slow model cannot cost you a page in a build that reports success. (It renders nothing if you never called `.generate()`.) The one thing it cannot see is a page a _synchronous_ callback defers to a later tick with `setTimeout` — queue those synchronously, or from an `async` callback.
 
 If any page fails to render or write, the other pages still build but `.complete()` **rejects** with an `AggregateError`; `err.failures` lists them as `{ view, buildTo, error }`. That makes a broken build fail your script instead of silently shipping a site with a page missing:
 
@@ -221,11 +360,26 @@ try {
 }
 ```
 
-A bad model or controller is not a build failure — it is logged, that page is skipped, and it appears in the resolved data as `{ id, data: null, error }`.
+A bad model is not a build failure — it is logged, that page is skipped, and it appears in the resolved data as `{ id, data: null, error }`. A bad controller _is_ a build failure: a controller that throws, one whose file is missing, one whose module does not export a function, and a `controller` option of an unrecognised type all fail that page and reject `.complete()`, rather than shipping a page built from un-controlled options. In a `.pages()` fan-out that failure is scoped to the one bad item: the rest of the items are still built, and each bad one is reported separately as `<view> [item N: <slug>]` (there is no output path to name it by). A missing or misspelled view file is a build failure too. So is an error thrown by a `.generate()` or `.sitemap()` callback — it is reported as `<generate callback>` / `<sitemap callback>` in `err.failures`. In `dev: true`, so is a dev server that cannot bind `config.port` (`Dev server could not bind 127.0.0.1:3001 (EADDRINUSE): the site is not being served`) — reported once, as `<dev server>` in `err.failures`; the watcher and live reload are stopped with it, so the process can exit once you have handled the rejection. A clash on `livereloadPort` is different: live reload is optional, so it is logged and switched off while the site keeps being served. `.complete()` reports a build's failures once: a second call in the same build resolves rather than rejecting again.
 
-In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server.
+In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server. It waits for a rebuild that is already running to finish, so once it resolves nothing more is written and it is safe to clean or deploy the build folder.
 
-Editing a page template re-renders that page. Editing anything else under `src/` — a partial, layout, model JSON or controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, or one dropped from a `.pages()` fan-out — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
+Editing a page template re-renders that page; deleting one, or creating any file under `src/`, rebuilds the whole site. Editing a partial or a layout re-renders every page, but nothing more: your models are not re-read, your controllers are not re-run, and a model you load from a URL is not fetched again — a partial cannot change which pages exist or where they are written, so there is nothing else to redo. Editing anything else under `src/` — a model JSON or a controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A rebuild replays each page from a shallow snapshot of its original `.page()`/`.pages()` call, so keep controllers pure (see the note under "Controller" above) — one that mutates its model in place carries that mutation into every later rebuild. A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, one dropped from a `.pages()` fan-out, or a page `.scan()` had discovered whose template you deleted — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. A partial or layout you add mid-session is registered by that rebuild and usable straight away, and one you delete is unregistered — so a page still referencing a deleted partial fails the rebuild with `The partial <name> could not be found` rather than quietly rendering the deleted content until you restart. If you used `.scan()`, a rebuild scans your pages folder again, so a page template you create while watching is built without a restart; on a site where you registered pages by name with `.page()`, adding the file is not enough — add the call too. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
+
+Your browser is reloaded once per rebuild, when that rebuild has finished writing every page — not once per file — so a reload never lands on a page that has not been re-rendered yet, however large the site. The first build reloads the browser too, so a tab left open across a restart picks the new output up. Editing a stylesheet reloads just that stylesheet, leaving the page where it was.
+
+### Other methods
+
+- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
+- `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
+- `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
+
+```js
+kiss.scan().generate(function (data) {
+  this.viewStats()
+  console.log(this.getModelByID('index.json', data))
+})
+```
 
 ### Helpers
 
@@ -251,6 +405,81 @@ If you want to take a peek at whats properties you have available to to in a han
 {{{stringify this}}}
 ```
 
+You can compile Sass, either from a file or an inline block:
+
+```handlebars
+{{{sass 'src/assets/main.scss'}}}
+
+{{#sass}}
+  $color: red; body { color: $color; }
+{{/sass}}
+```
+
+A relative file path is resolved against `process.cwd()` — not the assets folder or the current view — so pass a path relative to where you run the build, or pass an absolute path (used as given). `loadPaths` for `@use`/`@import` comes from `config.sass.includePaths`; output is `'expanded'` in `dev: true` and `'compressed'` otherwise.
+
+`offset` turns a zero-based `@index` into a one-based number:
+
+```handlebars
+{{#each items}}
+  {{offset @index}}:
+  {{this}}
+{{/each}}
+```
+
+`lookup` is Handlebars' own `lookup` helper with one addition: when the key is undefined it logs `lookup: 'moodleAccess' is undefined in handbooks/uob.hbs`, so a dynamic partial `{{> (lookup . 'key')}}` whose key is missing from your data tells you which key and which page — it still fails the build with `The partial undefined could not be found`, as before.
+
+`isActive` renders its block only when the current page matches `href`, handy for highlighting the current nav item:
+
+```handlebars
+<nav>
+  {{#isActive page href='/about'}}<a
+      class='active'
+      href='/about'
+    >About</a>{{else}}<a href='/about'>About</a>{{/isActive}}
+</nav>
+```
+
+Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
+
+`canonical` is the current page's absolute URL, for a `<link rel="canonical">` — `siteUrl` joined to the page's own URL:
+
+```handlebars
+<link rel='canonical' href='{{canonical}}' />
+```
+
+It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string: the trailing `index.html` collapses to the folder (`/about/index.html` → `https://example.com/about`), the home page is `siteUrl` with one trailing slash, and it reads the same whether `extensionLess` is on or off. A `siteUrl` with a trailing slash is fine — you never get a double slash.
+
+`absUrl` does the same join for any path of your own, which is what an Open Graph image or an RSS link needs:
+
+```handlebars
+<meta property='og:image' content='{{absUrl "/img/card.png"}}' />
+<meta property='og:url' content='{{absUrl}}' />
+```
+
+`/about`, `about` and `about/` all give `https://example.com/about`; a file extension is kept (`{{absUrl 'css/site.css'}}` → `https://example.com/css/site.css`), a URL that already has a scheme is passed through untouched, and calling it with no path gives you `canonical`.
+
+Both need `siteUrl` on the Kiss config. Without one they render nothing and log a warning (one per page) rather than failing the build.
+
+`asset` gives you the URL of a file the build actually contains, under whatever cache-busting policy `config.assets` sets:
+
+```handlebars
+<link rel='stylesheet' href='/{{asset "css/site.css"}}' />
+```
+
+It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` depending on the config — see **Cache-busting asset URLs** above. There is no leading slash, so the template chooses the base: `/{{asset …}}`, `{{root}}{{asset …}}`, or `{{absUrl (asset …)}}` for an absolute URL. A path that is not in the build renders as you wrote it and logs one warning per page naming it, rather than failing the page.
+
+`env` renders one branch or the other depending on whether you're in dev mode:
+
+```handlebars
+{{#env is='dev'}}
+  <script src='http://localhost:35729/livereload.js'></script>
+{{else}}
+  <!-- production only -->
+{{/env}}
+```
+
+`is` must be a string containing `"dev"` or `"prod"` (case-insensitive) — checked against the Kiss instance's `dev` config option.
+
 Kiss exposes the handlebars object so you can register your own helpers, e.g.
 
 ```js
@@ -261,10 +490,35 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 
 ## Migrating from v1
 
+- **Node ≥22.12.0 first** (`package.json` `engines.node`) — check this before anything else here: v2 will not install or run below it. If your project pins a dev Node version the way this repo's own `.nvmrc` does, bump yours before touching any code.
 - v2 is ESM-only (`import Kiss from 'kiss-ssg'`). `require()` still works on Node ≥22.12.
-- The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build.
+- The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build. Failures don't surface through `.generate()`, though: v1 logged a page's render/write failure and resolved anyway, while v2's `.complete()` **rejects** with an `AggregateError` (`err.failures` = `[{ view, buildTo, error }]`). The v1 callback-style idiom — `kiss.generate(function () { this.complete(function () { ... }) })` — now leaves that rejection unhandled the first time a page fails, so give `.complete()` a `.catch`:
+
+  ```js
+  kiss
+    .scan()
+    .generate()
+    .complete()
+    .catch((err) => {
+      for (const f of err.failures) {
+        console.error(`${f.view} | ${f.buildTo} | ${f.error.message}`)
+      }
+      process.exitCode = 1
+    })
+  ```
+
+  A failed build never runs `.complete()`'s own callback, so anything you did there — writing a sitemap, generating an index, kicking off a deploy — has to run again in the `catch`. And a chain that ends at `.generate()` with no `.complete()` never sees any of this: it keeps exiting 0 on a broken build, so every deploy script must `await kiss.complete()` (or otherwise attach a rejection handler) to catch a failure.
+
 - Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module. Partials live there too: a helper that reads `require('handlebars').partials` finds nothing in v2 — read `kiss.handlebars.partials`, or drop the helper and use Handlebars' native dynamic partial, `{{> (lookup this "partialName")}}`.
 - `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`.
 - Controller files may use `export default` (legacy `module.exports` still works).
-- Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are now skipped with a "Page already processed" log instead of being written twice.
+- Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are no longer written twice: the second page is not built, and the collision fails the build (`complete()` rejects, naming the path as `Page already processed: <path>`) — v1 built whichever page came last. If a site relied on that v1 skip to give one source priority over another — registering a low-priority fan-out last, so the engine silently dropped whatever slug a higher-priority source had already claimed — dedupe the slugs yourself before registering instead:
+
+  ```js
+  const claimed = new Set(catalogItems.map((c) => c.slug))
+  const rdItems = allRdItems.filter((r) => !claimed.has(r.slug))
+  kiss.pages({ view: 'rd.hbs', model: rdItems /* ... */ })
+  ```
+
 - New: `kiss.close()` stops the dev server and file watcher.
+- **Unchanged in v2**, so there is nothing to migrate even though it looks load-bearing: the per-page `generate: false` option (default `true`, see `.page()`'s options above) still skips building one page; `callback.call(this, ...)` still binds the `Kiss` instance inside `.generate()`/`.complete()`/`.sitemap()` callbacks; the per-page `ext` option; `copyAssets(sourceDir, targetDir)` to a second directory; `.viewStats()`/`.getModelByID()`. Anything under `this._stack` is internal and unversioned — code reading `_stack[].buildTo`/`_stack[].page.options` for a hand-rolled sitemap works today by accident; `.sitemap()` is the supported way to enumerate registered pages.

@@ -1,0 +1,47 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 7 &middot; versioned outputs &middot; {{config.season}}</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="grid">
+    {{#each model.menu}}
+    <article class="card">
+      <h3>{{name}}</h3>
+      <p class="meta">{{note}}</p>
+      <p class="price">{{price}}</p>
+    </article>
+    {{/each}}
+  </div>
+
+  <p class="meta">
+    <a href="../index.html">&larr; every season this roastery has printed</a>
+  </p>
+
+  <div class="card">
+    {{> "newsletter"}}
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    This page is one season's menu, and <code>{{config.season}}</code> above came from nowhere
+    but the command line: <code>node 7-versioned-outputs.js {{config.season}}</code> built this
+    exact folder. Run it again with a different season and a sibling folder appears &mdash; this
+    one is never touched, because <code>folders.build</code> is <code>../public/7-versioned-outputs/{{config.season}}</code>,
+    one full <code>Kiss</code> instance per season, and <code>cleanBuild: 'atomic'</code> means a
+    typo'd rerun can never wipe a season that already shipped.
+  </p>
+  <p>
+    The season also owns its own copy of the shared stylesheet: <code>folders.assets</code> is
+    <code>null</code> here, and <code>copyAssets('../_shared/assets', buildDir)</code> is called
+    explicitly against this season's own folder, so the CSS sitting next to this page is this
+    season's file, not a link to whatever the shared assets folder holds by the time someone
+    reads it years from now.
+  </p>
+  {{/content}}
+
+{{/extend}}

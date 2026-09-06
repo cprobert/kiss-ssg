@@ -2,6 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest'
 import Handlebars from 'handlebars'
 import { KissPage } from '../../lib/kiss-page.js'
 import { silentLogger } from '../../lib/logger.js'
+import fs from 'fs-extra'
+import path from 'node:path'
 import { makeSite } from '../helpers/site.js'
 
 const make = (view, opts = {}) => {
@@ -16,6 +18,7 @@ const make = (view, opts = {}) => {
   if (opts.ext) page.ext = opts.ext
   page.extLess = !!opts.extLess
   page.isDev = !!opts.dev
+  if (opts.livereloadPort) page.livereloadPort = opts.livereloadPort
   page.options = opts.options || {}
   return page.prepare()
 }
@@ -29,6 +32,12 @@ describe('url inference', () => {
     })
     expect(p.pageURL()).toBe('about-us/our-team.xml')
     expect(p.buildTo).toBe('out/about-us/our-team.xml')
+  })
+
+  it('sanitizes the extension so it cannot steer the output path', () => {
+    const p = make('v.hbs', { slug: 's', ext: '../../x' })
+    expect(p.buildTo).toBe('out/s.x')
+    expect(make('v.hbs', { slug: 's', ext: '.xml' }).buildTo).toBe('out/s.xml')
   })
 
   it('defaults to index.html at the root', () => {
@@ -83,6 +92,25 @@ describe('generate', () => {
     expect(JSON.parse(await site.read('public/d.json')).pageURL).toBe('d.html')
   })
 
+  // Flipped: this used to assert the hardcoded 'http://localhost:<port>' URL.
+  // The snippet now resolves the host in the browser, so a page opened from
+  // another device reaches the livereload server it was served from.
+  it('builds the dev snippet URL from location.hostname and the configured port', async () => {
+    site = await makeSite({})
+    const p = make('<body>\n<p>x</p>\n</body>', {
+      buildDir: site.build,
+      slug: 'lr',
+      dev: true,
+      livereloadPort: 41234,
+      options: { model: {} },
+    })
+    await p.generate()
+    const html = await site.read('public/lr.html')
+    expect(html).toContain('location.hostname')
+    expect(html).toContain(':41234/livereload.js?snipver=1')
+    expect(html).not.toContain('http://localhost:')
+  })
+
   it('reads .hbs views from pagesDir', async () => {
     site = await makeSite({ 'pages/a.hbs': 'A={{title}}' })
     const p = make('a.hbs', {
@@ -93,6 +121,40 @@ describe('generate', () => {
     })
     await p.generate()
     expect(await site.read('public/a.html')).toBe('A=T')
+  })
+
+  it('fails the page when a .hbs view cannot be read', async () => {
+    site = await makeSite({})
+    const p = make('missing.hbs', {
+      buildDir: site.build,
+      pagesDir: `${site.root}/pages`,
+      slug: 'missing',
+    })
+    await expect(p.generate()).rejects.toThrow(/missing\.hbs/)
+    expect(await site.exists('public/missing.html')).toBe(false)
+  })
+
+  it('compiles a view without a .hbs extension as an inline template', async () => {
+    site = await makeSite({})
+    const p = make('<p>{{title}}</p>', {
+      buildDir: site.build,
+      pagesDir: `${site.root}/pages`,
+      slug: 'inline',
+      options: { title: 'Inline' },
+    })
+    await p.generate()
+    expect(await site.read('public/inline.html')).toBe('<p>Inline</p>')
+  })
+
+  it('refuses to write outside the build folder', async () => {
+    site = await makeSite({})
+    const p = make('<p>x</p>', { buildDir: site.build, slug: 's' })
+    // Bypasses the setters deliberately: the guard is belt-and-braces behind
+    // them, so it can only be exercised by crafting the buildTo directly.
+    p._path = '../../escaped'
+    const escaped = path.resolve(p.buildTo)
+    await expect(p.generate()).rejects.toThrow(/build folder/)
+    expect(await fs.pathExists(escaped)).toBe(false)
   })
 
   it('skips when options.generate is false', async () => {

@@ -4,6 +4,7 @@
 // writing, so there's no window where a file exists but its content isn't.
 import { describe, it, expect, afterEach } from 'vitest'
 import Kiss from '../helpers/kiss.js'
+import fs from 'fs-extra'
 import { makeSite } from '../helpers/site.js'
 
 let site
@@ -68,6 +69,20 @@ describe('page()', () => {
       .generate()
     await kiss.complete()
     expect(await site.read('public/hello-snippet.html')).toBe('Hello world')
+  })
+
+  it('does not derive an output folder from an inline template body', async () => {
+    site = await makeSite({})
+    const kiss = new Kiss({ folders: site.folders })
+      .page({ view: '<p>no slash here</p>', slug: 'ok' })
+      .page({
+        view: '<html><body><h1>{{title}}</h1></body></html>',
+        slug: 'about',
+      })
+      .generate()
+    await kiss.complete()
+    expect(await site.exists('public/ok.html')).toBe(true)
+    expect(await site.exists('public/about.html')).toBe(true)
   })
 
   it('honours a custom extension', async () => {
@@ -141,6 +156,28 @@ describe('pages()', () => {
       .generate()
     await kiss.complete()
     expect(await site.read('public/alpha.html')).toBe('alpha')
+  })
+
+  it('gives every item its own file when the titles are non-Latin', async () => {
+    site = await makeSite({ 'src/pages/post.hbs': '{{model.title}}' })
+    const kiss = new Kiss({ folders: site.folders })
+      .pages({
+        view: 'post.hbs',
+        model: [
+          { title: '日本語のページ' },
+          { title: '안녕하세요' },
+          { title: 'Über uns' },
+          { title: 'Notre équipe' },
+        ],
+        controller: ({ model }) => ({ slug: model.title }),
+      })
+      .generate()
+    await expect(kiss.complete()).resolves.toBeDefined()
+    const built = kiss._stack.map((entry) => entry.buildTo)
+    expect(new Set(built).size).toBe(4)
+    expect(built).toContain(`${site.build}/uber-uns.html`)
+    expect(built).toContain(`${site.build}/notre-equipe.html`)
+    for (const file of built) expect(await fs.pathExists(file)).toBe(true)
   })
 
   it('loads every *.json in a models folder as the array', async () => {
@@ -253,5 +290,75 @@ describe('sitemap()', () => {
     expect(xml).not.toContain('hidden')
     expect(xml).toContain('<priority>0.5</priority>')
     expect(xml).toContain('<changefreq>weekly</changefreq>')
+  })
+})
+
+describe('per-page config', () => {
+  it('keeps a controller mutating options.config out of every other page, the instance config and the sitemap', async () => {
+    site = await makeSite({
+      'src/pages/one.hbs': '<a>{{config.siteUrl}}</a>',
+      'src/pages/two.hbs': '<b>{{config.siteUrl}}</b>',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://good.example',
+    })
+      .page({
+        view: 'one.hbs',
+        controller: (options) => {
+          options.config.siteUrl = 'https://evil.example'
+          return {}
+        },
+      })
+      .page({ view: 'two.hbs' })
+      .generate()
+      .sitemap()
+    await kiss.complete()
+    expect(await site.read('public/one.html')).toBe(
+      '<a>https://evil.example</a>',
+    )
+    expect(await site.read('public/two.html')).toBe(
+      '<b>https://good.example</b>',
+    )
+    expect(kiss.config.siteUrl).toBe('https://good.example')
+    const xml = await site.read('public/sitemap.xml')
+    expect(xml).toContain('<loc>https://good.example/one</loc>')
+    expect(xml).not.toContain('evil.example')
+  })
+
+  it('honours a caller-supplied options.config as a per-page override', async () => {
+    site = await makeSite({
+      'src/pages/one.hbs': '<a>{{config.siteUrl}}</a>',
+      'src/pages/two.hbs': '<b>{{config.siteUrl}}</b>',
+    })
+    const kiss = new Kiss({ folders: site.folders, siteUrl: 'https://global' })
+      .page({ view: 'one.hbs', config: { siteUrl: 'https://per-page' } })
+      .page({ view: 'two.hbs' })
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/one.html')).toBe('<a>https://per-page</a>')
+    expect(await site.read('public/two.html')).toBe('<b>https://global</b>')
+    expect(kiss.config.siteUrl).toBe('https://global')
+  })
+
+  it('gives each fanned-out page its own config copy', async () => {
+    site = await makeSite({ 'src/pages/course.hbs': '{{config.siteUrl}}' })
+    const kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://good.example',
+    })
+      .pages({
+        view: 'course.hbs',
+        model: [{ name: 'a' }, { name: 'b' }],
+        controller: (options) => {
+          if (options.model.name === 'a')
+            options.config.siteUrl = 'https://evil.example'
+          return {}
+        },
+      })
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/course-1.html')).toBe('https://evil.example')
+    expect(await site.read('public/course-2.html')).toBe('https://good.example')
   })
 })

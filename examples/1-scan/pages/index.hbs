@@ -1,4 +1,41 @@
-<p>
-  Hello
-  {{model.name}}
-</p>
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 1 &middot; scan</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="grid">
+    {{#each model.highlights}}
+    <article class="card">
+      <h3>{{name}}</h3>
+      <p class="meta">{{note}}</p>
+    </article>
+    {{/each}}
+  </div>
+
+  <div class="card">
+    {{> "newsletter"}}
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    Nothing on this site is registered by hand. One <code>.scan()</code> call walks the
+    pages folder, finds <code>pages/index.hbs</code> and <code>pages/about/us.hbs</code>, and
+    queues a page for each &mdash; keeping the folder structure, so the About page builds
+    to <code>about/us.html</code>.
+  </p>
+  <p>
+    Each scanned page picks up the model sitting at the matching path under
+    <code>models/</code> (<code>models/index.json</code>, <code>models/about/us.json</code>);
+    a controller at the matching path would be picked up the same way. Run this
+    example with <code>--dev</code> and add a <code>.hbs</code> file while the dev server
+    is running — the rebuild scans again, so the new page appears without touching
+    this script. Without <code>--dev</code> the example builds once and exits.
+  </p>
+  {{/content}}
+
+{{/extend}}

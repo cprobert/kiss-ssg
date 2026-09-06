@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "description": "Simple Static Website Generator",
   "main": "lib/kiss.js",
   "type": "module",
@@ -28,7 +28,8 @@
     "eg3": "cd examples && node 3-pages",
     "eg4": "cd examples && node 4-layouts-and-partials",
     "eg5": "cd examples && node 5-helpers",
-    "eg6": "cd examples && node 6-sitemap"
+    "eg6": "cd examples && node 6-sitemap",
+    "eg7": "cd examples && node 7-versioned-outputs"
   },
   "repository": {
     "type": "git",

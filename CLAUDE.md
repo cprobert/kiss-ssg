@@ -25,7 +25,10 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
 | Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
 | Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
+| Asset manifest + cache busting     | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Sass binding                       | `lib/sass.js`                | `AIKB/sass.md`                |
 | Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| URL-model fetch policy             | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
 | Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
 | Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
 | Dev server                         | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
@@ -43,8 +46,8 @@ npm run lint             # ESLint (flat config, eslint.config.js)
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the four pre-PR gates: test, lint, format, pack
 node scripts/base-branch.mjs   # print the integration branch this work merges into
-node docs                # regenerate docs/ (dev mode, starts a server — does not exit on its own, Ctrl-C to stop)
-npm run eg1 … eg6        # run an example (examples/*.js); most start a dev server and don't exit on their own
+node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
+npm run eg1 … eg7        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (examples 1-6)
 ```
 
 `.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.
@@ -53,13 +56,13 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettie
 
 ## Pipeline in one paragraph
 
-`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues an asset copy, registers helpers and partials, and in dev mode starts the server and watcher. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` drains everything (including work queued by callbacks) and resolves. `.sitemap()` waits for `_promises` and writes `sitemap.xml`. Under `.watch()`, a whole-site rebuild replays that pipeline from the logged `_registrations` (`Kiss._replay()`) instead of just re-rendering the stack, so edited models and controllers take effect. Full detail: `AIKB/kiss.md`.
+`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues an asset copy, registers helpers and partials, and in dev mode starts the server and watcher. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` runs `_settle()` — drain everything (including work queued by callbacks), render whatever the drain left unrendered, repeat until the stack is stable — then **rejects with an `AggregateError`** if any page, controller, callback or the dev server failed, and otherwise resolves (and, under `cleanBuild: 'atomic'`, promotes the staging folder at that point). `.sitemap()` waits for `_promises` and writes `sitemap.xml`. Under `.watch()`, every event goes to `Kiss._handleChange`, which decides between a scoped re-render of matching stack entries (a page-view, partial or layout edit) and a whole-site rebuild that replays the pipeline from the logged `_registrations` (`Kiss._replay()`) so edited models and controllers take effect; both kinds go through one serial rebuild queue, and one live reload fires per settled rebuild. Full detail: `AIKB/kiss.md`.
 
 ## Git workflow
 
 Two automated nets, and they run the same script. A **pre-commit hook** (`.githooks/pre-commit`, activated per-clone by the npm `prepare` script) blocks a commit whose staged files fail prettier — it checks staged blob content, not the working tree, so it is immune to the CRLF noise of a Windows checkout. **CI** (`.github/workflows/ci.yml`) runs `npm run gates` on every push and PR to `main` and `v2`, and `prepublishOnly` runs the same gates before `npm publish` can ship anything. Neither replaces the ritual below: CI tells you a branch is broken, the ritual is what sweeps the docs, checks coverage, bumps the version and writes the reflection.
 
-**The base branch is resolved, not assumed.** `node scripts/base-branch.mjs` prints the integration branch the current work merges back into — `main`, or the major line in development (`v2` today). Every skill and script below uses it, so nothing has to be edited when v2 lands on main. Override with `git config kiss.baseBranch <name>`.
+**The base branch is resolved, not assumed.** `node scripts/base-branch.mjs` prints the integration branch the current work merges back into — `main`, or the major line in development (`v2` today). Every skill and script below uses it, so nothing has to be edited when v2 lands on main. Override with `git config kiss.baseBranch <name>` or `KISS_BASE_BRANCH` — an override in effect names itself on stderr (stdout stays the bare ref), and one that resolves to no ref is reported and ignored in favour of the algorithm.
 
 A branch runs as three beats, all reading one committed artefact — `planning/sessions/<date>-<slug>.md`:
 

@@ -1,55 +1,60 @@
 import Kiss, { utils } from '../lib/kiss.js'
+import {
+  sharedFolders,
+  site,
+  script,
+  reportBuildFailure,
+} from './_shared/site.js'
+
+const dev = process.argv.includes('--dev')
+
 const kiss = new Kiss({
-  folders: {
-    src: './3-pages',
-    build: '../public/3-pages',
-    assets: null,
-    layouts: null,
-    models: null,
-    controllers: null,
-    partials: null,
-  },
-  addPagesOnGenerate: false,
+  site,
+  script: script(import.meta.url),
+  nav: [
+    { href: 'index.html', label: 'Home' },
+    { href: 'roasts/index.html', label: 'Roasts', folderMatch: true },
+  ],
+  folders: { src: './3-pages', build: '../public/3-pages', ...sharedFolders },
   verbose: true,
-  dev: true,
-  extensionLess: true,
+  dev,
 })
+
+// Every roast is one JSON file in models/roasts. Naming the folder as the
+// model hands .pages() the whole array, and it fans out one page per entry.
+kiss
+  .page({ view: 'index.hbs' })
   .pages({
-    view: 'courses/course.hbs',
-    model: 'https://jsonplaceholder.typicode.com/users',
-    controller: ({ model }) => {
-      // Map the demo API's user shape onto the fields the views expect
-      model.title = model.name
-      model.introduction = model.company.catchPhrase
-      model.slug = utils.toSlug(model.username)
-      return {
-        slug: model.slug,
-        model: model,
-      }
-    },
-    path: 'courses',
+    view: 'roasts/roast.hbs',
+    model: 'roasts',
+    // .pages() takes the output folder from `path`; unlike .page() it does
+    // not infer one from the view's location.
+    path: 'roasts',
+    controller: ({ model }) => ({
+      // Without a slug of its own each page would be roast-0, roast-1, …
+      slug: utils.toSlug(model.name),
+      model,
+    }),
   })
   .generate(function (data) {
-    // data is an array of models from all promises
-    // this.getModelByID is a helper to rehydrate the model on completion
-    const courseModel = this.getModelByID(
-      'https://jsonplaceholder.typicode.com/users',
-      data,
-    )
-    // It can then be reused for pages such as indexes
+    // The fan-out already resolved the folder; getModelByID pulls that same
+    // array back out of the build data to build the index from it.
+    const roasts = this.getModelByID('roasts', data)
     this.page({
-      model: courseModel,
-      view: 'courses/index.hbs',
-      path: '/',
-      controller: ({ model }) => {
-        return {
-          title: 'List of courses',
-          model: model,
-        }
-      },
-      slug: 'index',
+      view: 'roasts/index.hbs',
+      title: 'Every roast',
+      model: roasts,
+      controller: ({ model }) => ({
+        model: model.map((roast) => ({
+          ...roast,
+          slug: utils.toSlug(roast.name),
+        })),
+      }),
     }).generate(function () {
-      this.scan()
       this.viewStats()
     })
   })
+
+if (!dev) {
+  await kiss.complete().catch(reportBuildFailure)
+}

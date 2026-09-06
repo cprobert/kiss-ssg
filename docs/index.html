@@ -1,103 +1,26 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <title>Index</title>
-
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
-  <meta name="description" content="">
-  <meta name="author" content="Courtenay Probert">
-  <meta name="generator" content="kiss-ssg">
-  <title>Kiss-SSG</title>
-
-  
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
-
-  <style>
-    .bd-placeholder-img {
-      font-size: 1.125rem;
-      text-anchor: middle;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-
-    @media (min-width: 768px) {
-      .bd-placeholder-img-lg {
-        font-size: 3.5rem;
-      }
-    }
-  </style>
-  
-  <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
-  
-  <link href="/css/blog.css" rel="stylesheet">
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.2/styles/github.min.css">
-
-    
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.2/highlight.min.js"></script>
-  <script>hljs.initHighlightingOnLoad();</script>
-</head>
-<body>
-  <div class="container">
-        <header class="blog-header py-3">
-          <div class="row flex-nowrap justify-content-between align-items-center">
-            <div class="col-4 pt-1">
-              <a class="btn btn-sm btn-outline-secondary" href="https://github.com/cprobert/kiss-ssg">Source</a>
-            </div>
-            <div class="col-4 text-center">
-              <a class="blog-header-logo text-dark" href="#">Kiss-SSG</a>
-            </div>
-            <div class="col-4 d-flex justify-content-end align-items-center">
-              <a class="btn btn-sm btn-outline-secondary" href="https://www.npmjs.com/package/kiss-ssg">NPM</a>
-            </div>
-          </div>
-        </header>
-    <div class="nav-scroller py-1 mb-2">
-      <nav class="nav d-flex justify-content-between">
-        <a class="p-2 text-muted" href="#">Setup</a>
-        <a class="p-2 text-muted" href="#">Folders</a>
-        <a class="p-2 text-muted" href="#">Scan/Generate</a>
-        <a class="p-2 text-muted" href="#">Page/Pages</a>
-        <a class="p-2 text-muted" href="#">Helpers</a>
-      </nav>    </div>
-
-    <div class="jumbotron p-4 p-md-5 text-white rounded bg-dark">
-      <div class="col-md-12 px-0">
-        <h1 class="display-4 font-italic">Keep it Simple Static Site Generator</h1>
-        <p class="lead my-3">
-          Kiss Static Site Generator, is an open-source MVC html website builder (for node), that leverages handlebar templates to make quick, simple and blisteringly fast websites.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <main role="main" class="container">
-    <div class="row">
-
-      <div class="col-md-8 blog-main">
-        
-  <h3 class="pb-4 mb-4 font-italic border-bottom">
-    Usage
-  </h3>
-
-  <div class="blog-post">   
-    <h2>Setup</h2>
-    <p>Kiss is an object so will need to be instantiated. In its simplest form kiss will scan your pages directory and use file based routing to generate the html output.</p>
-    <pre><code class="language-js">import Kiss from 'kiss-ssg'
+<!doctype html><html lang="en"><head><title>Index</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name="description" content=""><meta name="author" content="Courtenay Probert"><meta name="generator" content="kiss-ssg"><title>Kiss-SSG</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous"><style>.bd-placeholder-img{font-size:1.125rem;text-anchor:middle;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}@media (min-width:768px){.bd-placeholder-img-lg{font-size:3.5rem}}</style><link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet"><link href="/css/blog.css" rel="stylesheet"><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.2/styles/github.min.css"><script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script><script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.2/highlight.min.js"></script><script>hljs.initHighlightingOnLoad()</script></head><body><div class="container"><header class="blog-header py-3"><div class="row flex-nowrap justify-content-between align-items-center"><div class="col-4 pt-1"><a class="btn btn-sm btn-outline-secondary" href="https://github.com/cprobert/kiss-ssg">Source</a></div><div class="col-4 text-center"><a class="blog-header-logo text-dark" href="#">Kiss-SSG</a></div><div class="col-4 d-flex justify-content-end align-items-center"><a class="btn btn-sm btn-outline-secondary" href="https://www.npmjs.com/package/kiss-ssg">NPM</a></div></div></header><div class="nav-scroller py-1 mb-2"><nav class="nav d-flex justify-content-between"><a class="p-2 text-muted" href="#">Setup</a> <a class="p-2 text-muted" href="#">Folders</a> <a class="p-2 text-muted" href="#">Scan/Generate</a> <a class="p-2 text-muted" href="#">Page/Pages</a> <a class="p-2 text-muted" href="#">Helpers</a></nav></div><div class="jumbotron p-4 p-md-5 text-white rounded bg-dark"><div class="col-md-12 px-0"><h1 class="display-4 font-italic">Keep it Simple Static Site Generator</h1><p class="lead my-3">Kiss Static Site Generator, is an open-source MVC html website builder (for node), that leverages handlebar templates to make quick, simple and blisteringly fast websites.</p></div></div></div><main role="main" class="container"><div class="row"><div class="col-md-8 blog-main"><h3 class="pb-4 mb-4 font-italic border-bottom">Usage</h3><div class="blog-post"><h2>Setup</h2><p>Kiss is an object so will need to be instantiated. In its simplest form kiss will scan your pages directory and use file based routing to generate the html output.</p><pre><code class="language-js">import Kiss from 'kiss-ssg'
     const kiss = new Kiss()
     kiss.scan()
     kiss.generate()
-    </code></pre>
-    <p><strong>Note</strong>: kiss will generate the default folders for you when you first run the script. You can overwrite the folder locations bay passing a config to the kiss constructor.</p>
-    <p>The default config options are:</p>
-    <pre><code class="language-js">{
+    </code></pre><p>kiss-ssg v2 is an ES module (<code>import Kiss from 'kiss-ssg'</code>) and needs Node 22.12 or newer; plain <code>require('kiss-ssg')</code> also works on those versions.</p><p><strong>Note</strong>: kiss will generate the default folders for you when you first run the script. You can overwrite the folder locations bay passing a config to the kiss constructor.</p><p>The default config options are:</p><pre><code class="language-js">{
       dev: false,
       verbose: false,
       cleanBuild: true,
+      extensionLess: false,
+      sass: { includePaths: [] },
+      fetch: {
+        headers: {},
+        timeout: 10000,
+        retries: 0,
+        cache: false
+      },
+      assets: {
+        hash: false,
+        version: null
+      },
+      port: 3001,
+      livereloadPort: 35729,
+      devHost: '127.0.0.1',
       folders: {
         src: './src',
         build: './public',
@@ -109,35 +32,7 @@
         controllers: './src/controllers'
       }
     }
-    </code></pre>
-    <p>Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed</p>
-    <table>
-    <thead>
-    <tr><th>Option</th><th style="text-align:center">Default</th><th style="text-align:center">Purpose</th></tr>
-    </thead>
-    <tbody>
-    <tr><td>dev</td><td style="text-align:center">false</td><td style="text-align:center">Dev mode will start a local live-reload server and rebuild on file change.</td></tr>
-    <tr><td>verbose</td><td style="text-align:center">false</td><td style="text-align:center">Enables additional output on the terminal, when set to true</td></tr>
-    <tr><td>cleanBuild</td><td style="text-align:center">true</td><td style="text-align:center">Removed all files from the build dir before generating.</td></tr>
-    <tr><td>folders</td><td style="text-align:center">see above</td><td style="text-align:center">A JSON object of alternative folder locations</td></tr>
-    </tbody>
-    </table>
-    <p><br></p>
-    <p><strong>Note</strong>: All config settings are available in the view under &quot;this.config&quot;</p>
-    <h3>Assets</h3>
-    <p>Any static files you have in the assets directory will be copied to the build directory</p>
-    <hr>
-    <h2>Methods</h2>
-    <p>kiss-ssg has 3 methods</p>
-    <ul>
-    <li>.page()</li>
-    <li>.pages()</li>
-    <li>.scan()</li>
-    </ul>
-    <p>The simplest usage is to use .scan() to scan your 'pages directory' for *.hbs files and outputs them to the 'build folder'.</p>
-    <h3>.page()</h3>
-    <p>Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g. </p>
-    <pre><code class="language-js">import Kiss from 'kiss-ssg'
+    </code></pre><p>Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed</p><table><thead><tr><th>Option</th><th style="text-align:center">Default</th><th style="text-align:center">Purpose</th></tr></thead><tbody><tr><td>dev</td><td style="text-align:center">false</td><td style="text-align:center">Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too.</td></tr><tr><td>verbose</td><td style="text-align:center">false</td><td style="text-align:center">Enables additional output on the terminal, when set to true</td></tr><tr><td>cleanBuild</td><td style="text-align:center">true</td><td style="text-align:center"><code>true</code>, <code>false</code> or <code>'atomic'</code>. <code>true</code> empties the build dir in the constructor, before anything renders; <code>'atomic'</code> builds into a staging folder and swaps it in when <code>complete()</code> resolves.</td></tr><tr><td>extensionLess</td><td style="text-align:center">false</td><td style="text-align:center">When <code>true</code>, a non-index page builds to <code>&lt;path&gt;/&lt;slug&gt;/index.html</code> instead of <code>&lt;path&gt;/&lt;slug&gt;.html</code>.</td></tr><tr><td>sass</td><td style="text-align:center"><code>{ includePaths: [] }</code></td><td style="text-align:center"><code>includePaths</code> is passed to sass as <code>loadPaths</code>, so <code>@use</code>/<code>@import</code> can resolve from those directories too.</td></tr><tr><td>fetch</td><td style="text-align:center">see below</td><td style="text-align:center">The policy for <code>http(s)</code> models: <code>headers</code> sent with every request, <code>timeout</code> in ms, <code>retries</code> after a network error or a 5xx, and <code>cache</code> (<code>false</code>, or a directory to cache successful bodies in).</td></tr><tr><td>assets</td><td style="text-align:center"><code>{ hash: false, version: null }</code></td><td style="text-align:center">Cache busting for the files copied into the build. <code>hash: true</code> renames every emitted <code>.css</code>/<code>.js</code> to carry a content hash; <code>version: '1.4.5'</code> renames nothing and makes <code>{{asset}}</code> append <code>?v=1.4.5</code>.</td></tr><tr><td>port</td><td style="text-align:center">3001</td><td style="text-align:center">The port the dev server listens on (<code>dev: true</code> only)</td></tr><tr><td>livereloadPort</td><td style="text-align:center">35729</td><td style="text-align:center">The port the live-reload server listens on. Give a second site of your own a different value so both can watch at once.</td></tr><tr><td>devHost</td><td style="text-align:center">'127.0.0.1'</td><td style="text-align:center">The interface the dev and live-reload servers bind to. Loopback only by default; set <code>'0.0.0.0'</code> to preview from another device on your network.</td></tr><tr><td>folders</td><td style="text-align:center">see above</td><td style="text-align:center">A JSON object of alternative folder locations</td></tr><tr><td>siteUrl</td><td style="text-align:center">undefined</td><td style="text-align:center">The site's base URL, required by <code>.sitemap()</code> (see below)</td></tr></tbody></table><p>A config key you pass explicitly as <code>undefined</code> still takes its default (<code>new Kiss({ port: process.env.PORT })</code> with <code>PORT</code> unset gives <code>3001</code>); <code>null</code> is a real value — it switches a folder off.</p><p>Setting <code>folders.src</code> re-derives every other folder key from it (<code>${src}/${key}</code>), unless you also set that key explicitly — <code>folders.build</code> always defaults to <code>./public</code> regardless of <code>src</code>.</p><p><br></p><p><strong>Note</strong>: All config settings are available in the view under &quot;this.config&quot;. Each page also gets its own copy, so a controller can override settings for just that page via a <code>config</code> option (see <code>.page()</code> below) without affecting any other page.</p><h3>Assets</h3><p>Any static files you have in the assets directory will be copied to the build directory. <code>.scss</code>/<code>.sass</code> files are compiled to a sibling <code>.css</code> file first; everything else is copied straight through.</p><hr><h2>Methods</h2><p>kiss-ssg's core methods:</p><ul><li>.page()</li><li>.pages()</li><li>.scan()</li><li>.generate()</li><li>.complete()</li></ul><p>The simplest usage is to use .scan() to scan your 'pages directory' for *.hbs files and outputs them to the 'build folder'. <code>.scan()</code> skips any view you've already registered with <code>.page()</code> earlier in the same chain, so the two can be mixed — <code>kiss.page({...}).scan().generate()</code>.</p><h3>.page()</h3><p>Instead (in in conjunction) of using the .scan() method you can pass a model to the view using the .page() method. This allows you to name the view and pass a model to that view. The model is then available in the handlebar template under the model property, e.g.</p><pre><code class="language-js">import Kiss from 'kiss-ssg'
     const kiss = new Kiss({ dev: true })
     kiss
       .page({
@@ -147,13 +42,7 @@
         title: 'My Page Title',
       })
       .generate()
-    </code></pre>
-    <p><strong>Note</strong>: The file locations of the models, views, and controllers are relative to the folder locations defined in the kiss configuration. Alternatively, instead of passing a file location you can pass a native object for that setting.</p>
-    <p>Views: can se a .hbs file or a string<br>
-    Models: can be a .json file, a http api endpoint, or a JSON object<br>
-    Controllers: can be a .js file or a function that returns a page option JSON to be merged into the page options</p>
-    <p>The options that you can pass to .page() &amp; pages() are:</p>
-    <pre><code class="language-js">  {
+    </code></pre><p><strong>Note</strong>: The file locations of the models, views, and controllers are relative to the folder locations defined in the kiss configuration. Alternatively, instead of passing a file location you can pass a native object for that setting.</p><p>Views: can be a .hbs file or a template string<br>Models: can be a .json file, a http(s) API endpoint, or a JSON object (a response with a non-2xx status fails that page rather than publishing the error body)<br>Controllers: can be a .js file or a function that returns a page option JSON to be merged into the page options</p><p>The options that you can pass to .page() &amp; pages() are:</p><pre><code class="language-js">  {
         view: 'index.hbs',
         model: {}
         controller: ({model})=&gt;{return {model: model}},
@@ -161,22 +50,14 @@
         description: 'A description of the page (useful for meta data)'
         path: '/',
         slug: 'index',
+        ext: 'html',
+        config: {},
+        ignoreSitemap: false,
+        sitemapPriority: '1.00',
+        sitemapChangefreq: undefined,
+        sitemapLastmod: undefined,
       }
-    </code></pre>
-    <p>These options are both used internally by kiss and are available in view.</p>
-    <ul>
-    <li>view = A handlebars view.</li>
-    <li>model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.</li>
-    <li>controller = A function that returns a page options object - used for manipulating data in the model.</li>
-    <li>title = The page title</li>
-    <li>path = the folder path to the page</li>
-    <li>slug = the name of the file without the extension</li>
-    </ul>
-    <p>page and path create the url, i.e. /{path}/{slug}.html</p>
-    <p><em>Note:</em> If you don't pass a path or a slug they will be inferred from the view</p>
-    <h3>.pages()</h3>
-    <p>In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:</p>
-    <pre><code class="language-js">import Kiss from 'kiss-ssg'
+    </code></pre><p>These options are both used internally by kiss and are available in view.</p><ul><li>view = A handlebars view.</li><li>model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.</li><li>controller = A function that returns a page options object - used for manipulating data in the model.</li><li>title = The page title</li><li>path = the folder path to the page</li><li>slug = the name of the file without the extension</li><li>ext = the output file extension (default <code>html</code>)</li><li>config = config overrides for this page only, merged over the global config</li></ul><p>page and path create the url, i.e. /{path}/{slug}.html</p><p><em>Note:</em> If you don't pass a path or a slug they will be inferred from the view — but only when the view is a <code>.hbs</code> filename; a template string has no file path to infer from, so it gets a generated slug instead. Two pages that resolve to the same output path fail the build rather than silently overwriting one another.</p><h3>.pages()</h3><p>In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:</p><pre><code class="language-js">import Kiss from 'kiss-ssg'
     
     const kiss = new Kiss()
     kiss
@@ -193,11 +74,19 @@
         },
       })
       .generate()
-    </code></pre>
-    <hr>
-    <h2>Controllers</h2>
-    <p>The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.</p>
-    <pre><code class="language-js">import Kiss from 'kiss-ssg'
+    </code></pre><p><code>.pages()</code> works the same way, except <code>model</code> must resolve to an array (or a models folder full of <code>.json</code> files) and it fans out one page per item.</p><h3>.generate() and .complete()</h3><p><code>.generate(callback)</code> waits for every queued page's model to resolve, then renders and writes each page. It's chainable and returns straight away — its callback fires once every page has been attempted, whether or not it succeeded:</p><pre><code class="language-js">kiss.scan().generate(function (data) {
+      console.log('build attempted', data.length, 'items')
+    })
+    </code></pre><p>To actually wait for the whole build — including anything a <code>.sitemap()</code> call or a <code>.generate()</code> callback queues — <code>await</code> <code>.complete()</code> instead:</p><pre><code class="language-js">try {
+      await kiss.scan().generate().complete()
+    } catch (err) {
+      console.error(err.message) // e.g. 1 page(s) failed to build: public/about.html
+      process.exitCode = 1
+    }
+    </code></pre><p>A bad model isn't a build failure: it's logged, that page is skipped, and it shows up in the resolved data as <code>{ id, data: null, error }</code>. A missing view file, a controller that throws (or is missing, or doesn't export a function), a callback that throws, and two pages that resolve to the same output path <strong>do</strong> fail the build — <code>.complete()</code> rejects with an <code>AggregateError</code> listing every failure.</p><p><strong>Note</strong>: a controller must be pure — return new values, never mutate <code>model</code> (or a nested option such as <code>config.folders</code>) in place. In <code>dev: true</code>, <code>.watch()</code> replays a page from a shallow snapshot of its original <code>.page()</code>/<code>.pages()</code> call, so an object model your controller mutated in place is still mutated on the next rebuild.</p><h3>.sitemap()</h3><p>Generates a <code>sitemap.xml</code> in the build folder from every page you've registered. Requires <code>siteUrl</code> to be set on the Kiss config; it logs an error and skips writing if it isn't. Can be called before or after <code>.generate()</code>:</p><pre><code class="language-js">import Kiss from 'kiss-ssg'
+    const kiss = new Kiss({ siteUrl: 'https://example.com' })
+    kiss.scan().generate().sitemap()
+    </code></pre><p>Any page can opt out with <code>ignoreSitemap: true</code>, and override its entry with <code>sitemapPriority</code> (default <code>'1.00'</code>), <code>sitemapChangefreq</code> (omitted unless set), and <code>sitemapLastmod</code> (default: one timestamp shared across all pages).</p><h3>.watch() and .close()</h3><p><code>kiss.watch()</code> (meaningful only alongside <code>dev: true</code>) starts a file watcher plus a live-reload dev server on <code>port</code>. Editing a partial or layout re-renders every page without re-reading models or re-running controllers. Every other change under <code>src/</code> — a page template, a model, or a controller — triggers a whole-site rebuild, so edited models and controllers take effect. Deleted partials, layouts and page templates are unregistered on the next rebuild; new ones are picked up automatically.</p><p><code>await kiss.close()</code> stops the watcher and dev server, waiting for any in-flight rebuild to finish first, so it's always safe to clean or deploy the build folder once it resolves.</p><hr><h2>Controllers</h2><p>The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.</p><pre><code class="language-js">import Kiss from 'kiss-ssg'
     const kiss = new Kiss({ test: '123' })
     
     kiss
@@ -216,45 +105,42 @@
         path: 'courses',
       })
       .generate()
-    </code></pre>
-    <hr>
-    <h2>Helpers</h2>
-    <p>Kiss-ssg registers a few useful helpers by default including a markdown parser.</p>
-    <p>Kiss exposes the handlebars object so you can register your own helpers, e.g.</p>
-    <pre><code class="language-js">//  Extending handlebars
+    </code></pre><p>A controller should stay <strong>pure</strong> — return new values, never mutate <code>model</code> (or a nested option such as <code>config.folders</code>) in place. How much an in-place mutation costs you depends on the model kind: a <code>.json</code> file, a models folder, or an <code>http(s)://</code> URL model is re-resolved on every build and on every <code>.watch()</code> whole-site rebuild, so mutating one of those in place is contained to that single build. A <strong>plain object</strong> model is different — it is replayed from a shallow snapshot of the original <code>.page()</code>/<code>.pages()</code> call, so an object model your controller mutated in place is still mutated on the next rebuild: an in-place <code>array.push(...)</code> or property assignment on it accumulates one more change with every save, and the dev server drifts further from what a fresh build would produce.</p><p>A controller that throws, a controller file that doesn't exist, or one whose file doesn't export a function fails that page's build — <code>.complete()</code> rejects, listing it as a failure — rather than shipping a page built from un-controlled options.</p><h3>Other methods</h3><ul><li><code>.registerPartials()</code> — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without <code>.watch()</code>.</li><li><code>.viewStats()</code> — logs how many pages are queued and prepared, and with <code>verbose: true</code> writes a <code>debug.json</code> into the build folder listing every page as <code>{ view, buildTo, runCount, options }</code>. Chainable; handy from a <code>.generate()</code> callback to see what the build actually produced.</li><li><code>.getModelByID(id, data)</code> — pulls one entry out of the <code>[{ id, data }]</code> array <code>.generate()</code>/<code>.complete()</code> hand back, returning its <code>data</code> (or <code>{ error }</code> if no entry has that id). The id is the model's filename or URL.</li><li><code>.copyAssets(sourceDir, targetDir)</code> — compiles every <code>.scss</code>/<code>.sass</code> under <code>sourceDir</code> to a sibling <code>.css</code> and copies everything else straight through. Runs automatically at construction for <code>folders.assets</code> → <code>folders.build</code>; call it again for extra asset directories.</li></ul><pre><code class="language-js">kiss.scan().generate(function (data) {
+      this.viewStats()
+      console.log(this.getModelByID('index.json', data))
+    })
+    </code></pre><hr><h2>Helpers</h2><p>Kiss-ssg registers a few useful helpers by default: <code>markdown</code>, <code>sass</code>, <code>offset</code>, <code>stringify</code>, <code>lookup</code>, <code>isActive</code>, <code>canonical</code>, <code>absUrl</code>, <code>asset</code> and <code>env</code>.</p><p>You can parse markdown like this:</p><pre><code class="language-handlebars">&lt;div&gt;
+      {{#markdown}} # Heading &gt; this is markdown foo bar baz
+      {{/markdown}} or
+    
+      {{markdown model.introduction}}
+    &lt;/div&gt;
+    </code></pre><p>An <code>undefined</code>, <code>null</code>, object or array value logs a warning and renders nothing, rather than throwing and failing the page.</p><p>If you want to take a peek at whats properties you have available to to in a handlebars file you can use this helper:</p><pre><code class="language-handlebars">{{{stringify this}}}
+    </code></pre><p><code>lookup</code> is Handlebars' own <code>lookup</code> helper, with one addition: when the key is undefined it logs a warning naming the key and the page, so a dynamic partial with a missing key is easier to track down:</p><pre><code class="language-handlebars">{{&gt; (lookup this 'partialName')}}
+    </code></pre><p>You can compile Sass, either from a file or an inline block:</p><pre><code class="language-handlebars">{{{sass 'src/assets/main.scss'}}}
+    
+    {{#sass}} $color: red; body { color: $color; }
+    {{/sass}}
+    </code></pre><p>A relative file path is resolved against <code>process.cwd()</code> — not the assets folder or the current view — so pass a path relative to where you run the build, or pass an absolute path. Output is <code>'expanded'</code> in <code>dev: true</code> and <code>'compressed'</code> otherwise; <code>config.sass.includePaths</code> is passed through as <code>loadPaths</code> for <code>@use</code>/<code>@import</code>.</p><p><code>offset</code> turns a zero-based <code>@index</code> into a one-based number:</p><pre><code class="language-handlebars">{{#each items}}
+    {{offset @index}}:
+    {{this}}
+    {{/each}}
+    </code></pre><p><code>isActive</code> renders its block only when the current page matches <code>href</code>, handy for highlighting the current nav item:</p><pre><code class="language-handlebars">&lt;nav&gt;
+      {{#isActive page href='/about'}}&lt;a
+        class='active'
+        href='/about'
+      &gt;About&lt;/a&gt;{{else}}&lt;a href='/about'&gt;About&lt;/a&gt;{{/isActive}}
+    &lt;/nav&gt;
+    </code></pre><p>Hash options: <code>href</code> (the link's path), <code>active</code> (the class name rendered as <code>{{active}}</code> inside the block on a match — default <code>'active'</code>), <code>folderMatch</code> (default <code>false</code> — when <code>true</code>, also matches pages below <code>href</code>, so <code>href=&quot;/blog&quot;</code> matches <code>/blog/post-1</code> too). <code>href</code> and the page's own URL are both reduced to the same key first — no leading/trailing slash, no extension, no trailing <code>index</code> segment — so the same <code>href=&quot;/about&quot;</code> matches whether the page built to <code>about.html</code> or, with <code>extensionLess: true</code>, <code>about/index.html</code>, and <code>/about</code>/<code>/about/</code> are always the same page.</p><p><code>canonical</code> is the current page's absolute URL, built from <code>config.siteUrl</code> and the same code that writes <code>sitemap.xml</code>:</p><pre><code class="language-handlebars">&lt;link rel='canonical' href='{{canonical}}' /&gt;
+    </code></pre><p><code>absUrl</code> does the same <code>siteUrl</code> join for any path of your own, which is what an Open Graph image or an RSS link needs:</p><pre><code class="language-handlebars">&lt;meta property='og:image' content='{{absUrl &quot;/img/card.png&quot;}}' /&gt;
+    </code></pre><p><code>asset</code> gives you the URL of a file the build actually contains, under whatever cache-busting policy <code>config.assets</code> sets:</p><pre><code class="language-handlebars">&lt;link rel='stylesheet' href='/{{asset &quot;css/site.css&quot;}}' /&gt;
+    </code></pre><p><code>env</code> renders one branch or the other depending on whether you're in dev mode:</p><pre><code class="language-handlebars">{{#env is='dev'}}
+    &lt;script src='http://localhost:35729/livereload.js'&gt;&lt;/script&gt;
+    {{else}}
+    &lt;!-- production only --&gt;
+    {{/env}}
+    </code></pre><p><code>is</code> must be a string containing <code>&quot;dev&quot;</code> or <code>&quot;prod&quot;</code> (case-insensitive) — checked against the Kiss instance's <code>dev</code> config option.</p><p>Kiss exposes the handlebars object so you can register your own helpers, e.g.</p><pre><code class="language-js">//  Extending handlebars
     kiss.handlebars.registerHelper('stringify', function (obj) {
       return JSON.stringify(obj, null, 3)
     })
-    </code></pre>
-  </div>
-
-      </div>
-
-      <aside class="col-md-4 blog-sidebar">
-        <div class="p-4 mb-3 bg-light rounded">
-          <h4 class="font-italic">Quick and Easy</h4>
-          <p class="mb-0">Sometimes you just don't need the overhead of Gatsby, Nuxt or Jekyll</p>
-        </div>
-      
-        <div class="p-4">
-          <h4 class="font-italic">Sites that use Kiss-SSG</h4>
-          <ol class="list-unstyled mb-0">
-            <li><a href="https://www.a1k9training.co.uk/">A1K9 Training</a></li>
-            <li><a href="https://www.learna.ac.uk/">Learna Ltd</a></li>
-          </ol>
-        </div>
-      </aside>
-    </div>
-  </main>
-
-  <footer class="blog-footer">
-    <p>
-      
-    </p>
-    <p>
-      <a href="#">Back to top</a>
-    </p>
-  </footer>
-<script src="http://localhost:35729/livereload.js?snipver=1"></script>
-</body>
-</html>
+    </code></pre></div></div><aside class="col-md-4 blog-sidebar"><div class="p-4 mb-3 bg-light rounded"><h4 class="font-italic">Quick and Easy</h4><p class="mb-0">Sometimes you just don't need the overhead of Gatsby, Nuxt or Jekyll</p></div><div class="p-4"><h4 class="font-italic">Sites that use Kiss-SSG</h4><ol class="list-unstyled mb-0"><li><a href="https://www.a1k9training.co.uk/">A1K9 Training</a></li><li><a href="https://www.learna.ac.uk/">Learna Ltd</a></li></ol></div></aside></div></main><footer class="blog-footer"><p></p><p><a href="#">Back to top</a></p></footer></body></html>

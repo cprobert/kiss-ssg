@@ -1,0 +1,22 @@
+{{#extend "layout" root="../"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">{{model.title}}</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="card">
+    {{> "newsletter"}}
+  </div>
+
+  <div class="callout">
+    <p>
+      Built to <code>stockists/index.html</code> because <code>extensionLess</code> is on, which
+      is why this page climbs one folder back to the stylesheet and the nav.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}

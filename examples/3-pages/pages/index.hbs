@@ -1,0 +1,42 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 3 &middot; pages</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+    <p><a href="roasts/index.html">See every roast &rarr;</a></p>
+  </section>
+
+  <div class="grid">
+    {{#each model.highlights}}
+    <article class="card">
+      <h3>{{name}}</h3>
+      <p class="meta">{{note}}</p>
+    </article>
+    {{/each}}
+  </div>
+
+  <div class="card">
+    {{> "newsletter"}}
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <code>.pages()</code> is <code>.page()</code> with an array. Point its model at the
+    <code>models/roasts</code> folder and kiss loads every JSON file in it, then builds one
+    page per entry from a single view, <code>roasts/roast.hbs</code>. The controller runs
+    once per roast and hands back a slug, so the pages land at
+    <code>roasts/guji-uraga.html</code> rather than <code>roast-0</code>,
+    <code>roast-1</code> and so on.
+  </p>
+  <p>
+    The listing page reuses the same data. The build callback asks
+    <code>getModelByID('roasts', data)</code> for the array the fan-out already resolved and
+    registers one more page with it, so the folder is read once and the index can never
+    disagree with the detail pages.
+  </p>
+  {{/content}}
+
+{{/extend}}

@@ -1,3 +1,28 @@
 {
-  "name": "Auto Mapper"
+  "title": "About us",
+  "description": "The four people behind Aster & Oak.",
+  "heading": "Four people and one very old drum roaster",
+  "lede": "We started in a railway arch in 2019 with a second-hand 12kg Probat and a list of growers we already knew by name.",
+  "team": [
+    {
+      "name": "Nadia Okonjo",
+      "role": "Head roaster",
+      "note": "Keeps the profiles, wins the arguments."
+    },
+    {
+      "name": "Tom Reilly",
+      "role": "Green buyer",
+      "note": "Spends October on the phone to Huila."
+    },
+    {
+      "name": "Priya Raman",
+      "role": "Wholesale",
+      "note": "Knows every cafe within an hour of the arch."
+    },
+    {
+      "name": "Callum Fraser",
+      "role": "Packing and post",
+      "note": "Also the only one who can fix the sealer."
+    }
+  ]
 }

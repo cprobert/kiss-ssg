@@ -1,3 +1,20 @@
 {
-  "name": "World"
+  "title": "Home",
+  "description": "A small-batch coffee roastery in Bristol.",
+  "heading": "Roasted on Tuesday, in your cup by Friday",
+  "lede": "We buy three or four coffees at a time, roast them in twelve-kilo batches and sell them until they run out. Nothing sits in a warehouse.",
+  "highlights": [
+    {
+      "name": "Twelve-kilo batches",
+      "note": "Small enough to taste every drum, large enough to keep the cafe supplied."
+    },
+    {
+      "name": "Dated, not best-before",
+      "note": "Every bag carries the day it was roasted. We think that is the only date worth printing."
+    },
+    {
+      "name": "Returnable tins",
+      "note": "Bring the tin back and the next fill is fifty pence cheaper."
+    }
+  ]
 }

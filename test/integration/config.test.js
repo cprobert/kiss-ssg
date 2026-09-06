@@ -22,3 +22,24 @@ describe('folder creation', () => {
     expect(await site.exists('src/controllers')).toBe(true)
   })
 })
+
+describe('project paths containing glob metacharacters', () => {
+  it('builds pages and compiles sass from a folder named site[old]', async () => {
+    site = await makeSite({
+      'site[old]/src/pages/index.hbs': 'hello',
+      'site[old]/src/assets/style.scss': 'body { color: red }',
+    })
+    const kiss = new Kiss({
+      folders: {
+        src: `${site.root}/site[old]/src`,
+        build: `${site.root}/site[old]/public`,
+      },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.exists('site[old]/public/index.html')).toBe(true)
+    expect(await site.exists('site[old]/public/style.css')).toBe(true)
+  })
+})

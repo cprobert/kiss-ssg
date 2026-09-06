@@ -35,16 +35,23 @@ export function parsePackedFiles(stdout) {
   }
 }
 
-const run = (cmd, args) => {
-  const r = spawnSync(cmd, args, {
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  })
-  const output = `${r.stdout ?? ''}${r.stderr ?? ''}`.trim()
+// A spawn that never started (missing binary, ENOENT) has no status and no
+// streams — without `error.message` the gate prints a blank failure block.
+export function spawnResult(r) {
+  const output =
+    `${r.error ? `${r.error.message}\n` : ''}${r.stdout ?? ''}${r.stderr ?? ''}`.trim()
   // `stdout` is kept separate for the pack gate: npm writes its lifecycle-script
   // banners to stderr, and merging them in leaves trailing text after the JSON.
   return { ok: r.status === 0, stdout: (r.stdout ?? '').trim(), output }
 }
+
+const run = (cmd, args) =>
+  spawnResult(
+    spawnSync(cmd, args, {
+      encoding: 'utf8',
+      shell: process.platform === 'win32',
+    }),
+  )
 
 const tail = (output, lines = 12) => output.split('\n').slice(-lines).join('\n')
 
@@ -53,19 +60,43 @@ function changedFiles(base) {
     const out = execFileSync(
       'git',
       ['diff', '--name-only', '--diff-filter=ACMR', `${base}...HEAD`],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     )
-    return (
-      out
+    return {
+      files: out
         .split('\n')
         .map((f) => f.trim())
         // No extension filter: `.prettierignore` decides what is out of scope
         // and `--ignore-unknown` (below) drops anything prettier cannot parse,
         // so the two live in one place instead of drifting apart here.
-        .filter(Boolean)
-    )
-  } catch {
-    return null
+        .filter(Boolean),
+    }
+  } catch (e) {
+    return { error: `${e.stderr ?? ''}`.trim() || e.message }
+  }
+}
+
+// An empty diff is the normal case on the base branch itself (CI push,
+// prepublishOnly) — checking nothing there would mean the gate never runs. The
+// repo is prettier-clean, so falling back to the whole tree is cheap and honest.
+export function formatGate(base, diff, run) {
+  // Same rule as the pack gate: a gate that cannot see its subject fails.
+  if (diff.error !== undefined)
+    return {
+      ok: false,
+      output: `could not diff against ${base}:\n${diff.error}`,
+    }
+  const wholeRepo = diff.files.length === 0
+  const note = wholeRepo
+    ? `whole repo (no diff against ${base})`
+    : `${diff.files.length} changed files`
+  // `.prettierignore` decides what is out of scope (build output, .hbs);
+  // `--ignore-unknown` drops anything prettier has no parser for, so the
+  // gate can just hand it every changed file.
+  const target = wholeRepo ? ['.'] : diff.files
+  return {
+    ...run('npx', ['prettier', '--check', '--ignore-unknown', ...target]),
+    note,
   }
 }
 
@@ -75,17 +106,7 @@ const GATES = [
   {
     name: 'format',
     fix: 'npx prettier --write <files>',
-    run: (base) => {
-      const files = changedFiles(base)
-      if (files === null)
-        return { ok: true, note: `skipped — could not diff against ${base}` }
-      if (files.length === 0)
-        return { ok: true, note: 'no formattable files changed' }
-      // `.prettierignore` decides what is out of scope (build output, .hbs);
-      // `--ignore-unknown` drops anything prettier has no parser for, so the
-      // gate can just hand it every changed file.
-      return run('npx', ['prettier', '--check', '--ignore-unknown', ...files])
-    },
+    run: (base) => formatGate(base, changedFiles(base), run),
   },
   {
     name: 'pack',
@@ -118,7 +139,7 @@ if (import.meta.filename === process.argv[1]) {
       console.log(`✓ ${gate.name}${note ? ` — ${note}` : ''}`)
     } else {
       failed++
-      console.log(`✗ ${gate.name}`)
+      console.log(`✗ ${gate.name}${note ? ` — ${note}` : ''}`)
       console.log(tail(output).replace(/^/gm, '    '))
       console.log(`    fix: ${gate.fix}`)
     }
