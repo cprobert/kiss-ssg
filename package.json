@@ -3,9 +3,19 @@
   "version": "2.0.0-alpha.2",
   "description": "Simple Static Website Generator",
   "main": "lib/kiss.js",
+  "types": "./types/kiss.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/kiss.d.ts",
+      "import": "./lib/kiss.js",
+      "require": "./lib/kiss.js"
+    },
+    "./package.json": "./package.json"
+  },
   "type": "module",
   "files": [
     "lib",
+    "types",
     "llms.txt",
     "AIKB"
   ],
@@ -16,6 +26,7 @@
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "prepublishOnly": "npm run gates",
     "test": "vitest run",
+    "types": "node scripts/emit-types.mjs",
     "gates": "node scripts/gates.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -62,6 +73,7 @@
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
     "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
     "vitest": "^5.0.0"
   },
   "keywords": [

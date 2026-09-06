@@ -45,6 +45,7 @@ npm run test:coverage
 npm run lint             # ESLint (flat config, eslint.config.js)
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the four pre-PR gates: test, lint, format, pack
+npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg7        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (examples 1-6)
@@ -84,4 +85,4 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 - Dev tooling in `scripts/` gets a `test/unit/` test too — it is outside the engine, so nothing else exercises it. Exempt a genuinely thin file with `// @test-exempt: <reason>` near the top.
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
-- Public API changes: update `llms.txt` and `README.md` in the same commit.
+- Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit.

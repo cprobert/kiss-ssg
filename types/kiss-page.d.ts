@@ -1,0 +1,30 @@
+export class KissPage {
+    constructor(view: any, { hbs, logger }?: {});
+    _path: string;
+    _slug: string;
+    _ext: string;
+    _extLess: boolean;
+    _buildTo: string;
+    _title: string;
+    _dev: boolean;
+    _debug: boolean;
+    view: any;
+    options: {};
+    buildDir: string;
+    pagesDir: string;
+    livereloadPort: 35729;
+    hbs: any;
+    logger: any;
+    set path(path: any);
+    set slug(slug: string);
+    get slug(): string;
+    set ext(extension: any);
+    set extLess(val: any);
+    get buildTo(): string;
+    pageURL(): string;
+    set isDev(dev: any);
+    set debug(dev: any);
+    prepare(): this;
+    generate(): Promise<string>;
+    _getTemplate(view: any): any;
+}

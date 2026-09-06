@@ -10,6 +10,22 @@ Install with `npm install kiss-ssg --save-dev`.
 
 Node 22.12 or newer. kiss-ssg v2 is an ES module: use `import Kiss from 'kiss-ssg'`. Plain `require('kiss-ssg')` also works on Node ≥22.12.
 
+## Types
+
+TypeScript declarations ship with the package, generated from the JSDoc in the engine — so a plain-JavaScript site gets completion, hover docs and checking from `// @ts-check` alone, with no TypeScript of its own and no `@types/` package to install:
+
+```js
+// @ts-check
+import Kiss from 'kiss-ssg'
+
+/** @type {import('kiss-ssg').KissConfigInput} */
+const config = { siteUrl: 'https://example.com', cleanBuild: 'atomic' }
+
+const kiss = new Kiss(config)
+```
+
+The same applies to `PageOptions`, `PagesOptions`, `KissController` (a controller function) and `BuildError` (the error `complete()` rejects with, carrying `err.failures`).
+
 ## Usage
 
 kiss-ssg has 3 methods

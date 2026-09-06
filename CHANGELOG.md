@@ -3,6 +3,25 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## Unreleased
+
+**Added**
+
+- **TypeScript declarations ship with the package**, generated from the engine's
+  own JSDoc. Put `// @ts-check` at the top of your build script and your editor
+  knows every config key, every page option and every method — with no
+  TypeScript in your project and no `@types/` package to install. Annotate with
+  `/** @type {import('kiss-ssg').KissConfigInput} */` on your config,
+  `PageOptions` / `PagesOptions` on page options, `KissController` on a
+  controller, and `BuildError` on the error `complete()` rejects with, so
+  `err.failures` is typed. A misspelled key inside `folders` is now an error you
+  see while typing rather than a build that quietly used the default folder;
+  keys of your own on the config and on page options stay allowed, because they
+  reach your templates.
+- `package.json` gains a `types` field and an `exports` map. `import` and
+  `require` both still resolve to `lib/kiss.js`, so nothing about how you load
+  kiss-ssg changes.
+
 ## 2.0.0-alpha.2 — 2026-09-06
 
 _Still a prerelease of the v2 line, now on `main`. The v1 → v2 migration notes

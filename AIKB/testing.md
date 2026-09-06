@@ -8,6 +8,7 @@ Cross-cutting notes on how tests in `test/` are organized and written — not a 
 - `test/integration/` — cross-module behavior driven through the public `Kiss` API: lifecycle (`generate`/`complete`), dedupe, config resolution, watch mode, ESM/CJS interop, and a broader "characterization" suite. This is where `lib/kiss.js` itself is covered — end-to-end through its public API rather than in a dedicated unit file.
 - `test/helpers/site.js` — `makeSite(files)` creates an isolated temp-dir site (under `os.tmpdir()`) and returns `{ root, src, build, folders, read, exists, touch, cleanup }`; `waitFor(predicate, { timeout, interval })` polls until a predicate is true (used for watch-mode assertions) or throws after `timeout`. Paths are returned with forward slashes because the engine compares and slices paths as posix throughout (`utils.posixPath`).
 - `test/helpers/kiss.js` — re-exports `Kiss`/`utils` from `lib/kiss.js` and `ENTRY` (`path.resolve('lib/kiss.js')`), so integration tests import one thing instead of reaching into `lib/` directly.
+- `test/fixtures/consumer/` — a plain-JS site (`site.js`, `// @ts-check`) plus a deliberately broken one (`bad.js`), each with its own tsconfig mapping `kiss-ssg` to the repo's `types/kiss.d.ts`. `test/unit/types.test.js` runs `tsc --noEmit` over both through `child_process`: `site.js` must be clean, `bad.js` must report exactly three named errors. Not a unit test of any module — it is the published type surface checked from the outside, the way a consumer meets it.
 - `test/aikb.test.js` — the sync test covered by this doc's own CLAUDE.md table row: fails if a `lib/` module has no `AIKB/` doc, a doc isn't listed in `CLAUDE.md`'s lookup table, a doc has no matching module, or a doc drops one of the five required headings. It also holds the two shipped-docs parity checks: every non-underscore `Kiss.prototype` method is named in `llms.txt`, and the config-defaults block in both `llms.txt` and `README.md` evaluates to exactly `resolveConfig({})` — so a new default cannot land in `config.js` alone.
 
 ## Commands
@@ -18,6 +19,7 @@ npx vitest run <file>            # a single test file
 npm run test:watch              # vitest, watch mode
 npm run test:coverage           # vitest run --coverage
 npm run lint                    # eslint . (flat config, eslint.config.js)
+npm run types                   # regenerate types/ from the JSDoc in lib/
 ```
 
 ## Conventions
@@ -31,6 +33,7 @@ npm run lint                    # eslint . (flat config, eslint.config.js)
 ## Gotchas
 
 - `npm run lint`'s `@eslint/js` (v10) requires Node ≥22.13, even though the package's own runtime floor (`package.json`'s `engines.node`) is 22.12 — on Node 22.12.x exactly, `npm test` passes but `npm run lint` may refuse to run.
+- **`types/` is generated — never hand-edit it.** `test/unit/types.test.js` re-emits it and byte-compares, so a JSDoc change in `lib/` fails the suite until `npm run types` has been run and the result committed. The failure names the file and the command.
 - The examples (`npm run eg1` … `eg7`) and `node docs` build and exit by default, so they are safe to run bare. It is the `--dev` flag that starts a server and **never exits on its own** — `node docs --dev`, or `npm run eg1 -- --dev` (examples 1–6). Use `timeout 10 node <script> --dev` in Git Bash (or equivalent) to smoke-run that path and let the timeout kill the process.
 - `docs/` is emptied by `docs.js` on every run (`cleanBuild: true`, the default) — nothing hand-written can live there. Specs and implementation plans belong in `planning/` (`planning/specs/`, `planning/plans/`), never under `docs/`.
 - **Watch-mode assertions wait on the rebuild, not on one file.** A replay's orphan sweep removes an output and its dev-mode `.json` sibling one `await` apart, so `waitFor(() => !exists('x.html'))` returns while the sweep is still running. A test that then asserts on the sibling is racing that interleaving — it fails under load (roughly 1 in 100 exposures with the suite run 5-up on 4 cores) and, worse, can pass for the wrong reason when it asserts a file is _kept_. Wait on the file to see the rebuild has started, then drain the queue (`while (kiss._rebuildInFlight) await kiss._rebuildInFlight` — `rebuildSettled()` in `watch.test.js`) before asserting anything else. Likewise, wait on a new page's _content_, not its existence: `fs.outputFile` creates the file before writing it.

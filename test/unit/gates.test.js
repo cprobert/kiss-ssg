@@ -47,9 +47,19 @@ describe('missingPackedFiles', () => {
 
   it('names the paths dropped from the tarball', () => {
     expect(missingPackedFiles(['lib/kiss.js'])).toEqual([
+      'types/kiss.d.ts',
       'llms.txt',
       'AIKB/kiss.md',
     ])
+  })
+
+  // The declarations are only useful to a consumer if they are in the tarball:
+  // `types`/`exports` point at a path npm would otherwise not ship.
+  it('requires the generated declarations entry', () => {
+    expect(REQUIRED_PACKED).toContain('types/kiss.d.ts')
+    expect(
+      missingPackedFiles(['lib/kiss.js', 'llms.txt', 'AIKB/kiss.md']),
+    ).toEqual(['types/kiss.d.ts'])
   })
 
   it('normalises Windows separators before comparing', () => {
