@@ -131,6 +131,56 @@ describe('createWatcher', () => {
     expect(seen.every((body) => body === complete)).toBe(true)
   })
 
+  // The torn state a 30ms settle can still expose: a truncate-then-write save
+  // whose gap outlasts the threshold arrives as a `change` on an empty file.
+  // Rather than widen the threshold back out, the empty event is dropped —
+  // the content lands as its own `change` (the size moved again) and that one
+  // is forwarded. The gap here is deliberately longer than the threshold, so
+  // this is the case the coalescing test above does not cover.
+  it('drops a change on an empty file and forwards the one that follows with content', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'seed' })
+    const seen = []
+    const { wiring } = spy()
+    handle = createWatcher({
+      config: folders(site),
+      entry: null,
+      ...wiring,
+      onChange: (event, p) => {
+        if (p.endsWith('pages/index.hbs')) seen.push(fs.readFileSync(p, 'utf8'))
+      },
+    })
+    await handle.ready
+
+    const file = `${site.src}/pages/index.hbs`
+    fs.writeFileSync(file, '')
+    await new Promise((r) => setTimeout(r, 120))
+    fs.writeFileSync(file, 'whole')
+
+    await waitFor(() => seen.length >= 1)
+    // Give a second, spurious forward every chance to arrive before asserting.
+    await new Promise((r) => setTimeout(r, 150))
+    expect(seen).toEqual(['whole'])
+  })
+
+  // A file deliberately created empty is the trade: it is not seen until it
+  // gains content. An empty page or partial renders nothing either way.
+  it('drops an add on an empty file until it has content', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'a',
+      'src/partials/p.hbs': 'p',
+    })
+    const { calls, wiring } = spy()
+    handle = createWatcher({ config: folders(site), entry: null, ...wiring })
+    await handle.ready
+
+    fs.writeFileSync(`${site.src}/partials/new.hbs`, '')
+    await new Promise((r) => setTimeout(r, 150))
+    expect(calls.change.filter(([, p]) => p.endsWith('new.hbs'))).toEqual([])
+
+    fs.writeFileSync(`${site.src}/partials/new.hbs`, 'now')
+    await waitFor(() => calls.change.some(([, p]) => p.endsWith('new.hbs')))
+  })
+
   it('forwards an unlink like any other event', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',

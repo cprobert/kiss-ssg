@@ -1,3 +1,5 @@
+export function loadMinifier(): Promise<any>;
+export function preloadMinifier(): void;
 export class KissPage {
     /**
      * @param {string} view a `.hbs` filename under `pagesDir`, or inline template
