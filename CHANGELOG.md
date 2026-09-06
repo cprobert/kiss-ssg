@@ -40,8 +40,12 @@ duration, pages, failures, assets, sitemap }`, every value JSON-safe, so a
   keys of your own on the config and on page options stay allowed, because they
   reach your templates.
 - `package.json` gains a `types` field and an `exports` map. `import` and
-  `require` both still resolve to `lib/kiss.js`, so nothing about how you load
-  kiss-ssg changes.
+  `require` both still resolve to `lib/kiss.js`, so nothing about the supported
+  way of loading kiss-ssg changes. One thing does: the map has a single entry,
+  so a deep path into the package — `kiss-ssg/lib/utils.js`, or v1's
+  `kiss-ssg/libs/utils.js` — now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`
+  instead of half-working. Everything public is reachable from `'kiss-ssg'`
+  itself; `utils` is the named export `import { utils } from 'kiss-ssg'`.
 - **`examples/` now ships in the package**, each of the two tiers with its own
   README, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run
   without cloning the repo.

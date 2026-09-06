@@ -24,7 +24,7 @@ const config = { siteUrl: 'https://example.com', cleanBuild: 'atomic' }
 const kiss = new Kiss(config)
 ```
 
-The same applies to `PageOptions`, `PagesOptions`, `KissController` (a controller function) and `BuildError` (the error `complete()` rejects with, carrying `err.failures`).
+The same applies to `PageOptions`, `PagesOptions`, `KissController` (a controller function), `BuildError` (the error `complete()` rejects with, carrying `err.failures`) and `BuildReport` (what `.report()` returns).
 
 ## Using an AI coding agent?
 
@@ -438,7 +438,7 @@ npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the sc
 ]
 ```
 
-It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. Your site's own build log goes to stderr, so stdout is nothing but the JSON.
+It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. Your site's own build log goes to stderr, so stdout is nothing but the JSON. `--summary` is the command's own flag and is read wherever you write it, so a site that needs that word for itself takes it after a bare `--` (`npx kiss-ssg check menu.js -- --summary`).
 
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance. Neither changes your script's exit code — that stays yours.
 
@@ -449,7 +449,7 @@ Two things a check cannot make true. A site that reads its own build folder back
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap }`, every value JSON-safe. `pages` is `{ view, buildTo, ok }` per queued page and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" below.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap }`, every value JSON-safe. `pages` is `{ view, buildTo, ok }` per queued page and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {
@@ -569,6 +569,7 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 
 - **Node ≥22.12.0 first** (`package.json` `engines.node`) — check this before anything else here: v2 will not install or run below it. If your project pins a dev Node version the way this repo's own `.nvmrc` does, bump yours before touching any code.
 - v2 is ESM-only (`import Kiss from 'kiss-ssg'`). `require()` still works on Node ≥22.12.
+- `folders.root` and `folders.static` are gone — no module in v1 ever read them, so a config still passing them gets nothing rather than a quiet no-op. Delete the keys; with `// @ts-check` on your build script they are now a typing error too. The six folders v2 derives from `folders.src` / `folders.build` unless you override them (`pages`, `assets`, `layouts`, `partials`, `models`, `controllers`) are listed under "Usage" above.
 - The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build. Failures don't surface through `.generate()`, though: v1 logged a page's render/write failure and resolved anyway, while v2's `.complete()` **rejects** with an `AggregateError` (`err.failures` = `[{ view, buildTo, error }]`). The v1 callback-style idiom — `kiss.generate(function () { this.complete(function () { ... }) })` — now leaves that rejection unhandled the first time a page fails, so give `.complete()` a `.catch`:
 
   ```js
@@ -587,7 +588,7 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
   A failed build never runs `.complete()`'s own callback, so anything you did there — writing a sitemap, generating an index, kicking off a deploy — has to run again in the `catch`. And a chain that ends at `.generate()` with no `.complete()` never sees any of this: it keeps exiting 0 on a broken build, so every deploy script must `await kiss.complete()` (or otherwise attach a rejection handler) to catch a failure.
 
 - Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module. Partials live there too: a helper that reads `require('handlebars').partials` finds nothing in v2 — read `kiss.handlebars.partials`, or drop the helper and use Handlebars' native dynamic partial, `{{> (lookup this "partialName")}}`.
-- `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`.
+- `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`. The package's `exports` map has one entry, so any deep path into it (`kiss-ssg/lib/…`, `kiss-ssg/libs/…`) now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` rather than half-working — everything public is reachable from `'kiss-ssg'` itself.
 - Controller files may use `export default` (legacy `module.exports` still works).
 - Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are no longer written twice: the second page is not built, and the collision fails the build (`complete()` rejects, naming the path as `Page already processed: <path>`) — v1 built whichever page came last. If a site relied on that v1 skip to give one source priority over another — registering a low-priority fan-out last, so the engine silently dropped whatever slug a higher-priority source had already claimed — dedupe the slugs yourself before registering instead:
 

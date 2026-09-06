@@ -42,7 +42,7 @@ Run the exemplar before you change anything, so you know what its output and exi
 
 ### 4. Write the build script
 
-End the chain at `await kiss.complete()`, inside a `try`/`catch` that prints every entry of `err.failures` and sets a non-zero exit code — the recipe is in `llms.txt` § Migrating from v1, and running code is `await-complete.html` in `node_modules/kiss-ssg/examples/9-migrated-from-v1/`.
+End the chain at `await kiss.complete()`, inside a `try`/`catch` that prints every entry of `err.failures` and sets a non-zero exit code — the recipe is in `llms.txt` § Migrating from v1, and running code is `node_modules/kiss-ssg/examples/9-migrated-from-v1/pages/await-complete.hbs` (its README indexes the recipes by built page name).
 
 Three mistakes real consumer sites made, all of which passed review before they bit:
 
