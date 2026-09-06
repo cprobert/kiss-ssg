@@ -16,7 +16,17 @@ Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev
 
 Then read `node_modules/kiss-ssg/llms.txt` § Migrating from v1 — every recipe, including the "unchanged in v2" list, which is there to stop you rewriting code that still works. The runnable version of the same recipes is `node_modules/kiss-ssg/examples/9-migrated-from-v1/`; its README maps one page to each v1 idiom it replaces.
 
-### 2. Diff the site's script against each recipe
+### 2. Point every future session at the contract
+
+Open the project's `CLAUDE.md` (create it if the project has none) and make sure it carries this line:
+
+```markdown
+@node_modules/kiss-ssg/llms.txt
+```
+
+A migrated site is one that will be edited again; the import makes every later Claude Code session read the v2 contract instead of remembering v1. Add the line if it is missing, keep it if it is there, and say which you did.
+
+### 3. Diff the site's script against each recipe
 
 Go recipe by recipe against the site's own build script, controllers and helpers, and record for each: applies / does not apply. The two consumer migrations both found most recipes did not apply — knowing that is the point of the pass.
 
@@ -30,7 +40,7 @@ The three that actually bit, in the order they cost the most:
 
 Also check `livereloadPort` if the project runs more than one dev site: without it, a second site's pages poll the first site's reload server.
 
-### 3. Build, verify, then compare against the old output
+### 4. Build, verify, then compare against the old output
 
 Run the build. Run the `check` skill (`/kiss-ssg:check`) and fix until it reports `ok: true`.
 
