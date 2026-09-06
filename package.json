@@ -13,7 +13,11 @@
     "./package.json": "./package.json"
   },
   "type": "module",
+  "bin": {
+    "kiss-ssg": "./bin/kiss-ssg.js"
+  },
   "files": [
+    "bin",
     "lib",
     "types",
     "llms.txt",

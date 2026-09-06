@@ -14,7 +14,7 @@ A dry run. It executes the site's own build script with the build staged atomica
 npx kiss-ssg check <site-script> [args]
 ```
 
-Arguments after the script are passed through to it, so a script that takes a season or a cohort is checked the same way you run it.
+Arguments after the script are passed through to it, so a script that takes a season or a cohort is checked the same way you run it. `--summary` anywhere on the line is the bin's own flag (one human-readable line per report instead of JSON); put `--` before it if the site script needs that word itself.
 
 It prints a JSON array with one report per `Kiss` instance the script created â€” a script that builds several outputs gets several reports:
 
@@ -29,13 +29,13 @@ It prints a JSON array with one report per `Kiss` instance the script created â€
       { "view": "about.hbs", "buildTo": "./public/about.html", "ok": true }
     ],
     "failures": [],
-    "assets": [
-      { "source": "src/assets/css/site.scss", "target": "css/site.css" }
-    ],
+    "assets": [{ "source": "css/site.css", "target": "css/site.605b52d7.css" }],
     "sitemap": "./public/sitemap.xml"
   }
 ]
 ```
+
+`assets` lists what the build emitted: `source` is the path a template asks `{{asset}}` for, `target` the file the build wrote under whatever `config.assets` policy is on.
 
 Exit code is 1 if any instance reports a failure, or if the script itself exits non-zero. Exit 0 and `ok: true` on every report is the only passing result.
 

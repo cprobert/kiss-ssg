@@ -384,11 +384,51 @@ Editing a page template re-renders that page; deleting one, or creating any file
 
 Your browser is reloaded once per rebuild, when that rebuild has finished writing every page — not once per file — so a reload never lands on a page that has not been re-rendered yet, however large the site. The first build reloads the browser too, so a tab left open across a restart picks the new output up. Editing a stylesheet reloads just that stylesheet, leaving the page where it was.
 
+### Checking a build
+
+`npx kiss-ssg check <script>` builds the site your script builds and tells you whether it worked — without publishing anything. The build is staged and then discarded, so the build folder is neither emptied nor written, and what you get back is the verdict instead of the output:
+
+```bash
+npx kiss-ssg check build.js            # JSON, one report per Kiss instance
+npx kiss-ssg check build.js --summary  # one line per instance instead
+npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the script
+```
+
+```json
+[
+  {
+    "ok": false,
+    "mode": "check",
+    "buildDir": "./public",
+    "duration": 160,
+    "pages": [
+      { "view": "index.hbs", "buildTo": "./public/index.html", "ok": true }
+    ],
+    "failures": [
+      {
+        "view": "stockists/stockist.hbs [item 3: harbour-market-stall]",
+        "buildTo": null,
+        "message": "Incomplete stockist record — missing address"
+      }
+    ],
+    "assets": [{ "source": "css/site.css", "target": "css/site.605b52d7.css" }],
+    "sitemap": "./public/sitemap.xml"
+  }
+]
+```
+
+It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. Your site's own build log goes to stderr, so stdout is nothing but the JSON.
+
+You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance. Neither changes your script's exit code — that stays yours.
+
+Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
+
 ### Other methods
 
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap }`, every value JSON-safe. `pages` is `{ view, buildTo, ok }` per queued page and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" below.
 
 ```js
 kiss.scan().generate(function (data) {

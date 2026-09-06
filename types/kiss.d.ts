@@ -1,4 +1,8 @@
 export default Kiss;
+export type BuildReport = import("./build-report.js").BuildReport;
+export type BuildPage = import("./build-report.js").BuildPage;
+export type BuildAsset = import("./build-report.js").BuildAsset;
+export type BuildReportFailure = import("./build-report.js").BuildReportFailure;
 export type KissConfig = import("./config.js").KissConfig;
 export type KissConfigInput = import("./config.js").KissConfigInput;
 export type KissFolders = import("./config.js").KissFolders;
@@ -120,10 +124,11 @@ export type BuildFailure = {
 /**
  * What `complete()` rejects with when anything failed to build: an
  * `AggregateError` over the underlying errors, carrying the whole list on
- * `failures`.
+ * `failures` and the same build as data on `report`.
  */
 export type BuildError = AggregateError & {
     failures: BuildFailure[];
+    report: BuildReport;
 };
 /**
  * One `<url>` of the sitemap, as handed to `.sitemap()`'s callback.
@@ -146,106 +151,6 @@ export type WatchOptions = {
      */
     entry?: string;
 };
-/** @typedef {import('./config.js').KissConfig} KissConfig */
-/** @typedef {import('./config.js').KissConfigInput} KissConfigInput */
-/** @typedef {import('./config.js').KissFolders} KissFolders */
-/**
- * The documented options of one page. Only `view` is required. Any key not
- * listed here is allowed too — `PageOptions` adds an index signature for them —
- * and reaches the template as top-level render context.
- *
- * @typedef {Object} PageOptionsKnown
- * @property {string} view a `.hbs` filename relative to `config.folders.pages`, or a template string
- * @property {any} [model] a `.json` filename, a models folder name, an `http(s)://` URL, a plain object or an array — and the resolved data itself by the time a controller sees it
- * @property {string|KissController} [controller] a `.js` filename relative to `config.folders.controllers`, or the function itself
- * @property {string} [title] filled from `model.title` when the model has one and this is unset
- * @property {string} [description]
- * @property {string} [path] output folder, inferred from `view` when omitted
- * @property {string} [slug] output filename, inferred from `view` when omitted
- * @property {string} [ext] output extension, default `html`
- * @property {boolean} [generate] `false` skips building this one page entirely
- * @property {KissConfigInput} [config] per-page config overrides, merged over the site config for this page alone
- * @property {boolean} [ignoreSitemap] keep this page out of `sitemap.xml`
- * @property {string} [sitemapPriority] default `'1.00'`
- * @property {string} [sitemapChangefreq] omitted from the XML unless set
- * @property {string} [sitemapLastmod] default: one timestamp shared by every page
- */
-/**
- * The options `.page()` takes: {@link PageOptionsKnown} plus any extra keys of
- * your own, which the page renders with.
- *
- * @typedef {PageOptionsKnown & Record<string, any>} PageOptions
- */
-/**
- * The options `.pages()` takes. Identical to {@link PageOptions}: the fan-out
- * requirement is that the model *resolves* to an array — a `.json` file or
- * models folder holding one, a URL that returns one, or an array passed
- * directly — which is a property of the resolved data, not of the option.
- *
- * @typedef {PageOptions} PagesOptions
- */
-/**
- * What a controller returns: any subset of the page's options, merged over
- * them. Returning nothing leaves the options as they were.
- *
- * @typedef {Partial<PageOptionsKnown> & Record<string, any>} PageOptionsPatch
- */
-/**
- * A page's controller, run once its model has resolved and before the page is
- * prepared. Synchronous: the patch is spread over the options as it is
- * returned, so a promise would be spread rather than awaited. A controller that
- * throws fails that page and makes `complete()` reject.
- *
- * @callback KissController
- * @param {PageOptions} options the page's options, with `model` resolved
- * @returns {PageOptionsPatch|void}
- */
-/**
- * One entry of the array `.generate()` and `.complete()` hand back: one
- * resolved model, in registration order. The construction-time asset copy is
- * queued first, so entry 0 is that copy rather than your first page — look
- * models up with `.getModelByID()` instead of by position.
- *
- * @typedef {Object} BuildDatum
- * @property {string} [id] the model filename or URL; an object model gets a hash, a page with no model has no id
- * @property {any} data the resolved model, or `null` when it failed to resolve
- * @property {Error} [error] why the model failed to resolve
- */
-/** @typedef {BuildDatum[]} BuildData */
-/**
- * One thing that failed to build. `buildTo` is `null` when the failure happened
- * before the page had an output path — a controller, a `.pages()` item, a
- * `generate`/`sitemap` callback, or the dev server.
- *
- * @typedef {Object} BuildFailure
- * @property {string} view
- * @property {string|null} buildTo
- * @property {Error} error
- */
-/**
- * What `complete()` rejects with when anything failed to build: an
- * `AggregateError` over the underlying errors, carrying the whole list on
- * `failures`.
- *
- * @typedef {AggregateError & { failures: BuildFailure[] }} BuildError
- */
-/**
- * One `<url>` of the sitemap, as handed to `.sitemap()`'s callback.
- *
- * @typedef {Object} SitemapUrl
- * @property {string} loc
- * @property {string} lastmod
- * @property {string} priority
- * @property {string} [changefreq]
- */
-/**
- * @typedef {Object} SitemapOptions
- * @property {boolean} [overwrite] default `true`; `false` leaves an existing `sitemap.xml` alone
- */
-/**
- * @typedef {Object} WatchOptions
- * @property {string} [entry] the script whose own change triggers a whole-site rebuild; defaults to `process.argv[1]`
- */
 /**
  * A site. Everything is driven from one instance: `.page()`/`.pages()`/`.scan()`
  * queue pages, `.generate()` renders them, `.complete()` resolves once the whole
@@ -316,6 +221,14 @@ declare class Kiss {
     private _buildTarget;
     /** @private */
     private _buildSettled;
+    /** @private */
+    private _startedAt;
+    /** @private */
+    private _report;
+    /** @private */
+    private _sitemapPath;
+    /** @private */
+    private _checkMode;
     /** @type {KissConfig} */
     config: KissConfig;
     logger: any;
@@ -362,6 +275,8 @@ declare class Kiss {
     private _reportedPath;
     /** @private */
     private _promote;
+    /** @private */
+    private _finishBuild;
     /** @private */
     private _discardStaging;
     /** @private */
@@ -427,6 +342,15 @@ declare class Kiss {
      * callback failed; `err.failures` is the whole list
      */
     complete(callback?: (data: BuildData) => void): Promise<BuildData>;
+    /**
+     * The last settled build, as data: what `.complete()` resolved or rejected
+     * with, in a JSON-safe shape a script can act on. `null` until the first
+     * `.complete()` has settled; a watch rebuild replaces it with its own. The
+     * same object is on the rejection as `err.report`.
+     *
+     * @returns {BuildReport|null}
+     */
+    report(): BuildReport | null;
     /**
      * Writes `sitemap.xml` into the build folder, one `<url>` per registered page.
      * Requires `config.siteUrl` — without it this logs an error and skips.

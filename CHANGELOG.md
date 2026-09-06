@@ -7,6 +7,26 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 
 **Added**
 
+- **`npx kiss-ssg check <script>`** — a dry run of your own build script. It
+  builds the site into a staging folder, tells you whether it worked, and then
+  throws the staging folder away: your build folder is neither emptied nor
+  written, so you can check a site whose output is already published. You get a
+  JSON array with one report per `Kiss` instance the script created — the pages
+  it built, anything that failed and why, the assets it emitted — and exit code
+  1 if anything failed, if your script exited non-zero, or if it never settled a
+  build at all. `--summary` prints one line per site instead. Arguments after
+  the script are passed through to it, so a site that takes a season or a cohort
+  is checked the way it is run.
+- **`kiss.report()`** — the last settled build as data: `{ ok, mode, buildDir,
+duration, pages, failures, assets, sitemap }`, every value JSON-safe, so a
+  deploy script can decide what to do without parsing log output. The same
+  object rides on the rejection as `err.report`. `complete()` itself is
+  unchanged: it still resolves with the data array and still rejects with the
+  `AggregateError`.
+- **`KISS_CHECK=1` and `KISS_REPORT=<file>`** for driving the same thing from a
+  harness of your own: the first turns any build into a check, the second
+  appends each settled build's report to a file as JSON Lines. Neither changes
+  your script's exit code.
 - **TypeScript declarations ship with the package**, generated from the engine's
   own JSDoc. Put `// @ts-check` at the top of your build script and your editor
   knows every config key, every page option and every method — with no
