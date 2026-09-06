@@ -62,3 +62,5 @@ opened: 2026-09-05
 ---
 
 <!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
+
+- **2026-09-05 (examples runnable by an agent, 9899cbb)** — Amendment landed: examples 1–6 build and exit by default (each `node N.js` from `examples/` exits 0 in under 3 s, page counts unchanged 2/3/8/2/2/4), `--dev` still serves (Serving line seen, killed by timeout), example 5's `{{#env}}` renders the production branch by default and the dev branch under `--dev`, a failed build prints its failures and exits 1; llms.txt § Docs labels the two tiers; 447/447, lint and prettier clean. Decision: **ready to close** — nothing further planned on this branch; the next-branch list above stands.
