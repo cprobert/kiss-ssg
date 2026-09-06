@@ -182,13 +182,30 @@ and `local-after.json`. The percentages below are that pair.
 
 | change                             | evidence                                               |
 | ---------------------------------- | ------------------------------------------------------ |
-| Lazy-load the four heaviest deps   | `import` 490ms → ~72ms (**-86%**)                      |
+| Lazy-load the four heaviest deps   | `import` 490ms → ~63ms (**-88%**)                      |
 | Memoise Sass compilation           | `styled@200` build 7995ms → 2811ms (**-64.8%**)        |
-| Shorten the write-settle threshold | `rerender` 108ms → 37ms (**-66%**), flat at 50 and 500 |
-| Cache compiled templates per env   | fan-out build **-8%**; 395ms → 14ms on real views      |
+| Shorten the write-settle threshold | `rerender` 108ms → 35ms (**-68%**), flat at 50 and 500 |
+| Cache compiled templates per env   | 395ms → 14ms of compilation on real views              |
+| Skip minification in dev           | `watch@500` build **-11.3%**, `watch@50` **-32.7%**    |
+| Register layouts compiled          | `fanout@500` build **-27.1%**; replay 455ms → 172ms    |
 
-End to end (`process`): **-76.5%** startup, **-46 to -50%** at 50 pages,
-**-25 to -35%** at 500. Every scenario improved; none regressed.
+Final sweep against the same machine's before-record (5 runs, median), every
+change in place:
+
+| scenario     | process | import |  build | rerender |
+| ------------ | ------: | -----: | -----: | -------: |
+| `startup`    |  -79.7% | -87.8% |      — |        — |
+| `scan@50`    |  -57.2% | -87.4% |  +0.7% |        — |
+| `fanout@50`  |  -62.6% | -86.9% | -25.0% |        — |
+| `watch@50`   |  -63.5% | -88.2% | -42.2% |   -67.9% |
+| `scan@500`   |  -52.7% | -88.2% | -41.9% |        — |
+| `models@500` |  -46.1% | -87.8% | -34.5% |        — |
+| `fanout@500` |  -71.0% | -87.4% | -69.3% |        — |
+| `watch@500`  |  -50.8% | -87.8% | -41.6% |     -66% |
+
+Every scenario improved end to end; none regressed. The `build` column is no
+longer up at 50 pages: deferring the minifier had moved ~155ms into it, and dev
+skipping minification plus the layout fix have since repaid that.
 
 Against the captured success criteria:
 
