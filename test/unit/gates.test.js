@@ -50,6 +50,7 @@ describe('missingPackedFiles', () => {
       'types/kiss.d.ts',
       'llms.txt',
       'AIKB/kiss.md',
+      'examples/README.md',
     ])
   })
 
@@ -58,8 +59,28 @@ describe('missingPackedFiles', () => {
   it('requires the generated declarations entry', () => {
     expect(REQUIRED_PACKED).toContain('types/kiss.d.ts')
     expect(
-      missingPackedFiles(['lib/kiss.js', 'llms.txt', 'AIKB/kiss.md']),
+      missingPackedFiles([
+        'lib/kiss.js',
+        'llms.txt',
+        'AIKB/kiss.md',
+        'examples/README.md',
+      ]),
     ).toEqual(['types/kiss.d.ts'])
+  })
+
+  // Proves the examples actually ship: `files` in package.json could drop
+  // `examples` silently otherwise, and the tarball is the only place that
+  // would show up.
+  it('requires the examples README', () => {
+    expect(REQUIRED_PACKED).toContain('examples/README.md')
+    expect(
+      missingPackedFiles([
+        'lib/kiss.js',
+        'types/kiss.d.ts',
+        'llms.txt',
+        'AIKB/kiss.md',
+      ]),
+    ).toEqual(['examples/README.md'])
   })
 
   it('normalises Windows separators before comparing', () => {

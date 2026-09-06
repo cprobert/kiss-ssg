@@ -159,7 +159,7 @@ kiss has no notion of "versions" or "sites" — it is one `Kiss` instance buildi
 
 The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
 
-See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. Every example under `examples/` builds and exits by default (`npm run eg1` … `eg7`); pass `--dev` to run examples 1–6 as a live dev server instead.
+See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 are the feature reference, one idea each; 7–9 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, and the v1 → v2 migration recipes. Every example builds and exits by default (`npm run eg1` … `eg9`); pass `--dev` to run examples 1–6, 8 and 9 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
 
 ### Remote models
 

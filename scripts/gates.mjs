@@ -18,6 +18,7 @@ export const REQUIRED_PACKED = [
   'types/kiss.d.ts',
   'llms.txt',
   'AIKB/kiss.md',
+  'examples/README.md',
 ]
 
 export function missingPackedFiles(packedFiles, required = REQUIRED_PACKED) {

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `llms.txt` at the repo root is an LLM-oriented API cheat-sheet (per the [llmstxt.org](https://llmstxt.org) convention) that ships in the npm package so an agent working in a project that depends on `kiss-ssg` can read `node_modules/kiss-ssg/llms.txt` instead of the source. Keep it in sync with `lib/kiss.js` when the public API changes.
 
-`package.json`'s `files` whitelist keeps the published tarball to `lib/`, `llms.txt` and `AIKB/` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `AIKB/` ships deliberately, so an agent in a consuming project can read the per-module notes alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/`, `examples/` and the configs are all excluded.
+`package.json`'s `files` whitelist keeps the published tarball to `lib/`, `types/`, `llms.txt`, `AIKB/` and `examples/` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `AIKB/` and `examples/` ship deliberately, so an agent in a consuming project can read the per-module notes and the runnable examples (`node_modules/kiss-ssg/examples/`) alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/` and the configs are all excluded. The examples build into a gitignored `public/` at the repo root, which never ships.
 
 `src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`). Treat `docs/` as build output. Design specs, implementation plans and session logs live in `planning/` (`planning/specs/`, `planning/plans/`, `planning/sessions/`) — never under `docs/`, which `docs.js` empties on every run. `scripts/` holds dev tooling that never ships (the `files` whitelist excludes it).
 
@@ -48,7 +48,7 @@ npm run gates            # the four pre-PR gates: test, lint, format, pack
 npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
-npm run eg1 … eg7        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (examples 1-6)
+npm run eg1 … eg9        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```
 
 `.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.

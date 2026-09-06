@@ -21,6 +21,13 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 - `package.json` gains a `types` field and an `exports` map. `import` and
   `require` both still resolve to `lib/kiss.js`, so nothing about how you load
   kiss-ssg changes.
+- **`examples/` now ships in the package**, each of the two tiers with its own
+  README, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run
+  without cloning the repo.
+- Two new exemplar examples: `examples/8-data-fed-site.js` (`npm run eg8`), a
+  site built from a folder of records where one is broken, and
+  `examples/9-migrated-from-v1.js` (`npm run eg9`), every v1 → v2 migration
+  recipe from `llms.txt` as running code in a site that builds clean.
 
 ## 2.0.0-alpha.2 — 2026-09-06
 
