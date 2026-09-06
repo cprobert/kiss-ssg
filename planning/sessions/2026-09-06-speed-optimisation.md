@@ -172,6 +172,65 @@ Small sites pay proportionally more, and small sites are most of them.
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+**2026-09-06 — four changes landed, all measured. Decision: continue.**
+
+Machine note: this sweep ran on a container ~25-35% slower than the one that
+recorded `baseline-main.json`, uniformly across every phase, with `lib/`
+unchanged. Cross-machine percentages are therefore not comparable, and a local
+before/after pair was captured instead — `planning/benchmarks/local-before.json`
+and `local-after.json`. The percentages below are that pair.
+
+| change                             | evidence                                               |
+| ---------------------------------- | ------------------------------------------------------ |
+| Lazy-load the four heaviest deps   | `import` 490ms → ~72ms (**-86%**)                      |
+| Memoise Sass compilation           | `styled@200` build 7995ms → 2811ms (**-64.8%**)        |
+| Shorten the write-settle threshold | `rerender` 108ms → 37ms (**-66%**), flat at 50 and 500 |
+| Cache compiled templates per env   | fan-out build **-8%**; 395ms → 14ms on real views      |
+
+End to end (`process`): **-76.5%** startup, **-46 to -50%** at 50 pages,
+**-25 to -35%** at 500. Every scenario improved; none regressed.
+
+Against the captured success criteria:
+
+- Harness exists, page count parameterised, per-phase reporting — done at
+  `58d9407`, extended here with a `styled` scenario built from a real site's
+  shape.
+- Baseline committed — done, plus the local pair the machine change forced.
+- Three in-scope paths each measured before/after — cold build ✅, watch
+  re-render ✅, module-load/startup ✅.
+- Every win attributed to a named change, none on intuition — ✅. Two changes
+  were additionally validated by breaking them on purpose and watching the new
+  test fail (`awaitWriteFinish` disabled; the template WeakMap swapped for a
+  shared Map).
+- Zero behaviour change — `npm test` green throughout (646→650 tests, all new),
+  `npm run gates` green at each commit.
+- `AIKB/` updated in the same commit as each change — ✅.
+- Harness documented in `CLAUDE.md`, `scripts/bench.mjs` has a `test/unit/`
+  sibling — ✅.
+
+### Findings recorded, deliberately not acted on
+
+1. **`html-minifier-terser` is 54% of a `styled` build** (1798ms of 3188ms at
+   200 pages) — it re-minifies CSS that Sass already emitted with
+   `style: 'compressed'`. Disabling `minifyCSS` would reclaim most of it, but
+   it would change output bytes for any site that inlines unminified CSS, which
+   the success criteria forbid. Needs a config key, so: follow-up, not this
+   branch.
+2. **Deferring the minifier moved ~155ms from `import` into `build`.** Net
+   `process` is far ahead, but the phase table shows `build` up ~20% at 50
+   pages. Minification is not optional, so the cost can only move, not vanish —
+   unless (1) gives it somewhere to go.
+3. **Site-side, not engine-side:** diploma-msc inlines the 22KB compiled
+   `catalog.scss` into all 111 course pages via `{{sass}}` in a partial. That is
+   22KB duplicated per page that no browser can cache across them, and it is
+   what makes the minifier cost scale with page count. An external stylesheet
+   would cut build time and page weight together. Worth raising with the site's
+   maintainers; nothing for the engine to fix.
+4. **The four named sites cannot be benchmarked against v2 at all.** Beyond the
+   missing content, `generate.js` in each does `require("kiss-ssg")` and v2 is
+   `"type": "module"`. A real before/after needs those sites migrated to ESM and
+   to the v2 API — a project, not a measurement.
+
 ---
 
 <!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->

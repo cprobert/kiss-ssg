@@ -127,6 +127,19 @@ describe('memoised compilation', () => {
     expect(compileSource('a { color: blue }')).toContain('blue')
   })
 
+  // A block-form key is the rendered block, so a template that interpolates
+  // model data into `{{#sass}}` would mint a new key per page. The cache is
+  // bounded so that case degrades to recompiling rather than growing without
+  // limit; correctness is what is asserted, since the bound itself is internal.
+  it('stays correct once the entry bound is exceeded', () => {
+    const css = (i) => `a { color: red; width: ${i}px }`
+    for (let i = 0; i < 300; i++) compileSource(css(i))
+    // The oldest key has been evicted, so this recompiles — and must still be
+    // right, not stale or missing.
+    expect(compileSource(css(0))).toContain('width: 0px')
+    expect(compileSource(css(299))).toContain('width: 299px')
+  })
+
   it('serves a fresh compile after the cache is cleared', () => {
     const file = write('d.scss', 'a { color: red }')
     const before = compileFile(file)
