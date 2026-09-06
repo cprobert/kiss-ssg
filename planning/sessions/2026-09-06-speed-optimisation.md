@@ -261,6 +261,33 @@ redundant. A counter answers the second question and the sweep never reached
 for one. `fanout@500` build **-27.1%**, replay after a model edit **455ms →
 172ms**.
 
+**2026-09-06 — a typecheck gate, and `.scan()` assessed for removal.**
+
+The gates go from four to five: `npm run typecheck` runs `tsc --checkJs` over
+`lib/`, `scripts/` and `bin/`. TypeScript was already in the toolchain emitting
+`types/` with `checkJs: false`, so the package published 18 declaration files
+that nothing verified. 22 findings, all fixed: one real defect (`new Kiss()`
+passed an argument to `_setupFolders()`, which takes none and always discarded
+it) and 21 places where JSDoc had drifted from the code.
+
+A full TypeScript migration was considered and rejected. It buys nothing at
+runtime — TS compiles to JS — and it would cost the property `CLAUDE.md` names
+first: no build step, no transpilation. Adding a compile to every edit works
+against the dev-experience goal that reordered this branch. The consumer-facing
+benefit (typed API) already exists via JSDoc → `types/`. The gap was never the
+type _language_, only that nothing checked the types being shipped.
+
+**`.scan()`: keep it. Deprecating it would not make anything faster.** None of
+the four consuming sites calls it (0 hits each), so the question was fair. But
+it is a registration method, not hot-path code: a site that never calls it pays
+nothing for its existence, and removing it makes no build measurably faster. It
+is also not dead — `examples/1-scan` (the reference example), `examples/7`,
+kiss's own `docs.js`, and ten integration tests use it, and `llms.txt` leads
+with it as the simplest way to build a site. Removing it is a breaking change
+(major bump) with a real documentation and test cost, for zero measured gain.
+If the intent is to steer large sites toward explicit registration, that is a
+docs change, not a deprecation.
+
 ### Ruled out by measurement — do not re-attempt without new evidence
 
 A sweep for remaining wins after the five changes landed. These all looked
