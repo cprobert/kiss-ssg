@@ -17,10 +17,12 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
   - `pageURL()` — the page's URL/relative-path, honoring `extLess` (writes `slug/index.ext` instead of `slug.ext`, except for `slug === 'index'`).
   - `prepare()` — merges default options (`title`, `path`, `slug`, `generate: true`) under any already set on `this.options`; returns `this`.
   - `async generate()` — compiles the template, renders with `this.options`, injects the livereload script in dev, minifies in production (dev skips minification entirely), asserts the resolved `buildTo` is inside the resolved `buildDir`, writes the file (and, in dev, the debug `.json`); returns `this.buildTo`. Logs _and rethrows_ render/minify/escape/output-write errors.
+- `loadMinifier()` — the one shared `Promise` for the `html-minifier-terser` import, resolving to its `minify`; every render awaits it.
+- `preloadMinifier()` — starts that load without awaiting it, swallowing a failure that `loadMinifier()` will re-surface at the render that needs it. Called by the `Kiss` constructor for non-dev builds.
 
 ## Depends on
 
-`fs-extra`, `node:path`, `html-minifier-terser`; `./utils.js` (`toSlug`, `toTitleCase`, `sanitizePath`), `./logger.js` (fallback logger only), `./config.js` (`DEFAULT_CONFIG.livereloadPort`, the fallback for a `KissPage` built outside `Kiss`).
+`fs-extra`, `node:path`, `html-minifier-terser` (dynamic `import()`, never at module load); `./utils.js` (`toSlug`, `toTitleCase`, `sanitizePath`), `./logger.js` (fallback logger only), `./config.js` (`DEFAULT_CONFIG.livereloadPort`, the fallback for a `KissPage` built outside `Kiss`).
 
 ## Depended on by
 

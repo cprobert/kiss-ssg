@@ -10,11 +10,11 @@ Sets up `chokidar` watchers over the entry script, `config.folders.src` (pages a
 - `createWatcher({ config, entry = process.argv[1], rebuildSite, onChange, assetsChanged, logger })` → `{ ready, close }`.
   - `ready` — `Promise` that resolves once every underlying chokidar watcher has fired its own `'ready'` event.
   - `close()` — `async`; closes every watcher. Required for the Node process to be able to exit (chokidar watchers otherwise keep the event loop alive).
-  - Watches (up to three, depending on `entry`): the `entry` file (`'change'` → `rebuildSite()`); `config.folders.src`, ignoring `posix(assetsDir)/**` (every `'all'` event → `onChange(event, posixPath)`, except the `add`/`addDir` burst chokidar emits before its own `'ready'`); `assetsDir` (`'change'` → `assetsChanged(posixPath)`). Each also has an `'error'` handler that logs via `logger.error`.
+  - Watches (up to three, depending on `entry`): the `entry` file (`'change'` → `rebuildSite()`); `config.folders.src`, ignoring `posix(assetsDir)/**` (every `'all'` event → `onChange(event, posixPath)`, except the `add`/`addDir` burst chokidar emits before its own `'ready'`, and except an `add` or `change` on a file that is empty at the moment it is stat'ed — see the empty-file bullet below); `assetsDir` (`'change'` → `assetsChanged(posixPath)`). Each also has an `'error'` handler that logs via `logger.error`.
 
 ## Depends on
 
-`chokidar`; `./utils.js` (`posixPath`).
+`chokidar` (required on first `createWatcher()`), `node:fs` (`statSync`, for the empty-file check); `./utils.js` (`posixPath`).
 
 ## Depended on by
 
