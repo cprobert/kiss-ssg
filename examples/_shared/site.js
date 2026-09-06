@@ -23,3 +23,17 @@ export const script = (metaUrl) => ({
   file: `examples/${metaUrl.split('/').pop()}`,
   text: readFileSync(new URL(metaUrl), 'utf8'),
 })
+
+// Shared by every example's `complete().catch()`: prints each failing page
+// and sets a non-zero exit code, so a broken example is loud to an agent
+// running `npm run egN` instead of silently exiting 0 — the recipe
+// llms.txt's "Migrating" section shows.
+export function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}

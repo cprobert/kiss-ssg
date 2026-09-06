@@ -1,7 +1,14 @@
 import Kiss from '../lib/kiss.js'
-import { sharedFolders, site, script } from './_shared/site.js'
+import {
+  sharedFolders,
+  site,
+  script,
+  reportBuildFailure,
+} from './_shared/site.js'
 
-new Kiss({
+const dev = process.argv.includes('--dev')
+
+const kiss = new Kiss({
   site,
   script: script(import.meta.url),
   nav: [
@@ -16,7 +23,7 @@ new Kiss({
     assets: sharedFolders.assets,
   },
   verbose: true,
-  dev: true,
+  dev,
 })
   .page({
     view: 'index.hbs',
@@ -37,3 +44,7 @@ new Kiss({
     },
   })
   .generate()
+
+if (!dev) {
+  await kiss.complete().catch(reportBuildFailure)
+}

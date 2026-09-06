@@ -1,7 +1,14 @@
 import Kiss from '../lib/kiss.js'
-import { sharedFolders, site, script } from './_shared/site.js'
+import {
+  sharedFolders,
+  site,
+  script,
+  reportBuildFailure,
+} from './_shared/site.js'
 
-new Kiss({
+const dev = process.argv.includes('--dev')
+
+const kiss = new Kiss({
   site,
   script: script(import.meta.url),
   nav: [
@@ -24,7 +31,7 @@ new Kiss({
   // path in the other five, from the same line.
   assets: { hash: true },
   verbose: true,
-  dev: true,
+  dev,
 })
   .page({ view: 'index.hbs' })
   .page({ view: 'about.hbs' })
@@ -42,3 +49,7 @@ new Kiss({
   .sitemap({}, function (urls) {
     console.log('sitemap.xml lists:', urls)
   })
+
+if (!dev) {
+  await kiss.complete().catch(reportBuildFailure)
+}

@@ -31,9 +31,10 @@
   <p>
     Each scanned page picks up the model sitting at the matching path under
     <code>models/</code> (<code>models/index.json</code>, <code>models/about/us.json</code>);
-    a controller at the matching path would be picked up the same way. Add a
-    <code>.hbs</code> file while the dev server is running and the rebuild scans again,
-    so the new page appears without touching this script.
+    a controller at the matching path would be picked up the same way. Run this
+    example with <code>--dev</code> and add a <code>.hbs</code> file while the dev server
+    is running — the rebuild scans again, so the new page appears without touching
+    this script. Without <code>--dev</code> the example builds once and exits.
   </p>
   {{/content}}
 

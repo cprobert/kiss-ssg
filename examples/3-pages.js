@@ -1,5 +1,12 @@
 import Kiss, { utils } from '../lib/kiss.js'
-import { sharedFolders, site, script } from './_shared/site.js'
+import {
+  sharedFolders,
+  site,
+  script,
+  reportBuildFailure,
+} from './_shared/site.js'
+
+const dev = process.argv.includes('--dev')
 
 const kiss = new Kiss({
   site,
@@ -10,7 +17,7 @@ const kiss = new Kiss({
   ],
   folders: { src: './3-pages', build: '../public/3-pages', ...sharedFolders },
   verbose: true,
-  dev: true,
+  dev,
 })
 
 // Every roast is one JSON file in models/roasts. Naming the folder as the
@@ -47,3 +54,7 @@ kiss
       this.viewStats()
     })
   })
+
+if (!dev) {
+  await kiss.complete().catch(reportBuildFailure)
+}

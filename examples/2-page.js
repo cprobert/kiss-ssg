@@ -1,7 +1,14 @@
 import Kiss from '../lib/kiss.js'
-import { sharedFolders, site, script } from './_shared/site.js'
+import {
+  sharedFolders,
+  site,
+  script,
+  reportBuildFailure,
+} from './_shared/site.js'
 
-new Kiss({
+const dev = process.argv.includes('--dev')
+
+const kiss = new Kiss({
   site,
   script: script(import.meta.url),
   nav: [
@@ -10,7 +17,7 @@ new Kiss({
   ],
   folders: { src: './2-page', build: '../public/2-page', ...sharedFolders },
   verbose: true,
-  dev: true,
+  dev,
 })
   // View only. models/index.json and controllers/index.js are picked up
   // because their filenames match the view's.
@@ -61,3 +68,7 @@ new Kiss({
   .generate(function () {
     this.viewStats()
   })
+
+if (!dev) {
+  await kiss.complete().catch(reportBuildFailure)
+}

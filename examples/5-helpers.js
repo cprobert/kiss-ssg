@@ -1,7 +1,14 @@
 import Kiss from '../lib/kiss.js'
-import { sharedFolders, site, script } from './_shared/site.js'
+import {
+  sharedFolders,
+  site,
+  script,
+  reportBuildFailure,
+} from './_shared/site.js'
 
-new Kiss({
+const dev = process.argv.includes('--dev')
+
+const kiss = new Kiss({
   site,
   script: script(import.meta.url),
   nav: [
@@ -17,7 +24,7 @@ new Kiss({
     assets: sharedFolders.assets,
   },
   verbose: true,
-  dev: true,
+  dev,
   // A second site can run alongside the others as long as both ports differ.
   port: 8080,
   livereloadPort: 35730,
@@ -54,6 +61,17 @@ new Kiss({
   .generate(() => {
     console.log('generate: every page has been written')
   })
-  .complete(() => {
+
+// `.complete()` rejects once per build — dev and build-and-exit are mutually
+// exclusive branches, so each calls it at most once.
+if (dev) {
+  kiss.complete(() => {
     console.log('complete: the build has finished draining')
   })
+} else {
+  await kiss
+    .complete(() => {
+      console.log('complete: the build has finished draining')
+    })
+    .catch(reportBuildFailure)
+}
