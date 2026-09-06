@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import Handlebars from 'handlebars'
-import { KissPage } from '../../lib/kiss-page.js'
+import { KissPage, loadMinifier, preloadMinifier } from '../../lib/kiss-page.js'
 import { silentLogger } from '../../lib/logger.js'
 import fs from 'fs-extra'
 import path from 'node:path'
@@ -232,22 +232,69 @@ describe('template caching', () => {
     expect(await site.read('public/two.html')).toBe('<p>SECOND</p>')
   })
 
-  it('recompiles after the view file changes', async () => {
+  // The cache is validated by content, not mtime, so this pins the case an
+  // mtime check gets wrong: the file changes but its timestamp does not. That
+  // is what a coarse-granularity filesystem (exFAT, some network and WSL2
+  // mounts) looks like when two saves land inside one tick.
+  it('recompiles when the content changes even though the mtime does not', async () => {
     site = await makeSite({ 'pages/e.hbs': '<p>before</p>' })
     const hbs = Handlebars.create()
     const opts = { buildDir: site.build, pagesDir: `${site.root}/pages` }
+    const file = path.join(site.root, 'pages/e.hbs')
+    const { atime, mtime } = fs.statSync(file)
 
     await pageOn(hbs, 'e.hbs', { ...opts, slug: 'a' }).generate()
     expect(await site.read('public/a.html')).toBe('<p>before</p>')
 
-    // Stamped rather than raced: a filesystem's mtime granularity can be
-    // coarser than the gap between two writes in a test.
-    const file = path.join(site.root, 'pages/e.hbs')
     await fs.outputFile(file, '<p>after</p>')
-    const future = new Date(Date.now() + 2000)
-    fs.utimesSync(file, future, future)
+    fs.utimesSync(file, atime, mtime)
+    // utimes rounds to whole milliseconds; the point is only that it did not
+    // move forward.
+    expect(Math.abs(fs.statSync(file).mtimeMs - mtime.getTime())).toBeLessThan(
+      1,
+    )
 
     await pageOn(hbs, 'e.hbs', { ...opts, slug: 'b' }).generate()
     expect(await site.read('public/b.html')).toBe('<p>after</p>')
+  })
+
+  it('does not recompile when the file is rewritten with the same content', async () => {
+    site = await makeSite({ 'pages/same.hbs': '<p>x</p>' })
+    const hbs = Handlebars.create()
+    let compiles = 0
+    const realCompile = hbs.compile.bind(hbs)
+    hbs.compile = (text) => {
+      compiles++
+      return realCompile(text)
+    }
+    const opts = { buildDir: site.build, pagesDir: `${site.root}/pages` }
+    const file = path.join(site.root, 'pages/same.hbs')
+
+    await pageOn(hbs, 'same.hbs', { ...opts, slug: 'a' }).generate()
+    // A save that changes nothing (a formatter no-op, a touch) bumps the mtime
+    // and used to force a recompile; the content check sees through it.
+    await fs.outputFile(file, '<p>x</p>')
+    const future = new Date(Date.now() + 2000)
+    fs.utimesSync(file, future, future)
+    await pageOn(hbs, 'same.hbs', { ...opts, slug: 'b' }).generate()
+
+    expect(compiles).toBe(1)
+    expect(await site.read('public/b.html')).toBe('<p>x</p>')
+  })
+})
+
+describe('minifier loading', () => {
+  // Every page's render starts concurrently, so the load must be one shared
+  // promise — not a cached result that each early caller finds unset.
+  it('hands every caller the same in-flight load', async () => {
+    const a = loadMinifier()
+    const b = loadMinifier()
+    expect(a).toBe(b)
+    expect(typeof (await a)).toBe('function')
+  })
+
+  it('preload starts the same load without waiting for it', async () => {
+    preloadMinifier()
+    expect(typeof (await loadMinifier())).toBe('function')
   })
 })
