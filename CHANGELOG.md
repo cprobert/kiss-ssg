@@ -3,7 +3,7 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
-## Unreleased
+## 2.0.0-alpha.3 — 2026-09-06
 
 **Added**
 
