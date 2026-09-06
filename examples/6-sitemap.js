@@ -19,6 +19,10 @@ new Kiss({
   siteUrl: 'https://asterandoak.example',
   // Pages build to <slug>/index.html, so every URL in the sitemap is a folder.
   extensionLess: true,
+  // The only example that turns cache busting on: the shared layout's
+  // `{{asset 'css/site.css'}}` renders a hashed filename here and the plain
+  // path in the other five, from the same line.
+  assets: { hash: true },
   verbose: true,
   dev: true,
 })

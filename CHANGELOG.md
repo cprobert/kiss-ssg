@@ -24,6 +24,22 @@ this file's `## 2.0.0` entry when the line is released._
   delete the directory when you want fresh data, and add it to your
   `.gitignore`.
 
+- Cache-busting asset URLs, so a caching policy stops being something your
+  templates spell out. Link a file with `href="/{{asset "css/site.css"}}"` and set
+  `assets: { hash: true }` on your config: every `.css` and `.js` copied into
+  the build is renamed to carry a hash of its contents
+  (`css/site.a1b2c3d4.css`), the helper renders that name, and the file it
+  replaces is deleted — so a changed stylesheet is a URL no cache has seen and
+  an unchanged one keeps its URL for ever. `assets: { version: '1.4.5' }` is
+  the alternative: nothing is renamed and the helper appends `?v=1.4.5`
+  instead. With neither set your build emits exactly the files it does today
+  and the helper renders the plain path, so the same template line works under
+  all three. The path comes back without a leading slash, so you pick the base:
+  `/{{asset …}}`, `{{root}}{{asset …}}`, or `{{absUrl (asset …)}}`. Only `.css` and `.js` are renamed — an image, a font or
+  `robots.txt` is reached by URLs kiss does not rewrite — but `{{asset}}`
+  resolves any file in your assets folder, and wrapping it
+  (`{{absUrl (asset "css/site.css")}}`) gives you the absolute URL.
+
 - Two helpers for absolute URLs, so you stop hardcoding your domain in your
   templates. `{{canonical}}` is the current page's full URL — put it in
   `<link rel="canonical" href="{{canonical}}">` — and `{{absUrl '/img/card.png'}}`

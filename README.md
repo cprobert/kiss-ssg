@@ -44,6 +44,10 @@ The default config options are:
     retries: 0,
     cache: false
   },
+  assets: {
+    hash: false,
+    version: null
+  },
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -62,19 +66,20 @@ The default config options are:
 
 Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
 
-| Option         |        Default         |                                                                                                                              Purpose                                                                                                                               |
-| -------------- | :--------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| dev            |         false          |                      Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                      |
-| verbose        |         false          |                                                                                                    Enables additional output on the terminal, when set to true                                                                                                     |
-| cleanBuild     |          true          |                                                                                                      Removed all files from the build dir before generating.                                                                                                       |
-| extensionLess  |         false          |                                                        When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                         |
-| sass           | `{ includePaths: [] }` |                                                                            `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                            |
-| fetch          |       see below        |                  The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                  |
-| port           |          3001          |                       The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                        |
-| livereloadPort |         35729          | The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process. |
-| devHost        |      '127.0.0.1'       |        The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.        |
-| folders        |       see above        |                                                                                                           A JSON object of alternative folder locations                                                                                                            |
-| siteUrl        |       undefined        |                                                                                The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                 |
+| Option         |             Default              |                                                                                                                                        Purpose                                                                                                                                        |
+| -------------- | :------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| dev            |              false               |                               Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                                |
+| verbose        |              false               |                                                                                                              Enables additional output on the terminal, when set to true                                                                                                              |
+| cleanBuild     |               true               |                                                                                                                Removed all files from the build dir before generating.                                                                                                                |
+| extensionLess  |              false               |                                                                  When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                                  |
+| sass           |      `{ includePaths: [] }`      |                                                                                     `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                                      |
+| fetch          |            see below             |                           The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                            |
+| assets         | `{ hash: false, version: null }` | Cache busting for the files copied into the build. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`. Both off is today's build, unchanged. See **Cache-busting asset URLs** below. |
+| port           |               3001               |                                 The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                                 |
+| livereloadPort |              35729               |          The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.           |
+| devHost        |           '127.0.0.1'            |                 The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                  |
+| folders        |            see above             |                                                                                                                     A JSON object of alternative folder locations                                                                                                                     |
+| siteUrl        |            undefined             |                                                                                          The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                          |
 
 A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
 
@@ -113,6 +118,29 @@ A cached model is a build input, exactly like a `.json` file in your models fold
 ### Assets
 
 Any static files you have in the assets directory will be copied to the build directory
+
+#### Cache-busting asset URLs
+
+Link an asset with the `asset` helper and the caching policy stops living in your template:
+
+```handlebars
+<link rel='stylesheet' href='/{{asset "css/site.css"}}' />
+```
+
+| `config.assets`        | What is emitted                | What the helper renders |
+| ---------------------- | ------------------------------ | ----------------------- |
+| _(default)_            | `public/css/site.css`          | `css/site.css`          |
+| `{ hash: true }`       | `public/css/site.a1b2c3d4.css` | `css/site.a1b2c3d4.css` |
+| `{ version: '1.4.5' }` | `public/css/site.css`          | `css/site.css?v=1.4.5`  |
+
+Ask for the path the file has when nothing is renaming it — a `.scss` source by its compiled `.css` name — and the same template line works under all three. The helper renders no leading slash, so the base is yours: `/{{asset …}}` for a root-relative link, or `{{root}}{{asset …}}` if your layout already climbs back to the build root (which is what makes a nested page work opened straight off the file system). The hash is taken over the bytes that were emitted (a stylesheet after sass compiled it), so the URL changes when, and only when, the file a browser downloads changes; the file it replaces is deleted as it is written, so a `dev` session leaves one stylesheet in the build rather than one per save. Only `.css` and `.js` are renamed: an image, a font or `robots.txt` is reached by URLs kiss does not rewrite — the ones inside a stylesheet, and the ones a host asks for by a fixed name — so those keep their names, and `{{asset}}` still resolves them.
+
+The other two forms, for a layout that climbs back to the build root and for an absolute URL — the hashed extension and the `?v=` query both survive the wrap:
+
+```handlebars
+<link rel='stylesheet' href='{{root}}{{asset "css/site.css"}}' />
+<link rel='preload' as='style' href='{{absUrl (asset "css/site.css")}}' />
+```
 
 ### .page()
 
@@ -374,6 +402,14 @@ It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper u
 `/about`, `about` and `about/` all give `https://example.com/about`; a file extension is kept (`{{absUrl 'css/site.css'}}` → `https://example.com/css/site.css`), a URL that already has a scheme is passed through untouched, and calling it with no path gives you `canonical`.
 
 Both need `siteUrl` on the Kiss config. Without one they render nothing and log a warning (one per page) rather than failing the build.
+
+`asset` gives you the URL of a file the build actually contains, under whatever cache-busting policy `config.assets` sets:
+
+```handlebars
+<link rel='stylesheet' href='/{{asset "css/site.css"}}' />
+```
+
+It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` depending on the config — see **Cache-busting asset URLs** above. There is no leading slash, so the template chooses the base: `/{{asset …}}`, `{{root}}{{asset …}}`, or `{{absUrl (asset …)}}` for an absolute URL. A path that is not in the build renders as you wrote it and logs one warning per page naming it, rather than failing the page.
 
 `env` renders one branch or the other depending on whether you're in dev mode:
 

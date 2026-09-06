@@ -82,6 +82,21 @@ describe('resolveConfig', () => {
     })
   })
 
+  it('defaults the assets cache-busting block', () => {
+    expect(resolveConfig({}).assets).toEqual({ hash: false, version: null })
+  })
+
+  it('merges the assets block one level deep, like sass', () => {
+    expect(resolveConfig({ assets: { version: '1.2.3' } }).assets).toEqual({
+      hash: false,
+      version: '1.2.3',
+    })
+    expect(resolveConfig({ assets: { hash: true } }).assets).toEqual({
+      hash: true,
+      version: null,
+    })
+  })
+
   it('takes the default for a key passed explicitly as undefined', () => {
     expect(resolveConfig({ port: undefined }).port).toBe(3001)
     expect(resolveConfig({ cleanBuild: undefined }).cleanBuild).toBe(true)
@@ -90,6 +105,9 @@ describe('resolveConfig', () => {
     ).toEqual([])
     expect(resolveConfig({ fetch: { timeout: undefined } }).fetch.timeout).toBe(
       10000,
+    )
+    expect(resolveConfig({ assets: { hash: undefined } }).assets.hash).toBe(
+      false,
     )
   })
 

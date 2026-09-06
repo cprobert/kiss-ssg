@@ -3,6 +3,7 @@ import path from 'node:path'
 import Handlebars from 'handlebars'
 import { Remarkable } from 'remarkable'
 import { registerHandlebarsHelpers } from '../../lib/handlebars-helpers.js'
+import { createAssetManifest } from '../../lib/asset-manifest.js'
 import { KissPage } from '../../lib/kiss-page.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -14,12 +15,13 @@ const render = (src, ctx = {}) => hbs.compile(src)(ctx)
 
 // A recording logger so the degrade-instead-of-throw paths can assert that the
 // template author was told, not just that nothing blew up.
-const makeHbs = (config = {}) => {
+const makeHbs = (config = {}, assets) => {
   const env = Handlebars.create()
   registerHandlebarsHelpers(
     env,
     { dev: false, sass: { includePaths: [] }, ...config },
     {
+      assets,
       markdown: new Remarkable({ html: true, xhtmlOut: true, breaks: true }),
       logger: {
         ...silentLogger,
@@ -397,5 +399,112 @@ describe('lookup', () => {
     )
     expect(warnings).toHaveLength(1)
     expect(warnings[0].join(' ')).toContain("'p'")
+  })
+})
+
+describe('asset', () => {
+  const manifestOf = (entries) => {
+    const manifest = createAssetManifest()
+    for (const [key, value] of Object.entries(entries))
+      manifest.record(key, value)
+    return manifest
+  }
+  const plain = { 'css/site.css': 'css/site.css' }
+  const hashed = { 'css/site.css': 'css/site.a1b2c3d4.css' }
+
+  it('is the plain site-relative path when no policy is on', () => {
+    hbs = makeHbs({ assets: { hash: false, version: null } }, manifestOf(plain))
+    expect(render('{{asset "css/site.css"}}')).toBe('css/site.css')
+  })
+
+  it('is the hashed name the copy emitted when hashing is on', () => {
+    hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    expect(render('{{asset "css/site.css"}}')).toBe('css/site.a1b2c3d4.css')
+  })
+
+  it('leaves the base to the template', () => {
+    hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    // Root-relative, and the relative climb the layouts use, from one helper.
+    expect(render('/{{asset "css/site.css"}}')).toBe('/css/site.a1b2c3d4.css')
+    expect(render('{{root}}{{asset "css/site.css"}}', { root: '../' })).toBe(
+      '../css/site.a1b2c3d4.css',
+    )
+  })
+
+  it('appends the version query when a version is set', () => {
+    hbs = makeHbs(
+      { assets: { hash: false, version: '1.2.3' } },
+      manifestOf(plain),
+    )
+    expect(render('{{asset "css/site.css"}}')).toBe('css/site.css?v=1.2.3')
+    expect(render('/{{asset "css/site.css"}}')).toBe('/css/site.css?v=1.2.3')
+  })
+
+  it('ignores the version when hashing is on — the name already carries it', () => {
+    hbs = makeHbs(
+      { assets: { hash: true, version: '1.2.3' } },
+      manifestOf(hashed),
+    )
+    expect(render('{{asset "css/site.css"}}')).toBe('css/site.a1b2c3d4.css')
+  })
+
+  it('takes a leading slash or none', () => {
+    hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    expect(render('{{asset "/css/site.css"}}')).toBe('css/site.a1b2c3d4.css')
+  })
+
+  it('composes with absUrl, keeping the hashed extension', () => {
+    hbs = makeHbs(
+      { siteUrl: 'https://e.com', assets: { hash: true, version: null } },
+      manifestOf(hashed),
+    )
+    expect(render('{{absUrl (asset "css/site.css")}}')).toBe(
+      'https://e.com/css/site.a1b2c3d4.css',
+    )
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('composes with absUrl, keeping the version query unescaped', () => {
+    hbs = makeHbs(
+      { siteUrl: 'https://e.com/', assets: { hash: false, version: '1.2.3' } },
+      manifestOf(plain),
+    )
+    expect(render('{{absUrl (asset "css/site.css")}}')).toBe(
+      'https://e.com/css/site.css?v=1.2.3',
+    )
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('passes a URL on another domain through untouched', () => {
+    hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    const cdn = 'https://cdn.example/site.css'
+    expect(render('{{asset p}}', { p: cdn })).toBe(cdn)
+    expect(render('{{absUrl (asset p)}}', { p: cdn })).toBe(cdn)
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('degrades to the path it was given, warning once per page per path', () => {
+    hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    const page = { view: 'index.hbs' }
+    expect(
+      hbs.compile('{{asset "css/nope.css"}}{{asset "css/nope.css"}}')(page),
+    ).toBe('css/nope.csscss/nope.css')
+    expect(warnings).toHaveLength(1)
+    expect(String(warnings[0][0])).toContain('index.hbs')
+    hbs.compile('{{asset "css/nope.css"}}')({ view: 'about.hbs' })
+    expect(warnings).toHaveLength(2)
+  })
+
+  it('degrades with no manifest at all', () => {
+    hbs = makeHbs()
+    expect(render('{{asset "css/site.css"}}')).toBe('css/site.css')
+    expect(warnings).toHaveLength(1)
+  })
+
+  it('warns when the path it was handed is not a string', () => {
+    hbs = makeHbs({}, manifestOf(plain))
+    expect(render('{{asset p}}', { p: null })).toBe('')
+    expect(render('{{asset}}')).toBe('')
+    expect(warnings).toHaveLength(2)
   })
 })

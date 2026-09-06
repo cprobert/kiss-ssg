@@ -2,11 +2,11 @@
 
 ## Responsibility
 
-Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `env`) onto a given Handlebars environment. `lookup` deliberately overrides Handlebars' own helper of that name.
+Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `env`) onto a given Handlebars environment. `lookup` deliberately overrides Handlebars' own helper of that name.
 
 ## Public interface
 
-- `registerHandlebarsHelpers(hbs, config, { markdown, logger })` — registers all nine helpers on `hbs` via `hbs.registerHelper(...)`; returns `hbs`.
+- `registerHandlebarsHelpers(hbs, config, { markdown, logger, assets })` — registers all ten helpers on `hbs` via `hbs.registerHelper(...)`; returns `hbs`. `assets` is the instance's asset manifest (`AIKB/asset-manifest.md`); it is optional and defaults to an empty one, so a caller that registers helpers without an asset copy still gets a working (degrading) `asset` helper.
   - `markdown` — block or string content, rendered through `markdown.render(trimLines(text))`, wrapped in `hbs.SafeString`.
   - `sass` — file path (string) and/or block; compiles via `sass.compile`/`sass.compileString` (`style` = `'expanded'` in dev, `'compressed'` otherwise; `loadPaths` from `config.sass.includePaths`); returns concatenated CSS as `hbs.SafeString`.
   - `offset(index)` — `index + 1`.
@@ -15,11 +15,12 @@ Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`
   - `isActive(pageOptions, options)` — block helper; renders the block with `context.active` set to the configured active class (`options.hash.active`, default `'active'`) when `pageOptions.pageURL` matches `options.hash.href`. Exact match by default; `folderMatch=true` also matches pages below the href.
   - `canonical(options)` — the current page's absolute URL (any leading argument is ignored; the options object is taken from the end of the argument list, so `{{canonical}}` and `{{canonical this}}` behave alike): the page's own `siteUrl` joined to `toURLKey(root.pageURL)` through `toAbsoluteUrl` (both from `utils.js`). Renders `''` and warns when there is no `siteUrl`, or when the root context carries no `pageURL`.
   - `absUrl(urlPath, options)` — `siteUrl` joined to any site-relative path through `toAbsoluteUrl`. A path already carrying a scheme (`https://…`) is returned unchanged, with or without a `siteUrl`. Called with no argument it is `canonical`. A non-string path logs a warning and renders `''`.
+  - `asset(urlPath, options)` — the path of an emitted asset, resolved through the manifest: `css/site.a1b2c3d4.css` under `config.assets.hash`, `css/site.css?v=1.2.3` under `config.assets.version`, and the plain `css/site.css` under neither. Site-relative with **no** leading slash, so the template supplies the base (`/{{asset …}}`, `{{root}}{{asset …}}`, `{{absUrl (asset …)}}`); a leading slash on the argument is optional and is stripped. A path already carrying a scheme is returned unchanged. A path the manifest does not know renders as it was given and logs one warning per page per path. A non-string path logs a warning and renders `''`.
   - `env(options)` — block helper gated on `options.hash.is` (`'dev'`/`'prod'`, case-insensitive substring match) against `config.dev`; renders `options.fn(this)` or `options.inverse(this)`. A missing or non-string `is` is an error: it logs and returns `''` (neither branch).
 
 ## Depends on
 
-`node:path`; `./sass.js` (the resolved sass binding); `./utils.js` (`trimLines`, `toURLKey`, `toAbsoluteUrl`).
+`node:path`; `./sass.js` (the resolved sass binding); `./asset-manifest.js` (`createAssetManifest`, for the empty default); `./utils.js` (`trimLines`, `toURLKey`, `toAbsoluteUrl`).
 
 ## Depended on by
 
@@ -41,3 +42,9 @@ Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`
 - **`absUrl` keeps a file extension, `canonical` does not.** `toURLKey` would turn `css/site.css` into `css/site`, so `absUrl` passes its path to `toAbsoluteUrl` directly — that only trims slashes and collapses a trailing `index` segment. A page URL is an identity (every spelling of it is one key); an arbitrary path is a path.
 - The `siteUrl` read is the **page's**, `root.config.siteUrl`, falling back to the instance config only when the template was compiled without a page context. `Kiss.page()` gives every page its own shallow copy of the config, so a page built for another domain (`.page({ view, config: { siteUrl } })`) gets a canonical URL on that domain. `sitemap.js` still reads the instance `siteUrl` for every `<loc>`, so such a page is the one case where the two differ — deliberately: it is the page that has been pointed elsewhere.
 - No `siteUrl` **degrades, like every other helper**: one warning and an empty string, never a throw and never a guessed domain. The warning is deduplicated per page through a `WeakSet` keyed on `options.data.root` (the `lookup` pattern), so a layout with a canonical link and a dozen `absUrl` links logs one line for that page, not thirteen. A missing `pageURL` warns separately and also renders nothing: the same canonical URL on every page is worse for a search engine than no canonical link at all.
+- **`asset` reads a manifest, it does not look at disk.** The manifest is filled by the one `copyAssets` run the constructor queues, and `generate()`/`complete()` await `_promises` — which that run is on — before any page renders, so the helper always sees a filled manifest. A watch-mode asset edit refills it and, under a hashing policy, `Kiss` re-renders the stack so the new filename reaches the pages (`AIKB/kiss.md`).
+- **The helper returns no leading slash, deliberately.** A root-relative URL is one form of link, not the only one: the examples' shared layout climbs back to the build root with `{{root}}` so a page opens straight off the file system, and a site on a sub-path needs its own prefix. `/{{asset 'css/site.css'}}`, `{{root}}{{asset 'css/site.css'}}` and `{{absUrl (asset 'css/site.css')}}` are the three forms, and the helper stays out of that decision.
+- **The version query is the one helper output that is a `SafeString`.** Handlebars escapes `=` in a `{{...}}` expression, so a plain string comes out of the template as `?v&#x3D;1.2.3`. The path is escaped with `hbs.Utils.escapeExpression` first and the query appended after it, so the escaping is exactly what Handlebars would have done and only the separator survives.
+- **`absUrl` unwraps and re-wraps a `SafeString` argument** so `{{absUrl (asset …)}}` composes under every policy. Without it the version mode's `SafeString` would fail `absUrl`'s "needs a path string" guard and render nothing, and re-escaping the result would put `&#x3D;` back. A path that already carries a scheme is returned exactly as it arrived, wrapper included.
+- **`asset` reads the instance config, not the page's** — unlike `canonical`/`absUrl`, which read `root.config.siteUrl`. The policy was applied once, by the copy that emitted the files, before any page rendered; a per-page override could only disagree with what is on disk.
+- `asset` degrades like every other helper: an unknown path is the author's own build, so it renders what they asked for and names the path once per page (the `lookup` `WeakMap`-of-`Set`s pattern), rather than failing the page.

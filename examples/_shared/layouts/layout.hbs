@@ -9,8 +9,11 @@
   {{#if config.siteUrl}}<link rel="canonical" href="{{canonical}}">{{/if}}
   {{!-- `root` is the climb back to the build root ("", "../", "../../"), set by
         each page in its {{#extend}} hash, so every page works from the dev
-        server and straight off the file system. --}}
-  <link rel="stylesheet" href="{{root}}css/site.css">
+        server and straight off the file system. `asset` renders the name the
+        file was emitted under, site-relative and unprefixed, so it sits behind
+        `root` like any other link and the caching policy lives in the config
+        (example 6 turns hashing on) rather than in this line. --}}
+  <link rel="stylesheet" href="{{root}}{{asset 'css/site.css'}}">
   {{#block "head"}}{{/block}}
 </head>
 <body>

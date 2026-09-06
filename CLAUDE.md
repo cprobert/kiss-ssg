@@ -25,6 +25,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
 | Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
 | Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
+| Asset manifest + cache busting     | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
 | Sass binding                       | `lib/sass.js`                | `AIKB/sass.md`                |
 | Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
 | URL-model fetch policy             | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
