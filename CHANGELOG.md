@@ -9,6 +9,20 @@ _v2 is in development on the `v2` branch. The v1 → v2 migration notes live in
 [`llms.txt`](llms.txt) § Migrating from v1 and in the README, and will become
 this file's `## 2.0.0` entry when the line is released._
 
+**Added**
+
+- Two helpers for absolute URLs, so you stop hardcoding your domain in your
+  templates. `{{canonical}}` is the current page's full URL — put it in
+  `<link rel="canonical" href="{{canonical}}">` — and `{{absUrl '/img/card.png'}}`
+  turns any path of yours into one, for `og:image`, a feed or an RSS link. Both
+  read `siteUrl` from your config, the same key `.sitemap()` already needs, and
+  `{{canonical}}` is built by the same code as `sitemap.xml`, so a page's
+  canonical link and its `<loc>` can never disagree: `/about/index.html`
+  collapses to `https://example.com/about`, the home page is your `siteUrl` with
+  one trailing slash, and it reads the same whether `extensionLess` is on or
+  off. Without a `siteUrl` they render nothing and log one warning per page
+  instead of failing your build.
+
 **Fixed**
 
 - One bad item in a `.pages()` fan-out no longer takes the rest of the fan-out

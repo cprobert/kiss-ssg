@@ -55,6 +55,44 @@ describe('utils.hashId', () => {
   })
 })
 
+describe('utils.toAbsoluteUrl', () => {
+  it('joins a site URL to a path with exactly one slash between them', () => {
+    expect(utils.toAbsoluteUrl('https://e.com', 'about')).toBe(
+      'https://e.com/about',
+    )
+    expect(utils.toAbsoluteUrl('https://e.com/', '/about/')).toBe(
+      'https://e.com/about',
+    )
+  })
+
+  it('gives an empty path the site root with one trailing slash', () => {
+    expect(utils.toAbsoluteUrl('https://e.com/', '')).toBe('https://e.com/')
+  })
+
+  it('treats a trailing index segment as the folder itself', () => {
+    expect(utils.toAbsoluteUrl('https://e.com', 'about/index.html')).toBe(
+      'https://e.com/about',
+    )
+    expect(utils.toAbsoluteUrl('https://e.com', 'index.html')).toBe(
+      'https://e.com/',
+    )
+  })
+
+  it('keeps a file extension that is not an index page', () => {
+    expect(utils.toAbsoluteUrl('https://e.com', 'css/site.css')).toBe(
+      'https://e.com/css/site.css',
+    )
+  })
+})
+
+describe('utils.toURLKey', () => {
+  it('reduces every spelling of one page to the same key', () => {
+    for (const value of ['/about', 'about/', 'about.html', 'about/index.html'])
+      expect(utils.toURLKey(value)).toBe('about')
+    expect(utils.toURLKey('index.html')).toBe('')
+  })
+})
+
 describe('utils.globFiles', () => {
   it('finds files under a directory, sorted and posix', async () => {
     site = await makeSite({ 'v/b.hbs': 'b', 'v/a/c.hbs': 'c' })

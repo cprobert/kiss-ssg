@@ -207,6 +207,132 @@ describe('isActive', () => {
   })
 })
 
+describe('canonical', () => {
+  const pageURLFor = (slug, extLess) => {
+    const page = new KissPage('view.hbs', { hbs, logger: silentLogger })
+    page.slug = slug
+    page.extLess = extLess
+    return page.pageURL()
+  }
+
+  beforeEach(() => {
+    hbs = makeHbs({ siteUrl: 'https://e.com' })
+  })
+
+  it('joins siteUrl to the page URL, without the extension', () => {
+    expect(render('{{canonical}}', { pageURL: 'about.html' })).toBe(
+      'https://e.com/about',
+    )
+  })
+
+  it('gives the home page the site root with one trailing slash', () => {
+    expect(render('{{canonical}}', { pageURL: 'index.html' })).toBe(
+      'https://e.com/',
+    )
+  })
+
+  it('keeps a nested page nested', () => {
+    expect(render('{{canonical}}', { pageURL: 'blog/2026/post.html' })).toBe(
+      'https://e.com/blog/2026/post',
+    )
+  })
+
+  const table = [
+    [false, 'about', 'https://e.com/about'],
+    [true, 'about', 'https://e.com/about'],
+    [false, 'index', 'https://e.com/'],
+    [true, 'index', 'https://e.com/'],
+  ]
+  it.each(table)(
+    'is the same URL with extensionLess=%s on the %s page',
+    (extLess, slug, expected) => {
+      const pageURL = pageURLFor(slug, extLess)
+      expect(render('{{canonical}}', { pageURL })).toBe(expected)
+    },
+  )
+
+  it('does not double the slash when siteUrl carries one', () => {
+    hbs = makeHbs({ siteUrl: 'https://e.com/' })
+    expect(render('{{canonical}}', { pageURL: 'about.html' })).toBe(
+      'https://e.com/about',
+    )
+    expect(render('{{canonical}}', { pageURL: 'index.html' })).toBe(
+      'https://e.com/',
+    )
+  })
+
+  it('follows a siteUrl the page overrides for itself', () => {
+    expect(
+      render('{{canonical}}', {
+        pageURL: 'about.html',
+        config: { siteUrl: 'https://de.example' },
+      }),
+    ).toBe('https://de.example/about')
+  })
+
+  it('renders nothing and warns once per page when there is no siteUrl', () => {
+    hbs = makeHbs()
+    expect(render('{{canonical}}{{canonical}}', { pageURL: 'a.html' })).toBe('')
+    expect(warnings).toHaveLength(1)
+    render('{{canonical}}', { pageURL: 'b.html' })
+    expect(warnings).toHaveLength(2)
+  })
+
+  it('finds the page when passed a context, as v1 templates did', () => {
+    expect(render('{{canonical this}}', { pageURL: 'about.html' })).toBe(
+      'https://e.com/about',
+    )
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('warns rather than guessing when there is no page context', () => {
+    expect(render('{{canonical}}')).toBe('')
+    expect(warnings).toHaveLength(1)
+  })
+})
+
+describe('absUrl', () => {
+  beforeEach(() => {
+    hbs = makeHbs({ siteUrl: 'https://e.com/' })
+  })
+
+  const paths = [
+    ['/about', 'https://e.com/about'],
+    ['about', 'https://e.com/about'],
+    ['about/', 'https://e.com/about'],
+    ['css/site.css', 'https://e.com/css/site.css'],
+    ['/about/index.html', 'https://e.com/about'],
+  ]
+  it.each(paths)('resolves %s to %s', (p, expected) => {
+    expect(render('{{absUrl p}}', { p })).toBe(expected)
+  })
+
+  it('returns an already absolute URL unchanged, siteUrl or not', () => {
+    const cdn = 'https://cdn.example/logo.png'
+    expect(render('{{absUrl p}}', { p: cdn })).toBe(cdn)
+    hbs = makeHbs()
+    expect(render('{{absUrl p}}', { p: cdn })).toBe(cdn)
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('is the page canonical when called with no path', () => {
+    expect(render('{{absUrl}}', { pageURL: 'about.html' })).toBe(
+      'https://e.com/about',
+    )
+  })
+
+  it('renders nothing and warns once per page when there is no siteUrl', () => {
+    hbs = makeHbs()
+    expect(render('{{absUrl "/a"}}{{absUrl "/b"}}', {})).toBe('')
+    expect(warnings).toHaveLength(1)
+  })
+
+  it('warns when the path it was handed is not a string', () => {
+    expect(render('{{absUrl p}}', { p: null })).toBe('')
+    expect(warnings).toHaveLength(1)
+  })
+})
+
 describe('env', () => {
   it('chooses the branch by config.dev', () => {
     expect(render('{{#env is="prod"}}P{{else}}D{{/env}}')).toBe('P')

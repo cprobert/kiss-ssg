@@ -67,7 +67,7 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 | livereloadPort |         35729          | The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process. |
 | devHost        |      '127.0.0.1'       |        The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.        |
 | folders        |       see above        |                                                                                                           A JSON object of alternative folder locations                                                                                                            |
-| siteUrl        |       undefined        |                                                                                                     The site's base URL, required by `.sitemap()` (see below)                                                                                                      |
+| siteUrl        |       undefined        |                                                                                The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                 |
 
 A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
 
@@ -320,6 +320,25 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 ```
 
 Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
+
+`canonical` is the current page's absolute URL, for a `<link rel="canonical">` — `siteUrl` joined to the page's own URL:
+
+```handlebars
+<link rel='canonical' href='{{canonical}}' />
+```
+
+It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string: the trailing `index.html` collapses to the folder (`/about/index.html` → `https://example.com/about`), the home page is `siteUrl` with one trailing slash, and it reads the same whether `extensionLess` is on or off. A `siteUrl` with a trailing slash is fine — you never get a double slash.
+
+`absUrl` does the same join for any path of your own, which is what an Open Graph image or an RSS link needs:
+
+```handlebars
+<meta property='og:image' content='{{absUrl "/img/card.png"}}' />
+<meta property='og:url' content='{{absUrl}}' />
+```
+
+`/about`, `about` and `about/` all give `https://example.com/about`; a file extension is kept (`{{absUrl 'css/site.css'}}` → `https://example.com/css/site.css`), a URL that already has a scheme is passed through untouched, and calling it with no path gives you `canonical`.
+
+Both need `siteUrl` on the Kiss config. Without one they render nothing and log a warning (one per page) rather than failing the build.
 
 `env` renders one branch or the other depending on whether you're in dev mode:
 

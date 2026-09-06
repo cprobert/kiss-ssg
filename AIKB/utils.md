@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Small string/path helpers shared across the engine: slugification, title-casing, path sanitization, content hashing, and the engine's one file-globbing entry point.
+Small string/path helpers shared across the engine: slugification, title-casing, path sanitization, URL normalisation, content hashing, and the engine's one file-globbing entry point.
 
 ## Public interface
 
@@ -13,8 +13,10 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 - `sanitizePath(path)` → `trimPath`, split on `/`, each segment passed through `toSlug`, rejoined with `/`; returns the input unchanged (including falsy) if falsy.
 - `posixPath(path)` → backslashes converted to `/` and a leading `./` stripped.
 - `globFiles(dir, pattern)` → every file matching `pattern` under `dir`, each through `posixPath`, sorted. `dir` is a literal directory (glob-escaped), `pattern` is the glob. The engine's only glob call site.
+- `toURLKey(value)` → the page-identity key for a URL or build path: leading and trailing `/` stripped, the last segment's file extension dropped, a trailing `index` segment removed. The home page is `''`.
+- `toAbsoluteUrl(siteUrl, urlPath)` → `siteUrl` (trailing slashes trimmed) joined to `urlPath` (leading/trailing slashes trimmed, a trailing `index` segment — with or without an extension — dropped) by exactly one `/`. An empty path gives `siteUrl` with a single trailing slash.
 - `hashId(input)` → MD5 hex digest of `input` if it's a string, else of `JSON.stringify(input)`.
-- `export default { trimLines, toSlug, toTitleCase, trimPath, sanitizePath, posixPath, globFiles, hashId }` (also each function is a named export).
+- `export default { trimLines, toSlug, toTitleCase, trimPath, sanitizePath, posixPath, globFiles, hashId, toURLKey, toAbsoluteUrl }` (also each function is a named export).
 
 ## Depends on
 
@@ -22,7 +24,7 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 
 ## Depended on by
 
-`lib/assets.js`, `lib/handlebars-helpers.js`, `lib/kiss.js`, `lib/kiss-page.js`, `lib/model-resolver.js`, `lib/partials.js`, `lib/watcher.js`.
+`lib/assets.js`, `lib/handlebars-helpers.js`, `lib/kiss.js`, `lib/kiss-page.js`, `lib/model-resolver.js`, `lib/partials.js`, `lib/sitemap.js`, `lib/watcher.js`.
 
 ## Non-obvious behavior
 
@@ -34,3 +36,6 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 - `globFiles` exists because glob v9+ changed two behaviours the engine relied on: it strips a leading `./` from the paths it returns (while every `config.folders.*` default carries one, so a caller slicing the folder prefix off a result would slice the wrong number of characters), and it no longer sorts results — walk order would make page order, partial registration order and sitemap order depend on the machine. Routing every glob through here fixes both once. Do not call `globSync` directly from another module.
 
 - **The directory is taken separately from the pattern so it can be escaped** (`escape()` from `glob`). A project path is a literal name, not a pattern: a folder called `site[old]` interpolated straight into a pattern is read as a character class and matches nothing, so `scan()` found zero pages and Sass compiled nothing while the build still reported success (review finding A-07). Callers therefore pass `globFiles(folder, '**/*.hbs')`, never a pre-joined string — joining it yourself puts the folder back inside the pattern and reopens the bug.
+
+- **`toURLKey` and `toAbsoluteUrl` live here because two modules need them, not because they are string helpers.** `lib/sitemap.js` builds every `<loc>` with them and `lib/handlebars-helpers.js` builds `{{canonical}}` with them, so a page's canonical URL and its sitemap entry are produced by one function and cannot disagree (review gap O5). Putting the join in either caller would have made the other import a module whose job is something else.
+- They are **two functions, not one, and the difference matters**: `toURLKey` is the page _identity_ (it drops the file extension, so `about.html` and `about/index.html` are one key, which is also what `isActive` compares), while `toAbsoluteUrl` keeps whatever extension it is handed — an asset URL passed to `{{absUrl "css/site.css"}}` has to survive. Only a trailing `index` segment is collapsed on the join, because no absolute URL should end in `/index.html`.

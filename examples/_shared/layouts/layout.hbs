@@ -6,6 +6,7 @@
   <title>{{#if model.title}}{{model.title}}{{else}}{{title}}{{/if}} · {{config.site.name}}</title>
   <meta name="description" content="{{#if model.description}}{{model.description}}{{else}}{{config.site.tagline}}{{/if}}">
   <meta name="generator" content="kiss-ssg">
+  {{#if config.siteUrl}}<link rel="canonical" href="{{canonical}}">{{/if}}
   {{!-- `root` is the climb back to the build root ("", "../", "../../"), set by
         each page in its {{#extend}} hash, so every page works from the dev
         server and straight off the file system. --}}
