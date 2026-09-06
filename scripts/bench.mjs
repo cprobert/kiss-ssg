@@ -39,7 +39,14 @@ const BENCH_DIR = path.join(ROOT, '.bench')
 // Pure helpers (exported for test/unit/bench.test.js)
 // ---------------------------------------------------------------------------
 
-export const SCENARIOS = ['startup', 'scan', 'models', 'fanout', 'watch']
+export const SCENARIOS = [
+  'startup',
+  'scan',
+  'models',
+  'fanout',
+  'watch',
+  'styled',
+]
 
 export const DEFAULTS = {
   pages: [50, 500],
@@ -236,6 +243,15 @@ const pageTemplate = (page) => `{{#extend "layout" root="../"}}
 {{/extend}}
 `
 
+// The same page, plus the one line that makes it a `styled` page: a partial
+// that compiles a shared stylesheet at render time. Every page includes it, so
+// every page pays for that compile — which is the whole point of the scenario.
+const styledPageTemplate = (page) =>
+  pageTemplate(page).replace(
+    '{{#content "main"}}',
+    '{{#content "main"}}\n  <style>{{> "styles"}}</style>',
+  )
+
 // A fan-out view lives outside pages/ so the scan scenario cannot pick it up —
 // the two scenarios must measure different things, not overlapping page sets.
 const ITEM_VIEW = `{{#extend "layout" root="../"}}
@@ -257,11 +273,69 @@ const model = (i) => ({
   })),
 })
 
+// ---------------------------------------------------------------------------
+// The `styled` fixture: a real site's shape, not a real site's stylesheets
+// ---------------------------------------------------------------------------
+//
+// Profiling `learna-ltd/diploma-msc` found the dominant cost of a real build in
+// a place the synthetic fixture could not see: the `{{sass}}` helper compiles at
+// render time, so a stylesheet named by a partial is recompiled once per page
+// that includes it. There, `catalog.scss` costs 76ms and is included by 111
+// course pages.
+//
+// That workload is reproduced rather than vendored — copying a client's
+// stylesheets into a published npm package would be wrong, and pinning the
+// benchmark to someone else's private repo would make it unrunnable. Instead the
+// generator below is calibrated against the real thing: 25 modules compiles in
+// ~66ms and emits ~27KB of CSS, against catalog.scss's 76ms and 22KB. Close
+// enough that a fix proven here is a fix there.
+//
+// Split across an entry and two `@use`d partials on purpose: real stylesheets
+// import, and a cache that keys on the entry alone would look correct here and
+// be wrong in `watch`, where the edit usually lands in a partial.
+const STYLE_MODULES = 25
+
+const SCSS_VARS = `@use 'sass:color';
+$brand: #3366cc;
+$accent: #cc6633;
+$space: 8px;
+${Array.from(
+  { length: 40 },
+  (_, v) => `$c${v}: color.adjust($brand, $hue: ${v * 3}deg);`,
+).join('\n')}
+`
+
+const SCSS_MIXINS = `@use 'sass:color';
+@use 'sass:math';
+@mixin card($bg, $pad) {
+  background: $bg;
+  padding: $pad;
+  border-radius: math.div($pad, 2);
+  &:hover { background: color.adjust($bg, $lightness: 5%); }
+  .title { font-weight: 700; .sub { opacity: .8; } }
+}
+`
+
+const SCSS_ENTRY = `@use 'sass:color';
+@use './vars' as v;
+@use './mixins' as m;
+${Array.from(
+  { length: STYLE_MODULES },
+  (_, i) => `.mod-${i} {
+  @include m.card(v.$c${i % 40}, v.$space * ${1 + (i % 4)});
+  .row { display: flex; .col { flex: 1; .cell { color: color.adjust(v.$c${i % 40}, $lightness: ${i % 20}%); } } }
+  @for $j from 1 through 15 {
+    .u-#{$j} { padding: #{$j * 4}px; border-color: color.adjust(v.$accent, $lightness: $j * 1%); }
+  }
+}`,
+).join('\n')}
+`
+
 // Regenerated whenever the page count changes; a marker file records what is on
 // disk so an unchanged sweep does not pay to rewrite thousands of files.
 export function buildFixture(dir, pages) {
   const marker = path.join(dir, '.fixture.json')
-  const want = JSON.stringify({ pages, v: 1 })
+  const want = JSON.stringify({ pages, v: 2 })
   if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8') === want) return
   fs.rmSync(dir, { recursive: true, force: true })
 
@@ -280,8 +354,18 @@ export function buildFixture(dir, pages) {
   write('views/item.hbs', ITEM_VIEW)
   write('assets/css/site.css', 'body{font:16px/1.5 system-ui;margin:0}\n')
 
+  write('scss/_vars.scss', SCSS_VARS)
+  write('scss/_mixins.scss', SCSS_MIXINS)
+  write('scss/shared.scss', SCSS_ENTRY)
+  // The helper takes a path, and an absolute one is independent of the cwd the
+  // child happens to run in. JSON.stringify escapes it for the Handlebars
+  // string literal, which matters on Windows.
+  const sheet = path.join(src, 'scss', 'shared.scss')
+  write('partials/styles.hbs', `{{sass ${JSON.stringify(sheet)}}}\n`)
+
   for (const page of fixturePlan(pages)) {
     write(`pages/${page.view}`, pageTemplate(page))
+    write(`pages-styled/${page.view}`, styledPageTemplate(page))
     write(`models/${page.name}.json`, JSON.stringify(model(page.index)))
     write(`models/items/${page.name}.json`, JSON.stringify(model(page.index)))
   }
@@ -339,6 +423,9 @@ async function runChild(scenario, dir, pages, loud) {
     fanout: { folders: { pages: path.join(src, 'views') } },
     // dev:true is the point of the watch scenario; the ports are randomised so
     // a previous iteration still releasing its socket cannot fail the next one.
+    // Its own pages folder, so `scan` and `styled` measure different things
+    // rather than overlapping page sets.
+    styled: { folders: { pages: path.join(src, 'pages-styled') } },
     watch: { dev: true, port: 0, livereloadPort: 0 },
   }[scenario]
   const config = baseConfig()
@@ -351,7 +438,7 @@ async function runChild(scenario, dir, pages, loud) {
   const construct = now() - tConstruct
 
   const tRegister = now()
-  if (scenario === 'scan') {
+  if (scenario === 'scan' || scenario === 'styled') {
     kiss.scan()
   } else if (scenario === 'models') {
     for (const page of plan)

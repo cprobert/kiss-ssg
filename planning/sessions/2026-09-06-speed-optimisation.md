@@ -59,6 +59,47 @@ could be hoisted to once-per-build.
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+**2026-09-06 — the Assets and Sass exclusion is lifted, on operator authority.**
+
+The non-goals above excluded `lib/assets.js`, `lib/sass.js` and
+`lib/asset-manifest.js`, on the reasoning that asset work is "often the dominant
+cost on real sites" and deserved its own branch. Profiling a real consuming site
+inverted that: it is the dominant cost, and it is dominant _inside the page
+loop_, which this branch already owns.
+
+The evidence, from `learna-ltd/diploma-msc` (a production kiss-ssg site):
+
+- The `{{sass}}` helper compiles on every render and caches nothing. Its
+  `catalog.scss` costs **76ms per compile** (measured, repeat compile, real
+  `loadPaths`) and emits an identical 22KB of CSS each time.
+- That partial is included by all four `src/pages/catalogs/*.hbs` views, which
+  `.pages({ view: 'catalogs', model: 'catalog' })` renders once per course. The
+  site's public sitemap lists **111 course pages** (of 669 URLs).
+- 111 × 76ms ≈ **8.4 seconds** of byte-identical recompilation in every
+  production build — an order of magnitude larger than the 371ms import finding
+  that reordered the branch in the first place.
+
+Two of the four sites surveyed (`diploma-msc`, `learna-kiss`) use the helper
+heavily; `medulla` uses it once and `metacarpus` not at all — so the win is
+real but site-shaped, which is itself worth recording.
+
+The operator authorised absorbing this rather than deferring it, and extended it
+to `lib/assets.js` and `lib/asset-manifest.js` for anything else the profile
+shows. The non-goal that stands unchanged is the public API: no new config keys,
+no changed signatures. A cache that needs a config key to control is a follow-up,
+not this branch.
+
+**2026-09-06 — real-site benchmarking is done as extracted fixtures, not live builds.**
+
+The four sites named for benchmarking (`diploma-msc`, `learna-kiss`, `medulla`,
+`metacarpus`) cannot be built in this environment, for two independent reasons:
+all four pin `kiss-ssg` ^1.x while this branch is 2.0.0-alpha, and none commits
+its `src/models/` — content comes from Orchard CMS at build time behind OAuth2
+credentials. `--site=` therefore has nothing to time. Instead their _workloads_
+are extracted into the harness as fixtures: real stylesheets, real template and
+partial counts, real page counts. That measures the engine change against
+real-world shapes without needing either a credential or a v1→v2 migration.
+
 ## Baseline (captured at 58d9407, before any `lib/` change)
 
 Recorded to `planning/benchmarks/baseline-main.json` — the file `--baseline=`

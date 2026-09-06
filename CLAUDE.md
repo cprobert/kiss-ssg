@@ -54,9 +54,12 @@ npx kiss-ssg check <script>    # dry-run a site's build script: report it, publi
                                # (exits 1 — example 8 fails one page on purpose)
 npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
-npm run bench                  # benchmark harness: 5 scenarios over a generated fixture,
+npm run bench                  # benchmark harness: 6 scenarios over a generated fixture,
                                # fresh child process per iteration, median of N runs
                                # --pages=50,500 --runs=5 --scenario=scan,watch
+                               # scenarios: startup, scan, models, fanout, watch, styled
+                               # (`styled` reproduces a real site's shape: a shared stylesheet
+                               # compiled by the {{sass}} helper on every page)
                                # --json=<f> records; --baseline=<f> compares against a record
                                # baseline for this branch: planning/benchmarks/baseline-main.json
                                # --site=<path> times a REAL kiss-ssg site instead of the fixture:
