@@ -3,6 +3,46 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.0.0-alpha.4 — 2026-09-06
+
+**Faster**
+
+Nothing about your site changes — same methods, same config, same output
+bytes — but builds and the dev loop got materially quicker. Measured on a
+generated 500-page fixture, against the same machine before the change:
+
+- **Your dev loop.** Saving a template now shows up in the browser in about
+  35ms instead of ~108ms. Editing a model or a controller — which rebuilds the
+  whole site — dropped from 455ms to 172ms on a 500-page site with Sass.
+- **Layouts are compiled once, not once per page.** `handlebars-layouts`
+  recompiles a layout on every `{{#extend}}` and never caches it, so every page
+  in your site was recompiling the whole layout from source. Builds that fan
+  many pages out of a few views gain the most: a 500-page fan-out builds 69%
+  faster.
+- **Stylesheets compiled by the `{{sass}}` helper are cached.** The helper runs
+  per render, so a stylesheet named in a partial used to be recompiled once per
+  page that included it — identical bytes every time. On a real 111-page course
+  catalogue that was ~8 seconds of every build.
+- **Starting up costs a fraction of what it did.** `sass`,
+  `html-minifier-terser` and the dev-server packages now load when something
+  actually uses them, so a build with no `.scss` and no dev server never pays
+  for them at all. Importing kiss went from ~490ms to ~63ms; `npx kiss-ssg
+check` feels it too.
+- **Dev builds skip minification entirely** rather than running the minifier
+  with its options turned off. Dev output now keeps its comments and
+  whitespace, which is easier to read anyway. Production minification is
+  unchanged.
+
+**Note if you read `kiss.handlebars.partials` yourself**
+
+Layouts are now registered as compiled template _functions_; every other
+partial is still a source string. If your own helper pulls a partial out of
+that object, handle both shapes:
+
+```js
+typeof p === 'function' ? p(ctx) : hbs.compile(p)(ctx)
+```
+
 ## 2.0.0-alpha.3 — 2026-09-06
 
 **Added**
