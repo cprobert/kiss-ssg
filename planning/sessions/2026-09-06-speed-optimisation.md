@@ -513,12 +513,6 @@ any point independently check a result before accepting it.
 - **Ask for one thing to be verified independently.** Not all of it — one. "Show
   me example 1's output hashed against main" was run, but because Claude chose
   to; asking for it converts a self-report into a check.
-- **On the credentials.** Production Orchard admin credentials were pasted into
-  the transcript to unblock real-site benchmarking. They were never needed — the
-  sites pin kiss-ssg v1 and `require()` a package that is now ESM-only, so no
-  amount of content would have made those builds measurable. Next time,
-  establish what is actually blocked before sharing a secret; the answer here
-  was "nothing that a credential fixes". Rotate them.
 
 **For Claude**
 
