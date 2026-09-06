@@ -241,6 +241,26 @@ it, compare bytes) and the end-to-end build disagreed, and the end-to-end was
 right. Three sampled stylesheets are not the population a published default has
 to hold for.
 
+**2026-09-06 — correction to the sweep below: it declared the cheap wins exhausted, and was wrong.**
+
+The sweep concluded that what remained needed either a config key or workers.
+Asking "are there other optimisations we've missed" one more time found the
+largest single win of the branch, in a place the sweep had already looked at
+twice and misread.
+
+`handlebars-layouts`' `extend` helper compiles the layout on every page render
+and never writes the compiled function back, so every page recompiled the whole
+layout. Handlebars showed as 44% of a build in the very first profile, and both
+earlier readings attributed it to "compiling N distinct views — inherent". It
+was not inherent. Counting `hbs.compile` calls rather than reading a profile
+found it in one command: a fan-out of 500 pages from ONE view called `compile`
+504 times.
+
+The lesson: a profile says which _module_ is hot, never which _call_ is
+redundant. A counter answers the second question and the sweep never reached
+for one. `fanout@500` build **-27.1%**, replay after a model edit **455ms →
+172ms**.
+
 ### Ruled out by measurement — do not re-attempt without new evidence
 
 A sweep for remaining wins after the five changes landed. These all looked
