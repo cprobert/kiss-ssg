@@ -35,10 +35,12 @@ this file's `## 2.0.0` entry when the line is released._
   `devHost: '0.0.0.0'`, a page opened on a phone or tablet asked that device's
   own `localhost` for the reload script, so edits never reached it; the page now
   reloads from whatever host it was loaded from.
-- A reload no longer races the file write, and more asset types trigger one.
-  The browser could previously be told to reload while a page was still being
-  written, and editing an `.svg`, `.webp`, `.avif`, `.ico`, `.woff` or `.woff2`
-  did not reload at all.
+- A reload no longer races the file write, and editing an asset of any type
+  reloads the page. The browser could previously be told to reload while a page
+  was still being written, and editing an `.svg`, `.webp`, `.avif`, `.ico`,
+  `.woff` or `.woff2` did not reload at all. Both are now covered by the
+  once-per-rebuild reload under **Changed** below, which replaced the
+  write-settle and the watched-extension list this entry first described.
 - A trailing slash on a folder you configure is now tolerated. Previously
   `folders: { assets: './src/assets/' }` wrote the compiled CSS next to your
   build folder — `./publicmain.css` at the project root — and logged it as a
@@ -163,6 +165,15 @@ this file's `## 2.0.0` entry when the line is released._
   `folders.assets`. Delete it from your config; leaving it in is harmless.
 
 **Changed**
+
+- Your browser is now reloaded once per rebuild, once that rebuild has written
+  every page — not once per file it wrote. On a big site the first of those
+  per-file reloads reached the browser within a second of your edit, while the
+  rebuild was still writing, so the page could reload onto output that had not
+  been re-rendered yet and then sit on stale content until your next save. One
+  save is now one reload, sent when the rebuild has finished. Editing a
+  stylesheet still reloads just that stylesheet, leaving the page where it was,
+  and the first build reloads a tab you left open across a restart.
 
 - A dynamic partial whose key is missing now names the key. `{{> (lookup . 'moodleAccess')}}`
   with no `moodleAccess` in the data failed with only `The partial undefined

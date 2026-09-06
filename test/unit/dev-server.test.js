@@ -91,13 +91,6 @@ describe('startDevServer with a real livereload server', () => {
       host: '127.0.0.1',
       ...options,
     })
-    // livereload watches with chokidar's ignoreInitial, so a file written
-    // before the initial scan finishes counts as pre-existing and never emits
-    // 'add'. 'ready' is one-shot, so the listener is attached here — in the
-    // same synchronous turn as chokidar.watch() — where it cannot be missed.
-    handle.watching = new Promise((resolve) =>
-      handle.livereload.watcher.once('ready', resolve),
-    )
     handles.push(handle)
     return handle
   }
@@ -150,20 +143,20 @@ describe('startDevServer with a real livereload server', () => {
     expect(loggerB.lines.some((l) => l.startsWith('error:'))).toBe(false)
   })
 
-  it('watches with a write-settle delay and the extra asset extensions', async () => {
+  it('exposes refresh, which broadcasts through the livereload server', async () => {
     const handle = start({ logger: silentLogger, livereloadPort: 35815 })
     await handle.ready
-    const { config } = handle.livereload
-    expect(config.delay).toBe(100)
-    for (const ext of ['svg', 'webp', 'avif', 'ico', 'woff', 'woff2'])
-      expect(config.exts).toContain(ext)
-    // The dev-mode debug .json siblings and sitemap.xml are written on every
-    // build, so watching them would reload the browser on every build.
-    expect(config.exts).not.toContain('json')
-    expect(config.exts).not.toContain('xml')
+    const refresh = vi.spyOn(handle.livereload, 'refresh')
+    handle.refresh('/css/main.css')
+    expect(refresh).toHaveBeenCalledWith('/css/main.css')
   })
 
-  it('refreshes on an extra-extension asset but not on a debug .json sibling', async () => {
+  it('does not watch the build folder: a file written there refreshes nothing', async () => {
+    // Flips the W3-9 test it replaces (finding F-E4). Watching httpRoot meant
+    // one reload per file written, so a whole-site rebuild reached the browser
+    // while it was still writing; Kiss now calls refresh once, when the
+    // rebuild has settled. `delay` and `extraExts` were options of this
+    // watcher and went with it.
     site = await makeSite({ 'public/index.html': '<p>x</p>' })
     const handle = start({
       httpRoot: `${site.root}/public`,
@@ -171,19 +164,16 @@ describe('startDevServer with a real livereload server', () => {
       livereloadPort: 35816,
     })
     await handle.ready
-    await handle.watching
     const refresh = vi.spyOn(handle.livereload, 'refresh')
+    expect(handle.livereload.watcher).toBeUndefined()
+    expect(handle.livereload.config.delay).toBeUndefined()
 
-    // The .json is written first, so its refresh — were it watched — would be
-    // queued on the same delay ahead of the .svg's. Seeing the .svg refresh is
-    // therefore proof the .json's was never queued, with nothing to sleep for.
-    await site.touch('public/x.json', '{}')
     await site.touch('public/x.svg', '<svg></svg>')
-    const refreshed = () =>
-      refresh.mock.calls.map(([f]) => f.replace(/\\/g, '/'))
-    await waitFor(() => refreshed().some((f) => f.endsWith('x.svg')))
-
-    expect(refreshed().some((f) => f.endsWith('x.json'))).toBe(false)
+    await site.touch('public/index.html', '<p>y</p>')
+    // Longer than the 100ms write-settle the old watcher applied, so a
+    // surviving watcher would have refreshed by now.
+    await new Promise((r) => setTimeout(r, 300))
+    expect(refresh).not.toHaveBeenCalled()
   })
 
   it('prints the Serving line only once the server is listening', async () => {

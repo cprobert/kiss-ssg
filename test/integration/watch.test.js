@@ -1,8 +1,16 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 
+// One shared refresh spy, so a test can assert how many times the browser was
+// told to reload and what it was told to reload.
+const dev = vi.hoisted(() => ({ refresh: vi.fn() }))
+
 vi.mock('../../lib/dev-server.js', () => ({
-  startDevServer: () => ({ ready: Promise.resolve(), close: async () => {} }),
+  startDevServer: () => ({
+    ready: Promise.resolve(),
+    close: async () => {},
+    refresh: dev.refresh,
+  }),
 }))
 
 import Kiss from '../helpers/kiss.js'
@@ -41,6 +49,7 @@ afterEach(async () => {
   if (kiss) await kiss.close()
   if (site) await site.cleanup()
   vi.unstubAllGlobals()
+  dev.refresh.mockReset()
 })
 
 describe('watch()', () => {
@@ -796,5 +805,119 @@ describe('partial and layout fast path', () => {
     await kiss._requestRebuild([stale])
     await drained()
     expect(rendered).not.toHaveBeenCalled()
+  })
+})
+
+describe('live reload', () => {
+  // The browser is told once per settled rebuild rather than once per file
+  // written (finding F-E4): livereload no longer watches the build folder, so
+  // a reload can no longer arrive while the rebuild is still writing pages.
+
+  // Everything below starts from the initial build's own reload, which has to
+  // be waited for rather than assumed: it is issued when the first build
+  // settles, which is not necessarily before complete() resolves.
+  const afterInitialReload = async () => {
+    await waitFor(() => dev.refresh.mock.calls.length > 0)
+    dev.refresh.mockClear()
+  }
+
+  it('reloads once when the first build settles', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'v1' })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    await waitFor(() => dev.refresh.mock.calls.length === 1)
+    await sleep(150)
+    expect(dev.refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('reloads once for a partial edit that re-renders every page, after all of them are written', async () => {
+    const views = ['a', 'b', 'c', 'd']
+    site = await makeSite({
+      ...Object.fromEntries(
+        views.map((v) => [`src/pages/${v}.hbs`, '[{{> foo}}]']),
+      ),
+      'src/partials/foo.hbs': 'V1',
+    })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    await kiss._watcher.ready
+    await afterInitialReload()
+
+    // Read inside the spy: the point of the fix is that no reload is sent
+    // before every page carries the new content.
+    const seen = []
+    dev.refresh.mockImplementation(() => {
+      seen.push(
+        views.map((v) => fs.readFileSync(`${site.build}/${v}.html`, 'utf8')),
+      )
+    })
+
+    await site.touch('src/partials/foo.hbs', 'V2')
+    await waitFor(async () => (await site.read('public/d.html')) === '[V2]')
+    await rebuildSettled()
+
+    expect(dev.refresh).toHaveBeenCalledTimes(1)
+    expect(seen).toEqual([views.map(() => '[V2]')])
+  })
+
+  it('reloads once for a page-template edit', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'v1' })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    await kiss._watcher.ready
+    await afterInitialReload()
+
+    await site.touch('src/pages/index.hbs', 'v2')
+    await waitFor(async () => (await site.read('public/index.html')) === 'v2')
+    await rebuildSettled()
+    expect(dev.refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('reloads once for a model edit, which replays the whole site', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{title}}',
+      'src/models/index.json': '{ "title": "m1" }',
+    })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    await kiss._watcher.ready
+    await afterInitialReload()
+
+    await site.touch('src/models/index.json', '{ "title": "m2" }')
+    await waitFor(async () => (await site.read('public/index.html')) === 'm2')
+    await rebuildSettled()
+    expect(dev.refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('reloads once for a stylesheet edit, naming the built CSS file', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'v1',
+      'src/assets/css/main.css': 'body { color: red }',
+    })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    await kiss._watcher.ready
+    await afterInitialReload()
+
+    await site.touch('src/assets/css/main.css', 'body { color: blue }')
+    await waitFor(() => dev.refresh.mock.calls.length > 0)
+    await sleep(150)
+    expect(dev.refresh).toHaveBeenCalledTimes(1)
+    // Named rather than a bare page reload: livereload swaps a stylesheet in
+    // place, keeping the page's state.
+    expect(dev.refresh.mock.calls[0][0].replace(/\\/g, '/')).toMatch(
+      /public\/css\/main\.css$/,
+    )
+    expect(await site.read('public/css/main.css')).toContain('blue')
   })
 })
