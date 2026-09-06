@@ -42,7 +42,6 @@ Passed to `new Kiss(config)`. Defaults:
     pages: './src/pages',
     build: './public',
     assets: './src/assets',
-    static: './src/static',
     layouts: './src/layouts',
     partials: './src/partials',
     models: './src/models',
@@ -55,7 +54,7 @@ Passed to `new Kiss(config)`. Defaults:
 
 A key you pass explicitly as `undefined` takes its default (`port: process.env.PORT` with `PORT` unset gives 3001); `null` is a real value — it switches a folder off.
 
-Setting `folders.src` re-derives `pages`, `assets`, `static`, `layouts`, `partials`, `models` and `controllers` from it (`${src}/${key}`), unless a given key is also set explicitly in the same `folders` object — `build` is independent and always defaults to `./public` regardless of `src`. Folder strings are normalised on the way in — a trailing slash or a backslash separator is tolerated (`'./src/assets/'` and `'.\\src\\assets'` both resolve to `'./src/assets'`).
+Setting `folders.src` re-derives `pages`, `assets`, `layouts`, `partials`, `models` and `controllers` from it (`${src}/${key}`), unless a given key is also set explicitly in the same `folders` object — `build` is independent and always defaults to `./public` regardless of `src`. Folder strings are normalised on the way in — a trailing slash or a backslash separator is tolerated (`'./src/assets/'` and `'.\\src\\assets'` both resolve to `'./src/assets'`).
 
 ## Helpers
 

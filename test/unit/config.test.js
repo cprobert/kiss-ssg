@@ -42,6 +42,11 @@ describe('resolveFolders', () => {
   it('has no root key — it was documented but never read', () => {
     expect(resolveFolders()).not.toHaveProperty('root')
   })
+
+  it('has no static key — it was documented but never read', () => {
+    expect(resolveFolders()).not.toHaveProperty('static')
+    expect(resolveFolders({ src: './site' })).not.toHaveProperty('static')
+  })
 })
 
 describe('resolveConfig', () => {
@@ -80,6 +85,10 @@ describe('resolveConfig', () => {
   it('resolves no root folder', () => {
     expect(resolveConfig({}).folders).not.toHaveProperty('root')
   })
+
+  it('resolves no static folder', () => {
+    expect(resolveConfig({}).folders).not.toHaveProperty('static')
+  })
 })
 
 describe('foldersToEnsure', () => {
@@ -90,5 +99,6 @@ describe('foldersToEnsure', () => {
     expect(list).toContain('s/models')
     expect(list).toContain('s/controllers')
     expect(list).not.toContain(null)
+    expect(list).not.toContain('s/static')
   })
 })

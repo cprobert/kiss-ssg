@@ -29,7 +29,6 @@ The default config options are:
     src: './src',
     build: './public',
     assets: './src/assets',
-    static: './src/static',
     layouts: './src/layouts',
     pages: './src/pages',
     partials: './src/partials',

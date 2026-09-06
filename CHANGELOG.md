@@ -143,6 +143,10 @@ this file's `## 2.0.0` entry when the line is released._
 - `folders.root` is gone. It was in the documented default config but no part of
   the engine ever read it, so setting it changed nothing and it was never even
   created on disk. Delete it from your config; leaving it in is harmless.
+- `folders.static` is gone, for the same reason. It was in the documented
+  default config and re-derived from `folders.src`, but no part of the engine
+  ever read it and it was never created on disk — static files are copied from
+  `folders.assets`. Delete it from your config; leaving it in is harmless.
 
 **Changed**
 
