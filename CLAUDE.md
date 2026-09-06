@@ -47,7 +47,7 @@ npm run format           # Prettier, write; format:check to verify
 npm run gates            # the four pre-PR gates: test, lint, format, pack
 node scripts/base-branch.mjs   # print the integration branch this work merges into
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
-npm run eg1 … eg6        # run an example (examples/*.js); most start a dev server and don't exit on their own
+npm run eg1 … eg7        # run an example (examples/*.js); most start a dev server and don't exit on their own
 ```
 
 `.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.

@@ -112,6 +112,39 @@ Until that line, the previous output is untouched — and if any page fails, `co
 
 Whatever `cleanBuild` is set to, kiss refuses to build into a folder that would swallow the site's own source — the build folder being the source folder, containing it, or being `'.'` or `'/'`. That is a floor, not a licence: if your build folder is built from a variable (`./handbooks/${cohort}`), validate it before you construct, because an empty value resolves to the parent folder.
 
+### Building more than one site from one source tree
+
+kiss has no notion of "versions" or "sites" — it is one `Kiss` instance building to one `folders.build`. That is enough to build several outputs from one shared `src/`, each frozen once and never touched again: an archive of per-intake handbooks, a menu rebuilt every season, a docs site published per release. Four things kiss already gives you, combined:
+
+1. **One `Kiss` instance per output, `folders.build` as the discriminator.** Everything else — pages, partials, models, controllers — is shared; only the build folder differs between runs:
+
+   ```js
+   const kiss = new Kiss({ folders: { build: `./menus/${season}` } })
+   ```
+
+2. **An arbitrary config key, carried into every view.** Pass whatever varies between outputs straight into `new Kiss({...})` and read it back as `config.<key>` — it is the only thing that needs to differ in the template:
+
+   ```js
+   new Kiss({ season, folders: { build: `./menus/${season}` } })
+   ```
+
+   ```hbs
+   <h1>The {{config.season}} menu</h1>
+   ```
+
+3. **`folders.assets: null` plus an explicit `copyAssets(src, buildDir)`** when each output must own its assets outright, rather than sharing a folder kiss would otherwise keep re-copying from:
+
+   ```js
+   const kiss = new Kiss({ folders: { build: menuDir, assets: null } })
+   kiss.copyAssets('./shared/assets', menuDir).scan().generate()
+   ```
+
+4. **`cleanBuild: 'atomic'`**, so a re-run that fixes a typo in this output can never destroy — or half-build — an output already published (see **Cleaning the build folder** above).
+
+The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
+
+See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk.
+
 ### Remote models
 
 A model can be a URL, and `config.fetch` is how you make that usable against a real API. It applies to every `http(s)` model of that site (it is per instance — there is no per-page override):

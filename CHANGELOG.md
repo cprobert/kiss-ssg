@@ -11,6 +11,15 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Added**
 
+- A documented pattern — "Building more than one site from one source tree"
+  (README, `llms.txt`) — for building several versioned outputs (per-intake
+  handbooks, a menu rebuilt each season) from one shared `src/`: one `Kiss`
+  instance per output, `folders.build` as the discriminator, an arbitrary
+  config key carried into views, `folders.assets: null` + explicit
+  `copyAssets` when an output must own its assets, and `cleanBuild: 'atomic'`
+  so a re-run can never destroy one already published. Runnable example:
+  `examples/7-versioned-outputs.js` (`npm run eg7`).
+
 - A fetch policy for models you load from a URL, so `model: 'https://…'` works
   against a real API. `config.fetch` takes `headers` (sent with every
   URL-model request — this is where an API token goes), `timeout` in

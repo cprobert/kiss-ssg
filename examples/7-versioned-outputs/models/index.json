@@ -1,0 +1,23 @@
+{
+  "title": "This season's menu",
+  "description": "The seasonal menu, rebuilt fresh and frozen once each season.",
+  "heading": "The seasonal menu",
+  "lede": "Four drinks, changed every season and never edited once the season ships. Last season's card stays exactly as printed.",
+  "menu": [
+    {
+      "name": "Spiced pear latte",
+      "note": "Espresso, steamed milk, a pear-and-cardamom syrup we make in-house.",
+      "price": "£3.60"
+    },
+    {
+      "name": "Cold brew tonic",
+      "note": "Eighteen-hour cold brew, topped with tonic and orange peel.",
+      "price": "£3.40"
+    },
+    {
+      "name": "Filter of the week",
+      "note": "Whatever single origin is brightest on the bar right now.",
+      "price": "£3.20"
+    }
+  ]
+}
