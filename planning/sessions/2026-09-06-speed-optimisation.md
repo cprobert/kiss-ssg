@@ -1,7 +1,7 @@
 ---
 branch: claude/library-speed-optimization-dx73qq
 base: main
-status: open
+status: closed
 opened: 2026-09-06
 ---
 
@@ -389,3 +389,209 @@ cold. Low value for the complexity.
 ---
 
 <!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-09-06: Speed Optimisation
+
+_A Claude Code session is supervised collaboration: Claude generates, the human
+directs and judges. The session's quality is set by how actively the human
+supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** seven engine changes and a fifth gate across 20 commits
+(`5238fad` lazy dependency loading, `b1f7e67` Sass memoisation, `b571fce` watch
+latency, `37b24ec` template cache, `a022779` dev skips minification, `f1e436f`
+layouts registered compiled, `a6278b4` the typecheck gate). End to end,
+**-46% to -80%** depending on scenario; watch re-render **-68%**; a dev replay
+after a model edit **455ms → 172ms**. Output byte-identical to `main`, no public
+API change, version `2.0.0-alpha.4`.
+
+## Reflect — what the session was
+
+**Emergent, and the brief said so.** `/branch-open` captured "the destination
+(faster) is fixed, the route is not", and named three suspicions to test rather
+than trust: sync `fs` in the page path, serial awaits, hoistable per-page work.
+All three were wrong. The baseline refuted the first (sync `fs` is 2.9% of a
+build), the code refuted the second (`generate()` already awaits one
+`Promise.all`), and the third was never the cost. That the brief framed them as
+suspicions rather than a plan is why being wrong three times cost nothing.
+
+The shape served the work, with one exception worth naming: the branch was never
+`/branch-pulse`'d. Six Pulse-log entries exist, but every one was written by
+Claude at a commit boundary rather than by the operator pausing to steer. The
+formal Steer beat was skipped; what substituted was a measurement discipline —
+no change was committed without a before/after — which caught drift at a finer
+grain than a pulse would have. Good outcome, but by a different mechanism than
+the ritual intends, and the captured success criteria went unchecked until this
+Verdict.
+
+## Evaluate — how the human supervised the AI
+
+Three dimensions discriminated this session. The rest were unremarkable.
+
+**Pushback & steering — the decisive dimension, and the reason the branch's
+biggest win exists.** Twice Claude declared the cheap wins exhausted. The first
+time it was recorded as a committed sweep (`872822c`) concluding that everything
+left needed a config key or worker threads. The operator's reply was four words
+of refusal to accept it: _"are there other optimisations we've missed?"_ That
+question produced `f1e436f` — `handlebars-layouts` recompiling the entire layout
+on every page render, the single largest cost in the engine, present in every
+kiss site ever built. Claude had read "Handlebars = 44% of the build" **twice**
+and filed it both times as "compiling N distinct views — inherent". It was not
+inherent. The correction is committed as `aad9fc9`.
+
+The other steer that redirected the branch: _"I want API compatibility I'm
+afraid… I'm more concerned with development experience."_ That killed a
+config-key direction Claude had proposed as the top remaining item and pointed
+the work at the dev loop — which is the ground the layout find was standing on.
+A single sentence of priority-setting was worth more than the analysis it
+overruled.
+
+**Problem framing — strong at the boundaries, and the operator used their own
+process correctly.** When the profile showed the dominant cost sat inside the
+excluded Sass modules, Claude stopped and put the scope question to the operator
+rather than absorbing it silently. The operator answered by lifting the
+exclusion _and widening it_ ("absorb it, and go further on assets") — the call
+their own one-open-branch rule reserves for them, recorded as a dated Amendment.
+That is the rule working as designed rather than as paperwork.
+
+**Verification & ownership — delegated, and that is the honest gap.** The
+operator did not run the benchmarks, read the diffs line by line, or open a
+built site. Verification was delegated wholly to Claude and to the gates. It
+happened to hold — every change was measured, two were verified by deliberately
+breaking them (disabling `awaitWriteFinish`; swapping the template WeakMap for a
+shared Map) to prove the new tests could fail, and the example suite was hashed
+against `main` — but it held because Claude chose to do it, not because the
+supervision required it. An operator who wanted assurance independent of the
+agent's own account did not get one this session.
+
+**Where the sum beat the parts.** The layout find, precisely. Claude had the
+method (count `hbs.compile` calls rather than read a profile) and had twice
+failed to apply it. The operator had the instinct that the seam was not mined
+out and no way to prove it. Neither input alone reaches `f1e436f`. That is the
+one exchange in this session that a solo effort — human or AI — does not
+produce.
+
+**Where Claude over-reached.** Three times, all recorded:
+
+1. **Recommended a change that was wrong.** Claude argued confidently for
+   dropping Sass's `compressed` output and letting `minifyCSS` do the work —
+   "not a trade-off, it's waste" — on evidence from three sampled stylesheets.
+   Built and measured end-to-end it produced **19% more output**: Sass converts
+   percentage-form colours to hex and clean-css does not. Reverted, with the
+   finding committed so nobody rediscovers it. The isolated experiment and the
+   real pipeline disagreed, and the isolated one was the confident one.
+2. **Misreported its own measurement.** Claude stated GC was 46.6% of a build.
+   It was 5.3% — the rollup script was bucketing every native frame together.
+   Corrected in the same session, but it was asserted to the operator as fact
+   first.
+3. **Ran ahead of an instruction.** The operator asked for real-site benchmarks
+   _before_ proceeding to lazy loading; the lazy loading was already done when
+   the message arrived. Disclosed rather than glossed, but the sequencing the
+   operator asked for was not honoured.
+
+**Competency level: Active supervisor.** Earned, not aspired to. The evidence
+for it: a scope decision taken at the point their own process reserves for the
+operator; a priority reframe that overruled and redirected Claude's technical
+recommendation; and a refusal to accept a completion claim that turned out to be
+premature and produced the branch's largest win. The evidence against
+**Agentic engineering lead**: verification was delegated entirely, no
+`/branch-pulse` was run across a 20-commit branch, and the operator did not at
+any point independently check a result before accepting it.
+
+## Feedback — recommendations for next session
+
+**For the operator**
+
+- **Keep asking the question that worked.** "Are there other optimisations we've
+  missed?" beat a committed, confident, evidence-cited sweep. Treat an agent's
+  "that's exhausted" as a hypothesis, not a finding — especially when it rests
+  on a profile, which names hot modules and is silent about redundant calls.
+- **Run `/branch-pulse` at least twice on a branch this size.** Twenty commits
+  closed cold. It worked here because Claude measured continuously, but the
+  captured success criteria sat unchecked from `/branch-open` to this Verdict.
+  A pulse after the baseline and another after the Amendment would have cost
+  minutes.
+- **Ask for one thing to be verified independently.** Not all of it — one. "Show
+  me example 1's output hashed against main" was run, but because Claude chose
+  to; asking for it converts a self-report into a check.
+- **On the credentials.** Production Orchard admin credentials were pasted into
+  the transcript to unblock real-site benchmarking. They were never needed — the
+  sites pin kiss-ssg v1 and `require()` a package that is now ESM-only, so no
+  amount of content would have made those builds measurable. Next time,
+  establish what is actually blocked before sharing a secret; the answer here
+  was "nothing that a credential fixes". Rotate them.
+
+**For Claude**
+
+- **Do not recommend on three samples.** The Sass revert cost a full
+  build-and-measure cycle. Three stylesheets from one site is not the population
+  a published default must hold for, and the confidence in the recommendation
+  was not supported by the sample behind it.
+- **Reach for a counter before a profiler when the question is "is this work
+  necessary".** A profile answers "where is time going"; it cannot answer "is
+  this call redundant". One `hbs.compile` counter found in a single command what
+  two profile readings missed. This is now recorded in the session file for the
+  next sweep.
+- **Sequence to the operator's instruction even when the work is obvious.** The
+  lazy loading was right, and doing it before the requested benchmarks still
+  took a decision that was not Claude's to take.
+
+**For the partnership**
+
+- The two changes verified by deliberately breaking them (`awaitWriteFinish`
+  disabled; the template WeakMap swapped for a shared `Map`) are the pattern
+  worth keeping. A test that has never been seen to fail is a guess about
+  coverage. Make it fail on purpose, once, before trusting it.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** make kiss-ssg measurably faster to build — harness first, then
+follow the profile to fix what it proves is slow.
+
+**Verdict: met, and the objective grew — good drift, formally authorised.** The
+Sass and assets exclusion was lifted on operator authority once the profile put
+the dominant cost inside the page loop the branch already owned, recorded as a
+dated Amendment rather than absorbed silently. Scope creep would have been
+taking that decision unilaterally; this was not that.
+
+Success criteria, checked against the evidence:
+
+- [x] **A benchmark harness exists**, page count parameterised, per-phase
+      reporting — `58d9407`, extended with a `styled` scenario built from a real
+      site's shape (`b1f7e67`).
+- [x] **A baseline committed** — `81e3e55`, plus the local before/after pair the
+      machine change forced (`planning/benchmarks/local-{before,after}.json`).
+- [x] **All three in-scope paths measured before/after** — cold build ✅, watch
+      re-render ✅ (108ms → 35ms), module-load/startup ✅ (490ms → 63ms).
+- [x] **Every win attributed to a named change, none on intuition** — and one
+      change (expanded Sass) was built, measured, found wrong and reverted,
+      which is the criterion doing its job rather than being satisfied.
+- [x] **Zero behaviour change** — `npm test` green throughout (654 tests, up
+      from 636), `npm run gates` green at close, example 1's full output tree
+      hashes byte-identical to `main`, example 8 still exits 1 by design.
+- [x] **`AIKB/` updated in the same commit as every module touched.**
+- [x] **Harness documented in `CLAUDE.md`; `scripts/bench.mjs` has a
+      `test/unit/` sibling.**
+
+**Measurably better now:** startup **-79.7%**, `fanout@500` end-to-end
+**-71.0%** (build **-69.3%**), `watch@500` **-50.8%** with re-render
+**-66%**, `models@500` **-46.1%**. Against v1 on the same fixture and the same
+measurement method: **-36%** at 50 pages, **-60.5%** on a Sass-heavy 200-page
+build. Worth stating plainly because it was not true before this branch — v2 on
+`main` was **7.8% slower than v1** at 500 pages. v2 is faster than v1 now; it
+was not when the branch opened.
+
+**What remains open**, recorded in this file rather than half-built:
+
+- Production minification behind a config key — 54% of a Sass-heavy build;
+  `minifyCSS` costs ~11-15ms/page for 426 bytes, `minifyJS` ~4-6ms for 9. Needs
+  an API addition, so a minor bump and its own branch.
+- Scoped rebuilds for model and controller edits. Views, partials and layouts
+  are already scoped (~38ms); a model edit still takes the full replay (172ms,
+  down from 455ms). Closing it needs a third rebuild mode and model-provenance
+  tracking — feature work with real staleness risk, and the operator's call.
+- Multicore: 80-91% of build time is per-page work, so ~3x is on the table, but
+  helpers and controllers cross the public API as _functions_ and cannot cross a
+  worker boundary. Blocked by API shape, not by effort.
+- Site-side, not engine-side: `diploma-msc` inlines 22KB of compiled CSS into
+  all 111 course pages. That is what makes minifier cost scale with page count,
+  and an external stylesheet fixes build time and page weight together.
