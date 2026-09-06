@@ -7,6 +7,7 @@ import {
   afterAll,
   afterEach,
 } from 'vitest'
+import net from 'node:net'
 
 // The mock is hoisted and therefore file-wide, so the real-livereload block
 // below flips this flag rather than trying to unmock a single describe.
@@ -183,6 +184,38 @@ describe('startDevServer with a real livereload server', () => {
     await waitFor(() => refreshed().some((f) => f.endsWith('x.svg')))
 
     expect(refreshed().some((f) => f.endsWith('x.json'))).toBe(false)
+  })
+
+  it('prints the Serving line only once the server is listening', async () => {
+    const logger = captureLogger()
+    const handle = start({ logger, livereloadPort: 35818 })
+    expect(logger.lines.some((l) => l.includes('Serving'))).toBe(false)
+    await handle.ready
+    expect(logger.lines.some((l) => l.includes('Serving (public)'))).toBe(true)
+  })
+
+  it('rejects with one message naming the port, logs nothing, and still closes', async () => {
+    const logger = captureLogger()
+    const blocker = net.createServer()
+    await new Promise((resolve) => blocker.listen(0, '127.0.0.1', resolve))
+    const { port } = blocker.address()
+    const handle = startDevServer('public', port, {
+      logger,
+      livereloadPort: 35819,
+      host: '127.0.0.1',
+    })
+    try {
+      await expect(handle.ready).rejects.toThrow(
+        new RegExp(`127\\.0\\.0\\.1:${port}.*not being served`),
+      )
+      // The message is reported once, by whoever owns `ready` — the module
+      // that raises it must not log a second copy of the same fault.
+      expect(logger.lines.filter((l) => l.startsWith('error:'))).toEqual([])
+      expect(logger.lines.some((l) => l.includes('Serving'))).toBe(false)
+      await expect(handle.close()).resolves.toBeUndefined()
+    } finally {
+      await new Promise((resolve) => blocker.close(resolve))
+    }
   })
 
   it('binds the configured host and names it in the log line', async () => {

@@ -146,6 +146,22 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Changed**
 
+- A dev server that cannot start now fails the build instead of leaving you with
+  a site nobody is serving. If `port` is already taken, the run used to print
+  `Serving … http://127.0.0.1:3001`, log the clash twice — one of those as
+  `Error running live reload server`, the wrong server — then finish the build
+  and sit there answering nothing. You now get one line naming the port and what
+  it costs you:
+
+  ```
+  Dev server could not bind 127.0.0.1:3001 (EADDRINUSE): the site is not being served
+  ```
+
+  The watcher and live reload stop with it and `complete()` rejects with a
+  `<dev server>` failure, so the process can exit. A clash on `livereloadPort` is
+  unchanged: live reload is optional, so it is logged once and the site keeps
+  being served.
+
 - `utils.globFiles` now takes the directory and the pattern separately —
   `globFiles(dir, pattern)` instead of `globFiles(pattern)`. The directory is
   escaped, so a folder name containing a glob character is matched literally.

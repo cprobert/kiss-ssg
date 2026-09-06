@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'fs-extra'
 import http from 'node:http'
+import net from 'node:net'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -459,5 +460,88 @@ describe('a bad item in a pages() fan-out', () => {
     await expect(kiss.complete()).resolves.toBeDefined()
     for (const n of [1, 2, 3, 4])
       expect(await site.exists(`public/item-${n}.html`)).toBe(true)
+  })
+})
+
+describe('a dev server that cannot bind', () => {
+  it('reports it once, fails the build, and stops watching', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'i' })
+    const blocker = net.createServer()
+    await new Promise((resolve) => blocker.listen(0, '127.0.0.1', resolve))
+    const { port } = blocker.address()
+    const lines = []
+    const record =
+      (level) =>
+      (...args) =>
+        lines.push(`${level}: ${args.map(String).join(' ')}`)
+    const logger = {
+      ...silentLogger,
+      info: record('info'),
+      error: record('error'),
+      warn: record('warn'),
+      plain: record('plain'),
+    }
+    const kiss = new Kiss({
+      folders: site.folders,
+      dev: true,
+      port,
+      livereloadPort: 35821,
+      logger,
+    })
+      .page({ view: 'index.hbs' })
+      .generate()
+
+    let caught = null
+    try {
+      await kiss.complete()
+    } catch (err) {
+      caught = err
+    }
+    try {
+      expect(caught.failures).toHaveLength(1)
+      expect(caught.failures[0].view).toBe('<dev server>')
+      expect(caught.failures[0].buildTo).toBeNull()
+
+      const errors = lines.filter((l) => l.startsWith('error:'))
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toContain(`127.0.0.1:${port}`)
+      expect(errors[0]).toContain('not being served')
+      expect(lines.some((l) => l.includes('Serving'))).toBe(false)
+      expect(lines.some((l) => l.includes('live reload'))).toBe(false)
+
+      // Nothing is served, so the process must be free to exit once the
+      // consumer has handled the rejection.
+      expect(kiss._watcher).toBeNull()
+      expect(kiss._devServer).toBeNull()
+    } finally {
+      await kiss.close()
+      await new Promise((resolve) => blocker.close(resolve))
+    }
+  })
+
+  it('serves and keeps watching when the port is free', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'i' })
+    const lines = []
+    const logger = {
+      ...silentLogger,
+      info: (...args) => lines.push(args.map(String).join(' ')),
+    }
+    const kiss = new Kiss({
+      folders: site.folders,
+      dev: true,
+      port: 0,
+      livereloadPort: 35822,
+      logger,
+    })
+      .page({ view: 'index.hbs' })
+      .generate()
+    try {
+      await expect(kiss.complete()).resolves.toBeDefined()
+      expect(lines.some((l) => l.includes('Serving'))).toBe(true)
+      expect(kiss._devServer.server.listening).toBe(true)
+      expect(kiss._watcher).toBeTruthy()
+    } finally {
+      await kiss.close()
+    }
   })
 })
