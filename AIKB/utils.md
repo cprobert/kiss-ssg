@@ -39,3 +39,7 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 
 - **`toURLKey` and `toAbsoluteUrl` live here because two modules need them, not because they are string helpers.** `lib/sitemap.js` builds every `<loc>` with them and `lib/handlebars-helpers.js` builds `{{canonical}}` with them, so a page's canonical URL and its sitemap entry are produced by one function and cannot disagree (review gap O5). Putting the join in either caller would have made the other import a module whose job is something else.
 - They are **two functions, not one, and the difference matters**: `toURLKey` is the page _identity_ (it drops the file extension, so `about.html` and `about/index.html` are one key, which is also what `isActive` compares), while `toAbsoluteUrl` keeps whatever extension it is handed — an asset URL passed to `{{absUrl "css/site.css"}}` has to survive. Only a trailing `index` segment is collapsed on the join, because no absolute URL should end in `/index.html`.
+
+## Types
+
+Every exported function carries `@param`/`@returns` JSDoc, because the default export is what `import { utils } from 'kiss-ssg'` hands a consumer — `types/utils.d.ts` is generated from it. Regenerate with `npm run types` after any signature or JSDoc change; `test/unit/types.test.js` byte-compares. `toSlug`, `toURLKey` and `hashId` take `unknown` rather than `string`: each stringifies its argument itself, and narrowing the declaration would refuse calls the runtime handles.

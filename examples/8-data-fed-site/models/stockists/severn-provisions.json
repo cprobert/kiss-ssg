@@ -1,0 +1,11 @@
+{
+  "name": "Severn Provisions",
+  "slug": "Severn Provisions (Portishead)",
+  "town": "Portishead",
+  "address": "51 High Street",
+  "postcode": "BS20 6AH",
+  "hours": "Wed–Sun, 10am–5pm",
+  "since": "2024",
+  "sells": ["Finca la Ilusión", "Arch Blend"],
+  "note": "The feed key for this one is the shop's display name, spaces, brackets and all — the controller slugs it before it becomes a filename."
+}

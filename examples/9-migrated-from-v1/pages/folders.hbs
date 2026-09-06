@@ -1,0 +1,65 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Recipe &middot; config</p>
+    <h1>The folders v2 reads</h1>
+    <p>
+      v1 shipped two folder keys no module ever read: <code>root</code> and
+      <code>static</code>. They were in the defaults, in the docs and in the README, so a
+      project could point one somewhere and get silence. v2 removed both.
+    </p>
+  </section>
+
+  <div class="card">
+    <h3>This instance's resolved folders</h3>
+    <p class="meta">Read straight off <code>kiss.config.folders</code> — the page cannot claim a key the engine does not have.</p>
+    <table>
+      <thead><tr><th>key</th><th>value</th></tr></thead>
+      <tbody>
+        {{#each model.folders}}
+        <tr><td><code>{{key}}</code></td><td><code>{{value}}</code></td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid">
+    <article class="card">
+      <h3>Where <code>static</code> went</h3>
+      <p>
+        Nowhere — it never worked. Static files are copied from
+        <code>folders.assets</code>, and <code>.copyAssets(source, target)</code> handles a
+        second directory. This site's stylesheet comes from <code>_shared/assets</code> that way.
+      </p>
+    </article>
+    <article class="card">
+      <h3>Where <code>root</code> went</h3>
+      <p>
+        The only <code>root</code> that matters is per page, not per site: the layout's
+        <code>root</code> hash — <code>""</code>, <code>"../"</code>, <code>"../../"</code> —
+        set by each page in its <code>extend</code> call, so links work from the dev server and
+        straight off the file system. The pages under <code>shelf/</code> set it; this one does not.
+      </p>
+    </article>
+    <article class="card">
+      <h3>A leftover key is just unread</h3>
+      <p>
+        <code>resolveFolders</code> spreads user folders in, so a <code>root:</code> left in a
+        migrated config passes through untouched and nothing reads it. Delete it — an unread
+        key in a config is a lie about what the build does.
+      </p>
+    </article>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    Every folder above except <code>build</code>, <code>layouts</code> and <code>assets</code>
+    was derived from <code>folders.src</code>. Naming one explicitly beats the derivation,
+    which is how this site keeps its own pages, partials and controllers while borrowing the
+    layout and the stylesheet from <code>_shared</code>.
+  </p>
+  {{/content}}
+
+{{/extend}}

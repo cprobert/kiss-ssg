@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `llms.txt` at the repo root is an LLM-oriented API cheat-sheet (per the [llmstxt.org](https://llmstxt.org) convention) that ships in the npm package so an agent working in a project that depends on `kiss-ssg` can read `node_modules/kiss-ssg/llms.txt` instead of the source. Keep it in sync with `lib/kiss.js` when the public API changes.
 
-`package.json`'s `files` whitelist keeps the published tarball to `lib/`, `llms.txt` and `AIKB/` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `AIKB/` ships deliberately, so an agent in a consuming project can read the per-module notes alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/`, `examples/` and the configs are all excluded.
+`package.json`'s `files` whitelist keeps the published tarball to `bin/`, `lib/`, `types/`, `llms.txt`, `AIKB/` and `examples/` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `AIKB/` and `examples/` ship deliberately, so an agent in a consuming project can read the per-module notes and the runnable examples (`node_modules/kiss-ssg/examples/`) alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/` and the configs are all excluded. The examples build into a gitignored `public/` at the repo root, which never ships.
+
+`bin/kiss-ssg.js` is the published command line (`npx kiss-ssg check <script>`) — a thin wrapper whose decisions all live in `lib/check.js`.
 
 `src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`). Treat `docs/` as build output. Design specs, implementation plans and session logs live in `planning/` (`planning/specs/`, `planning/plans/`, `planning/sessions/`) — never under `docs/`, which `docs.js` empties on every run. `scripts/` holds dev tooling that never ships (the `files` whitelist excludes it).
 
@@ -20,6 +22,8 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | ---------------------------------- | ---------------------------- | ----------------------------- |
 | Orchestrator / public API          | `lib/kiss.js`                | `AIKB/kiss.md`                |
 | Page renderer                      | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Build report (the machine verdict) | `lib/build-report.js`        | `AIKB/build-report.md`        |
+| `kiss-ssg check` decision core     | `lib/check.js`               | `AIKB/check.md`               |
 | Logger                             | `lib/logger.js`              | `AIKB/logger.md`              |
 | Config + folder derivation         | `lib/config.js`              | `AIKB/config.md`              |
 | Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
@@ -45,9 +49,13 @@ npm run test:coverage
 npm run lint             # ESLint (flat config, eslint.config.js)
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the four pre-PR gates: test, lint, format, pack
+npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing
+                               # e.g. from examples/: `node ../bin/kiss-ssg.js check 8-data-fed-site.js`
+                               # (exits 1 — example 8 fails one page on purpose)
+npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
-npm run eg1 … eg7        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (examples 1-6)
+npm run eg1 … eg9        # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```
 
 `.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.
@@ -56,7 +64,7 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettie
 
 ## Pipeline in one paragraph
 
-`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues an asset copy, registers helpers and partials, and in dev mode starts the server and watcher. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` runs `_settle()` — drain everything (including work queued by callbacks), render whatever the drain left unrendered, repeat until the stack is stable — then **rejects with an `AggregateError`** if any page, controller, callback or the dev server failed, and otherwise resolves (and, under `cleanBuild: 'atomic'`, promotes the staging folder at that point). `.sitemap()` waits for `_promises` and writes `sitemap.xml`. Under `.watch()`, every event goes to `Kiss._handleChange`, which decides between a scoped re-render of matching stack entries (a page-view, partial or layout edit) and a whole-site rebuild that replays the pipeline from the logged `_registrations` (`Kiss._replay()`) so edited models and controllers take effect; both kinds go through one serial rebuild queue, and one live reload fires per settled rebuild. Full detail: `AIKB/kiss.md`.
+`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues an asset copy, registers helpers and partials, and in dev mode starts the server and watcher. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` runs `_settle()` — drain everything (including work queued by callbacks), render whatever the drain left unrendered, repeat until the stack is stable — then **rejects with an `AggregateError`** if any page, controller, callback or the dev server failed, and otherwise resolves (and, under `cleanBuild: 'atomic'`, promotes the staging folder at that point). `.sitemap()` waits for `_promises` and writes `sitemap.xml`. Under `.watch()`, every event goes to `Kiss._handleChange`, which decides between a scoped re-render of matching stack entries (a page-view, partial or layout edit) and a whole-site rebuild that replays the pipeline from the logged `_registrations` (`Kiss._replay()`) so edited models and controllers take effect; both kinds go through one serial rebuild queue, and one live reload fires per settled rebuild. Every settled build also assembles one `BuildReport` — `kiss.report()`, `err.report` on the rejection, and a JSON Lines file when `KISS_REPORT` is set; with `KISS_CHECK=1` the build is staged and then discarded whether it passed or failed, which is what `kiss-ssg check` runs. Full detail: `AIKB/kiss.md`, `AIKB/build-report.md`, `AIKB/check.md`.
 
 ## Git workflow
 
@@ -82,6 +90,7 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 
 - Engine code goes in `lib/`, one responsibility per file, with a unit test in `test/unit/` (the orchestrator `lib/kiss.js` is covered by `test/integration/` instead) and an `AIKB/` doc.
 - Dev tooling in `scripts/` gets a `test/unit/` test too — it is outside the engine, so nothing else exercises it. Exempt a genuinely thin file with `// @test-exempt: <reason>` near the top.
+- `bin/` holds the published command line and nothing else: one thin wrapper per command, every decision in a `lib/` module with its own unit test, and the wrapper itself covered end-to-end by `test/integration/check.test.js`.
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
-- Public API changes: update `llms.txt` and `README.md` in the same commit.
+- Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit.

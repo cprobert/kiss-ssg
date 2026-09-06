@@ -136,3 +136,40 @@ Any page can opt out with `ignoreSitemap: true`, and override its entry with `si
 `kiss.watch()` (meaningful only alongside `dev: true`) starts a file watcher plus a live-reload dev server on `port`. Editing a partial or layout re-renders every page without re-reading models or re-running controllers. Every other change under `src/` — a page template, a model, or a controller — triggers a whole-site rebuild, so edited models and controllers take effect. Deleted partials, layouts and page templates are unregistered on the next rebuild; new ones are picked up automatically.
 
 `await kiss.close()` stops the watcher and dev server, waiting for any in-flight rebuild to finish first, so it's always safe to clean or deploy the build folder once it resolves.
+
+### Checking a build
+
+`npx kiss-ssg check <script>` runs your site's own build script with the build staged and then discarded, so nothing published is touched — the build folder is neither emptied nor written — and what you get back is the verdict instead of the output:
+
+```bash
+npx kiss-ssg check build.js            # JSON, one report per Kiss instance
+npx kiss-ssg check build.js --summary  # one line per instance instead
+npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the script
+```
+
+```json
+[
+  {
+    "ok": true,
+    "mode": "check",
+    "buildDir": "./public",
+    "duration": 160,
+    "pages": [
+      { "view": "index.hbs", "buildTo": "./public/index.html", "ok": true }
+    ],
+    "failures": [],
+    "assets": [{ "source": "css/site.css", "target": "css/site.605b52d7.css" }],
+    "sitemap": "./public/sitemap.xml"
+  }
+]
+```
+
+It exits **1** if any report is `ok: false`, if the script itself exits non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding. `--summary` is the command's own flag, read wherever it appears in the argument list; a site that needs that word for itself takes it after a bare `--`, e.g. `kiss-ssg check menu.js -- --summary`. Everything else after the script is passed straight through to it, so a site that takes its own arguments is checked the way it's run.
+
+You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded once `.complete()` settles, whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance. Neither changes your script's exit code — that stays yours.
+
+Two things a check can't make true: a site that reads its own build folder back after `.complete()` sees a folder nothing was published into, and a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
+
+### Other methods
+
+- `.report()` — the last settled build as data: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap }`, or `null` before the first `.complete()` has settled. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.

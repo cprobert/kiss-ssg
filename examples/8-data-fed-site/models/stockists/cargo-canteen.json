@@ -1,0 +1,11 @@
+{
+  "name": "Cargo Canteen",
+  "slug": "cargo-canteen",
+  "town": "Wapping Wharf",
+  "address": "Unit 9, Cargo 2",
+  "postcode": "BS1 6WP",
+  "hours": "Daily, 7am–5pm",
+  "since": "2022",
+  "sells": ["Arch Blend", "Nyeri Gatomboya"],
+  "note": "Espresso on bar all day; whole bags on the shelf by the till."
+}

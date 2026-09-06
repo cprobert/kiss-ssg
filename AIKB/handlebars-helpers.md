@@ -48,3 +48,7 @@ Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`
 - **`absUrl` unwraps and re-wraps a `SafeString` argument** so `{{absUrl (asset …)}}` composes under every policy. Without it the version mode's `SafeString` would fail `absUrl`'s "needs a path string" guard and render nothing, and re-escaping the result would put `&#x3D;` back. A path that already carries a scheme is returned exactly as it arrived, wrapper included.
 - **`asset` reads the instance config, not the page's** — unlike `canonical`/`absUrl`, which read `root.config.siteUrl`. The policy was applied once, by the copy that emitted the files, before any page rendered; a per-page override could only disagree with what is on disk.
 - `asset` degrades like every other helper: an unknown path is the author's own build, so it renders what they asked for and names the path once per page (the `lookup` `WeakMap`-of-`Set`s pattern), rather than failing the page.
+
+## Types
+
+`registerHandlebarsHelpers` carries JSDoc for the generated `types/handlebars-helpers.d.ts` — `hbs` is `typeof import('handlebars')`, `config` is `KissConfig` from `lib/config.js`, and `deps.logger` is `ReturnType<typeof createLogger>`. The helpers themselves are Handlebars runtime (variadic argument lists whose last entry is Handlebars' own options object), so they are documented one line each rather than typed: the shape a template calls them with is not expressible as a function signature. `deps.markdown` is `any` because `remarkable` ships no types. Regenerate with `npm run types`.

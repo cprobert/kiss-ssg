@@ -11,6 +11,20 @@ kiss.generate()
 
 kiss-ssg v2 is an ES module (`import Kiss from 'kiss-ssg'`) and needs Node 22.12 or newer; plain `require('kiss-ssg')` also works on those versions.
 
+TypeScript declarations ship with the package in `types/`, so a plain-JavaScript site gets completion and checking from `// @ts-check` alone — no TypeScript of its own required:
+
+```js
+// @ts-check
+import Kiss from 'kiss-ssg'
+
+/** @type {import('kiss-ssg').KissConfigInput} */
+const config = { siteUrl: 'https://example.com' }
+
+const kiss = new Kiss(config)
+```
+
+The package also ships nine runnable sites under `examples/`, each with its own README, for copying the exemplar whose shape matches your own.
+
 **Note**: kiss will generate the default folders for you when you first run the script. You can overwrite the folder locations bay passing a config to the kiss constructor.
 
 The default config options are:

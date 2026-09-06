@@ -1,0 +1,71 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Recipe &middot; the exit code</p>
+    <h1>Await complete(), and catch it</h1>
+    <p>
+      This is the migration that costs the most if it is missed, because nothing about it is
+      visible: the build still ends, the script still exits, and the deploy still runs.
+    </p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h3>The v1 idiom</h3>
+      <p>
+        A chain that ends at <code>generate()</code>, or a callback-style
+        <code>complete(function () { … })</code> with no <code>.catch</code>. v1 logged a
+        page's failure and resolved anyway, so a script shaped like that exited 0 on a build
+        with pages missing from it.
+      </p>
+    </article>
+    <article class="card">
+      <h3>What v2 does</h3>
+      <p>
+        <code>complete()</code> rejects with an <code>AggregateError</code>, and
+        <code>err.failures</code> lists every failed page as
+        <code>&#123; view, buildTo, error &#125;</code>. Unhandled, that is now an unhandled
+        rejection rather than a silent success.
+      </p>
+    </article>
+    <article class="card">
+      <h3>The catch has to do the work too</h3>
+      <p>
+        A failed build never runs <code>complete()</code>'s own callback. Anything that lived
+        there — a sitemap, an index, a deploy step — has to run again in the
+        <code>catch</code>, or it quietly stops happening on exactly the builds you most want
+        to know about.
+      </p>
+    </article>
+  </div>
+
+  <div class="callout">
+    <h2>The shape this script uses</h2>
+    <pre><code>const finish = (outcome) =&gt;
+  console.log(`post-build step ran after a ${outcome} build`)
+
+await kiss
+  .complete(() =&gt; finish('successful'))
+  .catch((err) =&gt; {
+    reportBuildFailure(err)
+    finish('failed')
+  })</code></pre>
+    <p class="meta">
+      <code>reportBuildFailure</code> lives in <code>examples/_shared/site.js</code>: it prints
+      each failure and sets <code>process.exitCode = 1</code>. Example 8 is the same shape with
+      a feed that really does fail.
+    </p>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    Run this example and the console prints
+    <code>post-build step ran after a successful build</code>. Run example 8 and the same line
+    reads <code>failed</code>, after the failure report — that is the whole recipe: one
+    function, called from both branches, so the exit code is the only difference.
+  </p>
+  {{/content}}
+
+{{/extend}}

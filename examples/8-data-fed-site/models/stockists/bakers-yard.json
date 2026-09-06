@@ -1,0 +1,11 @@
+{
+  "name": "Bakers Yard",
+  "slug": "bakers-yard",
+  "town": "Bedminster",
+  "address": "14 North Street",
+  "postcode": "BS3 1HT",
+  "hours": "Tue–Sat, 8am–4pm",
+  "since": "2021",
+  "sells": ["Arch Blend", "Guji Uraga"],
+  "note": "The first shop that ever took a bag off us. Still the one that sells the most Arch Blend."
+}

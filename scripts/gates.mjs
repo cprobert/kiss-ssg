@@ -9,10 +9,19 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { resolveBaseBranch } from './base-branch.mjs'
 
 // package.json's `files` whitelist is load-bearing: llms.txt and AIKB/ ship on
-// purpose so an agent in a consuming project can read them from node_modules.
-// A stray edit to `files` drops them silently — the tarball is the only place
-// that shows up, so check it here rather than after a bad publish.
-export const REQUIRED_PACKED = ['lib/kiss.js', 'llms.txt', 'AIKB/kiss.md']
+// purpose so an agent in a consuming project can read them from node_modules,
+// types/ is what an editor resolves `types`/`exports` to, and bin/ is what
+// `npx kiss-ssg check` runs. A stray edit to `files` drops them silently — the
+// tarball is the only place that shows up, so check it here rather than after a
+// bad publish.
+export const REQUIRED_PACKED = [
+  'bin/kiss-ssg.js',
+  'lib/kiss.js',
+  'types/kiss.d.ts',
+  'llms.txt',
+  'AIKB/kiss.md',
+  'examples/README.md',
+]
 
 export function missingPackedFiles(packedFiles, required = REQUIRED_PACKED) {
   const packed = new Set(packedFiles.map((f) => f.replace(/\\/g, '/')))

@@ -1,0 +1,62 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Recipe &middot; Handlebars</p>
+    <h1>One Handlebars environment per instance</h1>
+    <p>
+      v2 creates the environment with <code>Handlebars.create()</code>, so the global
+      <code>handlebars</code> module knows nothing about this site's helpers or partials.
+    </p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h3>The v1 idiom</h3>
+      <p>
+        A project helper that did <code>require('handlebars').partials[name]</code>. Under v2
+        that object is empty: the helper returns an empty string, the page renders, the build
+        is green, and the block is simply missing from the output.
+      </p>
+    </article>
+    <article class="card">
+      <h3>The v2 form</h3>
+      <p>
+        Register on <code>kiss.handlebars</code> and read the partials off the same
+        environment. This site registers a <code>renderPartial</code> helper that way; the card
+        beside this one is that helper rendering a partial by name.
+      </p>
+    </article>
+    <article class="card">
+      <h3>Rendered by the helper</h3>
+      {{renderPartial "stock-note" model}}
+      <p class="meta tone-good">If the helper had read the global module, this card would be empty and nothing would have said so.</p>
+    </article>
+  </div>
+
+  <div class="callout">
+    <pre><code>kiss.handlebars.registerHelper('renderPartial', function (name, context) {
+  const partial = kiss.handlebars.partials[name]
+  if (!partial) return ''
+  const template =
+    typeof partial === 'function' ? partial : kiss.handlebars.compile(partial)
+  return new kiss.handlebars.SafeString(template(context))
+})</code></pre>
+    <p class="meta">
+      Handlebars' own <code>&#123;&#123;&gt; partial&#125;&#125;</code> needs no helper at all.
+      This one exists for the v1 case it replaces: a partial chosen at run time and rendered
+      against a context the template does not have.
+    </p>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    The same rule covers helpers you register yourself, the six kiss ships, and every partial
+    under <code>folders.partials</code> and <code>folders.layouts</code>. If code outside the
+    instance needs one of them, hand it <code>kiss.handlebars</code> rather than importing the
+    module — that is the whole of the migration.
+  </p>
+  {{/content}}
+
+{{/extend}}

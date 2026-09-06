@@ -3,6 +3,57 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.0.0-alpha.3 — 2026-09-06
+
+**Added**
+
+- **A Claude Code plugin** lives in the repository: `/plugin marketplace add cprobert/kiss-ssg` then `/plugin install kiss-ssg@kiss-ssg` gives Claude three skills — build a new site, migrate a v1 site, check a build — each pointing at the docs installed in `node_modules/kiss-ssg/`; the first two also make sure the project's `CLAUDE.md` imports `@node_modules/kiss-ssg/llms.txt`, so later sessions read the contract unprompted. The README's new "Using an AI coding agent?" section says how to point any agent at the package.
+- **`npx kiss-ssg check <script>`** — a dry run of your own build script. It
+  builds the site into a staging folder, tells you whether it worked, and then
+  throws the staging folder away: your build folder is neither emptied nor
+  written, so you can check a site whose output is already published. You get a
+  JSON array with one report per `Kiss` instance the script created — the pages
+  it built, anything that failed and why, the assets it emitted — and exit code
+  1 if anything failed, if your script exited non-zero, or if it never settled a
+  build at all. `--summary` prints one line per site instead. Arguments after
+  the script are passed through to it, so a site that takes a season or a cohort
+  is checked the way it is run.
+- **`kiss.report()`** — the last settled build as data: `{ ok, mode, buildDir,
+duration, pages, failures, assets, sitemap }`, every value JSON-safe, so a
+  deploy script can decide what to do without parsing log output. The same
+  object rides on the rejection as `err.report`. `complete()` itself is
+  unchanged: it still resolves with the data array and still rejects with the
+  `AggregateError`.
+- **`KISS_CHECK=1` and `KISS_REPORT=<file>`** for driving the same thing from a
+  harness of your own: the first turns any build into a check, the second
+  appends each settled build's report to a file as JSON Lines. Neither changes
+  your script's exit code.
+- **TypeScript declarations ship with the package**, generated from the engine's
+  own JSDoc. Put `// @ts-check` at the top of your build script and your editor
+  knows every config key, every page option and every method — with no
+  TypeScript in your project and no `@types/` package to install. Annotate with
+  `/** @type {import('kiss-ssg').KissConfigInput} */` on your config,
+  `PageOptions` / `PagesOptions` on page options, `KissController` on a
+  controller, and `BuildError` on the error `complete()` rejects with, so
+  `err.failures` is typed. A misspelled key inside `folders` is now an error you
+  see while typing rather than a build that quietly used the default folder;
+  keys of your own on the config and on page options stay allowed, because they
+  reach your templates.
+- `package.json` gains a `types` field and an `exports` map. `import` and
+  `require` both still resolve to `lib/kiss.js`, so nothing about the supported
+  way of loading kiss-ssg changes. One thing does: the map has a single entry,
+  so a deep path into the package — `kiss-ssg/lib/utils.js`, or v1's
+  `kiss-ssg/libs/utils.js` — now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`
+  instead of half-working. Everything public is reachable from `'kiss-ssg'`
+  itself; `utils` is the named export `import { utils } from 'kiss-ssg'`.
+- **`examples/` now ships in the package**, each of the two tiers with its own
+  README, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run
+  without cloning the repo.
+- Two new exemplar examples: `examples/8-data-fed-site.js` (`npm run eg8`), a
+  site built from a folder of records where one is broken, and
+  `examples/9-migrated-from-v1.js` (`npm run eg9`), every v1 → v2 migration
+  recipe from `llms.txt` as running code in a site that builds clean.
+
 ## 2.0.0-alpha.2 — 2026-09-06
 
 _Still a prerelease of the v2 line, now on `main`. The v1 → v2 migration notes

@@ -1,0 +1,11 @@
+{
+  "name": "Oakfield Deli",
+  "slug": "oakfield-deli",
+  "town": "Clifton",
+  "address": "3 Oakfield Place",
+  "postcode": "BS8 2BJ",
+  "hours": "Mon–Sat, 9am–6pm",
+  "since": "2023",
+  "sells": ["Huila Decaf", "Sumatra Ketiara"],
+  "note": "Sells more decaf than anywhere else we supply, which says something about Clifton."
+}

@@ -47,9 +47,58 @@ describe('missingPackedFiles', () => {
 
   it('names the paths dropped from the tarball', () => {
     expect(missingPackedFiles(['lib/kiss.js'])).toEqual([
+      'bin/kiss-ssg.js',
+      'types/kiss.d.ts',
       'llms.txt',
       'AIKB/kiss.md',
+      'examples/README.md',
     ])
+  })
+
+  // The declarations are only useful to a consumer if they are in the tarball:
+  // `types`/`exports` point at a path npm would otherwise not ship.
+  it('requires the generated declarations entry', () => {
+    expect(REQUIRED_PACKED).toContain('types/kiss.d.ts')
+    expect(
+      missingPackedFiles([
+        'bin/kiss-ssg.js',
+        'lib/kiss.js',
+        'llms.txt',
+        'AIKB/kiss.md',
+        'examples/README.md',
+      ]),
+    ).toEqual(['types/kiss.d.ts'])
+  })
+
+  // `npx kiss-ssg check` is only reachable if the bin ships: package.json's
+  // `bin` entry points at a path `files` could drop silently.
+  it('requires the check bin', () => {
+    expect(REQUIRED_PACKED).toContain('bin/kiss-ssg.js')
+    expect(
+      missingPackedFiles([
+        'lib/kiss.js',
+        'types/kiss.d.ts',
+        'llms.txt',
+        'AIKB/kiss.md',
+        'examples/README.md',
+      ]),
+    ).toEqual(['bin/kiss-ssg.js'])
+  })
+
+  // Proves the examples actually ship: `files` in package.json could drop
+  // `examples` silently otherwise, and the tarball is the only place that
+  // would show up.
+  it('requires the examples README', () => {
+    expect(REQUIRED_PACKED).toContain('examples/README.md')
+    expect(
+      missingPackedFiles([
+        'bin/kiss-ssg.js',
+        'lib/kiss.js',
+        'types/kiss.d.ts',
+        'llms.txt',
+        'AIKB/kiss.md',
+      ]),
+    ).toEqual(['examples/README.md'])
   })
 
   it('normalises Windows separators before comparing', () => {

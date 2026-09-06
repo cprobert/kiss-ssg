@@ -1,0 +1,75 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Recipe &middot; the rest</p>
+    <h1>The smaller changes</h1>
+    <p>
+      None of these take more than a line, but all of them are in this script, so you can see
+      the v2 form rather than infer it.
+    </p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h3>Node 22.12 first</h3>
+      <p>
+        <code>engines.node</code> is <code>&gt;=22.12.0</code>. Check it before touching any
+        code: v2 will not install or run below it, and a pinned dev version in
+        <code>.nvmrc</code> has to move too.
+      </p>
+    </article>
+    <article class="card">
+      <h3>ESM, and CJS still works</h3>
+      <p>
+        <code>import Kiss from 'kiss-ssg'</code> is the form. <code>require('kiss-ssg')</code>
+        still resolves on Node 22.12 and up, so a CommonJS build script does not have to be
+        rewritten to migrate.
+      </p>
+    </article>
+    <article class="card">
+      <h3><code>utils</code> is a named export</h3>
+      <p>
+        <code>import Kiss, &#123; utils &#125; from 'kiss-ssg'</code>, not a deep path into
+        <code>libs/</code>. This script uses <code>utils.toSlug</code> for the deduplication on
+        the <a href="duplicate-paths.html">output paths</a> page.
+      </p>
+    </article>
+    <article class="card">
+      <h3>Controllers <code>export default</code></h3>
+      <p>
+        <code>controllers/shelf-item.js</code> is an ES module with a default export.
+        <code>module.exports =</code> is still accepted, so controllers can be migrated one at
+        a time.
+      </p>
+    </article>
+    <article class="card">
+      <h3>The generate callback fires last</h3>
+      <p>
+        In v1 it ran before the files were written. In v2 it runs after, so a callback can read
+        its own output — this build's console line
+        <code>index.html on disk when the callback ran: true</code> is that check.
+      </p>
+    </article>
+    <article class="card">
+      <h3>What did not change</h3>
+      <p>
+        The per-page <code>generate: false</code> option, <code>ext</code>,
+        <code>copyAssets()</code>, <code>viewStats()</code>, <code>getModelByID()</code>, and
+        <code>callback.call(this, &hellip;)</code> binding the instance. Underscored fields such
+        as <code>_stack</code> are internal and unversioned — use <code>.sitemap()</code> to
+        enumerate pages.
+      </p>
+    </article>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    The migration guide these pages follow ships with the package as
+    <code>node_modules/kiss-ssg/llms.txt</code>, &sect; Migrating from v1. Read it first; use
+    this site to see each recipe as running code.
+  </p>
+  {{/content}}
+
+{{/extend}}
