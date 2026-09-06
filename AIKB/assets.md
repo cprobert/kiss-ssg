@@ -11,7 +11,7 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 ## Depends on
 
-`fs-extra`; `./sass.js` (the resolved sass binding); `./asset-manifest.js` (`createAssetManifest`, `contentHash`, `hashedName`, `isHashable`); `./utils.js` (`globFiles`, `posixPath`, `hashId`).
+`fs-extra`, `node:path` (the CSS target arithmetic below); `./sass.js` (the resolved sass binding); `./asset-manifest.js` (`createAssetManifest`, `contentHash`, `hashedName`, `isHashable`); `./utils.js` (`globFiles`, `posixPath`, `hashId`).
 
 ## Depended on by
 

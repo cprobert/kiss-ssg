@@ -6,6 +6,7 @@ Sets up `chokidar` watchers over the entry script, `config.folders.src` (pages a
 
 ## Public interface
 
+- `isInside(dir)` → a predicate `(path) => boolean`, true when `path` is `dir` itself or below it (both posix-normalised). Used here as the `src` watcher's `ignored` option, and imported by `lib/kiss.js` so `_handleChange` can ask the same question of a changed path.
 - `createWatcher({ config, entry = process.argv[1], rebuildSite, onChange, assetsChanged, logger })` → `{ ready, close }`.
   - `ready` — `Promise` that resolves once every underlying chokidar watcher has fired its own `'ready'` event.
   - `close()` — `async`; closes every watcher. Required for the Node process to be able to exit (chokidar watchers otherwise keep the event loop alive).
@@ -13,7 +14,7 @@ Sets up `chokidar` watchers over the entry script, `config.folders.src` (pages a
 
 ## Depends on
 
-`chokidar`.
+`chokidar`; `./utils.js` (`posixPath`).
 
 ## Depended on by
 

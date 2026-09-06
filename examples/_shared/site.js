@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 
-// One page shell, one stylesheet, one set of shared partials for all six
-// examples. Each example spreads this into its own `folders` block, where an
+// One page shell, one stylesheet, one set of shared partials for every
+// example. Each example spreads this into its own `folders` block, where an
 // explicit key beats the folder kiss derives from `folders.src`.
 export const sharedFolders = {
   layouts: './_shared/layouts',

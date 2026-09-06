@@ -18,7 +18,7 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 
 ## Depends on
 
-`fs-extra`; `./utils.js` (`globFiles`, `posixPath`, `hashId`); `./fetch-policy.js` (`fetchModel`).
+`fs-extra`, `node:path` (the relative-filename arithmetic below); `./utils.js` (`globFiles`, `posixPath`, `hashId`); `./fetch-policy.js` (`fetchModel`).
 
 ## Depended on by
 

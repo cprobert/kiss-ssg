@@ -93,7 +93,7 @@ Registered on `kiss.handlebars` for every instance; register your own on the sam
 
 - [README.md](README.md): full usage docs, worked examples for `.page()`/`.pages()`/`.sitemap()`, the helpers list.
 - [examples/](examples/): two tiers. Examples 1–6 are the feature reference, one idea each — scan, page/model/controller, `.pages()` fan-out, layouts and partials, helpers, sitemap. Example 7 is an exemplar site to copy by shape rather than a single feature — versioned outputs, one build per season. Every example builds and exits by default (`node examples/<N>-name.js`, or `npm run eg<N>`); pass `--dev` to run examples 1–6 as a live dev server instead.
-- [lib/](lib/): the engine — `kiss.js` (orchestrator, public API), `kiss-page.js` (one page's render), and one module per concern (`config`, `logger`, `handlebars-helpers`, `partials`, `assets`, `asset-manifest`, `model-resolver`, `controller-resolver`, `sitemap`, `dev-server`, `watcher`, `utils`). Per-module notes: [AIKB/](AIKB/).
+- [lib/](lib/): the engine — `kiss.js` (orchestrator, public API), `kiss-page.js` (one page's render), and one module per concern (`config`, `logger`, `handlebars-helpers`, `partials`, `assets`, `asset-manifest`, `sass`, `model-resolver`, `fetch-policy`, `controller-resolver`, `sitemap`, `dev-server`, `watcher`, `utils`). Per-module notes: [AIKB/](AIKB/).
 
 ## Migrating from v1
 

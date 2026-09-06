@@ -24,7 +24,7 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 
 ## Depended on by
 
-`lib/assets.js`, `lib/handlebars-helpers.js`, `lib/kiss.js`, `lib/kiss-page.js`, `lib/model-resolver.js`, `lib/partials.js`, `lib/sitemap.js`, `lib/watcher.js`.
+`lib/assets.js`, `lib/fetch-policy.js`, `lib/handlebars-helpers.js`, `lib/kiss.js`, `lib/kiss-page.js`, `lib/model-resolver.js`, `lib/partials.js`, `lib/sitemap.js`, `lib/watcher.js`.
 
 ## Non-obvious behavior
 

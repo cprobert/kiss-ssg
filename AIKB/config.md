@@ -21,7 +21,7 @@ Resolves a user-supplied config object against defaults: fills in `DEFAULT_CONFI
 
 ## Depended on by
 
-`lib/kiss.js`; `lib/fetch-policy.js` (`DEFAULT_FETCH`).
+`lib/kiss.js`; `lib/fetch-policy.js` (`DEFAULT_FETCH`); `lib/kiss-page.js` (`DEFAULT_CONFIG.livereloadPort`, the fallback for a `KissPage` built outside `Kiss`).
 
 ## Non-obvious behavior
 
