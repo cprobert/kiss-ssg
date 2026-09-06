@@ -1,0 +1,64 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Recipe &middot; output paths</p>
+    <h1>Two sources, one path</h1>
+    <p>
+      The catalogue and the roasting bench both describe coffees, and both fan out into
+      <code>shelf/</code>. One name appears in both. v1 wrote whichever page came last; v2
+      fails the build naming the path, because only one of the two would ever exist on disk.
+    </p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h3>The catalogue owns its slugs</h3>
+      <ul>
+        {{#each model.catalogue}}
+        <li><a href="shelf/{{slug}}.html">{{name}}</a> &mdash; {{origin}}</li>
+        {{/each}}
+      </ul>
+    </article>
+    <article class="card">
+      <h3>Bench lots, after the filter</h3>
+      <ul>
+        {{#each model.built}}
+        <li><a href="shelf/{{slug}}.html">{{name}}</a> &mdash; {{origin}}</li>
+        {{/each}}
+      </ul>
+    </article>
+    <article class="card">
+      <h3>Dropped before registering</h3>
+      <ul>
+        {{#each model.dropped}}
+        <li><code>{{slug}}</code> &mdash; {{note}}</li>
+        {{/each}}
+      </ul>
+      <p class="meta tone-warn">Registered, this would have failed the build with <code>Page already processed: &hellip;/shelf/guji-uraga.html</code>.</p>
+    </article>
+  </div>
+
+  <div class="callout">
+    <pre><code>const claimed = new Set(catalogue.map((item) =&gt; utils.toSlug(item.name)))
+const benchToBuild = benchLots.filter(
+  (item) =&gt; !claimed.has(utils.toSlug(item.name)),
+)</code></pre>
+    <p>
+      Four lines, and the priority is now written down rather than implied by registration
+      order. That is the real gain: v1's behaviour depended on which <code>.pages()</code> call
+      came last, which no reader of the script could see.
+    </p>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    Both fan-outs share one view, <code>shelf/item.hbs</code>, and one controller file,
+    <code>controllers/shelf-item.js</code>, which derives each slug with
+    <code>utils.toSlug</code> — the same function the deduplication uses, so the Set and the
+    output paths cannot disagree.
+  </p>
+  {{/content}}
+
+{{/extend}}

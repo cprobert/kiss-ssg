@@ -1,0 +1,57 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 9 &middot; migrated from v1</p>
+    <h1>The v1 &rarr; v2 recipes, as one site that builds</h1>
+    <p>
+      Every recipe in <code>llms.txt</code> &sect; Migrating from v1 has a page here, and this
+      site is the <em>after</em>: it builds clean and exits 0. Where a recipe is about a v1
+      failure mode, the page demonstrates what v2 does with the case guarded — the point is to
+      show the shape you migrate <em>to</em>, not to leave a broken build lying around.
+    </p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h3><a href="await-complete.html">Await complete()</a></h3>
+      <p>A chain that ends at <code>generate()</code> exits 0 on a broken build. v2 rejects, and the post-build work moves into a function both branches call.</p>
+    </article>
+    <article class="card">
+      <h3><a href="folders.html">The folders v2 reads</a></h3>
+      <p><code>folders.root</code> and <code>folders.static</code> are gone. Here is the resolved folder table, read off the instance itself.</p>
+    </article>
+    <article class="card">
+      <h3><a href="handlebars-instance.html">One Handlebars per instance</a></h3>
+      <p>Helpers and partials belong to <code>kiss.handlebars</code>. A helper reading the global module renders nothing, quietly.</p>
+    </article>
+    <article class="card">
+      <h3><a href="dynamic-partials.html">Dynamic partials</a></h3>
+      <p>A partial name that resolves to <code>undefined</code>. v2 names the key and the view in a warning; the guard keeps the page.</p>
+    </article>
+    <article class="card">
+      <h3><a href="duplicate-paths.html">Two sources, one path</a></h3>
+      <p>Duplicate output paths fail the build in v2. Dedupe the slugs before registering and decide which source wins.</p>
+    </article>
+    <article class="card">
+      <h3><a href="pure-controllers.html">Controllers that return</a></h3>
+      <p>A controller that mutates an object model in place drifts a little further on every rebuild. Return new values instead.</p>
+    </article>
+    <article class="card">
+      <h3><a href="smaller-changes.html">The smaller changes</a></h3>
+      <p>Node 22.12, ESM, the <code>utils</code> named export, <code>export default</code> controllers, and when the generate callback fires.</p>
+    </article>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    One script, <code>9-migrated-from-v1.js</code>, builds all of this. Read it beside the
+    pages: each recipe is a few lines with a comment naming the v1 idiom it replaces, and the
+    page it built explains what changed and why. The two <code>.pages()</code> calls at the
+    bottom are the deduplication recipe doing real work — they fan out into one
+    <code>shelf/</code> folder without colliding.
+  </p>
+  {{/content}}
+
+{{/extend}}

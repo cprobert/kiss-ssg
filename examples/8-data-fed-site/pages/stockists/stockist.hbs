@@ -1,0 +1,38 @@
+{{#extend "layout" root="../"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">{{model.town}}</p>
+    <h1>{{model.name}}</h1>
+    <p>{{model.note}}</p>
+  </section>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Find it</h3>
+      <table>
+        <tbody>
+          <tr><th>Address</th><td>{{model.address}}</td></tr>
+          <tr><th>Town</th><td>{{model.town}}</td></tr>
+          <tr><th>Postcode</th><td>{{model.postcode}}</td></tr>
+          <tr><th>Open</th><td>{{model.hours}}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>On the shelf here</h3>
+      <p>{{#each model.sells}}<span class="tag">{{this}}</span> {{/each}}</p>
+      <p class="meta">Stocking Aster &amp; Oak since {{model.since}}.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>
+      This page was built from <code>models/stockists/</code>&hellip; by
+      <code>stockists/stockist.hbs</code>, the one view behind every stockist.
+      <a href="../index.html">Back to the list</a>.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}

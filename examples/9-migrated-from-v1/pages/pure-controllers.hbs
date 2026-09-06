@@ -1,0 +1,65 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Recipe &middot; controllers</p>
+    <h1>Controllers return; they do not mutate</h1>
+    <p>
+      A controller that changed <code>options.model</code> in place was fine in v1 and is
+      usually fine in v2 — until the model is a plain object and the site is running under
+      <code>.watch()</code>. Then it drifts, one edit at a time.
+    </p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h3>Why the model kind matters</h3>
+      <p>
+        A <code>.json</code> file, a models folder or an <code>http(s)://</code> model is
+        re-resolved on every build, so an in-place change is thrown away with it. A
+        <strong>plain object</strong> model is replayed from a shallow snapshot of the original
+        <code>.page()</code> call — the same object, every rebuild.
+      </p>
+    </article>
+    <article class="card">
+      <h3>What that looks like</h3>
+      <p>
+        A controller doing <code>model.pours.push(&hellip;)</code> adds one more row on every
+        save. The dev server looks fine at first and drifts further from a fresh build with
+        each edit, which is the worst kind of bug to be told about second-hand.
+      </p>
+    </article>
+    <article class="card">
+      <h3>This page's controller</h3>
+      <p>
+        It numbers the pours and counts them by building a new object:
+        <code>&#123; ...model, pours: model.pours.map(&hellip;), count &#125;</code>. Nothing it
+        was handed is touched, so the tenth rebuild renders exactly what the first one did.
+      </p>
+    </article>
+  </div>
+
+  <div class="card">
+    <h3>{{model.count}} brew recipes, numbered by the controller</h3>
+    <table>
+      <thead><tr><th>step</th><th>method</th><th>ratio</th></tr></thead>
+      <tbody>
+        {{#each model.pours}}
+        <tr><td>{{step}}</td><td>{{name}}</td><td>{{ratio}}</td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <p class="meta">Run the example with <code>--dev</code>, edit a page, and the count stays 2. Under the v1 habit it would be 3, then 4.</p>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    The same rule covers <code>options.config</code>: every page renders with its own shallow
+    copy, so a controller may override config for its own page, but nested objects such as
+    <code>folders</code> are shared and must be left alone. Return new values and the
+    distinction never has to be remembered.
+  </p>
+  {{/content}}
+
+{{/extend}}

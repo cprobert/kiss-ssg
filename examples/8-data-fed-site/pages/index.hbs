@@ -1,0 +1,80 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 8 &middot; a data-fed site</p>
+    <h1>Where to buy Aster &amp; Oak</h1>
+    <p>
+      Every shop below is one JSON file in <code>models/stockists</code>, exported from the
+      trade CRM each morning. The site is a fan-out over that folder: one page per record,
+      one view, one controller that checks the record before it is allowed to become a page.
+    </p>
+  </section>
+
+  <div class="grid">
+    {{#each model.stocked}}
+    <article class="card">
+      <h3><a href="stockists/{{slug}}.html">{{name}}</a></h3>
+      <p class="meta">{{town}} &middot; stocking us since {{since}}</p>
+      <p>{{note}}</p>
+      <p>{{#each sells}}<span class="tag">{{this}}</span> {{/each}}</p>
+    </article>
+    {{/each}}
+  </div>
+
+  {{#if model.incomplete}}
+  <div class="callout">
+    <h2>One record in this feed is broken on purpose</h2>
+    <p class="tone-warn">
+      {{#each model.incomplete}}
+      <strong>{{name}}</strong> (feed key <code>{{key}}</code>) has no <code>{{missing}}</code>.
+      {{/each}}
+    </p>
+    <p>
+      It is the shape of breakage a real feed produces: the row was created the day the pitch
+      was agreed and a required field was never filled in. The controller refuses to build a
+      stockist page with no address, so that one page fails, the other five build, and the
+      command exits 1 naming the record:
+    </p>
+    <pre><code>1 page(s) failed to build: stockists/stockist.hbs [item 3: harbour-market-stall]
+  stockists/stockist.hbs [item 3: harbour-market-stall]: Incomplete stockist record — missing address.</code></pre>
+    <p>
+      The listing you are reading knows the same thing for the same reason — it reports against
+      the validator the controller enforces, so it names the gap rather than silently dropping a shop.
+    </p>
+  </div>
+  {{/if}}
+
+  <div class="card">
+    {{> "newsletter"}}
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <strong>The fan-out.</strong> <code>.pages()</code> is <code>.page()</code> with an array.
+    Point <code>model</code> at the <code>models/stockists</code> folder and kiss loads every
+    JSON file in it, then builds one page per record from <code>stockists/stockist.hbs</code>.
+    <code>path: 'stockists'</code> puts them in a folder; the controller's <code>slug</code>
+    decides the filename.
+  </p>
+  <p>
+    <strong>The validation.</strong> <code>controllers/stockist.js</code> is the only place the
+    feed's contract is written down. It throws for a record that cannot make a correct page, and
+    exports the same check so the index can report on it. A throw fails one item, not the
+    fan-out: every other record is still registered and built, and each bad one is reported
+    separately as <code>&lt;view&gt; [item N: &lt;slug&gt;]</code>.
+  </p>
+  <p>
+    <strong>The exit code.</strong> The script <code>await</code>s <code>complete()</code> and
+    catches its rejection. Without that a broken feed exits 0 and a deploy ships a site with a
+    hole in it.
+  </p>
+  <p>
+    <strong>The build.</strong> Run it with <code>--atomic</code> and the same failure publishes
+    nothing at all: <code>cleanBuild: 'atomic'</code> stages the whole site and swaps it in only
+    when <code>complete()</code> resolves, so a bad feed can never half-replace a live site.
+  </p>
+  {{/content}}
+
+{{/extend}}

@@ -1,0 +1,54 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Recipe &middot; dynamic partials</p>
+    <h1>When the partial name is undefined</h1>
+    <p>
+      A dynamic partial takes its name from the model:
+      <code>&#123;&#123;&gt; (lookup this 'partial')&#125;&#125;</code>. When the key is missing
+      from one record out of many, v1 rendered an empty string and carried on. v2 fails the
+      page — so guard the call, and let the warning tell you which key went missing.
+    </p>
+  </section>
+
+  <div class="grid">
+    {{#each model.blocks}}
+    <article class="card">
+      <h3>{{label}}</h3>
+      {{#if partial}}
+      {{> (lookup this "partial")}}
+      {{else}}
+      <p class="tone-warn">
+        This record carries no <code>partial</code> key. The guard kept the page; the console
+        line <code>lookup: 'partial' is undefined in dynamic-partials.hbs</code> names the key
+        and the view, which is the diagnostic v1 never gave you.
+      </p>
+      <p class="meta">Looked up anyway, to produce that warning: &ldquo;{{lookup this "partial"}}&rdquo;</p>
+      {{/if}}
+    </article>
+    {{/each}}
+  </div>
+
+  <div class="callout">
+    <h2>Why this one bites</h2>
+    <p>
+      In a real migration this was 40 pages of one site failing with
+      <code>The partial undefined could not be found</code> — a message naming neither the key
+      nor the page. The same 40 pages had been shipping <em>without</em> that block under v1,
+      green, for a year. v2 is right to fail, and the warning is there so the diagnosis takes a
+      second rather than an afternoon.
+    </p>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    Two blocks above name a partial and render it — one <code>.hbs</code>, one
+    <code>.md</code>. The third is the guarded case. Guard with the plain property
+    (<code>&#123;&#123;#if partial&#125;&#125;</code>) when a missing block is acceptable, and
+    let the page fail when it is not: a missing block on a live page is a decision, not an accident.
+  </p>
+  {{/content}}
+
+{{/extend}}

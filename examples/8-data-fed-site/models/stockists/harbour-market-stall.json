@@ -1,0 +1,10 @@
+{
+  "name": "Harbour Market Stall",
+  "slug": "harbour-market-stall",
+  "town": "Bristol",
+  "postcode": "BS1 4RN",
+  "hours": "Saturdays, 9am–2pm",
+  "since": "2026",
+  "sells": ["Arch Blend"],
+  "note": "Added to the feed the day the pitch was agreed. The pitch number never came back from the market office, so the address field is still empty."
+}

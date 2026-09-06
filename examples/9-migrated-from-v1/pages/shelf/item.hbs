@@ -1,0 +1,19 @@
+{{#extend "layout" root="../"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">{{model.origin}}</p>
+    <h1>{{model.name}}</h1>
+    <p>{{model.note}}</p>
+  </section>
+
+  <div class="callout">
+    <p>
+      One of three pages in <code>shelf/</code>, fanned out from two separate sources that were
+      deduplicated before either was registered.
+      <a href="../duplicate-paths.html">How that works</a>.
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}
