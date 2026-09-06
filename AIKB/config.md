@@ -7,22 +7,27 @@ Resolves a user-supplied config object against defaults: fills in `DEFAULT_CONFI
 ## Public interface
 
 - `DEFAULT_FOLDERS` — frozen object: `src`, `pages`, `build`, `assets`, `layouts`, `partials`, `models`, `controllers` (all `./src/...` or `./public`).
-- `DEFAULT_CONFIG` — frozen object: `dev`, `verbose`, `cleanBuild`, `extensionLess`, `sass: { includePaths: [] }`, `fetch` (see `DEFAULT_FETCH`), `assets` (see `DEFAULT_ASSETS`), `port` (3001), `livereloadPort` (35729), `devHost` (`'127.0.0.1'`).
+- `DEFAULT_CONFIG` — frozen object: `dev`, `verbose`, `cleanBuild` (`true`, `false` or `'atomic'`), `extensionLess`, `sass: { includePaths: [] }`, `fetch` (see `DEFAULT_FETCH`), `assets` (see `DEFAULT_ASSETS`), `port` (3001), `livereloadPort` (35729), `devHost` (`'127.0.0.1'`).
 - `DEFAULT_FETCH` — frozen object, the URL-model fetch policy: `headers: {}`, `timeout: 10000`, `retries: 0`, `cache: false`. Exported so `lib/fetch-policy.js` fills its own gaps from the same object rather than repeating the numbers.
 - `DEFAULT_ASSETS` — frozen object, the cache-busting policy for emitted assets: `hash: false`, `version: null`.
 - `resolveFolders(userFolders = {})` → folders object. If `userFolders.src` is set, every key in `DERIVED_FROM_SRC` (`assets`, `layouts`, `pages`, `partials`, `models`, `controllers`) is rewritten to `${src}/${key}` _before_ any explicit per-key override in `userFolders` is applied. Every resulting string value is then normalised: backslashes to `/`, repeated slashes collapsed, trailing slashes stripped.
-- `resolveConfig(userConfig = {})` → full config object with `folders` resolved via `resolveFolders` and `sass`, `fetch` and `assets` shallow-merged with their defaults. Keys whose value is `undefined` are dropped from the user object first (at the top level, inside `folders`, inside `sass`, inside `fetch` and inside `assets`), so they take their default.
+- `resolveConfig(userConfig = {})` → full config object with `folders` resolved via `resolveFolders` and `sass`, `fetch` and `assets` shallow-merged with their defaults. Keys whose value is `undefined` are dropped from the user object first (at the top level, inside `folders`, inside `sass`, inside `fetch` and inside `assets`), so they take their default. **Throws** on a `cleanBuild` outside `CLEAN_BUILD_VALUES`, and on a build folder that contains the source folder (both below).
+- `CLEAN_BUILD_VALUES` — frozen `[true, false, 'atomic']`, the only accepted values of `config.cleanBuild`.
 - `foldersToEnsure(folders)` → array of the folder paths `Kiss` should `fs.ensureDirSync` on startup (`src`, `pages`, `build`, `assets`, `layouts`, `partials`, `models`, `controllers`), filtered to drop falsy entries.
 
 ## Depends on
 
-Nothing (no imports).
+`node:path` (resolving the build/source folders for the safety guard below) — nothing else.
 
 ## Depended on by
 
 `lib/kiss.js`; `lib/fetch-policy.js` (`DEFAULT_FETCH`).
 
 ## Non-obvious behavior
+
+- **`cleanBuild` has three values, and the two that clean do it at different moments.** `true` (the default) calls `fs.emptyDirSync(folders.build)` in `_setupFolders`, i.e. **in the `Kiss` constructor** — before any model resolves and before any page renders — and nothing rolls it back if the build then fails. So a re-run of a build folder that holds published output destroys it first and, on a failure, leaves it empty or half-built (consumer review finding B-3). `false` never cleans. `'atomic'` builds into a staging sibling and swaps it in only when `complete()` resolves; the old output is untouched until that moment and survives a failed build. See `AIKB/kiss.md` for the staging mechanics — this module only carries the value.
+- **The value is validated, not coerced.** Anything but `true`, `false` or `'atomic'` throws out of `resolveConfig` (so out of `new Kiss`), including `null` and `0`. A silently-falsy value is exactly the D-07 failure mode in a new coat: `{ cleanBuild: opts.clean }` with an unrecognised flag would quietly stop cleaning, or quietly stop staging.
+- **A build folder that contains the source folder is refused at construction**, whatever `cleanBuild` says (`false` today is one edit from `true`): `resolveConfig` throws when the resolved `folders.build` is the resolved `folders.src`, is an ancestor of it, or is a filesystem root — which is what catches `build: '.'`, `'./'` and `'/'` on a default layout. It is a **floor, not a fix**: a build folder that holds published output but is not above the source — metacarpus's `./handbooks` archive root, wiped whole by an empty cohort name (finding B-2) — is _not_ caught, because nothing in the config distinguishes it from any other legitimate build folder. That case is answered by validating the name in the consumer and by `cleanBuild: 'atomic'`.
 
 - **Folder strings are normalised once, here, because everything downstream is path arithmetic.** A trailing slash on `folders.assets` made `assets.js`'s target derivation miss (compiled CSS landed beside the build folder as `./publicmain.css`, logged as a success), and one on `folders.models` made `model-resolver.js` chop the first characters off every filename so a whole `.pages()` fan-out resolved to `[]`. Both are the same missing normalisation. `./` and `/` keep their slash — trimming them to `.` or `''` would change which directory they name — and a non-string value (`null`) is passed through untouched.
 - Setting `config.folders.src` re-derives the six `DERIVED_FROM_SRC` subfolders from it, _unless_ each is also individually overridden in the same `userFolders` object (the final spread `{ ...folders, ...supplied }` lets explicit keys win over the src-derived ones).

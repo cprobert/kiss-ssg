@@ -70,7 +70,7 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 | -------------- | :------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | dev            |              false               |                               Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                                |
 | verbose        |              false               |                                                                                                              Enables additional output on the terminal, when set to true                                                                                                              |
-| cleanBuild     |               true               |                                                                                                                Removed all files from the build dir before generating.                                                                                                                |
+| cleanBuild     |               true               |                   `true`, `false` or `'atomic'`. `true` empties the build dir — in the constructor, before anything is rendered. `'atomic'` builds into a staging folder and swaps it in only when `complete()` resolves. See **Cleaning the build folder** below.                    |
 | extensionLess  |              false               |                                                                  When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                                  |
 | sass           |      `{ includePaths: [] }`      |                                                                                     `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                                      |
 | fetch          |            see below             |                           The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                            |
@@ -88,6 +88,29 @@ A key you pass explicitly as `undefined` takes its default — `new Kiss({ port:
 **Note**: All config settings are available in the view under "this.config"
 
 Each page gets its **own shallow copy** of the resolved config, so a controller that mutates `options.config` changes that page only — never the other pages, `kiss.config`, or the sitemap. Pass `config` in a page's options to override settings for that page alone (nested objects such as `folders` are shared with the global config, and kiss never mutates them).
+
+### Cleaning the build folder
+
+`cleanBuild` decides what happens to `folders.build`, and it takes three values.
+
+`true` (the default) empties the build folder **in the `Kiss` constructor** — before a single model has resolved or page rendered — and nothing puts it back if the build then fails. For a build folder you regenerate from scratch every time that is exactly right. For one that holds output you have already published, it is not: a re-run to fix one typo destroys the old output first, and a build that fails leaves the folder empty or half-built.
+
+`false` never cleans; files from earlier builds stay where they are.
+
+`'atomic'` is the safe re-run. The build goes into a staging folder beside the build folder, and the whole thing is swapped into place only when `complete()` resolves:
+
+```js
+const kiss = new Kiss({
+  cleanBuild: 'atomic',
+  folders: { build: `./handbooks/${cohort}` },
+})
+kiss.scan().generate()
+await kiss.complete() // the folder is replaced here, in one step
+```
+
+Until that line, the previous output is untouched — and if any page fails, `complete()` rejects, the staging folder is deleted and the old output is still there, byte for byte. Everything the build writes follows the staging folder: pages, copied assets, `sitemap.xml`, and a `.copyAssets()` you aimed explicitly at the build folder. The swap itself is two renames — your old output is renamed aside, the new build is renamed into place, and the old folder is then deleted — so there is no moment where the folder is half-copied, and a failed swap puts the old output straight back. A build killed mid-flight leaves a `.kiss-staging-…` or `.kiss-old-…` folder beside your build folder; the next build removes it and says so. Two things to know: only `complete()` promotes, so a chain that ends at `.generate()` swaps nothing in; and in `dev: true` it behaves as `true` and says so in one line, because the dev server has been serving the build folder since it started.
+
+Whatever `cleanBuild` is set to, kiss refuses to build into a folder that would swallow the site's own source — the build folder being the source folder, containing it, or being `'.'` or `'/'`. That is a floor, not a licence: if your build folder is built from a variable (`./handbooks/${cohort}`), validate it before you construct, because an empty value resolves to the parent folder.
 
 ### Remote models
 

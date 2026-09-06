@@ -123,12 +123,61 @@ describe('resolveConfig', () => {
     ).toBeNull()
   })
 
+  it("accepts true, false and 'atomic' for cleanBuild, and nothing else", () => {
+    expect(resolveConfig({ cleanBuild: true }).cleanBuild).toBe(true)
+    expect(resolveConfig({ cleanBuild: false }).cleanBuild).toBe(false)
+    expect(resolveConfig({ cleanBuild: 'atomic' }).cleanBuild).toBe('atomic')
+    expect(() => resolveConfig({ cleanBuild: 'yes' })).toThrow(/cleanBuild/)
+    expect(() => resolveConfig({ cleanBuild: 1 })).toThrow(/cleanBuild/)
+    expect(() => resolveConfig({ cleanBuild: null })).toThrow(/cleanBuild/)
+  })
+
   it('resolves no root folder', () => {
     expect(resolveConfig({}).folders).not.toHaveProperty('root')
   })
 
   it('resolves no static folder', () => {
     expect(resolveConfig({}).folders).not.toHaveProperty('static')
+  })
+})
+
+describe('the build folder may never contain the source folder', () => {
+  it('refuses a build folder that is the source folder', () => {
+    expect(() =>
+      resolveConfig({ folders: { src: './site', build: './site' } }),
+    ).toThrow(/build folder/i)
+  })
+
+  it('refuses a build folder that is an ancestor of the source folder', () => {
+    expect(() => resolveConfig({ folders: { build: '.' } })).toThrow(
+      /build folder/i,
+    )
+    expect(() => resolveConfig({ folders: { build: './' } })).toThrow(
+      /build folder/i,
+    )
+    expect(() => resolveConfig({ folders: { build: '/' } })).toThrow(
+      /build folder/i,
+    )
+    expect(() =>
+      resolveConfig({ folders: { src: './site/src', build: './site' } }),
+    ).toThrow(/build folder/i)
+  })
+
+  it('allows a build folder that merely sits beside the source folder', () => {
+    // The metacarpus shape: an archive root the source folder is not under.
+    // The guard is a floor, not the fix for a build folder holding published
+    // output — that is `cleanBuild: 'atomic'` plus validating the name.
+    expect(
+      resolveConfig({ folders: { build: './handbooks' } }).folders.build,
+    ).toBe('./handbooks')
+    expect(
+      resolveConfig({ folders: { build: './handbooks/2026-sept' } }).folders
+        .build,
+    ).toBe('./handbooks/2026-sept')
+  })
+
+  it('leaves resolveFolders alone — the guard is a config-level refusal', () => {
+    expect(resolveFolders({ build: '/' }).build).toBe('/')
   })
 })
 

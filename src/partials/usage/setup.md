@@ -40,18 +40,18 @@ The default config options are:
 
 Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
 
-| Option         |        Default         |                                                                     Purpose                                                                      |
-| -------------- | :--------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------: |
-| dev            |         false          |            Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too.            |
-| verbose        |         false          |                                           Enables additional output on the terminal, when set to true                                            |
-| cleanBuild     |          true          |                                             Removed all files from the build dir before generating.                                              |
-| extensionLess  |         false          |                       When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html`.                        |
-| sass           | `{ includePaths: [] }` |                   `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                   |
-| port           |          3001          |                                              The port the dev server listens on (`dev: true` only)                                               |
-| livereloadPort |         35729          |             The port the live-reload server listens on. Give a second site of your own a different value so both can watch at once.              |
-| devHost        |      '127.0.0.1'       | The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to preview from another device on your network. |
-| folders        |       see above        |                                                  A JSON object of alternative folder locations                                                   |
-| siteUrl        |       undefined        |                                            The site's base URL, required by `.sitemap()` (see below)                                             |
+| Option         |        Default         |                                                                                           Purpose                                                                                            |
+| -------------- | :--------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| dev            |         false          |                                  Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too.                                  |
+| verbose        |         false          |                                                                 Enables additional output on the terminal, when set to true                                                                  |
+| cleanBuild     |          true          | `true`, `false` or `'atomic'`. `true` empties the build dir in the constructor, before anything renders; `'atomic'` builds into a staging folder and swaps it in when `complete()` resolves. |
+| extensionLess  |         false          |                                             When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html`.                                              |
+| sass           | `{ includePaths: [] }` |                                         `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                         |
+| port           |          3001          |                                                                    The port the dev server listens on (`dev: true` only)                                                                     |
+| livereloadPort |         35729          |                                   The port the live-reload server listens on. Give a second site of your own a different value so both can watch at once.                                    |
+| devHost        |      '127.0.0.1'       |                       The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to preview from another device on your network.                       |
+| folders        |       see above        |                                                                        A JSON object of alternative folder locations                                                                         |
+| siteUrl        |       undefined        |                                                                  The site's base URL, required by `.sitemap()` (see below)                                                                   |
 
 A config key you pass explicitly as `undefined` still takes its default (`new Kiss({ port: process.env.PORT })` with `PORT` unset gives `3001`); `null` is a real value — it switches a folder off.
 

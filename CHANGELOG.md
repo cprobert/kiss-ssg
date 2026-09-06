@@ -52,7 +52,31 @@ this file's `## 2.0.0` entry when the line is released._
   off. Without a `siteUrl` they render nothing and log one warning per page
   instead of failing your build.
 
+- A safe way to rebuild a folder you have already published:
+  `cleanBuild: 'atomic'`. The build goes into a staging folder beside your
+  build folder and is swapped into place in one step when
+  `await kiss.complete()` resolves — so until that moment your previous output is
+  untouched, and if any page fails the staging folder is deleted and the old
+  output is still there, byte for byte. The swap is two renames — your old
+  output aside, the new build in — so it is never half-applied, and a build
+  killed mid-flight leaves a folder beside your build folder that the next run
+  clears up. Pages, assets and `sitemap.xml` all follow it. Use it wherever `folders.build` holds output people are already
+  reading: with the default `cleanBuild: true` that folder is emptied in the
+  `Kiss` constructor, before anything renders, and a build that then fails
+  leaves it empty or half-built. It is for one-shot builds — in `dev: true` it
+  behaves as `true` and tells you so — and only `complete()` promotes, so a
+  chain that ends at `.generate()` swaps nothing in. `cleanBuild` now also
+  rejects any value other than `true`, `false` or `'atomic'`, rather than
+  quietly treating it as "don't clean".
+
 **Changed**
+
+- kiss now refuses to build into a folder that would swallow your source: if
+  `folders.build` is `folders.src`, contains it, or is `'.'` or `'/'`,
+  `new Kiss(...)` throws instead of emptying it. It is a floor, not a licence
+  — if your build folder comes from a variable (`./handbooks/${cohort}`),
+  validate it before you construct, because an empty value resolves to the
+  parent folder and `cleanBuild: true` would empty that.
 
 - URL models now time out. `config.fetch.timeout` defaults to 10 seconds, where
   before there was no limit at all — an API that accepted the connection and
