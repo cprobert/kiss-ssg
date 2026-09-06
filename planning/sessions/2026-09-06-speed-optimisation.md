@@ -241,6 +241,64 @@ it, compare bytes) and the end-to-end build disagreed, and the end-to-end was
 right. Three sampled stylesheets are not the population a published default has
 to hold for.
 
+### Ruled out by measurement — do not re-attempt without new evidence
+
+A sweep for remaining wins after the five changes landed. These all looked
+plausible and are all dead; recorded so the next person does not spend the time
+again.
+
+1. **Async or parallel file reads. Dead.** The branch-open note and the
+   baseline's finding 4 both suspected sync `fs` in the page hot path. Counting
+   and timing every sync call during a 500-page build: 729 `readFileSync`
+   (16ms), 1000 `existsSync` (2ms), 500 `statSync` (16ms) — **33ms, 2.9% of a
+   1154ms build**. The page cache makes these nearly free. The `readFileUtf8`
+   and `read` frames that dominate a CPU profile (24%) are Node loading its own
+   module graph at startup, not the page loop — a whole-process profile
+   attributes them to the build if you are not careful. Making model resolution
+   async would buy nothing.
+2. **Garbage collection. Not a lever.** An early reading of the profile put GC
+   at 46.6%; that was a rollup bucketing every `(native)` frame together. Actual
+   GC self-time is 138ms, **5.3%**.
+3. **Concurrency in the render loop. Already done.** `generate()` starts every
+   page's `generate()` and awaits one `Promise.all`. There is no serial await to
+   remove, and since the work is CPU-bound the concurrency only overlaps writes.
+4. **Caching markdown partials. Already done.** `registerPartialsFrom` renders
+   `.md` once at registration, not per page. The `{{markdown}}` _helper_ takes
+   page-specific content, so there is nothing to memoise.
+5. **Removing redundant existence checks.** 1000 calls, 2ms. Not worth the
+   churn.
+
+### What headroom is actually left
+
+**1. Production minification — the largest remaining item, needs a config key.**
+54% of a sass-heavy build. Per page, measured in fresh processes to avoid JIT
+contamination between option sets:
+
+| option      |     cost |     what it buys |
+| ----------- | -------: | ---------------: |
+| `minifyCSS` | ~11-15ms | 426 bytes (1.8%) |
+| `minifyJS`  |   ~4-6ms |          9 bytes |
+
+`minifyJS` is close to free to drop for a site whose inline scripts are already
+compact. Both need a config key, so both are an API addition — a minor bump and
+its own branch.
+
+**2. Multicore. Real, large, and blocked by the public API.** Per-page work is
+**80-91%** of build time (fixed vs per-page, solved from the 50/500 pair:
+`scan` 160ms + 2.43ms/page, `styled` 602ms + 11.69ms/page). Four cores put the
+ceiling near 3x. But helpers and controllers cross the API as _functions_ —
+diploma-msc registers 15 helper closures via `kiss.handlebars.registerHelper`,
+and controllers are inline arrows — and a closure cannot cross a worker
+boundary. Workers would have to re-execute the consumer's build script in a
+"register everything, render this subset" mode. Feasible; a major feature, not
+a tweak.
+
+**3. A persistent precompiled-template cache.** Handlebars compilation is 28-44%
+of a build and is inherent for N distinct views (the in-process cache only helps
+fan-out). Caching precompiled templates to disk across builds would help a
+developer rebuilding repeatedly and do nothing in CI, where the cache is always
+cold. Low value for the complexity.
+
 ### Findings recorded, deliberately not acted on
 
 1. **`html-minifier-terser` is 54% of a `styled` build** (1798ms of 3188ms at
