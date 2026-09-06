@@ -26,6 +26,27 @@ const kiss = new Kiss(config)
 
 The same applies to `PageOptions`, `PagesOptions`, `KissController` (a controller function) and `BuildError` (the error `complete()` rejects with, carrying `err.failures`).
 
+## Using an AI coding agent?
+
+Everything an agent needs ships in the package, so point it at `node_modules` rather than at this README. In the project's `CLAUDE.md` (or the equivalent for your agent), import the cheat-sheet:
+
+```markdown
+@node_modules/kiss-ssg/llms.txt
+```
+
+That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (nine runnable sites with a README each — copy the exemplar whose shape matches).
+
+Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)).
+
+If the agent is Claude Code, this repository is also a plugin marketplace:
+
+```
+/plugin marketplace add cprobert/kiss-ssg
+/plugin install kiss-ssg@kiss-ssg
+```
+
+That installs three skills — `/kiss-ssg:new-site` (build a site from a description), `/kiss-ssg:migrate-v1` (move a v1 project to v2) and `/kiss-ssg:check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
+
 ## Usage
 
 kiss-ssg has 3 methods

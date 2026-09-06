@@ -7,6 +7,7 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 
 **Added**
 
+- **A Claude Code plugin** lives in the repository: `/plugin marketplace add cprobert/kiss-ssg` then `/plugin install kiss-ssg@kiss-ssg` gives Claude three skills — build a new site, migrate a v1 site, check a build — each pointing at the docs installed in `node_modules/kiss-ssg/`. The README's new "Using an AI coding agent?" section says how to point any agent at the package.
 - **`npx kiss-ssg check <script>`** — a dry run of your own build script. It
   builds the site into a staging folder, tells you whether it worked, and then
   throws the staging folder away: your build folder is neither emptied nor
