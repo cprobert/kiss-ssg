@@ -41,6 +41,8 @@ opened: 2026-09-06
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-06 (themes 1, 3, 4 landed)** — Types (`f1bc6b3`): JSDoc on every public export, `types/` emitted by `npm run types` with the byte-parity test and the `// @ts-check` consumer fixture (three deliberate misuses caught by tsc); one real find on the way — tsc drops the quotes from `export { Kiss as 'module.exports' }` when the source is JS, so `scripts/emit-types.mjs` re-quotes it, with its own test. Examples (`118e53c`, `7f73d14`): 8 (one broken record, exit 1 by design) and 9 (the migration recipes, exit 0), a README per example and an index, `examples/` in the tarball (143 files, no build output), `test/integration/examples.test.js` builds all nine in ~5.5 s. Plugin (`d062c08`): marketplace + three skills, `claude plugin validate --strict` passes, manifest test ties both versions to package.json. Suite 513/513, gates green at each commit. Criteria 1, 3, 4 met; 2 (build summary) in progress; 5 (README agent section) after 2. Decision: **continue** to theme 2; no drift.
+
 ---
 
 <!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
