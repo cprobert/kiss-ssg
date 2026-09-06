@@ -211,6 +211,7 @@ These options are both used internally by kiss and are available in view.
 - config = Config overrides for this page only, merged over the global config
 - path = the folder path to the page
 - slug = the name of the file without the extension
+- generate = whether to build this page at all (default `true`); set to `false` to skip it entirely — e.g. a fanned-out `.pages()` item that fails a check in its controller. Nothing is written for that page, and `.generate()`/`.complete()` still resolve normally.
 
 page and path create the url, i.e. /{path}/{slug}.html
 
@@ -268,7 +269,7 @@ kiss
   .generate()
 ```
 
-**Note**: a controller must be pure — return new values, never mutate `model` (or a nested option such as `config.folders`) in place. In `dev: true`, `.watch()` replays a page from a shallow snapshot of its original `.page()`/`.pages()` call, so an object model your controller mutated in place is still mutated on the next rebuild — an in-place `array.push(...)` or property assignment accumulates one more change with every save, and the dev server drifts further from what a fresh build would produce.
+**Note**: controllers should stay pure — return new values rather than mutating `model` (or a nested option such as `config.folders`) in place. How much an in-place mutation costs you depends on the model kind: a `.json` file, a models folder, or an `http(s)://` URL model is re-resolved on every build and on every `.watch()` whole-site rebuild, so mutating one of those in place is contained to that single build. A **plain object** model is different — it is replayed from a shallow snapshot of the original `.page()`/`.pages()` call, so an object model your controller mutated in place is still mutated on the next rebuild: an in-place `array.push(...)` or property assignment on it accumulates one more change with every save, and the dev server drifts further from what a fresh build would produce. Returning new values sidesteps the distinction entirely.
 
 ### .sitemap()
 
@@ -456,10 +457,35 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 
 ## Migrating from v1
 
+- **Node ≥22.12.0 first** (`package.json` `engines.node`) — check this before anything else here: v2 will not install or run below it. If your project pins a dev Node version the way this repo's own `.nvmrc` does, bump yours before touching any code.
 - v2 is ESM-only (`import Kiss from 'kiss-ssg'`). `require()` still works on Node ≥22.12.
-- The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build.
+- The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build. Failures don't surface through `.generate()`, though: v1 logged a page's render/write failure and resolved anyway, while v2's `.complete()` **rejects** with an `AggregateError` (`err.failures` = `[{ view, buildTo, error }]`). The v1 callback-style idiom — `kiss.generate(function () { this.complete(function () { ... }) })` — now leaves that rejection unhandled the first time a page fails, so give `.complete()` a `.catch`:
+
+  ```js
+  kiss
+    .scan()
+    .generate()
+    .complete()
+    .catch((err) => {
+      for (const f of err.failures) {
+        console.error(`${f.view} | ${f.buildTo} | ${f.error.message}`)
+      }
+      process.exitCode = 1
+    })
+  ```
+
+  A failed build never runs `.complete()`'s own callback, so anything you did there — writing a sitemap, generating an index, kicking off a deploy — has to run again in the `catch`. And a chain that ends at `.generate()` with no `.complete()` never sees any of this: it keeps exiting 0 on a broken build, so every deploy script must `await kiss.complete()` (or otherwise attach a rejection handler) to catch a failure.
+
 - Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module. Partials live there too: a helper that reads `require('handlebars').partials` finds nothing in v2 — read `kiss.handlebars.partials`, or drop the helper and use Handlebars' native dynamic partial, `{{> (lookup this "partialName")}}`.
 - `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`.
 - Controller files may use `export default` (legacy `module.exports` still works).
-- Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are no longer written twice: the second page is not built, and the collision fails the build (`complete()` rejects, naming the path).
+- Duplicate output paths — including `.pages()` fan-out where a controller yields the same slug twice — are no longer written twice: the second page is not built, and the collision fails the build (`complete()` rejects, naming the path as `Page already processed: <path>`) — v1 built whichever page came last. If a site relied on that v1 skip to give one source priority over another — registering a low-priority fan-out last, so the engine silently dropped whatever slug a higher-priority source had already claimed — dedupe the slugs yourself before registering instead:
+
+  ```js
+  const claimed = new Set(catalogItems.map((c) => c.slug))
+  const rdItems = allRdItems.filter((r) => !claimed.has(r.slug))
+  kiss.pages({ view: 'rd.hbs', model: rdItems /* ... */ })
+  ```
+
 - New: `kiss.close()` stops the dev server and file watcher.
+- **Unchanged in v2**, so there is nothing to migrate even though it looks load-bearing: the per-page `generate: false` option (default `true`, see `.page()`'s options above) still skips building one page; `callback.call(this, ...)` still binds the `Kiss` instance inside `.generate()`/`.complete()`/`.sitemap()` callbacks; the per-page `ext` option; `copyAssets(sourceDir, targetDir)` to a second directory; `.viewStats()`/`.getModelByID()`. Anything under `this._stack` is internal and unversioned — code reading `_stack[].buildTo`/`_stack[].page.options` for a hand-rolled sitemap works today by accident; `.sitemap()` is the supported way to enumerate registered pages.

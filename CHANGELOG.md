@@ -71,6 +71,12 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Changed**
 
+- The v1 → v2 migration notes (`llms.txt` § Migrating from v1, README) now
+  carry the recipes learned from two real migrations: the Node floor as the
+  first thing to check, a `complete()`-rejection catch you can copy, how to
+  dedupe slugs if you relied on v1's duplicate-path skip, and a list of what
+  is unchanged in v2 so you don't waste time re-verifying it.
+
 - kiss now refuses to build into a folder that would swallow your source: if
   `folders.build` is `folders.src`, contains it, or is `'.'` or `'/'`,
   `new Kiss(...)` throws instead of emptying it. It is a floor, not a licence
