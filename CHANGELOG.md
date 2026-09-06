@@ -11,6 +11,12 @@ this file's `## 2.0.0` entry when the line is released._
 
 **Fixed**
 
+- One bad item in a `.pages()` fan-out no longer takes the rest of the fan-out
+  with it. A controller that threw for a single item abandoned every item after
+  it — those pages were never built and never mentioned, so a 64-page fan-out
+  could report one error and quietly lose 63 pages. Each bad item is now
+  reported on its own (named `<view> [item N: <slug>]`) and every good item is
+  still built; the build still fails.
 - Live reload now works when you preview the site from another device. With
   `devHost: '0.0.0.0'`, a page opened on a phone or tablet asked that device's
   own `localhost` for the reload script, so edits never reached it; the page now

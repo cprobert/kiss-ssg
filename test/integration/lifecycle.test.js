@@ -391,3 +391,73 @@ describe('a bad controller', () => {
     )
   })
 })
+
+describe('a bad item in a pages() fan-out', () => {
+  const items = (bad) => ({
+    view: 'item.hbs',
+    model: [
+      { slug: 'item-1', title: 'One' },
+      { slug: 'item-2', title: 'Two' },
+      { slug: 'item-3', title: 'Three' },
+      { slug: 'item-4', title: 'Four' },
+    ],
+    controller: ({ model }) => {
+      if (bad.includes(model.slug)) throw new Error(`bad item: ${model.slug}`)
+      return { slug: model.slug }
+    },
+  })
+
+  it('fails that page only: the rest of the fan-out still builds', async () => {
+    site = await makeSite({ 'src/pages/item.hbs': '{{model.title}}' })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .pages(items(['item-2']))
+      .generate()
+
+    let caught = null
+    try {
+      await kiss.complete()
+    } catch (err) {
+      caught = err
+    }
+    expect(caught.failures).toHaveLength(1)
+    expect(caught.failures[0].view).toMatch(/item\.hbs/)
+    expect(caught.failures[0].view).toMatch(/item-2/)
+    expect(caught.failures[0].error.message).toBe('bad item: item-2')
+    expect(await site.exists('public/item-1.html')).toBe(true)
+    expect(await site.exists('public/item-2.html')).toBe(false)
+    expect(await site.exists('public/item-3.html')).toBe(true)
+    expect(await site.exists('public/item-4.html')).toBe(true)
+  })
+
+  it('reports one failure per bad item', async () => {
+    site = await makeSite({ 'src/pages/item.hbs': '{{model.title}}' })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .pages(items(['item-2', 'item-4']))
+      .generate()
+
+    let caught = null
+    try {
+      await kiss.complete()
+    } catch (err) {
+      caught = err
+    }
+    expect(caught.failures).toHaveLength(2)
+    expect(caught.failures.map((f) => f.error.message)).toEqual([
+      'bad item: item-2',
+      'bad item: item-4',
+    ])
+    expect(await site.exists('public/item-1.html')).toBe(true)
+    expect(await site.exists('public/item-3.html')).toBe(true)
+  })
+
+  it('leaves a fan-out with no bad items untouched', async () => {
+    site = await makeSite({ 'src/pages/item.hbs': '{{model.title}}' })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .pages(items([]))
+      .generate()
+
+    await expect(kiss.complete()).resolves.toBeDefined()
+    for (const n of [1, 2, 3, 4])
+      expect(await site.exists(`public/item-${n}.html`)).toBe(true)
+  })
+})
