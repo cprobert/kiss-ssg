@@ -1,0 +1,62 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "head"}}
+  {{!-- The stylesheet the pipeline step wrote, linked like any other asset:
+        `asset` resolves it out of the manifest the copy filled in, so the
+        template never has to know a tool produced it. --}}
+  <link rel="stylesheet" href="{{root}}{{asset 'css/generated.css'}}">
+  {{/content}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 10 &middot; asset pipeline</p>
+    <h1>A tool kiss knows nothing about</h1>
+    <p>
+      The colours on this page were not written by hand and were not compiled by kiss.
+      A command ran before the asset copy, wrote a stylesheet into the assets folder, and
+      the copy picked it up like any other file.
+    </p>
+  </section>
+
+  <div class="token-card">
+    <p>
+      <span class="token-badge">generated</span>
+      This card is styled by <code>css/generated.css</code>, built from
+      <code>styles/tokens.json</code> by <code>{{model.command}}</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    {{> "newsletter"}}
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <code>config.assets.pipeline</code> is an ordered list of
+    <code>{ name?, run, watch?, cwd? }</code> steps. Every <code>run</code> is executed
+    through a shell, in order, awaited, <strong>before</strong> the asset copy &mdash; which is
+    what puts the generated stylesheet in the build in time for the first page to link it.
+    A step that exits non-zero fails the build like a failed page:
+    <code>complete()</code> rejects and the failure is named
+    <code>&lt;pipeline: tokens&gt;</code>.
+  </p>
+  <p>
+    Run this with <code>--dev</code> and the step's <code>watch</code> command is started
+    too &mdash; once, after <code>run</code> has succeeded &mdash; and kept for the session.
+    Edit <code>10-asset-pipeline/styles/tokens.json</code> while it is up: the tool
+    recompiles the stylesheet on its own, kiss's assets watcher copies it into the build,
+    and the browser reloads. <code>close()</code> ends the watch process, so nothing is
+    left running when the server stops.
+  </p>
+  <p>
+    Each command inherits <code>process.env</code> plus <code>KISS_BUILD</code>,
+    <code>KISS_ASSETS</code> and <code>KISS_DEV</code> &mdash; this example's tool writes to
+    <code>KISS_ASSETS</code> rather than guessing where the site keeps its assets. In a real
+    project the step is your actual toolchain: <code>npx @tailwindcss/cli -i
+    src/styles/site.css -o src/assets/css/site.css --minify</code>, with the same command
+    plus <code>--watch</code> as the <code>watch</code> half.
+  </p>
+  {{/content}}
+
+{{/extend}}

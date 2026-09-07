@@ -82,19 +82,53 @@ describe('resolveConfig', () => {
     })
   })
 
-  it('defaults the assets cache-busting block', () => {
-    expect(resolveConfig({}).assets).toEqual({ hash: false, version: null })
+  it('defaults the assets block: no cache busting, no pipeline', () => {
+    expect(resolveConfig({}).assets).toEqual({
+      hash: false,
+      version: null,
+      pipeline: [],
+    })
   })
 
   it('merges the assets block one level deep, like sass', () => {
     expect(resolveConfig({ assets: { version: '1.2.3' } }).assets).toEqual({
       hash: false,
       version: '1.2.3',
+      pipeline: [],
     })
     expect(resolveConfig({ assets: { hash: true } }).assets).toEqual({
       hash: true,
       version: null,
+      pipeline: [],
     })
+  })
+
+  it('takes the pipeline as given — an array value replaces the default', () => {
+    const pipeline = [{ run: 'npx tailwindcss -i a.css -o b.css' }]
+    expect(resolveConfig({ assets: { pipeline } }).assets).toEqual({
+      hash: false,
+      version: null,
+      pipeline,
+    })
+  })
+
+  it('refuses a pipeline that is not an array of steps with a command', () => {
+    // The same rule as cleanBuild: a shape that cannot be run is refused where
+    // it is written, not discovered as a spawn of `undefined` mid-build.
+    expect(() =>
+      resolveConfig({ assets: { pipeline: 'npx tailwindcss' } }),
+    ).toThrow(/config\.assets\.pipeline must be an array of steps/)
+    expect(() =>
+      resolveConfig({ assets: { pipeline: ['npx tailwindcss'] } }),
+    ).toThrow(
+      /config\.assets\.pipeline\[0\] must be an object with a string `run`/,
+    )
+    expect(() =>
+      resolveConfig({ assets: { pipeline: [{ run: '  ' }] } }),
+    ).toThrow(/config\.assets\.pipeline\[0\]\.run must be a non-empty string/)
+    expect(() =>
+      resolveConfig({ assets: { pipeline: [{ run: 'a', cwd: 3 }] } }),
+    ).toThrow(/config\.assets\.pipeline\[0\]\.cwd must be a string/)
   })
 
   it('takes the default for a key passed explicitly as undefined', () => {

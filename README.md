@@ -34,7 +34,7 @@ Everything an agent needs ships in the package, so point it at `node_modules` ra
 @node_modules/kiss-ssg/llms.txt
 ```
 
-That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (nine runnable sites with a README each — copy the exemplar whose shape matches).
+That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (ten runnable sites with a README each — copy the exemplar whose shape matches).
 
 Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)).
 
@@ -83,7 +83,8 @@ The default config options are:
   },
   assets: {
     hash: false,
-    version: null
+    version: null,
+    pipeline: []
   },
   port: 3001,
   livereloadPort: 35729,
@@ -103,20 +104,20 @@ The default config options are:
 
 Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
 
-| Option         |             Default              |                                                                                                                                        Purpose                                                                                                                                        |
-| -------------- | :------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| dev            |              false               |                               Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                                |
-| verbose        |              false               |                                                                                                              Enables additional output on the terminal, when set to true                                                                                                              |
-| cleanBuild     |               true               |                   `true`, `false` or `'atomic'`. `true` empties the build dir — in the constructor, before anything is rendered. `'atomic'` builds into a staging folder and swaps it in only when `complete()` resolves. See **Cleaning the build folder** below.                    |
-| extensionLess  |              false               |                                                                  When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                                  |
-| sass           |      `{ includePaths: [] }`      |                                                                                     `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                                      |
-| fetch          |            see below             |                           The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                            |
-| assets         | `{ hash: false, version: null }` | Cache busting for the files copied into the build. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`. Both off is today's build, unchanged. See **Cache-busting asset URLs** below. |
-| port           |               3001               |                                 The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                                 |
-| livereloadPort |              35729               |          The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.           |
-| devHost        |           '127.0.0.1'            |                 The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                  |
-| folders        |            see above             |                                                                                                                     A JSON object of alternative folder locations                                                                                                                     |
-| siteUrl        |            undefined             |                                                                                          The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                          |
+| Option         |                    Default                     |                                                                                                                                                                                                                Purpose                                                                                                                                                                                                                |
+| -------------- | :--------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| dev            |                     false                      |                                                                                                       Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk.                                                                                                        |
+| verbose        |                     false                      |                                                                                                                                                                                      Enables additional output on the terminal, when set to true                                                                                                                                                                                      |
+| cleanBuild     |                      true                      |                                                                                           `true`, `false` or `'atomic'`. `true` empties the build dir — in the constructor, before anything is rendered. `'atomic'` builds into a staging folder and swaps it in only when `complete()` resolves. See **Cleaning the build folder** below.                                                                                            |
+| extensionLess  |                     false                      |                                                                                                                                          When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                                                                                                          |
+| sass           |             `{ includePaths: [] }`             |                                                                                                                                                             `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                                                                                                              |
+| fetch          |                   see below                    |                                                                                                   The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                                                                                                    |
+| assets         | `{ hash: false, version: null, pipeline: [] }` | Cache busting for the files copied into the build, plus the external commands run before the copy. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`; `pipeline` is an ordered list of `{ name?, run, watch?, cwd? }` steps. All off is today's build, unchanged. See **Cache-busting asset URLs** and **An asset pipeline** below. |
+| port           |                      3001                      |                                                                                                         The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                                                                                                         |
+| livereloadPort |                     35729                      |                                                                                  The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.                                                                                   |
+| devHost        |                  '127.0.0.1'                   |                                                                                         The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                                                                                          |
+| folders        |                   see above                    |                                                                                                                                                                                             A JSON object of alternative folder locations                                                                                                                                                                                             |
+| siteUrl        |                   undefined                    |                                                                                                                                                                  The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                                                                                                  |
 
 A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
 
@@ -180,7 +181,7 @@ kiss has no notion of "versions" or "sites" — it is one `Kiss` instance buildi
 
 The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
 
-See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 are the feature reference, one idea each; 7–9 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, and the v1 → v2 migration recipes. Every example builds and exits by default (`npm run eg1` … `eg9`); pass `--dev` to run examples 1–6, 8 and 9 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
+See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, and the v1 → v2 migration recipes. Every example builds and exits by default (`npm run eg1` … `eg10`); pass `--dev` to run examples 1–6, 8, 9 and 10 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
 
 ### Remote models
 
@@ -234,6 +235,32 @@ The other two forms, for a layout that climbs back to the build root and for an 
 <link rel='stylesheet' href='{{root}}{{asset "css/site.css"}}' />
 <link rel='preload' as='style' href='{{absUrl (asset "css/site.css")}}' />
 ```
+
+#### An asset pipeline
+
+`config.assets.pipeline` runs an external tool as part of the build — a CSS toolchain, an icon sprite, anything with a command line. Each step is `{ name?, run, watch?, cwd? }`, and kiss knows nothing about the tool itself:
+
+```js
+const kiss = new Kiss({
+  dev: process.argv.includes('--dev'),
+  assets: {
+    pipeline: [
+      {
+        name: 'tailwind',
+        run: 'npx @tailwindcss/cli -i src/styles/site.css -o src/assets/css/site.css --minify',
+        watch:
+          'npx @tailwindcss/cli -i src/styles/site.css -o src/assets/css/site.css --minify --watch',
+      },
+    ],
+  },
+})
+```
+
+Every `run` is executed through a shell, in order, awaited, **before the asset copy** — so a tool that writes into your assets folder has its output copied into the build like any other asset — and again before the copy on every whole-site `watch` rebuild. A step that exits non-zero (or cannot be spawned) fails the build like a failed page: `complete()` rejects and the failure is named `<pipeline: tailwind>`, while the pages and the asset copy still run so the whole build is still reported. `report().pipeline` carries `{ name, ok, duration }` per step.
+
+`name` defaults to the first word of `run`, `cwd` to `process.cwd()`, and each command inherits `process.env` plus `KISS_BUILD`, `KISS_ASSETS` and `KISS_DEV` (`'1'` or `'0'`). `watch` is the dev-mode half: in `dev: true` only, it is started once — after that step's `run` has succeeded — kept for the session with its output going through kiss's logger, and ended by `close()`. A watch process that dies on its own is logged, not a build failure, and a rebuild never starts a second one. Editing a page, a partial or a layout does **not** re-run the steps; a tool that must see those edits is what `watch` is for.
+
+`kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline.js` (`npm run eg10`) is a runnable version that needs nothing installed.
 
 ### .page()
 

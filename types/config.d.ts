@@ -6,7 +6,8 @@ export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
 /**
  * @param {KissConfigInput} [userConfig]
  * @returns {KissConfig} the defaults with `userConfig` merged over them
- * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, or if the build
+ * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if
+ * `assets.pipeline` is not an array of `{ run: string }` steps, or if the build
  * folder contains the source folder
  */
 export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
@@ -48,12 +49,14 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {string|false} cache a directory to cache successful bodies in, or `false`
  */
 /**
- * The cache-busting policy for the files `.copyAssets()` emits
- * (`config.assets`), read by the `{{asset}}` helper. Both off = today's build.
+ * The asset block (`config.assets`): the cache-busting policy for the files
+ * `.copyAssets()` emits, read by the `{{asset}}` helper — both off = today's
+ * build — plus the pipeline of external commands run before the copy.
  *
  * @typedef {Object} KissAssets
  * @property {boolean} hash rename every emitted `.css`/`.js` to carry a content hash
  * @property {string|null} version leave names alone; `{{asset}}` appends `?v=<version>`
+ * @property {import('./pipeline.js').PipelineStep[]} pipeline ordered commands run before the asset copy
  */
 /**
  * Every documented config key except `folders`. Both the resolved and the input
@@ -113,6 +116,7 @@ export const DEFAULT_FETCH: Readonly<{
 export const DEFAULT_ASSETS: Readonly<{
     hash: false;
     version: any;
+    pipeline: any[];
 }>;
 export const DEFAULT_CONFIG: Readonly<{
     dev: false;
@@ -131,6 +135,7 @@ export const DEFAULT_CONFIG: Readonly<{
     assets: Readonly<{
         hash: false;
         version: any;
+        pipeline: any[];
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -205,8 +210,9 @@ export type KissFetch = {
     cache: string | false;
 };
 /**
- * The cache-busting policy for the files `.copyAssets()` emits
- * (`config.assets`), read by the `{{asset}}` helper. Both off = today's build.
+ * The asset block (`config.assets`): the cache-busting policy for the files
+ * `.copyAssets()` emits, read by the `{{asset}}` helper — both off = today's
+ * build — plus the pipeline of external commands run before the copy.
  */
 export type KissAssets = {
     /**
@@ -217,6 +223,10 @@ export type KissAssets = {
      * leave names alone; `{{asset}}` appends `?v=<version>`
      */
     version: string | null;
+    /**
+     * ordered commands run before the asset copy
+     */
+    pipeline: import("./pipeline.js").PipelineStep[];
 };
 /**
  * Every documented config key except `folders`. Both the resolved and the input
