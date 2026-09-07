@@ -249,7 +249,7 @@ const kiss = new Kiss({
         name: 'tailwind',
         run: 'npx @tailwindcss/cli -i src/styles/site.css -o src/assets/css/site.css --minify',
         watch:
-          'npx @tailwindcss/cli -i src/styles/site.css -o src/assets/css/site.css --minify --watch',
+          'npx @tailwindcss/cli -i src/styles/site.css -o src/assets/css/site.css --minify --watch=always',
       },
     ],
   },

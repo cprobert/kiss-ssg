@@ -65,6 +65,8 @@ in `lib/kiss.js` where the asset copy is queued, replayed and closed) is mapped.
 
 ## Pulse log
 
+- **2026-09-07 — proven on a1k9training.** Tailwind v4 runs through `config.assets.pipeline` for `npm run build`, `kiss-ssg check` (reports the step) and `npm run dev`. Playwright gate `qa/dev-watch.mjs` in that repo: 9/9 — server up, hashed stylesheet served, watch spawned, an edited partial produced a new utility in the compiled CSS, the re-copied asset got a new hash, livereload showed the edit, the style applied, no process left after `close()`. One lesson folded back into the docs: Tailwind's watch needs `--watch=always` because the child has no stdin. Decision: continue; remaining criteria are the operator's close.
+
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->

@@ -37,3 +37,5 @@ Runs the external commands of `config.assets.pipeline` — a CSS toolchain, an i
 ## Types
 
 `PipelineStep` and `PipelineResult` are declared here and referred to from `lib/config.js` (`KissAssets.pipeline`) and `lib/build-report.js` (`buildReport`'s `pipeline` input), so the shape a site writes, the shape that is run and the shape that is reported cannot drift apart. `types/pipeline.d.ts` is emitted from this JSDoc like every other `lib/` module — `npm run types`, never hand-edited.
+
+**Tools that watch stdin.** A watch child is spawned with stdin ignored. Tailwind's `--watch` exits as soon as stdin closes (exit code 0, logged as `pipeline watch "tailwind" exited (code 0)`); `--watch=always` is the flag that keeps it up. Found on a1k9training, the first real site to use the hook.
