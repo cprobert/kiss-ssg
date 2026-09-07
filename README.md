@@ -380,6 +380,8 @@ kiss.scan().generate().sitemap()
 
 It can be called before or after `.generate()` — both just wait for all your pages to be registered before doing their own thing.
 
+Each `<loc>` is the same string the `canonical` helper renders on that page, built by the same code — so a page built to a directory index is listed with its trailing slash (`courses/index.html` → `https://example.com/courses/`), which is the URL a static host serves without a redirect. See **canonical / absUrl** below.
+
 Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages):
 
 ```js
@@ -551,7 +553,9 @@ Hash options: `href` (the link's path), `active` (the class name rendered as `{{
 <link rel='canonical' href='{{canonical}}' />
 ```
 
-It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string: the trailing `index.html` collapses to the folder (`/about/index.html` → `https://example.com/about`), the home page is `siteUrl` with one trailing slash, and it reads the same whether `extensionLess` is on or off. A `siteUrl` with a trailing slash is fine — you never get a double slash.
+It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string. A page built to a file is the bare URL (`courses/bronze.html` → `https://example.com/courses/bronze`); **a page built to a directory index keeps a trailing slash** (`courses/index.html` → `https://example.com/courses/`), because that is the URL a static host actually serves — Netlify, GitHub Pages and nginx all answer the bare `/courses` with a 301, and a canonical must be the URL that returns 200. The home page is `siteUrl` with one trailing slash. A `siteUrl` with a trailing slash is fine — you never get a double slash.
+
+With `extensionLess: true` every page but the home page builds to `<path>/<slug>/index.html`, so every page but the home page is a directory index and its canonical ends in `/` too (`https://example.com/courses/bronze/`). That is deliberate, and it is the same rule: it is the URL the host serves without a redirect.
 
 `absUrl` does the same join for any path of your own, which is what an Open Graph image or an RSS link needs:
 
@@ -560,7 +564,7 @@ It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper u
 <meta property='og:url' content='{{absUrl}}' />
 ```
 
-`/about`, `about` and `about/` all give `https://example.com/about`; a file extension is kept (`{{absUrl 'css/site.css'}}` → `https://example.com/css/site.css`), a URL that already has a scheme is passed through untouched, and calling it with no path gives you `canonical`.
+`/about` and `about` both give `https://example.com/about`, and a trailing slash you write is kept rather than trimmed — `{{absUrl '/courses/'}}` → `https://example.com/courses/`, as does `{{absUrl '/courses/index.html'}}`. A file extension is kept (`{{absUrl 'css/site.css'}}` → `https://example.com/css/site.css`), a URL that already has a scheme is passed through untouched, and calling it with no path gives you `canonical`.
 
 Both need `siteUrl` on the Kiss config. Without one they render nothing and log a warning (one per page) rather than failing the build.
 

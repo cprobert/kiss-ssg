@@ -49,10 +49,18 @@ export function toURLKey(value: unknown): string;
 /**
  * @param {string} siteUrl
  * @param {string} [urlPath]
- * @returns {string} the two joined by exactly one `/`, a trailing `index`
- * segment collapsed; an empty path gives `siteUrl` with one trailing slash
+ * @returns {string} the two joined by exactly one `/`, repeated slashes
+ * collapsed, a trailing `index` segment replaced by a trailing `/` and an
+ * explicit trailing `/` preserved; an empty path gives `siteUrl` with one
+ * trailing slash
  */
 export function toAbsoluteUrl(siteUrl: string, urlPath?: string): string;
+/**
+ * @param {unknown} pageURL a page's build-relative URL, e.g. `courses/index.html`
+ * @returns {string} the same path with the last segment's file extension
+ * removed; every other character, `index` segment and slash left alone
+ */
+export function toCanonicalPath(pageURL: unknown): string;
 /**
  * @param {unknown} input
  * @returns {string} MD5 hex digest of the string, or of its JSON if it is not one
@@ -70,4 +78,5 @@ declare namespace utils {
     export { hashId };
     export { toURLKey };
     export { toAbsoluteUrl };
+    export { toCanonicalPath };
 }

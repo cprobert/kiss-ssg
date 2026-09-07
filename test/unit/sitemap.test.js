@@ -16,7 +16,11 @@ const entry = (buildTo, options = {}) => ({
 })
 
 describe('buildSitemapEntries', () => {
-  it('maps build paths to site URLs, treating index as the folder root', () => {
+  // `out/blog/index.html` changed deliberately: its `<loc>` is now
+  // `https://e.com/blog/`. A static host serves the directory index at the URL
+  // with the trailing slash and answers the bare `/blog` with a 301, so the old
+  // `<loc>` pointed every crawler at a redirect.
+  it('maps build paths to site URLs, a directory index keeping its slash', () => {
     const urls = buildSitemapEntries(
       [
         entry('out/index.html'),
@@ -28,7 +32,7 @@ describe('buildSitemapEntries', () => {
     expect(urls.map((u) => u.loc)).toEqual([
       'https://e.com/',
       'https://e.com/about/us',
-      'https://e.com/blog',
+      'https://e.com/blog/',
     ])
     expect(urls[0]).toMatchObject({ lastmod: 'T', priority: '1.00' })
   })
