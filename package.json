@@ -14,7 +14,7 @@
   },
   "type": "module",
   "bin": {
-    "kiss-ssg": "./bin/kiss-ssg.js"
+    "kiss-ssg": "bin/kiss-ssg.js"
   },
   "files": [
     "bin",
