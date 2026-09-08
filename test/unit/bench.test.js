@@ -10,7 +10,9 @@ import {
   compare,
   fixturePlan,
   formatRow,
+  isReloadMessage,
   parseArgs,
+  pickTouchTargets,
   resolveSiteEntry,
   scenariosToRun,
   summariseReports,
@@ -82,6 +84,60 @@ describe('parseArgs', () => {
     expect(parseArgs([`--scenario=${SCENARIOS.join(',')}`]).scenario).toEqual(
       SCENARIOS,
     )
+  })
+
+  it('takes a dev entry with its own arguments', () => {
+    expect(parseArgs(['--site=../a-site', '--dev=generate dev']).dev).toBe(
+      'generate dev',
+    )
+  })
+
+  // The port options read as kebab on the command line and as camel in the
+  // options object; nothing else in the file has a two-word name yet.
+  it('parses the kebab-cased port options', () => {
+    const opts = parseArgs([
+      '--site=../a-site',
+      '--dev=dev.js',
+      '--livereload-port=40001',
+      '--dev-port=4002',
+    ])
+    expect(opts.livereloadPort).toBe(40001)
+    expect(opts.devPort).toBe(4002)
+  })
+
+  // A default that drifts from lib/config.js sends the bench listening on a
+  // port the site never binds, which reads as "live reload never came up".
+  it('defaults the ports to the engine defaults', () => {
+    expect(DEFAULTS.livereloadPort).toBe(35729)
+    expect(DEFAULTS.devPort).toBe(3001)
+  })
+
+  it('takes explicit files to touch', () => {
+    const opts = parseArgs([
+      '--site=../a-site',
+      '--dev=dev.js',
+      '--partial=src/partials/nav.hbs',
+      '--model=src/models/home.json',
+      '--page=src/pages/index.hbs',
+    ])
+    expect(opts.partial).toBe('src/partials/nav.hbs')
+    expect(opts.model).toBe('src/models/home.json')
+    expect(opts.page).toBe('src/pages/index.hbs')
+  })
+
+  // A watch reading is a reading of a real site; there is nothing to watch
+  // without one, and ignoring the flag would look like it had worked.
+  it('rejects --dev without a --site to run it in', () => {
+    expect(() => parseArgs(['--dev=generate dev'])).toThrow(/--dev.*--site/)
+  })
+
+  it('rejects a port that is not a port', () => {
+    expect(() =>
+      parseArgs(['--site=../a', '--dev=d.js', '--livereload-port=nope']),
+    ).toThrow(/positive/)
+    expect(() =>
+      parseArgs(['--site=../a', '--dev=d.js', '--dev-port=0']),
+    ).toThrow(/positive/)
   })
 })
 
@@ -265,6 +321,103 @@ describe('buildFixture', () => {
   })
 })
 
+describe('pickTouchTargets', () => {
+  let dir
+  afterEach(() => dir && fs.rmSync(dir, { recursive: true, force: true }))
+
+  const make = (files) => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-touch-'))
+    for (const [rel, body] of Object.entries(files)) {
+      const file = path.join(dir, rel)
+      fs.mkdirSync(path.dirname(file), { recursive: true })
+      fs.writeFileSync(file, body)
+    }
+    return dir
+  }
+
+  it('picks the first sorted candidate in each category', () => {
+    const d = make({
+      'src/partials/zebra.hbs': '',
+      'src/partials/alpha.hbs': '',
+      'src/models/z.json': '{}',
+      'src/models/a.json': '{}',
+      'src/pages/z.hbs': '',
+      'src/pages/a.hbs': '',
+    })
+    expect(pickTouchTargets(d)).toEqual({
+      partial: path.join(d, 'src/partials/alpha.hbs'),
+      model: path.join(d, 'src/models/a.json'),
+      page: path.join(d, 'src/pages/a.hbs'),
+    })
+  })
+
+  it('descends into subfolders', () => {
+    const d = make({ 'src/partials/nested/deep/only.hbs': '' })
+    expect(pickTouchTargets(d).partial).toBe(
+      path.join(d, 'src/partials/nested/deep/only.hbs'),
+    )
+  })
+
+  it('ignores files of the wrong extension', () => {
+    const d = make({ 'src/partials/note.md': '', 'src/models/data.yml': '' })
+    expect(pickTouchTargets(d).partial).toBeNull()
+    expect(pickTouchTargets(d).model).toBeNull()
+  })
+
+  // A site with no models is still worth a page and a partial reading, so the
+  // missing category reports null rather than failing the whole run.
+  it('returns null for a category with no candidate', () => {
+    const d = make({ 'src/pages/index.hbs': '' })
+    expect(pickTouchTargets(d)).toEqual({
+      partial: null,
+      model: null,
+      page: path.join(d, 'src/pages/index.hbs'),
+    })
+  })
+
+  it('honours an override over the auto-pick', () => {
+    const d = make({
+      'src/partials/alpha.hbs': '',
+      'src/partials/chosen.hbs': '',
+    })
+    expect(
+      pickTouchTargets(d, { partial: 'src/partials/chosen.hbs' }).partial,
+    ).toBe(path.join(d, 'src/partials/chosen.hbs'))
+  })
+
+  it('takes an override from outside the conventional folders', () => {
+    const d = make({ 'other/thing.hbs': '' })
+    expect(pickTouchTargets(d, { page: 'other/thing.hbs' }).page).toBe(
+      path.join(d, 'other/thing.hbs'),
+    )
+  })
+})
+
+describe('isReloadMessage', () => {
+  it('recognises the livereload refresh broadcast', () => {
+    expect(
+      isReloadMessage(JSON.stringify({ command: 'reload', path: '/' })),
+    ).toBe(true)
+  })
+
+  // The handshake reply arrives on the same socket, and counting it as a
+  // settled rebuild would time the handshake instead of the build.
+  it('ignores the hello handshake and every other command', () => {
+    expect(isReloadMessage(JSON.stringify({ command: 'hello' }))).toBe(false)
+    expect(isReloadMessage(JSON.stringify({ command: 'alert' }))).toBe(false)
+  })
+
+  it('is false for anything that is not a JSON object', () => {
+    expect(isReloadMessage('not json')).toBe(false)
+    expect(isReloadMessage('null')).toBe(false)
+    expect(isReloadMessage('"reload"')).toBe(false)
+  })
+
+  it('reads a Buffer as well as a string', () => {
+    expect(isReloadMessage(Buffer.from('{"command":"reload"}'))).toBe(true)
+  })
+})
+
 describe('summarise', () => {
   it('summarises each phase present in the samples', () => {
     const summary = summarise([
@@ -284,6 +437,17 @@ describe('summarise', () => {
   it('orders phases by the pipeline, not by sample key order', () => {
     const summary = summarise([{ total: 3, import: 2, process: 1 }])
     expect(Object.keys(summary)).toEqual(['process', 'import', 'total'])
+  })
+
+  // The watch reading's three edits are phases like any other, and they read
+  // cheapest-first: one page, then every page, then a whole replay.
+  it('summarises the three edit kinds of a watch reading', () => {
+    const summary = summarise([
+      { page: 10, partial: 100, model: 400 },
+      { page: 30, partial: 300, model: 600 },
+    ])
+    expect(Object.keys(summary)).toEqual(['page', 'partial', 'model'])
+    expect(summary.partial).toMatchObject({ n: 2, median: 200 })
   })
 })
 
