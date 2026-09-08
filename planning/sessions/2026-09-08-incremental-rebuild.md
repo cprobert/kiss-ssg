@@ -153,6 +153,15 @@ emergent: it is settled by what the tracing partials actually record on a
   The docs promise a skipped page writes nothing; it should not claim a path
   either. Operator chose to fix it on this branch: engine internals, patch-level,
   `lib/kiss.js` plus an integration test.
+- **2026-09-08 — concurrent fresh imports of one CommonJS controller.** The
+  after-reading's replay reported two failed pages that the cold build did
+  not: diploma-msc registers two `.page()`s with `controller: "faculty-index.js"`,
+  a watch replay loads both fresh at once, and the second `delete require.cache`
+  lands while the first `import()` is still translating the CJS module — Node
+  throws `ERR_INTERNAL_ASSERTION`. Pre-existing (`lib/controller-resolver.js`
+  was untouched here), adjacent (the same replay seam), and it blocked a clean
+  step-5 record, so it was absorbed: in-flight fresh loads are shared per
+  controller path, with a child-process test that reproduces the assertion.
 
 ## Pulse log
 
