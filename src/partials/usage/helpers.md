@@ -15,6 +15,8 @@ You can parse markdown like this:
 
 An `undefined`, `null`, object or array value logs a warning and renders nothing, rather than throwing and failing the page.
 
+The renderer is this instance's Remarkable, configured by `config.markdown` (see Setup), so the helper and your `.md` partials always render the same way.
+
 If you want to take a peek at whats properties you have available to to in a handlebars file you can use this helper:
 
 ```handlebars
