@@ -152,6 +152,8 @@ emergent: it is settled by what the tracing partials actually record on a
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-08** — baseline pulse, one commit since `main` (the intent file). Phase A criteria 1–4 not yet (`scripts/bench.mjs` unchanged, no watch reading for `--site`; diploma-msc still on alpha.5, nothing linked; design spec step 5 still unmeasured); Phase B not applicable until the reading is in; gates/unedited-watch-tests trivially met (diff is `planning/` only). No drift: no `lib/`, `llms.txt` or `README.md` touched. Decision: continue — next slice is the bench watch reading plus the scoped-rebuild observable it needs.
+
 ---
 
 <!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
