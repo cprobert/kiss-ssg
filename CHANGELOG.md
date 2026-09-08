@@ -3,6 +3,38 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.0.0-beta.0 — 2026-09-08
+
+**An asset pipeline, and canonical URLs that don't redirect**
+
+First beta. The v2 surface is settled enough to build against.
+
+**New: `config.assets.pipeline`** runs your own tools as part of the build — a
+CSS toolchain, an icon sprite, anything with a command line. Each step is
+`{ name?, run, watch?, cwd? }`, and every `run` executes through a shell, in
+order, before the asset copy — so a tool that writes into your assets folder has
+its output copied, hashed and served like any other asset. It runs on the first
+build and again on every whole-site `watch` rebuild. A non-zero exit fails the
+build: `complete()` rejects and the step is named `<pipeline: name>` in
+`err.failures` and in `report()`, which gains a `pipeline` field. In `dev: true`
+a step's `watch` command is started once after its `run` succeeds and is ended by
+`close()` — note that a watch child has no stdin, so a tool like Tailwind needs
+its keep-alive flag (`--watch=always`). `kiss-ssg check` runs the pipeline too.
+See `examples/10-asset-pipeline.js`.
+
+**Changed: a page built to a directory index now canonicalises with a trailing
+slash.** `courses/index.html` was emitting `https://example.com/courses` in both
+`{{canonical}}` and its `sitemap.xml` `<loc>`. Netlify, GitHub Pages and nginx
+all answer that URL with a 301 to `/courses/`, so every canonical link and every
+section-index sitemap entry pointed at a redirect rather than at a URL returning 200. Both now emit `https://example.com/courses/`.
+
+This changes bytes in your built output. **Under `extensionLess: true` it affects
+every page but the home page**, since each one builds to `<path>/<slug>/index.html`.
+Page identity is untouched: `isActive` still matches `/about`, `/about/` and
+`about/index.html` as one page, so navigation highlighting behaves exactly as
+before. If you were post-processing `sitemap.xml` to add these slashes yourself,
+you can stop.
+
 ## 2.0.0-alpha.5 — 2026-09-06
 
 **Faster, and safer under watch**
