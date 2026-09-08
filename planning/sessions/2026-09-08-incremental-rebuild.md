@@ -1,7 +1,7 @@
 ---
 branch: feat/incremental-rebuild
 base: main
-status: open
+status: closed
 opened: 2026-09-08
 ---
 
@@ -177,3 +177,72 @@ emergent: it is settled by what the tracing partials actually record on a
 ---
 
 <!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-09-08: Measure first, then build the partial-to-page graph
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** the bench's `--dev` watch reading (`b94df1e`, `3d33e4d`), the step-5 measurement (`d7409b0`, `ae9ef9a`), the `generate: false` amendment (`0c06aa2`, `e563109`), the dependency graph (`630b67c` → `40f1a0e`), the concurrent-fresh-import fix (`9422813`), the final-review fix wave and docs sweep (`5712793`, `068ebfc`, `45b9cd1`), and 2.0.0-beta.2 (`9eac360`). Alongside, diploma-msc's `kiss-v2` branch (four commits, unpushed) builds clean under v2 with the engine's own sitemap.
+
+## Reflect — what the session was
+
+The goal was framed unusually well before any code, because the brief was a rescue: a spec and a brief from a deleted branch, both saying "re-run `/branch-open`, do not reuse the criteria". The interview settled three real ambiguities in one round — measure-then-decide on one branch, instrument the bench rather than the report, link the site to the checkout — and the criteria were written so that "no-go" counted as success. That mattered: the branch's honest outcome at the halfway point was a number (render 46% of a replay) that the brief's own fork rule read as _stop_.
+
+Shape: **between, as declared**. Phase A ran to plan. The fork was then taken on a rule the operator substituted at the pulse — "build it only if it is simple to own" — rather than the brief's "build it if render dominates". That is the single most consequential exchange of the session, and it produced something neither side held alone: the operator's question about legacy forced a re-examination of the design's riskiest piece (a "current page" marker with a sync-render invariant), and a twenty-line probe showed Handlebars' data frame could carry the page identity instead. The invariant vanished; the graph became small enough to say yes to. The drift was good, recorded at the pulse, and it changed the design for the better.
+
+Two things fought the shape. The bench reading exposed that diploma-msc's dev mode crashed under v2 (an unhandled `complete()` rejection), which turned into a separate cleanup of the site — legitimate, operator-authorised, and the reason the after-reading's model row is not comparable with the before-row. And the bench harness itself needed two fixes discovered only by running it on a real site: `--entry` could not carry an argument, and a settle waited ten minutes for a dev child that had already died.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering** discriminated this session. The operator did not take the recommendation at the go/no-go pulse (won't-do) and did not overrule it either; they reframed the decision around the cost of owning the code, which was the right axis and one the brief had not named. Earlier, "make sure we're delegating to appropriate models and the highest model evaluates" set the delegation policy the whole execution then ran on. Both were steers that changed what got built, not approvals of what was offered.
+
+**Learning engagement** was real but brief: the operator's "singing from the same hymn sheet" check corrected their own mental model (a scan, they thought; a trace at render time, in fact) and asked how added partials are handled. The explanation stood, and the design later leaned on exactly that distinction when diploma-msc turned out to select most of its partials dynamically.
+
+**Verification & ownership** is where intention and practice diverged. The intended checkpoints — plan approved at a pulse before any `lib/` change, go/no-go taken with the operator, every diff reviewed by a fresh reviewer, a final whole-branch review on the most capable model, a Codex pass — were all held; the pulse log shows four beats. But every verification was Claude-run or subagent-run. The human did not open the diff of any task, did not run a test, and did not look at the one artefact they had asked for by name: the dependency graph "visible from a debug perspective for a human to have a little look at". `dependency-graph.json` exists, was tested, and has not been looked at by a person. The reviews were rigorous — the final one found a real gap (a consumer helper that drops the data frame) that three per-task reviews had missed — so the output is well verified; it is just not _owner_-verified.
+
+**Iteration discipline** was strong: a pulse before the harness, a pulse at the reading, a pulse at plan approval, a pulse at the end; per-task review before the next task started; the after-reading re-run once the replay bug was fixed rather than recorded with a failed build in it. Claude's own long autonomous stretches were punctuated by those reviews rather than run to one large output.
+
+**Harness leverage** was the session's ceiling and its floor. Ceiling: `/branch-open` and `/branch-pulse` as designed, subagent-driven development with a reviewer per task, model tiers chosen per task, the most capable model for the final review, Codex as an independent second opinion, and the bench harness built for exactly this question. Floor: three garbled shell commands (a repeated variable assignment, then a heredoc that swallowed its own delimiter) and a mistyped scratchpad path cost real minutes, and the plan omitted `npm run types` and mandated a test fixture that did not match the engine — both caught by the implementers, both avoidable.
+
+**Where the human intended to supervise versus where they actually did:** the operator designed and ran the supervision _system_ (the three beats, the model policy, the reviews) and made every judgment call it surfaced; they did not put their own eyes on the code or the generated output at any point. That is the gap to close.
+
+**Competency level: Agentic engineering lead**, on the evidence of a reproducible workflow — captured intent, pulses with logged evidence, delegation policy, independent review passes, a measurement harness built to settle a design question — with one dimension, Verification & ownership, sitting at Active supervisor because the owner's own verification was delegated entirely.
+
+## Feedback — recommendations for next session
+
+- **Operator — look at the artefact you asked for.** Run diploma-msc on `kiss-v2` with `verbose: true`, open `public/dependency-graph.json`, pick a partial you know and check its pages. Five minutes, and it is the only check on this branch that is yours rather than a reviewer's.
+- **Operator — two site decisions are waiting.** The blog post whose URL loses a leading dash wants a Firebase redirect if the old URL is indexed; the "our students" page is out of the sitemap only because v1 excluded it by omission. Then, once beta.2 is published, pin the site to it — today `npm install` there would drop the link and bring the replay bug back.
+- **Claude — plans must be checked against the engine, not remembered.** The plan mandated a test asserting a title the engine never produces and omitted `npm run types` for every task; a plan that the repo's own `CLAUDE.md` rules would have corrected is a plan written too fast. Next time: run each plan's test snippet once before handing it to an implementer, and put the repo's "same commit" obligations in the Global Constraints verbatim.
+- **Claude — shell discipline.** Write any command longer than a line to a file first. Three garbled commands and one wrong path were pure waste, and the last one happened while writing this very section.
+- **Both — verify consumer call shapes, not only library ones.** The spec proved how Handlebars and handlebars-layouts call a partial and never asked how a _site's helper_ does, on a site the spec itself said routes most partials through one. The final review caught it; the per-task reviews could not. Before changing any documented surface, grep the consumer sites under `C:\Code\kiss` for how they touch it.
+- **Process — the docs sweep is the right place for the last prose fix, but say so.** The subagent workflow's "no second fix wave" rule left three inverted sentences to `/branch-close`; they were caught there. Keep the rule; record the hand-off in the pulse log as this branch did.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** take the registration-vs-render measurement on diploma-msc, record it, and either build the traced partial→page graph if render dominates or close with the numbers.
+
+**Verdict: met, with the fork taken on a substituted rule (good drift, recorded at the pulse).** Render did not dominate (0.46); the graph was built because the operator's rule — simple enough to own — was satisfied once the data-frame design removed the marker and its invariant.
+
+_Phase A_
+
+- [x] Bench watch reading — `--dev` on `--site`, 83 cases green at `3d33e4d`; no engine change was needed for the observable.
+- [x] Reading on diploma-msc via link, link removed afterwards — taken against beta.1 through a junction, alpha.5 restored; the site was then re-linked permanently on its own `kiss-v2` branch at the operator's request.
+- [x] Numbers, command and verdict recorded — design spec step 5, three records under `planning/benchmarks/`.
+- [x] Go/no-go at a pulse before any `lib/dependency-graph.js` — commit order `d7409b0` → `7768a35` → `eef1b2d` → `f1e730f` → `630b67c`.
+- [ ] No-go as a success outcome — not applicable; the go was taken.
+
+_Phase B_
+
+- [x] Plan in `planning/plans/` first, approved at a pulse — `eef1b2d`, `f1e730f`. Two of the three open questions are answered in the plan; the ESM-caching answer sits in this file's "Verified at open" rather than the plan text.
+- [x] Only pages that used it re-render; unaffected pages untouched by content and mtime — `watch.test.js` "re-renders only the pages that rendered the edited partial"; replay-equivalence unedited and green.
+- [x] Unresolvable edge → every page and a notice, one test for both halves — "falls back to every page, and says so".
+- [x] `kiss.handlebars.partials` shape change stated in `llms.txt` and `README.md`, with the consumer one-liner.
+- [ ] Sync-render invariant pinned and stated — superseded: the data-frame design has no such invariant, and `AIKB/kiss-page.md` states the opposite rule; the tracing and data-frame tests replace it.
+
+_Both phases_
+
+- [x] Every `lib/` change with its test and `AIKB/` doc in the same commit, `CLAUDE.md` row for the new module, `npm run gates` green at every commit, existing watch tests unedited.
+
+**Measurable impact:** on a 654-page site, a save to a narrowly used partial settles in 388ms instead of 1247ms; a layout-wide partial is unchanged at the designed ceiling. Two engine bugs found and fixed on the way: a `generate: false` page claiming its path, and two registrations sharing a CommonJS controller failing every replay. diploma-msc builds clean under v2 for the first time.
+
+**Still open:** publish beta.2 and pin the site; the two site decisions above; the deferred minors the final review triaged as leave; the docs site under `docs/` not regenerated from `src/` on this branch (`node docs` on the operator's next docs pass).
