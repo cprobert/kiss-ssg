@@ -31,6 +31,7 @@ describe('buildReport', () => {
       'failures',
       'assets',
       'sitemap',
+      'pipeline',
     ])
     expect(report.ok).toBe(true)
     expect(report.mode).toBe('build')
@@ -138,7 +139,32 @@ describe('buildReport', () => {
       failures: [],
       assets: [],
       sitemap: null,
+      pipeline: [],
     })
+  })
+
+  it('reports every pipeline step, without the error object', () => {
+    const report = buildReport({
+      buildDir: './public',
+      startedAt: Date.now(),
+      pipeline: [
+        { name: 'tailwind', ok: true, duration: 42 },
+        {
+          name: 'icons',
+          ok: false,
+          duration: 7,
+          error: new Error('exit code 1'),
+        },
+      ],
+    })
+
+    // The error stays on the failure entry that names the step; the report
+    // itself has to survive JSON.stringify.
+    expect(report.pipeline).toEqual([
+      { name: 'tailwind', ok: true, duration: 42 },
+      { name: 'icons', ok: false, duration: 7 },
+    ])
+    expect(JSON.parse(JSON.stringify(report)).pipeline).toEqual(report.pipeline)
   })
 
   it('reports no sitemap as null', () => {

@@ -60,7 +60,19 @@ describe('utils.toAbsoluteUrl', () => {
     expect(utils.toAbsoluteUrl('https://e.com', 'about')).toBe(
       'https://e.com/about',
     )
+    expect(utils.toAbsoluteUrl('https://e.com/', '/about')).toBe(
+      'https://e.com/about',
+    )
+  })
+
+  // Changed deliberately: a trailing slash is now meaningful, because it is
+  // what tells a static host to serve the directory index instead of
+  // redirecting. It used to be trimmed.
+  it('preserves an explicit trailing slash and leaves a bare path bare', () => {
     expect(utils.toAbsoluteUrl('https://e.com/', '/about/')).toBe(
+      'https://e.com/about/',
+    )
+    expect(utils.toAbsoluteUrl('https://e.com', 'about')).toBe(
       'https://e.com/about',
     )
   })
@@ -69,9 +81,15 @@ describe('utils.toAbsoluteUrl', () => {
     expect(utils.toAbsoluteUrl('https://e.com/', '')).toBe('https://e.com/')
   })
 
-  it('treats a trailing index segment as the folder itself', () => {
+  // Changed deliberately: `about/index.html` is served at `/about/`; the bare
+  // `/about` this used to emit is a 301 on Netlify, GitHub Pages and nginx, so
+  // every canonical and `<loc>` for a section index pointed at a redirect.
+  it('turns a trailing index segment into a trailing slash', () => {
     expect(utils.toAbsoluteUrl('https://e.com', 'about/index.html')).toBe(
-      'https://e.com/about',
+      'https://e.com/about/',
+    )
+    expect(utils.toAbsoluteUrl('https://e.com', 'about/index')).toBe(
+      'https://e.com/about/',
     )
     expect(utils.toAbsoluteUrl('https://e.com', 'index.html')).toBe(
       'https://e.com/',
@@ -83,9 +101,43 @@ describe('utils.toAbsoluteUrl', () => {
       'https://e.com/css/site.css',
     )
   })
+
+  it('collapses repeated slashes', () => {
+    expect(utils.toAbsoluteUrl('https://e.com//', '//a//b//index.html')).toBe(
+      'https://e.com/a/b/',
+    )
+  })
+})
+
+describe('utils.toCanonicalPath', () => {
+  it('drops only the last segment file extension', () => {
+    expect(utils.toCanonicalPath('about.html')).toBe('about')
+    expect(utils.toCanonicalPath('blog/2026/post.html')).toBe('blog/2026/post')
+    expect(utils.toCanonicalPath('/courses/index.html')).toBe('/courses/index')
+  })
+
+  it('leaves the index segment for toAbsoluteUrl to turn into a slash', () => {
+    expect(
+      utils.toAbsoluteUrl(
+        'https://e.com',
+        utils.toCanonicalPath('a/index.html'),
+      ),
+    ).toBe('https://e.com/a/')
+  })
+
+  it('leaves an extensionless path exactly as it came', () => {
+    expect(utils.toCanonicalPath('courses/')).toBe('courses/')
+    expect(utils.toCanonicalPath('')).toBe('')
+  })
+
+  it('ignores a dot in a parent segment', () => {
+    expect(utils.toCanonicalPath('v1.2/notes')).toBe('v1.2/notes')
+  })
 })
 
 describe('utils.toURLKey', () => {
+  // Unchanged by the trailing-slash fix: this is page *identity*, what
+  // `isActive` compares — not a URL anyone emits.
   it('reduces every spelling of one page to the same key', () => {
     for (const value of ['/about', 'about/', 'about.html', 'about/index.html'])
       expect(utils.toURLKey(value)).toBe('about')

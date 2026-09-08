@@ -15,6 +15,7 @@ Turns one settled build into data: the JSON-safe `BuildReport` that `Kiss.report
   - `failures` — `{ view, buildTo, message }` per entry of `Kiss._failures`; the `Error` itself is not in the report.
   - `assets` — `{ source, target }` per asset-manifest entry: the build-relative path a template asks for, and the file that is actually there.
   - `sitemap` — the `sitemap.xml` this build wrote, or `null`.
+  - `pipeline` — `{ name, ok, duration }` per `config.assets.pipeline` step this build ran, in order; `[]` when the site configured none.
 - `formatReport(report)` → the summary line `ok|FAIL <buildDir> (<mode>) — N pages, M failed, K assets, Xms`, followed by one indented `<buildTo|view>: <message>` line per failure. What `kiss-ssg check --summary` prints instead of the JSON.
 
 ## Depends on
@@ -31,8 +32,9 @@ Nothing.
 - **A failure's `Error` is reduced to its `message` on purpose.** `JSON.stringify(new Error('x'))` is `{}`, so a report carrying the object loses exactly the text that says what went wrong. The object itself stays on the `AggregateError` `complete()` rejects with — the report is the serialisable view of the same build, not a replacement for it.
 - **`assets` is the manifest, so it is keyed by the path a template writes**, not by the source file: a `.scss` appears under its compiled `css/site.css` name, and `target` is where cache busting put it (`css/site.a1b2c3d4.css`). See `AIKB/asset-manifest.md`.
 - **A failure with no output path (`buildTo: null`) marks no page as failed** — a `.pages()` item, a controller, a callback or the dev server never reached the stack, so no `pages` entry belongs to it. It is still in `failures`, and it still makes `ok` false.
+- **`pipeline` is appended, not slotted in beside `assets`.** It reports work that happens _before_ the copy, so its natural home would be above `assets` — but a consumer diffing two reports (or eyeballing one in a terminal) should see one new key rather than a reshuffle of the eight that were already there. A step's `Error` is dropped on the way in for the same reason a failure's is: the message is already in `failures`, under `<pipeline: <name>>`.
 - **Key order is fixed** because the report is read as text at least as often as it is read as data — a diff of two runs should show what changed in the build, not a reshuffle.
 
 ## Types
 
-`BuildReport`, `BuildPage`, `BuildAsset` and `BuildReportFailure` are declared here and re-exported from `lib/kiss.js` (`@typedef {import('./build-report.js').BuildReport} BuildReport`), the same way `KissConfig` is re-exported from `lib/config.js` — so a consumer reaches every one of them as `import('kiss-ssg').BuildReport`.
+`BuildReport`, `BuildPage`, `BuildAsset`, `BuildReportFailure` and `BuildPipelineStep` are declared here and re-exported from `lib/kiss.js` (`@typedef {import('./build-report.js').BuildReport} BuildReport`), the same way `KissConfig` is re-exported from `lib/config.js` — so a consumer reaches every one of them as `import('kiss-ssg').BuildReport`.
