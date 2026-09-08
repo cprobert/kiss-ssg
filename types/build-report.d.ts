@@ -11,9 +11,10 @@
  * @param {'build'|'check'} [input.mode]
  * @param {number} [input.startedAt] `Date.now()` at construction
  * @param {string|null} [input.sitemap] the sitemap written by this build
+ * @param {import('./pipeline.js').PipelineResult[]} [input.pipeline] what the asset pipeline's steps did
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -27,6 +28,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     mode?: "build" | "check";
     startedAt?: number;
     sitemap?: string | null;
+    pipeline?: import("./pipeline.js").PipelineResult[];
 }): BuildReport;
 /**
  * The one-line human rendering of a report, plus one line per failure — what
@@ -80,6 +82,24 @@ export type BuildReportFailure = {
     message: string;
 };
 /**
+ * One `config.assets.pipeline` step this build ran, as the report carries it:
+ * the step's `Error` is left behind on the failure entry that names it.
+ */
+export type BuildPipelineStep = {
+    /**
+     * the step's `name`, or the first word of its `run`
+     */
+    name: string;
+    /**
+     * the command exited 0
+     */
+    ok: boolean;
+    /**
+     * ms the command took
+     */
+    duration: number;
+};
+/**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
  * shape a script can act on without parsing log output.
  */
@@ -110,4 +130,8 @@ export type BuildReport = {
      * the `sitemap.xml` written, or `null` if none was
      */
     sitemap: string | null;
+    /**
+     * every `config.assets.pipeline` step, in order; empty when there are none
+     */
+    pipeline: BuildPipelineStep[];
 };

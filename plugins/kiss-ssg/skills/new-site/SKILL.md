@@ -39,7 +39,7 @@ Per-module detail, if you need it, is in `node_modules/kiss-ssg/AIKB/`.
 
 ### 4. Copy an exemplar by shape
 
-`node_modules/kiss-ssg/examples/README.md` lists nine runnable sites in two tiers. Pick the one whose _situation_ matches and copy its structure — its folder layout, its script shape, its controller pattern — never its content.
+`node_modules/kiss-ssg/examples/README.md` lists ten runnable sites in two tiers. Pick the one whose _situation_ matches and copy its structure — its folder layout, its script shape, its controller pattern — never its content.
 
 | Shape                                                                      | Exemplar                                                                                                    |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |

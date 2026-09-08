@@ -1,15 +1,15 @@
 # kiss-ssg examples
 
-Nine runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery — so that what
+Ten runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery — so that what
 differs between two examples is the kiss-ssg feature and nothing else. The shared layout,
 stylesheet and partials live in `_shared/`; each example keeps its own pages, models and
 controllers. Every site builds into `public/<example>/` at the repo root, which is gitignored.
 
 They come in two tiers.
 
-**Examples 1–6 are the feature reference: one idea each.** Scanning a folder of views,
+**Examples 1–6 and 10 are the feature reference: one idea each.** Scanning a folder of views,
 registering a page by hand, fanning out over an array, layouts and partials, the built-in
-helpers, the sitemap. Each script is short enough to read in one sitting and each page explains,
+helpers, the sitemap, an external tool in the asset pipeline. Each script is short enough to read in one sitting and each page explains,
 in a "How this example works" panel, the feature it is demonstrating — with the script that built
 it printed underneath. Read one when you want to know how a single thing works.
 
@@ -31,10 +31,11 @@ the feature reference.
 | [7 · versioned outputs](7-versioned-outputs/)       | Exemplar  | One build per season into its own folder, atomically, with an archive index beside them    | `npm run eg7` · `node 7-versioned-outputs.js <season>` |
 | [8 · data-fed site](8-data-fed-site/)               | Exemplar  | A site built from a folder of records, validated in the controller — one record is broken  | `npm run eg8` · exits 1 · `--dev`                      |
 | [9 · migrated from v1](9-migrated-from-v1/)         | Exemplar  | Every v1 → v2 migration recipe as running code, in a site that builds clean                | `npm run eg9` · `--dev`                                |
+| [10 · asset pipeline](10-asset-pipeline/)           | Reference | `config.assets.pipeline` runs an external tool before the asset copy, `watch` in dev mode  | `npm run eg10` · `--dev`                               |
 
 `npm run egN` runs from the repo root; from this folder the same thing is `node N-name.js`.
-Examples 1–6, 8 and 9 take `--dev` for a live-reloading preview; 7 builds and exits, and takes a
-season slug instead. Example 8 is the only one that exits non-zero, and it does so on purpose.
+Examples 1–6, 8, 9 and 10 take `--dev` for a live-reloading preview; 7 builds and exits, and takes
+a season slug instead. Example 8 is the only one that exits non-zero, and it does so on purpose.
 
 ## For an AI coding agent
 

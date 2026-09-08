@@ -50,7 +50,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
   // `public/`, so two builds racing would corrupt each other's page counts.
   // Vitest runs a plain `describe`'s tests in declaration order by default,
   // which is all sequencing this needs.
-  describe('the nine examples, built in place', () => {
+  describe('the ten examples, built in place', () => {
     it('1 · scan builds 2 pages', () => {
       cleanOutput('1-scan')
       const r = runExample('1-scan.js')
@@ -180,6 +180,23 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(readFileSync(handlebarsInstancePage, 'utf8')).toContain(
         '4 kg a week',
       )
+    }, 60000)
+
+    it('10 · asset pipeline builds 1 page and the stylesheet its step generated', () => {
+      cleanOutput('10-asset-pipeline')
+      const r = runExample('10-asset-pipeline.js')
+      expect(r.status).toBe(0)
+      expect(countHtmlFiles(path.join(publicDir, '10-asset-pipeline'))).toBe(1)
+
+      // The step ran before the asset copy, so what it wrote is in the build —
+      // which is the whole feature, and the one thing a page count cannot show.
+      const generated = path.join(
+        publicDir,
+        '10-asset-pipeline/css/generated.css',
+      )
+      expect(existsSync(generated)).toBe(true)
+      expect(readFileSync(generated, 'utf8')).toContain('--accent:')
+      expect(output(r)).toContain('pipeline: tokens ok')
     }, 60000)
   })
 })

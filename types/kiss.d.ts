@@ -3,6 +3,8 @@ export type BuildReport = import("./build-report.js").BuildReport;
 export type BuildPage = import("./build-report.js").BuildPage;
 export type BuildAsset = import("./build-report.js").BuildAsset;
 export type BuildReportFailure = import("./build-report.js").BuildReportFailure;
+export type BuildPipelineStep = import("./build-report.js").BuildPipelineStep;
+export type PipelineStep = import("./pipeline.js").PipelineStep;
 export type KissConfig = import("./config.js").KissConfig;
 export type KissConfigInput = import("./config.js").KissConfigInput;
 export type KissFolders = import("./config.js").KissFolders;
@@ -213,6 +215,10 @@ declare class Kiss {
     private _devServer;
     /** @private @type {Promise<any>} */
     private _assetQueue;
+    /** @private @type {ReturnType<typeof createPipeline>|null} */
+    private _pipeline;
+    /** @private @type {import('./pipeline.js').PipelineResult[]} */
+    private _pipelineResults;
     /** @private */
     private _stagingDir;
     /** @private */
@@ -258,6 +264,10 @@ declare class Kiss {
      * @returns {string[]} the names now registered
      */
     registerPartials(): string[];
+    /** @private */
+    private _pipelineEnv;
+    /** @private */
+    private _queuePipeline;
     /**
      * Compiles every `*.scss`/`*.sass` under `sourceDir` to a sibling `.css` and
      * copies everything else straight through. Runs once at construction for

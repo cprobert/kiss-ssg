@@ -239,14 +239,26 @@ describe('canonical', () => {
     )
   })
 
+  // Changed deliberately: a directory index is served at the URL with the
+  // trailing slash, and a static host answers the bare path with a 301. The
+  // canonical must be the URL that returns 200.
+  it('gives a directory index the trailing slash the host serves', () => {
+    expect(render('{{canonical}}', { pageURL: 'courses/index.html' })).toBe(
+      'https://e.com/courses/',
+    )
+  })
+
+  // Under `extensionLess` every page but the home page *is* a directory index
+  // (`about/index.html`), so its canonical ends in `/` too — that is the URL
+  // the host serves, so the two settings legitimately differ here.
   const table = [
     [false, 'about', 'https://e.com/about'],
-    [true, 'about', 'https://e.com/about'],
+    [true, 'about', 'https://e.com/about/'],
     [false, 'index', 'https://e.com/'],
     [true, 'index', 'https://e.com/'],
   ]
   it.each(table)(
-    'is the same URL with extensionLess=%s on the %s page',
+    'canonicalises the built URL with extensionLess=%s on the %s page',
     (extLess, slug, expected) => {
       const pageURL = pageURLFor(slug, extLess)
       expect(render('{{canonical}}', { pageURL })).toBe(expected)
@@ -298,12 +310,17 @@ describe('absUrl', () => {
     hbs = makeHbs({ siteUrl: 'https://e.com/' })
   })
 
+  // `about/` and `/about/index.html` changed deliberately: a trailing slash is
+  // now preserved rather than trimmed, and an `index` segment becomes one,
+  // because that is the URL a static host serves without a redirect. A bare
+  // path still stays bare.
   const paths = [
     ['/about', 'https://e.com/about'],
     ['about', 'https://e.com/about'],
-    ['about/', 'https://e.com/about'],
+    ['about/', 'https://e.com/about/'],
     ['css/site.css', 'https://e.com/css/site.css'],
-    ['/about/index.html', 'https://e.com/about'],
+    ['/about/index.html', 'https://e.com/about/'],
+    ['/courses/index.html', 'https://e.com/courses/'],
   ]
   it.each(paths)('resolves %s to %s', (p, expected) => {
     expect(render('{{absUrl p}}', { p })).toBe(expected)
@@ -320,6 +337,9 @@ describe('absUrl', () => {
   it('is the page canonical when called with no path', () => {
     expect(render('{{absUrl}}', { pageURL: 'about.html' })).toBe(
       'https://e.com/about',
+    )
+    expect(render('{{absUrl}}', { pageURL: 'courses/index.html' })).toBe(
+      'https://e.com/courses/',
     )
   })
 
