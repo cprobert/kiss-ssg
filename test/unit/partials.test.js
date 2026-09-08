@@ -206,6 +206,35 @@ describe('tracing', () => {
     expect(graph.size).toBe(0)
   })
 
+  it('records through a consumer helper only when it passes its data frame on', async () => {
+    site = await makeSite({ 'src/partials/nav.hbs': '<nav/>' })
+    const hbs = Handlebars.create()
+    const graph = new DependencyGraph()
+    registerPartials(hbs, folders(site), { ...deps, graph })
+    hbs.registerHelper('render', function (name, ctx, options) {
+      return new hbs.SafeString(hbs.partials[name](ctx, { data: options.data }))
+    })
+    hbs.registerHelper('renderBare', function (name, ctx) {
+      return new hbs.SafeString(hbs.partials[name](ctx))
+    })
+
+    expect(
+      hbs.compile('{{render "nav" this}}')(
+        {},
+        { data: { kissPage: 'a.html' } },
+      ),
+    ).toBe('<nav/>')
+    expect(graph.dependentsOf('nav')).toEqual(['a.html'])
+
+    expect(
+      hbs.compile('{{renderBare "nav" this}}')(
+        {},
+        { data: { kissPage: 'b.html' } },
+      ),
+    ).toBe('<nav/>')
+    expect(graph.dependentsOf('nav')).toEqual(['a.html'])
+  })
+
   it('a throwing recorder never reaches the render', async () => {
     site = await makeSite({ 'src/partials/nav.hbs': '<nav/>' })
     const hbs = Handlebars.create()

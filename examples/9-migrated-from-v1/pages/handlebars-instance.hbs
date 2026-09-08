@@ -35,17 +35,21 @@
   </div>
 
   <div class="callout">
-    <pre><code>kiss.handlebars.registerHelper('renderPartial', function (name, context) {
+    <pre><code>kiss.handlebars.registerHelper('renderPartial', function (name, context, options) {
   const partial = kiss.handlebars.partials[name]
   if (!partial) return ''
   const template =
     typeof partial === 'function' ? partial : kiss.handlebars.compile(partial)
-  return new kiss.handlebars.SafeString(template(context))
+  // Pass the helper's own data frame through — that frame is how the page is
+  // recorded as using the partial, so a save re-renders just this page.
+  return new kiss.handlebars.SafeString(template(context, { data: options.data }))
 })</code></pre>
     <p class="meta">
       Handlebars' own <code>&#123;&#123;&gt; partial&#125;&#125;</code> needs no helper at all.
       This one exists for the v1 case it replaces: a partial chosen at run time and rendered
-      against a context the template does not have.
+      against a context the template does not have. Pass <code>options.data</code> through as
+      the recipe does: without it the partial still renders, but under <code>watch()</code> this
+      page is not re-rendered when that partial changes.
     </p>
   </div>
   {{/content}}

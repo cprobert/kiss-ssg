@@ -22,7 +22,7 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
 
 ## Depends on
 
-`fs-extra`, `node:path`, `html-minifier-terser` (dynamic `import()`, never at module load); `./utils.js` (`toSlug`, `toTitleCase`, `sanitizePath`), `./logger.js` (fallback logger only), `./config.js` (`DEFAULT_CONFIG.livereloadPort`, the fallback for a `KissPage` built outside `Kiss`).
+`fs-extra`, `node:path`, `html-minifier-terser` (dynamic `import()`, never at module load); `./utils.js` (`toSlug`, `toTitleCase`, `sanitizePath`), `./logger.js` (fallback logger only), `./config.js` (`DEFAULT_CONFIG.livereloadPort`, the fallback for a `KissPage` built outside `Kiss`). The dependency graph arrives as `deps.graph` (`AIKB/dependency-graph.md`) and is referenced only by a type-only `import('./dependency-graph.js')` in the JSDoc — there is no runtime import of that module here.
 
 ## Depended on by
 

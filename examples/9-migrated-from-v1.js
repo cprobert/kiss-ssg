@@ -33,13 +33,20 @@ const kiss = new Kiss({
 // here, so a v1 helper that read the global module rendered nothing at all —
 // silently, on a green build. Register on `kiss.handlebars` and read the
 // partials off the same environment.
-kiss.handlebars.registerHelper('renderPartial', function (name, context) {
-  const partial = kiss.handlebars.partials[name]
-  if (!partial) return ''
-  const template =
-    typeof partial === 'function' ? partial : kiss.handlebars.compile(partial)
-  return new kiss.handlebars.SafeString(template(context))
-})
+kiss.handlebars.registerHelper(
+  'renderPartial',
+  function (name, context, options) {
+    const partial = kiss.handlebars.partials[name]
+    if (!partial) return ''
+    const template =
+      typeof partial === 'function' ? partial : kiss.handlebars.compile(partial)
+    // Pass the helper's own data frame through — that frame is how the page is
+    // recorded as using the partial, so a save re-renders just this page.
+    return new kiss.handlebars.SafeString(
+      template(context, { data: options.data }),
+    )
+  },
+)
 
 // Two sources, one output folder. v1 wrote whichever page came last when two
 // claimed one path; v2 fails the build. Dedupe before registering — the
