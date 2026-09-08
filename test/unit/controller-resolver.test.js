@@ -169,6 +169,12 @@ describe('loadController fresh', () => {
     // second call deletes require.cache[filename] while the first import() is
     // still translating the CJS module, and Node throws ERR_INTERNAL_ASSERTION
     // out of loadCJSModuleWithModuleLoad — failing both pages.
+    //
+    // This case is a guard, not a reproduction: it cannot go RED under vitest,
+    // which rewrites `import()` inside lib/ to its own module runner and never
+    // reaches the CJS translator that trips the assertion. It pins the shared
+    // in-flight behaviour; the child-process case below is the one that
+    // actually reproduces the bug.
     site = await makeSite({
       'c/shared.cjs': 'module.exports = ({ model }) => ({ model, hit: true })',
     })
@@ -188,7 +194,8 @@ describe('loadController fresh', () => {
   it('survives the concurrent fresh loads under Node’s own ESM loader', async () => {
     // The in-process case above is a guard, not a reproduction: vitest rewrites
     // `import()` inside lib/ to its module runner, which never reaches the CJS
-    // translator that trips the ERR_INTERNAL_ASSERTION. This runs the same two
+    // translator that trips the ERR_INTERNAL_ASSERTION — that case stays green
+    // with or without the fix. This runs the same two
     // concurrent fresh loads in a plain `node` child, where the bug is
     // deterministic without the in-flight map.
     site = await makeSite({

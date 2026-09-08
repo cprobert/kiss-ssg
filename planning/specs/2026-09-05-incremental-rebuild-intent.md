@@ -1,9 +1,10 @@
 # Dependency-aware incremental rebuild (intent)
 
-Status: **NOT STARTED.** Captured at a `/branch-open` on 2026-09-05; no `lib/`
-code was ever written for it. Preserved here when its branch
-(`claude/kiss-ssg-skills-8umyo8`) was deleted as part of the 2026-09-08 cleanup,
-so the criteria below need not be re-derived when the work is picked up.
+Status: **DONE.** Captured at a `/branch-open` on 2026-09-05 and preserved here
+when its branch (`claude/kiss-ssg-skills-8umyo8`) was deleted in the 2026-09-08
+cleanup; the work then ran on `feat/incremental-rebuild` (2026-09-08) — see
+[`planning/sessions/2026-09-08-incremental-rebuild.md`](../sessions/2026-09-08-incremental-rebuild.md),
+with the outcome recorded in the design spec below.
 
 **Read with [`2026-09-05-watch-dependency-graph-design.md`](./2026-09-05-watch-dependency-graph-design.md).**
 That is the _design_ for this work — the recommendation, the evidence from lane B
