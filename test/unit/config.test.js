@@ -103,6 +103,51 @@ describe('resolveConfig', () => {
     })
   })
 
+  it('defaults the markdown block: html on, xhtml output, no hard breaks', () => {
+    // `breaks: false` is the published v1 value, restored: a hard-wrapped `.md`
+    // partial is one paragraph, not one `<br />` per source line.
+    expect(resolveConfig({}).markdown).toEqual({
+      html: true,
+      xhtmlOut: true,
+      breaks: false,
+    })
+  })
+
+  it('merges the markdown block one level deep, like sass', () => {
+    expect(resolveConfig({ markdown: { breaks: true } }).markdown).toEqual({
+      html: true,
+      xhtmlOut: true,
+      breaks: true,
+    })
+    expect(resolveConfig({ markdown: { html: false } }).markdown).toEqual({
+      html: false,
+      xhtmlOut: true,
+      breaks: false,
+    })
+  })
+
+  it('carries an arbitrary remarkable option through untouched', () => {
+    // The block is passed to Remarkable as-is, so an option kiss has no opinion
+    // about (typographer, langPrefix) reaches it without kiss knowing the name.
+    expect(resolveConfig({ markdown: { typographer: true } }).markdown).toEqual(
+      {
+        html: true,
+        xhtmlOut: true,
+        breaks: false,
+        typographer: true,
+      },
+    )
+  })
+
+  it('takes the defaults for an undefined markdown key, and for no block', () => {
+    expect(resolveConfig({ markdown: undefined }).markdown).toEqual(
+      resolveConfig({}).markdown,
+    )
+    expect(resolveConfig({ markdown: { breaks: undefined } }).markdown).toEqual(
+      resolveConfig({}).markdown,
+    )
+  })
+
   it('takes the pipeline as given — an array value replaces the default', () => {
     const pipeline = [{ run: 'npx tailwindcss -i a.css -o b.css' }]
     expect(resolveConfig({ assets: { pipeline } }).assets).toEqual({

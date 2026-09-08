@@ -86,6 +86,11 @@ The default config options are:
     version: null,
     pipeline: []
   },
+  markdown: {
+    html: true,
+    xhtmlOut: true,
+    breaks: false
+  },
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -261,6 +266,22 @@ Every `run` is executed through a shell, in order, awaited, **before the asset c
 `name` defaults to the first word of `run`, `cwd` to `process.cwd()`, and each command inherits `process.env` plus `KISS_BUILD`, `KISS_ASSETS` and `KISS_DEV` (`'1'` or `'0'`). `watch` is the dev-mode half: in `dev: true` only, it is started once — after that step's `run` has succeeded — kept for the session with its output going through kiss's logger, and ended by `close()`. A watch process that dies on its own is logged, not a build failure, and a rebuild never starts a second one. Editing a page, a partial or a layout does **not** re-run the steps; a tool that must see those edits is what `watch` is for.
 
 `kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline.js` (`npm run eg10`) is a runnable version that needs nothing installed.
+
+### Markdown options
+
+`config.markdown` is handed to this instance's [Remarkable](https://github.com/jonschlinkert/remarkable) — the renderer behind both `.md` partials and the `{{markdown}}` helper, so the two can never disagree:
+
+```js
+new Kiss({
+  markdown: { breaks: true, typographer: true },
+})
+```
+
+The three defaults (`html: true`, `xhtmlOut: true`, `breaks: false`) are the keys kiss has an opinion about, **not** the keys it accepts — the block is passed through as-is, so any other Remarkable option reaches the renderer without kiss knowing its name. It is merged one level deep, like `sass`, `fetch` and `assets`, so setting one key keeps the rest at their defaults.
+
+**`breaks: false` is deliberate.** With `breaks: true`, every newline inside a paragraph becomes a `<br />` — so a paragraph you hard-wrapped in your editor renders with a line break at each of the source's wrap points, mid-sentence. Turn it on only if your `.md` sources genuinely treat a newline as a line break.
+
+Set it in config rather than reaching for `kiss.remarkable` afterwards: `.md` partials are rendered to HTML **when they are registered**, which happens in the constructor, so a later mutation would change the `{{markdown}}` helper but silently miss every partial unless you also called `kiss.registerPartials()`.
 
 ### .page()
 

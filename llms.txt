@@ -46,6 +46,11 @@ Passed to `new Kiss(config)`. Defaults:
     version: null,      // a string: nothing is renamed, {{asset}} appends ?v=<string>
     pipeline: [],       // ordered { name?, run, watch?, cwd? } commands run before the asset copy
   },
+  markdown: {           // Remarkable options for .md partials and the {{markdown}} helper
+    html: true,         // render raw HTML in the source rather than escaping it
+    xhtmlOut: true,     // close single tags XHTML-style (<br />)
+    breaks: false,      // true: every newline inside a paragraph becomes a <br />
+  },
   port: 3001,           // dev server port
   livereloadPort: 35729, // live reload port; also the port injected into the dev-mode reload <script>
   devHost: '127.0.0.1',  // interface the dev + live reload servers bind to
@@ -85,6 +90,8 @@ assets: {
 ```
 
 `kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate (their output is a source file, which is why there is nothing extra for the check to discard). Scoped re-renders — a page view, a partial or a layout edit under `watch` — deliberately do **not** re-run the steps; a tool that must see those edits is what `watch` is for. A watch command gets no stdin from kiss, so a tool that stops when stdin closes needs its keep-alive flag — Tailwind's is `--watch=always`; plain `--watch` exits at once and the log says `pipeline watch "tailwind" exited (code 0)`. `examples/10-asset-pipeline.js` is the runnable version of all of this.
+
+`markdown` is the option set handed to this instance's Remarkable — the renderer behind both `.md` partials and the `{{markdown}}` helper — so the two can never disagree. The three keys above are the ones kiss has a default for, **not** the ones it accepts: the block is passed through as-is, so any other Remarkable option (`typographer: true`, `langPrefix`) reaches the renderer without kiss knowing the name. `breaks: false` is deliberate and matches published v1: with `breaks: true` a paragraph hard-wrapped in the source renders one `<br />` per source line, breaking prose mid-sentence at whatever column the author happened to wrap at — set it to `true` only if your `.md` sources treat a newline as a real line break. Merged one level deep, like `sass`, `fetch` and `assets`, so `markdown: { breaks: true }` keeps `html` and `xhtmlOut` at their defaults. It applies per `Kiss` instance and is read in the constructor, **before** partials are registered: `.md` partials are rendered to HTML at registration, so setting it in config is the only way to reach them — mutating `kiss.remarkable` afterwards would change the helper but silently miss every partial (a later `kiss.registerPartials()` is what that would need).
 
 `livereloadPort` lets two sites run side by side: give the second one its own value, or its pages would poll the first site's live reload server. A clash on the live reload port is logged and live reload is switched off for that site — the dev server keeps serving. A clash on `port` is fatal instead: nothing can be served without the HTTP server, so the bind failure is reported exactly once (`Dev server could not bind 127.0.0.1:3001 (EADDRINUSE): the site is not being served`), the watcher and live reload are closed so the process can exit, and `complete()` rejects with a `<dev server>` failure. The `Serving …` line is printed only once the server is actually listening. Use `port` (with its own `livereloadPort`) to run a second site. `devHost` binds the dev and live reload servers to loopback only; set it to `'0.0.0.0'` to open the preview to other devices on your network — live reload follows the host the page was loaded from, so a preview opened on a phone reloads from the machine serving it.
 
