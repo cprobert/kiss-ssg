@@ -146,6 +146,14 @@ emergent: it is settled by what the tracing partials actually record on a
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-09-08 — `generate: false` still reserves its output path.** Found while
+  cleaning up `diploma-msc` under v2: `_preparePage` pushes every page onto
+  `_stack` and dedupes on `buildTo` before `generate` is consulted, so a skipped
+  page makes a real page registered later fail as `Page already processed`.
+  The docs promise a skipped page writes nothing; it should not claim a path
+  either. Operator chose to fix it on this branch: engine internals, patch-level,
+  `lib/kiss.js` plus an integration test.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
@@ -153,6 +161,7 @@ emergent: it is settled by what the tracing partials actually record on a
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
 - **2026-09-08** — baseline pulse, one commit since `main` (the intent file). Phase A criteria 1–4 not yet (`scripts/bench.mjs` unchanged, no watch reading for `--site`; diploma-msc still on alpha.5, nothing linked; design spec step 5 still unmeasured); Phase B not applicable until the reading is in; gates/unedited-watch-tests trivially met (diff is `planning/` only). No drift: no `lib/`, `llms.txt` or `README.md` touched. Decision: continue — next slice is the bench watch reading plus the scoped-rebuild observable it needs.
+- **2026-09-08** — go/no-go pulse. Phase A criteria 1–3 met (`--dev` watch reading landed with 83 green cases and gates at `3d33e4d`; reading taken on diploma-msc via junction against beta.1 and the alpha.5 install restored, later re-linked on the site's own `kiss-v2` branch at the operator's request; numbers in the design spec step 5 and `planning/benchmarks/diploma-msc-watch-2026-09-08.json`). Reading: partial 1247ms / model 2729ms / page 37.5ms on 654 pages, ratio 0.46. Operator's rule: build the mapper only if it is simple to own. A probe showed the page identity can travel through Handlebars' data frame (`template(ctx, { data: { kissPage } })` reaches function partials through nesting, `lookup` and layouts' `extend`), which removes the design's current-page marker and its sync-render invariant — the one piece of real legacy. Sized at ~70 engine lines plus a 40-line pure module. No drift: no `lib/` change yet, impact surface unchanged. Decision: **adjust course into Phase B** — plan in `planning/plans/` next, approved at a pulse before any `lib/` change; `generate: false` fix recorded as an Amendment.
 
 ---
 
