@@ -7,7 +7,7 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
 ## Public interface
 
 - `class KissPage`
-  - `new KissPage(view, { hbs, logger } = {})` — `view` is a `.hbs` path (relative to `pagesDir`) or an inline template string.
+  - `new KissPage(view, { hbs, logger, graph } = {})` — `view` is a `.hbs` path (relative to `pagesDir`) or an inline template string. `graph` is an optional `DependencyGraph` (`./dependency-graph.js`); without one the render is unchanged.
   - `set path(path)` — sanitizes via `sanitizePath` (`./utils.js`); falsy values are ignored (default `''` kept).
   - `set slug(slug)` / `get slug()` — setter normalizes via `toSlug` (`./utils.js`); falsy values are ignored (default `'index'` kept).
   - `set ext(extension)` — strips a leading `.`, then slugifies via `toSlug` (`./utils.js`), like `path` and `slug`; falsy values are ignored (default `'html'` kept).
@@ -30,6 +30,8 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
 
 ## Non-obvious behavior
 
+- **The render carries the page's identity in Handlebars' data frame**: `template(this.options, { data: { kissPage: this.buildTo } })`. Handlebars copies the frame into every nested partial invocation and handlebars-layouts passes `{ data }` through `extend`/`embed`, so a recording partial (`AIKB/partials.md`) reads `options.data.kissPage` and attributes itself to the right page whatever the render order — there is no "current page" variable and no assumption that pages render one at a time. Before rendering, the page calls `graph.clearPage(buildTo)` so its edge set is exactly what this render reached. `graph` is optional (`deps.graph`); without it the render is byte-identical to before — the extra `data` only adds a key to a frame Handlebars creates anyway.
+- In dev mode the `.json` sibling gains `partials`: the names this page recorded, from `graph.usesOf(buildTo)` — the per-page view of `dependency-graph.json`.
 - `_title` is computed from the _default_ slug (`'index'`) in the constructor, before any page-specific slug is set — so a page without an explicit title or model title falls back to `'Index'`, not a title derived from its own slug. This is a preserved v1 quirk, not a bug to fix.
 - `buildTo` is the value `Kiss._preparePage` uses to detect duplicate pages (same output path) — a duplicate is a build failure there, not a skip.
 - **Every part of `buildTo` is sanitised, `ext` included.** `ext` used to strip only the _first_ `.` (`replace('.', '')`) and never slugify, so unlike `path` (`sanitizePath`) and `slug` (`toSlug`) it carried `/` and `..` straight into the output path: `ext: './../../../escaped/pwned.html'` wrote three levels above the build folder, and the value is reachable from model data through the documented "controller derives the page's options" pattern (review finding C1). It now goes through `toSlug(extension.replace(/^\./, ''))` — `'.xml'` → `'xml'`, `'../x'` → `'x'`.

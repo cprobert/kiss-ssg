@@ -167,6 +167,47 @@ describe('generate', () => {
     await p.generate()
     expect(await site.exists('public/n.html')).toBe(false)
   })
+
+  it('names itself to its partials through the data frame, clearing its edges first', async () => {
+    site = await makeSite({})
+    const hbs = Handlebars.create()
+    const seen = []
+    hbs.registerPartial('p', (ctx, options) => {
+      seen.push(options?.data?.kissPage)
+      return 'P'
+    })
+    const calls = []
+    const graph = {
+      clearPage: (page) => calls.push(['clear', page]),
+      usesOf: () => ['p'],
+    }
+    const page = new KissPage('<i>{{> p}}</i>', {
+      hbs,
+      logger: silentLogger,
+      graph,
+    })
+    page.buildDir = site.build
+    page.slug = 's'
+    page.isDev = true
+    page.options = {}
+    page.prepare()
+    await page.generate()
+    expect(seen).toEqual([page.buildTo])
+    expect(calls).toEqual([['clear', page.buildTo]])
+    const sibling = JSON.parse(await site.read('public/s.json'))
+    expect(sibling.partials).toEqual(['p'])
+  })
+
+  it('renders identically with no graph injected', async () => {
+    site = await makeSite({})
+    const p = make('<i>{{title}}</i>', {
+      buildDir: site.build,
+      slug: 't',
+      options: { title: 'T' },
+    })
+    await p.generate()
+    expect(await site.read('public/t.html')).toBe('<i>T</i>')
+  })
 })
 
 // The template cache is the reason `_getTemplate` no longer reads and compiles
