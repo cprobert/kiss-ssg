@@ -2,6 +2,11 @@
 
 Status: STEPS 1–2 LANDED (2026-09-05, branch review/v2-critical-friend). Step 3 pending the measurement in Rollout order step 5.
 
+> **Companion document.** The branch brief for this work — success criteria,
+> non-goals and three open questions this design does not settle — is
+> [`2026-09-05-incremental-rebuild-intent.md`](./2026-09-05-incremental-rebuild-intent.md),
+> preserved when its (never-started) branch was deleted on 2026-09-08.
+
 ## Recommendation, up front
 
 1. **Land the three watch-mode correctness fixes first, as their own change.** None needs a graph. Lane B of the engine review confirmed each with a repro (`planning/reviews/2026-09-05-v2-engine-review.md`, B1, B2, B3).
