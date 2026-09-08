@@ -28,6 +28,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Config + folder derivation         | `lib/config.js`              | `AIKB/config.md`              |
 | Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
 | Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
+| Dependency graph (partial → page)  | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
 | Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
 | Asset pipeline (external tools)    | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
 | Asset manifest + cache busting     | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
