@@ -1,10 +1,14 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import {
   applyController,
   loadController,
 } from '../../lib/controller-resolver.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
+
+const run = promisify(execFile)
 
 let site
 afterEach(async () => {
@@ -157,6 +161,80 @@ describe('loadController fresh', () => {
       fresh: true,
     })
     expect(second().title).toBe('after')
+  })
+
+  it('two concurrent fresh loads of one CommonJS controller share a single import', async () => {
+    // Two `.page()` registrations naming the same CommonJS controller are
+    // replayed concurrently on a watch rebuild. Without the in-flight map the
+    // second call deletes require.cache[filename] while the first import() is
+    // still translating the CJS module, and Node throws ERR_INTERNAL_ASSERTION
+    // out of loadCJSModuleWithModuleLoad — failing both pages.
+    site = await makeSite({
+      'c/shared.cjs': 'module.exports = ({ model }) => ({ model, hit: true })',
+    })
+    const dir = `${site.root}/c`
+    // Load it once the way a cold build leaves it: cached, not fresh.
+    await loadController(dir, 'shared.cjs', { logger: silentLogger })
+    const [a, b] = await Promise.all([
+      loadController(dir, 'shared.cjs', { logger: silentLogger, fresh: true }),
+      loadController(dir, 'shared.cjs', { logger: silentLogger, fresh: true }),
+    ])
+    expect(typeof a).toBe('function')
+    expect(typeof b).toBe('function')
+    expect(a({ model: 1 })).toEqual({ model: 1, hit: true })
+    expect(b({ model: 2 })).toEqual({ model: 2, hit: true })
+  })
+
+  it('survives the concurrent fresh loads under Node’s own ESM loader', async () => {
+    // The in-process case above is a guard, not a reproduction: vitest rewrites
+    // `import()` inside lib/ to its module runner, which never reaches the CJS
+    // translator that trips the ERR_INTERNAL_ASSERTION. This runs the same two
+    // concurrent fresh loads in a plain `node` child, where the bug is
+    // deterministic without the in-flight map.
+    site = await makeSite({
+      'c/shared.cjs': 'module.exports = ({ model }) => ({ model, hit: true })',
+      'race.mjs': `
+        import { loadController } from ${JSON.stringify(new URL('../../lib/controller-resolver.js', import.meta.url).href)}
+        import { silentLogger as logger } from ${JSON.stringify(new URL('../../lib/logger.js', import.meta.url).href)}
+        const dir = process.argv[2]
+        await loadController(dir, 'shared.cjs', { logger })
+        const [a, b] = await Promise.all([
+          loadController(dir, 'shared.cjs', { logger, fresh: true }),
+          loadController(dir, 'shared.cjs', { logger, fresh: true }),
+        ])
+        process.stdout.write(JSON.stringify([a({ model: 1 }), b({ model: 2 })]))
+      `,
+    })
+    const { stdout } = await run(process.execPath, [
+      `${site.root}/race.mjs`,
+      `${site.root}/c`,
+    ])
+    expect(JSON.parse(stdout)).toEqual([
+      { model: 1, hit: true },
+      { model: 2, hit: true },
+    ])
+  })
+
+  it('re-reads the file on a fresh load after the first has settled', async () => {
+    // The in-flight map must only ever share loads that are still running:
+    // a fresh load once the previous one has settled still has to hit disk,
+    // which is the whole point of `fresh` in watch mode.
+    site = await makeSite({
+      'c/settled.cjs': 'module.exports = () => ({ hit: 1 })',
+    })
+    const dir = `${site.root}/c`
+    const first = await loadController(dir, 'settled.cjs', {
+      logger: silentLogger,
+      fresh: true,
+    })
+    expect(first().hit).toBe(1)
+    await settle()
+    await site.touch('c/settled.cjs', 'module.exports = () => ({ hit: 2 })')
+    const second = await loadController(dir, 'settled.cjs', {
+      logger: silentLogger,
+      fresh: true,
+    })
+    expect(second().hit).toBe(2)
   })
 
   it('serves the cached CommonJS controller without fresh', async () => {
