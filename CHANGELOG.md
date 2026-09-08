@@ -3,6 +3,55 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.0.0-beta.2 — 2026-09-08
+
+**Editing a partial rebuilds the pages that use it, not the whole site**
+
+**Changed: under `watch()`, saving a partial or layout re-renders only the pages
+that rendered it.** kiss learns which pages use which partials as they render —
+a partial reached through another partial, chosen with `{{> (lookup …)}}`, or
+used as a layout all count — so a save to a partial four pages use re-renders
+four pages. A partial nothing has rendered yet re-renders every page and logs a
+notice naming it. Measured on a 654-page site: a save to a narrowly used
+partial went from 1247ms to 388ms; a layout every page extends is unchanged,
+because every page really does need re-rendering. Output is byte-identical
+either way. With `verbose: true` a dev build also writes `dependency-graph.json`
+(partial → the pages that rendered it) beside `debug.json`, and each page's
+`.json` sibling lists the `partials` it used.
+
+**Changed: every entry of `kiss.handlebars.partials` is a function.** It was a
+string until the partial's first render anyway (Handlebars compiles it and
+writes the function back), so a helper that reads one has always had to handle
+both shapes. If you render a partial by name in your own helper, pass your
+helper's `options.data` through — that is how kiss records the page as using the
+partial:
+
+```js
+const p = kiss.handlebars.partials[name]
+return new kiss.handlebars.SafeString(
+  typeof p === 'function'
+    ? p(ctx, { data: options.data })
+    : kiss.handlebars.compile(p)(ctx, { data: options.data }),
+)
+```
+
+A bare `p(ctx)` still renders correctly, but that page will not be re-rendered
+when the partial changes under `watch()`. `examples/9-migrated-from-v1.js`
+shows the shape.
+
+**Fixed: a page with `generate: false` no longer claims its output path.** A
+skipped page used to make a real page registered later fail with
+`Page already processed`; it also appeared in `sitemap.xml` and logged a
+"Removed stale output" line on every rebuild. It now does none of those.
+
+**Fixed: two registrations sharing one CommonJS controller no longer fail every
+watch rebuild.** Their fresh re-imports raced, and Node threw
+`ERR_INTERNAL_ASSERTION` for both pages on every replay; the in-flight import
+is now shared.
+
+**Tooling:** `npm run bench --site=<path> --dev="<script> [args]"` times a
+page, a partial and a model save on a real site under watch.
+
 ## 2.0.0-beta.1 — 2026-09-08
 
 **Markdown options are configuration, and hard-wrapped prose renders correctly**
