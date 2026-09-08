@@ -3,6 +3,39 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.0.0-beta.1 — 2026-09-08
+
+**Markdown options are configuration, and hard-wrapped prose renders correctly**
+
+**Changed: `.md` partials no longer break at every wrap point.** kiss renders
+Markdown with `breaks: false` again — the value published v1 used. Since
+`2.0.0-alpha.1` it had been `true`, which turns every newline inside a paragraph
+into a `<br />`: a paragraph you hard-wrapped in your editor rendered with a line
+break at each of the source's wrap points, mid-sentence. If your `.md` partials
+are wrapped at a column, their output changes in this release — that is the fix.
+If you actually want a newline to mean a line break, set
+`markdown: { breaks: true }`.
+
+**New: `config.markdown`** is handed to the Remarkable instance behind both
+`.md` partials and the `{{markdown}}` helper, so the two can never disagree:
+
+```js
+new Kiss({
+  markdown: { breaks: true, typographer: true },
+})
+```
+
+The defaults are `html: true`, `xhtmlOut: true`, `breaks: false`. Those are the
+keys kiss has an opinion about, not the keys it accepts — the block is passed
+through as-is, so any other Remarkable option reaches the renderer. It merges one
+level deep, like `sass`, `fetch` and `assets`, so setting one key keeps the rest.
+
+Prefer it to reaching for `kiss.remarkable` after construction: `.md` partials are
+rendered to HTML **when they are registered**, which happens in the constructor,
+so a later mutation reaches the `{{markdown}}` helper but silently misses every
+partial unless you also call `kiss.registerPartials()`. Set in config, it lands
+before partials are registered and both paths agree.
+
 ## 2.0.0-beta.0 — 2026-09-08
 
 **An asset pipeline, and canonical URLs that don't redirect**

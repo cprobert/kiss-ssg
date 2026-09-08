@@ -1,7 +1,7 @@
 {
   "name": "kiss-ssg",
   "description": "Skills for building, migrating and verifying kiss-ssg static sites, pointing at the docs the package ships.",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0-beta.1",
   "author": {
     "name": "Courtenay Probert"
   }

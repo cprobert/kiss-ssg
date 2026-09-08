@@ -59,6 +59,18 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {import('./pipeline.js').PipelineStep[]} pipeline ordered commands run before the asset copy
  */
 /**
+ * The Markdown block (`config.markdown`): the options handed to this instance's
+ * Remarkable, behind both `.md` partials and the `{{markdown}}` helper. Merged
+ * exactly one level deep, and passed through as-is — the three keys below are
+ * the ones kiss has a default for, not the ones it accepts, so any other
+ * Remarkable option (`typographer`, `langPrefix`) reaches the renderer too.
+ *
+ * @typedef {Object} KissMarkdown
+ * @property {boolean} html render raw HTML in the source rather than escaping it
+ * @property {boolean} xhtmlOut close single tags XHTML-style (`<br />`)
+ * @property {boolean} breaks turn a newline inside a paragraph into a `<br />`
+ */
+/**
  * Every documented config key except `folders`. Both the resolved and the input
  * config are built from this one shape, so the two cannot drift apart.
  *
@@ -71,6 +83,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {{ includePaths: string[] }} sass load paths handed to Sass (its `loadPaths`)
  * @property {KissFetch} fetch
  * @property {KissAssets} assets
+ * @property {KissMarkdown & Record<string, any>} markdown
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
  * @property {string} devHost interface the dev and live reload servers bind to
@@ -86,14 +99,15 @@ export function foldersToEnsure(folders: KissFolders): string[];
 /**
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
- * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch` and
- * `assets` are partial here because each is merged exactly one level deep, so a
- * site sets the one key it cares about and keeps the defaults around it.
+ * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`
+ * and `markdown` are partial here because each is merged exactly one level deep,
+ * so a site sets the one key it cares about and keeps the defaults around it.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'>> & {
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
+ *   markdown?: Partial<KissMarkdown> & Record<string, any>,
  *   folders?: KissFoldersInput,
  * } & Record<string, any>} KissConfigInput
  */
@@ -118,6 +132,11 @@ export const DEFAULT_ASSETS: Readonly<{
     version: any;
     pipeline: any[];
 }>;
+export const DEFAULT_MARKDOWN: Readonly<{
+    html: true;
+    xhtmlOut: true;
+    breaks: false;
+}>;
 export const DEFAULT_CONFIG: Readonly<{
     dev: false;
     verbose: false;
@@ -136,6 +155,11 @@ export const DEFAULT_CONFIG: Readonly<{
         hash: false;
         version: any;
         pipeline: any[];
+    }>;
+    markdown: Readonly<{
+        html: true;
+        xhtmlOut: true;
+        breaks: false;
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -229,6 +253,27 @@ export type KissAssets = {
     pipeline: import("./pipeline.js").PipelineStep[];
 };
 /**
+ * The Markdown block (`config.markdown`): the options handed to this instance's
+ * Remarkable, behind both `.md` partials and the `{{markdown}}` helper. Merged
+ * exactly one level deep, and passed through as-is — the three keys below are
+ * the ones kiss has a default for, not the ones it accepts, so any other
+ * Remarkable option (`typographer`, `langPrefix`) reaches the renderer too.
+ */
+export type KissMarkdown = {
+    /**
+     * render raw HTML in the source rather than escaping it
+     */
+    html: boolean;
+    /**
+     * close single tags XHTML-style (`<br />`)
+     */
+    xhtmlOut: boolean;
+    /**
+     * turn a newline inside a paragraph into a `<br />`
+     */
+    breaks: boolean;
+};
+/**
  * Every documented config key except `folders`. Both the resolved and the input
  * config are built from this one shape, so the two cannot drift apart.
  */
@@ -261,6 +306,7 @@ export type KissSettings = {
     };
     fetch: KissFetch;
     assets: KissAssets;
+    markdown: KissMarkdown & Record<string, any>;
     /**
      * dev server port
      */
@@ -286,15 +332,16 @@ export type KissConfig = KissSettings & {
 /**
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
- * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch` and
- * `assets` are partial here because each is merged exactly one level deep, so a
- * site sets the one key it cares about and keeps the defaults around it.
+ * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`
+ * and `markdown` are partial here because each is merged exactly one level deep,
+ * so a site sets the one key it cares about and keeps the defaults around it.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown">> & {
     sass?: {
         includePaths?: string[];
     };
     fetch?: Partial<KissFetch>;
     assets?: Partial<KissAssets>;
+    markdown?: Partial<KissMarkdown> & Record<string, any>;
     folders?: KissFoldersInput;
 } & Record<string, any>;
