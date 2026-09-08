@@ -1,6 +1,6 @@
 # kiss-ssg: watch-mode rebuild scoping (design)
 
-Status: STEPS 1–2 LANDED (2026-09-05, branch review/v2-critical-friend). Step 3 pending the measurement in Rollout order step 5.
+Status: LANDED (2026-09-08, branch `feat/incremental-rebuild`). Steps 6–7 built on the data-frame mechanism rather than the current-page marker described under Tracing — see `planning/plans/2026-09-08-dependency-graph.md`.
 
 > **Companion document.** The branch brief for this work — success criteria,
 > non-goals and three open questions this design does not settle — is
@@ -131,6 +131,37 @@ Each step is its own green commit with `npm run gates`, and `/branch-pulse` runs
 3. The serial rebuild queue, landed while every path still requests a full replay — behaviour-neutral, exercised by the queue tests.
 4. The no-graph optimisation: partial/layout `change` → re-register + rebuild the stack. Replay-equivalence test lands here.
 5. **Measure** on a consumer-scale site: registration time vs render time per replay. Record the numbers in this spec. Stop here if registration dominates.
+
+   **Measured 2026-09-08.** Site: `diploma-msc` — 69 page views, 188 partials and layouts, 686 pages queued (654 in the stack after a replay: 32 are duplicate registrations of `/profession` that fail at prepare). Engine: `kiss-ssg@2.0.0-beta.1` at `b94df1e`, this checkout linked into the site's `node_modules` with a directory junction for the reading and the installed `2.0.0-alpha.5` restored afterwards. Node v24.20.0, win32-arm64, 12 cpus, 5 runs, medians. Record: `planning/benchmarks/diploma-msc-watch-2026-09-08.json`.
+
+   ```
+   NODE_OPTIONS=--unhandled-rejections=warn node scripts/bench.mjs      --site=C:/Code/kiss/diploma-msc --entry="generate.js staging"      --dev="generate.js dev" --dev-port=3002 --runs=5 --json=<record>
+   ```
+
+   `NODE_OPTIONS` because the site calls `complete()` in the v1 callback form with nothing handling the rejection its 32 failed pages produce, so the dev process dies right after its first build; downgraded to a warning it keeps watching. Nothing in the site was edited.
+
+   | phase                                                  | median  | min     | max     |
+   | ------------------------------------------------------ | ------- | ------- | ------- |
+   | cold `staging` build, engine (minified)                | 18854ms | 17274ms | 20888ms |
+   | watch: page view save (one page re-rendered)           | 37.5ms  | 34.3ms  | 51.3ms  |
+   | watch: partial save (re-register, render 654 pages)    | 1247ms  | 1233ms  | 1893ms  |
+   | watch: model save (full replay: registration + render) | 2729ms  | 2360ms  | 3562ms  |
+
+   **partial/model = 0.46.** Render is 46% of a replay; registration (models, controllers, asset copy, partials) is 54%. Per page, render is ≈1.9ms. So the most the traced graph could ever remove on this site is the partial row: ≈1.2s per save of a partial that few pages use, and nothing at all for the layout (67 of 69 views) or any shared partial. The model row is outside the graph's reach by design (Non-goals). A static count of partial references is not a usable proxy for "pages that use it" here — most of this site's partials are selected at render time through a `renderPartial` helper and `lookup`, which is the case for tracing over parsing.
+
+   **After the graph (2026-09-08, same site, same command, engine at `9422813` on `feat/incremental-rebuild`; the site's `kiss-v2` branch by then had its duplicate registrations fixed, so the model row is not comparable with the before-row).** Two partials, because the win depends entirely on how many pages a partial reaches:
+
+   | save                                                         | before  | after  |
+   | ------------------------------------------------------------ | ------- | ------ |
+   | `util/faq-util.hbs` — four views use it (`--partial=…`)      | ≈1247ms | 388ms  |
+   | `banner.hbs` — inside the layout, every page (the auto-pick) | 1247ms  | 1281ms |
+   | page view (`404.hbs`, the floor)                             | 37.5ms  | 50.8ms |
+   | model (full replay)                                          | 2729ms  | 1696ms |
+
+   Records: `planning/benchmarks/diploma-msc-watch-2026-09-08-after-narrow-partial.json`, `…-after-layout-partial.json`. The narrow partial's 388ms is mostly re-registration — 188 partial files re-read on every partial save — not render, so the next lever, if one is ever wanted, is skipping re-registration for a `change` to a file whose content is unchanged, not more graph. The layout-wide row is the designed ceiling: nothing can narrow a partial every page renders.
+
+   The reading also surfaced a pre-existing replay bug — two registrations sharing one CommonJS controller raced their fresh imports and both failed every replay — fixed on the same branch (`lib/controller-resolver.js`, `9422813`).
+
 6. Only if render dominates: `lib/dependency-graph.js` with its unit tests and docs, unused for dispatch. Then tracing partials and the marker in `KissPage.generate()`, graph populated but unused, visible in dev mode's debug `.json` sibling. Two internal changes to state explicitly: `hbs.partials` entries are functions always (documented surface, above), and handlebars-layouts stops recompiling a layout on every `{{#extend}}` (`index.js:124–126` compiles per invocation for string partials today) — output unchanged, probed for whitespace, `this` binding and indentation.
 7. Scoped dispatch through the graph, with step 4 as its fallback. Invariant tests land here.
 

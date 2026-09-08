@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "node": "v24.20.0",
+    "platform": "win32-arm64",
+    "cpus": 12,
+    "commit": "b94df1e",
+    "recordedAt": "2026-09-08T15:16:11.401Z",
+    "runs": 5,
+    "loud": false
+  },
+  "scenarios": {
+    "site:diploma-msc": {
+      "site": "diploma-msc",
+      "entry": "generate.js staging",
+      "kiss": {
+        "path": "C:\\Code\\kiss-ssg\\lib\\kiss.js",
+        "version": "2.0.0-beta.1"
+      },
+      "builtPages": 686,
+      "builds": 1,
+      "ok": false,
+      "phases": {
+        "process": {
+          "n": 5,
+          "min": 17757.377000000008,
+          "median": 19258.0271,
+          "max": 21368.7157
+        },
+        "engine": {
+          "n": 5,
+          "min": 17274,
+          "median": 18854,
+          "max": 20888
+        }
+      }
+    },
+    "site:diploma-msc:watch": {
+      "site": "diploma-msc",
+      "entry": "generate.js",
+      "kiss": {
+        "path": "C:\\Code\\kiss-ssg\\lib\\kiss.js",
+        "version": "2.0.0-beta.1"
+      },
+      "builtPages": 654,
+      "builds": 1,
+      "ok": false,
+      "touched": {
+        "page": "src/pages/404.hbs",
+        "partial": "src/partials/banner.hbs",
+        "model": "src/models/academicPapers/a-community-perspective-of-covid-19-and-obesity-in-children-causes-and-consequences.json"
+      },
+      "ratio": 0.4569721608179942,
+      "phases": {
+        "page": {
+          "n": 5,
+          "min": 34.270999999993364,
+          "median": 37.4713999999949,
+          "max": 51.279200000004494
+        },
+        "partial": {
+          "n": 5,
+          "min": 1232.586500000005,
+          "median": 1247.2636999999959,
+          "max": 1893.3766999999934
+        },
+        "model": {
+          "n": 5,
+          "min": 2359.717799999984,
+          "median": 2729.4084999999905,
+          "max": 3561.955799999996
+        }
+      }
+    }
+  }
+}

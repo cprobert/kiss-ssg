@@ -28,6 +28,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Config + folder derivation         | `lib/config.js`              | `AIKB/config.md`              |
 | Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
 | Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
+| Dependency graph (partial → page)  | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
 | Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
 | Asset pipeline (external tools)    | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
 | Asset manifest + cache busting     | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
@@ -73,6 +74,18 @@ npm run bench                  # benchmark harness: 6 scenarios over a generated
                                # nothing installed, linked or edited. Prints which kiss-ssg it
                                # resolved, since two runs on different copies are not comparable.
                                # --entry=<script> when package.json's build script isn't a bare `node x.js`
+                               # --dev="<script> [args]" adds a WATCH reading to every --site: starts
+                               # that dev entry, then edits a page, a partial and a model in turn and
+                               # times each save to its live reload. The partial row re-registers the
+                               # partials and re-renders the pages that rendered it (every page for a
+                               # layout-wide partial, when partial/model is the registration-vs-render
+                               # split). --livereload-port / --dev-port say
+                               # where that dev process listens (35729 / 3001); --partial / --model /
+                               # --page name the files to touch, else the first candidate under
+                               # src/partials, src/models and src/pages. --partial should be one a page
+                               # renders: one nothing has rendered yet re-renders every page (the
+                               # fallback, not a scoped save), and one whose pages have all dropped it
+                               # re-renders nothing, broadcasts no live reload, and the reading times out
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg10       # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```
@@ -83,7 +96,7 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettie
 
 ## Pipeline in one paragraph
 
-`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues `config.assets.pipeline`'s external commands and then an asset copy (both on one queue, so the steps always run first), registers helpers and partials, and in dev mode starts the server and watcher — plus, per pipeline step that has one, a long-lived `watch` process that `close()` ends. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` runs `_settle()` — drain everything (including work queued by callbacks), render whatever the drain left unrendered, repeat until the stack is stable — then **rejects with an `AggregateError`** if any page, controller, callback or the dev server failed, and otherwise resolves (and, under `cleanBuild: 'atomic'`, promotes the staging folder at that point). `.sitemap()` waits for `_promises` and writes `sitemap.xml`. Under `.watch()`, every event goes to `Kiss._handleChange`, which decides between a scoped re-render of matching stack entries (a page-view, partial or layout edit) and a whole-site rebuild that replays the pipeline from the logged `_registrations` (`Kiss._replay()`) so edited models and controllers take effect; both kinds go through one serial rebuild queue, and one live reload fires per settled rebuild. Every settled build also assembles one `BuildReport` — `kiss.report()`, `err.report` on the rejection, and a JSON Lines file when `KISS_REPORT` is set; with `KISS_CHECK=1` the build is staged and then discarded whether it passed or failed, which is what `kiss-ssg check` runs. Full detail: `AIKB/kiss.md`, `AIKB/build-report.md`, `AIKB/check.md`.
+`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues `config.assets.pipeline`'s external commands and then an asset copy (both on one queue, so the steps always run first), registers helpers and partials, and in dev mode starts the server and watcher — plus, per pipeline step that has one, a long-lived `watch` process that `close()` ends. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` runs `_settle()` — drain everything (including work queued by callbacks), render whatever the drain left unrendered, repeat until the stack is stable — then **rejects with an `AggregateError`** if any page, controller, callback or the dev server failed, and otherwise resolves (and, under `cleanBuild: 'atomic'`, promotes the staging folder at that point). `.sitemap()` waits for `_promises` and writes `sitemap.xml`. Under `.watch()`, every event goes to `Kiss._handleChange`, which decides between a scoped re-render of matching stack entries (a page-view edit; a partial or layout edit re-renders the pages `lib/dependency-graph.js` recorded as having rendered it, or every page with a notice when it has none) and a whole-site rebuild that replays the pipeline from the logged `_registrations` (`Kiss._replay()`) so edited models and controllers take effect; both kinds go through one serial rebuild queue, and one live reload fires per settled rebuild. Every settled build also assembles one `BuildReport` — `kiss.report()`, `err.report` on the rejection, and a JSON Lines file when `KISS_REPORT` is set; with `KISS_CHECK=1` the build is staged and then discarded whether it passed or failed, which is what `kiss-ssg check` runs. Full detail: `AIKB/kiss.md`, `AIKB/build-report.md`, `AIKB/check.md`.
 
 ## Git workflow
 

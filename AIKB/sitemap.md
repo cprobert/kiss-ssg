@@ -6,7 +6,7 @@ Builds `sitemap.xml` entries from the page stack and writes the file to the buil
 
 ## Public interface
 
-- `buildSitemapEntries(stack, { siteUrl, buildDir, now = new Date().toISOString() })` → array of `{ loc, lastmod, priority, changefreq }`. Skips entries where `entry.page.options.ignoreSitemap` is truthy. `loc` = `siteUrl` joined to the page's URL path (derived from `buildTo`) by `toAbsoluteUrl` from `utils.js`. `lastmod` defaults to `now` (one shared timestamp per call unless a page sets `sitemapLastmod`); `priority` defaults to `'1.00'`; `changefreq` is omitted from the XML unless `sitemapChangefreq` is set.
+- `buildSitemapEntries(stack, { siteUrl, buildDir, now = new Date().toISOString() })` → array of `{ loc, lastmod, priority, changefreq }`. Skips entries where `entry.page.options.ignoreSitemap` is truthy, and where `entry.page.options.generate === false`. `loc` = `siteUrl` joined to the page's URL path (derived from `buildTo`) by `toAbsoluteUrl` from `utils.js`. `lastmod` defaults to `now` (one shared timestamp per call unless a page sets `sitemapLastmod`); `priority` defaults to `'1.00'`; `changefreq` is omitted from the XML unless `sitemapChangefreq` is set.
 - `renderSitemapXml(urls)` → the `sitemap.xml` string (standard `<urlset>`/`<url>` schema; `<changefreq>` only emitted when `url.changefreq` is set).
 - `async writeSitemap(stack, { config, logger, overwrite = true })` → `Promise<{ status, urls }>`. `status` is `'no-site-url'` (no `config.siteUrl`, nothing written), `'skipped'` (`overwrite: false` and a `sitemap.xml` already exists), or `'written'` (file written, `urls` populated).
 

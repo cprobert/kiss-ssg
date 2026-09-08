@@ -789,6 +789,80 @@ describe('partial and layout fast path', () => {
     expect(await site.read('public/index.html')).toBe('[V2]remote')
   })
 
+  it('re-renders only the pages that rendered the edited partial', async () => {
+    site = await makeSite({
+      'src/pages/uses.hbs': '[{{> foo}}]',
+      'src/pages/other.hbs': 'other',
+      'src/partials/foo.hbs': 'V1',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    const before = (await fs.stat(`${site.build}/other.html`)).mtimeMs
+
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/partials/foo.hbs', 'V2')
+    await waitFor(async () => (await site.read('public/uses.html')) === '[V2]')
+    await drained()
+    await sleep(300)
+    // Untouched output, not merely unchanged content: the other page was
+    // never re-rendered.
+    expect((await fs.stat(`${site.build}/other.html`)).mtimeMs).toBe(before)
+    expect(await site.read('public/other.html')).toBe('other')
+  })
+
+  it('falls back to every page, and says so, for a partial no page has rendered', async () => {
+    const notices = []
+    const logger = {
+      ...silentLogger,
+      notice: (...args) => notices.push(args.join(' ')),
+    }
+    site = await makeSite({
+      'src/pages/a.hbs': 'A',
+      'src/pages/b.hbs': 'B',
+      'src/partials/unused.hbs': 'U1',
+    })
+    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+    await kiss.complete()
+    const a = (await fs.stat(`${site.build}/a.html`)).mtimeMs
+    const b = (await fs.stat(`${site.build}/b.html`)).mtimeMs
+
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/partials/unused.hbs', 'U2')
+    await waitFor(
+      async () => (await fs.stat(`${site.build}/b.html`)).mtimeMs > b,
+    )
+    await drained()
+    expect((await fs.stat(`${site.build}/a.html`)).mtimeMs).toBeGreaterThan(a)
+    expect(notices.some((n) => n.includes('unused'))).toBe(true)
+  })
+
+  it('stops re-rendering a page that stopped using the partial', async () => {
+    site = await makeSite({
+      'src/pages/p.hbs': '[{{> foo}}]',
+      'src/partials/foo.hbs': 'V1',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await site.touch('src/pages/p.hbs', 'plain')
+    await waitFor(async () => (await site.read('public/p.html')) === 'plain')
+    await drained()
+    const after = (await fs.stat(`${site.build}/p.html`)).mtimeMs
+
+    await site.touch('src/partials/foo.hbs', 'V2')
+    await sleep(500)
+    await drained()
+    expect((await fs.stat(`${site.build}/p.html`)).mtimeMs).toBe(after)
+  })
+
   it('skips a queued rebuild target the stack no longer holds', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
     kiss = new Kiss({ folders: site.folders, logger: silentLogger })
@@ -919,5 +993,32 @@ describe('live reload', () => {
       /public\/css\/main\.css$/,
     )
     expect(await site.read('public/css/main.css')).toContain('blue')
+  })
+})
+
+describe('dependency graph dump', () => {
+  it('writes dependency-graph.json in verbose dev mode, partial to pages', async () => {
+    site = await makeSite({
+      'src/pages/a.hbs': '{{> foo}}',
+      'src/pages/b.hbs': '{{> foo}}{{> bar}}',
+      'src/partials/foo.hbs': 'F',
+      'src/partials/bar.hbs': 'B',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      logger: silentLogger,
+      dev: true,
+      verbose: true,
+      port: 0,
+      livereloadPort: 0,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    const dump = JSON.parse(await site.read('public/dependency-graph.json'))
+    expect(dump).toEqual({
+      bar: [`${site.build}/b.html`],
+      foo: [`${site.build}/a.html`, `${site.build}/b.html`],
+    })
   })
 })

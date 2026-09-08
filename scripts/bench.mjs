@@ -26,10 +26,16 @@
 //   node scripts/bench.mjs --scenario=scan,models
 //   node scripts/bench.mjs --json=baseline.json     # record
 //   node scripts/bench.mjs --baseline=baseline.json # record and compare
+//   node scripts/bench.mjs --site=../a-site         # time a real site's build
+//   node scripts/bench.mjs --site=../a-site --dev="generate dev"
+//                                                   # …and time three saves under watch
+//     --livereload-port=<n> / --dev-port=<n>  where that dev process will listen
+//     --partial=<p> --model=<p> --page=<p>    the files to touch, if not the first
+//                                             candidate under src/{partials,models,pages}
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
@@ -62,6 +68,18 @@ export const DEFAULTS = {
   // package.json does not make it obvious.
   site: [],
   entry: null,
+  // `--dev` names the site's dev-mode entry ("<script> [args…]") and turns on
+  // the watch reading for every `--site` given; the ports say where that
+  // process will listen, and the three file options override what gets touched.
+  dev: null,
+  // Repeated from `lib/config.js` rather than imported: a static import of any
+  // `lib/` module leaves it in this file's module cache, and this file re-enters
+  // itself as the child that times `import('../lib/kiss.js')` cold.
+  livereloadPort: 35729,
+  devPort: 3001,
+  partial: null,
+  model: null,
+  page: null,
 }
 
 // Naming real sites means you want those sites, not a fixture sweep alongside
@@ -86,8 +104,11 @@ export function parseArgs(argv, defaults = DEFAULTS) {
   const opts = { ...defaults }
   for (const arg of argv) {
     const [rawKey, rawValue] = arg.replace(/^--/, '').split('=')
-    const key = rawKey.trim()
-    if (!(key in defaults)) throw new Error(`unknown option: --${key}`)
+    // Kebab on the command line, camel in the options object — `--dev-port`
+    // reads better than `--devPort` and nothing else here is two words.
+    const key = rawKey.trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+    if (!(key in defaults))
+      throw new Error(`unknown option: --${rawKey.trim()}`)
     const fallback = defaults[key]
     if (typeof fallback === 'boolean') {
       opts[key] = rawValue === undefined ? true : rawValue !== 'false'
@@ -106,6 +127,16 @@ export function parseArgs(argv, defaults = DEFAULTS) {
     throw new Error('--pages must be positive numbers')
   if (!Number.isFinite(opts.runs) || opts.runs < 1)
     throw new Error('--runs must be a positive number')
+  // A watch reading is a reading of a real site running its own dev process;
+  // accepting the flag without one would report nothing and look like a run.
+  if (opts.dev && opts.site.length === 0)
+    throw new Error('--dev needs a --site to run that dev entry in')
+  for (const [key, flag] of [
+    ['livereloadPort', '--livereload-port'],
+    ['devPort', '--dev-port'],
+  ])
+    if (!Number.isFinite(opts[key]) || opts[key] < 1)
+      throw new Error(`${flag} must be a positive port number`)
   return opts
 }
 
@@ -378,6 +409,7 @@ export function buildFixture(dir, pages) {
 // ---------------------------------------------------------------------------
 
 const now = () => performance.now()
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function runChild(scenario, dir, pages, loud) {
   const { silentLogger } = await import('../lib/logger.js')
@@ -549,6 +581,11 @@ export function resolveSiteEntry(pkg, explicit) {
 // One line per settled build, so a site that constructs several Kiss instances
 // (an archive of per-version outputs, say) is summed rather than reported as
 // whichever build happened to finish last.
+// An entry is a script and whatever argv it wants, separated by whitespace.
+export function splitEntry(entry) {
+  return String(entry).trim().split(/\s+/).filter(Boolean)
+}
+
 export function summariseReports(lines) {
   const reports = lines
     .map((l) => l.trim())
@@ -602,8 +639,11 @@ function benchSite(siteDir, opts) {
     throw new Error(
       `could not work out how to build ${dir} — name it with --entry=<script>`,
     )
-  if (!fs.existsSync(path.join(dir, entry)))
-    throw new Error(`entry script not found: ${path.join(dir, entry)}`)
+  // "<script> [args…]", like `--dev`: a site that picks its instance from argv
+  // (`generate staging`) has no bare script that builds and exits.
+  const [script, ...args] = splitEntry(entry)
+  if (!fs.existsSync(path.join(dir, script)))
+    throw new Error(`entry script not found: ${path.join(dir, script)}`)
 
   const resolved = resolveKissFrom(dir)
   const reportFile = path.join(BENCH_DIR, `report-${process.pid}.jsonl`)
@@ -611,7 +651,7 @@ function benchSite(siteDir, opts) {
   const run = () => {
     fs.rmSync(reportFile, { force: true })
     const started = now()
-    const r = spawnSync(process.execPath, [entry], {
+    const r = spawnSync(process.execPath, [script, ...args], {
       cwd: dir,
       encoding: 'utf8',
       env: { ...process.env, KISS_REPORT: reportFile, NO_COLOR: '1' },
@@ -645,6 +685,366 @@ function benchSite(siteDir, opts) {
     builds: samples[0]?.builds ?? null,
     ok: samples.every((s) => s.ok !== false),
     phases: summarise(samples),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Real sites, under watch
+// ---------------------------------------------------------------------------
+
+// The cold reading above says what a site costs once. `--dev` asks the other
+// question — what one save costs — because that is the number the watch-scoping
+// spec stops or continues on (`planning/specs/2026-09-05-watch-dependency-graph-
+// design.md`, rollout step 5). Three edits, three engine routes:
+//
+//   page     a page view — the single-page re-render, the floor
+//   partial  a partial — re-register the partials, then re-render the pages
+//            that rendered it (every page for a layout-wide partial)
+//   model    a model — a full replay: registration *and* render
+//
+// median(partial)/median(model) is the registration-vs-render split only when
+// the touched partial reaches every page; a narrower partial re-renders fewer
+// pages and the ratio falls with the fan-out, so read it as "what this save
+// costs", not as a fixed property of the engine.
+//
+// "Settled" is observed the way a browser observes it. The engine's livereload
+// server broadcasts once per settled rebuild (`Kiss._reload`), and a scoped
+// re-render writes no build report, so the socket is the only public signal
+// that covers all three routes. Polling output files instead would need to know
+// which of a real site's thousands of pages the edit reached.
+
+// Cheapest first, so a run that dies part-way still has the simpler numbers.
+const TOUCH_ORDER = ['page', 'partial', 'model']
+
+// Conventional layout, deliberately: reading the site's real folder config
+// would mean running its script, which is what the child is for. `--partial`,
+// `--model` and `--page` are the escape hatch for a site shaped differently.
+//
+// `--partial` should name a partial some page renders. One nothing has ever
+// rendered still works — kiss knows no dependents and re-renders every page —
+// but that measures the fallback, not a scoped save. What broadcasts nothing
+// is a partial kiss once saw rendered whose pages have all since dropped it
+// (or are no longer on the stack): the rebuild queue returns early on empty
+// targets, so the reading times out rather than reporting a fast save. The
+// auto-pick is simply the first `.hbs` sorted under `src/partials`.
+const TOUCH_KINDS = {
+  partial: { dir: 'src/partials', ext: '.hbs' },
+  model: { dir: 'src/models', ext: '.json' },
+  page: { dir: 'src/pages', ext: '.hbs' },
+}
+
+// Sorted, so two runs of the bench touch the same file: no filesystem promises
+// an order for a directory listing, and a reading of two different partials is
+// not a before/after.
+function firstFile(dir, ext) {
+  if (!fs.existsSync(dir)) return null
+  const found = []
+  const walk = (rel) => {
+    for (const entry of fs.readdirSync(path.join(dir, rel), {
+      withFileTypes: true,
+    })) {
+      const next = rel ? `${rel}/${entry.name}` : entry.name
+      if (entry.isDirectory()) walk(next)
+      else if (entry.name.toLowerCase().endsWith(ext)) found.push(next)
+    }
+  }
+  walk('')
+  return found.sort()[0] ?? null
+}
+
+export function pickTouchTargets(siteDir, overrides = {}) {
+  const out = {}
+  for (const [kind, { dir, ext }] of Object.entries(TOUCH_KINDS)) {
+    if (overrides[kind]) {
+      out[kind] = path.resolve(siteDir, overrides[kind])
+      continue
+    }
+    const found = firstFile(path.join(siteDir, dir), ext)
+    out[kind] = found ? path.join(siteDir, dir, found) : null
+  }
+  return out
+}
+
+// The livereload protocol puts several commands on one socket, and the `hello`
+// reply lands there too — counting that as a settled rebuild would time the
+// handshake instead of the build.
+export function isReloadMessage(raw) {
+  try {
+    const parsed = JSON.parse(typeof raw === 'string' ? raw : String(raw))
+    return parsed?.command === 'reload'
+  } catch {
+    return false
+  }
+}
+
+// `livereload`'s `Server.listen` builds a bare `ws.Server({ port, host })` with
+// no HTTP server and no `path` option, so any request path connects, and
+// `refresh()` → `sendAllClients` broadcasts to every socket in `server.clients`
+// — the `hello` handshake is answered but never gates a broadcast. It is sent
+// anyway, so the bench is the client the protocol describes rather than one
+// that only happens to work.
+async function connectLivereload(port, isDead) {
+  // Generous, because this is a cold `node` start of somebody else's site: the
+  // socket has to be open before the first build settles or its reload is
+  // broadcast to nobody, so the retry is tight and the patience is long.
+  const deadline = Date.now() + 60000
+  for (;;) {
+    try {
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/livereload`)
+      await new Promise((resolve, reject) => {
+        socket.addEventListener('open', () => resolve(null), { once: true })
+        socket.addEventListener('error', () => reject(new Error('refused')), {
+          once: true,
+        })
+      })
+      socket.send(
+        JSON.stringify({
+          command: 'hello',
+          protocols: ['http://livereload.com/protocols/official-7'],
+        }),
+      )
+      return socket
+    } catch {
+      if (isDead() || Date.now() > deadline)
+        throw new Error(
+          `no live reload server answered on 127.0.0.1:${port} — the site never started one, or it listens elsewhere (--livereload-port=<n>)`,
+        )
+      await sleep(25)
+    }
+  }
+}
+
+// A dev server that cannot bind logs the failure and keeps building, so without
+// this the bench would sit waiting for reloads from somebody else's livereload
+// server — or worse, get them.
+async function assertPortsFree(ports) {
+  const net = await import('node:net')
+  for (const [port, flag] of ports) {
+    const free = await new Promise((resolve) => {
+      const probe = net.createServer()
+      probe.once('error', () => resolve(false))
+      probe.listen(port, '127.0.0.1', () => probe.close(() => resolve(true)))
+    })
+    if (!free)
+      throw new Error(
+        `port ${port} is already in use — free it, or point the bench at the port this site uses (${flag}=<n>)`,
+      )
+  }
+}
+
+export async function benchSiteWatch(siteDir, opts) {
+  const dir = path.resolve(siteDir)
+  if (!fs.existsSync(dir)) throw new Error(`no such site directory: ${dir}`)
+  const [entry, ...args] = splitEntry(opts.dev)
+  if (!entry) throw new Error('--dev needs a dev-mode entry script')
+  if (!fs.existsSync(path.join(dir, entry)))
+    throw new Error(`dev entry script not found: ${path.join(dir, entry)}`)
+
+  const targets = pickTouchTargets(dir, opts)
+  for (const kind of TOUCH_ORDER)
+    if (targets[kind] && !fs.existsSync(targets[kind]))
+      throw new Error(`no such ${kind} to touch: ${targets[kind]}`)
+  if (TOUCH_ORDER.every((kind) => !targets[kind]))
+    throw new Error(
+      `found nothing to touch under ${dir} — name the files with --page, --partial and --model`,
+    )
+  await assertPortsFree([
+    [opts.livereloadPort, '--livereload-port'],
+    [opts.devPort, '--dev-port'],
+  ])
+
+  const resolved = resolveKissFrom(dir)
+  fs.mkdirSync(BENCH_DIR, { recursive: true })
+  const reportFile = path.join(BENCH_DIR, `watch-${process.pid}.jsonl`)
+  fs.rmSync(reportFile, { force: true })
+  // Read before anything is touched, written back in `finally`: the bench edits
+  // the site it is measuring, and one byte left behind makes the next reading a
+  // reading of a different site.
+  const originals = new Map(
+    TOUCH_ORDER.filter((kind) => targets[kind]).map((kind) => [
+      targets[kind],
+      fs.readFileSync(targets[kind]),
+    ]),
+  )
+
+  const lines = []
+  const keep = (chunk) => {
+    lines.push(...String(chunk).split('\n'))
+    if (lines.length > 30) lines.splice(0, lines.length - 30)
+  }
+  const tail = () => lines.join('\n').trim()
+
+  let exited = false
+  const child = spawn(process.execPath, [entry, ...args], {
+    cwd: dir,
+    env: { ...process.env, KISS_REPORT: reportFile, NO_COLOR: '1' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  child.stdout.on('data', keep)
+  child.stderr.on('data', keep)
+  child.on('exit', () => (exited = true))
+  // An 'error' with no listener throws on an EventEmitter, and a failed spawn
+  // emits no 'exit' at all — so it has to end the wait itself.
+  child.on('error', (err) => {
+    keep(err.message)
+    exited = true
+  })
+
+  let socket = null
+  let reloads = 0
+  const samples = []
+  try {
+    // Connected before anything is edited. The initial build's own reload is
+    // *not* waited for: the livereload server binds inside the same
+    // `generate()` call that settles the build, so it is broadcast to nobody
+    // and a client waiting for it waits forever (verified against a real dev
+    // process). An edit of the bench's own is the only reload it can be sure of
+    // catching, which is what `warm` below is for.
+    socket = await connectLivereload(opts.livereloadPort, () => exited)
+    socket.addEventListener('message', (event) => {
+      if (isReloadMessage(event.data)) reloads++
+    })
+
+    // Armed before the touch, never after: a small site can settle a rebuild
+    // faster than the next line of this function runs.
+    const settle = () =>
+      new Promise((resolve, reject) => {
+        let timer = null
+        const done = (fn, value) => {
+          clearTimeout(timer)
+          socket.removeEventListener('message', onMessage)
+          socket.removeEventListener('close', onClose)
+          child.removeListener('exit', onClose)
+          fn(value)
+        }
+        const onMessage = (event) =>
+          isReloadMessage(event.data) && done(resolve, now())
+        const onClose = () =>
+          done(
+            reject,
+            new Error(`the dev process went away mid-reading:\n${tail()}`),
+          )
+        timer = setTimeout(
+          () =>
+            done(
+              reject,
+              new Error(`timed out waiting for a live reload:\n${tail()}`),
+            ),
+          600000,
+        )
+        socket.addEventListener('message', onMessage)
+        socket.addEventListener('close', onClose)
+        // The socket does not always learn that its server died — a process
+        // that crashes sends no close frame — but the child's exit is certain,
+        // and a settle that waits ten minutes to find out is a hang.
+        if (exited) onClose()
+        else child.once('exit', onClose)
+      })
+
+    // The discarded touch, and the only one that is retried. Three things can
+    // swallow it: chokidar may still be doing its initial scan, the site may
+    // still be inside its cold build, and this is the first event for the path,
+    // which pays for watcher registration no later edit repeats. Ten minutes,
+    // not the fixture scenarios' thirty seconds — a consumer-scale cold build
+    // may be fetching URL models.
+    const warm = async (file, kind) => {
+      const deadline = Date.now() + 600000
+      for (;;) {
+        const before = reloads
+        fs.appendFileSync(file, '\n')
+        await until(() => reloads > before || exited, 5000, 25).catch(() => {})
+        if (reloads > before) break
+        if (exited)
+          throw new Error(
+            `dev entry \`${entry}\` exited before it rebuilt anything:\n${tail()}`,
+          )
+        if (Date.now() > deadline)
+          throw new Error(
+            `no live reload after editing ${file} in ten minutes — ${
+              kind === 'partial'
+                ? 'no page rendered that partial in its last build (a partial whose recorded pages have all dropped it re-renders nothing and broadcasts nothing — name one a page uses with --partial), or the site is not watching that folder'
+                : 'is the site watching that folder?'
+            }`,
+          )
+      }
+      // Quiet, not merely "one reload": the initial build's broadcast and a
+      // retried touch's can both still be in flight, and an unclaimed reload
+      // would resolve the next measured edit before it had rebuilt anything.
+      for (let last = -1; last !== reloads;) {
+        last = reloads
+        await sleep(300)
+      }
+    }
+
+    for (const kind of TOUCH_ORDER) {
+      const file = targets[kind]
+      if (!file) continue
+      await warm(file, kind)
+      for (let i = 0; i < opts.runs; i++) {
+        const settled = settle()
+        const tTouch = now()
+        // Appended, never rewritten and never replaced: `add` and `unlink` both
+        // route to a full replay, so a create-or-delete would measure the same
+        // thing three times. The file grows a byte a touch and is restored below.
+        fs.appendFileSync(file, '\n')
+        samples.push({ [kind]: (await settled) - tTouch })
+        // Two edits inside chokidar's debounce window coalesce into one event,
+        // and would then be timed as one rebuild.
+        await sleep(100)
+      }
+    }
+
+    // Taken from the report at the end, and from its last line only. A dev
+    // script that never calls `complete()` (the common shape —
+    // `examples/1-scan.js`) writes nothing until a replay, and by now the model
+    // edits have replayed the whole site several times; summing the file would
+    // count the site once per replay.
+    const reported = (
+      fs.existsSync(reportFile) ? fs.readFileSync(reportFile, 'utf8') : ''
+    )
+      .split('\n')
+      .filter(Boolean)
+    const settled = summariseReports(reported.slice(-1))
+
+    const phases = summarise(samples)
+    return {
+      site: path.basename(dir),
+      entry,
+      kiss: resolved,
+      builtPages: settled?.pages ?? null,
+      builds: settled?.builds ?? null,
+      ok: settled?.ok !== false,
+      touched: Object.fromEntries(
+        TOUCH_ORDER.map((kind) => [
+          kind,
+          targets[kind]
+            ? path.relative(dir, targets[kind]).replace(/\\/g, '/')
+            : null,
+        ]),
+      ),
+      // Reported beside the table rather than in it: it is a ratio of two rows,
+      // not a fourth measurement.
+      ratio:
+        phases.partial && phases.model
+          ? phases.partial.median / phases.model.median
+          : null,
+      phases,
+    }
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) child.kill()
+    for (const [file, body] of originals) fs.writeFileSync(file, body)
+    socket?.close()
+    fs.rmSync(reportFile, { force: true })
+    // Awaited, not fired and forgotten: until the dev process is gone it still
+    // holds its two ports, and the next reading cannot bind them.
+    if (!exited)
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, 5000)
+        child.once('exit', () => {
+          clearTimeout(timer)
+          resolve(null)
+        })
+      })
   }
 }
 
@@ -689,6 +1089,10 @@ const PHASE_ORDER = [
   'total',
   'engine',
   'rerender',
+  // The watch reading's three edits, cheapest route first.
+  'page',
+  'partial',
+  'model',
 ]
 
 export function summarise(samples) {
@@ -730,6 +1134,13 @@ async function main(argv) {
     process.stderr.write(`  running ${key} …`)
     results.scenarios[key] = benchSite(site, opts)
     process.stderr.write(' done\n')
+    // Its own scenario rather than extra rows on the cold one: the two readings
+    // come from different processes and answer different questions.
+    if (opts.dev) {
+      process.stderr.write(`  running ${key}:watch …`)
+      results.scenarios[`${key}:watch`] = await benchSiteWatch(site, opts)
+      process.stderr.write(' done\n')
+    }
   }
 
   const scenarios = scenariosToRun(
@@ -803,6 +1214,14 @@ function print(results, baseline) {
         `  engine: ${result.kiss ? `kiss-ssg@${result.kiss.version} — ${result.kiss.path}` : 'kiss-ssg did not resolve from this site'}`,
       )
     if (result.entry) console.log(`  entry:  ${result.entry}`)
+    // Which files were edited is part of a watch reading: a partial nothing
+    // includes and a partial every page includes are different measurements.
+    if (result.touched)
+      console.log(
+        `  touched: ${Object.entries(result.touched)
+          .map(([kind, file]) => `${kind}=${file ?? '—'}`)
+          .join(' ')}`,
+      )
     console.log(
       `  ${'phase'.padEnd(28)} ${'median'.padStart(9)} ${'min'.padStart(9)} ${'max'.padStart(9)}${baseline ? `${'Δ'.padStart(11)}` : ''}`,
     )
@@ -810,6 +1229,8 @@ function print(results, baseline) {
       const base = baseline?.scenarios?.[key]?.phases?.[phase]
       console.log(`  ${formatRow(phase, s, base ? compare(s, base) : null)}`)
     }
+    if (result.ratio != null)
+      console.log(`  partial/model: ${result.ratio.toFixed(2)}`)
   }
 }
 
