@@ -56,6 +56,14 @@ describe('buildSitemapEntries', () => {
       lastmod: 'L',
     })
   })
+
+  it('skips a page that is not generated', () => {
+    const urls = buildSitemapEntries(
+      [entry('out/a.html'), entry('out/b.html', { generate: false })],
+      { siteUrl: 'https://example.com', buildDir: 'out' },
+    )
+    expect(urls.map((u) => u.loc)).toEqual(['https://example.com/a'])
+  })
 })
 
 describe('renderSitemapXml', () => {
