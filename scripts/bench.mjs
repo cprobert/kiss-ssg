@@ -581,6 +581,11 @@ export function resolveSiteEntry(pkg, explicit) {
 // One line per settled build, so a site that constructs several Kiss instances
 // (an archive of per-version outputs, say) is summed rather than reported as
 // whichever build happened to finish last.
+// An entry is a script and whatever argv it wants, separated by whitespace.
+export function splitEntry(entry) {
+  return String(entry).trim().split(/\s+/).filter(Boolean)
+}
+
 export function summariseReports(lines) {
   const reports = lines
     .map((l) => l.trim())
@@ -634,8 +639,11 @@ function benchSite(siteDir, opts) {
     throw new Error(
       `could not work out how to build ${dir} — name it with --entry=<script>`,
     )
-  if (!fs.existsSync(path.join(dir, entry)))
-    throw new Error(`entry script not found: ${path.join(dir, entry)}`)
+  // "<script> [args…]", like `--dev`: a site that picks its instance from argv
+  // (`generate staging`) has no bare script that builds and exits.
+  const [script, ...args] = splitEntry(entry)
+  if (!fs.existsSync(path.join(dir, script)))
+    throw new Error(`entry script not found: ${path.join(dir, script)}`)
 
   const resolved = resolveKissFrom(dir)
   const reportFile = path.join(BENCH_DIR, `report-${process.pid}.jsonl`)
@@ -643,7 +651,7 @@ function benchSite(siteDir, opts) {
   const run = () => {
     fs.rmSync(reportFile, { force: true })
     const started = now()
-    const r = spawnSync(process.execPath, [entry], {
+    const r = spawnSync(process.execPath, [script, ...args], {
       cwd: dir,
       encoding: 'utf8',
       env: { ...process.env, KISS_REPORT: reportFile, NO_COLOR: '1' },
@@ -819,7 +827,7 @@ async function assertPortsFree(ports) {
 export async function benchSiteWatch(siteDir, opts) {
   const dir = path.resolve(siteDir)
   if (!fs.existsSync(dir)) throw new Error(`no such site directory: ${dir}`)
-  const [entry, ...args] = String(opts.dev).trim().split(/\s+/).filter(Boolean)
+  const [entry, ...args] = splitEntry(opts.dev)
   if (!entry) throw new Error('--dev needs a dev-mode entry script')
   if (!fs.existsSync(path.join(dir, entry)))
     throw new Error(`dev entry script not found: ${path.join(dir, entry)}`)
@@ -898,6 +906,7 @@ export async function benchSiteWatch(siteDir, opts) {
           clearTimeout(timer)
           socket.removeEventListener('message', onMessage)
           socket.removeEventListener('close', onClose)
+          child.removeListener('exit', onClose)
           fn(value)
         }
         const onMessage = (event) =>
@@ -908,11 +917,20 @@ export async function benchSiteWatch(siteDir, opts) {
             new Error(`the dev process went away mid-reading:\n${tail()}`),
           )
         timer = setTimeout(
-          () => done(reject, new Error('timed out waiting for a live reload')),
+          () =>
+            done(
+              reject,
+              new Error(`timed out waiting for a live reload:\n${tail()}`),
+            ),
           600000,
         )
         socket.addEventListener('message', onMessage)
         socket.addEventListener('close', onClose)
+        // The socket does not always learn that its server died — a process
+        // that crashes sends no close frame — but the child's exit is certain,
+        // and a settle that waits ten minutes to find out is a hang.
+        if (exited) onClose()
+        else child.once('exit', onClose)
       })
 
     // The discarded touch, and the only one that is retried. Three things can

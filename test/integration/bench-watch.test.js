@@ -34,7 +34,10 @@ const canBind = (port) =>
 // The smallest site that still exercises all three edit routes: a page view
 // (single-page re-render), a partial it includes (scoped re-render) and a model
 // it reads (full replay).
-async function makeDevSite() {
+// `exitAfterRender`, when given, ends the dev process 200ms after that many
+// renders of the page — the crash test's way of dying *between* two of the
+// bench's settles rather than inside one.
+async function makeDevSite({ exitAfterRender = 0 } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-bench-watch-'))
   const posix = dir.replace(/\\/g, '/')
   const port = await freePort()
@@ -45,7 +48,10 @@ async function makeDevSite() {
     fs.writeFileSync(file, body)
   }
   write('src/partials/p.hbs', '<p>partial</p>\n')
-  write('src/pages/index.hbs', '<h1>{{model.title}}</h1>\n{{> "p"}}\n')
+  write(
+    'src/pages/index.hbs',
+    '<h1>{{model.title}}</h1>\n{{> "p"}}\n{{tick}}\n',
+  )
   write('src/models/m.json', '{ "title": "hello" }\n')
   // A junction rather than a copy, so `resolveKissFrom` — the check that stops
   // a before/after quietly comparing two different engines — has something to
@@ -61,15 +67,19 @@ async function makeDevSite() {
     `import Kiss from '${url('kiss.js')}'
 import { silentLogger } from '${url('logger.js')}'
 
-new Kiss({
+const kiss = new Kiss({
   dev: true,
   port: ${port},
   livereloadPort: ${livereloadPort},
   logger: silentLogger,
   folders: { src: '${posix}/src', build: '${posix}/public' },
 })
-  .page({ view: 'index.hbs', model: 'm.json' })
-  .generate()
+let renders = 0
+kiss.handlebars.registerHelper('tick', () => {
+  if (++renders === ${exitAfterRender}) setTimeout(() => process.exit(1), 200)
+  return ''
+})
+kiss.page({ view: 'index.hbs', model: 'm.json' }).generate()
 `,
   )
   return { dir, port, livereloadPort }
@@ -128,4 +138,31 @@ describe('benchSiteWatch', () => {
     // vitest worker open — the freed port is the proof it is gone.
     await expect(canBind(site.livereloadPort)).resolves.toBe(true)
   }, 60000)
+
+  it('rejects promptly when the dev process dies between two settles', async () => {
+    // Render 1 is the initial build; render 2 is the bench's discarded page
+    // touch. The process exits 200ms after that — its reload already
+    // broadcast, the bench draining the socket to quiet — so the socket's
+    // close lands while no settle is listening. The first measured touch then
+    // arms a settle on a socket that will never speak again, and only the
+    // child's own exit can tell it so. Without that check this sat out the
+    // settle's ten-minute timeout; the 30s test timeout is the assertion.
+    site = await makeDevSite({ exitAfterRender: 2 })
+    const before = read(site.dir, 'src/pages/index.hbs')
+
+    await expect(
+      benchSiteWatch(site.dir, {
+        dev: 'dev.mjs',
+        runs: 1,
+        livereloadPort: site.livereloadPort,
+        devPort: site.port,
+        partial: null,
+        model: null,
+        page: null,
+      }),
+    ).rejects.toThrow(/went away mid-reading|exited before it rebuilt/)
+
+    expect(read(site.dir, 'src/pages/index.hbs')).toEqual(before)
+    await expect(canBind(site.livereloadPort)).resolves.toBe(true)
+  }, 30000)
 })

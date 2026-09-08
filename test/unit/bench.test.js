@@ -14,6 +14,7 @@ import {
   parseArgs,
   pickTouchTargets,
   resolveSiteEntry,
+  splitEntry,
   scenariosToRun,
   summariseReports,
   recordTarget,
@@ -475,6 +476,15 @@ describe('recordTarget', () => {
 
   it('writes nothing when neither option is given', () => {
     expect(recordTarget({ json: null, baseline: null }, missing)).toBeNull()
+  })
+})
+
+describe('splitEntry', () => {
+  it('splits a script from its arguments', () => {
+    expect(splitEntry('generate staging')).toEqual(['generate', 'staging'])
+  })
+  it('leaves a bare script alone', () => {
+    expect(splitEntry(' build.js ')).toEqual(['build.js'])
   })
 })
 
