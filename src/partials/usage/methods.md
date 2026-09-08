@@ -133,7 +133,7 @@ Any page can opt out with `ignoreSitemap: true`, and override its entry with `si
 
 ### .watch() and .close()
 
-`kiss.watch()` (meaningful only alongside `dev: true`) starts a file watcher plus a live-reload dev server on `port`. Editing a partial or layout re-renders every page without re-reading models or re-running controllers. Every other change under `src/` — a page template, a model, or a controller — triggers a whole-site rebuild, so edited models and controllers take effect. Deleted partials, layouts and page templates are unregistered on the next rebuild; new ones are picked up automatically.
+`kiss.watch()` (meaningful only alongside `dev: true`) starts a file watcher plus a live-reload dev server on `port`. Editing a partial or layout re-renders only the pages that rendered it — learned while rendering, so a dynamic partial and a layout both count — without re-reading models or re-running controllers; a partial no page has rendered yet re-renders every page and logs a notice naming it. Every other change under `src/` — a page template, a model, or a controller — triggers a whole-site rebuild, so edited models and controllers take effect. Deleted partials, layouts and page templates are unregistered on the next rebuild; new ones are picked up automatically.
 
 `await kiss.close()` stops the watcher and dev server, waiting for any in-flight rebuild to finish first, so it's always safe to clean or deploy the build folder once it resolves.
 

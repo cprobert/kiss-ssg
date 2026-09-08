@@ -1,6 +1,6 @@
 # kiss-ssg: watch-mode rebuild scoping (design)
 
-Status: STEPS 1–4 LANDED. **Step 5 measured on 2026-09-08** (branch `feat/incremental-rebuild`; numbers under Rollout order step 5). The go/no-go on step 6 is the operator's call at a `/branch-pulse` and is recorded in `planning/sessions/2026-09-08-incremental-rebuild.md`.
+Status: LANDED (2026-09-08, branch `feat/incremental-rebuild`). Steps 6–7 built on the data-frame mechanism rather than the current-page marker described under Tracing — see `planning/plans/2026-09-08-dependency-graph.md`.
 
 > **Companion document.** The branch brief for this work — success criteria,
 > non-goals and three open questions this design does not settle — is

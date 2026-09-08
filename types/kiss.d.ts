@@ -191,6 +191,12 @@ declare class Kiss {
     private _scanRequested;
     /** @private */
     private _partialNames;
+    /**
+     * Which pages rendered which partials, learned from rendering. Read by
+     * `_handleChange` to scope a partial edit; cleared by `_replay()`.
+     * @type {DependencyGraph} @private
+     */
+    private _graph;
     /** @private */
     private _failures;
     /** @private */
