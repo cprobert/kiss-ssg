@@ -698,14 +698,14 @@ function benchSite(siteDir, opts) {
 // design.md`, rollout step 5). Three edits, three engine routes:
 //
 //   page     a page view — the single-page re-render, the floor
-//   partial  a partial — re-register, then re-render every stack entry: render
-//            cost alone
+//   partial  a partial — re-register the partials, then re-render the pages
+//            that rendered it (every page for a layout-wide partial)
 //   model    a model — a full replay: registration *and* render
 //
-// So median(partial)/median(model) is the registration-vs-render split. If it
-// is close to 1, render dominates and a dependency graph could still pay; if it
-// is small, registration dominates and the no-graph optimisation already took
-// the win.
+// median(partial)/median(model) is the registration-vs-render split only when
+// the touched partial reaches every page; a narrower partial re-renders fewer
+// pages and the ratio falls with the fan-out, so read it as "what this save
+// costs", not as a fixed property of the engine.
 //
 // "Settled" is observed the way a browser observes it. The engine's livereload
 // server broadcasts once per settled rebuild (`Kiss._reload`), and a scoped
@@ -719,6 +719,12 @@ const TOUCH_ORDER = ['page', 'partial', 'model']
 // Conventional layout, deliberately: reading the site's real folder config
 // would mean running its script, which is what the child is for. `--partial`,
 // `--model` and `--page` are the escape hatch for a site shaped differently.
+//
+// `--partial` must name a partial some page actually renders: a partial no page
+// rendered re-renders nothing and broadcasts no live reload (`Kiss`'s rebuild
+// queue returns early on empty targets), and the reading then times out rather
+// than reporting a fast save. The auto-pick is simply the first `.hbs` sorted
+// under `src/partials`, which may well be one nothing renders.
 const TOUCH_KINDS = {
   partial: { dir: 'src/partials', ext: '.hbs' },
   model: { dir: 'src/models', ext: '.json' },
@@ -939,7 +945,7 @@ export async function benchSiteWatch(siteDir, opts) {
     // which pays for watcher registration no later edit repeats. Ten minutes,
     // not the fixture scenarios' thirty seconds — a consumer-scale cold build
     // may be fetching URL models.
-    const warm = async (file) => {
+    const warm = async (file, kind) => {
       const deadline = Date.now() + 600000
       for (;;) {
         const before = reloads
@@ -952,7 +958,11 @@ export async function benchSiteWatch(siteDir, opts) {
           )
         if (Date.now() > deadline)
           throw new Error(
-            `no live reload after editing ${file} in ten minutes — is the site watching that folder?`,
+            `no live reload after editing ${file} in ten minutes — ${
+              kind === 'partial'
+                ? 'no page renders that partial (an unrendered partial re-renders nothing and broadcasts nothing — name one a page uses with --partial), or the site is not watching that folder'
+                : 'is the site watching that folder?'
+            }`,
           )
       }
       // Quiet, not merely "one reload": the initial build's broadcast and a
@@ -967,7 +977,7 @@ export async function benchSiteWatch(siteDir, opts) {
     for (const kind of TOUCH_ORDER) {
       const file = targets[kind]
       if (!file) continue
-      await warm(file)
+      await warm(file, kind)
       for (let i = 0; i < opts.runs; i++) {
         const settled = settle()
         const tTouch = now()
@@ -1218,9 +1228,7 @@ function print(results, baseline) {
       console.log(`  ${formatRow(phase, s, base ? compare(s, base) : null)}`)
     }
     if (result.ratio != null)
-      console.log(
-        `  partial/model: ${result.ratio.toFixed(2)} — the render half is ${(result.ratio * 100).toFixed(0)}% of a replay`,
-      )
+      console.log(`  partial/model: ${result.ratio.toFixed(2)}`)
   }
 }
 

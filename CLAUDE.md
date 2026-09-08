@@ -76,11 +76,16 @@ npm run bench                  # benchmark harness: 6 scenarios over a generated
                                # --entry=<script> when package.json's build script isn't a bare `node x.js`
                                # --dev="<script> [args]" adds a WATCH reading to every --site: starts
                                # that dev entry, then edits a page, a partial and a model in turn and
-                               # times each save to its live reload. partial/model is the
-                               # registration-vs-render split. --livereload-port / --dev-port say
+                               # times each save to its live reload. The partial row re-registers the
+                               # partials and re-renders the pages that rendered it (every page for a
+                               # layout-wide partial, when partial/model is the registration-vs-render
+                               # split). --livereload-port / --dev-port say
                                # where that dev process listens (35729 / 3001); --partial / --model /
                                # --page name the files to touch, else the first candidate under
-                               # src/partials, src/models and src/pages
+                               # src/partials, src/models and src/pages. --partial must be one a page
+                               # renders: a partial no page rendered re-renders nothing, broadcasts no
+                               # live reload, and the reading times out — and the auto-pick (the first
+                               # .hbs sorted) may well be such a partial
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg10       # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```
