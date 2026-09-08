@@ -403,7 +403,7 @@ It can be called before or after `.generate()` — both just wait for all your p
 
 Each `<loc>` is the same string the `canonical` helper renders on that page, built by the same code — so a page built to a directory index is listed with its trailing slash (`courses/index.html` → `https://example.com/courses/`), which is the URL a static host serves without a redirect. See **canonical / absUrl** below.
 
-Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages):
+Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages): A page with `generate: false` is left out as well.
 
 ```js
 kiss.page({

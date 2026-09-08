@@ -82,10 +82,10 @@ npm run bench                  # benchmark harness: 6 scenarios over a generated
                                # split). --livereload-port / --dev-port say
                                # where that dev process listens (35729 / 3001); --partial / --model /
                                # --page name the files to touch, else the first candidate under
-                               # src/partials, src/models and src/pages. --partial must be one a page
-                               # renders: a partial no page rendered re-renders nothing, broadcasts no
-                               # live reload, and the reading times out — and the auto-pick (the first
-                               # .hbs sorted) may well be such a partial
+                               # src/partials, src/models and src/pages. --partial should be one a page
+                               # renders: one nothing has rendered yet re-renders every page (the
+                               # fallback, not a scoped save), and one whose pages have all dropped it
+                               # re-renders nothing, broadcasts no live reload, and the reading times out
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg10       # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
 ```

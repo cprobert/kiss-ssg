@@ -43,7 +43,7 @@ kiss.handlebars.registerHelper(
     // Pass the helper's own data frame through — that frame is how the page is
     // recorded as using the partial, so a save re-renders just this page.
     return new kiss.handlebars.SafeString(
-      template(context, { data: options.data }),
+      template(context, { data: options?.data }),
     )
   },
 )

@@ -720,11 +720,13 @@ const TOUCH_ORDER = ['page', 'partial', 'model']
 // would mean running its script, which is what the child is for. `--partial`,
 // `--model` and `--page` are the escape hatch for a site shaped differently.
 //
-// `--partial` must name a partial some page actually renders: a partial no page
-// rendered re-renders nothing and broadcasts no live reload (`Kiss`'s rebuild
-// queue returns early on empty targets), and the reading then times out rather
-// than reporting a fast save. The auto-pick is simply the first `.hbs` sorted
-// under `src/partials`, which may well be one nothing renders.
+// `--partial` should name a partial some page renders. One nothing has ever
+// rendered still works — kiss knows no dependents and re-renders every page —
+// but that measures the fallback, not a scoped save. What broadcasts nothing
+// is a partial kiss once saw rendered whose pages have all since dropped it
+// (or are no longer on the stack): the rebuild queue returns early on empty
+// targets, so the reading times out rather than reporting a fast save. The
+// auto-pick is simply the first `.hbs` sorted under `src/partials`.
 const TOUCH_KINDS = {
   partial: { dir: 'src/partials', ext: '.hbs' },
   model: { dir: 'src/models', ext: '.json' },
@@ -960,7 +962,7 @@ export async function benchSiteWatch(siteDir, opts) {
           throw new Error(
             `no live reload after editing ${file} in ten minutes — ${
               kind === 'partial'
-                ? 'no page renders that partial (an unrendered partial re-renders nothing and broadcasts nothing — name one a page uses with --partial), or the site is not watching that folder'
+                ? 'no page rendered that partial in its last build (a partial whose recorded pages have all dropped it re-renders nothing and broadcasts nothing — name one a page uses with --partial), or the site is not watching that folder'
                 : 'is the site watching that folder?'
             }`,
           )
