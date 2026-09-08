@@ -139,3 +139,7 @@ This is the clearest evidence the repo has that the **summative** gate is not ce
 **Measurable impact.** A consuming site can run any command-line tool as a build step, with its output copied, hashed and served like any other asset, and its watch process ending with the site. a1k9training can delete the `sitemap.xml` regex patch it ran after every build. Canonical links and `<loc>` entries now name URLs that return 200 rather than 301.
 
 **What remains open.** Publishing — `2.0.0-beta.0` is bumped but not on npm, and until it is, neither a1k9training nor diploma-msc sees any of this. CI has no Windows leg, so this class of defect is still caught only by whoever happens to close a branch on Windows. And separately from this branch, `feat/markdown-config` and `claude/kiss-ssg-skills-8umyo8` remain open as intent-only stubs awaiting the consolidation plan.
+
+---
+
+**Postscript — 2026-09-08, on this branch.** The Windows CI leg recommended under _Feedback_ is now in `.github/workflows/ci.yml`: the `gates` job runs as a matrix over `ubuntu-latest` and `windows-latest`, with `fail-fast: false` so a Windows-only failure cannot cancel the Linux leg and hide half the answer. PR #9's own checks therefore prove the `taskkill` fix on a real Windows runner, rather than only on the machine that happened to close the branch. The _"What remains open"_ note above predates this and is left as written — it was true when written, and the recommendation it fed is the reason this exists.

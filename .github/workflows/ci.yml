@@ -8,7 +8,22 @@ on:
 
 jobs:
   gates:
-    runs-on: ubuntu-latest
+    name: gates (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Both legs always report. A Windows-only failure is the entire reason
+      # this matrix exists, and cancelling the sibling leg on the first red
+      # hides half the answer at exactly the moment you need both halves.
+      fail-fast: false
+      matrix:
+        # Windows is here because `lib/pipeline.js` shipped a defect no Linux
+        # run could see: its win32 branch killed only the shell, leaving the
+        # tool it spawned holding the pipes, so `close()` hung and leaked a
+        # process per dev session. The branch's own test suite caught it — on
+        # Windows only. Any module touching `process.kill`, `spawn`, path
+        # separators or file locking is platform-divergent by default, so the
+        # gates run on both rather than on whichever machine closed the branch.
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
         with:
