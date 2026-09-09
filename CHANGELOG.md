@@ -3,6 +3,24 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.0.0 — 2026-09-09
+
+**v2 is stable.** No engine changes since `2.0.0-beta.2` — this release just drops the
+prerelease tag and moves the npm `latest` dist-tag onto the v2 line, so a bare
+`npm install kiss-ssg` now installs v2 by default. A `^1` install keeps getting v1;
+pin `kiss-ssg@^1` explicitly if you are not ready to move yet. See **Migrating from v1**
+in `README.md` and `llms.txt` before upgrading an existing site.
+
+Verified against four real, previously-v1 production sites before this cut — each
+rebuilt end to end against this exact code and diffed against its v1 output: no
+`generate.js`/`export.js`/controller changes were needed for any of them to build, and
+output was unchanged bar one already-known slug-generation fix and cosmetic minifier
+differences. One of the four also surfaced and fixed a real v1 bug: `kiss-ssg@1.x`'s
+`.pages()` fan-out reused one options object across the whole loop, so a field one
+model item's controller set could silently leak into the next item that didn't set it
+— v2's per-item isolation turns that into a correctly-reported build failure instead of
+silently wrong output.
+
 ## 2.0.0-beta.2 — 2026-09-08
 
 **Editing a partial rebuilds the pages that use it, not the whole site**
