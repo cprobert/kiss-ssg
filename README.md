@@ -38,14 +38,14 @@ That file is the API contract: the pipeline, every method and option, the helper
 
 Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)).
 
-If the agent is Claude Code, this repository is also a plugin marketplace:
+If the agent is Claude Code, this repository is also a plugin marketplace. In Claude Code, run:
 
 ```
 /plugin marketplace add cprobert/kiss-ssg
 /plugin install kiss-ssg@kiss-ssg
 ```
 
-That installs three skills — `/kiss-ssg:new-site` (build a site from a description), `/kiss-ssg:migrate-v1` (move a v1 project to v2) and `/kiss-ssg:check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
+The first line registers this repository as a marketplace; the second installs the plugin from it. That installs four skills, all named `kiss-<something>` so they're easy to spot alongside skills from other plugins — `/kiss-ssg:kiss-new-site` (build a site from a description, or a whole new section on one), `/kiss-ssg:kiss-add-page` (add or update a single page on a site that's already set up), `/kiss-ssg:kiss-migrate-v1` (move a v1 project to v2) and `/kiss-ssg:kiss-check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. You don't have to invoke them by name — each skill's description is written for automatic discovery, so a request like "add a page to this site" or "why is my kiss-ssg build failing" reaches for the matching skill on its own. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
 
 ## Usage
 

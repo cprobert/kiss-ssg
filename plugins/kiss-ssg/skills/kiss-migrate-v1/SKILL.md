@@ -1,6 +1,6 @@
 ---
-name: migrate-v1
-description: Migrate a site built on kiss-ssg v1 to v2. Use when a project's build script targets kiss-ssg 1.x, when a v2 upgrade fails with an unhandled AggregateError or silently empty output, or when asked to "upgrade kiss", "migrate to kiss-ssg v2", or "why did my kiss site break after the upgrade".
+name: kiss-migrate-v1
+description: Migrate a site built on kiss-ssg v1 to v2. Use when a project's build script targets kiss-ssg 1.x, when a v2 upgrade fails with an unhandled AggregateError or silently empty output, or when asked to "upgrade kiss", "migrate to kiss-ssg v2", "migrate kiss-ssg", or "why did my kiss site break after the upgrade".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -42,7 +42,7 @@ Also check `livereloadPort` if the project runs more than one dev site: without 
 
 ### 4. Build, verify, then compare against the old output
 
-Run the build. Run the `check` skill (`/kiss-ssg:check`) and fix until it reports `ok: true`.
+Run the build. Run the `kiss-check` skill (`/kiss-ssg:kiss-check`) and fix until it reports `ok: true`.
 
 Then compare the page list and the page bodies against the previous v1 build's committed output. **For a content-only migration the goal is byte-identical output** — one consumer test diffed v2-built pages against the v1-built ones and got an empty diff, which is the strongest evidence a migration is complete. A difference is a finding to explain, not noise to accept: it is either a v2 improvement you can name, or a regression you have not found yet.
 

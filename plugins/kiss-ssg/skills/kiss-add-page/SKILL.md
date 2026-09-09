@@ -1,0 +1,44 @@
+---
+name: kiss-add-page
+description: Add a new page to a kiss-ssg site that is already set up, or update an existing page's content, model or controller. Use when asked to "add a page", "add a new page to the site", "add a blog post", "update this page", "change what's on this page", or when editing a `.hbs` view, a `.json` model or a controller in a project that already has `node_modules/kiss-ssg` installed. Not for scaffolding a brand-new site or adding a whole new section with its own model/controller pattern (use kiss-new-site for that), and not for a v1-to-v2 upgrade (use kiss-migrate-v1).
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep
+---
+
+# Add or update a kiss-ssg page
+
+The site already exists and already builds. This is a small, targeted change to it — not a new build script.
+
+## Execution instructions
+
+### 1. Find out how the site registers its pages
+
+Read the build script. A page is queued one of two ways, and that decides what "add a page" even means here:
+
+- **`.scan()`** — every `.hbs` under `config.folders.pages` (default `src/pages`) is picked up automatically by filename, matched to a same-named model/controller if one exists. Adding a page can be nothing more than adding a file.
+- **Explicit `.page()`/`.pages()`** — the script names every view. Adding a page means adding a call (or, for a `.pages()` fan-out, adding a record to the data the fan-out reads).
+
+### 2. Add the new page
+
+- **Scanned site**: create the `.hbs` view under `config.folders.pages`. If it needs data, add a same-named `.json` under `config.folders.models` (or a matching controller under `config.folders.controllers`) — `.scan()` matches by filename.
+- **Explicitly registered site**: add a `.page()` call with `view`, and `model`/`controller` if the page needs them. A page that belongs to an existing fan-out (a blog post, a product) is usually one new record in the model the `.pages()` call already reads, not a new call — see `node_modules/kiss-ssg/llms.txt` `## API` for the full option list (`title`, `path`, `slug`, `sitemapPriority`, etc.).
+- Copy the pattern of a page that already does something similar — its model shape, its controller, which partials/layout it extends — rather than inventing a new one.
+
+### 3. Update an existing page
+
+| What's changing               | Edit                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| Copy / markup / layout usage  | the `.hbs` view                                                         |
+| Data shown on the page        | the `.json` model, or the source the model reads from                   |
+| Sorting, derived fields, slug | the controller                                                          |
+| Shared markup (nav, footer)   | the partial/layout it comes from — this changes every page that uses it |
+
+If the site runs a dev server (`dev: true`, started via `.watch()`), edit and watch it reload rather than rebuilding by hand: a page-view edit re-renders just that page; a partial or layout edit re-renders every page that rendered it; anything else — an edited model, a controller, a new or deleted page file — triggers a whole-site rebuild that replays `.page()`/`.pages()`/`.scan()` from scratch, so the change actually takes effect. See `node_modules/kiss-ssg/llms.txt` `.watch()` for the exact scoping rules and `node_modules/kiss-ssg/AIKB/watcher.md` / `AIKB/dependency-graph.md` for how the scoping is decided.
+
+### 4. Don't let a page collide or silently disappear
+
+- Two pages resolving to the same output path fail the whole build (`Page already processed`) — if the new page could share a slug with an existing one (two records with the same title, a fan-out and a hand-registered page landing on the same path), dedupe before registering rather than relying on last-registered-wins.
+- Removing a page cleanly means removing its `.page()` call (or setting `generate: false`), or — on a `.scan()`'d site — deleting its `.hbs` file; either way the next whole-site rebuild also deletes the stale output file. Leaving the call in place while emptying the view is not the same thing.
+
+### 5. Verify
+
+Build the site, then run the `kiss-check` skill (`/kiss-ssg:kiss-check`) and don't call the change done until it reports `ok: true`. A missing page or a silently empty element is exactly what `check` catches and a build's exit code alone does not.

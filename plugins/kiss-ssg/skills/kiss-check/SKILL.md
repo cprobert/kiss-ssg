@@ -1,6 +1,6 @@
 ---
-name: check
-description: Verify that a kiss-ssg site builds cleanly without publishing the output, and read the resulting report. Use after writing or editing a kiss site's build script, models, controllers or views, before declaring a build done, and when asked to "check the site builds", "verify the kiss build", or "why is this page missing".
+name: kiss-check
+description: Verify that a kiss-ssg site builds cleanly without publishing the output, and read the resulting report. Use after writing or editing a kiss site's build script, models, controllers or views, before declaring a build done, and when asked to "check the site builds", "verify the kiss build", "verify the kiss-ssg build", or "why is this page missing".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
