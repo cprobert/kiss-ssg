@@ -31,3 +31,5 @@ Full design and contract: `planning/plans/2026-09-10-site-memory.md`.
 ### Amendments
 
 ## Pulse log
+
+- **2026-09-10 (B and C landed)** — B (`6515c63`): `hash` on every generated page, `check --against` with `readReportsFile`, `diffReports`, `formatDiff`; one review change by Fable — a `KISS_REPORT` log holding several builds of one folder now pairs against the newest, pinned by a unit test. C (`4f363e6`): `plugins/kiss-memory` with four skills, `claude plugin validate --strict` clean on both plugins and the marketplace, manifest test and version sync generalised to every plugin, branch-open reads back Feedback; two edits outside the brief accepted (the `version` hook stages `plugins/*/…`, branch-close's Step 4a). README updated for both (`44ca42a`). 185 tests across the seven touched files green; full gates deferred until A lands. Criteria 2 and 3 evidenced; 1 in progress. Decision: **continue** to A; no drift.
