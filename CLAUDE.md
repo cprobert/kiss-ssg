@@ -38,6 +38,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
 | Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
 | llms.txt (the AI-facing index)     | `lib/llms.js`                | `AIKB/llms.md`                |
+| Site knowledge base (`.aikb()`)    | `lib/aikb.js`                | `AIKB/aikb.md`                |
 | Dev server                         | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
 | File watcher                       | `lib/watcher.js`             | `AIKB/watcher.md`             |
 | String/path utils                  | `lib/utils.js`               | `AIKB/utils.md`               |

@@ -105,7 +105,8 @@ The default config options are:
     pages: './src/pages',
     partials: './src/partials',
     models: './src/models',
-    controllers: './src/controllers'
+    controllers: './src/controllers',
+    aikb: './AIKB'
   }
 }
 ```
@@ -125,6 +126,7 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 | livereloadPort |                     35729                      |                                                                                  The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.                                                                                   |
 | devHost        |                  '127.0.0.1'                   |                                                                                         The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                                                                                          |
 | folders        |                   see above                    |                                                                                                                                                                                             A JSON object of alternative folder locations                                                                                                                                                                                             |
+| folders.aikb   |                    './AIKB'                    |                                                                                           Where `.aikb()` writes the site's knowledge base. Source, not output: it sits outside `folders.build`, is never derived from `folders.src`, is not created until you call `.aikb()`, and is meant to be committed. `null` switches `.aikb()` off                                                                                            |
 | siteUrl        |                   undefined                    |                                                                                                                                                                  The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                                                                                                  |
 
 A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
@@ -474,6 +476,35 @@ writes:
 
 It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
 
+### .aikb()
+
+`kiss.aikb()` writes the site's own knowledge base into `config.folders.aikb` (default `./AIKB`) — the map of the site as the build saw it, for the developer who comes back to it in two years and finds that every context window that held this is gone.
+
+Four files. `README.md` is written once if it is absent and never overwritten: what the folder is, which files are generated, how to write a note. `site-map.md` and `site-map.json` are the map itself, rewritten every build — the site's URL, build folder and source folders; a row per page giving its output path, view, model source, controller source and the partials and layouts it actually rendered; the partial → pages index; models and controllers with the pages that used them; the asset pipeline's steps. `last-build.json` is that build's report with every timing dropped, which is what `npx kiss-ssg check --against` compares your working tree to.
+
+Every file is byte-stable across two identical builds — nothing is timestamped and every list is sorted — so the folder belongs in git and a diff in it is a real change to the shape of the site. It is **source, not output**: it sits outside `config.folders.build`, survives `cleanBuild`, and no folder appears at all until you call `.aikb()`.
+
+```js
+kiss.scan().generate().sitemap().aikb()
+await kiss.complete()
+```
+
+Unlike `.sitemap()` and `.llms()` the write happens once the whole build has settled rather than on the internal promise queue, because the partial-per-page index is learned from rendering. It is chainable, it is re-run by every whole-site watch rebuild, and its callback receives the map object (`kiss.aikb(null, (map) => …)`). Under `KISS_CHECK` nothing is written: the map is still built and the note rules still evaluated, and the report says `written: false` — refreshing the committed folder needs a real build.
+
+**Notes are yours; the engine never writes one.** A map says what the site is; a note says why, which no build can work out. Three kinds of subject carry judgement, and each wants a note under `AIKB/notes/` at a path derived mechanically from its id:
+
+| Subject                                               | Its note                                         |
+| ----------------------------------------------------- | ------------------------------------------------ |
+| a controller file, e.g. `stockist.js`                 | `AIKB/notes/controllers/stockist.md`             |
+| a URL model, e.g. `https://api.example.com/v2/events` | `AIKB/notes/models/api.example.com-v2-events.md` |
+| an asset pipeline step, e.g. `tailwind`               | `AIKB/notes/pipeline/tailwind.md`                |
+
+Plain pages, partials and `.json` models are deliberately not subjects — a note saying "renders the about page" is noise. An inline controller or an object model has no file to attach a note to, and is not a subject either. Suggested headings, which nothing enforces: `## What it does`, `## Why it is this way`, `## Gotchas`.
+
+Every build reports two findings on `report().aikb.notes`: **missing** (a subject nobody has explained) and **dead** (a note under `notes/` whose subject is not in the map). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` lines. Neither is a build failure and neither changes an exit code.
+
+`examples/8-data-fed-site/AIKB/` is the runnable exemplar: a committed knowledge base, with one authored note beside it. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
+
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -556,7 +587,7 @@ ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
   = 3 unchanged
 ```
 
-Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array — the shape changes only under this flag, and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
+Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array — the shape changes only under this flag, and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it. `.aikb()` is the other way round: the AIKB folder is a publish, so a check writes none of it while still evaluating the note rules — `aikb.notes` is as true in a check as in a build, and only `written: false` differs.
 
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance. Neither changes your script's exit code — that stays yours.
 
@@ -567,7 +598,7 @@ Two things a check cannot make true. A site that reads its own build folder back
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms }`, every value JSON-safe. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb }`, every value JSON-safe. `aikb` is `null` unless you called `.aikb()`, and otherwise `{ folder, written, notes: { missing, dead } }` — where the knowledge base lives, whether this build actually wrote it (`false` under a check, which publishes nothing), and the two note findings as lists of paths. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {

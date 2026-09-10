@@ -1,0 +1,71 @@
+{
+  "ok": false,
+  "mode": "build",
+  "buildDir": "../public/8-data-fed-site",
+  "pages": [
+    {
+      "view": "index.hbs",
+      "buildTo": "../public/8-data-fed-site/index.html",
+      "ok": true,
+      "hash": "76178dc5b753fda6e70541321f63263d613b2f5a"
+    },
+    {
+      "view": "stockists/stockist.hbs",
+      "buildTo": "../public/8-data-fed-site/stockists/bakers-yard.html",
+      "ok": true,
+      "hash": "65e0180878a0e146c64b9bae4997d85cee9ed48b"
+    },
+    {
+      "view": "stockists/stockist.hbs",
+      "buildTo": "../public/8-data-fed-site/stockists/cargo-canteen.html",
+      "ok": true,
+      "hash": "6e57b56aa9561e53edb90e5614ec817a1744e405"
+    },
+    {
+      "view": "stockists/stockist.hbs",
+      "buildTo": "../public/8-data-fed-site/stockists/oakfield-deli.html",
+      "ok": true,
+      "hash": "0ffaaa8748867b3d73cac18ff4a43e6eab42bb80"
+    },
+    {
+      "view": "stockists/stockist.hbs",
+      "buildTo": "../public/8-data-fed-site/stockists/severn-provisions-portishead.html",
+      "ok": true,
+      "hash": "a795b4ff597f36162bc069f7e9136ae4cdf2c496"
+    },
+    {
+      "view": "stockists/stockist.hbs",
+      "buildTo": "../public/8-data-fed-site/stockists/the-hop-and-vine.html",
+      "ok": true,
+      "hash": "a17f73e6273d6b7ca7e50e68ef7ce786ce68fab9"
+    }
+  ],
+  "failures": [
+    {
+      "view": "stockists/stockist.hbs [item 3: harbour-market-stall]",
+      "buildTo": null,
+      "message": "Incomplete stockist record — missing address. Fix the feed, not the site."
+    }
+  ],
+  "assets": [
+    {
+      "source": "css/site.css",
+      "target": "css/site.605b52d7.css"
+    },
+    {
+      "source": "robots.txt",
+      "target": "robots.txt"
+    }
+  ],
+  "sitemap": "../public/8-data-fed-site/sitemap.xml",
+  "pipeline": [],
+  "llms": null,
+  "aikb": {
+    "folder": "8-data-fed-site/AIKB",
+    "written": true,
+    "notes": {
+      "missing": [],
+      "dead": []
+    }
+  }
+}

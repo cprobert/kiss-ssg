@@ -4,6 +4,8 @@ export type BuildPage = import("./build-report.js").BuildPage;
 export type BuildAsset = import("./build-report.js").BuildAsset;
 export type BuildReportFailure = import("./build-report.js").BuildReportFailure;
 export type BuildPipelineStep = import("./build-report.js").BuildPipelineStep;
+export type BuildAikb = import("./build-report.js").BuildAikb;
+export type SiteMap = import("./aikb.js").SiteMap;
 export type PipelineStep = import("./pipeline.js").PipelineStep;
 export type KissConfig = import("./config.js").KissConfig;
 export type KissConfigInput = import("./config.js").KissConfigInput;
@@ -182,6 +184,12 @@ export type LlmsOptions = {
      */
     overwrite?: boolean;
 };
+/**
+ * The options `.aikb()` takes. Reserved: none are defined yet, and the folder
+ * the knowledge base is written to is `config.folders.aikb`, not an option —
+ * it is a property of the site, not of one call.
+ */
+export type AikbOptions = any;
 export type WatchOptions = {
     /**
      * the script whose own change triggers a whole-site rebuild; defaults to `process.argv[1]`
@@ -253,6 +261,8 @@ declare class Kiss {
     /** @private */
     private _llmsRequest;
     /** @private */
+    private _aikbRequest;
+    /** @private */
     private _watcher;
     /** @private */
     private _devServer;
@@ -278,6 +288,8 @@ declare class Kiss {
     private _sitemapPath;
     /** @private */
     private _llmsPath;
+    /** @private */
+    private _promotedFrom;
     /** @private */
     private _checkMode;
     /** @type {KissConfig} */
@@ -332,6 +344,8 @@ declare class Kiss {
     private _promote;
     /** @private */
     private _finishBuild;
+    /** @private */
+    private _buildAikb;
     /** @private */
     private _discardStaging;
     /** @private */
@@ -430,6 +444,37 @@ declare class Kiss {
      * @returns {this}
      */
     llms(options: LlmsOptions, callback?: (text: string) => void | Promise<void>): this;
+    /**
+     * Writes the site's own knowledge base into `config.folders.aikb` (default
+     * `./AIKB`) — a map of the site as the build saw it, for the developer who
+     * comes back to it in two years. Four files: `README.md` (written once, never
+     * overwritten), `site-map.md` and `site-map.json` (the pages, their models,
+     * controllers and partials, the partial index, and the asset pipeline), and
+     * `last-build.json` (this build's report minus its timings, which is what
+     * `kiss-ssg check --against` compares a working tree to).
+     *
+     * Unlike `.sitemap()` and `.llms()` the write happens once the whole build has
+     * settled, not on the promise queue: the partial-per-page index is learned
+     * from rendering, so a map written any earlier would be empty. It is source,
+     * not output — the folder is meant to be committed, and every file is
+     * byte-stable across two identical builds — so it is written outside the build
+     * folder and survives `cleanBuild`. Under `KISS_CHECK` nothing is written at
+     * all: the map is still built and the note rules still evaluated, and the
+     * report says `written: false`.
+     *
+     * The engine never writes anything under `AIKB/notes/`. Those are authored,
+     * and all a build does about them is report the two findings on
+     * `report().aikb.notes`: a **missing** note (a controller file, a URL model or
+     * a pipeline step nobody has explained) and a **dead** one (a note whose
+     * subject has gone). Neither fails the build.
+     *
+     * @param {AikbOptions|null} [options] reserved; none are defined yet
+     * @param {(map: SiteMap) => void|Promise<void>} [callback] receives the map
+     * once the build has settled — under a check too, where nothing is written;
+     * not fired when `.aikb()` could not run (`folders.aikb` is `null`)
+     * @returns {this}
+     */
+    aikb(options?: AikbOptions | null, callback?: (map: SiteMap) => void | Promise<void>): this;
     /**
      * Pulls one resolved model out of the array `.generate()`/`.complete()` hand
      * back — the way to read a model without relying on its position.

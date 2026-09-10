@@ -45,6 +45,17 @@ function runExample(script, args = []) {
 
 const output = (r) => `${r.stdout ?? ''}${r.stderr ?? ''}`
 
+// Example 8's committed knowledge base: written by every build, byte-stable
+// across two of them, and outside `public/` because it is source, not output.
+const AIKB_FILES = [
+  'README.md',
+  'site-map.md',
+  'site-map.json',
+  'last-build.json',
+]
+const readAikb = (file) =>
+  readFileSync(path.join(examplesDir, '8-data-fed-site/AIKB', file), 'utf8')
+
 describe.skipIf(!hasExamples)('example builds', () => {
   // Never `.concurrent`: every example writes into the one shared repo-root
   // `public/`, so two builds racing would corrupt each other's page counts.
@@ -138,9 +149,21 @@ describe.skipIf(!hasExamples)('example builds', () => {
       )
       expect(text).toContain('missing address')
       expect(countHtmlFiles(path.join(publicDir, '8-data-fed-site'))).toBe(6)
+
+      // The knowledge base `.aikb()` writes is committed, so it is written even
+      // by this deliberately failing build — and every subject in it has a note
+      // (only `stockist.js` is one: the index page's controller is inline).
+      const report = JSON.parse(readAikb('last-build.json'))
+      expect(report.ok).toBe(false)
+      expect(report.aikb.notes).toEqual({ missing: [], dead: [] })
+      expect(readAikb('site-map.md')).toContain('`file:stockist.js`')
     }, 60000)
 
     it('8 · --atomic discards the whole build, leaving no staging folder', () => {
+      // Snapshot the committed folder before the second run, which builds the
+      // same site a different way: byte-identical output is what keeps the
+      // folder out of `git status` and makes any diff in it a real one.
+      const before = AIKB_FILES.map(readAikb)
       cleanOutput('8-data-fed-site')
       const r = runExample('8-data-fed-site.js', ['--atomic'])
       expect(r.status).toBe(1)
@@ -148,6 +171,9 @@ describe.skipIf(!hasExamples)('example builds', () => {
         f.startsWith('8-data-fed-site.kiss-staging-'),
       )
       expect(leftoverStaging).toEqual([])
+      expect(AIKB_FILES.map(readAikb)).toEqual(before)
+      // ...and nothing in it names the staging sibling it was built through.
+      expect(readAikb('last-build.json')).not.toContain('kiss-staging')
     }, 60000)
 
     it('9 · migrated from v1 builds 11 pages with the recipes intact', () => {

@@ -35,6 +35,7 @@ describe('buildReport', () => {
       'sitemap',
       'pipeline',
       'llms',
+      'aikb',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -167,6 +168,7 @@ describe('buildReport', () => {
       sitemap: null,
       pipeline: [],
       llms: null,
+      aikb: null,
     })
   })
 
