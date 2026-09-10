@@ -7,7 +7,15 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { HELP, exitCodeFor, parseArgs, readReports } from '../lib/check.js'
+import {
+  HELP,
+  diffReports,
+  exitCodeFor,
+  formatDiff,
+  parseArgs,
+  readReports,
+  readReportsFile,
+} from '../lib/check.js'
 import { formatReport } from '../lib/build-report.js'
 
 const parsed = parseArgs(process.argv.slice(2))
@@ -19,6 +27,22 @@ if (parsed.error) {
 if (parsed.command === 'help') {
   console.log(HELP)
   process.exit(0)
+}
+
+// Read before the build, not after it: a run that takes a minute and then dies
+// on a mistyped filename has wasted the minute, and the mistyped filename was
+// knowable at the first instruction. It is a usage error, so it prints like one.
+let against = null
+if (parsed.against) {
+  try {
+    against = readReportsFile(fs.readFileSync(parsed.against, 'utf8'))
+  } catch (err) {
+    console.error(
+      `kiss-ssg: cannot read --against file ${parsed.against} (${err.message})\n`,
+    )
+    console.error(HELP)
+    process.exit(1)
+  }
 }
 
 const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-check-'))
@@ -47,13 +71,22 @@ try {
     console.error(`kiss-ssg: could not read the build report (${err.message})`)
   }
 
+  // One diff entry per report, in the same order, so the summary can print
+  // each under its own site's line by index.
+  const diff = against ? diffReports(against, reports) : null
+
   if (reports.length === 0)
     console.error(
       'kiss-ssg: no build report was written — the script never settled a build. Add `await kiss.complete()` to it.',
     )
   else if (parsed.summary)
-    for (const report of reports) console.log(formatReport(report))
-  else console.log(JSON.stringify(reports, null, 2))
+    reports.forEach((report, at) => {
+      console.log(formatReport(report))
+      if (diff) console.log(formatDiff(diff[at]))
+    })
+  // The bare array stays the shape stdout has without --against: a consumer
+  // that never asked for a diff never has to learn the wrapper.
+  else console.log(JSON.stringify(diff ? { reports, diff } : reports, null, 2))
 
   process.exitCode = exitCodeFor(reports, run.status)
 } finally {

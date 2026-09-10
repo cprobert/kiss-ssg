@@ -44,6 +44,17 @@ const NEVER_COMPLETES = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public' } })
 kiss.scan().generate()`)
 
+// A real build of the same site, with its report appended to `reportFile` —
+// how a site keeps the last build it published, and what `--against` reads.
+function record(cwd, reportFile) {
+  return spawnSync(process.execPath, ['build.js'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 60000,
+    env: { ...process.env, KISS_REPORT: reportFile },
+  })
+}
+
 function check(cwd, args) {
   return spawnSync(process.execPath, [bin, ...args], {
     cwd,
@@ -81,7 +92,13 @@ describe('kiss-ssg check', () => {
       sitemap: null,
     })
     expect(reports[0].pages).toEqual([
-      { view: 'index.hbs', buildTo: './public/index.html', ok: true },
+      {
+        view: 'index.hbs',
+        buildTo: './public/index.html',
+        ok: true,
+        // sha1 of the bytes the page wrote — the staged ones, in a check.
+        hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+      },
     ])
     expect(await temp.exists('public')).toBe(false)
     expect(siblings(temp.root)).toEqual([])
@@ -108,7 +125,10 @@ describe('kiss-ssg check', () => {
       view: 'index.hbs',
       buildTo: './public/index.html',
       ok: true,
+      hash: expect.stringMatching(/^[0-9a-f]{40}$/),
     })
+    // The page that failed wrote nothing, so it names no bytes.
+    expect(report.pages.find((p) => p.view === 'missing.hbs')?.hash).toBeNull()
     expect(await temp.exists('public')).toBe(false)
     expect(siblings(temp.root)).toEqual([])
   }, 60000)
@@ -173,6 +193,87 @@ describe('kiss-ssg check', () => {
     expect(run.stderr).toContain('no build report')
   }, 60000)
 
+  it('names the page that changed since the report --against reads', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/about.hbs': '<p>about</p>',
+      'build.js': ONE_PAGE,
+    })
+
+    expect(
+      record(temp.root, path.join(temp.root, 'last-build.jsonl')).status,
+    ).toBe(0)
+    await temp.touch('src/pages/about.hbs', '<p>about, rewritten</p>')
+
+    const run = check(temp.root, [
+      'check',
+      '--against',
+      'last-build.jsonl',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(0)
+    const { reports, diff } = JSON.parse(run.stdout)
+    expect(reports).toHaveLength(1)
+    expect(diff).toEqual([
+      {
+        buildDir: './public',
+        added: [],
+        removed: [],
+        changed: ['./public/about.html'],
+        unchanged: 1,
+      },
+    ])
+  }, 60000)
+
+  it('prints the diff under each site in --summary, without moving the exit code', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/about.hbs': '<p>about</p>',
+      'build.js': ONE_PAGE,
+    })
+
+    expect(
+      record(temp.root, path.join(temp.root, 'last-build.jsonl')).status,
+    ).toBe(0)
+    await temp.touch('src/pages/contact.hbs', '<p>contact</p>')
+    await fs.remove(path.join(temp.root, 'src/pages/about.hbs'))
+
+    const run = check(temp.root, [
+      'check',
+      '--summary',
+      '--against',
+      'last-build.jsonl',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 2 pages/)
+    expect(lines.slice(1)).toEqual([
+      '  + ./public/contact.html',
+      '  - ./public/about.html',
+      '  = 1 unchanged',
+    ])
+  }, 60000)
+
+  it('refuses an --against file it cannot read, before building anything', () => {
+    const run = check(repoRoot, [
+      'check',
+      '--against',
+      'no-such-report.json',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(1)
+    expect(run.stdout).toBe('')
+    expect(run.stderr).toContain(
+      'cannot read --against file no-such-report.json',
+    )
+    // A usage error, so it prints the help the way every other one does.
+    expect(run.stderr).toContain('kiss-ssg check <script>')
+  })
+
   it('prints the help for --help, and a usage error for anything it cannot parse', () => {
     const help = check(repoRoot, ['--help'])
     expect(help.status).toBe(0)
@@ -206,7 +307,12 @@ describe('kiss.report()', () => {
     expect(report).toMatchObject({ ok: true, mode: 'build', failures: [] })
     expect(report.buildDir).toBe(temp.build)
     expect(report.pages).toEqual([
-      { view: 'index.hbs', buildTo: `${temp.build}/index.html`, ok: true },
+      {
+        view: 'index.hbs',
+        buildTo: `${temp.build}/index.html`,
+        ok: true,
+        hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+      },
     ])
     expect(report.assets).toEqual([
       { source: 'robots.txt', target: 'robots.txt' },

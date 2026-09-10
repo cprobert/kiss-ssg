@@ -21,6 +21,8 @@ export class KissPage {
     _debug: boolean;
     view: any;
     options: {};
+    /** @type {string|null} */
+    hash: string | null;
     buildDir: string;
     pagesDir: string;
     /** @type {number} */

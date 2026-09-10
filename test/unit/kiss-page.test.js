@@ -4,6 +4,7 @@ import { KissPage, loadMinifier, preloadMinifier } from '../../lib/kiss-page.js'
 import { silentLogger } from '../../lib/logger.js'
 import fs from 'fs-extra'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 import { makeSite } from '../helpers/site.js'
 
 const make = (view, opts = {}) => {
@@ -75,6 +76,63 @@ describe('generate', () => {
     const out = await p.generate()
     expect(out).toBe(`${site.build}/s.html`)
     expect(await site.read('public/s.html')).toBe('<p>1</p>')
+  })
+
+  it('records the sha1 of the bytes it wrote, not of the template', async () => {
+    site = await makeSite({})
+    const p = make('<p>  {{model.a}}  </p>', {
+      buildDir: site.build,
+      slug: 'h',
+      options: { model: { a: 1 } },
+    })
+    expect(p.hash).toBeNull()
+
+    await p.generate()
+
+    // The written file, minified — so the hash follows the output, and two
+    // different templates that minify to the same HTML hash the same.
+    const written = await site.read('public/h.html')
+    expect(p.hash).toBe(createHash('sha1').update(written).digest('hex'))
+    expect(p.hash).toMatch(/^[0-9a-f]{40}$/)
+  })
+
+  it('changes the hash when the render does and keeps it when it does not', async () => {
+    site = await makeSite({})
+    const render = async (a) => {
+      const p = make('<p>{{model.a}}</p>', {
+        buildDir: site.build,
+        slug: 'same',
+        options: { model: { a } },
+      })
+      await p.generate()
+      return p.hash
+    }
+    expect(await render(1)).toBe(await render(1))
+    expect(await render(1)).not.toBe(await render(2))
+  })
+
+  it('leaves the hash null for a page that was not generated', async () => {
+    site = await makeSite({})
+    const p = make('x', {
+      buildDir: site.build,
+      slug: 'skipped',
+      options: { generate: false },
+    })
+    await p.generate()
+    expect(p.hash).toBeNull()
+  })
+
+  it('clears the hash when a re-render fails after an earlier write', async () => {
+    site = await makeSite({})
+    const p = make('<p>x</p>', { buildDir: site.build, slug: 's' })
+    await p.generate()
+    expect(p.hash).not.toBeNull()
+
+    // The same page, now writing outside the build folder: the write never
+    // happens, so the hash must not still name the bytes of the last one.
+    p._path = '../../escaped'
+    await expect(p.generate()).rejects.toThrow(/build folder/)
+    expect(p.hash).toBeNull()
   })
 
   it('in dev mode injects livereload, keeps whitespace, and writes a debug json', async () => {

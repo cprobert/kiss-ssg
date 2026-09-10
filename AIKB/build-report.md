@@ -11,7 +11,7 @@ Turns one settled build into data: the JSON-safe `BuildReport` that `Kiss.report
   - `mode` — `'build'` for a build that publishes, `'check'` for one that is staged and discarded.
   - `buildDir` — the folder the site asked for, never the staging sibling.
   - `duration` — ms since `startedAt` (`Kiss` passes its construction time).
-  - `pages` — `{ view, buildTo, ok }` per stack entry, in registration order; `ok` is `false` when a failure names that output path.
+  - `pages` — `{ view, buildTo, ok, hash }` per stack entry, in registration order; `ok` is `false` when a failure names that output path, and `hash` is the sha1 the page recorded for the bytes it wrote (`null` when it wrote none).
   - `failures` — `{ view, buildTo, message }` per entry of `Kiss._failures`; the `Error` itself is not in the report.
   - `assets` — `{ source, target }` per asset-manifest entry: the build-relative path a template asks for, and the file that is actually there.
   - `sitemap` — the `sitemap.xml` this build wrote, or `null`.
@@ -34,6 +34,7 @@ Nothing.
 - **`assets` is the manifest, so it is keyed by the path a template writes**, not by the source file: a `.scss` appears under its compiled `css/site.css` name, and `target` is where cache busting put it (`css/site.a1b2c3d4.css`). See `AIKB/asset-manifest.md`.
 - **A failure with no output path (`buildTo: null`) marks no page as failed** — a `.pages()` item, a controller, a callback or the dev server never reached the stack, so no `pages` entry belongs to it. It is still in `failures`, and it still makes `ok` false.
 - **`pipeline` is appended, not slotted in beside `assets`.** It reports work that happens _before_ the copy, so its natural home would be above `assets` — but a consumer diffing two reports (or eyeballing one in a terminal) should see one new key rather than a reshuffle of the eight that were already there. A step's `Error` is dropped on the way in for the same reason a failure's is: the message is already in `failures`, under `<pipeline: <name>>`.
+- **`hash` is read off the `KissPage` the stack entry carries** (`entry.page?.hash ?? null`), not computed here — this module never sees bytes, and the page is the only thing that knows what it actually wrote (`AIKB/kiss-page.md`). It is appended after `ok` for the reason `pipeline` and `llms` were appended to the report: one new key beats a reshuffle of the three that were there. `null` covers three cases that all mean the same thing — nothing is on disk for this page: it failed, it was never rendered, or it was registered with `generate: false`. A stack entry with no `page` at all (a hand-built one in a test) reports `null` too, so the shape never depends on who assembled the stack. What reads it back is `diffReports` in `lib/check.js`, which is why "no hash" has to be distinguishable from "some hash": it counts a `null` on either side as _changed_, never as unchanged.
 - **Key order is fixed** because the report is read as text at least as often as it is read as data — a diff of two runs should show what changed in the build, not a reshuffle.
 
 ## Types
