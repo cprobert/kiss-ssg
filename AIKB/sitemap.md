@@ -16,7 +16,7 @@ Builds `sitemap.xml` entries from the page stack and writes the file to the buil
 
 ## Depended on by
 
-`lib/kiss.js` (`Kiss.sitemap()`).
+`lib/kiss.js` (`Kiss.sitemap()`). `lib/llms.js` is its sibling rather than a consumer: it copies the same `buildTo` → `toCanonicalPath` → `toAbsoluteUrl` derivation, and honours `ignoreSitemap` as an exclusion of its own — a page kept out of the sitemap is kept out of `llms.txt` too.
 
 ## Non-obvious behavior
 

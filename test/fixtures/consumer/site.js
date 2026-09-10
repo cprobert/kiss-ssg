@@ -29,7 +29,13 @@ const kiss = new Kiss(config)
 
 kiss
   .page({ view: 'index.hbs', title: 'Home', model: { name: 'home' } })
-  .page({ view: 'about.hbs', controller: addTitle, ignoreSitemap: true })
+  .page({
+    view: 'about.hbs',
+    controller: addTitle,
+    ignoreSitemap: true,
+    ignoreLlms: true,
+    llmsSection: 'Pages',
+  })
   .pages({ view: 'team.hbs', model: 'team', controller: 'team.js' })
   .scan()
   .generate((data) => {
@@ -38,6 +44,14 @@ kiss
   .sitemap({ overwrite: false }, (urls) => {
     urls.forEach((url) => console.log(url.loc, url.priority))
   })
+  .llms(
+    {
+      title: 'Example',
+      summary: 'What this site is.',
+      sections: { root: 'Pages', team: 'The team' },
+    },
+    (text) => console.log(text.length),
+  )
 
 try {
   const data = await kiss.complete()

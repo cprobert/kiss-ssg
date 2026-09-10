@@ -9,7 +9,7 @@ They come in two tiers.
 
 **Examples 1–6 and 10 are the feature reference: one idea each.** Scanning a folder of views,
 registering a page by hand, fanning out over an array, layouts and partials, the built-in
-helpers, the sitemap, an external tool in the asset pipeline. Each script is short enough to read in one sitting and each page explains,
+helpers, the sitemap and llms.txt, an external tool in the asset pipeline. Each script is short enough to read in one sitting and each page explains,
 in a "How this example works" panel, the feature it is demonstrating — with the script that built
 it printed underneath. Read one when you want to know how a single thing works.
 
@@ -27,7 +27,7 @@ the feature reference.
 | [3 · pages](3-pages/)                               | Reference | `.pages()` fans out one page per JSON file; the index reuses the same resolved array       | `npm run eg3` · `--dev`                                |
 | [4 · layouts and partials](4-layouts-and-partials/) | Reference | One layout, blocks and content, nested `.hbs`/`.html`/`.md` partials, a dynamic partial    | `npm run eg4` · `--dev`                                |
 | [5 · helpers](5-helpers/)                           | Reference | The six built-in helpers, all on one page, plus custom dev ports                           | `npm run eg5` · `--dev`                                |
-| [6 · sitemap](6-sitemap/)                           | Reference | `.sitemap()` with `siteUrl`, per-page tuning, `extensionLess`, hashed assets               | `npm run eg6` · `--dev`                                |
+| [6 · sitemap and llms.txt](6-sitemap/)              | Reference | `.sitemap()` and `.llms()` with `siteUrl`, per-page tuning, `extensionLess`, hashed assets | `npm run eg6` · `--dev`                                |
 | [7 · versioned outputs](7-versioned-outputs/)       | Exemplar  | One build per season into its own folder, atomically, with an archive index beside them    | `npm run eg7` · `node 7-versioned-outputs.js <season>` |
 | [8 · data-fed site](8-data-fed-site/)               | Exemplar  | A site built from a folder of records, validated in the controller — one record is broken  | `npm run eg8` · exits 1 · `--dev`                      |
 | [9 · migrated from v1](9-migrated-from-v1/)         | Exemplar  | Every v1 → v2 migration recipe as running code, in a site that builds clean                | `npm run eg9` · `--dev`                                |

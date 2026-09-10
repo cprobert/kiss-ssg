@@ -89,7 +89,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(countHtmlFiles(path.join(publicDir, '5-helpers'))).toBe(2)
     }, 60000)
 
-    it('6 · sitemap builds 4 pages, a sitemap and a hashed stylesheet', () => {
+    it('6 · sitemap builds 4 pages, a sitemap, an llms.txt and a hashed stylesheet', () => {
       cleanOutput('6-sitemap')
       const r = runExample('6-sitemap.js')
       expect(r.status).toBe(0)
@@ -97,6 +97,14 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(existsSync(path.join(publicDir, '6-sitemap/sitemap.xml'))).toBe(
         true,
       )
+      // The one example that writes both: llms.txt lists the three pages the
+      // sitemap does, and not the `ignoreSitemap` one.
+      const llms = readFileSync(
+        path.join(publicDir, '6-sitemap/llms.txt'),
+        'utf8',
+      )
+      expect(llms.match(/^- \[/gm)).toHaveLength(3)
+      expect(llms).not.toContain('rota')
       expect(
         countMatching(
           path.join(publicDir, '6-sitemap/css'),
