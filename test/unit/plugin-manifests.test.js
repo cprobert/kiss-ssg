@@ -3,11 +3,12 @@ import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 
 const root = path.resolve(import.meta.dirname, '../..')
-const PLUGIN_DIR = 'plugins/kiss-ssg'
 const PACKAGE_PREFIX = 'node_modules/kiss-ssg/'
 // npm packs these three whatever `files` says, so a skill may cite them even
 // though they are not listed.
 const ALWAYS_PACKED = ['package.json', 'README.md', 'LICENSE']
+const RUBRIC_SOURCE = '.claude/skills/retrospective/rubric.md'
+const RUBRIC_COPY = 'plugins/kiss-memory/skills/kiss-close/rubric.md'
 
 function parseJson(relative) {
   const raw = fs.readFileSync(path.join(root, relative), 'utf8')
@@ -45,19 +46,44 @@ function citedPackagePaths(file) {
 
 const pkg = parseJson('package.json')
 const marketplace = parseJson('.claude-plugin/marketplace.json')
-const plugin = parseJson(`${PLUGIN_DIR}/.claude-plugin/plugin.json`)
 
-const skillsDir = path.join(root, PLUGIN_DIR, 'skills')
-const skillNames = fs
-  .readdirSync(skillsDir, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
-  .map((entry) => entry.name)
-  .sort()
+// Everything below is driven off the marketplace, so a plugin added there is
+// held to the same rules without a line of test having to be written for it.
+const plugins = (marketplace.value?.plugins ?? []).map((entry) => {
+  const dir = path.posix.normalize(entry.source)
+  const manifestPath = `${dir}/.claude-plugin/plugin.json`
+  const skillsDir = path.join(root, dir, 'skills')
+  const skills = fs.existsSync(skillsDir)
+    ? fs
+        .readdirSync(skillsDir, { withFileTypes: true })
+        .filter((it) => it.isDirectory())
+        .map((it) => it.name)
+        .sort()
+    : []
+  return {
+    name: entry.name,
+    entry,
+    dir,
+    manifestPath,
+    hasManifest: fs.existsSync(path.join(root, manifestPath)),
+    manifest: fs.existsSync(path.join(root, manifestPath))
+      ? parseJson(manifestPath)
+      : { value: null, error: null },
+    skills,
+  }
+})
 
-describe('plugin manifests', () => {
-  it('both manifests parse as JSON', () => {
+const everySkill = plugins.flatMap((plugin) =>
+  plugin.skills.map((skill) => ({
+    plugin: plugin.name,
+    skill,
+    file: path.join(root, plugin.dir, 'skills', skill, 'SKILL.md'),
+  })),
+)
+
+describe('marketplace', () => {
+  it('parses as JSON', () => {
     expect(marketplace.error).toBeNull()
-    expect(plugin.error).toBeNull()
   })
 
   it('names the marketplace and its owner', () => {
@@ -66,57 +92,84 @@ describe('plugin manifests', () => {
     expect(Array.isArray(marketplace.value.plugins)).toBe(true)
   })
 
-  it('resolves plugins[0].source to a directory holding plugin.json', () => {
-    const source = marketplace.value.plugins[0].source
-    const dir = path.resolve(root, source)
-    expect(fs.statSync(dir).isDirectory()).toBe(true)
-    expect(fs.existsSync(path.join(dir, '.claude-plugin', 'plugin.json'))).toBe(
-      true,
-    )
+  it('ships at least one plugin', () => {
+    expect(plugins.length).toBeGreaterThan(0)
+  })
+})
+
+describe.each(plugins)('plugin $name', (plugin) => {
+  it('resolves its source to a directory holding plugin.json', () => {
+    expect(fs.statSync(path.join(root, plugin.dir)).isDirectory()).toBe(true)
+    expect(plugin.hasManifest).toBe(true)
   })
 
-  // A version bump in package.json has to carry both manifests with it, or the
-  // marketplace advertises a version the plugin does not claim.
+  it('parses its manifest as JSON', () => {
+    expect(plugin.manifest.error).toBeNull()
+  })
+
+  it('names itself the same in the manifest and the marketplace', () => {
+    expect(plugin.manifest.value.name).toBe(plugin.entry.name)
+    expect(plugin.manifest.value.description.length).toBeGreaterThan(0)
+    expect((plugin.entry.description ?? '').length).toBeGreaterThan(0)
+  })
+
+  // A version bump in package.json has to carry every manifest with it, or the
+  // marketplace advertises a version a plugin does not claim.
   it('keeps both manifest versions in step with package.json', () => {
-    expect(plugin.value.version).toBe(pkg.value.version)
-    expect(marketplace.value.plugins[0].version).toBe(pkg.value.version)
+    expect(plugin.manifest.value.version).toBe(pkg.value.version)
+    expect(plugin.entry.version).toBe(pkg.value.version)
   })
 
-  it('gives the plugin a name and a description', () => {
-    expect(plugin.value.name).toBe('kiss-ssg')
-    expect(plugin.value.description.length).toBeGreaterThan(0)
+  it('ships at least one skill', () => {
+    expect(plugin.skills.length).toBeGreaterThan(0)
   })
 })
 
 describe('skills', () => {
-  it('ships at least one skill', () => {
-    expect(skillNames.length).toBeGreaterThan(0)
-  })
-
-  it.each(skillNames)('%s: frontmatter matches its folder', (name) => {
-    const fields = readFrontmatter(path.join(skillsDir, name, 'SKILL.md'))
-    expect(fields).not.toBeNull()
-    expect(fields.name).toBe(name)
-    expect(fields.description ?? '').not.toBe('')
-  })
+  it.each(everySkill)(
+    '$plugin/$skill: frontmatter matches its folder',
+    ({ skill, file }) => {
+      const fields = readFrontmatter(file)
+      expect(fields).not.toBeNull()
+      expect(fields.name).toBe(skill)
+      expect(fields.description ?? '').not.toBe('')
+    },
+  )
 
   // A skill that cites a path the tarball does not ship sends the agent to a
   // file that is not there — the whole point of pointing at llms.txt rather
   // than restating it.
-  it.each(skillNames)('%s: every cited package path exists', (name) => {
-    const file = path.join(skillsDir, name, 'SKILL.md')
-    const missing = citedPackagePaths(file).filter(
-      (relative) => !fs.existsSync(path.join(root, relative)),
-    )
-    expect(missing).toEqual([])
-  })
+  it.each(everySkill)(
+    '$plugin/$skill: every cited package path exists',
+    ({ file }) => {
+      const missing = citedPackagePaths(file).filter(
+        (relative) => !fs.existsSync(path.join(root, relative)),
+      )
+      expect(missing).toEqual([])
+    },
+  )
 
-  it.each(skillNames)('%s: every cited package path is packed', (name) => {
-    const file = path.join(skillsDir, name, 'SKILL.md')
-    const packed = [...pkg.value.files, ...ALWAYS_PACKED]
-    const unpacked = citedPackagePaths(file).filter(
-      (relative) => !packed.includes(relative.split('/')[0]),
-    )
-    expect(unpacked).toEqual([])
+  it.each(everySkill)(
+    '$plugin/$skill: every cited package path is packed',
+    ({ file }) => {
+      const packed = [...pkg.value.files, ...ALWAYS_PACKED]
+      const unpacked = citedPackagePaths(file).filter(
+        (relative) => !packed.includes(relative.split('/')[0]),
+      )
+      expect(unpacked).toEqual([])
+    },
+  )
+})
+
+// The rubric ships with kiss-close so a consuming site scores its reflections
+// against the same seven dimensions this repo scores its own. A copy is the
+// only way to ship it, so this is the thing that stops the two drifting.
+describe('shipped rubric', () => {
+  it('is the repo rubric verbatim, under a one-line source header', () => {
+    const copy = fs.readFileSync(path.join(root, RUBRIC_COPY), 'utf8')
+    const source = fs.readFileSync(path.join(root, RUBRIC_SOURCE), 'utf8')
+    const firstBreak = copy.indexOf('\n')
+    expect(copy.slice(0, firstBreak)).toMatch(/rubric\.md/)
+    expect(copy.slice(firstBreak + 1)).toBe(source)
   })
 })

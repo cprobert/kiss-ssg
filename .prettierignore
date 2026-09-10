@@ -16,3 +16,10 @@ types/
 # in this repo relies on — it errors rather than formatting. Templates are
 # hand-formatted.
 *.hbs
+
+# A verbatim copy of .claude/skills/retrospective/rubric.md, shipped beside the
+# kiss-close skill so a consuming site scores its reflections against the same
+# rubric. test/unit/plugin-manifests.test.js byte-compares it against the
+# original past its one-line source header — prettier reflowing the copy alone
+# would break that identity.
+plugins/kiss-memory/skills/kiss-close/rubric.md

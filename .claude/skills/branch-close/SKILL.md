@@ -128,13 +128,13 @@ npm version patch|minor|major|prerelease --preid alpha --no-git-tag-version
 
 `--no-git-tag-version` edits `package.json` and `package-lock.json` without creating a git tag — the PR merge is the version event, and publishing is a separate deliberate act.
 
-Three files carry this version: `package.json` and the two plugin manifests (`.claude-plugin/marketplace.json`, `plugins/kiss-ssg/.claude-plugin/plugin.json`), and `test/unit/plugin-manifests.test.js` fails if they disagree. You do not have to edit them: npm's `version` lifecycle hook runs `scripts/sync-plugin-versions.mjs` as part of the command above — including under `--no-git-tag-version` — so the manifests move with the bump. `git add` them along with the manifest below.
+This version is carried by `package.json`, the marketplace manifest (`.claude-plugin/marketplace.json`) and every plugin's own `plugins/<name>/.claude-plugin/plugin.json`, and `test/unit/plugin-manifests.test.js` fails if they disagree. You do not have to edit them: npm's `version` lifecycle hook runs `scripts/sync-plugin-versions.mjs` as part of the command above — including under `--no-git-tag-version` — so the manifests move with the bump. `git add` them along with the manifest below.
 
 User-visible changes also get an entry in `CHANGELOG.md` at the repo root, written for someone building a site with kiss-ssg, not for someone maintaining it. Create the file if it does not exist yet (newest version first, `## <version> — <date>` headings). Write it alongside the bump, then commit both:
 
 ```bash
 git add package.json package-lock.json CHANGELOG.md \
-  .claude-plugin/marketplace.json plugins/kiss-ssg/.claude-plugin/plugin.json
+  .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json
 git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
 ```
 

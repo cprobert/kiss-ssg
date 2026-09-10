@@ -61,6 +61,14 @@ Match the interview to the work:
 
 When unsure, ask one question: "quick chore, or something worth speccing?"
 
+### Step 2a — Read back the last three reflections' Feedback
+
+```bash
+ls -t planning/sessions/*.md | head -3
+```
+
+Read each one's `## Feedback` section — the recommendations the last three branches left for next time. Anything that appears in **two or more** of them is a lesson that has not stuck, and this branch inherits it: surface those items to the user before the interview and keep them visible through it, so the criteria can be written to hold them. A reflection nobody reads at the next open is a diary, not institutional memory.
+
 ### Step 3 — Interview for intent
 
 Elicit the fields below. Use AskUserQuestion for the structured choices (impact surface, expected shape) and open dialogue for the objective and criteria. Ask only what actually shapes the work — questions that reduce real ambiguity, not interrogation theatre. If the user already stated something clearly, reflect it back rather than re-asking.
