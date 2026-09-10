@@ -43,9 +43,12 @@ If the agent is Claude Code, this repository is also a plugin marketplace. In Cl
 ```
 /plugin marketplace add cprobert/kiss-ssg
 /plugin install kiss-ssg@kiss-ssg
+/plugin install kiss-memory@kiss-ssg
 ```
 
-The first line registers this repository as a marketplace; the second installs the plugin from it. That installs four skills, all named `kiss-<something>` so they're easy to spot alongside skills from other plugins — `/kiss-ssg:kiss-new-site` (build a site from a description, or a whole new section on one), `/kiss-ssg:kiss-add-page` (add or update a single page on a site that's already set up), `/kiss-ssg:kiss-migrate-v1` (move a v1 project to v2) and `/kiss-ssg:kiss-check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. You don't have to invoke them by name — each skill's description is written for automatic discovery, so a request like "add a page to this site" or "why is my kiss-ssg build failing" reaches for the matching skill on its own. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
+The first line registers this repository as a marketplace; the other two install its two plugins. `kiss-ssg` builds sites; `kiss-memory` remembers them — it reads the `AIKB/` folder a build writes with `.aikb()` and the diff `kiss-ssg check --against` produces, so a developer returning after two years can be briefed on what the site is and what bites (`/kiss-memory:kiss-catch-up`), and a piece of work can be framed, steered and closed against the site's own output (`/kiss-memory:kiss-open`, `kiss-pulse`, `kiss-close`). See [`plugins/kiss-memory/`](plugins/kiss-memory/).
+
+The `kiss-ssg` plugin installs four skills, all named `kiss-<something>` so they're easy to spot alongside skills from other plugins — `/kiss-ssg:kiss-new-site` (build a site from a description, or a whole new section on one), `/kiss-ssg:kiss-add-page` (add or update a single page on a site that's already set up), `/kiss-ssg:kiss-migrate-v1` (move a v1 project to v2) and `/kiss-ssg:kiss-check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. You don't have to invoke them by name — each skill's description is written for automatic discovery, so a request like "add a page to this site" or "why is my kiss-ssg build failing" reaches for the matching skill on its own. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
 
 ## Usage
 
@@ -508,6 +511,7 @@ Your browser is reloaded once per rebuild, when that rebuild has finished writin
 npx kiss-ssg check build.js            # JSON, one report per Kiss instance
 npx kiss-ssg check build.js --summary  # one line per instance instead
 npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the script
+npx kiss-ssg check --against AIKB/last-build.json build.js  # …and what changed since that build
 ```
 
 ```json
@@ -518,7 +522,12 @@ npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the sc
     "buildDir": "./public",
     "duration": 160,
     "pages": [
-      { "view": "index.hbs", "buildTo": "./public/index.html", "ok": true }
+      {
+        "view": "index.hbs",
+        "buildTo": "./public/index.html",
+        "ok": true,
+        "hash": "9c1185a5c5e9fc54612808977ee8f548b2258d31"
+      }
     ],
     "failures": [
       {
@@ -535,7 +544,19 @@ npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the sc
 ]
 ```
 
-It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. Your site's own build log goes to stderr, so stdout is nothing but the JSON. `--summary` is the command's own flag and is read wherever you write it, so a site that needs that word for itself takes it after a bare `--` (`npx kiss-ssg check menu.js -- --summary`).
+It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. Your site's own build log goes to stderr, so stdout is nothing but the JSON. `--summary` is the command's own flag and is read wherever you write it, so a site that needs that word for itself takes it after a bare `--` (`npx kiss-ssg check menu.js -- --summary`). Each page carries `hash`, the sha1 of the bytes it wrote — `null` for a page that failed or that you registered with `generate: false`.
+
+`--against <file>` (before the script) turns the check into a comparison: it reads a report an earlier build left behind — a `KISS_REPORT` JSON Lines file, the JSON array `check` itself prints, or a single report object, all three read without you having to say which — and tells you which pages this build would add, remove or change. Pages are matched by output path and compared by `hash`, so it answers about the bytes a browser would receive rather than about which files you happened to touch; a page whose `hash` is `null` on either side counts as changed. Reports are paired by `buildDir`, so a script that builds several sites gets one diff each, and a file holding several builds of one folder is compared against the newest. Under `--summary` the diff prints under that site's line:
+
+```
+ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
+  + ./public/news/spring-2026.html
+  - ./public/news/autumn-2025.html
+  ~ ./public/news/index.html
+  = 3 unchanged
+```
+
+Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array — the shape changes only under this flag, and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
 
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance. Neither changes your script's exit code — that stays yours.
 
@@ -546,7 +567,7 @@ Two things a check cannot make true. A site that reads its own build folder back
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms }`, every value JSON-safe. `pages` is `{ view, buildTo, ok }` per queued page and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms }`, every value JSON-safe. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {
