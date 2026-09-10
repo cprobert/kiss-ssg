@@ -12,9 +12,10 @@
  * @param {number} [input.startedAt] `Date.now()` at construction
  * @param {string|null} [input.sitemap] the sitemap written by this build
  * @param {import('./pipeline.js').PipelineResult[]} [input.pipeline] what the asset pipeline's steps did
+ * @param {string|null} [input.llms] the llms.txt written by this build
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, llms, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -29,6 +30,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     startedAt?: number;
     sitemap?: string | null;
     pipeline?: import("./pipeline.js").PipelineResult[];
+    llms?: string | null;
 }): BuildReport;
 /**
  * The one-line human rendering of a report, plus one line per failure — what
@@ -134,4 +136,8 @@ export type BuildReport = {
      * every `config.assets.pipeline` step, in order; empty when there are none
      */
     pipeline: BuildPipelineStep[];
+    /**
+     * the `llms.txt` written, or `null` if none was
+     */
+    llms: string | null;
 };
