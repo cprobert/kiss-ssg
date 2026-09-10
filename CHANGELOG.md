@@ -3,6 +3,29 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.1.0 — 2026-09-10
+
+**`.llms()` writes your site's llms.txt**
+
+**Added: `kiss.llms({ title, summary, notes?, sections? })`**, a sibling of
+`.sitemap()`. It writes `llms.txt` — the [llmstxt.org](https://llmstxt.org)
+index an answer engine reads before it crawls — into the build folder from
+the pages you already registered: an `# title`, a `> summary` blockquote,
+one `##` section per top-level `path` and one `- [title](url): description`
+line per page, plus an optional `## Notes` section. `summary` and `notes`
+take inline text or a path to a `.md`/`.txt` file, and `sections` maps a
+path segment to a heading. Every URL is the same string as that page's
+`{{canonical}}` and its `<loc>` in `sitemap.xml`, built by the same code, so
+the three can never disagree. Call it before or after `.generate()`; a
+whole-site `watch` rebuild re-runs it.
+
+Per page: `ignoreLlms: true` keeps a page out, `llmsSection: 'Name'` moves
+it to another heading, and a page with `ignoreSitemap: true` or
+`generate: false` is left out automatically. `report()` gains an additive
+`llms` field naming the file written, or `null`. Example 6 now writes one
+beside its sitemap, and `llms.txt` has a worked snippet under
+**Writing llms.txt**.
+
 ## 2.0.0 — 2026-09-09
 
 **v2 is stable.** No engine changes since `2.0.0-beta.2` — this release just drops the
