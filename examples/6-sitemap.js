@@ -50,6 +50,18 @@ const kiss = new Kiss({
     console.log('sitemap.xml lists:', urls)
   })
 
+  // The sitemap's sibling: llms.txt, the llmstxt.org index an answer engine
+  // reads first. Same registry, same URLs — `rota` is out of both, because a
+  // page kept out of the sitemap is kept out of this too. The summary is
+  // inline here; a path to a `.md` file would be read instead.
+  .llms({
+    title: 'Aster & Oak',
+    summary:
+      'A small-batch coffee roastery in Bristol. Beans, brewing notes and the shops that stock us.',
+    sections: { root: 'Pages' },
+    notes: 'Prices and opening hours change seasonally.',
+  })
+
 if (!dev) {
   await kiss.complete().catch(reportBuildFailure)
 }

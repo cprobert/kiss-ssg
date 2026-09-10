@@ -32,6 +32,7 @@ describe('buildReport', () => {
       'assets',
       'sitemap',
       'pipeline',
+      'llms',
     ])
     expect(report.ok).toBe(true)
     expect(report.mode).toBe('build')
@@ -85,6 +86,7 @@ describe('buildReport', () => {
       mode: 'check',
       startedAt: Date.now(),
       sitemap: `${staging}/sitemap.xml`,
+      llms: `${staging}/llms.txt`,
     })
 
     expect(report.buildDir).toBe('./public')
@@ -92,6 +94,7 @@ describe('buildReport', () => {
     expect(report.pages[0].ok).toBe(false)
     expect(report.failures[0].buildTo).toBe('./public/index.html')
     expect(report.sitemap).toBe('./public/sitemap.xml')
+    expect(report.llms).toBe('./public/llms.txt')
     expect(JSON.stringify(report)).not.toContain('kiss-staging')
   })
 
@@ -140,6 +143,7 @@ describe('buildReport', () => {
       assets: [],
       sitemap: null,
       pipeline: [],
+      llms: null,
     })
   })
 

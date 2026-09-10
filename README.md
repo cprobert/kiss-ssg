@@ -426,6 +426,51 @@ kiss.sitemap({ overwrite: false })
 
 **Note**: `overwrite: false` only has an effect if you also set `cleanBuild: false` on the Kiss config. With the default `cleanBuild: true`, the whole build folder — including any previous `sitemap.xml` — is emptied before generation starts, so there's never an existing file left for `.sitemap()` to find.
 
+### .llms()
+
+Writes an [`llms.txt`](https://llmstxt.org) into the root of the build folder: the curated, AI-facing index of your site, the file an answer engine reads before it crawls. It is `.sitemap()`'s sibling — same registry, same titles, same URLs, a different reader — so the two can never drift apart. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
+
+```js
+kiss
+  .page({
+    view: 'index.hbs',
+    title: 'A1K9 Training',
+    description: 'Dog training and behaviour work in South Wales',
+  })
+  .pages({ view: 'courses/course.hbs', model: 'courses', path: 'courses' })
+  .page({ view: 'rota.hbs', ignoreLlms: true }) // in the sitemap, out of the index
+  .generate()
+  .sitemap()
+  .llms({
+    title: 'A1K9 Training',
+    summary: 'Dog behaviour and obedience training in South Wales.',
+    sections: { root: 'Pages', courses: 'Courses' },
+    notes: 'src/content/llms-notes.md',
+  })
+```
+
+writes:
+
+```markdown
+# A1K9 Training
+
+> Dog behaviour and obedience training in South Wales.
+
+## Pages
+
+- [A1K9 Training](https://a1k9training.co.uk/): Dog training and behaviour work in South Wales
+
+## Courses
+
+- [Bronze obedience](https://a1k9training.co.uk/courses/bronze-obedience): Six weeks, group class
+```
+
+**The options**: `title` is the `# ` heading and `summary` the `> ` blockquote — and `summary` (like the optional `notes`, which becomes a trailing `## Notes` section) is either the text itself or a path, relative to your working directory, to a `.md`/`.txt` file holding it, so a long summary can live beside the rest of your content. `sections` maps a top-level path segment to a heading (`{ courses: 'Courses' }`); the key `root` names the section holding pages with no path (default `Pages`), and any segment you do not map is title-cased (`behavioural-consultations` → `Behavioural Consultations`). `overwrite` (default `true`) behaves exactly as the sitemap's.
+
+**Which pages are listed**: every registered page, grouped by the first segment of its `path` with the root group first, in registration order. A page opts out with `ignoreLlms: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of `llms.txt` too — the index is a subset of the site the sitemap describes, never a superset. `llmsSection: 'Name'` puts one page under a heading of your choosing regardless of its path. Each entry is `- [title](url): description`, with the description omitted when the page has none and the title falling back to the page's slug, title-cased; each URL is the same string that page's own `{{canonical}}` renders.
+
+It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
+
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -483,7 +528,9 @@ npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the sc
       }
     ],
     "assets": [{ "source": "css/site.css", "target": "css/site.605b52d7.css" }],
-    "sitemap": "./public/sitemap.xml"
+    "sitemap": "./public/sitemap.xml",
+    "pipeline": [{ "name": "tailwind", "ok": true, "duration": 420 }],
+    "llms": "./public/llms.txt"
   }
 ]
 ```
@@ -499,7 +546,7 @@ Two things a check cannot make true. A site that reads its own build folder back
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap }`, every value JSON-safe. `pages` is `{ view, buildTo, ok }` per queued page and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms }`, every value JSON-safe. `pages` is `{ view, buildTo, ok }` per queued page and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {

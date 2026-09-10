@@ -67,6 +67,14 @@ export type PageOptionsKnown = {
      * default: one timestamp shared by every page
      */
     sitemapLastmod?: string;
+    /**
+     * keep this page out of `llms.txt`
+     */
+    ignoreLlms?: boolean;
+    /**
+     * the `llms.txt` section this page is listed under, overriding its path
+     */
+    llmsSection?: string;
 };
 /**
  * The options `.page()` takes: {@link PageOptionsKnown} plus any extra keys of
@@ -147,6 +155,33 @@ export type SitemapOptions = {
      */
     overwrite?: boolean;
 };
+/**
+ * The options `.llms()` takes. `title` and `summary` are required — without
+ * either, kiss logs an error and writes nothing, exactly as it does for a
+ * sitemap with no `siteUrl`.
+ */
+export type LlmsOptions = {
+    /**
+     * the site's name — the file's `# ` heading
+     */
+    title: string;
+    /**
+     * what the site is, as a `> ` blockquote: the text itself, or a path (relative to `process.cwd()`) to a `.md`/`.txt` file holding it
+     */
+    summary: string;
+    /**
+     * a trailing `## Notes` section; same text-or-file rule as `summary`
+     */
+    notes?: string;
+    /**
+     * top-level path segment → section heading (`{ courses: 'Courses' }`); the key `root` names the section holding pages with no path (default `Pages`). An unmapped segment is title-cased.
+     */
+    sections?: Record<string, string>;
+    /**
+     * default `true`; `false` leaves an existing `llms.txt` alone
+     */
+    overwrite?: boolean;
+};
 export type WatchOptions = {
     /**
      * the script whose own change triggers a whole-site rebuild; defaults to `process.argv[1]`
@@ -216,6 +251,8 @@ declare class Kiss {
     /** @private */
     private _sitemapRequest;
     /** @private */
+    private _llmsRequest;
+    /** @private */
     private _watcher;
     /** @private */
     private _devServer;
@@ -239,6 +276,8 @@ declare class Kiss {
     private _report;
     /** @private */
     private _sitemapPath;
+    /** @private */
+    private _llmsPath;
     /** @private */
     private _checkMode;
     /** @type {KissConfig} */
@@ -377,6 +416,20 @@ declare class Kiss {
      * @returns {this}
      */
     sitemap(options?: SitemapOptions | null, callback?: (urls: SitemapUrl[]) => void | Promise<void>): this;
+    /**
+     * Writes `llms.txt` into the build folder — the llmstxt.org index an answer
+     * engine reads first — from the same registry, titles and URLs the sitemap is
+     * built from, so the two can never disagree. Requires `config.siteUrl`, and
+     * `options.title`/`options.summary`; without any of them this logs an error
+     * and skips. Like `.sitemap()`, it can be called before or after
+     * `.generate()`, and it is re-run by a whole-site watch rebuild.
+     *
+     * @param {LlmsOptions} options
+     * @param {(text: string) => void|Promise<void>} [callback] receives the
+     * rendered file; not fired when llms.txt was skipped for want of an option
+     * @returns {this}
+     */
+    llms(options: LlmsOptions, callback?: (text: string) => void | Promise<void>): this;
     /**
      * Pulls one resolved model out of the array `.generate()`/`.complete()` hand
      * back — the way to read a model without relying on its position.
