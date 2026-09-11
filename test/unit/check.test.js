@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
   HELP,
+  defaultBaseline,
   diffReports,
   exitCodeFor,
   formatDiff,
   parseArgs,
   readReports,
   readReportsFile,
+  recordedLine,
 } from '../../lib/check.js'
 
 const report = (ok) => ({ ok, mode: 'check', buildDir: './public' })
@@ -132,10 +134,103 @@ describe('parseArgs', () => {
     expect(parsed.error).toContain('build script')
   })
 
-  it('documents the command it parses', () => {
-    expect(HELP).toContain('kiss-ssg check <script>')
+  it('parses the aikb command exactly as it parses check', () => {
+    expect(parseArgs(['aikb', 'site.js', '2026-spring'])).toEqual({
+      command: 'aikb',
+      script: 'site.js',
+      args: ['2026-spring'],
+      summary: false,
+      against: null,
+      error: null,
+    })
+  })
+
+  it('takes both options under aikb too', () => {
+    expect(
+      parseArgs(['aikb', '--summary', '--against', 'last.json', 'site.js']),
+    ).toMatchObject({
+      command: 'aikb',
+      summary: true,
+      against: 'last.json',
+      script: 'site.js',
+      error: null,
+    })
+    // ...and --summary is still read after the script, without being passed on.
+    expect(parseArgs(['aikb', 'site.js', '--summary'])).toMatchObject({
+      command: 'aikb',
+      summary: true,
+      args: [],
+    })
+  })
+
+  it('names the command it could not complete in its usage errors', () => {
+    expect(parseArgs(['aikb']).error).toBe(
+      "aikb needs the site's build script: kiss-ssg aikb <script>",
+    )
+    expect(parseArgs(['aikb', '--against']).error).toContain(
+      'kiss-ssg aikb --against <file> <script>',
+    )
+  })
+
+  it('documents both commands it parses', () => {
+    expect(HELP).toContain('check <script>')
+    expect(HELP).toContain('aikb <script>')
     expect(HELP).toContain('--summary')
     expect(HELP).toContain('--against <file>')
+  })
+})
+
+describe('defaultBaseline', () => {
+  const recorded = (folder) => ({
+    ok: true,
+    buildDir: './public',
+    aikb: { folder, written: true },
+  })
+
+  it('is the last-build.json of the first folder a report names', () => {
+    expect(defaultBaseline([recorded('AIKB')])).toBe('AIKB/last-build.json')
+  })
+
+  it('skips the sites that recorded nothing and takes the first that did', () => {
+    expect(
+      defaultBaseline([
+        { ok: true, aikb: null },
+        recorded('site/AIKB'),
+        recorded('other/AIKB'),
+      ]),
+    ).toBe('site/AIKB/last-build.json')
+  })
+
+  it('is null when no site has a knowledge base at all', () => {
+    expect(defaultBaseline([{ ok: true, aikb: null }])).toBeNull()
+    expect(defaultBaseline([])).toBeNull()
+    expect(defaultBaseline()).toBeNull()
+  })
+})
+
+describe('recordedLine', () => {
+  it('names the folder a record wrote', () => {
+    expect(
+      recordedLine({ ok: true, aikb: { folder: 'AIKB', written: true } }),
+    ).toBe('  recorded AIKB')
+  })
+
+  it('says the build failed, which is the reason that outranks the others', () => {
+    expect(
+      recordedLine({ ok: false, aikb: { folder: 'AIKB', written: false } }),
+    ).toBe('  not recorded — build failed')
+  })
+
+  it('says the folder is switched off when there is none to write', () => {
+    expect(recordedLine({ ok: true, aikb: null })).toBe(
+      '  not recorded — folders.aikb is null',
+    )
+  })
+
+  it('falls back to the bare verdict when nothing else explains it', () => {
+    expect(
+      recordedLine({ ok: true, aikb: { folder: 'AIKB', written: false } }),
+    ).toBe('  not recorded')
   })
 })
 

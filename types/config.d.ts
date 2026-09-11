@@ -15,7 +15,7 @@ export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
  * @param {KissFolders} folders
  * @returns {string[]} the folders `Kiss` creates on start-up, skipping any set
  * to `null`. `aikb` is not among them: an empty `AIKB/` in every site that has
- * never called `.aikb()` would be a promise the build does not keep.
+ * never recorded one would be a promise the build does not keep.
  */
 export function foldersToEnsure(folders: KissFolders): string[];
 /**
@@ -32,7 +32,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {string|null} partials registered as Handlebars partials
  * @property {string|null} models `.json` models `options.model` names
  * @property {string|null} controllers `.js` controllers `options.controller` names
- * @property {string|null} aikb where `.aikb()` writes the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
+ * @property {string|null} aikb where `kiss-ssg aikb` records the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
  */
 /**
  * A `folders` block as a site writes it: every key optional. Setting `src`
@@ -211,7 +211,7 @@ export type KissFolders = {
      */
     controllers: string | null;
     /**
-     * where `.aikb()` writes the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
+     * where `kiss-ssg aikb` records the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
      */
     aikb: string | null;
 };

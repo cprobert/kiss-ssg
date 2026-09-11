@@ -36,7 +36,7 @@ Everything an agent needs ships in the package, so point it at `node_modules` ra
 
 That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (ten runnable sites with a README each — copy the exemplar whose shape matches).
 
-Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)).
+Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)), and `npx kiss-ssg aikb site.js` records what the site is into `AIKB/`, which the agent reads back next time.
 
 If the agent is Claude Code, this repository is also a plugin marketplace. In Claude Code, run:
 
@@ -46,7 +46,7 @@ If the agent is Claude Code, this repository is also a plugin marketplace. In Cl
 /plugin install kiss-memory@kiss-ssg
 ```
 
-The first line registers this repository as a marketplace; the other two install its two plugins. `kiss-ssg` builds sites; `kiss-memory` remembers them — it reads the `AIKB/` folder a build writes with `.aikb()` and the diff `kiss-ssg check --against` produces, so a developer returning after two years can be briefed on what the site is and what bites (`/kiss-memory:kiss-catch-up`), and a piece of work can be framed, steered and closed against the site's own output (`/kiss-memory:kiss-open`, `kiss-pulse`, `kiss-close`). See [`plugins/kiss-memory/`](plugins/kiss-memory/).
+The first line registers this repository as a marketplace; the other two install its two plugins. `kiss-ssg` builds sites; `kiss-memory` remembers them — it reads the `AIKB/` folder `npx kiss-ssg aikb <build-script>` records, and the diff `kiss-ssg check` produces against that record by default, so a developer returning after two years can be briefed on what the site is and what bites (`/kiss-memory:kiss-catch-up`), and a piece of work can be framed, steered and closed against the site's own output (`/kiss-memory:kiss-open`, `kiss-pulse`, `kiss-close`) — the baseline moving only when the close records it. See [`plugins/kiss-memory/`](plugins/kiss-memory/).
 
 The `kiss-ssg` plugin installs four skills, all named `kiss-<something>` so they're easy to spot alongside skills from other plugins — `/kiss-ssg:kiss-new-site` (build a site from a description, or a whole new section on one), `/kiss-ssg:kiss-add-page` (add or update a single page on a site that's already set up), `/kiss-ssg:kiss-migrate-v1` (move a v1 project to v2) and `/kiss-ssg:kiss-check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. You don't have to invoke them by name — each skill's description is written for automatic discovery, so a request like "add a page to this site" or "why is my kiss-ssg build failing" reaches for the matching skill on its own. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
 
@@ -126,7 +126,7 @@ Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automat
 | livereloadPort |                     35729                      |                                                                                  The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.                                                                                   |
 | devHost        |                  '127.0.0.1'                   |                                                                                         The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                                                                                          |
 | folders        |                   see above                    |                                                                                                                                                                                             A JSON object of alternative folder locations                                                                                                                                                                                             |
-| folders.aikb   |                    './AIKB'                    |                                                                                           Where `.aikb()` writes the site's knowledge base. Source, not output: it sits outside `folders.build`, is never derived from `folders.src`, is not created until you call `.aikb()`, and is meant to be committed. `null` switches `.aikb()` off                                                                                            |
+| folders.aikb   |                    './AIKB'                    |                                                                                           Where `npx kiss-ssg aikb` records the site's knowledge base. Source, not output: it sits outside `folders.build`, is never derived from `folders.src`, is not created until you record one, and is meant to be committed. `null` switches it off                                                                                            |
 | siteUrl        |                   undefined                    |                                                                                                                                                                  The site's base URL, required by `.sitemap()` (see below) and by the `canonical` / `absUrl` helpers                                                                                                                                                                  |
 
 A key you pass explicitly as `undefined` takes its default — `new Kiss({ port: process.env.PORT })` with `PORT` unset still gets 3001, and the same holds inside `folders` and `sass`. `null` is a real value: set a folder to `null` to switch it off.
@@ -476,35 +476,6 @@ writes:
 
 It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
 
-### .aikb()
-
-`kiss.aikb()` writes the site's own knowledge base into `config.folders.aikb` (default `./AIKB`) — the map of the site as the build saw it, for the developer who comes back to it in two years and finds that every context window that held this is gone.
-
-Four files. `README.md` is written once if it is absent and never overwritten: what the folder is, which files are generated, how to write a note. `site-map.md` and `site-map.json` are the map itself, rewritten every build — the site's URL, build folder and source folders; a row per page giving its output path, view, model source, controller source and the partials and layouts it actually rendered; the partial → pages index; models and controllers with the pages that used them; the asset pipeline's steps. `last-build.json` is that build's report with every timing dropped, which is what `npx kiss-ssg check --against` compares your working tree to.
-
-Every file is byte-stable across two identical builds — nothing is timestamped and every list is sorted — so the folder belongs in git and a diff in it is a real change to the shape of the site. It is **source, not output**: it sits outside `config.folders.build`, survives `cleanBuild`, and no folder appears at all until you call `.aikb()`.
-
-```js
-kiss.scan().generate().sitemap().aikb()
-await kiss.complete()
-```
-
-Unlike `.sitemap()` and `.llms()` the write happens once the whole build has settled rather than on the internal promise queue, because the partial-per-page index is learned from rendering. It is chainable, it is re-run by every whole-site watch rebuild, and its callback receives the map object (`kiss.aikb(null, (map) => …)`). Under `KISS_CHECK` nothing is written: the map is still built and the note rules still evaluated, and the report says `written: false` — refreshing the committed folder needs a real build.
-
-**Notes are yours; the engine never writes one.** A map says what the site is; a note says why, which no build can work out. Three kinds of subject carry judgement, and each wants a note under `AIKB/notes/` at a path derived mechanically from its id:
-
-| Subject                                               | Its note                                         |
-| ----------------------------------------------------- | ------------------------------------------------ |
-| a controller file, e.g. `stockist.js`                 | `AIKB/notes/controllers/stockist.md`             |
-| a URL model, e.g. `https://api.example.com/v2/events` | `AIKB/notes/models/api.example.com-v2-events.md` |
-| an asset pipeline step, e.g. `tailwind`               | `AIKB/notes/pipeline/tailwind.md`                |
-
-Plain pages, partials and `.json` models are deliberately not subjects — a note saying "renders the about page" is noise. An inline controller or an object model has no file to attach a note to, and is not a subject either. Suggested headings, which nothing enforces: `## What it does`, `## Why it is this way`, `## Gotchas`.
-
-Every build reports two findings on `report().aikb.notes`: **missing** (a subject nobody has explained) and **dead** (a note under `notes/` whose subject is not in the map). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` lines. Neither is a build failure and neither changes an exit code.
-
-`examples/8-data-fed-site/AIKB/` is the runnable exemplar: a committed knowledge base, with one authored note beside it. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
-
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -539,10 +510,11 @@ Your browser is reloaded once per rebuild, when that rebuild has finished writin
 `npx kiss-ssg check <script>` builds the site your script builds and tells you whether it worked — without publishing anything. The build is staged and then discarded, so the build folder is neither emptied nor written, and what you get back is the verdict instead of the output:
 
 ```bash
-npx kiss-ssg check build.js            # JSON, one report per Kiss instance
+npx kiss-ssg check build.js            # JSON, one report per Kiss instance — and, if the
+                                       # site has recorded an AIKB/, what changed since
 npx kiss-ssg check build.js --summary  # one line per instance instead
 npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the script
-npx kiss-ssg check --against AIKB/last-build.json build.js  # …and what changed since that build
+npx kiss-ssg check --against last.jsonl build.js  # diff against some other report instead
 ```
 
 ```json
@@ -577,7 +549,7 @@ npx kiss-ssg check --against AIKB/last-build.json build.js  # …and what change
 
 It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. Your site's own build log goes to stderr, so stdout is nothing but the JSON. `--summary` is the command's own flag and is read wherever you write it, so a site that needs that word for itself takes it after a bare `--` (`npx kiss-ssg check menu.js -- --summary`). Each page carries `hash`, the sha1 of the bytes it wrote — `null` for a page that failed or that you registered with `generate: false`.
 
-`--against <file>` (before the script) turns the check into a comparison: it reads a report an earlier build left behind — a `KISS_REPORT` JSON Lines file, the JSON array `check` itself prints, or a single report object, all three read without you having to say which — and tells you which pages this build would add, remove or change. Pages are matched by output path and compared by `hash`, so it answers about the bytes a browser would receive rather than about which files you happened to touch; a page whose `hash` is `null` on either side counts as changed. Reports are paired by `buildDir`, so a script that builds several sites gets one diff each, and a file holding several builds of one folder is compared against the newest. Under `--summary` the diff prints under that site's line:
+When the site has recorded a knowledge base (see [Recording the knowledge base](#recording-the-knowledge-base)), `check` diffs against its `AIKB/last-build.json` without being asked. `--against <file>` (before the script) names a different baseline: it reads a report an earlier build left behind — a `KISS_REPORT` JSON Lines file, the JSON array `check` itself prints, or a single report object, all three read without you having to say which — and tells you which pages this build would add, remove or change. Pages are matched by output path and compared by `hash`, so it answers about the bytes a browser would receive rather than about which files you happened to touch; a page whose `hash` is `null` on either side counts as changed. Reports are paired by `buildDir`, so a script that builds several sites gets one diff each, and a file holding several builds of one folder is compared against the newest. Under `--summary` the diff prints under that site's line:
 
 ```
 ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
@@ -587,18 +559,51 @@ ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
   = 3 unchanged
 ```
 
-Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array — the shape changes only under this flag, and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it. `.aikb()` is the other way round: the AIKB folder is a publish, so a check writes none of it while still evaluating the note rules — `aikb.notes` is as true in a check as in a build, and only `written: false` differs.
+Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array whenever there is a diff to print — under `--against`, or under `check` when the site has a recorded baseline — and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
 
-You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance. Neither changes your script's exit code — that stays yours.
+You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance; `KISS_AIKB=1` (same rule again) is the one thing `kiss-ssg aikb` adds on top of those two. None of them changes your script's exit code — that stays yours.
 
 Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
+
+### Recording the knowledge base
+
+`npx kiss-ssg aikb <script>` writes the site's own knowledge base into `config.folders.aikb` (default `./AIKB`) — the map of the site as the build saw it, for the developer who comes back to it in two years and finds that every context window that held this is gone. It runs exactly the build `check` runs — staged and then discarded, publishing nothing — and the folder is the only thing it leaves behind.
+
+```bash
+npx kiss-ssg aikb build.js            # record it
+npx kiss-ssg aikb build.js --summary  # ...and say in one line whether it did
+```
+
+Nothing else writes that folder. There is no API call for it, and an ordinary build, a `check`, a dev server and a watch rebuild all leave it exactly as they found it. Recording is a **ceremony**: run it when a piece of work is finished, and commit what it wrote. That is what makes `npx kiss-ssg check` mean "what have I changed since this work opened" rather than "since the last time anybody ran a build".
+
+**It refuses to record a build that did not work.** A failed build writes nothing, and `--summary` says `not recorded — build failed`; the exit code is `check`'s. A dev build writes nothing either. The previous record stays exactly as it was — a knowledge base describing a broken build is worse than a slightly old one.
+
+Four files, and all of them are byte-stable across two identical records — nothing is timestamped and every list is sorted — so recording an unchanged site twice leaves `git status` clean and any diff in the folder is a real change to the shape of the site. `README.md` is written once if it is absent and never overwritten: what the folder is, which files are generated, how to write a note. `site-map.md` and `site-map.json` are the map itself — the site's URL, build folder and source folders; a row per page giving its output path, view, model source, controller source and the partials and layouts it actually rendered; the partial → pages index; models and controllers with the pages that used them; the asset pipeline's steps. `last-build.json` is that build's report with every timing dropped, and it is the baseline `npx kiss-ssg check` diffs your working tree against.
+
+The folder is **source, not output**: it sits outside `config.folders.build`, survives `cleanBuild`, and is meant to be committed. Setting `folders.aikb: null` switches it off altogether.
+
+**Having the folder is not the same as opting in.** A build reports `report().aikb` only when `folders.aikb` is set _and_ `<folder>/site-map.json` is there — the one file only a record writes. Until then `aikb` is `null` and no map is built, so the default `./AIKB` is harmless in a repository whose `AIKB/` is something else entirely. Once a site has recorded, every build — a `check` included — reports the folder and the note findings, with `written: false`.
+
+**Notes are yours; the engine never writes one.** A map says what the site is; a note says why, which no build can work out. Three kinds of subject carry judgement, and each wants a note under `AIKB/notes/` at a path derived mechanically from its id:
+
+| Subject                                               | Its note                                         |
+| ----------------------------------------------------- | ------------------------------------------------ |
+| a controller file, e.g. `stockist.js`                 | `AIKB/notes/controllers/stockist.md`             |
+| a URL model, e.g. `https://api.example.com/v2/events` | `AIKB/notes/models/api.example.com-v2-events.md` |
+| an asset pipeline step, e.g. `tailwind`               | `AIKB/notes/pipeline/tailwind.md`                |
+
+Plain pages, partials and `.json` models are deliberately not subjects — a note saying "renders the about page" is noise. An inline controller or an object model has no file to attach a note to, and is not a subject either. Suggested headings, which nothing enforces: `## What it does`, `## Why it is this way`, `## Gotchas`.
+
+Every build reports two findings on `report().aikb.notes`: **missing** (a subject nobody has explained) and **dead** (a note under `notes/` whose subject is not in the map). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` lines. Neither is a build failure and neither changes an exit code.
+
+`examples/9-migrated-from-v1/AIKB/` is the runnable exemplar: a committed knowledge base recorded with `cd examples && npx kiss-ssg aikb 9-migrated-from-v1.js`, with one authored note beside it. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
 
 ### Other methods
 
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb }`, every value JSON-safe. `aikb` is `null` unless you called `.aikb()`, and otherwise `{ folder, written, notes: { missing, dead } }` — where the knowledge base lives, whether this build actually wrote it (`false` under a check, which publishes nothing), and the two note findings as lists of paths. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb }`, every value JSON-safe. `aikb` is `null` unless the site has a knowledge base to report on (`folders.aikb` set, and a record already made — see "Recording the knowledge base"), and otherwise `{ folder, written, notes: { missing, dead } }` — where it lives, whether _this_ build wrote it (`true` only for a passing `npx kiss-ssg aikb` run; every ordinary build reports `false`), and the two note findings as lists of paths. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {

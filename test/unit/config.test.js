@@ -272,8 +272,8 @@ describe('foldersToEnsure', () => {
   })
 
   it('never creates the AIKB folder', () => {
-    // `.aikb()` writes it; a site that never calls it must not find an empty
-    // AIKB/ beside its source that it did not ask for.
+    // `npx kiss-ssg aikb` writes it; a site that has never recorded one must
+    // not find an empty AIKB/ beside its source that it did not ask for.
     const list = foldersToEnsure(resolveFolders({}))
     expect(list).not.toContain('./AIKB')
     expect(list).not.toContain(DEFAULT_FOLDERS.aikb)
@@ -290,7 +290,7 @@ describe('folders.aikb', () => {
 
   it('is overridable and normalised like every other folder', () => {
     expect(resolveFolders({ aikb: '.\\docs\\AIKB\\' }).aikb).toBe('./docs/AIKB')
-    // `null` is a real value: it switches `.aikb()` off.
+    // `null` is a real value: it switches the knowledge base off entirely.
     expect(resolveFolders({ aikb: null }).aikb).toBe(null)
   })
 })

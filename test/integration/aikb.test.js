@@ -1,6 +1,4 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import fs from 'fs-extra'
-import path from 'node:path'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -13,7 +11,7 @@ afterEach(async () => {
   site = null
   kiss = null
   vi.unstubAllGlobals()
-  delete process.env.KISS_CHECK
+  vi.unstubAllEnvs()
 })
 
 const node = `"${process.execPath}"`
@@ -45,7 +43,12 @@ const stubFetch = () =>
     json: async () => ({ count: 2 }),
   }))
 
-const build = async () => {
+// `KISS_AIKB` is read the way `KISS_CHECK` is — once, from `process.env`, as
+// the build settles — so a test asks for a record exactly as `kiss-ssg aikb`
+// does: by setting the variable the bin sets.
+const record = () => vi.stubEnv('KISS_AIKB', '1')
+
+const build = async ({ over = {}, broken = false } = {}) => {
   kiss = new Kiss({
     logger: silentLogger,
     siteUrl: 'https://e.com',
@@ -53,6 +56,7 @@ const build = async () => {
     assets: {
       pipeline: [{ name: 'stamp', run: `${node} -e "0"` }],
     },
+    ...over,
   })
   kiss
     .page({ view: 'index.hbs', model: 'index.json' })
@@ -63,9 +67,9 @@ const build = async () => {
       controller: 'member.js',
     })
     .page({ view: 'events.hbs', model: EVENTS })
-    .generate()
-    .aikb()
-  await kiss.complete()
+  if (broken) kiss.page({ view: 'missing.hbs' })
+  kiss.generate()
+  await kiss.complete().catch(() => {})
   return kiss.report()
 }
 
@@ -76,17 +80,59 @@ const readAikb = async () => ({
   lastBuild: await site.read('AIKB/last-build.json'),
 })
 
-describe('.aikb()', () => {
-  it('writes the map, the report snapshot and the note verdict', async () => {
+const generated = [
+  'README.md',
+  'site-map.md',
+  'site-map.json',
+  'last-build.json',
+]
+const present = async () =>
+  Object.fromEntries(
+    await Promise.all(
+      generated.map(async (file) => [file, await site.exists(`AIKB/${file}`)]),
+    ),
+  )
+const none = Object.fromEntries(generated.map((file) => [file, false]))
+const all = Object.fromEntries(generated.map((file) => [file, true]))
+
+describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
+  it('is absent from a build of a site nobody has recorded', async () => {
+    // The opt-in rule: a folder holding notes but no `site-map.json` has never
+    // been recorded, so an ordinary build neither maps it nor mentions it.
     site = await makeSite(files)
     stubFetch()
     const report = await build()
 
-    // 1. The four generated files, plus the note that was already there.
-    expect(await site.exists('AIKB/README.md')).toBe(true)
-    expect(await site.exists('AIKB/site-map.md')).toBe(true)
-    expect(await site.exists('AIKB/site-map.json')).toBe(true)
-    expect(await site.exists('AIKB/last-build.json')).toBe(true)
+    expect(report.aikb).toBeNull()
+    expect(await present()).toEqual(none)
+  })
+
+  it('is null, and silent, when folders.aikb is switched off', async () => {
+    site = await makeSite(files)
+    stubFetch()
+    const errors = []
+    record()
+    const report = await build({
+      over: {
+        folders: { ...site.folders, aikb: null },
+        logger: { ...silentLogger, error: (msg) => errors.push(String(msg)) },
+      },
+    })
+
+    expect(report.ok).toBe(true)
+    expect(report.aikb).toBeNull()
+    expect(errors).toEqual([])
+  })
+
+  it('records the map, the snapshot and the note verdict under KISS_AIKB', async () => {
+    site = await makeSite(files)
+    stubFetch()
+    record()
+    const report = await build()
+
+    // 1. The folder's five entries: the four generated files, and the authored
+    //    `notes/` the engine has never written and does not touch now.
+    expect(await present()).toEqual(all)
     expect(await site.exists('AIKB/notes/controllers/member.md')).toBe(true)
 
     // 2. The report key: the appended verdict, and the two note findings.
@@ -145,7 +191,7 @@ describe('.aikb()', () => {
     expect(map.site.siteUrl).toBe('https://e.com')
 
     // 4. last-build.json is this build's report with every timing dropped —
-    //    that is what makes it diffable, and it is what `check --against` reads.
+    //    that is what makes it diffable, and it is the baseline `check` reads.
     const last = JSON.parse(await site.read('AIKB/last-build.json'))
     expect(last).not.toHaveProperty('duration')
     expect(last.pipeline).toEqual([{ name: 'stamp', ok: true }])
@@ -161,9 +207,56 @@ describe('.aikb()', () => {
     expect(md).toContain('| Output')
   })
 
-  it('writes byte-identical files on a second identical build', async () => {
+  it('refuses to record a build that failed, and says so', async () => {
+    // The whole point of the ceremony: the knowledge base only ever describes
+    // a build that worked. The notes are still evaluated, because that verdict
+    // is true whatever the build did.
     site = await makeSite(files)
     stubFetch()
+    const notices = []
+    record()
+    const report = await build({
+      broken: true,
+      over: {
+        logger: { ...silentLogger, notice: (msg) => notices.push(String(msg)) },
+      },
+    })
+
+    expect(report.ok).toBe(false)
+    expect(report.aikb.written).toBe(false)
+    expect(report.aikb.notes.missing).toHaveLength(1)
+    expect(report.aikb.notes.dead).toHaveLength(1)
+    expect(await present()).toEqual(none)
+    expect(notices.join('\n')).toContain('not recording')
+    expect(notices.join('\n')).toContain('the build failed')
+  })
+
+  it('refuses to record a dev build', async () => {
+    // A dev build is half a site by definition — one save away from the next
+    // one — and recording it would move the baseline under a developer who is
+    // only looking at the page they are editing.
+    site = await makeSite(files)
+    stubFetch()
+    const notices = []
+    record()
+    const report = await build({
+      over: {
+        dev: true,
+        port: 0,
+        livereloadPort: 0,
+        logger: { ...silentLogger, notice: (msg) => notices.push(String(msg)) },
+      },
+    })
+
+    expect(report.aikb.written).toBe(false)
+    expect(await present()).toEqual(none)
+    expect(notices.join('\n')).toContain('a dev build is never recorded')
+  })
+
+  it('writes byte-identical files on a second identical record', async () => {
+    site = await makeSite(files)
+    stubFetch()
+    record()
     await build()
     const first = await readAikb()
     await kiss.close()
@@ -171,7 +264,7 @@ describe('.aikb()', () => {
 
     await build()
     // Every one of them, including the report snapshot: nothing in the folder
-    // is timestamped and no duration survives, so an identical build is a
+    // is timestamped and no duration survives, so an identical record is a
     // no-op in git and any diff is a real change to the site.
     expect(await readAikb()).toEqual(first)
   })
@@ -179,29 +272,39 @@ describe('.aikb()', () => {
   it('is written once and never overwritten, for README.md alone', async () => {
     site = await makeSite({ ...files, 'AIKB/README.md': 'my own words\n' })
     stubFetch()
+    record()
     await build()
     expect(await site.read('AIKB/README.md')).toBe('my own words\n')
     expect(await site.read('AIKB/site-map.md')).toContain('# Site map')
   })
 
-  it('writes nothing under KISS_CHECK, and reports written: false', async () => {
-    // The knowledge base is a publish, and a check publishes nothing — but the
-    // note rules still run, so a check is a real verdict on them.
+  it('reports on a recorded site without rewriting it, on a plain build and on a check', async () => {
+    // The opt-in marker is `site-map.json`, which only a record writes. Once it
+    // is there every build reports the map's verdict — that is how `check` and
+    // a deploy script see a missing note — and neither touches the folder.
     site = await makeSite(files)
     stubFetch()
-    process.env.KISS_CHECK = '1'
-    const report = await build()
+    record()
+    const recorded = await build()
+    const snapshot = await readAikb()
+    await kiss.close()
+    kiss = null
+    vi.unstubAllEnvs()
 
-    expect(report.mode).toBe('check')
-    expect(report.aikb.written).toBe(false)
-    expect(report.aikb.notes.missing).toHaveLength(1)
-    expect(report.aikb.notes.dead).toHaveLength(1)
-    expect(await site.exists('AIKB/site-map.md')).toBe(false)
-    expect(await site.exists('AIKB/site-map.json')).toBe(false)
-    expect(await site.exists('AIKB/last-build.json')).toBe(false)
-    expect(await site.exists('AIKB/README.md')).toBe(false)
-    // ...and the notes it read are untouched.
-    expect(await site.exists('AIKB/notes/controllers/member.md')).toBe(true)
+    const plain = await build()
+    expect(plain.aikb.folder).toBe(`${site.root}/AIKB`)
+    expect(plain.aikb.written).toBe(false)
+    expect(plain.aikb.notes).toEqual(recorded.aikb.notes)
+    expect(await readAikb()).toEqual(snapshot)
+    await kiss.close()
+    kiss = null
+
+    vi.stubEnv('KISS_CHECK', '1')
+    const checked = await build()
+    expect(checked.mode).toBe('check')
+    expect(checked.aikb.written).toBe(false)
+    expect(checked.aikb.notes).toEqual(recorded.aikb.notes)
+    expect(await readAikb()).toEqual(snapshot)
   })
 
   it('maps staged paths back to the real folder after an atomic promotion', async () => {
@@ -211,12 +314,13 @@ describe('.aikb()', () => {
     // longer exists.
     site = await makeSite(files)
     stubFetch()
+    record()
     kiss = new Kiss({
       logger: silentLogger,
       cleanBuild: 'atomic',
       folders: { ...site.folders, aikb: `${site.root}/AIKB` },
     })
-    kiss.page({ view: 'index.hbs', model: 'index.json' }).generate().aikb()
+    kiss.page({ view: 'index.hbs', model: 'index.json' }).generate()
     await kiss.complete()
 
     const map = JSON.parse(await site.read('AIKB/site-map.json'))
@@ -226,70 +330,5 @@ describe('.aikb()', () => {
     // The report agrees, and neither names the staging sibling.
     const text = await site.read('AIKB/last-build.json')
     expect(text).not.toContain('kiss-staging')
-  })
-
-  it('is re-run by a whole-site rebuild, like the sitemap and llms.txt', async () => {
-    site = await makeSite(files)
-    stubFetch()
-    await build()
-    await fs.remove(path.join(site.root, 'AIKB/site-map.md'))
-    await fs.remove(path.join(site.root, 'AIKB/last-build.json'))
-
-    // A new page file, so the rebuild has something to say that the first
-    // build could not: `.scan()` is not in play, so register it and replay.
-    kiss.page({ view: 'index.hbs', model: 'index.json', slug: 'copy' })
-    await kiss._requestReplay()
-
-    expect(await site.exists('AIKB/site-map.md')).toBe(true)
-    expect(await site.exists('AIKB/last-build.json')).toBe(true)
-    expect(await site.read('AIKB/site-map.md')).toContain('copy.html')
-    expect(kiss.report().aikb.written).toBe(true)
-  })
-
-  it('hands the map to a callback once the folder has been written', async () => {
-    site = await makeSite(files)
-    stubFetch()
-    const seen = []
-    kiss = new Kiss({
-      logger: silentLogger,
-      folders: { ...site.folders, aikb: `${site.root}/AIKB` },
-    })
-    kiss
-      .page({ view: 'index.hbs', model: 'index.json' })
-      .generate()
-      .aikb(null, (map) => seen.push(map))
-    await kiss.complete()
-
-    expect(seen).toHaveLength(1)
-    expect(seen[0].pages[0].buildTo).toBe(`${site.build}/index.html`)
-    // The callback ran after the write, so what it was handed is on disk.
-    expect(JSON.parse(await site.read('AIKB/site-map.json'))).toEqual(seen[0])
-  })
-
-  it('logs and carries on when the folder is switched off', async () => {
-    site = await makeSite(files)
-    const errors = []
-    kiss = new Kiss({
-      logger: { ...silentLogger, error: (msg) => errors.push(String(msg)) },
-      folders: { ...site.folders, aikb: null },
-    })
-    kiss.page({ view: 'index.hbs', model: 'index.json' }).generate().aikb()
-    await kiss.complete()
-
-    // Not a build failure — the site the author asked for, minus this file.
-    expect(kiss.report().ok).toBe(true)
-    expect(kiss.report().aikb).toBe(null)
-    expect(errors.join('\n')).toContain('config.folders.aikb is not set')
-  })
-
-  it('is absent from a build that never called it', async () => {
-    site = await makeSite(files)
-    kiss = new Kiss({ logger: silentLogger, folders: site.folders })
-    kiss.page({ view: 'index.hbs', model: 'index.json' }).generate()
-    await kiss.complete()
-
-    expect(kiss.report().aikb).toBe(null)
-    // Opt-in, like `.sitemap()`: no folder appears for a site that never asked.
-    expect(await site.exists('AIKB/site-map.md')).toBe(false)
   })
 })

@@ -45,16 +45,31 @@ function runExample(script, args = []) {
 
 const output = (r) => `${r.stdout ?? ''}${r.stderr ?? ''}`
 
-// Example 8's committed knowledge base: written by every build, byte-stable
-// across two of them, and outside `public/` because it is source, not output.
+// Example 9's committed knowledge base: written by `kiss-ssg aikb` and by
+// nothing else, byte-stable across two records, and outside `public/` because
+// it is source, not output.
 const AIKB_FILES = [
   'README.md',
   'site-map.md',
   'site-map.json',
   'last-build.json',
 ]
-const readAikb = (file) =>
-  readFileSync(path.join(examplesDir, '8-data-fed-site/AIKB', file), 'utf8')
+const aikbDir = path.join(examplesDir, '9-migrated-from-v1/AIKB')
+const readAikb = (file) => readFileSync(path.join(aikbDir, file), 'utf8')
+
+// The published command line, run the way a person records a site: from
+// `examples/`, so the script's own relative folders resolve as they do in
+// every other test here.
+const runBin = (args) =>
+  spawnSync(
+    process.execPath,
+    [path.join(repoRoot, 'bin/kiss-ssg.js'), ...args],
+    {
+      cwd: examplesDir,
+      encoding: 'utf8',
+      timeout: 60000,
+    },
+  )
 
 describe.skipIf(!hasExamples)('example builds', () => {
   // Never `.concurrent`: every example writes into the one shared repo-root
@@ -150,20 +165,14 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(text).toContain('missing address')
       expect(countHtmlFiles(path.join(publicDir, '8-data-fed-site'))).toBe(6)
 
-      // The knowledge base `.aikb()` writes is committed, so it is written even
-      // by this deliberately failing build — and every subject in it has a note
-      // (only `stockist.js` is one: the index page's controller is inline).
-      const report = JSON.parse(readAikb('last-build.json'))
-      expect(report.ok).toBe(false)
-      expect(report.aikb.notes).toEqual({ missing: [], dead: [] })
-      expect(readAikb('site-map.md')).toContain('`file:stockist.js`')
+      // A build that fails can never be recorded, so this example ships no
+      // knowledge base at all — and an ordinary build writes none either.
+      expect(existsSync(path.join(examplesDir, '8-data-fed-site/AIKB'))).toBe(
+        false,
+      )
     }, 60000)
 
     it('8 · --atomic discards the whole build, leaving no staging folder', () => {
-      // Snapshot the committed folder before the second run, which builds the
-      // same site a different way: byte-identical output is what keeps the
-      // folder out of `git status` and makes any diff in it a real one.
-      const before = AIKB_FILES.map(readAikb)
       cleanOutput('8-data-fed-site')
       const r = runExample('8-data-fed-site.js', ['--atomic'])
       expect(r.status).toBe(1)
@@ -171,9 +180,6 @@ describe.skipIf(!hasExamples)('example builds', () => {
         f.startsWith('8-data-fed-site.kiss-staging-'),
       )
       expect(leftoverStaging).toEqual([])
-      expect(AIKB_FILES.map(readAikb)).toEqual(before)
-      // ...and nothing in it names the staging sibling it was built through.
-      expect(readAikb('last-build.json')).not.toContain('kiss-staging')
     }, 60000)
 
     it('9 · migrated from v1 builds 11 pages with the recipes intact', () => {
@@ -214,6 +220,36 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(readFileSync(handlebarsInstancePage, 'utf8')).toContain(
         '4 kg a week',
       )
+    }, 60000)
+
+    it('9 · records a byte-identical knowledge base through the bin', () => {
+      // The committed folder is the exemplar, and this is the property the
+      // whole feature rests on: recording an unchanged site a second time must
+      // leave `git status` clean, or every diff in the folder is noise. Run
+      // through the published command line, because that is the only writer —
+      // the build above wrote none of this.
+      const before = AIKB_FILES.map(readAikb)
+
+      const r = runBin(['aikb', '9-migrated-from-v1.js', '--summary'])
+
+      expect(r.status).toBe(0)
+      expect(r.stdout).toContain('recorded 9-migrated-from-v1/AIKB')
+      expect(AIKB_FILES.map(readAikb)).toEqual(before)
+      // A record publishes nothing, so nothing in it names the staging sibling
+      // it was built through, and the authored half is untouched.
+      expect(readAikb('last-build.json')).not.toContain('kiss-staging')
+      expect(
+        existsSync(path.join(aikbDir, 'notes/controllers/shelf-item.md')),
+      ).toBe(true)
+      // Every subject has a note: `shelf-item.js` is the only one (the
+      // pure-controllers page's controller is inline, so it cannot be).
+      const report = JSON.parse(readAikb('last-build.json'))
+      expect(report.ok).toBe(true)
+      expect(report.aikb).toEqual({
+        folder: '9-migrated-from-v1/AIKB',
+        written: true,
+        notes: { missing: [], dead: [] },
+      })
     }, 60000)
 
     it('10 · asset pipeline builds 1 page and the stylesheet its step generated', () => {

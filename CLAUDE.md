@@ -18,31 +18,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
 
-| Module                             | File                         | AIKB doc                      |
-| ---------------------------------- | ---------------------------- | ----------------------------- |
-| Orchestrator / public API          | `lib/kiss.js`                | `AIKB/kiss.md`                |
-| Page renderer                      | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
-| Build report (the machine verdict) | `lib/build-report.js`        | `AIKB/build-report.md`        |
-| `kiss-ssg check` decision core     | `lib/check.js`               | `AIKB/check.md`               |
-| Logger                             | `lib/logger.js`              | `AIKB/logger.md`              |
-| Config + folder derivation         | `lib/config.js`              | `AIKB/config.md`              |
-| Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
-| Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
-| Dependency graph (partial → page)  | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
-| Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
-| Asset pipeline (external tools)    | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
-| Asset manifest + cache busting     | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
-| Sass binding                       | `lib/sass.js`                | `AIKB/sass.md`                |
-| Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
-| URL-model fetch policy             | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
-| Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
-| Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
-| llms.txt (the AI-facing index)     | `lib/llms.js`                | `AIKB/llms.md`                |
-| Site knowledge base (`.aikb()`)    | `lib/aikb.js`                | `AIKB/aikb.md`                |
-| Dev server                         | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
-| File watcher                       | `lib/watcher.js`             | `AIKB/watcher.md`             |
-| String/path utils                  | `lib/utils.js`               | `AIKB/utils.md`               |
-| Cross-cutting: testing conventions | `test/`                      | `AIKB/testing.md`             |
+| Module                                | File                         | AIKB doc                      |
+| ------------------------------------- | ---------------------------- | ----------------------------- |
+| Orchestrator / public API             | `lib/kiss.js`                | `AIKB/kiss.md`                |
+| Page renderer                         | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Build report (the machine verdict)    | `lib/build-report.js`        | `AIKB/build-report.md`        |
+| `kiss-ssg check` decision core        | `lib/check.js`               | `AIKB/check.md`               |
+| Logger                                | `lib/logger.js`              | `AIKB/logger.md`              |
+| Config + folder derivation            | `lib/config.js`              | `AIKB/config.md`              |
+| Built-in Handlebars helpers           | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Partials / layouts registration       | `lib/partials.js`            | `AIKB/partials.md`            |
+| Dependency graph (partial → page)     | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
+| Assets + Sass                         | `lib/assets.js`              | `AIKB/assets.md`              |
+| Asset pipeline (external tools)       | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
+| Asset manifest + cache busting        | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Sass binding                          | `lib/sass.js`                | `AIKB/sass.md`                |
+| Model resolution                      | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| URL-model fetch policy                | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
+| Controller resolution                 | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
+| Sitemap                               | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
+| llms.txt (the AI-facing index)        | `lib/llms.js`                | `AIKB/llms.md`                |
+| Site knowledge base (`kiss-ssg aikb`) | `lib/aikb.js`                | `AIKB/aikb.md`                |
+| Dev server                            | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
+| File watcher                          | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| String/path utils                     | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: testing conventions    | `test/`                      | `AIKB/testing.md`             |
 
 ## Commands
 
@@ -55,9 +55,17 @@ npm run typecheck        # tsc --checkJs over lib/, scripts/ and bin/ — checks
                          # (tsconfig.check.json; tsconfig.types.json is the one that emits types/)
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the five pre-PR gates: test, lint, typecheck, format, pack
-npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing
+npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing.
+                               # Diffs against the site's own AIKB/last-build.json when it has
+                               # one, so it says what this working tree changed since the last
+                               # record; --against <file> names a different baseline.
                                # e.g. from examples/: `node ../bin/kiss-ssg.js check 8-data-fed-site.js`
                                # (exits 1 — example 8 fails one page on purpose)
+npx kiss-ssg aikb <script>     # record the site's knowledge base into config.folders.aikb from
+                               # the same staged, discarded build. Publishes nothing, refuses a
+                               # failed build, and is the only thing that writes that folder —
+                               # run it when a piece of work closes and commit the result.
+                               # e.g. from examples/: `node ../bin/kiss-ssg.js aikb 9-migrated-from-v1.js`
 npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
 node scripts/sync-plugin-versions.mjs   # carry package.json's version into both plugin

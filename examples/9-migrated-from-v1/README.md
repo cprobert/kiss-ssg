@@ -32,3 +32,32 @@ comment naming the v1 idiom it replaces, and a page explaining it:
 
 Start with `await-complete.html`. It is the migration that costs the most if it is missed,
 because a script that never awaits `complete()` looks exactly like a working one.
+
+## The knowledge base it ships
+
+`9-migrated-from-v1/AIKB/` is committed — the exemplar of what a kiss site writes down about
+itself. Nothing in `9-migrated-from-v1.js` writes it; one command does, and only from a build
+that passed:
+
+```bash
+cd examples && npx kiss-ssg aikb 9-migrated-from-v1.js --summary
+```
+
+That run builds the site into a staging folder, throws the build away (it publishes nothing, the
+way `check` does) and writes four files: `README.md` (written once, then left alone),
+`site-map.md` and `site-map.json` (the pages, their models and controllers, the partials each page
+rendered), and `last-build.json` (that build's report, minus its timings). All four are
+byte-stable, so recording twice over an unchanged site leaves `git status` clean and any diff in
+the folder is a real change to the shape of the site.
+
+Recording is a ceremony, not a side effect of building: run it when a piece of work is finished
+and commit the folder. Everything in between reads it — `npx kiss-ssg check 9-migrated-from-v1.js`
+diffs this build against `last-build.json` without being asked, and says which pages the working
+tree would add, remove or change since the folder was last recorded.
+
+`AIKB/notes/controllers/shelf-item.md` is the other half, and the engine never writes it: why the
+slug is derived where it is, and what bites. A record reports which subjects still have no note —
+a controller **file**, a **URL** model or an asset pipeline step — and this site has exactly one
+subject, so `aikb.notes.missing` is empty. The `pure-controllers.html` page's controller is a
+function written inline in the build script: there is no file to attach a note to, so it is not a
+subject.

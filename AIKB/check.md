@@ -2,16 +2,20 @@
 
 ## Responsibility
 
-The decision core of the `kiss-ssg` command line: what an argv asked for, what the reports file says, and what to exit with. `bin/kiss-ssg.js` is the thin wrapper around it — it spawns the site's own build script, makes the temp file and prints; every answer it acts on comes from here.
+The decision core of the `kiss-ssg` command line: what an argv asked for, what the reports file says, which baseline to diff against, and what to exit with. `bin/kiss-ssg.js` is the thin wrapper around it — it spawns the site's own build script, makes the temp file and prints; every answer it acts on comes from here.
+
+Two commands share all of it. `check <script>` runs the site's build staged and discarded and says what it built; `aikb <script>` runs the identical build and additionally sets `KISS_AIKB`, which is what lets the engine write the site's knowledge base (`AIKB/aikb.md`). Same options, same exit code, one env var and one summary line apart.
 
 ## Public interface
 
-- `HELP` — the usage text both `--help` and a usage error print.
-- `parseArgs(argv)` → `{ command, script, args, summary, against, error }`. `command` is `'check'` or `'help'`; `script` is the site's build script and `args` everything after it, less our own `--summary`; `summary` is set by `--summary` on either side of the script; `against` is the report file `--against <file>` named, or `null`; `error` is a usage error (print it with `HELP` and exit 1).
+- `HELP` — the usage text both `--help` and a usage error print; it documents both commands.
+- `parseArgs(argv)` → `{ command, script, args, summary, against, error }`. `command` is `'check'`, `'aikb'` or `'help'`; `script` is the site's build script and `args` everything after it, less our own `--summary`; `summary` is set by `--summary` on either side of the script; `against` is the report file `--against <file>` named, or `null`; `error` is a usage error (print it with `HELP` and exit 1), and it names the command it could not complete.
 - `readReports(text)` → the JSON Lines file `KISS_REPORT` collects, parsed into `BuildReport[]`. Blank lines are skipped; a malformed line throws.
 - `readReportsFile(text)` → the same `BuildReport[]`, from any of the three shapes a kept report file has: JSON Lines (a `KISS_REPORT` file), the JSON array `check` prints, or a single report object. What `--against` reads.
 - `diffReports(before, after)` → one `CheckDiff` per `after` report, in `after` order: `{ buildDir, added, removed, changed, unchanged }`, the three lists holding output paths, sorted. Pure.
 - `formatDiff(diff)` → the human rendering of one `CheckDiff`: `  + <path>` added, `  - <path>` removed, `  ~ <path>` changed, then `  = N unchanged`. Indented to sit under that site's `formatReport` line.
+- `defaultBaseline(reports)` → `<folder>/last-build.json` for the first report whose `aikb.folder` is set, else `null`. The file `check` diffs against when `--against` was not given; the bin decides whether it exists, because a site that has never recorded is the ordinary case and not a finding.
+- `recordedLine(report)` → the line `aikb --summary` prints under a site: `  recorded <folder>`, `  not recorded — build failed`, `  not recorded — folders.aikb is null`, or `  not recorded`.
 - `exitCodeFor(reports, scriptStatus)` → `0` only when the script exited `0`, at least one build was reported, and every report is `ok`. Everything else is `1`.
 
 ## Depends on
@@ -35,11 +39,13 @@ Nothing (`readReports`' return type refers to `./build-report.js`, but only as a
 - **`readReportsFile` sniffs the shape rather than being told it.** Two of the three shapes are called `.json`, so the extension cannot decide, and being wrong would be a usage error over something the bytes already answer. `JSON.parse` is tried first and JSON Lines is the fallback, not the other way round: a one-line file holding a single report is valid JSON too, and only a multi-line file `JSON.parse` rejects is JSON Lines. A file that is neither still throws, from `readReports`, naming the line — the same rule as before.
 - **The diff never touches the exit code.** `exitCodeFor` does not see it. A build that is `ok` but changed 40 pages is a passing check with a loud description; whether that is what the operator meant is a judgement no exit code can make for them.
 - **The bin reads the `--against` file before it spawns the build**, so a mistyped filename costs nothing and prints as the usage error it is (`kiss-ssg: cannot read --against file <path>`, then `HELP`, exit 1) rather than after a minute of building.
-- **`--against` changes the JSON shape, and only under the flag.** Without it stdout is the bare array it has always been; with it, `{ "reports": [...], "diff": [...] }` — a consumer that never asked for a diff never has to learn the wrapper, and one that did gets both halves in one parse. `--summary` prints each site's diff under its own report line instead, which is why `diffReports` answers in `after` order: the bin pairs them by index.
+- **`check` diffs without being asked, and `aikb` does not.** With no `--against`, the bin asks `defaultBaseline(reports)` where the site's own snapshot would be and diffs against it if the file is there — so the ordinary question ("what have I changed since this work opened") is answered by the ordinary command, and the answer is measured from the last _record_, not from the last build anybody happened to run. A check writes nothing, so the file it reads is the one the last record left. `aikb` skips the fallback for the opposite reason: by the time it could read that file it has just overwritten it, and a diff against yourself is `= N unchanged` every time. Naming `--against` explicitly always wins, under either command.
+- **The first report with a folder wins the baseline.** A script that builds several sites writes one report each, but they share a working tree and therefore one knowledge base; `diffReports` pairs the file's contents with this run's reports by `buildDir`, so a single baseline covers all of them.
+- **A diff shape can now appear without the flag.** Under `--against` — or under `check` with a recorded baseline — stdout is `{ "reports": [...], "diff": [...] }` rather than the bare array. A consumer that parses stdout should read the wrapper when it is there; the bare array is what a site with no knowledge base and no flag still prints. `--summary` prints each site's diff under its own report line instead, which is why `diffReports` answers in `after` order: the bin pairs them by index.
 - **The bin sends the child's stdout to its own stderr** (`stdio: [0, 2, 2]`). Plain `'inherit'` would interleave the site's build log with the JSON on stdout and nothing could parse it; a person still sees the whole build, on stderr.
-- **The bin runs the script from the caller's cwd**, not from the script's folder: a site resolves `folders` against the cwd it is normally run from (`cd examples && node 8-data-fed-site.js`), so moving it would check a different set of paths from the ones it builds with.
+- **The bin runs the script from the caller's cwd**, not from the script's folder: a site resolves `folders` against the cwd it is normally run from (`cd examples && node 9-migrated-from-v1.js`), so moving it would check a different set of paths from the ones it builds with.
 - **The temp reports file is removed in a `finally`**, and the bin sets `process.exitCode` rather than calling `process.exit()`, so the cleanup runs before the process leaves.
 
 ## Types
 
-`types/check.d.ts` is emitted from the JSDoc here like every other `lib/` module, but nothing imports it: the CLI surface is the command, not the module. `CheckArgs` and `CheckDiff` are documented for the reader of this file.
+`types/check.d.ts` is emitted from the JSDoc here like every other `lib/` module, but nothing imports it: the CLI surface is the command, not the module. `CheckArgs` (whose `command` is `'check' | 'aikb' | 'help'`) and `CheckDiff` are documented for the reader of this file.

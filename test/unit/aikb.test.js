@@ -5,6 +5,7 @@ import {
   classifyController,
   classifyModel,
   evaluateNotes,
+  isRecorded,
   lastBuildRecord,
   noteSubjects,
   notePathFor,
@@ -277,6 +278,29 @@ describe('notePathFor', () => {
     expect(
       notePathFor({ kind: 'pipeline', id: 'tailwind' }, 'site/AIKB/notes'),
     ).toBe('site/AIKB/notes/pipeline/tailwind.md')
+  })
+})
+
+describe('isRecorded', () => {
+  it('is true only once a record has written site-map.json', async () => {
+    site = await makeSite({ 'AIKB/site-map.json': { pages: [] } })
+    expect(isRecorded(`${site.root}/AIKB`)).toBe(true)
+  })
+
+  it('is false for a folder that merely exists', async () => {
+    // The case this test exists for: a repository whose `AIKB/` holds
+    // hand-written module notes has not opted in, and a site built inside it
+    // must not start claiming that folder as its own knowledge base.
+    site = await makeSite({ 'AIKB/notes/controllers/x.md': '## What it does' })
+    expect(isRecorded(`${site.root}/AIKB`)).toBe(false)
+  })
+
+  it('is false for a folder that is not there, and for no folder at all', async () => {
+    site = await makeSite({})
+    expect(isRecorded(`${site.root}/AIKB`)).toBe(false)
+    expect(isRecorded(null)).toBe(false)
+    expect(isRecorded(undefined)).toBe(false)
+    expect(isRecorded('')).toBe(false)
   })
 })
 

@@ -1,0 +1,174 @@
+{
+  "site": {
+    "siteUrl": null,
+    "build": "../public/9-migrated-from-v1",
+    "folders": {
+      "aikb": "./9-migrated-from-v1/AIKB",
+      "assets": "./_shared/assets",
+      "controllers": "./9-migrated-from-v1/controllers",
+      "layouts": "./_shared/layouts",
+      "models": "./9-migrated-from-v1/models",
+      "pages": "./9-migrated-from-v1/pages",
+      "partials": "./9-migrated-from-v1/partials",
+      "src": "./9-migrated-from-v1"
+    }
+  },
+  "pages": [
+    {
+      "buildTo": "../public/9-migrated-from-v1/await-complete.html",
+      "view": "await-complete.hbs",
+      "model": "none",
+      "controller": "none",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/duplicate-paths.html",
+      "view": "duplicate-paths.hbs",
+      "model": "inline",
+      "controller": "none",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/dynamic-partials.html",
+      "view": "dynamic-partials.hbs",
+      "model": "inline",
+      "controller": "none",
+      "partials": [
+        "layout",
+        "sourcing-note",
+        "stock-note"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/folders.html",
+      "view": "folders.hbs",
+      "model": "inline",
+      "controller": "none",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/handlebars-instance.html",
+      "view": "handlebars-instance.hbs",
+      "model": "inline",
+      "controller": "none",
+      "partials": [
+        "layout",
+        "stock-note"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/index.html",
+      "view": "index.hbs",
+      "model": "none",
+      "controller": "none",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/pure-controllers.html",
+      "view": "pure-controllers.hbs",
+      "model": "inline",
+      "controller": "inline",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/shelf/arch-blend.html",
+      "view": "shelf/item.hbs",
+      "model": "inline",
+      "controller": "file:shelf-item.js",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/shelf/guji-uraga.html",
+      "view": "shelf/item.hbs",
+      "model": "inline",
+      "controller": "file:shelf-item.js",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/shelf/oak-cascara.html",
+      "view": "shelf/item.hbs",
+      "model": "inline",
+      "controller": "file:shelf-item.js",
+      "partials": [
+        "layout"
+      ]
+    },
+    {
+      "buildTo": "../public/9-migrated-from-v1/smaller-changes.html",
+      "view": "smaller-changes.hbs",
+      "model": "none",
+      "controller": "none",
+      "partials": [
+        "layout"
+      ]
+    }
+  ],
+  "partials": {
+    "layout": [
+      "../public/9-migrated-from-v1/await-complete.html",
+      "../public/9-migrated-from-v1/duplicate-paths.html",
+      "../public/9-migrated-from-v1/dynamic-partials.html",
+      "../public/9-migrated-from-v1/folders.html",
+      "../public/9-migrated-from-v1/handlebars-instance.html",
+      "../public/9-migrated-from-v1/index.html",
+      "../public/9-migrated-from-v1/pure-controllers.html",
+      "../public/9-migrated-from-v1/shelf/arch-blend.html",
+      "../public/9-migrated-from-v1/shelf/guji-uraga.html",
+      "../public/9-migrated-from-v1/shelf/oak-cascara.html",
+      "../public/9-migrated-from-v1/smaller-changes.html"
+    ],
+    "sourcing-note": [
+      "../public/9-migrated-from-v1/dynamic-partials.html"
+    ],
+    "stock-note": [
+      "../public/9-migrated-from-v1/dynamic-partials.html",
+      "../public/9-migrated-from-v1/handlebars-instance.html"
+    ]
+  },
+  "models": [
+    {
+      "source": "inline",
+      "pages": [
+        "../public/9-migrated-from-v1/duplicate-paths.html",
+        "../public/9-migrated-from-v1/dynamic-partials.html",
+        "../public/9-migrated-from-v1/folders.html",
+        "../public/9-migrated-from-v1/handlebars-instance.html",
+        "../public/9-migrated-from-v1/pure-controllers.html",
+        "../public/9-migrated-from-v1/shelf/arch-blend.html",
+        "../public/9-migrated-from-v1/shelf/guji-uraga.html",
+        "../public/9-migrated-from-v1/shelf/oak-cascara.html"
+      ]
+    }
+  ],
+  "controllers": [
+    {
+      "source": "file:shelf-item.js",
+      "pages": [
+        "../public/9-migrated-from-v1/shelf/arch-blend.html",
+        "../public/9-migrated-from-v1/shelf/guji-uraga.html",
+        "../public/9-migrated-from-v1/shelf/oak-cascara.html"
+      ]
+    },
+    {
+      "source": "inline",
+      "pages": [
+        "../public/9-migrated-from-v1/pure-controllers.html"
+      ]
+    }
+  ],
+  "pipeline": []
+}

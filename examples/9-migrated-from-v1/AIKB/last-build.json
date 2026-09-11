@@ -1,0 +1,95 @@
+{
+  "ok": true,
+  "mode": "check",
+  "buildDir": "../public/9-migrated-from-v1",
+  "pages": [
+    {
+      "view": "index.hbs",
+      "buildTo": "../public/9-migrated-from-v1/index.html",
+      "ok": true,
+      "hash": "55beba765690825842b03ecd5a81c6a0201d99ed"
+    },
+    {
+      "view": "await-complete.hbs",
+      "buildTo": "../public/9-migrated-from-v1/await-complete.html",
+      "ok": true,
+      "hash": "487f355b4561884e59a62c56279351521c861a41"
+    },
+    {
+      "view": "folders.hbs",
+      "buildTo": "../public/9-migrated-from-v1/folders.html",
+      "ok": true,
+      "hash": "65e7de6945ba0104a9f044899390de61dc04ca05"
+    },
+    {
+      "view": "handlebars-instance.hbs",
+      "buildTo": "../public/9-migrated-from-v1/handlebars-instance.html",
+      "ok": true,
+      "hash": "e5ed25fd48a83b190b461e0b6152b2749e410733"
+    },
+    {
+      "view": "dynamic-partials.hbs",
+      "buildTo": "../public/9-migrated-from-v1/dynamic-partials.html",
+      "ok": true,
+      "hash": "6ad097c53e3ddcfc0d83764f01908ada962d9aa8"
+    },
+    {
+      "view": "duplicate-paths.hbs",
+      "buildTo": "../public/9-migrated-from-v1/duplicate-paths.html",
+      "ok": true,
+      "hash": "757645c144fcb1f3203b523898e45259f0751264"
+    },
+    {
+      "view": "pure-controllers.hbs",
+      "buildTo": "../public/9-migrated-from-v1/pure-controllers.html",
+      "ok": true,
+      "hash": "31d0dad39c22c986a4d6f969c58a94e4026e12e5"
+    },
+    {
+      "view": "smaller-changes.hbs",
+      "buildTo": "../public/9-migrated-from-v1/smaller-changes.html",
+      "ok": true,
+      "hash": "9058a9d28e8a2b647d0249541c943f022d319191"
+    },
+    {
+      "view": "shelf/item.hbs",
+      "buildTo": "../public/9-migrated-from-v1/shelf/arch-blend.html",
+      "ok": true,
+      "hash": "0105add91d94317fd5af4b41bc6aaf55074bc890"
+    },
+    {
+      "view": "shelf/item.hbs",
+      "buildTo": "../public/9-migrated-from-v1/shelf/oak-cascara.html",
+      "ok": true,
+      "hash": "7815d7788080c087e62c20f6856beedfb6bb921c"
+    },
+    {
+      "view": "shelf/item.hbs",
+      "buildTo": "../public/9-migrated-from-v1/shelf/guji-uraga.html",
+      "ok": true,
+      "hash": "4aa1cfd0d0b91d932a3660f2ea949c7b6bb4556f"
+    }
+  ],
+  "failures": [],
+  "assets": [
+    {
+      "source": "css/site.css",
+      "target": "css/site.css"
+    },
+    {
+      "source": "robots.txt",
+      "target": "robots.txt"
+    }
+  ],
+  "sitemap": null,
+  "pipeline": [],
+  "llms": null,
+  "aikb": {
+    "folder": "9-migrated-from-v1/AIKB",
+    "written": true,
+    "notes": {
+      "missing": [],
+      "dead": []
+    }
+  }
+}

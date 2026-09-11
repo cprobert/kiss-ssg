@@ -34,9 +34,9 @@
  * @property {number} duration ms the command took
  */
 /**
- * What `.aikb()` did on this build, as the report carries it: where the site's
- * knowledge base lives, whether this build actually wrote it (a check computes
- * the map and writes nothing), and the two note findings.
+ * What this build did about the site's knowledge base, as the report carries
+ * it: where that knowledge base lives, whether this build actually wrote it
+ * (only a passing `KISS_AIKB` record does), and the two note findings.
  *
  * @typedef {Object} BuildAikb
  * @property {string} folder the AIKB folder, as configured
@@ -58,7 +58,7 @@
  * @property {string|null} sitemap the `sitemap.xml` written, or `null` if none was
  * @property {BuildPipelineStep[]} pipeline every `config.assets.pipeline` step, in order; empty when there are none
  * @property {string|null} llms the `llms.txt` written, or `null` if none was
- * @property {BuildAikb|null} aikb what `.aikb()` wrote, or `null` when it was never called
+ * @property {BuildAikb|null} aikb the site's knowledge base, or `null` when there is none to report on
  */
 /**
  * @param {string|null|undefined} target
@@ -87,7 +87,7 @@ export function reportedView(view: string): string;
  * @param {string|null} [input.sitemap] the sitemap written by this build
  * @param {import('./pipeline.js').PipelineResult[]} [input.pipeline] what the asset pipeline's steps did
  * @param {string|null} [input.llms] the llms.txt written by this build
- * @param {BuildAikb|null} [input.aikb] what `.aikb()` wrote, `null` when it was never called
+ * @param {BuildAikb|null} [input.aikb] the site's knowledge base, `null` when there is none to report on
  * @returns {BuildReport}
  */
 export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, llms, aikb, }: {
@@ -185,9 +185,9 @@ export type BuildPipelineStep = {
     duration: number;
 };
 /**
- * What `.aikb()` did on this build, as the report carries it: where the site's
- * knowledge base lives, whether this build actually wrote it (a check computes
- * the map and writes nothing), and the two note findings.
+ * What this build did about the site's knowledge base, as the report carries
+ * it: where that knowledge base lives, whether this build actually wrote it
+ * (only a passing `KISS_AIKB` record does), and the two note findings.
  */
 export type BuildAikb = {
     /**
@@ -246,7 +246,7 @@ export type BuildReport = {
      */
     llms: string | null;
     /**
-     * what `.aikb()` wrote, or `null` when it was never called
+     * the site's knowledge base, or `null` when there is none to report on
      */
     aikb: BuildAikb | null;
 };

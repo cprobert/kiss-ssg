@@ -26,10 +26,6 @@ const kiss = new Kiss({
   folders: {
     src: './8-data-fed-site',
     build: '../public/8-data-fed-site',
-    // The knowledge base is source, not output: it lives beside the site's own
-    // files, survives cleanBuild, and is committed. Not derived from `src`,
-    // which is why it is named here rather than picked up with the rest.
-    aikb: './8-data-fed-site/AIKB',
     ...sharedFolders,
   },
   siteUrl: 'https://asterandoak.example',
@@ -80,13 +76,6 @@ kiss
   })
   .generate()
   .sitemap()
-  // The build writes down what it knows: the pages, the fan-out's model and
-  // controller, the partials each page rendered. What it cannot know — why the
-  // controller throws instead of skipping — is the authored half, in
-  // 8-data-fed-site/AIKB/notes/controllers/stockist.md. The report says which
-  // subjects still have no note; a failed build writes the folder too, which is
-  // how this example ships one.
-  .aikb()
 
 if (!dev) {
   // Without this await a broken feed exits 0 and ships a site with a hole in

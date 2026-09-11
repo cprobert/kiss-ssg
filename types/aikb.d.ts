@@ -1,4 +1,18 @@
 /**
+ * Whether this site has ever been recorded — the opt-in test, and the reason
+ * an ordinary build of a site that has a knowledge base still reports on it.
+ *
+ * `site-map.json` is the marker rather than the folder itself, because only a
+ * record ever writes that file: a repository whose `AIKB/` holds hand-written
+ * module notes (this one's does) has not opted in, and a build of the docs site
+ * inside it must not start claiming it has. Synchronous and side-effect-free —
+ * it is one `stat` on the way to assembling the report.
+ *
+ * @param {string|null|undefined} folder `config.folders.aikb`
+ * @returns {boolean}
+ */
+export function isRecorded(folder: string | null | undefined): boolean;
+/**
  * How a page's model was written in the `.page()` call that registered it —
  * not what it resolved to. By the time a page is on the stack `options.model`
  * has been replaced by the resolved data, so a map built from the stack alone
@@ -112,8 +126,8 @@ export function renderSiteMap(map: SiteMap): string;
  */
 export function renderAikbReadme(): string;
 /**
- * Evaluates the note rules and, unless this is a check, writes the generated
- * half of the folder. A failure to write is logged and reported as
+ * Evaluates the note rules and, when this build is a record, writes the
+ * generated half of the folder. A failure to write is logged and reported as
  * `written: false` — never a build failure. The site the author asked for is
  * still the site they get, minus its map.
  *
@@ -121,7 +135,7 @@ export function renderAikbReadme(): string;
  * @param {SiteMap} input.map
  * @param {string} input.folder the AIKB folder, as a path from the cwd
  * @param {any} input.logger
- * @param {boolean} [input.write] `false` under check mode: evaluate, write nothing
+ * @param {boolean} [input.write] `false` on an ordinary build: evaluate, write nothing
  * @returns {Promise<AikbResult>}
  */
 export function writeAikb({ map, folder, logger, write }: {
@@ -271,7 +285,7 @@ export type AikbResult = {
      */
     folder: string;
     /**
-     * `false` under check mode, and when a write failed
+     * `false` on every build but a passing `KISS_AIKB` record, and when a write failed
      */
     written: boolean;
     /**

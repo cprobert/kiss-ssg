@@ -44,6 +44,24 @@ const NEVER_COMPLETES = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public' } })
 kiss.scan().generate()`)
 
+// A site with a knowledge base configured: the only thing `folders.aikb` does
+// on its own is say where `kiss-ssg aikb` would write one.
+const WITH_AIKB = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss.scan().generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
+const WITH_AIKB_BROKEN = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss.scan().page({ view: 'missing.hbs' }).generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
 // A real build of the same site, with its report appended to `reportFile` —
 // how a site keeps the last build it published, and what `--against` reads.
 function record(cwd, reportFile) {
@@ -271,18 +289,149 @@ describe('kiss-ssg check', () => {
       'cannot read --against file no-such-report.json',
     )
     // A usage error, so it prints the help the way every other one does.
-    expect(run.stderr).toContain('kiss-ssg check <script>')
+    expect(run.stderr).toContain('kiss-ssg <command> <script>')
   })
 
   it('prints the help for --help, and a usage error for anything it cannot parse', () => {
     const help = check(repoRoot, ['--help'])
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain('kiss-ssg check <script>')
+    expect(help.stdout).toContain('kiss-ssg <command> <script>')
+    expect(help.stdout).toContain('aikb <script>')
 
     const wrong = check(repoRoot, ['build', 'site.js'])
     expect(wrong.status).toBe(1)
     expect(wrong.stderr).toContain('unknown command: build')
   })
+})
+
+describe('kiss-ssg aikb', () => {
+  it('records the folder from a passing build, publishes nothing, and says so', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+
+    const run = check(temp.root, ['aikb', '--summary', 'build.js'])
+
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 1 pages/)
+    expect(lines[1]).toBe('  recorded AIKB')
+    for (const file of [
+      'README.md',
+      'site-map.md',
+      'site-map.json',
+      'last-build.json',
+    ])
+      expect(await temp.exists(`AIKB/${file}`)).toBe(true)
+    // The same staged, discarded build `check` runs: the site itself is never
+    // published, and the only thing on disk afterwards is the knowledge base.
+    expect(await temp.exists('public')).toBe(false)
+    expect(siblings(temp.root)).toEqual([])
+  }, 60000)
+
+  it('refuses to record a failed build, writes nothing and exits 1', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB_BROKEN,
+    })
+
+    const run = check(temp.root, ['aikb', '--summary', 'build.js'])
+
+    expect(run.status).toBe(1)
+    expect(run.stdout).toContain('  not recorded — build failed')
+    expect(await temp.exists('AIKB')).toBe(false)
+  }, 60000)
+
+  it('leaves an already-recorded folder untouched when the build fails', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    const before = await temp.read('AIKB/last-build.json')
+    // Now break the site, and record again.
+    await temp.touch('build.js', WITH_AIKB_BROKEN)
+
+    const run = check(temp.root, ['aikb', '--summary', 'build.js'])
+
+    expect(run.status).toBe(1)
+    expect(run.stdout).toContain('  not recorded — build failed')
+    // The baseline still describes the last build that worked, which is the
+    // one property the whole ceremony exists to keep.
+    expect(await temp.read('AIKB/last-build.json')).toBe(before)
+  }, 60000)
+})
+
+describe('kiss-ssg check, against the knowledge base', () => {
+  it('diffs against the recorded baseline with no --against at all', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/about.hbs': '<p>about</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+
+    // Nothing has changed since the record, so the diff says exactly that.
+    const clean = check(temp.root, ['check', '--summary', 'build.js'])
+    expect(clean.status).toBe(0)
+    expect(clean.stdout.trim().split('\n').slice(1)).toEqual([
+      '  = 2 unchanged',
+    ])
+
+    // ...and one edit later it names the page and nothing else. The check
+    // publishes nothing, so the baseline it just read is still the same file.
+    await temp.touch('src/pages/about.hbs', '<p>about, rewritten</p>')
+    const dirty = check(temp.root, ['check', '--summary', 'build.js'])
+    expect(dirty.status).toBe(0)
+    expect(dirty.stdout.trim().split('\n').slice(1)).toEqual([
+      '  ~ ./public/about.html',
+      '  = 1 unchanged',
+    ])
+  }, 60000)
+
+  it('does not diff a site that has never been recorded', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // `folders.aikb` names a folder nobody has recorded, so there is no
+    // baseline, no diff — and the report has nothing to say about it either.
+    expect(run.status).toBe(0)
+    expect(run.stdout.trim().split('\n')).toHaveLength(1)
+    expect(
+      JSON.parse(check(temp.root, ['check', 'build.js']).stdout)[0].aikb,
+    ).toBeNull()
+  }, 60000)
+
+  it('lets --against win over the recorded baseline', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+    // The record is the site at one page...
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    // ...and this published build, kept separately, is the site at two.
+    await temp.touch('src/pages/about.hbs', '<p>about</p>')
+    expect(
+      record(temp.root, path.join(temp.root, 'published.jsonl')).status,
+    ).toBe(0)
+
+    const run = check(temp.root, [
+      'check',
+      '--summary',
+      '--against',
+      'published.jsonl',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(0)
+    // Against the baseline it would be `+ ./public/about.html, = 1 unchanged`.
+    expect(run.stdout.trim().split('\n').slice(1)).toEqual(['  = 2 unchanged'])
+  }, 60000)
 })
 
 // The same report, read through the API rather than through the bin: `report()`
