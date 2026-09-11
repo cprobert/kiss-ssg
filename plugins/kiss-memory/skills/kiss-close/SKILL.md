@@ -1,6 +1,6 @@
 ---
 name: kiss-close
-description: Finish a piece of work on a kiss-ssg site — verify the build diff against the intent captured at kiss-open, prove the site's knowledge base was kept up (notes for every controller, URL model and pipeline step the change touched), regenerate and commit `AIKB/`, write the reflection into the session file, and push. Use when asked to "close the branch", "wrap this up", "we're done, ship it", "finish this change", or "write the retrospective" on a kiss-ssg site. Opens a pull request only when asked.
+description: Finish a piece of work on a kiss-ssg site — verify the build diff against the intent captured at kiss-open, prove the site's knowledge base was kept up (notes for every controller, URL model and pipeline step the change touched), record and commit `AIKB/`, write the reflection into the session file, and push. Use when asked to "close the branch", "wrap this up", "we're done, ship it", "finish this change", or "write the retrospective" on a kiss-ssg site. Opens a pull request only when asked.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -29,10 +29,12 @@ Commit or stash anything outstanding before verifying — the check runs the wor
 ### 2. Verify the build and the diff
 
 ```bash
-npx kiss-ssg check --against AIKB/last-build.json --summary <build-script>
+npx kiss-ssg check --summary <build-script>
 ```
 
-`--against` and `--summary` go **before** the script: everything after the script is passed through to the site's own build script.
+`--summary` goes **before** the script: everything after the script is passed through to the site's own build script.
+
+The diff needs no flag. The check compares this build against the site's record — `AIKB/last-build.json`, written the last time somebody closed a piece of work — and prints `+ - ~ = N unchanged` under the report line. Nothing since has moved that baseline (builds, dev servers and watch rebuilds never write it), so the block is the whole of what this branch did to the site's output. If no block appears, the site has never been recorded: verify the criteria against the page list by eye, say so in the Verdict, and step 4 gives the next branch a baseline.
 
 Three things must hold, and each is a hard stop:
 
@@ -44,9 +46,9 @@ If the intent moved during the work, it should already be a dated **Amendment**;
 
 ### 3. Prove the knowledge base kept up
 
-The map regenerates itself; the judgement does not. Two checks:
+The map is generated for you at step 4; the judgement in it never is. Two checks:
 
-**a. No subject is unexplained.** The report's `aikb.notes.missing` must be empty — every controller file, URL model and pipeline step in the map has a note under `AIKB/notes/`. Write the missing ones now (`## What it does`, `## Why it is this way`, `## Gotchas`) rather than closing with a gap. Anything in `aikb.notes.dead` is a note whose subject is gone: delete it, or fix the map if the subject should still be there.
+**a. No subject is unexplained.** The check evaluates the note rules on any site that has recorded once (a site that never has reports `aikb: null`, and gets its first record in step 4). The report's `aikb.notes.missing` must be empty — every controller file, URL model and pipeline step in the map has a note under `AIKB/notes/`. Write the missing ones now (`## What it does`, `## Why it is this way`, `## Gotchas`) rather than closing with a gap. Anything in `aikb.notes.dead` is a note whose subject is gone: delete it, or fix the map if the subject should still be there.
 
 **b. Every subject this change touched has a note that changed with it.**
 
@@ -64,18 +66,30 @@ From that list, take the subjects the change actually touched — files under th
 
 A note that did not move while its subject did is the failure mode this gate exists to catch: the code changed, the reason nobody wrote down. Update it — even one line under `## Gotchas` — before continuing. A genuinely note-free change (a typo in a controller comment) is a judgement call: say out loud that you are skipping it and why.
 
-### 4. Regenerate `AIKB/` for real, and commit it
+### 4. Record the knowledge base, and commit it
 
-`check` publishes nothing, so it does not refresh the knowledge base. Run the site's own build:
+Nothing else writes `AIKB/`. Not a build, not the dev server, not a watch rebuild, not `check` — only this command, and only here:
 
 ```bash
-npm run build   # or: node <build-script>
+npx kiss-ssg aikb <build-script>
+```
+
+**This is the only moment the baseline moves.** That is the whole design: because the record sits still while a branch is open, the diff `kiss-pulse` and step 2 read answers "since this piece of work opened" rather than "since somebody last ran a build". Moving it early costs the branch its own measurement, so record here, after the verification, and nowhere else.
+
+It runs the site's build staged and discarded exactly as `check` does, so it publishes no site; what it writes is the knowledge base in `config.folders.aikb` (default `./AIKB`): `README.md` if it is not there yet, then `site-map.md`, `site-map.json` and `last-build.json`.
+
+**`not recorded — build failed` is a hard stop.** A record only ever describes a build that worked, so a failure writes nothing at all. Do not commit around it, and do not close: go back to step 2, fix the failure, and record again.
+
+Read what it wrote before you commit it:
+
+```bash
 git status --short AIKB
+git diff -- AIKB
 git add AIKB planning/sessions/<file> <the rest of the change>
 git commit -m "<what changed on the site>"
 ```
 
-`AIKB/site-map.md`, `AIKB/site-map.json` and `AIKB/last-build.json` are byte-stable across identical builds, so a diff here is a real change to the site's shape — read it before committing it, and let the new `last-build.json` be the baseline the next `--against` compares to. If the build wrote no `AIKB/` at all, the site does not call `.aikb()`: say so and offer to add it (`node_modules/kiss-ssg/llms.txt` has the method).
+The three generated files are byte-stable across identical builds, so every line of that diff is a real change to the site's shape — the pages, models, controllers, partials and pipeline steps the branch moved. It should read like the change you just verified; anything in it you cannot account for is a finding, and belongs in the Verdict. The `last-build.json` you commit is the baseline the next branch's checks diff against.
 
 ### 5. Write the reflection into the session file
 
@@ -103,6 +117,6 @@ git commit -m "Close: reflection + status"
 git push -u origin HEAD
 ```
 
-**Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date, `AIKB/` regenerated and committed, reflection written, branch pushed.
+**Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date, `AIKB/` recorded and committed, reflection written, branch pushed.
 
 Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point.

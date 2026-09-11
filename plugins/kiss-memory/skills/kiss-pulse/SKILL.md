@@ -1,6 +1,6 @@
 ---
 name: kiss-pulse
-description: Mid-work checkpoint on a kiss-ssg site — re-run the build check against the last committed build, read the page diff against the criteria captured at kiss-open, log the beat and decide continue / adjust / amend / ready-to-close. Use when asked to "pulse", "check progress", "how are we doing against the brief", "am I drifting", "is this ready to close yet", or every time a slice of the change is finished. Cheap and repeatable; not a substitute for kiss-close.
+description: Mid-work checkpoint on a kiss-ssg site — re-run the build check against the recorded baseline, read the page diff against the criteria captured at kiss-open, log the beat and decide continue / adjust / amend / ready-to-close. Use when asked to "pulse", "check progress", "how are we doing against the brief", "am I drifting", "is this ready to close yet", or every time a slice of the change is finished. Cheap and repeatable; not a substitute for kiss-close.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -21,22 +21,26 @@ Read that file's **Success criteria**, **Non-goals** and **Impact surface**. The
 
 No file? Offer to capture intent retrospectively with `kiss-open` (inferring the objective and criteria from the work so far, marked as inferred). If the user declines, pulse loosely against a checklist they give you.
 
-### 2. Run the check against the last committed build
+### 2. Run the check against the recorded baseline
 
 ```bash
-npx kiss-ssg check --against AIKB/last-build.json --summary <build-script>
+npx kiss-ssg check --summary <build-script>
 ```
 
-`--against` and `--summary` go **before** the script: everything after the script is passed through to the site's own build script.
+`--summary` goes **before** the script: everything after the script is passed through to the site's own build script.
 
-`AIKB/last-build.json` is the build that was committed last — so the diff is exactly "what my working tree changes about this site":
+No flag asks for the diff. When the site has a recorded knowledge base, the check compares this build against `AIKB/last-build.json` by default and prints:
 
 - `+ <path>` a page this change adds
 - `- <path>` a page it removes
 - `~ <path>` a page whose bytes changed
 - `= N` unchanged
 
-No `AIKB/last-build.json` (the site does not call `.aikb()`, or has never built with it committed)? Run without `--against` and compare the page list by eye against the criteria; note in the log that the diff was unavailable.
+That record is the state the branch opened at, because recording happens once per piece of work, at `kiss-close`. So the block is exactly "what my work so far changes about this site" — and it stays that way all branch long, which is the reason nothing here records.
+
+**Never run `npx kiss-ssg aikb` at a pulse.** It would move the baseline to the current build and the diff you are steering by would go empty for the rest of the branch. Recording is the close's job (or, on a site that has never had a record, the open's).
+
+No diff block? The site has never been recorded, so there is no baseline — `kiss-open` normally sets one up. Do not fix it now by recording mid-branch; compare the page list by eye against the criteria and note in the log that the diff was unavailable. `kiss-close` records at the end, and the next branch gets a proper diff.
 
 ### 3. Read the diff against the criteria
 
@@ -51,7 +55,7 @@ Then read the diff the other way round — **every line in it that no criterion 
 
 ### 4. Drift check
 
-Compare the trajectory against the **Non-goals** and the declared **Impact surface**. A change opened as "content" that is now editing the build script has moved surface — say so; at close it will oblige different checks and, on the data/controller and asset surfaces, a note under `AIKB/notes/`.
+Compare the trajectory against the **Non-goals** and the declared **Impact surface**. A change opened as "content" that is now editing the build script has moved surface — say so; at close it will oblige different checks and, on the data/controller and asset surfaces, a note under `AIKB/notes/`. A check on a recorded site also reports its note rules (`note missing:` / `note dead:` lines) — a new `note missing:` is the surface moving in front of you, and cheaper to answer now than at the close.
 
 Legitimate expansion (adjacent, same theme) → append a dated entry to the session file's `### Amendments`. Genuine scope creep (a different objective) → say so and recommend deferring. Never absorb it silently; never start a second branch on your own initiative.
 

@@ -54,7 +54,7 @@ Run the exemplar before you change anything, so you know what its output and exi
 
 End the chain at `await kiss.complete()`, inside a `try`/`catch` that prints every entry of `err.failures` and sets a non-zero exit code — the recipe is in `llms.txt` § Migrating from v1, and running code is `node_modules/kiss-ssg/examples/9-migrated-from-v1/pages/await-complete.hbs` (its README indexes the recipes by built page name).
 
-If the site will be handed on — to a colleague, or to you in two years — chain `.aikb()` as well (it sits beside `.sitemap()`; see `node_modules/kiss-ssg/llms.txt` `## API`): it writes a committed knowledge base of the pages, models, controllers, partials and pipeline steps the build actually saw, which is what the sibling `kiss-memory` plugin's skills read back as a briefing and check a change against.
+If the site will be handed on — to a colleague, or to you in two years — record its knowledge base once it builds green: `npx kiss-ssg aikb <site-script>` (documented in `node_modules/kiss-ssg/llms.txt`) runs the build staged and discarded, publishes nothing, and writes `AIKB/site-map.md`, `AIKB/site-map.json` and `AIKB/last-build.json` — the pages, models, controllers, partials and pipeline steps the build actually saw — into `config.folders.aikb` (default `./AIKB`). Commit that folder. It takes no change to the build script, a failed build is refused, and recording once is what opts the site in: from then on `kiss-ssg check` diffs against the record by default, and the sibling `kiss-memory` plugin's skills read it back as a briefing and as the baseline for a piece of work.
 
 Three mistakes real consumer sites made, all of which passed review before they bit:
 

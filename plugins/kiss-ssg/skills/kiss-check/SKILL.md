@@ -41,6 +41,15 @@ Exit code is 1 if any instance reports a failure, if the script itself exits non
 
 **If the installed version has no `check` bin yet**, fall back to `node <site-script>` with a `.catch` on `complete()` that prints `err.failures` (the recipe is in `node_modules/kiss-ssg/llms.txt` § Migrating from v1). Same information, no staging — so run it against a scratch `folders.build`, not over published output.
 
+## The diff against the last record, and the note findings
+
+A site opts into a knowledge base by recording one — `npx kiss-ssg aikb <site-script>`, which runs the same staged-and-discarded build and writes `AIKB/site-map.md`, `AIKB/site-map.json` and `AIKB/last-build.json`. Once a site has recorded, `check` does two more things on its own, with no flag:
+
+- **It diffs this build against the record.** `--summary` prints the block under the report line — `+ <path>` a page the working tree adds, `- <path>` one it removes, `~ <path>` one whose bytes changed, `= N` unchanged; JSON mode carries the diff alongside the reports. `--against <file>` compares against a different report instead. The record moves only when somebody records, never on a build, a dev build or a watch rebuild, so the diff reads "since the last record", not "since the last build".
+- **It evaluates the note rules**, reported as `aikb` on each report and as `note missing:` / `note dead:` lines in the summary: a controller file, URL model or pipeline step in the map with no note under `AIKB/notes/`, and a note whose subject has left the map. A site that has never recorded reports `aikb: null` and neither of these.
+
+**Neither changes the exit code.** They are readings, not gates — exit 0 with `ok: true` on every report is still the only passing result. And `check` never writes `AIKB/`: recording is the separate `aikb` command.
+
 ## Reading a failure
 
 Each entry in `failures` is `{ view, buildTo, message }`.

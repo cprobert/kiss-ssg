@@ -2,7 +2,7 @@
 
 Four skills, all prefixed `kiss-` so they're easy to pick out in a skill list, that teach Claude to set up, extend, migrate and verify [kiss-ssg](https://github.com/cprobert/kiss-ssg) sites. They carry no copy of the API: each one points at the docs the npm package ships (`node_modules/kiss-ssg/llms.txt`, `node_modules/kiss-ssg/examples/`, `node_modules/kiss-ssg/AIKB/`), so the guidance cannot drift away from the engine you have installed.
 
-A sibling plugin in the same marketplace, `kiss-memory`, covers the other half — remembering a site rather than building one: a catch-up briefing over the `AIKB/` a build writes, and a site-shaped open/pulse/close loop.
+A sibling plugin in the same marketplace, `kiss-memory`, covers the other half — remembering a site rather than building one: a catch-up briefing over the `AIKB/` knowledge base `npx kiss-ssg aikb` records, and a site-shaped open/pulse/close loop that keeps it recorded.
 
 ## Install
 

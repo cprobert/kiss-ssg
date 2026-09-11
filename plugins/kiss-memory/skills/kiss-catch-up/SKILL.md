@@ -14,28 +14,30 @@ Two kinds of knowledge, and they are not equally trustworthy. The **map** is gen
 
 Read `package.json`'s `scripts` — a kiss site's build is usually `build`, `generate` or `site`, and the entry is the `.js` it runs. If nothing obvious is there, `grep -rl "kiss-ssg" --include=*.js . --exclude-dir=node_modules` and pick the file that constructs `new Kiss(...)`. If more than one qualifies (a site that builds several editions), say which you chose and why, and ask if it matters.
 
-### 2. Run the check first, so the map is current
+### 2. Run the check first, so you know where the site stands
 
 ```bash
-npx kiss-ssg check --against AIKB/last-build.json --summary <build-script>
+npx kiss-ssg check --summary <build-script>
 ```
 
-`--against` and `--summary` go **before** the script: everything after the script is passed through to the site's own build script.
+`--summary` goes **before** the script: everything after the script is passed through to the site's own build script.
 
 This builds into a staging folder and discards it, so it publishes nothing. Two things come back:
 
 - **Whether the site still builds** — `ok: true` and exit 0, or a list of failures. A briefing that does not say "and by the way it is currently broken" is worse than no briefing.
-- **The drift since the last committed build** — `+` added, `-` removed, `~` changed, `= N` unchanged. That is "what changed lately" in the working tree, as opposed to what changed in git.
+- **The drift since the site was last recorded** — and you do not ask for it. When the site has a recorded knowledge base (an `AIKB/last-build.json` in the repo), the check diffs this working tree against it by default and prints the block under the report line: `+` added, `-` removed, `~` changed, `= N` unchanged. `--against <file>` overrides that baseline with some other report; you rarely want to.
 
-If `AIKB/last-build.json` does not exist, drop `--against` and note that no committed build exists to compare against. If the `--against` flag is not recognised, the installed kiss-ssg predates it — say so, run the plain check, and read the drift from git instead.
+The baseline moves only when somebody records — `npx kiss-ssg aikb <build-script>`, normally at the close of a piece of work. Ordinary builds, dev builds and watch rebuilds never touch it. So the diff reads "since the last closed piece of work", not "since whoever was here last ran a build", and an old `+`/`~` block is a finding about unfinished work, not noise.
+
+No diff block at all means this site has never been recorded — that is step 4, not a failure of the command. If `check` itself is not recognised, the installed kiss-ssg predates it: say so and read the drift from git instead.
 
 ### 3. Read the sources, in this order
 
 | Source                                     | Gives you                                                                                                                    | Label        |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | `AIKB/site-map.md`                         | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps       | generated    |
-| the `check` output above                   | whether it builds now, and what differs from the last committed build                                                        | generated    |
-| `AIKB/last-build.json`                     | the last committed build's page list, assets, sitemap, and `aikb.notes.missing` / `aikb.notes.dead`                          | generated    |
+| the `check` output above                   | whether it builds now, and what differs from the last recorded build                                                         | generated    |
+| `AIKB/last-build.json`                     | the recorded build's page list, assets, sitemap, and `aikb.notes.missing` / `aikb.notes.dead`                                | generated    |
 | `AIKB/notes/**/*.md`                       | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                | recollection |
 | the 3 most recent `planning/sessions/*.md` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open | recollection |
 
@@ -45,7 +47,7 @@ Read the sessions newest first (`ls -t planning/sessions/*.md | head -3`) and ta
 
 Missing sources are findings, not silence:
 
-- **No `AIKB/` at all** — the site has never called `.aikb()`, so nothing generated survives its builds. Say so, brief from the check output and git alone, and tell the user the fix: add `.aikb()` to the build chain (beside `.sitemap()`), run a real build, and commit the folder it writes. The API is in `node_modules/kiss-ssg/llms.txt`.
+- **No `AIKB/` at all** — this site has never been recorded, so nothing generated survives its builds and the check has no baseline to diff against. Say so, brief from the check output and git alone, and tell the user the fix, which is not a code change: run `npx kiss-ssg aikb <build-script>` once and commit the folder it writes. Recording runs the build staged and discarded like `check` does, publishes nothing, and refuses a failing build (`not recorded — build failed`), so a broken site is fixed first. The command is documented in `node_modules/kiss-ssg/llms.txt`.
 - **No `AIKB/notes/`, or notes missing for subjects the report lists in `aikb.notes.missing`** — the odd parts of this site have never been explained by anyone. Name them; they are the highest-value thing to write down next.
 - **Notes in `aikb.notes.dead`** — a note whose subject is no longer in the map. Treat what it says as history, not fact.
 - **No `planning/sessions/`** — no recollection at all; the briefing is generated-only, and say that in the first line.
@@ -56,7 +58,7 @@ Five headings, in this order, every statement tagged **[generated]** or **[recol
 
 - **What the site is and who for** — mostly recollection (session objectives, `AIKB/README.md`, the site's own copy). If nothing says, say nothing says.
 - **How it is built** — generated: the build script and its chain, page count, how pages are registered (`.scan()` / `.page()` / `.pages()`), models and controllers, asset pipeline steps, whether it writes a sitemap or `llms.txt`.
-- **What changed lately** — generated: the `--against` diff, plus `git log --oneline -10`. Separate "uncommitted drift" from "recent commits".
+- **What changed lately** — generated: the check's diff against the last record, plus `git log --oneline -10`. Separate "drift since the last record" from "recent commits"; say when the site has never been recorded, so there is no diff.
 - **What was left open** — recollection: unticked success criteria, Amendments, and the Verdict's "what remains open" from the three sessions.
 - **Known gotchas** — recollection: the `## Gotchas` sections of `AIKB/notes/**`, plus any current build failure (generated) and any subject with no note (generated: nobody has written this one down).
 

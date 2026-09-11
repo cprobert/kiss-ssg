@@ -37,10 +37,14 @@ Uncommitted changes: surface them and ask whether to commit or stash first.
 ### 3. Know the site's current shape
 
 ```bash
-npx kiss-ssg check <build-script> --summary
+npx kiss-ssg check --summary <build-script>
 ```
 
+`--summary` goes **before** the script: everything after it is passed through to the site's own build script.
+
 The page list this prints is the baseline the success criteria are written against, and it is also proof the site was green _before_ you touched it. If it is already failing, that is the first thing to fix or to name as inherited. Find the build script the way `kiss-catch-up` does (`package.json` scripts). If the site has an `AIKB/site-map.md`, skim it for the sections your change is near.
+
+When the site has been recorded before, the check also prints its diff against that record with no flag asked for. Read it: anything already `+`, `-` or `~` before you have touched a thing is inherited drift, and belongs in the session file rather than in your change.
 
 ### 4. Interview for intent
 
@@ -70,7 +74,32 @@ Adopting (step 2)? Skip this. Otherwise propose a name from the objective (`cont
 git checkout -b <branch-name>
 ```
 
-### 6. Write and commit the session file
+### 6. Make sure this branch has a baseline
+
+Check for the record:
+
+```bash
+ls AIKB/site-map.json
+```
+
+**It exists** — do nothing. The record is the state at the last close, and that is exactly what `kiss-pulse` and `kiss-close` want to diff against. Never record at open on a site that already has one: recording would move the baseline to _now_ and this branch's diff would come out empty.
+
+**It is absent** — this site has never been recorded, so there is nothing to measure the branch against. Record once, now, so it has one:
+
+```bash
+npx kiss-ssg aikb <build-script>
+```
+
+That runs the build staged and discarded exactly as `check` does — it publishes no site — and writes `AIKB/README.md` (once), `AIKB/site-map.md`, `AIKB/site-map.json` and `AIKB/last-build.json`. Read what it wrote: `site-map.md` is the site's shape as the engine actually saw it — pages, views, models, controllers, partials, pipeline steps. If it contradicts what the interview assumed, correct the criteria before they go into the session file in step 7. Then commit the folder on its own, ahead of any of your work:
+
+```bash
+git add AIKB
+git commit -m "Record: knowledge base at open"
+```
+
+**If the build fails**, the record is refused — `not recorded — build failed`, nothing written. That is the first finding of this branch, not an obstacle to work around: say so, add "the site builds green again" to the success criteria, and record once it passes — the branch simply opens without a baseline, and `kiss-close` records at the end as it always does.
+
+### 7. Write and commit the session file
 
 Write `planning/sessions/<YYYY-MM-DD>-<slug>.md` from the template below (create the folder if it does not exist), then:
 
@@ -128,4 +157,4 @@ opened: <YYYY-MM-DD>
 
 ## The loop
 
-**Frame** (`kiss-open`, here) → **Steer** (`kiss-pulse`, repeatedly) → **Verify & close** (`kiss-close`). All three read this one file. For the engine's API — what `.aikb()` writes, what the report carries, what `check --against` compares — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.
+**Frame** (`kiss-open`, here) → **Steer** (`kiss-pulse`, repeatedly) → **Verify & close** (`kiss-close`). All three read this one file. The baseline they measure against moves exactly once per piece of work, at `kiss-close` — this skill records only to establish one that does not exist yet. For the engine's own contract — what `npx kiss-ssg aikb` records, what the report carries, what `check` diffs against — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.
