@@ -106,3 +106,24 @@ Fable plans, briefs, reviews every diff and runs the gates; agents implement, wr
 - [ ] B. `hash` on every generated page; `check --against` prints added/removed/changed/unchanged in both modes; missing file is a usage error; pure `diffReports` unit-tested; the bin covered in `test/integration/check.test.js`.
 - [ ] C. Second plugin passes `claude plugin validate --strict` (if the CLI is on PATH) and the generalised manifest test; the four skills exist with "use when" descriptions; rubric copy identity-tested; branch-open reads back Feedback.
 - [ ] `npm run gates` green; every new `lib/` module has its unit test and AIKB doc in the same commit.
+
+## Amendment — 2026-09-11: the ceremony is the only writer
+
+**Why.** With `.aikb()` any real build rewrote `AIKB/last-build.json`, so the baseline the diff compares against moved on every build a developer ran to look at the site, and dev builds churned the page hashes. The diff answered "since my last build", not "since I opened this piece of work". The operator's requirement: the knowledge base is written once per closed piece of work and read at open, nothing else triggers it, and it only ever describes a build that worked.
+
+**What changes.**
+
+1. **`Kiss.aikb()` is removed**, with `_aikbRequest`, `AikbOptions`, the callback and the replay hook. `folders.aikb` stays as the folder's location.
+2. **`kiss-ssg aikb <script>` is the writer.** The bin runs the site's build script exactly as `check` does (staged and discarded, `KISS_CHECK=1`, `KISS_REPORT`), and additionally sets `KISS_AIKB=1`. It accepts `--summary`, `--against <file>` and `--help` with the same parsing as `check`. It **refuses to record a failed build**: the engine writes nothing when any failure was recorded, and the summary says so. Exit code as `check`'s.
+3. **The engine's rule**, in `_finishBuild()`, with the env read the way `KISS_CHECK` is (`''`, `'0'`, `'false'` mean off):
+   - `folder = config.folders.aikb`. If `null` → `aikb: null`.
+   - `record = KISS_AIKB is on`. `optedIn = record || <folder>/site-map.json exists` (a file only a record ever writes, so a site that has recorded once is opted in and a folder that merely exists is not — this repo's own `AIKB/` holds module notes and must not trip the docs-site build).
+   - Not opted in → `aikb: null`, nothing built.
+   - Opted in → build the map and evaluate the notes. `write = record && !config.dev && failures.length === 0`. Under `write`, `README.md` (once), `site-map.md`, `site-map.json`, then `last-build.json` after the report exists. `aikb: { folder, written, notes }` on the report either way.
+4. **`check` diffs by default.** When `--against` is not given and a report's `aikb.folder` has a `last-build.json`, `check` diffs against it (read after the run, which under `check` has not touched the file). Pure helper in `lib/check.js` (`defaultBaseline(reports)` or similar). The `aikb` command diffs only when `--against` is given explicitly, because it has just overwritten that file.
+5. **The exemplar moves from example 8 to example 9.** Example 8 fails on purpose and can no longer be recorded. Example 9 passes, has the controller file `shelf-item.js` used by two registrations and an inline controller. `examples/9-migrated-from-v1.js` gets `folders.aikb: './9-migrated-from-v1/AIKB'`; the folder is recorded with `node ../bin/kiss-ssg.js aikb 9-migrated-from-v1.js` from `examples/` and committed with one authored note `notes/controllers/shelf-item.md`. Example 8's `AIKB/` folder and `.aikb()` call are deleted; its `folders.aikb` is removed. The examples test asserts example 9's record is byte-stable and example 8 writes no folder.
+6. **The report key, the folder layout, the note rules, `formatReport`'s note lines and `hash` are unchanged.**
+7. **Skills.** `kiss-catch-up` runs a plain `check --summary` (the default diff appears when a record exists). `kiss-open` reads; if the site has no `AIKB/site-map.json` it records once (`npx kiss-ssg aikb <script>`) and commits it as the state at open. `kiss-pulse` runs a plain check. `kiss-close`: check `ok: true`, criteria against the default diff, notes complete, then `npx kiss-ssg aikb <script>`, commit the folder — the only moment the baseline moves. No skill mentions `.aikb()`.
+8. **Docs.** `llms.txt` (method removed; § check gains the `aikb` command, `KISS_AIKB`, the default baseline), `README.md` (the `.aikb()` section becomes "Recording the knowledge base" beside "Checking a build"), `AIKB/aikb.md`, `AIKB/kiss.md`, `AIKB/check.md`, `AIKB/build-report.md`, `AIKB/config.md`, CLAUDE.md's table row and command list, `types/` regenerated, the plugin READMEs.
+
+**Delegation.** D (engine + bin + tests + AIKB docs + llms.txt + CLAUDE.md + examples) and E (both plugins' skills and READMEs) run concurrently; Fable edits README.md, reviews, runs the gates and commits.
