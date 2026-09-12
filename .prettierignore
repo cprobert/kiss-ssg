@@ -17,12 +17,12 @@ types/
 # hand-formatted.
 *.hbs
 
-# A verbatim copy of .claude/skills/retrospective/rubric.md, shipped beside the
-# kiss-close skill so a consuming site scores its reflections against the same
+# A verbatim copy of .claude/skills/session-reflect/rubric.md, shipped beside the
+# kiss-branch-close skill so a consuming site scores its reflections against the same
 # rubric. test/unit/plugin-manifests.test.js byte-compares it against the
 # original past its one-line source header — prettier reflowing the copy alone
 # would break that identity.
-plugins/kiss-memory/skills/kiss-close/rubric.md
+plugins/kiss-memory/skills/kiss-branch-close/rubric.md
 
 # Written by `npx kiss-ssg aikb 9-migrated-from-v1.js` and committed as the
 # exemplar. `JSON.stringify(map, null, 2)` puts one value per line where

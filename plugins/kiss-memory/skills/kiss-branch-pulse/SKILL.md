@@ -1,12 +1,12 @@
 ---
-name: kiss-pulse
-description: Mid-work checkpoint on a kiss-ssg site — re-run the build check against the recorded baseline, read the page diff against the criteria captured at kiss-open, log the beat and decide continue / adjust / amend / ready-to-close. Use when asked to "pulse", "check progress", "how are we doing against the brief", "am I drifting", "is this ready to close yet", or every time a slice of the change is finished. Cheap and repeatable; not a substitute for kiss-close.
+name: kiss-branch-pulse
+description: Mid-work checkpoint on a kiss-ssg site — re-run the build check against the recorded baseline, read the page diff against the criteria captured at kiss-branch-open, log the beat and decide continue / adjust / amend / ready-to-close. Use when asked to "pulse", "check progress", "how are we doing against the brief", "am I drifting", "is this ready to close yet", or every time a slice of the change is finished. Cheap and repeatable; not a substitute for kiss-branch-close.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # Pulse a kiss-ssg change
 
-The Steer beat between `kiss-open` and `kiss-close`. Work drifts in the gap where nothing checks it; this closes the gap with evidence — a real build diff — rather than a feeling. Run it every slice, keep it under a couple of minutes. If a pulse starts to feel like a close, it has failed its purpose.
+The Steer beat between `kiss-branch-open` and `kiss-branch-close`. Work drifts in the gap where nothing checks it; this closes the gap with evidence — a real build diff — rather than a feeling. Run it every slice, keep it under a couple of minutes. If a pulse starts to feel like a close, it has failed its purpose.
 
 ## Execution instructions
 
@@ -19,7 +19,7 @@ grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
 
 Read that file's **Success criteria**, **Non-goals** and **Impact surface**. They are the baseline: read them, never rewrite them.
 
-No file? Offer to capture intent retrospectively with `kiss-open` (inferring the objective and criteria from the work so far, marked as inferred). If the user declines, pulse loosely against a checklist they give you.
+No file? Offer to capture intent retrospectively with `kiss-branch-open` (inferring the objective and criteria from the work so far, marked as inferred). If the user declines, pulse loosely against a checklist they give you.
 
 ### 2. Run the check against the recorded baseline
 
@@ -36,11 +36,11 @@ No flag asks for the diff. When the site has a recorded knowledge base, the chec
 - `~ <path>` a page whose bytes changed
 - `= N` unchanged
 
-That record is the state the branch opened at, because recording happens once per piece of work, at `kiss-close`. So the block is exactly "what my work so far changes about this site" — and it stays that way all branch long, which is the reason nothing here records.
+That record is the state the branch opened at, because recording happens once per piece of work, at `kiss-branch-close`. So the block is exactly "what my work so far changes about this site" — and it stays that way all branch long, which is the reason nothing here records.
 
 **Never run `npx kiss-ssg aikb` at a pulse.** It would move the baseline to the current build and the diff you are steering by would go empty for the rest of the branch. Recording is the close's job (or, on a site that has never had a record, the open's).
 
-No diff block? The site has never been recorded, so there is no baseline — `kiss-open` normally sets one up. Do not fix it now by recording mid-branch; compare the page list by eye against the criteria and note in the log that the diff was unavailable. `kiss-close` records at the end, and the next branch gets a proper diff.
+No diff block? The site has never been recorded, so there is no baseline — `kiss-branch-open` normally sets one up. Do not fix it now by recording mid-branch; compare the page list by eye against the criteria and note in the log that the diff was unavailable. `kiss-branch-close` records at the end, and the next branch gets a proper diff.
 
 ### 3. Read the diff against the criteria
 
@@ -81,4 +81,4 @@ git add planning/sessions/<file>
 git commit -m "Pulse: <YYYY-MM-DD> <one-line decision>"
 ```
 
-The four decisions: **continue** (on track) / **adjust** (named correction, re-steer now) / **amend** (remit legitimately moved, recorded above) / **ready to close** (criteria met — hand to `kiss-close`).
+The four decisions: **continue** (on track) / **adjust** (named correction, re-steer now) / **amend** (remit legitimately moved, recorded above) / **ready to close** (criteria met — hand to `kiss-branch-close`).

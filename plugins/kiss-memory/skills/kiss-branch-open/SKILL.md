@@ -1,12 +1,12 @@
 ---
-name: kiss-open
-description: Capture what a piece of work on a kiss-ssg site is meant to change, before changing it — objective, checkable criteria, non-goals, impact surface — into a session file, then create or adopt the branch. Use when starting work on a kiss site, or when asked to "open a branch", "start a new feature on the site", "add a section to the site" (before writing it), "capture intent", "spec this before we build", or "plan this change". Pair it with kiss-pulse mid-work and kiss-close at the end.
+name: kiss-branch-open
+description: Capture what a piece of work on a kiss-ssg site is meant to change, before changing it — objective, checkable criteria, non-goals, impact surface — into a session file, then create or adopt the branch. Use when starting work on a kiss site, or when asked to "open a branch", "start a new feature on the site", "add a section to the site" (before writing it), "capture intent", "spec this before we build", or "plan this change". Pair it with kiss-branch-pulse mid-work and kiss-branch-close at the end.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
 # Open a piece of work on a kiss-ssg site
 
-The Frame beat. Something has to record what this change was _meant_ to do, or the close has nothing to verify against and the reflection is reconstructed from memory. This skill writes that record — `planning/sessions/<date>-<slug>.md` — and it is the same file `kiss-pulse` appends to and `kiss-close` reads.
+The Frame beat. Something has to record what this change was _meant_ to do, or the close has nothing to verify against and the reflection is reconstructed from memory. This skill writes that record — `planning/sessions/<date>-<slug>.md` — and it is the same file `kiss-branch-pulse` appends to and `kiss-branch-close` reads.
 
 This is the site-shaped loop: no version bump, no package, no npm publish. What is verified at close is the site's **output**, so the criteria are phrased in pages.
 
@@ -29,12 +29,12 @@ grep -L "^consolidated:" planning/sessions/*.md           # not yet
 
 The three-session read-back is the briefing; the count is the diagnosis, and it needs the whole history because a lesson that recurred in 2026-05, 2026-07 and 2026-08 is invisible to a window of three. Skim every session's Feedback — including the consolidated ones, and say that you did — and tally which items recur.
 
-**Recommend `kiss-consolidate` when either fires**, before the interview, and say which:
+**Recommend `kiss-memory-consolidate` when either fires**, before the interview, and say which:
 
 - a Feedback item has recurred in **three or more** sessions — nobody is going to learn it by being told a fourth time; it needs promoting to a rule in `AIKB/site.md` and retiring from the read-back;
 - **five or more** sessions lack `consolidated:` — the logs have outrun the read-back and the older lessons are write-only.
 
-It is a recommendation, not a gate: the user may open the branch anyway. Do not run `kiss-consolidate` from inside this skill — it is a separate beat, and its commit does not belong in this branch's first diff. An item that already appears under **Retired feedback** in `AIKB/site.md` has been dealt with: it is a convention now, so do not re-surface it as inherited feedback.
+It is a recommendation, not a gate: the user may open the branch anyway. Do not run `kiss-memory-consolidate` from inside this skill — it is a separate beat, and its commit does not belong in this branch's first diff. An item that already appears under **Retired feedback** in `AIKB/site.md` has been dealt with: it is a convention now, so do not re-surface it as inherited feedback.
 
 **Also list possibly abandoned work.** A session file still `status: open` on a branch that is not this one is a piece of work somebody walked away from:
 
@@ -66,11 +66,11 @@ npx kiss-ssg check --summary <build-script>
 
 `--summary` goes **before** the script: everything after it is passed through to the site's own build script.
 
-The page list this prints is the baseline the success criteria are written against, and it is also proof the site was green _before_ you touched it. If it is already failing, that is the first thing to fix or to name as inherited. Find the build script the way `kiss-catch-up` does (`package.json` scripts). If the site has an `AIKB/site-map.md`, skim it for the sections your change is near.
+The page list this prints is the baseline the success criteria are written against, and it is also proof the site was green _before_ you touched it. If it is already failing, that is the first thing to fix or to name as inherited. Find the build script the way `kiss-site-brief` does (`package.json` scripts). If the site has an `AIKB/site-map.md`, skim it for the sections your change is near.
 
 **Read `AIKB/site.md` before the interview, if the site has one.** It is the authored, evergreen page — what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already retired into rules — and it is the accumulated answer to half the questions the interview would otherwise ask. Two things follow from it: the conventions constrain what a sensible objective looks like here, and a standing gotcha near the change is worth naming out loud before anybody writes a criterion that walks into it. It is curated, not generated, so treat it as recollection: accurate the day it was written, never re-checked by a build.
 
-The check also prints its note findings — `note missing:`, `note dead:`, `note stale:`, `note dangling:`. Any of them present at open is **inherited**, not yours. Record them in the session file so the close can tell them apart from rot this branch caused; a big crop of them is another reason to recommend `kiss-consolidate` first.
+The check also prints its note findings — `note missing:`, `note dead:`, `note stale:`, `note dangling:`. Any of them present at open is **inherited**, not yours. Record them in the session file so the close can tell them apart from rot this branch caused; a big crop of them is another reason to recommend `kiss-memory-consolidate` first.
 
 When the site has been recorded before, the check also prints its diff against that record with no flag asked for. Read it: anything already `+`, `-` or `~` before you have touched a thing is inherited drift, and belongs in the session file rather than in your change.
 
@@ -110,7 +110,7 @@ Check for the record:
 ls AIKB/site-map.json
 ```
 
-**It exists** — do nothing. The record is the state at the last close, and that is exactly what `kiss-pulse` and `kiss-close` want to diff against. Never record at open on a site that already has one: recording would move the baseline to _now_ and this branch's diff would come out empty.
+**It exists** — do nothing. The record is the state at the last close, and that is exactly what `kiss-branch-pulse` and `kiss-branch-close` want to diff against. Never record at open on a site that already has one: recording would move the baseline to _now_ and this branch's diff would come out empty.
 
 **It is absent** — this site has never been recorded, so there is nothing to measure the branch against. Record once, now, so it has one:
 
@@ -125,7 +125,7 @@ git add AIKB
 git commit -m "Record: knowledge base at open"
 ```
 
-**If the build fails**, the record is refused — `not recorded — build failed`, nothing written. That is the first finding of this branch, not an obstacle to work around: say so, add "the site builds green again" to the success criteria, and record once it passes — the branch simply opens without a baseline, and `kiss-close` records at the end as it always does.
+**If the build fails**, the record is refused — `not recorded — build failed`, nothing written. That is the first finding of this branch, not an obstacle to work around: say so, add "the site builds green again" to the success criteria, and record once it passes — the branch simply opens without a baseline, and `kiss-branch-close` records at the end as it always does.
 
 ### 7. Write and commit the session file
 
@@ -136,7 +136,7 @@ git add planning/sessions/<file>
 git commit -m "Open: <objective, short>"
 ```
 
-Tell the user: intent captured, branch ready. Run `kiss-pulse` as you go and `kiss-close` when done. This is now the single open piece of work — scope that drifts is recorded as a dated **Amendment** in this file, never split into a second branch on your initiative.
+Tell the user: intent captured, branch ready. Run `kiss-branch-pulse` as you go and `kiss-branch-close` when done. This is now the single open piece of work — scope that drifts is recorded as a dated **Amendment** in this file, never split into a second branch on your initiative.
 
 ## Session-file template
 
@@ -150,7 +150,7 @@ opened: <YYYY-MM-DD>
 
 # Session — <YYYY-MM-DD>: <Descriptive Title>
 
-## Intent (captured at kiss-open)
+## Intent (captured at kiss-branch-open)
 
 **Objective:** <one sentence>
 
@@ -174,15 +174,15 @@ opened: <YYYY-MM-DD>
 
 ## Pulse log
 
-<!-- Appended by kiss-pulse, one dated line per checkpoint: criteria status,
+<!-- Appended by kiss-branch-pulse, one dated line per checkpoint: criteria status,
      the evidence, and the decision. Append-only — the Intent above is immutable,
      and the criteria are ticked only at close. -->
 
 ---
 
-<!-- kiss-close writes the reflection below and flips status: closed -->
+<!-- kiss-branch-close writes the reflection below and flips status: closed -->
 ```
 
 ## The loop
 
-**Frame** (`kiss-open`, here) → **Steer** (`kiss-pulse`, repeatedly) → **Verify & close** (`kiss-close`). All three read this one file. `kiss-consolidate` sits outside the loop, between pieces of work: it folds the session logs' durable lessons into `AIKB/site.md` and fixes the notes, which is what stops this step's read-back surfacing the same feedback forever. The baseline they measure against moves exactly once per piece of work, at `kiss-close` — this skill records only to establish one that does not exist yet. For the engine's own contract — what `npx kiss-ssg aikb` records, what the report carries, what `check` diffs against — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.
+**Frame** (`kiss-branch-open`, here) → **Steer** (`kiss-branch-pulse`, repeatedly) → **Verify & close** (`kiss-branch-close`). All three read this one file. `kiss-memory-consolidate` sits outside the loop, between pieces of work: it folds the session logs' durable lessons into `AIKB/site.md` and fixes the notes, which is what stops this step's read-back surfacing the same feedback forever. The baseline they measure against moves exactly once per piece of work, at `kiss-branch-close` — this skill records only to establish one that does not exist yet. For the engine's own contract — what `npx kiss-ssg aikb` records, what the report carries, what `check` diffs against — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.

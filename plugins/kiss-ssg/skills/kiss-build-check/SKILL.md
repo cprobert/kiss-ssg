@@ -1,5 +1,5 @@
 ---
-name: kiss-check
+name: kiss-build-check
 description: Verify that a kiss-ssg site builds cleanly without publishing the output, and read the resulting report. Use after writing or editing a kiss site's build script, models, controllers or views, before declaring a build done, and when asked to "check the site builds", "verify the kiss build", "verify the kiss-ssg build", or "why is this page missing".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
@@ -55,7 +55,7 @@ A site opts into a knowledge base by recording one — `npx kiss-ssg aikb <site-
   | `note stale:`    | `stale`      | a note carrying a `subject-hash:` stamp that no longer matches the subject's hash — the code moved, the note did not. An unstamped note is never stale                    |
   | `note dangling:` | `dangling`   | `"<note path>: <token>"` — a backticked file-looking reference, in a note or in the authored `AIKB/site.md`, that resolves to no file, page, partial, model or controller |
 
-  A site that has never recorded reports `aikb: null` and none of these. The engine never writes the `subject-hash:` stamp — the `kiss-memory` plugin's `kiss-close` and `kiss-consolidate` skills do, copying it from `site-map.json`'s `subjects`.
+  A site that has never recorded reports `aikb: null` and none of these. The engine never writes the `subject-hash:` stamp — the `kiss-memory` plugin's `kiss-branch-close` and `kiss-memory-consolidate` skills do, copying it from `site-map.json`'s `subjects`.
 
 **Neither changes the exit code.** They are readings, not gates — exit 0 with `ok: true` on every report is still the only passing result. And `check` never writes `AIKB/`: recording is the separate `aikb` command.
 

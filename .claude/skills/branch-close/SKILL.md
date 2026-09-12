@@ -1,6 +1,6 @@
 ---
 name: branch-close
-description: End-of-branch ritual. Checks branch safety and freshness, then /secrets-scan, /docs-sweep, /corpse-collector, the version bump, /test-coverage-check --gate, an operator eyeball on one changed artefact, the gates (`npm run gates`), an optional Codex review, /retrospective, then pushes and opens the PR. Run this instead of manually pushing — it is the single command that replaces the manual sequence.
+description: End-of-branch ritual. Checks branch safety and freshness, then /secrets-scan, /docs-sweep, /corpse-collector, the version bump, /test-coverage-check --gate, an operator eyeball on one changed artefact, the gates (`npm run gates`), an optional Codex review, /session-reflect, then pushes and opens the PR. Run this instead of manually pushing — it is the single command that replaces the manual sequence.
 ---
 
 # Close Branch
@@ -17,7 +17,7 @@ Do not run if:
 
 - You are on the base branch — check first (`node scripts/base-branch.mjs`), stop if true
 - There are no commits since the base — nothing to PR
-- A PR is already open for this branch — use `/docs-sweep` + `/retrospective` alone to update it
+- A PR is already open for this branch — use `/docs-sweep` + `/session-reflect` alone to update it
 
 ---
 
@@ -163,7 +163,7 @@ Name **one** artefact this branch changed that a human should look at with their
 
 Then **stop and ask** with AskUserQuestion: did you look, and what did you see? This is the one place in the ritual that waits on a human rather than on a command, so do not answer it for them and do not accept your own summary as the answer — Claude reporting that Claude's output looks right is the exact loop this step breaks.
 
-Record the answer in one line and carry it into Step 8, so `/retrospective` can cite it under **Verification & ownership**:
+Record the answer in one line and carry it into Step 8, so `/session-reflect` can cite it under **Verification & ownership**:
 
 - the operator looked — what they saw, and whether it matched;
 - the operator declined or did not answer — record it verbatim as **"unanswered — proceeding on the ritual's defaults"**. That is an honest reading, and a reflection that says so is worth more than one that implies a check happened.
@@ -197,9 +197,9 @@ It runs **after** the gates on purpose. Codex is the _semantic_ complement to th
 
 Surface the findings and triage them **with the operator**: Codex output ranges from real bugs to nits and false positives, so this is a human call, not an auto-fail. **Fix-now** (commit the fix, then re-run the gates and this step) or **proceed** — the operator decides; a finding neither silently blocks nor silently passes.
 
-### Step 8 — Run /retrospective
+### Step 8 — Run /session-reflect
 
-Invoke `/retrospective`. This writes the supervised-collaboration reflection to `planning/sessions/` and commits it (filling the branch's intent artefact if `/branch-open` created one). It runs **after** the gates deliberately — there's no point reflecting on a branch that doesn't pass. Hand it the Step 5a answer — what the operator looked at and saw, or "unanswered — proceeding on the ritual's defaults" — so the reflection reads **Verification & ownership** from what a human actually checked rather than from Claude's own summary. Scope that drifted during the branch and was recorded as **Amendments** in the intent artefact is legitimate emergent work — the reflection weighs it as good drift vs scope creep, not as a failure to match the original remit verbatim.
+Invoke `/session-reflect`. This writes the supervised-collaboration reflection to `planning/sessions/` and commits it (filling the branch's intent artefact if `/branch-open` created one). It runs **after** the gates deliberately — there's no point reflecting on a branch that doesn't pass. Hand it the Step 5a answer — what the operator looked at and saw, or "unanswered — proceeding on the ritual's defaults" — so the reflection reads **Verification & ownership** from what a human actually checked rather than from Claude's own summary. Scope that drifted during the branch and was recorded as **Amendments** in the intent artefact is legitimate emergent work — the reflection weighs it as good drift vs scope creep, not as a failure to match the original remit verbatim.
 
 ### Step 9 — Push and open PR
 
@@ -253,9 +253,9 @@ Then check whether the logs themselves are due a sweep — the close keeps one b
 grep -L "^consolidated:" planning/sessions/*.md | wc -l
 ```
 
-**Recommend `/consolidate` when either trigger fires** — the same rule `/branch-open` reads back against:
+**Recommend `/memory-consolidate` when either trigger fires** — the same rule `/branch-open` reads back against:
 
-- a Feedback item has recurred in **three or more** logs, counting the one `/retrospective` just wrote against every earlier log and skipping anything already in `.claude/skills/consolidate/retired.md`;
+- a Feedback item has recurred in **three or more** logs, counting the one `/session-reflect` just wrote against every earlier log and skipping anything already in `.claude/skills/memory-consolidate/retired.md`;
 - **five or more** logs lack `consolidated:`.
 
 Add one line to the report naming the trigger and its evidence — the lesson and its dates, or the count. **Do not run it here**: it edits `CLAUDE.md` and the ritual skills, and those edits have no business in the diff you just verified and pushed.
@@ -273,6 +273,6 @@ Add one line to the report naming the trigger and its evidence — the lesson an
 | Operator eyeball (AskUserQuestion)    | Asked by `/branch-close` — a human answers | Operator Eyeball step |
 | `npm run gates` (`scripts/gates.mjs`) | Run by `/branch-close`                     | Gates step            |
 | `codex-companion.mjs review --wait`   | Run by `/branch-close` (judgment call)     | Codex Review step     |
-| `/retrospective`                      | Invoked by `/branch-close`                 | Retrospective step    |
+| `/session-reflect`                    | Invoked by `/branch-close`                 | Retrospective step    |
 
 The pre-commit hook and CI cover formatting and the gate battery on their own. Everything else in this table — the secrets scan, the docs sweep, the coverage gate, the version bump, the operator eyeball, the reflection — runs only because this ritual runs it. Pushing without `/branch-close` skips all of those.

@@ -28,7 +28,7 @@ A note is wanted for each of the three things that carry judgement:
 
 Plain pages, partials and `.json` models are deliberately not subjects: a note saying "renders the about page" is noise, and a rule that demands one teaches people to write noise. An inline controller and an object model have no file to attach a note to, so they cannot be subjects either.
 
-`site.md` is the one page about the whole site rather than any one subject — curated, evergreen, and the first thing to read when you come back to this repository. Five sections: **What this site is and who for** · **How it is deployed** · **Conventions** · **Standing gotchas** · **Retired feedback**. Nothing generates it and nothing enforces its shape; the `kiss-consolidate` skill maintains it, folding the durable lessons out of old session logs so they stop being re-read one by one.
+`site.md` is the one page about the whole site rather than any one subject — curated, evergreen, and the first thing to read when you come back to this repository. Five sections: **What this site is and who for** · **How it is deployed** · **Conventions** · **Standing gotchas** · **Retired feedback**. Nothing generates it and nothing enforces its shape; the `kiss-memory-consolidate` skill maintains it, folding the durable lessons out of old session logs so they stop being re-read one by one.
 
 ## The stamp
 

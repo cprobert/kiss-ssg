@@ -55,7 +55,7 @@ What each check gathers:
 
 **How to read Check 8.** It is the softest row in the report, and the only one that measures history rather than a broken reference. CLAUDE.md's rule — read the relevant AIKB doc before changing that module, **update it in the same commit** — is the thing no test can enforce: `test/aikb.test.js` can see that a doc exists, never that it is still true. Commit distance is the closest mechanical proxy. So a doc can be five commits behind and still be entirely accurate (five refactors that changed nothing the doc describes), and a doc committed alongside its module can still be wrong. The row does not say "this is wrong"; it says **read it before trusting it**, and it is a prompt at exactly the moment that matters — before you rely on a module note you did not write. The fix, when it really is stale, is never a doc-only tidy-up commit: it is to bring the doc up to date **in the module's next commit**, which is what the rule asks for and what resets the count.
 
-`/consolidate` runs this scanner first and reports these rows as its mechanical half — the durable-memory sweep folds session-log lessons into the rules, and Check 8 is the same question asked of the module notes.
+`/memory-consolidate` runs this scanner first and reports these rows as its mechanical half — the durable-memory sweep folds session-log lessons into the rules, and Check 8 is the same question asked of the module notes.
 
 ### Step 2 — Judge
 

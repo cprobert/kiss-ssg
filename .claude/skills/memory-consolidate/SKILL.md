@@ -1,5 +1,5 @@
 ---
-name: consolidate
+name: memory-consolidate
 description: Housekeeping sweep of this repo's institutional memory — fold the durable lessons out of `planning/sessions/` into the place that will actually be read (a bullet in `CLAUDE.md`, or a step in a ritual skill), retire the feedback that keeps coming back, and report the mechanical staleness `/corpse-collector` finds. Use when asked to "consolidate the session logs", "the same feedback keeps coming back", "tidy the memory", "fold the reflections into the rules", "the logs are piling up unread", or when `/branch-open` or `/branch-close` recommends it. Runs between branches — it never opens, closes or pushes one.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
@@ -61,7 +61,7 @@ A session log carries `consolidated: <YYYY-MM-DD>` in its frontmatter once it ha
 grep -L "^consolidated:" planning/sessions/*.md
 ```
 
-A log still `status: open` will be in that list on **every** sweep until its branch closes and `/retrospective` writes its Feedback — there is nothing to fold in yet, and Step 7 leaves it unstamped. That is expected, not an oversight, and it is not a reason to stamp it early.
+A log still `status: open` will be in that list on **every** sweep until its branch closes and `/session-reflect` writes its Feedback — there is nothing to fold in yet, and Step 7 leaves it unstamped. That is expected, not an oversight, and it is not a reason to stamp it early.
 
 No unconsolidated logs and no AIKB rows: say so, change nothing, and stop. A sweep that commits nothing is a good outcome, not a failed run.
 
@@ -71,7 +71,7 @@ Read each unconsolidated log's **`## Feedback`**, **`### Amendments`** and **`##
 
 In an older log, read whatever **plays their role**. The logs predate the template, so a missing `## Feedback` heading is not a test for whether a log carries feedback: some hold their recommendations inline, in a closing paragraph, or under a heading of their own wording, and a `grep` for the heading will report them as having nothing to give. Open every log in the Step 2 list and read it. Only after reading does "nothing durable in this one" become a finding rather than a heading that happened to be spelled differently.
 
-Feedback items name their audience in bold at the start — **Operator**, **Claude**, **Both** or **Process** — because `/retrospective` requires it, and the older logs do it informally (`**For the operator**` as a group heading, or `- **Operator — look at the artefact you asked for.**` inline). Read either shape; where a log predates the convention and names no audience at all, infer it from the item and **say in the report that you inferred it**.
+Feedback items name their audience in bold at the start — **Operator**, **Claude**, **Both** or **Process** — because `/session-reflect` requires it, and the older logs do it informally (`**For the operator**` as a group heading, or `- **Operator — look at the artefact you asked for.**` inline). Read either shape; where a log predates the convention and names no audience at all, infer it from the item and **say in the report that you inferred it**.
 
 Keep a tally as you read: for each distinct lesson, which log dates it appeared in and which audience it was aimed at. **Two items are the same lesson when the next-time change they ask for is the same**, not when the wording matches, and not when the virtue behind them matches:
 
@@ -90,7 +90,7 @@ You are editing curated files that many future sessions read. Read them whole fi
 
 ```bash
 cat CLAUDE.md
-cat .claude/skills/consolidate/retired.md
+cat .claude/skills/memory-consolidate/retired.md
 ```
 
 The **whole** of `CLAUDE.md`, not § Rules alone. A Claude-audience lesson can belong under § Rules or under § Git workflow, and the sharpen-before-add judgment in Step 5 needs both in view: a rule about how a branch is run is often already stated, in weaker form, in the § Git workflow prose rather than in the § Rules bullets.
@@ -130,7 +130,7 @@ An item that appeared once stays in the log and stays in `/branch-open`'s read-b
 
 ### Step 6 — Record every retirement in `retired.md`
 
-Every lesson you retired gets one row in `.claude/skills/consolidate/retired.md`: the lesson, the dates it recurred in, exactly where it went, and what you actually had to change to put it there.
+Every lesson you retired gets one row in `.claude/skills/memory-consolidate/retired.md`: the lesson, the dates it recurred in, exactly where it went, and what you actually had to change to put it there.
 
 ```markdown
 | Look at one built artefact yourself before accepting the branch | 2026-09-05, 2026-09-06, 2026-09-08, 2026-09-09 | `/branch-close` Step 5a — Operator eyeball | none — destination existed (added one bullet to its menu) |

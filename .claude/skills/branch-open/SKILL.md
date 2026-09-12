@@ -7,7 +7,7 @@ description: Start-of-branch ritual, the mirror of /branch-close. Run on the bas
 
 `/branch-open` is the front bookend of the dev loop. `/branch-close` evaluates whether we did what we set out to do — so something has to _record_ what we set out to do. That's this skill: capture intent up front, as a committed artefact, so the brief is real (not reconstructed from memory at the end), seeds the PR, and is the baseline the closing reflection scores against.
 
-The captured intent lives in one `planning/sessions/<date>-<slug>.md` file per branch. `/branch-open` writes its **Intent** half; `/branch-close` → `/retrospective` writes its **Reflection** half into the same file. Open and close are two ends of one artefact.
+The captured intent lives in one `planning/sessions/<date>-<slug>.md` file per branch. `/branch-open` writes its **Intent** half; `/branch-close` → `/session-reflect` writes its **Reflection** half into the same file. Open and close are two ends of one artefact.
 
 > **Why `planning/`, not `docs/`.** `docs/` is build output — `docs.js` empties it on every run (`cleanBuild: true`), so nothing hand-written survives there. Session logs live beside the specs and plans in `planning/`.
 
@@ -78,14 +78,14 @@ grep -L "^consolidated:" planning/sessions/*.md   # the ones never folded in
 
 Skim **every** log's Feedback, not the last three, and tally which lessons recur — then say that you did. Three is too narrow a window to see the pattern: "look at one built page yourself" recurred across four logs in five days in this repo (2026-09-05, 09-06, 09-08, 09-09) and a window of three would have shown it as an ordinary one-off at any point along the way.
 
-**Skip anything already listed in `.claude/skills/consolidate/retired.md`.** A lesson in that table has been dealt with — it is a rule in `CLAUDE.md` or a step in one of these rituals now, not an outstanding recommendation — so re-surfacing it as inherited feedback is noise that trains the operator to skim the read-back.
+**Skip anything already listed in `.claude/skills/memory-consolidate/retired.md`.** A lesson in that table has been dealt with — it is a rule in `CLAUDE.md` or a step in one of these rituals now, not an outstanding recommendation — so re-surfacing it as inherited feedback is noise that trains the operator to skim the read-back.
 
-**Recommend `/consolidate` when either trigger fires**, before the interview, naming which one and the evidence:
+**Recommend `/memory-consolidate` when either trigger fires**, before the interview, naming which one and the evidence:
 
 - a lesson has recurred in **three or more** logs — nobody is going to learn it by being told a fourth time; it needs promoting to a rule or a ritual step;
 - **five or more** logs lack `consolidated:` — the logs have outrun the read-back, and everything older than the last three is write-only.
 
-It is a recommendation, not a gate: the user may open the branch anyway. **Do not run `/consolidate` from here** — it is a separate beat, and its `CLAUDE.md` and skill edits do not belong in this branch's first diff.
+It is a recommendation, not a gate: the user may open the branch anyway. **Do not run `/memory-consolidate` from here** — it is a separate beat, and its `CLAUDE.md` and skill edits do not belong in this branch's first diff.
 
 **Also list possibly abandoned work.** A log still `status: open` on a branch that is not the one you are about to work on is a piece of work somebody walked away from:
 
@@ -186,7 +186,7 @@ opened: <YYYY-MM-DD>
 
 ---
 
-<!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
+<!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
 ```
 
 ---
@@ -196,6 +196,6 @@ opened: <YYYY-MM-DD>
 The branch runs as three beats, all reading this one session file: **Frame** (`/branch-open`, here) → **Steer** (`/branch-pulse`, repeated mid-branch) → **Verify & close** (`/branch-close`).
 
 - **`/branch-pulse`** reads this file's **Success criteria** mid-branch and checks progress against them with evidence, logging each checkpoint to the `## Pulse log` section — so drift is caught while the work is warm, not discovered cold at the close.
-- **`/branch-close` → `/retrospective`** finds this file by its `branch:` frontmatter, writes the Reflection beneath the marker (reading **Intent** for the Reflect section, the **Pulse log** for accrued evidence, and checking **Success criteria** in the Verdict — "did we achieve the objective?"), and flips `status: closed`.
+- **`/branch-close` → `/session-reflect`** finds this file by its `branch:` frontmatter, writes the Reflection beneath the marker (reading **Intent** for the Reflect section, the **Pulse log** for accrued evidence, and checking **Success criteria** in the Verdict — "did we achieve the objective?"), and flips `status: closed`.
 - **`/branch-close` PR body** seeds its Summary and Test plan from the captured **Objective** and **Success criteria**, so the reviewer sees the original intent beside the diff. Its version bump reads the **Impact surface**.
-- A branch not opened with `/branch-open` simply has no intent file — `/branch-pulse` falls back to asking what to check, and `/retrospective` falls back to creating a fresh reflection, so this is additive, not required.
+- A branch not opened with `/branch-open` simply has no intent file — `/branch-pulse` falls back to asking what to check, and `/session-reflect` falls back to creating a fresh reflection, so this is additive, not required.

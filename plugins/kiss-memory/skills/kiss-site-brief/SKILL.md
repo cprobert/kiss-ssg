@@ -1,6 +1,6 @@
 ---
-name: kiss-catch-up
-description: Brief a developer returning to (or joining) a kiss-ssg site — what it is, how it is built, what changed lately, what was left open, what bites. Use when asked to "catch me up", "what is this site", "remind me how this site works", "I haven't touched this in months", "onboard me to this repo", "who is this site for", or when starting work in an unfamiliar project that has `node_modules/kiss-ssg` installed. Not for verifying a build (use kiss-check) or for starting a piece of work (use kiss-open).
+name: kiss-site-brief
+description: Brief a developer returning to (or joining) a kiss-ssg site — what it is, how it is built, what changed lately, what was left open, what bites. Use when asked to "catch me up", "what is this site", "remind me how this site works", "I haven't touched this in months", "onboard me to this repo", "who is this site for", or when starting work in an unfamiliar project that has `node_modules/kiss-ssg` installed. Not for verifying a build (use kiss-build-check) or for starting a piece of work (use kiss-branch-open).
 allowed-tools: Read, Bash, Glob, Grep
 ---
 
@@ -42,7 +42,7 @@ No diff block at all means this site has never been recorded — that is step 4,
 | `AIKB/notes/**/*.md`                       | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                               | recollection           |
 | the 3 most recent `planning/sessions/*.md` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open                | recollection           |
 
-**Read `AIKB/site.md` first when it exists.** It is the one source somebody sat down and curated: authored, evergreen, never written by a build, and periodically fed by `kiss-consolidate` from the session logs. It answers "what is this and who for" better than anything generated can, and its Standing gotchas are the distilled version of what you would otherwise reconstruct from a dozen notes. Label it **recollection (curated)** and keep that distinction in the briefing — it is recollection, so it can be out of date, but unlike a session log it is meant to be true today, and a place where it contradicts the map is a real finding worth reporting.
+**Read `AIKB/site.md` first when it exists.** It is the one source somebody sat down and curated: authored, evergreen, never written by a build, and periodically fed by `kiss-memory-consolidate` from the session logs. It answers "what is this and who for" better than anything generated can, and its Standing gotchas are the distilled version of what you would otherwise reconstruct from a dozen notes. Label it **recollection (curated)** and keep that distinction in the briefing — it is recollection, so it can be out of date, but unlike a session log it is meant to be true today, and a place where it contradicts the map is a real finding worth reporting.
 
 Read the sessions newest first (`ls -t planning/sessions/*.md | head -3`) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
 
@@ -51,7 +51,7 @@ Read the sessions newest first (`ls -t planning/sessions/*.md | head -3`) and ta
 Missing sources are findings, not silence:
 
 - **No `AIKB/` at all** — this site has never been recorded, so nothing generated survives its builds and the check has no baseline to diff against. Say so, brief from the check output and git alone, and tell the user the fix, which is not a code change: run `npx kiss-ssg aikb <build-script>` once and commit the folder it writes. Recording runs the build staged and discarded like `check` does, publishes nothing, and refuses a failing build (`not recorded — build failed`), so a broken site is fixed first. The command is documented in `node_modules/kiss-ssg/llms.txt`.
-- **No `AIKB/site.md`** — nobody has written down what this site is for, how it is deployed or what the conventions are, so everything under those headings in the briefing is inferred from code and logs. Say so. The fix is `kiss-consolidate`, which creates it from the template and fills it from the session logs.
+- **No `AIKB/site.md`** — nobody has written down what this site is for, how it is deployed or what the conventions are, so everything under those headings in the briefing is inferred from code and logs. Say so. The fix is `kiss-memory-consolidate`, which creates it from the template and fills it from the session logs.
 - **No `AIKB/notes/`, or notes missing for subjects the report lists in `aikb.notes.missing`** — the odd parts of this site have never been explained by anyone. Name them; they are the highest-value thing to write down next.
 - **Notes in `aikb.notes.dead`** — a note whose subject is no longer in the map. Treat what it says as history, not fact.
 - **Notes in `aikb.notes.stale`** — the subject's code has moved since the note was written against it. Treat the note as **out of date, not wrong**: still the best account of why the thing exists, no longer a reliable account of what it does now. Read the subject beside it before you believe a detail.
@@ -72,4 +72,4 @@ Five headings, in this order, every statement tagged **[generated]** or **[recol
   - `note stale:` — this note was written against older code; check it against the subject before trusting a detail
   - `note dangling:` — this note points at a file that is not there
 
-Keep it to a page. End with the one thing you would do first if this were your site, and why. A long list of note findings is a legitimate answer to that: it means the fastest way to make this site knowable again is `kiss-consolidate`.
+Keep it to a page. End with the one thing you would do first if this were your site, and why. A long list of note findings is a legitimate answer to that: it means the fastest way to make this site knowable again is `kiss-memory-consolidate`.

@@ -1,6 +1,6 @@
 ---
-name: kiss-consolidate
-description: Tidy a kiss-ssg site's knowledge base — fold the durable lessons out of the session logs into `AIKB/site.md`, retire feedback that keeps coming back, and fix the stale, dangling and dead notes the check reports. Use when asked to "consolidate the knowledge base", "tidy the notes", "fold the session logs into site.md", "the same feedback keeps coming back", "the knowledge base feels inconsistent", "the notes are out of date", "clean up AIKB", or when kiss-open or kiss-close recommends it. Housekeeping between pieces of work — it never records the knowledge base and never opens or closes a branch.
+name: kiss-memory-consolidate
+description: Tidy a kiss-ssg site's knowledge base — fold the durable lessons out of the session logs into `AIKB/site.md`, retire feedback that keeps coming back, and fix the stale, dangling and dead notes the check reports. Use when asked to "consolidate the knowledge base", "tidy the notes", "fold the session logs into site.md", "the same feedback keeps coming back", "the knowledge base feels inconsistent", "the notes are out of date", "clean up AIKB", or when kiss-branch-open or kiss-branch-close recommends it. Housekeeping between pieces of work — it never records the knowledge base and never opens or closes a branch.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -24,7 +24,7 @@ This skill is the housekeeping beat that answers all three. It is not part of th
 npx kiss-ssg check --summary <build-script>
 ```
 
-`--summary` goes **before** the script: everything after the script is passed through to the site's own build script. Find the build script the way `kiss-catch-up` does (`package.json` scripts, else the file that constructs `new Kiss(...)`).
+`--summary` goes **before** the script: everything after the script is passed through to the site's own build script. Find the build script the way `kiss-site-brief` does (`package.json` scripts, else the file that constructs `new Kiss(...)`).
 
 Four lines in the summary are this skill's worklist. None of them changes the exit code — they are readings, not gates — so read them even when the build is green:
 
@@ -64,7 +64,7 @@ cat AIKB/site.md
 ```markdown
 # <Site name> — what we know
 
-<!-- Authored and evergreen. The build never writes this file; kiss-consolidate
+<!-- Authored and evergreen. The build never writes this file; kiss-memory-consolidate
      curates it and the check only scans it for dangling references. -->
 
 ## What this site is and who for
@@ -85,7 +85,7 @@ cat AIKB/site.md
 
 ## Retired feedback
 
-<!-- Lessons promoted out of the session logs, each naming the session dates it recurred in, so kiss-open stops surfacing them. -->
+<!-- Lessons promoted out of the session logs, each naming the session dates it recurred in, so kiss-branch-open stops surfacing them. -->
 ```
 
 **Present?** Read it whole before writing a word. You are extending a curated page, not regenerating it: keep its voice, keep its order, and do not restructure it to suit the material you are bringing.
@@ -123,7 +123,7 @@ Use the tally from step 2. **A Feedback item that recurs in two or more sessions
    - Always run the check before pushing — recurred 2026-06-04, 2026-07-19, 2026-08-30; now a convention.
    ```
 
-Both lines, always. The Conventions/Gotchas line is the rule; the Retired-feedback line is what tells `kiss-open`'s read-back that this one has been dealt with and should stop being surfaced as inherited feedback every branch. One without the other either loses the lesson or keeps re-raising it.
+Both lines, always. The Conventions/Gotchas line is the rule; the Retired-feedback line is what tells `kiss-branch-open`'s read-back that this one has been dealt with and should stop being surfaced as inherited feedback every branch. One without the other either loses the lesson or keeps re-raising it.
 
 ### 7. Fix the `stale` notes
 
@@ -150,7 +150,7 @@ subject-hash: 9f2c1b0a4e7d83f6c5b21a908d7e6f4c3b2a1908
 …
 ```
 
-**The engine never writes that line — this skill and `kiss-close` do.** A note you rewrite gets the current hash; a note you did not touch keeps whatever stamp it had. Never copy a hash you have not just read out of the check's report, and never invent one to silence the line: an unstamped note is honest, a wrongly stamped one lies to every future check.
+**The engine never writes that line — this skill and `kiss-branch-close` do.** A note you rewrite gets the current hash; a note you did not touch keeps whatever stamp it had. Never copy a hash you have not just read out of the check's report, and never invent one to silence the line: an unstamped note is honest, a wrongly stamped one lies to every future check.
 
 A URL model never goes stale (its id is the whole subject), so a `note stale:` entry naming one is a finding to raise with the human, not something to restamp.
 
@@ -228,4 +228,4 @@ End with the count in the commit message and one sentence on the shape of the ba
 
 ## Where this sits
 
-`kiss-open` (Frame) → `kiss-pulse` (Steer) → `kiss-close` (Verify) run a piece of work. This runs **between** pieces of work, on nobody's branch in particular, and it is recommended to you by `kiss-open`'s read-back or `kiss-close`'s final report when a Feedback item has recurred in three or more sessions, or five or more sessions lack `consolidated:`. Run it by hand whenever the base feels inconsistent. For what the check reports, what the record writes and what `subjects` carries, read `node_modules/kiss-ssg/llms.txt` — nothing here restates the engine's contract.
+`kiss-branch-open` (Frame) → `kiss-branch-pulse` (Steer) → `kiss-branch-close` (Verify) run a piece of work. This runs **between** pieces of work, on nobody's branch in particular, and it is recommended to you by `kiss-branch-open`'s read-back or `kiss-branch-close`'s final report when a Feedback item has recurred in three or more sessions, or five or more sessions lack `consolidated:`. Run it by hand whenever the base feels inconsistent. For what the check reports, what the record writes and what `subjects` carries, read `node_modules/kiss-ssg/llms.txt` — nothing here restates the engine's contract.

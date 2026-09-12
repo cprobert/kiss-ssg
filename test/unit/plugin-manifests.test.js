@@ -7,8 +7,8 @@ const PACKAGE_PREFIX = 'node_modules/kiss-ssg/'
 // npm packs these three whatever `files` says, so a skill may cite them even
 // though they are not listed.
 const ALWAYS_PACKED = ['package.json', 'README.md', 'LICENSE']
-const RUBRIC_SOURCE = '.claude/skills/retrospective/rubric.md'
-const RUBRIC_COPY = 'plugins/kiss-memory/skills/kiss-close/rubric.md'
+const RUBRIC_SOURCE = '.claude/skills/session-reflect/rubric.md'
+const RUBRIC_COPY = 'plugins/kiss-memory/skills/kiss-branch-close/rubric.md'
 
 function parseJson(relative) {
   const raw = fs.readFileSync(path.join(root, relative), 'utf8')
@@ -161,7 +161,7 @@ describe('skills', () => {
   )
 })
 
-// The rubric ships with kiss-close so a consuming site scores its reflections
+// The rubric ships with kiss-branch-close so a consuming site scores its reflections
 // against the same seven dimensions this repo scores its own. A copy is the
 // only way to ship it, so this is the thing that stops the two drifting.
 describe('shipped rubric', () => {

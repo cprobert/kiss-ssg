@@ -1,6 +1,6 @@
 ---
-name: kiss-close
-description: Finish a piece of work on a kiss-ssg site — verify the build diff against the intent captured at kiss-open, prove the site's knowledge base was kept up (notes for every controller, URL model and pipeline step the change touched), record and commit `AIKB/`, write the reflection into the session file, and push. Use when asked to "close the branch", "wrap this up", "we're done, ship it", "finish this change", or "write the retrospective" on a kiss-ssg site. Opens a pull request only when asked.
+name: kiss-branch-close
+description: Finish a piece of work on a kiss-ssg site — verify the build diff against the intent captured at kiss-branch-open, prove the site's knowledge base was kept up (notes for every controller, URL model and pipeline step the change touched), record and commit `AIKB/`, write the reflection into the session file, and push. Use when asked to "close the branch", "wrap this up", "we're done, ship it", "finish this change", or "write the retrospective" on a kiss-ssg site. Opens a pull request only when asked.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -106,7 +106,7 @@ Nothing else writes `AIKB/`. Not a build, not the dev server, not a watch rebuil
 npx kiss-ssg aikb <build-script>
 ```
 
-**This is the only moment the baseline moves.** That is the whole design: because the record sits still while a branch is open, the diff `kiss-pulse` and step 2 read answers "since this piece of work opened" rather than "since somebody last ran a build". Moving it early costs the branch its own measurement, so record here, after the verification, and nowhere else.
+**This is the only moment the baseline moves.** That is the whole design: because the record sits still while a branch is open, the diff `kiss-branch-pulse` and step 2 read answers "since this piece of work opened" rather than "since somebody last ran a build". Moving it early costs the branch its own measurement, so record here, after the verification, and nowhere else.
 
 It runs the site's build staged and discarded exactly as `check` does, so it publishes no site; what it writes is the knowledge base in `config.folders.aikb` (default `./AIKB`): `README.md` if it is not there yet, then `site-map.md`, `site-map.json` and `last-build.json`.
 
@@ -131,7 +131,7 @@ Four sections:
 
 - **Reflect — what the session was.** How clearly was the change framed before work began; was it planned or emergent, and did that shape serve it?
 - **Evaluate — how the human supervised the AI.** The heart of it. Lead with the two or three rubric dimensions that actually discriminated this session, not all seven as a scorecard. Name where the human intended to supervise versus where they actually did — the pulse cadence in the log is direct evidence. End on a named competency level, earned by the evidence, no flattery.
-- **Feedback — recommendations for next time.** Both partners, every item ending in a concrete next-time change. This is the section `kiss-open` reads back at the start of the next piece of work, so write it to be inherited: vague advice comes back to haunt you three sessions running.
+- **Feedback — recommendations for next time.** Both partners, every item ending in a concrete next-time change. This is the section `kiss-branch-open` reads back at the start of the next piece of work, so write it to be inherited: vague advice comes back to haunt you three sessions running.
 - **Verdict — did we achieve the objective?** Re-state the brief, tick each success criterion `[x]` / `[ ]` with its evidence, and say **met / partially met / the objective moved**. State what is concretely better on the site now, and what remains open.
 
 Be specific — name the pages, the partial, the controller, the failure mode. A reflection that could describe any session has no value to the person who reads it in two years.
@@ -151,10 +151,10 @@ The close keeps one branch's memory honest. Nothing in it keeps the **whole** ba
 grep -L "^consolidated:" planning/sessions/*.md | wc -l   # sessions never folded in
 ```
 
-- **A Feedback item has recurred in three or more sessions.** Compare the Feedback you just wrote against every earlier session's — not only the three `kiss-open` reads back. An item on its third outing is not a lesson anybody is going to learn by being told again; it needs promoting to a rule in `AIKB/site.md`.
+- **A Feedback item has recurred in three or more sessions.** Compare the Feedback you just wrote against every earlier session's — not only the three `kiss-branch-open` reads back. An item on its third outing is not a lesson anybody is going to learn by being told again; it needs promoting to a rule in `AIKB/site.md`.
 - **Five or more sessions lack `consolidated:`.** The logs have outrun the read-back, so everything older than the last three is effectively write-only.
 
-Either one: recommend `kiss-consolidate` in the final report, naming which trigger fired and the evidence (the item and its dates, or the count). **Do not run it here.** It is a separate beat, on nobody's branch, and folding it into a close would mix housekeeping edits into the diff you just verified.
+Either one: recommend `kiss-memory-consolidate` in the final report, naming which trigger fired and the evidence (the item and its dates, or the count). **Do not run it here.** It is a separate beat, on nobody's branch, and folding it into a close would mix housekeeping edits into the diff you just verified.
 
 ### 7. Push, and stop
 
@@ -164,4 +164,4 @@ git push -u origin HEAD
 
 **Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date and stamped, all four note lines clean, `AIKB/` recorded and committed, reflection written, branch pushed.
 
-Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-consolidate`", with the trigger.
+Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-memory-consolidate`", with the trigger.
