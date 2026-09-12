@@ -27,7 +27,7 @@ The orchestrator and public API. `Kiss` owns config, a per-instance Handlebars e
 
 ## Depends on
 
-`fs-extra`, `node:path`, `handlebars`, `handlebars-layouts`, `remarkable`; and `./utils.js`, `./logger.js`, `./config.js`, `./build-report.js`, `./handlebars-helpers.js`, `./partials.js`, `./dependency-graph.js`, `./assets.js`, `./asset-manifest.js`, `./pipeline.js`, `./model-resolver.js`, `./controller-resolver.js`, `./sitemap.js`, `./llms.js`, `./kiss-page.js`, `./dev-server.js`, `./watcher.js`.
+`fs-extra`, `node:path`, `handlebars`, `handlebars-layouts`, `remarkable`; and `./utils.js`, `./logger.js`, `./config.js`, `./build-report.js`, `./aikb.js`, `./handlebars-helpers.js`, `./partials.js`, `./dependency-graph.js`, `./assets.js`, `./asset-manifest.js`, `./pipeline.js`, `./model-resolver.js`, `./controller-resolver.js`, `./sitemap.js`, `./llms.js`, `./kiss-page.js`, `./dev-server.js`, `./watcher.js`.
 
 ## Depended on by
 
