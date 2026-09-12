@@ -525,7 +525,7 @@ writes `public/feed.xml`:
 </rss>
 ```
 
-**The options**: `title` (required) is the channel's `<title>` and `description` its `<description>`. `section` limits the feed to one top-level `path` segment (`'blog'`) — omit it and every page is a candidate. `limit` (default `20`) caps the items, `filename` (default `feed.xml`) names the file inside the build folder, and `overwrite` (default `true`) behaves exactly as the sitemap's.
+**The options**: `title` (required) is the channel's `<title>` and `description` its `<description>`. `section` limits the feed to one top-level `path` segment (`'blog'`) — omit it and every page is a candidate. `limit` (default `20`) caps the items, `filename` (default `feed.xml`) names the file inside the build folder (a name that resolves outside it is refused), and `overwrite` (default `true`) behaves exactly as the sitemap's.
 
 **Where the dates come from**: `dateField` (default `'date'`) names one field, and it is read from the page's options first and its resolved model second — so a post can be dated in its `.page()`/`.pages()` call or in its own `.json`, and either way it is the same key. A `Date`, epoch milliseconds, or any string `new Date()` parses is accepted; a value that cannot be read logs one warning and the page is treated as undated.
 
@@ -560,7 +560,7 @@ The target is the page's canonical path — `/`, `/courses/`, `/about` — the s
 
 On a `.pages()` fan-out the aliases belong to **each record**, never to the registration: `.pages({ aliases: [...] })` is not broadcast over the fan-out, because one source path redirecting to N different pages is not a redirect. Put them in the model item. A page with `generate: false` contributes none — there would be nothing at the other end.
 
-A site with no aliases writes **no file at all**, not an empty one, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone.
+A site with no aliases writes **no file at all**, not an empty one, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone. An alias is one path: one with a space or a line break inside it is dropped, because the file is space-separated columns and one rule per line. And if the file cannot be written the build fails, the way a page that cannot be written fails it — a site published without its redirects is a site whose old URLs 404.
 
 **Three findings ride along**, all advisory and all in `report().redirects` (`{ file, aliases, removed, collisions, moved }`, or `null` when there is nothing to say — no alias anywhere in the site, no removal and no move):
 

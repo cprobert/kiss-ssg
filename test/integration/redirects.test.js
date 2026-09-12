@@ -150,6 +150,36 @@ describe('_redirects, written from page aliases', () => {
     expect(await site.read('public/_redirects')).toBe(first)
   })
 
+  it('fails the build when _redirects cannot be written, and an atomic build keeps the old site', async () => {
+    // A site whose aliases are lost is a site whose old URLs 404 — the loss the
+    // aliases exist to prevent — so a `_redirects` that did not reach the disk
+    // is a failure of the build, not an advisory. The write is made to fail
+    // for real: a directory squats on the path inside the staging folder.
+    site = await makeSite({ ...FILES, 'public/index.html': 'old' })
+    const kiss = track(
+      new Kiss({
+        folders: site.folders,
+        siteUrl: 'https://e.com',
+        cleanBuild: 'atomic',
+        logger: silentLogger,
+      }),
+    )
+    kiss
+      .page({ view: 'index.hbs' })
+      .page({ view: 'about.hbs', aliases: ['/team'] })
+      .generate(() =>
+        fs.ensureDirSync(`${kiss.config.folders.build}/_redirects`),
+      )
+
+    const err = await kiss.complete().catch((e) => e)
+    expect(err).toBeInstanceOf(AggregateError)
+    expect(err.failures.map((f) => f.view)).toEqual(['<redirects>'])
+    expect(kiss.report().ok).toBe(false)
+    // Discarded, not promoted: the previous deployment is still what is served.
+    expect(await site.read('public/index.html')).toBe('old')
+    expect(await site.exists('public/_redirects')).toBe(false)
+  })
+
   it('names the real build folder under check mode, having published nothing', async () => {
     vi.stubEnv('KISS_CHECK', '1')
     await buildSite()

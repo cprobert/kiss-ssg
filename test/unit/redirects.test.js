@@ -74,6 +74,27 @@ describe('normaliseAlias', () => {
     expect(normaliseAlias('/a//b')).toBe('/a/b')
   })
 
+  it('drops an alias with whitespace inside it, so one alias is only ever one rule', () => {
+    // The `_redirects` format is space-separated columns and newline-separated
+    // rules; an alias carrying either would write more than the one line it
+    // was promised, and a record from a fetched model is not a hand-typed path.
+    expect(normaliseAlias('/old post')).toBeNull()
+    expect(normaliseAlias('/old\t/maintenance')).toBeNull()
+    expect(
+      normaliseAlias('/old /maintenance 302\n/* /maintenance 302'),
+    ).toBeNull()
+    expect(
+      renderRedirects(
+        collectAliases(
+          [entry('./public/x.html', { slug: 'x', aliases: ['/a b'] })],
+          {
+            buildDir: './public',
+          },
+        ),
+      ),
+    ).toBe('')
+  })
+
   it('drops an alias with no path in it at all', () => {
     expect(normaliseAlias('')).toBeNull()
     expect(normaliseAlias('   ')).toBeNull()

@@ -340,6 +340,21 @@ describe('writeFeed', () => {
     expect(written.text).toContain('<link>https://e.com/a</link>')
   })
 
+  it('refuses a filename that escapes the build folder', async () => {
+    site = await makeSite({})
+    // `../escaped.xml` from `public/` lands in the site root: the sibling of the
+    // build folder, and under `'atomic'` or check the sibling of a staging
+    // folder that was promised to be the only thing written.
+    await expect(
+      writeFeed([], {
+        config: { siteUrl: 'https://e.com', folders: { build: site.build } },
+        logger: silentLogger,
+        options: { ...opts, filename: '../escaped.xml' },
+      }),
+    ).rejects.toThrow(/outside the build folder/)
+    expect(await site.exists('escaped.xml')).toBe(false)
+  })
+
   it('rejects when the feed cannot be written, so the caller can report it', async () => {
     site = await makeSite({})
     await fs.ensureDir(`${site.build}/feed.xml`)

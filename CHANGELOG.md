@@ -3,6 +3,30 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.2.1 — 2026-09-12
+
+**Three hardening fixes to 2.2.0's redirects and feed, from an adversarial review**
+
+**Fixed: a `_redirects` that cannot be written now fails the build.** It
+used to be logged and swallowed, like a sitemap write failure — but a site
+published without its redirects is a site whose old URLs 404, which is the
+loss `aliases` exist to prevent. The failure is reported as `<redirects>`
+in `err.failures`, and under `cleanBuild: 'atomic'` the staging folder is
+discarded so the previous deployment stays live.
+
+**Fixed: an alias is one path.** An alias with a space or a line break
+inside it (`'/old post'`) is dropped rather than written, because the
+`_redirects` format is space-separated columns and one rule per line, and
+such an alias would have produced more than the one rule it stands for.
+Leading and trailing whitespace is still trimmed as before.
+
+**Fixed: `.feed({ filename })` cannot write outside the build folder.** A
+name that resolves outside it (`'../x.xml'`) is refused with
+`Refusing to write outside the build folder`, the same check every page
+write already made. It matters most under `kiss-ssg check` and
+`cleanBuild: 'atomic'`, where the build folder is a staging sibling that
+was promised to be the only thing written.
+
 ## 2.2.0 — 2026-09-12
 
 **Your site can now tell you what you broke and what you lost, and link to itself by name**

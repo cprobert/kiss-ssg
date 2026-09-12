@@ -1,7 +1,7 @@
 {
   "name": "kiss-memory",
   "description": "Skills that give a kiss-ssg site a memory: a catch-up briefing over the recorded AIKB, a site-shaped open/pulse/close loop, and a consolidation beat that keeps the notes and site.md consistent.",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "author": {
     "name": "Courtenay Probert"
   }
