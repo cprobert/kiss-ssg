@@ -35,6 +35,8 @@ Contract: `planning/plans/2026-09-12-link-check-redirects.md`.
 
 ### Amendments
 
+- **2026-09-12** — Page identity and the `{{link}}` helper, absorbed as adjacent to the link work on the operator's agreement (identity derived from the view). Contract: the plan's "Amendment — 2026-09-12 (2)". New success criterion: every page carries an `id` defaulting from its view (fan-out items `<registration id>/<slug>`), explicit collisions fail the build and default collisions only warn, `{{link "<id>"}}` renders the served path and fails the render on an unknown, ambiguous or non-generated id, `id` appears on the report and the site map, the `removed` finding distinguishes a moved page from a deleted one, and example 11 links by identity while the link checker still counts and passes every helper-emitted reference.
+
 ## Pulse log
 
 ---
