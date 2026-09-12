@@ -55,7 +55,17 @@ A site opts into a knowledge base by recording one — `npx kiss-ssg aikb <site-
   | `note stale:`    | `stale`      | a note carrying a `subject-hash:` stamp that no longer matches the subject's hash — the code moved, the note did not. An unstamped note is never stale                    |
   | `note dangling:` | `dangling`   | `"<note path>: <token>"` — a backticked file-looking reference, in a note or in the authored `AIKB/site.md`, that resolves to no file, page, partial, model or controller |
 
-  A site that has never recorded reports `aikb: null` and none of these. The engine never writes the `subject-hash:` stamp — the `kiss-memory` plugin's `kiss-branch-close` and `kiss-memory-consolidate` skills do, copying it from `site-map.json`'s `subjects`.
+  Three more lines read the site's **output** rather than its notes, and need no record at all:
+
+  | Line                          | Report key               | Meaning                                                                                                                                                                                                   |
+  | ----------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `broken link:`                | `links.broken[]`         | `<page> -> <href>`: a page wrote an internal `href`/`src`/`srcset`/`action` that resolves to no file, page, directory index or emitted asset. Absolute URLs on the site's own `siteUrl` count as internal |
+  | `removed without redirect:`   | `redirects.removed[]`    | a page the last record wrote that this build does not, with no `aliases` entry covering its path — inbound links now 404. Needs a record; empty without one                                               |
+  | `alias collides with a page:` | `redirects.collisions[]` | an `aliases` entry a live page already answers — Netlify and Cloudflare silently ignore such a rule, so the redirect does nothing                                                                         |
+
+  `links` is `null` on a dev build (a scoped re-render has not rewritten every page) and when `links.check` is `false`. Fix a broken link in the template or model that wrote it; fix a removal by adding the old path to the new page's `aliases`, or by saying out loud that the page is meant to be gone.
+
+  A site that has never recorded reports `aikb: null` and none of the note findings. The engine never writes the `subject-hash:` stamp — the `kiss-memory` plugin's `kiss-branch-close` and `kiss-memory-consolidate` skills do, copying it from `site-map.json`'s `subjects`.
 
 **Neither changes the exit code.** They are readings, not gates — exit 0 with `ok: true` on every report is still the only passing result. And `check` never writes `AIKB/`: recording is the separate `aikb` command.
 
