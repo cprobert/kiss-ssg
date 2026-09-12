@@ -76,6 +76,15 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {boolean} breaks turn a newline inside a paragraph into a `<br />`
  */
 /**
+ * The link block (`config.links`): what the broken-internal-link scan does on a
+ * settled non-dev build. A block rather than a bare boolean because the second
+ * knob a real deploy wants (paths the host generates and the build never sees)
+ * would otherwise be a breaking rename. Merged exactly one level deep.
+ *
+ * @typedef {Object} KissLinks
+ * @property {boolean} check scan every written page for internal references that resolve to nothing
+ */
+/**
  * Every documented config key except `folders`. Both the resolved and the input
  * config are built from this one shape, so the two cannot drift apart.
  *
@@ -89,6 +98,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissFetch} fetch
  * @property {KissAssets} assets
  * @property {KissMarkdown & Record<string, any>} markdown
+ * @property {KissLinks} links gates the broken-internal-link scan on a settled non-dev build
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
  * @property {string} devHost interface the dev and live reload servers bind to
@@ -104,15 +114,16 @@ export function foldersToEnsure(folders: KissFolders): string[];
 /**
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
- * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`
- * and `markdown` are partial here because each is merged exactly one level deep,
+ * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
+ * `markdown` and `links` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'>> & {
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
  *   markdown?: Partial<KissMarkdown> & Record<string, any>,
+ *   links?: Partial<KissLinks>,
  *   folders?: KissFoldersInput,
  * } & Record<string, any>} KissConfigInput
  */
@@ -143,6 +154,9 @@ export const DEFAULT_MARKDOWN: Readonly<{
     xhtmlOut: true;
     breaks: false;
 }>;
+export const DEFAULT_LINKS: Readonly<{
+    check: true;
+}>;
 export const DEFAULT_CONFIG: Readonly<{
     dev: false;
     verbose: false;
@@ -166,6 +180,9 @@ export const DEFAULT_CONFIG: Readonly<{
         html: true;
         xhtmlOut: true;
         breaks: false;
+    }>;
+    links: Readonly<{
+        check: true;
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -286,6 +303,18 @@ export type KissMarkdown = {
     breaks: boolean;
 };
 /**
+ * The link block (`config.links`): what the broken-internal-link scan does on a
+ * settled non-dev build. A block rather than a bare boolean because the second
+ * knob a real deploy wants (paths the host generates and the build never sees)
+ * would otherwise be a breaking rename. Merged exactly one level deep.
+ */
+export type KissLinks = {
+    /**
+     * scan every written page for internal references that resolve to nothing
+     */
+    check: boolean;
+};
+/**
  * Every documented config key except `folders`. Both the resolved and the input
  * config are built from this one shape, so the two cannot drift apart.
  */
@@ -320,6 +349,10 @@ export type KissSettings = {
     assets: KissAssets;
     markdown: KissMarkdown & Record<string, any>;
     /**
+     * gates the broken-internal-link scan on a settled non-dev build
+     */
+    links: KissLinks;
+    /**
      * dev server port
      */
     port: number;
@@ -344,16 +377,17 @@ export type KissConfig = KissSettings & {
 /**
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
- * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`
- * and `markdown` are partial here because each is merged exactly one level deep,
+ * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
+ * `markdown` and `links` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links">> & {
     sass?: {
         includePaths?: string[];
     };
     fetch?: Partial<KissFetch>;
     assets?: Partial<KissAssets>;
     markdown?: Partial<KissMarkdown> & Record<string, any>;
+    links?: Partial<KissLinks>;
     folders?: KissFoldersInput;
 } & Record<string, any>;

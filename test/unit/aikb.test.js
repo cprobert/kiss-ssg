@@ -797,6 +797,9 @@ describe('lastBuildRecord', () => {
       notes: { missing: [], dead: [], stale: [], dangling: [] },
       subjects: [],
     },
+    links: { checked: 3, broken: [] },
+    redirects: { file: null, aliases: 0, removed: [], collisions: [] },
+    feed: null,
   }
 
   it('drops every duration and keeps the report’s own key order', () => {
@@ -812,6 +815,12 @@ describe('lastBuildRecord', () => {
       'pipeline',
       'llms',
       'aikb',
+      // The record is `{ ...report }`, so every key appended to the report
+      // lands in every committed `last-build.json` — which is why example 9 is
+      // re-recorded whenever this list grows.
+      'links',
+      'redirects',
+      'feed',
     ])
     expect(record.pipeline).toEqual([{ name: 'tailwind', ok: true }])
   })

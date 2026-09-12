@@ -103,6 +103,30 @@ describe('resolveConfig', () => {
     })
   })
 
+  it('defaults the links block: the broken-link scan is on', () => {
+    // The scan is advisory — it never changes `ok` or the exit code — so it is
+    // on by default and a site opts *out*.
+    expect(resolveConfig({}).links).toEqual({ check: true })
+  })
+
+  it('merges the links block one level deep, like sass', () => {
+    expect(resolveConfig({ links: { check: false } }).links).toEqual({
+      check: false,
+    })
+  })
+
+  it('carries an unknown links key through, like the other blocks', () => {
+    // A one-level-merged block rather than a bare boolean is what makes the
+    // second knob (an ignore list) an addition rather than a breaking rename.
+    expect(resolveConfig({ links: { ignore: ['/cdn-cgi/*'] } }).links).toEqual({
+      check: true,
+      ignore: ['/cdn-cgi/*'],
+    })
+    expect(resolveConfig({ links: { check: undefined } }).links).toEqual({
+      check: true,
+    })
+  })
+
   it('defaults the markdown block: html on, xhtml output, no hard breaks', () => {
     // `breaks: false` is the published v1 value, restored: a hard-wrapped `.md`
     // partial is one paragraph, not one `<br />` per source line.

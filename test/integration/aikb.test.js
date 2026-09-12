@@ -138,7 +138,11 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
     expect(await site.exists('AIKB/notes/controllers/member.md')).toBe(true)
 
     // 2. The report key: the appended verdict, and the two note findings.
-    expect(Object.keys(report).at(-1)).toBe('aikb')
+    // Relative, in the `llms.test.js` style: `aikb` was appended after `llms`,
+    // and the keys appended after it (`links`, `redirects`, `feed`) must not
+    // break an assertion about where this one sits.
+    const keys = Object.keys(report)
+    expect(keys.indexOf('aikb')).toBe(keys.indexOf('llms') + 1)
     expect(report.aikb.folder).toBe(`${site.root}/AIKB`)
     expect(report.aikb.written).toBe(true)
     expect(report.aikb.notes).toEqual({

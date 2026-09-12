@@ -94,6 +94,9 @@ The default config options are:
     xhtmlOut: true,
     breaks: false
   },
+  links: {
+    check: true
+  },
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -542,7 +545,18 @@ npx kiss-ssg check --against last.jsonl build.js  # diff against some other repo
     "assets": [{ "source": "css/site.css", "target": "css/site.605b52d7.css" }],
     "sitemap": "./public/sitemap.xml",
     "pipeline": [{ "name": "tailwind", "ok": true, "duration": 420 }],
-    "llms": "./public/llms.txt"
+    "llms": "./public/llms.txt",
+    "links": {
+      "checked": 24,
+      "broken": [{ "page": "./public/about.html", "href": "/news/gone" }]
+    },
+    "redirects": {
+      "file": "./public/_redirects",
+      "aliases": 2,
+      "removed": ["./public/news/autumn-2025.html"],
+      "collisions": []
+    },
+    "feed": "./public/feed.xml"
   }
 ]
 ```
@@ -607,7 +621,7 @@ Every build reports four findings on `report().aikb.notes`: **missing** (a subje
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb }`, every value JSON-safe. `aikb` is `null` unless the site has a knowledge base to report on (`folders.aikb` set, and a record already made — see "Recording the knowledge base"), and otherwise `{ folder, written, notes: { missing, dead, stale, dangling }, subjects }` — where it lives, whether _this_ build wrote it (`true` only for a passing `npx kiss-ssg aikb` run; every ordinary build reports `false`), the four note findings (paths, except `dangling`'s `<note path>: <token>`), and `{ kind, id, note, hash }` per subject of this build. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb, links, redirects, feed }`, every value JSON-safe. `aikb` is `null` unless the site has a knowledge base to report on (`folders.aikb` set, and a record already made — see "Recording the knowledge base"), and otherwise `{ folder, written, notes: { missing, dead, stale, dangling }, subjects }` — where it lives, whether _this_ build wrote it (`true` only for a passing `npx kiss-ssg aikb` run; every ordinary build reports `false`), the four note findings (paths, except `dangling`'s `<note path>: <token>`), and `{ kind, id, note, hash }` per subject of this build. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. `links`, `redirects` and `feed` are new in this version, appended after `aikb` in that order, and each is `null` until a build actually does that piece of work — which is not the same as doing it and finding nothing. `links` is the broken-internal-link scan of the build's own output, `{ checked, broken: [{ page, href }] }` (`null` in dev, on a watch rebuild, and under `links: { check: false }`); `redirects` is what the build did about page `aliases`, `{ file, aliases, removed, collisions }` — the `_redirects` file written, the alias count in it, the pages the last record had that this build no longer has and no alias covers, and the aliases a live page already answers; `feed` is the feed file written, like `sitemap` and `llms`. Every path in them names the build folder you asked for, never a staging sibling. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {

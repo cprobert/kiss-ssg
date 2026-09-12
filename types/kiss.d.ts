@@ -5,6 +5,9 @@ export type BuildAsset = import("./build-report.js").BuildAsset;
 export type BuildReportFailure = import("./build-report.js").BuildReportFailure;
 export type BuildPipelineStep = import("./build-report.js").BuildPipelineStep;
 export type BuildAikb = import("./build-report.js").BuildAikb;
+export type BuildLinks = import("./build-report.js").BuildLinks;
+export type BuildBrokenLink = import("./build-report.js").BuildBrokenLink;
+export type BuildRedirects = import("./build-report.js").BuildRedirects;
 export type SiteMap = import("./aikb.js").SiteMap;
 export type PipelineStep = import("./pipeline.js").PipelineStep;
 export type KissConfig = import("./config.js").KissConfig;
@@ -255,6 +258,8 @@ declare class Kiss {
     /** @private */
     private _llmsRequest;
     /** @private */
+    private _feedRequest;
+    /** @private */
     private _watcher;
     /** @private */
     private _devServer;
@@ -280,6 +285,14 @@ declare class Kiss {
     private _sitemapPath;
     /** @private */
     private _llmsPath;
+    /** @private */
+    private _feedPath;
+    /** @private @type {BuildLinks|null} */
+    private _links;
+    /** @private */
+    private _redirectsPath;
+    /** @private @type {BuildRedirects|null} */
+    private _redirectsResult;
     /** @private */
     private _promotedFrom;
     /** @private */

@@ -36,6 +36,9 @@ describe('buildReport', () => {
       'pipeline',
       'llms',
       'aikb',
+      'links',
+      'redirects',
+      'feed',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -111,6 +114,17 @@ describe('buildReport', () => {
       startedAt: Date.now(),
       sitemap: `${staging}/sitemap.xml`,
       llms: `${staging}/llms.txt`,
+      links: {
+        checked: 4,
+        broken: [{ page: `${staging}/index.html`, href: '/gone' }],
+      },
+      redirects: {
+        file: `${staging}/_redirects`,
+        aliases: 1,
+        removed: ['./public/old.html'],
+        collisions: [],
+      },
+      feed: `${staging}/feed.xml`,
     })
 
     expect(report.buildDir).toBe('./public')
@@ -119,6 +133,12 @@ describe('buildReport', () => {
     expect(report.failures[0].buildTo).toBe('./public/index.html')
     expect(report.sitemap).toBe('./public/sitemap.xml')
     expect(report.llms).toBe('./public/llms.txt')
+    // The three appended keys are mapped by the same rule: the pages were read
+    // back out of the staging folder, which under check mode is gone by the
+    // time anyone reads the report.
+    expect(report.links.broken[0].page).toBe('./public/index.html')
+    expect(report.redirects.file).toBe('./public/_redirects')
+    expect(report.feed).toBe('./public/feed.xml')
     expect(JSON.stringify(report)).not.toContain('kiss-staging')
   })
 
@@ -169,7 +189,36 @@ describe('buildReport', () => {
       pipeline: [],
       llms: null,
       aikb: null,
+      links: null,
+      redirects: null,
+      feed: null,
     })
+  })
+
+  it('reports no scan, no redirects and no feed as null, not as empty', () => {
+    // `null` is "this build did not do that piece of work" — a dev build, a
+    // site with no alias, a site that never called `.feed()`. A scan that ran
+    // and found nothing is `{ checked: N, broken: [] }`, which is a different
+    // answer to a different question.
+    const report = buildReport({
+      stack: [page('index.hbs', './public/index.html')],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+    expect(report.links).toBeNull()
+    expect(report.redirects).toBeNull()
+    expect(report.feed).toBeNull()
+  })
+
+  it('keeps the three appended keys in their fixed order, after aikb', () => {
+    // Relative, not `at(-1)`: the next key appended after these three should
+    // move one assertion, not break this one.
+    const keys = Object.keys(
+      buildReport({ buildDir: './public', startedAt: Date.now() }),
+    )
+    expect(keys.indexOf('links')).toBe(keys.indexOf('aikb') + 1)
+    expect(keys.indexOf('redirects')).toBe(keys.indexOf('links') + 1)
+    expect(keys.indexOf('feed')).toBe(keys.indexOf('redirects') + 1)
   })
 
   it('reports every pipeline step, without the error object', () => {
@@ -324,5 +373,55 @@ describe('formatReport', () => {
     expect(lines[0]).toContain('2 failed')
     expect(lines[1]).toBe('  ./public/index.html: boom')
     expect(lines[2]).toBe('  one.hbs [item 2: x]: missing address')
+  })
+
+  it('names each broken link, removal and collision under the note lines', () => {
+    const report = buildReport({
+      stack: [page('index.hbs', './public/index.html')],
+      buildDir: './public',
+      startedAt: Date.now(),
+      aikb: {
+        folder: 'AIKB',
+        written: false,
+        notes: {
+          missing: ['AIKB/notes/controllers/stockist.md'],
+          dead: [],
+          stale: [],
+          dangling: [],
+        },
+        subjects: [],
+      },
+      links: {
+        checked: 12,
+        broken: [
+          { page: './public/index.html', href: '/news/gone' },
+          { page: './public/about.html', href: 'team.html' },
+        ],
+      },
+      redirects: {
+        file: './public/_redirects',
+        aliases: 2,
+        removed: ['./public/news/autumn-2025.html'],
+        collisions: ['/about'],
+      },
+    })
+    const lines = formatReport(report).split('\n')
+    // Under the note findings, which are the advisory lines that came first.
+    expect(lines[1]).toBe('  note missing: AIKB/notes/controllers/stockist.md')
+    expect(lines.slice(2)).toEqual([
+      '  broken link: ./public/index.html -> /news/gone',
+      '  broken link: ./public/about.html -> team.html',
+      '  removed without redirect: ./public/news/autumn-2025.html',
+      '  alias collides with a page: /about',
+    ])
+  })
+
+  it('prints nothing extra for a build that ran none of the three', () => {
+    const report = buildReport({
+      stack: [page('index.hbs', './public/index.html')],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+    expect(formatReport(report).split('\n')).toHaveLength(1)
   })
 })
