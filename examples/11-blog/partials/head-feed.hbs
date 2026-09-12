@@ -1,5 +1,8 @@
 {{!-- Every page carries the feed in its <head>, which is how a reader (and a
-      browser extension) finds it without being told. The href is root-relative
-      rather than {{root}}-prefixed on purpose: `npx kiss-ssg check` resolves
-      both shapes, and this site exercises both. --}}
-<link rel="alternate" type="application/rss+xml" title="Aster &amp; Oak &mdash; the journal" href="/feed.xml">
+      browser extension) finds it without being told. `feed.xml` is a file this
+      build *writes*, not a page it registers, so it has no identity and
+      {{link}} cannot name it — {{absUrl}} is the helper for a path of your own.
+      Absolute, because RSS autodiscovery is consumed off-site; `npx kiss-ssg
+      check` still resolves it, because a URL on this site's own origin counts
+      as internal. --}}
+<link rel="alternate" type="application/rss+xml" title="Aster &amp; Oak &mdash; the journal" href="{{absUrl 'feed.xml'}}">

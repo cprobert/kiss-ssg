@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 // In a project that depends on the package this is `import { utils } from 'kiss-ssg'`.
 import { utils } from '../../../lib/kiss.js'
-import { tagUrl } from './tag.js'
 
 // The record's contract, in one place: the fan-out enforces it here and the
 // build script reads the same folder through `loadPosts` below, so the listing
@@ -21,10 +20,18 @@ export function missingFields(record) {
 // take back later.
 export const slugFor = (record) => utils.toSlug(record.slug)
 
-// One derivation, used by the post page, the listing, the tag pages and the
-// home page. A second copy of this line is how a site starts linking to pages
-// it does not build.
-export const urlFor = (record) => `/blog/${slugFor(record)}/`
+// A post's *identity*, not its URL. Nothing here derives an address any more:
+// the templates ask for one with `{{link}}`, which reads it off the registry,
+// so `extensionLess`, `path` and `slug` are decided in exactly one place — the
+// engine. What a card still has to carry is which page it means.
+//
+// This mirrors the precedence the fan-out applies: an item's default id is
+// `<view route>/<slug>` — `blog/post/<slug>` here — and a record's own `id`
+// wins outright. The cascara post carries one, which is what lets `moved`
+// follow it through a slug rename (see the README). Get this line wrong and the
+// build *fails*, naming the id and the page that asked: an identity is checked
+// at render, where a hand-written URL was only ever checked by a reader.
+export const idFor = (record) => record.id ?? `blog/post/${slugFor(record)}`
 
 const MONTHS = [
   'January',
@@ -66,13 +73,17 @@ export function loadPosts(dir) {
 
 // What a post looks like everywhere it is *listed* rather than read: the shape
 // the listing, the tag pages and the home page all render through one partial.
+// It carries an `id` and not a `url` — `post-card.hbs` renders `{{link id}}`
+// and the engine turns that into the address — and the tags stay the plain
+// names the record wrote, because the partial asks for a tag page by identity
+// too (`{{link 'blog/tags' slug=this}}`).
 export const summaryCard = (record) => ({
   title: record.title,
-  url: urlFor(record),
+  id: idFor(record),
   date: record.date,
   dateLabel: dateLabel(record.date),
   summary: record.summary,
-  tags: (record.tags ?? []).map((name) => ({ name, url: tagUrl(name) })),
+  tags: record.tags ?? [],
 })
 
 // Controllers may `export default` in v2 (`module.exports =` still works).
@@ -96,11 +107,12 @@ export default function post({ model }) {
     title: model.title,
     description: model.summary,
     date: model.date,
+    // No URLs in here: the post page renders its tag links with
+    // `{{link 'blog/tags' slug=this}}` straight off the record's own tag names,
+    // so the only thing this adds is the printable date.
     model: {
       ...model,
-      url: urlFor(model),
       dateLabel: dateLabel(model.date),
-      tags: (model.tags ?? []).map((name) => ({ name, url: tagUrl(name) })),
     },
   }
 }

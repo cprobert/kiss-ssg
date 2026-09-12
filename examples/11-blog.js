@@ -68,7 +68,12 @@ const tags = tagRecords(cards)
 // the shape every reader already recognises, and the one that leaves the
 // first page's URL alone when a seventh post is written.
 const pageCount = Math.max(1, Math.ceil(cards.length / PER_PAGE))
-const listingUrl = (n) => (n === 1 ? '/blog/' : `/blog/page/${n}/`)
+// The listing's *identity*, not its URL. One view rendered more than once is
+// the case where neither page gets a default id — the engine withdraws it and
+// says so — so these two are the pages that have to name themselves. The same
+// function names the page and names it again as a prev/next target, which is
+// what stops the two from drifting; `{{link}}` turns either into an address.
+const listingId = (n) => (n === 1 ? 'blog' : `blog/page/${n}`)
 
 kiss.page({
   view: 'index.hbs',
@@ -81,6 +86,8 @@ kiss.page({
 for (let number = 1; number <= pageCount; number++) {
   kiss.page({
     view: 'blog/listing.hbs',
+    // Explicit, because one view rendered twice claims no default id at all.
+    id: listingId(number),
     // Page 1 is the section index; the rest are numbered folders under it.
     path: number === 1 ? 'blog' : 'blog/page',
     slug: number === 1 ? 'index' : String(number),
@@ -98,8 +105,9 @@ for (let number = 1; number <= pageCount; number++) {
       posts: cards.slice((number - 1) * PER_PAGE, number * PER_PAGE),
       number,
       of: pageCount,
-      prev: number > 1 ? listingUrl(number - 1) : null,
-      next: number < pageCount ? listingUrl(number + 1) : null,
+      // Ids, not URLs: the view renders `{{link model.prev}}`.
+      prev: number > 1 ? listingId(number - 1) : null,
+      next: number < pageCount ? listingId(number + 1) : null,
       tags,
     },
   })
@@ -129,6 +137,12 @@ kiss
     model: tags,
     path: 'blog/tags',
     controller: 'tag.js',
+    // A registration's `id` is the *prefix* its items' default ids are built
+    // from, in place of the view's route — so these pages are
+    // `blog/tags/<slug>` rather than `blog/tag/<slug>`, and every id in this
+    // site reads like the path it is served at. It is never broadcast to the
+    // items as an id of their own; a record's own `id` still wins outright.
+    id: 'blog/tags',
   })
   .page({
     view: 'blog/tags.hbs',

@@ -318,6 +318,18 @@ describe.skipIf(!hasExamples)('example builds', () => {
         '/blog/cascara-notes.html /blog/the-cascara-experiment/ 301\n',
       )
 
+      // The helper's output, in the bytes: a post card, a tag and the
+      // pagination link on the listing page are all `{{link}}`, and what they
+      // render is the served path — a directory, because the site is
+      // `extensionLess` — with no view having written a URL.
+      const listing = readFileSync(path.join(dir, 'blog/index.html'), 'utf8')
+      expect(listing).toContain('href="/blog/the-cascara-experiment/"')
+      expect(listing).toContain('href="/blog/tags/brewing/"')
+      expect(listing).toContain('href="/blog/page/2/"')
+      // And the feed autodiscovery link is `{{absUrl}}`, because feed.xml is a
+      // file this build writes rather than a page it registers.
+      expect(listing).toContain('href="https://asterandoak.example/feed.xml"')
+
       // Six items: the posts and only the posts. The listing and tag pages are
       // inside `section: 'blog'` but carry no date, so they fall out on their
       // own — and the order is the feature, not the count.
@@ -337,21 +349,66 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(clean.status).toBe(0)
       expect(clean.report.ok).toBe(true)
       expect(clean.report.links.broken).toEqual([])
-      expect(clean.report.links.checked).toBeGreaterThan(0)
+      // Pinned, not `> 0`: every internal href in this site's own views is
+      // `{{link}}` output, so the number is what the helper and the shared
+      // layout actually emitted across fourteen pages. `checked` deduplicates
+      // per page, so it is a property of the site rather than a render count —
+      // and a drop in it is the symptom of a link quietly stopping being
+      // rendered, which is exactly what a pinned number catches and a
+      // `> 0` does not.
+      expect(clean.report.links.checked).toBe(171)
       expect(clean.report.redirects.aliases).toBe(1)
       expect(clean.report.redirects.removed).toEqual([])
       expect(clean.report.redirects.collisions).toEqual([])
+      expect(clean.report.redirects.moved).toEqual([])
 
       const broken = checkReport(['11-blog.js', '--broken'])
       // Still `ok`, still exit 0: a broken link is a finding, not a failure.
       expect(broken.status).toBe(0)
       expect(broken.report.ok).toBe(true)
+      // Exactly one, and it is the one href in the site a person wrote by
+      // hand — a string in a post's record. A `{{link}}` cannot land here: an
+      // id the registry does not hold fails the render instead.
       expect(broken.report.links.broken).toEqual([
         {
           page: '../public/11-blog/blog/the-cascara-experiment/index.html',
           href: '/blog/the-kenya-microlot/',
         },
       ])
+    }, 60000)
+
+    it('11 · gives every page an id, explicitly where the default withdraws', () => {
+      // The `Id` column of the recorded map is what a person (or an agent)
+      // reads to know what `{{link}}` will answer to, so it is asserted off
+      // the recorded JSON rather than off a live report.
+      const map = JSON.parse(readBlogAikb('site-map.json'))
+      const idOf = (buildTo) =>
+        map.pages.find((page) => page.buildTo === buildTo)?.id
+
+      // A fan-out item's default id is `<registration>/<slug>` …
+      expect(idOf('../public/11-blog/blog/pour-over-at-home/index.html')).toBe(
+        'blog/post/pour-over-at-home',
+      )
+      // … and a record's own `id` wins outright. This is the one that makes
+      // `moved` able to follow a slug rename: it does not contain the slug.
+      expect(
+        idOf('../public/11-blog/blog/the-cascara-experiment/index.html'),
+      ).toBe('blog/post/cascara')
+      // The registration's `id` is the items' prefix, never an id of theirs.
+      expect(idOf('../public/11-blog/blog/tags/brewing/index.html')).toBe(
+        'blog/tags/brewing',
+      )
+
+      // The two pagination pages are one view rendered twice, so neither gets
+      // a default id at all — these are explicit, and without them the build
+      // prints the withdrawn-id notice and `{{link model.prev}}` fails.
+      expect(idOf('../public/11-blog/blog/index.html')).toBe('blog')
+      expect(idOf('../public/11-blog/blog/page/2/index.html')).toBe(
+        'blog/page/2',
+      )
+
+      // Nothing on this site is unlinkable.
+      expect(map.pages.filter((page) => !page.id)).toEqual([])
     }, 60000)
 
     it('11 · records a byte-identical knowledge base with two stamped notes', () => {

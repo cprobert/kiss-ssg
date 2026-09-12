@@ -2,11 +2,12 @@
 import { utils } from '../../../lib/kiss.js'
 
 // A tag is not a record anyone writes down: it exists only because some posts
-// mention it. Deriving its slug in one place is what keeps the link a post
-// renders and the page the fan-out writes at the same address.
+// mention it. This is the slug the fan-out writes the page at — and the only
+// derivation left in this file, because nothing here builds a URL any more: a
+// template asks for a tag page by identity, `{{link 'blog/tags' slug=name}}`,
+// and the `slug=` sugar runs the same `toSlug` over the tag's own name. One
+// function on both sides, so the link and the page cannot drift apart.
 export const tagSlug = (tag) => utils.toSlug(String(tag))
-
-export const tagUrl = (tag) => `/blog/tags/${tagSlug(tag)}/`
 
 /**
  * Every tag the posts mention, each with the posts that mention it — the array
@@ -15,7 +16,7 @@ export const tagUrl = (tag) => `/blog/tags/${tagSlug(tag)}/`
  * first), so two builds of the same folder register the same pages in the same
  * order and the sitemap, the feed and `llms.txt` do not churn.
  *
- * @param {{ title: string, url: string, date: string, dateLabel: string, summary: string, tags: { name: string, url: string }[] }[]} cards
+ * @param {{ title: string, id: string, date: string, dateLabel: string, summary: string, tags: string[] }[]} cards
  * @returns {{ tag: string, slug: string, count: number, posts: any[] }[]}
  */
 export function tagRecords(cards) {
@@ -23,8 +24,8 @@ export function tagRecords(cards) {
   const byTag = new Map()
   for (const card of cards) {
     for (const tag of card.tags) {
-      if (!byTag.has(tag.name)) byTag.set(tag.name, [])
-      byTag.get(tag.name).push(card)
+      if (!byTag.has(tag)) byTag.set(tag, [])
+      byTag.get(tag).push(card)
     }
   }
   return [...byTag.entries()]

@@ -19,8 +19,8 @@
 
   <div class="callout">
     <p>
-      <a href="/blog/">Read the whole journal</a> &middot;
-      <a href="/blog/tags/">Browse by tag</a> &middot;
+      <a href="{{link 'blog'}}">Read the whole journal</a> &middot;
+      <a href="{{link 'blog/tags'}}">Browse by tag</a> &middot;
       <a href="/feed.xml">Subscribe by RSS</a>
     </p>
   </div>
@@ -46,6 +46,15 @@
     exists because some posts mention it. <code>controllers/tag.js</code> folds the posts into
     one record per tag and <code>.pages()</code> builds a page from each, exactly as the posts
     themselves were built.
+  </p>
+  <p>
+    <strong>Every internal link is asked for by identity.</strong> No view in this site writes a
+    URL. <code>\{{link 'blog'}}</code> renders <code>{{link 'blog'}}</code>,
+    <code>\{{link 'blog' absolute=true}}</code> renders
+    <code>{{link 'blog' absolute=true}}</code> for an OG tag or a feed, and
+    <code>\{{link 'blog' canonical=true}}</code> renders <code>{{link 'blog' canonical=true}}</code>,
+    the pretty form the sitemap emits. The ids are in <code>AIKB/site-map.md</code>; an id no page
+    claims fails the build rather than shipping a 404.
   </p>
   <p>
     <strong>The feed comes from the registry.</strong> <code>.feed()</code> reads the same page

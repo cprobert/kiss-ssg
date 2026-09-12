@@ -7,98 +7,98 @@
       "view": "index.hbs",
       "buildTo": "../public/11-blog/index.html",
       "ok": true,
-      "hash": "f7ce92deb74dd96dad7c935cc0ee9fbc01e38868",
+      "hash": "b19020993c1586e30bc12ac8d2d203c50f065cf4",
       "id": "index"
     },
     {
       "view": "blog/listing.hbs",
       "buildTo": "../public/11-blog/blog/index.html",
       "ok": true,
-      "hash": "a8847a4999a8ac739eadd9f17c5dc569c486bbe7",
-      "id": null
+      "hash": "dc6818075d6b2dad8e66c3eaf8a48295290f2af6",
+      "id": "blog"
     },
     {
       "view": "blog/listing.hbs",
       "buildTo": "../public/11-blog/blog/page/2/index.html",
       "ok": true,
-      "hash": "7b806ded622a92e3111795218bf17a6cb6ed60df",
-      "id": null
+      "hash": "2b3a16315e6a19b2ddba02ea845eb31204b87007",
+      "id": "blog/page/2"
     },
     {
       "view": "blog/tags.hbs",
       "buildTo": "../public/11-blog/blog/tags/index.html",
       "ok": true,
-      "hash": "a765c88d512783405e03bfd678a7bff276c14ddb",
+      "hash": "af14be77d54e8bb3f7c77385a698d70cbbc75c53",
       "id": "blog/tags"
     },
     {
       "view": "blog/post.hbs",
       "buildTo": "../public/11-blog/blog/a-year-of-bench-lots/index.html",
       "ok": true,
-      "hash": "a9b15202b24be02a70b8ead18309f9a680463b77",
+      "hash": "326f96b0372bc9fbaa8eb8ec7bc5426c9b879e5f",
       "id": "blog/post/a-year-of-bench-lots"
     },
     {
       "view": "blog/tag.hbs",
       "buildTo": "../public/11-blog/blog/tags/brewing/index.html",
       "ok": true,
-      "hash": "fc640de7d1d8347cbc2d46e28e68bc684852a4ff",
-      "id": "blog/tag/brewing"
+      "hash": "e316720fdc2dc2524a6950c2811988d0e35cada5",
+      "id": "blog/tags/brewing"
     },
     {
       "view": "blog/post.hbs",
       "buildTo": "../public/11-blog/blog/grind-size-is-the-dial/index.html",
       "ok": true,
-      "hash": "e7617c4ab1a47d07e18e352b2835e1e874159d25",
+      "hash": "0b67010419aa2c82adfbde09ffa01a6fa296c04a",
       "id": "blog/post/grind-size-is-the-dial"
     },
     {
       "view": "blog/tag.hbs",
       "buildTo": "../public/11-blog/blog/tags/experiments/index.html",
       "ok": true,
-      "hash": "e587c97ef92cf56535166e6f5f77321891e2982f",
-      "id": "blog/tag/experiments"
+      "hash": "e899120045f78615731fc4b752ef6fd50ba44bb4",
+      "id": "blog/tags/experiments"
     },
     {
       "view": "blog/post.hbs",
       "buildTo": "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
       "ok": true,
-      "hash": "3c1a463777872831aa80a5adeeb64e6347962e6e",
+      "hash": "7e5862e6902a84c3bbee935b01f2571ac8110308",
       "id": "blog/post/why-we-roast-on-wednesdays"
     },
     {
       "view": "blog/tag.hbs",
       "buildTo": "../public/11-blog/blog/tags/roastery/index.html",
       "ok": true,
-      "hash": "f9fb5fddb0971d1a1f6ad8783185dc6fc85e4c87",
-      "id": "blog/tag/roastery"
+      "hash": "87100c4dbd5347240447b5eb1888380e72f2321c",
+      "id": "blog/tags/roastery"
     },
     {
       "view": "blog/post.hbs",
       "buildTo": "../public/11-blog/blog/guji-uraga-has-landed/index.html",
       "ok": true,
-      "hash": "0d96435acc8cafe48a995c33f7d9216064c1aeea",
+      "hash": "c046e954b9d4c16c6603937f81bb49294432d298",
       "id": "blog/post/guji-uraga-has-landed"
     },
     {
       "view": "blog/tag.hbs",
       "buildTo": "../public/11-blog/blog/tags/sourcing/index.html",
       "ok": true,
-      "hash": "30c0288ff9c83d582fb9c0913aa161cb1a427d3c",
-      "id": "blog/tag/sourcing"
+      "hash": "f05eafee3665c69267d49be62987ae37a877f7b3",
+      "id": "blog/tags/sourcing"
     },
     {
       "view": "blog/post.hbs",
       "buildTo": "../public/11-blog/blog/the-cascara-experiment/index.html",
       "ok": true,
-      "hash": "38f159c056330381b51146b601873ea8e6b83e9c",
-      "id": "blog/post/the-cascara-experiment"
+      "hash": "1f357821c2ffc26d358d32a992b8f698a2c6a6fa",
+      "id": "blog/post/cascara"
     },
     {
       "view": "blog/post.hbs",
       "buildTo": "../public/11-blog/blog/pour-over-at-home/index.html",
       "ok": true,
-      "hash": "dff598dba9a6e0bd177d4901aa4985d5c1de1f41",
+      "hash": "b1ae78e791608ee3ed627caf4ef9ed3e0895b960",
       "id": "blog/post/pour-over-at-home"
     }
   ],
@@ -130,18 +130,18 @@
         "kind": "controllers",
         "id": "post.js",
         "note": "notes/controllers/post.md",
-        "hash": "4d36508cabe497bb29d4b1a6b7414d9f88736c86"
+        "hash": "bb32f83791071d7b9156878b143c83635d0df09e"
       },
       {
         "kind": "controllers",
         "id": "tag.js",
         "note": "notes/controllers/tag.md",
-        "hash": "10729118b061dae9fc9adb09eb3f57979c57423d"
+        "hash": "7abc178112f330517c48c1a6977647162e6c0f81"
       }
     ]
   },
   "links": {
-    "checked": 161,
+    "checked": 171,
     "broken": []
   },
   "redirects": {

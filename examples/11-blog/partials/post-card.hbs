@@ -1,9 +1,15 @@
 {{!-- One post as it looks when it is listed rather than read. The listing, the
       tag pages and the home page all render this, so a post looks the same
-      everywhere and there is one place to change it. --}}
+      everywhere and there is one place to change it.
+
+      Both links are asked for by *identity*: `id` is the post's, carried on the
+      card by `summaryCard`, and a tag page is named by the `slug=` sugar
+      straight off the tag's own name. Neither line knows that this site is
+      `extensionLess`, or that posts live under /blog/ — that is the engine's to
+      know, and this partial's not to guess. --}}
 <article class="card">
-  <h3><a href="{{url}}">{{title}}</a></h3>
+  <h3><a href="{{link id}}">{{title}}</a></h3>
   <p class="meta"><time datetime="{{date}}">{{dateLabel}}</time></p>
   <p>{{summary}}</p>
-  <p>{{#each tags}}<a class="tag" href="{{url}}">{{name}}</a> {{/each}}</p>
+  <p>{{#each tags}}<a class="tag" href="{{link 'blog/tags' slug=this}}">{{this}}</a> {{/each}}</p>
 </article>

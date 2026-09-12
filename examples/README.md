@@ -32,7 +32,7 @@ assembling it from the feature reference.
 | [8 · data-fed site](8-data-fed-site/)               | Exemplar  | A site built from a folder of records, validated in the controller — one record is broken                         | `npm run eg8` · exits 1 · `--dev`                      |
 | [9 · migrated from v1](9-migrated-from-v1/)         | Exemplar  | Every v1 → v2 migration recipe as running code, in a site that builds clean; ships a recorded `AIKB/`             | `npm run eg9` · `--dev`                                |
 | [10 · asset pipeline](10-asset-pipeline/)           | Reference | `config.assets.pipeline` runs an external tool before the asset copy, `watch` in dev mode                         | `npm run eg10` · `--dev`                               |
-| [11 · blog](11-blog/)                               | Exemplar  | Posts as a folder fan-out, pagination, tag pages, `.feed()`, a renamed post's `aliases`; ships a recorded `AIKB/` | `npm run eg11` · `--broken` · `--dev`                  |
+| [11 · blog](11-blog/)                               | Exemplar  | Posts as a fan-out, pagination, tag pages, `.feed()`, a rename's `aliases`, links by `{{link}}`; recorded `AIKB/` | `npm run eg11` · `--broken` · `--dev`                  |
 
 `npm run egN` runs from the repo root; from this folder the same thing is `node N-name.js`.
 Examples 1–6 and 8–11 take `--dev` for a live-reloading preview; 7 builds and exits, and takes a

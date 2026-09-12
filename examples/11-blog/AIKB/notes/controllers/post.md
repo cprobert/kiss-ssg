@@ -1,5 +1,5 @@
 ---
-subject-hash: 4d36508cabe497bb29d4b1a6b7414d9f88736c86
+subject-hash: bb32f83791071d7b9156878b143c83635d0df09e
 ---
 
 # post.js
@@ -9,15 +9,31 @@ subject-hash: 4d36508cabe497bb29d4b1a6b7414d9f88736c86
 Turns one post record — a JSON file in the posts models folder — into the page that post gets.
 It validates the record against `REQUIRED_FIELDS` and throws if a field is missing, derives the
 slug from the record's own `slug` (never from the filename), and returns `title`, `description`
-and `date` **on the page** plus a `model` with the post's own URL, a printable date label and
-its tags already turned into links.
+and `date` **on the page** plus a `model` with the post's own fields and a printable date label.
 
 It is also the module the build script reads the folder through: `loadPosts` returns the records
 newest first and `summaryCard` reduces one to the shape the listing, the tag pages and the home
-page all render through the `post-card` partial. `urlFor` is the single derivation of a post's
-URL, and `dateLabel` the single derivation of how a date is printed.
+page all render through the `post-card` partial. What is left in here after that is two
+derivations and no URLs: `idFor` is the single derivation of a post's **identity**, and
+`dateLabel` the single derivation of how a date is printed.
 
 ## Why it is this way
+
+**No URL is derived here at all.** This file used to export `urlFor`, `/blog/<slug>/`, and bake
+its result into every card and into the post's own model. It does not any more. A template asks
+for an address by identity — `{{link id}}` in `post-card.hbs`, `{{link 'blog/tags' slug=this}}`
+for a tag — and the engine answers from the registry, so `extensionLess`, the fan-out's `path`
+and the normalised slug are read in exactly one place instead of being re-derived by hand in a
+second. The old line was correct, and it was correct by coincidence: change `extensionLess` to
+`false` and every one of those hrefs became a 404 that nothing in the build would have noticed.
+
+**`idFor` mirrors the rule the engine applies, and a mistake in it is loud.** A `.pages()` item's
+default id is `<view route>/<slug>` — `blog/post/<slug>` for this fan-out — and a record's own
+`id` wins outright; `idFor` is that precedence, written once so a card and the page it points at
+cannot disagree. It is still a second copy of a rule, which is the honest cost of carrying an id
+on a card. The difference from `urlFor` is what happens when the copy is wrong: an id no page
+claims **fails the build**, naming the id and the view that asked, because an id is a claim about
+this build's registry and is checkable exactly at render. A wrong URL only ever shipped.
 
 **The page options, not the model, carry the metadata.** `.feed()` orders and titles its items
 from `title`, `description` and `date`; llms.txt and sitemap.xml read the first two; the
@@ -44,14 +60,22 @@ Example 8 is the exemplar for what that failure looks like when it is left in.
   without one is a silent 404 for every inbound link. `npx kiss-ssg check` reports it as
   `removed without redirect:` — but only once the site has been recorded, so the baseline exists
   to compare against.
+- **That same post carries an explicit `id: 'blog/post/cascara'`, and that is deliberate.** A
+  default id embeds the slug, so a slug rename changes the identity as well as the path, the two
+  builds do not pair, and the check reports a deletion rather than a move. An id that does not
+  contain the slug survives the rename, which is what lets the finding be `moved without
+redirect: <from> -> <to> (<id>)` with the alias to add named in it.
 - **`aliases` belongs to the record, never to the `.pages()` registration.** One old path
   redirecting to six new pages is not a redirect, so the engine promotes it from the model and
-  deletes the registration's own. Being an ordinary page option it also reaches the template,
-  which is how the post page prints "formerly published at".
+  deletes the registration's own. `id` follows exactly the same rule — a registration's `id` is
+  only the _prefix_ its items' default ids are built from. Being an ordinary page option `aliases`
+  also reaches the template, which is how the post page prints "formerly published at".
 - **`dateLabel` formats from the UTC parts by hand rather than with
   `toLocaleDateString`.** The locale and time zone of the machine running the build would
   otherwise reach the bytes of the page, and a build whose output is not byte-stable cannot be
   diffed against the recorded one.
-- **`summaryCard` and the post page must agree about tags.** Both map the record's tag names
-  through `tagUrl` in `tag.js`; if one stopped, the listing and the post would link the same tag
-  to two different addresses and only one of them would exist.
+- **`summaryCard` hands the tags on as the record wrote them.** They used to be
+  `{ name, url }` pairs built here; now they are the plain strings, and the partial turns one
+  into a link with `{{link 'blog/tags' slug=this}}`. The `slug=` sugar runs the same `toSlug`
+  that `tag.js` slugs the tag page with, so the two cannot point at different addresses — and if
+  they ever did, the build would stop rather than ship the mismatch.

@@ -16,15 +16,15 @@
   <div class="grid">
     {{#each model.tags}}
     <article class="card">
-      <h3><a href="/blog/tags/{{slug}}/">{{tag}}</a></h3>
+      <h3><a href="{{link 'blog/tags' slug=slug}}">{{tag}}</a></h3>
       <p class="meta">{{count}} posts</p>
-      <p>{{#each posts}}<a href="{{url}}">{{title}}</a>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
+      <p>{{#each posts}}<a href="{{link id}}">{{title}}</a>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
     </article>
     {{/each}}
   </div>
 
   <div class="callout">
-    <p><a href="/blog/">The whole journal</a> &middot; <a href="/feed.xml">RSS feed</a></p>
+    <p><a href="{{link 'blog'}}">The whole journal</a> &middot; <a href="/feed.xml">RSS feed</a></p>
   </div>
   {{/content}}
 

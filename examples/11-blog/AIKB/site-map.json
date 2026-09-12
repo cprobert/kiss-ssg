@@ -49,7 +49,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/index.html",
-      "id": null,
+      "id": "blog",
       "view": "blog/listing.hbs",
       "model": "inline",
       "controller": "none",
@@ -61,7 +61,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/page/2/index.html",
-      "id": null,
+      "id": "blog/page/2",
       "view": "blog/listing.hbs",
       "model": "inline",
       "controller": "none",
@@ -84,7 +84,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/brewing/index.html",
-      "id": "blog/tag/brewing",
+      "id": "blog/tags/brewing",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -96,7 +96,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/experiments/index.html",
-      "id": "blog/tag/experiments",
+      "id": "blog/tags/experiments",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -119,7 +119,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/roastery/index.html",
-      "id": "blog/tag/roastery",
+      "id": "blog/tags/roastery",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -131,7 +131,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/sourcing/index.html",
-      "id": "blog/tag/sourcing",
+      "id": "blog/tags/sourcing",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -143,7 +143,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/the-cascara-experiment/index.html",
-      "id": "blog/post/the-cascara-experiment",
+      "id": "blog/post/cascara",
       "view": "blog/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",
@@ -273,13 +273,13 @@
       "kind": "controllers",
       "id": "post.js",
       "note": "notes/controllers/post.md",
-      "hash": "4d36508cabe497bb29d4b1a6b7414d9f88736c86"
+      "hash": "bb32f83791071d7b9156878b143c83635d0df09e"
     },
     {
       "kind": "controllers",
       "id": "tag.js",
       "note": "notes/controllers/tag.md",
-      "hash": "10729118b061dae9fc9adb09eb3f57979c57423d"
+      "hash": "7abc178112f330517c48c1a6977647162e6c0f81"
     }
   ]
 }
