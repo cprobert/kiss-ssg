@@ -55,7 +55,14 @@ Then read the diff the other way round — **every line in it that no criterion 
 
 ### 4. Drift check
 
-Compare the trajectory against the **Non-goals** and the declared **Impact surface**. A change opened as "content" that is now editing the build script has moved surface — say so; at close it will oblige different checks and, on the data/controller and asset surfaces, a note under `AIKB/notes/`. A check on a recorded site also reports its note rules (`note missing:` / `note dead:` lines) — a new `note missing:` is the surface moving in front of you, and cheaper to answer now than at the close.
+Compare the trajectory against the **Non-goals** and the declared **Impact surface**. A change opened as "content" that is now editing the build script has moved surface — say so; at close it will oblige different checks and, on the data/controller and asset surfaces, a note under `AIKB/notes/`. A check on a recorded site also reports its note rules, four summary lines that cost nothing to read:
+
+- **`note missing:`** — a subject with no note. A _new_ one is the surface moving in front of you: cheaper to answer now than at the close, where it is a hard stop.
+- **`note stale:`** — a stamped note whose subject's code has changed under it. On this branch that almost always means _you_ changed it: the code moved, the reason did not. Also a hard stop at the close, so fix it in the slice that caused it, while you still remember why.
+- **`note dangling:`** — a note (or `AIKB/site.md`) naming a file that no longer resolves, printed as `"<note path>: <token>"`. Renaming or deleting a file is the usual cause, so a new one is normally this branch's doing.
+- **`note dead:`** — a note whose subject has left the map. Expected when the branch retired something; a surprise otherwise, and then a finding.
+
+None of them changes the exit code, and inherited ones (present at open, recorded in the session file) are not yours to fix at a pulse. It is the **new** ones that are drift.
 
 Legitimate expansion (adjacent, same theme) → append a dated entry to the session file's `### Amendments`. Genuine scope creep (a different objective) → say so and recommend deferring. Never absorb it silently; never start a second branch on your own initiative.
 

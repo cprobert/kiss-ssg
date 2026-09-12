@@ -48,7 +48,45 @@ If the intent moved during the work, it should already be a dated **Amendment**;
 
 The map is generated for you at step 4; the judgement in it never is. Two checks:
 
-**a. No subject is unexplained.** The check evaluates the note rules on any site that has recorded once (a site that never has reports `aikb: null`, and gets its first record in step 4). The report's `aikb.notes.missing` must be empty — every controller file, URL model and pipeline step in the map has a note under `AIKB/notes/`. Write the missing ones now (`## What it does`, `## Why it is this way`, `## Gotchas`) rather than closing with a gap. Anything in `aikb.notes.dead` is a note whose subject is gone: delete it, or fix the map if the subject should still be there.
+**a. No subject is unexplained, and no note has rotted.** The check evaluates the note rules on any site that has recorded once (a site that never has reports `aikb: null`, and gets its first record in step 4). It reports four lists on `aikb.notes`, printed in the summary as four lines. None of them changes the exit code — they are readings, and this step is the gate that makes two of them matter:
+
+| Line             | What it means                                                                                                                 | At a close                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `note missing:`  | a controller file, URL model or pipeline step in the map with no note under `AIKB/notes/`                                     | **hard stop.** Write the note now (`## What it does`, `## Why it is this way`, `## Gotchas`) rather than closing with a gap             |
+| `note stale:`    | a stamped note whose `subject-hash` differs from the subject's current hash — the code moved on this branch, the note did not | **hard stop, the same one.** This is precisely the failure this close exists to catch: re-read the subject, update the note, restamp it |
+| `note dangling:` | `"<note path>: <token>"` — a backticked file-looking reference, in a note or in `AIKB/site.md`, that resolves to nothing      | **fix before recording.** Point it at where the file lives now, or rewrite the sentence so it does not need it                          |
+| `note dead:`     | a note whose subject has left the map                                                                                         | delete it — or, if the subject went missing by mistake, restore the subject and keep the note, and say which you did                    |
+
+All four must be empty before step 4 records. Recording a build whose notes are stale or dangling bakes the rot into the baseline the next branch reads.
+
+**Stamp every note you write or update.** The stamp is the one frontmatter line `subject-hash: <sha1>`, copied verbatim from the `subjects` array in `AIKB/site-map.json` — entries of `{ kind, id, note, hash }`; take the `hash` of the entry whose `note` is this note's path:
+
+```bash
+node -e "for (const s of require('./AIKB/site-map.json').subjects) console.log(s.hash, s.kind, s.id, s.note)"
+```
+
+```markdown
+---
+subject-hash: 9f2c1b0a4e7d83f6c5b21a908d7e6f4c3b2a1908
+---
+
+# controllers/stockist.js
+
+## What it does
+
+…
+```
+
+The engine never writes that line; this skill does. It is what lets the next check say "this note was written against a different version of this code" instead of everybody having to reread both. Read the hash out of the map — never invent one, and never stamp a note you have not actually brought up to date, because a wrong stamp silences the very warning it exists to raise. Leaving a legacy note unstamped is fine: an unstamped note is never stale, just unstamped.
+
+One ordering trap. The `site-map.json` on disk right now is the **last** record's — nothing since has rewritten it — so for a subject this branch changed, its `hash` there is the old one, and stamping from it would leave the note stale. For those, hash the subject as the engine does: the controller file's bytes, or the pipeline step's `run` string.
+
+```bash
+sha1sum src/controllers/stockist.js                 # a controller file
+printf '%s' 'npx tailwindcss -i src/app.css -o …' | sha1sum   # a pipeline step's run string
+```
+
+(A URL model has no hash and never goes stale.) Re-run the check: all four lines clean is the proof you stamped right. Then step 4 records, and the fresh `site-map.json` it writes is the authority from that point — if the check after recording still reports a stale note, take the hash from that file and fix the stamp before you commit.
 
 **b. Every subject this change touched has a note that changed with it.**
 
@@ -64,7 +102,7 @@ From that list, take the subjects the change actually touched — files under th
 | a URL model, e.g. `https://api.example.com/v2/events` | `AIKB/notes/models/api.example.com-v2-events.md` |
 | a pipeline step, e.g. `tailwind`                      | `AIKB/notes/pipeline/tailwind.md`                |
 
-A note that did not move while its subject did is the failure mode this gate exists to catch: the code changed, the reason nobody wrote down. Update it — even one line under `## Gotchas` — before continuing. A genuinely note-free change (a typo in a controller comment) is a judgement call: say out loud that you are skipping it and why.
+A note that did not move while its subject did is the failure mode this gate exists to catch: the code changed, the reason nobody wrote down. Update it — even one line under `## Gotchas` — and restamp it as in (a) before continuing. `note stale:` catches this mechanically for notes that carry a stamp; this diff read is what catches it for the ones that do not, which is every note written before stamping existed. A genuinely note-free change (a typo in a controller comment) is a judgement call: say out loud that you are skipping it and why — and do not restamp a note you did not update, or you will have silenced the warning without doing the work.
 
 ### 4. Record the knowledge base, and commit it
 
@@ -111,12 +149,25 @@ git add planning/sessions/<file>
 git commit -m "Close: reflection + status"
 ```
 
-### 6. Push, and stop
+### 6. Decide whether to recommend a consolidation
+
+The close keeps one branch's memory honest. Nothing in it keeps the **whole** base honest, and two measurable symptoms say it has stopped being:
+
+```bash
+grep -L "^consolidated:" planning/sessions/*.md | wc -l   # sessions never folded in
+```
+
+- **A Feedback item has recurred in three or more sessions.** Compare the Feedback you just wrote against every earlier session's — not only the three `kiss-open` reads back. An item on its third outing is not a lesson anybody is going to learn by being told again; it needs promoting to a rule in `AIKB/site.md`.
+- **Five or more sessions lack `consolidated:`.** The logs have outrun the read-back, so everything older than the last three is effectively write-only.
+
+Either one: recommend `kiss-consolidate` in the final report, naming which trigger fired and the evidence (the item and its dates, or the count). **Do not run it here.** It is a separate beat, on nobody's branch, and folding it into a close would mix housekeeping edits into the diff you just verified.
+
+### 7. Push, and stop
 
 ```bash
 git push -u origin HEAD
 ```
 
-**Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date, `AIKB/` recorded and committed, reflection written, branch pushed.
+**Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date and stamped, all four note lines clean, `AIKB/` recorded and committed, reflection written, branch pushed.
 
-Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point.
+Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-consolidate`", with the trigger.

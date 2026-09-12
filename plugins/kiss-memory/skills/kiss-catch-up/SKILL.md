@@ -33,33 +33,43 @@ No diff block at all means this site has never been recorded — that is step 4,
 
 ### 3. Read the sources, in this order
 
-| Source                                     | Gives you                                                                                                                    | Label        |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `AIKB/site-map.md`                         | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps       | generated    |
-| the `check` output above                   | whether it builds now, and what differs from the last recorded build                                                         | generated    |
-| `AIKB/last-build.json`                     | the recorded build's page list, assets, sitemap, and `aikb.notes.missing` / `aikb.notes.dead`                                | generated    |
-| `AIKB/notes/**/*.md`                       | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                | recollection |
-| the 3 most recent `planning/sessions/*.md` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open | recollection |
+| Source                                     | Gives you                                                                                                                                   | Label                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `AIKB/site.md`                             | what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already promoted to rules             | recollection (curated) |
+| `AIKB/site-map.md`                         | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps, subjects and hashes | generated              |
+| the `check` output above                   | whether it builds now, what differs from the last recorded build, and the four note findings                                                | generated              |
+| `AIKB/last-build.json`                     | the recorded build's page list, assets, sitemap, and `aikb.notes` — `missing`, `dead`, `stale`, `dangling`                                  | generated              |
+| `AIKB/notes/**/*.md`                       | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                               | recollection           |
+| the 3 most recent `planning/sessions/*.md` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open                | recollection           |
 
-Read the sessions newest first (`ls -t planning/sessions/*.md | head -3`) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need.
+**Read `AIKB/site.md` first when it exists.** It is the one source somebody sat down and curated: authored, evergreen, never written by a build, and periodically fed by `kiss-consolidate` from the session logs. It answers "what is this and who for" better than anything generated can, and its Standing gotchas are the distilled version of what you would otherwise reconstruct from a dozen notes. Label it **recollection (curated)** and keep that distinction in the briefing — it is recollection, so it can be out of date, but unlike a session log it is meant to be true today, and a place where it contradicts the map is a real finding worth reporting.
+
+Read the sessions newest first (`ls -t planning/sessions/*.md | head -3`) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
 
 ### 4. Say plainly when a source is absent
 
 Missing sources are findings, not silence:
 
 - **No `AIKB/` at all** — this site has never been recorded, so nothing generated survives its builds and the check has no baseline to diff against. Say so, brief from the check output and git alone, and tell the user the fix, which is not a code change: run `npx kiss-ssg aikb <build-script>` once and commit the folder it writes. Recording runs the build staged and discarded like `check` does, publishes nothing, and refuses a failing build (`not recorded — build failed`), so a broken site is fixed first. The command is documented in `node_modules/kiss-ssg/llms.txt`.
+- **No `AIKB/site.md`** — nobody has written down what this site is for, how it is deployed or what the conventions are, so everything under those headings in the briefing is inferred from code and logs. Say so. The fix is `kiss-consolidate`, which creates it from the template and fills it from the session logs.
 - **No `AIKB/notes/`, or notes missing for subjects the report lists in `aikb.notes.missing`** — the odd parts of this site have never been explained by anyone. Name them; they are the highest-value thing to write down next.
 - **Notes in `aikb.notes.dead`** — a note whose subject is no longer in the map. Treat what it says as history, not fact.
+- **Notes in `aikb.notes.stale`** — the subject's code has moved since the note was written against it. Treat the note as **out of date, not wrong**: still the best account of why the thing exists, no longer a reliable account of what it does now. Read the subject beside it before you believe a detail.
+- **Entries in `aikb.notes.dangling`** — a note (or `site.md`) names a file that no longer resolves. Usually a rename nobody chased; occasionally a sign the note describes a version of the site that no longer exists.
 - **No `planning/sessions/`** — no recollection at all; the briefing is generated-only, and say that in the first line.
 
 ### 5. Write the briefing
 
 Five headings, in this order, every statement tagged **[generated]** or **[recollection]**:
 
-- **What the site is and who for** — mostly recollection (session objectives, `AIKB/README.md`, the site's own copy). If nothing says, say nothing says.
+- **What the site is and who for** — recollection: `AIKB/site.md`'s first two sections when it exists (label them **curated**), otherwise session objectives and the site's own copy. If nothing says, say nothing says.
 - **How it is built** — generated: the build script and its chain, page count, how pages are registered (`.scan()` / `.page()` / `.pages()`), models and controllers, asset pipeline steps, whether it writes a sitemap or `llms.txt`.
 - **What changed lately** — generated: the check's diff against the last record, plus `git log --oneline -10`. Separate "drift since the last record" from "recent commits"; say when the site has never been recorded, so there is no diff.
 - **What was left open** — recollection: unticked success criteria, Amendments, and the Verdict's "what remains open" from the three sessions.
-- **Known gotchas** — recollection: the `## Gotchas` sections of `AIKB/notes/**`, plus any current build failure (generated) and any subject with no note (generated: nobody has written this one down).
+- **Known gotchas** — recollection: `AIKB/site.md`'s **Standing gotchas** first (curated, and the ones most likely still to bite), then the `## Gotchas` sections of `AIKB/notes/**`. Then, generated, any current build failure and all four note findings, each said in plain words rather than as a label:
+  - `note missing:` — nobody has written this subject down at all
+  - `note dead:` — this note outlived its subject; history, not fact
+  - `note stale:` — this note was written against older code; check it against the subject before trusting a detail
+  - `note dangling:` — this note points at a file that is not there
 
-Keep it to a page. End with the one thing you would do first if this were your site, and why.
+Keep it to a page. End with the one thing you would do first if this were your site, and why. A long list of note findings is a legitimate answer to that: it means the fastest way to make this site knowable again is `kiss-consolidate`.

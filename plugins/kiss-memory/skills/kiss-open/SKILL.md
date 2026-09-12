@@ -12,13 +12,37 @@ This is the site-shaped loop: no version bump, no package, no npm publish. What 
 
 ## Execution instructions
 
-### 1. Read back the last three sessions' Feedback
+### 1. Read back the Feedback, and count how often it has come back
 
 ```bash
 ls -t planning/sessions/*.md 2>/dev/null | head -3
 ```
 
 Read each one's `## Feedback` section. Anything that shows up in **two or more** of them is a recurring lesson that has not stuck — surface those to the user now, as this branch's standing checklist, and copy them into the session file under **Inherited feedback**. If there are no sessions yet, say so and skip; this is the first.
+
+Then count across **all** of them, not just the three you read back:
+
+```bash
+grep -l "^consolidated:" planning/sessions/*.md | wc -l   # already folded into AIKB/site.md
+grep -L "^consolidated:" planning/sessions/*.md           # not yet
+```
+
+The three-session read-back is the briefing; the count is the diagnosis, and it needs the whole history because a lesson that recurred in 2026-05, 2026-07 and 2026-08 is invisible to a window of three. Skim every session's Feedback — including the consolidated ones, and say that you did — and tally which items recur.
+
+**Recommend `kiss-consolidate` when either fires**, before the interview, and say which:
+
+- a Feedback item has recurred in **three or more** sessions — nobody is going to learn it by being told a fourth time; it needs promoting to a rule in `AIKB/site.md` and retiring from the read-back;
+- **five or more** sessions lack `consolidated:` — the logs have outrun the read-back and the older lessons are write-only.
+
+It is a recommendation, not a gate: the user may open the branch anyway. Do not run `kiss-consolidate` from inside this skill — it is a separate beat, and its commit does not belong in this branch's first diff. An item that already appears under **Retired feedback** in `AIKB/site.md` has been dealt with: it is a convention now, so do not re-surface it as inherited feedback.
+
+**Also list possibly abandoned work.** A session file still `status: open` on a branch that is not this one is a piece of work somebody walked away from:
+
+```bash
+grep -l "^status: open$" planning/sessions/*.md | xargs grep -H "^branch:"
+```
+
+Name each one with its branch and its opened date, and ask the user what it is — finished but never closed, genuinely still in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one of them is the branch you are about to adopt in step 2, that is not abandoned work — that is this piece of work, and step 2 handles it.
 
 ### 2. Confirm the starting state
 
@@ -43,6 +67,10 @@ npx kiss-ssg check --summary <build-script>
 `--summary` goes **before** the script: everything after it is passed through to the site's own build script.
 
 The page list this prints is the baseline the success criteria are written against, and it is also proof the site was green _before_ you touched it. If it is already failing, that is the first thing to fix or to name as inherited. Find the build script the way `kiss-catch-up` does (`package.json` scripts). If the site has an `AIKB/site-map.md`, skim it for the sections your change is near.
+
+**Read `AIKB/site.md` before the interview, if the site has one.** It is the authored, evergreen page — what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already retired into rules — and it is the accumulated answer to half the questions the interview would otherwise ask. Two things follow from it: the conventions constrain what a sensible objective looks like here, and a standing gotcha near the change is worth naming out loud before anybody writes a criterion that walks into it. It is curated, not generated, so treat it as recollection: accurate the day it was written, never re-checked by a build.
+
+The check also prints its note findings — `note missing:`, `note dead:`, `note stale:`, `note dangling:`. Any of them present at open is **inherited**, not yours. Record them in the session file so the close can tell them apart from rot this branch caused; a big crop of them is another reason to recommend `kiss-consolidate` first.
 
 When the site has been recorded before, the check also prints its diff against that record with no flag asked for. Read it: anything already `+`, `-` or `~` before you have touched a thing is inherited drift, and belongs in the session file rather than in your change.
 
@@ -157,4 +185,4 @@ opened: <YYYY-MM-DD>
 
 ## The loop
 
-**Frame** (`kiss-open`, here) → **Steer** (`kiss-pulse`, repeatedly) → **Verify & close** (`kiss-close`). All three read this one file. The baseline they measure against moves exactly once per piece of work, at `kiss-close` — this skill records only to establish one that does not exist yet. For the engine's own contract — what `npx kiss-ssg aikb` records, what the report carries, what `check` diffs against — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.
+**Frame** (`kiss-open`, here) → **Steer** (`kiss-pulse`, repeatedly) → **Verify & close** (`kiss-close`). All three read this one file. `kiss-consolidate` sits outside the loop, between pieces of work: it folds the session logs' durable lessons into `AIKB/site.md` and fixes the notes, which is what stops this step's read-back surfacing the same feedback forever. The baseline they measure against moves exactly once per piece of work, at `kiss-close` — this skill records only to establish one that does not exist yet. For the engine's own contract — what `npx kiss-ssg aikb` records, what the report carries, what `check` diffs against — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.

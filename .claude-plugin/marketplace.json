@@ -15,7 +15,7 @@
     {
       "name": "kiss-memory",
       "source": "./plugins/kiss-memory",
-      "description": "Skills that give a kiss-ssg site a memory: a catch-up briefing over the build-generated AIKB, and a site-shaped open/pulse/close loop.",
+      "description": "Skills that give a kiss-ssg site a memory: a catch-up briefing over the recorded AIKB, a site-shaped open/pulse/close loop, and a consolidation beat that keeps the notes and site.md consistent.",
       "version": "2.1.0"
     }
   ]
