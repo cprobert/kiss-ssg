@@ -552,7 +552,7 @@ describe('link', () => {
   }
   // A page context with the data frame `KissPage.generate()` fills, so a
   // failure message can name both the view and the file that asked.
-  const renderIn = (src, ctx = { view: 'index.hbs' }) =>
+  const renderIn = (src, ctx = { view: 'index.hbs', pageURL: 'index.html' }) =>
     hbs.compile(src)(ctx, { data: { kissPage: './public/index.html' } })
 
   it('renders the served path, root-relative, for every page shape', () => {
@@ -640,7 +640,7 @@ describe('link', () => {
   it('throws for an unknown id, naming the id and the page that asked', () => {
     linkHbs({ about: 'about.html' })
     expect(() => renderIn('{{link "contact"}}')).toThrow(
-      'link: no page with id "contact" (asked by index.hbs / ./public/index.html)',
+      'link: no page with id "contact" (asked by index.hbs / /)',
     )
   })
 

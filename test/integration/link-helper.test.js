@@ -200,7 +200,7 @@ describe('id collisions', () => {
       'Two pages share the default id "blog/listing" (blog/listing.hbs, blog/listing.hbs): neither can be linked — set an explicit id on each',
     ])
     expect(error.failures.map((f) => f.error.message)).toEqual([
-      `link: id "blog/listing" is the default id of more than one page (blog/listing.hbs, blog/listing.hbs), so no page claims it — set an explicit id (asked by index.hbs / ${site.build}/index.html)`,
+      `link: id "blog/listing" is the default id of more than one page (blog/listing.hbs, blog/listing.hbs), so no page claims it — set an explicit id (asked by index.hbs / /)`,
     ])
     // Withdrawn means withdrawn: neither page carries the id on the record.
     expect(
