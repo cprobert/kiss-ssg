@@ -40,3 +40,5 @@ Contract: `planning/plans/2026-09-12-link-check-redirects.md`.
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+- **2026-09-12 (contract critiqued, Beat 0, L and F landed)** — The adversarial read (`planning/reviews/2026-09-12-link-check-contract-critique.md`) found nine blockers before a line was built, the decisive one being that check mode discards staging before the step the contract chose for the scan; the contract was amended in place (`2ad0748`). Beat 0 (`71151b6`) landed the shared seam so L and F ran concurrently without touching the same files. L and F (`492e98c`): references extracted at write time and resolved before the folder moves; `.feed()` mirroring `.llms()`. Both agents ran red-first in a sandbox copy of HEAD rather than stashing the shared tree — a new discipline worth keeping. Fable's review: the single call site above `complete()`'s branch is better than the contract's three; accepted. Real-site smoke on examples 4 and 9 and the docs site: no false positives. Gates green after `npm run types`. Criteria 1 and 3 evidenced; 2 and 4 pending. Decision: **continue** to R.
