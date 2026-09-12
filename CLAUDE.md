@@ -138,7 +138,7 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 - `bin/` holds the published command line and nothing else: one thin wrapper per command, every decision in a `lib/` module with its own unit test, and the wrapper itself covered end-to-end by `test/integration/check.test.js`.
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
-- Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit.
+- Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit. A feature an agent should reach for also goes into the skill that would use it (`plugins/*/skills/`) and gets a row in `test/unit/skill-coverage.test.js`, which is what makes that obligation fail loudly rather than surface as a question months later.
 - JSDoc is the type source, and it is checked: `npm run typecheck` (a gate) runs `tsc --checkJs` over `lib/`, `scripts/` and `bin/`. A private class field annotated with `@type` needs `@private` in the _same_ JSDoc block — a second comment displaces it and the field lands in the published `types/`, which `test/unit/types.test.js` rejects.
 - A regression test is accepted only once it has been seen to fail against the unfixed code. A test that has never been red is a guess about coverage, not evidence of it.
 - A doc is a claim about the code, not evidence of it — check `lib/` before repeating what `AIKB/`, `llms.txt` or a `planning/plans/` document says about it, and before writing a plan step that depends on it.

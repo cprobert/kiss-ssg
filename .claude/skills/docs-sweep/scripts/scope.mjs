@@ -74,6 +74,7 @@ const RULES = [
       'llms.txt → ## API (the consumer cheat-sheet — it ships in the npm package)',
       'README.md → usage docs',
       'CLAUDE.md → ## Pipeline in one paragraph',
+      'plugins/*/skills/*/SKILL.md → the skills an agent follows; test/unit/skill-coverage.test.js pins which skill must name which feature — add a row for a new one',
     ],
   },
   {
