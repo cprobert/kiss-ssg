@@ -3,6 +3,63 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.2.0 — 2026-09-12
+
+**Your site can now tell you what you broke and what you lost, and link to itself by name**
+
+**Added: broken internal links.** Every settled build gathers the `href`,
+`src` and `srcset` references each page writes and resolves them against
+the files the build wrote, the pages it registered (including directory
+indexes and extension-less URLs) and the asset manifest. Schemes,
+protocol-relative URLs, fragments and empties are skipped; same-origin
+absolute URLs are checked as internal. The result is
+`report().links = { checked, broken: [{ page, href }] }`, printed by
+`check --summary` as `broken link: <page> -> <href>` lines. It runs in
+check mode too, is `null` in dev, and `config.links = { check: false }`
+switches it off. Exit codes are unchanged.
+
+**Added: page identity and `{{link}}`.** Every page carries an `id`, by
+default its view's route without the extension (`about`,
+`blog/index`), and a fan-out item `<registration id or view route>/<slug>`.
+Set `id` on `.page()` to name a page yourself; two explicit pages claiming
+one id fail the build, an explicit id beats a default one, and two
+default ids that collide are both withdrawn with a notice. Templates then
+write `{{link "about"}}`, `{{link "blog/post" slug=post.slug}}`,
+`{{link "about" absolute=true}}` or `canonical=true` and get the served
+path (`/`, `/about.html`, `/blog/x/`), so a page can move and every link
+to it follows. An id no page claims fails that render in a build
+(`link: no page with id "…" (asked by <view> / <served path>)`) and
+renders `#` with a warning in dev. `id` appears on the report and in the
+site map.
+
+**Added: `aliases` and `_redirects`.** Give a page `aliases: ['/old.html']`
+and every build writes `<build>/_redirects` (`/old.html /new 301`), the
+server-side format Netlify and Cloudflare Pages read. No meta-refresh is
+ever written. On a recorded site the report also carries
+`redirects.removed` (a page in `AIKB/last-build.json` that is gone with no
+alias covering its URL), `redirects.moved` (the same id now served from a
+different URL, with no alias for the old one) and
+`redirects.collisions` (an alias that points at a live page), printed by
+`check --summary` as `removed without redirect:`,
+`moved without redirect: <from> -> <to> (<id>)` and
+`alias collides with a page:` lines. The alias you paste to silence a
+finding may use either the canonical or the served spelling.
+
+**Added: `.feed(options)`.** Writes an RSS 2.0 `feed.xml` from the same
+registry as the sitemap: `{ title, description?, section?, limit = 20,
+filename = 'feed.xml', dateField = 'date' }`. Dated pages only, newest
+first, `lastBuildDate` equal to the newest item, URLs identical to the
+sitemap's, byte-stable across identical builds; requires `siteUrl`. Pages
+can opt out with `ignoreFeed`. `report().feed` names the file.
+
+**Added: example 11, a blog.** Pagination, tag pages built by fan-out,
+one aliased post, a feed, a sitemap, identity links throughout and a
+recorded `AIKB/` with two stamped notes. `npm run eg11`; `-- --broken`
+plants one bad link so you can see what a `broken link:` finding looks
+like. The Claude Code skills in `plugins/` teach all of the above, and a
+test now fails if a public feature is missing from the skill that should
+mention it.
+
 ## 2.1.1 — 2026-09-12
 
 **Your site can now remember itself, and only when you ask it to**
