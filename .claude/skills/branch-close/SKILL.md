@@ -1,6 +1,6 @@
 ---
 name: branch-close
-description: End-of-branch ritual. Checks branch safety and freshness, then /secrets-scan, /docs-sweep, /corpse-collector, the version bump, /test-coverage-check --gate, the gates (`npm run gates`), an optional Codex review, /retrospective, then pushes and opens the PR. Run this instead of manually pushing — it is the single command that replaces the manual sequence.
+description: End-of-branch ritual. Checks branch safety and freshness, then /secrets-scan, /docs-sweep, /corpse-collector, the version bump, /test-coverage-check --gate, an operator eyeball on one changed artefact, the gates (`npm run gates`), an optional Codex review, /retrospective, then pushes and opens the PR. Run this instead of manually pushing — it is the single command that replaces the manual sequence.
 ---
 
 # Close Branch
@@ -61,6 +61,7 @@ The sequence follows two principles: **cheapest and most critical checks run fir
 
 - **Secrets scan (Step 2)** is the cheapest possible check and the hardest possible stop. If a real credential is in the diff, nothing else matters.
 - **Docs sweep (Step 3), version bump (Step 4a) and test coverage (Step 5)** all happen _before_ the gates so that documentation fixes, the bumped manifest, and any newly written tests are validated in the same gate pass — not in a second run.
+- **Operator eyeball (Step 5a)** is the one human check in the sequence, and it sits before the gates so that anything it finds is fixed and re-validated in the same pass. It runs after the automated checks have named what changed, and it is the only step that waits on a person.
 - **Gates (Step 6)** validate the complete final state: code, docs, tests, and the bumped version in one authoritative pass.
 - **Codex review (Step 7)** runs after the gates so expensive semantic review time is never spent on code a cheap gate would have rejected.
 - **Retrospective (Step 8)** runs last among the checks — there is no value in reflecting on a branch that does not pass.
@@ -148,6 +149,26 @@ Runs **before** the gates so that any tests written in response to this check ar
 
 Use `/test-coverage-check` (no flag) mid-branch for advisory suggestions on what tests to write.
 
+### Step 5a — Operator eyeball
+
+This step exists because the lesson recurred in four reflections (2026-09-05, 09-06, 09-08, 09-09) — "look at the artefact yourself" was written down, agreed, and then not done, four times running, which is what a lesson that needs to become a ritual step rather than another recommendation looks like.
+
+Name **one** artefact this branch changed that a human should look at with their own eyes, and give the exact command or path to reach it. One, not a list — a list gets skimmed. Pick the thing a gate structurally cannot judge:
+
+- a built page under `public/` — `npm run eg3`, then open `public/index.html`
+- a `check --summary` line for a real site — the page list, or the count that should have moved
+- a type hover in an editor — `types/kiss.d.ts` regenerated, the signature a consuming site now sees
+- a live-reload round trip, a rendered diagram, a colour, a piece of copy
+
+Then **stop and ask** with AskUserQuestion: did you look, and what did you see? This is the one place in the ritual that waits on a human rather than on a command, so do not answer it for them and do not accept your own summary as the answer — Claude reporting that Claude's output looks right is the exact loop this step breaks.
+
+Record the answer in one line and carry it into Step 8, so `/retrospective` can cite it under **Verification & ownership**:
+
+- the operator looked — what they saw, and whether it matched;
+- the operator declined or did not answer — record it verbatim as **"unanswered — proceeding on the ritual's defaults"**. That is an honest reading, and a reflection that says so is worth more than one that implies a check happened.
+
+Either way the ritual continues: this is a stop for an answer, not a gate that blocks the close.
+
 ### Step 6 — Run the gates
 
 ```bash
@@ -177,7 +198,7 @@ Surface the findings and triage them **with the operator**: Codex output ranges 
 
 ### Step 8 — Run /retrospective
 
-Invoke `/retrospective`. This writes the supervised-collaboration reflection to `planning/sessions/` and commits it (filling the branch's intent artefact if `/branch-open` created one). It runs **after** the gates deliberately — there's no point reflecting on a branch that doesn't pass. Scope that drifted during the branch and was recorded as **Amendments** in the intent artefact is legitimate emergent work — the reflection weighs it as good drift vs scope creep, not as a failure to match the original remit verbatim.
+Invoke `/retrospective`. This writes the supervised-collaboration reflection to `planning/sessions/` and commits it (filling the branch's intent artefact if `/branch-open` created one). It runs **after** the gates deliberately — there's no point reflecting on a branch that doesn't pass. Hand it the Step 5a answer — what the operator looked at and saw, or "unanswered — proceeding on the ritual's defaults" — so the reflection reads **Verification & ownership** from what a human actually checked rather than from Claude's own summary. Scope that drifted during the branch and was recorded as **Amendments** in the intent artefact is legitimate emergent work — the reflection weighs it as good drift vs scope creep, not as a failure to match the original remit verbatim.
 
 ### Step 9 — Push and open PR
 
@@ -223,7 +244,20 @@ The PR body is the same in every case:
 
 ### Step 10 — Report
 
-Return the PR URL to the user. One line confirming: gates passed, docs swept, retrospective committed, PR open.
+Return the PR URL to the user. One line confirming: gates passed, docs swept, the operator eyeball answered (or unanswered), retrospective committed, PR open.
+
+Then check whether the logs themselves are due a sweep — the close keeps one branch's memory honest, and nothing in it keeps the whole set honest:
+
+```bash
+grep -L "^consolidated:" planning/sessions/*.md | wc -l
+```
+
+**Recommend `/consolidate` when either trigger fires** — the same rule `/branch-open` reads back against:
+
+- a Feedback item has recurred in **three or more** logs, counting the one `/retrospective` just wrote against every earlier log and skipping anything already in `.claude/skills/consolidate/retired.md`;
+- **five or more** logs lack `consolidated:`.
+
+Add one line to the report naming the trigger and its evidence — the lesson and its dates, or the count. **Do not run it here**: it edits `CLAUDE.md` and the ritual skills, and those edits have no business in the diff you just verified and pushed.
 
 ---
 
@@ -235,8 +269,9 @@ Return the PR URL to the user. One line confirming: gates passed, docs swept, re
 | `/docs-sweep`                         | Invoked by `/branch-close`                 | Docs Sweep step       |
 | `/corpse-collector`                   | Invoked by `/branch-close` (judgment call) | Corpse Collector step |
 | `/test-coverage-check --gate`         | Invoked by `/branch-close`                 | Test Coverage step    |
+| Operator eyeball (AskUserQuestion)    | Asked by `/branch-close` — a human answers | Operator Eyeball step |
 | `npm run gates` (`scripts/gates.mjs`) | Run by `/branch-close`                     | Gates step            |
 | `codex-companion.mjs review --wait`   | Run by `/branch-close` (judgment call)     | Codex Review step     |
 | `/retrospective`                      | Invoked by `/branch-close`                 | Retrospective step    |
 
-The pre-commit hook and CI cover formatting and the gate battery on their own. Everything else in this table — the secrets scan, the docs sweep, the coverage gate, the version bump, the reflection — runs only because this ritual runs it. Pushing without `/branch-close` skips all of those.
+The pre-commit hook and CI cover formatting and the gate battery on their own. Everything else in this table — the secrets scan, the docs sweep, the coverage gate, the version bump, the operator eyeball, the reflection — runs only because this ritual runs it. Pushing without `/branch-close` skips all of those.

@@ -93,7 +93,10 @@ End with the **competency level** — one of **Passive delegator / Assisted oper
 
 ## Feedback — recommendations for next session
 
-Honest, both directions, both partners — framed as **recommendations**, not observations. Anchor them to the dimensions that scored low in Evaluate: if learning engagement was thin, the recommendation is concrete ("ask Claude to explain the non-obvious block before accepting it"); if verification was waved through, name the check that should have run. **Harness leverage is usually the richest seam here** — it's where the operator has the most to learn: if plan mode, a sub-agent pass, a fitting skill, or an MCP tool would have made the session faster, safer, or more accurate and wasn't used, name the specific technique and when to reach for it next time. Keep the technical specifics: failure modes caught (and missed), and the fix each one points to. Every item ends in a concrete next-time change. This is the institutional-memory payload — don't let it go soft.
+Honest, both directions, both partners — framed as **recommendations**, not observations.
+
+**Every item starts with its audience in bold** — **Operator**, **Claude**, **Both** or **Process** — then the recommendation: `- **Operator — look at the artefact you asked for.** Run …`. The logs already do this informally (some as a bold group heading, some inline), and making it a rule is what lets `/consolidate` route a recurring lesson to where it can act: an item aimed at Claude that keeps coming back becomes a bullet in `CLAUDE.md` § Rules, one aimed at the operator becomes a step in `/branch-open`, `/branch-pulse` or `/branch-close`. An unaddressed item is one nobody owns, and it comes back next branch unchanged.
+Anchor them to the dimensions that scored low in Evaluate: if learning engagement was thin, the recommendation is concrete ("ask Claude to explain the non-obvious block before accepting it"); if verification was waved through, name the check that should have run. **Harness leverage is usually the richest seam here** — it's where the operator has the most to learn: if plan mode, a sub-agent pass, a fitting skill, or an MCP tool would have made the session faster, safer, or more accurate and wasn't used, name the specific technique and when to reach for it next time. Keep the technical specifics: failure modes caught (and missed), and the fix each one points to. Every item ends in a concrete next-time change. This is the institutional-memory payload — don't let it go soft.
 
 ## Verdict — did we achieve the objective?
 
@@ -107,7 +110,7 @@ The culmination. Re-state the brief, then a plain verdict against the original i
 
 **What we shipped:** [commits / PR + one line]
 **Supervision:** [planned or emergent; competency level — passive delegator / assisted operator / active supervisor / agentic engineering lead; the standout dimension, strong or weak; intended vs actual supervision]
-**Feedback for next time:** [concrete, both partners]
+**Feedback for next time:** [concrete, both partners; each item prefixed with its audience in bold — **Operator** / **Claude** / **Both** / **Process**]
 **Did we achieve the objective?** [verdict + what's still open]
 ```
 

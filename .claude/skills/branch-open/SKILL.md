@@ -61,13 +61,39 @@ Match the interview to the work:
 
 When unsure, ask one question: "quick chore, or something worth speccing?"
 
-### Step 2a — Read back the last three reflections' Feedback
+### Step 2a — Read back the Feedback, and count how often it has come back
 
 ```bash
 ls -t planning/sessions/*.md | head -3
 ```
 
 Read each one's `## Feedback` section — the recommendations the last three branches left for next time. Anything that appears in **two or more** of them is a lesson that has not stuck, and this branch inherits it: surface those items to the user before the interview and keep them visible through it, so the criteria can be written to hold them. A reflection nobody reads at the next open is a diary, not institutional memory.
+
+The three-log read-back is the briefing. The **count** is the diagnosis, and it needs the whole history:
+
+```bash
+ls planning/sessions/*.md | wc -l                 # logs in total
+grep -L "^consolidated:" planning/sessions/*.md   # the ones never folded in
+```
+
+Skim **every** log's Feedback, not the last three, and tally which lessons recur — then say that you did. Three is too narrow a window to see the pattern: "look at one built page yourself" recurred across four logs in five days in this repo (2026-09-05, 09-06, 09-08, 09-09) and a window of three would have shown it as an ordinary one-off at any point along the way.
+
+**Skip anything already listed in `.claude/skills/consolidate/retired.md`.** A lesson in that table has been dealt with — it is a rule in `CLAUDE.md` or a step in one of these rituals now, not an outstanding recommendation — so re-surfacing it as inherited feedback is noise that trains the operator to skim the read-back.
+
+**Recommend `/consolidate` when either trigger fires**, before the interview, naming which one and the evidence:
+
+- a lesson has recurred in **three or more** logs — nobody is going to learn it by being told a fourth time; it needs promoting to a rule or a ritual step;
+- **five or more** logs lack `consolidated:` — the logs have outrun the read-back, and everything older than the last three is write-only.
+
+It is a recommendation, not a gate: the user may open the branch anyway. **Do not run `/consolidate` from here** — it is a separate beat, and its `CLAUDE.md` and skill edits do not belong in this branch's first diff.
+
+**Also list possibly abandoned work.** A log still `status: open` on a branch that is not the one you are about to work on is a piece of work somebody walked away from:
+
+```bash
+grep -l "^status: open$" planning/sessions/*.md | xargs grep -H "^branch:"
+```
+
+Name each one with its branch and its opened date and ask the user what it is — finished but never closed, still genuinely in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one names the branch you are adopting in Step 4, that is not abandoned work — that is this piece of work.
 
 ### Step 3 — Interview for intent
 
@@ -81,6 +107,11 @@ Elicit the fields below. Use AskUserQuestion for the structured choices (impact 
   - **Engine internals** — a `lib/` module's implementation with the API unchanged. Obliges that module's `AIKB/` doc, and a patch bump.
   - **Tooling & docs** — tests, skills, `scripts/`, the docs site under `src/`, `planning/`. Patch bump, or none.
 - **Expected shape** — planned (the destination known up front, the route largely mapped) or emergent (the goal and route revealed as we go). Both are valid; naming it sets expectations and lets the reflection's Reflect section compare actual vs expected.
+
+Two more fields, **asked only for a substantial branch** — a chore does not need either, and asking anyway is the interrogation theatre this step warns against:
+
+- **Delegation convention** — who briefs and who implements, and what the agents may do. Say it once here rather than re-deciding it per task: normally the main session briefs and reviews, sub-agents implement inside a named scope, and **agents never commit** — the operator's diff review is the checkpoint, and a sub-agent that commits removes it. Record whatever this branch actually agrees, including "no delegation, one session".
+- **Contract** — ask only when more than one workstream is expected. Name the `planning/plans/<date>-<slug>.md` the workstreams build against: the one document that says what each workstream owns, which files it may touch, and where the seams are. It is amended **in place**, with a dated section, when the design moves — never forked into a second plan, or the workstreams start building against different documents without anyone noticing. Write the file (or confirm it exists) before the first workstream starts, and put its path in the session file so the reflection can be read against it.
 
 ### Step 4 — Name and create the branch (only when starting from the base branch)
 
@@ -135,6 +166,10 @@ opened: <YYYY-MM-DD>
 **Impact surface:** public API | engine internals | tooling & docs — <one line why>
 
 **Expected shape:** planned | emergent | between — <one line why>
+
+**Delegation convention:** <who briefs, who implements, what the agents may not do — or "none: one session"; substantial branches only>
+
+**Contract:** <path to the `planning/plans/` document the workstreams build against, amended in place with dated sections — omit when there is only one workstream>
 
 ### Amendments
 

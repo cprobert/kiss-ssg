@@ -126,7 +126,7 @@ A branch runs as three beats, all reading one committed artefact — `planning/s
 
 **Never run `/branch-close` or create a PR unless explicitly asked.** Commit and push the outstanding changes, then stop.
 
-Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc staleness for the branch's diff), `/corpse-collector` (dead references repo-wide), `/test-coverage-check` (modules with no `test/unit/` sibling), `/secrets-scan`, `/retrospective`. The supervision rubric the reflections score against is `.claude/skills/retrospective/rubric.md`.
+Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc staleness for the branch's diff), `/corpse-collector` (dead references repo-wide), `/test-coverage-check` (modules with no `test/unit/` sibling), `/secrets-scan`, `/retrospective`, `/consolidate` (housekeeping **between** branches: folds the recurring lessons out of `planning/sessions/` into a rule here or a step in a ritual skill, and stamps each log `consolidated:`). The supervision rubric the reflections score against is `.claude/skills/retrospective/rubric.md`; the lessons already promoted out of the logs are listed in `.claude/skills/consolidate/retired.md`.
 
 ## Rules
 
