@@ -1,6 +1,5 @@
-# `types/` is emitted by tsc (`npm run types`), which always writes LF, and
-# test/unit/types.test.js byte-compares the checked-in files against a fresh
-# emit. On a Windows clone with core.autocrlf=true git would smudge them to
-# CRLF on checkout and that test could never pass, so pin the working tree to
-# match what tsc emits.
-types/*.d.ts text eol=lf
+# LF in the repo and in every working tree, whatever a clone's core.autocrlf
+# says. The tests hash and byte-compare files on disk — the example records
+# embed their own build script, and test/aikb.test.js searches llms.txt for
+# exact line breaks — so a CRLF checkout fails the gates with no code change.
+* text=auto eol=lf
