@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `package.json`'s `files` whitelist keeps the published tarball to `bin/`, `lib/`, `types/`, `llms.txt`, `AIKB/` and `examples/` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `AIKB/` and `examples/` ship deliberately, so an agent in a consuming project can read the per-module notes and the runnable examples (`node_modules/kiss-ssg/examples/`) alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/` and the configs are all excluded. The examples build into a gitignored `public/` at the repo root, which never ships.
 
-`bin/kiss-ssg.js` is the published command line (`npx kiss-ssg check <script>`) — a thin wrapper whose decisions all live in `lib/check.js`.
+`bin/kiss-ssg.js` is the published command line (`npx kiss-ssg check <script>` and `npx kiss-ssg aikb <script>`) — a thin wrapper whose decisions all live in `lib/check.js`.
 
 `src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`). Treat `docs/` as build output. Design specs, implementation plans and session logs live in `planning/` (`planning/specs/`, `planning/plans/`, `planning/sessions/`) — never under `docs/`, which `docs.js` empties on every run. `scripts/` holds dev tooling that never ships (the `files` whitelist excludes it).
 
@@ -18,30 +18,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
 
-| Module                             | File                         | AIKB doc                      |
-| ---------------------------------- | ---------------------------- | ----------------------------- |
-| Orchestrator / public API          | `lib/kiss.js`                | `AIKB/kiss.md`                |
-| Page renderer                      | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
-| Build report (the machine verdict) | `lib/build-report.js`        | `AIKB/build-report.md`        |
-| `kiss-ssg check` decision core     | `lib/check.js`               | `AIKB/check.md`               |
-| Logger                             | `lib/logger.js`              | `AIKB/logger.md`              |
-| Config + folder derivation         | `lib/config.js`              | `AIKB/config.md`              |
-| Built-in Handlebars helpers        | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
-| Partials / layouts registration    | `lib/partials.js`            | `AIKB/partials.md`            |
-| Dependency graph (partial → page)  | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
-| Assets + Sass                      | `lib/assets.js`              | `AIKB/assets.md`              |
-| Asset pipeline (external tools)    | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
-| Asset manifest + cache busting     | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
-| Sass binding                       | `lib/sass.js`                | `AIKB/sass.md`                |
-| Model resolution                   | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
-| URL-model fetch policy             | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
-| Controller resolution              | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
-| Sitemap                            | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
-| llms.txt (the AI-facing index)     | `lib/llms.js`                | `AIKB/llms.md`                |
-| Dev server                         | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
-| File watcher                       | `lib/watcher.js`             | `AIKB/watcher.md`             |
-| String/path utils                  | `lib/utils.js`               | `AIKB/utils.md`               |
-| Cross-cutting: testing conventions | `test/`                      | `AIKB/testing.md`             |
+| Module                                | File                         | AIKB doc                      |
+| ------------------------------------- | ---------------------------- | ----------------------------- |
+| Orchestrator / public API             | `lib/kiss.js`                | `AIKB/kiss.md`                |
+| Page renderer                         | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Build report (the machine verdict)    | `lib/build-report.js`        | `AIKB/build-report.md`        |
+| `kiss-ssg check` decision core        | `lib/check.js`               | `AIKB/check.md`               |
+| Logger                                | `lib/logger.js`              | `AIKB/logger.md`              |
+| Config + folder derivation            | `lib/config.js`              | `AIKB/config.md`              |
+| Built-in Handlebars helpers           | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Partials / layouts registration       | `lib/partials.js`            | `AIKB/partials.md`            |
+| Dependency graph (partial → page)     | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
+| Assets + Sass                         | `lib/assets.js`              | `AIKB/assets.md`              |
+| Asset pipeline (external tools)       | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
+| Asset manifest + cache busting        | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Sass binding                          | `lib/sass.js`                | `AIKB/sass.md`                |
+| Model resolution                      | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| URL-model fetch policy                | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
+| Controller resolution                 | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
+| Sitemap                               | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
+| llms.txt (the AI-facing index)        | `lib/llms.js`                | `AIKB/llms.md`                |
+| Site knowledge base (`kiss-ssg aikb`) | `lib/aikb.js`                | `AIKB/aikb.md`                |
+| Dev server                            | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
+| File watcher                          | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| String/path utils                     | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: testing conventions    | `test/`                      | `AIKB/testing.md`             |
 
 ## Commands
 
@@ -54,13 +55,21 @@ npm run typecheck        # tsc --checkJs over lib/, scripts/ and bin/ — checks
                          # (tsconfig.check.json; tsconfig.types.json is the one that emits types/)
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the five pre-PR gates: test, lint, typecheck, format, pack
-npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing
+npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing.
+                               # Diffs against the site's own AIKB/last-build.json when it has
+                               # one, so it says what this working tree changed since the last
+                               # record; --against <file> names a different baseline.
                                # e.g. from examples/: `node ../bin/kiss-ssg.js check 8-data-fed-site.js`
                                # (exits 1 — example 8 fails one page on purpose)
+npx kiss-ssg aikb <script>     # record the site's knowledge base into config.folders.aikb from
+                               # the same staged, discarded build. Publishes nothing, refuses a
+                               # failed build, and is the only thing that writes that folder —
+                               # run it when a piece of work closes and commit the result.
+                               # e.g. from examples/: `node ../bin/kiss-ssg.js aikb 9-migrated-from-v1.js`
 npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
-node scripts/sync-plugin-versions.mjs   # carry package.json's version into both plugin
-                               # manifests. Wired to npm's `version` lifecycle, so
+node scripts/sync-plugin-versions.mjs   # carry package.json's version into every plugin
+                               # manifest. Wired to npm's `version` lifecycle, so
                                # `npm version` already ran it — this is the manual escape hatch.
 npm run bench                  # benchmark harness: 6 scenarios over a generated fixture,
                                # fresh child process per iteration, median of N runs
@@ -97,7 +106,7 @@ Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettie
 
 ## Pipeline in one paragraph
 
-`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues `config.assets.pipeline`'s external commands and then an asset copy (both on one queue, so the steps always run first), registers helpers and partials, and in dev mode starts the server and watcher — plus, per pipeline step that has one, a long-lived `watch` process that `close()` ends. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` runs `_settle()` — drain everything (including work queued by callbacks), render whatever the drain left unrendered, repeat until the stack is stable — then **rejects with an `AggregateError`** if any page, controller, callback or the dev server failed, and otherwise resolves (and, under `cleanBuild: 'atomic'`, promotes the staging folder at that point). `.sitemap()` waits for `_promises` and writes `sitemap.xml`; `.llms()` waits on the same queue and writes the llmstxt.org `llms.txt` from the same registry and the same URL join. Under `.watch()`, every event goes to `Kiss._handleChange`, which decides between a scoped re-render of matching stack entries (a page-view edit; a partial or layout edit re-renders the pages `lib/dependency-graph.js` recorded as having rendered it, or every page with a notice when it has none) and a whole-site rebuild that replays the pipeline from the logged `_registrations` (`Kiss._replay()`) so edited models and controllers take effect; both kinds go through one serial rebuild queue, and one live reload fires per settled rebuild. Every settled build also assembles one `BuildReport` — `kiss.report()`, `err.report` on the rejection, and a JSON Lines file when `KISS_REPORT` is set; with `KISS_CHECK=1` the build is staged and then discarded whether it passed or failed, which is what `kiss-ssg check` runs. Full detail: `AIKB/kiss.md`, `AIKB/build-report.md`, `AIKB/check.md`.
+`new Kiss(config)` resolves config, creates a per-instance Handlebars env (with handlebars-layouts) and Remarkable renderer, ensures folders, queues `config.assets.pipeline`'s external commands and then an asset copy (both on one queue, so the steps always run first), registers helpers and partials, and in dev mode starts the server and watcher — plus, per pipeline step that has one, a long-lived `watch` process that `close()` ends. `.page()`/`.pages()`/`.scan()` queue pages: each becomes one caught promise on `_promises` that resolves the model, runs the controller, and pushes a prepared `KissPage` onto `_stack`. Nothing renders until `.generate()`, which waits for `_promises`, renders each stack entry once, awaits the writes, then fires its callback. `.complete()` runs `_settle()` — drain everything (including work queued by callbacks), render whatever the drain left unrendered, repeat until the stack is stable — then **rejects with an `AggregateError`** if any page, controller, callback or the dev server failed, and otherwise resolves (and, under `cleanBuild: 'atomic'`, promotes the staging folder at that point). `.sitemap()` waits for `_promises` and writes `sitemap.xml`; `.llms()` waits on the same queue and writes the llmstxt.org `llms.txt` from the same registry and the same URL join. Under `.watch()`, every event goes to `Kiss._handleChange`, which decides between a scoped re-render of matching stack entries (a page-view edit; a partial or layout edit re-renders the pages `lib/dependency-graph.js` recorded as having rendered it, or every page with a notice when it has none) and a whole-site rebuild that replays the pipeline from the logged `_registrations` (`Kiss._replay()`) so edited models and controllers take effect; both kinds go through one serial rebuild queue, and one live reload fires per settled rebuild. Every settled build also assembles one `BuildReport` — `kiss.report()`, `err.report` on the rejection, and a JSON Lines file when `KISS_REPORT` is set; with `KISS_CHECK=1` the build is staged and then discarded whether it passed or failed, which is what `kiss-ssg check` runs; with `KISS_AIKB=1` as well, a passing non-dev build also records the site's knowledge base into `folders.aikb`, which is what `kiss-ssg aikb` runs and the only thing that writes that folder. Full detail: `AIKB/kiss.md`, `AIKB/build-report.md`, `AIKB/check.md`, `AIKB/aikb.md`.
 
 ## Git workflow
 
@@ -107,9 +116,9 @@ Two automated nets, and they run the same script. A **pre-commit hook** (`.githo
 
 A branch runs as three beats, all reading one committed artefact — `planning/sessions/<date>-<slug>.md`:
 
-- **`/branch-open`** (Frame) — run on the base branch. Interviews for intent (objective, success criteria, non-goals, **impact surface**, expected shape), writes it to the session file, creates the branch. The impact surface (public API / engine internals / tooling & docs) is what `/branch-close` reads to propose the semver bump.
-- **`/branch-pulse`** (Steer) — run repeatedly mid-branch. Re-checks the captured success criteria with evidence (`npm test`, a `timeout`-bounded example run, a human eyeball), catches drift early, logs each checkpoint to the file's `## Pulse log`. Cheap and formative.
-- **`/branch-close`** (Verify & close) — the single end-of-branch command. Sequences `/secrets-scan`, `/docs-sweep`, `/corpse-collector`, the version bump, `/test-coverage-check --gate`, `npm run gates`, an optional Codex review, `/retrospective`, then pushes and opens the PR **against the base branch**. Never push manually without running it first.
+- **`/branch-open`** (Frame) — run on the base branch. Reads back the Feedback of every earlier session log (skipping lessons already retired) and lists abandoned open logs, then interviews for intent (objective, success criteria, non-goals, **impact surface**, expected shape, and for a substantial branch the delegation convention and a contract document), writes it to the session file, creates the branch. The impact surface (public API / engine internals / tooling & docs) is what `/branch-close` reads to propose the semver bump.
+- **`/branch-pulse`** (Steer) — run repeatedly mid-branch. Re-checks the captured success criteria with evidence (`npm test`, a `timeout`-bounded example run, a human eyeball), catches drift early, logs each checkpoint to the file's `## Pulse log`. Cheap and formative. Claude offers it — at least once per working session the branch stays open, and at each natural slice boundary — rather than waiting to be asked; a branch that reaches `/branch-close` unpulsed did all its verification at the boundary.
+- **`/branch-close`** (Verify & close) — the single end-of-branch command. Sequences `/secrets-scan`, `/docs-sweep`, `/corpse-collector`, the version bump, `/test-coverage-check --gate`, an operator eyeball on one changed artefact, `npm run gates`, an optional Codex review, `/session-reflect`, then pushes and opens the PR **against the base branch**. Never push manually without running it first.
 
 `/branch-close` also bumps the version in `package.json` and adds a `CHANGELOG.md` entry. Semver is a real promise here — this package is published — so the bump follows the branch's captured impact surface: public API additions are minor, breaking changes major, everything else patch. While the version carries a prerelease tag the bump is `npm version prerelease --preid alpha` unless the operator is deliberately cutting the release.
 
@@ -117,7 +126,7 @@ A branch runs as three beats, all reading one committed artefact — `planning/s
 
 **Never run `/branch-close` or create a PR unless explicitly asked.** Commit and push the outstanding changes, then stop.
 
-Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc staleness for the branch's diff), `/corpse-collector` (dead references repo-wide), `/test-coverage-check` (modules with no `test/unit/` sibling), `/secrets-scan`, `/retrospective`. The supervision rubric the reflections score against is `.claude/skills/retrospective/rubric.md`.
+Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc staleness for the branch's diff), `/corpse-collector` (dead references repo-wide), `/test-coverage-check` (modules with no `test/unit/` sibling), `/secrets-scan`, `/session-reflect`, `/memory-consolidate` (housekeeping **between** branches: folds the recurring lessons out of `planning/sessions/` into a rule here or a step in a ritual skill, and stamps each log `consolidated:`). The supervision rubric the reflections score against is `.claude/skills/session-reflect/rubric.md`; the lessons already promoted out of the logs are listed in `.claude/skills/memory-consolidate/retired.md`.
 
 ## Rules
 
@@ -128,3 +137,6 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
 - Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit.
 - JSDoc is the type source, and it is checked: `npm run typecheck` (a gate) runs `tsc --checkJs` over `lib/`, `scripts/` and `bin/`. A private class field annotated with `@type` needs `@private` in the _same_ JSDoc block — a second comment displaces it and the field lands in the published `types/`, which `test/unit/types.test.js` rejects.
+- A regression test is accepted only once it has been seen to fail against the unfixed code. A test that has never been red is a guess about coverage, not evidence of it.
+- A doc is a claim about the code, not evidence of it — check `lib/` before repeating what `AIKB/`, `llms.txt` or a `planning/plans/` document says about it, and before writing a plan step that depends on it.
+- Say it at the point of decision, not in the reflection: an unanswered operator question, a risk carried by inherited work, a diff that is mostly generated files — surface it before the step that depends on it, not afterwards as a diagnosis.

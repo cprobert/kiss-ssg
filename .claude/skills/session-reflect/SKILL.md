@@ -1,5 +1,5 @@
 ---
-name: retrospective
+name: session-reflect
 description: Supervised-collaboration session reflection. Generates a date-stamped reflection in planning/sessions/ that reads how actively the human supervised the AI — reflect on the session, evaluate the supervision against the rubric, give feedback for next time, and verdict on whether the objective was achieved — as CPD for both the human and Claude. Run before wiping context to preserve institutional memory that context windows cannot hold.
 ---
 
@@ -11,7 +11,7 @@ The structure is **Reflect → Evaluate → Feedback → Verdict**: reflect on w
 
 ## When to use
 
-Run `/retrospective` before clearing context or ending a significant session. Context windows are ephemeral; the decisions, tensions, and supervision dynamics within a session disappear with them. Run it after `/docs-sweep` and the gates — correctness first, then reflection.
+Run `/session-reflect` before clearing context or ending a significant session. Context windows are ephemeral; the decisions, tensions, and supervision dynamics within a session disappear with them. Run it after `/docs-sweep` and the gates — correctness first, then reflection.
 
 > **Where reflections live: `planning/sessions/`.** Not `docs/` — `docs.js` empties that directory on every run (`cleanBuild: true`), so anything written there is deleted by the next build. Session logs sit beside the specs and plans in `planning/`.
 
@@ -93,7 +93,10 @@ End with the **competency level** — one of **Passive delegator / Assisted oper
 
 ## Feedback — recommendations for next session
 
-Honest, both directions, both partners — framed as **recommendations**, not observations. Anchor them to the dimensions that scored low in Evaluate: if learning engagement was thin, the recommendation is concrete ("ask Claude to explain the non-obvious block before accepting it"); if verification was waved through, name the check that should have run. **Harness leverage is usually the richest seam here** — it's where the operator has the most to learn: if plan mode, a sub-agent pass, a fitting skill, or an MCP tool would have made the session faster, safer, or more accurate and wasn't used, name the specific technique and when to reach for it next time. Keep the technical specifics: failure modes caught (and missed), and the fix each one points to. Every item ends in a concrete next-time change. This is the institutional-memory payload — don't let it go soft.
+Honest, both directions, both partners — framed as **recommendations**, not observations.
+
+**Every item starts with its audience in bold** — **Operator**, **Claude**, **Both** or **Process** — then the recommendation: `- **Operator — look at the artefact you asked for.** Run …`. The logs already do this informally (some as a bold group heading, some inline), and making it a rule is what lets `/memory-consolidate` route a recurring lesson to where it can act: an item aimed at Claude that keeps coming back becomes a bullet in `CLAUDE.md` § Rules, one aimed at the operator becomes a step in `/branch-open`, `/branch-pulse` or `/branch-close`. An unaddressed item is one nobody owns, and it comes back next branch unchanged.
+Anchor them to the dimensions that scored low in Evaluate: if learning engagement was thin, the recommendation is concrete ("ask Claude to explain the non-obvious block before accepting it"); if verification was waved through, name the check that should have run. **Harness leverage is usually the richest seam here** — it's where the operator has the most to learn: if plan mode, a sub-agent pass, a fitting skill, or an MCP tool would have made the session faster, safer, or more accurate and wasn't used, name the specific technique and when to reach for it next time. Keep the technical specifics: failure modes caught (and missed), and the fix each one points to. Every item ends in a concrete next-time change. This is the institutional-memory payload — don't let it go soft.
 
 ## Verdict — did we achieve the objective?
 
@@ -107,7 +110,7 @@ The culmination. Re-state the brief, then a plain verdict against the original i
 
 **What we shipped:** [commits / PR + one line]
 **Supervision:** [planned or emergent; competency level — passive delegator / assisted operator / active supervisor / agentic engineering lead; the standout dimension, strong or weak; intended vs actual supervision]
-**Feedback for next time:** [concrete, both partners]
+**Feedback for next time:** [concrete, both partners; each item prefixed with its audience in bold — **Operator** / **Claude** / **Both** / **Process**]
 **Did we achieve the objective?** [verdict + what's still open]
 ```
 
@@ -165,8 +168,8 @@ Full reflection → `planning/sessions/{filename}`
 
 ## Relationship to other gates
 
-| Gate             | When                                                       | What it captures                                                                                                   |
-| ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `npm run gates`  | Gates step of `/branch-close`                              | Correctness: test, lint, typecheck, format, pack                                                                   |
-| `/docs-sweep`    | Docs Sweep step of `/branch-close`                         | Doc accuracy across the branch                                                                                     |
-| `/retrospective` | Retrospective step of `/branch-close`, before context wipe | The supervision: how actively the human supervised, feedback for next time, and whether the objective was achieved |
+| Gate               | When                                                       | What it captures                                                                                                   |
+| ------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `npm run gates`    | Gates step of `/branch-close`                              | Correctness: test, lint, typecheck, format, pack                                                                   |
+| `/docs-sweep`      | Docs Sweep step of `/branch-close`                         | Doc accuracy across the branch                                                                                     |
+| `/session-reflect` | Retrospective step of `/branch-close`, before context wipe | The supervision: how actively the human supervised, feedback for next time, and whether the objective was achieved |

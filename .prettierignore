@@ -16,3 +16,19 @@ types/
 # in this repo relies on — it errors rather than formatting. Templates are
 # hand-formatted.
 *.hbs
+
+# A verbatim copy of .claude/skills/session-reflect/rubric.md, shipped beside the
+# kiss-branch-close skill so a consuming site scores its reflections against the same
+# rubric. test/unit/plugin-manifests.test.js byte-compares it against the
+# original past its one-line source header — prettier reflowing the copy alone
+# would break that identity.
+plugins/kiss-memory/skills/kiss-branch-close/rubric.md
+
+# Written by `npx kiss-ssg aikb 9-migrated-from-v1.js` and committed as the
+# exemplar. `JSON.stringify(map, null, 2)` puts one value per line where
+# prettier would fill a short array onto one, and the engine cannot depend on
+# prettier at run time — so the machine-written JSON is left as the engine
+# writes it. The markdown beside it *is* emitted prettier-clean (tables padded
+# the way prettier pads them), and the authored notes under AIKB/notes/ are
+# ordinary source, so neither is ignored.
+examples/9-migrated-from-v1/AIKB/*.json

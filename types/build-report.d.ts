@@ -1,9 +1,85 @@
 /**
+ * One page the build queued.
+ *
+ * @typedef {Object} BuildPage
+ * @property {string} view the `.hbs` filename — an inline template is elided to its first line
+ * @property {string|null} buildTo the file it writes, against the real build folder
+ * @property {boolean} ok `false` when a failure names this output path
+ * @property {string|null} hash sha1 of the bytes written, or `null` when nothing was
+ */
+/**
+ * One file `.copyAssets()` put in the build, as the asset manifest records it.
+ *
+ * @typedef {Object} BuildAsset
+ * @property {string} source the build-relative path a template asks for (`css/site.css`)
+ * @property {string} target the file that is actually there (`css/site.a1b2c3d4.css`)
+ */
+/**
+ * One thing that failed to build. The same entry as {@link BuildFailure} with
+ * the `Error` reduced to its message — the object itself stays on the
+ * `AggregateError` `complete()` rejects with, so this stays serialisable.
+ *
+ * @typedef {Object} BuildReportFailure
+ * @property {string} view
+ * @property {string|null} buildTo `null` when the failure happened before the page had an output path
+ * @property {string} message
+ */
+/**
+ * One `config.assets.pipeline` step this build ran, as the report carries it:
+ * the step's `Error` is left behind on the failure entry that names it.
+ *
+ * @typedef {Object} BuildPipelineStep
+ * @property {string} name the step's `name`, or the first word of its `run`
+ * @property {boolean} ok the command exited 0
+ * @property {number} duration ms the command took
+ */
+/**
+ * What this build did about the site's knowledge base, as the report carries
+ * it: where that knowledge base lives, whether this build actually wrote it
+ * (only a passing `KISS_AIKB` record does), the four note findings, and the
+ * subjects those findings are about.
+ *
+ * @typedef {Object} BuildAikb
+ * @property {string} folder the AIKB folder, as configured
+ * @property {boolean} written `false` under check mode, and when a write failed
+ * @property {{ missing: string[], dead: string[], stale: string[], dangling: string[] }} notes all four sorted; `missing`, `dead` and `stale` are note paths, `dangling` is `<note path>: <token>`
+ * @property {import('./aikb.js').SiteMapSubject[]} subjects `{ kind, id, note, hash }` per subject of *this* build — the hash to stamp a note with, which `site-map.json` cannot yet carry because it still describes the last record
+ */
+/**
+ * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
+ * shape a script can act on without parsing log output.
+ *
+ * @typedef {Object} BuildReport
+ * @property {boolean} ok nothing failed
+ * @property {'build'|'check'} mode `'check'` when the build was staged and discarded rather than published
+ * @property {string} buildDir the folder the site was built for — never the staging sibling
+ * @property {number} duration ms from `new Kiss()` to the settled build
+ * @property {BuildPage[]} pages every queued page, in registration order
+ * @property {BuildReportFailure[]} failures
+ * @property {BuildAsset[]} assets
+ * @property {string|null} sitemap the `sitemap.xml` written, or `null` if none was
+ * @property {BuildPipelineStep[]} pipeline every `config.assets.pipeline` step, in order; empty when there are none
+ * @property {string|null} llms the `llms.txt` written, or `null` if none was
+ * @property {BuildAikb|null} aikb the site's knowledge base, or `null` when there is none to report on
+ */
+/**
+ * @param {string|null|undefined} target
+ * @param {string} buildDir
+ * @param {string|null} [stagingDir]
+ * @returns {string|null}
+ */
+export function reportedPath(target: string | null | undefined, buildDir: string, stagingDir?: string | null): string | null;
+/**
+ * @param {string} view
+ * @returns {string}
+ */
+export function reportedView(view: string): string;
+/**
  * Assembles the report for one settled build. Key order is fixed: the report is
  * read as text as often as it is read as data.
  *
  * @param {Object} input
- * @param {{ view: string, buildTo: string|null }[]} [input.stack] the prepared pages
+ * @param {{ view: string, buildTo: string|null, page?: { hash?: string|null } }[]} [input.stack] the prepared pages
  * @param {import('./kiss.js').BuildFailure[]} [input.failures]
  * @param {{ toObject: () => Record<string, string> }|null} [input.manifest] the instance's asset manifest
  * @param {string} input.buildDir the real build folder
@@ -13,12 +89,16 @@
  * @param {string|null} [input.sitemap] the sitemap written by this build
  * @param {import('./pipeline.js').PipelineResult[]} [input.pipeline] what the asset pipeline's steps did
  * @param {string|null} [input.llms] the llms.txt written by this build
+ * @param {BuildAikb|null} [input.aikb] the site's knowledge base, `null` when there is none to report on
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, llms, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, llms, aikb, }: {
     stack?: {
         view: string;
         buildTo: string | null;
+        page?: {
+            hash?: string | null;
+        };
     }[];
     failures?: import("./kiss.js").BuildFailure[];
     manifest?: {
@@ -31,6 +111,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     sitemap?: string | null;
     pipeline?: import("./pipeline.js").PipelineResult[];
     llms?: string | null;
+    aikb?: BuildAikb | null;
 }): BuildReport;
 /**
  * The one-line human rendering of a report, plus one line per failure — what
@@ -56,6 +137,10 @@ export type BuildPage = {
      * `false` when a failure names this output path
      */
     ok: boolean;
+    /**
+     * sha1 of the bytes written, or `null` when nothing was
+     */
+    hash: string | null;
 };
 /**
  * One file `.copyAssets()` put in the build, as the asset manifest records it.
@@ -102,6 +187,35 @@ export type BuildPipelineStep = {
     duration: number;
 };
 /**
+ * What this build did about the site's knowledge base, as the report carries
+ * it: where that knowledge base lives, whether this build actually wrote it
+ * (only a passing `KISS_AIKB` record does), the four note findings, and the
+ * subjects those findings are about.
+ */
+export type BuildAikb = {
+    /**
+     * the AIKB folder, as configured
+     */
+    folder: string;
+    /**
+     * `false` under check mode, and when a write failed
+     */
+    written: boolean;
+    /**
+     * all four sorted; `missing`, `dead` and `stale` are note paths, `dangling` is `<note path>: <token>`
+     */
+    notes: {
+        missing: string[];
+        dead: string[];
+        stale: string[];
+        dangling: string[];
+    };
+    /**
+     * `{ kind, id, note, hash }` per subject of *this* build — the hash to stamp a note with, which `site-map.json` cannot yet carry because it still describes the last record
+     */
+    subjects: import("./aikb.js").SiteMapSubject[];
+};
+/**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
  * shape a script can act on without parsing log output.
  */
@@ -140,4 +254,8 @@ export type BuildReport = {
      * the `llms.txt` written, or `null` if none was
      */
     llms: string | null;
+    /**
+     * the site's knowledge base, or `null` when there is none to report on
+     */
+    aikb: BuildAikb | null;
 };

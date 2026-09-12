@@ -44,6 +44,46 @@ const NEVER_COMPLETES = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public' } })
 kiss.scan().generate()`)
 
+// A site with a knowledge base configured: the only thing `folders.aikb` does
+// on its own is say where `kiss-ssg aikb` would write one.
+const WITH_AIKB = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss.scan().generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
+const WITH_AIKB_BROKEN = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss.scan().page({ view: 'missing.hbs' }).generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
+// A site with a subject in it — a controller **file**, the one thing a note
+// can be stale about — so the two mechanical note lints have something to
+// find.
+const WITH_SUBJECT = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss.page({ view: 'index.hbs', controller: 'index.js' }).generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
+// A real build of the same site, with its report appended to `reportFile` —
+// how a site keeps the last build it published, and what `--against` reads.
+function record(cwd, reportFile) {
+  return spawnSync(process.execPath, ['build.js'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 60000,
+    env: { ...process.env, KISS_REPORT: reportFile },
+  })
+}
+
 function check(cwd, args) {
   return spawnSync(process.execPath, [bin, ...args], {
     cwd,
@@ -81,7 +121,13 @@ describe('kiss-ssg check', () => {
       sitemap: null,
     })
     expect(reports[0].pages).toEqual([
-      { view: 'index.hbs', buildTo: './public/index.html', ok: true },
+      {
+        view: 'index.hbs',
+        buildTo: './public/index.html',
+        ok: true,
+        // sha1 of the bytes the page wrote — the staged ones, in a check.
+        hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+      },
     ])
     expect(await temp.exists('public')).toBe(false)
     expect(siblings(temp.root)).toEqual([])
@@ -108,7 +154,10 @@ describe('kiss-ssg check', () => {
       view: 'index.hbs',
       buildTo: './public/index.html',
       ok: true,
+      hash: expect.stringMatching(/^[0-9a-f]{40}$/),
     })
+    // The page that failed wrote nothing, so it names no bytes.
+    expect(report.pages.find((p) => p.view === 'missing.hbs')?.hash).toBeNull()
     expect(await temp.exists('public')).toBe(false)
     expect(siblings(temp.root)).toEqual([])
   }, 60000)
@@ -173,15 +222,252 @@ describe('kiss-ssg check', () => {
     expect(run.stderr).toContain('no build report')
   }, 60000)
 
+  it('names the page that changed since the report --against reads', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/about.hbs': '<p>about</p>',
+      'build.js': ONE_PAGE,
+    })
+
+    expect(
+      record(temp.root, path.join(temp.root, 'last-build.jsonl')).status,
+    ).toBe(0)
+    await temp.touch('src/pages/about.hbs', '<p>about, rewritten</p>')
+
+    const run = check(temp.root, [
+      'check',
+      '--against',
+      'last-build.jsonl',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(0)
+    const { reports, diff } = JSON.parse(run.stdout)
+    expect(reports).toHaveLength(1)
+    expect(diff).toEqual([
+      {
+        buildDir: './public',
+        added: [],
+        removed: [],
+        changed: ['./public/about.html'],
+        unchanged: 1,
+      },
+    ])
+  }, 60000)
+
+  it('prints the diff under each site in --summary, without moving the exit code', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/about.hbs': '<p>about</p>',
+      'build.js': ONE_PAGE,
+    })
+
+    expect(
+      record(temp.root, path.join(temp.root, 'last-build.jsonl')).status,
+    ).toBe(0)
+    await temp.touch('src/pages/contact.hbs', '<p>contact</p>')
+    await fs.remove(path.join(temp.root, 'src/pages/about.hbs'))
+
+    const run = check(temp.root, [
+      'check',
+      '--summary',
+      '--against',
+      'last-build.jsonl',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 2 pages/)
+    expect(lines.slice(1)).toEqual([
+      '  + ./public/contact.html',
+      '  - ./public/about.html',
+      '  = 1 unchanged',
+    ])
+  }, 60000)
+
+  it('refuses an --against file it cannot read, before building anything', () => {
+    const run = check(repoRoot, [
+      'check',
+      '--against',
+      'no-such-report.json',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(1)
+    expect(run.stdout).toBe('')
+    expect(run.stderr).toContain(
+      'cannot read --against file no-such-report.json',
+    )
+    // A usage error, so it prints the help the way every other one does.
+    expect(run.stderr).toContain('kiss-ssg <command> <script>')
+  })
+
   it('prints the help for --help, and a usage error for anything it cannot parse', () => {
     const help = check(repoRoot, ['--help'])
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain('kiss-ssg check <script>')
+    expect(help.stdout).toContain('kiss-ssg <command> <script>')
+    expect(help.stdout).toContain('aikb <script>')
 
     const wrong = check(repoRoot, ['build', 'site.js'])
     expect(wrong.status).toBe(1)
     expect(wrong.stderr).toContain('unknown command: build')
   })
+})
+
+describe('kiss-ssg aikb', () => {
+  it('records the folder from a passing build, publishes nothing, and says so', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+
+    const run = check(temp.root, ['aikb', '--summary', 'build.js'])
+
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 1 pages/)
+    expect(lines[1]).toBe('  recorded AIKB')
+    for (const file of [
+      'README.md',
+      'site-map.md',
+      'site-map.json',
+      'last-build.json',
+    ])
+      expect(await temp.exists(`AIKB/${file}`)).toBe(true)
+    // The same staged, discarded build `check` runs: the site itself is never
+    // published, and the only thing on disk afterwards is the knowledge base.
+    expect(await temp.exists('public')).toBe(false)
+    expect(siblings(temp.root)).toEqual([])
+  }, 60000)
+
+  it('refuses to record a failed build, writes nothing and exits 1', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB_BROKEN,
+    })
+
+    const run = check(temp.root, ['aikb', '--summary', 'build.js'])
+
+    expect(run.status).toBe(1)
+    expect(run.stdout).toContain('  not recorded — build failed')
+    expect(await temp.exists('AIKB')).toBe(false)
+  }, 60000)
+
+  it('leaves an already-recorded folder untouched when the build fails', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    const before = await temp.read('AIKB/last-build.json')
+    // Now break the site, and record again.
+    await temp.touch('build.js', WITH_AIKB_BROKEN)
+
+    const run = check(temp.root, ['aikb', '--summary', 'build.js'])
+
+    expect(run.status).toBe(1)
+    expect(run.stdout).toContain('  not recorded — build failed')
+    // The baseline still describes the last build that worked, which is the
+    // one property the whole ceremony exists to keep.
+    expect(await temp.read('AIKB/last-build.json')).toBe(before)
+  }, 60000)
+})
+
+describe('kiss-ssg check, against the knowledge base', () => {
+  it('diffs against the recorded baseline with no --against at all', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/about.hbs': '<p>about</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+
+    // Nothing has changed since the record, so the diff says exactly that.
+    const clean = check(temp.root, ['check', '--summary', 'build.js'])
+    expect(clean.status).toBe(0)
+    expect(clean.stdout.trim().split('\n').slice(1)).toEqual([
+      '  = 2 unchanged',
+    ])
+
+    // ...and one edit later it names the page and nothing else. The check
+    // publishes nothing, so the baseline it just read is still the same file.
+    await temp.touch('src/pages/about.hbs', '<p>about, rewritten</p>')
+    const dirty = check(temp.root, ['check', '--summary', 'build.js'])
+    expect(dirty.status).toBe(0)
+    expect(dirty.stdout.trim().split('\n').slice(1)).toEqual([
+      '  ~ ./public/about.html',
+      '  = 1 unchanged',
+    ])
+  }, 60000)
+
+  it('prints the stale and dangling note lines under --summary', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/controllers/index.js': 'export default () => ({ title: "Home" })\n',
+      'build.js': WITH_SUBJECT,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    // Written after the record, the way a person writes a note: stamped with
+    // a hash that is not this controller's, and citing a file that is gone.
+    await temp.touch(
+      'AIKB/notes/controllers/index.md',
+      `---\nsubject-hash: ${'0'.repeat(40)}\n---\n\n## What it does\n\nReplaced \`src/pages/old.hbs\`.\n`,
+    )
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // Findings, not failures: both lines print and the check still passes.
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines).toContain('  note stale: AIKB/notes/controllers/index.md')
+    expect(lines).toContain(
+      '  note dangling: AIKB/notes/controllers/index.md: src/pages/old.hbs',
+    )
+  }, 60000)
+
+  it('does not diff a site that has never been recorded', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // `folders.aikb` names a folder nobody has recorded, so there is no
+    // baseline, no diff — and the report has nothing to say about it either.
+    expect(run.status).toBe(0)
+    expect(run.stdout.trim().split('\n')).toHaveLength(1)
+    expect(
+      JSON.parse(check(temp.root, ['check', 'build.js']).stdout)[0].aikb,
+    ).toBeNull()
+  }, 60000)
+
+  it('lets --against win over the recorded baseline', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+    // The record is the site at one page...
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    // ...and this published build, kept separately, is the site at two.
+    await temp.touch('src/pages/about.hbs', '<p>about</p>')
+    expect(
+      record(temp.root, path.join(temp.root, 'published.jsonl')).status,
+    ).toBe(0)
+
+    const run = check(temp.root, [
+      'check',
+      '--summary',
+      '--against',
+      'published.jsonl',
+      'build.js',
+    ])
+
+    expect(run.status).toBe(0)
+    // Against the baseline it would be `+ ./public/about.html, = 1 unchanged`.
+    expect(run.stdout.trim().split('\n').slice(1)).toEqual(['  = 2 unchanged'])
+  }, 60000)
 })
 
 // The same report, read through the API rather than through the bin: `report()`
@@ -206,7 +492,12 @@ describe('kiss.report()', () => {
     expect(report).toMatchObject({ ok: true, mode: 'build', failures: [] })
     expect(report.buildDir).toBe(temp.build)
     expect(report.pages).toEqual([
-      { view: 'index.hbs', buildTo: `${temp.build}/index.html`, ok: true },
+      {
+        view: 'index.hbs',
+        buildTo: `${temp.build}/index.html`,
+        ok: true,
+        hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+      },
     ])
     expect(report.assets).toEqual([
       { source: 'robots.txt', target: 'robots.txt' },

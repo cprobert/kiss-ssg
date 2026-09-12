@@ -43,3 +43,7 @@ The whole script, and `8-data-fed-site/controllers/stockist.js` with it:
 - **The exit code** — `await kiss.complete().catch(reportBuildFailure)`. Without the await, a
   broken feed exits 0 and the deploy ships a site with a hole in it.
 - **The atomic build** — for anything publishing over a live site.
+
+This example deliberately ships no `AIKB/` folder: `npx kiss-ssg aikb` records a site's knowledge
+base only from a build that **worked**, and this one fails on purpose. Example 9 is the exemplar —
+see `9-migrated-from-v1/AIKB/`.

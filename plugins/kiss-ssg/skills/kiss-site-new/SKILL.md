@@ -1,6 +1,6 @@
 ---
-name: kiss-new-site
-description: Build a new static site with kiss-ssg from a description of what it should contain, or add a whole new section to an existing site (its own model, controller and view pattern). Use when scaffolding a kiss-ssg site from scratch, doing kiss-ssg initial setup, or when asked to "make a site with kiss", "set up kiss-ssg", "initialise a kiss-ssg site", or "write the build script for this site". For adding or updating a single page on a site that is already set up, use the kiss-add-page skill instead.
+name: kiss-site-new
+description: Build a new static site with kiss-ssg from a description of what it should contain, or add a whole new section to an existing site (its own model, controller and view pattern). Use when scaffolding a kiss-ssg site from scratch, doing kiss-ssg initial setup, or when asked to "make a site with kiss", "set up kiss-ssg", "initialise a kiss-ssg site", or "write the build script for this site". For adding or updating a single page on a site that is already set up, use the kiss-page-add skill instead.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -41,18 +41,20 @@ Per-module detail, if you need it, is in `node_modules/kiss-ssg/AIKB/`.
 
 `node_modules/kiss-ssg/examples/README.md` lists ten runnable sites in two tiers. Pick the one whose _situation_ matches and copy its structure — its folder layout, its script shape, its controller pattern — never its content.
 
-| Shape                                                                      | Exemplar                                                                                                         |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| One build per edition/season/version, each into its own folder             | `node_modules/kiss-ssg/examples/7-versioned-outputs.js`                                                          |
-| Pages fanned out from data you do not control, validated in the controller | `node_modules/kiss-ssg/examples/8-data-fed-site.js`                                                              |
-| A v1 project being moved to v2                                             | `node_modules/kiss-ssg/examples/9-migrated-from-v1.js` — and use the `kiss-migrate-v1` skill instead of this one |
-| A single narrower question (which call, which option, which helper)        | Examples 1–6, the feature reference                                                                              |
+| Shape                                                                      | Exemplar                                                                                                           |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| One build per edition/season/version, each into its own folder             | `node_modules/kiss-ssg/examples/7-versioned-outputs.js`                                                            |
+| Pages fanned out from data you do not control, validated in the controller | `node_modules/kiss-ssg/examples/8-data-fed-site.js`                                                                |
+| A v1 project being moved to v2                                             | `node_modules/kiss-ssg/examples/9-migrated-from-v1.js` — and use the `kiss-site-migrate` skill instead of this one |
+| A single narrower question (which call, which option, which helper)        | Examples 1–6, the feature reference                                                                                |
 
 Run the exemplar before you change anything, so you know what its output and exit code are meant to look like. Example 8 exits 1 on purpose.
 
 ### 5. Write the build script
 
 End the chain at `await kiss.complete()`, inside a `try`/`catch` that prints every entry of `err.failures` and sets a non-zero exit code — the recipe is in `llms.txt` § Migrating from v1, and running code is `node_modules/kiss-ssg/examples/9-migrated-from-v1/pages/await-complete.hbs` (its README indexes the recipes by built page name).
+
+If the site will be handed on — to a colleague, or to you in two years — record its knowledge base once it builds green: `npx kiss-ssg aikb <site-script>` (documented in `node_modules/kiss-ssg/llms.txt`) runs the build staged and discarded, publishes nothing, and writes `AIKB/site-map.md`, `AIKB/site-map.json` and `AIKB/last-build.json` — the pages, models, controllers, partials and pipeline steps the build actually saw — into `config.folders.aikb` (default `./AIKB`). Commit that folder. It takes no change to the build script, a failed build is refused, and recording once is what opts the site in: from then on `kiss-ssg check` diffs against the record by default, and the sibling `kiss-memory` plugin's skills read it back as a briefing and as the baseline for a piece of work.
 
 Three mistakes real consumer sites made, all of which passed review before they bit:
 
@@ -62,4 +64,4 @@ Three mistakes real consumer sites made, all of which passed review before they 
 
 ### 6. Build, then verify
 
-Build it, then run the `kiss-check` skill (`/kiss-ssg:kiss-check`) and do not declare the site done until it reports `ok: true`. A build you have not verified is a build you have not finished.
+Build it, then run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`) and do not declare the site done until it reports `ok: true`. A build you have not verified is a build you have not finished.

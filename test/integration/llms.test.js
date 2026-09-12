@@ -113,7 +113,11 @@ describe('.llms()', () => {
     await buildSite(false)
     const report = kiss.report()
     expect(report.llms).toBe(`${site.build}/llms.txt`)
-    expect(Object.keys(report).at(-1)).toBe('llms')
+    // Appended after `pipeline`, so a consumer diffing two reports sees one new
+    // key rather than a reshuffle. `aikb` was appended after it for the same
+    // reason, which is why this is a relative assertion and not `at(-1)`.
+    const keys = Object.keys(report)
+    expect(keys.indexOf('llms')).toBe(keys.indexOf('pipeline') + 1)
   })
 
   it('logs an error and skips without a siteUrl, leaving the build ok', async () => {

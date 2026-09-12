@@ -1,6 +1,6 @@
 # The supervision rubric
 
-The shared vocabulary `/retrospective` scores a session against, and that `/branch-pulse` speaks in mid-branch. It lives here — beside the skill that applies it — rather than in the repo, so the skill and its rubric travel together and the reference never depends on where the skill folder sits.
+The shared vocabulary `/session-reflect` scores a session against, and that `/branch-pulse` speaks in mid-branch. It lives here — beside the skill that applies it — rather than in the repo, so the skill and its rubric travel together and the reference never depends on where the skill folder sits.
 
 A reflection's **Evaluate** section reads _how actively the human supervised the AI_. The session's quality is set less by the model than by the human's supervision — framing the problem, asking the AI to explain rather than accepting code blindly, correcting it rather than absorbing the first answer, verifying before accepting, and being able to explain afterwards what changed. The defining divide is **active supervisor vs passive delegator**.
 

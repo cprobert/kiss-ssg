@@ -68,7 +68,7 @@ Go through the success criteria one at a time. For each, state **met / partial /
 
   **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Then **hand off to the human to eyeball the generated HTML** — the human verifying is the point, not a fallback.
 
-Speak in the supervision rubric's vocabulary (`.claude/skills/retrospective/rubric.md`) — this beat exercises **Verification & ownership** and **Pushback & steering** above all.
+Speak in the supervision rubric's vocabulary (`.claude/skills/session-reflect/rubric.md`) — this beat exercises **Verification & ownership** and **Pushback & steering** above all.
 
 ### Step 4 — Drift check
 
@@ -105,4 +105,4 @@ git commit -m "Pulse: <YYYY-MM-DD> <one-line decision>"
 | **Steer**          | `/branch-pulse` (here) | Re-check criteria vs evidence; catch drift; decide continue/adjust/amend/close | Formative — `npm test`, advisory coverage, a bounded example run |
 | **Verify & close** | `/branch-close`        | Verify against the original criteria + reflect + ship                          | Summative — the full `npm run gates` battery                     |
 
-The pulse and the close are the formative/summative pair — the same split as `/test-coverage-check`'s advisory-vs-`--gate` modes. Evidence the pulse accrues in the `## Pulse log` is what `/branch-close` and `/retrospective` read at the end, so the Verdict scores a criteria list that was checked all along, not one reconstructed cold.
+The pulse and the close are the formative/summative pair — the same split as `/test-coverage-check`'s advisory-vs-`--gate` modes. Evidence the pulse accrues in the `## Pulse log` is what `/branch-close` and `/session-reflect` read at the end, so the Verdict scores a criteria list that was checked all along, not one reconstructed cold.

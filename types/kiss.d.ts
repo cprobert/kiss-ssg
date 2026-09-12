@@ -4,6 +4,8 @@ export type BuildPage = import("./build-report.js").BuildPage;
 export type BuildAsset = import("./build-report.js").BuildAsset;
 export type BuildReportFailure = import("./build-report.js").BuildReportFailure;
 export type BuildPipelineStep = import("./build-report.js").BuildPipelineStep;
+export type BuildAikb = import("./build-report.js").BuildAikb;
+export type SiteMap = import("./aikb.js").SiteMap;
 export type PipelineStep = import("./pipeline.js").PipelineStep;
 export type KissConfig = import("./config.js").KissConfig;
 export type KissConfigInput = import("./config.js").KissConfigInput;
@@ -279,6 +281,8 @@ declare class Kiss {
     /** @private */
     private _llmsPath;
     /** @private */
+    private _promotedFrom;
+    /** @private */
     private _checkMode;
     /** @type {KissConfig} */
     config: KissConfig;
@@ -332,6 +336,8 @@ declare class Kiss {
     private _promote;
     /** @private */
     private _finishBuild;
+    /** @private */
+    private _buildAikb;
     /** @private */
     private _discardStaging;
     /** @private */

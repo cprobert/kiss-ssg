@@ -1,6 +1,6 @@
 ---
-name: kiss-add-page
-description: Add a new page to a kiss-ssg site that is already set up, or update an existing page's content, model or controller. Use when asked to "add a page", "add a new page to the site", "add a blog post", "update this page", "change what's on this page", or when editing a `.hbs` view, a `.json` model or a controller in a project that already has `node_modules/kiss-ssg` installed. Not for scaffolding a brand-new site or adding a whole new section with its own model/controller pattern (use kiss-new-site for that), and not for a v1-to-v2 upgrade (use kiss-migrate-v1).
+name: kiss-page-add
+description: Add a new page to a kiss-ssg site that is already set up, or update an existing page's content, model or controller. Use when asked to "add a page", "add a new page to the site", "add a blog post", "update this page", "change what's on this page", or when editing a `.hbs` view, a `.json` model or a controller in a project that already has `node_modules/kiss-ssg` installed. Not for scaffolding a brand-new site or adding a whole new section with its own model/controller pattern (use kiss-site-new for that), and not for a v1-to-v2 upgrade (use kiss-site-migrate).
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -41,4 +41,4 @@ If the site runs a dev server (`dev: true`, started via `.watch()`), edit and wa
 
 ### 5. Verify
 
-Build the site, then run the `kiss-check` skill (`/kiss-ssg:kiss-check`) and don't call the change done until it reports `ok: true`. A missing page or a silently empty element is exactly what `check` catches and a build's exit code alone does not.
+Build the site, then run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`) and don't call the change done until it reports `ok: true`. A missing page or a silently empty element is exactly what `check` catches and a build's exit code alone does not.

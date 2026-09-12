@@ -7,7 +7,7 @@ description: Start-of-branch ritual, the mirror of /branch-close. Run on the bas
 
 `/branch-open` is the front bookend of the dev loop. `/branch-close` evaluates whether we did what we set out to do — so something has to _record_ what we set out to do. That's this skill: capture intent up front, as a committed artefact, so the brief is real (not reconstructed from memory at the end), seeds the PR, and is the baseline the closing reflection scores against.
 
-The captured intent lives in one `planning/sessions/<date>-<slug>.md` file per branch. `/branch-open` writes its **Intent** half; `/branch-close` → `/retrospective` writes its **Reflection** half into the same file. Open and close are two ends of one artefact.
+The captured intent lives in one `planning/sessions/<date>-<slug>.md` file per branch. `/branch-open` writes its **Intent** half; `/branch-close` → `/session-reflect` writes its **Reflection** half into the same file. Open and close are two ends of one artefact.
 
 > **Why `planning/`, not `docs/`.** `docs/` is build output — `docs.js` empties it on every run (`cleanBuild: true`), so nothing hand-written survives there. Session logs live beside the specs and plans in `planning/`.
 
@@ -61,6 +61,40 @@ Match the interview to the work:
 
 When unsure, ask one question: "quick chore, or something worth speccing?"
 
+### Step 2a — Read back the Feedback, and count how often it has come back
+
+```bash
+ls -t planning/sessions/*.md | head -3
+```
+
+Read each one's `## Feedback` section — the recommendations the last three branches left for next time. Anything that appears in **two or more** of them is a lesson that has not stuck, and this branch inherits it: surface those items to the user before the interview and keep them visible through it, so the criteria can be written to hold them. A reflection nobody reads at the next open is a diary, not institutional memory.
+
+The three-log read-back is the briefing. The **count** is the diagnosis, and it needs the whole history:
+
+```bash
+ls planning/sessions/*.md | wc -l                 # logs in total
+grep -L "^consolidated:" planning/sessions/*.md   # the ones never folded in
+```
+
+Skim **every** log's Feedback, not the last three, and tally which lessons recur — then say that you did. Three is too narrow a window to see the pattern: "look at one built page yourself" recurred across four logs in five days in this repo (2026-09-05, 09-06, 09-08, 09-09) and a window of three would have shown it as an ordinary one-off at any point along the way.
+
+**Skip anything already listed in `.claude/skills/memory-consolidate/retired.md`.** A lesson in that table has been dealt with — it is a rule in `CLAUDE.md` or a step in one of these rituals now, not an outstanding recommendation — so re-surfacing it as inherited feedback is noise that trains the operator to skim the read-back.
+
+**Recommend `/memory-consolidate` when either trigger fires**, before the interview, naming which one and the evidence:
+
+- a lesson has recurred in **three or more** logs — nobody is going to learn it by being told a fourth time; it needs promoting to a rule or a ritual step;
+- **five or more** logs lack `consolidated:` — the logs have outrun the read-back, and everything older than the last three is write-only.
+
+It is a recommendation, not a gate: the user may open the branch anyway. **Do not run `/memory-consolidate` from here** — it is a separate beat, and its `CLAUDE.md` and skill edits do not belong in this branch's first diff.
+
+**Also list possibly abandoned work.** A log still `status: open` on a branch that is not the one you are about to work on is a piece of work somebody walked away from:
+
+```bash
+grep -l "^status: open$" planning/sessions/*.md | xargs grep -H "^branch:"
+```
+
+Name each one with its branch and its opened date and ask the user what it is — finished but never closed, still genuinely in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one names the branch you are adopting in Step 4, that is not abandoned work — that is this piece of work.
+
 ### Step 3 — Interview for intent
 
 Elicit the fields below. Use AskUserQuestion for the structured choices (impact surface, expected shape) and open dialogue for the objective and criteria. Ask only what actually shapes the work — questions that reduce real ambiguity, not interrogation theatre. If the user already stated something clearly, reflect it back rather than re-asking.
@@ -73,6 +107,11 @@ Elicit the fields below. Use AskUserQuestion for the structured choices (impact 
   - **Engine internals** — a `lib/` module's implementation with the API unchanged. Obliges that module's `AIKB/` doc, and a patch bump.
   - **Tooling & docs** — tests, skills, `scripts/`, the docs site under `src/`, `planning/`. Patch bump, or none.
 - **Expected shape** — planned (the destination known up front, the route largely mapped) or emergent (the goal and route revealed as we go). Both are valid; naming it sets expectations and lets the reflection's Reflect section compare actual vs expected.
+
+Two more fields, **asked only for a substantial branch** — a chore does not need either, and asking anyway is the interrogation theatre this step warns against:
+
+- **Delegation convention** — who briefs and who implements, and what the agents may do. Say it once here rather than re-deciding it per task: normally the main session briefs and reviews, sub-agents implement inside a named scope, and **agents never commit** — the operator's diff review is the checkpoint, and a sub-agent that commits removes it. Record whatever this branch actually agrees, including "no delegation, one session".
+- **Contract** — ask only when more than one workstream is expected. Name the `planning/plans/<date>-<slug>.md` the workstreams build against: the one document that says what each workstream owns, which files it may touch, and where the seams are. It is amended **in place**, with a dated section, when the design moves — never forked into a second plan, or the workstreams start building against different documents without anyone noticing. Write the file (or confirm it exists) before the first workstream starts, and put its path in the session file so the reflection can be read against it.
 
 ### Step 4 — Name and create the branch (only when starting from the base branch)
 
@@ -97,7 +136,7 @@ git commit -m "Open branch: <objective, short>
 Intent captured at branch-open."
 ```
 
-Then tell the user: branch created, intent captured — start the work, run `/branch-pulse` to take stock against the criteria as you go, and run `/branch-close` when done. Remind them this is now the **single active branch**: work stays here until close, scope drift is recorded as a dated **Amendment** in this file (not split into a new branch), and you will not create another branch on your own initiative — only when they explicitly ask.
+Then tell the user: branch created, intent captured — start the work, run `/branch-pulse` to take stock against the criteria as you go, and run `/branch-close` when done. **Name when the first pulse is due** — after the first slice of work lands, and at minimum once per working session the branch stays open. Claude offers the pulse rather than waiting to be asked for it. Remind them this is now the **single active branch**: work stays here until close, scope drift is recorded as a dated **Amendment** in this file (not split into a new branch), and you will not create another branch on your own initiative — only when they explicitly ask.
 
 ---
 
@@ -128,6 +167,10 @@ opened: <YYYY-MM-DD>
 
 **Expected shape:** planned | emergent | between — <one line why>
 
+**Delegation convention:** <who briefs, who implements, what the agents may not do — or "none: one session"; substantial branches only>
+
+**Contract:** <path to the `planning/plans/` document the workstreams build against, amended in place with dated sections — omit when there is only one workstream>
+
 ### Amendments
 
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
@@ -143,7 +186,7 @@ opened: <YYYY-MM-DD>
 
 ---
 
-<!-- /branch-close → /retrospective fills the Reflection below and flips status: closed -->
+<!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
 ```
 
 ---
@@ -153,6 +196,6 @@ opened: <YYYY-MM-DD>
 The branch runs as three beats, all reading this one session file: **Frame** (`/branch-open`, here) → **Steer** (`/branch-pulse`, repeated mid-branch) → **Verify & close** (`/branch-close`).
 
 - **`/branch-pulse`** reads this file's **Success criteria** mid-branch and checks progress against them with evidence, logging each checkpoint to the `## Pulse log` section — so drift is caught while the work is warm, not discovered cold at the close.
-- **`/branch-close` → `/retrospective`** finds this file by its `branch:` frontmatter, writes the Reflection beneath the marker (reading **Intent** for the Reflect section, the **Pulse log** for accrued evidence, and checking **Success criteria** in the Verdict — "did we achieve the objective?"), and flips `status: closed`.
+- **`/branch-close` → `/session-reflect`** finds this file by its `branch:` frontmatter, writes the Reflection beneath the marker (reading **Intent** for the Reflect section, the **Pulse log** for accrued evidence, and checking **Success criteria** in the Verdict — "did we achieve the objective?"), and flips `status: closed`.
 - **`/branch-close` PR body** seeds its Summary and Test plan from the captured **Objective** and **Success criteria**, so the reviewer sees the original intent beside the diff. Its version bump reads the **Impact surface**.
-- A branch not opened with `/branch-open` simply has no intent file — `/branch-pulse` falls back to asking what to check, and `/retrospective` falls back to creating a fresh reflection, so this is additive, not required.
+- A branch not opened with `/branch-open` simply has no intent file — `/branch-pulse` falls back to asking what to check, and `/session-reflect` falls back to creating a fresh reflection, so this is additive, not required.

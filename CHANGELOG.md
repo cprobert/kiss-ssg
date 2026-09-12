@@ -3,6 +3,59 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.1.1 — 2026-09-12
+
+**Your site can now remember itself, and only when you ask it to**
+
+**Added: `npx kiss-ssg aikb <script>`**, a sibling of `check`. It runs your
+build script staged and discarded, publishing nothing, and if the build
+passed writes the site's knowledge base into `folders.aikb` (default
+`./AIKB`, a new folders key): `README.md` once, then `site-map.md` and
+`site-map.json` (every page with its view, model source, controller source
+and the partials it rendered; the partial index; models, controllers,
+pipeline steps; and a `subjects` list with a content hash per controller
+file and pipeline step) and `last-build.json` (that build's report minus
+its timings). Every file is byte-stable across identical records, so the
+folder belongs in git. Nothing else writes it — not a build, a dev server, a
+watch rebuild or a `check` — and a failed build is refused with
+`not recorded — build failed`. A site is opted in once it has recorded.
+
+Notes are yours: a controller file, a URL model or a pipeline step wants a
+note under `AIKB/notes/` at a path derived from its id, optionally stamped
+with `subject-hash: <sha1>` copied from the report. Every build of a
+recorded site reports four findings on `report().aikb.notes` — **missing**,
+**dead**, **stale** (the subject changed under a stamped note) and
+**dangling** (a backticked file reference that resolves to nothing, in a
+note or in the authored `AIKB/site.md`) — printed by `check --summary` as
+`note …:` lines. None fails a build or changes an exit code.
+
+**Added: `kiss-ssg check --against <report>`** and page hashes. Each page
+in a report carries `hash`, the sha1 of the bytes it wrote. `check` diffs
+this build against an earlier report — a `KISS_REPORT` file, the array
+`check` prints, or a single report — and prints which pages were added,
+removed or changed; a recorded site is diffed against its own
+`AIKB/last-build.json` with no flag. Under `--summary` the diff prints under
+the site's line; otherwise stdout becomes `{ reports, diff }` whenever there
+is a diff to print. The exit code is unchanged by any of it. `report()`
+gains `aikb` (`null` unless the site has recorded) and `pages[].hash`.
+
+**Added: the `kiss-memory` Claude Code plugin** in the same marketplace
+(`/plugin install kiss-memory@kiss-ssg`): `kiss-site-brief` briefs a
+returning developer from the recorded folder, `kiss-branch-open`,
+`kiss-branch-pulse` and `kiss-branch-close` run a piece of work on a site
+against the `check` diff with the close as the only moment the record
+moves, and `kiss-memory-consolidate` folds session logs into `AIKB/site.md`
+and repairs the notes `check` flags. The `kiss-ssg` plugin's skills are
+renamed to the same thing-action shape: `kiss-site-new`, `kiss-page-add`,
+`kiss-site-migrate`, `kiss-build-check`.
+
+**Fixed:** after a successful `cleanBuild: 'atomic'` promotion, `report()`'s
+`sitemap` and `llms` named the discarded staging folder rather than the
+real one.
+
+Example 9 ships a recorded `examples/9-migrated-from-v1/AIKB/` with one
+stamped note as the exemplar.
+
 ## 2.1.0 — 2026-09-10
 
 **`.llms()` writes your site's llms.txt**

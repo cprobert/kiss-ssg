@@ -1,7 +1,31 @@
 import { describe, it, expect } from 'vitest'
-import { HELP, exitCodeFor, parseArgs, readReports } from '../../lib/check.js'
+import {
+  HELP,
+  defaultBaseline,
+  diffReports,
+  exitCodeFor,
+  formatDiff,
+  parseArgs,
+  readReports,
+  readReportsFile,
+  recordedLine,
+} from '../../lib/check.js'
 
 const report = (ok) => ({ ok, mode: 'check', buildDir: './public' })
+
+// A report as `diffReports` reads it: a build folder and the pages under it,
+// each with the hash of the bytes it wrote.
+const built = (buildDir, pages) => ({
+  ok: true,
+  mode: 'build',
+  buildDir,
+  pages: Object.entries(pages).map(([buildTo, hash]) => ({
+    view: 'v.hbs',
+    buildTo,
+    ok: hash !== null,
+    hash,
+  })),
+})
 
 describe('parseArgs', () => {
   it('reads the script and everything after it', () => {
@@ -11,6 +35,7 @@ describe('parseArgs', () => {
         script: 'site.js',
         args: ['2026-spring', '--verbose'],
         summary: false,
+        against: null,
         error: null,
       },
     )
@@ -39,6 +64,41 @@ describe('parseArgs', () => {
     const parsed = parseArgs(['check', '--summary', '--', '-weird-name.js'])
     expect(parsed.summary).toBe(true)
     expect(parsed.script).toBe('-weird-name.js')
+  })
+
+  it('takes --against with its file before the script', () => {
+    const parsed = parseArgs(['check', '--against', 'last.json', 'site.js'])
+    expect(parsed.against).toBe('last.json')
+    expect(parsed.script).toBe('site.js')
+    expect(parsed.args).toEqual([])
+    expect(parsed.error).toBeNull()
+  })
+
+  it('reads --against beside --summary, in either order', () => {
+    expect(
+      parseArgs(['check', '--summary', '--against', 'last.json', 'site.js']),
+    ).toMatchObject({ summary: true, against: 'last.json', script: 'site.js' })
+    expect(
+      parseArgs(['check', '--against', 'last.json', '--summary', 'site.js']),
+    ).toMatchObject({ summary: true, against: 'last.json', script: 'site.js' })
+  })
+
+  it('leaves against null when the flag is not given', () => {
+    expect(parseArgs(['check', 'site.js']).against).toBeNull()
+  })
+
+  it('refuses --against with no file at all', () => {
+    expect(parseArgs(['check', '--against']).error).toContain(
+      '--against needs a report file',
+    )
+  })
+
+  it('refuses --against whose file would be the end-of-options marker', () => {
+    // `check --against -- site.js` is a typo, not a request to diff against a
+    // file called `--`; taking it would silently check the site against itself.
+    expect(parseArgs(['check', '--against', '--', 'site.js']).error).toContain(
+      '--against needs a report file',
+    )
   })
 
   it('passes an unknown flag after the script to the script', () => {
@@ -74,9 +134,103 @@ describe('parseArgs', () => {
     expect(parsed.error).toContain('build script')
   })
 
-  it('documents the command it parses', () => {
-    expect(HELP).toContain('kiss-ssg check <script>')
+  it('parses the aikb command exactly as it parses check', () => {
+    expect(parseArgs(['aikb', 'site.js', '2026-spring'])).toEqual({
+      command: 'aikb',
+      script: 'site.js',
+      args: ['2026-spring'],
+      summary: false,
+      against: null,
+      error: null,
+    })
+  })
+
+  it('takes both options under aikb too', () => {
+    expect(
+      parseArgs(['aikb', '--summary', '--against', 'last.json', 'site.js']),
+    ).toMatchObject({
+      command: 'aikb',
+      summary: true,
+      against: 'last.json',
+      script: 'site.js',
+      error: null,
+    })
+    // ...and --summary is still read after the script, without being passed on.
+    expect(parseArgs(['aikb', 'site.js', '--summary'])).toMatchObject({
+      command: 'aikb',
+      summary: true,
+      args: [],
+    })
+  })
+
+  it('names the command it could not complete in its usage errors', () => {
+    expect(parseArgs(['aikb']).error).toBe(
+      "aikb needs the site's build script: kiss-ssg aikb <script>",
+    )
+    expect(parseArgs(['aikb', '--against']).error).toContain(
+      'kiss-ssg aikb --against <file> <script>',
+    )
+  })
+
+  it('documents both commands it parses', () => {
+    expect(HELP).toContain('check <script>')
+    expect(HELP).toContain('aikb <script>')
     expect(HELP).toContain('--summary')
+    expect(HELP).toContain('--against <file>')
+  })
+})
+
+describe('defaultBaseline', () => {
+  const recorded = (folder) => ({
+    ok: true,
+    buildDir: './public',
+    aikb: { folder, written: true },
+  })
+
+  it('is the last-build.json of the first folder a report names', () => {
+    expect(defaultBaseline([recorded('AIKB')])).toBe('AIKB/last-build.json')
+  })
+
+  it('skips the sites that recorded nothing and takes the first that did', () => {
+    expect(
+      defaultBaseline([
+        { ok: true, aikb: null },
+        recorded('site/AIKB'),
+        recorded('other/AIKB'),
+      ]),
+    ).toBe('site/AIKB/last-build.json')
+  })
+
+  it('is null when no site has a knowledge base at all', () => {
+    expect(defaultBaseline([{ ok: true, aikb: null }])).toBeNull()
+    expect(defaultBaseline([])).toBeNull()
+    expect(defaultBaseline()).toBeNull()
+  })
+})
+
+describe('recordedLine', () => {
+  it('names the folder a record wrote', () => {
+    expect(
+      recordedLine({ ok: true, aikb: { folder: 'AIKB', written: true } }),
+    ).toBe('  recorded AIKB')
+  })
+
+  it('says the build failed, which is the reason that outranks the others', () => {
+    expect(
+      recordedLine({ ok: false, aikb: { folder: 'AIKB', written: false } }),
+    ).toBe('  not recorded — build failed')
+  })
+
+  it('says the folder is switched off when there is none to write', () => {
+    expect(recordedLine({ ok: true, aikb: null })).toBe(
+      '  not recorded — folders.aikb is null',
+    )
+  })
+
+  it('falls back to the bare verdict when nothing else explains it', () => {
+    expect(
+      recordedLine({ ok: true, aikb: { folder: 'AIKB', written: false } }),
+    ).toBe('  not recorded')
   })
 })
 
@@ -94,6 +248,203 @@ describe('readReports', () => {
 
   it('throws on a line it cannot parse, rather than dropping it', () => {
     expect(() => readReports('{"ok":true}\n{half a report')).toThrow()
+  })
+})
+
+describe('readReportsFile', () => {
+  it('reads the JSON Lines a KISS_REPORT file collects', () => {
+    const text = `${JSON.stringify(report(true))}\n${JSON.stringify(report(false))}\n`
+    expect(readReportsFile(text)).toEqual([report(true), report(false)])
+  })
+
+  it('reads the JSON array check itself prints', () => {
+    const text = JSON.stringify([report(true), report(false)], null, 2)
+    expect(readReportsFile(text)).toEqual([report(true), report(false)])
+  })
+
+  it('reads a single report object as one report', () => {
+    expect(readReportsFile(JSON.stringify(report(true), null, 2))).toEqual([
+      report(true),
+    ])
+  })
+
+  it('reads an empty file as no reports', () => {
+    expect(readReportsFile('')).toEqual([])
+    expect(readReportsFile('\n\n')).toEqual([])
+    expect(readReportsFile()).toEqual([])
+  })
+
+  it('throws on a file it cannot read either way', () => {
+    expect(() => readReportsFile('{"ok":true}\n{half a report')).toThrow()
+    expect(() => readReportsFile('not json at all')).toThrow()
+  })
+})
+
+describe('diffReports', () => {
+  it('sorts every page into added, removed, changed or unchanged', () => {
+    const before = built('./public', {
+      './public/index.html': 'aaa',
+      './public/about.html': 'bbb',
+      './public/gone.html': 'ccc',
+    })
+    const after = built('./public', {
+      './public/index.html': 'aaa',
+      './public/about.html': 'BBB',
+      './public/new.html': 'ddd',
+    })
+
+    expect(diffReports([before], [after])).toEqual([
+      {
+        buildDir: './public',
+        added: ['./public/new.html'],
+        removed: ['./public/gone.html'],
+        changed: ['./public/about.html'],
+        unchanged: 1,
+      },
+    ])
+  })
+
+  it('sorts each list by path rather than by registration order', () => {
+    const after = built('./public', {
+      './public/z.html': 'z',
+      './public/a.html': 'a',
+    })
+    const [diff] = diffReports([], [after])
+    expect(diff.added).toEqual(['./public/a.html', './public/z.html'])
+  })
+
+  it('counts a null hash on either side as changed, never as unchanged', () => {
+    const before = built('./public', {
+      './public/failed.html': null,
+      './public/skipped.html': 'aaa',
+      './public/same.html': 'bbb',
+    })
+    const after = built('./public', {
+      './public/failed.html': 'aaa',
+      './public/skipped.html': null,
+      './public/same.html': 'bbb',
+    })
+
+    const [diff] = diffReports([before], [after])
+    expect(diff.changed).toEqual([
+      './public/failed.html',
+      './public/skipped.html',
+    ])
+    expect(diff.unchanged).toBe(1)
+  })
+
+  it('diffs a build folder the old file never saw as all added', () => {
+    const before = built('./public/a', { './public/a/index.html': 'aaa' })
+    const after = built('./public/b', { './public/b/index.html': 'bbb' })
+
+    expect(diffReports([before], [after])).toEqual([
+      {
+        buildDir: './public/b',
+        added: ['./public/b/index.html'],
+        removed: [],
+        changed: [],
+        unchanged: 0,
+      },
+    ])
+  })
+
+  it('takes the newest report for a folder when the before file holds several', () => {
+    // A KISS_REPORT file is appended to across builds: the baseline a
+    // developer means by "since the last build" is the last line, not the first.
+    const before = [
+      built('./public', { './public/index.html': 'old' }),
+      built('./public', { './public/index.html': 'new' }),
+    ]
+    const after = [built('./public', { './public/index.html': 'new' })]
+
+    expect(diffReports(before, after)[0]).toMatchObject({
+      changed: [],
+      unchanged: 1,
+    })
+  })
+
+  it('ignores a before report this run did not build again', () => {
+    const before = [
+      built('./public/a', { './public/a/index.html': 'aaa' }),
+      built('./public/b', { './public/b/index.html': 'bbb' }),
+    ]
+    const after = [built('./public/a', { './public/a/index.html': 'aaa' })]
+
+    const diff = diffReports(before, after)
+    expect(diff).toHaveLength(1)
+    expect(diff[0]).toMatchObject({ buildDir: './public/a', unchanged: 1 })
+  })
+
+  it('pairs each site by build folder and answers in after order', () => {
+    const before = [
+      built('./public/a', { './public/a/index.html': 'aaa' }),
+      built('./public/b', { './public/b/index.html': 'bbb' }),
+    ]
+    const after = [
+      built('./public/b', { './public/b/index.html': 'BBB' }),
+      built('./public/a', { './public/a/index.html': 'aaa' }),
+    ]
+
+    expect(diffReports(before, after).map((d) => d.buildDir)).toEqual([
+      './public/b',
+      './public/a',
+    ])
+    expect(diffReports(before, after)[0].changed).toEqual([
+      './public/b/index.html',
+    ])
+  })
+
+  it('leaves a page with no output path out of the diff entirely', () => {
+    const after = {
+      buildDir: './public',
+      pages: [
+        { view: 'item.hbs [item 3: x]', buildTo: null, ok: false, hash: null },
+        {
+          view: 'index.hbs',
+          buildTo: './public/index.html',
+          ok: true,
+          hash: 'a',
+        },
+      ],
+    }
+    const [diff] = diffReports([], [after])
+    expect(diff.added).toEqual(['./public/index.html'])
+  })
+
+  it('reads two empty sides as no diff at all', () => {
+    expect(diffReports()).toEqual([])
+    expect(diffReports([], [])).toEqual([])
+  })
+})
+
+describe('formatDiff', () => {
+  it('prints one indented line per page and the unchanged count last', () => {
+    const lines = formatDiff({
+      buildDir: './public',
+      added: ['./public/new.html'],
+      removed: ['./public/gone.html'],
+      changed: ['./public/about.html'],
+      unchanged: 4,
+    }).split('\n')
+
+    expect(lines).toEqual([
+      '  + ./public/new.html',
+      '  - ./public/gone.html',
+      '  ~ ./public/about.html',
+      '  = 4 unchanged',
+    ])
+  })
+
+  it('still says how many were unchanged when nothing moved', () => {
+    expect(
+      formatDiff({
+        buildDir: './public',
+        added: [],
+        removed: [],
+        changed: [],
+        unchanged: 6,
+      }),
+    ).toBe('  = 6 unchanged')
   })
 })
 

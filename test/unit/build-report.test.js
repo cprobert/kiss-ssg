@@ -3,7 +3,9 @@ import { buildReport, formatReport } from '../../lib/build-report.js'
 
 const manifest = (entries) => ({ toObject: () => entries })
 
-const page = (view, buildTo) => ({ view, buildTo })
+// A stack entry, as `Kiss._preparePage` builds it: the `KissPage` it carries is
+// where the report reads the output hash from.
+const page = (view, buildTo, hash = null) => ({ view, buildTo, page: { hash } })
 const failure = (view, buildTo, message) => ({
   view,
   buildTo,
@@ -33,12 +35,24 @@ describe('buildReport', () => {
       'sitemap',
       'pipeline',
       'llms',
+      'aikb',
+    ])
+    expect(Object.keys(report.pages[0])).toEqual([
+      'view',
+      'buildTo',
+      'ok',
+      'hash',
     ])
     expect(report.ok).toBe(true)
     expect(report.mode).toBe('build')
     expect(report.buildDir).toBe('./public')
     expect(report.pages).toEqual([
-      { view: 'index.hbs', buildTo: './public/index.html', ok: true },
+      {
+        view: 'index.hbs',
+        buildTo: './public/index.html',
+        ok: true,
+        hash: null,
+      },
     ])
     expect(report.failures).toEqual([])
     expect(report.assets).toEqual([
@@ -62,8 +76,18 @@ describe('buildReport', () => {
 
     expect(report.ok).toBe(false)
     expect(report.pages).toEqual([
-      { view: 'index.hbs', buildTo: './public/index.html', ok: true },
-      { view: 'about.hbs', buildTo: './public/about.html', ok: false },
+      {
+        view: 'index.hbs',
+        buildTo: './public/index.html',
+        ok: true,
+        hash: null,
+      },
+      {
+        view: 'about.hbs',
+        buildTo: './public/about.html',
+        ok: false,
+        hash: null,
+      },
     ])
     expect(report.failures).toEqual([
       {
@@ -144,6 +168,7 @@ describe('buildReport', () => {
       sitemap: null,
       pipeline: [],
       llms: null,
+      aikb: null,
     })
   })
 
@@ -227,6 +252,37 @@ describe('buildReport', () => {
     // An Error serialises to `{}`, so a report carrying one loses the message
     // exactly where it is needed.
     expect(roundTripped.failures[0].message).toBe('boom')
+  })
+
+  it('carries each page\u2019s output hash off the KissPage the stack holds', () => {
+    const report = buildReport({
+      stack: [
+        page('index.hbs', './public/index.html', 'a'.repeat(40)),
+        page('about.hbs', './public/about.html', 'b'.repeat(40)),
+      ],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+
+    expect(report.pages.map((p) => p.hash)).toEqual([
+      'a'.repeat(40),
+      'b'.repeat(40),
+    ])
+  })
+
+  it('reports no hash for a page that was never generated', () => {
+    // `generate: false` and a page that failed both leave `hash` null on the
+    // KissPage \u2014 there are no bytes on disk for it to name.
+    const report = buildReport({
+      stack: [
+        page('skipped.hbs', './public/skipped.html'),
+        { view: 'legacy.hbs', buildTo: './public/legacy.html' },
+      ],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+
+    expect(report.pages.map((p) => p.hash)).toEqual([null, null])
   })
 
   it('accepts a failure whose error is not an Error', () => {

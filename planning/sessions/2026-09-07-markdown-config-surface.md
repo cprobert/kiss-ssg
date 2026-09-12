@@ -3,6 +3,7 @@ branch: feat/markdown-config
 base: main
 status: closed
 opened: 2026-09-07
+consolidated: 2026-09-12
 ---
 
 # Session — 2026-09-07: A Config Surface for Markdown Options

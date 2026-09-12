@@ -13,7 +13,9 @@ export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
 export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
 /**
  * @param {KissFolders} folders
- * @returns {string[]} the folders `Kiss` creates on start-up, skipping any set to `null`
+ * @returns {string[]} the folders `Kiss` creates on start-up, skipping any set
+ * to `null`. `aikb` is not among them: an empty `AIKB/` in every site that has
+ * never recorded one would be a promise the build does not keep.
  */
 export function foldersToEnsure(folders: KissFolders): string[];
 /**
@@ -30,11 +32,14 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {string|null} partials registered as Handlebars partials
  * @property {string|null} models `.json` models `options.model` names
  * @property {string|null} controllers `.js` controllers `options.controller` names
+ * @property {string|null} aikb where `kiss-ssg aikb` records the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
  */
 /**
  * A `folders` block as a site writes it: every key optional. Setting `src`
  * re-derives `pages`, `assets`, `layouts`, `partials`, `models` and
  * `controllers` from it, unless the same object also sets them explicitly.
+ * `build` and `aikb` are never derived: one is the output, the other is
+ * committed source beside it.
  *
  * @typedef {Partial<KissFolders>} KissFoldersInput
  */
@@ -120,6 +125,7 @@ export const DEFAULT_FOLDERS: Readonly<{
     partials: "./src/partials";
     models: "./src/models";
     controllers: "./src/controllers";
+    aikb: "./AIKB";
 }>;
 export const DEFAULT_FETCH: Readonly<{
     headers: {};
@@ -204,11 +210,17 @@ export type KissFolders = {
      * `.js` controllers `options.controller` names
      */
     controllers: string | null;
+    /**
+     * where `kiss-ssg aikb` records the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
+     */
+    aikb: string | null;
 };
 /**
  * A `folders` block as a site writes it: every key optional. Setting `src`
  * re-derives `pages`, `assets`, `layouts`, `partials`, `models` and
  * `controllers` from it, unless the same object also sets them explicitly.
+ * `build` and `aikb` are never derived: one is the output, the other is
+ * committed source beside it.
  */
 export type KissFoldersInput = Partial<KissFolders>;
 /**

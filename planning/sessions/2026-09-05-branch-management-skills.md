@@ -3,6 +3,7 @@ branch: claude/kiss-ssg-skills-8umyo8
 base: v2
 status: closed
 opened: 2026-09-05
+consolidated: 2026-09-12
 ---
 
 # Session — 2026-09-05: Branch-management skills for kiss-ssg

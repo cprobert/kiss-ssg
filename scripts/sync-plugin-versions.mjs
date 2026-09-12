@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Carries package.json's version into the Claude Code plugin manifests.
 //
-// Three files hold the same version: package.json, `.claude-plugin/marketplace.json`
-// and `plugins/kiss-ssg/.claude-plugin/plugin.json`. `test/unit/plugin-manifests.test.js`
-// asserts they agree — a marketplace advertising a version the plugin does not
+// One version, held in package.json and repeated in every plugin manifest:
+// `.claude-plugin/marketplace.json` (once per entry) and each plugin's own
+// `plugins/<name>/.claude-plugin/plugin.json`. `test/unit/plugin-manifests.test.js`
+// asserts they all agree — a marketplace advertising a version a plugin does not
 // claim is the failure it exists to stop.
 //
 // That test is a good net and was a poor tripwire: it fires *after* a bump, at
@@ -21,6 +22,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const MANIFESTS = [
   '.claude-plugin/marketplace.json',
   'plugins/kiss-ssg/.claude-plugin/plugin.json',
+  'plugins/kiss-memory/.claude-plugin/plugin.json',
 ]
 
 /**

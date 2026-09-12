@@ -341,3 +341,30 @@ describe('the build folder is never allowed to swallow the source folder', () =>
     ).toThrow(/build folder/i)
   })
 })
+
+describe('the report after an atomic promotion', () => {
+  it('names sitemap.xml and llms.txt against the real folder, not the staging sibling', async () => {
+    // A promotion rewrites every stack entry's buildTo but recorded the sitemap
+    // and llms paths while they were being written into staging. The report
+    // has to map them back like every other path in it.
+    site = await makeSite({ 'src/pages/index.hbs': '{{canonical}}' })
+    kiss = new Kiss({
+      logger: silentLogger,
+      cleanBuild: 'atomic',
+      siteUrl: 'https://e.com/',
+      folders: site.folders,
+    })
+    kiss
+      .page({ view: 'index.hbs', title: 'Home' })
+      .generate()
+      .sitemap()
+      .llms({ title: 'Site', summary: 'One page.' })
+    await kiss.complete()
+
+    const report = kiss.report()
+    expect(report.sitemap).toBe(`${site.build}/sitemap.xml`)
+    expect(report.llms).toBe(`${site.build}/llms.txt`)
+    expect(JSON.stringify(report)).not.toContain('kiss-staging')
+    expect(staging(site.root)).toEqual([])
+  })
+})

@@ -10,6 +10,11 @@ import {
 
 const dev = process.argv.includes('--dev')
 
+// Named once, because the page below reports it: under `npx kiss-ssg check` and
+// `npx kiss-ssg aikb` the engine builds into a staging sibling with a random
+// name, so `kiss.config.folders.build` is not the same string twice.
+const buildFolder = '../public/9-migrated-from-v1'
+
 const kiss = new Kiss({
   site,
   script: script(import.meta.url),
@@ -19,9 +24,15 @@ const kiss = new Kiss({
   // quietly ignored — a `root:` key here would just sit there unread.
   folders: {
     src: './9-migrated-from-v1',
-    build: '../public/9-migrated-from-v1',
+    build: buildFolder,
     layouts: sharedFolders.layouts,
     assets: sharedFolders.assets,
+    // The knowledge base is source, not output: it lives beside the site's own
+    // files, survives cleanBuild, and is committed. Not derived from `src`,
+    // which is why it is named here rather than picked up with the rest.
+    // Nothing here writes it — `npx kiss-ssg aikb 9-migrated-from-v1.js` does,
+    // from a build that passed. An ordinary build only reports on it.
+    aikb: './9-migrated-from-v1/AIKB',
   },
   verbose: true,
   dev,
@@ -93,11 +104,15 @@ kiss
     view: 'folders.hbs',
     title: 'The folders v2 reads',
     // The resolved folders, straight off the instance — the page cannot claim
-    // a key the engine does not have.
+    // a key the engine does not have. `build` is the exception, and deliberately
+    // so: a staged run (check, or a record) is building into a sibling folder
+    // whose name is different every time, and a page that rendered it would
+    // change its own bytes on every run — the one thing a committed knowledge
+    // base cannot have. So the page names the folder the site asked for.
     model: {
       folders: Object.entries(kiss.config.folders).map(([key, value]) => ({
         key,
-        value,
+        value: key === 'build' ? buildFolder : value,
       })),
     },
   })
