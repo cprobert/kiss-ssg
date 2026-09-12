@@ -1,5 +1,15 @@
 # LF in the repo and in every working tree, whatever a clone's core.autocrlf
-# says. The tests hash and byte-compare files on disk — the example records
-# embed their own build script, and test/aikb.test.js searches llms.txt for
-# exact line breaks — so a CRLF checkout fails the gates with no code change.
+# says. Several tests hash or byte-compare files on disk, and a CRLF checkout
+# fails them with no code change:
+#
+# - `types/` is emitted by tsc (`npm run types`), which always writes LF, and
+#   test/unit/types.test.js byte-compares the checked-in files against a fresh
+#   emit.
+# - The example knowledge-base records (`examples/*/AIKB/`) are byte-compared
+#   against a fresh `kiss-ssg aikb` run, and example 9 and 11 embed their own
+#   build script in the page, so the recorded page hash depends on the
+#   script's line endings.
+# - test/aikb.test.js searches llms.txt for exact line breaks.
+#
+# `text=auto` leaves binaries alone; nothing here needs CRLF.
 * text=auto eol=lf
