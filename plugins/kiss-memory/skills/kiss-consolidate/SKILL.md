@@ -129,10 +129,11 @@ Both lines, always. The Conventions/Gotchas line is the rule; the Retired-feedba
 
 For each `note stale:` entry the subject moved under the note. Re-read the subject — the controller file, the pipeline step's `run` command, whatever the map names — and bring the note back into line: what it does now, why it is this way now, which gotchas still apply. Then restamp it from the map, so the next check reads clean.
 
-Take the hash from `AIKB/site-map.json`'s `subjects` array, whose entries are `{ kind, id, note, hash }`; find the one whose `note` is this note's path and copy its `hash` verbatim:
+Take the hash from the **check's report** — every check carries the current hashes under `aikb.subjects`, entries of `{ kind, id, note, hash }` — and not from `AIKB/site-map.json`, which is the last record's and is exactly what a stale note is stale against. Find the entry whose `note` is this note's path and copy its `hash` verbatim:
 
 ```bash
-node -e "for (const s of require('./AIKB/site-map.json').subjects) console.log(s.hash, s.kind, s.id, s.note)"
+npx kiss-ssg check <build-script> 2>/dev/null \
+  | node -e "const j=JSON.parse(require('fs').readFileSync(0,'utf8')); for (const r of j.reports ?? j) for (const s of r.aikb?.subjects ?? []) console.log(s.hash, s.kind, s.id, s.note)"
 ```
 
 The stamp is one frontmatter line at the very top of the note:
@@ -149,7 +150,7 @@ subject-hash: 9f2c1b0a4e7d83f6c5b21a908d7e6f4c3b2a1908
 …
 ```
 
-**The engine never writes that line — this skill and `kiss-close` do.** A note you rewrite gets the current hash; a note you did not touch keeps whatever stamp it had. Never copy a hash you have not just read out of `site-map.json`, and never invent one to silence the line: an unstamped note is honest, a wrongly stamped one lies to every future check.
+**The engine never writes that line — this skill and `kiss-close` do.** A note you rewrite gets the current hash; a note you did not touch keeps whatever stamp it had. Never copy a hash you have not just read out of the check's report, and never invent one to silence the line: an unstamped note is honest, a wrongly stamped one lies to every future check.
 
 A URL model never goes stale (its id is the whole subject), so a `note stale:` entry naming one is a finding to raise with the human, not something to restamp.
 
@@ -176,7 +177,7 @@ When you cannot tell from the code and the logs, leave the note, say so, and han
 
 For each `note missing:` subject, read its code — the controller file, the pipeline step's command, the URL the model fetches.
 
-- **If the subject is understandable from its code**, write the note: `## What it does`, `## Why it is this way`, `## Gotchas`. Stamp it with its `hash` from `site-map.json` as in step 7. Be plain about the limits of what you can see — "why" inferred from code is a guess, so write it as one ("appears to exist so that…") rather than as fact.
+- **If the subject is understandable from its code**, write the note: `## What it does`, `## Why it is this way`, `## Gotchas`. Stamp it with its `hash` from the check's report as in step 7. Be plain about the limits of what you can see — "why" inferred from code is a guess, so write it as one ("appears to exist so that…") rather than as fact.
 - **If it is not** — a magic number nothing explains, a URL nobody can account for, a pipeline step whose purpose is not in the command — **do not write a note.** A fabricated rationale is worse than an empty slot, because the next person believes it. List the subject for the human in the report instead, with the question you would need answered.
 
 ### 11. Flag the contradictions — never resolve one silently

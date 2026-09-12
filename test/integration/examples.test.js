@@ -242,14 +242,34 @@ describe.skipIf(!hasExamples)('example builds', () => {
         existsSync(path.join(aikbDir, 'notes/controllers/shelf-item.md')),
       ).toBe(true)
       // Every subject has a note: `shelf-item.js` is the only one (the
-      // pure-controllers page's controller is inline, so it cannot be).
+      // pure-controllers page's controller is inline, so it cannot be). All
+      // four findings are empty, which is what makes this folder an exemplar
+      // rather than a specimen: the note is stamped with the controller's
+      // current hash, and every file it cites resolves.
       const report = JSON.parse(readAikb('last-build.json'))
+      const subjects = [
+        {
+          kind: 'controllers',
+          id: 'shelf-item.js',
+          note: 'notes/controllers/shelf-item.md',
+          hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+        },
+      ]
       expect(report.ok).toBe(true)
       expect(report.aikb).toEqual({
         folder: '9-migrated-from-v1/AIKB',
         written: true,
-        notes: { missing: [], dead: [] },
+        notes: { missing: [], dead: [], stale: [], dangling: [] },
+        subjects,
       })
+      expect(JSON.parse(readAikb('site-map.json')).subjects).toEqual(subjects)
+      // The stamp in the authored note is the hash in the generated map — the
+      // one thing a person maintains by hand, shown being maintained.
+      const note = readFileSync(
+        path.join(aikbDir, 'notes/controllers/shelf-item.md'),
+        'utf8',
+      )
+      expect(note).toContain(`subject-hash: ${report.aikb.subjects[0].hash}`)
     }, 60000)
 
     it('10 · asset pipeline builds 1 page and the stylesheet its step generated', () => {

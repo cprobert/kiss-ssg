@@ -51,9 +51,10 @@ export function pageOrigin(options?: Record<string, any>): {
  * @param {import('./pipeline.js').PipelineStep[]} [input.pipeline] defaults to `config.assets.pipeline`
  * @param {string} input.buildDir the real build folder
  * @param {string|null} [input.stagingDir] the staging sibling paths are reported against, if there was one
+ * @param {(kind: string, id: string) => Buffer|string|null} [input.readSubject] the bytes a subject's hash is taken over; defaults to reading the controller file off disk
  * @returns {SiteMap}
  */
-export function buildSiteMap({ stack, graph, config, pipeline, buildDir, stagingDir, }: {
+export function buildSiteMap({ stack, graph, config, pipeline, buildDir, stagingDir, readSubject, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -67,6 +68,7 @@ export function buildSiteMap({ stack, graph, config, pipeline, buildDir, staging
     pipeline?: import("./pipeline.js").PipelineStep[];
     buildDir: string;
     stagingDir?: string | null;
+    readSubject?: (kind: string, id: string) => Buffer | string | null;
 }): SiteMap;
 /**
  * Every subject in the map that carries judgement, sorted. A subject is a
@@ -92,19 +94,44 @@ export function noteSubjects(map: SiteMap): NoteSubject[];
  */
 export function notePathFor(subject: NoteSubject, notesDir?: string): string;
 /**
- * The two note rules, evaluated against a folder on disk. **missing** is a
+ * The `---` block at the top of a note: one `key: value` per line, which is
+ * all a stamp ever is. Deliberately **not** a YAML parser — the same handful
+ * of lines `test/unit/plugin-manifests.test.js` reads out of a `SKILL.md`
+ * header, and nothing more. A note with no block, or a block that says
+ * nothing, is not an error: it is simply an unstamped note.
+ *
+ * @param {string} text the note's whole text
+ * @returns {Record<string, string>|null} `null` when there is no block at all
+ */
+export function readFrontmatter(text: string): Record<string, string> | null;
+/**
+ * The four note rules, evaluated against a folder on disk. **missing** is a
  * subject in the map with no note; **dead** is a note whose subject is not in
- * the map — a controller that was deleted, an API that is no longer called.
- * Neither is a build failure: they are findings, reported on the build report
- * and read back by whoever is closing a piece of work.
+ * the map — a controller that was deleted, an API that is no longer called;
+ * **stale** is a note stamped with a subject hash that is no longer the
+ * subject's hash, which is the note whose subject changed underneath it; and
+ * **dangling** is a note citing a file that resolves to nothing. None of the
+ * four is a build failure: they are findings, reported on the build report and
+ * read back by whoever is closing a piece of work.
+ *
+ * The two new ones are mechanical on purpose. "Is this note still true?" is a
+ * question only a person can answer; "was this note written against a
+ * different controller?" and "does this path exist?" are questions a build can
+ * answer for free, every time, and they are the two ways a note rots quietly.
  *
  * @param {SiteMap} map
  * @param {string} notesDir the `notes` folder, as a path from the cwd
- * @returns {{ missing: string[], dead: string[] }} both sorted
+ * @param {Object} [options]
+ * @param {string|null} [options.aikbDir] the knowledge base's folder — `site.md` is scanned for dangling references too, and paths under the folder always resolve
+ * @returns {{ missing: string[], dead: string[], stale: string[], dangling: string[] }} all four sorted
  */
-export function evaluateNotes(map: SiteMap, notesDir: string): {
+export function evaluateNotes(map: SiteMap, notesDir: string, { aikbDir }?: {
+    aikbDir?: string | null;
+}): {
     missing: string[];
     dead: string[];
+    stale: string[];
+    dangling: string[];
 };
 /**
  * The human half of the map: the same data as `site-map.json`, as markdown a
@@ -221,6 +248,28 @@ export type SiteMapPipelineStep = {
     run: string;
 };
 /**
+ * A subject as the map records it: what it is, where its note goes, and what
+ * the subject looked like when this build ran.
+ */
+export type SiteMapSubject = {
+    /**
+     * the folder its note lives in
+     */
+    kind: "controllers" | "models" | "pipeline";
+    /**
+     * the controller filename, the model URL, or the step name
+     */
+    id: string;
+    /**
+     * the note's path, relative to the AIKB folder
+     */
+    note: string;
+    /**
+     * sha1 hex of what the subject *is* — the controller file's bytes, or the step's command — and `null` when there is nothing to hash (a URL model) or nothing to read (a controller file that is not there)
+     */
+    hash: string | null;
+};
+/**
  * Where the site is read from and written to.
  */
 export type SiteMapSite = {
@@ -262,6 +311,10 @@ export type SiteMap = {
      * in the order the steps run
      */
     pipeline: SiteMapPipelineStep[];
+    /**
+     * every thing that wants a note, sorted as `noteSubjects` sorts
+     */
+    subjects: SiteMapSubject[];
 };
 /**
  * A thing with judgement in it, which therefore wants a note.
@@ -289,10 +342,16 @@ export type AikbResult = {
      */
     written: boolean;
     /**
-     * both sorted
+     * all four sorted
      */
     notes: {
         missing: string[];
         dead: string[];
+        stale: string[];
+        dangling: string[];
     };
+    /**
+     * the map's subject rows, so the hash to stamp a note with is on the report of the build that found the finding
+     */
+    subjects: SiteMapSubject[];
 };

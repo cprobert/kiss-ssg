@@ -1,3 +1,7 @@
+---
+subject-hash: 8bfa290248f68febbcea3d6c759bcc8b55eaf6dd
+---
+
 # shelf-item.js
 
 ## What it does

@@ -62,6 +62,17 @@ await kiss.complete().catch((err) => {
   process.exitCode = 1
 })`)
 
+// A site with a subject in it — a controller **file**, the one thing a note
+// can be stale about — so the two mechanical note lints have something to
+// find.
+const WITH_SUBJECT = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss.page({ view: 'index.hbs', controller: 'index.js' }).generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
 // A real build of the same site, with its report appended to `reportFile` —
 // how a site keeps the last build it published, and what `--against` reads.
 function record(cwd, reportFile) {
@@ -388,6 +399,31 @@ describe('kiss-ssg check, against the knowledge base', () => {
       '  ~ ./public/about.html',
       '  = 1 unchanged',
     ])
+  }, 60000)
+
+  it('prints the stale and dangling note lines under --summary', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/controllers/index.js': 'export default () => ({ title: "Home" })\n',
+      'build.js': WITH_SUBJECT,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    // Written after the record, the way a person writes a note: stamped with
+    // a hash that is not this controller's, and citing a file that is gone.
+    await temp.touch(
+      'AIKB/notes/controllers/index.md',
+      `---\nsubject-hash: ${'0'.repeat(40)}\n---\n\n## What it does\n\nReplaced \`src/pages/old.hbs\`.\n`,
+    )
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // Findings, not failures: both lines print and the check still passes.
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines).toContain('  note stale: AIKB/notes/controllers/index.md')
+    expect(lines).toContain(
+      '  note dangling: AIKB/notes/controllers/index.md: src/pages/old.hbs',
+    )
   }, 60000)
 
   it('does not diff a site that has never been recorded', async () => {

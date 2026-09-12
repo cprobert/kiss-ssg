@@ -59,11 +59,14 @@ The map is generated for you at step 4; the judgement in it never is. Two checks
 
 All four must be empty before step 4 records. Recording a build whose notes are stale or dangling bakes the rot into the baseline the next branch reads.
 
-**Stamp every note you write or update.** The stamp is the one frontmatter line `subject-hash: <sha1>`, copied verbatim from the `subjects` array in `AIKB/site-map.json` — entries of `{ kind, id, note, hash }`; take the `hash` of the entry whose `note` is this note's path:
+**Stamp every note you write or update.** The stamp is the one frontmatter line `subject-hash: <sha1>`. Take the hash from the **check's report**, not from the map on disk: `AIKB/site-map.json` is the last record's and holds the old hash for any subject this branch changed, while every check reports the current hashes under `aikb.subjects` — entries of `{ kind, id, note, hash }`; take the `hash` of the entry whose `note` is this note's path:
 
 ```bash
-node -e "for (const s of require('./AIKB/site-map.json').subjects) console.log(s.hash, s.kind, s.id, s.note)"
+npx kiss-ssg check <build-script> 2>/dev/null \
+  | node -e "for (const r of JSON.parse(require('fs').readFileSync(0,'utf8')).reports ?? JSON.parse(require('fs').readFileSync(0,'utf8'))) for (const s of r.aikb?.subjects ?? []) console.log(s.hash, s.kind, s.id, s.note)"
 ```
+
+(The JSON is `{ reports, diff }` when the site has a baseline and a bare array when it has not.) The stamp goes at the very top of the note:
 
 ```markdown
 ---
@@ -77,16 +80,7 @@ subject-hash: 9f2c1b0a4e7d83f6c5b21a908d7e6f4c3b2a1908
 …
 ```
 
-The engine never writes that line; this skill does. It is what lets the next check say "this note was written against a different version of this code" instead of everybody having to reread both. Read the hash out of the map — never invent one, and never stamp a note you have not actually brought up to date, because a wrong stamp silences the very warning it exists to raise. Leaving a legacy note unstamped is fine: an unstamped note is never stale, just unstamped.
-
-One ordering trap. The `site-map.json` on disk right now is the **last** record's — nothing since has rewritten it — so for a subject this branch changed, its `hash` there is the old one, and stamping from it would leave the note stale. For those, hash the subject as the engine does: the controller file's bytes, or the pipeline step's `run` string.
-
-```bash
-sha1sum src/controllers/stockist.js                 # a controller file
-printf '%s' 'npx tailwindcss -i src/app.css -o …' | sha1sum   # a pipeline step's run string
-```
-
-(A URL model has no hash and never goes stale.) Re-run the check: all four lines clean is the proof you stamped right. Then step 4 records, and the fresh `site-map.json` it writes is the authority from that point — if the check after recording still reports a stale note, take the hash from that file and fix the stamp before you commit.
+The engine never writes that line; this skill does. It is what lets the next check say "this note was written against a different version of this code" instead of everybody having to reread both. Read the hash out of the report — never invent one, and never stamp a note you have not actually brought up to date, because a wrong stamp silences the very warning it exists to raise. Leaving a legacy note unstamped is fine: an unstamped note is never stale, just unstamped. A URL model has no hash and never goes stale. Re-run the check: all four lines clean is the proof you stamped right.
 
 **b. Every subject this change touched has a note that changed with it.**
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { createHash } from 'node:crypto'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -15,6 +16,7 @@ afterEach(async () => {
 })
 
 const node = `"${process.execPath}"`
+const sha1 = (text) => createHash('sha1').update(text).digest('hex')
 const EVENTS = 'https://api.example.com/v2/events?page=1'
 
 // One site with every kind of subject in it: a `.json` file model, a models
@@ -144,7 +146,32 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       missing: [`${site.root}/AIKB/notes/models/api.example.com-v2-events.md`],
       // ...and this note's subject is not in the site any more.
       dead: [`${site.root}/AIKB/notes/models/api.example.com-v1-old.md`],
+      // Nothing is stamped yet, and no note cites a file.
+      stale: [],
+      dangling: [],
     })
+    // The subject rows ride on the report too, so a check can say which hash
+    // a note wants stamping with before any record has been made.
+    expect(report.aikb.subjects).toEqual([
+      {
+        kind: 'controllers',
+        id: 'member.js',
+        note: 'notes/controllers/member.md',
+        hash: sha1(files['src/controllers/member.js']),
+      },
+      {
+        kind: 'models',
+        id: EVENTS,
+        note: 'notes/models/api.example.com-v2-events.md',
+        hash: null,
+      },
+      {
+        kind: 'pipeline',
+        id: 'stamp',
+        note: 'notes/pipeline/stamp.md',
+        hash: sha1(`${node} -e "0"`),
+      },
+    ])
 
     // 3. The map itself: a row per page (the fan-out contributing one each),
     //    classified from the *registration*, not from the resolved data.
@@ -187,6 +214,10 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       ],
     })
     expect(map.pipeline).toEqual([{ name: 'stamp', run: `${node} -e "0"` }])
+    // The same rows are the last key of the map on disk — which is what a
+    // note is stamped from once the record has been made.
+    expect(Object.keys(map).at(-1)).toBe('subjects')
+    expect(map.subjects).toEqual(report.aikb.subjects)
     expect(map.site.build).toBe(site.build)
     expect(map.site.siteUrl).toBe('https://e.com')
 
@@ -305,6 +336,64 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
     expect(checked.aikb.written).toBe(false)
     expect(checked.aikb.notes).toEqual(recorded.aikb.notes)
     expect(await readAikb()).toEqual(snapshot)
+  })
+
+  it('reports a stamped note as stale once its subject changes underneath it', async () => {
+    // The finding the stamp exists for. Nothing about the note changed and
+    // nothing about the map changed, so no other rule can see this: the note
+    // was written against one controller and the controller has moved on.
+    site = await makeSite(files)
+    stubFetch()
+    record()
+    const recorded = await build()
+    const { hash } = recorded.aikb.subjects.find((s) => s.id === 'member.js')
+    await site.touch(
+      'AIKB/notes/controllers/member.md',
+      `---\nsubject-hash: ${hash}\n---\n\n## What it does\n\nDerives the slug.\n`,
+    )
+    await kiss.close()
+    kiss = null
+
+    const stamped = await build()
+    expect(stamped.aikb.notes.stale).toEqual([])
+    await kiss.close()
+    kiss = null
+
+    await site.touch(
+      'src/controllers/member.js',
+      'export default ({ model }) => ({ slug: model.slug, extra: 1 })\n',
+    )
+    const drifted = await build()
+    expect(drifted.aikb.notes.stale).toEqual([
+      `${site.root}/AIKB/notes/controllers/member.md`,
+    ])
+    // The note is still there and still about a subject that is still in the
+    // map, so the two older rules have nothing to say about it — and the
+    // report carries the hash it should be restamped with.
+    expect(drifted.aikb.notes.missing).not.toContain(
+      `${site.root}/AIKB/notes/controllers/member.md`,
+    )
+    expect(drifted.aikb.notes.dead).toEqual(recorded.aikb.notes.dead)
+    expect(
+      drifted.aikb.subjects.find((s) => s.id === 'member.js').hash,
+    ).not.toBe(hash)
+  })
+
+  it('reports a note that cites a view the site no longer has', async () => {
+    site = await makeSite({
+      ...files,
+      'AIKB/notes/controllers/member.md':
+        '## What it does\n\nRenders `member.hbs`, which used to be `src/pages/member-card-v1.hbs`.\n',
+    })
+    stubFetch()
+    record()
+    const report = await build()
+
+    // One of the two tokens is a view this build rendered; the other is a
+    // file that resolves to nothing, anywhere.
+    expect(report.aikb.notes.dangling).toEqual([
+      `${site.root}/AIKB/notes/controllers/member.md: src/pages/member-card-v1.hbs`,
+    ])
   })
 
   it('maps staged paths back to the real folder after an atomic promotion', async () => {

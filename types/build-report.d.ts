@@ -36,12 +36,14 @@
 /**
  * What this build did about the site's knowledge base, as the report carries
  * it: where that knowledge base lives, whether this build actually wrote it
- * (only a passing `KISS_AIKB` record does), and the two note findings.
+ * (only a passing `KISS_AIKB` record does), the four note findings, and the
+ * subjects those findings are about.
  *
  * @typedef {Object} BuildAikb
  * @property {string} folder the AIKB folder, as configured
  * @property {boolean} written `false` under check mode, and when a write failed
- * @property {{ missing: string[], dead: string[] }} notes paths, both sorted
+ * @property {{ missing: string[], dead: string[], stale: string[], dangling: string[] }} notes all four sorted; `missing`, `dead` and `stale` are note paths, `dangling` is `<note path>: <token>`
+ * @property {import('./aikb.js').SiteMapSubject[]} subjects `{ kind, id, note, hash }` per subject of *this* build — the hash to stamp a note with, which `site-map.json` cannot yet carry because it still describes the last record
  */
 /**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
@@ -187,7 +189,8 @@ export type BuildPipelineStep = {
 /**
  * What this build did about the site's knowledge base, as the report carries
  * it: where that knowledge base lives, whether this build actually wrote it
- * (only a passing `KISS_AIKB` record does), and the two note findings.
+ * (only a passing `KISS_AIKB` record does), the four note findings, and the
+ * subjects those findings are about.
  */
 export type BuildAikb = {
     /**
@@ -199,12 +202,18 @@ export type BuildAikb = {
      */
     written: boolean;
     /**
-     * paths, both sorted
+     * all four sorted; `missing`, `dead` and `stale` are note paths, `dangling` is `<note path>: <token>`
      */
     notes: {
         missing: string[];
         dead: string[];
+        stale: string[];
+        dangling: string[];
     };
+    /**
+     * `{ kind, id, note, hash }` per subject of *this* build — the hash to stamp a note with, which `site-map.json` cannot yet carry because it still describes the last record
+     */
+    subjects: import("./aikb.js").SiteMapSubject[];
 };
 /**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a

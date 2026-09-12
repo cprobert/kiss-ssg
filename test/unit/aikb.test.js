@@ -1,5 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'fs-extra'
+import path from 'node:path'
+import { createHash } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
 import {
   buildSiteMap,
   classifyController,
@@ -10,6 +13,7 @@ import {
   noteSubjects,
   notePathFor,
   pageOrigin,
+  readFrontmatter,
   renderAikbReadme,
   renderSiteMap,
   writeAikb,
@@ -38,6 +42,16 @@ const config = {
 
 const map = (over = {}) =>
   buildSiteMap({ config, buildDir: './public', ...over })
+
+const sha1 = (text) => createHash('sha1').update(text).digest('hex')
+
+// A path that really is on disk, written the way a note would write it: from
+// the cwd the build script is run from, which for this suite is the repo root.
+// Derived rather than hard-coded so the test cannot quietly start passing (or
+// failing) because a file was moved.
+const REAL_FILE = path
+  .relative(process.cwd(), fileURLToPath(import.meta.url))
+  .replace(/\\/g, '/')
 
 let site
 afterEach(async () => {
@@ -205,6 +219,117 @@ describe('buildSiteMap', () => {
   })
 })
 
+describe('buildSiteMap: subjects', () => {
+  const CONTROLLER = 'export default () => ({ ok: true })\n'
+  // The injected reader is the whole point of the dependency: the only thing
+  // in this module that would otherwise touch a disk, handed in so a unit
+  // test never has to write a controller file to assert on its hash.
+  const reader = (kind, id) =>
+    kind === 'controllers' && id === 'stockist.js' ? CONTROLLER : null
+
+  const withSubjects = (over = {}) =>
+    map({
+      readSubject: reader,
+      stack: [
+        entry('./public/a.html', {
+          model: 'url:https://api.example.com/v2/events?x=1',
+          controller: 'file:stockist.js',
+        }),
+        entry('./public/b.html', { controller: 'file:gone.js' }),
+      ],
+      pipeline: [{ name: 'tailwind', run: 'npx tailwindcss' }],
+      ...over,
+    })
+
+  it('hashes a controller the same with CRLF and LF line endings', () => {
+    const lf = 'export default () => ({})\n// two\n'
+    const crlf = lf.replace(/\n/g, '\r\n')
+    const mapFor = (text) =>
+      buildSiteMap({
+        stack: [
+          {
+            view: 'a.hbs',
+            buildTo: './public/a.html',
+            origin: { model: 'none', controller: 'file:a.js' },
+          },
+        ],
+        config: { folders: {} },
+        buildDir: './public',
+        readSubject: () => Buffer.from(text),
+      })
+    expect(mapFor(crlf).subjects[0].hash).toBe(mapFor(lf).subjects[0].hash)
+    expect(mapFor(lf).subjects[0].hash).toBe(sha1(lf))
+  })
+
+  it('hashes a controller by its bytes, a step by its command, a URL model not at all', () => {
+    expect(withSubjects().subjects).toEqual([
+      // A controller the reader cannot produce has no hash rather than a
+      // wrong one — and a subject with no hash can never be stale.
+      {
+        kind: 'controllers',
+        id: 'gone.js',
+        note: 'notes/controllers/gone.md',
+        hash: null,
+      },
+      {
+        kind: 'controllers',
+        id: 'stockist.js',
+        note: 'notes/controllers/stockist.md',
+        hash: sha1(CONTROLLER),
+      },
+      // A URL model's id *is* the subject: an id that changed is a different
+      // subject with a different note, so there is nothing for a hash to say.
+      {
+        kind: 'models',
+        id: 'https://api.example.com/v2/events?x=1',
+        note: 'notes/models/api.example.com-v2-events.md',
+        hash: null,
+      },
+      {
+        kind: 'pipeline',
+        id: 'tailwind',
+        note: 'notes/pipeline/tailwind.md',
+        hash: sha1('npx tailwindcss'),
+      },
+    ])
+  })
+
+  it('is the last key on the map, sorted exactly as noteSubjects sorts', () => {
+    const result = withSubjects()
+    expect(Object.keys(result).at(-1)).toBe('subjects')
+    expect(result.subjects.map((s) => [s.kind, s.id])).toEqual(
+      noteSubjects(result).map((s) => [s.kind, s.id]),
+    )
+  })
+
+  it('asks the reader only about the subject that lives in a file', () => {
+    const asked = []
+    withSubjects({
+      readSubject: (kind, id) => {
+        asked.push(`${kind}/${id}`)
+        return null
+      },
+    })
+    expect(asked).toEqual(['controllers/gone.js', 'controllers/stockist.js'])
+  })
+
+  it('reads no file of its own by default when there is no controllers folder', () => {
+    // `config.folders.controllers` is null here, so the default reader has
+    // nowhere to look and says so instead of throwing.
+    expect(
+      map({ stack: [entry('./public/a.html', { controller: 'file:x.js' })] })
+        .subjects,
+    ).toEqual([
+      {
+        kind: 'controllers',
+        id: 'x.js',
+        note: 'notes/controllers/x.md',
+        hash: null,
+      },
+    ])
+  })
+})
+
 describe('noteSubjects', () => {
   it('is controller files, URL models and pipeline steps, and nothing else', () => {
     const result = map({
@@ -326,6 +451,8 @@ describe('evaluateNotes', () => {
     expect(notes).toEqual({
       missing: [`${site.root}/AIKB/notes/models/api.example.com-v2-events.md`],
       dead: [`${site.root}/AIKB/notes/pipeline/postcss.md`],
+      stale: [],
+      dangling: [],
     })
   })
 
@@ -351,9 +478,206 @@ describe('evaluateNotes', () => {
   })
 })
 
+describe('readFrontmatter', () => {
+  it('reads a --- block of key: value lines, and only that', () => {
+    expect(
+      readFrontmatter('---\nsubject-hash: abc123\ntitle: A note\n---\n\n# x'),
+    ).toEqual({ 'subject-hash': 'abc123', title: 'A note' })
+  })
+
+  it('keeps a colon inside a value and skips a line that has none', () => {
+    expect(
+      readFrontmatter('---\nsee: https://e.com/a\nnot a field\n---\nbody'),
+    ).toEqual({ see: 'https://e.com/a' })
+  })
+
+  it('reads a CRLF block, because a Windows checkout writes one', () => {
+    expect(readFrontmatter('---\r\nsubject-hash: abc\r\n---\r\nbody')).toEqual({
+      'subject-hash': 'abc',
+    })
+  })
+
+  it('is null when there is no block, or the block is not at the top', () => {
+    expect(readFrontmatter('## What it does\n')).toBeNull()
+    expect(readFrontmatter('')).toBeNull()
+    expect(readFrontmatter('# x\n\n---\nsubject-hash: abc\n---\n')).toBeNull()
+  })
+})
+
+describe('evaluateNotes: stale', () => {
+  const CONTROLLER = 'export default () => ({})\n'
+  const stampedMap = () =>
+    map({
+      readSubject: () => CONTROLLER,
+      stack: [
+        entry('./public/a.html', {
+          controller: 'file:stockist.js',
+          model: 'url:https://api.example.com/v2/events',
+        }),
+      ],
+    })
+  const stamped = (hash) =>
+    `---\nsubject-hash: ${hash}\n---\n\n## What it does\n`
+
+  it('is the note whose stamp is no longer the subject’s hash', async () => {
+    site = await makeSite({
+      'AIKB/notes/controllers/stockist.md': stamped('0'.repeat(40)),
+      // Stamped too, and with the same wrong hash — but a URL model has no
+      // hash to disagree with, so it is never stale.
+      'AIKB/notes/models/api.example.com-v2-events.md': stamped('0'.repeat(40)),
+    })
+    const notes = evaluateNotes(stampedMap(), `${site.root}/AIKB/notes`)
+    expect(notes.stale).toEqual([
+      `${site.root}/AIKB/notes/controllers/stockist.md`,
+    ])
+    expect(notes.missing).toEqual([])
+  })
+
+  it('is not a note stamped with the current hash, nor an unstamped one', async () => {
+    site = await makeSite({
+      'AIKB/notes/controllers/stockist.md': stamped(sha1(CONTROLLER)),
+      // No stamp at all is the state every note starts in: unstamped, not
+      // stale.
+      'AIKB/notes/models/api.example.com-v2-events.md': '## What it does\n',
+    })
+    expect(
+      evaluateNotes(stampedMap(), `${site.root}/AIKB/notes`).stale,
+    ).toEqual([])
+  })
+
+  it('is empty for a map with no subject hashes at all', async () => {
+    // A map written before subjects existed, or one built by hand: nothing to
+    // compare against, so nothing is stale.
+    site = await makeSite({
+      'AIKB/notes/controllers/stockist.md': stamped('0'.repeat(40)),
+    })
+    const older = stampedMap()
+    delete older.subjects
+    expect(evaluateNotes(older, `${site.root}/AIKB/notes`).stale).toEqual([])
+  })
+})
+
+describe('evaluateNotes: dangling', () => {
+  const referencedMap = () => {
+    const graph = new DependencyGraph()
+    graph.record('./public/a.html', 'nav/top')
+    return buildSiteMap({
+      // A models folder that is deliberately not on this disk, so the token
+      // naming it can only resolve through the map.
+      config: {
+        ...config,
+        folders: { ...config.folders, models: './content/records' },
+      },
+      buildDir: './public',
+      graph,
+      stack: [
+        {
+          view: 'index.hbs',
+          buildTo: './public/a.html',
+          origin: { model: 'file:a.json', controller: 'file:stockist.js' },
+        },
+      ],
+    })
+  }
+
+  const note = [
+    '## What it does',
+    '',
+    `Reads \`${REAL_FILE}\` — a file that is really there, from the cwd.`,
+    'Renders `index.hbs` into `a.html` through `nav/top`, out of `content/records`,',
+    'and is explained beside `notes/controllers/stockist.md`.',
+    '',
+    '## Gotchas',
+    '',
+    '- `<title>` is set by the layout, and `npx kiss-ssg check` says so.',
+    '- The feed is `https://api.example.com/v2/events`; everything lands in `shelf/`.',
+    '- It still imports `src/pages/gone.hbs`, and `src/pages/gone.hbs` is gone.',
+    '',
+  ].join('\n')
+
+  const siteMd = [
+    '# This site',
+    '',
+    'Deployed from `src/pages/vanished.hbs`, which is not there either.',
+    '',
+    '```js',
+    "import x from 'src/pages/fenced.hbs'",
+    '```',
+    '',
+  ].join('\n')
+
+  it('reports only the tokens that look like a file and resolve to nothing', async () => {
+    site = await makeSite({
+      'AIKB/notes/controllers/stockist.md': note,
+      'AIKB/site.md': siteMd,
+    })
+    const notes = evaluateNotes(referencedMap(), `${site.root}/AIKB/notes`, {
+      aikbDir: `${site.root}/AIKB`,
+    })
+    expect(notes.dangling).toEqual([
+      // Cited twice in the note, reported once.
+      `${site.root}/AIKB/notes/controllers/stockist.md: src/pages/gone.hbs`,
+      // `site.md` is scanned like a note — and the fenced block in it is not,
+      // because a snippet quotes code rather than citing a file.
+      `${site.root}/AIKB/site.md: src/pages/vanished.hbs`,
+    ])
+    // ...and `site.md` is never missing, dead or stale: it has no subject.
+    expect(notes.dead).toEqual([])
+    expect(notes.stale).toEqual([])
+  })
+
+  it('scans no site.md when it is not there, and none without the folder', async () => {
+    site = await makeSite({ 'AIKB/notes/controllers/stockist.md': note })
+    const withFolder = evaluateNotes(
+      referencedMap(),
+      `${site.root}/AIKB/notes`,
+      { aikbDir: `${site.root}/AIKB` },
+    )
+    expect(withFolder.dangling).toHaveLength(1)
+    // With no folder given, a note citing its neighbour cannot be resolved
+    // against the knowledge base — the one thing the folder is needed for.
+    const without = evaluateNotes(referencedMap(), `${site.root}/AIKB/notes`)
+    expect(without.dangling).toContain(
+      `${site.root}/AIKB/notes/controllers/stockist.md: notes/controllers/stockist.md`,
+    )
+  })
+})
+
+describe('evaluateNotes: dangling, resolved against the source folders', () => {
+  it('accepts a reference written the way the source tree reads', async () => {
+    // `controllers/helper.js` exists under the site's `src`, not under the
+    // cwd: a note cites it the way the tree reads, and the map knows where
+    // that tree hangs.
+    site = await makeSite({
+      'src/controllers/helper.js': 'export default () => ({})\n',
+      'AIKB/notes/controllers/stockist.md':
+        'Shares `controllers/helper.js`; `controllers/absent.js` is gone.\n',
+    })
+    const siteMap = buildSiteMap({
+      config: { folders: { src: `${site.root}/src` } },
+      buildDir: './public',
+      stack: [
+        {
+          view: 'index.hbs',
+          buildTo: './public/a.html',
+          origin: { model: 'none', controller: 'file:stockist.js' },
+        },
+      ],
+      readSubject: () => null,
+    })
+    const notes = evaluateNotes(siteMap, `${site.root}/AIKB/notes`, {
+      aikbDir: `${site.root}/AIKB`,
+    })
+    expect(notes.dangling).toEqual([
+      `${site.root}/AIKB/notes/controllers/stockist.md: controllers/absent.js`,
+    ])
+  })
+})
+
 describe('renderSiteMap', () => {
   const full = () =>
     map({
+      readSubject: () => 'export default () => ({})\n',
       graph: (() => {
         const graph = new DependencyGraph()
         graph.record('./public/a.html', 'card')
@@ -406,9 +730,32 @@ describe('renderSiteMap', () => {
       '## Models',
       '## Controllers',
       '## Asset pipeline',
+      '## Subjects',
     ])
       expect(text).toContain(heading)
-    expect(text.match(/_None\._/g)).toHaveLength(5)
+    expect(text.match(/_None\._/g)).toHaveLength(6)
+  })
+
+  it('lists every subject with its note and the first 12 characters of its hash', () => {
+    const result = map({
+      readSubject: () => 'export default () => ({})\n',
+      stack: [
+        entry('./public/a.html', {
+          controller: 'file:x.js',
+          model: 'url:https://e.com/v1/a',
+        }),
+      ],
+    })
+    const text = renderSiteMap(result)
+    const hash = result.subjects[0].hash
+    expect(text).toContain('## Subjects')
+    expect(text).toContain('`notes/controllers/x.md`')
+    expect(text).toContain(`\`${hash.slice(0, 12)}\``)
+    // The whole hash lives in site-map.json, which is what a note is stamped
+    // from — the table is for reading, not for copying.
+    expect(text).not.toContain(hash)
+    // A URL model has no hash, and the cell says so rather than being blank.
+    expect(text).toContain('| models')
   })
 
   it('escapes a pipe so a command cannot break out of its cell', () => {
@@ -444,7 +791,12 @@ describe('lastBuildRecord', () => {
     sitemap: null,
     pipeline: [{ name: 'tailwind', ok: true, duration: 420 }],
     llms: null,
-    aikb: { folder: 'AIKB', written: true, notes: { missing: [], dead: [] } },
+    aikb: {
+      folder: 'AIKB',
+      written: true,
+      notes: { missing: [], dead: [], stale: [], dangling: [] },
+      subjects: [],
+    },
   }
 
   it('drops every duration and keeps the report’s own key order', () => {
@@ -484,6 +836,22 @@ describe('writeAikb', () => {
     expect(result.written).toBe(true)
     expect(result.notes.missing).toEqual([
       `${site.root}/AIKB/notes/controllers/x.md`,
+    ])
+    // The subject rows ride on the result, so the report of the build that
+    // found the finding also carries the hash a note should be stamped with.
+    expect(Object.keys(result)).toEqual([
+      'folder',
+      'written',
+      'notes',
+      'subjects',
+    ])
+    expect(result.subjects).toEqual([
+      {
+        kind: 'controllers',
+        id: 'x.js',
+        note: 'notes/controllers/x.md',
+        hash: null,
+      },
     ])
     expect(await site.exists('AIKB/README.md')).toBe(true)
     expect(await site.exists('AIKB/site-map.md')).toBe(true)

@@ -170,5 +170,13 @@
       ]
     }
   ],
-  "pipeline": []
+  "pipeline": [],
+  "subjects": [
+    {
+      "kind": "controllers",
+      "id": "shelf-item.js",
+      "note": "notes/controllers/shelf-item.md",
+      "hash": "8bfa290248f68febbcea3d6c759bcc8b55eaf6dd"
+    }
+  ]
 }
