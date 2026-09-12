@@ -15,13 +15,14 @@ const render = (src, ctx = {}) => hbs.compile(src)(ctx)
 
 // A recording logger so the degrade-instead-of-throw paths can assert that the
 // template author was told, not just that nothing blew up.
-const makeHbs = (config = {}, assets) => {
+const makeHbs = (config = {}, assets, lookupPage) => {
   const env = Handlebars.create()
   registerHandlebarsHelpers(
     env,
     { dev: false, sass: { includePaths: [] }, ...config },
     {
       assets,
+      lookupPage,
       markdown: new Remarkable({ html: true, xhtmlOut: true, breaks: true }),
       logger: {
         ...silentLogger,
@@ -526,5 +527,158 @@ describe('asset', () => {
     expect(render('{{asset p}}', { p: null })).toBe('')
     expect(render('{{asset}}')).toBe('')
     expect(warnings).toHaveLength(2)
+  })
+})
+
+describe('link', () => {
+  // The registry as `Kiss._lookupPage` answers it, stubbed: a page is whatever
+  // carries a `pageURL()`, which is the one thing the helper reads off it.
+  const registry = (pages) => {
+    const asked = []
+    const lookup = (id) => {
+      asked.push(id)
+      const pageURL = pages[id]
+      if (pageURL === undefined) return null
+      if (Array.isArray(pageURL))
+        return { withdrawn: true, views: /** @type {string[]} */ (pageURL) }
+      return { entry: { view: `${id}.hbs`, page: { pageURL: () => pageURL } } }
+    }
+    return { lookup, asked }
+  }
+  const linkHbs = (pages, config = {}) => {
+    const { lookup, asked } = registry(pages)
+    hbs = makeHbs(config, undefined, lookup)
+    return asked
+  }
+  // A page context with the data frame `KissPage.generate()` fills, so a
+  // failure message can name both the view and the file that asked.
+  const renderIn = (src, ctx = { view: 'index.hbs' }) =>
+    hbs.compile(src)(ctx, { data: { kissPage: './public/index.html' } })
+
+  it('renders the served path, root-relative, for every page shape', () => {
+    linkHbs({
+      home: 'index.html',
+      about: 'about.html',
+      courses: 'courses/index.html',
+      contact: 'contact/index.html',
+    })
+    expect(renderIn('{{link "home"}}')).toBe('/')
+    expect(renderIn('{{link "about"}}')).toBe('/about.html')
+    expect(renderIn('{{link "courses"}}')).toBe('/courses/')
+    // The same call on an extension-less site: the page's own URL changed, the
+    // helper did not.
+    expect(renderIn('{{link "contact"}}')).toBe('/contact/')
+  })
+
+  it('joins a slug= hash after normalising it, the way the default id was built', () => {
+    const asked = linkHbs({ 'blog/post/hello-world': 'blog/hello-world.html' })
+    expect(
+      renderIn('{{link "blog/post" slug=title}}', {
+        view: 'index.hbs',
+        title: 'Hello World',
+      }),
+    ).toBe('/blog/hello-world.html')
+    expect(asked).toEqual(['blog/post/hello-world'])
+  })
+
+  it('makes an absolute URL by joining siteUrl to the served path', () => {
+    linkHbs({ about: 'about.html' }, { siteUrl: 'https://e.com' })
+    expect(renderIn('{{link "about" absolute=true}}')).toBe(
+      'https://e.com/about.html',
+    )
+  })
+
+  it('tolerates a trailing slash on siteUrl and keeps a path prefix', () => {
+    linkHbs(
+      { about: 'about.html', home: 'index.html' },
+      { siteUrl: 'https://e.com/' },
+    )
+    expect(renderIn('{{link "about" absolute=true}}')).toBe(
+      'https://e.com/about.html',
+    )
+    expect(renderIn('{{link "home" absolute=true}}')).toBe('https://e.com/')
+    linkHbs(
+      { about: 'about.html', home: 'index.html' },
+      { siteUrl: 'https://e.com/docs' },
+    )
+    expect(renderIn('{{link "about" absolute=true}}')).toBe(
+      'https://e.com/docs/about.html',
+    )
+    expect(renderIn('{{link "home" absolute=true}}')).toBe(
+      'https://e.com/docs/',
+    )
+  })
+
+  // The case `toAbsoluteUrl` got wrong: it strips a trailing `index` segment
+  // with any extension, so the absolute form would have pointed at `/data/`
+  // while the relative form pointed at the file.
+  it('keeps an index.<ext> page a file in both forms', () => {
+    linkHbs({ data: 'data/index.json' }, { siteUrl: 'https://e.com' })
+    expect(renderIn('{{link "data"}}')).toBe('/data/index.json')
+    expect(renderIn('{{link "data" absolute=true}}')).toBe(
+      'https://e.com/data/index.json',
+    )
+  })
+
+  it('renders the canonical form on request, the string the sitemap uses', () => {
+    linkHbs({
+      home: 'index.html',
+      about: 'about.html',
+      courses: 'courses/index.html',
+    })
+    expect(renderIn('{{link "about" canonical=true}}')).toBe('/about')
+    expect(renderIn('{{link "courses" canonical=true}}')).toBe('/courses/')
+    expect(renderIn('{{link "home" canonical=true}}')).toBe('/')
+  })
+
+  it('degrades to the root-relative form, with one warning, when there is no siteUrl', () => {
+    linkHbs({ about: 'about.html' })
+    expect(renderIn('{{link "about" absolute=true}}')).toBe('/about.html')
+    expect(warnings).toHaveLength(1)
+  })
+
+  it('throws for an unknown id, naming the id and the page that asked', () => {
+    linkHbs({ about: 'about.html' })
+    expect(() => renderIn('{{link "contact"}}')).toThrow(
+      'link: no page with id "contact" (asked by index.hbs / ./public/index.html)',
+    )
+  })
+
+  it('throws for a withdrawn default id, naming the pages that share it', () => {
+    linkHbs({ 'blog/listing': ['blog/listing.hbs', 'blog/listing.hbs'] })
+    expect(() => renderIn('{{link "blog/listing"}}')).toThrow(
+      /link: id "blog\/listing" is the default id of more than one page \(blog\/listing\.hbs, blog\/listing\.hbs\).*asked by index\.hbs/,
+    )
+  })
+
+  it('throws when it is called with no id at all', () => {
+    linkHbs({ about: 'about.html' })
+    expect(() => renderIn('{{link}}')).toThrow('link: no page with id ""')
+    expect(() => renderIn('{{link missing}}')).toThrow(
+      'link: no page with id ""',
+    )
+  })
+
+  // The `{{asset}}` stance, and only in dev: the live reload shows the page and
+  // the mistake, while a real build (and `kiss-ssg check`) stays fatal.
+  it('warns and renders # in dev, for every failure mode', () => {
+    linkHbs(
+      { 'blog/listing': ['a.hbs', 'b.hbs'] },
+      { dev: true, siteUrl: 'https://e.com' },
+    )
+    expect(renderIn('{{link "contact"}}')).toBe('#')
+    expect(renderIn('{{link "blog/listing"}}')).toBe('#')
+    expect(renderIn('{{link}}')).toBe('#')
+    expect(renderIn('{{link "contact" absolute=true}}')).toBe('#')
+    expect(warnings).toHaveLength(4)
+    expect(warnings[0][0]).toContain('no page with id "contact"')
+    expect(warnings[1][0]).toContain('more than one page')
+  })
+
+  it('names the view even when the template was compiled without a page', () => {
+    linkHbs({ about: 'about.html' })
+    expect(() => render('{{link "contact"}}')).toThrow(
+      'asked by <unknown view> / <unwritten>',
+    )
   })
 })

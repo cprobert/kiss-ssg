@@ -183,6 +183,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
     expect(map.pages).toEqual([
       {
         buildTo: `${site.build}/events.html`,
+        id: 'events',
         view: 'events.hbs',
         model: `url:${EVENTS}`,
         controller: 'none',
@@ -190,6 +191,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       },
       {
         buildTo: `${site.build}/index.html`,
+        id: 'index',
         view: 'index.hbs',
         model: 'file:index.json',
         controller: 'none',
@@ -197,6 +199,8 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       },
       {
         buildTo: `${site.build}/team/ana.html`,
+        // A fan-out item: the view's route, then the record's normalised slug.
+        id: 'member/ana',
         view: 'member.hbs',
         model: 'folder:team',
         controller: 'file:member.js',
@@ -204,6 +208,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       },
       {
         buildTo: `${site.build}/team/bo.html`,
+        id: 'member/bo',
         view: 'member.hbs',
         model: 'folder:team',
         controller: 'file:member.js',

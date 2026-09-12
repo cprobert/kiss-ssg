@@ -45,7 +45,7 @@ export function pageOrigin(options?: Record<string, any>): {
  * reads a clock: two identical builds produce the same object.
  *
  * @param {Object} input
- * @param {{ view: string, buildTo: string|null, origin?: { model: string, controller: string } }[]} [input.stack] the prepared pages
+ * @param {{ view: string, buildTo: string|null, id?: string|null, origin?: { model: string, controller: string } }[]} [input.stack] the prepared pages
  * @param {import('./dependency-graph.js').DependencyGraph|null} [input.graph] filled by rendering, so this only works on a settled build
  * @param {any} input.config the resolved config
  * @param {import('./pipeline.js').PipelineStep[]} [input.pipeline] defaults to `config.assets.pipeline`
@@ -58,6 +58,7 @@ export function buildSiteMap({ stack, graph, config, pipeline, buildDir, staging
     stack?: {
         view: string;
         buildTo: string | null;
+        id?: string | null;
         origin?: {
             model: string;
             controller: string;
@@ -204,6 +205,10 @@ export type SiteMapPage = {
      * the file it writes, against the real build folder
      */
     buildTo: string | null;
+    /**
+     * the page's identity, what `{{link "<id>"}}` resolves — `null` for an inline template, a `generate: false` page and a withdrawn default id
+     */
+    id: string | null;
     /**
      * the `.hbs` filename — an inline template is elided to its first line
      */

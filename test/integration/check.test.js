@@ -151,6 +151,8 @@ describe('kiss-ssg check', () => {
         ok: true,
         // sha1 of the bytes the page wrote — the staged ones, in a check.
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+        // The page's identity, defaulted from the view's route.
+        id: 'index',
       },
     ])
     expect(await temp.exists('public')).toBe(false)
@@ -179,6 +181,7 @@ describe('kiss-ssg check', () => {
       buildTo: './public/index.html',
       ok: true,
       hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+      id: 'index',
     })
     // The page that failed wrote nothing, so it names no bytes.
     expect(report.pages.find((p) => p.view === 'missing.hbs')?.hash).toBeNull()
@@ -568,6 +571,7 @@ describe('kiss.report()', () => {
         buildTo: `${temp.build}/index.html`,
         ok: true,
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+        id: 'index',
       },
     ])
     expect(report.assets).toEqual([

@@ -749,6 +749,25 @@ describe('renderSiteMap', () => {
     expect(rows[1]).toMatch(/^\| -+ (\| -+ )*\|$/)
   })
 
+  it('carries each page id in its own column, right after the output path', () => {
+    const text = renderSiteMap(
+      map({
+        stack: [
+          { ...entry('./public/a.html'), id: 'about' },
+          // No id at all: an inline template, a `generate: false` page, or a
+          // default id two pages arrived at and neither kept.
+          entry('./public/b.html'),
+        ],
+      }),
+    )
+    const rows = text.split('\n').filter((line) => line.startsWith('|'))
+    expect(rows[0]).toMatch(
+      /^\| Output +\| Id +\| View +\| Model +\| Controller +\| Partials & layouts +\|$/,
+    )
+    expect(rows[2]).toMatch(/^\| `\.\/public\/a\.html` +\| `about` +\|/)
+    expect(rows[3]).toMatch(/^\| `\.\/public\/b\.html` +\| none +\|/)
+  })
+
   it('has a section per part of the map, and says None for an empty one', () => {
     const text = renderSiteMap(map())
     for (const heading of [

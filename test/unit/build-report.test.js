@@ -45,6 +45,7 @@ describe('buildReport', () => {
       'buildTo',
       'ok',
       'hash',
+      'id',
     ])
     expect(report.ok).toBe(true)
     expect(report.mode).toBe('build')
@@ -55,6 +56,7 @@ describe('buildReport', () => {
         buildTo: './public/index.html',
         ok: true,
         hash: null,
+        id: null,
       },
     ])
     expect(report.failures).toEqual([])
@@ -62,6 +64,22 @@ describe('buildReport', () => {
       { source: 'css/site.css', target: 'css/site.a1b2c3d4.css' },
     ])
     expect(report.sitemap).toBe('./public/sitemap.xml')
+  })
+
+  it("carries each page's id, and null for a page that claims none", () => {
+    const report = buildReport({
+      stack: [
+        { ...page('about.hbs', './public/about.html', 'h1'), id: 'about' },
+        // An inline template, a `generate: false` page, and a default id two
+        // pages arrived at all reach this module with no id on the entry.
+        page('<p>inline</p>', './public/snippet-1.html'),
+      ],
+      failures: [],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+
+    expect(report.pages.map((p) => p.id)).toEqual(['about', null])
   })
 
   it('marks the failed page — and only that page — as not ok', () => {
@@ -84,12 +102,14 @@ describe('buildReport', () => {
         buildTo: './public/index.html',
         ok: true,
         hash: null,
+        id: null,
       },
       {
         view: 'about.hbs',
         buildTo: './public/about.html',
         ok: false,
         hash: null,
+        id: null,
       },
     ])
     expect(report.failures).toEqual([

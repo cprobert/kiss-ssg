@@ -24,6 +24,10 @@ export type PageOptionsKnown = {
      */
     view: string;
     /**
+     * this page's identity, what `{{link "<id>"}}` resolves. Default: the view's route without its extension (`blog/listing.hbs` → `blog/listing`); on a `.pages()` fan-out the registration's `id` is the *prefix* its items' default ids use (`<prefix>/<slug>`) and a *record*'s own `id` wins outright, the way `aliases` belongs to the record. An inline template and a `generate: false` page have no id
+     */
+    id?: string;
+    /**
      * a `.json` filename, a models folder name, an `http(s)://` URL, a plain object or an array — and the resolved data itself by the time a controller sees it
      */
     model?: any;
@@ -283,6 +287,10 @@ declare class Kiss {
      * @type {DependencyGraph} @private
      */
     private _graph;
+    /** @private @type {{ byId: Map<string, any>, withdrawn: Map<string, string[]> }|null} */
+    private _idIndex;
+    /** @private */
+    private _idNoticed;
     /** @private */
     private _failures;
     /** @private */
@@ -409,8 +417,25 @@ declare class Kiss {
     private _redirectFindings;
     /** @private */
     private _discardStaging;
-    /** @private */
+    /**
+     * @private
+     * @param {any} options
+     * @param {any} [origin]
+     * @param {string|null} [idPrefix] given only by `_prepareMultiplePages`: what
+     * this fan-out's items prefix their default ids with, in place of the view
+     * route. Its presence is also what tells a fan-out item from a `.page()` page.
+     */
     private _preparePage;
+    /** @private */
+    private _idIndexFor;
+    /**
+     * @private
+     * @param {string} id
+     * @returns {{ entry: any }|{ withdrawn: true, views: string[] }|null}
+     */
+    private _lookupPage;
+    /** @private */
+    private _stackForRecord;
     /** @private */
     private _prepareMultiplePages;
     /**

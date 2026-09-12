@@ -16,6 +16,7 @@
   "pages": [
     {
       "buildTo": "../public/11-blog/blog/a-year-of-bench-lots/index.html",
+      "id": "blog/post/a-year-of-bench-lots",
       "view": "blog/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",
@@ -26,6 +27,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/grind-size-is-the-dial/index.html",
+      "id": "blog/post/grind-size-is-the-dial",
       "view": "blog/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",
@@ -36,6 +38,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/guji-uraga-has-landed/index.html",
+      "id": "blog/post/guji-uraga-has-landed",
       "view": "blog/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",
@@ -46,6 +49,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/index.html",
+      "id": null,
       "view": "blog/listing.hbs",
       "model": "inline",
       "controller": "none",
@@ -57,6 +61,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/page/2/index.html",
+      "id": null,
       "view": "blog/listing.hbs",
       "model": "inline",
       "controller": "none",
@@ -68,6 +73,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/pour-over-at-home/index.html",
+      "id": "blog/post/pour-over-at-home",
       "view": "blog/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",
@@ -78,6 +84,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/brewing/index.html",
+      "id": "blog/tag/brewing",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -89,6 +96,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/experiments/index.html",
+      "id": "blog/tag/experiments",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -100,6 +108,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/index.html",
+      "id": "blog/tags",
       "view": "blog/tags.hbs",
       "model": "inline",
       "controller": "none",
@@ -110,6 +119,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/roastery/index.html",
+      "id": "blog/tag/roastery",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -121,6 +131,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/tags/sourcing/index.html",
+      "id": "blog/tag/sourcing",
       "view": "blog/tag.hbs",
       "model": "inline",
       "controller": "file:tag.js",
@@ -132,6 +143,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/the-cascara-experiment/index.html",
+      "id": "blog/post/the-cascara-experiment",
       "view": "blog/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",
@@ -142,6 +154,7 @@
     },
     {
       "buildTo": "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
+      "id": "blog/post/why-we-roast-on-wednesdays",
       "view": "blog/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",
@@ -152,6 +165,7 @@
     },
     {
       "buildTo": "../public/11-blog/index.html",
+      "id": "index",
       "view": "index.hbs",
       "model": "inline",
       "controller": "none",
