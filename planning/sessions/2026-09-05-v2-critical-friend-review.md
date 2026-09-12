@@ -3,6 +3,7 @@ branch: review/v2-critical-friend
 base: main
 status: closed
 opened: 2026-09-05
+consolidated: 2026-09-12
 ---
 
 # Session — 2026-09-05: Independent review of the v2 engine, then implement what survives triage

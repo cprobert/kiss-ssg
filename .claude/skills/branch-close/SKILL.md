@@ -159,6 +159,7 @@ Name **one** artefact this branch changed that a human should look at with their
 - a `check --summary` line for a real site — the page list, or the count that should have moved
 - a type hover in an editor — `types/kiss.d.ts` regenerated, the signature a consuming site now sees
 - a live-reload round trip, a rendered diagram, a colour, a piece of copy
+- a performance claim re-measured while you watch — `npm run bench` before and after on the same machine, minutes apart, on any branch claiming a speed win. A number you only read is a report, not a check.
 
 Then **stop and ask** with AskUserQuestion: did you look, and what did you see? This is the one place in the ritual that waits on a human rather than on a command, so do not answer it for them and do not accept your own summary as the answer — Claude reporting that Claude's output looks right is the exact loop this step breaks.
 

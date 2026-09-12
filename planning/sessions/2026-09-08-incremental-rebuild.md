@@ -3,6 +3,7 @@ branch: feat/incremental-rebuild
 base: main
 status: closed
 opened: 2026-09-08
+consolidated: 2026-09-12
 ---
 
 # Session — 2026-09-08: Dependency-aware incremental rebuild (measure, then decide)

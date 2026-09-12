@@ -136,7 +136,7 @@ git commit -m "Open branch: <objective, short>
 Intent captured at branch-open."
 ```
 
-Then tell the user: branch created, intent captured — start the work, run `/branch-pulse` to take stock against the criteria as you go, and run `/branch-close` when done. Remind them this is now the **single active branch**: work stays here until close, scope drift is recorded as a dated **Amendment** in this file (not split into a new branch), and you will not create another branch on your own initiative — only when they explicitly ask.
+Then tell the user: branch created, intent captured — start the work, run `/branch-pulse` to take stock against the criteria as you go, and run `/branch-close` when done. **Name when the first pulse is due** — after the first slice of work lands, and at minimum once per working session the branch stays open. Claude offers the pulse rather than waiting to be asked for it. Remind them this is now the **single active branch**: work stays here until close, scope drift is recorded as a dated **Amendment** in this file (not split into a new branch), and you will not create another branch on your own initiative — only when they explicitly ask.
 
 ---
 
