@@ -674,6 +674,34 @@ describe('evaluateNotes: dangling, resolved against the source folders', () => {
   })
 })
 
+describe('evaluateNotes: dangling, engine outputs', () => {
+  it('accepts the files the engine writes beside the pages, and any file in the build', async () => {
+    site = await makeSite({
+      'public/css/site.css': 'body{}',
+      'AIKB/notes/controllers/stockist.md':
+        'Feeds `feed.xml`, listed in `sitemap.xml` and `llms.txt`, redirected by `_redirects`; styled by `css/site.css`; `css/gone.css` is not there.\n',
+    })
+    const siteMap = buildSiteMap({
+      config: { folders: { src: `${site.root}/src` } },
+      buildDir: `${site.root}/public`,
+      stack: [
+        {
+          view: 'index.hbs',
+          buildTo: `${site.root}/public/index.html`,
+          origin: { model: 'none', controller: 'file:stockist.js' },
+        },
+      ],
+      readSubject: () => null,
+    })
+    const notes = evaluateNotes(siteMap, `${site.root}/AIKB/notes`, {
+      aikbDir: `${site.root}/AIKB`,
+    })
+    expect(notes.dangling).toEqual([
+      `${site.root}/AIKB/notes/controllers/stockist.md: css/gone.css`,
+    ])
+  })
+})
+
 describe('renderSiteMap', () => {
   const full = () =>
     map({

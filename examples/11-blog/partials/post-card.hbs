@@ -1,0 +1,9 @@
+{{!-- One post as it looks when it is listed rather than read. The listing, the
+      tag pages and the home page all render this, so a post looks the same
+      everywhere and there is one place to change it. --}}
+<article class="card">
+  <h3><a href="{{url}}">{{title}}</a></h3>
+  <p class="meta"><time datetime="{{date}}">{{dateLabel}}</time></p>
+  <p>{{summary}}</p>
+  <p>{{#each tags}}<a class="tag" href="{{url}}">{{name}}</a> {{/each}}</p>
+</article>

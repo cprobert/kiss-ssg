@@ -100,7 +100,7 @@ npm run bench                  # benchmark harness: 6 scenarios over a generated
                                # fallback, not a scoped save), and one whose pages have all dropped it
                                # re-renders nothing, broadcasts no live reload, and the reading times out
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
-npm run eg1 … eg10       # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design
+npm run eg1 … eg11       # run an example (examples/*.js); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding
 ```
 
 `.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.

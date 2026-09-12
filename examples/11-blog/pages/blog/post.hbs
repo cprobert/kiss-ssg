@@ -1,0 +1,52 @@
+{{!-- Every post sits at blog/<slug>/index.html, so the climb back to the build
+      root is the same for all six and can be written here. --}}
+{{#extend "layout" root="../../"}}
+
+  {{#content "head"}}{{> "head-feed"}}{{/content}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow"><time datetime="{{model.date}}">{{model.dateLabel}}</time></p>
+    <h1>{{model.title}}</h1>
+    <p>{{model.summary}}</p>
+    <p>{{#each model.tags}}<a class="tag" href="{{url}}">{{name}}</a> {{/each}}</p>
+  </section>
+
+  <article class="card">
+    {{markdown model.body}}
+  </article>
+
+  {{#if aliases}}
+  <p class="meta">
+    Formerly published at {{#each aliases}}<code>{{this}}</code>{{/each}}. That address still
+    works: the build writes a <code>301</code> for it into <code>_redirects</code>, and
+    <code>aliases</code> reaches this template like any other page option, which is how this
+    sentence knows what to say.
+  </p>
+  {{/if}}
+
+  {{#if broken}}
+  {{#if model.staleLink}}
+  <div class="callout">
+    <h2>This run was started with <code>--broken</code></h2>
+    <p class="tone-warn">
+      So this post links to <a href="{{model.staleLink}}">a post that was never published</a> —
+      the shape of breakage an edit leaves behind. Nothing fails and nothing warns; the page
+      builds and the run still exits 0. It is
+      <code>npx kiss-ssg check 11-blog.js --summary -- --broken</code> that says so, in one
+      line:
+    </p>
+    <pre><code>ok ../public/11-blog (check) — 14 pages, 0 failed, 2 assets, 622ms
+  broken link: ../public/11-blog/blog/the-cascara-experiment/index.html -&gt; {{model.staleLink}}
+  ~ ../public/11-blog/blog/the-cascara-experiment/index.html
+  = 13 unchanged</code></pre>
+  </div>
+  {{/if}}
+  {{/if}}
+
+  <div class="callout">
+    <p><a href="/blog/">&larr; Back to the journal</a> &middot; <a href="/feed.xml">RSS feed</a></p>
+  </div>
+  {{/content}}
+
+{{/extend}}

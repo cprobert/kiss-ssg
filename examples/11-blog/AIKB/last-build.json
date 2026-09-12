@@ -1,0 +1,140 @@
+{
+  "ok": true,
+  "mode": "check",
+  "buildDir": "../public/11-blog",
+  "pages": [
+    {
+      "view": "index.hbs",
+      "buildTo": "../public/11-blog/index.html",
+      "ok": true,
+      "hash": "f7ce92deb74dd96dad7c935cc0ee9fbc01e38868"
+    },
+    {
+      "view": "blog/listing.hbs",
+      "buildTo": "../public/11-blog/blog/index.html",
+      "ok": true,
+      "hash": "a8847a4999a8ac739eadd9f17c5dc569c486bbe7"
+    },
+    {
+      "view": "blog/listing.hbs",
+      "buildTo": "../public/11-blog/blog/page/2/index.html",
+      "ok": true,
+      "hash": "7b806ded622a92e3111795218bf17a6cb6ed60df"
+    },
+    {
+      "view": "blog/tags.hbs",
+      "buildTo": "../public/11-blog/blog/tags/index.html",
+      "ok": true,
+      "hash": "a765c88d512783405e03bfd678a7bff276c14ddb"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/a-year-of-bench-lots/index.html",
+      "ok": true,
+      "hash": "a9b15202b24be02a70b8ead18309f9a680463b77"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/brewing/index.html",
+      "ok": true,
+      "hash": "fc640de7d1d8347cbc2d46e28e68bc684852a4ff"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/grind-size-is-the-dial/index.html",
+      "ok": true,
+      "hash": "e7617c4ab1a47d07e18e352b2835e1e874159d25"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/experiments/index.html",
+      "ok": true,
+      "hash": "e587c97ef92cf56535166e6f5f77321891e2982f"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
+      "ok": true,
+      "hash": "3c1a463777872831aa80a5adeeb64e6347962e6e"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/roastery/index.html",
+      "ok": true,
+      "hash": "f9fb5fddb0971d1a1f6ad8783185dc6fc85e4c87"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/guji-uraga-has-landed/index.html",
+      "ok": true,
+      "hash": "0d96435acc8cafe48a995c33f7d9216064c1aeea"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/sourcing/index.html",
+      "ok": true,
+      "hash": "30c0288ff9c83d582fb9c0913aa161cb1a427d3c"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/the-cascara-experiment/index.html",
+      "ok": true,
+      "hash": "38f159c056330381b51146b601873ea8e6b83e9c"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/pour-over-at-home/index.html",
+      "ok": true,
+      "hash": "dff598dba9a6e0bd177d4901aa4985d5c1de1f41"
+    }
+  ],
+  "failures": [],
+  "assets": [
+    {
+      "source": "css/site.css",
+      "target": "css/site.css"
+    },
+    {
+      "source": "robots.txt",
+      "target": "robots.txt"
+    }
+  ],
+  "sitemap": "../public/11-blog/sitemap.xml",
+  "pipeline": [],
+  "llms": "../public/11-blog/llms.txt",
+  "aikb": {
+    "folder": "11-blog/AIKB",
+    "written": true,
+    "notes": {
+      "missing": [],
+      "dead": [],
+      "stale": [],
+      "dangling": []
+    },
+    "subjects": [
+      {
+        "kind": "controllers",
+        "id": "post.js",
+        "note": "notes/controllers/post.md",
+        "hash": "4d36508cabe497bb29d4b1a6b7414d9f88736c86"
+      },
+      {
+        "kind": "controllers",
+        "id": "tag.js",
+        "note": "notes/controllers/tag.md",
+        "hash": "10729118b061dae9fc9adb09eb3f57979c57423d"
+      }
+    ]
+  },
+  "links": {
+    "checked": 161,
+    "broken": []
+  },
+  "redirects": {
+    "file": "../public/11-blog/_redirects",
+    "aliases": 1,
+    "removed": [],
+    "collisions": []
+  },
+  "feed": "../public/11-blog/feed.xml"
+}

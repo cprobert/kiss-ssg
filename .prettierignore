@@ -32,3 +32,6 @@ plugins/kiss-memory/skills/kiss-branch-close/rubric.md
 # the way prettier pads them), and the authored notes under AIKB/notes/ are
 # ordinary source, so neither is ignored.
 examples/9-migrated-from-v1/AIKB/*.json
+
+# Written by `npx kiss-ssg aikb 11-blog.js` and committed, for the same reason.
+examples/11-blog/AIKB/*.json

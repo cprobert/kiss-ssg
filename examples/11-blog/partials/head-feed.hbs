@@ -1,0 +1,5 @@
+{{!-- Every page carries the feed in its <head>, which is how a reader (and a
+      browser extension) finds it without being told. The href is root-relative
+      rather than {{root}}-prefixed on purpose: `npx kiss-ssg check` resolves
+      both shapes, and this site exercises both. --}}
+<link rel="alternate" type="application/rss+xml" title="Aster &amp; Oak &mdash; the journal" href="/feed.xml">

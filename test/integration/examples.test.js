@@ -71,12 +71,27 @@ const runBin = (args) =>
     },
   )
 
+// Example 11's committed knowledge base, recorded the same way — two subjects
+// this time, so it is the folder with more than one note in it.
+const blogAikbDir = path.join(examplesDir, '11-blog/AIKB')
+const readBlogAikb = (file) =>
+  readFileSync(path.join(blogAikbDir, file), 'utf8')
+
+// One `check` through the published bin, as data. stdout is `{ reports, diff }`
+// once a site has a recorded baseline and a bare array before that, which is
+// why both shapes are unwrapped here rather than at each call.
+function checkReport(args) {
+  const r = runBin(['check', ...args])
+  const parsed = JSON.parse(r.stdout)
+  return { status: r.status, report: (parsed.reports ?? parsed)[0] }
+}
+
 describe.skipIf(!hasExamples)('example builds', () => {
   // Never `.concurrent`: every example writes into the one shared repo-root
   // `public/`, so two builds racing would corrupt each other's page counts.
   // Vitest runs a plain `describe`'s tests in declaration order by default,
   // which is all sequencing this needs.
-  describe('the ten examples, built in place', () => {
+  describe('the eleven examples, built in place', () => {
     it('1 · scan builds 2 pages', () => {
       cleanOutput('1-scan')
       const r = runExample('1-scan.js')
@@ -287,6 +302,93 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(existsSync(generated)).toBe(true)
       expect(readFileSync(generated, 'utf8')).toContain('--accent:')
       expect(output(r)).toContain('pipeline: tokens ok')
+    }, 60000)
+
+    it('11 · blog builds 14 pages, one redirect and a feed of six posts newest first', () => {
+      cleanOutput('11-blog')
+      const r = runExample('11-blog.js')
+      expect(r.status).toBe(0)
+      const dir = path.join(publicDir, '11-blog')
+      expect(countHtmlFiles(dir)).toBe(14)
+
+      // The rename recipe: one post's record carries `aliases`, so the build
+      // writes exactly one 301 — and its target is the page's canonical path,
+      // the same string the sitemap and the feed give that page.
+      expect(readFileSync(path.join(dir, '_redirects'), 'utf8')).toBe(
+        '/blog/cascara-notes.html /blog/the-cascara-experiment/ 301\n',
+      )
+
+      // Six items: the posts and only the posts. The listing and tag pages are
+      // inside `section: 'blog'` but carry no date, so they fall out on their
+      // own — and the order is the feature, not the count.
+      const feed = readFileSync(path.join(dir, 'feed.xml'), 'utf8')
+      expect(feed.match(/<item>/g) ?? []).toHaveLength(6)
+      const dates = [...feed.matchAll(/<pubDate>(.*?)<\/pubDate>/g)].map((m) =>
+        Date.parse(m[1]),
+      )
+      expect(dates).toHaveLength(6)
+      expect([...dates].sort((a, b) => b - a)).toEqual(dates)
+    }, 60000)
+
+    it('11 · reports no broken link by default and exactly one under --broken', () => {
+      // The finding the example exists to make visible, read through the
+      // published command line rather than off a log line.
+      const clean = checkReport(['11-blog.js'])
+      expect(clean.status).toBe(0)
+      expect(clean.report.ok).toBe(true)
+      expect(clean.report.links.broken).toEqual([])
+      expect(clean.report.links.checked).toBeGreaterThan(0)
+      expect(clean.report.redirects.aliases).toBe(1)
+      expect(clean.report.redirects.removed).toEqual([])
+      expect(clean.report.redirects.collisions).toEqual([])
+
+      const broken = checkReport(['11-blog.js', '--broken'])
+      // Still `ok`, still exit 0: a broken link is a finding, not a failure.
+      expect(broken.status).toBe(0)
+      expect(broken.report.ok).toBe(true)
+      expect(broken.report.links.broken).toEqual([
+        {
+          page: '../public/11-blog/blog/the-cascara-experiment/index.html',
+          href: '/blog/the-kenya-microlot/',
+        },
+      ])
+    }, 60000)
+
+    it('11 · records a byte-identical knowledge base with two stamped notes', () => {
+      const before = AIKB_FILES.map(readBlogAikb)
+
+      const r = runBin(['aikb', '11-blog.js', '--summary'])
+
+      expect(r.status).toBe(0)
+      expect(r.stdout).toContain('recorded 11-blog/AIKB')
+      expect(AIKB_FILES.map(readBlogAikb)).toEqual(before)
+      expect(readBlogAikb('last-build.json')).not.toContain('kiss-staging')
+
+      // Two controller files, two notes, and nothing left to say about either:
+      // all four findings empty is what makes this an exemplar rather than a
+      // specimen.
+      const report = JSON.parse(readBlogAikb('last-build.json'))
+      expect(report.ok).toBe(true)
+      expect(report.aikb.folder).toBe('11-blog/AIKB')
+      expect(report.aikb.written).toBe(true)
+      expect(report.aikb.notes).toEqual({
+        missing: [],
+        dead: [],
+        stale: [],
+        dangling: [],
+      })
+      expect(report.aikb.subjects.map((s) => s.id)).toEqual([
+        'post.js',
+        'tag.js',
+      ])
+      // Each note carries its own subject's current hash — the one line a
+      // person maintains by hand, shown being maintained twice over.
+      for (const subject of report.aikb.subjects) {
+        expect(subject.hash).toMatch(/^[0-9a-f]{40}$/)
+        expect(
+          readFileSync(path.join(blogAikbDir, subject.note), 'utf8'),
+        ).toContain(`subject-hash: ${subject.hash}`)
+      }
     }, 60000)
   })
 })

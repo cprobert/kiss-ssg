@@ -1,0 +1,35 @@
+{{!-- One view, rendered at two depths: /blog/index.html and
+      /blog/page/2/index.html. That is why `root` is read from the page's
+      options here instead of being written into this line — the build script
+      knows how deep each page of the listing sits, and the view does not. --}}
+{{#extend "layout" root=root}}
+
+  {{#content "head"}}{{> "head-feed"}}{{/content}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">The journal &middot; page {{model.number}} of {{model.of}}</p>
+    <h1>{{title}}</h1>
+    <p>{{description}}</p>
+  </section>
+
+  <div class="stack">
+    {{#each model.posts}}{{> "post-card"}}{{/each}}
+  </div>
+
+  <nav class="callout" aria-label="Pagination">
+    <p>
+      {{#if model.prev}}<a href="{{model.prev}}">&larr; Newer posts</a>{{else}}<span class="meta">&larr; Newer posts</span>{{/if}}
+      &nbsp;&middot;&nbsp; page {{model.number}} of {{model.of}} &nbsp;&middot;&nbsp;
+      {{#if model.next}}<a href="{{model.next}}">Older posts &rarr;</a>{{else}}<span class="meta">Older posts &rarr;</span>{{/if}}
+    </p>
+  </nav>
+
+  <div class="card">
+    <h3>Browse by tag</h3>
+    <p>{{#each model.tags}}<a class="tag" href="/blog/tags/{{slug}}/">{{tag}} ({{count}})</a> {{/each}}</p>
+    <p class="meta"><a href="/blog/tags/">Every tag</a> &middot; <a href="/feed.xml">RSS feed</a></p>
+  </div>
+  {{/content}}
+
+{{/extend}}

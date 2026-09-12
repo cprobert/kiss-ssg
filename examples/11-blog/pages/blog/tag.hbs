@@ -1,0 +1,23 @@
+{{!-- One page per tag, built by the same `.pages()` call shape the posts use —
+      over a computed array rather than a models folder. --}}
+{{#extend "layout" root="../../../"}}
+
+  {{#content "head"}}{{> "head-feed"}}{{/content}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Tagged</p>
+    <h1>{{model.tag}}</h1>
+    <p>{{model.count}} posts in the journal are filed under this tag.</p>
+  </section>
+
+  <div class="stack">
+    {{#each model.posts}}{{> "post-card"}}{{/each}}
+  </div>
+
+  <div class="callout">
+    <p><a href="/blog/tags/">Every tag</a> &middot; <a href="/blog/">The whole journal</a></p>
+  </div>
+  {{/content}}
+
+{{/extend}}

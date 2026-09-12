@@ -34,7 +34,7 @@ Everything an agent needs ships in the package, so point it at `node_modules` ra
 @node_modules/kiss-ssg/llms.txt
 ```
 
-That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (ten runnable sites with a README each — copy the exemplar whose shape matches).
+That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (eleven runnable sites with a README each — copy the exemplar whose shape matches).
 
 Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)), and `npx kiss-ssg aikb site.js` records what the site is into `AIKB/`, which the agent reads back next time.
 
@@ -194,7 +194,7 @@ kiss has no notion of "versions" or "sites" — it is one `Kiss` instance buildi
 
 The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
 
-See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, and the v1 → v2 migration recipes. Every example builds and exits by default (`npm run eg1` … `eg10`); pass `--dev` to run examples 1–6, 8, 9 and 10 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
+See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 and 11 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, the v1 → v2 migration recipes, and a blog with pagination, tag pages, a feed and a redirect. Every example builds and exits by default (`npm run eg1` … `eg11`); pass `--dev` to run examples 1–6, 8, 9, 10 and 11 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
 
 ### Remote models
 
@@ -710,7 +710,7 @@ Plain pages, partials and `.json` models are deliberately not subjects — a not
 
 Every build reports four findings on `report().aikb.notes`: **missing** (a subject nobody has explained), **dead** (a note under `notes/` whose subject is not in the map), **stale** (a note whose `subject-hash` stamp is no longer its subject's hash — a URL model can never be stale) and **dangling** (`"<note path>: <token>"` for a backticked token in a note, or in `site.md`, that looks like a file reference and resolves to nothing: not a file on disk or under a source folder, a page view or output path, a partial name, a model or controller name, a folder in the map, or a path under the AIKB folder). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` / `note stale:` / `note dangling:` lines. The dangling filter is deliberately narrow — a token needs a `/` or a known extension and must hold no spaces, `<`, `>`, `*`, `{`, `}` or `$`; code fences, trailing-slash folders and anything with a URI scheme are skipped — because a lint that fires on every note is one people learn to ignore. None of the four is a build failure and none changes an exit code.
 
-`examples/9-migrated-from-v1/AIKB/` is the runnable exemplar: a committed knowledge base recorded with `cd examples && npx kiss-ssg aikb 9-migrated-from-v1.js`, with one authored note beside it, stamped with that controller's hash. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
+`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples && npx kiss-ssg aikb <script>`, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
 
 ### Other methods
 
