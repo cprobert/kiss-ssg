@@ -426,6 +426,56 @@ describe('the moved-without-a-redirect finding', () => {
     expect(report.redirects.moved).toHaveLength(1)
   })
 
+  it('names an extension-less page by its served URL, which is the alias that silences it', async () => {
+    // The shape every blog on this engine has, and the one the finding was
+    // wrong about: the page is `about/index.html` on disk and `/about/` to a
+    // reader. A finding that named the file would recommend an alias no
+    // browser ever requested — and `_redirects` sources are URLs.
+    site = await makeSite({
+      'src/pages/index.hbs': 'home',
+      'src/pages/about.hbs': 'about',
+    })
+    record()
+    const first = track(
+      new Kiss({
+        folders: folders(),
+        extensionLess: true,
+        logger: silentLogger,
+      }),
+    )
+      .page({ view: 'index.hbs' })
+      .page({ view: 'about.hbs' })
+      .generate()
+    await first.complete()
+    stopRecording()
+
+    const moved = async (aliases) => {
+      const kiss = track(
+        new Kiss({
+          folders: folders(),
+          extensionLess: true,
+          logger: silentLogger,
+        }),
+      )
+      kiss
+        .page({ view: 'index.hbs' })
+        .page({ view: 'about.hbs', path: 'company', aliases })
+        .generate()
+      await kiss.complete()
+      return kiss.report()
+    }
+
+    expect((await moved()).redirects.moved).toEqual([
+      { id: 'about', from: '/about/', to: '/company/about/' },
+    ])
+    // The alias the notice asked for, verbatim — and it silences the finding
+    // and writes the rule.
+    expect((await moved(['/about/'])).redirects.moved).toEqual([])
+    expect(await site.read('public/_redirects')).toBe(
+      '/about/ /company/about/ 301\n',
+    )
+  })
+
   it('reports null for a recorded site with no alias, no removal and no move', async () => {
     await recorded()
     const kiss = track(new Kiss({ folders: folders(), logger: silentLogger }))

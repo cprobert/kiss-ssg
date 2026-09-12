@@ -9,9 +9,9 @@
  * The three advisory findings about what a rename left behind.
  *
  * @typedef {Object} RedirectFindings
- * @property {string[]} removed sorted build-relative paths the last record had, this build does not, and no alias covers
+ * @property {string[]} removed sorted **served** paths the last record had, this build does not, and no alias covers — the URLs a browser asked for (`/about.html`, `/courses/`, `/`)
  * @property {string[]} collisions sorted alias paths a live page already answers, plus any alias two pages both claim
- * @property {{ id: string, from: string, to: string }[]} moved sorted by `from`; one page, paired by `id` across the two builds, whose build-relative path changed and whose old path no alias covers
+ * @property {{ id: string, from: string, to: string }[]} moved sorted by `from`; one page, paired by `id` across the two builds, whose path changed and whose old path no alias covers — `from` and `to` are served paths, like `removed`
  */
 /**
  * A page's canonical path, without the origin: `/`, `/courses/`, `/about`.
@@ -90,6 +90,10 @@ export function renderRedirects(rules?: RedirectRule[]): string;
  * One predicate, called from both loops below, so `removed` and `moved` can
  * never disagree about the same page: two findings for one event, or a page
  * that slips between them.
+ *
+ * It takes the **file** path. An alias covers it in either the canonical or the
+ * served spelling, so the alias a notice recommends always silences the finding
+ * that recommended it.
  *
  * @param {string} rel the old page's build-relative path (`/old-post.html`)
  * @param {Set<string>} fromSet every `from` this build's rules declare
@@ -187,7 +191,7 @@ export type RedirectRule = {
  */
 export type RedirectFindings = {
     /**
-     * sorted build-relative paths the last record had, this build does not, and no alias covers
+     * sorted **served** paths the last record had, this build does not, and no alias covers — the URLs a browser asked for (`/about.html`, `/courses/`, `/`)
      */
     removed: string[];
     /**
@@ -195,7 +199,7 @@ export type RedirectFindings = {
      */
     collisions: string[];
     /**
-     * sorted by `from`; one page, paired by `id` across the two builds, whose build-relative path changed and whose old path no alias covers
+     * sorted by `from`; one page, paired by `id` across the two builds, whose path changed and whose old path no alias covers — `from` and `to` are served paths, like `removed`
      */
     moved: {
         id: string;

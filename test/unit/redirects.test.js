@@ -236,6 +236,24 @@ describe('redirectFindings — removed', () => {
     expect(removed([])).not.toContain('/draft.html')
   })
 
+  it('names a directory index by the URL a browser asked for, not by the file', () => {
+    // `/old/index.html` is the file; `/old/` is what anyone ever linked to, and
+    // what an alias covering it has to be written as.
+    const { removed } = redirectFindings({
+      currentPages: [{ buildTo: 'public/site/index.html' }],
+      previousPages: {
+        buildDir: '../public/site',
+        pages: [
+          { buildTo: '../public/site/index.html', hash: 'aaa' },
+          { buildTo: '../public/site/old/index.html', hash: 'bbb' },
+        ],
+      },
+      buildDir: 'public/site',
+    })
+
+    expect(removed).toEqual(['/old/'])
+  })
+
   it('is empty with no record at all', () => {
     expect(
       redirectFindings({ currentPages, buildDir: 'public/site' }).removed,
@@ -261,16 +279,16 @@ describe('redirectFindings — removed', () => {
 
 describe('coveredByAlias', () => {
   // The one predicate both findings ask, so they can never disagree about a
-  // page: the old path is reduced to its canonical form first, because that is
-  // the form an alias is written in.
-  it('matches an alias in canonical form, and only in canonical form', () => {
+  // page. An alias covers in either spelling: the canonical form the sitemap
+  // uses, or the served form the finding itself reports — so the alias a
+  // notice recommends always silences the finding that recommended it.
+  it('matches an alias in canonical or served form, and nothing else', () => {
     expect(coveredByAlias('/old-post.html', new Set(['/old-post']))).toBe(true)
-    expect(coveredByAlias('/old/index.html', new Set(['/old/']))).toBe(true)
-    // The file-path spelling of the same page is a different string, and the
-    // rule kiss writes targets the canonical one.
     expect(coveredByAlias('/old-post.html', new Set(['/old-post.html']))).toBe(
-      false,
+      true,
     )
+    expect(coveredByAlias('/old/index.html', new Set(['/old/']))).toBe(true)
+    expect(coveredByAlias('/old-post.html', new Set(['/other']))).toBe(false)
     expect(coveredByAlias('/old-post.html', new Set())).toBe(false)
   })
 })
@@ -318,19 +336,21 @@ describe('redirectFindings — moved', () => {
   })
 
   it('decides both findings by the same alias predicate', () => {
-    // `/about.html` is the file, not the canonical path an alias is matched
-    // against, so it covers neither finding...
-    const spelt = [{ from: '/about.html', to: '/company/about' }]
-    expect(findings(spelt).moved).toHaveLength(1)
+    // An unrelated alias covers neither finding...
+    const other = [{ from: '/elsewhere', to: '/company/about' }]
+    expect(findings(other).moved).toHaveLength(1)
     expect(
-      findings(spelt, { currentPages: [currentPages[0]] }).removed,
+      findings(other, { currentPages: [currentPages[0]] }).removed,
     ).toEqual(['/about.html'])
-    // ...and the canonical spelling covers both.
-    const canonical = [{ from: '/about', to: '/company/about' }]
-    expect(findings(canonical).moved).toEqual([])
-    expect(
-      findings(canonical, { currentPages: [currentPages[0]] }).removed,
-    ).toEqual([])
+    // ...and either spelling of the old page — the served one the finding
+    // reports, or the canonical one — covers both.
+    for (const from of ['/about.html', '/about']) {
+      const rules = [{ from, to: '/company/about' }]
+      expect(findings(rules).moved).toEqual([])
+      expect(
+        findings(rules, { currentPages: [currentPages[0]] }).removed,
+      ).toEqual([])
+    }
   })
 
   it('falls back to the path comparison for a record written before ids', () => {
@@ -387,6 +407,30 @@ describe('redirectFindings — moved', () => {
     // `draft` was never published; `gone` has no page with its id in this
     // build, so it is a removal and not a move.
     expect(removed).toEqual(['/gone.html'])
+  })
+
+  it('reports a moved directory index as served URLs, and an alias on the old one silences it', () => {
+    // The extension-less shape every blog on this engine has: the page is a
+    // folder with an `index.html` in it, and the address is the folder. Both
+    // halves of the finding have to say so, or the fix it recommends is a path
+    // no browser ever requested.
+    const over = {
+      previousPages: {
+        buildDir: '../public/site',
+        pages: [
+          { buildTo: '../public/site/old/index.html', hash: 'aaa', id: 'post' },
+        ],
+      },
+      currentPages: [{ buildTo: 'public/site/new/index.html', id: 'post' }],
+    }
+
+    expect(findings([], over).moved).toEqual([
+      { id: 'post', from: '/old/', to: '/new/' },
+    ])
+    // And the alias the finding asks for is one the predicate accepts: the
+    // served path and the canonical path are the same string for a directory
+    // index, which is what makes the advice actionable.
+    expect(findings([{ from: '/old/', to: '/new/' }], over).moved).toEqual([])
   })
 
   it('is sorted by from', () => {
