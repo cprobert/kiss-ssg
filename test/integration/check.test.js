@@ -72,6 +72,20 @@ await kiss.complete().catch((err) => {
   process.exitCode = 1
 })`)
 
+// The same site after a rename: the page that was recorded is gone, the one
+// that replaced it carries an alias — and that alias is a path the home page
+// already answers, so both redirect findings have something to say.
+const RENAMED_WITH_ALIAS = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss
+  .page({ view: 'index.hbs' })
+  .page({ view: 'new.hbs', aliases: ['/index.html'] })
+  .generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
 // A site with a subject in it — a controller **file**, the one thing a note
 // can be stale about — so the two mechanical note lints have something to
 // find.
@@ -429,6 +443,33 @@ describe('kiss-ssg check, against the knowledge base', () => {
       '  ~ ./public/about.html',
       '  = 1 unchanged',
     ])
+  }, 60000)
+
+  it('names a page removed without a redirect, and a colliding alias, under --summary', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/old.hbs': '<p>old</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+
+    // The rename the finding exists to catch: `old.hbs` is gone, `new.hbs` has
+    // taken its place, and the alias it carries answers the wrong path.
+    await fs.remove(path.join(temp.root, 'src/pages/old.hbs'))
+    await temp.touch('src/pages/new.hbs', '<p>new</p>')
+    await temp.touch('build.js', RENAMED_WITH_ALIAS)
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // Advisory, both of them: the build is still `ok` and the exit code is
+    // still 0. The paths are build-relative, so they read the same whichever
+    // folder the check was run from.
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 2 pages, 0 failed/)
+    expect(lines).toContain('  removed without redirect: /old.html')
+    expect(lines).toContain('  alias collides with a page: /index.html')
+    expect(await temp.exists('public')).toBe(false)
   }, 60000)
 
   it('prints the stale and dangling note lines under --summary', async () => {

@@ -88,6 +88,10 @@ export type PageOptionsKnown = {
      * the page's date; `.feed()` orders by it and leaves out a page without one (the field name is `.feed()`'s `dateField`)
      */
     date?: Date | number | string;
+    /**
+     * old URL paths this page now answers (`['/old-slug']`); each becomes one `301` line in `<build>/_redirects`. On a `.pages()` fan-out it belongs to the *record*, not to the registration
+     */
+    aliases?: string[];
 };
 /**
  * The options `.page()` takes: {@link PageOptionsKnown} plus any extra keys of
@@ -336,6 +340,8 @@ declare class Kiss {
     /** @private @type {BuildRedirects|null} */
     private _redirectsResult;
     /** @private */
+    private _redirectsRun;
+    /** @private */
     private _promotedFrom;
     /** @private */
     private _checkMode;
@@ -395,6 +401,12 @@ declare class Kiss {
     private _buildAikb;
     /** @private */
     private _checkLinks;
+    /** @private */
+    private _writeRedirects;
+    /** @private */
+    private _lastBuildRecord;
+    /** @private */
+    private _redirectFindings;
     /** @private */
     private _discardStaging;
     /** @private */

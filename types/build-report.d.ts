@@ -66,7 +66,7 @@
 /**
  * What the build did about page `aliases`: the redirects file it wrote, and the
  * two advisory findings about what a rename left behind. `null` on the report
- * when no page has an alias and the site has nothing recorded to compare with.
+ * when no page has an alias and neither finding fired.
  *
  * @typedef {Object} BuildRedirects
  * @property {string|null} file the `_redirects` written, against the real build folder, or `null` when no page has an alias
@@ -286,7 +286,7 @@ export type BuildLinks = {
 /**
  * What the build did about page `aliases`: the redirects file it wrote, and the
  * two advisory findings about what a rename left behind. `null` on the report
- * when no page has an alias and the site has nothing recorded to compare with.
+ * when no page has an alias and neither finding fired.
  */
 export type BuildRedirects = {
     /**

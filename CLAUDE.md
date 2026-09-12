@@ -41,6 +41,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | RSS feed (from the registry)          | `lib/feed.js`                | `AIKB/feed.md`                |
 | Site knowledge base (`kiss-ssg aikb`) | `lib/aikb.js`                | `AIKB/aikb.md`                |
 | Broken internal links                 | `lib/links.js`               | `AIKB/links.md`               |
+| Redirects (`aliases` → `_redirects`)  | `lib/redirects.js`           | `AIKB/redirects.md`           |
 | Dev server                            | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
 | File watcher                          | `lib/watcher.js`             | `AIKB/watcher.md`             |
 | String/path utils                     | `lib/utils.js`               | `AIKB/utils.md`               |

@@ -531,6 +531,42 @@ writes `public/feed.xml`:
 
 `<lastBuildDate>` is the newest item's date rather than the wall clock, so two identical builds produce byte-identical files and a feed you commit does not churn. It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()` and `.llms()`. Its callback receives the rendered document (`kiss.feed(options, (xml) => …)`), and the file it wrote is reported as the build report's `feed`.
 
+### Redirects
+
+A page's `aliases` are the old URL paths it now answers. Every settled build collects them and writes `_redirects` into the root of the build folder — the [Netlify](https://docs.netlify.com/routing/redirects/) and [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) format, and only that: no `.htaccess`, no `vercel.json`, no meta-refresh. There is no method to call; an alias is a property of a page, not a file you ask for.
+
+```js
+kiss
+  .page({ view: 'about.hbs', aliases: ['/about-us', '/team.html'] })
+  .pages({
+    view: 'blog/post.hbs',
+    model: 'posts', // a renamed post's own JSON carries `"aliases": ["/news/2024/thing.html"]`
+    path: 'blog',
+  })
+  .generate()
+```
+
+writes `public/_redirects`:
+
+```
+/about-us /about 301
+/news/2024/thing.html /blog/thing 301
+/team.html /about 301
+```
+
+The target is the page's canonical path — `/`, `/courses/`, `/about` — the same string that page's own `{{canonical}}` renders and its `<loc>` in `sitemap.xml` carries, so a redirect can never point at a URL your site does not serve. Sources are written as you gave them, with a leading `/` added and any `?query` or `#fragment` dropped; a trailing slash is kept, because `/old/` and `/old` are two different paths to a host and you are the one who knows which was linked. Lines are sorted, so two identical builds write identical bytes and a committed `_redirects` does not churn.
+
+On a `.pages()` fan-out the aliases belong to **each record**, never to the registration: `.pages({ aliases: [...] })` is not broadcast over the fan-out, because one source path redirecting to N different pages is not a redirect. Put them in the model item. A page with `generate: false` contributes none — there would be nothing at the other end.
+
+A site with no aliases writes **no file at all**, not an empty one, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone.
+
+**Two findings ride along**, both advisory and both in `report().redirects` (`{ file, aliases, removed, collisions }`, or `null` when there is nothing to say):
+
+- `removed` — pages the **last record** wrote that this build does not, minus any an alias now covers: a page that vanished with no redirect. It is the one finding that needs a recorded knowledge base (see [Recording the knowledge base](#recording-the-knowledge-base)); without `AIKB/last-build.json` it is empty, and an unreadable one is treated the same way. Paths are compared build-relative on both sides, so a record made from one working directory and a check run from another still agree.
+- `collisions` — aliases a live page already answers, by its canonical path (`/about`) or by the file itself (`/about.html`), and any source two pages both claim. On both hosts a non-forced rule whose source is a real file is **silently ignored** — the line does nothing at all, with no error anywhere — which is why this is worth saying out loud.
+
+Under `--summary` they print as `  removed without redirect: <path>` and `  alias collides with a page: <path>`. Neither changes `ok`, and neither changes the exit code.
+
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -605,7 +641,7 @@ npx kiss-ssg check --against last.jsonl build.js  # diff against some other repo
     "redirects": {
       "file": "./public/_redirects",
       "aliases": 2,
-      "removed": ["./public/news/autumn-2025.html"],
+      "removed": ["/news/autumn-2025.html"],
       "collisions": []
     },
     "feed": "./public/feed.xml"
@@ -632,6 +668,8 @@ Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instea
 An absolute URL on your own `siteUrl` counts as **internal** — that is what catches a renamed slug still linked from a nav or a `{{canonical}}`. Another origin, a protocol-relative `//host/x`, `mailto:`, `tel:`, `data:`, `javascript:`, a bare `#fragment` and an empty value are ignored; a query string and a fragment are stripped before resolving. Under `assets.hash` a hardcoded `/css/site.css` **is** a finding, because the file on disk is `css/site.<hash>.css` — use `{{asset}}`.
 
 The finding is advisory: it never changes `ok` and never changes the exit code. Set `links: { check: false }` to turn the scan off. A dev build or a watch rebuild always reports `links: null` — a scoped re-render has not rewritten every page, so there is nothing honest to scan.
+
+**Redirects and renames.** The same report carries `redirects` — the `_redirects` this build wrote from your pages' `aliases`, and two more advisory findings: a page the last record had that this build no longer writes and no alias covers (`  removed without redirect: <path>`), and an alias a live page already answers, which the host will silently ignore (`  alias collides with a page: <path>`). See [Redirects](#redirects).
 
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance; `KISS_AIKB=1` (same rule again) is the one thing `kiss-ssg aikb` adds on top of those two. None of them changes your script's exit code — that stays yours.
 

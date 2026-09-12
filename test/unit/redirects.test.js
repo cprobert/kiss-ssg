@@ -1,0 +1,311 @@
+import { describe, it, expect, afterEach } from 'vitest'
+import fs from 'fs-extra'
+import os from 'node:os'
+import path from 'node:path'
+import {
+  canonicalPathFor,
+  collectAliases,
+  normaliseAlias,
+  redirectFindings,
+  renderRedirects,
+  writeRedirects,
+} from '../../lib/redirects.js'
+import { silentLogger } from '../../lib/logger.js'
+
+// A stack entry, as `Kiss._preparePage` builds one: the output path, and the
+// page's options.
+const entry = (buildTo, options = {}) => ({ buildTo, page: { options } })
+
+let temp
+afterEach(async () => {
+  if (temp) await fs.remove(temp)
+  temp = null
+})
+
+describe('canonicalPathFor', () => {
+  // The three shapes a page can have, and the reason the derivation is
+  // `toAbsoluteUrl('', toCanonicalPath(rel))` rather than `toCanonicalPath`
+  // alone: two of these three would be wrong without the `index` collapse.
+  it('gives the home page, a directory index and a file page their served paths', () => {
+    expect(canonicalPathFor('./public/index.html', './public')).toBe('/')
+    expect(canonicalPathFor('./public/courses/index.html', './public')).toBe(
+      '/courses/',
+    )
+    expect(canonicalPathFor('./public/about.html', './public')).toBe('/about')
+  })
+
+  it('is the same string the sitemap and {{canonical}} emit', async () => {
+    const { buildSitemapEntries } = await import('../../lib/sitemap.js')
+    const stack = [
+      entry('./public/index.html'),
+      entry('./public/courses/index.html'),
+      entry('./public/about.html'),
+    ]
+    const locs = buildSitemapEntries(stack, {
+      siteUrl: 'https://e.com',
+      buildDir: './public',
+    }).map((url) => url.loc)
+
+    expect(locs).toEqual(
+      stack.map(
+        (e) => `https://e.com${canonicalPathFor(e.buildTo, './public')}`,
+      ),
+    )
+  })
+})
+
+describe('normaliseAlias', () => {
+  it('adds the leading slash, strips query and fragment, keeps the trailing slash', () => {
+    expect(normaliseAlias('old-slug')).toBe('/old-slug')
+    expect(normaliseAlias('/news/2024/thing.html')).toBe(
+      '/news/2024/thing.html',
+    )
+    expect(normaliseAlias('/old?utm=1')).toBe('/old')
+    expect(normaliseAlias('/old#top')).toBe('/old')
+    // Preserved as written: `/old/` and `/old` are two different source paths
+    // to a host, and only the author knows which one used to be linked.
+    expect(normaliseAlias('/old/')).toBe('/old/')
+    expect(normaliseAlias('  /spaced  ')).toBe('/spaced')
+  })
+
+  it('collapses repeated slashes, so an alias cannot read as protocol-relative', () => {
+    expect(normaliseAlias('//old')).toBe('/old')
+    expect(normaliseAlias('/a//b')).toBe('/a/b')
+  })
+
+  it('drops an alias with no path in it at all', () => {
+    expect(normaliseAlias('')).toBeNull()
+    expect(normaliseAlias('   ')).toBeNull()
+    expect(normaliseAlias('?utm=1')).toBeNull()
+    expect(normaliseAlias(undefined)).toBeNull()
+    // `/` is a path — the home page — so it survives.
+    expect(normaliseAlias('/')).toBe('/')
+  })
+})
+
+describe('collectAliases', () => {
+  const stack = [
+    entry('./public/index.html'),
+    entry('./public/about.html', { aliases: ['/about-us', '/about-us'] }),
+    entry('./public/courses/index.html', { aliases: ['courses.html'] }),
+  ]
+
+  it('takes every page’s aliases and targets its canonical path', () => {
+    expect(collectAliases(stack, { buildDir: './public' })).toEqual([
+      { from: '/about-us', to: '/about' },
+      { from: '/courses.html', to: '/courses/' },
+    ])
+  })
+
+  it('accepts a bare string, and ignores a page with none', () => {
+    expect(
+      collectAliases([entry('./public/a.html', { aliases: '/old' })], {
+        buildDir: './public',
+      }),
+    ).toEqual([{ from: '/old', to: '/a' }])
+    expect(collectAliases([entry('./public/a.html')], {})).toEqual([])
+  })
+
+  it('skips a generate:false page, which has no file to redirect to', () => {
+    expect(
+      collectAliases(
+        [entry('./public/a.html', { aliases: ['/old'], generate: false })],
+        { buildDir: './public' },
+      ),
+    ).toEqual([])
+  })
+
+  it('keeps two pages claiming one alias as two rules', () => {
+    expect(
+      collectAliases(
+        [
+          entry('./public/b.html', { aliases: ['/old'] }),
+          entry('./public/a.html', { aliases: ['/old'] }),
+        ],
+        { buildDir: './public' },
+      ),
+    ).toEqual([
+      { from: '/old', to: '/a' },
+      { from: '/old', to: '/b' },
+    ])
+  })
+})
+
+describe('renderRedirects', () => {
+  const rules = [
+    { from: '/z', to: '/zed' },
+    { from: '/a', to: '/ay' },
+    { from: '/m/', to: '/em/' },
+  ]
+
+  it('writes one 301 line per rule, sorted, newline-terminated', () => {
+    expect(renderRedirects(rules)).toBe(
+      '/a /ay 301\n/m/ /em/ 301\n/z /zed 301\n',
+    )
+  })
+
+  it('is byte-stable whatever order the rules arrive in', () => {
+    const shuffled = [rules[2], rules[0], rules[1]]
+    expect(renderRedirects(shuffled)).toBe(renderRedirects(rules))
+  })
+
+  it('writes nothing at all for no rules', () => {
+    expect(renderRedirects([])).toBe('')
+  })
+})
+
+describe('redirectFindings — collisions', () => {
+  const currentPages = [
+    { buildTo: './public/index.html' },
+    { buildTo: './public/about.html' },
+    { buildTo: './public/courses/index.html' },
+  ]
+  const findings = (rules) =>
+    redirectFindings({ rules, currentPages, buildDir: './public' })
+
+  it('reports an alias a live page already answers, in either form', () => {
+    // `/about` is what the host serves the page at; `/about.html` is the file
+    // itself. A non-forced rule is silently skipped for both.
+    expect(findings([{ from: '/about', to: '/x' }]).collisions).toEqual([
+      '/about',
+    ])
+    expect(findings([{ from: '/about.html', to: '/x' }]).collisions).toEqual([
+      '/about.html',
+    ])
+    expect(findings([{ from: '/courses/', to: '/x' }]).collisions).toEqual([
+      '/courses/',
+    ])
+  })
+
+  it('reports a from two pages both claim, once, and sorted with the rest', () => {
+    const { collisions } = findings([
+      { from: '/old', to: '/a' },
+      { from: '/old', to: '/b' },
+      { from: '/about', to: '/x' },
+    ])
+    expect(collisions).toEqual(['/about', '/old'])
+  })
+
+  it('says nothing about an alias no live page answers', () => {
+    expect(findings([{ from: '/gone', to: '/about' }]).collisions).toEqual([])
+  })
+})
+
+describe('redirectFindings — removed', () => {
+  // The same site, recorded from `examples/` and rebuilt from the repo root:
+  // not one path string is shared, which is why the comparison is made on the
+  // build-relative half of each path.
+  const previousPages = {
+    buildDir: '../public/site',
+    pages: [
+      { buildTo: '../public/site/index.html', hash: 'aaa' },
+      { buildTo: '../public/site/old-post.html', hash: 'bbb' },
+      { buildTo: '../public/site/draft.html', hash: null },
+    ],
+  }
+  const currentPages = [
+    { buildTo: 'public/site/index.html' },
+    { buildTo: 'public/site/new-post.html' },
+  ]
+  const removed = (rules) =>
+    redirectFindings({
+      rules,
+      currentPages,
+      previousPages,
+      buildDir: 'public/site',
+    }).removed
+
+  it('names the page that vanished, across two different working directories', () => {
+    expect(removed([])).toEqual(['/old-post.html'])
+  })
+
+  it('says nothing once an alias covers it', () => {
+    // The alias is the canonical path (`/old-post`), which is what the old
+    // file's path reduces to — the comparison the two halves have to agree on.
+    expect(removed([{ from: '/old-post', to: '/new-post' }])).toEqual([])
+    // A rule for some other path leaves the finding standing.
+    expect(removed([{ from: '/elsewhere', to: '/new-post' }])).toEqual([
+      '/old-post.html',
+    ])
+  })
+
+  it('ignores a page the record wrote no bytes for', () => {
+    // `draft.html` is `generate: false` in the record: nothing was ever
+    // published there, so nothing was lost.
+    expect(removed([])).not.toContain('/draft.html')
+  })
+
+  it('is empty with no record at all', () => {
+    expect(
+      redirectFindings({ currentPages, buildDir: 'public/site' }).removed,
+    ).toEqual([])
+  })
+
+  it('is empty, and never throws, for a record it cannot make sense of', () => {
+    for (const previous of [
+      {},
+      { pages: null },
+      { pages: [{}, { buildTo: 42 }] },
+      /** @type {any} */ ('not a report'),
+    ])
+      expect(
+        redirectFindings({
+          currentPages,
+          previousPages: previous,
+          buildDir: 'public/site',
+        }),
+      ).toEqual({ removed: [], collisions: [] })
+  })
+})
+
+describe('writeRedirects', () => {
+  const build = async () => {
+    temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-redirects-'))
+    return { folders: { build: temp.replace(/\\/g, '/') } }
+  }
+
+  it('writes the file, and reports the rules it wrote', async () => {
+    const config = await build()
+    const result = await writeRedirects(
+      [entry(`${config.folders.build}/about.html`, { aliases: ['/old'] })],
+      { config, logger: silentLogger },
+    )
+
+    expect(result.status).toBe('written')
+    expect(result.rules).toEqual([{ from: '/old', to: '/about' }])
+    expect(
+      await fs.readFile(`${config.folders.build}/_redirects`, 'utf8'),
+    ).toBe('/old /about 301\n')
+  })
+
+  it('writes nothing for a site with no aliases, and leaves an existing file alone', async () => {
+    const config = await build()
+    const file = `${config.folders.build}/_redirects`
+    // What a project that keeps its own `_redirects` in `src/assets/` has: the
+    // asset copy put it there, and kiss must not touch it.
+    await fs.outputFile(file, '/hand-written /x 301\n')
+
+    const result = await writeRedirects(
+      [entry(`${config.folders.build}/about.html`)],
+      { config, logger: silentLogger },
+    )
+
+    expect(result.status).toBe('none')
+    expect(await fs.readFile(file, 'utf8')).toBe('/hand-written /x 301\n')
+  })
+
+  it('leaves an existing file alone under overwrite:false', async () => {
+    const config = await build()
+    const file = `${config.folders.build}/_redirects`
+    await fs.outputFile(file, 'kept\n')
+
+    const result = await writeRedirects(
+      [entry(`${config.folders.build}/about.html`, { aliases: ['/old'] })],
+      { config, logger: silentLogger, overwrite: false },
+    )
+
+    expect(result.status).toBe('skipped')
+    expect(result.rules).toEqual([{ from: '/old', to: '/about' }])
+    expect(await fs.readFile(file, 'utf8')).toBe('kept\n')
+  })
+})
