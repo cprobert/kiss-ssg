@@ -34,7 +34,7 @@ Everything an agent needs ships in the package, so point it at `node_modules` ra
 @node_modules/kiss-ssg/llms.txt
 ```
 
-That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (ten runnable sites with a README each — copy the exemplar whose shape matches).
+That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (eleven runnable sites with a README each — copy the exemplar whose shape matches).
 
 Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)), and `npx kiss-ssg aikb site.js` records what the site is into `AIKB/`, which the agent reads back next time.
 
@@ -93,6 +93,9 @@ The default config options are:
     html: true,
     xhtmlOut: true,
     breaks: false
+  },
+  links: {
+    check: true
   },
   port: 3001,
   livereloadPort: 35729,
@@ -191,7 +194,7 @@ kiss has no notion of "versions" or "sites" — it is one `Kiss` instance buildi
 
 The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
 
-See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, and the v1 → v2 migration recipes. Every example builds and exits by default (`npm run eg1` … `eg10`); pass `--dev` to run examples 1–6, 8, 9 and 10 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
+See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 and 11 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, the v1 → v2 migration recipes, and a blog with pagination, tag pages, a feed and a redirect. Every example builds and exits by default (`npm run eg1` … `eg11`); pass `--dev` to run examples 1–6, 8, 9, 10 and 11 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
 
 ### Remote models
 
@@ -366,6 +369,8 @@ kiss
   .generate()
 ```
 
+**Identity.** Every page has an `id` — what `{{link "<id>"}}` resolves (see **Helpers**). It defaults to the view's route without its extension (`blog/listing.hbs` → `blog/listing`), so most pages need nothing; set `id` when you want a stable name (`id: 'blog'`), or when two `.page()` calls render one view (pagination), where **neither** page gets the default id and a notice says so. On a `.pages()` fan-out an item's default id is the registration's route — or the registration's own `id`, used as a **prefix** — plus the item's slug (`blog/post/the-cascara-experiment`), and a _record_ may carry its own `id`, which wins outright; the registration's `id` is never broadcast to the items, the same rule `aliases` follows. A controller may return one. Two pages claiming one explicit id fail the build (`Page id already claimed: <id>`), an explicit id beats a colliding default one, and a `generate: false` page claims no id at all.
+
 ### Controller
 
 The option mapper is really useful for mapping a slug from the model. This is great for dynamic slugs and a necessity when passing an array of models to the .pages() method to generate a series of pages.
@@ -476,6 +481,95 @@ writes:
 
 It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
 
+### .feed()
+
+Writes an RSS 2.0 feed into the root of the build folder: the third file derived from the same registry as `sitemap.xml` and `llms.txt`, so an item can never name a URL your site does not serve. One `<item>` per page that carries a date, newest first. It needs `siteUrl` and a `title`; without either it logs an error and skips the file rather than throwing.
+
+```js
+kiss
+  .pages({
+    view: 'blog/post.hbs',
+    model: 'posts', // each post's JSON carries its own `date`
+    path: 'blog',
+  })
+  .page({ view: 'blog/index.hbs', path: 'blog' }) // no date: not an item
+  .generate()
+  .sitemap()
+  .feed({
+    title: 'A1K9 Training — the blog',
+    description: 'Dog behaviour and obedience training in South Wales.',
+    section: 'blog',
+    limit: 20,
+  })
+```
+
+writes `public/feed.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>A1K9 Training — the blog</title>
+    <link>https://a1k9training.co.uk/</link>
+    <description>Dog behaviour and obedience training in South Wales.</description>
+    <atom:link href="https://a1k9training.co.uk/feed.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Tue, 03 Feb 2026 00:00:00 GMT</lastBuildDate>
+    <item>
+      <title>Loose-lead walking</title>
+      <link>https://a1k9training.co.uk/blog/loose-lead-walking</link>
+      <guid isPermaLink="true">https://a1k9training.co.uk/blog/loose-lead-walking</guid>
+      <pubDate>Tue, 03 Feb 2026 00:00:00 GMT</pubDate>
+      <description>Six weeks, one lead, no pulling.</description>
+    </item>
+  </channel>
+</rss>
+```
+
+**The options**: `title` (required) is the channel's `<title>` and `description` its `<description>`. `section` limits the feed to one top-level `path` segment (`'blog'`) — omit it and every page is a candidate. `limit` (default `20`) caps the items, `filename` (default `feed.xml`) names the file inside the build folder, and `overwrite` (default `true`) behaves exactly as the sitemap's.
+
+**Where the dates come from**: `dateField` (default `'date'`) names one field, and it is read from the page's options first and its resolved model second — so a post can be dated in its `.page()`/`.pages()` call or in its own `.json`, and either way it is the same key. A `Date`, epoch milliseconds, or any string `new Date()` parses is accepted; a value that cannot be read logs one warning and the page is treated as undated.
+
+**Which pages are items**: every page with a readable date, newest first (the URL breaks a tie so the order is the same on every machine). A page with no date is simply left out — most of a site is undated, and that is not a mistake worth a warning. A page opts out with `ignoreFeed: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of the feed too. Each `<link>` and `<guid>` is the same string that page's own `{{canonical}}` renders, and the `<title>`/`<description>` are derived exactly as `llms.txt` derives them.
+
+`<lastBuildDate>` is the newest item's date rather than the wall clock, so two identical builds produce byte-identical files and a feed you commit does not churn. It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()` and `.llms()`. Its callback receives the rendered document (`kiss.feed(options, (xml) => …)`), and the file it wrote is reported as the build report's `feed`.
+
+### Redirects
+
+A page's `aliases` are the old URL paths it now answers. Every settled build collects them and writes `_redirects` into the root of the build folder — the [Netlify](https://docs.netlify.com/routing/redirects/) and [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) format, and only that: no `.htaccess`, no `vercel.json`, no meta-refresh. There is no method to call; an alias is a property of a page, not a file you ask for.
+
+```js
+kiss
+  .page({ view: 'about.hbs', aliases: ['/about-us', '/team.html'] })
+  .pages({
+    view: 'blog/post.hbs',
+    model: 'posts', // a renamed post's own JSON carries `"aliases": ["/news/2024/thing.html"]`
+    path: 'blog',
+  })
+  .generate()
+```
+
+writes `public/_redirects`:
+
+```
+/about-us /about 301
+/news/2024/thing.html /blog/thing 301
+/team.html /about 301
+```
+
+The target is the page's canonical path — `/`, `/courses/`, `/about` — the same string that page's own `{{canonical}}` renders and its `<loc>` in `sitemap.xml` carries, so a redirect can never point at a URL your site does not serve. Sources are written as you gave them, with a leading `/` added and any `?query` or `#fragment` dropped; a trailing slash is kept, because `/old/` and `/old` are two different paths to a host and you are the one who knows which was linked. Lines are sorted, so two identical builds write identical bytes and a committed `_redirects` does not churn.
+
+On a `.pages()` fan-out the aliases belong to **each record**, never to the registration: `.pages({ aliases: [...] })` is not broadcast over the fan-out, because one source path redirecting to N different pages is not a redirect. Put them in the model item. A page with `generate: false` contributes none — there would be nothing at the other end.
+
+A site with no aliases writes **no file at all**, not an empty one, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone.
+
+**Three findings ride along**, all advisory and all in `report().redirects` (`{ file, aliases, removed, collisions, moved }`, or `null` when there is nothing to say — no alias anywhere in the site, no removal and no move):
+
+- `removed` — pages the **last record** wrote that this build does not, minus any an alias now covers: a page that vanished with no redirect. It is the one finding that needs a recorded knowledge base (see [Recording the knowledge base](#recording-the-knowledge-base)); without `AIKB/last-build.json` it is empty, and an unreadable one is treated the same way. Paths are compared build-relative on both sides, so a record made from one working directory and a check run from another still agree, and are reported as the URL a browser asked for (`/old.html`, `/old/`) — the same string to put in `aliases`; the canonical spelling (`/old`) covers too.
+- `moved` — a page the **last record** and this build both have, paired by its `id` rather than by its path, whose output path changed and whose old path no alias covers: `{ id, from, to }` per page, sorted by `from`. It needs a record too, and an `id` on **both** sides, so it follows a page whose identity is stable — a `.page()` page whose `path`, `slug` or `ext` moved, or any page (a fan-out record included) carrying an explicit `id` — and not one whose identity moved with it: a `.pages()` item's default id embeds its slug (`blog/post/<slug>`), so renaming a post's slug changes the id as well and the event reads as a `removed` instead. A move suppresses the matching `removed`, so one rename is one finding.
+- `collisions` — aliases a live page already answers, by its canonical path (`/about`) or by the file itself (`/about.html`), and any source two pages both claim. On both hosts a non-forced rule whose source is a real file is **silently ignored** — the line does nothing at all, with no error anywhere — which is why this is worth saying out loud.
+
+Under `--summary` they print as `  removed without redirect: <path>`, `  moved without redirect: <from> -> <to> (<id>)` and `  alias collides with a page: <path>`; the build log's `notice` for a move carries the fix with it (`add "<from>" to that page's aliases`). None of them changes `ok`, and none changes the exit code.
+
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -542,7 +636,21 @@ npx kiss-ssg check --against last.jsonl build.js  # diff against some other repo
     "assets": [{ "source": "css/site.css", "target": "css/site.605b52d7.css" }],
     "sitemap": "./public/sitemap.xml",
     "pipeline": [{ "name": "tailwind", "ok": true, "duration": 420 }],
-    "llms": "./public/llms.txt"
+    "llms": "./public/llms.txt",
+    "links": {
+      "checked": 24,
+      "broken": [{ "page": "./public/about.html", "href": "/news/gone" }]
+    },
+    "redirects": {
+      "file": "./public/_redirects",
+      "aliases": 2,
+      "removed": ["/news/autumn-2025.html"],
+      "collisions": [],
+      "moved": [
+        { "id": "about", "from": "/about.html", "to": "/company/about.html" }
+      ]
+    },
+    "feed": "./public/feed.xml"
   }
 ]
 ```
@@ -561,6 +669,14 @@ ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
 
 Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array whenever there is a diff to print — under `--against`, or under `check` when the site has a recorded baseline — and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
 
+**Broken internal links.** Every settled non-dev build also scans its own output and reports what it found as `report().links` — `{ checked, broken: [{ page, href }] }` — with one `  broken link: <page> -> <href>` line per finding under `--summary`. It checks the `href`, `src`, each `srcset` candidate and `action` of every `a`, `link`, `script`, `img`, `source`, `video`, `audio`, `iframe` and `form` your pages wrote, resolving a root-relative path against the build folder and a relative one against the page's own directory, and accepting a file that is there, a page this build wrote, `<path>/` → `<path>/index.html`, an extension-less `<path>` → `<path>.html` or `<path>/index.html`, and an asset under the name `{{asset}}` actually emitted.
+
+An absolute URL on your own `siteUrl` counts as **internal** — that is what catches a renamed slug still linked from a nav or a `{{canonical}}`. Another origin, a protocol-relative `//host/x`, `mailto:`, `tel:`, `data:`, `javascript:`, a bare `#fragment` and an empty value are ignored; a query string and a fragment are stripped before resolving. Under `assets.hash` a hardcoded `/css/site.css` **is** a finding, because the file on disk is `css/site.<hash>.css` — use `{{asset}}`.
+
+The finding is advisory: it never changes `ok` and never changes the exit code. Set `links: { check: false }` to turn the scan off. `{{link}}` and the checker are two halves of one thing: the helper renders a path the resolver accepts by construction, so a site whose internal hrefs are all `{{link}}` reports no broken links and the scan stays the net for the hand-written references beside them — with one qualifier, that the scan only knows the pages which wrote bytes, so a `{{link}}` to a page that failed to render _is_ reported broken on every page that linked it. A dev build or a watch rebuild always reports `links: null` — a scoped re-render has not rewritten every page, so there is nothing honest to scan.
+
+**Redirects and renames.** The same report carries `redirects` — the `_redirects` this build wrote from your pages' `aliases`, and three more advisory findings: a page the last record had that this build no longer writes and no alias covers (`  removed without redirect: <path>`), a page the record and this build share an `id` with that is now written somewhere else with nothing answering its old URL (`  moved without redirect: <from> -> <to> (<id>)`), and an alias a live page already answers, which the host will silently ignore (`  alias collides with a page: <path>`). See [Redirects](#redirects).
+
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance; `KISS_AIKB=1` (same rule again) is the one thing `kiss-ssg aikb` adds on top of those two. None of them changes your script's exit code — that stays yours.
 
 Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
@@ -578,7 +694,7 @@ Nothing else writes that folder. There is no API call for it, and an ordinary bu
 
 **It refuses to record a build that did not work.** A failed build writes nothing, and `--summary` says `not recorded — build failed`; the exit code is `check`'s. A dev build writes nothing either. The previous record stays exactly as it was — a knowledge base describing a broken build is worse than a slightly old one.
 
-Four files, and all of them are byte-stable across two identical records — nothing is timestamped and every list is sorted — so recording an unchanged site twice leaves `git status` clean and any diff in the folder is a real change to the shape of the site. `README.md` is written once if it is absent and never overwritten: what the folder is, which files are generated, how to write and stamp a note, what the four findings mean, and what `site.md` is for. `site-map.md` and `site-map.json` are the map itself — the site's URL, build folder and source folders; a row per page giving its output path, view, model source, controller source and the partials and layouts it actually rendered; the partial → pages index; models and controllers with the pages that used them; the asset pipeline's steps; and a `## Subjects` table — each subject, the note it wants, and the first 12 characters of its hash (`site-map.json` carries the whole hash). `last-build.json` is that build's report with every timing dropped, and it is the baseline `npx kiss-ssg check` diffs your working tree against.
+Four files, and all of them are byte-stable across two identical records — nothing is timestamped and every list is sorted — so recording an unchanged site twice leaves `git status` clean and any diff in the folder is a real change to the shape of the site. `README.md` is written once if it is absent and never overwritten: what the folder is, which files are generated, how to write and stamp a note, what the four findings mean, and what `site.md` is for. `site-map.md` and `site-map.json` are the map itself — the site's URL, build folder and source folders; a row per page giving its output path, view, model source, controller source and the partials and layouts it actually rendered; the partial → pages index; models and controllers with the pages that used them; the asset pipeline's steps; and a `## Subjects` table — each subject, the note it wants, and the first 12 characters of its hash (`site-map.json` carries the whole hash). Each page row also carries the page's `id`, so that `Id` column is the list of `{{link}}` targets the site answers to — the autocomplete for an agent adding a page or linking to one. `last-build.json` is that build's report with every timing dropped, and it is the baseline `npx kiss-ssg check` diffs your working tree against.
 
 The folder is **source, not output**: it sits outside `config.folders.build`, survives `cleanBuild`, and is meant to be committed. Setting `folders.aikb: null` switches it off altogether.
 
@@ -600,14 +716,14 @@ Plain pages, partials and `.json` models are deliberately not subjects — a not
 
 Every build reports four findings on `report().aikb.notes`: **missing** (a subject nobody has explained), **dead** (a note under `notes/` whose subject is not in the map), **stale** (a note whose `subject-hash` stamp is no longer its subject's hash — a URL model can never be stale) and **dangling** (`"<note path>: <token>"` for a backticked token in a note, or in `site.md`, that looks like a file reference and resolves to nothing: not a file on disk or under a source folder, a page view or output path, a partial name, a model or controller name, a folder in the map, or a path under the AIKB folder). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` / `note stale:` / `note dangling:` lines. The dangling filter is deliberately narrow — a token needs a `/` or a known extension and must hold no spaces, `<`, `>`, `*`, `{`, `}` or `$`; code fences, trailing-slash folders and anything with a URI scheme are skipped — because a lint that fires on every note is one people learn to ignore. None of the four is a build failure and none changes an exit code.
 
-`examples/9-migrated-from-v1/AIKB/` is the runnable exemplar: a committed knowledge base recorded with `cd examples && npx kiss-ssg aikb 9-migrated-from-v1.js`, with one authored note beside it, stamped with that controller's hash. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
+`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples && npx kiss-ssg aikb <script>`, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
 
 ### Other methods
 
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb }`, every value JSON-safe. `aikb` is `null` unless the site has a knowledge base to report on (`folders.aikb` set, and a record already made — see "Recording the knowledge base"), and otherwise `{ folder, written, notes: { missing, dead, stale, dangling }, subjects }` — where it lives, whether _this_ build wrote it (`true` only for a passing `npx kiss-ssg aikb` run; every ordinary build reports `false`), the four note findings (paths, except `dangling`'s `<note path>: <token>`), and `{ kind, id, note, hash }` per subject of this build. `pages` is `{ view, buildTo, ok, hash }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb, links, redirects, feed }`, every value JSON-safe. `aikb` is `null` unless the site has a knowledge base to report on (`folders.aikb` set, and a record already made — see "Recording the knowledge base"), and otherwise `{ folder, written, notes: { missing, dead, stale, dangling }, subjects }` — where it lives, whether _this_ build wrote it (`true` only for a passing `npx kiss-ssg aikb` run; every ordinary build reports `false`), the four note findings (paths, except `dangling`'s `<note path>: <token>`), and `{ kind, id, note, hash }` per subject of this build. `pages` is `{ view, buildTo, ok, hash, id }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. `links`, `redirects` and `feed` are new in this version, appended after `aikb` in that order, and each is `null` until a build actually does that piece of work — which is not the same as doing it and finding nothing. `links` is the broken-internal-link scan of the build's own output, `{ checked, broken: [{ page, href }] }` (`null` in dev, on a watch rebuild, and under `links: { check: false }`); `redirects` is what the build did about page `aliases`, `{ file, aliases, removed, collisions, moved }` — the `_redirects` file written, the alias count in it, the pages the last record had that this build no longer has and no alias covers, and the aliases a live page already answers; `feed` is the feed file written, like `sitemap` and `llms`. Every path in them names the build folder you asked for, never a staging sibling. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {
@@ -724,6 +840,16 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
   return JSON.stringify(obj, null, 3)
 })
 ```
+
+**Link to a page by its identity**, so a template never guesses a URL:
+
+```handlebars
+<a href='{{link "about"}}'>About</a>
+<a href='{{link "blog/post" slug=post.slug}}'>{{post.title}}</a>
+<meta property='og:url' content='{{link "about" absolute=true}}' />
+```
+
+`{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/blog/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (wrap it in `{{absUrl}}` to make that absolute). **It is the one helper that fails the build**: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
 
 ## Migrating from v1
 

@@ -40,6 +40,16 @@ for (const name of ['a', 'b']) {
   await kiss.complete()
 }`)
 
+// One page, one internal reference that resolves to nothing: the finding is
+// advisory, so the build is still `ok` and the exit code is still 0.
+const ONE_BROKEN_LINK = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public' } })
+kiss.scan().generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
 const NEVER_COMPLETES = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public' } })
 kiss.scan().generate()`)
@@ -57,6 +67,34 @@ await kiss.complete().catch((err) => {
 const WITH_AIKB_BROKEN = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
 kiss.scan().page({ view: 'missing.hbs' }).generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
+// The same site after a rename: the page that was recorded is gone, the one
+// that replaced it carries an alias — and that alias is a path the home page
+// already answers, so both redirect findings have something to say.
+const RENAMED_WITH_ALIAS = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss
+  .page({ view: 'index.hbs' })
+  .page({ view: 'new.hbs', aliases: ['/index.html'] })
+  .generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
+// The same site after a **move**: the page keeps its view, and so its default
+// id, and changes only where it is written — the rename a record can follow by
+// identity rather than by path.
+const MOVED = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public', aikb: './AIKB' } })
+kiss
+  .page({ view: 'index.hbs' })
+  .page({ view: 'about.hbs', path: 'company' })
+  .generate()
 await kiss.complete().catch((err) => {
   console.error(err.message)
   process.exitCode = 1
@@ -127,6 +165,8 @@ describe('kiss-ssg check', () => {
         ok: true,
         // sha1 of the bytes the page wrote — the staged ones, in a check.
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+        // The page's identity, defaulted from the view's route.
+        id: 'index',
       },
     ])
     expect(await temp.exists('public')).toBe(false)
@@ -155,6 +195,7 @@ describe('kiss-ssg check', () => {
       buildTo: './public/index.html',
       ok: true,
       hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+      id: 'index',
     })
     // The page that failed wrote nothing, so it names no bytes.
     expect(report.pages.find((p) => p.view === 'missing.hbs')?.hash).toBeNull()
@@ -207,6 +248,26 @@ describe('kiss-ssg check', () => {
     expect(run.stdout.trim()).toMatch(
       /^ok \.\/public \(check\) — 1 pages, 0 failed, \d+ assets, \d+ms$/,
     )
+  }, 60000)
+
+  it('names a broken internal link under --summary, without moving the exit code', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<a href="/news/gone.html">Gone</a>',
+      'build.js': ONE_BROKEN_LINK,
+    })
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // The pages are scanned before the staging folder is discarded, so a check
+    // finds this at all; and the page is named in the folder the site asked
+    // for, not in the staging sibling it was actually written to.
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 1 pages, 0 failed/)
+    expect(lines).toContain(
+      '  broken link: ./public/index.html -> /news/gone.html',
+    )
+    expect(await temp.exists('public')).toBe(false)
   }, 60000)
 
   it('fails when the script never settles a build', async () => {
@@ -401,6 +462,57 @@ describe('kiss-ssg check, against the knowledge base', () => {
     ])
   }, 60000)
 
+  it('names a page removed without a redirect, and a colliding alias, under --summary', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/old.hbs': '<p>old</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+
+    // The rename the finding exists to catch: `old.hbs` is gone, `new.hbs` has
+    // taken its place, and the alias it carries answers the wrong path.
+    await fs.remove(path.join(temp.root, 'src/pages/old.hbs'))
+    await temp.touch('src/pages/new.hbs', '<p>new</p>')
+    await temp.touch('build.js', RENAMED_WITH_ALIAS)
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // Advisory, both of them: the build is still `ok` and the exit code is
+    // still 0. The paths are build-relative, so they read the same whichever
+    // folder the check was run from.
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 2 pages, 0 failed/)
+    expect(lines).toContain('  removed without redirect: /old.html')
+    expect(lines).toContain('  alias collides with a page: /index.html')
+    expect(await temp.exists('public')).toBe(false)
+  }, 60000)
+
+  it('names a page that moved without a redirect, under --summary', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'src/pages/about.hbs': '<p>about</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+
+    // The page is still there and still called `about`; only its path moved.
+    await temp.touch('build.js', MOVED)
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines).toContain(
+      '  moved without redirect: /about.html -> /company/about.html (about)',
+    )
+    // One event, one line: the old path is not also reported as removed.
+    expect(
+      lines.filter((line) => line.startsWith('  removed without redirect:')),
+    ).toEqual([])
+  }, 60000)
+
   it('prints the stale and dangling note lines under --summary', async () => {
     temp = await makeSite({
       'src/pages/index.hbs': '<p>hello</p>',
@@ -497,6 +609,7 @@ describe('kiss.report()', () => {
         buildTo: `${temp.build}/index.html`,
         ok: true,
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+        id: 'index',
       },
     ])
     expect(report.assets).toEqual([

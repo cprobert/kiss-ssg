@@ -674,6 +674,34 @@ describe('evaluateNotes: dangling, resolved against the source folders', () => {
   })
 })
 
+describe('evaluateNotes: dangling, engine outputs', () => {
+  it('accepts the files the engine writes beside the pages, and any file in the build', async () => {
+    site = await makeSite({
+      'public/css/site.css': 'body{}',
+      'AIKB/notes/controllers/stockist.md':
+        'Feeds `feed.xml`, listed in `sitemap.xml` and `llms.txt`, redirected by `_redirects`; styled by `css/site.css`; `css/gone.css` is not there.\n',
+    })
+    const siteMap = buildSiteMap({
+      config: { folders: { src: `${site.root}/src` } },
+      buildDir: `${site.root}/public`,
+      stack: [
+        {
+          view: 'index.hbs',
+          buildTo: `${site.root}/public/index.html`,
+          origin: { model: 'none', controller: 'file:stockist.js' },
+        },
+      ],
+      readSubject: () => null,
+    })
+    const notes = evaluateNotes(siteMap, `${site.root}/AIKB/notes`, {
+      aikbDir: `${site.root}/AIKB`,
+    })
+    expect(notes.dangling).toEqual([
+      `${site.root}/AIKB/notes/controllers/stockist.md: css/gone.css`,
+    ])
+  })
+})
+
 describe('renderSiteMap', () => {
   const full = () =>
     map({
@@ -719,6 +747,25 @@ describe('renderSiteMap', () => {
     const widths = new Set(rows.slice(0, 3).map((line) => line.length))
     expect(widths.size).toBe(1)
     expect(rows[1]).toMatch(/^\| -+ (\| -+ )*\|$/)
+  })
+
+  it('carries each page id in its own column, right after the output path', () => {
+    const text = renderSiteMap(
+      map({
+        stack: [
+          { ...entry('./public/a.html'), id: 'about' },
+          // No id at all: an inline template, a `generate: false` page, or a
+          // default id two pages arrived at and neither kept.
+          entry('./public/b.html'),
+        ],
+      }),
+    )
+    const rows = text.split('\n').filter((line) => line.startsWith('|'))
+    expect(rows[0]).toMatch(
+      /^\| Output +\| Id +\| View +\| Model +\| Controller +\| Partials & layouts +\|$/,
+    )
+    expect(rows[2]).toMatch(/^\| `\.\/public\/a\.html` +\| `about` +\|/)
+    expect(rows[3]).toMatch(/^\| `\.\/public\/b\.html` +\| none +\|/)
   })
 
   it('has a section per part of the map, and says None for an empty one', () => {
@@ -797,6 +844,9 @@ describe('lastBuildRecord', () => {
       notes: { missing: [], dead: [], stale: [], dangling: [] },
       subjects: [],
     },
+    links: { checked: 3, broken: [] },
+    redirects: { file: null, aliases: 0, removed: [], collisions: [] },
+    feed: null,
   }
 
   it('drops every duration and keeps the report’s own key order', () => {
@@ -812,6 +862,12 @@ describe('lastBuildRecord', () => {
       'pipeline',
       'llms',
       'aikb',
+      // The record is `{ ...report }`, so every key appended to the report
+      // lands in every committed `last-build.json` — which is why example 9 is
+      // re-recorded whenever this list grows.
+      'links',
+      'redirects',
+      'feed',
     ])
     expect(record.pipeline).toEqual([{ name: 'tailwind', ok: true }])
   })

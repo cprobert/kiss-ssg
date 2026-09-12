@@ -62,6 +62,12 @@ export function toAbsoluteUrl(siteUrl: string, urlPath?: string): string;
  */
 export function toCanonicalPath(pageURL: unknown): string;
 /**
+ * @param {unknown} pageURL a page's build-relative URL, e.g. `courses/index.html`
+ * @returns {string} the root-relative path the host serves it at: `/`,
+ * `/about.html`, `/about/`, `/courses/`, `/data/index.json`
+ */
+export function servedPathFor(pageURL: unknown): string;
+/**
  * @param {unknown} input
  * @returns {string} MD5 hex digest of the string, or of its JSON if it is not one
  */
@@ -79,4 +85,5 @@ declare namespace utils {
     export { toURLKey };
     export { toAbsoluteUrl };
     export { toCanonicalPath };
+    export { servedPathFor };
 }

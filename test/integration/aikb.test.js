@@ -138,7 +138,11 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
     expect(await site.exists('AIKB/notes/controllers/member.md')).toBe(true)
 
     // 2. The report key: the appended verdict, and the two note findings.
-    expect(Object.keys(report).at(-1)).toBe('aikb')
+    // Relative, in the `llms.test.js` style: `aikb` was appended after `llms`,
+    // and the keys appended after it (`links`, `redirects`, `feed`) must not
+    // break an assertion about where this one sits.
+    const keys = Object.keys(report)
+    expect(keys.indexOf('aikb')).toBe(keys.indexOf('llms') + 1)
     expect(report.aikb.folder).toBe(`${site.root}/AIKB`)
     expect(report.aikb.written).toBe(true)
     expect(report.aikb.notes).toEqual({
@@ -179,6 +183,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
     expect(map.pages).toEqual([
       {
         buildTo: `${site.build}/events.html`,
+        id: 'events',
         view: 'events.hbs',
         model: `url:${EVENTS}`,
         controller: 'none',
@@ -186,6 +191,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       },
       {
         buildTo: `${site.build}/index.html`,
+        id: 'index',
         view: 'index.hbs',
         model: 'file:index.json',
         controller: 'none',
@@ -193,6 +199,8 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       },
       {
         buildTo: `${site.build}/team/ana.html`,
+        // A fan-out item: the view's route, then the record's normalised slug.
+        id: 'member/ana',
         view: 'member.hbs',
         model: 'folder:team',
         controller: 'file:member.js',
@@ -200,6 +208,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       },
       {
         buildTo: `${site.build}/team/bo.html`,
+        id: 'member/bo',
         view: 'member.hbs',
         model: 'folder:team',
         controller: 'file:member.js',

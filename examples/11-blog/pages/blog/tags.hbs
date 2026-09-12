@@ -1,0 +1,31 @@
+{{#extend "layout" root="../../"}}
+
+  {{#content "head"}}{{> "head-feed"}}{{/content}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">The journal</p>
+    <h1>Every tag</h1>
+    <p>
+      Four tags, none of them written down anywhere: each one exists because some post
+      mentions it, and <code>controllers/tag.js</code> folds the posts into one record per tag
+      for the fan-out to build.
+    </p>
+  </section>
+
+  <div class="grid">
+    {{#each model.tags}}
+    <article class="card">
+      <h3><a href="{{link 'blog/tags' slug=slug}}">{{tag}}</a></h3>
+      <p class="meta">{{count}} posts</p>
+      <p>{{#each posts}}<a href="{{link id}}">{{title}}</a>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
+    </article>
+    {{/each}}
+  </div>
+
+  <div class="callout">
+    <p><a href="{{link 'blog'}}">The whole journal</a> &middot; <a href="/feed.xml">RSS feed</a></p>
+  </div>
+  {{/content}}
+
+{{/extend}}

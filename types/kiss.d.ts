@@ -5,6 +5,9 @@ export type BuildAsset = import("./build-report.js").BuildAsset;
 export type BuildReportFailure = import("./build-report.js").BuildReportFailure;
 export type BuildPipelineStep = import("./build-report.js").BuildPipelineStep;
 export type BuildAikb = import("./build-report.js").BuildAikb;
+export type BuildLinks = import("./build-report.js").BuildLinks;
+export type BuildBrokenLink = import("./build-report.js").BuildBrokenLink;
+export type BuildRedirects = import("./build-report.js").BuildRedirects;
 export type SiteMap = import("./aikb.js").SiteMap;
 export type PipelineStep = import("./pipeline.js").PipelineStep;
 export type KissConfig = import("./config.js").KissConfig;
@@ -20,6 +23,10 @@ export type PageOptionsKnown = {
      * a `.hbs` filename relative to `config.folders.pages`, or a template string
      */
     view: string;
+    /**
+     * this page's identity, what `{{link "<id>"}}` resolves. Default: the view's route without its extension (`blog/listing.hbs` → `blog/listing`); on a `.pages()` fan-out the registration's `id` is the *prefix* its items' default ids use (`<prefix>/<slug>`) and a *record*'s own `id` wins outright, the way `aliases` belongs to the record. An inline template and a `generate: false` page have no id
+     */
+    id?: string;
     /**
      * a `.json` filename, a models folder name, an `http(s)://` URL, a plain object or an array — and the resolved data itself by the time a controller sees it
      */
@@ -77,6 +84,18 @@ export type PageOptionsKnown = {
      * the `llms.txt` section this page is listed under, overriding its path
      */
     llmsSection?: string;
+    /**
+     * keep this page out of the `.feed()` document
+     */
+    ignoreFeed?: boolean;
+    /**
+     * the page's date; `.feed()` orders by it and leaves out a page without one (the field name is `.feed()`'s `dateField`)
+     */
+    date?: Date | number | string;
+    /**
+     * old URL paths this page now answers (`['/old-slug']`); each becomes one `301` line in `<build>/_redirects`. On a `.pages()` fan-out it belongs to the *record*, not to the registration
+     */
+    aliases?: string[];
 };
 /**
  * The options `.page()` takes: {@link PageOptionsKnown} plus any extra keys of
@@ -184,6 +203,40 @@ export type LlmsOptions = {
      */
     overwrite?: boolean;
 };
+/**
+ * The options `.feed()` takes. `title` is required — without it, kiss logs an
+ * error and writes nothing, exactly as it does for a sitemap with no `siteUrl`.
+ */
+export type FeedOptions = {
+    /**
+     * the feed's `<title>` — the site's name, or the section's
+     */
+    title: string;
+    /**
+     * the feed's `<description>`
+     */
+    description?: string;
+    /**
+     * a top-level `path` segment to include (`'blog'`); omit for every page
+     */
+    section?: string;
+    /**
+     * default `20`; how many items the feed carries, newest first
+     */
+    limit?: number;
+    /**
+     * default `feed.xml`, relative to `config.folders.build`
+     */
+    filename?: string;
+    /**
+     * default `'date'`; the page option (or model field) each item's date is read from
+     */
+    dateField?: string;
+    /**
+     * default `true`; `false` leaves an existing feed file alone
+     */
+    overwrite?: boolean;
+};
 export type WatchOptions = {
     /**
      * the script whose own change triggers a whole-site rebuild; defaults to `process.argv[1]`
@@ -234,6 +287,10 @@ declare class Kiss {
      * @type {DependencyGraph} @private
      */
     private _graph;
+    /** @private @type {{ byId: Map<string, any>, withdrawn: Map<string, string[]> }|null} */
+    private _idIndex;
+    /** @private */
+    private _idNoticed;
     /** @private */
     private _failures;
     /** @private */
@@ -254,6 +311,8 @@ declare class Kiss {
     private _sitemapRequest;
     /** @private */
     private _llmsRequest;
+    /** @private */
+    private _feedRequest;
     /** @private */
     private _watcher;
     /** @private */
@@ -280,6 +339,16 @@ declare class Kiss {
     private _sitemapPath;
     /** @private */
     private _llmsPath;
+    /** @private */
+    private _feedPath;
+    /** @private @type {BuildLinks|null} */
+    private _links;
+    /** @private */
+    private _redirectsPath;
+    /** @private @type {BuildRedirects|null} */
+    private _redirectsResult;
+    /** @private */
+    private _redirectsRun;
     /** @private */
     private _promotedFrom;
     /** @private */
@@ -339,9 +408,34 @@ declare class Kiss {
     /** @private */
     private _buildAikb;
     /** @private */
-    private _discardStaging;
+    private _checkLinks;
     /** @private */
+    private _writeRedirects;
+    /** @private */
+    private _lastBuildRecord;
+    /** @private */
+    private _redirectFindings;
+    /** @private */
+    private _discardStaging;
+    /**
+     * @private
+     * @param {any} options
+     * @param {any} [origin]
+     * @param {string|null} [idPrefix] given only by `_prepareMultiplePages`: what
+     * this fan-out's items prefix their default ids with, in place of the view
+     * route. Its presence is also what tells a fan-out item from a `.page()` page.
+     */
     private _preparePage;
+    /** @private */
+    private _idIndexFor;
+    /**
+     * @private
+     * @param {string} id
+     * @returns {{ entry: any }|{ withdrawn: true, views: string[] }|null}
+     */
+    private _lookupPage;
+    /** @private */
+    private _stackForRecord;
     /** @private */
     private _prepareMultiplePages;
     /**
@@ -436,6 +530,21 @@ declare class Kiss {
      * @returns {this}
      */
     llms(options: LlmsOptions, callback?: (text: string) => void | Promise<void>): this;
+    /**
+     * Writes an RSS 2.0 feed into the build folder — the third file derived from
+     * the same registry as `sitemap.xml` and `llms.txt`, so an item can never
+     * name a URL the site does not serve. One `<item>` per page that carries a
+     * date, newest first. Requires `config.siteUrl` and `options.title`; without
+     * either this logs an error and skips. Like `.sitemap()` and `.llms()`, it
+     * can be called before or after `.generate()`, and it is re-run by a
+     * whole-site watch rebuild.
+     *
+     * @param {FeedOptions} options
+     * @param {(text: string) => void|Promise<void>} [callback] receives the
+     * rendered document; not fired when the feed was skipped for want of an option
+     * @returns {this}
+     */
+    feed(options: FeedOptions, callback?: (text: string) => void | Promise<void>): this;
     /**
      * Pulls one resolved model out of the array `.generate()`/`.complete()` hand
      * back — the way to read a model without relying on its position.

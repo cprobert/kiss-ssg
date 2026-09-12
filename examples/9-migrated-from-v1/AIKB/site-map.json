@@ -16,6 +16,7 @@
   "pages": [
     {
       "buildTo": "../public/9-migrated-from-v1/await-complete.html",
+      "id": "await-complete",
       "view": "await-complete.hbs",
       "model": "none",
       "controller": "none",
@@ -25,6 +26,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/duplicate-paths.html",
+      "id": "duplicate-paths",
       "view": "duplicate-paths.hbs",
       "model": "inline",
       "controller": "none",
@@ -34,6 +36,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/dynamic-partials.html",
+      "id": "dynamic-partials",
       "view": "dynamic-partials.hbs",
       "model": "inline",
       "controller": "none",
@@ -45,6 +48,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/folders.html",
+      "id": "folders",
       "view": "folders.hbs",
       "model": "inline",
       "controller": "none",
@@ -54,6 +58,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/handlebars-instance.html",
+      "id": "handlebars-instance",
       "view": "handlebars-instance.hbs",
       "model": "inline",
       "controller": "none",
@@ -64,6 +69,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/index.html",
+      "id": "index",
       "view": "index.hbs",
       "model": "none",
       "controller": "none",
@@ -73,6 +79,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/pure-controllers.html",
+      "id": "pure-controllers",
       "view": "pure-controllers.hbs",
       "model": "inline",
       "controller": "inline",
@@ -82,6 +89,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/shelf/arch-blend.html",
+      "id": "shelf/item/arch-blend",
       "view": "shelf/item.hbs",
       "model": "inline",
       "controller": "file:shelf-item.js",
@@ -91,6 +99,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/shelf/guji-uraga.html",
+      "id": "shelf/item/guji-uraga",
       "view": "shelf/item.hbs",
       "model": "inline",
       "controller": "file:shelf-item.js",
@@ -100,6 +109,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/shelf/oak-cascara.html",
+      "id": "shelf/item/oak-cascara",
       "view": "shelf/item.hbs",
       "model": "inline",
       "controller": "file:shelf-item.js",
@@ -109,6 +119,7 @@
     },
     {
       "buildTo": "../public/9-migrated-from-v1/smaller-changes.html",
+      "id": "smaller-changes",
       "view": "smaller-changes.hbs",
       "model": "none",
       "controller": "none",

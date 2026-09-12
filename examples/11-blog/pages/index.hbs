@@ -1,0 +1,67 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "head"}}{{> "head-feed"}}{{/content}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 11 &middot; a blog</p>
+    <h1>The Aster &amp; Oak journal</h1>
+    <p>
+      Six posts, three to a page, filed under four tags, with an RSS feed and a
+      <code>_redirects</code> file for the one post that was renamed. Four recipes a blog
+      needs and nothing else.
+    </p>
+  </section>
+
+  <div class="stack">
+    {{#each model.latest}}{{> "post-card"}}{{/each}}
+  </div>
+
+  <div class="callout">
+    <p>
+      <a href="{{link 'blog'}}">Read the whole journal</a> &middot;
+      <a href="{{link 'blog/tags'}}">Browse by tag</a> &middot;
+      <a href="/feed.xml">Subscribe by RSS</a>
+    </p>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <strong>Posts are a folder fan-out.</strong> One JSON file per post in
+    <code>models/posts/</code>, one page each from <code>blog/post.hbs</code>, and
+    <code>controllers/post.js</code> between them: it validates the record, derives the slug,
+    and sets <code>title</code>, <code>description</code> and <code>date</code> on the
+    <em>page</em> so the feed, <code>llms.txt</code> and the layout all read the same values.
+  </p>
+  <p>
+    <strong>The listing is paginated.</strong> Three posts to a page: <code>/blog/</code> and
+    <code>/blog/page/2/</code>, prev and next links, one <code>.page()</code> call per page of
+    posts from a loop in the build script. The arithmetic is eight lines and it is in the
+    script rather than in a controller, because the number of pages is a property of the
+    whole collection and a controller only ever sees one record.
+  </p>
+  <p>
+    <strong>Tag pages are a second fan-out.</strong> A tag is not a record anybody writes; it
+    exists because some posts mention it. <code>controllers/tag.js</code> folds the posts into
+    one record per tag and <code>.pages()</code> builds a page from each, exactly as the posts
+    themselves were built.
+  </p>
+  <p>
+    <strong>Every internal link is asked for by identity.</strong> No view in this site writes a
+    URL. <code>\{{link 'blog'}}</code> renders <code>{{link 'blog'}}</code>,
+    <code>\{{link 'blog' absolute=true}}</code> renders
+    <code>{{link 'blog' absolute=true}}</code> for an OG tag or a feed, and
+    <code>\{{link 'blog' canonical=true}}</code> renders <code>{{link 'blog' canonical=true}}</code>,
+    the pretty form the sitemap emits. The ids are in <code>AIKB/site-map.md</code>; an id no page
+    claims fails the build rather than shipping a 404.
+  </p>
+  <p>
+    <strong>The feed comes from the registry.</strong> <code>.feed()</code> reads the same page
+    list <code>.sitemap()</code> and <code>.llms()</code> read, so an item can never name a URL
+    this site does not serve. <code>section: 'blog'</code> keeps the home page out of it; the
+    undated listing and tag pages fall out on their own.
+  </p>
+  {{/content}}
+
+{{/extend}}

@@ -37,6 +37,7 @@ No diff block at all means this site has never been recorded — that is step 4,
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
 | `AIKB/site.md`                             | what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already promoted to rules             | recollection (curated) |
 | `AIKB/site-map.md`                         | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps, subjects and hashes | generated              |
+| `AIKB/site-map.md`'s **Id** column         | the ids `{{link}}` answers to on this site — the list of valid link targets an agent adding a page can point at                             | generated              |
 | the `check` output above                   | whether it builds now, what differs from the last recorded build, and the four note findings                                                | generated              |
 | `AIKB/last-build.json`                     | the recorded build's page list, assets, sitemap, and `aikb.notes` — `missing`, `dead`, `stale`, `dangling`                                  | generated              |
 | `AIKB/notes/**/*.md`                       | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                               | recollection           |
@@ -63,7 +64,7 @@ Missing sources are findings, not silence:
 Five headings, in this order, every statement tagged **[generated]** or **[recollection]**:
 
 - **What the site is and who for** — recollection: `AIKB/site.md`'s first two sections when it exists (label them **curated**), otherwise session objectives and the site's own copy. If nothing says, say nothing says.
-- **How it is built** — generated: the build script and its chain, page count, how pages are registered (`.scan()` / `.page()` / `.pages()`), models and controllers, asset pipeline steps, whether it writes a sitemap or `llms.txt`.
+- **How it is built** — generated: the build script and its chain, page count, how pages are registered (`.scan()` / `.page()` / `.pages()`), models and controllers, asset pipeline steps, and which of the four derived files it writes: a sitemap (`.sitemap()`), an `llms.txt` (`.llms()`), a `feed.xml` (`.feed()` in the chain — the report's `feed` names the file) and a `_redirects` (any page carrying `aliases` — the report's `redirects.file`, `null` when the site has none). Say too whether the templates **link by identity**: `grep -rn "{{link" <the views folder>` against a count of hand-typed hrefs tells a returning developer whether renaming a page here is one edit or a hunt.
 - **What changed lately** — generated: the check's diff against the last record, plus `git log --oneline -10`. Separate "drift since the last record" from "recent commits"; say when the site has never been recorded, so there is no diff.
 - **What was left open** — recollection: unticked success criteria, Amendments, and the Verdict's "what remains open" from the three sessions.
 - **Known gotchas** — recollection: `AIKB/site.md`'s **Standing gotchas** first (curated, and the ones most likely still to bite), then the `## Gotchas` sections of `AIKB/notes/**`. Then, generated, any current build failure and all four note findings, each said in plain words rather than as a label:
@@ -71,5 +72,9 @@ Five headings, in this order, every statement tagged **[generated]** or **[recol
   - `note dead:` — this note outlived its subject; history, not fact
   - `note stale:` — this note was written against older code; check it against the subject before trusting a detail
   - `note dangling:` — this note points at a file that is not there
+  - `broken link:` — a page links to something the site does not serve (generated, from the output itself)
+  - `removed without redirect:` — a page the last record had is gone and its old URL now 404s (generated)
+  - `moved without redirect:` — a page the record and this build share an `id` with is being written somewhere else, and nothing answers its old URL (generated)
+  - `alias collides with a page:` — a redirect the host will silently ignore (generated)
 
 Keep it to a page. End with the one thing you would do first if this were your site, and why. A long list of note findings is a legitimate answer to that: it means the fastest way to make this site knowable again is `kiss-memory-consolidate`.

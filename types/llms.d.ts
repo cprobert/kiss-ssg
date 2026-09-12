@@ -16,6 +16,23 @@ export function resolveText(value: unknown): Promise<string>;
  */
 export function sectionNameFor(segment: string, sections?: Record<string, string>): string;
 /**
+ * A page's display title: its own `title`, or its slug title-cased when it has
+ * none (see `UNTITLED`). Shared with `lib/feed.js`.
+ *
+ * @param {Record<string, any>} options a page's options
+ * @returns {string}
+ */
+export function entryTitle(options: Record<string, any>): string;
+/**
+ * The first segment of a page's `path`, sanitised — the section key both this
+ * file's grouping and `lib/feed.js`'s `section` filter read, so a page can
+ * never land in one and miss the other.
+ *
+ * @param {unknown} pagePath a page's `path` option
+ * @returns {string} `''` for a page with no path
+ */
+export function topSegment(pagePath: unknown): string;
+/**
  * One entry per page that belongs in `llms.txt`, in registration order. A page
  * is left out by `ignoreLlms`, by `ignoreSitemap` (the AI index is a curated
  * subset of the same site the sitemap describes, never a superset), or by
@@ -94,6 +111,7 @@ export function writeLlms(stack: {
     options?: Record<string, any>;
     overwrite?: boolean;
 }): Promise<LlmsWriteResult>;
+export function oneLine(value: unknown): string;
 export type LlmsWriteResult = {
     status: "no-site-url" | "no-title" | "no-summary" | "skipped" | "written";
     /**

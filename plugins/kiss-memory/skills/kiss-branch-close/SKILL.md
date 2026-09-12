@@ -40,6 +40,7 @@ Three things must hold, and each is a hard stop:
 
 - **`ok: true`** on every report, exit 0. A failing page is never closed over.
 - **Every success criterion met**, with the diff line that proves it. Criteria marked "eyeball" go to the human to look at — do not tick them yourself.
+- **No `broken link:` line.** The check scans every page this build wrote; a broken internal link is a change to the site a reader will hit. Fix the template or model that wrote it. `removed without redirect:` is the same kind of stop: a page the last record had is gone and nothing sends its old URL anywhere — add the old path to the new page's `aliases`, or state in the session file that the page is meant to be gone and why. `moved without redirect: <from> -> <to> (<id>)` is that page still being there at a new address, which is the same 404 for anyone holding the old link — same fix, the old path on that page's `aliases`. `alias collides with a page:` means the host will silently ignore that rule; fix the alias.
 - **Nothing in the diff that no criterion asked for.** Each `+`, `-` or `~` is either claimed by a criterion, explained (a shared partial legitimately changed those pages), or a finding. An unexplained `-` is a page that has silently disappeared.
 
 If the intent moved during the work, it should already be a dated **Amendment**; judge against intent-plus-amendments, and say in the Verdict whether that was good drift or scope creep.

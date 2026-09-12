@@ -1,0 +1,155 @@
+{
+  "ok": true,
+  "mode": "check",
+  "buildDir": "../public/11-blog",
+  "pages": [
+    {
+      "view": "index.hbs",
+      "buildTo": "../public/11-blog/index.html",
+      "ok": true,
+      "hash": "b19020993c1586e30bc12ac8d2d203c50f065cf4",
+      "id": "index"
+    },
+    {
+      "view": "blog/listing.hbs",
+      "buildTo": "../public/11-blog/blog/index.html",
+      "ok": true,
+      "hash": "dc6818075d6b2dad8e66c3eaf8a48295290f2af6",
+      "id": "blog"
+    },
+    {
+      "view": "blog/listing.hbs",
+      "buildTo": "../public/11-blog/blog/page/2/index.html",
+      "ok": true,
+      "hash": "2b3a16315e6a19b2ddba02ea845eb31204b87007",
+      "id": "blog/page/2"
+    },
+    {
+      "view": "blog/tags.hbs",
+      "buildTo": "../public/11-blog/blog/tags/index.html",
+      "ok": true,
+      "hash": "af14be77d54e8bb3f7c77385a698d70cbbc75c53",
+      "id": "blog/tags"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/a-year-of-bench-lots/index.html",
+      "ok": true,
+      "hash": "326f96b0372bc9fbaa8eb8ec7bc5426c9b879e5f",
+      "id": "blog/post/a-year-of-bench-lots"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/brewing/index.html",
+      "ok": true,
+      "hash": "e316720fdc2dc2524a6950c2811988d0e35cada5",
+      "id": "blog/tags/brewing"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/grind-size-is-the-dial/index.html",
+      "ok": true,
+      "hash": "0b67010419aa2c82adfbde09ffa01a6fa296c04a",
+      "id": "blog/post/grind-size-is-the-dial"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/experiments/index.html",
+      "ok": true,
+      "hash": "e899120045f78615731fc4b752ef6fd50ba44bb4",
+      "id": "blog/tags/experiments"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
+      "ok": true,
+      "hash": "7e5862e6902a84c3bbee935b01f2571ac8110308",
+      "id": "blog/post/why-we-roast-on-wednesdays"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/roastery/index.html",
+      "ok": true,
+      "hash": "87100c4dbd5347240447b5eb1888380e72f2321c",
+      "id": "blog/tags/roastery"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/guji-uraga-has-landed/index.html",
+      "ok": true,
+      "hash": "c046e954b9d4c16c6603937f81bb49294432d298",
+      "id": "blog/post/guji-uraga-has-landed"
+    },
+    {
+      "view": "blog/tag.hbs",
+      "buildTo": "../public/11-blog/blog/tags/sourcing/index.html",
+      "ok": true,
+      "hash": "f05eafee3665c69267d49be62987ae37a877f7b3",
+      "id": "blog/tags/sourcing"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/the-cascara-experiment/index.html",
+      "ok": true,
+      "hash": "1f357821c2ffc26d358d32a992b8f698a2c6a6fa",
+      "id": "blog/post/cascara"
+    },
+    {
+      "view": "blog/post.hbs",
+      "buildTo": "../public/11-blog/blog/pour-over-at-home/index.html",
+      "ok": true,
+      "hash": "b1ae78e791608ee3ed627caf4ef9ed3e0895b960",
+      "id": "blog/post/pour-over-at-home"
+    }
+  ],
+  "failures": [],
+  "assets": [
+    {
+      "source": "css/site.css",
+      "target": "css/site.css"
+    },
+    {
+      "source": "robots.txt",
+      "target": "robots.txt"
+    }
+  ],
+  "sitemap": "../public/11-blog/sitemap.xml",
+  "pipeline": [],
+  "llms": "../public/11-blog/llms.txt",
+  "aikb": {
+    "folder": "11-blog/AIKB",
+    "written": true,
+    "notes": {
+      "missing": [],
+      "dead": [],
+      "stale": [],
+      "dangling": []
+    },
+    "subjects": [
+      {
+        "kind": "controllers",
+        "id": "post.js",
+        "note": "notes/controllers/post.md",
+        "hash": "bb32f83791071d7b9156878b143c83635d0df09e"
+      },
+      {
+        "kind": "controllers",
+        "id": "tag.js",
+        "note": "notes/controllers/tag.md",
+        "hash": "7abc178112f330517c48c1a6977647162e6c0f81"
+      }
+    ]
+  },
+  "links": {
+    "checked": 171,
+    "broken": []
+  },
+  "redirects": {
+    "file": "../public/11-blog/_redirects",
+    "aliases": 1,
+    "removed": [],
+    "collisions": [],
+    "moved": []
+  },
+  "feed": "../public/11-blog/feed.xml"
+}

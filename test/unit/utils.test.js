@@ -135,6 +135,49 @@ describe('utils.toCanonicalPath', () => {
   })
 })
 
+describe('utils.servedPathFor', () => {
+  // The seven page shapes a build can produce, measured off `KissPage.pageURL()`
+  // — this is the table the `{{link}}` contract is written against.
+  it.each([
+    ['index.html', '/'],
+    ['about.html', '/about.html'],
+    ['about/index.html', '/about/'],
+    ['courses/index.html', '/courses/'],
+    ['blog/my-post.html', '/blog/my-post.html'],
+    ['blog/my-post/index.html', '/blog/my-post/'],
+    ['data/index.json', '/data/index.json'],
+  ])('serves %s at %s', (pageURL, served) => {
+    expect(utils.servedPathFor(pageURL)).toBe(served)
+  })
+
+  // The difference from `toAbsoluteUrl`, which strips a trailing `index`
+  // segment with *any* extension: an `ext: 'json'` index page is a file, and a
+  // link to `/data/` would 404 on a directory with no index.html in it.
+  it('collapses only index.html, never another index.<ext>', () => {
+    expect(utils.servedPathFor('data/index.json')).toBe('/data/index.json')
+    expect(utils.servedPathFor('feed/index.xml')).toBe('/feed/index.xml')
+    expect(utils.toAbsoluteUrl('', 'data/index.json')).toBe('/data/')
+  })
+
+  it('is root-relative whatever it is given', () => {
+    expect(utils.servedPathFor('/about.html')).toBe('/about.html')
+    expect(utils.servedPathFor('')).toBe('/')
+  })
+
+  // Not the canonical form: a static host serves the file, and the pretty URL
+  // only where the site is extension-less (where the two coincide).
+  it('is not the canonical path on a site with extensions', () => {
+    expect(utils.servedPathFor('about.html')).toBe('/about.html')
+    expect(utils.toAbsoluteUrl('', utils.toCanonicalPath('about.html'))).toBe(
+      '/about',
+    )
+    expect(utils.servedPathFor('about/index.html')).toBe('/about/')
+    expect(
+      utils.toAbsoluteUrl('', utils.toCanonicalPath('about/index.html')),
+    ).toBe('/about/')
+  })
+})
+
 describe('utils.toURLKey', () => {
   // Unchanged by the trailing-slash fix: this is page *identity*, what
   // `isActive` compares — not a URL anyone emits.

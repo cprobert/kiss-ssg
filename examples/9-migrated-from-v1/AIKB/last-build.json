@@ -7,67 +7,78 @@
       "view": "index.hbs",
       "buildTo": "../public/9-migrated-from-v1/index.html",
       "ok": true,
-      "hash": "55beba765690825842b03ecd5a81c6a0201d99ed"
+      "hash": "55beba765690825842b03ecd5a81c6a0201d99ed",
+      "id": "index"
     },
     {
       "view": "await-complete.hbs",
       "buildTo": "../public/9-migrated-from-v1/await-complete.html",
       "ok": true,
-      "hash": "487f355b4561884e59a62c56279351521c861a41"
+      "hash": "487f355b4561884e59a62c56279351521c861a41",
+      "id": "await-complete"
     },
     {
       "view": "folders.hbs",
       "buildTo": "../public/9-migrated-from-v1/folders.html",
       "ok": true,
-      "hash": "65e7de6945ba0104a9f044899390de61dc04ca05"
+      "hash": "65e7de6945ba0104a9f044899390de61dc04ca05",
+      "id": "folders"
     },
     {
       "view": "handlebars-instance.hbs",
       "buildTo": "../public/9-migrated-from-v1/handlebars-instance.html",
       "ok": true,
-      "hash": "e5ed25fd48a83b190b461e0b6152b2749e410733"
+      "hash": "e5ed25fd48a83b190b461e0b6152b2749e410733",
+      "id": "handlebars-instance"
     },
     {
       "view": "dynamic-partials.hbs",
       "buildTo": "../public/9-migrated-from-v1/dynamic-partials.html",
       "ok": true,
-      "hash": "6ad097c53e3ddcfc0d83764f01908ada962d9aa8"
+      "hash": "6ad097c53e3ddcfc0d83764f01908ada962d9aa8",
+      "id": "dynamic-partials"
     },
     {
       "view": "duplicate-paths.hbs",
       "buildTo": "../public/9-migrated-from-v1/duplicate-paths.html",
       "ok": true,
-      "hash": "757645c144fcb1f3203b523898e45259f0751264"
+      "hash": "757645c144fcb1f3203b523898e45259f0751264",
+      "id": "duplicate-paths"
     },
     {
       "view": "pure-controllers.hbs",
       "buildTo": "../public/9-migrated-from-v1/pure-controllers.html",
       "ok": true,
-      "hash": "31d0dad39c22c986a4d6f969c58a94e4026e12e5"
+      "hash": "31d0dad39c22c986a4d6f969c58a94e4026e12e5",
+      "id": "pure-controllers"
     },
     {
       "view": "smaller-changes.hbs",
       "buildTo": "../public/9-migrated-from-v1/smaller-changes.html",
       "ok": true,
-      "hash": "9058a9d28e8a2b647d0249541c943f022d319191"
+      "hash": "9058a9d28e8a2b647d0249541c943f022d319191",
+      "id": "smaller-changes"
     },
     {
       "view": "shelf/item.hbs",
       "buildTo": "../public/9-migrated-from-v1/shelf/arch-blend.html",
       "ok": true,
-      "hash": "0105add91d94317fd5af4b41bc6aaf55074bc890"
+      "hash": "0105add91d94317fd5af4b41bc6aaf55074bc890",
+      "id": "shelf/item/arch-blend"
     },
     {
       "view": "shelf/item.hbs",
       "buildTo": "../public/9-migrated-from-v1/shelf/oak-cascara.html",
       "ok": true,
-      "hash": "7815d7788080c087e62c20f6856beedfb6bb921c"
+      "hash": "7815d7788080c087e62c20f6856beedfb6bb921c",
+      "id": "shelf/item/oak-cascara"
     },
     {
       "view": "shelf/item.hbs",
       "buildTo": "../public/9-migrated-from-v1/shelf/guji-uraga.html",
       "ok": true,
-      "hash": "4aa1cfd0d0b91d932a3660f2ea949c7b6bb4556f"
+      "hash": "4aa1cfd0d0b91d932a3660f2ea949c7b6bb4556f",
+      "id": "shelf/item/guji-uraga"
     }
   ],
   "failures": [],
@@ -101,5 +112,11 @@
         "hash": "8bfa290248f68febbcea3d6c759bcc8b55eaf6dd"
       }
     ]
-  }
+  },
+  "links": {
+    "checked": 36,
+    "broken": []
+  },
+  "redirects": null,
+  "feed": null
 }

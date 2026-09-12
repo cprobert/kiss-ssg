@@ -33,19 +33,20 @@ Read `node_modules/kiss-ssg/llms.txt` — it is the API cheat-sheet that ships i
 | The opening summary | The chainable pipeline: pages are _queued_ by `.page()`/`.pages()`/`.scan()`, rendered by `.generate()`, awaited by `.complete()` |
 | `## API`            | Which of `.page()` / `.pages()` / `.scan()` fits each part of the site, and what a controller may return                          |
 | `## Config`         | `folders`, `cleanBuild`, `siteUrl`, `fetch`, `assets` — set these deliberately, do not inherit defaults by accident               |
-| `## Helpers`        | `markdown`, `asset`, `canonical`, `absUrl`, `isActive`, `env` and friends — use the built-in before writing your own              |
+| `## Helpers`        | `markdown`, `asset`, `canonical`, `absUrl`, `isActive`, `link`, `env` and friends — use the built-in before writing your own      |
 
 Per-module detail, if you need it, is in `node_modules/kiss-ssg/AIKB/`.
 
 ### 4. Copy an exemplar by shape
 
-`node_modules/kiss-ssg/examples/README.md` lists ten runnable sites in two tiers. Pick the one whose _situation_ matches and copy its structure — its folder layout, its script shape, its controller pattern — never its content.
+`node_modules/kiss-ssg/examples/README.md` lists eleven runnable sites in two tiers. Pick the one whose _situation_ matches and copy its structure — its folder layout, its script shape, its controller pattern — never its content.
 
 | Shape                                                                      | Exemplar                                                                                                           |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | One build per edition/season/version, each into its own folder             | `node_modules/kiss-ssg/examples/7-versioned-outputs.js`                                                            |
 | Pages fanned out from data you do not control, validated in the controller | `node_modules/kiss-ssg/examples/8-data-fed-site.js`                                                                |
 | A v1 project being moved to v2                                             | `node_modules/kiss-ssg/examples/9-migrated-from-v1.js` — and use the `kiss-site-migrate` skill instead of this one |
+| A blog, a news or events section — anything dated, paginated or tagged     | `node_modules/kiss-ssg/examples/11-blog/` — also the exemplar for the four habits in step 5 below                  |
 | A single narrower question (which call, which option, which helper)        | Examples 1–6, the feature reference                                                                                |
 
 Run the exemplar before you change anything, so you know what its output and exit code are meant to look like. Example 8 exits 1 on purpose.
@@ -56,6 +57,13 @@ End the chain at `await kiss.complete()`, inside a `try`/`catch` that prints eve
 
 If the site will be handed on — to a colleague, or to you in two years — record its knowledge base once it builds green: `npx kiss-ssg aikb <site-script>` (documented in `node_modules/kiss-ssg/llms.txt`) runs the build staged and discarded, publishes nothing, and writes `AIKB/site-map.md`, `AIKB/site-map.json` and `AIKB/last-build.json` — the pages, models, controllers, partials and pipeline steps the build actually saw — into `config.folders.aikb` (default `./AIKB`). Commit that folder. It takes no change to the build script, a failed build is refused, and recording once is what opts the site in: from then on `kiss-ssg check` diffs against the record by default, and the sibling `kiss-memory` plugin's skills read it back as a briefing and as the baseline for a piece of work.
 
+Four habits to build in while the views are still being written. All four run together in `node_modules/kiss-ssg/examples/11-blog/`, which is the exemplar to read for them:
+
+- **Link between pages by identity, never by a typed path.** `{{link "about"}}` is root-relative (`/about.html`, or `/about/` on an `extensionLess` site), `{{link "about" absolute=true}}` is the absolute URL an `og:url` or a feed needs, and `{{link "about" canonical=true}}` is the pretty form the sitemap and `{{canonical}}` emit. A typed `/about.html` is a guess about `extensionLess`, `path` and `slug`; `{{link}}` renders the path the build actually wrote, and an id no page claims fails the build naming the id and the view that asked.
+- **Every page already has an `id` to be linked by** — the view's route without its extension (`about.hbs` → `about`, `blog/listing.hbs` → `blog/listing`), and for a `.pages()` fan-out item `<view route>/<slug>` (or `<registration id>/<slug>` when the registration sets one). Set an explicit `id` where one view is rendered twice — a paginated listing at `/blog/` and `/blog/page/2/` — because two pages arriving at one default id both withdraw from it and neither can be linked until you name them.
+- **A site with news, posts or events gets a feed.** Put `.feed({ section: 'blog', title: 'Site — the blog' })` beside `.sitemap()` in the chain: one RSS item per page carrying a date, newest first, from the same registry the sitemap and `llms.txt` are built from, so it can never name a URL the site does not serve. `section` limits it to one top-level `path` segment; `title` is required.
+- **A page you rename or move keeps its old URL.** Put the old path in that page's `aliases` (`aliases: ['/old-slug.html']`, on the fan-out **record** rather than the registration) and kiss writes `_redirects` into the build folder. There is no method to call — an alias is a page option.
+
 Three mistakes real consumer sites made, all of which passed review before they bit:
 
 - **A chain that ends at `.generate()` exits 0 on a broken build.** Page failures surface only through `complete()`'s rejection. A deploy script that does not await it ships a half-built tree and reports success.
@@ -65,3 +73,5 @@ Three mistakes real consumer sites made, all of which passed review before they 
 ### 6. Build, then verify
 
 Build it, then run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`) and do not declare the site done until it reports `ok: true`. A build you have not verified is a build you have not finished.
+
+Read that check's `broken link:` lines too: they are how you confirm the scaffolding's internal references actually resolve. A `{{link}}` cannot be wrong without failing the build, so anything listed there is a path something typed by hand — fix it in the template or the model that wrote it. It is a finding, not a failure, so it never shows up in the exit code.
