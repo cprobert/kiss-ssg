@@ -131,7 +131,7 @@ npm version patch|minor|major|prerelease --preid alpha --no-git-tag-version
 
 This version is carried by `package.json`, the marketplace manifest (`.claude-plugin/marketplace.json`) and every plugin's own `plugins/<name>/.claude-plugin/plugin.json`, and `test/unit/plugin-manifests.test.js` fails if they disagree. You do not have to edit them: npm's `version` lifecycle hook runs `scripts/sync-plugin-versions.mjs` as part of the command above — including under `--no-git-tag-version` — so the manifests move with the bump. `git add` them along with the manifest below.
 
-User-visible changes also get an entry in `CHANGELOG.md` at the repo root, written for someone building a site with kiss-ssg, not for someone maintaining it. Create the file if it does not exist yet (newest version first, `## <version> — <date>` headings). Write it alongside the bump, then commit both:
+User-visible changes also get an entry in `CHANGELOG.md` at the repo root, written for someone building a site with kiss-ssg, not for someone maintaining it. Create the file if it does not exist yet (newest version first, `## <version> — <date>` headings). `test/unit/changelog.test.js` fails the gates if the first heading is not the version `package.json` declares, so a bump without an entry — or an entry without a bump — cannot reach the PR. Write it alongside the bump, then commit both:
 
 ```bash
 git add package.json package-lock.json CHANGELOG.md \
