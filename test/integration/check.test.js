@@ -40,6 +40,16 @@ for (const name of ['a', 'b']) {
   await kiss.complete()
 }`)
 
+// One page, one internal reference that resolves to nothing: the finding is
+// advisory, so the build is still `ok` and the exit code is still 0.
+const ONE_BROKEN_LINK = site(`
+const kiss = new Kiss({ folders: { src: './src', build: './public' } })
+kiss.scan().generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
 const NEVER_COMPLETES = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public' } })
 kiss.scan().generate()`)
@@ -207,6 +217,26 @@ describe('kiss-ssg check', () => {
     expect(run.stdout.trim()).toMatch(
       /^ok \.\/public \(check\) — 1 pages, 0 failed, \d+ assets, \d+ms$/,
     )
+  }, 60000)
+
+  it('names a broken internal link under --summary, without moving the exit code', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<a href="/news/gone.html">Gone</a>',
+      'build.js': ONE_BROKEN_LINK,
+    })
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    // The pages are scanned before the staging folder is discarded, so a check
+    // finds this at all; and the page is named in the folder the site asked
+    // for, not in the staging sibling it was actually written to.
+    expect(run.status).toBe(0)
+    const lines = run.stdout.trim().split('\n')
+    expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 1 pages, 0 failed/)
+    expect(lines).toContain(
+      '  broken link: ./public/index.html -> /news/gone.html',
+    )
+    expect(await temp.exists('public')).toBe(false)
   }, 60000)
 
   it('fails when the script never settles a build', async () => {

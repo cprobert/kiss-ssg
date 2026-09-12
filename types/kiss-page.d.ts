@@ -23,6 +23,8 @@ export class KissPage {
     options: {};
     /** @type {string|null} */
     hash: string | null;
+    /** @type {string[]|null} */
+    links: string[] | null;
     buildDir: string;
     pagesDir: string;
     /** @type {number} */

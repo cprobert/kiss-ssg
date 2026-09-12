@@ -80,6 +80,14 @@ export type PageOptionsKnown = {
      * the `llms.txt` section this page is listed under, overriding its path
      */
     llmsSection?: string;
+    /**
+     * keep this page out of the `.feed()` document
+     */
+    ignoreFeed?: boolean;
+    /**
+     * the page's date; `.feed()` orders by it and leaves out a page without one (the field name is `.feed()`'s `dateField`)
+     */
+    date?: Date | number | string;
 };
 /**
  * The options `.page()` takes: {@link PageOptionsKnown} plus any extra keys of
@@ -184,6 +192,40 @@ export type LlmsOptions = {
     sections?: Record<string, string>;
     /**
      * default `true`; `false` leaves an existing `llms.txt` alone
+     */
+    overwrite?: boolean;
+};
+/**
+ * The options `.feed()` takes. `title` is required — without it, kiss logs an
+ * error and writes nothing, exactly as it does for a sitemap with no `siteUrl`.
+ */
+export type FeedOptions = {
+    /**
+     * the feed's `<title>` — the site's name, or the section's
+     */
+    title: string;
+    /**
+     * the feed's `<description>`
+     */
+    description?: string;
+    /**
+     * a top-level `path` segment to include (`'blog'`); omit for every page
+     */
+    section?: string;
+    /**
+     * default `20`; how many items the feed carries, newest first
+     */
+    limit?: number;
+    /**
+     * default `feed.xml`, relative to `config.folders.build`
+     */
+    filename?: string;
+    /**
+     * default `'date'`; the page option (or model field) each item's date is read from
+     */
+    dateField?: string;
+    /**
+     * default `true`; `false` leaves an existing feed file alone
      */
     overwrite?: boolean;
 };
@@ -352,6 +394,8 @@ declare class Kiss {
     /** @private */
     private _buildAikb;
     /** @private */
+    private _checkLinks;
+    /** @private */
     private _discardStaging;
     /** @private */
     private _preparePage;
@@ -449,6 +493,21 @@ declare class Kiss {
      * @returns {this}
      */
     llms(options: LlmsOptions, callback?: (text: string) => void | Promise<void>): this;
+    /**
+     * Writes an RSS 2.0 feed into the build folder — the third file derived from
+     * the same registry as `sitemap.xml` and `llms.txt`, so an item can never
+     * name a URL the site does not serve. One `<item>` per page that carries a
+     * date, newest first. Requires `config.siteUrl` and `options.title`; without
+     * either this logs an error and skips. Like `.sitemap()` and `.llms()`, it
+     * can be called before or after `.generate()`, and it is re-run by a
+     * whole-site watch rebuild.
+     *
+     * @param {FeedOptions} options
+     * @param {(text: string) => void|Promise<void>} [callback] receives the
+     * rendered document; not fired when the feed was skipped for want of an option
+     * @returns {this}
+     */
+    feed(options: FeedOptions, callback?: (text: string) => void | Promise<void>): this;
     /**
      * Pulls one resolved model out of the array `.generate()`/`.complete()` hand
      * back — the way to read a model without relying on its position.

@@ -479,6 +479,58 @@ writes:
 
 It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
 
+### .feed()
+
+Writes an RSS 2.0 feed into the root of the build folder: the third file derived from the same registry as `sitemap.xml` and `llms.txt`, so an item can never name a URL your site does not serve. One `<item>` per page that carries a date, newest first. It needs `siteUrl` and a `title`; without either it logs an error and skips the file rather than throwing.
+
+```js
+kiss
+  .pages({
+    view: 'blog/post.hbs',
+    model: 'posts', // each post's JSON carries its own `date`
+    path: 'blog',
+  })
+  .page({ view: 'blog/index.hbs', path: 'blog' }) // no date: not an item
+  .generate()
+  .sitemap()
+  .feed({
+    title: 'A1K9 Training — the blog',
+    description: 'Dog behaviour and obedience training in South Wales.',
+    section: 'blog',
+    limit: 20,
+  })
+```
+
+writes `public/feed.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>A1K9 Training — the blog</title>
+    <link>https://a1k9training.co.uk/</link>
+    <description>Dog behaviour and obedience training in South Wales.</description>
+    <atom:link href="https://a1k9training.co.uk/feed.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Tue, 03 Feb 2026 00:00:00 GMT</lastBuildDate>
+    <item>
+      <title>Loose-lead walking</title>
+      <link>https://a1k9training.co.uk/blog/loose-lead-walking</link>
+      <guid isPermaLink="true">https://a1k9training.co.uk/blog/loose-lead-walking</guid>
+      <pubDate>Tue, 03 Feb 2026 00:00:00 GMT</pubDate>
+      <description>Six weeks, one lead, no pulling.</description>
+    </item>
+  </channel>
+</rss>
+```
+
+**The options**: `title` (required) is the channel's `<title>` and `description` its `<description>`. `section` limits the feed to one top-level `path` segment (`'blog'`) — omit it and every page is a candidate. `limit` (default `20`) caps the items, `filename` (default `feed.xml`) names the file inside the build folder, and `overwrite` (default `true`) behaves exactly as the sitemap's.
+
+**Where the dates come from**: `dateField` (default `'date'`) names one field, and it is read from the page's options first and its resolved model second — so a post can be dated in its `.page()`/`.pages()` call or in its own `.json`, and either way it is the same key. A `Date`, epoch milliseconds, or any string `new Date()` parses is accepted; a value that cannot be read logs one warning and the page is treated as undated.
+
+**Which pages are items**: every page with a readable date, newest first (the URL breaks a tie so the order is the same on every machine). A page with no date is simply left out — most of a site is undated, and that is not a mistake worth a warning. A page opts out with `ignoreFeed: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of the feed too. Each `<link>` and `<guid>` is the same string that page's own `{{canonical}}` renders, and the `<title>`/`<description>` are derived exactly as `llms.txt` derives them.
+
+`<lastBuildDate>` is the newest item's date rather than the wall clock, so two identical builds produce byte-identical files and a feed you commit does not churn. It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()` and `.llms()`. Its callback receives the rendered document (`kiss.feed(options, (xml) => …)`), and the file it wrote is reported as the build report's `feed`.
+
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -574,6 +626,12 @@ ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
 ```
 
 Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array whenever there is a diff to print — under `--against`, or under `check` when the site has a recorded baseline — and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
+
+**Broken internal links.** Every settled non-dev build also scans its own output and reports what it found as `report().links` — `{ checked, broken: [{ page, href }] }` — with one `  broken link: <page> -> <href>` line per finding under `--summary`. It checks the `href`, `src`, each `srcset` candidate and `action` of every `a`, `link`, `script`, `img`, `source`, `video`, `audio`, `iframe` and `form` your pages wrote, resolving a root-relative path against the build folder and a relative one against the page's own directory, and accepting a file that is there, a page this build wrote, `<path>/` → `<path>/index.html`, an extension-less `<path>` → `<path>.html` or `<path>/index.html`, and an asset under the name `{{asset}}` actually emitted.
+
+An absolute URL on your own `siteUrl` counts as **internal** — that is what catches a renamed slug still linked from a nav or a `{{canonical}}`. Another origin, a protocol-relative `//host/x`, `mailto:`, `tel:`, `data:`, `javascript:`, a bare `#fragment` and an empty value are ignored; a query string and a fragment are stripped before resolving. Under `assets.hash` a hardcoded `/css/site.css` **is** a finding, because the file on disk is `css/site.<hash>.css` — use `{{asset}}`.
+
+The finding is advisory: it never changes `ok` and never changes the exit code. Set `links: { check: false }` to turn the scan off. A dev build or a watch rebuild always reports `links: null` — a scoped re-render has not rewritten every page, so there is nothing honest to scan.
 
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance; `KISS_AIKB=1` (same rule again) is the one thing `kiss-ssg aikb` adds on top of those two. None of them changes your script's exit code — that stays yours.
 

@@ -102,7 +102,10 @@
       }
     ]
   },
-  "links": null,
+  "links": {
+    "checked": 36,
+    "broken": []
+  },
   "redirects": null,
   "feed": null
 }

@@ -38,7 +38,9 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Controller resolution                 | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
 | Sitemap                               | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
 | llms.txt (the AI-facing index)        | `lib/llms.js`                | `AIKB/llms.md`                |
+| RSS feed (from the registry)          | `lib/feed.js`                | `AIKB/feed.md`                |
 | Site knowledge base (`kiss-ssg aikb`) | `lib/aikb.js`                | `AIKB/aikb.md`                |
+| Broken internal links                 | `lib/links.js`               | `AIKB/links.md`               |
 | Dev server                            | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
 | File watcher                          | `lib/watcher.js`             | `AIKB/watcher.md`             |
 | String/path utils                     | `lib/utils.js`               | `AIKB/utils.md`               |

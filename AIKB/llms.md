@@ -7,6 +7,7 @@ Builds the [llmstxt.org](https://llmstxt.org) index — `llms.txt` — from the 
 ## Public interface
 
 - `resolveText(value)` → `Promise<string>`. A `summary`/`notes` option is either the text itself or a path (relative to `process.cwd()`) to a file holding it: if the string names an existing **file** its contents are returned, otherwise the string is. A `.md` file is used as-is — `llms.txt` is markdown. Only a single-line string of at most 512 characters is offered to `fs` at all; anything longer or multi-line is prose by construction. A non-string is `''`.
+- `oneLine(value)`, `entryTitle(options)` and `topSegment(pagePath)` — the three derivations `lib/feed.js` shares rather than copies: whitespace collapsed to one line (`''` for a non-string); a page's `title`, or its slug title-cased when the title is the `Index` placeholder; and the sanitised first segment of a page's `path` (`''` for a root page), which is both this file's grouping key and the feed's `section` filter.
 - `sectionNameFor(segment, sections = {})` → the display name for one top-level path segment: `sections[segment]` if mapped, else the segment title-cased with `-`/`_` read as spaces. The empty segment is the root group: `sections.root`, else `'Pages'`.
 - `buildLlmsEntries(stack, { siteUrl, buildDir, sections })` → `{ title, url, description, section }[]` in registration order. Skips an entry whose `page.options` has `ignoreLlms`, `ignoreSitemap`, or `generate === false`. `url` is `toAbsoluteUrl(siteUrl, toCanonicalPath(buildTo.slice(buildDir.length)))` — the identical join `buildSitemapEntries` makes. `section` is `options.llmsSection` when set, else `sectionNameFor` over the first segment of the page's (sanitised) `path`.
 - `groupLlmsEntries(entries, rootSection)` → `{ name, entries }[]`, sections in first-seen order with the root section hoisted to the front when it is present.
@@ -19,7 +20,7 @@ Builds the [llmstxt.org](https://llmstxt.org) index — `llms.txt` — from the 
 
 ## Depended on by
 
-`lib/kiss.js` (`Kiss.llms()`).
+`lib/kiss.js` (`Kiss.llms()`); `lib/feed.js`, for `oneLine`, `entryTitle` and `topSegment` — an RSS `<title>` and an `llms.txt` link text for one page are the same string by construction, not by coincidence.
 
 ## Non-obvious behavior
 
