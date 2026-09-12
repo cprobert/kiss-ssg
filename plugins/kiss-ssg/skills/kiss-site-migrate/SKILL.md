@@ -47,3 +47,11 @@ Run the build. Run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`) a
 Then compare the page list and the page bodies against the previous v1 build's committed output. **For a content-only migration the goal is byte-identical output** — one consumer test diffed v2-built pages against the v1-built ones and got an empty diff, which is the strongest evidence a migration is complete. A difference is a finding to explain, not noise to accept: it is either a v2 improvement you can name, or a regression you have not found yet.
 
 A page that is missing rather than different usually means a failing controller or a model the new build could not resolve — see the `check` skill on reading a failure.
+
+### 5. Links, and the URLs the migration changed
+
+A v1 site's templates carry hand-written hrefs. **Converting them to `{{link "<id>"}}` is optional here** and usually wrong for a content-only migration: it rewrites bytes, and byte-identical output is the evidence you are trying to produce. Leave them, note the option, and offer it as a follow-up piece of work once the diff is empty — `node_modules/kiss-ssg/examples/11-blog/` is the site to copy that shape from.
+
+What is not optional is checking they still point somewhere. The check's `broken link:` lines are the verification that the migration kept every internal link: each one names the page and the `href` that now resolves to no file, page, directory index or emitted asset, and an absolute URL on the site's own `siteUrl` counts as internal. A v1 href that survived into a v2 build whose URLs moved shows up there and nowhere else — it is advisory, so it never touches `ok` or the exit code.
+
+Where a page's URL **does** change in v2 — `extensionLess` turning `/about.html` into `/about/`, a slug rule that normalises differently — the old URL belongs in that page's `aliases`, and that list is the migration's redirect plan. kiss writes them into `<build>/_redirects` (Netlify and Cloudflare Pages format, one `301` per line) with no method to call. Take the old paths from the v1 build's committed output you are already diffing against: every path in it that the v2 build no longer writes is either a page you have lost or an alias you owe.
