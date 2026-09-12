@@ -30,6 +30,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "prepublishOnly": "npm run gates",
+    "postpublish": "node scripts/tag-release.mjs",
     "test": "vitest run",
     "types": "node scripts/emit-types.mjs",
     "version": "node scripts/sync-plugin-versions.mjs && git add .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json",

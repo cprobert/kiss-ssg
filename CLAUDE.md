@@ -74,6 +74,10 @@ node scripts/base-branch.mjs   # print the integration branch this work merges i
 node scripts/sync-plugin-versions.mjs   # carry package.json's version into every plugin
                                # manifest. Wired to npm's `version` lifecycle, so
                                # `npm version` already ran it — this is the manual escape hatch.
+node scripts/tag-release.mjs   # tag the current commit `v<package.json version>` and push the
+                               # tag. Wired to npm's `postpublish`, so `npm publish` already ran
+                               # it — the tag names the commit a version shipped from, which is
+                               # also the commit a plugin install of that version came from
 npm run bench                  # benchmark harness: 6 scenarios over a generated fixture,
                                # fresh child process per iteration, median of N runs
                                # --pages=50,500 --runs=5 --scenario=scan,watch
