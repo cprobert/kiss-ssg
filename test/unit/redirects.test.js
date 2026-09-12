@@ -5,6 +5,7 @@ import path from 'node:path'
 import {
   canonicalPathFor,
   collectAliases,
+  coveredByAlias,
   normaliseAlias,
   redirectFindings,
   renderRedirects,
@@ -254,7 +255,162 @@ describe('redirectFindings — removed', () => {
           previousPages: previous,
           buildDir: 'public/site',
         }),
-      ).toEqual({ removed: [], collisions: [] })
+      ).toEqual({ removed: [], collisions: [], moved: [] })
+  })
+})
+
+describe('coveredByAlias', () => {
+  // The one predicate both findings ask, so they can never disagree about a
+  // page: the old path is reduced to its canonical form first, because that is
+  // the form an alias is written in.
+  it('matches an alias in canonical form, and only in canonical form', () => {
+    expect(coveredByAlias('/old-post.html', new Set(['/old-post']))).toBe(true)
+    expect(coveredByAlias('/old/index.html', new Set(['/old/']))).toBe(true)
+    // The file-path spelling of the same page is a different string, and the
+    // rule kiss writes targets the canonical one.
+    expect(coveredByAlias('/old-post.html', new Set(['/old-post.html']))).toBe(
+      false,
+    )
+    expect(coveredByAlias('/old-post.html', new Set())).toBe(false)
+  })
+})
+
+describe('redirectFindings — moved', () => {
+  // The same page, recorded at one path and built at another: same `id`, so the
+  // record and the build can be paired across the rename.
+  const previousPages = {
+    buildDir: '../public/site',
+    pages: [
+      { buildTo: '../public/site/index.html', hash: 'aaa', id: 'index' },
+      { buildTo: '../public/site/about.html', hash: 'bbb', id: 'about' },
+    ],
+  }
+  const currentPages = [
+    { buildTo: 'public/site/index.html', id: 'index' },
+    { buildTo: 'public/site/company/about.html', id: 'about' },
+  ]
+  const findings = (rules = [], over = {}) =>
+    redirectFindings({
+      rules,
+      currentPages,
+      previousPages,
+      buildDir: 'public/site',
+      ...over,
+    })
+
+  it('pairs the record and the build by id, and reports the move instead of a removal', () => {
+    const { moved, removed } = findings()
+
+    expect(moved).toEqual([
+      { id: 'about', from: '/about.html', to: '/company/about.html' },
+    ])
+    // One event, one finding: the old path is not also reported as a page that
+    // vanished, which it would be on the path comparison alone.
+    expect(removed).toEqual([])
+  })
+
+  it('says nothing once an alias covers the old path', () => {
+    expect(findings([{ from: '/about', to: '/company/about' }])).toEqual({
+      removed: [],
+      collisions: [],
+      moved: [],
+    })
+  })
+
+  it('decides both findings by the same alias predicate', () => {
+    // `/about.html` is the file, not the canonical path an alias is matched
+    // against, so it covers neither finding...
+    const spelt = [{ from: '/about.html', to: '/company/about' }]
+    expect(findings(spelt).moved).toHaveLength(1)
+    expect(
+      findings(spelt, { currentPages: [currentPages[0]] }).removed,
+    ).toEqual(['/about.html'])
+    // ...and the canonical spelling covers both.
+    const canonical = [{ from: '/about', to: '/company/about' }]
+    expect(findings(canonical).moved).toEqual([])
+    expect(
+      findings(canonical, { currentPages: [currentPages[0]] }).removed,
+    ).toEqual([])
+  })
+
+  it('falls back to the path comparison for a record written before ids', () => {
+    // No `id` key anywhere: the same rename can only be seen as a removal, and
+    // that is the answer this version of the record earns.
+    const { moved, removed } = findings([], {
+      previousPages: {
+        buildDir: '../public/site',
+        pages: [
+          { buildTo: '../public/site/index.html', hash: 'aaa' },
+          { buildTo: '../public/site/about.html', hash: 'bbb' },
+        ],
+      },
+    })
+
+    expect(moved).toEqual([])
+    expect(removed).toEqual(['/about.html'])
+  })
+
+  it('never pairs a null id with anything, on either side', () => {
+    // `null` means two different things — an inline template, a `generate:
+    // false` page, a withdrawn default id — and none of them is an identity.
+    // Pairing nulls would pair every idless page with every other.
+    const { moved, removed } = findings([], {
+      previousPages: {
+        buildDir: '../public/site',
+        pages: [
+          { buildTo: '../public/site/index.html', hash: 'aaa', id: 'index' },
+          { buildTo: '../public/site/about.html', hash: 'bbb', id: null },
+        ],
+      },
+      currentPages: [
+        { buildTo: 'public/site/index.html', id: 'index' },
+        { buildTo: 'public/site/company/about.html', id: null },
+      ],
+    })
+
+    expect(moved).toEqual([])
+    expect(removed).toEqual(['/about.html'])
+  })
+
+  it('ignores a page the record wrote no bytes for, and one with no current page', () => {
+    const { moved, removed } = findings([], {
+      previousPages: {
+        buildDir: '../public/site',
+        pages: [
+          { buildTo: '../public/site/draft.html', hash: null, id: 'draft' },
+          { buildTo: '../public/site/gone.html', hash: 'ccc', id: 'gone' },
+        ],
+      },
+    })
+
+    expect(moved).toEqual([])
+    // `draft` was never published; `gone` has no page with its id in this
+    // build, so it is a removal and not a move.
+    expect(removed).toEqual(['/gone.html'])
+  })
+
+  it('is sorted by from', () => {
+    const { moved } = findings([], {
+      previousPages: {
+        buildDir: '../public/site',
+        pages: [
+          { buildTo: '../public/site/zebra.html', hash: 'a', id: 'z' },
+          { buildTo: '../public/site/apple.html', hash: 'b', id: 'a' },
+          { buildTo: '../public/site/mango.html', hash: 'c', id: 'm' },
+        ],
+      },
+      currentPages: [
+        { buildTo: 'public/site/moved/zebra.html', id: 'z' },
+        { buildTo: 'public/site/moved/apple.html', id: 'a' },
+        { buildTo: 'public/site/moved/mango.html', id: 'm' },
+      ],
+    })
+
+    expect(moved.map((move) => move.from)).toEqual([
+      '/apple.html',
+      '/mango.html',
+      '/zebra.html',
+    ])
   })
 })
 

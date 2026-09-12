@@ -73,6 +73,7 @@ Five headings, in this order, every statement tagged **[generated]** or **[recol
   - `note dangling:` — this note points at a file that is not there
   - `broken link:` — a page links to something the site does not serve (generated, from the output itself)
   - `removed without redirect:` — a page the last record had is gone and its old URL now 404s (generated)
+  - `moved without redirect:` — a page the record and this build share an `id` with is being written somewhere else, and nothing answers its old URL (generated)
   - `alias collides with a page:` — a redirect the host will silently ignore (generated)
 
 Keep it to a page. End with the one thing you would do first if this were your site, and why. A long list of note findings is a legitimate answer to that: it means the fastest way to make this site knowable again is `kiss-memory-consolidate`.

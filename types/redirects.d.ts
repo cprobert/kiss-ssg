@@ -6,11 +6,12 @@
  * @property {string} to the target page's canonical path — what `{{canonical}}` shows, origin stripped
  */
 /**
- * The two advisory findings about what a rename left behind.
+ * The three advisory findings about what a rename left behind.
  *
  * @typedef {Object} RedirectFindings
  * @property {string[]} removed sorted build-relative paths the last record had, this build does not, and no alias covers
  * @property {string[]} collisions sorted alias paths a live page already answers, plus any alias two pages both claim
+ * @property {{ id: string, from: string, to: string }[]} moved sorted by `from`; one page, paired by `id` across the two builds, whose build-relative path changed and whose old path no alias covers
  */
 /**
  * A page's canonical path, without the origin: `/`, `/courses/`, `/about`.
@@ -75,23 +76,50 @@ export function collectAliases(stack?: {
  */
 export function renderRedirects(rules?: RedirectRule[]): string;
 /**
+ * Whether an alias already answers for an old path.
+ *
+ * The alias is matched **in canonical form**: the old file's build-relative
+ * path is reduced by the same `toAbsoluteUrl('', toCanonicalPath(rel))` join
+ * every other URL here goes through, because that is the form `collectAliases`
+ * writes a rule's target in and the form an author writes the source in
+ * (`/old-post`, not `/old-post.html`). An alias spelled as the file
+ * (`/old-post.html`) therefore does **not** cover it — it is a different source
+ * path to the host, and saying it covered the loss would be a lie about what
+ * the `_redirects` file does.
+ *
+ * One predicate, called from both loops below, so `removed` and `moved` can
+ * never disagree about the same page: two findings for one event, or a page
+ * that slips between them.
+ *
+ * @param {string} rel the old page's build-relative path (`/old-post.html`)
+ * @param {Set<string>} fromSet every `from` this build's rules declare
+ * @returns {boolean}
+ */
+export function coveredByAlias(rel: string, fromSet: Set<string>): boolean;
+/**
  * What a rename left behind, and what an alias is about to be ignored for.
  *
- * `removed` is the pages the last record wrote that this build does not, minus
- * any whose canonical path an alias now covers: a page that vanished with no
- * redirect. `collisions` is the aliases a live page already answers — on both
- * Netlify and Cloudflare Pages a non-forced rule is **silently skipped** when a
- * real file exists at its source, so such a rule does nothing at all — plus any
- * `from` two pages both claim, where only the first line can ever win.
+ * `moved` is the pages the last record wrote at one path and this build writes
+ * at another — paired **by id**, so a page that kept its identity and changed
+ * its address is reported as the one event it is, with the fix (`aliases`) to
+ * hand. `removed` is the pages the last record wrote that this build does not,
+ * minus any whose canonical path an alias now covers and minus any whose id
+ * paired: a page that vanished with no redirect. `collisions` is the aliases a
+ * live page already answers — on both Netlify and Cloudflare Pages a non-forced
+ * rule is **silently skipped** when a real file exists at its source, so such a
+ * rule does nothing at all — plus any `from` two pages both claim, where only
+ * the first line can ever win.
  *
- * Both are advisory: nothing here moves `ok` or an exit code.
+ * All three are advisory: nothing here moves `ok` or an exit code.
  *
  * @param {Object} context
  * @param {RedirectRule[]} [context.rules] this build's rules, from `collectAliases`
- * @param {{ buildTo: string }[]} [context.currentPages] the pages this build writes
- * @param {{ buildDir?: string, pages?: { buildTo?: string, hash?: string|null }[] }|null} [context.previousPages]
+ * @param {{ buildTo: string, id?: string|null }[]} [context.currentPages] the pages this build writes, with their identities
+ * @param {{ buildDir?: string, pages?: { buildTo?: string, hash?: string|null, id?: string|null }[] }|null} [context.previousPages]
  * the last record — its own `buildDir` and `pages[]`. `null`, or anything
- * unreadable, means there is no baseline and `removed` is empty
+ * unreadable, means there is no baseline and `removed` and `moved` are empty;
+ * a record written before ids existed carries none, and degrades to the path
+ * comparison alone
  * @param {string} [context.buildDir] this build's folder
  * @returns {RedirectFindings}
  */
@@ -99,12 +127,14 @@ export function redirectFindings({ rules, currentPages, previousPages, buildDir,
     rules?: RedirectRule[];
     currentPages?: {
         buildTo: string;
+        id?: string | null;
     }[];
     previousPages?: {
         buildDir?: string;
         pages?: {
             buildTo?: string;
             hash?: string | null;
+            id?: string | null;
         }[];
     } | null;
     buildDir?: string;
@@ -153,7 +183,7 @@ export type RedirectRule = {
     to: string;
 };
 /**
- * The two advisory findings about what a rename left behind.
+ * The three advisory findings about what a rename left behind.
  */
 export type RedirectFindings = {
     /**
@@ -164,6 +194,14 @@ export type RedirectFindings = {
      * sorted alias paths a live page already answers, plus any alias two pages both claim
      */
     collisions: string[];
+    /**
+     * sorted by `from`; one page, paired by `id` across the two builds, whose build-relative path changed and whose old path no alias covers
+     */
+    moved: {
+        id: string;
+        from: string;
+        to: string;
+    }[];
 };
 export type RedirectWriteResult = {
     /**

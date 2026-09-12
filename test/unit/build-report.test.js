@@ -143,6 +143,9 @@ describe('buildReport', () => {
         aliases: 1,
         removed: ['./public/old.html'],
         collisions: [],
+        moved: [
+          { id: 'about', from: '/about.html', to: '/company/about.html' },
+        ],
       },
       feed: `${staging}/feed.xml`,
     })
@@ -158,6 +161,11 @@ describe('buildReport', () => {
     // time anyone reads the report.
     expect(report.links.broken[0].page).toBe('./public/index.html')
     expect(report.redirects.file).toBe('./public/_redirects')
+    // `moved` is build-relative on both sides, so there is no staging prefix on
+    // it to map — it survives the assembly exactly as the module derived it.
+    expect(report.redirects.moved).toEqual([
+      { id: 'about', from: '/about.html', to: '/company/about.html' },
+    ])
     expect(report.feed).toBe('./public/feed.xml')
     expect(JSON.stringify(report)).not.toContain('kiss-staging')
   })
@@ -423,6 +431,9 @@ describe('formatReport', () => {
         aliases: 2,
         removed: ['./public/news/autumn-2025.html'],
         collisions: ['/about'],
+        moved: [
+          { id: 'about', from: '/about.html', to: '/company/about.html' },
+        ],
       },
     })
     const lines = formatReport(report).split('\n')
@@ -432,6 +443,9 @@ describe('formatReport', () => {
       '  broken link: ./public/index.html -> /news/gone',
       '  broken link: ./public/about.html -> team.html',
       '  removed without redirect: ./public/news/autumn-2025.html',
+      // Beside the removal rather than in report-key order: the two are one
+      // question — what a rename left behind — and are read together.
+      '  moved without redirect: /about.html -> /company/about.html (about)',
       '  alias collides with a page: /about',
     ])
   })

@@ -85,6 +85,7 @@ describe('_redirects, written from page aliases', () => {
       aliases: 3,
       removed: [],
       collisions: [],
+      moved: [],
     })
   })
 
@@ -286,6 +287,7 @@ describe('the removed-without-a-redirect finding', () => {
       aliases: 0,
       removed: ['/old-post.html'],
       collisions: [],
+      moved: [],
     })
     // The record is read, not `isRecorded()` — which `_buildAikb()` has just
     // made true one line earlier on a site's very first record.
@@ -301,6 +303,7 @@ describe('the removed-without-a-redirect finding', () => {
       aliases: 1,
       removed: [],
       collisions: [],
+      moved: [],
     })
     expect(await site.read('public/_redirects')).toBe(
       '/old-post /new-post 301\n',
@@ -332,5 +335,105 @@ describe('the removed-without-a-redirect finding', () => {
     // No throw, no failure, and no finding invented out of an unreadable file.
     expect(report.ok).toBe(true)
     expect(report.redirects).toBeNull()
+  })
+})
+
+describe('the moved-without-a-redirect finding', () => {
+  const record = () => vi.stubEnv('KISS_AIKB', '1')
+  const stopRecording = () => vi.stubEnv('KISS_AIKB', '')
+
+  const folders = () => ({ ...site.folders, aikb: `${site.root}/AIKB` })
+
+  // One page recorded at `/about.html`, under the id its view gives it. The
+  // rename that follows moves the *file* and leaves the identity alone, which
+  // is the only kind of rename this finding can see.
+  const recorded = async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'home',
+      'src/pages/about.hbs': 'about',
+    })
+    record()
+    const first = track(new Kiss({ folders: folders(), logger: silentLogger }))
+      .page({ view: 'index.hbs' })
+      .page({ view: 'about.hbs' })
+      .generate()
+    await first.complete()
+    expect(first.report().redirects).toBeNull()
+    stopRecording()
+  }
+
+  const rebuildMoved = async ({ aliases, notices } = {}) => {
+    const kiss = track(
+      new Kiss({
+        folders: folders(),
+        logger: notices
+          ? { ...silentLogger, notice: (msg) => notices.push(String(msg)) }
+          : silentLogger,
+      }),
+    )
+    kiss
+      .page({ view: 'index.hbs' })
+      .page({ view: 'about.hbs', path: 'company', aliases })
+      .generate()
+    await kiss.complete()
+    return kiss.report()
+  }
+
+  it('names the page that moved, with its id, and does not also call it removed', async () => {
+    const notices = []
+    await recorded()
+    const report = await rebuildMoved({ notices })
+
+    expect(report.redirects).toEqual({
+      file: null,
+      aliases: 0,
+      removed: [],
+      collisions: [],
+      moved: [{ id: 'about', from: '/about.html', to: '/company/about.html' }],
+    })
+    // The notice carries the fix, because the fix is one line of the page's
+    // own registration.
+    expect(notices).toContain(
+      'moved without redirect: /about.html -> /company/about.html (about) — add "/about.html" to that page\'s aliases',
+    )
+    // Advisory: the build still passed.
+    expect(report.ok).toBe(true)
+  })
+
+  it('says nothing once the alias is there', async () => {
+    await recorded()
+    const report = await rebuildMoved({ aliases: ['/about'] })
+
+    expect(report.redirects.moved).toEqual([])
+    expect(report.redirects.removed).toEqual([])
+    expect(await site.read('public/_redirects')).toBe(
+      '/about /company/about 301\n',
+    )
+  })
+
+  it('reports a move even when the site has no aliases at all', async () => {
+    await recorded()
+    const report = await rebuildMoved()
+
+    // The `null` short-circuit is "no rules and no findings" — a move on its
+    // own is a finding, and a site with no alias anywhere must still hear it.
+    expect(report.redirects).not.toBeNull()
+    expect(report.redirects.aliases).toBe(0)
+    // And the move is the only thing holding it open: nothing was removed and
+    // nothing collided.
+    expect(report.redirects.removed).toEqual([])
+    expect(report.redirects.collisions).toEqual([])
+    expect(report.redirects.moved).toHaveLength(1)
+  })
+
+  it('reports null for a recorded site with no alias, no removal and no move', async () => {
+    await recorded()
+    const kiss = track(new Kiss({ folders: folders(), logger: silentLogger }))
+      .page({ view: 'index.hbs' })
+      .page({ view: 'about.hbs' })
+      .generate()
+    await kiss.complete()
+
+    expect(kiss.report().redirects).toBeNull()
   })
 })

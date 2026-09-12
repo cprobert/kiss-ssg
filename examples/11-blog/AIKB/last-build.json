@@ -148,7 +148,8 @@
     "file": "../public/11-blog/_redirects",
     "aliases": 1,
     "removed": [],
-    "collisions": []
+    "collisions": [],
+    "moved": []
   },
   "feed": "../public/11-blog/feed.xml"
 }

@@ -74,6 +74,7 @@
  * @property {number} aliases alias paths written into that file
  * @property {string[]} removed sorted; pages in the last record that this build does not build and no alias covers
  * @property {string[]} collisions sorted; aliases equal to a path this build actually writes
+ * @property {{ id: string, from: string, to: string }[]} moved sorted by `from`; pages the last record and this build share an `id` with, whose path changed and whose old path no alias covers
  */
 /**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
@@ -311,6 +312,14 @@ export type BuildRedirects = {
      * sorted; aliases equal to a path this build actually writes
      */
     collisions: string[];
+    /**
+     * sorted by `from`; pages the last record and this build share an `id` with, whose path changed and whose old path no alias covers
+     */
+    moved: {
+        id: string;
+        from: string;
+        to: string;
+    }[];
 };
 /**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
