@@ -1,6 +1,6 @@
 ---
 name: corpse-collector
-description: Audits the repo for dead references — documented methods that no longer exist on Kiss, config keys the docs promise that lib/config.js doesn't define, file paths cited in docs that aren't on disk, `npm run` scripts with no matching package.json entry, stale slash-command names, and remote branches already merged. Produces a prioritised checklist. Does not auto-fix — findings require developer judgment. Run after major renames, before a release, or whenever the repo has had a burst of architectural change.
+description: Audits the repo for dead references — documented methods that no longer exist on Kiss, config keys the docs promise that lib/config.js doesn't define, file paths cited in docs that aren't on disk, `npm run` scripts with no matching package.json entry, stale slash-command names, remote branches already merged, and AIKB module docs whose module has moved on without them. Produces a prioritised checklist. Does not auto-fix — findings require developer judgment. Run after major renames, before a release, or whenever the repo has had a burst of architectural change.
 ---
 
 # Corpse Collector
@@ -34,7 +34,7 @@ The skill is split in two: a script **gathers** candidate findings deterministic
 
 ### Step 1 — Gather
 
-Run the scanner from the repo root. It performs all seven checks and prints a candidate-findings report:
+Run the scanner from the repo root. It performs all eight checks and prints a candidate-findings report:
 
 ```bash
 node .claude/skills/corpse-collector/scripts/scan.mjs
@@ -51,6 +51,11 @@ What each check gathers:
 - **Check 5 — npm scripts:** `npm run x` in the docs with no `x` in `package.json`'s `scripts`.
 - **Check 6 — config keys:** `config.foo` / `config.folders.foo` in the docs with no matching key in `lib/config.js`'s `DEFAULT_CONFIG` / `DEFAULT_FOLDERS`.
 - **Check 7 — remote branches:** remote branches fully merged into the base (deletable). Integration branches are never flagged.
+- **Check 8 — AIKB docs behind their modules:** for each `lib/<m>.js` with an `AIKB/<m>.md`, the number of commits that have touched the module since the last commit that touched its doc. Two or more is a row: `AIKB/<m>.md: N commits behind lib/<m>.js (doc last changed <short sha> <date>)`. A doc git has never seen is skipped — a _missing_ doc is Check 1's business (and `test/aikb.test.js`'s), not this one's.
+
+**How to read Check 8.** It is the softest row in the report, and the only one that measures history rather than a broken reference. CLAUDE.md's rule — read the relevant AIKB doc before changing that module, **update it in the same commit** — is the thing no test can enforce: `test/aikb.test.js` can see that a doc exists, never that it is still true. Commit distance is the closest mechanical proxy. So a doc can be five commits behind and still be entirely accurate (five refactors that changed nothing the doc describes), and a doc committed alongside its module can still be wrong. The row does not say "this is wrong"; it says **read it before trusting it**, and it is a prompt at exactly the moment that matters — before you rely on a module note you did not write. The fix, when it really is stale, is never a doc-only tidy-up commit: it is to bring the doc up to date **in the module's next commit**, which is what the rule asks for and what resets the count.
+
+`/consolidate` runs this scanner first and reports these rows as its mechanical half — the durable-memory sweep folds session-log lessons into the rules, and Check 8 is the same question asked of the module notes.
 
 ### Step 2 — Judge
 
