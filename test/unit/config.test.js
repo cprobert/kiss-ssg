@@ -106,12 +106,23 @@ describe('resolveConfig', () => {
   it('defaults the links block: the broken-link scan is on', () => {
     // The scan is advisory — it never changes `ok` or the exit code — so it is
     // on by default and a site opts *out*.
-    expect(resolveConfig({}).links).toEqual({ check: true })
+    expect(resolveConfig({}).links).toEqual({ check: true, canonical: false })
   })
 
   it('merges the links block one level deep, like sass', () => {
     expect(resolveConfig({ links: { check: false } }).links).toEqual({
       check: false,
+      canonical: false,
+    })
+  })
+
+  it('defaults links.canonical off, so a bare {{link}} keeps its extension', () => {
+    // Turning it on changes the URL every bare `{{link}}` emits — a site's
+    // whole internal link graph — which is a major-version decision.
+    expect(resolveConfig({}).links.canonical).toBe(false)
+    expect(resolveConfig({ links: { canonical: true } }).links).toEqual({
+      check: true,
+      canonical: true,
     })
   })
 
@@ -120,10 +131,12 @@ describe('resolveConfig', () => {
     // second knob (an ignore list) an addition rather than a breaking rename.
     expect(resolveConfig({ links: { ignore: ['/cdn-cgi/*'] } }).links).toEqual({
       check: true,
+      canonical: false,
       ignore: ['/cdn-cgi/*'],
     })
     expect(resolveConfig({ links: { check: undefined } }).links).toEqual({
       check: true,
+      canonical: false,
     })
   })
 

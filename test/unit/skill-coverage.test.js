@@ -23,6 +23,14 @@ const COVERAGE = [
     ],
   },
   {
+    feature: 'links: { canonical: true } — the pretty form on every link',
+    pattern: /canonical: true/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
+    ],
+  },
+  {
     feature: 'aliases → _redirects',
     pattern: /\baliases\b/,
     skills: [

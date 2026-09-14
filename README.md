@@ -95,7 +95,8 @@ The default config options are:
     breaks: false
   },
   links: {
-    check: true
+    check: true,
+    canonical: false
   },
   port: 3001,
   livereloadPort: 35729,
@@ -872,7 +873,7 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 <meta property='og:url' content='{{link "about" absolute=true}}' />
 ```
 
-`{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/blog/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (wrap it in `{{absUrl}}` to make that absolute). **It is the one helper that fails the build**: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
+`{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/blog/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (add `absolute=true` for `https://example.com/about`). A site whose host serves the pretty form on every page sets `links: { canonical: true }` once instead of writing `canonical=true` at every call site; the per-call hash still wins either way, `canonical=false` included, and `canonical` and `absolute` compose — with both, the link is the absolute URL of the pretty path. **It is the one helper that fails the build**: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
 
 ## Migrating from v1
 
