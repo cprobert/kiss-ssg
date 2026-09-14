@@ -294,7 +294,7 @@ To scan only what you mean, disable the walk and list your sources — rememberi
 
 A path that matches nothing is silent as well: `source(none)` plus an `@source` that resolves nowhere compiles an empty utility layer rather than failing.
 
-**Keep the `-i`.** Running `npx @tailwindcss/cli -o out.css` without `-i` exits 0 and writes a plausible stylesheet, but it never reads your entry file — the CLI substitutes a default input of `@import 'tailwindcss'`, silently dropping every custom rule, `@theme` block and `@source` line in it. In the same 4.3.3 test the output fell from 4,435 to 4,410 bytes with the custom rule gone, and nothing reported an error. A project whose dev command passes `-i` while its build command does not is correct on every developer's machine and wrong only on the deployed site.
+**Keep the `-i`.** Running `npx @tailwindcss/cli -o out.css` without `-i` exits 0, prints a normal timing line and writes a plausible stylesheet — but it never reads your entry file. The CLI substitutes a default input of `@import 'tailwindcss'`, so what is lost is not a handful of rules but everything you authored: every `@layer components` class, every `@theme` token, every `@font-face`, every plugin import and every `@source` line. Verified on 4.3.3 — an entry file declaring `.btn`, `.card`, `.callout` and a self-hosted `@font-face` compiled all of them with `-i` and none of them without; on a real 20-page site the output fell from 66,384 to 24,990 bytes, leaving generic utilities. Nothing reports an error. A project whose dev command passes `-i` while its build command does not is correct on every developer's machine and wrong only on the deployed site, which is how this survives for months.
 
 ### Markdown options
 

@@ -19,9 +19,11 @@ const dev = process.argv.includes('--dev')
 // README.md and llms.txt, verified on Tailwind 4.3.3):
 //
 //  1. Keep the `-i`. Without it the CLI still exits 0 and still writes a
-//     stylesheet, but it reads a default input instead of your entry file and
-//     silently drops every custom rule in it. A site whose `watch` command has
-//     `-i` and whose `run` does not is correct in dev and wrong in production.
+//     stylesheet, but it reads a default input instead of your entry file, so
+//     everything you authored goes with it — components, theme tokens,
+//     @font-face, plugins — leaving generic utilities. A site whose `watch`
+//     command has `-i` and whose `run` does not is correct in dev and wrong in
+//     production, which is how it survives unnoticed.
 //  2. Tailwind v4 scans the WHOLE project for class names, and `@source` adds
 //     to that walk rather than replacing it — so your own `.md` files are
 //     scanned and an ordinary English word compiles a utility. Harmless until
