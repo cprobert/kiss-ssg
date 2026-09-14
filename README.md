@@ -275,6 +275,26 @@ Every `run` is executed through a shell, in order, awaited, **before the asset c
 
 `kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline.js` (`npm run eg10`) is a runnable version that needs nothing installed.
 
+##### Two silent traps in the Tailwind recipe
+
+Neither of these is kiss's behaviour — both are Tailwind's — but the command above is what people copy, so they belong next to it.
+
+**`@source` adds to Tailwind's project walk; it does not replace it.** Tailwind v4 scans your whole project for class-name candidates (everything not excluded by `.gitignore`, `node_modules`, a lockfile, a binary or a CSS file), and an `@source` line registers _additional_ paths. A site that writes an explicit `@source` list, reasonably reading it as _the_ source list, is still scanning its own markdown. Tailwind treats every file as plain text, so an ordinary English word is a candidate class — and with `assets.hash: true` the stylesheet's content hash is its filename. Typing the word `invisible` into a tracked `README.md` compiles `.invisible{visibility:hidden}`, gives `css/site.<hash>.css` a new name, and changes the `<link href>` on **every** page; `kiss-ssg check` then reports the whole site as changed with nothing in the page sources to explain it. On Tailwind 4.3.3 that single word moved the stylesheet from 4,381 to 4,410 bytes.
+
+It is intermittent, which is what makes it expensive: a word counts only if it forms a clean candidate token, so `capitalize` in a sentence compiles a rule while `capitalize.` or `capitalize,` does not, and a word matching an already-compiled utility changes nothing. The hash therefore moves on some documentation edits and not others.
+
+To scan only what you mean, disable the walk and list your sources — remembering that an `@source` path resolves against the **stylesheet's own folder**, not the working directory:
+
+```css
+@import 'tailwindcss' source(none);
+@source '../views';
+@source '../partials';
+```
+
+A path that matches nothing is silent as well: `source(none)` plus an `@source` that resolves nowhere compiles an empty utility layer rather than failing.
+
+**Keep the `-i`.** Running `npx @tailwindcss/cli -o out.css` without `-i` exits 0 and writes a plausible stylesheet, but it never reads your entry file — the CLI substitutes a default input of `@import 'tailwindcss'`, silently dropping every custom rule, `@theme` block and `@source` line in it. In the same 4.3.3 test the output fell from 4,435 to 4,410 bytes with the custom rule gone, and nothing reported an error. A project whose dev command passes `-i` while its build command does not is correct on every developer's machine and wrong only on the deployed site.
+
 ### Markdown options
 
 `config.markdown` is handed to this instance's [Remarkable](https://github.com/jonschlinkert/remarkable) — the renderer behind both `.md` partials and the `{{markdown}}` helper, so the two can never disagree:
@@ -885,4 +905,5 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
   ```
 
 - New: `kiss.close()` stops the dev server and file watcher.
+- **Upgrading from a v2 _prerelease_ rather than v1: `markdown.breaks` flipped.** It was hard-coded `true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`, where the option set became the configurable `DEFAULT_MARKDOWN` block; `2.0.0`, `2.1.0` and `2.2.x` all match beta.1. A project pinned to an alpha may carry a workaround for the old default — `kiss.remarkable.set({ breaks: false })` followed by `kiss.registerPartials()`, often with a comment asserting that v2 defaults to `breaks: true`. That comment was correct when written and has been wrong since beta.1: delete both calls, and set `markdown: { breaks: true }` in config if you actually want the old behaviour. The `registerPartials()` half is why the pair survives upgrades unnoticed — it does not look redundant, because `.md` partials are rendered to HTML at registration, so a later mutation of `kiss.remarkable` really would need a re-register to reach them.
 - **Unchanged in v2**, so there is nothing to migrate even though it looks load-bearing: the per-page `generate: false` option (default `true`, see `.page()`'s options above) still skips building one page; `callback.call(this, ...)` still binds the `Kiss` instance inside `.generate()`/`.complete()`/`.sitemap()` callbacks; the per-page `ext` option; `copyAssets(sourceDir, targetDir)` to a second directory; `.viewStats()`/`.getModelByID()`. Anything under `this._stack` is internal and unversioned — code reading `_stack[].buildTo`/`_stack[].page.options` for a hand-rolled sitemap works today by accident; `.sitemap()` is the supported way to enumerate registered pages.

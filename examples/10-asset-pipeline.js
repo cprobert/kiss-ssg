@@ -13,6 +13,22 @@ const dev = process.argv.includes('--dev')
 // --minify` (and the same command with --watch); here it is a dependency-free
 // stand-in so the example runs with nothing installed. Either way kiss knows
 // nothing about it — it is a command line, and that is the whole contract.
+//
+// Two things about that real command, because kiss knowing nothing about the
+// tool is exactly what makes them hard to spot (both are written up in
+// README.md and llms.txt, verified on Tailwind 4.3.3):
+//
+//  1. Keep the `-i`. Without it the CLI still exits 0 and still writes a
+//     stylesheet, but it reads a default input instead of your entry file and
+//     silently drops every custom rule in it. A site whose `watch` command has
+//     `-i` and whose `run` does not is correct in dev and wrong in production.
+//  2. Tailwind v4 scans the WHOLE project for class names, and `@source` adds
+//     to that walk rather than replacing it — so your own `.md` files are
+//     scanned and an ordinary English word compiles a utility. Harmless until
+//     `assets.hash: true`, where the stylesheet's hash is its filename: one
+//     word typed into a README renames it and changes the `<link href>` on
+//     every page. `@import 'tailwindcss' source(none)` plus explicit `@source`
+//     paths (resolved against the stylesheet's folder) is the fix.
 const tokens = 'node 10-asset-pipeline/tools/tokens.js'
 
 const kiss = new Kiss({
