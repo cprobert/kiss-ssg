@@ -498,7 +498,7 @@ describe('formatDiff', () => {
     ).toBe('  = 6 unchanged')
   })
 
-  it('names the assets that moved, under the page lines', () => {
+  it('names the assets that moved, above the page lines they explain', () => {
     const lines = formatDiff({
       buildDir: './public',
       added: [],
@@ -515,10 +515,10 @@ describe('formatDiff', () => {
     }).split('\n')
 
     expect(lines).toEqual([
+      '  ~ asset css/site.css -> css/site.136acc63.css (was css/site.e7abc083.css)',
       '  ~ ./public/index.html',
       '  ~ ./public/about.html',
       '  = 0 unchanged',
-      '  ~ asset css/site.css -> css/site.136acc63.css (was css/site.e7abc083.css)',
     ])
   })
 
@@ -553,7 +553,10 @@ describe('formatDiff', () => {
     }).split('\n')
 
     expect(lines.filter((l) => l.startsWith('  ~ asset'))).toHaveLength(10)
-    expect(lines.at(-1)).toBe('  … and 3 more assets changed')
+    // The cap line closes the asset block, which sits above the page rows.
+    expect(lines[10]).toBe('  … and 3 more assets changed')
+    expect(lines[11]).toBe('  ~ ./public/index.html')
+    expect(lines.at(-1)).toBe('  = 0 unchanged')
   })
 
   it('survives a diff from before assets were recorded', () => {

@@ -294,6 +294,8 @@ To scan only what you mean, disable the walk and list your sources — rememberi
 
 A path that matches nothing is silent as well: `source(none)` plus an `@source` that resolves nowhere compiles an empty utility layer rather than failing.
 
+**Guard it rather than remember it.** Both failures are silent and both produce a plausible file, so a few lines in the build — a `pipeline` step, or a CI check — that fail when `source(none)` is missing from the entry stylesheet, or when any `@source` path no longer resolves, catch the whole class. It needs nothing built, and it is what caught this on a real site.
+
 **Keep the `-i`.** Running `npx @tailwindcss/cli -o out.css` without `-i` exits 0, prints a normal timing line and writes a plausible stylesheet — but it never reads your entry file. The CLI substitutes a default input of `@import 'tailwindcss'`, so what is lost is not a handful of rules but everything you authored: every `@layer components` class, every `@theme` token, every `@font-face`, every plugin import and every `@source` line. Verified on 4.3.3 — an entry file declaring `.btn`, `.card`, `.callout` and a self-hosted `@font-face` compiled all of them with `-i` and none of them without; on a real 20-page site the output fell from 66,384 to 24,990 bytes, leaving generic utilities. Nothing reports an error. A project whose dev command passes `-i` while its build command does not is correct on every developer's machine and wrong only on the deployed site, which is how this survives for months.
 
 ### Markdown options
@@ -682,16 +684,16 @@ When the site has recorded a knowledge base (see [Recording the knowledge base](
 
 ```
 ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
+  ~ asset css/site.css -> css/site.136acc63.css (was css/site.e7abc083.css)
   + ./public/news/spring-2026.html
   - ./public/news/autumn-2025.html
   ~ ./public/news/index.html
   = 3 unchanged
-  ~ asset css/site.css -> css/site.136acc63.css (was css/site.e7abc083.css)
 ```
 
 Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array whenever there is a diff to print — under `--against`, or under `check` when the site has a recorded baseline — and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged, assets }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
 
-**Assets that moved are named under the pages.** Whenever a diff has pages in it, `formatDiff` follows the `= N unchanged` line with one `  ~ asset <source> -> <target> (was <target>)` row per emitted asset whose filename changed, capped at ten with `  … and N more assets changed` after it, and `diff[].assets` carries the same rows as `{ source, from, to }`. This exists because of `assets.hash`: a hashed stylesheet's filename **is** its content hash, so one changed asset rewrites the `<link href>` of every page that references it and the diff reads `~ <every page>, = 0 unchanged` with nothing in any page source to explain it. The row names the cause. Only assets both builds emitted are rows — one the baseline never saw has no previous name to have moved from — and nothing is printed when no page moved, since the rows are there to explain a diff rather than to be one.
+**Assets that moved are named under the pages.** Whenever a diff has pages in it, `formatDiff` **opens** with one `  ~ asset <source> -> <target> (was <target>)` row per emitted asset whose filename changed — above the page rows, capped at ten with `  … and N more assets changed` — and `diff[].assets` carries the same rows as `{ source, from, to }`. This exists because of `assets.hash`: a hashed stylesheet's filename **is** its content hash, so one changed asset rewrites the `<link href>` of every page that references it and the diff reads `~ <every page>, = 0 unchanged` with nothing in any page source to explain it. The row names the cause, and it goes first because that is where the reader already is: after a two-hundred-page list it would be a footnote reached by scrolling past everything it explains. Only assets both builds emitted are rows — one the baseline never saw has no previous name to have moved from — and nothing is printed when no page moved, since the rows are there to explain a diff rather than to be one.
 
 **Broken internal links.** Every settled non-dev build also scans its own output and reports what it found as `report().links` — `{ checked, broken: [{ page, href }] }` — with one `  broken link: <page> -> <href>` line per finding under `--summary`. It checks the `href`, `src`, each `srcset` candidate and `action` of every `a`, `link`, `script`, `img`, `source`, `video`, `audio`, `iframe` and `form` your pages wrote, resolving a root-relative path against the build folder and a relative one against the page's own directory, and accepting a file that is there, a page this build wrote, `<path>/` → `<path>/index.html`, an extension-less `<path>` → `<path>.html` or `<path>/index.html`, and an asset under the name `{{asset}}` actually emitted.
 
