@@ -312,6 +312,7 @@ describe('kiss-ssg check', () => {
         removed: [],
         changed: ['./public/about.html'],
         unchanged: 1,
+        assets: [],
       },
     ])
   }, 60000)
