@@ -1,3 +1,11 @@
+---
+branch: claude/hot-fix-repo-review-7usi3m
+base: main
+status: closed
+opened: 2026-09-14
+consolidated: 2026-09-15
+---
+
 # Session Reflection — 2026-09-15: Four downstream findings, relayed by two peer sessions
 
 _A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._

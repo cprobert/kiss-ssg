@@ -3,6 +3,7 @@ branch: feat/link-check-redirects
 base: main
 status: closed
 opened: 2026-09-12
+consolidated: 2026-09-15
 ---
 
 # Session — 2026-09-12: Broken links, server-side redirects, a feed, and a blog exemplar
