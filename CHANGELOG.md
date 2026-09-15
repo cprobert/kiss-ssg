@@ -3,6 +3,60 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.2.2 — 2026-09-15
+
+**Two silent Tailwind traps documented, one new link option, and `check` now names the asset that moved**
+
+**Added: `links: { canonical: true }`.** If your host serves `/about` and
+301s `/about.html` to it, every bare `{{link}}` was shipping a redirect
+hop unless you wrote `canonical=true` on each call — a rule nothing
+enforces, and forgetting it once is invisible in dev and wrong only on
+the deployed site. Set the config key once instead. It is **off by
+default**, so nothing about your existing links changes; a per-call
+`canonical=false` still opts one link back out, and `canonical` and
+`absolute` now compose, so `{{link "about" canonical=true
+absolute=true}}` gives `https://example.com/about` where it previously
+ignored `absolute` and gave `/about`.
+
+**Changed: `kiss-ssg check` names the assets whose filename moved.**
+Under `assets: { hash: true }` a stylesheet's filename is the hash of its
+bytes, so changing one asset rewrites the `<link href>` of every page
+that references it — and the diff said `~ <every page>, = 0 unchanged`
+with nothing in any page source to explain it. The diff now opens with
+one row per moved asset, above the page list it explains:
+
+```
+  ~ asset css/site.css -> css/site.136acc63.css (was css/site.e7abc083.css)
+  ~ ./public/index.html
+  ~ ./public/about.html
+  = 0 unchanged
+```
+
+`diff[].assets` carries the same rows as `{ source, from, to }`.
+
+**Docs: two ways a Tailwind pipeline step silently builds the wrong
+stylesheet.** Both verified on Tailwind 4.3.3, and both exit 0 while
+writing a plausible file. First, `@source` **adds** to Tailwind's
+automatic walk of your whole project rather than replacing it — so a
+site that writes an explicit `@source` list is still scanning its own
+markdown, and with `assets.hash` an ordinary English word typed into a
+`.md` compiles a utility, renames the stylesheet and changes every
+page's `<link href>`. It is intermittent, which is what makes it
+expensive: `capitalize` in prose compiles a rule, `capitalize.` does
+not. Use `@import 'tailwindcss' source(none)` and list your template
+folders — remembering that an `@source` path resolves against the
+stylesheet's own folder, not the working directory. Second, omitting
+`-i` does not lose a few rules: the entry stylesheet is never read at
+all, so every `@layer components` class, `@theme` token, `@font-face`
+and plugin import goes with it.
+
+**Docs: `markdown.breaks` changed during the v2 prereleases.** It was
+`true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`. If
+you pinned an alpha you may still be carrying a
+`kiss.remarkable.set({ breaks: false })` + `kiss.registerPartials()`
+workaround for a default that no longer exists — the migration notes now
+say so.
+
 ## 2.2.1 — 2026-09-12
 
 **Three hardening fixes to 2.2.0's redirects and feed, from an adversarial review**
