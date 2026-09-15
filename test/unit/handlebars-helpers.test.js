@@ -631,6 +631,61 @@ describe('link', () => {
     expect(renderIn('{{link "home" canonical=true}}')).toBe('/')
   })
 
+  it('takes the canonical form from config.links.canonical', () => {
+    linkHbs(
+      {
+        home: 'index.html',
+        about: 'about.html',
+        courses: 'courses/index.html',
+      },
+      { links: { canonical: true } },
+    )
+    expect(renderIn('{{link "about"}}')).toBe('/about')
+    expect(renderIn('{{link "courses"}}')).toBe('/courses/')
+    expect(renderIn('{{link "home"}}')).toBe('/')
+  })
+
+  it('lets one call opt back out of a config-level canonical', () => {
+    linkHbs({ about: 'about.html' }, { links: { canonical: true } })
+    expect(renderIn('{{link "about" canonical=false}}')).toBe('/about.html')
+  })
+
+  it('leaves the extension on when config.links.canonical is off', () => {
+    linkHbs({ about: 'about.html' }, { links: { canonical: false } })
+    expect(renderIn('{{link "about"}}')).toBe('/about.html')
+    linkHbs({ about: 'about.html' })
+    expect(renderIn('{{link "about"}}')).toBe('/about.html')
+  })
+
+  // `canonical` decides the shape of the path, `absolute` whether it carries
+  // the origin — so a site that opted into the pretty form emits it in its OG
+  // tags and feed too, rather than advertising the redirecting form there.
+  it('composes the canonical path with absolute=true', () => {
+    linkHbs(
+      { about: 'about.html', courses: 'courses/index.html' },
+      { links: { canonical: true }, siteUrl: 'https://e.com' },
+    )
+    expect(renderIn('{{link "about" absolute=true}}')).toBe(
+      'https://e.com/about',
+    )
+    expect(renderIn('{{link "courses" absolute=true}}')).toBe(
+      'https://e.com/courses/',
+    )
+  })
+
+  it('composes an explicit canonical=true with absolute=true too', () => {
+    linkHbs({ about: 'about.html' }, { siteUrl: 'https://e.com' })
+    expect(renderIn('{{link "about" canonical=true absolute=true}}')).toBe(
+      'https://e.com/about',
+    )
+  })
+
+  it('degrades a canonical absolute link to the canonical path with no siteUrl', () => {
+    linkHbs({ about: 'about.html' }, { links: { canonical: true } })
+    expect(renderIn('{{link "about" absolute=true}}')).toBe('/about')
+    expect(warnings).toHaveLength(1)
+  })
+
   it('degrades to the root-relative form, with one warning, when there is no siteUrl', () => {
     linkHbs({ about: 'about.html' })
     expect(renderIn('{{link "about" absolute=true}}')).toBe('/about.html')

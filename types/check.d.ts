@@ -90,6 +90,17 @@ export function diffReports(before?: import("./build-report.js").BuildReport[], 
  * `formatReport` line for the same site. One character per verdict, so a page
  * that moved reads as one line out and one line in rather than as prose.
  *
+ * The asset rows come **first**, and only when a page moved. Under
+ * `assets.hash` a stylesheet's filename is its content hash, so one changed
+ * asset rewrites the `<link href>` of every page that references it — a
+ * whole-site page diff whose cause is in no page source. Naming the asset is
+ * the difference between that diff being a five-minute read and an afternoon
+ * spent in the wrong tree, and it only does that work where the reader already
+ * is: cause first, then consequence. Put after the page list it is a footnote
+ * you reach by scrolling past the two hundred rows it explains — which is the
+ * same wrong-tree problem it exists to prevent. Nothing is printed when no page
+ * moved: the rows are there to explain a diff, not to be one.
+ *
  * @param {CheckDiff} diff
  * @returns {string}
  */
@@ -152,4 +163,27 @@ export type CheckDiff = {
      * how many pages wrote byte-identical output
      */
     unchanged: number;
+    /**
+     * emitted assets that changed filename
+     */
+    assets: CheckDiffAsset[];
+};
+/**
+ * One asset whose emitted file changed name between the two builds. Under
+ * `assets.hash` the filename *is* the content hash, so this is the row that
+ * explains a page diff nothing in the page sources accounts for.
+ */
+export type CheckDiffAsset = {
+    /**
+     * the path a template asks for (`css/site.css`)
+     */
+    source: string;
+    /**
+     * the file it resolved to in the baseline
+     */
+    from: string;
+    /**
+     * the file it resolves to now
+     */
+    to: string;
 };

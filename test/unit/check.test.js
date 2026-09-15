@@ -27,6 +27,16 @@ const built = (buildDir, pages) => ({
   })),
 })
 
+// The asset manifest as `diffReports` reads it: what each template-facing path
+// actually resolved to on disk once cache busting had renamed it.
+const withAssets = (report, assets) => ({
+  ...report,
+  assets: Object.entries(assets).map(([source, target]) => ({
+    source,
+    target,
+  })),
+})
+
 describe('parseArgs', () => {
   it('reads the script and everything after it', () => {
     expect(parseArgs(['check', 'site.js', '2026-spring', '--verbose'])).toEqual(
@@ -300,6 +310,7 @@ describe('diffReports', () => {
         removed: ['./public/gone.html'],
         changed: ['./public/about.html'],
         unchanged: 1,
+        assets: [],
       },
     ])
   })
@@ -344,6 +355,7 @@ describe('diffReports', () => {
         removed: [],
         changed: [],
         unchanged: 0,
+        assets: [],
       },
     ])
   })
@@ -415,6 +427,45 @@ describe('diffReports', () => {
     expect(diffReports()).toEqual([])
     expect(diffReports([], [])).toEqual([])
   })
+
+  it('names the assets whose emitted file changed name', () => {
+    const before = withAssets(built('./public', { './public/i.html': 'aaa' }), {
+      'css/site.css': 'css/site.e7abc083.css',
+      'js/app.js': 'js/app.11111111.js',
+    })
+    const after = withAssets(built('./public', { './public/i.html': 'AAA' }), {
+      'css/site.css': 'css/site.136acc63.css',
+      'js/app.js': 'js/app.11111111.js',
+    })
+
+    expect(diffReports([before], [after])[0].assets).toEqual([
+      {
+        source: 'css/site.css',
+        from: 'css/site.e7abc083.css',
+        to: 'css/site.136acc63.css',
+      },
+    ])
+  })
+
+  it('reports no assets when neither side carries a manifest', () => {
+    const pages = { './public/i.html': 'aaa' }
+    const [diff] = diffReports(
+      [built('./public', pages)],
+      [built('./public', pages)],
+    )
+    expect(diff.assets).toEqual([])
+  })
+
+  it('ignores an asset only one of the two builds emitted', () => {
+    const before = withAssets(built('./public', { './public/i.html': 'a' }), {
+      'css/site.css': 'css/site.aaaaaaaa.css',
+    })
+    const after = withAssets(built('./public', { './public/i.html': 'b' }), {
+      'css/site.css': 'css/site.aaaaaaaa.css',
+      'js/new.js': 'js/new.bbbbbbbb.js',
+    })
+    expect(diffReports([before], [after])[0].assets).toEqual([])
+  })
 })
 
 describe('formatDiff', () => {
@@ -445,6 +496,79 @@ describe('formatDiff', () => {
         unchanged: 6,
       }),
     ).toBe('  = 6 unchanged')
+  })
+
+  it('names the assets that moved, above the page lines they explain', () => {
+    const lines = formatDiff({
+      buildDir: './public',
+      added: [],
+      removed: [],
+      changed: ['./public/index.html', './public/about.html'],
+      unchanged: 0,
+      assets: [
+        {
+          source: 'css/site.css',
+          from: 'css/site.e7abc083.css',
+          to: 'css/site.136acc63.css',
+        },
+      ],
+    }).split('\n')
+
+    expect(lines).toEqual([
+      '  ~ asset css/site.css -> css/site.136acc63.css (was css/site.e7abc083.css)',
+      '  ~ ./public/index.html',
+      '  ~ ./public/about.html',
+      '  = 0 unchanged',
+    ])
+  })
+
+  it('says nothing about assets when no page moved', () => {
+    expect(
+      formatDiff({
+        buildDir: './public',
+        added: [],
+        removed: [],
+        changed: [],
+        unchanged: 3,
+        assets: [
+          { source: 'css/site.css', from: 'css/a.css', to: 'css/b.css' },
+        ],
+      }),
+    ).toBe('  = 3 unchanged')
+  })
+
+  it('caps the asset list and counts the rest', () => {
+    const assets = Array.from({ length: 13 }, (_, i) => ({
+      source: `css/s${i}.css`,
+      from: `css/s${i}.aaaaaaaa.css`,
+      to: `css/s${i}.bbbbbbbb.css`,
+    }))
+    const lines = formatDiff({
+      buildDir: './public',
+      added: [],
+      removed: [],
+      changed: ['./public/index.html'],
+      unchanged: 0,
+      assets,
+    }).split('\n')
+
+    expect(lines.filter((l) => l.startsWith('  ~ asset'))).toHaveLength(10)
+    // The cap line closes the asset block, which sits above the page rows.
+    expect(lines[10]).toBe('  … and 3 more assets changed')
+    expect(lines[11]).toBe('  ~ ./public/index.html')
+    expect(lines.at(-1)).toBe('  = 0 unchanged')
+  })
+
+  it('survives a diff from before assets were recorded', () => {
+    expect(
+      formatDiff({
+        buildDir: './public',
+        added: [],
+        removed: [],
+        changed: ['./public/i.html'],
+        unchanged: 0,
+      }),
+    ).toBe('  ~ ./public/i.html\n  = 0 unchanged')
   })
 })
 

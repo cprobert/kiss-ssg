@@ -83,6 +83,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  *
  * @typedef {Object} KissLinks
  * @property {boolean} check scan every written page for internal references that resolve to nothing
+ * @property {boolean} canonical make `{{link}}` emit the extension-less canonical path by default
  */
 /**
  * Every documented config key except `folders`. Both the resolved and the input
@@ -156,6 +157,7 @@ export const DEFAULT_MARKDOWN: Readonly<{
 }>;
 export const DEFAULT_LINKS: Readonly<{
     check: true;
+    canonical: false;
 }>;
 export const DEFAULT_CONFIG: Readonly<{
     dev: false;
@@ -183,6 +185,7 @@ export const DEFAULT_CONFIG: Readonly<{
     }>;
     links: Readonly<{
         check: true;
+        canonical: false;
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -313,6 +316,10 @@ export type KissLinks = {
      * scan every written page for internal references that resolve to nothing
      */
     check: boolean;
+    /**
+     * make `{{link}}` emit the extension-less canonical path by default
+     */
+    canonical: boolean;
 };
 /**
  * Every documented config key except `folders`. Both the resolved and the input
