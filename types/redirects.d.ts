@@ -28,9 +28,13 @@
  * @param {string} buildTo the page's output file, as written
  * @param {string} buildDir the folder it was written into — the same naive
  * prefix slice `buildSitemapEntries` makes, so the two cannot disagree
+ * @param {Object} [options]
+ * @param {boolean} [options.trailingSlash] `config.links.trailingSlash`
  * @returns {string} the origin-less canonical path, always starting with `/`
  */
-export function canonicalPathFor(buildTo: string, buildDir: string): string;
+export function canonicalPathFor(buildTo: string, buildDir: string, { trailingSlash }?: {
+    trailingSlash?: boolean;
+}): string;
 /**
  * One alias as it will be written: a path with a leading `/` and nothing else
  * touched. The trailing-slash form is **preserved as written**, because
@@ -55,6 +59,7 @@ export function normaliseAlias(alias: unknown): string | null;
  * @param {{ buildTo: string, page: { options: Record<string, any> } }[]} stack
  * @param {Object} [context]
  * @param {string} [context.buildDir] the folder the pages were written into
+ * @param {boolean} [context.trailingSlash] `config.links.trailingSlash`: keep a directory index's trailing `/` in the emitted URL
  * @returns {RedirectRule[]} sorted by `from`, then `to`
  */
 export function collectAliases(stack?: {
@@ -62,8 +67,9 @@ export function collectAliases(stack?: {
     page: {
         options: Record<string, any>;
     };
-}[], { buildDir }?: {
+}[], { buildDir, trailingSlash }?: {
     buildDir?: string;
+    trailingSlash?: boolean;
 }): RedirectRule[];
 /**
  * The `_redirects` file's text — the Netlify and Cloudflare Pages format, one
@@ -75,6 +81,70 @@ export function collectAliases(stack?: {
  * @returns {string} one line per rule, newline-terminated; `''` for no rules
  */
 export function renderRedirects(rules?: RedirectRule[]): string;
+/**
+ * The host-neutral intermediate representation, and the point of the whole
+ * block: the rules as data, in the one file every format is derived from.
+ *
+ * `aliases` is a fact about the site ("this page used to answer `/old`"), and
+ * that fact is portable. `_redirects` is not — it is one vendor's encoding of
+ * it, and a site on Firebase or Vercel that got only that file got nothing it
+ * could use while the report cheerfully said the redirects were written. So
+ * the IR is written whatever `format` says, including `'none'`: a build always
+ * leaves the list behind in a form the site can read, and `report().redirects.rules`
+ * carries the same array for a script that would rather not touch the disk.
+ *
+ * `version` is there so a consumer can branch on the shape rather than guess
+ * it, and `status` is per-rule because a later `410` or a forced rule belongs
+ * on the rule, not in a second file.
+ *
+ * @param {RedirectRule[]} rules
+ * @returns {string} pretty-printed JSON, newline-terminated
+ */
+export function renderRedirectsJson(rules?: RedirectRule[]): string;
+/**
+ * The Firebase Hosting encoding, as a **fragment to merge** — the `redirects`
+ * array alone, not a `firebase.json`.
+ *
+ * Firebase does not read `_redirects` at all; it takes redirects from a
+ * `redirects` array in `firebase.json`. That file also holds hosting targets,
+ * headers, rewrites and often years of hand-maintained history — one real site
+ * carries 227 redirects in it — so kiss emits the array it can vouch for and
+ * the site merges it on its own terms. A build step that rewrote
+ * `firebase.json` would be a build step that can lose a site's deploy config.
+ *
+ * @param {RedirectRule[]} rules
+ * @returns {string} pretty-printed JSON, newline-terminated
+ */
+export function renderFirebaseRedirects(rules?: RedirectRule[]): string;
+/**
+ * The Vercel encoding, as a fragment to merge into `vercel.json`'s `redirects`
+ * array — same reasoning as Firebase's. `permanent: true` is Vercel's spelling
+ * of a 308; it is the permanent redirect that platform offers, and the closest
+ * honest equivalent of the `301` every other format here writes.
+ *
+ * @param {RedirectRule[]} rules
+ * @returns {string} pretty-printed JSON, newline-terminated
+ */
+export function renderVercelRedirects(rules?: RedirectRule[]): string;
+/**
+ * What a custom writer asked for, normalised: always a list, always with a
+ * string `file` and string `contents`. A writer that returns nothing writes
+ * nothing, which is a legitimate answer (it may have posted the rules
+ * somewhere itself).
+ *
+ * An absolute path, or one climbing out of the build folder with `..`, is
+ * refused rather than resolved: a redirect writer is site code running in a
+ * build, and "write any file on this machine" is not the capability it asked
+ * for.
+ *
+ * @param {*} returned what the writer returned
+ * @param {string} buildDir
+ * @returns {{ file: string, contents: string }[]}
+ */
+export function normaliseWriterOutput(returned: any, buildDir: string): {
+    file: string;
+    contents: string;
+}[];
 /**
  * Whether an alias already answers for an old path.
  *
@@ -99,7 +169,9 @@ export function renderRedirects(rules?: RedirectRule[]): string;
  * @param {Set<string>} fromSet every `from` this build's rules declare
  * @returns {boolean}
  */
-export function coveredByAlias(rel: string, fromSet: Set<string>): boolean;
+export function coveredByAlias(rel: string, fromSet: Set<string>, { trailingSlash }?: {
+    trailingSlash?: boolean;
+}): boolean;
 /**
  * What a rename left behind, and what an alias is about to be ignored for.
  *
@@ -125,9 +197,11 @@ export function coveredByAlias(rel: string, fromSet: Set<string>): boolean;
  * a record written before ids existed carries none, and degrades to the path
  * comparison alone
  * @param {string} [context.buildDir] this build's folder
+ * @param {boolean} [context.trailingSlash] `config.links.trailingSlash`, so a
+ * finding names the URL this site actually serves
  * @returns {RedirectFindings}
  */
-export function redirectFindings({ rules, currentPages, previousPages, buildDir, }?: {
+export function redirectFindings({ rules, currentPages, previousPages, buildDir, trailingSlash, }?: {
     rules?: RedirectRule[];
     currentPages?: {
         buildTo: string;
@@ -142,23 +216,31 @@ export function redirectFindings({ rules, currentPages, previousPages, buildDir,
         }[];
     } | null;
     buildDir?: string;
+    trailingSlash?: boolean;
 }): RedirectFindings;
 /**
  * @typedef {Object} RedirectWriteResult
  * @property {'none'|'skipped'|'written'} status `none` when no page has an alias
  * @property {RedirectRule[]} rules what the file says, or would have said
+ * @property {string[]} files every path written, build-folder-relative paths made absolute, sorted as written — `redirects.json` first, then the host file
+ * @property {string} format the format that ran: a built-in name, or `'custom'` for a writer function
  */
 /**
- * Writes `<build>/_redirects`. The one impure function here.
+ * Writes the redirects. The one impure function here.
  *
- * A site with no aliases writes **nothing** — not an empty file — so a
- * `_redirects` a project keeps in `src/assets/` and copies into the build is
- * left exactly as it was. kiss only ever writes that file when it has rules of
- * its own to put in it; it never merges, and it never deletes.
+ * Two files at most: `redirects.json` (the host-neutral IR, always) and the one
+ * `config.redirects.format` names (`_redirects` by default). A custom writer
+ * replaces the second with whatever it returns, and still gets the first — the
+ * IR is the contract, not a side effect of the Netlify format.
+ *
+ * A site with no aliases writes **nothing** — not an empty file, not an empty
+ * IR — so a `_redirects` a project keeps in `src/assets/` and copies into the
+ * build is left exactly as it was. kiss only ever writes these files when it
+ * has rules of its own to put in them; it never merges, and it never deletes.
  *
  * @param {{ buildTo: string, page: { options: Record<string, any> } }[]} stack
  * @param {Object} deps
- * @param {any} deps.config the resolved config — `folders.build`
+ * @param {any} deps.config the resolved config — `folders.build`, `links.trailingSlash`, `redirects.format`
  * @param {any} deps.logger
  * @param {boolean} [deps.overwrite] default `true`
  * @returns {Promise<RedirectWriteResult>}
@@ -216,4 +298,12 @@ export type RedirectWriteResult = {
      * what the file says, or would have said
      */
     rules: RedirectRule[];
+    /**
+     * every path written, build-folder-relative paths made absolute, sorted as written — `redirects.json` first, then the host file
+     */
+    files: string[];
+    /**
+     * the format that ran: a built-in name, or `'custom'` for a writer function
+     */
+    format: string;
 };

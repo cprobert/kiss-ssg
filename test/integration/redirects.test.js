@@ -86,6 +86,16 @@ describe('_redirects, written from page aliases', () => {
       removed: [],
       collisions: [],
       moved: [],
+      // The portable fact beside the vendor encoding of it: the same three
+      // rules `_redirects` carries, as data a site on another host can use.
+      rules: [
+        { from: '/about-us/', to: '/about' },
+        { from: '/news/2024/ay.html', to: '/blog/ay' },
+        { from: '/team', to: '/about' },
+      ],
+      json: `${site.build}/redirects.json`,
+      format: 'netlify',
+      files: [`${site.build}/redirects.json`, `${site.build}/_redirects`],
     })
   })
 
@@ -318,6 +328,12 @@ describe('the removed-without-a-redirect finding', () => {
       removed: ['/old-post.html'],
       collisions: [],
       moved: [],
+      // No alias anywhere, so nothing was written and there is nothing to
+      // hand over — the finding stands on its own.
+      rules: [],
+      json: null,
+      format: 'netlify',
+      files: [],
     })
     // The record is read, not `isRecorded()` — which `_buildAikb()` has just
     // made true one line earlier on a site's very first record.
@@ -334,6 +350,10 @@ describe('the removed-without-a-redirect finding', () => {
       removed: [],
       collisions: [],
       moved: [],
+      rules: [{ from: '/old-post', to: '/new-post' }],
+      json: `${site.build}/redirects.json`,
+      format: 'netlify',
+      files: [`${site.build}/redirects.json`, `${site.build}/_redirects`],
     })
     expect(await site.read('public/_redirects')).toBe(
       '/old-post /new-post 301\n',
@@ -420,6 +440,10 @@ describe('the moved-without-a-redirect finding', () => {
       removed: [],
       collisions: [],
       moved: [{ id: 'about', from: '/about.html', to: '/company/about.html' }],
+      rules: [],
+      json: null,
+      format: 'netlify',
+      files: [],
     })
     // The notice carries the fix, because the fix is one line of the page's
     // own registration.

@@ -102,7 +102,11 @@ The default config options are:
   },
   links: {
     check: true,
-    canonical: false
+    canonical: false,
+    trailingSlash: true
+  },
+  redirects: {
+    format: 'netlify'
   },
   port: 3001,
   livereloadPort: 35729,

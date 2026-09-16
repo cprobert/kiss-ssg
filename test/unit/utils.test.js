@@ -205,3 +205,67 @@ describe('utils.globFiles', () => {
     ])
   })
 })
+
+// The directory-index policy. Measured live on 2026-09-16: Netlify serves
+// `/courses/` and 301s the bare form; Firebase with `cleanUrls` +
+// `trailingSlash: false` does the exact reverse. One of them has to be the
+// default, and the other has to be sayable.
+describe('toAbsoluteUrl / servedPathFor under links.trailingSlash', () => {
+  it('collapses a directory index to a trailing slash by default', () => {
+    expect(utils.toAbsoluteUrl('https://s', 'courses/index.html')).toBe(
+      'https://s/courses/',
+    )
+    expect(utils.servedPathFor('courses/index.html')).toBe('/courses/')
+  })
+
+  it('drops the slash entirely under trailingSlash:false', () => {
+    const off = { trailingSlash: false }
+    expect(utils.toAbsoluteUrl('https://s', 'courses/index.html', off)).toBe(
+      'https://s/courses',
+    )
+    expect(utils.servedPathFor('courses/index.html', off)).toBe('/courses')
+  })
+
+  it('leaves the site root as one trailing slash under either policy', () => {
+    // Both replacements empty the path here, so the join returns the origin
+    // with a single slash. `https://s` with no path is not a URL any host
+    // serves a home page at, and this is the assertion that says so.
+    for (const options of [undefined, { trailingSlash: false }]) {
+      expect(utils.toAbsoluteUrl('https://s', 'index.html', options)).toBe(
+        'https://s/',
+      )
+      expect(utils.toAbsoluteUrl('https://s', '', options)).toBe('https://s/')
+      expect(utils.servedPathFor('index.html', options)).toBe('/')
+    }
+  })
+
+  it('leaves a file page, an asset and an author-written slash alone', () => {
+    const off = { trailingSlash: false }
+    // The hosts agree on file pages, so the policy must not touch them.
+    expect(utils.toAbsoluteUrl('https://s', 'about', off)).toBe(
+      'https://s/about',
+    )
+    expect(utils.servedPathFor('about.html', off)).toBe('/about.html')
+    // An asset URL has to survive both ways round.
+    expect(utils.toAbsoluteUrl('https://s', 'css/site.css', off)).toBe(
+      'https://s/css/site.css',
+    )
+    // A slash the caller typed is the caller's, not an index collapse: the
+    // policy governs what kiss *derives*, not what a template asked for.
+    expect(utils.toAbsoluteUrl('https://s', '/courses/', off)).toBe(
+      'https://s/courses/',
+    )
+    // Only `index.html` collapses in a served path — `data/index.json` is a
+    // file, and `/data/` would be a directory with no index in it.
+    expect(utils.servedPathFor('data/index.json', off)).toBe('/data/index.json')
+  })
+
+  it('does not touch toURLKey, so page identity is host-independent', () => {
+    // `isActive` compares these, and a nav highlight must not depend on where
+    // the site happens to be deployed. `toURLKey` takes no policy at all —
+    // passing one changes nothing, which is the assertion.
+    for (const value of ['courses/index.html', '/courses/', 'courses'])
+      expect(utils.toURLKey(value, { trailingSlash: false })).toBe('courses')
+    expect(utils.toURLKey('index.html', { trailingSlash: false })).toBe('')
+  })
+})

@@ -49,12 +49,18 @@ export function toURLKey(value: unknown): string;
 /**
  * @param {string} siteUrl
  * @param {string} [urlPath]
+ * @param {Object} [options]
+ * @param {boolean} [options.trailingSlash] `config.links.trailingSlash`: keep
+ * the directory index's trailing `/` (the default, what Netlify serves), or
+ * drop it (what Firebase with `trailingSlash: false` serves)
  * @returns {string} the two joined by exactly one `/`, repeated slashes
- * collapsed, a trailing `index` segment replaced by a trailing `/` and an
- * explicit trailing `/` preserved; an empty path gives `siteUrl` with one
- * trailing slash
+ * collapsed, a trailing `index` segment replaced by a trailing `/` (or by
+ * nothing) and an explicit trailing `/` preserved; an empty path gives
+ * `siteUrl` with one trailing slash whatever the policy
  */
-export function toAbsoluteUrl(siteUrl: string, urlPath?: string): string;
+export function toAbsoluteUrl(siteUrl: string, urlPath?: string, { trailingSlash }?: {
+    trailingSlash?: boolean;
+}): string;
 /**
  * @param {unknown} pageURL a page's build-relative URL, e.g. `courses/index.html`
  * @returns {string} the same path with the last segment's file extension
@@ -63,10 +69,17 @@ export function toAbsoluteUrl(siteUrl: string, urlPath?: string): string;
 export function toCanonicalPath(pageURL: unknown): string;
 /**
  * @param {unknown} pageURL a page's build-relative URL, e.g. `courses/index.html`
+ * @param {Object} [options]
+ * @param {boolean} [options.trailingSlash] `config.links.trailingSlash`, the
+ * same policy `toAbsoluteUrl` takes — the two must agree or a page is linked
+ * at one URL and canonicalised at another
  * @returns {string} the root-relative path the host serves it at: `/`,
- * `/about.html`, `/about/`, `/courses/`, `/data/index.json`
+ * `/about.html`, `/about/` (or `/about`), `/courses/` (or `/courses`),
+ * `/data/index.json`
  */
-export function servedPathFor(pageURL: unknown): string;
+export function servedPathFor(pageURL: unknown, { trailingSlash }?: {
+    trailingSlash?: boolean;
+}): string;
 /**
  * @param {unknown} input
  * @returns {string} MD5 hex digest of the string, or of its JSON if it is not one

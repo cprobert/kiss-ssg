@@ -70,7 +70,11 @@
  * when no page has an alias and neither finding fired.
  *
  * @typedef {Object} BuildRedirects
- * @property {string|null} file the `_redirects` written, against the real build folder, or `null` when no page has an alias
+ * @property {string|null} file the host redirects file written (`_redirects` under the default format), against the real build folder; `null` when no page has an alias, and under `format: 'none'` or a custom writer that wrote no host file
+ * @property {{ from: string, to: string }[]} rules the resolved redirects, sorted — the host-neutral list every format is rendered from
+ * @property {string|null} json the `redirects.json` IR written, against the real build folder, or `null` when none was
+ * @property {string} format the format that ran: `'netlify'`, `'firebase'`, `'vercel'`, `'none'`, or `'custom'` for a writer function
+ * @property {string[]} files every redirects file this build wrote, against the real build folder
  * @property {number} aliases alias paths written into that file
  * @property {string[]} removed sorted; pages in the last record that this build does not build and no alias covers
  * @property {string[]} collisions sorted; aliases equal to a path this build actually writes
@@ -297,9 +301,28 @@ export type BuildLinks = {
  */
 export type BuildRedirects = {
     /**
-     * the `_redirects` written, against the real build folder, or `null` when no page has an alias
+     * the host redirects file written (`_redirects` under the default format), against the real build folder; `null` when no page has an alias, and under `format: 'none'` or a custom writer that wrote no host file
      */
     file: string | null;
+    /**
+     * the resolved redirects, sorted — the host-neutral list every format is rendered from
+     */
+    rules: {
+        from: string;
+        to: string;
+    }[];
+    /**
+     * the `redirects.json` IR written, against the real build folder, or `null` when none was
+     */
+    json: string | null;
+    /**
+     * the format that ran: `'netlify'`, `'firebase'`, `'vercel'`, `'none'`, or `'custom'` for a writer function
+     */
+    format: string;
+    /**
+     * every redirects file this build wrote, against the real build folder
+     */
+    files: string[];
     /**
      * alias paths written into that file
      */

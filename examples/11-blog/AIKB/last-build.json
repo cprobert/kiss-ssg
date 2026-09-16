@@ -149,7 +149,19 @@
     "aliases": 1,
     "removed": [],
     "collisions": [],
-    "moved": []
+    "moved": [],
+    "rules": [
+      {
+        "from": "/blog/cascara-notes.html",
+        "to": "/blog/the-cascara-experiment/"
+      }
+    ],
+    "json": "../../public/11-blog/redirects.json",
+    "format": "netlify",
+    "files": [
+      "../../public/11-blog/redirects.json",
+      "../../public/11-blog/_redirects"
+    ]
   },
   "feed": "../../public/11-blog/feed.xml"
 }

@@ -72,6 +72,10 @@ Passed to `new Kiss(config)`. Defaults:
   links: {              // the broken-internal-link scan, and what {{link}} emits
     check: true,        // false: skip the scan; the finding is advisory either way
     canonical: false,   // true: bare {{link}} emits /about, not /about.html
+    trailingSlash: true,// false: a directory index is /courses, not /courses/ — host policy, see below
+  },
+  redirects: {          // how page aliases are emitted; redirects.json is written either way
+    format: 'netlify',  // 'firebase' | 'vercel' | 'none' | (rules, ctx) => [{ file, contents }]
   },
   port: 3001,           // dev server port
   livereloadPort: 35729, // live reload port; also the port injected into the dev-mode reload <script>

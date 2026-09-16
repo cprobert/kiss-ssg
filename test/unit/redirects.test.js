@@ -8,7 +8,11 @@ import {
   coveredByAlias,
   normaliseAlias,
   redirectFindings,
+  renderFirebaseRedirects,
   renderRedirects,
+  renderRedirectsJson,
+  renderVercelRedirects,
+  normaliseWriterOutput,
   writeRedirects,
 } from '../../lib/redirects.js'
 import { silentLogger } from '../../lib/logger.js'
@@ -515,7 +519,7 @@ describe('writeRedirects', () => {
     expect(await fs.readFile(file, 'utf8')).toBe('/hand-written /x 301\n')
   })
 
-  it('leaves an existing file alone under overwrite:false', async () => {
+  it('leaves an existing host file alone under overwrite:false, and still writes the IR', async () => {
     const config = await build()
     const file = `${config.folders.build}/_redirects`
     await fs.outputFile(file, 'kept\n')
@@ -525,8 +529,241 @@ describe('writeRedirects', () => {
       { config, logger: silentLogger, overwrite: false },
     )
 
-    expect(result.status).toBe('skipped')
-    expect(result.rules).toEqual([{ from: '/old', to: '/about' }])
+    // The invariant this test has always guarded: a `_redirects` the project
+    // keeps in `src/assets/` is never clobbered.
     expect(await fs.readFile(file, 'utf8')).toBe('kept\n')
+    expect(result.rules).toEqual([{ from: '/old', to: '/about' }])
+    // The IR did not exist, so `overwrite` has nothing to protect and it is
+    // written: the rules are the one thing a site cannot reconstruct if this
+    // build declines to say them. `status` reports the build as a whole, so
+    // it is `written` rather than `skipped`.
+    expect(result.status).toBe('written')
+    expect(result.files).toEqual([`${config.folders.build}/redirects.json`])
+    expect(
+      JSON.parse(
+        await fs.readFile(`${config.folders.build}/redirects.json`, 'utf8'),
+      ),
+    ).toEqual({
+      version: 1,
+      rules: [{ from: '/old', to: '/about', status: 301 }],
+    })
+  })
+
+  it('skips everything, and says so, when both files already exist', async () => {
+    const config = await build()
+    await fs.outputFile(`${config.folders.build}/_redirects`, 'kept\n')
+    await fs.outputFile(`${config.folders.build}/redirects.json`, 'kept too\n')
+
+    const result = await writeRedirects(
+      [entry(`${config.folders.build}/about.html`, { aliases: ['/old'] })],
+      { config, logger: silentLogger, overwrite: false },
+    )
+
+    expect(result.status).toBe('skipped')
+    expect(result.files).toEqual([])
+  })
+})
+
+// `aliases` records a fact about the site — "this page used to answer /old" —
+// and that fact is portable. `_redirects` is one vendor's encoding of it.
+// Firebase reads a `redirects` array in firebase.json and ignores `_redirects`
+// entirely; Vercel reads vercel.json. A site on either used to get a file its
+// host never reads, while the report said the redirects were written.
+describe('the redirect formats', () => {
+  const rules = [
+    { from: '/team', to: '/about' },
+    { from: '/old', to: '/courses/' },
+  ]
+
+  it('renders the host-neutral IR, sorted, with an explicit status', () => {
+    expect(JSON.parse(renderRedirectsJson(rules))).toEqual({
+      version: 1,
+      rules: [
+        { from: '/old', to: '/courses/', status: 301 },
+        { from: '/team', to: '/about', status: 301 },
+      ],
+    })
+    // Sorted here as well as in `collectAliases`: two identical builds must
+    // write identical bytes or a committed file churns in git.
+    expect(renderRedirectsJson(rules)).toBe(
+      renderRedirectsJson([...rules].reverse()),
+    )
+    expect(renderRedirectsJson(rules).endsWith('\n')).toBe(true)
+  })
+
+  it('renders a Firebase fragment, not a firebase.json', () => {
+    // The fragment is the `redirects` array alone. A site's firebase.json
+    // holds hosting targets, headers and rewrites — one real site keeps 227
+    // redirects in it by hand — and a build step that rewrote that file is a
+    // build step that can lose a site's deploy config.
+    const payload = JSON.parse(renderFirebaseRedirects(rules))
+    expect(Object.keys(payload)).toEqual(['redirects'])
+    expect(payload.redirects).toEqual([
+      { source: '/old', destination: '/courses/', type: 301 },
+      { source: '/team', destination: '/about', type: 301 },
+    ])
+  })
+
+  it('renders a Vercel fragment, with its permanent flag', () => {
+    const payload = JSON.parse(renderVercelRedirects(rules))
+    expect(Object.keys(payload)).toEqual(['redirects'])
+    expect(payload.redirects).toEqual([
+      { source: '/old', destination: '/courses/', permanent: true },
+      { source: '/team', destination: '/about', permanent: true },
+    ])
+  })
+})
+
+describe('writeRedirects: format dispatch', () => {
+  const build = async (redirects) => {
+    temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-formats-'))
+    return {
+      folders: { build: temp.replace(/\\/g, '/') },
+      links: { trailingSlash: true },
+      redirects,
+    }
+  }
+  const stack = (buildDir) => [
+    entry(`${buildDir}/about.html`, { aliases: ['/old'] }),
+  ]
+
+  it('writes the IR beside _redirects under the default format', async () => {
+    const config = await build({ format: 'netlify' })
+    const result = await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(result.format).toBe('netlify')
+    expect(result.files).toEqual([
+      `${config.folders.build}/redirects.json`,
+      `${config.folders.build}/_redirects`,
+    ])
+    expect(
+      await fs.readFile(`${config.folders.build}/_redirects`, 'utf8'),
+    ).toBe('/old /about 301\n')
+  })
+
+  it('writes a Firebase fragment instead of _redirects', async () => {
+    const config = await build({ format: 'firebase' })
+    await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    // The file a Firebase site actually needs, and *not* the one it does not:
+    // writing `_redirects` there was the silent no-op this format exists to end.
+    expect(
+      await fs.pathExists(`${config.folders.build}/redirects.firebase.json`),
+    ).toBe(true)
+    expect(await fs.pathExists(`${config.folders.build}/_redirects`)).toBe(
+      false,
+    )
+  })
+
+  it('writes only the IR under format:none', async () => {
+    const config = await build({ format: 'none' })
+    const result = await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(result.files).toEqual([`${config.folders.build}/redirects.json`])
+    expect(await fs.pathExists(`${config.folders.build}/_redirects`)).toBe(
+      false,
+    )
+  })
+
+  it('writes nothing at all when no page has an alias, whatever the format', async () => {
+    // Not an empty IR either: a `_redirects` a project keeps in src/assets/
+    // and copies into the build must be left exactly as it was.
+    for (const format of ['netlify', 'firebase', 'vercel', 'none']) {
+      const config = await build({ format })
+      const result = await writeRedirects(
+        [entry(`${config.folders.build}/about.html`)],
+        { config, logger: silentLogger },
+      )
+      expect(result.status).toBe('none')
+      expect(result.files).toEqual([])
+      expect(
+        await fs.pathExists(`${config.folders.build}/redirects.json`),
+      ).toBe(false)
+      await fs.remove(temp)
+      temp = null
+    }
+  })
+
+  it('hands the resolved rules to a custom writer and writes what it returns', async () => {
+    /** @type {any[]} */
+    const seen = []
+    const config = await build({
+      format: (rules, context) => {
+        seen.push({ rules, buildDir: context.buildDir })
+        return {
+          file: 'nginx.conf',
+          contents: rules
+            .map((r) => `rewrite ^${r.from}$ ${r.to} permanent;`)
+            .join('\n'),
+        }
+      },
+    })
+    const result = await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(seen[0].rules).toEqual([{ from: '/old', to: '/about' }])
+    expect(seen[0].buildDir).toBe(config.folders.build)
+    // `'custom'` rather than the function: a machine-readable report should
+    // not carry a source-code detail.
+    expect(result.format).toBe('custom')
+    expect(
+      await fs.readFile(`${config.folders.build}/nginx.conf`, 'utf8'),
+    ).toBe('rewrite ^/old$ /about permanent;')
+    // The IR is the contract, not a side effect of the Netlify format: a
+    // custom writer gets it too.
+    expect(await fs.pathExists(`${config.folders.build}/redirects.json`)).toBe(
+      true,
+    )
+  })
+
+  it('lets a writer that throws fail the build rather than fail silently', async () => {
+    // The whole complaint that started this block was a redirect feature
+    // reporting success while doing nothing. A writer that dies quietly would
+    // be the same trap one level up, so the rejection propagates to the
+    // caller, which pushes it onto `_failures`.
+    const config = await build({
+      format: () => {
+        throw new Error('no credentials')
+      },
+    })
+    await expect(
+      writeRedirects(stack(config.folders.build), {
+        config,
+        logger: silentLogger,
+      }),
+    ).rejects.toThrow('no credentials')
+  })
+
+  it('refuses a writer path that escapes the build folder', async () => {
+    // A redirect writer is site code running in a build. "Write any file on
+    // this machine" is not the capability it asked for.
+    for (const file of ['../escaped.conf', '/etc/nginx.conf', 'a/../../b.conf'])
+      expect(() =>
+        normaliseWriterOutput({ file, contents: 'x' }, '/build'),
+      ).toThrow(/outside the build folder|absolute path/)
+    expect(
+      normaliseWriterOutput({ file: 'a/b.conf', contents: 'x' }, '/build'),
+    ).toEqual([{ file: '/build/a/b.conf', contents: 'x' }])
+    expect(normaliseWriterOutput(undefined, '/build')).toEqual([])
+  })
+
+  it('refuses a writer entry with no file or a non-string body', async () => {
+    expect(() => normaliseWriterOutput({ contents: 'x' }, '/build')).toThrow(
+      /no `file`/,
+    )
+    expect(() => normaliseWriterOutput({ file: 'a.conf' }, '/build')).toThrow(
+      /non-string/,
+    )
   })
 })
