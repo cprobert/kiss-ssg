@@ -181,7 +181,7 @@ kiss
   })
   // v2 fires this after the files are written, so a callback can read them.
   .generate(function () {
-    const written = existsSync('../public/9-migrated-from-v1/index.html')
+    const written = existsSync('../../public/9-migrated-from-v1/index.html')
     console.log(
       `generate: index.html on disk when the callback ran: ${written}`,
     )

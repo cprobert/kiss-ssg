@@ -66,7 +66,7 @@ const kiss = new Kiss({
 // The shared look lives outside this site's own assets folder, so it comes in
 // as a second copy. Copies (and the pipeline steps before them) run one after
 // another in registration order, never concurrently.
-kiss.copyAssets(sharedFolders.assets, '../public/10-asset-pipeline')
+kiss.copyAssets(sharedFolders.assets, '../../public/10-asset-pipeline')
 
 kiss
   .page({
