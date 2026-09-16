@@ -1,10 +1,7 @@
-import Kiss from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+// Tier 0: one file. A pipeline step is config, not code to lift out — it is a
+// command the router declares. See llms.txt § The build script.
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
 
 const dev = process.argv.includes('--dev')
 
@@ -31,19 +28,18 @@ const dev = process.argv.includes('--dev')
 //     word typed into a README renames it and changes the `<link href>` on
 //     every page. `@import 'tailwindcss' source(none)` plus explicit `@source`
 //     paths (resolved against the stylesheet's folder) is the fix.
-const tokens = 'node 10-asset-pipeline/tools/tokens.js'
+const tokens = 'node tools/tokens.js'
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [{ href: 'index.html', label: 'The pipeline' }],
   folders: {
-    src: './10-asset-pipeline',
-    build: '../public/10-asset-pipeline',
+    src: '.',
+    build: '../../public/10-asset-pipeline',
     layouts: sharedFolders.layouts,
     partials: sharedFolders.partials,
     // Assets stay local (derived from `src`), because this is the folder the
-    // pipeline step writes into: `10-asset-pipeline/assets/css/generated.css`
+    // pipeline step writes into: `assets/css/generated.css`
     // is generated, gitignored, and copied into the build like any other asset.
   },
   assets: {
@@ -70,7 +66,7 @@ const kiss = new Kiss({
 // The shared look lives outside this site's own assets folder, so it comes in
 // as a second copy. Copies (and the pipeline steps before them) run one after
 // another in registration order, never concurrently.
-kiss.copyAssets(sharedFolders.assets, '../public/10-asset-pipeline')
+kiss.copyAssets(sharedFolders.assets, '../../public/10-asset-pipeline')
 
 kiss
   .page({

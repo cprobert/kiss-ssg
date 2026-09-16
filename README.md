@@ -36,7 +36,7 @@ Everything an agent needs ships in the package, so point it at `node_modules` ra
 
 That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (eleven runnable sites with a README each — copy the exemplar whose shape matches).
 
-Give the agent a verdict it can act on: `npx kiss-ssg check site.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)), and `npx kiss-ssg aikb site.js` records what the site is into `AIKB/`, which the agent reads back next time.
+Give the agent a verdict it can act on: `npx kiss-ssg check router.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)), and `npx kiss-ssg aikb router.js` records what the site is into `AIKB/`, which the agent reads back next time.
 
 If the agent is Claude Code, this repository is also a plugin marketplace. In Claude Code, run:
 
@@ -51,6 +51,12 @@ The first line registers this repository as a marketplace; the other two install
 The `kiss-ssg` plugin installs four skills, all named `kiss-<something>` so they're easy to spot alongside skills from other plugins — `/kiss-ssg:kiss-site-new` (build a site from a description, or a whole new section on one), `/kiss-ssg:kiss-page-add` (add or update a single page on a site that's already set up), `/kiss-ssg:kiss-site-migrate` (move a v1 project to v2) and `/kiss-ssg:kiss-build-check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. You don't have to invoke them by name — each skill's description is written for automatic discovery, so a request like "add a page to this site" or "why is my kiss-ssg build failing" reaches for the matching skill on its own. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
 
 ## Usage
+
+### The build script
+
+Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, one `registerHelpers(kiss)` call if the site has custom helpers, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()` chain, and the `complete()`/`catch()` pair. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
+
+How much is extracted follows the size of the file, not ambition. One file is correct up to roughly 150 lines; `helpers/` is earned when the custom helpers pass about a third of it, `config/` when a fact appears in both the markup and the structured data. `llms.txt` § The build script has the thresholds, the reasons, and the three mistakes the shape invites — chief among them that renaming an existing build script to `router.js` silently orphans whatever names it, from `package.json` to a CSS toolchain's source globs.
 
 kiss-ssg has 3 methods
 
@@ -196,7 +202,7 @@ kiss has no notion of "versions" or "sites" — it is one `Kiss` instance buildi
 
 The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
 
-See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 and 11 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, the v1 → v2 migration recipes, and a blog with pagination, tag pages, a feed and a redirect. Every example builds and exits by default (`npm run eg1` … `eg11`); pass `--dev` to run examples 1–6, 8, 9, 10 and 11 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
+See `examples/7-versioned-outputs/router.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 and 11 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, the v1 → v2 migration recipes, and a blog with pagination, tag pages, a feed and a redirect. Each example is a site in its own folder with its own `router.js`, run from that folder the way a real site is. Every example builds and exits by default (`npm run eg1` … `eg11`); pass `--dev` to run examples 1–6, 8, 9, 10 and 11 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
 
 ### Remote models
 
@@ -275,7 +281,7 @@ Every `run` is executed through a shell, in order, awaited, **before the asset c
 
 `name` defaults to the first word of `run`, `cwd` to `process.cwd()`, and each command inherits `process.env` plus `KISS_BUILD`, `KISS_ASSETS` and `KISS_DEV` (`'1'` or `'0'`). `watch` is the dev-mode half: in `dev: true` only, it is started once — after that step's `run` has succeeded — kept for the session with its output going through kiss's logger, and ended by `close()`. A watch process that dies on its own is logged, not a build failure, and a rebuild never starts a second one. Editing a page, a partial or a layout does **not** re-run the steps; a tool that must see those edits is what `watch` is for.
 
-`kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline.js` (`npm run eg10`) is a runnable version that needs nothing installed.
+`kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline/` (`npm run eg10`) is a runnable version that needs nothing installed.
 
 ##### Two silent traps in the Tailwind recipe
 
@@ -628,11 +634,11 @@ Your browser is reloaded once per rebuild, when that rebuild has finished writin
 `npx kiss-ssg check <script>` builds the site your script builds and tells you whether it worked — without publishing anything. The build is staged and then discarded, so the build folder is neither emptied nor written, and what you get back is the verdict instead of the output:
 
 ```bash
-npx kiss-ssg check build.js            # JSON, one report per Kiss instance — and, if the
-                                       # site has recorded an AIKB/, what changed since
-npx kiss-ssg check build.js --summary  # one line per instance instead
-npx kiss-ssg check menu.js 2026-spring # arguments after the script go to the script
-npx kiss-ssg check --against last.jsonl build.js  # diff against some other report instead
+npx kiss-ssg check router.js             # JSON, one report per Kiss instance — and, if the
+                                         # site has recorded an AIKB/, what changed since
+npx kiss-ssg check router.js --summary   # one line per instance instead
+npx kiss-ssg check menu.js 2026-spring   # arguments after the script go to the script
+npx kiss-ssg check --against last.jsonl router.js  # diff against some other report instead
 ```
 
 ```json
@@ -713,8 +719,8 @@ Two things a check cannot make true. A site that reads its own build folder back
 `npx kiss-ssg aikb <script>` writes the site's own knowledge base into `config.folders.aikb` (default `./AIKB`) — the map of the site as the build saw it, for the developer who comes back to it in two years and finds that every context window that held this is gone. It runs exactly the build `check` runs — staged and then discarded, publishing nothing — and the folder is the only thing it leaves behind.
 
 ```bash
-npx kiss-ssg aikb build.js            # record it
-npx kiss-ssg aikb build.js --summary  # ...and say in one line whether it did
+npx kiss-ssg aikb router.js             # record it
+npx kiss-ssg aikb router.js --summary   # ...and say in one line whether it did
 ```
 
 Nothing else writes that folder. There is no API call for it, and an ordinary build, a `check`, a dev server and a watch rebuild all leave it exactly as they found it. Recording is a **ceremony**: run it when a piece of work is finished, and commit what it wrote. That is what makes `npx kiss-ssg check` mean "what have I changed since this work opened" rather than "since the last time anybody ran a build".
@@ -806,7 +812,7 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 `lookup` is Handlebars' own `lookup` helper with one addition: when the key is undefined it logs `lookup: 'moodleAccess' is undefined in handbooks/uob.hbs`, so a dynamic partial `{{> (lookup . 'key')}}` whose key is missing from your data tells you which key and which page — it still fails the build with `The partial undefined could not be found`, as before.
 
-`isActive` renders its block only when the current page matches `href`, handy for highlighting the current nav item:
+`isActive` renders its block only when the current page matches `href`, handy for highlighting the current nav item. The block sees the surrounding context **plus** the hash you pass, the hash winning on a clash — so inside an `{{#each}}` the item's own keys are still in scope, and `active`, `href`, `folderMatch` and `pageURL` are always the helper's own:
 
 ```handlebars
 <nav>

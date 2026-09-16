@@ -1,21 +1,21 @@
 {
   "site": {
     "siteUrl": "https://asterandoak.example",
-    "build": "../public/11-blog",
+    "build": "../../public/11-blog",
     "folders": {
-      "aikb": "./11-blog/AIKB",
-      "assets": "./_shared/assets",
-      "controllers": "./11-blog/controllers",
-      "layouts": "./_shared/layouts",
-      "models": "./11-blog/models",
-      "pages": "./11-blog/pages",
-      "partials": "./11-blog/partials",
-      "src": "./11-blog"
+      "aikb": "./AIKB",
+      "assets": "../_shared/assets",
+      "controllers": "./controllers",
+      "layouts": "../_shared/layouts",
+      "models": "./models",
+      "pages": "./pages",
+      "partials": "./partials",
+      "src": "."
     }
   },
   "pages": [
     {
-      "buildTo": "../public/11-blog/blog/a-year-of-bench-lots/index.html",
+      "buildTo": "../../public/11-blog/blog/a-year-of-bench-lots/index.html",
       "id": "blog/post/a-year-of-bench-lots",
       "view": "blog/post.hbs",
       "model": "folder:posts",
@@ -26,7 +26,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/grind-size-is-the-dial/index.html",
+      "buildTo": "../../public/11-blog/blog/grind-size-is-the-dial/index.html",
       "id": "blog/post/grind-size-is-the-dial",
       "view": "blog/post.hbs",
       "model": "folder:posts",
@@ -37,7 +37,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/guji-uraga-has-landed/index.html",
+      "buildTo": "../../public/11-blog/blog/guji-uraga-has-landed/index.html",
       "id": "blog/post/guji-uraga-has-landed",
       "view": "blog/post.hbs",
       "model": "folder:posts",
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/index.html",
+      "buildTo": "../../public/11-blog/blog/index.html",
       "id": "blog",
       "view": "blog/listing.hbs",
       "model": "inline",
@@ -60,7 +60,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/page/2/index.html",
+      "buildTo": "../../public/11-blog/blog/page/2/index.html",
       "id": "blog/page/2",
       "view": "blog/listing.hbs",
       "model": "inline",
@@ -72,7 +72,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/pour-over-at-home/index.html",
+      "buildTo": "../../public/11-blog/blog/pour-over-at-home/index.html",
       "id": "blog/post/pour-over-at-home",
       "view": "blog/post.hbs",
       "model": "folder:posts",
@@ -83,7 +83,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/tags/brewing/index.html",
+      "buildTo": "../../public/11-blog/blog/tags/brewing/index.html",
       "id": "blog/tags/brewing",
       "view": "blog/tag.hbs",
       "model": "inline",
@@ -95,7 +95,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/tags/experiments/index.html",
+      "buildTo": "../../public/11-blog/blog/tags/experiments/index.html",
       "id": "blog/tags/experiments",
       "view": "blog/tag.hbs",
       "model": "inline",
@@ -107,7 +107,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/tags/index.html",
+      "buildTo": "../../public/11-blog/blog/tags/index.html",
       "id": "blog/tags",
       "view": "blog/tags.hbs",
       "model": "inline",
@@ -118,7 +118,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/tags/roastery/index.html",
+      "buildTo": "../../public/11-blog/blog/tags/roastery/index.html",
       "id": "blog/tags/roastery",
       "view": "blog/tag.hbs",
       "model": "inline",
@@ -130,7 +130,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/tags/sourcing/index.html",
+      "buildTo": "../../public/11-blog/blog/tags/sourcing/index.html",
       "id": "blog/tags/sourcing",
       "view": "blog/tag.hbs",
       "model": "inline",
@@ -142,7 +142,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/the-cascara-experiment/index.html",
+      "buildTo": "../../public/11-blog/blog/the-cascara-experiment/index.html",
       "id": "blog/post/cascara",
       "view": "blog/post.hbs",
       "model": "folder:posts",
@@ -153,7 +153,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
+      "buildTo": "../../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
       "id": "blog/post/why-we-roast-on-wednesdays",
       "view": "blog/post.hbs",
       "model": "folder:posts",
@@ -164,7 +164,7 @@
       ]
     },
     {
-      "buildTo": "../public/11-blog/index.html",
+      "buildTo": "../../public/11-blog/index.html",
       "id": "index",
       "view": "index.hbs",
       "model": "inline",
@@ -178,70 +178,70 @@
   ],
   "partials": {
     "head-feed": [
-      "../public/11-blog/blog/a-year-of-bench-lots/index.html",
-      "../public/11-blog/blog/grind-size-is-the-dial/index.html",
-      "../public/11-blog/blog/guji-uraga-has-landed/index.html",
-      "../public/11-blog/blog/index.html",
-      "../public/11-blog/blog/page/2/index.html",
-      "../public/11-blog/blog/pour-over-at-home/index.html",
-      "../public/11-blog/blog/tags/brewing/index.html",
-      "../public/11-blog/blog/tags/experiments/index.html",
-      "../public/11-blog/blog/tags/index.html",
-      "../public/11-blog/blog/tags/roastery/index.html",
-      "../public/11-blog/blog/tags/sourcing/index.html",
-      "../public/11-blog/blog/the-cascara-experiment/index.html",
-      "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
-      "../public/11-blog/index.html"
+      "../../public/11-blog/blog/a-year-of-bench-lots/index.html",
+      "../../public/11-blog/blog/grind-size-is-the-dial/index.html",
+      "../../public/11-blog/blog/guji-uraga-has-landed/index.html",
+      "../../public/11-blog/blog/index.html",
+      "../../public/11-blog/blog/page/2/index.html",
+      "../../public/11-blog/blog/pour-over-at-home/index.html",
+      "../../public/11-blog/blog/tags/brewing/index.html",
+      "../../public/11-blog/blog/tags/experiments/index.html",
+      "../../public/11-blog/blog/tags/index.html",
+      "../../public/11-blog/blog/tags/roastery/index.html",
+      "../../public/11-blog/blog/tags/sourcing/index.html",
+      "../../public/11-blog/blog/the-cascara-experiment/index.html",
+      "../../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
+      "../../public/11-blog/index.html"
     ],
     "layout": [
-      "../public/11-blog/blog/a-year-of-bench-lots/index.html",
-      "../public/11-blog/blog/grind-size-is-the-dial/index.html",
-      "../public/11-blog/blog/guji-uraga-has-landed/index.html",
-      "../public/11-blog/blog/index.html",
-      "../public/11-blog/blog/page/2/index.html",
-      "../public/11-blog/blog/pour-over-at-home/index.html",
-      "../public/11-blog/blog/tags/brewing/index.html",
-      "../public/11-blog/blog/tags/experiments/index.html",
-      "../public/11-blog/blog/tags/index.html",
-      "../public/11-blog/blog/tags/roastery/index.html",
-      "../public/11-blog/blog/tags/sourcing/index.html",
-      "../public/11-blog/blog/the-cascara-experiment/index.html",
-      "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
-      "../public/11-blog/index.html"
+      "../../public/11-blog/blog/a-year-of-bench-lots/index.html",
+      "../../public/11-blog/blog/grind-size-is-the-dial/index.html",
+      "../../public/11-blog/blog/guji-uraga-has-landed/index.html",
+      "../../public/11-blog/blog/index.html",
+      "../../public/11-blog/blog/page/2/index.html",
+      "../../public/11-blog/blog/pour-over-at-home/index.html",
+      "../../public/11-blog/blog/tags/brewing/index.html",
+      "../../public/11-blog/blog/tags/experiments/index.html",
+      "../../public/11-blog/blog/tags/index.html",
+      "../../public/11-blog/blog/tags/roastery/index.html",
+      "../../public/11-blog/blog/tags/sourcing/index.html",
+      "../../public/11-blog/blog/the-cascara-experiment/index.html",
+      "../../public/11-blog/blog/why-we-roast-on-wednesdays/index.html",
+      "../../public/11-blog/index.html"
     ],
     "post-card": [
-      "../public/11-blog/blog/index.html",
-      "../public/11-blog/blog/page/2/index.html",
-      "../public/11-blog/blog/tags/brewing/index.html",
-      "../public/11-blog/blog/tags/experiments/index.html",
-      "../public/11-blog/blog/tags/roastery/index.html",
-      "../public/11-blog/blog/tags/sourcing/index.html",
-      "../public/11-blog/index.html"
+      "../../public/11-blog/blog/index.html",
+      "../../public/11-blog/blog/page/2/index.html",
+      "../../public/11-blog/blog/tags/brewing/index.html",
+      "../../public/11-blog/blog/tags/experiments/index.html",
+      "../../public/11-blog/blog/tags/roastery/index.html",
+      "../../public/11-blog/blog/tags/sourcing/index.html",
+      "../../public/11-blog/index.html"
     ]
   },
   "models": [
     {
       "source": "folder:posts",
       "pages": [
-        "../public/11-blog/blog/a-year-of-bench-lots/index.html",
-        "../public/11-blog/blog/grind-size-is-the-dial/index.html",
-        "../public/11-blog/blog/guji-uraga-has-landed/index.html",
-        "../public/11-blog/blog/pour-over-at-home/index.html",
-        "../public/11-blog/blog/the-cascara-experiment/index.html",
-        "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html"
+        "../../public/11-blog/blog/a-year-of-bench-lots/index.html",
+        "../../public/11-blog/blog/grind-size-is-the-dial/index.html",
+        "../../public/11-blog/blog/guji-uraga-has-landed/index.html",
+        "../../public/11-blog/blog/pour-over-at-home/index.html",
+        "../../public/11-blog/blog/the-cascara-experiment/index.html",
+        "../../public/11-blog/blog/why-we-roast-on-wednesdays/index.html"
       ]
     },
     {
       "source": "inline",
       "pages": [
-        "../public/11-blog/blog/index.html",
-        "../public/11-blog/blog/page/2/index.html",
-        "../public/11-blog/blog/tags/brewing/index.html",
-        "../public/11-blog/blog/tags/experiments/index.html",
-        "../public/11-blog/blog/tags/index.html",
-        "../public/11-blog/blog/tags/roastery/index.html",
-        "../public/11-blog/blog/tags/sourcing/index.html",
-        "../public/11-blog/index.html"
+        "../../public/11-blog/blog/index.html",
+        "../../public/11-blog/blog/page/2/index.html",
+        "../../public/11-blog/blog/tags/brewing/index.html",
+        "../../public/11-blog/blog/tags/experiments/index.html",
+        "../../public/11-blog/blog/tags/index.html",
+        "../../public/11-blog/blog/tags/roastery/index.html",
+        "../../public/11-blog/blog/tags/sourcing/index.html",
+        "../../public/11-blog/index.html"
       ]
     }
   ],
@@ -249,21 +249,21 @@
     {
       "source": "file:post.js",
       "pages": [
-        "../public/11-blog/blog/a-year-of-bench-lots/index.html",
-        "../public/11-blog/blog/grind-size-is-the-dial/index.html",
-        "../public/11-blog/blog/guji-uraga-has-landed/index.html",
-        "../public/11-blog/blog/pour-over-at-home/index.html",
-        "../public/11-blog/blog/the-cascara-experiment/index.html",
-        "../public/11-blog/blog/why-we-roast-on-wednesdays/index.html"
+        "../../public/11-blog/blog/a-year-of-bench-lots/index.html",
+        "../../public/11-blog/blog/grind-size-is-the-dial/index.html",
+        "../../public/11-blog/blog/guji-uraga-has-landed/index.html",
+        "../../public/11-blog/blog/pour-over-at-home/index.html",
+        "../../public/11-blog/blog/the-cascara-experiment/index.html",
+        "../../public/11-blog/blog/why-we-roast-on-wednesdays/index.html"
       ]
     },
     {
       "source": "file:tag.js",
       "pages": [
-        "../public/11-blog/blog/tags/brewing/index.html",
-        "../public/11-blog/blog/tags/experiments/index.html",
-        "../public/11-blog/blog/tags/roastery/index.html",
-        "../public/11-blog/blog/tags/sourcing/index.html"
+        "../../public/11-blog/blog/tags/brewing/index.html",
+        "../../public/11-blog/blog/tags/experiments/index.html",
+        "../../public/11-blog/blog/tags/roastery/index.html",
+        "../../public/11-blog/blog/tags/sourcing/index.html"
       ]
     }
   ],

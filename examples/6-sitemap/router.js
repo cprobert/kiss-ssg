@@ -1,24 +1,21 @@
-import Kiss from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+// Tier 0: one file. `.sitemap()` and `.llms()` belong in the terminal chain of
+// the router itself — they are part of what the site emits, not logic to lift
+// out. See llms.txt § The build script for what does leave this file.
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
 
 const dev = process.argv.includes('--dev')
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [
     { href: 'index.html', label: 'Home' },
     { href: 'about/index.html', label: 'About' },
     { href: 'stockists/index.html', label: 'Stockists' },
   ],
   folders: {
-    src: './6-sitemap',
-    build: '../public/6-sitemap',
+    src: '.',
+    build: '../../public/6-sitemap',
     ...sharedFolders,
   },
   // The sitemap needs to know where the site will live; without it kiss logs

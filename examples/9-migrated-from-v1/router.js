@@ -1,29 +1,31 @@
+// Tier 1 of the build-script convention (llms.txt § The build script), and the
+// only reference example that reaches it. This router registers one custom
+// helper, and **one is the trigger** — not three, not a proportion of the file.
+// A helper registered inline here could not be imported, so it could not be
+// unit-tested, and that is as true of the first helper as of the fourth. It
+// lives in helpers/ with the pure function exported and the registrar a thin
+// adapter over it; the folder cost one file and one import.
 import { existsSync } from 'node:fs'
 // `utils` is a named export in v2, not `kiss-ssg/libs/utils.js`.
-import Kiss, { utils } from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+import Kiss, { utils } from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import { registerHelpers } from './helpers/index.js'
 
 const dev = process.argv.includes('--dev')
 
 // Named once, because the page below reports it: under `npx kiss-ssg check` and
 // `npx kiss-ssg aikb` the engine builds into a staging sibling with a random
 // name, so `kiss.config.folders.build` is not the same string twice.
-const buildFolder = '../public/9-migrated-from-v1'
+const buildFolder = '../../public/9-migrated-from-v1'
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [{ href: 'index.html', label: 'The recipes' }],
   // v2 reads these folder keys and no others. `root` and `static` were in the
   // v1 defaults but no module ever read them, so they are gone rather than
   // quietly ignored — a `root:` key here would just sit there unread.
   folders: {
-    src: './9-migrated-from-v1',
+    src: '.',
     build: buildFolder,
     layouts: sharedFolders.layouts,
     assets: sharedFolders.assets,
@@ -32,7 +34,7 @@ const kiss = new Kiss({
     // which is why it is named here rather than picked up with the rest.
     // Nothing here writes it — `npx kiss-ssg aikb 9-migrated-from-v1.js` does,
     // from a build that passed. An ordinary build only reports on it.
-    aikb: './9-migrated-from-v1/AIKB',
+    aikb: './AIKB',
   },
   verbose: true,
   dev,
@@ -40,24 +42,11 @@ const kiss = new Kiss({
   livereloadPort: 35739,
 })
 
-// Handlebars is per-instance in v2: `require('handlebars').partials` is empty
-// here, so a v1 helper that read the global module rendered nothing at all —
-// silently, on a green build. Register on `kiss.handlebars` and read the
-// partials off the same environment.
-kiss.handlebars.registerHelper(
-  'renderPartial',
-  function (name, context, options) {
-    const partial = kiss.handlebars.partials[name]
-    if (!partial) return ''
-    const template =
-      typeof partial === 'function' ? partial : kiss.handlebars.compile(partial)
-    // Pass the helper's own data frame through — that frame is how the page is
-    // recorded as using the partial, so a save re-renders just this page.
-    return new kiss.handlebars.SafeString(
-      template(context, { data: options?.data }),
-    )
-  },
-)
+// The site's custom helpers, in helpers/ because it has one and one is the
+// trigger. The v1 trap they replace — a helper reading the global handlebars
+// module, which renders nothing at all, silently, on a green build — is
+// explained where the helper now lives.
+registerHelpers(kiss)
 
 // Two sources, one output folder. v1 wrote whichever page came last when two
 // claimed one path; v2 fails the build. Dedupe before registering — the
@@ -192,7 +181,7 @@ kiss
   })
   // v2 fires this after the files are written, so a callback can read them.
   .generate(function () {
-    const written = existsSync('../public/9-migrated-from-v1/index.html')
+    const written = existsSync('../../public/9-migrated-from-v1/index.html')
     console.log(
       `generate: index.html on disk when the callback ran: ${written}`,
     )

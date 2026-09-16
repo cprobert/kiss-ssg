@@ -3,6 +3,57 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.3.0 — 2026-09-16
+
+### A page can opt out of `extensionLess`
+
+`config: { extensionLess: false }` on one page is now honoured. It was accepted
+and silently ignored, because the output path was resolved from the instance's
+config rather than the page's own. That matters most for the 404: Netlify and
+Cloudflare Pages look for a literal `404.html` at the publish root and will not
+fall back to `404/index.html`, so an otherwise `extensionLess` site had no way to
+give them one.
+
+```js
+.page({ view: '404.hbs', slug: '404', config: { extensionLess: false } })
+```
+
+### `isActive`'s block can see the surrounding context
+
+The block now renders with the surrounding context **plus** the hash, the hash
+winning on a clash. Previously it saw the hash alone, so the natural data-driven
+nav rendered an empty label for every item — on a green build, with nothing able
+to warn:
+
+```hbs
+{{#each nav}}{{#isActive ../page href=href}}{{label}}{{/isActive}}{{/each}}
+```
+
+`active`, `href`, `folderMatch` and `pageURL` are still always the helper's own.
+If your templates already passed everything the block needed, nothing changes.
+
+### Fewer false findings from the knowledge base
+
+`kiss-ssg check` no longer reports a note as **dangling** for citing a page id
+(`shelf/index` — the name the rest of your site links that page by) or for
+mentioning a bare file extension in a sentence. Both were the correct way to
+write a note, and both were reported as broken references.
+
+Note lookup is also case-tolerant now: a controller named `jobList.js` can have
+its note at `jobList.md`, which the generated README's own rule told you to
+write, rather than being reported missing and dead at the same time.
+
+### The build script has a documented shape
+
+`llms.txt` gains a **The build script** section: call it `router.js`, keep it a
+route table, and extract `helpers/` the moment you write your first custom
+helper, `config/` the moment one fact appears in both your markup and your
+structured data. The two triggers are independent, and file length is not one.
+
+The eleven examples now each live in their own folder with their own
+`router.js`, run the way a real site is run (`cd examples/3-pages && node
+router`), and each states which shape it is and why.
+
 ## 2.2.2 — 2026-09-15
 
 **Two silent Tailwind traps documented, one new link option, and `check` now names the asset that moved**

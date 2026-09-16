@@ -456,6 +456,67 @@ describe('evaluateNotes', () => {
     })
   })
 
+  // A controller named in camelCase is the case this got wrong: the canonical
+  // note path is lower-cased, so a note named after its own subject
+  // (`jobList.js` -> `jobList.md`) was reported missing AND dead at once —
+  // two findings for one casing difference, and no way to satisfy both by
+  // reading the rule the generated README states (`<file, no .js>.md`).
+  // Four independent reports across three sites, all of them the SAME shape: a
+  // note written in good English is punished for it. A lint that fires on the
+  // correct way to write prose trains people to stop reading the finding, which
+  // costs more than the typos it would have caught.
+  it('does not call ordinary prose a dangling reference', async () => {
+    site = await makeSite({
+      'AIKB/notes/controllers/stockist.md': [
+        '## What it does',
+        // 1. A bare file extension, discussed as a kind of file.
+        'Runs once per `.json` record in the models folder.',
+        // 2. A page id — which is exactly what a note SHOULD cite, and has a
+        //    slash but no extension.
+        'Linked from `shelf/index` and from `about`.',
+        // 3. A path into the engine itself, which a note legitimately cites
+        //    when it explains why something behaves as it does.
+        'Verified against `lib/controller-resolver.js`.',
+      ].join('\n\n'),
+      'AIKB/notes/models/api.example.com-v2-events.md': 'x',
+    })
+    // The map has to actually claim that id, which is the point: a page id
+    // resolves because the site has that page, exactly as a view path does.
+    const withId = map({
+      stack: [
+        {
+          ...entry('./public/a.html', {
+            model: 'url:https://api.example.com/v2/events',
+            controller: 'file:stockist.js',
+          }),
+          id: 'shelf/index',
+        },
+      ],
+    })
+    const notes = evaluateNotes(withId, `${site.root}/AIKB/notes`, {
+      aikbDir: `${site.root}/AIKB`,
+    })
+    expect(notes.dangling).toEqual([])
+  })
+
+  it('accepts a note whose filename differs from the canonical one only in case', async () => {
+    const camel = () =>
+      map({
+        stack: [
+          entry('./public/a.html', {
+            model: 'none',
+            controller: 'file:jobList.js',
+          }),
+        ],
+      })
+    site = await makeSite({
+      'AIKB/notes/controllers/jobList.md': '## What it does',
+    })
+    const notes = evaluateNotes(camel(), `${site.root}/AIKB/notes`)
+    expect(notes.missing).toEqual([])
+    expect(notes.dead).toEqual([])
+  })
+
   it('treats a note filed anywhere unexpected as dead', async () => {
     site = await makeSite({
       'AIKB/notes/controllers/stockist.md': 'x',

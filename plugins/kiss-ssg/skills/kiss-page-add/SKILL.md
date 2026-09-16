@@ -12,7 +12,7 @@ The site already exists and already builds. This is a small, targeted change to 
 
 ### 1. Find out how the site registers its pages
 
-Read the build script. A page is queued one of two ways, and that decides what "add a page" even means here:
+Read the build script — `router.js` on a site that follows the convention in `node_modules/kiss-ssg/llms.txt` § The build script, whatever it is called on one that does not. A page is queued one of two ways, and that decides what "add a page" even means here:
 
 - **`.scan()`** — every `.hbs` under `config.folders.pages` (default `src/pages`) is picked up automatically by filename, matched to a same-named model/controller if one exists. Adding a page can be nothing more than adding a file.
 - **Explicit `.page()`/`.pages()`** — the script names every view. Adding a page means adding a call (or, for a `.pages()` fan-out, adding a record to the data the fan-out reads).
@@ -43,6 +43,12 @@ If the site runs a dev server (`dev: true`, started via `.watch()`), edit and wa
 ### 4a. Link to other pages by identity, not by path
 
 Write `href="{{link "about"}}"`, `{{link "blog/post" slug=post.slug}}`, `{{link "contact" absolute=true}}` — never a hand-typed `/about.html` or `/about/`. The URL of a page is derived from `extensionLess`, `path` and `slug`, so a typed path is a guess that breaks the day any of them changes; `{{link}}` renders the path the build actually writes, and an id that resolves to nothing fails the build with the id and the page that asked, which is what you want. A hand-written internal path is still checked (`broken link:` in the check report), but a fixed one costs a rebuild; a `{{link}}` never needs fixing. Reach for the site's `AIKB/site-map.md` **Id** column to see every valid target — that is the autocomplete. The page you are adding gets an id of its own the same way: its view's route without the extension (`contact.hbs` → `contact`, a fan-out record → `<registration route or id>/<slug>`), and that is the name the rest of the site links it by — it appears in that `Id` column the next time somebody runs `npx kiss-ssg aikb`.
+
+### 4b. A new helper does not go in the router
+
+If the page needs a Handlebars helper the site does not have, put it where that site already keeps them — `src/helpers/`, one module per kind of thing, each exporting a `register*Helpers(kiss)` composed by `index.js` — rather than adding a `kiss.handlebars.registerHelper` call to the router. A router that grows helper bodies one page at a time is how a route table becomes a 570-line file; `node_modules/kiss-ssg/llms.txt` § The build script has the rule. If the site has no `helpers/` folder yet and this is its **first** custom helper, create the folder now rather than putting it in the router — one helper is the trigger, because a helper in the router cannot be imported and so cannot be tested. Either way, register on `kiss.handlebars` and not the global `handlebars` module, and export the helper's logic as a plain function so it can be tested without a `Kiss` instance.
+
+Two things about _when_ a helper runs, both of which bite in dev rather than in the build. Registration happens once per process: a watch rebuild replays the recorded `.page()`/`.pages()`/`.scan()` calls on the same instance and never re-imports the build script, so a helper that reads files as it registers is serving that first reading for the rest of the session, and an edit to a helper module does nothing until you restart the dev server. And a helper that resolves a link must call `{{link}}` at render time, not at registration — the page registry it reads is filled by the `.page()`/`.pages()` calls, so build the binding early if you like, but resolve inside the helper.
 
 ### 5. Verify
 

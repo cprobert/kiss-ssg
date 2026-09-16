@@ -1,23 +1,22 @@
-import Kiss from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+// Tier 0: one file — and worth saying why, because this is the helpers example.
+// Every helper shown here is one kiss ships, so there is nothing custom to
+// extract. The `helpers/` folder in llms.txt § The build script is earned by
+// YOUR helpers outgrowing the route table, and a site can use all six built-ins
+// without ever writing one.
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
 
 const dev = process.argv.includes('--dev')
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [
     { href: 'index.html', label: 'Helpers' },
     { href: 'brew-guide.html', label: 'Brew guide' },
   ],
   folders: {
-    src: './5-helpers',
-    build: '../public/5-helpers',
+    src: '.',
+    build: '../../public/5-helpers',
     // Partials stay local — two of them are here to be pulled in by the
     // markdown and dynamic-partial demos.
     layouts: sharedFolders.layouts,

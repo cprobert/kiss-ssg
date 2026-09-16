@@ -108,6 +108,37 @@ describe('offset and stringify', () => {
 
 describe('isActive', () => {
   const tpl = '{{#isActive page href=href}}[{{active}}]{{/isActive}}'
+
+  // The trap two independent agents fell into on a fresh site, one of them
+  // shipping a nav of five blank links on a green build. The block context was
+  // built from the hash ALONE, so a data-driven nav —
+  // `{{#each nav}}{{#isActive ../page href=href}}{{label}}{{/isActive}}{{/each}}`
+  // — rendered nothing for `{{label}}`, because the surrounding `{{#each}}`
+  // item was not in scope inside the block. Nothing warned: the helper cannot
+  // tell a missing key from one the caller never wanted.
+  it('keeps the surrounding context visible inside the block', () => {
+    const nav = [
+      { href: '/about', label: 'About' },
+      { href: '/contact', label: 'Contact' },
+    ]
+    const out = render(
+      '{{#each nav}}{{#isActive ../page href=href}}{{label}}:{{active}} {{/isActive}}{{/each}}',
+      { page: { pageURL: 'about.html' }, nav },
+    )
+    expect(out).toBe('About:active Contact: ')
+  })
+
+  it('lets the hash win over a same-named key in the surrounding context', () => {
+    expect(
+      render(
+        '{{#isActive page href="/about" label="Hash"}}{{label}}{{/isActive}}',
+        {
+          page: { pageURL: 'about.html' },
+          label: 'Context',
+        },
+      ),
+    ).toBe('Hash')
+  })
   it('matches the page URL exactly, treating index as /', () => {
     expect(
       render(tpl, { page: { pageURL: 'about.html' }, href: '/about' }),

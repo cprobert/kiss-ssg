@@ -73,3 +73,38 @@ describe('{{canonical}} and sitemap.xml', () => {
     },
   )
 })
+
+// A site that is extensionLess everywhere still has to emit one literal
+// `404.html`: Netlify and Cloudflare Pages look for that exact filename at the
+// publish root and will not fall back to `404/index.html`. `options.config` is
+// documented as per-page config overrides merged over the global config, so
+// `config: { extensionLess: false }` on that one page is the natural way to
+// ask for it — and it was accepted and then ignored, because the output path
+// was resolved from the instance's config rather than the page's.
+describe('per-page extensionLess', () => {
+  it('lets one page opt out of a site-wide extensionLess', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'home',
+      'src/pages/about.hbs': 'about',
+      'src/pages/404.hbs': 'not found',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://e.com/',
+      extensionLess: true,
+      logger: silentLogger,
+    })
+      .page({ view: 'index.hbs' })
+      .page({ view: 'about.hbs' })
+      .page({ view: '404.hbs', slug: '404', config: { extensionLess: false } })
+      .generate()
+    await kiss.complete()
+
+    const built = utils.globFiles(site.build, '**/*.html').sort()
+    // The rest of the site is unchanged: still folders.
+    expect(built.some((f) => f.endsWith('about/index.html'))).toBe(true)
+    // The page that opted out is a file.
+    expect(built.some((f) => f.endsWith('404.html'))).toBe(true)
+    expect(built.some((f) => f.endsWith('404/index.html'))).toBe(false)
+  })
+})

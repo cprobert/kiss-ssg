@@ -1,12 +1,15 @@
-import Kiss from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
-import { loadPosts, summaryCard } from './11-blog/controllers/post.js'
-import { tagRecords } from './11-blog/controllers/tag.js'
+// Tier 2 of the build-script convention (llms.txt § The build script), and the
+// only example that has earned a seam. `config/site.js` holds the facts this
+// site states more than once — its name reaches the sitemap, the feed's channel
+// title and llms.txt — which is what the config/ seam is FOR: it is earned by
+// duplication, not by file length, so a site can reach it while its helpers are
+// still at tier 0. This router has no custom helpers and therefore no
+// `helpers/` folder, which is the convention working rather than a gap.
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import { loadPosts, summaryCard } from './controllers/post.js'
+import { tagRecords } from './controllers/tag.js'
+import { journal } from './config/site.js'
 
 const dev = process.argv.includes('--dev')
 
@@ -23,27 +26,28 @@ const PER_PAGE = 3
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [
     { href: 'index.html', label: 'The journal' },
     { href: 'blog/index.html', label: 'All posts', folderMatch: true },
     { href: 'blog/tags/index.html', label: 'Tags' },
   ],
   folders: {
-    src: './11-blog',
-    build: '../public/11-blog',
+    src: '.',
+    build: '../../public/11-blog',
     layouts: sharedFolders.layouts,
     assets: sharedFolders.assets,
     // Source, not output: it sits outside the build folder, survives
     // cleanBuild, and is committed. Nothing here writes it —
     // `npx kiss-ssg aikb 11-blog.js` does, from a build that passed.
-    aikb: './11-blog/AIKB',
+    aikb: './AIKB',
   },
   // Every URL derived from the registry — the sitemap's <loc>, the feed's
   // <link> and <guid>, each page's {{canonical}}, and the target of every
   // redirect — is joined onto this. Without it the feed and the sitemap log an
   // error and skip their files rather than guessing an origin.
-  siteUrl: 'https://asterandoak.example',
+  siteUrl: journal.siteUrl,
+  // On `config` for every template and every helper: {{config.journal.name}}.
+  journal,
   // Posts build to blog/<slug>/index.html, so every URL in this site is a
   // folder and a post can be renamed without its extension going with it.
   extensionLess: true,
@@ -58,7 +62,7 @@ const kiss = new Kiss({
 // the records *before* any page is registered, so the script reads them too —
 // through the same module that validates them, which is what keeps the two
 // readings from drifting.
-const posts = loadPosts('./11-blog/models/posts')
+const posts = loadPosts('./models/posts')
 const cards = posts.map(summaryCard)
 const tags = tagRecords(cards)
 
@@ -123,7 +127,7 @@ kiss
     path: 'blog',
     // A controller file, resolved by name from folders.controllers. It
     // validates the record and derives the slug, and it is a *subject* of the
-    // site's knowledge base — see 11-blog/AIKB/notes/controllers/post.md.
+    // site's knowledge base — see AIKB/notes/controllers/post.md.
     controller: 'post.js',
     // An ordinary page option, so it reaches every post's template. Only the
     // one post that carries a `staleLink` renders anything with it.
@@ -161,17 +165,15 @@ kiss
   // carry a date at all. `section: 'blog'` keeps the home page out; the
   // listing and tag pages have no date, so they fall out on their own.
   .feed({
-    title: 'Aster & Oak — the journal',
-    description:
-      'Brewing notes, sourcing news and bench lots from a small-batch roastery in Bristol.',
+    title: journal.name,
+    description: journal.description,
     section: 'blog',
   })
   // The registry's third reader: a crawler gets sitemap.xml, a feed client gets
   // feed.xml, an answer engine gets this.
   .llms({
-    title: 'Aster & Oak — the journal',
-    summary:
-      'A small-batch coffee roastery in Bristol. Brewing notes, sourcing news and bench lots.',
+    title: journal.name,
+    summary: journal.summary,
     sections: { root: 'The site', blog: 'The journal' },
   })
 

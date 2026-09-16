@@ -1,23 +1,20 @@
-import Kiss from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+// Tier 0: one file. Layouts and partials live in their own folders because kiss
+// puts them there, not because this router was split — the convention in
+// llms.txt § The build script is about what leaves `router.js`, and nothing has.
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
 
 const dev = process.argv.includes('--dev')
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [
     { href: 'index.html', label: 'The bar' },
     { href: 'stockists.html', label: 'Stockists' },
   ],
   folders: {
-    src: './4-layouts-and-partials',
-    build: '../public/4-layouts-and-partials',
+    src: '.',
+    build: '../../public/4-layouts-and-partials',
     // Layouts and partials are what this example is about, so it keeps its
     // own and borrows only the shared stylesheet.
     assets: sharedFolders.assets,
