@@ -30,7 +30,7 @@ have. The fan-out is registered with `id: 'blog/tags'`, so a registration's id i
 the same shape as the path they are served at.
 
 **It is a controller file rather than an inline function**, unlike the pagination loop in
-`11-blog.js`. Two reasons: the tag pages are a fan-out, so the derivation has to run per record
+`router.js`. Two reasons: the tag pages are a fan-out, so the derivation has to run per record
 rather than once; and a controller file is a _subject_ of this knowledge base, which is what
 gives this note somewhere to live. An inline controller has no file to attach a note to, and so
 can never be explained here.
@@ -62,5 +62,5 @@ redirect:` — the identity moves with the name. If tag URLs ever need to surviv
   the place to do it.
 - **`count` is the number of posts, not the number of pages.** Tag pages are not paginated. Four
   tags over six posts never needed it; a tag that grows past a screenful will, and that is the
-  moment to lift the pagination loop out of `11-blog.js` into something both listings share —
+  moment to lift the pagination loop out of `router.js` into something both listings share —
   and to give those pages explicit ids, the way `listingId` does for the journal.

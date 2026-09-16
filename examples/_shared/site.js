@@ -1,12 +1,13 @@
-import { readFileSync } from 'node:fs'
-
 // One page shell, one stylesheet, one set of shared partials for every
 // example. Each example spreads this into its own `folders` block, where an
 // explicit key beats the folder kiss derives from `folders.src`.
+// Each example is run from its OWN folder (`cd examples/3-pages && node router`),
+// the way a real site is run from its project root — so the shared shell is one
+// level up from wherever the router sits.
 export const sharedFolders = {
-  layouts: './_shared/layouts',
-  partials: './_shared/partials',
-  assets: './_shared/assets',
+  layouts: '../_shared/layouts',
+  partials: '../_shared/partials',
+  assets: '../_shared/assets',
 }
 
 // Any extra key on the config object reaches every view as `config.<key>`,
@@ -16,13 +17,6 @@ export const site = {
   name: 'Aster & Oak',
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
-
-// The demo pages print the very script that built them, read at run time, so
-// the code shown on the page can never drift from the code that ran.
-export const script = (metaUrl) => ({
-  file: `examples/${metaUrl.split('/').pop()}`,
-  text: readFileSync(new URL(metaUrl), 'utf8'),
-})
 
 // Shared by every example's `complete().catch()`: prints each failing page
 // and sets a non-zero exit code, so a broken example is loud to an agent

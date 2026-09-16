@@ -35,9 +35,12 @@ function countMatching(dir, pattern) {
 // A build that hangs (a stray `--dev`, a port bind that never resolves) must
 // fail the test rather than the whole run — `timeout` turns that into a
 // normal non-zero-exit assertion failure instead of a stuck CI job.
-function runExample(script, args = []) {
-  return spawnSync(process.execPath, [script, ...args], {
-    cwd: examplesDir,
+// Each example is run from its OWN folder, which is how a real site is run and
+// how `npm run egN` runs it — the router sits at the project root and its
+// relative folders resolve from there.
+function runExample(name, args = []) {
+  return spawnSync(process.execPath, ['router.js', ...args], {
+    cwd: path.join(examplesDir, name),
     encoding: 'utf8',
     timeout: 60000,
   })
@@ -57,15 +60,15 @@ const AIKB_FILES = [
 const aikbDir = path.join(examplesDir, '9-migrated-from-v1/AIKB')
 const readAikb = (file) => readFileSync(path.join(aikbDir, file), 'utf8')
 
-// The published command line, run the way a person records a site: from
-// `examples/`, so the script's own relative folders resolve as they do in
+// The published command line, run the way a person records a site: from the
+// example's own folder, so the router's relative folders resolve as they do in
 // every other test here.
-const runBin = (args) =>
+const runBin = (name, args) =>
   spawnSync(
     process.execPath,
     [path.join(repoRoot, 'bin/kiss-ssg.js'), ...args],
     {
-      cwd: examplesDir,
+      cwd: path.join(examplesDir, name),
       encoding: 'utf8',
       timeout: 60000,
     },
@@ -80,8 +83,8 @@ const readBlogAikb = (file) =>
 // One `check` through the published bin, as data. stdout is `{ reports, diff }`
 // once a site has a recorded baseline and a bare array before that, which is
 // why both shapes are unwrapped here rather than at each call.
-function checkReport(args) {
-  const r = runBin(['check', ...args])
+function checkReport(name, args) {
+  const r = runBin(name, ['check', ...args])
   const parsed = JSON.parse(r.stdout)
   return { status: r.status, report: (parsed.reports ?? parsed)[0] }
 }
@@ -94,14 +97,14 @@ describe.skipIf(!hasExamples)('example builds', () => {
   describe('the eleven examples, built in place', () => {
     it('1 · scan builds 2 pages', () => {
       cleanOutput('1-scan')
-      const r = runExample('1-scan.js')
+      const r = runExample('1-scan')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '1-scan'))).toBe(2)
     }, 60000)
 
     it('2 · page builds 3 pages, including feed.xml', () => {
       cleanOutput('2-page')
-      const r = runExample('2-page.js')
+      const r = runExample('2-page')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '2-page'))).toBe(3)
       expect(existsSync(path.join(publicDir, '2-page/feed.xml'))).toBe(true)
@@ -109,14 +112,14 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
     it('3 · pages fans out to 8 pages', () => {
       cleanOutput('3-pages')
-      const r = runExample('3-pages.js')
+      const r = runExample('3-pages')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '3-pages'))).toBe(8)
     }, 60000)
 
     it('4 · layouts and partials builds 2 pages', () => {
       cleanOutput('4-layouts-and-partials')
-      const r = runExample('4-layouts-and-partials.js')
+      const r = runExample('4-layouts-and-partials')
       expect(r.status).toBe(0)
       expect(
         countHtmlFiles(path.join(publicDir, '4-layouts-and-partials')),
@@ -125,14 +128,14 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
     it('5 · helpers builds 2 pages', () => {
       cleanOutput('5-helpers')
-      const r = runExample('5-helpers.js')
+      const r = runExample('5-helpers')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '5-helpers'))).toBe(2)
     }, 60000)
 
     it('6 · sitemap builds 4 pages, a sitemap, an llms.txt and a hashed stylesheet', () => {
       cleanOutput('6-sitemap')
-      const r = runExample('6-sitemap.js')
+      const r = runExample('6-sitemap')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '6-sitemap'))).toBe(4)
       expect(existsSync(path.join(publicDir, '6-sitemap/sitemap.xml'))).toBe(
@@ -159,7 +162,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // lists every season directory it finds, so a leftover from an earlier
       // run would change what it reports.
       cleanOutput('7-versioned-outputs')
-      const r = runExample('7-versioned-outputs.js')
+      const r = runExample('7-versioned-outputs')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '7-versioned-outputs'))).toBe(
         2,
@@ -171,7 +174,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
     it('8 · data-fed site fails on purpose, building the other 6 pages', () => {
       cleanOutput('8-data-fed-site')
-      const r = runExample('8-data-fed-site.js')
+      const r = runExample('8-data-fed-site')
       expect(r.status).toBe(1)
       const text = output(r)
       expect(text).toContain(
@@ -189,7 +192,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
     it('8 · --atomic discards the whole build, leaving no staging folder', () => {
       cleanOutput('8-data-fed-site')
-      const r = runExample('8-data-fed-site.js', ['--atomic'])
+      const r = runExample('8-data-fed-site', ['--atomic'])
       expect(r.status).toBe(1)
       const leftoverStaging = readdirSync(publicDir).filter((f) =>
         f.startsWith('8-data-fed-site.kiss-staging-'),
@@ -199,7 +202,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
     it('9 · migrated from v1 builds 11 pages with the recipes intact', () => {
       cleanOutput('9-migrated-from-v1')
-      const r = runExample('9-migrated-from-v1.js')
+      const r = runExample('9-migrated-from-v1')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '9-migrated-from-v1'))).toBe(
         11,
@@ -245,10 +248,10 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // the build above wrote none of this.
       const before = AIKB_FILES.map(readAikb)
 
-      const r = runBin(['aikb', '9-migrated-from-v1.js', '--summary'])
+      const r = runBin('9-migrated-from-v1', ['aikb', 'router.js', '--summary'])
 
       expect(r.status).toBe(0)
-      expect(r.stdout).toContain('recorded 9-migrated-from-v1/AIKB')
+      expect(r.stdout).toContain('recorded AIKB')
       expect(AIKB_FILES.map(readAikb)).toEqual(before)
       // A record publishes nothing, so nothing in it names the staging sibling
       // it was built through, and the authored half is untouched.
@@ -272,7 +275,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       ]
       expect(report.ok).toBe(true)
       expect(report.aikb).toEqual({
-        folder: '9-migrated-from-v1/AIKB',
+        folder: 'AIKB',
         written: true,
         notes: { missing: [], dead: [], stale: [], dangling: [] },
         subjects,
@@ -289,7 +292,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
     it('10 · asset pipeline builds 1 page and the stylesheet its step generated', () => {
       cleanOutput('10-asset-pipeline')
-      const r = runExample('10-asset-pipeline.js')
+      const r = runExample('10-asset-pipeline')
       expect(r.status).toBe(0)
       expect(countHtmlFiles(path.join(publicDir, '10-asset-pipeline'))).toBe(1)
 
@@ -306,7 +309,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
     it('11 · blog builds 14 pages, one redirect and a feed of six posts newest first', () => {
       cleanOutput('11-blog')
-      const r = runExample('11-blog.js')
+      const r = runExample('11-blog')
       expect(r.status).toBe(0)
       const dir = path.join(publicDir, '11-blog')
       expect(countHtmlFiles(dir)).toBe(14)
@@ -345,7 +348,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
     it('11 · reports no broken link by default and exactly one under --broken', () => {
       // The finding the example exists to make visible, read through the
       // published command line rather than off a log line.
-      const clean = checkReport(['11-blog.js'])
+      const clean = checkReport('11-blog', ['router.js'])
       expect(clean.status).toBe(0)
       expect(clean.report.ok).toBe(true)
       expect(clean.report.links.broken).toEqual([])
@@ -362,7 +365,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(clean.report.redirects.collisions).toEqual([])
       expect(clean.report.redirects.moved).toEqual([])
 
-      const broken = checkReport(['11-blog.js', '--broken'])
+      const broken = checkReport('11-blog', ['router.js', '--broken'])
       // Still `ok`, still exit 0: a broken link is a finding, not a failure.
       expect(broken.status).toBe(0)
       expect(broken.report.ok).toBe(true)
@@ -371,7 +374,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // id the registry does not hold fails the render instead.
       expect(broken.report.links.broken).toEqual([
         {
-          page: '../public/11-blog/blog/the-cascara-experiment/index.html',
+          page: '../../public/11-blog/blog/the-cascara-experiment/index.html',
           href: '/blog/the-kenya-microlot/',
         },
       ])
@@ -386,24 +389,24 @@ describe.skipIf(!hasExamples)('example builds', () => {
         map.pages.find((page) => page.buildTo === buildTo)?.id
 
       // A fan-out item's default id is `<registration>/<slug>` …
-      expect(idOf('../public/11-blog/blog/pour-over-at-home/index.html')).toBe(
-        'blog/post/pour-over-at-home',
-      )
+      expect(
+        idOf('../../public/11-blog/blog/pour-over-at-home/index.html'),
+      ).toBe('blog/post/pour-over-at-home')
       // … and a record's own `id` wins outright. This is the one that makes
       // `moved` able to follow a slug rename: it does not contain the slug.
       expect(
-        idOf('../public/11-blog/blog/the-cascara-experiment/index.html'),
+        idOf('../../public/11-blog/blog/the-cascara-experiment/index.html'),
       ).toBe('blog/post/cascara')
       // The registration's `id` is the items' prefix, never an id of theirs.
-      expect(idOf('../public/11-blog/blog/tags/brewing/index.html')).toBe(
+      expect(idOf('../../public/11-blog/blog/tags/brewing/index.html')).toBe(
         'blog/tags/brewing',
       )
 
       // The two pagination pages are one view rendered twice, so neither gets
       // a default id at all — these are explicit, and without them the build
       // prints the withdrawn-id notice and `{{link model.prev}}` fails.
-      expect(idOf('../public/11-blog/blog/index.html')).toBe('blog')
-      expect(idOf('../public/11-blog/blog/page/2/index.html')).toBe(
+      expect(idOf('../../public/11-blog/blog/index.html')).toBe('blog')
+      expect(idOf('../../public/11-blog/blog/page/2/index.html')).toBe(
         'blog/page/2',
       )
 
@@ -414,10 +417,10 @@ describe.skipIf(!hasExamples)('example builds', () => {
     it('11 · records a byte-identical knowledge base with two stamped notes', () => {
       const before = AIKB_FILES.map(readBlogAikb)
 
-      const r = runBin(['aikb', '11-blog.js', '--summary'])
+      const r = runBin('11-blog', ['aikb', 'router.js', '--summary'])
 
       expect(r.status).toBe(0)
-      expect(r.stdout).toContain('recorded 11-blog/AIKB')
+      expect(r.stdout).toContain('recorded AIKB')
       expect(AIKB_FILES.map(readBlogAikb)).toEqual(before)
       expect(readBlogAikb('last-build.json')).not.toContain('kiss-staging')
 
@@ -426,7 +429,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // specimen.
       const report = JSON.parse(readBlogAikb('last-build.json'))
       expect(report.ok).toBe(true)
-      expect(report.aikb.folder).toBe('11-blog/AIKB')
+      expect(report.aikb.folder).toBe('AIKB')
       expect(report.aikb.written).toBe(true)
       expect(report.aikb.notes).toEqual({
         missing: [],

@@ -1,6 +1,10 @@
+// Tier 0, at 123 lines and deliberately so: the shape here is two Kiss
+// instances in sequence, which is what makes the file long. Length alone is the
+// symptom; the trigger for a `helpers/` folder is helpers outgrowing the route
+// table, and there are none (llms.txt § The build script).
 import { existsSync, readdirSync } from 'node:fs'
-import Kiss from '../lib/kiss.js'
-import { sharedFolders, site, script } from './_shared/site.js'
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site } from '../_shared/site.js'
 
 // The "cohort" here is a season: a fresh menu built once and never rebuilt.
 // It becomes a filesystem path (`folders.build`), so it has to look like a
@@ -15,20 +19,18 @@ if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(season)) {
   process.exit(1)
 }
 
-const archiveDir = '../public/7-versioned-outputs'
+const archiveDir = '../../public/7-versioned-outputs'
 const seasonDir = `${archiveDir}/${season}`
-const built = script(import.meta.url)
 
 // One Kiss instance per season. `folders.build` is the only thing that
 // differs between two runs of this script; `season` reaches the layout as
 // `config.season` and is the only thing that differs in the rendered page.
 const kiss = new Kiss({
   site,
-  script: built,
   season,
   nav: [{ href: 'index.html', label: 'This season' }],
   folders: {
-    src: './7-versioned-outputs',
+    src: '.',
     layouts: sharedFolders.layouts,
     partials: sharedFolders.partials,
     build: seasonDir,
@@ -78,10 +80,9 @@ const seasons = existsSync(archiveDir)
 
 const indexKiss = new Kiss({
   site,
-  script: built,
   seasons,
   folders: {
-    src: './7-versioned-outputs',
+    src: '.',
     build: archiveDir,
     // No assets of its own: a copied stylesheet would land in `archiveDir`
     // itself and the next run's `readdirSync` above would list it as if it

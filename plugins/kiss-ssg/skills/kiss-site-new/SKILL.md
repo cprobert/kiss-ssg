@@ -41,13 +41,24 @@ Per-module detail, if you need it, is in `node_modules/kiss-ssg/AIKB/`.
 
 `node_modules/kiss-ssg/examples/README.md` lists eleven runnable sites in two tiers. Pick the one whose _situation_ matches and copy its structure — its folder layout, its script shape, its controller pattern — never its content.
 
-| Shape                                                                      | Exemplar                                                                                                           |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| One build per edition/season/version, each into its own folder             | `node_modules/kiss-ssg/examples/7-versioned-outputs.js`                                                            |
-| Pages fanned out from data you do not control, validated in the controller | `node_modules/kiss-ssg/examples/8-data-fed-site.js`                                                                |
-| A v1 project being moved to v2                                             | `node_modules/kiss-ssg/examples/9-migrated-from-v1.js` — and use the `kiss-site-migrate` skill instead of this one |
-| A blog, a news or events section — anything dated, paginated or tagged     | `node_modules/kiss-ssg/examples/11-blog/` — also the exemplar for the four habits in step 5 below                  |
-| A single narrower question (which call, which option, which helper)        | Examples 1–6, the feature reference                                                                                |
+| Shape                                                                      | Exemplar                                                                                                                  |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| One build per edition/season/version, each into its own folder             | `node_modules/kiss-ssg/examples/7-versioned-outputs/router.js`                                                            |
+| Pages fanned out from data you do not control, validated in the controller | `node_modules/kiss-ssg/examples/8-data-fed-site/router.js`                                                                |
+| A v1 project being moved to v2                                             | `node_modules/kiss-ssg/examples/9-migrated-from-v1/router.js` — and use the `kiss-site-migrate` skill instead of this one |
+| A blog, a news or events section — anything dated, paginated or tagged     | `node_modules/kiss-ssg/examples/11-blog/` — also the exemplar for the four habits in step 5 below                         |
+| A single narrower question (which call, which option, which helper)        | Examples 1–6, the feature reference                                                                                       |
+
+The same table read by **router shape** — how much a site has had to split up, which is the other
+axis `examples/README.md` indexes. An agent arrives at one example rather than reading the set, so
+pick on both axes:
+
+| How complex is the site?                                                   | Look at                                                                                                                                                                                |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One file is plenty — a handful of pages, no custom helpers                 | Any of examples 1–8 and 10. Every one is tier 0, and each router's header says why it was _not_ split                                                                                  |
+| It has one custom helper and you are wondering whether that earns a folder | `node_modules/kiss-ssg/examples/9-migrated-from-v1/router.js` — one helper, kept inline, with the threshold stated beside it                                                           |
+| A fact appears in both the markup and the feed or the JSON-LD              | `node_modules/kiss-ssg/examples/11-blog/` — a `config/` seam, earned by duplication rather than by length                                                                              |
+| Four or more custom helpers, outgrowing the route table                    | No shipped example is this big. `llms.txt` § The build script has the shape: `helpers/index.js` composing one `register*Helpers(kiss)` per kind, called immediately after `new Kiss()` |
 
 Run the exemplar before you change anything, so you know what its output and exit code are meant to look like. Example 8 exits 1 on purpose.
 

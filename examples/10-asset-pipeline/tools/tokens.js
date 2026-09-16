@@ -4,8 +4,8 @@
 // dependency-free (and deliberately not a kiss module): the whole point of
 // `config.assets.pipeline` is that kiss knows nothing about the tool.
 //
-//   node 10-asset-pipeline/tools/tokens.js            # one shot: the `run` step
-//   node 10-asset-pipeline/tools/tokens.js --watch    # stays up: the `watch` step
+//   node tools/tokens.js            # one shot: the `run` step
+//   node tools/tokens.js --watch    # stays up: the `watch` step
 //
 // Paths are resolved against this file, never against the cwd, so the same
 // command works from `examples/` and from the repo root. `KISS_ASSETS` — which

@@ -1,21 +1,18 @@
-import Kiss, { utils } from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+// Tier 0: one file. A fan-out does not by itself earn a seam — what earns one
+// is helpers outgrowing the route table, or a fact appearing in both the markup
+// and the structured data. Neither has happened here.
+import Kiss, { utils } from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
 
 const dev = process.argv.includes('--dev')
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [
     { href: 'index.html', label: 'Home' },
     { href: 'roasts/index.html', label: 'Roasts', folderMatch: true },
   ],
-  folders: { src: './3-pages', build: '../public/3-pages', ...sharedFolders },
+  folders: { src: '.', build: '../../public/3-pages', ...sharedFolders },
   verbose: true,
   dev,
 })

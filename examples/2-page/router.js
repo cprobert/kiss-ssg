@@ -1,21 +1,18 @@
-import Kiss from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+// Tier 0: one file. Config, the page table, the terminal chain. Extract
+// `helpers/` once custom helpers pass about a third of the file or there are
+// more than about three (llms.txt § The build script) — this has none.
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
 
 const dev = process.argv.includes('--dev')
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [
     { href: 'index.html', label: 'Today on the shelf' },
     { href: 'about.html', label: 'The roastery' },
   ],
-  folders: { src: './2-page', build: '../public/2-page', ...sharedFolders },
+  folders: { src: '.', build: '../../public/2-page', ...sharedFolders },
   verbose: true,
   dev,
 })

@@ -1,29 +1,29 @@
+// Tier 0 — and the clearest case in the set, because this router DOES register a
+// custom helper. One helper, in a 200-line file, is neither of the thresholds in
+// llms.txt § The build script ("more than about three, or more than about a
+// third of the file"), so it stays inline. A `helpers/index.js` composing a
+// single registrar would be pure ceremony. Extract when there is a second and a
+// third, not before.
 import { existsSync } from 'node:fs'
 // `utils` is a named export in v2, not `kiss-ssg/libs/utils.js`.
-import Kiss, { utils } from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
+import Kiss, { utils } from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
 
 const dev = process.argv.includes('--dev')
 
 // Named once, because the page below reports it: under `npx kiss-ssg check` and
 // `npx kiss-ssg aikb` the engine builds into a staging sibling with a random
 // name, so `kiss.config.folders.build` is not the same string twice.
-const buildFolder = '../public/9-migrated-from-v1'
+const buildFolder = '../../public/9-migrated-from-v1'
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [{ href: 'index.html', label: 'The recipes' }],
   // v2 reads these folder keys and no others. `root` and `static` were in the
   // v1 defaults but no module ever read them, so they are gone rather than
   // quietly ignored — a `root:` key here would just sit there unread.
   folders: {
-    src: './9-migrated-from-v1',
+    src: '.',
     build: buildFolder,
     layouts: sharedFolders.layouts,
     assets: sharedFolders.assets,
@@ -32,7 +32,7 @@ const kiss = new Kiss({
     // which is why it is named here rather than picked up with the rest.
     // Nothing here writes it — `npx kiss-ssg aikb 9-migrated-from-v1.js` does,
     // from a build that passed. An ordinary build only reports on it.
-    aikb: './9-migrated-from-v1/AIKB',
+    aikb: './AIKB',
   },
   verbose: true,
   dev,

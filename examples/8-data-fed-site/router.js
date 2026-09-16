@@ -1,14 +1,9 @@
-import Kiss from '../lib/kiss.js'
-import {
-  sharedFolders,
-  site,
-  script,
-  reportBuildFailure,
-} from './_shared/site.js'
-import {
-  missingFields,
-  slugFor,
-} from './8-data-fed-site/controllers/stockist.js'
+// Tier 0: one file. The validation that makes this example what it is lives in
+// a controller, which is where kiss already puts it — not a seam this convention
+// adds. See llms.txt § The build script.
+import Kiss from '../../lib/kiss.js'
+import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import { missingFields, slugFor } from './controllers/stockist.js'
 
 const dev = process.argv.includes('--dev')
 
@@ -21,11 +16,10 @@ const cleanBuild = process.argv.includes('--atomic') ? 'atomic' : true
 
 const kiss = new Kiss({
   site,
-  script: script(import.meta.url),
   nav: [{ href: 'index.html', label: 'Where to buy' }],
   folders: {
-    src: './8-data-fed-site',
-    build: '../public/8-data-fed-site',
+    src: '.',
+    build: '../../public/8-data-fed-site',
     ...sharedFolders,
   },
   siteUrl: 'https://asterandoak.example',

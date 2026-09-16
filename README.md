@@ -202,7 +202,7 @@ kiss has no notion of "versions" or "sites" — it is one `Kiss` instance buildi
 
 The one thing kiss cannot validate for you: the value that becomes `folders.build` is yours before it ever reaches the constructor. Check it looks like a slug — not empty, no `..`, no path separators — before building, since an empty or malformed value resolves against the parent of every output you have already published, not just the one you meant to build.
 
-See `examples/7-versioned-outputs.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 and 11 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, the v1 → v2 migration recipes, and a blog with pagination, tag pages, a feed and a redirect. Every example builds and exits by default (`npm run eg1` … `eg11`); pass `--dev` to run examples 1–6, 8, 9, 10 and 11 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
+See `examples/7-versioned-outputs/router.js` for a full runnable version: one seasonal menu per season, each with its own copied assets, plus a small second build that lists every season folder found on disk. `examples/` ships in the published package, so `node_modules/kiss-ssg/examples/README.md` is a copy you can run without cloning the repo. Examples 1–6 and 10 are the feature reference, one idea each; 7–9 and 11 are exemplars — whole sites to copy by shape: versioned outputs, a data-fed site with one broken record, the v1 → v2 migration recipes, and a blog with pagination, tag pages, a feed and a redirect. Each example is a site in its own folder with its own `router.js`, run from that folder the way a real site is. Every example builds and exits by default (`npm run eg1` … `eg11`); pass `--dev` to run examples 1–6, 8, 9, 10 and 11 as a live dev server instead (7 takes a season slug in place of `--dev`, and 8 exits 1 by design).
 
 ### Remote models
 
@@ -281,7 +281,7 @@ Every `run` is executed through a shell, in order, awaited, **before the asset c
 
 `name` defaults to the first word of `run`, `cwd` to `process.cwd()`, and each command inherits `process.env` plus `KISS_BUILD`, `KISS_ASSETS` and `KISS_DEV` (`'1'` or `'0'`). `watch` is the dev-mode half: in `dev: true` only, it is started once — after that step's `run` has succeeded — kept for the session with its output going through kiss's logger, and ended by `close()`. A watch process that dies on its own is logged, not a build failure, and a rebuild never starts a second one. Editing a page, a partial or a layout does **not** re-run the steps; a tool that must see those edits is what `watch` is for.
 
-`kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline.js` (`npm run eg10`) is a runnable version that needs nothing installed.
+`kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline/` (`npm run eg10`) is a runnable version that needs nothing installed.
 
 ##### Two silent traps in the Tailwind recipe
 

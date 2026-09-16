@@ -141,6 +141,33 @@ calls rather than defects:
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+**2026-09-16 — criterion 6 cannot be met honestly, and is amended.**
+
+The captured criteria said "examples 5–6 show tier 1 (`helpers/`); 11 shows tier 2". Counting
+`registerHelper` calls across all eleven routers before writing anything: **ten have none, and
+example 9 has exactly one.** Example 5 is the _built-in_ helper reference — every helper it shows
+is one kiss ships — so there is nothing custom there to extract.
+
+Meeting the criterion as written would mean inventing custom helpers for two examples purely to
+justify a folder, which is the cargo-culting this branch's own thresholds exist to prevent, and it
+would be the first thing an agent copied. Criterion 6 is amended to what the set can demonstrate
+truthfully:
+
+- **Examples 1–10 are tier 0**, each router's header saying why it was _not_ split. Example 9
+  carries the sharpest version: one helper, in a 200-line file, is neither threshold, so it stays
+  inline and the header says so. That teaches the rule better than a manufactured folder would.
+- **Example 11 is tier 2**, earned honestly: its name was written out three times (the feed's
+  channel title, `llms.txt`'s heading, the listing prose) and its description twice.
+  `config/site.js` now holds both. It is the demonstration that the `config/` seam is earned by
+  **duplication, not by length** — the independent-triggers finding from the pro-plumbing dogfood,
+  now shown in running code rather than only asserted in prose.
+- **No shipped example reaches the helper-extraction threshold, and the docs now say so** rather
+  than implying one does. `examples/README.md` and `kiss-site-new`'s new router-shape table both
+  name the gap and describe the shape a site takes when it gets there.
+
+The alternative — a twelfth example built specifically to have four helpers — stays a non-goal. A
+site that exists to demonstrate a folder is not an exemplar of anything.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
