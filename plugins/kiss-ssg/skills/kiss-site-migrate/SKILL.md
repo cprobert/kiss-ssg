@@ -26,6 +26,20 @@ Open the project's `CLAUDE.md` (create it if the project has none) and make sure
 
 A migrated site is one that will be edited again; the import makes every later Claude Code session read the v2 contract instead of remembering v1. Add the line if it is missing, keep it if it is there, and say which you did.
 
+### 2a. Rename the build script to `router.js` — then grep for the old name
+
+A v1 site's script is usually `generate.js`, `site.js` or `build.js`. v2's convention is `router.js` at the project root (`node_modules/kiss-ssg/llms.txt` § The build script), and a migration is the cheapest moment to adopt it: you are already editing the file, and the alternative is renaming it on some later branch when far more things point at it.
+
+The rename itself is one `git mv`. What makes it worth a step of its own is that **nothing reports a reference it breaks.** Grep the whole repo for the old basename before you build, and fix every hit:
+
+- `package.json` — `main`, and every script that runs it (`build`, `dev`, `check`, anything a host calls).
+- The host's build command and any CI workflow — Netlify, Cloudflare Pages, GitHub Actions.
+- A CSS toolchain's source globs. Tailwind v4's `@source` is the sharp one: a glob matching nothing is scanned in silence, so class names used only in the build script stop compiling, the stylesheet's content hash changes, and every page that links it changes with it. A real site lost a build to exactly this.
+- Any `npx kiss-ssg check <script>` or `npx kiss-ssg aikb <script>` invocation, in scripts and in the project's `CLAUDE.md`.
+- The project's own docs and `README.md`.
+
+If the migration is aiming at byte-identical output (step 4), do the rename as its own commit before the recipes, so the diff that proves the migration is not also carrying a rename.
+
 ### 3. Diff the site's script against each recipe
 
 Go recipe by recipe against the site's own build script, controllers and helpers, and record for each: applies / does not apply. The two consumer migrations both found most recipes did not apply — knowing that is the point of the pass.

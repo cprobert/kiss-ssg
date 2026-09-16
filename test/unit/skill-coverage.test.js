@@ -85,6 +85,28 @@ const COVERAGE = [
     ],
   },
   {
+    // The convention itself, not just the filename: a skill that says
+    // `router.js` without saying when a site earns `helpers/` teaches the
+    // folder and not the rule, which is how a four-page site ends up with an
+    // index.js composing two registrars over one helper.
+    feature: 'the router convention (router.js, and the extraction thresholds)',
+    pattern: /router\.js/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
+    ],
+  },
+  {
+    feature: 'the tiers that decide when to extract helpers/ and config/',
+    pattern: /The build script/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
+    ],
+  },
+  {
     feature: "the site map's Id column as the link targets",
     pattern: /\bId\b.*column|`Id`|\*\*Id\*\*/,
     skills: [
