@@ -456,6 +456,29 @@ describe('evaluateNotes', () => {
     })
   })
 
+  // A controller named in camelCase is the case this got wrong: the canonical
+  // note path is lower-cased, so a note named after its own subject
+  // (`jobList.js` -> `jobList.md`) was reported missing AND dead at once —
+  // two findings for one casing difference, and no way to satisfy both by
+  // reading the rule the generated README states (`<file, no .js>.md`).
+  it('accepts a note whose filename differs from the canonical one only in case', async () => {
+    const camel = () =>
+      map({
+        stack: [
+          entry('./public/a.html', {
+            model: 'none',
+            controller: 'file:jobList.js',
+          }),
+        ],
+      })
+    site = await makeSite({
+      'AIKB/notes/controllers/jobList.md': '## What it does',
+    })
+    const notes = evaluateNotes(camel(), `${site.root}/AIKB/notes`)
+    expect(notes.missing).toEqual([])
+    expect(notes.dead).toEqual([])
+  })
+
   it('treats a note filed anywhere unexpected as dead', async () => {
     site = await makeSite({
       'AIKB/notes/controllers/stockist.md': 'x',

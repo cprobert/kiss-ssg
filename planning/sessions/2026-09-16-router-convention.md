@@ -97,6 +97,45 @@ following the edited `kiss-site-new` on a throwaway site, before the examples mo
 
 ### Amendments
 
+**2026-09-16 — the remit now includes patching the engine, and the impact surface has moved.**
+
+The operator has established a feedback loop: consumer sites (`a1k9training`,
+`pro-plumbing`) build against the **live** kiss-ssg working tree rather than a published
+version, and unexpected behaviour found while building a real site is patched here rather than
+worked around there. `pro-plumbing` is wired with `file:../kiss-ssg`, which npm symlinks, so a
+patch in this repo is live in that site's next build with no reinstall.
+
+Two engine defects came out of the first site built that way, and both are fixed on this branch:
+
+1. **A page's `config: { extensionLess: false }` was accepted and silently ignored.**
+   `_preparePage` read `extLess` from the instance's config rather than the page's resolved one,
+   so a site that is `extensionLess` everywhere could not emit the literal `404.html` that
+   Netlify and Cloudflare Pages require and will not fall back from. Fixed in `lib/kiss.js`;
+   `test/integration/canonical.test.js` § per-page extensionLess, seen red first.
+2. **A camelCase controller could not have a note named after itself.** `notePathFor` lower-cases,
+   the generated README documents the rule as the filename without `.js`, so `jobList.js` with a
+   `jobList.md` beside it was reported `missing` _and_ `dead` — two findings for one casing
+   difference, and unactionable in either direction. `evaluateNotes` is now case-tolerant on read
+   and canonical on write. `test/unit/aikb.test.js`, seen red first.
+
+**This changes the impact surface from `tooling & docs` to `public API`, and the bump from patch
+to minor.** Per-page `extensionLess` is behaviour a consuming site can observe and now depends on;
+`llms.txt` § API documents it. That is the operator's call at `/branch-close` and it is recorded
+here so the bump is read off intent rather than re-derived from the diff.
+
+Non-goals amended accordingly: "no change to `lib/`" is withdrawn. Everything else stands —
+still no renumbering, no twelfth example, and a1k9training is still untouched.
+
+Two findings from the same session are **not** patched, deliberately, because both are judgement
+calls rather than defects:
+
+- The dangling-reference check flags a backticked file extension in prose (`` `.json` ``) and a
+  path into the engine's own source (`lib/controller-resolver.js`) cited by a site's note. Both
+  are arguably correct strictness. Reworded in the site instead; raised for the operator.
+- `kiss-site-new`'s pointer to `llms.txt` § The build script does not resolve against the latest
+  published version (2.2.1). It resolves on release of this branch, but a plugin skill can always
+  outrun the installed engine.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;
