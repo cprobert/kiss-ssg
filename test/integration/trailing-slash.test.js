@@ -52,6 +52,7 @@ const buildSite = async ({ trailingSlash } = {}) => {
     folders: site.folders,
     siteUrl: 'https://e.com',
     logger: silentLogger,
+    redirects: { format: 'netlify' },
     ...(trailingSlash === undefined ? {} : { links: { trailingSlash } }),
   })
   instances.push(kiss)

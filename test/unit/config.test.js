@@ -145,8 +145,24 @@ describe('resolveConfig', () => {
     })
   })
 
-  it('defaults the redirects block to the Netlify format', () => {
-    expect(resolveConfig({}).redirects).toEqual({ format: 'netlify' })
+  it('defaults the redirects block to no host format at all', () => {
+    // The IR is the baseline and a host encoding is opt-in: kiss does not
+    // guess where a site is deployed. A build with aliases and no format
+    // says so once, in a notice, because v2.3 always wrote `_redirects`.
+    expect(resolveConfig({}).redirects).toEqual({ format: null })
+  })
+
+  it('takes a list of formats, so a site can deploy to two hosts', () => {
+    expect(
+      resolveConfig({ redirects: { format: ['netlify', 'firebase'] } })
+        .redirects.format,
+    ).toEqual(['netlify', 'firebase'])
+  })
+
+  it('refuses a typo inside a list rather than quietly dropping it', () => {
+    expect(() =>
+      resolveConfig({ redirects: { format: ['netlify', 'firbase'] } }),
+    ).toThrow(/"firbase"/)
   })
 
   it('merges the redirects block one level deep and keeps unknown keys', () => {
@@ -155,9 +171,9 @@ describe('resolveConfig', () => {
     })
     expect(
       resolveConfig({ redirects: { format: undefined } }).redirects.format,
-    ).toBe('netlify')
+    ).toBe(null)
     expect(resolveConfig({ redirects: { statusCode: 308 } }).redirects).toEqual(
-      { format: 'netlify', statusCode: 308 },
+      { format: null, statusCode: 308 },
     )
   })
 
@@ -182,9 +198,8 @@ describe('resolveConfig', () => {
     expect(() => resolveConfig({ redirects: { format: 'firbase' } })).toThrow(
       /"firbase"/,
     )
-    expect(() => resolveConfig({ redirects: { format: null } })).toThrow(
-      /config\.redirects\.format/,
-    )
+    // `null` is legal: it is the default and means "no host format".
+    expect(() => resolveConfig({ redirects: { format: null } })).not.toThrow()
   })
 
   it('carries an unknown links key through, like the other blocks', () => {

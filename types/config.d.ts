@@ -92,7 +92,12 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * one level deep.
  *
  * @typedef {Object} KissRedirects
- * @property {'netlify'|'firebase'|'vercel'|'htaccess'|'none'|RedirectWriter} format the encoding for the host file, or a function that writes it
+ * @property {RedirectFormat|RedirectFormat[]|null} format the host encodings to emit beside `redirects.json`; `null` (the default) emits none
+ */
+/**
+ * One host encoding: a built-in name, or a function that writes it.
+ *
+ * @typedef {'netlify'|'firebase'|'vercel'|'htaccess'|'none'|RedirectWriter} RedirectFormat
  */
 /**
  * A custom redirect writer: given the resolved rules, return the files to write
@@ -182,7 +187,7 @@ export const DEFAULT_LINKS: Readonly<{
     trailingSlash: true;
 }>;
 export const DEFAULT_REDIRECTS: Readonly<{
-    format: "netlify";
+    format: any;
 }>;
 export const REDIRECT_FORMATS: readonly string[];
 export const DEFAULT_CONFIG: Readonly<{
@@ -215,7 +220,7 @@ export const DEFAULT_CONFIG: Readonly<{
         trailingSlash: true;
     }>;
     redirects: Readonly<{
-        format: "netlify";
+        format: any;
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -362,10 +367,14 @@ export type KissLinks = {
  */
 export type KissRedirects = {
     /**
-     * the encoding for the host file, or a function that writes it
+     * the host encodings to emit beside `redirects.json`; `null` (the default) emits none
      */
-    format: "netlify" | "firebase" | "vercel" | "htaccess" | "none" | RedirectWriter;
+    format: RedirectFormat | RedirectFormat[] | null;
 };
+/**
+ * One host encoding: a built-in name, or a function that writes it.
+ */
+export type RedirectFormat = "netlify" | "firebase" | "vercel" | "htaccess" | "none" | RedirectWriter;
 /**
  * A custom redirect writer: given the resolved rules, return the files to write
  * into the build folder. A relative `file` is resolved against the build

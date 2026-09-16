@@ -352,8 +352,8 @@ declare class Kiss {
     private _redirectsPath;
     /** @private */
     private _redirectsJsonPath;
-    /** @private @type {string} */
-    private _redirectsFormat;
+    /** @private @type {string[]} */
+    private _redirectsFormats;
     /** @private @type {string[]} */
     private _redirectsFiles;
     /** @private @type {BuildRedirects|null} */

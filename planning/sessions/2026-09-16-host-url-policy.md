@@ -107,6 +107,43 @@ Added success criteria:
 - [x] `redirects.format: 'htaccess'` writes `redirects.htaccess` as a **fragment**, never the live
       `.htaccess` — the same ownership rule as the firebase and vercel fragments
 
+**2026-09-16 — scope amended again by the operator: `redirects.format` becomes a list, and the
+IR becomes the default. THIS MAKES THE BRANCH A MAJOR.**
+
+Finding 2's third option, taken now rather than deferred. `format` accepts a list so one build can
+emit several host encodings (`['netlify', 'firebase']` — Netlify previews and Firebase production
+is a real shape), and it is **unset by default**: `redirects.json` is the baseline and a host
+encoding is opt-in, because kiss cannot know where a site deploys.
+
+**The semver consequence, stated at the point of decision.** `_redirects` on the default path is
+v2.3.0 shipped behaviour. A 2.3 site with `aliases` that upgrades and changes nothing would stop
+emitting it and its old URLs would start 404ing on Netlify. That is a breaking change: the bump is
+**3.0.0**, not 2.4.0, and the captured Impact surface moves from "public API additions are minor"
+to a major. The operator decides the number at `/branch-close`; this records why it cannot be minor.
+
+Mitigation, so the break is loud rather than silent — which is the whole subject of this branch:
+`format` defaults to `null` meaning _never chose_, distinct from `'none'`/`[]` meaning _chose the
+IR alone_. A build with aliases under `null` logs one notice naming the fix. An upgrader is told;
+a deliberate IR-only site is not nagged. The distinction lives in the config value rather than a
+hidden flag so a site can express it.
+
+Two readings of "uses the format instead" were possible and I took the first, stated here so it is
+reviewable rather than assumed: **the IR is always written** and a named format adds host files
+beside it. `report().redirects.json`, `rules` and the whole portable-fact argument rest on the IR
+being unconditional; making it disappear whenever a format is named would undo the branch.
+
+Report shape moves again: `redirects.format` (string) becomes `redirects.formats` (string list),
+and `file` is now documented as the **first** host file with `files` authoritative. Both example
+records re-recorded deliberately, per pulse 2.
+
+Added success criteria:
+
+- [x] `format` accepts a list; `['netlify','firebase']` emits both host files from one build
+- [x] `format` unset writes the IR alone and logs one notice when the build has aliases
+- [x] `'none'` and `[]` write the IR alone and are silent
+- [x] every entry of a list is validated, so one typo in four is named not dropped
+- [x] duplicates collapse and order is kept
+
 **2026-09-16 — criterion 1 was written wrong, and is amended rather than reinterpreted.**
 It said an unset config produces byte-identical output "with no test edited to accommodate it".
 Two parts of that could never have held, and both are consequences of decisions the operator had
@@ -162,6 +199,27 @@ Evidence, all re-run at this checkpoint rather than recalled:
 Carried, not blocking: one test failed on a full-suite run at 16:25 and passed on every run since;
 I could not capture which before the output rotated, so it is recorded as an unidentified flake to
 watch for at close rather than as a known-good.
+
+**2026-09-16 — pulse 4. The format list landed; the branch is now a major.**
+
+Evidence re-run at this checkpoint:
+
+- `npm run gates` — five green, 1338 tests.
+- **Red-first**: `git stash push lib/`, then the two new integration cases failed against the
+  pre-change engine ("writes only the IR by default, and says so once"; "emits both host files for
+  a site that deploys to two hosts"); restored, both pass.
+- **Operator eyeball, on real builds rather than fixtures.** Two hosts:
+  `format: ['netlify','firebase']` emitted `redirects.json`, `_redirects` (two sorted 301 lines)
+  and `redirects.firebase.json` (the same two as `{source, destination, type: 301}`) — read by eye,
+  all three agreeing. Then the same site with the key removed: `redirects.json` only, no
+  `_redirects`, and the notice printed — `aliases written to redirects.json only — set
+config.redirects.format …`. That is the upgrade path working as designed.
+- The blast radius was itself the evidence: **20 existing tests failed** on the default change,
+  every one of them a place that had assumed `_redirects` happens by itself. Each now declares
+  `redirects: { format: 'netlify' }`, which is exactly what a real 2.3 site must do. Example 11,
+  the redirect exemplar, declares it too — the docs saying out loud what the code now requires.
+
+Decision: continue. Not closed; no version bump, no CHANGELOG, no PR.
 
 **2026-09-16 — pulse 3. Two self-review findings closed; a third referred to the operator.**
 

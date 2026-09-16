@@ -51,6 +51,13 @@ const kiss = new Kiss({
   // Posts build to blog/<slug>/index.html, so every URL in this site is a
   // folder and a post can be renamed without its extension going with it.
   extensionLess: true,
+  // Where this site deploys, stated rather than assumed. `redirects.json` — the
+  // host-neutral list — is written whatever this says; `format` names the
+  // vendor encodings to put beside it, and takes an array when a site deploys
+  // to more than one host (`['netlify', 'firebase']`). Leave it off and a
+  // build with `aliases` writes only the IR and says so in a notice: kiss will
+  // not guess a host and quietly emit a file yours does not read.
+  redirects: { format: 'netlify' },
   verbose: true,
   dev,
   port: 3011,

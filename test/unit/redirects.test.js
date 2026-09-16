@@ -9,6 +9,7 @@ import {
   normaliseAlias,
   redirectFindings,
   renderFirebaseRedirects,
+  resolveRedirectFormats,
   renderHtaccessRedirects,
   renderRedirects,
   renderRedirectsJson,
@@ -493,6 +494,7 @@ describe('writeRedirects', () => {
 
   it('writes the file, and reports the rules it wrote', async () => {
     const config = await build()
+    config.redirects = { format: 'netlify' }
     const result = await writeRedirects(
       [entry(`${config.folders.build}/about.html`, { aliases: ['/old'] })],
       { config, logger: silentLogger },
@@ -633,6 +635,43 @@ describe('the redirect formats', () => {
   })
 })
 
+describe('resolveRedirectFormats', () => {
+  it('treats an unset format as no host encoding at all', () => {
+    // The IR is the baseline. kiss does not guess where a site is deployed,
+    // so the default emits `redirects.json` and nothing else.
+    expect(resolveRedirectFormats(undefined)).toEqual([])
+    expect(resolveRedirectFormats(null)).toEqual([])
+  })
+
+  it("treats 'none' as a readable spelling of the empty list", () => {
+    expect(resolveRedirectFormats('none')).toEqual([])
+    expect(resolveRedirectFormats(['netlify', 'none'])).toEqual(['netlify'])
+  })
+
+  it('takes a bare string or a list, the way aliases does', () => {
+    expect(resolveRedirectFormats('netlify')).toEqual(['netlify'])
+    expect(resolveRedirectFormats(['netlify', 'firebase'])).toEqual([
+      'netlify',
+      'firebase',
+    ])
+  })
+
+  it('keeps the order given and collapses duplicates', () => {
+    // Two entries naming one format would render the same file twice and the
+    // second write would be the one on disk.
+    expect(resolveRedirectFormats(['firebase', 'netlify', 'firebase'])).toEqual(
+      ['firebase', 'netlify'],
+    )
+  })
+
+  it('carries writer functions through, deduped by reference', () => {
+    const a = () => []
+    const b = () => []
+    expect(resolveRedirectFormats([a, a, b])).toEqual([a, b])
+    expect(resolveRedirectFormats(a)).toEqual([a])
+  })
+})
+
 describe('writeRedirects: format dispatch', () => {
   const build = async (redirects) => {
     temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-formats-'))
@@ -653,7 +692,7 @@ describe('writeRedirects: format dispatch', () => {
       logger: silentLogger,
     })
 
-    expect(result.format).toBe('netlify')
+    expect(result.formats).toEqual(['netlify'])
     expect(result.files).toEqual([
       `${config.folders.build}/redirects.json`,
       `${config.folders.build}/_redirects`,
@@ -713,6 +752,85 @@ describe('writeRedirects: format dispatch', () => {
       await fs.remove(temp)
       temp = null
     }
+  })
+
+  it('writes only the IR when no format is set, and flags the upgrade', async () => {
+    // v2.3 always wrote `_redirects`, so a site with aliases that never chose
+    // a format is an upgrade about to lose its redirects. `unset` is what
+    // `Kiss` turns into the one notice that says so.
+    const config = await build(undefined)
+    const result = await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(result.formats).toEqual([])
+    expect(result.unset).toBe(true)
+    expect(result.files).toEqual([`${config.folders.build}/redirects.json`])
+    expect(await fs.pathExists(`${config.folders.build}/_redirects`)).toBe(
+      false,
+    )
+  })
+
+  it("does not flag an explicit 'none' — that is a decision, not a drift", async () => {
+    const config = await build({ format: 'none' })
+    const result = await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(result.unset).toBe(false)
+    expect(result.formats).toEqual([])
+  })
+
+  it('writes one host file per format, so a site can deploy to two hosts', async () => {
+    // Netlify previews and Firebase production is a real shape, and picking
+    // one at build time would mean building twice.
+    const config = await build({ format: ['netlify', 'firebase'] })
+    const result = await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(result.formats).toEqual(['netlify', 'firebase'])
+    expect(result.files).toEqual([
+      `${config.folders.build}/redirects.json`,
+      `${config.folders.build}/_redirects`,
+      `${config.folders.build}/redirects.firebase.json`,
+    ])
+    expect(
+      await fs.readFile(`${config.folders.build}/_redirects`, 'utf8'),
+    ).toBe('/old /about 301\n')
+    expect(
+      JSON.parse(
+        await fs.readFile(
+          `${config.folders.build}/redirects.firebase.json`,
+          'utf8',
+        ),
+      ).redirects,
+    ).toEqual([{ source: '/old', destination: '/about', type: 301 }])
+  })
+
+  it('mixes a built-in format with a custom writer in one list', async () => {
+    const config = await build({
+      format: [
+        'netlify',
+        (rules) => ({
+          file: 'redirects.conf',
+          contents: rules.map((r) => `${r.from} ${r.to}`).join('\n'),
+        }),
+      ],
+    })
+    const result = await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(result.formats).toEqual(['netlify', 'custom'])
+    expect(
+      await fs.readFile(`${config.folders.build}/redirects.conf`, 'utf8'),
+    ).toBe('/old /about')
+    expect(await fs.pathExists(`${config.folders.build}/_redirects`)).toBe(true)
   })
 
   it('writes an Apache fragment, never the live .htaccess', async () => {
@@ -791,7 +909,7 @@ describe('writeRedirects: format dispatch', () => {
     expect(seen[0].buildDir).toBe(config.folders.build)
     // `'custom'` rather than the function: a machine-readable report should
     // not carry a source-code detail.
-    expect(result.format).toBe('custom')
+    expect(result.formats).toEqual(['custom'])
     expect(
       await fs.readFile(`${config.folders.build}/nginx.conf`, 'utf8'),
     ).toBe('rewrite ^/old$ /about permanent;')

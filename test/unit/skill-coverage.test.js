@@ -50,7 +50,7 @@ const COVERAGE = [
     ],
   },
   {
-    feature: 'redirects: { format } — _redirects is not every host',
+    feature: 'redirects: { format } — no default host, and it takes a list',
     pattern: /redirects: \{ format/,
     skills: [
       skill('kiss-ssg', 'kiss-site-new'),

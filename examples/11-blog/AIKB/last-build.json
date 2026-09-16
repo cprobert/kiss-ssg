@@ -157,7 +157,9 @@
       }
     ],
     "json": "../../public/11-blog/redirects.json",
-    "format": "netlify",
+    "formats": [
+      "netlify"
+    ],
     "files": [
       "../../public/11-blog/redirects.json",
       "../../public/11-blog/_redirects"

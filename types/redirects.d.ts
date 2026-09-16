@@ -154,6 +154,31 @@ export function renderVercelRedirects(rules?: RedirectRule[]): string;
  */
 export function renderHtaccessRedirects(rules?: RedirectRule[]): string;
 /**
+ * Every host encoding this build should emit, as a list.
+ *
+ * The IR is the baseline and is written whatever this returns, including for
+ * an empty list — `redirects.json` is the portable fact and `format` only ever
+ * says which *vendor encodings* to put beside it. So the list is allowed to be
+ * empty and that is the default: a site states its hosts, rather than
+ * inheriting one.
+ *
+ * A list rather than a single value because a site can legitimately deploy to
+ * more than one host — Netlify previews and Firebase production is a real
+ * shape — and picking one at build time would mean building twice. A bare
+ * string and a bare function are each a list of one, the way `aliases` takes
+ * either. `'none'` is kept as a readable spelling of `[]` and is dropped from
+ * the list rather than dispatched, which is why `HOST_FORMATS` has no row for
+ * it.
+ *
+ * Duplicates collapse: two entries naming one format would render the same
+ * file twice, and the second write would be the one on disk.
+ *
+ * @param {*} format `config.redirects.format`
+ * @returns {(string|Function)[]} the encodings to emit, in order, each either a
+ * `HOST_FORMATS` key or a writer function
+ */
+export function resolveRedirectFormats(format: any): (string | Function)[];
+/**
  * What a custom writer asked for, normalised: always a list, always with a
  * string `file` and string `contents`. A writer that returns nothing writes
  * nothing, which is a legitimate answer (it may have posted the rules
@@ -249,8 +274,9 @@ export function redirectFindings({ rules, currentPages, previousPages, buildDir,
  * @typedef {Object} RedirectWriteResult
  * @property {'none'|'skipped'|'written'} status `none` when no page has an alias
  * @property {RedirectRule[]} rules what the file says, or would have said
- * @property {string[]} files every path written, build-folder-relative paths made absolute, sorted as written — `redirects.json` first, then the host file
- * @property {string} format the format that ran: a built-in name, or `'custom'` for a writer function
+ * @property {string[]} files every path written, build-folder-relative paths made absolute, in write order — `redirects.json` first, then one per format
+ * @property {string[]} formats the formats that ran, in order: built-in names, and `'custom'` for each writer function; `[]` when only the IR was written
+ * @property {boolean} unset whether this build has aliases, emitted no host file, and never chose — the upgrade case worth one notice
  */
 /**
  * Writes the redirects. The one impure function here.
@@ -344,11 +370,15 @@ export type RedirectWriteResult = {
      */
     rules: RedirectRule[];
     /**
-     * every path written, build-folder-relative paths made absolute, sorted as written — `redirects.json` first, then the host file
+     * every path written, build-folder-relative paths made absolute, in write order — `redirects.json` first, then one per format
      */
     files: string[];
     /**
-     * the format that ran: a built-in name, or `'custom'` for a writer function
+     * the formats that ran, in order: built-in names, and `'custom'` for each writer function; `[]` when only the IR was written
      */
-    format: string;
+    formats: string[];
+    /**
+     * whether this build has aliases, emitted no host file, and never chose — the upgrade case worth one notice
+     */
+    unset: boolean;
 };

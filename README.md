@@ -106,7 +106,7 @@ The default config options are:
     trailingSlash: true
   },
   redirects: {
-    format: 'netlify'
+    format: null
   },
   port: 3001,
   livereloadPort: 35729,
@@ -643,7 +643,16 @@ See [Redirects](#redirects) below. `_redirects` is a Netlify and Cloudflare Page
 
 A page's `aliases` are the old URL paths it now answers. There is no method to call; an alias is a property of a page, not a file you ask for.
 
-An alias is a fact about your site — "this page used to answer `/old`" — and that fact is portable. Every alias is a **permanent** redirect: `redirects.json` records `status: 301` on each rule so a consumer has the code in the data rather than hardcoding it, but there is no way to ask for a `302`, a `308` or a `410`, and no forced or wildcard rules. The field marks the place such a thing would live, not a setting. The file it goes into is one host's encoding of it, and hosts disagree, so every settled build with an alias writes **two** files: `redirects.json`, the host-neutral list, always; and the host file `config.redirects.format` names.
+An alias is a fact about your site — "this page used to answer `/old`" — and that fact is portable. Every alias is a **permanent** redirect: `redirects.json` records `status: 301` on each rule so a consumer has the code in the data rather than hardcoding it, but there is no way to ask for a `302`, a `308` or a `410`, and no forced or wildcard rules. The field marks the place such a thing would live, not a setting. The file it goes into is one host's encoding of it, and hosts disagree. So every settled build with an alias writes `redirects.json` — the host-neutral list — **always**, and then whatever host encodings `config.redirects.format` names beside it.
+
+**`format` is unset by default, and takes a list.** kiss does not guess where you deploy: with no `format` you get the IR and no host file. Because every version before this one always wrote `_redirects`, a build that has aliases and no `format` logs one notice telling you what to set — an explicit `'none'` or `[]` is a decision and stays silent.
+
+```js
+new Kiss({ redirects: { format: ['netlify', 'firebase'] } })
+// writes redirects.json, _redirects AND redirects.firebase.json
+```
+
+A list because a site can legitimately deploy to more than one host — Netlify previews and Firebase production is a real shape, and choosing one at build time would mean building twice. A bare string or a single function is a list of one. Duplicates collapse, order is kept, and a typo anywhere in the list throws at `new Kiss()` rather than being quietly dropped.
 
 | `redirects.format`      | Writes                                          | For                                                                                                                                          |
 | ----------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -651,7 +660,8 @@ An alias is a fact about your site — "this page used to answer `/old`" — and
 | `'firebase'`            | `redirects.firebase.json` — a fragment to merge | Firebase Hosting, which ignores `_redirects` entirely                                                                                        |
 | `'vercel'`              | `redirects.vercel.json` — a fragment to merge   | Vercel                                                                                                                                       |
 | `'htaccess'`            | `redirects.htaccess` — a fragment to `Include`  | Apache                                                                                                                                       |
-| `'none'`                | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
+| `'none'` / `[]`         | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
+| _unset_ (the default)   | nothing but the IR, plus one notice             | a site that has not said where it deploys                                                                                                    |
 | a function              | whatever it returns                             | anything else — nginx, Apache, a CDN API                                                                                                     |
 
 The Firebase, Vercel and Apache formats emit **a fragment**, not a `firebase.json`, a `vercel.json` or a `.htaccess`. Your real config file holds hosting targets, headers, rewrites and often years of hand-maintained redirect history; kiss will not rewrite it. Merge the fragment on your own terms — for Apache, by `Include`-ing `redirects.htaccess` or concatenating it. (That fragment uses mod_alias `Redirect`, not `RewriteRule`: a rewrite's left-hand side is a regex, so an alias containing a `.` would match more paths than the one it names.)
@@ -698,7 +708,7 @@ On a `.pages()` fan-out the aliases belong to **each record**, never to the regi
 
 A site with no aliases writes **no file at all**, not an empty one and not an empty IR, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone. An alias is one path: one with a space or a line break inside it is dropped, because the file is space-separated columns and one rule per line. And if the file cannot be written the build fails, the way a page that cannot be written fails it — a site published without its redirects is a site whose old URLs 404.
 
-**Three findings ride along**, all advisory and all in `report().redirects` (`{ file, aliases, removed, collisions, moved, rules, json, format, files }`, or `null` when there is nothing to say — no alias anywhere in the site, no removal and no move):
+**Three findings ride along**, all advisory and all in `report().redirects` (`{ file, aliases, removed, collisions, moved, rules, json, formats, files }` — `formats` is the list that ran, `file` is the first host file, `files` is the complete and authoritative list, or `null` when there is nothing to say — no alias anywhere in the site, no removal and no move):
 
 - `removed` — pages the **last record** wrote that this build does not, minus any an alias now covers: a page that vanished with no redirect. It is the one finding that needs a recorded knowledge base (see [Recording the knowledge base](#recording-the-knowledge-base)); without `AIKB/last-build.json` it is empty, and an unreadable one is treated the same way. Paths are compared build-relative on both sides, so a record made from one working directory and a check run from another still agree, and are reported as the URL a browser asked for (`/old.html`, `/old/`) — the same string to put in `aliases`; the canonical spelling (`/old`) covers too.
 - `moved` — a page the **last record** and this build both have, paired by its `id` rather than by its path, whose output path changed and whose old path no alias covers: `{ id, from, to }` per page, sorted by `from`. It needs a record too, and an `id` on **both** sides, so it follows a page whose identity is stable — a `.page()` page whose `path`, `slug` or `ext` moved, or any page (a fan-out record included) carrying an explicit `id` — and not one whose identity moved with it: a `.pages()` item's default id embeds its slug (`blog/post/<slug>`), so renaming a post's slug changes the id as well and the event reads as a `removed` instead. A move suppresses the matching `removed`, so one rename is one finding.

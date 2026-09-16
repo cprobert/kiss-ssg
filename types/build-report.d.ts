@@ -83,10 +83,10 @@
  * when no page has an alias and neither finding fired.
  *
  * @typedef {Object} BuildRedirects
- * @property {string|null} file the host redirects file written (`_redirects` under the default format), against the real build folder; `null` when no page has an alias, and under `format: 'none'` or a custom writer that wrote no host file
+ * @property {string|null} file the **first** host redirects file written, in `formats` order, against the real build folder; `null` when no page has an alias and when no host format ran. With more than one format this names one of several — `files` is the complete list and the authoritative one
  * @property {{ from: string, to: string }[]} rules the resolved redirects, sorted — the host-neutral list every format is rendered from
  * @property {string|null} json the `redirects.json` IR written, against the real build folder, or `null` when none was
- * @property {string} format the format that ran: `'netlify'`, `'firebase'`, `'vercel'`, `'none'`, or `'custom'` for a writer function
+ * @property {string[]} formats the host formats that ran, in order — built-in names, and `'custom'` for each writer function; `[]` when only the IR was written
  * @property {string[]} files every redirects file this build wrote, against the real build folder
  * @property {number} aliases alias paths written into that file
  * @property {string[]} removed sorted; pages in the last record that this build does not build and no alias covers
@@ -341,7 +341,7 @@ export type BuildLinks = {
  */
 export type BuildRedirects = {
     /**
-     * the host redirects file written (`_redirects` under the default format), against the real build folder; `null` when no page has an alias, and under `format: 'none'` or a custom writer that wrote no host file
+     * the **first** host redirects file written, in `formats` order, against the real build folder; `null` when no page has an alias and when no host format ran. With more than one format this names one of several — `files` is the complete list and the authoritative one
      */
     file: string | null;
     /**
@@ -356,9 +356,9 @@ export type BuildRedirects = {
      */
     json: string | null;
     /**
-     * the format that ran: `'netlify'`, `'firebase'`, `'vercel'`, `'none'`, or `'custom'` for a writer function
+     * the host formats that ran, in order — built-in names, and `'custom'` for each writer function; `[]` when only the IR was written
      */
-    format: string;
+    formats: string[];
     /**
      * every redirects file this build wrote, against the real build folder
      */
