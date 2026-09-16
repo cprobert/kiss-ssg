@@ -3,7 +3,7 @@
 // It must stay clean: `test/unit/types.test.js` runs `tsc --noEmit` over it, so
 // anything the published types get wrong shows up as a failing test rather than
 // in a consumer's editor.
-import Kiss, { utils } from 'kiss-ssg'
+import Kiss, { utils, renderRedirects } from 'kiss-ssg'
 
 /** @type {import('kiss-ssg').KissConfigInput} */
 const config = {
@@ -17,6 +17,15 @@ const config = {
     cache: '.cache',
   },
   assets: { hash: true },
+  // A custom redirect writer composing a shipped renderer rather than
+  // reimplementing the encoding. Type-checked here on purpose: this is what
+  // proves the published declarations carry the re-export, not just the
+  // source.
+  redirects: {
+    format: (rules) => [
+      { file: 'edge/_redirects', contents: renderRedirects(rules) },
+    ],
+  },
 }
 
 /** @type {import('kiss-ssg').KissController} */

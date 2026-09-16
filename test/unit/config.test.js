@@ -106,13 +106,18 @@ describe('resolveConfig', () => {
   it('defaults the links block: the broken-link scan is on', () => {
     // The scan is advisory — it never changes `ok` or the exit code — so it is
     // on by default and a site opts *out*.
-    expect(resolveConfig({}).links).toEqual({ check: true, canonical: false })
+    expect(resolveConfig({}).links).toEqual({
+      check: true,
+      canonical: false,
+      trailingSlash: true,
+    })
   })
 
   it('merges the links block one level deep, like sass', () => {
     expect(resolveConfig({ links: { check: false } }).links).toEqual({
       check: false,
       canonical: false,
+      trailingSlash: true,
     })
   })
 
@@ -123,7 +128,78 @@ describe('resolveConfig', () => {
     expect(resolveConfig({ links: { canonical: true } }).links).toEqual({
       check: true,
       canonical: true,
+      trailingSlash: true,
     })
+  })
+
+  it('defaults links.trailingSlash on: a directory index keeps its slash', () => {
+    // Netlify serves `/courses/` and 301s the bare `/courses` (measured on
+    // a1k9training.co.uk, 2026-09-16), and every `<loc>` in that site's live
+    // sitemap returns 200 under this default. Moving it would turn six of
+    // them into redirects, so it does not move.
+    expect(resolveConfig({}).links.trailingSlash).toBe(true)
+    expect(resolveConfig({ links: { trailingSlash: false } }).links).toEqual({
+      check: true,
+      canonical: false,
+      trailingSlash: false,
+    })
+  })
+
+  it('defaults the redirects block to no host format at all', () => {
+    // The IR is the baseline and a host encoding is opt-in: kiss does not
+    // guess where a site is deployed. A build with aliases and no format
+    // says so once, in a notice, because v2.3 always wrote `_redirects`.
+    expect(resolveConfig({}).redirects).toEqual({ format: null })
+  })
+
+  it('takes a list of formats, so a site can deploy to two hosts', () => {
+    expect(
+      resolveConfig({ redirects: { format: ['netlify', 'firebase'] } })
+        .redirects.format,
+    ).toEqual(['netlify', 'firebase'])
+  })
+
+  it('refuses a typo inside a list rather than quietly dropping it', () => {
+    expect(() =>
+      resolveConfig({ redirects: { format: ['netlify', 'firbase'] } }),
+    ).toThrow(/"firbase"/)
+  })
+
+  it('merges the redirects block one level deep and keeps unknown keys', () => {
+    expect(resolveConfig({ redirects: { format: 'none' } }).redirects).toEqual({
+      format: 'none',
+    })
+    expect(
+      resolveConfig({ redirects: { format: undefined } }).redirects.format,
+    ).toBe(null)
+    expect(resolveConfig({ redirects: { statusCode: 308 } }).redirects).toEqual(
+      { format: null, statusCode: 308 },
+    )
+  })
+
+  it('accepts every built-in redirect format, and a writer function', () => {
+    for (const format of ['netlify', 'firebase', 'vercel', 'htaccess', 'none'])
+      expect(resolveConfig({ redirects: { format } }).redirects.format).toBe(
+        format,
+      )
+    const writer = () => []
+    expect(
+      resolveConfig({ redirects: { format: writer } }).redirects.format,
+    ).toBe(writer)
+  })
+
+  it('refuses an unknown redirect format rather than writing nothing', () => {
+    // The whole point of the block: a misspelled format that silently wrote no
+    // host file would leave every old URL 404ing while the report said the
+    // redirects were written — the exact silent failure this key exists to end.
+    expect(() => resolveConfig({ redirects: { format: 'firbase' } })).toThrow(
+      /config\.redirects\.format must be one of/,
+    )
+    expect(() => resolveConfig({ redirects: { format: 'firbase' } })).toThrow(
+      /"firbase"/,
+    )
+    // `null` is legal: it is the default and means "no host format".
+    expect(() => resolveConfig({ redirects: { format: null } })).not.toThrow()
   })
 
   it('carries an unknown links key through, like the other blocks', () => {
@@ -132,11 +208,13 @@ describe('resolveConfig', () => {
     expect(resolveConfig({ links: { ignore: ['/cdn-cgi/*'] } }).links).toEqual({
       check: true,
       canonical: false,
+      trailingSlash: true,
       ignore: ['/cdn-cgi/*'],
     })
     expect(resolveConfig({ links: { check: undefined } }).links).toEqual({
       check: true,
       canonical: false,
+      trailingSlash: true,
     })
   })
 

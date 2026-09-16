@@ -84,6 +84,30 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @typedef {Object} KissLinks
  * @property {boolean} check scan every written page for internal references that resolve to nothing
  * @property {boolean} canonical make `{{link}}` emit the extension-less canonical path by default
+ * @property {boolean} trailingSlash keep a directory index's trailing `/` in every URL kiss emits (`/courses/`, the default) or drop it (`/courses`)
+ */
+/**
+ * The redirect block (`config.redirects`): how page `aliases` are encoded. The
+ * host-neutral `redirects.json` is written whatever this says. Merged exactly
+ * one level deep.
+ *
+ * @typedef {Object} KissRedirects
+ * @property {RedirectFormat|RedirectFormat[]|null} format the host encodings to emit beside `redirects.json`; `null` (the default) emits none
+ */
+/**
+ * One host encoding: a built-in name, or a function that writes it.
+ *
+ * @typedef {'netlify'|'firebase'|'vercel'|'htaccess'|'none'|RedirectWriter} RedirectFormat
+ */
+/**
+ * A custom redirect writer: given the resolved rules, return the files to write
+ * into the build folder. A relative `file` is resolved against the build
+ * folder; `contents` is written verbatim. Returning nothing writes nothing.
+ *
+ * @callback RedirectWriter
+ * @param {{ from: string, to: string }[]} rules sorted, the same list `report().redirects.rules` carries
+ * @param {{ buildDir: string, config: Object }} context
+ * @returns {{ file: string, contents: string }[]|{ file: string, contents: string }|void|Promise<{ file: string, contents: string }[]|{ file: string, contents: string }|void>}
  */
 /**
  * Every documented config key except `folders`. Both the resolved and the input
@@ -100,6 +124,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissAssets} assets
  * @property {KissMarkdown & Record<string, any>} markdown
  * @property {KissLinks} links gates the broken-internal-link scan on a settled non-dev build
+ * @property {KissRedirects} redirects how page `aliases` are encoded on a settled build
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
  * @property {string} devHost interface the dev and live reload servers bind to
@@ -116,15 +141,16 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown` and `links` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links` and `redirects` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'>> & {
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
  *   markdown?: Partial<KissMarkdown> & Record<string, any>,
  *   links?: Partial<KissLinks>,
+ *   redirects?: Partial<KissRedirects>,
  *   folders?: KissFoldersInput,
  * } & Record<string, any>} KissConfigInput
  */
@@ -158,7 +184,12 @@ export const DEFAULT_MARKDOWN: Readonly<{
 export const DEFAULT_LINKS: Readonly<{
     check: true;
     canonical: false;
+    trailingSlash: true;
 }>;
+export const DEFAULT_REDIRECTS: Readonly<{
+    format: any;
+}>;
+export const REDIRECT_FORMATS: readonly string[];
 export const DEFAULT_CONFIG: Readonly<{
     dev: false;
     verbose: false;
@@ -186,6 +217,10 @@ export const DEFAULT_CONFIG: Readonly<{
     links: Readonly<{
         check: true;
         canonical: false;
+        trailingSlash: true;
+    }>;
+    redirects: Readonly<{
+        format: any;
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -320,7 +355,50 @@ export type KissLinks = {
      * make `{{link}}` emit the extension-less canonical path by default
      */
     canonical: boolean;
+    /**
+     * keep a directory index's trailing `/` in every URL kiss emits (`/courses/`, the default) or drop it (`/courses`)
+     */
+    trailingSlash: boolean;
 };
+/**
+ * The redirect block (`config.redirects`): how page `aliases` are encoded. The
+ * host-neutral `redirects.json` is written whatever this says. Merged exactly
+ * one level deep.
+ */
+export type KissRedirects = {
+    /**
+     * the host encodings to emit beside `redirects.json`; `null` (the default) emits none
+     */
+    format: RedirectFormat | RedirectFormat[] | null;
+};
+/**
+ * One host encoding: a built-in name, or a function that writes it.
+ */
+export type RedirectFormat = "netlify" | "firebase" | "vercel" | "htaccess" | "none" | RedirectWriter;
+/**
+ * A custom redirect writer: given the resolved rules, return the files to write
+ * into the build folder. A relative `file` is resolved against the build
+ * folder; `contents` is written verbatim. Returning nothing writes nothing.
+ */
+export type RedirectWriter = (rules: {
+    from: string;
+    to: string;
+}[], context: {
+    buildDir: string;
+    config: any;
+}) => {
+    file: string;
+    contents: string;
+}[] | {
+    file: string;
+    contents: string;
+} | void | Promise<{
+    file: string;
+    contents: string;
+}[] | {
+    file: string;
+    contents: string;
+} | void>;
 /**
  * Every documented config key except `folders`. Both the resolved and the input
  * config are built from this one shape, so the two cannot drift apart.
@@ -360,6 +438,10 @@ export type KissSettings = {
      */
     links: KissLinks;
     /**
+     * how page `aliases` are encoded on a settled build
+     */
+    redirects: KissRedirects;
+    /**
      * dev server port
      */
     port: number;
@@ -385,10 +467,10 @@ export type KissConfig = KissSettings & {
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown` and `links` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links` and `redirects` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects">> & {
     sass?: {
         includePaths?: string[];
     };
@@ -396,5 +478,6 @@ export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "ass
     assets?: Partial<KissAssets>;
     markdown?: Partial<KissMarkdown> & Record<string, any>;
     links?: Partial<KissLinks>;
+    redirects?: Partial<KissRedirects>;
     folders?: KissFoldersInput;
 } & Record<string, any>;

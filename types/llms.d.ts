@@ -43,6 +43,7 @@ export function topSegment(pagePath: unknown): string;
  * @param {string} context.siteUrl
  * @param {string} context.buildDir
  * @param {Record<string, string>} [context.sections] top-level path segment → display name
+ * @param {boolean} [context.trailingSlash] `config.links.trailingSlash`: keep a directory index's trailing `/` in the emitted URL
  * @returns {LlmsEntry[]}
  */
 export function buildLlmsEntries(stack: {
@@ -50,10 +51,11 @@ export function buildLlmsEntries(stack: {
     page: {
         options: Record<string, any>;
     };
-}[], { siteUrl, buildDir, sections }: {
+}[], { siteUrl, buildDir, sections, trailingSlash }: {
     siteUrl: string;
     buildDir: string;
     sections?: Record<string, string>;
+    trailingSlash?: boolean;
 }): LlmsEntry[];
 /**
  * Groups entries by section, first-seen order, with the root section first

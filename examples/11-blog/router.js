@@ -51,6 +51,13 @@ const kiss = new Kiss({
   // Posts build to blog/<slug>/index.html, so every URL in this site is a
   // folder and a post can be renamed without its extension going with it.
   extensionLess: true,
+  // Where this site deploys, stated rather than assumed. `redirects.json` — the
+  // host-neutral list — is written whatever this says; `format` names the
+  // vendor encodings to put beside it, and takes an array when a site deploys
+  // to more than one host (`['netlify', 'firebase']`). Leave it off and a
+  // build with `aliases` writes only the IR and says so in a notice: kiss will
+  // not guess a host and quietly emit a file yours does not read.
+  redirects: { format: 'netlify' },
   verbose: true,
   dev,
   port: 3011,
@@ -176,6 +183,13 @@ kiss
     summary: journal.summary,
     sections: { root: 'The site', blog: 'The journal' },
   })
+  // And the file that tells a crawler the sitemap above exists. This used to be
+  // a static `robots.txt` copied from `_shared/assets/` — two lines that never
+  // mentioned the sitemap this very example generates, which is the gap
+  // `.robots()` was built to close. The `Sitemap:` line is produced by the same
+  // join as every `<loc>`, so it cannot drift from the file `.sitemap()` wrote,
+  // and it is emitted only because `.sitemap()` was called.
+  .robots()
 
 if (!dev) {
   // Without this await a broken build exits 0 and ships a site with a hole in

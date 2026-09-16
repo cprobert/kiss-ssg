@@ -133,7 +133,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(countHtmlFiles(path.join(publicDir, '5-helpers'))).toBe(2)
     }, 60000)
 
-    it('6 · sitemap builds 4 pages, a sitemap, an llms.txt and a hashed stylesheet', () => {
+    it('6 · sitemap builds 4 pages, a sitemap, an llms.txt, a robots.txt and a hashed stylesheet', () => {
       cleanOutput('6-sitemap')
       const r = runExample('6-sitemap')
       expect(r.status).toBe(0)
@@ -148,6 +148,17 @@ describe.skipIf(!hasExamples)('example builds', () => {
         'utf8',
       )
       expect(llms.match(/^- \[/gm)).toHaveLength(3)
+
+      // And the file that points a crawler at the sitemap beside it. This is
+      // the guard on the claim `.robots()` was built for: until v2.4 every
+      // example shipped a *static* `robots.txt` copied from `_shared/assets/`
+      // that never mentioned the sitemap the same example generated. The
+      // `Sitemap:` line is generated from the registry, so it cannot go stale.
+      expect(
+        readFileSync(path.join(publicDir, '6-sitemap/robots.txt'), 'utf8'),
+      ).toBe(
+        'User-agent: *\nAllow: /\n\nSitemap: https://asterandoak.example/sitemap.xml\n',
+      )
       expect(llms).not.toContain('rota')
       expect(
         countMatching(
@@ -319,6 +330,12 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // the same string the sitemap and the feed give that page.
       expect(readFileSync(path.join(dir, '_redirects'), 'utf8')).toBe(
         '/blog/cascara-notes.html /blog/the-cascara-experiment/ 301\n',
+      )
+
+      // The generated robots.txt, not a copied one: its `Sitemap:` line is
+      // built from the registry that wrote sitemap.xml two lines up.
+      expect(readFileSync(path.join(dir, 'robots.txt'), 'utf8')).toBe(
+        'User-agent: *\nAllow: /\n\nSitemap: https://asterandoak.example/sitemap.xml\n',
       )
 
       // The helper's output, in the bytes: a post card, a tag and the

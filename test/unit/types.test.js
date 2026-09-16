@@ -61,8 +61,23 @@ describe('the entry declaration keeps its load-bearing exports', () => {
   // syntax error — see `quoteStringExportNames` in scripts/emit-types.mjs. It
   // is the line that makes `require('kiss-ssg')` return the class.
   it("keeps the quoted 'module.exports' export, and the utils re-export", () => {
-    expect(entry).toContain("export { Kiss as 'module.exports', utils };")
+    expect(entry).toContain("export { Kiss as 'module.exports', utils")
     expect(entry).toContain("import utils from './utils.js';")
+  })
+
+  // The `exports` map has one entry, so anything public has to be reachable
+  // from `'kiss-ssg'` itself — llms.txt says so in as many words. A renderer
+  // that a custom `redirects.format` writer is meant to build on is public by
+  // that rule, and it has to be in the *declarations* too or a typed consumer
+  // gets `has no exported member` against a function that is really there.
+  it.each([
+    'renderRedirects',
+    'renderRedirectsJson',
+    'renderFirebaseRedirects',
+    'renderVercelRedirects',
+    'renderHtaccessRedirects',
+  ])('re-exports %s for a custom redirects.format writer', (name) => {
+    expect(entry).toContain(name)
   })
 
   it.each([

@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
-import Kiss from '../helpers/kiss.js'
+import Kiss, {
+  renderFirebaseRedirects,
+  renderRedirects,
+} from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
@@ -44,6 +47,10 @@ const buildSite = async ({ over = {}, aliases, onKiss } = {}) => {
       folders: site.folders,
       siteUrl: 'https://e.com',
       logger: silentLogger,
+      // This file is about `_redirects`, so it names the host that reads it.
+      // Since the IR became the default that is no longer implicit — which is
+      // the point of the change: a site states where it deploys.
+      redirects: { format: 'netlify' },
       ...over,
     }),
   )
@@ -86,6 +93,16 @@ describe('_redirects, written from page aliases', () => {
       removed: [],
       collisions: [],
       moved: [],
+      // The portable fact beside the vendor encoding of it: the same three
+      // rules `_redirects` carries, as data a site on another host can use.
+      rules: [
+        { from: '/about-us/', to: '/about' },
+        { from: '/news/2024/ay.html', to: '/blog/ay' },
+        { from: '/team', to: '/about' },
+      ],
+      json: `${site.build}/redirects.json`,
+      formats: ['netlify'],
+      files: [`${site.build}/redirects.json`, `${site.build}/_redirects`],
     })
   })
 
@@ -99,6 +116,7 @@ describe('_redirects, written from page aliases', () => {
         folders: site.folders,
         siteUrl: 'https://e.com',
         logger: silentLogger,
+        redirects: { format: 'netlify' },
       }),
     )
       .page({ view: 'index.hbs', aliases: ['/home.html'] })
@@ -162,6 +180,7 @@ describe('_redirects, written from page aliases', () => {
         siteUrl: 'https://e.com',
         cleanBuild: 'atomic',
         logger: silentLogger,
+        redirects: { format: 'netlify' },
       }),
     )
     kiss
@@ -214,7 +233,11 @@ describe('_redirects, written from page aliases', () => {
   it('reports null, and writes nothing, for a site with neither aliases nor a record', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'home' })
     const kiss = track(
-      new Kiss({ folders: site.folders, logger: silentLogger }),
+      new Kiss({
+        folders: site.folders,
+        logger: silentLogger,
+        redirects: { format: 'netlify' },
+      }),
     )
       .scan()
       .generate()
@@ -247,6 +270,110 @@ describe('_redirects, written from page aliases', () => {
   })
 })
 
+describe('the host format, and the upgrade it must not lose in silence', () => {
+  it('writes only the IR by default, and says so once', async () => {
+    // v2.3 always wrote `_redirects`. Now the IR is the baseline and the host
+    // encoding is opt-in, so a site upgrading with aliases and no `format`
+    // would otherwise lose its redirects with nothing in the log — the exact
+    // silent failure the format block was built to abolish, delivered by the
+    // block itself.
+    const notices = []
+    await buildSite({
+      over: {
+        redirects: undefined,
+        logger: { ...silentLogger, notice: (msg) => notices.push(String(msg)) },
+      },
+    })
+
+    expect(await site.exists('public/redirects.json')).toBe(true)
+    expect(await site.exists('public/_redirects')).toBe(false)
+    expect(notices).toContain(
+      'aliases written to redirects.json only — set config.redirects.format' +
+        " (e.g. 'netlify', 'firebase', or ['netlify','firebase']) to emit a file your host reads",
+    )
+    expect(last().report().redirects.formats).toEqual([])
+  })
+
+  it('stays silent when the site chose the IR deliberately', async () => {
+    const notices = []
+    await buildSite({
+      over: {
+        redirects: { format: 'none' },
+        logger: { ...silentLogger, notice: (msg) => notices.push(String(msg)) },
+      },
+    })
+
+    expect(await site.exists('public/redirects.json')).toBe(true)
+    expect(
+      notices.filter((line) => line.includes('redirects.json only')),
+    ).toEqual([])
+  })
+
+  it('emits both host files for a site that deploys to two hosts', async () => {
+    await buildSite({
+      over: { redirects: { format: ['netlify', 'firebase'] } },
+    })
+
+    expect(await site.read('public/_redirects')).toContain('/team /about 301')
+    expect(
+      JSON.parse(await site.read('public/redirects.firebase.json')).redirects,
+    ).toContainEqual({ source: '/team', destination: '/about', type: 301 })
+    const report = last().report().redirects
+    expect(report.formats).toEqual(['netlify', 'firebase'])
+    // `file` names the first host file; `files` is the complete list and the
+    // authoritative one once more than one format runs.
+    expect(report.file).toBe(`${site.build}/_redirects`)
+    expect(report.files).toEqual([
+      `${site.build}/redirects.json`,
+      `${site.build}/_redirects`,
+      `${site.build}/redirects.firebase.json`,
+    ])
+  })
+})
+
+describe('the renderers a custom writer builds on', () => {
+  it('lets a writer compose a shipped encoding instead of reimplementing it', async () => {
+    // The point of re-exporting them. Before this a site that needed a host
+    // kiss does not encode had to write the encoding from scratch — and could
+    // not copy ours, because the `exports` map makes `kiss-ssg/lib/…` an
+    // ERR_PACKAGE_PATH_NOT_EXPORTED. Here the writer takes Netlify's exact
+    // bytes and puts them somewhere else, and appends a rule of its own.
+    await buildSite({
+      over: {
+        redirects: {
+          format: (rules) => [
+            {
+              file: 'edge/_redirects',
+              contents:
+                renderRedirects(rules) +
+                '/vendor/* https://cdn.example/:splat 200\n',
+            },
+            {
+              file: 'hosting/redirects.json',
+              contents: renderFirebaseRedirects(rules),
+            },
+          ],
+        },
+      },
+    })
+
+    const netlify = await site.read('public/edge/_redirects')
+    // Identical to the built-in format's output, plus the site's own line —
+    // which is the composition that was impossible before.
+    expect(netlify).toContain('/about-us/ /about 301')
+    expect(netlify).toContain('/team /about 301')
+    expect(netlify.trim().split('\n').at(-1)).toBe(
+      '/vendor/* https://cdn.example/:splat 200',
+    )
+    expect(
+      JSON.parse(await site.read('public/hosting/redirects.json')).redirects,
+    ).toContainEqual({ source: '/team', destination: '/about', type: 301 })
+    // The IR is still the baseline underneath a custom writer.
+    expect(await site.exists('public/redirects.json')).toBe(true)
+    expect(last().report().redirects.formats).toEqual(['custom'])
+  })
+})
+
 describe('the removed-without-a-redirect finding', () => {
   const record = () => vi.stubEnv('KISS_AIKB', '1')
   const stopRecording = () => vi.stubEnv('KISS_AIKB', '')
@@ -263,6 +390,7 @@ describe('the removed-without-a-redirect finding', () => {
       new Kiss({
         folders: { ...site.folders, aikb: `${site.root}/AIKB` },
         logger: silentLogger,
+        redirects: { format: 'netlify' },
       }),
     )
       .scan()
@@ -282,6 +410,7 @@ describe('the removed-without-a-redirect finding', () => {
       new Kiss({
         folders: { ...site.folders, aikb: `${site.root}/AIKB` },
         logger: silentLogger,
+        redirects: { format: 'netlify' },
       }),
     )
     kiss.page({ view: 'index.hbs' }).page({ view: 'new-post.hbs', aliases })
@@ -296,6 +425,7 @@ describe('the removed-without-a-redirect finding', () => {
       new Kiss({
         folders: { ...site.folders, aikb: `${site.root}/AIKB` },
         logger: silentLogger,
+        redirects: { format: 'netlify' },
       }),
     )
       .scan()
@@ -318,6 +448,12 @@ describe('the removed-without-a-redirect finding', () => {
       removed: ['/old-post.html'],
       collisions: [],
       moved: [],
+      // No alias anywhere, so nothing was written and there is nothing to
+      // hand over — the finding stands on its own.
+      rules: [],
+      json: null,
+      formats: ['netlify'],
+      files: [],
     })
     // The record is read, not `isRecorded()` — which `_buildAikb()` has just
     // made true one line earlier on a site's very first record.
@@ -334,6 +470,10 @@ describe('the removed-without-a-redirect finding', () => {
       removed: [],
       collisions: [],
       moved: [],
+      rules: [{ from: '/old-post', to: '/new-post' }],
+      json: `${site.build}/redirects.json`,
+      formats: ['netlify'],
+      files: [`${site.build}/redirects.json`, `${site.build}/_redirects`],
     })
     expect(await site.read('public/_redirects')).toBe(
       '/old-post /new-post 301\n',
@@ -383,7 +523,13 @@ describe('the moved-without-a-redirect finding', () => {
       'src/pages/about.hbs': 'about',
     })
     record()
-    const first = track(new Kiss({ folders: folders(), logger: silentLogger }))
+    const first = track(
+      new Kiss({
+        folders: folders(),
+        logger: silentLogger,
+        redirects: { format: 'netlify' },
+      }),
+    )
       .page({ view: 'index.hbs' })
       .page({ view: 'about.hbs' })
       .generate()
@@ -399,6 +545,7 @@ describe('the moved-without-a-redirect finding', () => {
         logger: notices
           ? { ...silentLogger, notice: (msg) => notices.push(String(msg)) }
           : silentLogger,
+        redirects: { format: 'netlify' },
       }),
     )
     kiss
@@ -420,6 +567,10 @@ describe('the moved-without-a-redirect finding', () => {
       removed: [],
       collisions: [],
       moved: [{ id: 'about', from: '/about.html', to: '/company/about.html' }],
+      rules: [],
+      json: null,
+      formats: ['netlify'],
+      files: [],
     })
     // The notice carries the fix, because the fix is one line of the page's
     // own registration.
@@ -471,6 +622,7 @@ describe('the moved-without-a-redirect finding', () => {
         folders: folders(),
         extensionLess: true,
         logger: silentLogger,
+        redirects: { format: 'netlify' },
       }),
     )
       .page({ view: 'index.hbs' })
@@ -485,6 +637,7 @@ describe('the moved-without-a-redirect finding', () => {
           folders: folders(),
           extensionLess: true,
           logger: silentLogger,
+          redirects: { format: 'netlify' },
         }),
       )
       kiss
@@ -508,7 +661,13 @@ describe('the moved-without-a-redirect finding', () => {
 
   it('reports null for a recorded site with no alias, no removal and no move', async () => {
     await recorded()
-    const kiss = track(new Kiss({ folders: folders(), logger: silentLogger }))
+    const kiss = track(
+      new Kiss({
+        folders: folders(),
+        logger: silentLogger,
+        redirects: { format: 'netlify' },
+      }),
+    )
       .page({ view: 'index.hbs' })
       .page({ view: 'about.hbs' })
       .generate()

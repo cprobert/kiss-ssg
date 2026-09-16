@@ -107,10 +107,6 @@
     {
       "source": "css/site.css",
       "target": "css/site.css"
-    },
-    {
-      "source": "robots.txt",
-      "target": "robots.txt"
     }
   ],
   "sitemap": "../../public/11-blog/sitemap.xml",
@@ -149,7 +145,29 @@
     "aliases": 1,
     "removed": [],
     "collisions": [],
-    "moved": []
+    "moved": [],
+    "rules": [
+      {
+        "from": "/blog/cascara-notes.html",
+        "to": "/blog/the-cascara-experiment/"
+      }
+    ],
+    "json": "../../public/11-blog/redirects.json",
+    "formats": [
+      "netlify"
+    ],
+    "files": [
+      "../../public/11-blog/redirects.json",
+      "../../public/11-blog/_redirects"
+    ]
   },
-  "feed": "../../public/11-blog/feed.xml"
+  "feed": "../../public/11-blog/feed.xml",
+  "robots": {
+    "file": "../../public/11-blog/robots.txt",
+    "agents": 1,
+    "disallowAll": false,
+    "sitemaps": [
+      "https://asterandoak.example/sitemap.xml"
+    ]
+  }
 }

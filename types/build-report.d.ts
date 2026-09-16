@@ -20,6 +20,19 @@
  * the `Error` reduced to its message — the object itself stays on the
  * `AggregateError` `complete()` rejects with, so this stays serialisable.
  *
+/**
+ * What the build told crawlers. An object rather than a path, unlike `sitemap`,
+ * `llms` and `feed`, for one reason: `disallowAll` is a fact that removes the
+ * site from search and a path cannot say it. Carried here so a `kiss-ssg
+ * check` diff shows a staging crawl policy reaching production.
+ *
+ * @typedef {Object} BuildRobots
+ * @property {string} file the `robots.txt` written, against the real build folder
+ * @property {number} agents how many `User-agent:` blocks it carries
+ * @property {boolean} disallowAll whether any block disallows the whole site
+ * @property {string[]} sitemaps the absolute sitemap URLs it advertises
+ */
+/**
  * @typedef {Object} BuildReportFailure
  * @property {string} view
  * @property {string|null} buildTo `null` when the failure happened before the page had an output path
@@ -70,7 +83,11 @@
  * when no page has an alias and neither finding fired.
  *
  * @typedef {Object} BuildRedirects
- * @property {string|null} file the `_redirects` written, against the real build folder, or `null` when no page has an alias
+ * @property {string|null} file the **first** host redirects file written, in `formats` order, against the real build folder; `null` when no page has an alias and when no host format ran. With more than one format this names one of several — `files` is the complete list and the authoritative one
+ * @property {{ from: string, to: string }[]} rules the resolved redirects, sorted — the host-neutral list every format is rendered from
+ * @property {string|null} json the `redirects.json` IR written, against the real build folder, or `null` when none was
+ * @property {string[]} formats the host formats that ran, in order — built-in names, and `'custom'` for each writer function; `[]` when only the IR was written
+ * @property {string[]} files every redirects file this build wrote, against the real build folder
  * @property {number} aliases alias paths written into that file
  * @property {string[]} removed sorted; pages in the last record that this build does not build and no alias covers
  * @property {string[]} collisions sorted; aliases equal to a path this build actually writes
@@ -95,6 +112,7 @@
  * @property {BuildLinks|null} links the broken-internal-link scan, or `null` when this build ran none
  * @property {BuildRedirects|null} redirects the redirects file and the two rename findings, or `null` when there is nothing to say
  * @property {string|null} feed the feed file written, or `null` if none was
+ * @property {BuildRobots|null} robots what `.robots()` wrote, or `null` when it was never called
  */
 /**
  * @param {string|null|undefined} target
@@ -126,10 +144,11 @@ export function reportedView(view: string): string;
  * @param {BuildAikb|null} [input.aikb] the site's knowledge base, `null` when there is none to report on
  * @param {BuildLinks|null} [input.links] what the broken-internal-link scan found, `null` when none ran
  * @param {BuildRedirects|null} [input.redirects] what the build did about page `aliases`, `null` when there is nothing to say
+ * @param {BuildRobots|null} [input.robots] what `.robots()` wrote, `null` when it was never called
  * @param {string|null} [input.feed] the feed file written by this build
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, llms, aikb, links, redirects, feed, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -152,6 +171,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     aikb?: BuildAikb | null;
     links?: BuildLinks | null;
     redirects?: BuildRedirects | null;
+    robots?: BuildRobots | null;
     feed?: string | null;
 }): BuildReport;
 /**
@@ -204,7 +224,31 @@ export type BuildAsset = {
  * One thing that failed to build. The same entry as {@link BuildFailure} with
  * the `Error` reduced to its message — the object itself stays on the
  * `AggregateError` `complete()` rejects with, so this stays serialisable.
+ *
+ * /**
+ * What the build told crawlers. An object rather than a path, unlike `sitemap`,
+ * `llms` and `feed`, for one reason: `disallowAll` is a fact that removes the
+ * site from search and a path cannot say it. Carried here so a `kiss-ssg
+ * check` diff shows a staging crawl policy reaching production.
  */
+export type BuildRobots = {
+    /**
+     * the `robots.txt` written, against the real build folder
+     */
+    file: string;
+    /**
+     * how many `User-agent:` blocks it carries
+     */
+    agents: number;
+    /**
+     * whether any block disallows the whole site
+     */
+    disallowAll: boolean;
+    /**
+     * the absolute sitemap URLs it advertises
+     */
+    sitemaps: string[];
+};
 export type BuildReportFailure = {
     view: string;
     /**
@@ -297,9 +341,28 @@ export type BuildLinks = {
  */
 export type BuildRedirects = {
     /**
-     * the `_redirects` written, against the real build folder, or `null` when no page has an alias
+     * the **first** host redirects file written, in `formats` order, against the real build folder; `null` when no page has an alias and when no host format ran. With more than one format this names one of several — `files` is the complete list and the authoritative one
      */
     file: string | null;
+    /**
+     * the resolved redirects, sorted — the host-neutral list every format is rendered from
+     */
+    rules: {
+        from: string;
+        to: string;
+    }[];
+    /**
+     * the `redirects.json` IR written, against the real build folder, or `null` when none was
+     */
+    json: string | null;
+    /**
+     * the host formats that ran, in order — built-in names, and `'custom'` for each writer function; `[]` when only the IR was written
+     */
+    formats: string[];
+    /**
+     * every redirects file this build wrote, against the real build folder
+     */
+    files: string[];
     /**
      * alias paths written into that file
      */
@@ -376,4 +439,8 @@ export type BuildReport = {
      * the feed file written, or `null` if none was
      */
     feed: string | null;
+    /**
+     * what `.robots()` wrote, or `null` when it was never called
+     */
+    robots: BuildRobots | null;
 };

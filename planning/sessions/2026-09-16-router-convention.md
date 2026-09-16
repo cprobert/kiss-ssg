@@ -3,6 +3,7 @@ branch: claude/a1k9-router-helpers-refactor-meez9p
 base: main
 status: closed
 opened: 2026-09-16
+consolidated: 2026-09-16
 ---
 
 # Session — 2026-09-16: The router convention

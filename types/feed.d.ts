@@ -27,6 +27,7 @@ export function toDate(value: unknown): Date | null;
  * @param {string} [context.dateField] default `'date'`
  * @param {number} [context.limit] default `20`; a non-positive or non-finite limit means no cap
  * @param {any} [context.logger] warns once per unparsable date
+ * @param {boolean} [context.trailingSlash] `config.links.trailingSlash`: keep a directory index's trailing `/` in the emitted URL
  * @returns {FeedItems}
  */
 export function buildFeedItems(stack: {
@@ -34,13 +35,14 @@ export function buildFeedItems(stack: {
     page: {
         options: Record<string, any>;
     };
-}[], { siteUrl, buildDir, section, dateField, limit, logger }: {
+}[], { siteUrl, buildDir, section, dateField, limit, logger, trailingSlash, }: {
     siteUrl: string;
     buildDir: string;
     section?: string;
     dateField?: string;
     limit?: number;
     logger?: any;
+    trailingSlash?: boolean;
 }): FeedItems;
 /**
  * Renders the RSS 2.0 document. Deterministic by construction: every date in it

@@ -3,6 +3,112 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.4.0 — 2026-09-16
+
+### ⚠️ Read this first if your site uses `aliases`
+
+**Your `_redirects` file will stop being written unless you ask for it.** Until
+now every build with page `aliases` wrote `<build>/_redirects` automatically.
+It no longer does: kiss writes the host-neutral `<build>/redirects.json` and
+leaves the host encoding to you.
+
+```js
+new Kiss({ redirects: { format: 'netlify' } }) // what you used to get for free
+```
+
+A build that has aliases and no `format` prints a notice saying exactly that,
+so you will see it the first time you build rather than the first time someone
+follows an old link. This is a behaviour change in a minor release — a
+deliberate call by the maintainer, who owns the consuming sites — but if you
+installed this from the registry expecting `^2.3.0` to be safe, this is the
+paragraph that explains why your redirects went missing. Set `format` and
+you are back to exactly the 2.3 output, byte for byte.
+
+### Redirects are portable now, and can target more than one host
+
+An alias is a fact about your site; `_redirects` was one vendor's encoding of
+it. Firebase ignores that file entirely and reads `firebase.json`; Vercel reads
+`vercel.json`. Those sites used to get a file no host reads while the build
+reported the redirects as written.
+
+- `<build>/redirects.json` — `{ version, rules: [{ from, to, status }] }` — is
+  written on every build that has an alias, whatever else you configure.
+  `report().redirects.rules` carries the same list.
+- `redirects: { format }` names the host encodings to write beside it:
+  `'netlify'` (`_redirects`), `'firebase'`, `'vercel'`, `'htaccess'`, `'none'`,
+  or a function. **It takes a list**, so `['netlify', 'firebase']` emits both
+  from one build — for a site with Netlify previews and Firebase production.
+- Firebase, Vercel and Apache get a **fragment to merge**
+  (`redirects.firebase.json`, `redirects.vercel.json`, `redirects.htaccess`) —
+  never your real config file, which holds hosting targets, headers, rewrites
+  and often years of hand-maintained history.
+- A custom writer is `(rules, { buildDir, config }) => [{ file, contents }]`.
+  It can build on a shipped encoder rather than reinventing one: every renderer
+  is now a named export — `import { renderRedirects } from 'kiss-ssg'`.
+- A misspelled format throws at `new Kiss()`; a writer that throws fails the
+  build. Neither silently writes nothing.
+
+Every redirect is still a permanent `301`. There is no way to ask for a `302`,
+`308` or `410`, and no forced or wildcard rules.
+
+### `links: { trailingSlash }` — the trailing slash is your host's, not ours
+
+A directory index used to always canonicalise as `/courses/`. That is right on
+Netlify, which 301s the bare `/courses`; it is exactly wrong on Firebase with
+`cleanUrls` + `trailingSlash: false`, which 301s the slashed form instead. Both
+measured on live sites. The default is unchanged, so nothing moves unless you
+say so:
+
+```js
+new Kiss({ links: { trailingSlash: false } }) // /courses, not /courses/
+```
+
+It moves **every URL the build derives for a page together** — `{{canonical}}`,
+`{{link}}`, `<loc>`, the `llms.txt` entry, the feed `<link>` and every alias
+target — because a page advertised at one spelling and linked at the other
+ships a redirect hop on every internal click. It deliberately does not touch
+`{{isActive}}` (page identity is not a host policy), a trailing slash you wrote
+yourself, or the site root, which stays `/` either way.
+
+See **Host URL policy** in the README for the measured per-host table.
+
+### `.robots()` — robots.txt, and a `Sitemap:` line that cannot drift
+
+```js
+kiss.page({ view: 'index.hbs' }).sitemap().robots().generate()
+```
+
+The crawler blocks are boilerplate you have probably hand-written. The point is
+the last line: it is built by the same join as every `<loc>`, so it names the
+sitemap this build actually wrote, and it is only emitted when you called
+`.sitemap()` — advertising one that does not exist is a fetch error in every
+crawler that reads it.
+
+`examples/6-sitemap` and `examples/11-blog` both call it. The static
+`robots.txt` that six examples used to copy from `_shared/assets/` is gone: it
+was two lines that never mentioned the sitemap those examples generate, which
+is the gap this method exists to close.
+
+`agents`, or the `userAgent`/`allow`/`disallow` shorthand, set the blocks;
+`sitemap` overrides what is advertised; `overwrite: false` leaves a `robots.txt`
+you keep in `src/assets/` alone. `report().robots` carries
+`{ file, agents, disallowAll, sitemaps }`.
+
+**`disallow: '/'` removes your site from search**, and is one character from the
+bare `Disallow:` that means the opposite — so it logs a notice on every build
+that emits it and sets `disallowAll`, which means a staging crawl policy that
+reaches production shows up in a `kiss-ssg check` diff. kiss never infers a
+`Disallow` for you; in particular `ignoreSitemap` does **not** imply one,
+because blocking a crawler stops it seeing a `noindex` and can leave the URL
+indexed with no snippet.
+
+### Also
+
+- `report().redirects` gains `rules`, `json`, `formats` and `files`;
+  `redirects.format` (a string) is now `redirects.formats` (a list), and
+  `redirects.file` is the **first** host file with `files` authoritative.
+- `report()` gains `robots`, appended after `feed`.
+
 ## 2.3.0 — 2026-09-16
 
 ### A page can opt out of `extensionLess`

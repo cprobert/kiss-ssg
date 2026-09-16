@@ -39,6 +39,9 @@ describe('buildReport', () => {
       'links',
       'redirects',
       'feed',
+      // Appended last, the rule every key here follows: a consumer diffing two
+      // reports sees a new key at the end rather than a reshuffle.
+      'robots',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -220,6 +223,7 @@ describe('buildReport', () => {
       links: null,
       redirects: null,
       feed: null,
+      robots: null,
     })
   })
 

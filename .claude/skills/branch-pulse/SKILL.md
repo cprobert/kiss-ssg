@@ -66,26 +66,48 @@ Go through the success criteria one at a time. For each, state **met / partial /
   timeout 20 node examples/6-sitemap.js; ls -R examples/public | head
   ```
 
-  **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Then **hand off to the human to eyeball the generated HTML** — the human verifying is the point, not a fallback.
+  **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Naming the artefact is this step's job; getting a human to look at it is **Step 4**, which is a stop rather than a bullet.
 
 Speak in the supervision rubric's vocabulary (`.claude/skills/session-reflect/rubric.md`) — this beat exercises **Verification & ownership** and **Pushback & steering** above all.
 
-### Step 4 — Drift check
+### Step 4 — The operator's own eyes, while the artefact is warm
+
+**This step exists because its predecessor failed eight times.** "Look at one built artefact yourself" was written in four reflections, retired into `/branch-close` Step 5a, and then deferred at four more closes (2026-09-12, 09-15, and twice on 09-16). The diagnosis in the 09-15 log is that the destination was wrong, not the lesson: by the close the artefact is cold and the session is five steps from a PR, so "not now" is always the cheaper answer. Here it is warm, nothing is waiting on it, and a deferral costs nothing but a line in the log.
+
+Name **one** artefact this branch has changed that a gate structurally cannot judge, and give the exact command or path. One, not a list — a list gets skimmed:
+
+- a built page under `public/` — `timeout 20 node examples/3-pages/router.js`, then open the HTML
+- a `check --summary` line for a real site — the page list, or the count that should have moved
+- a regenerated signature in `types/kiss.d.ts` that a consuming site will hover
+- a rendered colour, a piece of copy, a live-reload round trip
+- a performance claim re-measured while you watch — a number you only read is a report, not a check
+
+Then **stop and ask** with AskUserQuestion: did you look, and what did you see? Do not answer it for them, and do not accept your own summary as the answer — Claude reporting that Claude's output looks right is the loop this step breaks.
+
+Record the answer verbatim in Step 7's pulse line, in one of three shapes, because `/branch-close` Step 5a reads this log rather than asking again:
+
+- **looked** — what they saw, and whether it matched;
+- **deferred** — where the item was written down (a `to-verify.md`, an issue) so it is tracked rather than lost. A deferral with a destination is an honest answer; one without is a non-answer.
+- **declined** — recorded as declined.
+
+The pulse continues either way. This is a stop for an answer, not a gate that blocks the branch.
+
+### Step 5 — Drift check
 
 Compare the trajectory against the **Non-goals**, the **Objective**, and the declared **Impact surface**. A branch opened as "engine internals" that has started editing `llms.txt` has moved surface — that is a real signal, not a formality, because it changes the semver bump at close.
 
 If the remit has _legitimately_ expanded (adjacent, shares the theme), append a dated entry to the intent file's `### Amendments` list — the one sanctioned channel for scope drift. If it looks like scope **creep** (a genuinely different subsystem or objective), say so and recommend stopping or deferring; never absorb it silently, and never spawn a new branch on initiative (the operator's call).
 
-### Step 5 — Decide, out loud
+### Step 6 — Decide, out loud
 
 State the call plainly, with its reason: **continue** (on track) / **adjust course** (re-steer, named correction) / **record amendment** (remit moved) / **ready to close** (criteria met, hand to `/branch-close`). This is the anti-rush, anti-abandon moment — the decision is deliberate, not drift.
 
-### Step 6 — Log the beat
+### Step 7 — Log the beat
 
-Append one dated line to the intent file's `## Pulse log` section (the file `/branch-open` wrote, or the one just captured retrospectively in Step 1; create the section once if an older file lacks it), capturing the evidence and the decision — e.g.:
+Append one dated line to the intent file's `## Pulse log` section (the file `/branch-open` wrote, or the one just captured retrospectively in Step 1; create the section once if an older file lacks it), capturing the evidence, **the Step 4 eyeball answer** and the decision — e.g.:
 
 ```markdown
-- **2026-09-05** — criteria 1–2 met (`test/unit/sitemap.test.js` green, 12 cases); criterion 3 not yet (llms.txt unwritten); no drift. Decision: continue.
+- **2026-09-05** — criteria 1–2 met (`test/unit/sitemap.test.js` green, 12 cases); criterion 3 not yet (llms.txt unwritten); no drift. **Eyeball: looked** — opened `examples/public/6-sitemap/sitemap.xml`, 12 `<loc>`s, all absolute. Decision: continue.
 ```
 
 Do **not** tick the Intent block's `[ ]` checkboxes — status is reported live and logged here; the close's **Verdict** does the final tick against the pristine baseline. Then commit **only the session file** (never `-A` — keep code out of this commit):
