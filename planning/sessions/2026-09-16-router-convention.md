@@ -1,7 +1,7 @@
 ---
 branch: claude/a1k9-router-helpers-refactor-meez9p
 base: main
-status: open
+status: closed
 opened: 2026-09-16
 ---
 
@@ -329,3 +329,151 @@ site that exists to demonstrate a folder is not an exemplar of anything.
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-09-16: The router convention, and what a clean room proved
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and
+judges. The session's quality is set by how actively the human supervised it. This reflection
+reads that supervision, as CPD for both._
+
+**What we shipped:** kiss-ssg 2.3.0 — the build-script convention stated in `llms.txt`, carried by
+three skills, enforced by `skill-coverage`, demonstrated by eleven examples each laid out as a real
+site; plus four engine fixes the work itself surfaced (`5793c59`…`00ac79b`, 72 files, +2146/−546).
+Two consumer sites were built against it, one of them a clean-room test.
+
+## Reflect — what the session was
+
+The brief was framed tightly and the shape was **planned at the start, emphatically emergent by the
+end** — and the drift was the good kind, because every expansion was paid for by evidence rather
+than ambition.
+
+It opened as a documentation branch: take one convention a1k9training had evolved and make it the
+shape kiss-ssg teaches. Three amendments later it carried `lib/` changes, a semver bump from patch
+to minor, and a controlled experiment. Each step was forced by the previous one finding something:
+building a real site (`pro-plumbing`) against the branch surfaced two engine defects; the operator
+then made the loop explicit — consumer sites build against the **live tree**, and unexpected
+behaviour gets patched upstream rather than worked around — and that instruction is what turned a
+docs branch into an engine branch.
+
+The shape served the work. A planned branch that had refused the drift would have shipped a
+convention nobody had tested and two defects nobody had found.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering — the dimension that decided this session.** The operator overrode Claude
+three times, and was right every time.
+
+1. _"I'm not bound by the promise of examples/README.md. Override that constraint."_ Claude had
+   treated a sentence in a README as a design constraint and was routing around it. The override
+   unlocked the layout the operator actually wanted.
+2. _"The only one looking at the examples are the AI."_ This reframed the audience and invalidated
+   a whole class of Claude's reasoning — the `script()` panel, the readability arguments, the
+   line-count threshold were all calibrated for a human reader who does not exist here.
+3. _"I want to make sure that helpers subdirectory gets propagated... one helper needs a folder."_
+   The sharpest one. Claude had written a threshold ("more than about three helpers") and defended
+   it; the operator's instinct said it was wrong. It was. `pro-plumbing` had ended up with two
+   untestable helpers inside `router.js` — precisely the a1k9 flaw Claude had identified at the top
+   of the branch and declared must-not-propagate. **Claude's own rule permitted the exact defect
+   Claude had named.** The retraction (`aa327cc`) is the single most valuable commit here, and the
+   operator, not Claude, caused it.
+
+**Harness leverage — strong on the operator's side, and it produced the session's best evidence.**
+Asking _"would you recommend... spawn a sub-agent... how you expose that I want you to design"_ was
+the right instrument reached for at the right moment, and it delegated the design rather than the
+decision. The two-arm clean room answered a question argument could not: arm A, given only the
+tarball, produced a correct site with no skills at all — which located the skills' unique
+contribution precisely (the `CLAUDE.md` import, one row of the scorecard) and turned an open
+packaging question into a measured one.
+
+**Verification & ownership — strong mechanically, and with one persistent hole.** Every regression
+test was seen red before its fix, as the repo's rule demands. Claims were checked against `lib/`
+rather than repeated from docs: the `_replay()` behaviour, the `isActive` block context, the
+controller-receives-config question were all verified in source before being written down. Both
+subagent reports were re-scored against the files rather than believed.
+
+The hole is the operator eyeball. It went unanswered again — **the fifth consecutive close.** This
+is no longer a lapse to note; the 09-15 log already said so: _"the recommendation is not 'answer it
+next time'; that has been tried and has not held."_ A ritual step that has never once been answered
+is not a check, it is a prompt everyone has learned to dismiss, and it should be moved or removed
+rather than restated.
+
+**Iteration discipline — four pulses across a branch this size**, each with evidence and a decision,
+and two of them changed the plan (the tier-1 criterion was found unmeetable at a pulse, not at the
+close). That is the beat working as designed.
+
+**Where Claude over-reached.** Three times Claude wrote something confident and wrong, and each was
+caught by a mechanism rather than by judgement: a blanket `build.js`→`router.js` replace rewrote
+`AIKB/last-build.json` into `last-router.json`; the JSON-LD placeholder guard tested `startsWith`
+where the placeholder was embedded, so `https://TODO_SITE_URL` passed; and backticks in a
+`git commit -m` string were shell-substituted **twice**, the second time after Claude had already
+written the lesson down. A lesson written and not applied within the same session is the clearest
+possible evidence that writing it down is not the same as learning it.
+
+**Competency level: Agentic engineering lead.** Earned, not awarded. The evidence is the three
+overrides — each one rejecting a plausible Claude answer on a point of substance — plus commissioning
+the clean-room experiment, and holding the line on _"patch kiss until it can do it"_ rather than
+accepting a documentation-shaped win. The one thing keeping it from unambiguous is the eyeball:
+a lead who never looks at the artefact is delegating the last mile of judgement.
+
+## Feedback — recommendations for next session
+
+- **Process — move the operator eyeball out of `/branch-close`, do not restate it.** Five closes,
+  five non-answers, across two separate retirements into ritual steps. The 09-15 proposal stands and
+  should now be executed by `/memory-consolidate`: relocate the look into `/branch-pulse`, where the
+  artefact is warm and the session is not five steps from a PR, and leave Step 5a as a _confirmation_
+  that a pulse-time look happened — a question that can only be answered yes by having done the work.
+- **Claude — when you write a threshold, test it against the next thing you build, in the same
+  session.** The three-helper rule survived exactly one real site before disproving itself. The
+  concrete change: after writing any rule with a number in it, apply it immediately to the nearest
+  real artefact and report what it permits — not what it forbids.
+- **Claude — use `-F` for every commit message, without exception.** Twice in one session a
+  backticked phrase was executed by the shell, the second time after the lesson was already written
+  in this very file. Stop treating `-m` as available.
+- **Operator — the clean-room test has one more run in it, and it is cheap.** The subagent arms were
+  contaminated by the harness injecting sibling `CLAUDE.md` files, which arm B declared unprompted.
+  A separate session with only the test repo attached would settle it. The signal is already strong;
+  this would make it clean.
+- **Both — the five practices that did not propagate are the real next branch**, and the QA harness
+  is its spine: a1k9's `qa/` is ~800 lines of Playwright, axe and Lighthouse with no upstream
+  representation at all, and `kiss-build-check` verifies the _build_ while nothing verifies the
+  _page_. Scope it as its own branch rather than a sixth amendment here.
+- **Process — `plugins/` ships zero files, and that is now a decision to take deliberately.**
+  `llms.txt` and `examples/` carry the convention to consumers; the four skills reach nobody through
+  npm. Either add `plugins/` to `files`, fold the load-bearing parts into `llms.txt`, or accept
+  vendoring as the norm and document it — but stop leaving it implicit.
+
+## Verdict — did we achieve the objective?
+
+**The captured objective is met.** The brief was to make the router convention the shape kiss-ssg
+teaches by default — stated, carried, enforced, demonstrated. All four hold, and the convention was
+then independently re-derived from the shipped package by an agent that had never been told it.
+
+- [x] `llms.txt` § The build script, with the tiers and their triggers
+- [x] All three `kiss-ssg` skills carry it; `kiss-site-migrate` has the rename-then-grep step
+- [x] `skill-coverage` rows, **seen red first** against a stripped SKILL.md
+- [x] Eleven examples at `<n>-<name>/router.js`, run from their own folders
+- [x] Every router declares its tier and restates the trigger
+- [x] ~~5–6 show tier 1~~ — **amended**: ten of eleven routers register no custom helper, so the
+      criterion was unmeetable without inventing helpers to justify a folder. Example 9 (one helper)
+      is tier 1; example 11 is tier 2. Recorded 2026-09-16.
+- [x] Extracted helpers export a pure function, registrar a thin adapter (example 9, pro-plumbing)
+- [x] `script()` and the rendered panel gone
+- [x] `examples/README.md` states both axes and indexes the router shape
+- [x] `kiss-site-new` selectable by router shape
+- [x] Gates green, `examples.test.js` passing, page counts unchanged (11-blog: 14 pages, 171 refs)
+
+**The objective also moved, twice, and both were good drift.** The impact surface went from
+tooling & docs to public API when the operator made the upstream-patching loop explicit, and the
+helper threshold was retracted and rewritten when a real site disproved it. Both are recorded as
+dated Amendments; neither was absorbed silently.
+
+**What is concretely better:** four defects fixed that were all silent — a per-page config key
+accepted and ignored, a nav that rendered blank labels on a green build, a knowledge-base lint that
+fired on correct prose, and a note path that could not be spelled correctly. Two of the four were
+found by agents who knew nothing about this project, which is the strongest evidence the branch
+produced.
+
+**What remains open:** the five unpropagated practices (QA harness, caching policy, the image
+convention, `AIKB/site.md`, CI); the `plugins/`-shipping decision; a truly clean clean-room run; and
+a1k9training itself, which still carries the three defects and should be fixed after its content PR
+merges and 2.3.0 publishes — not before, because 288 lines of that PR touch the same four files.
