@@ -3,6 +3,7 @@ branch: claude/learna-kiss-session-communication-d1uv1d
 base: main
 status: closed
 opened: 2026-09-16
+consolidated: 2026-09-16
 ---
 
 # Session — 2026-09-16: Host URL Policy — trailing slash and redirect format
