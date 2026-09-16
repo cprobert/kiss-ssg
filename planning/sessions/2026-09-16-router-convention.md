@@ -223,6 +223,50 @@ site that exists to demonstrate a folder is not an exemplar of anything.
      Decision: **continue**; findings 1–3 fold into the examples slice, 4 and 5 are for the operator
      to place.
 
+- **2026-09-16 (shape comparison: a1k9training vs pro-plumbing)** — the operator asked whether
+  a1k9's practices washed through into a site built after the change. Compared the two trees.
+
+  **The caveat that governs everything below: pro-plumbing is contaminated evidence.** It was
+  built in the same session, with a1k9's `CLAUDE.md` imported into context. Some of what landed
+  there came from having read a1k9, not from the skill. This is the 2026-09-10 lesson — dogfood a
+  skill with a _fresh_ agent — biting exactly where it was predicted to. The comparison is still
+  useful, but it measures an upper bound, not what the skill alone produces.
+
+  **Washed through, and attributable to this branch or to llms.txt:** `router.js` as a route
+  table (206 lines vs a1k9's 208); the tier thresholds applied _correctly_ — pro-plumbing has
+  `src/config/` but deliberately no `src/helpers/`, because two helpers is under the threshold,
+  which is the convention working rather than being ignored; `config/` earned by duplication;
+  `{{link}}` by identity; `AIKB/` recorded with a note per controller; `complete()`/`catch()`.
+
+  **Did NOT wash through — in a1k9, absent from every kiss-ssg skill, and absent from
+  pro-plumbing.** Each was verified by grep across `plugins/kiss-ssg/skills/*/SKILL.md`:
+
+  1. **A rendered-site QA harness.** a1k9 has `qa/` — Playwright, axe-core, Lighthouse, snapshot
+     and compare against a baseline, a preview verifier. **No kiss-ssg skill mentions browser QA
+     at all.** `kiss-build-check` verifies the _build_; nothing verifies the _page_ — contrast,
+     console errors, horizontal overflow at 375px, structured-data parity. Largest single gap.
+  2. **Caching policy.** a1k9 ships `src/assets/_headers` (immutable for hashed assets, a year for
+     images). No skill mentions `_headers`, caching or immutability; pro-plumbing has none.
+  3. **The image convention** — versioned filenames, never overwrite in place, an optimisation
+     script. In no skill. Applied in pro-plumbing (`logo-mark-v1.svg`) only because a1k9's
+     CLAUDE.md was in context — the clearest single instance of the contamination above.
+  4. **`AIKB/site.md`**, the consolidated "why". a1k9 has one; `kiss-site-new` never asks for one.
+  5. **The memory loop.** pro-plumbing has no `planning/sessions/` and no vendored kiss-memory
+     skills; `kiss-site-new` does not mention setting the loop up.
+  6. **CI.** a1k9 runs QA on every PR. Nothing upstream suggests a workflow.
+
+  **Flows the other way — pro-plumbing is better than a1k9 on three counts**, and these belong
+  upstream too: the `known` helper that withholds a value until it is real, so placeholder text
+  can never reach JSON-LD (a1k9 has no equivalent); `extensionLess` from the first commit, which
+  avoids the `canonical=true`-on-every-call rule a1k9 is permanently stuck with; and a brand file
+  carrying measured contrast ratios beside each token.
+
+  **Verdict on the captured objective: achieved.** Every criterion is met or explicitly amended,
+  and the convention is stated, carried, enforced and demonstrated. **Verdict on the operator's
+  broader ambition — "take the best practices from a1k9 upstream" — roughly a third done.** The
+  router convention is one practice of about six that site evolved. The remaining five are
+  scoped above and are the natural next branch.
+
 ### Inherited feedback this branch carries
 
 - **The operator eyeball has recurred three times since being retired** (09-10, 09-12, 09-15).
