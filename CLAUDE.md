@@ -39,6 +39,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Sitemap                               | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
 | llms.txt (the AI-facing index)        | `lib/llms.js`                | `AIKB/llms.md`                |
 | RSS feed (from the registry)          | `lib/feed.js`                | `AIKB/feed.md`                |
+| robots.txt (`.robots()`)              | `lib/robots.js`              | `AIKB/robots.md`              |
 | Site knowledge base (`kiss-ssg aikb`) | `lib/aikb.js`                | `AIKB/aikb.md`                |
 | Broken internal links                 | `lib/links.js`               | `AIKB/links.md`               |
 | Redirects (`aliases` → `_redirects`)  | `lib/redirects.js`           | `AIKB/redirects.md`           |

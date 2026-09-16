@@ -76,6 +76,37 @@ written red-first against the unfixed code before the fix (per `AIKB/testing.md`
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+**2026-09-16 — scope amended by the operator: `.robots()` and an `.htaccess` redirect fragment.**
+Adjacent work, absorbed on this branch rather than split off, per `CLAUDE.md`'s one-open-branch rule.
+Both are the same theme as the original objective — the site's host and its crawlers decide things the
+engine was either deciding or not saying — and both are additive public API, so the captured minor
+bump (2.4.0) still holds.
+
+The evidence that settled `.robots()`: `examples/_shared/assets/robots.txt` is `User-agent: * / Allow: /`
+and carries **no `Sitemap:` line**, while those same examples call `.sitemap()`. kiss ships examples
+that generate a sitemap and never advertise it. That is the `.llms()`/`.feed()` gap exactly — the build
+knows a URL the hand-written file cannot keep in sync — and the `Sitemap:` line goes through the same
+`toAbsoluteUrl` join as `<loc>`, so it inherits this branch's `trailingSlash` policy for free.
+
+Two design constraints recorded now so they are not re-litigated later:
+
+- **`ignoreSitemap` must NOT imply `Disallow`.** Blocking a crawler stops it fetching the page, which
+  stops it seeing a `noindex` tag, so the URL can stay indexed with no snippet. Excluded-from-sitemap
+  and blocked-from-crawling are different intents and stay separate keys.
+- **`Disallow: /` is the sharpest edge in the package** — one staging config promoted to production
+  removes a site from search, silently, with nothing in the build looking wrong. It gets a `notice` on
+  every build and a `report().robots` field, the treatment the redirect findings get.
+
+Added success criteria:
+
+- [x] `.robots(options)` writes `<build>/robots.txt` only when called; a `robots.txt` copied from
+      `src/assets/` is untouched under `overwrite: false`
+- [x] Its `Sitemap:` line is the same join `<loc>` uses, and follows `links.trailingSlash`
+- [x] A write failure is logged, not fatal (discovery, like the sitemap — not the redirect case)
+- [x] `Disallow: /` logs a notice every build and is visible in `report().robots`
+- [x] `redirects.format: 'htaccess'` writes `redirects.htaccess` as a **fragment**, never the live
+      `.htaccess` — the same ownership rule as the firebase and vercel fragments
+
 **2026-09-16 — criterion 1 was written wrong, and is amended rather than reinterpreted.**
 It said an unset config produces byte-identical output "with no test edited to accommodate it".
 Two parts of that could never have held, and both are consequences of decisions the operator had
@@ -131,6 +162,36 @@ Evidence, all re-run at this checkpoint rather than recalled:
 Carried, not blocking: one test failed on a full-suite run at 16:25 and passed on every run since;
 I could not capture which before the output rotated, so it is recorded as an unidentified flake to
 watch for at close rather than as a known-good.
+
+**2026-09-16 — pulse 2. That "flake" was not a flake, and the diagnosis in pulse 1 was wrong.**
+
+`test/integration/examples.test.js` records examples 9 and 11 **in place**, in the committed
+`examples/*/AIKB/` folders, and asserts the files are byte-identical before and after. So any change
+to the report's shape makes the first run rewrite two committed files and fail — and leaves the
+files on disk matching, so **every subsequent run passes**. Self-healing and order-dependent, which
+is exactly what an intermittent failure looks like from the outside.
+
+Both sightings were this, not one flake: the 16:25 failure was the `redirects` keys, the 16:58 one
+was `robots`. `last-build.json` is the whole report, so `"robots": null` is a real diff in both
+example records. Nine consecutive clean full-suite runs after the fact are not evidence of health —
+they are evidence the first run already healed it.
+
+Worse, I committed the first instance without noticing: `git add -A` in commit 13ff5ef swept up the
+re-recorded `examples/*/AIKB/last-build.json` as though it were part of the change. It _was_ correct
+to commit them — the record shape genuinely moved — but I did not know I was doing it, and "the
+suite is green" was doing no work as evidence at that moment.
+
+Two things follow, and the second is for the operator:
+
+1. Re-recording the examples is a **required step** of any report-shape change, not an accident. Both
+   files are committed deliberately this time.
+2. **The test's failure mode is a trap and is worth fixing on its own branch.** A report-shape change
+   fails CI once, rewrites two tracked files, and goes green on a re-run — which is precisely the
+   "re-run until it passes" behaviour the repo's own rules forbid, handed to you by the test. The
+   assertion should either record into a temp copy of the example folder, or its failure message
+   should say "the report shape changed — run `npx kiss-ssg aikb` in examples/9 and 11 and commit".
+   Not fixed here: it is test infrastructure, not this branch's subject, and this branch has already
+   absorbed one amendment.
 
 ---
 

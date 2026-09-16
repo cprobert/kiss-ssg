@@ -92,7 +92,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * one level deep.
  *
  * @typedef {Object} KissRedirects
- * @property {'netlify'|'firebase'|'vercel'|'none'|RedirectWriter} format the encoding for the host file, or a function that writes it
+ * @property {'netlify'|'firebase'|'vercel'|'htaccess'|'none'|RedirectWriter} format the encoding for the host file, or a function that writes it
  */
 /**
  * A custom redirect writer: given the resolved rules, return the files to write
@@ -364,7 +364,7 @@ export type KissRedirects = {
     /**
      * the encoding for the host file, or a function that writes it
      */
-    format: "netlify" | "firebase" | "vercel" | "none" | RedirectWriter;
+    format: "netlify" | "firebase" | "vercel" | "htaccess" | "none" | RedirectWriter;
 };
 /**
  * A custom redirect writer: given the resolved rules, return the files to write

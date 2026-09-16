@@ -9,6 +9,7 @@ import {
   normaliseAlias,
   redirectFindings,
   renderFirebaseRedirects,
+  renderHtaccessRedirects,
   renderRedirects,
   renderRedirectsJson,
   renderVercelRedirects,
@@ -604,6 +605,23 @@ describe('the redirect formats', () => {
     ])
   })
 
+  it('renders an Apache fragment of Redirect directives, not a .htaccess', () => {
+    expect(renderHtaccessRedirects(rules)).toBe(
+      ['Redirect 301 /old /courses/', 'Redirect 301 /team /about'].join('\n') +
+        '\n',
+    )
+  })
+
+  it('uses Redirect, not RewriteRule, so a dot in an alias is literal', () => {
+    // `RewriteRule`'s left-hand side is a regex: `/news/2024/a.b.html` would
+    // match `/news/2024/axbxhtml` too. mod_alias `Redirect` takes a literal
+    // path prefix, which is what an alias is.
+    expect(renderHtaccessRedirects([{ from: '/a.b.html', to: '/c' }])).toBe(
+      'Redirect 301 /a.b.html /c\n',
+    )
+    expect(renderHtaccessRedirects([])).toBe('')
+  })
+
   it('renders a Vercel fragment, with its permanent flag', () => {
     const payload = JSON.parse(renderVercelRedirects(rules))
     expect(Object.keys(payload)).toEqual(['redirects'])
@@ -661,6 +679,21 @@ describe('writeRedirects: format dispatch', () => {
     )
   })
 
+  it('writes an Apache fragment, never the live .htaccess', async () => {
+    const config = await build({ format: 'htaccess' })
+    await writeRedirects(stack(config.folders.build), {
+      config,
+      logger: silentLogger,
+    })
+
+    expect(
+      await fs.readFile(`${config.folders.build}/redirects.htaccess`, 'utf8'),
+    ).toBe('Redirect 301 /old /about\n')
+    // The file Apache actually reads carries auth, rewrites and caching the
+    // build knows nothing about. kiss does not write it.
+    expect(await fs.pathExists(`${config.folders.build}/.htaccess`)).toBe(false)
+  })
+
   it('writes only the IR under format:none', async () => {
     const config = await build({ format: 'none' })
     const result = await writeRedirects(stack(config.folders.build), {
@@ -677,7 +710,13 @@ describe('writeRedirects: format dispatch', () => {
   it('writes nothing at all when no page has an alias, whatever the format', async () => {
     // Not an empty IR either: a `_redirects` a project keeps in src/assets/
     // and copies into the build must be left exactly as it was.
-    for (const format of ['netlify', 'firebase', 'vercel', 'none']) {
+    for (const format of [
+      'netlify',
+      'firebase',
+      'vercel',
+      'htaccess',
+      'none',
+    ]) {
       const config = await build({ format })
       const result = await writeRedirects(
         [entry(`${config.folders.build}/about.html`)],

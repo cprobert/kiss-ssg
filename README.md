@@ -567,6 +567,42 @@ writes `public/feed.xml`:
 
 `<lastBuildDate>` is the newest item's date rather than the wall clock, so two identical builds produce byte-identical files and a feed you commit does not churn. It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()` and `.llms()`. Its callback receives the rendered document (`kiss.feed(options, (xml) => …)`), and the file it wrote is reported as the build report's `feed`.
 
+### .robots()
+
+```js
+kiss.page({ view: 'index.hbs' }).sitemap().robots().generate()
+```
+
+writes `public/robots.txt`:
+
+```
+User-agent: *
+Allow: /
+
+Sitemap: https://example.com/sitemap.xml
+```
+
+**That last line is the point.** The block above it is boilerplate you can hand-write — and probably have. What a hand-written `robots.txt` cannot do is stay in step with the build: this one is produced by the same `toAbsoluteUrl` join as every `<loc>`, so the sitemap a crawler is pointed at is character-for-character the one `.sitemap()` wrote, and it moves with [`links.trailingSlash`](#host-url-policy). It is emitted **only when this build calls `.sitemap()`** — advertising a `sitemap.xml` that was never written is a fetch error in every crawler that reads the line.
+
+Same lifecycle as `.sitemap()`, `.llms()` and `.feed()`: chainable, callable before or after `.generate()`, callable on either side of `.sitemap()` (both give the same file), re-run by a watch rebuild. A write failure is logged and skipped — this is discovery, like the sitemap, not the redirects case where a missing file 404s a reader who already has the link.
+
+```js
+kiss.robots({
+  agents: [
+    { userAgent: '*', disallow: ['/admin/', '/tmp/'] },
+    { userAgent: 'BadBot', disallow: '/', crawlDelay: 10 },
+  ],
+})
+```
+
+`agents` is one block per crawler; `userAgent`/`allow`/`disallow` at the top level are the shorthand for a single block, and each takes a path or an array. `sitemap` is `true` (the default), `false`, or a URL or path — or an array — to advertise instead of this build's own. `overwrite: false` leaves a `robots.txt` you keep in `src/assets/` exactly where it is. A path containing whitespace is dropped rather than written, because one directive is one line and there is no escape for a newline.
+
+`report().robots` is `{ file, agents, disallowAll, sitemaps }`, or `null` when you never called the method — an object rather than a bare path, unlike `sitemap` and `feed`, for one reason:
+
+> **`disallow: '/'` removes your site from search.** It is one character from the bare `Disallow:` that means the opposite, and nothing else about the build looks wrong afterwards. So it logs a `notice` on **every** build that emits it, and `disallowAll` is on the report — which means a staging crawl policy that reaches production shows up in a `kiss-ssg check` diff rather than in Search Console a month later.
+
+kiss never infers a `Disallow` for you. In particular **`ignoreSitemap` does not imply one**, and the omission is deliberate: blocking a crawler stops it fetching the page, which stops it seeing a `noindex`, which can leave the URL indexed with no snippet — worse than leaving it crawlable. Keeping a page out of the sitemap and keeping a crawler out of a page are different intents, and you state the second explicitly.
+
 ### Host URL policy
 
 Two of the things kiss emits are decided by your **host**, not by the generator. Both are config keys, and both default to what kiss has always done, so an existing site does not move.
@@ -614,10 +650,11 @@ An alias is a fact about your site — "this page used to answer `/old`" — and
 | `'netlify'` _(default)_ | `_redirects`                                    | [Netlify](https://docs.netlify.com/routing/redirects/), [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) |
 | `'firebase'`            | `redirects.firebase.json` — a fragment to merge | Firebase Hosting, which ignores `_redirects` entirely                                                                                        |
 | `'vercel'`              | `redirects.vercel.json` — a fragment to merge   | Vercel                                                                                                                                       |
+| `'htaccess'`            | `redirects.htaccess` — a fragment to `Include`  | Apache                                                                                                                                       |
 | `'none'`                | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
 | a function              | whatever it returns                             | anything else — nginx, Apache, a CDN API                                                                                                     |
 
-The Firebase and Vercel formats emit **the `redirects` array alone**, not a `firebase.json` or a `vercel.json`. Your real config file holds hosting targets, headers and rewrites, and very often years of hand-maintained redirect history; kiss will not rewrite it. Merge the fragment on your own terms.
+The Firebase, Vercel and Apache formats emit **a fragment**, not a `firebase.json`, a `vercel.json` or a `.htaccess`. Your real config file holds hosting targets, headers, rewrites and often years of hand-maintained redirect history; kiss will not rewrite it. Merge the fragment on your own terms — for Apache, by `Include`-ing `redirects.htaccess` or concatenating it. (That fragment uses mod_alias `Redirect`, not `RewriteRule`: a rewrite's left-hand side is a regex, so an alias containing a `.` would match more paths than the one it names.)
 
 A custom writer is `(rules, { buildDir, config }) => [{ file, contents }]` — or one entry, or nothing at all. Paths are relative to the build folder and one that escapes it is refused. A writer that throws **fails the build**, exactly as a failed write does: a redirect writer that dies quietly would be the silent no-op this whole block exists to end. An unknown format name throws at `new Kiss()` rather than writing nothing.
 

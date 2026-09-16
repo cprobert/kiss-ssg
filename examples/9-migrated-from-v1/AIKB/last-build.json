@@ -118,5 +118,6 @@
     "broken": []
   },
   "redirects": null,
-  "feed": null
+  "feed": null,
+  "robots": null
 }

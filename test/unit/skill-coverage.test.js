@@ -58,6 +58,11 @@ const COVERAGE = [
     ],
   },
   {
+    feature: '.robots() — robots.txt, and the Sitemap: line',
+    pattern: /\.robots\(/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
     feature: '.feed()',
     pattern: /\.feed\(/,
     skills: [skill('kiss-ssg', 'kiss-site-new')],

@@ -162,7 +162,7 @@ describe('resolveConfig', () => {
   })
 
   it('accepts every built-in redirect format, and a writer function', () => {
-    for (const format of ['netlify', 'firebase', 'vercel', 'none'])
+    for (const format of ['netlify', 'firebase', 'vercel', 'htaccess', 'none'])
       expect(resolveConfig({ redirects: { format } }).redirects.format).toBe(
         format,
       )

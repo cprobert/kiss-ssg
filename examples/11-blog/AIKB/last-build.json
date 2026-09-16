@@ -163,5 +163,6 @@
       "../../public/11-blog/_redirects"
     ]
   },
-  "feed": "../../public/11-blog/feed.xml"
+  "feed": "../../public/11-blog/feed.xml",
+  "robots": null
 }

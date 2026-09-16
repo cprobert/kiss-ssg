@@ -127,6 +127,24 @@ export function renderFirebaseRedirects(rules?: RedirectRule[]): string;
  */
 export function renderVercelRedirects(rules?: RedirectRule[]): string;
 /**
+ * The Apache encoding, as a **fragment to include** — `Redirect` directives
+ * alone, never a `.htaccess`.
+ *
+ * Same ownership rule as the Firebase and Vercel fragments, for a sharper
+ * reason: a real `.htaccess` carries authentication, rewrite rules, caching
+ * headers and error documents, and it is the *live* server config rather than
+ * a deploy manifest. kiss writes `redirects.htaccess` for the site to
+ * `Include` or concatenate, and never touches the file Apache actually reads.
+ *
+ * `Redirect` (mod_alias), not `RewriteRule`: the source is a literal path, and
+ * a directive whose left-hand side is a regex would turn a `.` or a `+` in an
+ * alias into a pattern. The alias `/a.b` must redirect `/a.b` and nothing else.
+ *
+ * @param {RedirectRule[]} rules
+ * @returns {string} one directive per line, sorted, newline-terminated
+ */
+export function renderHtaccessRedirects(rules?: RedirectRule[]): string;
+/**
  * What a custom writer asked for, normalised: always a list, always with a
  * string `file` and string `contents`. A writer that returns nothing writes
  * nothing, which is a legitimate answer (it may have posted the rules

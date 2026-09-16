@@ -8,6 +8,7 @@ export type BuildAikb = import("./build-report.js").BuildAikb;
 export type BuildLinks = import("./build-report.js").BuildLinks;
 export type BuildBrokenLink = import("./build-report.js").BuildBrokenLink;
 export type BuildRedirects = import("./build-report.js").BuildRedirects;
+export type BuildRobots = import("./build-report.js").BuildRobots;
 export type SiteMap = import("./aikb.js").SiteMap;
 export type PipelineStep = import("./pipeline.js").PipelineStep;
 export type KissConfig = import("./config.js").KissConfig;
@@ -314,6 +315,10 @@ declare class Kiss {
     /** @private */
     private _feedRequest;
     /** @private */
+    private _robotsRequest;
+    /** @private @type {BuildRobots|null} */
+    private _robotsResult;
+    /** @private */
     private _watcher;
     /** @private */
     private _devServer;
@@ -536,6 +541,42 @@ declare class Kiss {
      * @returns {this}
      */
     llms(options: LlmsOptions, callback?: (text: string) => void | Promise<void>): this;
+    /**
+     * Writes `robots.txt` into the build folder. The `Sitemap:` line is the
+     * point: it is built by the same `toAbsoluteUrl` join as every `<loc>`, so
+     * the sitemap a crawler is pointed at is character-for-character the one
+     * `.sitemap()` wrote — and it is emitted **only** when this build actually
+     * writes a sitemap, because advertising one that does not exist is a fetch
+     * error in every crawler that reads the line.
+     *
+     * Called with no options it writes the file the hand-written ones usually
+     * say — one `*` block allowing everything — plus that line. Unlike
+     * `_redirects` there is a method to call, because a crawl policy is a
+     * statement about the whole site rather than a property of a page: nothing
+     * in the stack could imply it. A `robots.txt` a site keeps in `src/assets/`
+     * is therefore untouched unless it asks for this, and `overwrite: false`
+     * leaves the copied file alone even then.
+     *
+     * **`Disallow: '/'` removes the site from search.** It is logged as a
+     * `notice` on every build that emits it and carried on `report().robots`,
+     * so a staging policy promoted to production is visible in a `kiss-ssg
+     * check` diff rather than in Search Console a month later. It is never
+     * inferred: `ignoreSitemap` deliberately does **not** imply a `Disallow`,
+     * because blocking a crawler stops it fetching the page and so stops it
+     * seeing a `noindex`, which leaves the URL indexed with no snippet.
+     *
+     * Like `.sitemap()`, `.llms()` and `.feed()` it can be called before or
+     * after `.generate()`, in any order relative to `.sitemap()`, and it is
+     * re-run by a whole-site watch rebuild. A write failure is logged, not
+     * fatal — this is discovery, like the sitemap, not the redirects case where
+     * a missing file 404s traffic a reader already has a link to.
+     *
+     * @param {import('./robots.js').RobotsOptions} [options]
+     * @param {(text: string) => void|Promise<void>} [callback] receives the
+     * rendered file; not fired when an existing file was left in place
+     * @returns {this}
+     */
+    robots(options?: import("./robots.js").RobotsOptions, callback?: (text: string) => void | Promise<void>): this;
     /**
      * Writes an RSS 2.0 feed into the build folder — the third file derived from
      * the same registry as `sitemap.xml` and `llms.txt`, so an item can never
