@@ -1,7 +1,7 @@
 ---
 branch: claude/learna-kiss-session-communication-d1uv1d
 base: main
-status: open
+status: closed
 opened: 2026-09-16
 ---
 
@@ -343,3 +343,71 @@ Two things follow, and the second is for the operator:
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-09-16: Host URL Policy — trailing slash, redirect format, robots.txt
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** v2.4.0 across nine commits (`e3ce41b`…`a7239dd`): `links.trailingSlash` and a `redirects.format` list with a host-neutral `redirects.json` IR, four host encodings plus a custom-writer extension point, the encoders re-exported from `lib/kiss.js`, a new `lib/robots.js` / `.robots()`, and the measured host matrix replacing a false universal in five documentation places. 1345 tests, five gates green.
+
+## Reflect — what the session was
+
+**The framing did not come from the operator, and that is the most interesting fact about this session.** It began as "can you communicate with the other session editing Learna Kiss?" — a capability question, not a work request. The brief arrived from a _peer Claude session_ working on `learna-kiss`, relayed through a scheduled trigger, and the operator's role was to authorise the channel and then adjudicate the findings that came back down it.
+
+The shape was **planned in the small, emergent in the large**. Each slice was well specified before code (the `/branch-open` intent, then three operator decisions taken at explicit checkpoints). But the branch grew three times beyond its captured remit: `.robots()`, the format list, and the renderer exports each arrived as a new operator instruction mid-branch. All three were recorded as dated Amendments and absorbed here rather than split off — `CLAUDE.md`'s one-open-branch rule working exactly as written. That is good drift, not scope creep: every addition sat inside the branch's own theme of _host policy is the site's to state, not the engine's to assume_.
+
+The cross-session relay is worth naming as a working pattern in its own right. Three inbound messages, four outbound, each side re-deriving the other's claims rather than trusting them — and it caught real errors in both directions.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering — the strongest dimension, and the one that shaped the output.** The operator overrode Claude's recommendation three times, and was right each time:
+
+1. On the redirect IR, Claude proposed a four-rung ladder ending in "a callback, last and possibly never". The operator replied _"an internal Json… a format option… and an extendability point for custom writers"_ — collapsing the ladder into one coherent design and taking the callback immediately. The shipped architecture is the operator's, not Claude's.
+2. On `format`, the operator specified a **list** ("so that I can support both netlify and Firebase"). Claude had not considered multi-host deployment at all.
+3. On the version, Claude recommended major with a three-point argument; the operator chose minor with a stated reason (sole consumer, will patch clients). Claude executed it and documented the break under its own warning heading rather than re-arguing.
+
+**Learning engagement — active, and it changed the work.** _"How modular and extendable is the redirect infrastructure?"_ was not a request for reassurance; it was an audit prompt. It produced three findings, two of which were genuine defects in code Claude had written an hour earlier — including a silent-no-op path of exactly the class the whole branch existed to abolish. That question is the highest-value input in the session.
+
+**Verification & ownership — mixed, and the gap is at the end.** Mid-branch it was strong: five pulses, red-first evidence for every behavioural test (`git stash push lib/`, watch it fail, restore), and real-build eyeballs at three separate points including a packed-tarball install in a clean project. But **the one human check the ritual reserves was not performed** — the operator was on mobile at Step 5a and deferred it to `to-verify.md` (`a7239dd`). That is an honest answer and better than a waved-through yes, but it means the final judgement on whether the upgrade notice is loud enough — the thing protecting every consuming site from silently losing its redirects — is still outstanding.
+
+**Iteration discipline — strong, and unusually so.** No slice ran one-shot. The largest single change (the format list) broke twenty existing tests, and that breakage was treated as the evidence it was rather than as noise to suppress: each test now declares its host, which is precisely what a real 2.3 site must do.
+
+**Harness leverage — the one clearly weak dimension, and it is Claude's fault more than the operator's.** Claude delegated the security review to a sub-agent that died in an MCP disconnect and never reported; Claude then did the review itself. That worked, but it means the branch's one _independent_ read of the new arbitrary-file-write surface never happened — Claude reviewed Claude's own code. The Codex reviewer was unavailable too, so both independent-review paths came up empty and the close proceeded on self-assessment. Claude should have noticed the missing notification far earlier than Step 7.
+
+**Where the human intended to supervise versus where they actually did.** The operator held every _design_ checkpoint and none of the _verification_ ones at the end. The pattern is consistent: they were decisive about what to build and delegated whether it works. On a branch that ships a behavioural break under a minor version, that asymmetry is the risk worth naming.
+
+**Competency level: Active supervisor.** Earned by the three overrides, the audit prompt, and the explicit decisions at every design fork — not Agentic engineering lead, because the final verification was deferred and the independent review silently never happened.
+
+## Feedback — recommendations for next session
+
+- **Operator — `to-verify.md` item 1 is the one that matters; do it before this ships anywhere.** A 2.3 site that upgrades and changes nothing stops writing `_redirects`. The only guard is one cyan `notice`, and it went out under a _minor_ version. Ten minutes on a laptop decides whether that notice should be a `warn`.
+- **Claude — a delegated check that never reports is a check that did not happen, and I should say so at the moment it stalls.** The security sub-agent was launched at Step 2 and its absence was not noticed until Step 7. The concrete change: when a step's evidence comes from a background agent, verify the notification arrived before moving past the step that depends on it.
+- **Claude — do not review my own new attack surface and call it a review.** This branch added an arbitrary-file-write path (`normaliseWriterOutput`). The empirical check was real and found nothing, but a second pair of eyes was the point. When both independent reviewers are unavailable, say plainly that the branch has no independent review rather than treating the self-check as equivalent.
+- **Both — the cross-session relay worked, and the rule that made it work was re-derivation.** Every correction in the exchange came from checking rather than agreeing: the peer caught kiss's false universal; Claude caught that the peer's cited precedent (`source(none)`) did not exist; the peer caught that its own first recommendation would have broken a1k9training. Keep the 09-15 rule — state which claims are measured and which are inferred — and add: **re-derive the peer's claim locally before acting on it, every time.**
+- **Claude — my "one function, five prose places" count was an inference stated as a measurement.** `servedPathFor` carried a second copy of the same regex; I found it only because I went looking after the peer's next message. Had I fixed only what I named, a Firebase site would have canonicalised `/courses` and linked `/courses/` — the exact split I then warned about. When reporting a count from a grep, say it is from a grep.
+- **Process — `examples.test.js` self-heals, and that should not survive another branch.** It records examples 9 and 11 in place and asserts byte-identity, so any report-shape change rewrites two tracked files, fails once, and passes forever after. It fired twice here and the first instance was committed unnoticed by a `git add -A`. Documented in `AIKB/testing.md`; the fix — record into a temp copy, or make the failure message name the remedy — deserves its own branch.
+- **Operator — the bench baseline contradiction is now three logs old** (09-10, 09-12, and carried into this branch's inherited feedback). `CLAUDE.md` calls `planning/benchmarks/baseline-main.json` the branch's baseline; the 09-06 follow-up says a committed record is history. One sentence settles it, and at three recurrences `/memory-consolidate` is the right home for it.
+
+## Verdict — did we achieve the objective?
+
+**The objective was met, and then moved three times with the operator's authorisation.**
+
+Original brief — _stop the engine deciding two things that belong to the site's host, with defaults that reproduce today's behaviour exactly_. Against the captured criteria:
+
+- [x] `links.trailingSlash` defaults to `true`; existing integration suite passes (with the amendment: report-key assertions were extended, none weakened)
+- [x] One URL everywhere under `trailingSlash: false` — canonical, `<loc>`, llms.txt, feed, `_redirects` target and `{{link}}` — test seen red first
+- [x] `toURLKey` untouched; `isActive` identical under both settings, asserted
+- [x] `report().redirects.rules` carries the resolved list
+- [x] `<build>/redirects.json` written whenever there are aliases
+- [x] `redirects.format` accepts all four built-ins, `'none'`, a writer function, **and a list**
+- [x] A throwing custom writer fails the build through `_failures`
+- [x] AIKB, `llms.txt`, `README.md`, regenerated `types/`, skill-coverage rows
+- [x] `npm run gates` green
+
+Amended criteria (`.robots()`, the htaccess fragment, the format list, the renderer exports) are all ticked in their Amendment blocks above.
+
+**The one criterion that did not survive contact:** the original said the default would "reproduce today's behaviour exactly". It no longer does — `redirects.format` is unset by default, so a 2.3 site loses `_redirects`. That is the operator's deliberate reversal of the branch's own founding constraint, taken with the consequence stated, and mitigated by a notice. Recorded as an Amendment rather than quietly reinterpreted.
+
+**Concretely better now:** two real sites can express their host's URL policy instead of patching kiss's output; a Firebase or Vercel site gets redirects that its host actually reads instead of a file nothing serves; five documentation claims that were false for half the hosts they named are now a measured table with the unverified rows labelled as such; and a custom writer can build on a shipped encoder rather than reimplementing one.
+
+**Open:** the operator eyeball (`to-verify.md`, five items) — in particular whether the upgrade notice is loud enough. No independent code review happened on this branch: the security sub-agent died and Codex is not installed. The branch ships a behavioural break under a minor version, which is a recorded decision, not an oversight.
