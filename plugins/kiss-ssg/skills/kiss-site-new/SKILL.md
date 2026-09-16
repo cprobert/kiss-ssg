@@ -53,18 +53,18 @@ The same table read by **router shape** — how much a site has had to split up,
 axis `examples/README.md` indexes. An agent arrives at one example rather than reading the set, so
 pick on both axes:
 
-| How complex is the site?                                                   | Look at                                                                                                                                                                                |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| One file is plenty — a handful of pages, no custom helpers                 | Any of examples 1–8 and 10. Every one is tier 0, and each router's header says why it was _not_ split                                                                                  |
-| It has one custom helper and you are wondering whether that earns a folder | `node_modules/kiss-ssg/examples/9-migrated-from-v1/router.js` — one helper, kept inline, with the threshold stated beside it                                                           |
-| A fact appears in both the markup and the feed or the JSON-LD              | `node_modules/kiss-ssg/examples/11-blog/` — a `config/` seam, earned by duplication rather than by length                                                                              |
-| Four or more custom helpers, outgrowing the route table                    | No shipped example is this big. `llms.txt` § The build script has the shape: `helpers/index.js` composing one `register*Helpers(kiss)` per kind, called immediately after `new Kiss()` |
+| How complex is the site?                                      | Look at                                                                                                                             |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| One file is plenty — a handful of pages, no custom helpers    | Any of examples 1–8 and 10. Every one is tier 0, and each router's header says why it was _not_ split                               |
+| It has one custom helper                                      | `node_modules/kiss-ssg/examples/9-migrated-from-v1/` — one helper, and therefore a `helpers/` folder. One is the trigger, not three |
+| A fact appears in both the markup and the feed or the JSON-LD | `node_modules/kiss-ssg/examples/11-blog/` — a `config/` seam, earned by duplication rather than by length                           |
+| Several custom helpers of different kinds                     | The same shape, one module per kind — `llms.txt` § The build script. No shipped example is that big                                 |
 
 Run the exemplar before you change anything, so you know what its output and exit code are meant to look like. Example 8 exits 1 on purpose.
 
 ### 5. Write the build script
 
-Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. `node_modules/kiss-ssg/llms.txt` § The build script is the contract — read it, because it carries the extraction thresholds and this is only the summary: the file is a router (config, one `registerHelpers(kiss)` call, the `.page()`/`.pages()`/`.scan()` table, the terminal chain, the `complete()`/`catch()` pair), and a site earns `helpers/` when its custom helpers pass about a third of the file, `config/` when one fact appears in both the markup and the JSON-LD.
+Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. `node_modules/kiss-ssg/llms.txt` § The build script is the contract — read it, because it carries the extraction thresholds and this is only the summary: the file is a router (config, one `registerHelpers(kiss)` call, the `.page()`/`.pages()`/`.scan()` table, the terminal chain, the `complete()`/`catch()` pair). A site earns `src/helpers/` the moment it has its **first** custom helper — one, not three — because a helper inside `router.js` cannot be imported and so cannot be tested, which is as true of the first as of the fourth. It earns `src/config/` the moment one fact appears in both the markup and the JSON-LD. The two triggers are independent: a site can have `config/` and no `helpers/`.
 
 Name it `router.js` from the first commit even while the whole site fits in that one file. A site at tier 0 is not a site that got it wrong — splitting a 120-line router makes it harder to read — but renaming the file later silently orphans whatever names it: a CSS toolchain's source globs, `package.json`, the host's build command, a `npx kiss-ssg check <script>` invocation. None of those fails loudly. The name costs nothing now and is a grep-the-repo job later.
 

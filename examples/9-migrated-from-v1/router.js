@@ -1,13 +1,15 @@
-// Tier 0 — and the clearest case in the set, because this router DOES register a
-// custom helper. One helper, in a 200-line file, is neither of the thresholds in
-// llms.txt § The build script ("more than about three, or more than about a
-// third of the file"), so it stays inline. A `helpers/index.js` composing a
-// single registrar would be pure ceremony. Extract when there is a second and a
-// third, not before.
+// Tier 1 of the build-script convention (llms.txt § The build script), and the
+// only reference example that reaches it. This router registers one custom
+// helper, and **one is the trigger** — not three, not a proportion of the file.
+// A helper registered inline here could not be imported, so it could not be
+// unit-tested, and that is as true of the first helper as of the fourth. It
+// lives in helpers/ with the pure function exported and the registrar a thin
+// adapter over it; the folder cost one file and one import.
 import { existsSync } from 'node:fs'
 // `utils` is a named export in v2, not `kiss-ssg/libs/utils.js`.
 import Kiss, { utils } from '../../lib/kiss.js'
 import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import { registerHelpers } from './helpers/index.js'
 
 const dev = process.argv.includes('--dev')
 
@@ -40,24 +42,11 @@ const kiss = new Kiss({
   livereloadPort: 35739,
 })
 
-// Handlebars is per-instance in v2: `require('handlebars').partials` is empty
-// here, so a v1 helper that read the global module rendered nothing at all —
-// silently, on a green build. Register on `kiss.handlebars` and read the
-// partials off the same environment.
-kiss.handlebars.registerHelper(
-  'renderPartial',
-  function (name, context, options) {
-    const partial = kiss.handlebars.partials[name]
-    if (!partial) return ''
-    const template =
-      typeof partial === 'function' ? partial : kiss.handlebars.compile(partial)
-    // Pass the helper's own data frame through — that frame is how the page is
-    // recorded as using the partial, so a save re-renders just this page.
-    return new kiss.handlebars.SafeString(
-      template(context, { data: options?.data }),
-    )
-  },
-)
+// The site's custom helpers, in helpers/ because it has one and one is the
+// trigger. The v1 trap they replace — a helper reading the global handlebars
+// module, which renders nothing at all, silently, on a green build — is
+// explained where the helper now lives.
+registerHelpers(kiss)
 
 // Two sources, one output folder. v1 wrote whichever page came last when two
 // claimed one path; v2 fails the build. Dedupe before registering — the

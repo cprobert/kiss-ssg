@@ -38,17 +38,17 @@ assembling it from the feature reference.
 | [6 · sitemap and llms.txt](6-sitemap/)              | Reference | tier 0       | `.sitemap()` and `.llms()` with `siteUrl`, per-page tuning, `extensionLess`, hashed assets                        | `npm run eg6` · `--dev`                                |
 | [7 · versioned outputs](7-versioned-outputs/)       | Exemplar  | tier 0       | One build per season into its own folder, atomically, with an archive index beside them                           | `npm run eg7` · `node 7-versioned-outputs.js <season>` |
 | [8 · data-fed site](8-data-fed-site/)               | Exemplar  | tier 0       | A site built from a folder of records, validated in the controller — one record is broken                         | `npm run eg8` · exits 1 · `--dev`                      |
-| [9 · migrated from v1](9-migrated-from-v1/)         | Exemplar  | tier 0 ¹     | Every v1 → v2 migration recipe as running code, in a site that builds clean; ships a recorded `AIKB/`             | `npm run eg9` · `--dev`                                |
+| [9 · migrated from v1](9-migrated-from-v1/)         | Exemplar  | **tier 1** ¹ | Every v1 → v2 migration recipe as running code, in a site that builds clean; ships a recorded `AIKB/`             | `npm run eg9` · `--dev`                                |
 | [10 · asset pipeline](10-asset-pipeline/)           | Reference | tier 0       | `config.assets.pipeline` runs an external tool before the asset copy, `watch` in dev mode                         | `npm run eg10` · `--dev`                               |
 | [11 · blog](11-blog/)                               | Exemplar  | **tier 2** ² | Posts as a fan-out, pagination, tag pages, `.feed()`, a rename's `aliases`, links by `{{link}}`; recorded `AIKB/` | `npm run eg11` · `--broken` · `--dev`                  |
 
-¹ Example 9 is the one that registers a custom helper — exactly one — and keeps it inline. That
-is the threshold working, not a gap: `helpers/` is earned by more than about three helpers, or by
-helpers outgrowing the route table.
+¹ Example 9 registers exactly one custom helper, and therefore has a `helpers/` folder. One is the
+trigger: a helper inside `router.js` cannot be imported and so cannot be tested, which is as true
+of the first as of the fourth.
 ² Example 11 has a `config/` folder because its name appears in the feed, in `llms.txt` and in the
-markup. That seam is earned by **duplication**, not by file length, which is why a site can reach
-it while its helpers are still inline. No shipped example reaches the helper-extraction threshold;
-a site that does looks like `config/` plus `helpers/index.js` composing one module per kind.
+markup. That trigger is **duplication**, not file length, and it is independent of the helper one —
+which is why example 11 has `config/` and no `helpers/` (it registers none), while example 9 has
+`helpers/` and no `config/`. The tiers are not stages to pass through in order.
 
 `npm run egN` runs from the repo root; from this folder the same thing is `cd N-name && node
 router`. Each router's own header states its tier and why it is there.
