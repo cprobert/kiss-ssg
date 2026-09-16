@@ -84,6 +84,11 @@ sitemap this build actually wrote, and it is only emitted when you called
 `.sitemap()` — advertising one that does not exist is a fetch error in every
 crawler that reads it.
 
+`examples/6-sitemap` and `examples/11-blog` both call it. The static
+`robots.txt` that six examples used to copy from `_shared/assets/` is gone: it
+was two lines that never mentioned the sitemap those examples generate, which
+is the gap this method exists to close.
+
 `agents`, or the `userAgent`/`allow`/`disallow` shorthand, set the blocks;
 `sitemap` overrides what is advertised; `overwrite: false` leaves a `robots.txt`
 you keep in `src/assets/` alone. `report().robots` carries

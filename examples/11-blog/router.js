@@ -183,6 +183,13 @@ kiss
     summary: journal.summary,
     sections: { root: 'The site', blog: 'The journal' },
   })
+  // And the file that tells a crawler the sitemap above exists. This used to be
+  // a static `robots.txt` copied from `_shared/assets/` — two lines that never
+  // mentioned the sitemap this very example generates, which is the gap
+  // `.robots()` was built to close. The `Sitemap:` line is produced by the same
+  // join as every `<loc>`, so it cannot drift from the file `.sitemap()` wrote,
+  // and it is emitted only because `.sitemap()` was called.
+  .robots()
 
 if (!dev) {
   // Without this await a broken build exits 0 and ships a site with a hole in

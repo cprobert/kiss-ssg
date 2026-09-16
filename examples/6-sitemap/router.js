@@ -59,6 +59,15 @@ const kiss = new Kiss({
     notes: 'Prices and opening hours change seasonally.',
   })
 
+  // The third sibling, and the one that points a crawler at the other two.
+  // Called bare it writes `User-agent: * / Allow: /` plus a `Sitemap:` line —
+  // and that line is the point: it is built by the same join as every `<loc>`
+  // above, so it names the sitemap this build actually wrote rather than a URL
+  // someone typed into a static file once. Drop `.sitemap()` from this chain
+  // and the line disappears rather than going stale, because advertising a
+  // sitemap that does not exist is a fetch error in every crawler that reads it.
+  .robots()
+
 if (!dev) {
   await kiss.complete().catch(reportBuildFailure)
 }

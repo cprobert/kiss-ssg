@@ -86,10 +86,6 @@
     {
       "source": "css/site.css",
       "target": "css/site.css"
-    },
-    {
-      "source": "robots.txt",
-      "target": "robots.txt"
     }
   ],
   "sitemap": null,
