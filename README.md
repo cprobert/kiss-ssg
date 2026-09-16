@@ -812,7 +812,7 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 `lookup` is Handlebars' own `lookup` helper with one addition: when the key is undefined it logs `lookup: 'moodleAccess' is undefined in handbooks/uob.hbs`, so a dynamic partial `{{> (lookup . 'key')}}` whose key is missing from your data tells you which key and which page — it still fails the build with `The partial undefined could not be found`, as before.
 
-`isActive` renders its block only when the current page matches `href`, handy for highlighting the current nav item:
+`isActive` renders its block only when the current page matches `href`, handy for highlighting the current nav item. The block sees the surrounding context **plus** the hash you pass, the hash winning on a clash — so inside an `{{#each}}` the item's own keys are still in scope, and `active`, `href`, `folderMatch` and `pageURL` are always the helper's own:
 
 ```handlebars
 <nav>
