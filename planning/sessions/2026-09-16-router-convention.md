@@ -108,6 +108,26 @@ following the edited `kiss-site-new` on a throwaway site, before the examples mo
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-16 (slice one: the convention)** — criteria 1–3 met: `llms.txt` § The build script
+  present with the three tiers (`test/aikb.test.js` 152 passed, its `## Helpers`/`## Config`
+  section slicing unaffected); all three `kiss-ssg` skills carry it; the two `skill-coverage` rows
+  were seen to fail (`2 failed | 32 passed` against a `kiss-page-add` with the convention stripped)
+  before passing (34). Criterion 11 partial — `npm run gates` all five green and `npm test` 1252
+  passed, but the examples half is untestable until they move. Criteria 4–9 not yet: slice two.
+  Criterion 10 deliberately deferred — `kiss-site-new`'s exemplar table cannot offer a router-shape
+  column until the examples actually carry tiers; writing it now would be a doc making a claim about
+  code that does not exist.
+  **Pre-move baseline captured** for slice two: `timeout 40 node 11-blog.js` exits 0, builds 14
+  HTML pages, 171 internal references none broken — the numbers `test/integration/examples.test.js`
+  asserts and the moved scripts must reproduce.
+  **Scope note, not an amendment:** `README.md` was edited (a `### The build script` section under
+  Usage, generic `build.js`/`site.js` placeholders → `router.js`) though no criterion named it.
+  Same objective, same impact surface, so it is recorded here rather than as scope drift.
+  Two self-inflicted defects caught pre-push: a blanket `build.js` → `router.js` replace rewrote
+  `AIKB/last-build.json` into `last-router.json` (the 09-10 bulk-rename lesson, landing on me), and
+  the first commit carried `"peer": true` lockfile churn from an `npm install`. Both fixed before
+  the push. Decision: **continue** to slice two.
+
 ### Inherited feedback this branch carries
 
 - **The operator eyeball has recurred three times since being retired** (09-10, 09-12, 09-15).
