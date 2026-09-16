@@ -666,7 +666,30 @@ A list because a site can legitimately deploy to more than one host — Netlify 
 
 The Firebase, Vercel and Apache formats emit **a fragment**, not a `firebase.json`, a `vercel.json` or a `.htaccess`. Your real config file holds hosting targets, headers, rewrites and often years of hand-maintained redirect history; kiss will not rewrite it. Merge the fragment on your own terms — for Apache, by `Include`-ing `redirects.htaccess` or concatenating it. (That fragment uses mod_alias `Redirect`, not `RewriteRule`: a rewrite's left-hand side is a regex, so an alias containing a `.` would match more paths than the one it names.)
 
-A custom writer is `(rules, { buildDir, config }) => [{ file, contents }]` — or one entry, or nothing at all. Paths are relative to the build folder and one that escapes it is refused. A writer that throws **fails the build**, exactly as a failed write does: a redirect writer that dies quietly would be the silent no-op this whole block exists to end. An unknown format name throws at `new Kiss()` rather than writing nothing.
+A custom writer is `(rules, { buildDir, config }) => [{ file, contents }]` — or one entry, or nothing at all. **It does not have to start from scratch**: every built-in encoder is a named export, so a writer can compose one rather than reimplement it.
+
+```js
+import Kiss, { renderRedirects, renderFirebaseRedirects } from 'kiss-ssg'
+
+new Kiss({
+  redirects: {
+    format: (rules) => [
+      // Netlify's exact bytes, somewhere else, plus a rule of your own
+      {
+        file: 'edge/_redirects',
+        contents:
+          renderRedirects(rules) + '/vendor/* https://cdn.example/:splat 200\n',
+      },
+      {
+        file: 'hosting/redirects.json',
+        contents: renderFirebaseRedirects(rules),
+      },
+    ],
+  },
+})
+```
+
+`renderRedirects`, `renderRedirectsJson`, `renderFirebaseRedirects`, `renderVercelRedirects` and `renderHtaccessRedirects` are all `(rules) => string` over the same list your writer is handed. Paths are relative to the build folder and one that escapes it is refused. A writer that throws **fails the build**, exactly as a failed write does: a redirect writer that dies quietly would be the silent no-op this whole block exists to end. An unknown format name throws at `new Kiss()` rather than writing nothing.
 
 ```js
 new Kiss({

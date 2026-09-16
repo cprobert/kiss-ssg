@@ -635,5 +635,10 @@ declare class Kiss {
     close(): Promise<void>;
 }
 import utils from './utils.js';
+import { renderRedirects } from './redirects.js';
+import { renderRedirectsJson } from './redirects.js';
+import { renderFirebaseRedirects } from './redirects.js';
+import { renderVercelRedirects } from './redirects.js';
+import { renderHtaccessRedirects } from './redirects.js';
 import Handlebars from 'handlebars';
-export { Kiss as 'module.exports', utils };
+export { Kiss as 'module.exports', utils, renderRedirects, renderRedirectsJson, renderFirebaseRedirects, renderVercelRedirects, renderHtaccessRedirects };

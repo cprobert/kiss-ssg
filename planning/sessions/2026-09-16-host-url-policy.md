@@ -107,6 +107,31 @@ Added success criteria:
 - [x] `redirects.format: 'htaccess'` writes `redirects.htaccess` as a **fragment**, never the live
       `.htaccess` — the same ownership rule as the firebase and vercel fragments
 
+**2026-09-16 — scope amended by the operator: Finding 2 closed, renderers exported through
+`lib/kiss.js`.** The operator also waived the API-compatibility concern for the redirect surface —
+they are the only consumer and will patch their clients — so that is no longer an open risk on this
+branch.
+
+`renderRedirects`, `renderRedirectsJson`, `renderFirebaseRedirects`, `renderVercelRedirects` and
+`renderHtaccessRedirects` are now named exports of the entry module. This was not a convenience:
+the `exports` map has one entry by design, so `kiss-ssg/lib/redirects.js` raises
+`ERR_PACKAGE_PATH_NOT_EXPORTED` and a site could not reach them at all. A `config.redirects.format`
+writer therefore had to reimplement an encoding kiss already shipped — an extension point with
+nothing to extend, and a straight violation of this package's own rule, stated in `llms.txt`: one
+entry in the map, everything public reachable from `'kiss-ssg'` itself.
+
+Exported **flat** rather than under a `redirects` namespace (the shape `utils` uses), because a site
+reads `config.redirects` in the same file and `redirects.renderRedirects(...)` inside
+`redirects: { format: ... }` is a sentence nobody should have to parse. One vocabulary: the names
+are exactly the ones `AIKB/redirects.md` already documented, not a second set of aliases.
+
+Added success criteria:
+
+- [x] every built-in encoder is reachable as a named export of `'kiss-ssg'`
+- [x] the declarations carry them, proved by a typed consumer rather than by the source
+- [x] a custom writer can compose a shipped encoding instead of reimplementing it
+- [x] the one-entry `exports` map is unchanged — deep imports still fail
+
 **2026-09-16 — scope amended again by the operator: `redirects.format` becomes a list, and the
 IR becomes the default. THIS MAKES THE BRANCH A MAJOR.**
 
@@ -199,6 +224,32 @@ Evidence, all re-run at this checkpoint rather than recalled:
 Carried, not blocking: one test failed on a full-suite run at 16:25 and passed on every run since;
 I could not capture which before the output rotated, so it is recorded as an unidentified flake to
 watch for at close rather than as a known-good.
+
+**2026-09-16 — pulse 5. Finding 2 closed. Verified against a real npm install, not the working tree.**
+
+- `npm run gates` — five green, 1345 tests.
+- **The eyeball was the install, because that is the only thing that can prove an `exports`-map
+  change.** `npm pack`, then `npm install` the tarball into an empty project outside the repo, then
+  a site that imports `renderRedirects` and `renderFirebaseRedirects` from `'kiss-ssg'` by name and
+  composes them in a custom writer. Output read by eye:
+
+      public/edge/_redirects          /old-about /about 301
+                                      /vendor/* https://cdn.example/:splat 200
+      public/hosting/redirects.json   { source, destination, type: 301 }
+      public/redirects.json           the IR, still the baseline under a custom writer
+
+  The Netlify bytes are the built-in encoder's, with the site's own rule appended — the composition
+  that was impossible before. And `import('kiss-ssg/lib/redirects.js')` from that same project still
+  returns `ERR_PACKAGE_PATH_NOT_EXPORTED`, so the one-entry map is intact and the named exports are
+  the only door.
+
+- Typed proof rather than a claim: `test/fixtures/consumer/site.js` now uses `renderRedirects` in a
+  `redirects.format` writer and is type-checked against the **published** declarations under
+  `tsc --noEmit`. `test/unit/types.test.js` asserts all five names survive into `types/kiss.d.ts` —
+  that test was red first, because the old assertion pinned the exact pre-change export line.
+
+Decision: continue. All three self-review findings are now closed. Not closed as a branch: no
+version bump, no CHANGELOG, no PR.
 
 **2026-09-16 — pulse 4. The format list landed; the branch is now a major.**
 

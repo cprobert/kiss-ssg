@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
-import Kiss from '../helpers/kiss.js'
+import Kiss, {
+  renderFirebaseRedirects,
+  renderRedirects,
+} from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
@@ -325,6 +328,49 @@ describe('the host format, and the upgrade it must not lose in silence', () => {
       `${site.build}/_redirects`,
       `${site.build}/redirects.firebase.json`,
     ])
+  })
+})
+
+describe('the renderers a custom writer builds on', () => {
+  it('lets a writer compose a shipped encoding instead of reimplementing it', async () => {
+    // The point of re-exporting them. Before this a site that needed a host
+    // kiss does not encode had to write the encoding from scratch — and could
+    // not copy ours, because the `exports` map makes `kiss-ssg/lib/…` an
+    // ERR_PACKAGE_PATH_NOT_EXPORTED. Here the writer takes Netlify's exact
+    // bytes and puts them somewhere else, and appends a rule of its own.
+    await buildSite({
+      over: {
+        redirects: {
+          format: (rules) => [
+            {
+              file: 'edge/_redirects',
+              contents:
+                renderRedirects(rules) +
+                '/vendor/* https://cdn.example/:splat 200\n',
+            },
+            {
+              file: 'hosting/redirects.json',
+              contents: renderFirebaseRedirects(rules),
+            },
+          ],
+        },
+      },
+    })
+
+    const netlify = await site.read('public/edge/_redirects')
+    // Identical to the built-in format's output, plus the site's own line —
+    // which is the composition that was impossible before.
+    expect(netlify).toContain('/about-us/ /about 301')
+    expect(netlify).toContain('/team /about 301')
+    expect(netlify.trim().split('\n').at(-1)).toBe(
+      '/vendor/* https://cdn.example/:splat 200',
+    )
+    expect(
+      JSON.parse(await site.read('public/hosting/redirects.json')).redirects,
+    ).toContainEqual({ source: '/team', destination: '/about', type: 301 })
+    // The IR is still the baseline underneath a custom writer.
+    expect(await site.exists('public/redirects.json')).toBe(true)
+    expect(last().report().redirects.formats).toEqual(['custom'])
   })
 })
 
