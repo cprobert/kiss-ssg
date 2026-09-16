@@ -267,6 +267,51 @@ site that exists to demonstrate a folder is not an exemplar of anything.
   router convention is one practice of about six that site evolved. The remaining five are
   scoped above and are the natural next branch.
 
+- **2026-09-16 (clean-room test, two arms)** — two fresh subagents built the same brief (a mobile
+  bicycle repair business, distant from dogs and plumbing) from `npm pack` of this branch. Arm A
+  got the tarball only — what a real npm consumer gets, since `plugins/` ships zero files. Arm B
+  also got the four skills vendored into `.claude/skills/`, which is a1k9's workaround. Neither
+  was told anything about the convention. Both scored against the files, not their own reports.
+
+  | Check                                    | Arm A (no skills)           | Arm B (skills)              |
+  | ---------------------------------------- | --------------------------- | --------------------------- |
+  | `router.js` at root, route table         | 118 lines                   | 145 lines                   |
+  | `src/config/` for dual-surface facts     | yes                         | yes                         |
+  | `src/helpers/`                           | absent, 0 helpers — correct | absent, 0 helpers — correct |
+  | `{{link}}` / hand-typed hrefs            | 24 / **0**                  | 12 / **0**                  |
+  | `complete()` + `catch`                   | yes                         | yes                         |
+  | `AIKB/` recorded + notes                 | 7 files                     | 6 files                     |
+  | **Invented facts**                       | **none**                    | **none**                    |
+  | **`CLAUDE.md` with the llms.txt import** | **NO**                      | yes                         |
+
+  **The delta is one row.** Everything else the arms derived from `llms.txt` and `examples/` alone.
+  The skills' unique contribution on this task was step 2 — writing the `CLAUDE.md` import that
+  makes every _future_ session read the contract. That is a persistence mechanism, not a
+  build-quality one, and it is the one thing that does not ship. It is also the highest-leverage
+  thing in the four skills, because without it every later session starts from nothing.
+
+  **Neither arm invented the withheld facts** (email, hours, qualifications) — the practice a1k9
+  holds hardest and that no skill mentions. Both reached it from the brief alone. That weakens the
+  case for writing it into the skills and strengthens the case that it is simply what a careful
+  agent does when told a fact is unavailable.
+
+  **Isolation leaked, and not through either agent's conduct.** Arm B declared unprompted that the
+  sibling repositories' `CLAUDE.md` contents were injected into its context by the harness. Arm A
+  reported reading nothing outside its project and noted that arm-b's skills were surfaced to it
+  mid-task without being invoked. So a subagent cannot be isolated from this session's registered
+  repositories: a genuinely clean run needs a separate session with only the test repo attached.
+  Both results are therefore an upper bound.
+
+  **Two defects, each found independently by both arms:**
+  1. **`isActive` builds its block context from its own hash**, so `{{label}}` inside the block is
+     not inherited from the surrounding `{{#each}}`. Arm A caught it by reading `lib/` before
+     writing; arm B shipped it and caught it by reading the rendered HTML — five nav links with
+     empty labels on a **green build**. Two independent agents, one trap. `llms.txt` § Helpers
+     does not say it.
+  2. **The AIKB dangling check treats any backticked token containing `/` as a file path**, so a
+     page id or an illustrative path written in prose is reported dangling. This is now its
+     **fourth** independent report (twice mine on pro-plumbing, once per arm).
+
 ### Inherited feedback this branch carries
 
 - **The operator eyeball has recurred three times since being retired** (09-10, 09-12, 09-15).
