@@ -643,7 +643,7 @@ See [Redirects](#redirects) below. `_redirects` is a Netlify and Cloudflare Page
 
 A page's `aliases` are the old URL paths it now answers. There is no method to call; an alias is a property of a page, not a file you ask for.
 
-An alias is a fact about your site — "this page used to answer `/old`" — and that fact is portable. The file it goes into is one host's encoding of it, and hosts disagree, so every settled build with an alias writes **two** files: `redirects.json`, the host-neutral list, always; and the host file `config.redirects.format` names.
+An alias is a fact about your site — "this page used to answer `/old`" — and that fact is portable. Every alias is a **permanent** redirect: `redirects.json` records `status: 301` on each rule so a consumer has the code in the data rather than hardcoding it, but there is no way to ask for a `302`, a `308` or a `410`, and no forced or wildcard rules. The field marks the place such a thing would live, not a setting. The file it goes into is one host's encoding of it, and hosts disagree, so every settled build with an alias writes **two** files: `redirects.json`, the host-neutral list, always; and the host file `config.redirects.format` names.
 
 | `redirects.format`      | Writes                                          | For                                                                                                                                          |
 | ----------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |

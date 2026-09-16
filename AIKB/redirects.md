@@ -37,6 +37,8 @@ So the rules come first and the encoding second. `redirects.json` — `{ version
 
 ## Non-obvious behavior
 
+- **Every redirect is a `301`, and the IR's `status` field does not change that.** The value is written into `redirects.json` so a consumer has the code in the data rather than hardcoding it, and it sits on the rule rather than on the file because that is where a `302`, `308` or `410` would belong if the surface grew one. It has not: `aliases` is a bare array of path strings, `normaliseAlias` takes a string, and all four encoders hardcode their permanent form (`301`, `type: 301`, `permanent: true`, `Redirect 301`). The field is a place, not a capability — read it as documentation of what kiss emits, never as a knob. Netlify's forced (`!`) rules, wildcards and splats are absent for the same reason: nothing in the page surface can express them.
+
 - **A custom writer that throws fails the build, deliberately.** `writeRedirects` awaits it inside the promise `Kiss._writeRedirects()` catches, so a rejection lands on `_failures` as `<redirects>` and the staging folder is discarded. Swallowing it would rebuild the exact trap this block was written to close — a redirect feature reporting success while doing nothing — one level up, in the site's own code.
 
 - **An unknown `format` name throws at `resolveConfig`, not at write time.** `'firbase'` would otherwise match no built-in, write no host file, and leave every old URL 404ing while the report looked healthy. `lib/config.js` refuses it with the offending value in the message, the way `cleanBuild` is refused.

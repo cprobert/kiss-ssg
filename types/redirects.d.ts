@@ -94,8 +94,17 @@ export function renderRedirects(rules?: RedirectRule[]): string;
  * carries the same array for a script that would rather not touch the disk.
  *
  * `version` is there so a consumer can branch on the shape rather than guess
- * it, and `status` is per-rule because a later `410` or a forced rule belongs
- * on the rule, not in a second file.
+ * it.
+ *
+ * **`status` is always `301`, and nothing can change it.** It is written out
+ * rather than left implicit so a consumer building a Vercel or nginx rule has
+ * the code in the data instead of hardcoding it at the other end — that is the
+ * whole of its job today. It is per-rule rather than per-file because that is
+ * where a `302`, a `308` or a `410` would have to live if the surface ever
+ * grew one, but `aliases` is a bare array of path strings and there is no way
+ * to say anything but "permanently moved". Do not read this field as evidence
+ * that mixed statuses work; they do not, and a reader who assumes otherwise
+ * will ship a `301` where they meant a `302`.
  *
  * @param {RedirectRule[]} rules
  * @returns {string} pretty-printed JSON, newline-terminated
@@ -273,6 +282,24 @@ export function writeRedirects(stack: {
     logger: any;
     overwrite?: boolean;
 }): Promise<RedirectWriteResult>;
+export const HOST_FORMATS: Readonly<{
+    netlify: {
+        file: string;
+        render: typeof renderRedirects;
+    };
+    firebase: {
+        file: string;
+        render: typeof renderFirebaseRedirects;
+    };
+    vercel: {
+        file: string;
+        render: typeof renderVercelRedirects;
+    };
+    htaccess: {
+        file: string;
+        render: typeof renderHtaccessRedirects;
+    };
+}>;
 /**
  * One line of `_redirects`: an old path, and the page that now answers it.
  */

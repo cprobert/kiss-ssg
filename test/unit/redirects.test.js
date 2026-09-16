@@ -17,6 +17,7 @@ import {
   writeRedirects,
 } from '../../lib/redirects.js'
 import { silentLogger } from '../../lib/logger.js'
+import { REDIRECT_FORMATS } from '../../lib/config.js'
 
 // A stack entry, as `Kiss._preparePage` builds one: the output path, and the
 // page's options.
@@ -677,6 +678,41 @@ describe('writeRedirects: format dispatch', () => {
     expect(await fs.pathExists(`${config.folders.build}/_redirects`)).toBe(
       false,
     )
+  })
+
+  // The cross-module guard. `config.js` validates the format name and
+  // `redirects.js` dispatches on it, and until these two were tied together a
+  // name added to the validator alone would pass every other test in this
+  // file: `HOST_FORMATS[format]` is `undefined`, the `if (host)` skips, only
+  // the IR is written, and the build reports success. That is precisely the
+  // silent no-op this whole block exists to abolish, reintroduced one level up
+  // in the maintainer's path rather than the user's. This iterates the
+  // *validated* list rather than a hardcoded one, so it fails for any future
+  // format the same way.
+  it('writes a host file for every accepted format name', async () => {
+    for (const format of REDIRECT_FORMATS) {
+      const config = await build({ format })
+      const result = await writeRedirects(stack(config.folders.build), {
+        config,
+        logger: silentLogger,
+      })
+      const ir = `${config.folders.build}/redirects.json`
+      expect(result.files).toContain(ir)
+      if (format === 'none') {
+        expect(result.files).toEqual([ir])
+      } else {
+        const host = result.files.filter((file) => file !== ir)
+        expect(
+          host,
+          `format '${format}' validates but writes no host file — add its row to HOST_FORMATS`,
+        ).toHaveLength(1)
+        // Written, and not empty: a renderer returning '' would be the same
+        // silent nothing wearing a filename.
+        expect(await fs.readFile(host[0], 'utf8')).not.toBe('')
+      }
+      await fs.remove(temp)
+      temp = null
+    }
   })
 
   it('writes an Apache fragment, never the live .htaccess', async () => {

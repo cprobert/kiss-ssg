@@ -163,6 +163,44 @@ Carried, not blocking: one test failed on a full-suite run at 16:25 and passed o
 I could not capture which before the output rotated, so it is recorded as an unidentified flake to
 watch for at close rather than as a known-good.
 
+**2026-09-16 — pulse 3. Two self-review findings closed; a third referred to the operator.**
+
+I reviewed my own redirect infrastructure for modularity at the operator's request and found three
+things. Two are fixed here, one is a design decision that is not mine to make.
+
+**Finding 1 (fixed) — the format list had two sources of truth, and one drift direction was
+silent.** `REDIRECT_FORMATS` (validation, `config.js`) and `HOST_FORMATS` (dispatch,
+`redirects.js`) were maintained independently. A name added to the validator alone would validate
+cleanly, match nothing in the dispatch, write only the IR and report success — the silent no-op the
+whole format block exists to abolish, reintroduced in the maintainer's path. Fixed structurally:
+`HOST_FORMATS` is now exported and `REDIRECT_FORMATS` is derived from its keys plus `'none'`, so
+the two cannot disagree. Guarded behaviourally too, because a derivation can be undone: a test
+iterates the _validated_ list and asserts each name writes a non-empty host file.
+
+Seen red first, as the rule requires — `'fastly'` was added to the validator alone and the guard
+failed with `format 'fastly' validates but writes no host file — add its row to HOST_FORMATS`
+before the derivation was applied.
+
+Note the new import direction: `config.js` now imports `redirects.js`. No cycle (`redirects.js`
+reaches only `utils.js`), but it is the first time the config resolver depends on a feature module,
+and it is deliberate — the module that implements the formats is the one that should say which
+exist.
+
+**Finding 3 (fixed) — the IR's `status` field was a stub dressed as a design.** The comment said
+`status` is per-rule "because a later `410` or a forced rule belongs on the rule", which reads as
+though mixed statuses work. They do not: `aliases` is a bare array of path strings and all four
+encoders hardcode their permanent form. The field is now documented as always `301` — a place, not
+a capability — in the code, `AIKB/redirects.md`, `llms.txt` and `README.md`, with the absence of
+forced and wildcard rules stated alongside it. No behaviour changed; the claim did.
+
+**Finding 2 (NOT fixed — operator's call).** The extension point cannot reuse anything.
+`package.json`'s `exports` map is closed (`"."` → `lib/kiss.js`, which exports only `Kiss` and
+`utils`), so a consuming site cannot import `renderFirebaseRedirects` or `renderRedirectsJson`: a
+custom writer must reimplement an encoding from scratch. And `format` is singular, so a site
+deploying to two hosts cannot emit two host files without hand-rolling both. Options and trade-offs
+were put to the operator; the decision touches the published API surface and is not Claude's to
+take.
+
 **2026-09-16 — pulse 2. That "flake" was not a flake, and the diagnosis in pulse 1 was wrong.**
 
 `test/integration/examples.test.js` records examples 9 and 11 **in place**, in the committed
