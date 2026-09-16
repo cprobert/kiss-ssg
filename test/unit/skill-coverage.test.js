@@ -41,6 +41,23 @@ const COVERAGE = [
     ],
   },
   {
+    feature:
+      'links: { trailingSlash } — the host decides the directory-index URL',
+    pattern: /trailingSlash/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
+    ],
+  },
+  {
+    feature: 'redirects: { format } — _redirects is not every host',
+    pattern: /redirects: \{ format/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
+    ],
+  },
+  {
     feature: '.feed()',
     pattern: /\.feed\(/,
     skills: [skill('kiss-ssg', 'kiss-site-new')],

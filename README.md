@@ -445,7 +445,7 @@ kiss.scan().generate().sitemap()
 
 It can be called before or after `.generate()` — both just wait for all your pages to be registered before doing their own thing.
 
-Each `<loc>` is the same string the `canonical` helper renders on that page, built by the same code — so a page built to a directory index is listed with its trailing slash (`courses/index.html` → `https://example.com/courses/`), which is the URL a static host serves without a redirect. See **canonical / absUrl** below.
+Each `<loc>` is the same string the `canonical` helper renders on that page, built by the same code — so a page built to a directory index is listed with its trailing slash (`courses/index.html` → `https://example.com/courses/`), which is the URL Netlify serves without a redirect, or without it under `links: { trailingSlash: false }` for a host that serves the bare form ([Host URL policy](#host-url-policy)). See **canonical / absUrl** below.
 
 Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages): A page with `generate: false` is left out as well.
 
@@ -567,9 +567,74 @@ writes `public/feed.xml`:
 
 `<lastBuildDate>` is the newest item's date rather than the wall clock, so two identical builds produce byte-identical files and a feed you commit does not churn. It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()` and `.llms()`. Its callback receives the rendered document (`kiss.feed(options, (xml) => …)`), and the file it wrote is reported as the build report's `feed`.
 
+### Host URL policy
+
+Two of the things kiss emits are decided by your **host**, not by the generator. Both are config keys, and both default to what kiss has always done, so an existing site does not move.
+
+#### The trailing slash on a directory index
+
+`links: { trailingSlash: true }` by default. Measured live on 2026-09-16 — not inferred:
+
+| Host                                                                                              | `/courses/` (a directory index)                                            | `/about` (a file page)       |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
+| **Netlify** — verified on `www.a1k9training.co.uk`                                                | **200**; bare `/courses` 301s here                                         | **200**; `/about/` 301s here |
+| **Firebase Hosting** with `cleanUrls: true` + `trailingSlash: false` — verified on `learna.ac.uk` | 301 → `/courses`; the **bare** form is 200                                 | **200**; `/about/` 301s here |
+| Cloudflare Pages, GitHub Pages, nginx                                                             | _unverified — each has a trailing-slash mode; measure your own deployment_ | _unverified_                 |
+
+The two verified hosts **agree on file pages and contradict each other on directory indexes**, so no single default can be right for both. `true` matches Netlify and is what kiss has always emitted; `false` matches that Firebase configuration:
+
+```js
+new Kiss({ siteUrl: 'https://example.com', links: { trailingSlash: false } })
+// {{canonical}} on courses/index.html → https://example.com/courses
+// its <loc>, its llms.txt entry, its feed <link> and {{link "courses/index"}} → the same
+```
+
+The setting moves **every URL kiss derives for a page, together** — `{{canonical}}`, `{{link}}`, `<loc>`, `llms.txt`, the feed and an alias's target. That is the point: a page advertised at `/courses` but linked as `/courses/` ships a redirect hop on every internal click. It deliberately does **not** move:
+
+- `{{isActive}}` — page identity is not a host policy, and a nav highlight must not depend on where you deploy. `/about`, `/about/` and `about/index.html` stay one key either way.
+- a trailing slash **you** wrote — `{{absUrl '/courses/'}}` is still `https://example.com/courses/`.
+- file extensions, and the site root, which is `https://example.com/` under both.
+
+One consequence worth knowing: on Firebase with `cleanUrls` + `trailingSlash: false`, `about.html` and `about/index.html` are both served at `/about` — so `extensionLess` stops being a URL decision there and becomes purely an output-path one. On Netlify the two shapes stay distinct.
+
+If you are not sure what your host does, measure it rather than guess: deploy once, then `curl -sI https://yoursite/some-section/` and `curl -sI https://yoursite/some-section` and see which returns 200 and which returns 301.
+
+#### The redirect file format
+
+See [Redirects](#redirects) below. `_redirects` is a Netlify and Cloudflare Pages file; Firebase and Vercel read their own, so the default writes a file those hosts ignore. `redirects: { format: … }` says which, and `redirects.json` carries the rules as data whatever you pick.
+
 ### Redirects
 
-A page's `aliases` are the old URL paths it now answers. Every settled build collects them and writes `_redirects` into the root of the build folder — the [Netlify](https://docs.netlify.com/routing/redirects/) and [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) format, and only that: no `.htaccess`, no `vercel.json`, no meta-refresh. There is no method to call; an alias is a property of a page, not a file you ask for.
+A page's `aliases` are the old URL paths it now answers. There is no method to call; an alias is a property of a page, not a file you ask for.
+
+An alias is a fact about your site — "this page used to answer `/old`" — and that fact is portable. The file it goes into is one host's encoding of it, and hosts disagree, so every settled build with an alias writes **two** files: `redirects.json`, the host-neutral list, always; and the host file `config.redirects.format` names.
+
+| `redirects.format`      | Writes                                          | For                                                                                                                                          |
+| ----------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'netlify'` _(default)_ | `_redirects`                                    | [Netlify](https://docs.netlify.com/routing/redirects/), [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) |
+| `'firebase'`            | `redirects.firebase.json` — a fragment to merge | Firebase Hosting, which ignores `_redirects` entirely                                                                                        |
+| `'vercel'`              | `redirects.vercel.json` — a fragment to merge   | Vercel                                                                                                                                       |
+| `'none'`                | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
+| a function              | whatever it returns                             | anything else — nginx, Apache, a CDN API                                                                                                     |
+
+The Firebase and Vercel formats emit **the `redirects` array alone**, not a `firebase.json` or a `vercel.json`. Your real config file holds hosting targets, headers and rewrites, and very often years of hand-maintained redirect history; kiss will not rewrite it. Merge the fragment on your own terms.
+
+A custom writer is `(rules, { buildDir, config }) => [{ file, contents }]` — or one entry, or nothing at all. Paths are relative to the build folder and one that escapes it is refused. A writer that throws **fails the build**, exactly as a failed write does: a redirect writer that dies quietly would be the silent no-op this whole block exists to end. An unknown format name throws at `new Kiss()` rather than writing nothing.
+
+```js
+new Kiss({
+  redirects: {
+    format: (rules) => ({
+      file: 'redirects.conf',
+      contents: rules
+        .map((r) => `rewrite ^${r.from}$ ${r.to} permanent;`)
+        .join('\n'),
+    }),
+  },
+})
+```
+
+You do not need a writer to do this, though: `report().redirects.rules` is the same `[{ from, to }]` list, so a deploy script can read `kiss.report()` after `.complete()` and write any format it likes without kiss knowing the host exists.
 
 ```js
 kiss
@@ -582,7 +647,7 @@ kiss
   .generate()
 ```
 
-writes `public/_redirects`:
+writes `public/_redirects` (and `public/redirects.json` beside it):
 
 ```
 /about-us /about 301
@@ -594,9 +659,9 @@ The target is the page's canonical path — `/`, `/courses/`, `/about` — the s
 
 On a `.pages()` fan-out the aliases belong to **each record**, never to the registration: `.pages({ aliases: [...] })` is not broadcast over the fan-out, because one source path redirecting to N different pages is not a redirect. Put them in the model item. A page with `generate: false` contributes none — there would be nothing at the other end.
 
-A site with no aliases writes **no file at all**, not an empty one, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone. An alias is one path: one with a space or a line break inside it is dropped, because the file is space-separated columns and one rule per line. And if the file cannot be written the build fails, the way a page that cannot be written fails it — a site published without its redirects is a site whose old URLs 404.
+A site with no aliases writes **no file at all**, not an empty one and not an empty IR, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone. An alias is one path: one with a space or a line break inside it is dropped, because the file is space-separated columns and one rule per line. And if the file cannot be written the build fails, the way a page that cannot be written fails it — a site published without its redirects is a site whose old URLs 404.
 
-**Three findings ride along**, all advisory and all in `report().redirects` (`{ file, aliases, removed, collisions, moved }`, or `null` when there is nothing to say — no alias anywhere in the site, no removal and no move):
+**Three findings ride along**, all advisory and all in `report().redirects` (`{ file, aliases, removed, collisions, moved, rules, json, format, files }`, or `null` when there is nothing to say — no alias anywhere in the site, no removal and no move):
 
 - `removed` — pages the **last record** wrote that this build does not, minus any an alias now covers: a page that vanished with no redirect. It is the one finding that needs a recorded knowledge base (see [Recording the knowledge base](#recording-the-knowledge-base)); without `AIKB/last-build.json` it is empty, and an unreadable one is treated the same way. Paths are compared build-relative on both sides, so a record made from one working directory and a check run from another still agree, and are reported as the URL a browser asked for (`/old.html`, `/old/`) — the same string to put in `aliases`; the canonical spelling (`/old`) covers too.
 - `moved` — a page the **last record** and this build both have, paired by its `id` rather than by its path, whose output path changed and whose old path no alias covers: `{ id, from, to }` per page, sorted by `from`. It needs a record too, and an `id` on **both** sides, so it follows a page whose identity is stable — a `.page()` page whose `path`, `slug` or `ext` moved, or any page (a fan-out record included) carrying an explicit `id` — and not one whose identity moved with it: a `.pages()` item's default id embeds its slug (`blog/post/<slug>`), so renaming a post's slug changes the id as well and the event reads as a `removed` instead. A move suppresses the matching `removed`, so one rename is one finding.
@@ -712,7 +777,7 @@ An absolute URL on your own `siteUrl` counts as **internal** — that is what ca
 
 The finding is advisory: it never changes `ok` and never changes the exit code. Set `links: { check: false }` to turn the scan off. `{{link}}` and the checker are two halves of one thing: the helper renders a path the resolver accepts by construction, so a site whose internal hrefs are all `{{link}}` reports no broken links and the scan stays the net for the hand-written references beside them — with one qualifier, that the scan only knows the pages which wrote bytes, so a `{{link}}` to a page that failed to render _is_ reported broken on every page that linked it. A dev build or a watch rebuild always reports `links: null` — a scoped re-render has not rewritten every page, so there is nothing honest to scan.
 
-**Redirects and renames.** The same report carries `redirects` — the `_redirects` this build wrote from your pages' `aliases`, and three more advisory findings: a page the last record had that this build no longer writes and no alias covers (`  removed without redirect: <path>`), a page the record and this build share an `id` with that is now written somewhere else with nothing answering its old URL (`  moved without redirect: <from> -> <to> (<id>)`), and an alias a live page already answers, which the host will silently ignore (`  alias collides with a page: <path>`). See [Redirects](#redirects).
+**Redirects and renames.** The same report carries `redirects` — the redirect files this build wrote from your pages' `aliases`, the resolved `rules` as data, and three more advisory findings: a page the last record had that this build no longer writes and no alias covers (`  removed without redirect: <path>`), a page the record and this build share an `id` with that is now written somewhere else with nothing answering its old URL (`  moved without redirect: <from> -> <to> (<id>)`), and an alias a live page already answers, which the host will silently ignore (`  alias collides with a page: <path>`). See [Redirects](#redirects).
 
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance; `KISS_AIKB=1` (same rule again) is the one thing `kiss-ssg aikb` adds on top of those two. None of them changes your script's exit code — that stays yours.
 
@@ -835,7 +900,7 @@ Hash options: `href` (the link's path), `active` (the class name rendered as `{{
 <link rel='canonical' href='{{canonical}}' />
 ```
 
-It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string. A page built to a file is the bare URL (`courses/bronze.html` → `https://example.com/courses/bronze`); **a page built to a directory index keeps a trailing slash** (`courses/index.html` → `https://example.com/courses/`), because that is the URL a static host actually serves — Netlify, GitHub Pages and nginx all answer the bare `/courses` with a 301, and a canonical must be the URL that returns 200. The home page is `siteUrl` with one trailing slash. A `siteUrl` with a trailing slash is fine — you never get a double slash.
+It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string. A page built to a file is the bare URL (`courses/bronze.html` → `https://example.com/courses/bronze`); **a page built to a directory index keeps a trailing slash** (`courses/index.html` → `https://example.com/courses/`), because that is the URL Netlify actually serves — it answers the bare `/courses` with a 301, and a canonical must be the URL that returns 200. That is host policy rather than a universal, and `links: { trailingSlash: false }` says the other convention — see [Host URL policy](#host-url-policy). The home page is `siteUrl` with one trailing slash. A `siteUrl` with a trailing slash is fine — you never get a double slash.
 
 With `extensionLess: true` every page but the home page builds to `<path>/<slug>/index.html`, so every page but the home page is a directory index and its canonical ends in `/` too (`https://example.com/courses/bronze/`). That is deliberate, and it is the same rule: it is the URL the host serves without a redirect.
 

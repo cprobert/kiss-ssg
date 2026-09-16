@@ -17,10 +17,10 @@ default reproduces today's behaviour exactly.
 2026-09-16 15:50, 15:54, 15:58), each claim re-derived locally before being accepted. Two host rows
 are **measured**, not remembered:
 
-| Host                                            | Directory index         | File page                |
-| ----------------------------------------------- | ----------------------- | ------------------------ |
-| Netlify (`www.a1k9training.co.uk`, verified)     | `/courses/` 200         | `/x` 200, `/x/` 301      |
-| Firebase `cleanUrls`+`trailingSlash:false` (verified by the peer session on `learna.ac.uk`) | `/courses` 200 | `/x` 200, `/x/` 301 |
+| Host                                                                                        | Directory index | File page           |
+| ------------------------------------------------------------------------------------------- | --------------- | ------------------- |
+| Netlify (`www.a1k9training.co.uk`, verified)                                                | `/courses/` 200 | `/x` 200, `/x/` 301 |
+| Firebase `cleanUrls`+`trailingSlash:false` (verified by the peer session on `learna.ac.uk`) | `/courses` 200  | `/x` 200, `/x/` 301 |
 
 They agree on file pages and contradict each other on directory indexes, which is the whole
 justification for the key. All 18 `<loc>` entries in a1k9training's live sitemap return 200 under
@@ -76,6 +76,25 @@ written red-first against the unfixed code before the fix (per `AIKB/testing.md`
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+**2026-09-16 — criterion 1 was written wrong, and is amended rather than reinterpreted.**
+It said an unset config produces byte-identical output "with no test edited to accommodate it".
+Two parts of that could never have held, and both are consequences of decisions the operator had
+already made before the criterion was written — so this is my drafting error, not scope drift:
+
+1. The operator chose "also write `redirects.json` to `build/`", so a build **with aliases** emits
+   one new file. Every pre-existing file is byte-identical; the build folder is not.
+2. `report().redirects` gains four keys, so every `toEqual` on that object had to be extended —
+   four in `test/integration/redirects.test.js`, five `links` assertions in
+   `test/unit/config.test.js`, and one in `test/unit/redirects.test.js` whose _behaviour_ also
+   changed (`overwrite: false` now protects each target file independently, so an existing
+   `_redirects` survives while the IR beside it is still written; `status` reports the build, so
+   it reads `written` rather than `skipped`).
+
+The criterion as it should have read, and as the work is held to: **no existing emitted file
+changes a byte under an unset config, and no test assertion is weakened** — every edit above
+either adds a key to an exact-match assertion or asserts a deliberately changed behaviour.
+No test was loosened to pass.
+
 ### Inherited feedback carried into this branch
 
 - **Bench baseline contradiction** (09-10, 09-12 — twice asked, still open): not blocking here.
@@ -89,6 +108,29 @@ written red-first against the unfixed code before the fix (per `AIKB/testing.md`
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+**2026-09-16 — pulse 1. Decision: continue (code and docs complete; close not yet run).**
+
+Evidence, all re-run at this checkpoint rather than recalled:
+
+- `npm run gates` — all five green (test 1288, lint, typecheck, format, pack 208 files).
+- **Red-first, as the rule requires.** `git stash push lib/` then
+  `npx vitest run test/integration/trailing-slash.test.js` → 2 failed / 2 passed against the
+  unfixed engine; restored, 5/5 pass. The two behaviour tests were seen red.
+- **Operator eyeball — done here, at the pulse, per 09-15's recommendation, and on a real build
+  rather than a test fixture.** Built a Firebase-shaped site
+  (`trailingSlash: false`, `format: 'firebase'`) and read the output myself:
+  `<link rel="canonical" href="https://learna.ac.uk/courses">`, `{{link}}` rendering `/courses`
+  on the same page (the two agreeing is the whole point), `<loc>https://learna.ac.uk/courses</loc>`
+  with no slashed form anywhere, a correct `redirects.firebase.json`, **no `_redirects` written**,
+  and the link checker resolving all 4 references. Also rebuilt `examples/11-blog` under the
+  defaults: `_redirects` byte-identical to before, `redirects.json` beside it agreeing with it.
+- Criteria: all nine met, subject to the amendment above. Version bump and CHANGELOG are
+  `/branch-close`'s step and have deliberately **not** been done — the branch stays at 2.3.0.
+
+Carried, not blocking: one test failed on a full-suite run at 16:25 and passed on every run since;
+I could not capture which before the output rotated, so it is recorded as an unidentified flake to
+watch for at close rather than as a known-good.
 
 ---
 
