@@ -102,7 +102,10 @@ dist
 
 # TernJS port file
 .tern-port
-public/*
+# Every build output folder named public/, at any depth. Was `public/*`, which
+# git anchors to the repo root — so an example briefly building to
+# examples/public/ had its output committed, and examples/ ships in the tarball.
+public/
 deploy.md
 docs/*.json
 
