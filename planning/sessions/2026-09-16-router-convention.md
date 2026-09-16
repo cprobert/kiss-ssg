@@ -128,6 +128,35 @@ following the edited `kiss-site-new` on a throwaway site, before the examples mo
   the first commit carried `"peer": true` lockfile churn from an `npm install`. Both fixed before
   the push. Decision: **continue** to slice two.
 
+- **2026-09-16 (dogfood: `kiss-site-new` on a greenfield site)** — followed the edited skill
+  literally to scaffold `cprobert/pro-plumbing` (home + services fan-out + contact, Netlify,
+  `extensionLess`). Weaker than the 09-10 lesson asks for — the author following his own skill
+  supplies what it left out — but five findings came out of it anyway.
+  1. **The skill's new pointer dangles on every real install today.** `npm install kiss-ssg`
+     resolves to **2.2.1** (latest published; this repo is 2.2.2, unreleased), whose `llms.txt`
+     has no `## The build script`. `kiss-site-new` now tells an agent to read a section that is
+     not there. It resolves on release, but a plugin skill can always be newer than the installed
+     package, so the skill should carry enough inline to stand without it.
+  2. **The two tier-0 triggers can disagree and the doc does not say which wins.** The finished
+     router is 177 lines — past the "roughly 150" ceiling — with one helper at about a fifth of
+     the file, which is neither extraction trigger. Kept it inline. The doc should say the line
+     count is the symptom and the helper proportion the cause.
+  3. **`config/` is earned by duplication, not by size, so the numbering misleads.** This site
+     needed `src/config/business.js` immediately (the phone number is in the markup and in the
+     JSON-LD) while staying tier 0 for helpers. "Tier 2" reads as a later stage; the triggers are
+     independent and the section should say so.
+  4. **Engine finding, out of scope here: a page's `config: { extensionLess: false }` is accepted
+     and silently ignored.** `lib/kiss.js:1155` sets `kissPage.extLess` from
+     `this.config.extensionLess`, the instance's. So an `extensionLess` site cannot emit a literal
+     `404.html`, which is the only thing Netlify and Cloudflare Pages look for. Worked around in
+     the site with a catch-all rule in `netlify.toml`. Not fixed — `lib/` is a non-goal on this
+     branch.
+  5. **The AIKB dangling-note check false-positives on prose.** Writing "once per `` `.json` ``
+     record" in a controller note produced `note dangling: …: .json`. A backticked extension in a
+     sentence is read as a subject token.
+     Decision: **continue**; findings 1–3 fold into the examples slice, 4 and 5 are for the operator
+     to place.
+
 ### Inherited feedback this branch carries
 
 - **The operator eyeball has recurred three times since being retired** (09-10, 09-12, 09-15).
