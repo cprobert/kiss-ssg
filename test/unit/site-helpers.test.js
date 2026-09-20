@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
   helpersEntry,
+  isActiveHelpersEntry,
   isHelpersEntry,
   loadSiteHelpers,
 } from '../../lib/site-helpers.js'
@@ -121,6 +122,41 @@ describe('isHelpersEntry', () => {
     expect(isHelpersEntry(`${site.root}/h`, `${site.root}/h/index.cjs`)).toBe(
       true,
     )
+  })
+})
+
+// `isHelpersEntry` answers "could this file be an entry", which is what a
+// DELETE needs. A change needs a narrower question, and conflating the two
+// was a regression: editing `index.mjs` while `index.js` is the selected
+// entry took the reload path, but the loader busts the selected entry alone —
+// so `index.mjs` stayed cached, the site rebuilt with stale helpers, and the
+// restart notice that used to fire no longer did.
+describe('isActiveHelpersEntry', () => {
+  it('is true for the selected entry and false for a candidate that is not selected', async () => {
+    site = await makeSite({
+      'h/index.js': 'export function registerHelpers() {}',
+      'h/index.mjs': 'export function registerHelpers() {}',
+    })
+    expect(
+      isActiveHelpersEntry(`${site.root}/h`, `${site.root}/h/index.js`),
+    ).toBe(true)
+    expect(
+      isActiveHelpersEntry(`${site.root}/h`, `${site.root}/h/index.mjs`),
+    ).toBe(false)
+  })
+
+  // A deleted candidate changes WHICH file is the entry — including to none at
+  // all — so it takes the reload path even though it is not the selection.
+  it('is true for a candidate that has just been deleted', async () => {
+    site = await makeSite({
+      'h/index.mjs': 'export function registerHelpers() {}',
+    })
+    expect(
+      isActiveHelpersEntry(`${site.root}/h`, `${site.root}/h/index.js`),
+    ).toBe(true)
+    expect(
+      isActiveHelpersEntry(`${site.root}/h`, `${site.root}/h/format.js`),
+    ).toBe(false)
   })
 })
 
@@ -279,7 +315,7 @@ describe('loadSiteHelpers', () => {
       kiss,
       logger: silentLogger,
     })
-    expect([...first.registered].sort()).toEqual(['a', 'b'])
+    expect(first.registered.map((h) => h.name).sort()).toEqual(['a', 'b'])
 
     await new Promise((r) => setTimeout(r, 10)) // a distinct mtime
     await site.touch(
@@ -292,7 +328,7 @@ describe('loadSiteHelpers', () => {
       fresh: true,
       previous: first.registered,
     })
-    expect(second.registered).toEqual(['a'])
+    expect(second.registered.map((h) => h.name)).toEqual(['a'])
     expect(kiss.registered.a()).toBe('A2')
     expect(kiss.registered.b).toBeUndefined()
   })
@@ -348,12 +384,58 @@ describe('loadSiteHelpers', () => {
       kiss,
       logger: silentLogger,
     })
-    expect([...first.registered].sort()).toEqual(['banner', 'keep'])
+    expect(first.registered.map((h) => h.name).sort()).toEqual([
+      'banner',
+      'keep',
+    ])
 
     await new Promise((r) => setTimeout(r, 10))
     await site.touch(
       'helpers/index.js',
       "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('keep', () => 'K') }",
+    )
+    const second = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+      fresh: true,
+      previous: first.registered,
+    })
+    // And what the teardown then does is "undo what this loader did", not
+    // "delete the name": `banner` reverts to the ROUTER's registration, which
+    // is still genuinely in effect — the router really did call the registrar
+    // and nothing has re-run it. Deleting it would be kiss removing a
+    // registration it never made, which is the same mistake that destroyed an
+    // overridden built-in above. The double registration is the thing to fix
+    // on such a site, and it is an anti-pattern the migrate skill now names.
+    expect(kiss.registered.banner()).toBe('OLD')
+    expect(second.registered.map((h) => h.name)).toEqual(['keep'])
+  })
+
+  // Ownership by "the function reference changed" swept up a kiss BUILT-IN the
+  // site registrar overrode — and teardown unregisters a name rather than
+  // putting back what was there, so dropping an override DESTROYED the
+  // built-in. Measured: {{markdown}} went BUILTIN -> SITE -> "" (empty, not an
+  // error, because an argument-less mustache is a missing property to
+  // Handlebars). A site that overrides `markdown` and later stops silently
+  // loses Markdown rendering on every page. Worse than the bug that this
+  // ownership rule was introduced to fix.
+  it('restores a built-in the registrar overrode, rather than destroying it', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('markdown', () => 'SITE') }",
+    })
+    const kiss = fakeKiss()
+    kiss.handlebars.registerHelper('markdown', () => 'BUILTIN')
+    const first = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    expect(kiss.registered.markdown()).toBe('SITE')
+
+    await new Promise((r) => setTimeout(r, 10))
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('other', () => 'O') }",
     )
     await loadSiteHelpers(`${site.root}/helpers`, {
       kiss,
@@ -361,7 +443,8 @@ describe('loadSiteHelpers', () => {
       fresh: true,
       previous: first.registered,
     })
-    expect(kiss.registered.banner).toBeUndefined()
+    expect(kiss.registered.markdown()).toBe('BUILTIN')
+    expect(kiss.registered.other()).toBe('O')
   })
 
   // Restoring the names the old registrar owned is not the same as undoing the
@@ -439,6 +522,6 @@ describe('loadSiteHelpers', () => {
       kiss,
       logger: silentLogger,
     })
-    expect(result.registered).toEqual(['mine'])
+    expect(result.registered.map((h) => h.name)).toEqual(['mine'])
   })
 })

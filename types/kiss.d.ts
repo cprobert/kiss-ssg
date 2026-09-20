@@ -295,14 +295,16 @@ declare class Kiss {
     /** @private @type {Promise<void>} */
     private _helpersReady;
     /**
-     * The helper names the site's own registrar added on its last load, so a
-     * reload can clear the ones the new source dropped. Not the built-ins:
-     * those are kiss's and are never the site's to remove.
+     * What the site's own registrar registered on its last load, as
+     * `{ name, prior }` pairs, so a reload can undo exactly what that load did
+     * — restoring what each registration displaced rather than deleting the
+     * name. A kiss built-in the registrar overrode is displaced, not owned, and
+     * deleting it silently removed the built-in.
      *
-     * @type {string[]}
+     * @type {import('./site-helpers.js').OwnedHelper[]}
      * @private
      */
-    private _siteHelperNames;
+    private _siteHelpers;
     /**
      * Whether the author named `folders.helpers` or kiss defaulted to it. Read
      * from the config as supplied, before `resolveConfig` fills the default in,

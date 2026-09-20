@@ -418,6 +418,41 @@ describe('watch()', () => {
     expect(notices.filter((n) => /restart/i.test(n))).toEqual([])
   })
 
+  // The other half of the candidate/selected split. `index.js` is selected and
+  // imports from `index.mjs`; only the selected entry's URL is cache-busted,
+  // so an edit to `index.mjs` cannot be picked up — it must take the restart
+  // notice, not a reload that rebuilds against the stale module and says
+  // nothing.
+  it('asks for a restart when a non-selected entry candidate changes', async () => {
+    const notices = []
+    const logger = {
+      ...silentLogger,
+      notice: (...a) => notices.push(a.join(' ')),
+    }
+    site = await makeSite({
+      'src/pages/index.hbs': '{{shout "hi"}}',
+      'helpers/index.mjs': "export const WORD = 'ONE'",
+      'helpers/index.js': [
+        "import { WORD } from './index.mjs'",
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => WORD + '-' + s) }",
+      ].join('\n'),
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('ONE-hi')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await site.touch('helpers/index.mjs', "export const WORD = 'TWO'")
+    await waitFor(() => notices.some((n) => /restart/i.test(n)))
+    expect(await site.read('public/index.html')).toBe('ONE-hi')
+  })
+
   // Deleting the entry when a fallback is present is not a delete at all: it
   // is a change of which file is the entry. Resolving the entry AFTER the
   // deletion made the file that had just vanished look like a sibling, so

@@ -34,6 +34,25 @@ export function helpersEntry(folder: string | null | undefined): string | null;
  */
 export function isHelpersEntry(folder: string | null | undefined, file: string | null | undefined): boolean;
 /**
+ * Whether a watch event on this path should take the **entry reload** path.
+ *
+ * Narrower than `isHelpersEntry`, and the two are deliberately different
+ * questions. A reload busts the *selected* entry's URL and nothing else, so
+ * editing `index.mjs` while `index.js` is selected must not take the reload
+ * path: the edit would not be picked up, the site would rebuild with stale
+ * helpers, and the restart notice that names the problem would not fire.
+ *
+ * A **deleted** candidate is the exception, and is why `isHelpersEntry` exists
+ * separately: removing `index.js` changes which file is the entry — to
+ * `index.mjs`, or to none at all — so it reloads even though it is not the
+ * selection at the moment the question is asked.
+ *
+ * @param {string|null|undefined} folder `config.folders.helpers`
+ * @param {string|null|undefined} file a path as the watcher reported it
+ * @returns {boolean}
+ */
+export function isActiveHelpersEntry(folder: string | null | undefined, file: string | null | undefined): boolean;
+/**
  * Imports `<folders.helpers>/index.js` and calls its `registerHelpers` export
  * (or its default) with the `Kiss` instance.
  *
@@ -42,11 +61,15 @@ export function isHelpersEntry(folder: string | null | undefined, file: string |
  * already holds. Re-registering an existing helper name is how Handlebars
  * replaces one, so an *edited* helper needs no teardown — but a *removed* one
  * does: the registry still holds it, and the registrar that would have put it
- * back is gone. `previous` is the list this call last returned as `registered`;
- * those names are cleared after the module imports and before the registrar
- * runs, so whatever the new source does not register stays gone. They are put
- * back if the registrar throws, since a half-registered site is worse than the
- * one it replaced.
+ * back is gone. `previous` is the list this call last returned as `registered`
+ * — `{ name, prior }` pairs, not bare names, because a registrar may have
+ * *overridden* something rather than added it. Those entries are undone after
+ * the module imports and before the registrar runs: a name with a `prior` is
+ * restored to it, a name without one is unregistered. Recording only the name
+ * meant an overridden kiss built-in was destroyed when the site stopped
+ * overriding it — silently, since an argument-less mustache renders empty
+ * rather than throwing. They are put back if the registrar throws, since a
+ * half-registered site is worse than the one it replaced.
  *
  * Resolves to a description of what happened rather than throwing: a helpers
  * folder that cannot be loaded is a build failure for the caller to record,
@@ -62,18 +85,56 @@ export function isHelpersEntry(folder: string | null | undefined, file: string |
  * would lose every helper silently.
  *
  * @param {string|null|undefined} folder `config.folders.helpers`
- * @param {{ kiss: any, logger: any, fresh?: boolean, previous?: string[], required?: boolean }} deps
- * @returns {Promise<{ loaded: boolean, entry: string|null, registered?: string[], error?: Error }>}
+ * @typedef {{ name: string, prior: import('handlebars').HelperDelegate|undefined }} OwnedHelper
+ *
+ * @param {{ kiss: any, logger: any, fresh?: boolean, previous?: OwnedHelper[], required?: boolean }} deps
+ * @returns {Promise<{ loaded: boolean, entry: string|null, registered?: OwnedHelper[], error?: Error }>}
  */
 export function loadSiteHelpers(folder: string | null | undefined, { kiss, logger, fresh, previous, required }: {
     kiss: any;
     logger: any;
     fresh?: boolean;
-    previous?: string[];
+    previous?: OwnedHelper[];
     required?: boolean;
 }): Promise<{
     loaded: boolean;
     entry: string | null;
-    registered?: string[];
+    registered?: OwnedHelper[];
     error?: Error;
 }>;
+/**
+ * Imports `<folders.helpers>/index.js` and calls its `registerHelpers` export
+ * (or its default) with the `Kiss` instance.
+ *
+ * `fresh` busts both module caches the way `controller-resolver.js` does, so a
+ * watch rebuild picks up an edited helper instead of re-running the copy Node
+ * already holds. Re-registering an existing helper name is how Handlebars
+ * replaces one, so an *edited* helper needs no teardown — but a *removed* one
+ * does: the registry still holds it, and the registrar that would have put it
+ * back is gone. `previous` is the list this call last returned as `registered`
+ * — `{ name, prior }` pairs, not bare names, because a registrar may have
+ * *overridden* something rather than added it. Those entries are undone after
+ * the module imports and before the registrar runs: a name with a `prior` is
+ * restored to it, a name without one is unregistered. Recording only the name
+ * meant an overridden kiss built-in was destroyed when the site stopped
+ * overriding it — silently, since an argument-less mustache renders empty
+ * rather than throwing. They are put back if the registrar throws, since a
+ * half-registered site is worse than the one it replaced.
+ *
+ * Resolves to a description of what happened rather than throwing: a helpers
+ * folder that cannot be loaded is a build failure for the caller to record,
+ * not an exception thrown through the constructor.
+ *
+ * `required` says whether the author named this folder or kiss guessed it, and
+ * it changes one branch: an entry that exports **no registrar at all**. That is
+ * the evidence the folder belongs to someone else — an upgrading site whose
+ * root `helpers/` holds unrelated utilities — so a guessed folder warns and the
+ * build carries on, while a folder the author pointed kiss at is a failure. A
+ * folder that breaks rather than declining (an import that throws, a registrar
+ * that throws) fails either way: that one is ours and broken, and shipping it
+ * would lose every helper silently.
+ */
+export type OwnedHelper = {
+    name: string;
+    prior: import("handlebars").HelperDelegate | undefined;
+};
