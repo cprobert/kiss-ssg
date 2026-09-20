@@ -107,6 +107,50 @@ describe('copyAssets manifest', () => {
     expect(await site.exists('out/css/x.css')).toBe(true)
   })
 
+  // The migration shape: a project moving off a pipeline that committed its
+  // compiled CSS has site.scss and site.css side by side. Both are emitted to
+  // one path, the copy runs after the compile, and the plain file wins — so
+  // every .scss edit silently does nothing, on a green build and a clean
+  // check. The pages are correct and the asset is wrong, so page hashes can
+  // never catch it. Nothing said so before this warning.
+  it('warns when a sass compile and a plain copy claim one emitted path', async () => {
+    const logger = { ...silentLogger, warn: vi.fn() }
+    site = await makeSite({
+      'a/css/site.scss': 'body { color: #111; }',
+      'a/css/site.css': 'body{color:#eee}',
+    })
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+      manifest: createAssetManifest(),
+    })
+    const warned = logger.warn.mock.calls.map((c) => c.join(' '))
+    expect(warned).toHaveLength(1)
+    // The DIRECTION is the load-bearing part, and glob order is the opposite
+    // of write order: `site.css` sorts first but `fs.copy` runs after the
+    // compile, so the plain file is served and the Sass is discarded. Naming
+    // them the wrong way round sends the author to edit the winning file.
+    expect(warned[0]).toContain(
+      'css/site.scss is compiled there and css/site.css is copied over the top',
+    )
+    expect(warned[0]).toContain('edits to css/site.scss do nothing')
+    // ...and the claim is true: the plain file's bytes are what is served.
+    expect((await site.read('out/css/site.css')).trim()).toBe(
+      'body{color:#eee}',
+    )
+  })
+
+  it('does not warn when only a sass source emits that path', async () => {
+    const logger = { ...silentLogger, warn: vi.fn() }
+    site = await makeSite({ 'a/css/only.scss': 'body { color: #111; }' })
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+      manifest: createAssetManifest(),
+    })
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
   it('keys the manifest to the build root when the target is below it', async () => {
     site = await makeSite({ 'a/x.css': 'b{}' })
     const manifest = createAssetManifest()
