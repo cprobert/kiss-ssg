@@ -131,9 +131,13 @@ describe('copyAssets manifest', () => {
     // compile, so the copied file is served and the Sass is discarded. Naming
     // them the wrong way round sends the author to edit the winning file.
     expect(warned[0]).toContain(
-      'css/site.scss compiles there, then css/site.css is copied over it',
+      'css/site.scss compiles to css/site.css, then css/site.css is copied over it',
     )
-    expect(warned[0]).toContain('edits to css/site.scss do nothing')
+    // Consequence before mechanism: what the reader needs first is that their
+    // edits are not reaching the site.
+    expect(warned[0]).toContain(
+      'edits to css/site.scss are not reaching the site',
+    )
     // ...and it says the precedence is intended, not an accident: a copied
     // `.css` is often an assets.pipeline step's output, which must beat
     // kiss's built-in Sass.
