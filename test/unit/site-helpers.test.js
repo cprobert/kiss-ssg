@@ -364,6 +364,68 @@ describe('loadSiteHelpers', () => {
     expect(kiss.registered.banner).toBeUndefined()
   })
 
+  // Restoring the names the old registrar owned is not the same as undoing the
+  // attempt. A registrar that adds `temporary` and then throws left it behind,
+  // and a failed load reports no `registered` list — so the caller's ownership
+  // list still said ['a'] and nothing would ever remove `temporary`, not a
+  // later success and not a delete. Measured: `temporary = T` after the throw.
+  it('leaves nothing behind from a registrar that threw part-way', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('a', () => 'A') }",
+    })
+    const kiss = fakeKiss()
+    const first = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+
+    await new Promise((r) => setTimeout(r, 10))
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('temporary', () => 'T'); throw new Error('half way') }",
+    )
+    await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: { ...silentLogger, error: vi.fn() },
+      fresh: true,
+      previous: first.registered,
+    })
+    expect(kiss.registered.a()).toBe('A')
+    expect(kiss.registered.temporary).toBeUndefined()
+  })
+
+  // "The build continues without site helpers" was not true: the warn path
+  // returned before the teardown, so the previous load's helpers stayed live
+  // and kept rendering. Saying the site has no helpers while serving them is
+  // the failure mode this branch exists to remove.
+  it('actually drops the helpers when it says it is continuing without them', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('a', () => 'A') }",
+    })
+    const kiss = fakeKiss()
+    const first = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+
+    await new Promise((r) => setTimeout(r, 10))
+    await site.touch(
+      'helpers/index.js',
+      'export const formatDate = (d) => String(d)',
+    )
+    const second = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: { ...silentLogger, warn: vi.fn() },
+      fresh: true,
+      previous: first.registered,
+      required: false,
+    })
+    expect(kiss.registered.a).toBeUndefined()
+    expect(second.registered).toEqual([])
+  })
+
   // The caller needs to know which names the site's registrar added, and only
   // those: a built-in kiss helper is not the site's to unregister later.
   it('reports only the names the site registrar added', async () => {
