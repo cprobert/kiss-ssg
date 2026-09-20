@@ -482,6 +482,95 @@ describe('watch()', () => {
     )
   })
 
+  // The generalisation of the bug above, made enforceable. Every other test in
+  // this suite configures absolute folders, so the whole watch dispatch was
+  // exercised only against a shape no real site has: `folders` defaults are
+  // relative (`./src`, `./src/pages`, …) and chokidar then emits relative
+  // events. Measured benign — both sides derive from the same config, unlike
+  // the helpers entry, which came from `path.resolve` — but "measured benign
+  // once" is not coverage. This is the test that makes it stay benign.
+  it('dispatches every kind of edit under the relative folder defaults', async () => {
+    const cwd = process.cwd()
+    // Asserting output alone proves nothing here, and that is a finding in
+    // itself: an unmatched path falls through to a whole-site replay, which
+    // produces the SAME bytes by the expensive route. Verified by mutation —
+    // making the src watcher emit absolute paths, the exact mismatch that made
+    // the helpers entry unreachable, left an output-only assertion green. So
+    // the dispatch is what gets asserted: `Rebuilding:` is scoped,
+    // `Rebuilding site:` is a replay.
+    const rebuilds = []
+    const logger = {
+      ...silentLogger,
+      info: (...a) => rebuilds.push(a.join(' ')),
+      notice: (...a) => rebuilds.push(a.join(' ')),
+    }
+    const scoped = () =>
+      rebuilds.filter((l) => /^Rebuilding/.test(l)).length > 0 &&
+      rebuilds
+        .filter((l) => /^Rebuilding/.test(l))
+        .every((l) => !/site:/.test(l))
+    site = await makeSite({
+      'src/pages/index.hbs': '{{> "bit"}}|{{title}}|{{extra}}',
+      'src/partials/bit.hbs': 'P1',
+      'src/models/index.json': { title: 'M1' },
+      'src/controllers/c.js': 'export default (m) => ({ ...m, extra: "C1" })',
+      'src/assets/css/site.css': 'a{}',
+    })
+    process.chdir(site.root)
+    try {
+      kiss = new Kiss({ logger })
+        .page({ view: 'index.hbs', model: 'index.json', controller: 'c.js' })
+        .generate()
+      await kiss.complete()
+      expect(await site.read('public/index.html')).toBe('P1|M1|C1')
+      kiss.watch({ entry: null })
+      await kiss._watcher.ready
+
+      // A page edit is the scoped path; a partial edit is the graph path; a
+      // model and a controller edit each force a replay. All four have to
+      // resolve the changed path against a relative folder.
+      rebuilds.length = 0
+      await site.touch(
+        'src/pages/index.hbs',
+        '{{> "bit"}}|{{title}}|{{extra}}|v2',
+      )
+      await waitFor(
+        async () => (await site.read('public/index.html')) === 'P1|M1|C1|v2',
+      )
+      // A page edit must be SCOPED. Under a path mismatch it still produces
+      // the right bytes, via a replay — correct, and silently expensive.
+      expect(scoped()).toBe(true)
+
+      rebuilds.length = 0
+      await site.touch('src/partials/bit.hbs', 'P2')
+      await waitFor(
+        async () => (await site.read('public/index.html')) === 'P2|M1|C1|v2',
+      )
+      // A partial edit must re-render the pages the graph recorded rather
+      // than falling back to every page.
+      expect(scoped()).toBe(true)
+      await site.touch('src/models/index.json', JSON.stringify({ title: 'M2' }))
+      await waitFor(
+        async () => (await site.read('public/index.html')) === 'P2|M2|C1|v2',
+      )
+      await site.touch(
+        'src/controllers/c.js',
+        'export default (m) => ({ ...m, extra: "C2" })',
+      )
+      await waitFor(
+        async () => (await site.read('public/index.html')) === 'P2|M2|C2|v2',
+      )
+
+      // ...and the assets watcher, whose folder is relative too.
+      await site.touch('src/assets/css/site.css', 'a{color:red}')
+      await waitFor(
+        async () => (await site.read('public/css/site.css')) === 'a{color:red}',
+      )
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
   // EVERY other test in this file names `helpers` with an absolute path, and
   // `grep -rn "'./helpers'" test/` returned nothing across the whole suite.
   // The defaulted configuration — the convention this feature ships, and the
