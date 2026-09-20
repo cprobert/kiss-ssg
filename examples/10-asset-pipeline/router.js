@@ -52,6 +52,20 @@ const tokens = 'node tools/tokens.js'
 const kiss = new Kiss({
   site,
   nav: [{ href: 'index.html', label: 'The pipeline' }],
+  // Two URLs this site does not host. They go through `{{asset}}` like every
+  // other reference the templates emit: the helper hands back anything that
+  // already names its own origin, so a template never branches on where a
+  // file lives — and never prefixes `{{root}}` onto one of these, because a
+  // URL that carries its own origin has no base to climb back to.
+  cdn: {
+    // The form to prefer: absolute, scheme and all.
+    fonts: 'https://fonts.asterandoak.example/inter.css',
+    // Protocol-relative — no scheme, the form a good many CDN snippets still
+    // hand you. kiss passes it through untouched, so a snippet pasted from a
+    // vendor works as given; `https://` is the form to write when the choice
+    // is yours.
+    insights: '//cdn.asterandoak.example/js/insights.js',
+  },
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
   assets: {
@@ -86,6 +100,12 @@ kiss
     title: 'An asset pipeline',
     model: {
       command: tokens,
+      // A 16-pixel dot with no file behind it. `data:` carries no `//`, which
+      // is exactly how it used to be mistaken for a path into the build and
+      // fail it; it is passed through like any other reference that names no
+      // file this build wrote.
+      badge:
+        'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Ccircle%20cx%3D%228%22%20cy%3D%228%22%20r%3D%227%22%20fill%3D%22%23b4531f%22%2F%3E%3C%2Fsvg%3E',
     },
   })
   .generate(function () {

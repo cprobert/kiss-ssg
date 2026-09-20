@@ -318,6 +318,23 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(existsSync(generated)).toBe(true)
       expect(readFileSync(generated, 'utf8')).toContain('--accent:')
       expect(output(r)).toContain('pipeline: tokens ok')
+
+      // The other half of the example: one `{{asset}}` call, four kinds of
+      // reference. The two build paths are looked up (the sprite's `#fragment`
+      // split off and re-appended), and the two URLs that name their own
+      // origin are handed back. Every one of these shapes failed the build
+      // when `{{asset}}` first learned to throw — `data:` and `mailto:` carry
+      // no `//`, and `//cdn/x` carries no scheme, so all three fell through to
+      // a manifest lookup they could never satisfy.
+      const html = readFileSync(
+        path.join(outputDir('10-asset-pipeline'), 'index.html'),
+        'utf8',
+      )
+      expect(html).toContain('href="img/icons.svg#bean"')
+      expect(html).toContain('src="data:image/svg+xml,%3Csvg')
+      expect(html).toContain('https://fonts.asterandoak.example/inter.css')
+      expect(html).toContain('//cdn.asterandoak.example/js/insights.js')
+      expect(html).toContain('css/generated.css?v=2')
     }, 60000)
 
     it('11 · blog builds 14 pages, one redirect and a feed of six posts newest first', () => {
