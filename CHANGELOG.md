@@ -54,7 +54,10 @@ Two details worth knowing:
 - **A `?query` or `#fragment` is fine**, and so is anything with a scheme or a
   protocol-relative `//host/…`. `{{asset "img/logo.svg#symbol"}}` resolves the
   sprite and keeps the fragment; `data:` URIs and `https://` pass straight
-  through. Only the path itself has to be in the build.
+  through. Only the path itself has to be in the build — and when it is not,
+  the message names the reference you wrote **and** the path it looked up
+  underneath it, so a stripped slash or a split-off fragment never leaves you
+  searching your templates for a string you never typed.
 
 ### ⚠️ A stylesheet that will not compile now fails the build
 
