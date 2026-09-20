@@ -151,6 +151,8 @@ A branch runs as three beats, all reading one committed artefact — `planning/s
 
 **Never run `/branch-close` or create a PR unless explicitly asked.** Commit and push the outstanding changes, then stop.
 
+**Verify an edit landed before committing it.** A scripted edit whose anchor no longer matches fails silently when the next command is on a new line rather than chained with `&&` — the script aborts, the commit runs anyway, and a module ships without the `AIKB/` doc this file requires in the same commit. That happened twice in one session, the second time an hour after the first. Chain the whole thing with `&&`, or grep for the new text before `git add`.
+
 **Never pass prose through the shell.** Commit messages, PR bodies and any command longer than a line go through `git commit -F -` with a heredoc, or a file — never `-m "…"`. Backticks, `$(…)`, `!` and newlines in a `-m` string are interpreted by the shell, and the failure is silent: the commit lands with the substituted text in it. This has bitten twice in one session, the second time after the lesson was written down in that same session.
 
 Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc staleness for the branch's diff), `/corpse-collector` (dead references repo-wide), `/test-coverage-check` (modules with no `test/unit/` sibling), `/secrets-scan`, `/session-reflect`, `/memory-consolidate` (housekeeping **between** branches: folds the recurring lessons out of `planning/sessions/` into a rule here or a step in a ritual skill, and stamps each log `consolidated:`). The supervision rubric the reflections score against is `.claude/skills/session-reflect/rubric.md`; the lessons already promoted out of the logs are listed in `.claude/skills/memory-consolidate/retired.md`.
