@@ -130,3 +130,42 @@ Every item above fixed with a test seen red first where a test is possible, `npm
 and the downstream session asked to pull and re-run Codex against the new tip — because this list is
 what a review found that the gates could not, and the same review is the only thing that can say the
 fixes hold.
+
+## Outcome — 2026-09-20
+
+Every item worked in order, one commit each, each with a test seen red against the unfixed code
+where a test could be red at all. `npm run gates` green after every commit, **on Linux** (see P7).
+
+| Item | Commit    | Red-first evidence                                                               |
+| ---- | --------- | -------------------------------------------------------------------------------- |
+| P0   | `7d82ac4` | `plugin-manifests` failed on the CHANGELOG citation; two `skill-coverage` rows   |
+| P1   | `790863d` | `TypeError: result.split is not a function`, twice                               |
+| P2   | `922131d` | sibling-edit notice timed out; three `site-helpers` units; the end-to-end drop   |
+| P3   | `3755306` | the guessed-folder warn (unit and end-to-end); the named-folder cases are guards |
+| P4   | `67f61d5` | zero warnings under `hash: true` on the files that warn under `hash: false`      |
+| P5   | `ee60a93` | `forbiddenPackedFiles is not a function`                                         |
+| P6   | `b45bae7` | `registerPartials(): any[]` in the emitted declaration                           |
+| P7   | `30f31e6` | **none available here** — the assertion can only fail on Windows                 |
+| P8   | `f0f4656` | two watcher units timed out; the stale `<site helpers>` failure; the delete      |
+| P9   | `b9169fb` | not a test: output proven byte-identical with and without the change             |
+| P10  | `ff5b3e9` | not testable — a contradiction between two sentences                             |
+
+Three things the plan did not anticipate, all folded in:
+
+- **P0 grew a tarball change.** `CHANGELOG.md` was not in `files`, so the skill's new §0 cited a
+  path a consumer does not have. The existing whitelist test caught it, which is what it is for.
+- **P8's "unverified" check was real.** `_failures` is cleared by `_replay()` and nothing else, and
+  a helpers reload is a scoped rebuild — so a broken save stayed in `report()` for the rest of the
+  session after the file was fixed. Each load now replaces the last one's outcome.
+- **P8 also needed a decision the plan left open**: what a _deleted_ entry means. It unregisters
+  the site's helpers, for the same reason P2b unregisters a dropped one.
+
+Left unverified, stated rather than buried:
+
+- **P7 has no red on this machine.** `helpersEntry`'s separator only goes wrong on Windows, and
+  every "gates green" reported on this branch was a Linux checkout. CI's `windows-latest` leg is
+  the only thing that can confirm it.
+- **The restart notice for a sibling module is the honest answer, not a working one.** An author
+  editing `helpers/format.js` still has to restart. A loader hook could make it reload; nothing
+  here tries.
+- **P10 is a reading, not a test.** Nothing fails if llms.txt contradicts itself again.

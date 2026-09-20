@@ -198,6 +198,30 @@ consumer, so a small breaking-shaped change costs a version bump rather than a m
   **Eyeball: looked** — ran `npm run eg9 -- --dev`, edited `helpers/index.js`, read the notice; wording
   does its job. Decision: **record amendment** (F2 absorbed) and continue; close once F2 lands.
 
+- **2026-09-20 (post-review remediation)** — a local `/code-review` pass and a downstream Codex
+  review between them found eleven defects in this branch's own work. All eleven are fixed,
+  planned in `planning/plans/2026-09-20-review-remediation.md` and worked one commit at a time
+  (`7d82ac4`..`ff5b3e9`), each with a test seen red against the unfixed code wherever a test could
+  be red. The ones that matter as lessons rather than as fixes:
+
+  - **The feature built to end dishonest dev rebuilds shipped a dishonest dev rebuild.** Only the
+    helpers _entry_ is cache-busted, so a sibling module the entry imports came back from the ESM
+    cache — the registrar re-registered the old helper while every page re-rendered and the browser
+    reloaded. Exactly the trap this branch exists to remove, one level down, and `folders.helpers`
+    was exempted from the restart notice that would have caught it.
+  - **A detector that only ever asks what is missing cannot see what should not be there.** The
+    `pack` gate checked `REQUIRED_PACKED` and nothing else, so 75 files of example build output
+    shipped in the tarball against CLAUDE.md's "never ships". The same shape twice: the asset
+    collision warning was dead under `assets.hash` because the check sat after the move that made
+    it unreachable.
+  - **A doc is a claim, including the ones written this branch.** `llms.txt` told an agent to write
+    `registerHelpers(kiss)` in the router eleven lines before telling it not to; example 9 did both.
+  - **"All five gates green" was Linux.** Said repeatedly on this branch, never qualified.
+    `helpersEntry` returned a native-separator path and I have no Windows leg to prove it; CI does.
+
+  Decision: **continue** — the branch stays open until the downstream Codex review has run against
+  the new tip, since that review is the only thing outside this session that can say the fixes hold.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
