@@ -9,14 +9,20 @@ afterEach(async () => {
 })
 
 // A stand-in for the Kiss instance: the loader only ever touches what the
-// site's own register function touches.
+// site's own register function touches. `registered` and `handlebars.helpers`
+// are the same object, because Handlebars' registry is one too — the loader
+// has to be able to read back what the site's registrar put there.
 const fakeKiss = () => {
   const registered = {}
   return {
     registered,
     handlebars: {
+      helpers: registered,
       registerHelper: (name, fn) => {
         registered[name] = fn
+      },
+      unregisterHelper: (name) => {
+        delete registered[name]
       },
     },
   }
@@ -144,5 +150,85 @@ describe('loadSiteHelpers', () => {
       fresh: true,
     })
     expect(fresh.registered.v()).toBe('TWO')
+  })
+
+  // A reload re-runs the registrar against a registry that still holds the
+  // previous load's helpers, so a helper the new source dropped stayed live
+  // and every page kept rendering it. Deleting a helper has to take effect
+  // the same way editing one does, or the running site disagrees with the
+  // source on disk and only a restart settles it.
+  it('unregisters a helper the new source no longer registers', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('a', () => 'A'); kiss.handlebars.registerHelper('b', () => 'B') }",
+    })
+    const kiss = fakeKiss()
+    const first = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    expect([...first.registered].sort()).toEqual(['a', 'b'])
+
+    await new Promise((r) => setTimeout(r, 10)) // a distinct mtime
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('a', () => 'A2') }",
+    )
+    const second = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+      fresh: true,
+      previous: first.registered,
+    })
+    expect(second.registered).toEqual(['a'])
+    expect(kiss.registered.a()).toBe('A2')
+    expect(kiss.registered.b).toBeUndefined()
+  })
+
+  // Clearing the old names is what makes a removal land, so it happens before
+  // the new registrar runs — which means a registrar that throws half way
+  // would otherwise leave the site with fewer helpers than either version of
+  // the file registers. Put them back.
+  it('restores the previous helpers when the reload throws part-way', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('a', () => 'A'); kiss.handlebars.registerHelper('b', () => 'B') }",
+    })
+    const kiss = fakeKiss()
+    const first = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+
+    await new Promise((r) => setTimeout(r, 10))
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('a', () => 'A2'); throw new Error('half way') }",
+    )
+    const second = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: { ...silentLogger, error: vi.fn() },
+      fresh: true,
+      previous: first.registered,
+    })
+    expect(second.loaded).toBe(false)
+    expect(kiss.registered.a()).toBe('A')
+    expect(kiss.registered.b()).toBe('B')
+  })
+
+  // The caller needs to know which names the site's registrar added, and only
+  // those: a built-in kiss helper is not the site's to unregister later.
+  it('reports only the names the site registrar added', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('mine', () => 1) }",
+    })
+    const kiss = fakeKiss()
+    kiss.handlebars.registerHelper('builtin', () => 0)
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    expect(result.registered).toEqual(['mine'])
   })
 })

@@ -294,6 +294,15 @@ declare class Kiss {
     private _idNoticed;
     /** @private @type {Promise<void>} */
     private _helpersReady;
+    /**
+     * The helper names the site's own registrar added on its last load, so a
+     * reload can clear the ones the new source dropped. Not the built-ins:
+     * those are kiss's and are never the site's to remove.
+     *
+     * @type {string[]}
+     * @private
+     */
+    private _siteHelperNames;
     /** @private */
     private _failures;
     /** @private */

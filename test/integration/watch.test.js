@@ -234,6 +234,71 @@ describe('watch()', () => {
     )
   })
 
+  // The other half of an honest reload: a helper the edited entry no longer
+  // registers has to leave the running site, or the browser keeps rendering
+  // against a registrar that no longer exists on disk.
+  it('drops a helper the edited entry stopped registering', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{keep "hi"}}',
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('keep', (s) => 'K-' + s); kiss.handlebars.registerHelper('gone', () => 'G') }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(typeof kiss.handlebars.helpers.gone).toBe('function')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('keep', (s) => 'K2-' + s) }",
+    )
+    await waitFor(
+      async () => (await site.read('public/index.html')) === 'K2-hi',
+    )
+    expect(kiss.handlebars.helpers.gone).toBeUndefined()
+  })
+
+  // The reload busts the cache for the ENTRY only. `index.js`'s own
+  // `import './format.js'` resolves to the un-busted URL, so the sibling comes
+  // back from the ESM cache and the registrar re-registers the OLD helper —
+  // while every page re-renders and the browser reloads. That is the dev
+  // rebuild trap this whole branch exists to remove, and it shipped inside the
+  // feature built to remove it. ESM has no cache-invalidation API, so the fix
+  // is not a working reload: it is an honest one.
+  it('asks for a restart when a module beside the helpers entry changes, and does not re-render', async () => {
+    const logger = { ...silentLogger, notice: vi.fn() }
+    site = await makeSite({
+      'src/pages/index.hbs': '{{shout "hi"}}',
+      'helpers/format.js': "export const PREFIX = 'ONE-'",
+      'helpers/index.js':
+        "import { PREFIX } from './format.js'\nexport function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => PREFIX + s) }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('ONE-hi')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await site.touch('helpers/format.js', "export const PREFIX = 'TWO-'")
+    await waitFor(() =>
+      logger.notice.mock.calls.some(([m]) => /restart/i.test(String(m))),
+    )
+    // The page is untouched: a rebuild here would have re-rendered with the
+    // cached module and presented the old output as the new one.
+    expect(await site.read('public/index.html')).toBe('ONE-hi')
+  })
+
   // A site that puts its helpers inside src gets both watchers on one file.
   // The helpers watcher makes the edit take effect, so the restart notice
   // would be exactly the lie it exists to prevent.
