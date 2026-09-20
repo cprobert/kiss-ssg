@@ -81,6 +81,39 @@ describe('copyAssets', () => {
   })
 })
 
+// A compile failure and a write failure are different problems with
+// different fixes, and both used to be reported as "Error parsing sass file".
+// A stylesheet that parses perfectly and cannot be written sent the author
+// looking for a syntax error that was not there.
+describe('copyAssets sass diagnostics', () => {
+  it('names the write, not the parse, when the output cannot be written', async () => {
+    site = await makeSite({ 'a/css/x.scss': 'b { color: red }' })
+    // A directory where `x.css` has to go: the source parses, the write cannot.
+    await fs.ensureDir(`${site.root}/out/css/x.css`)
+    const logger = { ...silentLogger, error: vi.fn(), warn: vi.fn() }
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+    })
+    expect(result.sass[0].error).toBeInstanceOf(Error)
+    const said = logger.error.mock.calls.map((c) => c.join(' ')).join('\n')
+    expect(said).toContain('Error writing compiled sass to: ')
+    expect(said).not.toContain('Error parsing sass file')
+  })
+
+  it('still names the parse when the stylesheet will not compile', async () => {
+    site = await makeSite({ 'a/css/x.scss': 'b { color: ' })
+    const logger = { ...silentLogger, error: vi.fn(), warn: vi.fn() }
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+    })
+    expect(result.sass[0].error).toBeInstanceOf(Error)
+    const said = logger.error.mock.calls.map((c) => c.join(' ')).join('\n')
+    expect(said).toContain('Error parsing sass file')
+  })
+})
+
 describe('copyAssets manifest', () => {
   const hashing = (extra = {}) => ({
     config: { ...deps.config, assets: { hash: true, version: null, ...extra } },

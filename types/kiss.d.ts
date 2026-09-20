@@ -327,6 +327,11 @@ declare class Kiss {
     private _helpersExplicit;
     /** @private */
     private _failures;
+    /**
+     * @type {Map<string, Set<any>>}
+     * @private
+     */
+    private _sassFailures;
     /** @private */
     private _failuresReported;
     /** @private */

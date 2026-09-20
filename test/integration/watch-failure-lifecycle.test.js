@@ -9,6 +9,7 @@ vi.mock('../../lib/dev-server.js', () => ({
   }),
 }))
 
+import fs from 'fs-extra'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
@@ -108,6 +109,33 @@ describe('a failure the replay cannot re-derive', () => {
     )
     await kiss._assetQueue
     expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+  })
+
+  // A copy owns its Sass failures by the resolved (source, target) pair it
+  // is, not by a prefix of the view string: `src/assets` is a prefix of
+  // `src/assets/nested`, so a parent root's copy used to clear a nested
+  // root's unresolved failure — and the parent's own compile of that same
+  // file then succeeded to a different target, so nothing raised it again.
+  it('a parent asset root does not clear a nested root failure', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'hi',
+      'src/assets/nested/theme.scss': 'body { color: red; }',
+    })
+    // The nested copy cannot WRITE its output — a directory sits where
+    // theme.css must go — though the stylesheet itself parses. The parent
+    // copy compiles the same source successfully, to a different target.
+    await fs.ensureDir(`${site.root}/out-nested/theme.css`)
+    kiss = new Kiss({
+      folders: { ...site.folders, assets: null },
+      logger: silentLogger,
+    })
+    kiss.copyAssets(`${site.root}/src/assets/nested`, `${site.root}/out-nested`)
+    kiss.copyAssets(`${site.root}/src/assets`, `${site.root}/out-parent`)
+    kiss.scan().generate()
+
+    await expect(kiss.complete()).rejects.toThrow()
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+    expect(kiss.report().ok).toBe(false)
   })
 
   it('still clears a failure the replay does re-derive', async () => {
