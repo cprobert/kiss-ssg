@@ -47,6 +47,20 @@ describe('helpersEntry', () => {
     expect(helpersEntry(null)).toBeNull()
     expect(helpersEntry(undefined)).toBeNull()
   })
+
+  // Green on Linux whatever the implementation does; this is the assertion
+  // that fails on Windows CI, where `path.resolve` returns backslashes. The
+  // path is compared against a watcher event and lands in
+  // `_failures[].buildTo`, so a native separator is a comparison that never
+  // matches and a failure nobody can grep for.
+  it('is posix-normalised, like every other path kiss hands out', async () => {
+    site = await makeSite({
+      'h/index.js': 'export function registerHelpers() {}',
+    })
+    const entry = helpersEntry(`${site.root}/h`)
+    expect(entry).not.toContain('\\')
+    expect(entry).toBe(`${site.root}/h/index.js`)
+  })
 })
 
 describe('loadSiteHelpers', () => {

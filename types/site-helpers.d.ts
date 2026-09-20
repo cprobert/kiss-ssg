@@ -3,6 +3,11 @@
  * folder has none — which is the ordinary case for a site with no custom
  * helpers and must stay silent.
  *
+ * Posix-normalised, like every other path kiss hands out: `path.resolve`
+ * returns native separators, and this one is compared against a watcher event
+ * and reported in `_failures[].buildTo`. A backslash in either is a path that
+ * matches nothing and a failure a consumer cannot grep for.
+ *
  * @param {string|null|undefined} folder
  * @returns {string|null}
  */
