@@ -177,6 +177,36 @@ describe('copyAssets manifest', () => {
     expect((await site.read(`out/${emitted}`)).trim()).toBe('body{color:#eee}')
   })
 
+  // A Sass syntax error was logged in red and then dropped on the floor:
+  // complete() resolved, report().ok was true, `kiss-ssg check` said ok, and
+  // the site shipped with no stylesheet. An agent following kiss's own
+  // documented bar — "ok:true and exit 0 is the only passing result" — would
+  // publish that. Same family as the dishonest dev rebuild this branch
+  // exists to remove, in a corner nobody had looked at.
+  it('reports a sass compile failure to its caller', async () => {
+    site = await makeSite({
+      'a/css/broken.scss': 'body { color: red;',
+      'a/css/fine.scss': 'body { color: blue; }',
+    })
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+      manifest: createAssetManifest(),
+    })
+    // Every file it tried is reported, so a caller can clear the entry for one
+    // that has since started compiling.
+    expect(result.sass.map((s) => s.file).sort()).toEqual([
+      'css/broken.scss',
+      'css/fine.scss',
+    ])
+    const failed = result.sass.filter((s) => s.error)
+    expect(failed).toHaveLength(1)
+    expect(failed[0].file).toBe('css/broken.scss')
+    // ...and the sibling still compiled: one broken stylesheet does not stop
+    // the rest, the same rule a failed page follows.
+    expect(await site.exists('out/css/fine.css')).toBe(true)
+  })
+
   it('does not warn when only a sass source emits that path', async () => {
     const logger = { ...silentLogger, warn: vi.fn() }
     site = await makeSite({ 'a/css/only.scss': 'body { color: #111; }' })

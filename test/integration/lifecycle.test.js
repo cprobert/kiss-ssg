@@ -36,6 +36,57 @@ describe('a bad model', () => {
 // run from inside the temp site, the way a real build script does. That is
 // also the only way to exercise the *defaulted* path at all: naming the folder
 // in the config is what makes it explicit.
+// Found by a clean-room conversion: an agent working only from the published
+// docs built a site whose stylesheet never compiled, and every machine signal
+// said the build was good. `kiss-build-check` tells an agent "ok:true and
+// exit 0 is the only passing result", which makes that verdict load-bearing.
+describe('a stylesheet that does not compile', () => {
+  it('fails the build rather than shipping a site with no CSS', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '<link href="{{asset "css/style.css"}}">',
+      'src/assets/css/style.scss': 'body { color: red;',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow(/<sass: css\/style\.scss>/)
+    expect(kiss.report().ok).toBe(false)
+  })
+
+  // One broken stylesheet must not take the others with it, the same rule a
+  // failing page follows.
+  it('still compiles the stylesheets that are fine', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/broken.scss': 'body { color: red;',
+      'src/assets/css/fine.scss': 'body { color: blue; }',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow()
+    expect(await site.exists('public/css/fine.css')).toBe(true)
+  })
+
+  it('says nothing when every stylesheet compiles', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/fine.scss': 'body { color: blue; }',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).resolves.toBeDefined()
+    expect(kiss.report().ok).toBe(true)
+  })
+})
+
 describe('a root helpers/ folder that kiss does not own', () => {
   const inSite = async (root, fn) => {
     const cwd = process.cwd()
