@@ -74,6 +74,8 @@ A site opts into a knowledge base by recording one — `npx kiss-ssg aikb <site-
 
 Each entry in `failures` is `{ view, buildTo, message }`.
 
+**A `{{asset}}` path no `.copyAssets()` emitted is one of these**, not a warning. It used to log `asset: '<path>' is not in the build` and render the path anyway, so the build passed and the site shipped a 404; it now fails the build outside dev, the same way `{{link}}` fails on an id no page claims. The message names the path and the view that asked. Fix the path, or the folder it should have been copied from — and if it is genuinely emitted by something other than kiss, copy it in with an extra `.copyAssets()` so the manifest knows about it. In **dev** it still warns and renders the path as written, because the file you are about to add is legitimately not there yet.
+
 - **`view` names the source.** A `.pages()` fan-out item appears as `<view> [item N: <slug>]`, because a page that never got as far as an output path cannot be named by one.
 - **The fix is almost always in the model or the controller**, not the view — a record missing a field the template dereferences, a controller that throws on one item, a model file that does not exist. Read the failing item's model before you touch the template.
 - **`Page already processed` is a slug collision**, not a render error: two pages resolved to one output path. Dedupe before registering.
