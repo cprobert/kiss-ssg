@@ -248,6 +248,82 @@ consumer, so a small breaking-shaped change costs a version bump rather than a m
   Decision: **continue**. The peer is in a sustained verification loop at the operator's direction;
   fixes go out as they land rather than batched.
 
+- **2026-09-20 (third round — the multi-session verification loop, R4..R13)** — the operator put a
+  second Claude session into a sustained loop with OpenAI Codex on his desktop, a Sonnet instance
+  rebuilding swan-love, and a clean-room session converting a real 4-page site
+  (spirit-of-boogie) from the published docs alone. It found, and I fixed, thirteen more defects
+  (`3810fe5`..`9a6a82a`). Written down before compacting this session, because the transferable
+  part is not the fix list.
+
+  **The defects worth remembering as shapes, not as bugs:**
+
+  - **A fix for a loud wrong behaviour introduced a quiet wrong behaviour — three times.** R6 and
+    R10 both declined valid registrars silently; R12's Sass half silently stopped emitting a
+    `_`-named entry stylesheet, with zero mentions in the build log. Each time the loud version
+    was caught within minutes and the quiet one needed an external review to find. The peer named
+    it, and the framing is the lesson: **"what does this now do silently?" belongs in the fix, not
+    in the review afterwards.**
+  - **The tested shape was not the shipped shape, twice.** `folders.helpers` defaults to the
+    relative `./helpers` and every test named it absolutely, so the helper reload was inert in its
+    own default configuration behind five green gates. `isActive`'s unit tests fabricated a
+    `{ page: { pageURL } }` context — the shape the DOCS described — so they were green while
+    every documented snippet was broken. A convention that ships a default needs a test that
+    exercises the default; a helper's test must use the context a render actually has.
+  - **The absolute-versus-relative path seam bit three times in one branch**: the helpers entry
+    (R1), `helpersEntry`'s native separators on Windows (P7), and `isInside` normalising without
+    resolving (R10). Resolve both sides, always.
+  - **A detector that only asks what is MISSING cannot see what should not be there** — the `pack`
+    gate shipped 75 files of example output, and the asset collision warning was dead under
+    `assets.hash` for the same reason one layer down.
+  - **A mention test cannot catch a contradiction.** `skill-coverage.test.js` asserted a skill
+    NAMES `folders.helpers` while the same file told an agent to call the registrar by hand — and
+    a clean-room agent followed the stale half. Hence the `CONTRADICTIONS` table: ban the sentence,
+    do not require the mention.
+
+  **Process failures of mine, recorded because they were not one-offs:**
+
+  - **I committed twice without checking my own edit landed.** A scripted edit's anchor failed, the
+    script aborted, the commit ran anyway because it was on a new line rather than chained. The
+    second time was in the very commit fixing the first. Rule now in `CLAUDE.md`.
+  - **I carried a verification across a change that invalidated it.** I reported the new ESLint rule
+    as "verified by running it"; that was true of the broad version, and when I narrowed the
+    selector it stopped firing entirely. Re-verify after the change, not before it.
+  - **Five of seven of my defects were incomplete case analysis, not memory** — an untested config
+    value (`folders.assets: null`), export forms enumerated from imagination rather than from real
+    code, a discriminator that cannot run on a module that failed to import. Context length was not
+    the cause and should not be offered as one.
+
+  **On the loop itself, for whoever reads this before building another one:**
+
+  - Instruments ranked by yield: **clean-room conversion > real-site variance > Codex-on-diff >
+    my own gates.** The clean-room is the only thing that tests whether the documentation works,
+    and it found behavioural defects (the silent Sass failure) as a side effect.
+  - **The finding rate held; my fix quality became the constraint.** Roughly a third of my fix
+    commits introduced a new defect, every one from a same-hour turnaround on a single finding
+    without re-examining its neighbourhood. Doc and test fixes are safe to turn around fast;
+    behavioural changes to `lib/` are not.
+  - **The mix shifted.** Round one was eleven pre-existing defects; the last two Codex rounds were
+    almost entirely about defects this remediation introduced. That is the signal that the loop is
+    starting to spin on its own output, and the natural stopping point is the clean-room re-run
+    from an `npm pack` tarball: if a fresh agent builds without hitting walls, the docs are done.
+  - **The peer corrected itself twice, unprompted** — retracting "zero regressions across six
+    sites" as "the estate does not contain the failing variant", and withdrawing its endorsement of
+    R6 with an explanation of why its probe missed the case. An agent that only confirms is worse
+    than no agent.
+
+  **Still open at `9a6a82a`:** the Sass watch/report lifecycle (an asset change does not refresh
+  the settled verdict, and `_replay()` can erase an unresolved failure while recompiling assets
+  only when a pipeline exists) — so R8's guarantee currently holds for a single asset root on a
+  cold build only; the ESLint selector no longer catching an explicit `file:` URL; and eleven
+  clean-room documentation findings (`{{asset}}` documented as failing the build when it does not,
+  README's first example shipping a broken site green, `.html` "inserted as-is" when it is
+  compiled, `{{root}}` undefined anywhere, the redirects contradictions, examples cited as files,
+  the partials pass count, and the Host URL table row the clean-room's live-host GitHub Pages
+  matrix can now fill).
+
+  Decision: **continue**, and compact this session — the durable state is the commit messages, the
+  plan file and this log, not the conversation.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->

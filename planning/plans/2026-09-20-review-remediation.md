@@ -211,3 +211,35 @@ Two more things corrected rather than fixed:
 Still open, and honestly so: Codex's objection to P3's `required` line — that treating _any_ import
 exception as evidence the folder is kiss's own is wrong, with a browser-utility barrel touching
 `window` at top level as the counterexample. It predates this remediation and is not fixed here.
+
+## Third round — 2026-09-20, the multi-session verification loop
+
+A peer session running OpenAI Codex, a real-site variance harness across six kiss sites, and a
+clean-room conversion of spirit-of-boogie (an agent working only from the published docs, never
+reading `lib/`). Thirteen more fixes, `3810fe5`..`9a6a82a`. Full narrative and the transferable
+lessons are in `planning/sessions/2026-09-20-dev-rebuild-honesty.md`; this is the index.
+
+| Item | Commit    | What it was                                                                                            |
+| ---- | --------- | ------------------------------------------------------------------------------------------------------ |
+| R4   | `3810fe5` | ownership deleted a name instead of restoring what it displaced — an overridden built-in was destroyed |
+| R5   | `a2846f5` | ownership observed rather than diffed; the redundant hand-call diagnostic                              |
+| R6   | `c19529f` | a guessed helpers folder trusted by name, not by shape                                                 |
+| R7   | `4000458` | the watch dispatch covered under the shipped relative defaults                                         |
+| R8   | `e9ba3f8` | **a stylesheet that will not compile now fails the build** (was silent-green)                          |
+| R9   | `acaac84` | the Windows-only fixture, and an ESLint rule banning the idiom                                         |
+| R10  | `3dfbc8a` | the helpers discriminator moved before the import                                                      |
+| R11  | `1f2998b` | **`isActive` was documented as a helper kiss does not have** (docs only)                               |
+| R12  | `cf6bb8f` | R8 broke standard Sass partials; R10 silently dropped valid registrars                                 |
+| R13  | `9a6a82a` | the Sass fixes stop losing output and failures silently                                                |
+
+Three of those (R6, R10, R12's Sass half) were fixes for defects the previous round's fixes
+introduced. That ratio is the branch's own warning about turnaround speed.
+
+**Open at `9a6a82a`:**
+
+- The Sass watch/report lifecycle — an asset change does not refresh the settled verdict, and
+  `_replay()` can erase an unresolved failure while recompiling assets only when a pipeline
+  exists. R8's guarantee therefore holds for a single asset root on a cold build only.
+- The ESLint selector no longer catches an explicit `file:` URL (narrowing it to remove a false
+  positive on `new URL('https://…').pathname` lost that case).
+- Eleven clean-room documentation findings, all measured, listed in the session log.
