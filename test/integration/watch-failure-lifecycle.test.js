@@ -10,9 +10,34 @@ vi.mock('../../lib/dev-server.js', () => ({
 }))
 
 import fs from 'fs-extra'
+import os from 'node:os'
+import path from 'node:path'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
+
+// Whether this machine can create a directory symlink at all. Windows needs a
+// privilege most developer accounts do not have, and the two canonicalisation
+// tests below are worthless without one.
+//
+// Decided HERE, at module scope, so the gate can be `skipIf` — because a
+// `return` inside the test body reports the test as PASSED, and a test that
+// says "passed" while exercising nothing is the exact shape this branch has
+// spent twenty rounds on, moved into the suite. Measured on an unprivileged
+// Windows box by the QA session: `2 passed | 13 skipped`, for two tests that
+// did not run a line.
+const canSymlink = (() => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-symlink-'))
+  try {
+    fs.ensureDirSync(path.join(dir, 'target'))
+    fs.symlinkSync(path.join(dir, 'target'), path.join(dir, 'link'), 'dir')
+    return true
+  } catch {
+    return false
+  } finally {
+    fs.removeSync(dir)
+  }
+})()
 
 let site, kiss
 afterEach(async () => {
@@ -236,33 +261,30 @@ describe('a failure the replay cannot re-derive', () => {
   // more than it looks: the obvious future edit is replacing
   // `realpathSync.native` with `path.resolve` to drop a sync filesystem call
   // from the copy path, and without this it would pass every gate.
-  it('treats two spellings of one source as one copy (symlink)', async () => {
-    site = await makeSite({
-      'src/pages/index.hbs': 'hi',
-      'src/assets/css/site.scss': 'body { color: ',
-    })
-    try {
+  it.skipIf(!canSymlink)(
+    'treats two spellings of one source as one copy (symlink)',
+    async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'src/assets/css/site.scss': 'body { color: ',
+      })
       await fs.symlink(`${site.root}/src/assets`, `${site.root}/aliased`, 'dir')
-    } catch {
-      // Windows needs a privilege for this; the case-spelling test below is
-      // that platform's half of the pair.
-      return
-    }
-    kiss = new Kiss({
-      folders: { ...site.folders, assets: null },
-      logger: silentLogger,
-    })
-    kiss.copyAssets(`${site.root}/src/assets`, `${site.root}/out`)
-    kiss.scan().generate()
-    await expect(kiss.complete()).rejects.toThrow()
-    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+      kiss = new Kiss({
+        folders: { ...site.folders, assets: null },
+        logger: silentLogger,
+      })
+      kiss.copyAssets(`${site.root}/src/assets`, `${site.root}/out`)
+      kiss.scan().generate()
+      await expect(kiss.complete()).rejects.toThrow()
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
 
-    // Fixed, and re-copied through the other spelling of the same folder.
-    await site.touch('src/assets/css/site.scss', 'body { color: red; }')
-    kiss.copyAssets(`${site.root}/aliased`, `${site.root}/out`)
-    await kiss._assetQueue
-    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
-  })
+      // Fixed, and re-copied through the other spelling of the same folder.
+      await site.touch('src/assets/css/site.scss', 'body { color: red; }')
+      kiss.copyAssets(`${site.root}/aliased`, `${site.root}/out`)
+      await kiss._assetQueue
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+    },
+  )
 
   // The case half, which only means anything on a case-insensitive
   // filesystem. It is not dead weight in CI: `.github/workflows/ci.yml` runs
@@ -296,32 +318,31 @@ describe('a failure the replay cannot re-derive', () => {
   // ENOENT for a folder about to be created, falls back to the spelling, and
   // then returns the canonical spelling once the folder is there — one copy,
   // two keys, and the failure the first run recorded can never be cleared.
-  it('keys a copy the same before and after its target exists', async () => {
-    site = await makeSite({
-      'src/pages/index.hbs': 'hi',
-      'vendor/css/lib.scss': 'body { color: ',
-    })
-    try {
-      await fs.symlink(`${site.root}/real`, `${site.root}/alias`, 'dir')
+  it.skipIf(!canSymlink)(
+    'keys a copy the same before and after its target exists',
+    async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'vendor/css/lib.scss': 'body { color: ',
+      })
       await fs.ensureDir(`${site.root}/real`)
-    } catch {
-      return // Windows needs a privilege for a directory symlink.
-    }
-    kiss = new Kiss({
-      folders: { ...site.folders, assets: null },
-      logger: silentLogger,
-      dev: true,
-    })
-    // `alias` exists; `alias/out` does not, and this copy creates it.
-    kiss.copyAssets(`${site.root}/vendor`, `${site.root}/alias/out`)
-    kiss.scan().generate()
-    await expect(kiss.complete()).rejects.toThrow()
-    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+      await fs.symlink(`${site.root}/real`, `${site.root}/alias`, 'dir')
+      kiss = new Kiss({
+        folders: { ...site.folders, assets: null },
+        logger: silentLogger,
+        dev: true,
+      })
+      // `alias` exists; `alias/out` does not, and this copy creates it.
+      kiss.copyAssets(`${site.root}/vendor`, `${site.root}/alias/out`)
+      kiss.scan().generate()
+      await expect(kiss.complete()).rejects.toThrow()
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
 
-    await site.touch('vendor/css/lib.scss', 'body { color: red; }')
-    await kiss._replay().catch(() => {})
-    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
-  })
+      await site.touch('vendor/css/lib.scss', 'body { color: red; }')
+      await kiss._replay().catch(() => {})
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+    },
+  )
 
   // `_assetCopies` is what a replay re-runs, and a replay happens later. A
   // relative path recorded as written is re-resolved against whatever the
