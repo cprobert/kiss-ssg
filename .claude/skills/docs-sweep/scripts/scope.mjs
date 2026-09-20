@@ -83,6 +83,12 @@ const RULES = [
     docs: () => [
       'llms.txt → ## Config (defaults block)',
       'README.md → config docs',
+      // A new config key is a feature an agent should reach for, so the same
+      // obligation applies as for a `lib/kiss.js` change. Added after
+      // `folders.helpers` shipped and two skills kept teaching the placement
+      // it exists to correct: the key arrived through config.js alone, and
+      // this rule said nothing about skills.
+      'plugins/*/skills/*/SKILL.md → a new or changed config key is a feature a skill must teach; check none of them still describes the shape it replaced',
     ],
   },
   {
