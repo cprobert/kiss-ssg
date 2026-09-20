@@ -128,12 +128,16 @@ describe('copyAssets manifest', () => {
     expect(warned).toHaveLength(1)
     // The DIRECTION is the load-bearing part, and glob order is the opposite
     // of write order: `site.css` sorts first but `fs.copy` runs after the
-    // compile, so the plain file is served and the Sass is discarded. Naming
+    // compile, so the copied file is served and the Sass is discarded. Naming
     // them the wrong way round sends the author to edit the winning file.
     expect(warned[0]).toContain(
-      'css/site.scss is compiled there and css/site.css is copied over the top',
+      'css/site.scss compiles there, then css/site.css is copied over it',
     )
     expect(warned[0]).toContain('edits to css/site.scss do nothing')
+    // ...and it says the precedence is intended, not an accident: a copied
+    // `.css` is often an assets.pipeline step's output, which must beat
+    // kiss's built-in Sass.
+    expect(warned[0]).toContain('wins by design')
     // ...and the claim is true: the plain file's bytes are what is served.
     expect((await site.read('out/css/site.css')).trim()).toBe(
       'body{color:#eee}',
