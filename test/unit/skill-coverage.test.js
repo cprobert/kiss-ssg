@@ -140,7 +140,18 @@ const COVERAGE = [
     skills: [
       skill('kiss-ssg', 'kiss-site-new'),
       skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
     ],
+  },
+  {
+    // `kiss-site-migrate` is the upgrade skill for every version boundary,
+    // not only v1 -> v2, and the only thing that makes a point upgrade
+    // legible is the CHANGELOG between the depended-on version and the
+    // installed one. A skill that skips it can only find the breakages it
+    // was written knowing about.
+    feature: 'the CHANGELOG as the list of what an upgrade changed',
+    pattern: /CHANGELOG\.md/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
   },
   {
     feature: "the site map's Id column as the link targets",

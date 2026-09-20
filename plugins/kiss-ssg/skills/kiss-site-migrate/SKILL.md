@@ -1,14 +1,52 @@
 ---
 name: kiss-site-migrate
-description: Migrate a site built on kiss-ssg v1 to v2. Use when a project's build script targets kiss-ssg 1.x, when a v2 upgrade fails with an unhandled AggregateError or silently empty output, or when asked to "upgrade kiss", "migrate to kiss-ssg v2", "migrate kiss-ssg", or "why did my kiss site break after the upgrade".
+description: Upgrade a site built on kiss-ssg across any version boundary — a v1 to v2 migration, or a minor release that changed what a folder or a default means. Use when a project's build script targets an older kiss-ssg than the installed one, when an upgrade fails with an unhandled AggregateError or silently empty output, or when asked to "upgrade kiss", "migrate to kiss-ssg v2", "migrate kiss-ssg", "update kiss-ssg", or "why did my kiss site break after the upgrade".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
-# Migrate a v1 kiss site to v2
+# Upgrade a kiss site
 
-The migration is short — real consumer sites needed two or three edits each — but each one is silent if you miss it. Work from the shipped recipes, not from memory.
+Two jobs share this skill because they fail the same way — silently.
+
+**A v1 → v2 migration** is short: real consumer sites needed two or three edits each, but each one is
+silent if you miss it. That is §1 onward.
+
+**A point upgrade within v2** is shorter still and easier to skip, which is the trap. A minor release
+can change what a folder or a default _means_ without changing any signature, so nothing fails at
+install time and the site keeps building — differently. Do §0 for any upgrade, including a v1 → v2
+one, then continue.
+
+Work from the shipped recipes and the CHANGELOG, not from memory.
 
 ## Execution instructions
+
+### 0. Read what changed between the two versions
+
+Compare what the project depends on with what is installed:
+
+```bash
+node -p "require('./package.json').devDependencies?.['kiss-ssg'] ?? require('./package.json').dependencies?.['kiss-ssg']"
+node -p "require('./node_modules/kiss-ssg/package.json').version"
+```
+
+Then read `node_modules/kiss-ssg/CHANGELOG.md` — every entry between those two versions, not only the
+newest. It is written for people building sites rather than maintaining the engine, so an entry that
+names a folder, a default or a config key is one that can change this site's behaviour without
+changing its code.
+
+**A new default that adopts a folder you already have is the hazard to look for.** Concretely, from
+2.5: `config.folders.helpers` defaults to `./helpers`, and kiss now imports that folder's `index.js`
+itself and calls its `registerHelpers` export. A site that already had a root `helpers/` folder for
+unrelated utilities now has it imported on every build. Check for one:
+
+```bash
+ls helpers/index.js helpers/index.mjs helpers/index.cjs 2>/dev/null
+```
+
+If it is there and is **not** a kiss registrar, either point `folders.helpers` somewhere else, move
+the folder, or leave it — kiss warns and carries on when it defaulted to a folder whose entry exports
+no registrar, and only fails the build when you named the folder explicitly. If it **is** a registrar
+that `router.js` also calls by hand, drop the manual call: it now runs twice.
 
 ### 1. Check the floor, then read the recipes
 

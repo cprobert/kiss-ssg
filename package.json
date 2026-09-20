@@ -22,7 +22,8 @@
     "types",
     "llms.txt",
     "AIKB",
-    "examples"
+    "examples",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=22.12.0"
