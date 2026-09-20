@@ -234,6 +234,87 @@ describe('watch()', () => {
     )
   })
 
+  // The folder is optional, so it may not exist when the session starts. A
+  // first `helpers/index.js` written mid-session has to register and take
+  // effect like any other edit — before, it got no watcher at all, and the
+  // restart notice that might have covered it is suppressed for this folder.
+  it('registers a helpers entry created after the watch started', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': '{{#if shout}}x{{/if}}ok' })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(kiss.handlebars.helpers.shout).toBeUndefined()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'ONE-' + s) }",
+    )
+    await waitFor(() => typeof kiss.handlebars.helpers.shout === 'function')
+  })
+
+  // Deleting the entry is the same statement as removing a registration from
+  // it, made one file up: the site has no helpers any more, so neither does
+  // the running build.
+  it('unregisters the site helpers when the entry is deleted', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'ONE-' + s) }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(typeof kiss.handlebars.helpers.shout).toBe('function')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await fs.remove(`${site.root}/helpers/index.js`)
+    await waitFor(() => kiss.handlebars.helpers.shout === undefined)
+  })
+
+  // `_failures` is cleared by `_replay()` and by nothing else, and a helpers
+  // reload is a scoped rebuild rather than a replay — so a broken save left a
+  // `<site helpers>` entry in `report()` for the rest of the session, long
+  // after the file was fixed. A stale failure is worse than none: it is the
+  // one thing a consumer checks to decide whether the build is good.
+  it('clears the site-helpers failure once the file is fixed', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'ONE-' + s) }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: { ...silentLogger, error: vi.fn() },
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await site.touch('helpers/index.js', "throw new Error('broken save')")
+    await waitFor(() => kiss._failures.some((f) => f.view === '<site helpers>'))
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'TWO-' + s) }",
+    )
+    await waitFor(async () => (await site.read('public/index.html')) === 'ok')
+    await waitFor(
+      () => !kiss._failures.some((f) => f.view === '<site helpers>'),
+    )
+  })
+
   // The other half of an honest reload: a helper the edited entry no longer
   // registers has to leave the running site, or the browser keeps rendering
   // against a registrar that no longer exists on disk.

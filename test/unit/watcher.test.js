@@ -201,6 +201,75 @@ describe('createWatcher', () => {
   })
 })
 
+describe('the helpers watcher', () => {
+  const spy = () => {
+    const calls = { helpers: [] }
+    return {
+      calls,
+      wiring: {
+        rebuildSite: () => {},
+        onChange: () => {},
+        assetsChanged: () => {},
+        helpersChanged: (p) => calls.helpers.push(p),
+        logger: silentLogger,
+      },
+    }
+  }
+
+  // The folder is optional, so the watcher was installed only when it already
+  // existed at watch() time. Creating a first `helpers/index.js` mid-session
+  // then got no watcher, no rebuild and no notice — and the restart notice
+  // that would have covered it is suppressed for this folder by design.
+  it('picks up a helpers folder created after the watch started', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'a' })
+    const { calls, wiring } = spy()
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          assets: `${site.src}/assets`,
+          helpers: `${site.root}/helpers`,
+        },
+      },
+      entry: null,
+      ...wiring,
+    })
+    await handle.ready
+    await site.touch('helpers/index.js', 'export function registerHelpers() {}')
+    await waitFor(() => calls.helpers.includes(`${site.root}/helpers/index.js`))
+  })
+
+  it('forwards a delete, and skips an empty write the way the src watcher does', async () => {
+    site = await makeSite({
+      'helpers/index.js': 'export function registerHelpers() {}',
+    })
+    const { calls, wiring } = spy()
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          assets: `${site.src}/assets`,
+          helpers: `${site.root}/helpers`,
+        },
+      },
+      entry: null,
+      ...wiring,
+    })
+    await handle.ready
+    // The initial scan's `add` for a file that was already there is not an
+    // authoring event, so it must not reload helpers on start-up.
+    expect(calls.helpers).toEqual([])
+
+    await site.touch('helpers/index.js', '')
+    await site.touch('helpers/other.js', 'export const x = 1')
+    await waitFor(() => calls.helpers.includes(`${site.root}/helpers/other.js`))
+    expect(calls.helpers).not.toContain(`${site.root}/helpers/index.js`)
+
+    await fs.remove(`${site.root}/helpers/index.js`)
+    await waitFor(() => calls.helpers.includes(`${site.root}/helpers/index.js`))
+  })
+})
+
 describe('isInside', () => {
   const inAssets = isInside('./src/assets')
 
