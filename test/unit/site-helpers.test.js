@@ -698,6 +698,81 @@ describe('loadSiteHelpers', () => {
     },
   )
 
+  // R10's source test matched a narrow set of export FORMS, and ordinary
+  // JavaScript that exports a perfectly good registrar fell outside it — so
+  // the helpers silently did not exist, argument-less references rendered
+  // empty via helperMissing, and on a reload `dropPrevious()` unregistered a
+  // registrar that had been working. A false negative that produces silently
+  // wrong output is worse than the false positive it replaced, which at least
+  // failed loudly.
+  //
+  // The gate is now a LOOSE mention of the name — enough to decide whether the
+  // folder might be kiss's — and the real discrimination is done on the
+  // module's actual exports after it imports. Every valid form passes, because
+  // every valid form names the export it is declaring.
+  it.each([
+    [
+      'a comment between export and function',
+      'export /* public API */ function registerHelpers(kiss) { kiss.handlebars.registerHelper("x", () => 1) }',
+    ],
+    [
+      'a multi-declarator const',
+      'export const version = 1, registerHelpers = (kiss) => kiss.handlebars.registerHelper("x", () => 1)',
+    ],
+    [
+      'an async registrar',
+      'export async function registerHelpers(kiss) { kiss.handlebars.registerHelper("x", () => 1) }',
+    ],
+  ])(
+    'loads a guessed folder whose registrar is written with %s',
+    async (_l, src) => {
+      site = await makeSite({ 'helpers/index.js': src })
+      const kiss = fakeKiss()
+      const result = await loadSiteHelpers(`${site.root}/helpers`, {
+        kiss,
+        logger: silentLogger,
+        required: false,
+      })
+      expect(result.loaded).toBe(true)
+      expect(kiss.registered.x()).toBe(1)
+    },
+  )
+
+  // A re-export barrel cannot be resolved by reading one file, but it does not
+  // need to be: the name is mentioned, so the module imports, and after that
+  // `mod.registerHelpers` is simply there.
+  it('loads a guessed folder that re-exports its registrar from a sibling', async () => {
+    site = await makeSite({
+      'helpers/register.js':
+        'export function registerHelpers(kiss) { kiss.handlebars.registerHelper("x", () => 1) }',
+      'helpers/index.js': "export * from './register.js'",
+    })
+    const kiss = fakeKiss()
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+      required: false,
+    })
+    expect(result.loaded).toBe(true)
+    expect(kiss.registered.x()).toBe(1)
+  })
+
+  // ...and a module that merely mentions the name while exporting it under a
+  // different one still declines — the decision is the EXPORT, not the text.
+  it('declines a guessed folder that renames the export away', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        'const registerHelpers = () => {}\nexport { registerHelpers as browserSetup }',
+    })
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss: fakeKiss(),
+      logger: { ...silentLogger, warn: vi.fn() },
+      required: false,
+    })
+    expect(result.loaded).toBe(false)
+    expect(result.error).toBeUndefined()
+  })
+
   // ...and the module that started all this still declines, without being run.
   it('declines a guessed folder that never mentions registerHelpers, without importing it', async () => {
     site = await makeSite({

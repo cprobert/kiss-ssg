@@ -207,6 +207,36 @@ describe('copyAssets manifest', () => {
     expect(await site.exists('out/css/fine.css')).toBe(true)
   })
 
+  // A leading underscore is THE Sass convention for "this is a partial, do not
+  // compile me standalone" — dart-sass itself never compiles one. kiss globbed
+  // them anyway, which was a red log line until a Sass error became a build
+  // failure; then a site with the most ordinary stylesheet layout there is
+  // could not build at all. Measured: main.css compiled correctly and the
+  // build failed on _buttons.scss.
+  it('does not compile _-prefixed sass partials standalone', async () => {
+    site = await makeSite({
+      'a/css/_buttons.scss': '.button { color: $brand; }',
+      // `@import` rather than `@use`, because that is what the partial
+      // convention is for: the importer defines the variable the partial
+      // reads, which is exactly why the partial cannot compile alone. It is
+      // also what the real sites in this estate use.
+      'a/css/main.scss': "$brand: #c00;\n@import 'buttons';",
+    })
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+      manifest: createAssetManifest(),
+    })
+    expect(result.sass.map((s) => s.file)).toEqual(['css/main.scss'])
+    expect(result.sass[0].error).toBeUndefined()
+    expect(await site.exists('out/css/main.css')).toBe(true)
+    // ...and the partial emits nothing of its own, which is the point of it.
+    expect(await site.exists('out/css/_buttons.css')).toBe(false)
+    // The partial's source is not copied through either — it is Sass, not an
+    // asset a page can link.
+    expect(await site.exists('out/css/_buttons.scss')).toBe(false)
+  })
+
   it('does not warn when only a sass source emits that path', async () => {
     const logger = { ...silentLogger, warn: vi.fn() }
     site = await makeSite({ 'a/css/only.scss': 'body { color: #111; }' })

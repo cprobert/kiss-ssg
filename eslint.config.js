@@ -13,26 +13,27 @@ export default [
     },
     rules: {
       'no-unused-vars': ['warn', { args: 'none' }],
-      // `new URL(...).pathname` is a usable filesystem path on POSIX and NOT
-      // on Windows, where it returns `/C:/...` and `fs` resolves the leading
-      // slash against the current drive root (`C:\C:\...`). This branch hit
-      // it twice — once in `lib/` via `path.resolve` separators, once in a
-      // test fixture — and both times only the Windows CI leg could see it,
-      // so a Linux run reported five green gates over a broken test.
-      // `fileURLToPath` is correct on both.
+      // A FILE url's `.pathname` is not a filesystem path on Windows: it
+      // returns `/C:/...`, and `fs` resolves the leading slash against the
+      // current drive root (`C:\\C:\\...`). This branch hit it twice — once in
+      // `lib/` via `path.resolve` separators, once in a test fixture — and
+      // both times only the Windows CI leg could see it, so a Linux run
+      // reported green gates over a broken test. `fileURLToPath` is correct on
+      // both.
+      //
+      // Scoped to the `import.meta.url` base deliberately. Reading `.pathname`
+      // off a real http URL is CORRECT usage (`lib/links.js` does it), and a
+      // blanket ban would reject it — a lint rule that cries wolf gets
+      // disabled, which costs more than it saves. `import.meta.url` as the
+      // base is always a file URL, which is exactly the case that is always
+      // wrong.
       'no-restricted-syntax': [
         'error',
         {
           selector:
-            "MemberExpression[property.name='pathname'][object.callee.name='URL']",
+            "MemberExpression[property.name='pathname'][object.type='NewExpression'][object.callee.name='URL'][object.arguments.1.object.type='MetaProperty']",
           message:
-            'new URL(...).pathname is not a filesystem path on Windows (it yields /C:/...). Use fileURLToPath(new URL(...)) from node:url.',
-        },
-        {
-          selector:
-            "MemberExpression[property.name='pathname'][object.type='NewExpression'][object.callee.name='URL']",
-          message:
-            'new URL(...).pathname is not a filesystem path on Windows (it yields /C:/...). Use fileURLToPath(new URL(...)) from node:url.',
+            'new URL(..., import.meta.url).pathname is not a filesystem path on Windows (it yields /C:/...). Use fileURLToPath(new URL(..., import.meta.url)) from node:url.',
         },
       ],
     },
