@@ -12,6 +12,30 @@ const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
+  // 2.5 fails builds that used to pass, in three places. The upgrade skill is
+  // the only thing a consuming agent reads when a site breaks on upgrade, so
+  // each break has to be findable there by the error text the author is
+  // actually looking at — not by a description of it.
+  {
+    feature: 'upgrade: a missing {{asset}} path now fails the build',
+    pattern: /is not in the build/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
+  {
+    feature: 'upgrade: a Sass compile error now fails the build',
+    pattern: /<sass:/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
+  {
+    feature: 'upgrade: a _-prefixed Sass file is no longer compiled standalone',
+    pattern: /do not compile standalone/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
+  {
+    feature: 'upgrade: run `kiss-ssg check` before changing anything',
+    pattern: /kiss-ssg check .*--summary/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
   {
     feature: '{{link — link between pages by identity',
     pattern: /\{\{link\b/,

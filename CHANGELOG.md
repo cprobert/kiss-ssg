@@ -17,6 +17,12 @@ are the three paragraphs that explain why your build started failing** — and i
 all three cases the thing that now fails was already broken, silently, in the
 output you were publishing.
 
+**Upgrading?** Run `npx kiss-ssg check router.js --summary` before you change
+anything: it reports all three against a staged build it then throws away, so
+you find out without publishing. If you are working with an agent, the
+`kiss-site-migrate` skill walks each break by the error text you will actually
+be looking at — what it means, and the three things it is usually caused by.
+
 ### ⚠️ Read this first: a missing asset now fails the build
 
 `{{asset "css/site.css"}}` on a path no `.copyAssets()` emitted used to log a
