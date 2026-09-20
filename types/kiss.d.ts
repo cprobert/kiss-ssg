@@ -554,10 +554,17 @@ declare class Kiss {
      */
     complete(callback?: (data: BuildData) => void): Promise<BuildData>;
     /**
-     * The last settled build, as data: what `.complete()` resolved or rejected
-     * with, in a JSON-safe shape a script can act on. `null` until the first
-     * `.complete()` has settled; a watch rebuild replaces it with its own. The
-     * same object is on the rejection as `err.report`.
+     * The last **settled** build, as data: what `.complete()` resolved or
+     * rejected with, in a JSON-safe shape a script can act on. `null` until the
+     * first `.complete()` has settled. The same object is on the rejection as
+     * `err.report`.
+     *
+     * A watch rebuild replaces it only when it settles a build. A whole-site
+     * replay does; a scoped re-render (a page view, a partial, a layout) and a
+     * watch asset re-copy do not, because neither calls `_finishBuild()`. So a
+     * stylesheet broken by an asset save is logged and recorded on `_failures`
+     * at once, while this keeps describing the last build that settled until
+     * the next one does.
      *
      * @returns {BuildReport|null}
      */
