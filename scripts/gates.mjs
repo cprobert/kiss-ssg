@@ -28,6 +28,23 @@ export function missingPackedFiles(packedFiles, required = REQUIRED_PACKED) {
   return required.filter((f) => !packed.has(f))
 }
 
+// The other half of the same question, and the half that was missing. The
+// `files` whitelist overrides `.gitignore`, so a gitignored folder inside a
+// whitelisted one ships anyway: `examples/` is published on purpose, and each
+// example builds into its own `public/`, which put 75 files of generated
+// output into the tarball that `CLAUDE.md` says never ships. Asking only what
+// was *missing* could never have caught it.
+export const FORBIDDEN_PACKED = [/^examples\/[^/]+\/public\//]
+
+export function forbiddenPackedFiles(
+  packedFiles,
+  forbidden = FORBIDDEN_PACKED,
+) {
+  return packedFiles
+    .map((f) => f.replace(/\\/g, '/'))
+    .filter((f) => forbidden.some((pattern) => pattern.test(f)))
+}
+
 // `npm pack --dry-run --json` emits one entry per tarball, each with a `files`
 // array of { path } — but npm prints lifecycle-script banners (the `prepare`
 // script that installs our git hook) ahead of it, so the JSON has to be found
@@ -145,9 +162,18 @@ const GATES = [
           output: `could not read npm pack output:\n${r.output}`,
         }
       const missing = missingPackedFiles(packed)
-      return missing.length === 0
-        ? { ok: true, note: `${packed.length} files in tarball` }
-        : { ok: false, output: `missing from tarball: ${missing.join(', ')}` }
+      if (missing.length)
+        return {
+          ok: false,
+          output: `missing from tarball: ${missing.join(', ')}`,
+        }
+      const forbidden = forbiddenPackedFiles(packed)
+      if (forbidden.length)
+        return {
+          ok: false,
+          output: `build output in tarball (${forbidden.length} files): ${forbidden.slice(0, 5).join(', ')}${forbidden.length > 5 ? ', …' : ''}`,
+        }
+      return { ok: true, note: `${packed.length} files in tarball` }
     },
   },
 ]

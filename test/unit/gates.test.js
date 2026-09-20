@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   REQUIRED_PACKED,
+  FORBIDDEN_PACKED,
+  forbiddenPackedFiles,
   formatGate,
   missingPackedFiles,
   parsePackedFiles,
@@ -37,6 +39,46 @@ describe('parsePackedFiles', () => {
 
   it('returns null when there is no JSON at all, so the gate can fail loudly', () => {
     expect(parsePackedFiles('npm error code ENOENT\n')).toBeNull()
+  })
+})
+
+// The whitelist overrides .gitignore, so a gitignored build folder inside a
+// whitelisted one ships anyway. `examples/*/public/` did exactly that — 75
+// files of generated output in a tarball CLAUDE.md says never ships — and the
+// gate could not see it, because it only ever asked what was MISSING.
+describe('forbiddenPackedFiles', () => {
+  it('names example build output that slipped into the tarball', () => {
+    expect(
+      forbiddenPackedFiles([
+        'lib/kiss.js',
+        'examples/1-scan/router.js',
+        'examples/1-scan/public/index.html',
+        'examples/11-blog/public/css/site.css',
+      ]),
+    ).toEqual([
+      'examples/1-scan/public/index.html',
+      'examples/11-blog/public/css/site.css',
+    ])
+  })
+
+  it("leaves an example's own source alone", () => {
+    expect(
+      forbiddenPackedFiles([
+        'examples/1-scan/router.js',
+        'examples/1-scan/src/pages/index.hbs',
+        'examples/README.md',
+      ]),
+    ).toEqual([])
+  })
+
+  it('accepts a windows-style path the way missingPackedFiles does', () => {
+    expect(
+      forbiddenPackedFiles(['examples\\1-scan\\public\\index.html']),
+    ).toEqual(['examples/1-scan/public/index.html'])
+  })
+
+  it('is declared, so the gate has something to check against', () => {
+    expect(FORBIDDEN_PACKED.length).toBeGreaterThan(0)
   })
 })
 

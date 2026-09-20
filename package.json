@@ -23,6 +23,7 @@
     "llms.txt",
     "AIKB",
     "examples",
+    "!examples/*/public",
     "CHANGELOG.md"
   ],
   "engines": {
