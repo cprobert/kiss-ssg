@@ -235,11 +235,44 @@ lessons are in `planning/sessions/2026-09-20-dev-rebuild-honesty.md`; this is th
 Three of those (R6, R10, R12's Sass half) were fixes for defects the previous round's fixes
 introduced. That ratio is the branch's own warning about turnaround speed.
 
-**Open at `9a6a82a`:**
+**Closed since `9a6a82a`:**
 
-- The Sass watch/report lifecycle — an asset change does not refresh the settled verdict, and
-  `_replay()` can erase an unresolved failure while recompiling assets only when a pipeline
-  exists. R8's guarantee therefore holds for a single asset root on a cold build only.
+- `753bca2` **R14** — `_replay()` emptied `_failures` and rebuilt the list from the work it
+  re-runs, which is honest only for the work it actually re-runs. It never re-imports the helpers
+  entry, never restarts the dev server, and recompiles stylesheets only when an `assets.pipeline`
+  step is configured. Measured: a site whose `site.scss` would not compile reported `ok` on the
+  next controller save. The replay now sweeps rather than empties, carrying `<sass: …>`,
+  `<site helpers>` and `<dev server>`.
+- `1bcf059` **R15** — R13's copy-scoped Sass identity was a prefix of the view string, so a copy
+  of a parent asset root cleared a nested root's unresolved failure (found by the QA session,
+  reproduced here). Identity is now the resolved `(source, target)` pair and the failures are
+  owned by object identity. Also splits the Sass parse and write diagnostics, which both read
+  "Error parsing sass file".
+- `bfc577d` **R16** — nine clean-room documentation findings, each re-derived locally. `.html`
+  partials documented as uncompiled; `{{asset}}` documented as failing the build; the
+  `redirects.format` default; "3 methods" and a first example that exits 0 on a broken build; the
+  150-line rule contradicting llms.txt; `{{root}}`; examples cited as files; the minifier's inline
+  JS/CSS; and `AIKB/assets.md` asserting the pre-R8 behaviour beside its replacement. Six new
+  CONTRADICTIONS rows, and `AIKB/` added to the scanned set — it ships in the tarball.
+
+**Open at `bfc577d`:**
+
+- **`report()` is stale between settles** — a scoped re-render and a watch asset re-copy call no
+  `_finishBuild()`, so breaking a stylesheet on a watch save collects and logs the failure at once
+  while `report().ok` stays true until the next settle. Measured. Documented in four places
+  (`report()`'s docstring, `AIKB/kiss.md`, `AIKB/build-report.md`, `llms.txt`) rather than fixed:
+  re-settling a build per keystroke is the wrong cost, and the honest statement is which rebuilds
+  replace the report.
 - The ESLint selector no longer catches an explicit `file:` URL (narrowing it to remove a false
   positive on `new URL('https://…').pathname` lost that case).
-- Eleven clean-room documentation findings, all measured, listed in the session log.
+- **The version string does not distinguish the branch from the release.** `package.json`,
+  both plugin manifests and the installed 2.4.0 plugin cache all read `2.4.0` while carrying
+  materially different skill text — so a consuming agent cannot tell which it has, and the cached
+  copy still teaches `src/helpers/` and a `registerHelpers(kiss)` call. Raised by the QA session.
+  Not acted on here: the version bump belongs to `/branch-close`, which this branch has not been
+  asked to run. Worth deciding whether `/branch-open` should bump to a prerelease tag so the two
+  copies are distinguishable mid-branch.
+- Not a defect, recorded so it is not re-found: the examples hand-type internal URLs against
+  llms.txt's opening rule. The rule was wrong, not the examples — `{{link}}` emits a leading slash,
+  which cannot resolve in a build opened straight off the file system, which is what those
+  examples are for. The rule now carries the exception.
