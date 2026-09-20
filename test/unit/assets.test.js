@@ -148,6 +148,35 @@ describe('copyAssets manifest', () => {
     )
   })
 
+  // Hashing renames the emitted file, so the second source's stat found
+  // nothing and the detector short-circuited before it ever compared claims —
+  // silent in exactly the configuration a production site builds with, which
+  // is the one configuration where a silently dead stylesheet matters.
+  it('warns the same way when assets.hash is on', async () => {
+    const logger = { ...silentLogger, warn: vi.fn() }
+    site = await makeSite({
+      'a/css/site.scss': 'body { color: #111; }',
+      'a/css/site.css': 'body{color:#eee}',
+    })
+    const manifest = createAssetManifest()
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      config: { ...deps.config, assets: { hash: true } },
+      logger,
+      manifest,
+    })
+    const warned = logger.warn.mock.calls.map((c) => c.join(' '))
+    expect(warned).toHaveLength(1)
+    expect(warned[0]).toContain(
+      'css/site.scss compiles to css/site.css, then css/site.css is copied over it',
+    )
+    // The hashed file is still emitted and still the copied bytes: the fix
+    // moves when the claim is recorded, not what is served.
+    const emitted = manifest.lookup('css/site.css')
+    expect(emitted).toMatch(/^css\/site\.[0-9a-f]+\.css$/)
+    expect((await site.read(`out/${emitted}`)).trim()).toBe('body{color:#eee}')
+  })
+
   it('does not warn when only a sass source emits that path', async () => {
     const logger = { ...silentLogger, warn: vi.fn() }
     site = await makeSite({ 'a/css/only.scss': 'body { color: #111; }' })
