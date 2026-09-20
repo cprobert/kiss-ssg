@@ -290,14 +290,16 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   lint selector missed `FILE:` and a leading space — a ban that did not cover the spellings of the
   thing it banned.
 
-**Open at `271b416`:**
+- `4f23b76` **R22** — `report()` stops lagging the log between settles. Courtenay overruled the
+  decision to document this rather than fix it, and the overrule was right: the cost objection
+  ruled out re-running `_finishBuild()` per keystroke, not re-deriving the report.
+  `_refreshReport()` re-derives it wherever the failure list moves without a build settling (the
+  asset copy, the helpers reload) and deliberately does not touch `_finishBuild()`'s once-per-build
+  side effects — a test asserts `KISS_REPORT` still has one line after a save that flips `ok`.
+  Both call sites read one `_reportInputs()`.
 
-- **`report()` is stale between settles** — a scoped re-render and a watch asset re-copy call no
-  `_finishBuild()`, so breaking a stylesheet on a watch save collects and logs the failure at once
-  while `report().ok` stays true until the next settle. Measured. Documented in four places
-  (`report()`'s docstring, `AIKB/kiss.md`, `AIKB/build-report.md`, `llms.txt`) rather than fixed:
-  re-settling a build per keystroke is the wrong cost, and the honest statement is which rebuilds
-  replace the report.
+**Open at `4f23b76`:**
+
 - **The version string does not distinguish the branch from the release.** `package.json`,
   both plugin manifests and the installed 2.4.0 plugin cache all read `2.4.0` while carrying
   materially different skill text — so a consuming agent cannot tell which it has, and the cached
