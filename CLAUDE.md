@@ -61,6 +61,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Dev server                            | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
 | File watcher                          | `lib/watcher.js`             | `AIKB/watcher.md`             |
 | String/path utils                     | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: design & lineage       | —                            | `AIKB/design.md`              |
 | Cross-cutting: testing conventions    | `test/`                      | `AIKB/testing.md`             |
 
 ## Commands
