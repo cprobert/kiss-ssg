@@ -124,8 +124,8 @@ describe('.txt partials are literal text', () => {
     )
 
   // The extension is a statement about processing: .hbs is a template, .md is
-  // rendered Markdown, .html is inserted as-is, .txt is the file's own
-  // characters. Escaped exactly as `{{ }}` escapes a value.
+  // rendered Markdown, .html is HTML — and all three are compiled — while .txt
+  // is the file's own characters. Escaped exactly as `{{ }}` escapes a value.
   it('shows markup as source rather than rendering it', async () => {
     site = await makeSite({
       'src/partials/snippet.txt': '<div class="card">hi</div>',

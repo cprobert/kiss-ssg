@@ -190,11 +190,46 @@ const CONTRADICTIONS = [
       /one `?registerHelpers\(kiss\)`? call/i, // the 2.4.0 wording
     ],
   },
+  {
+    why: 'an .html partial IS compiled as a Handlebars template — "inserted as-is" reads as "not compiled" and a clean-room agent wrote a .html partial expecting its {{ }} to be literal',
+    patterns: [/`?\.html`? is inserted as-is/i],
+  },
+  {
+    why: 'config.redirects.format is unset by default — kiss writes redirects.json and no host file until you name one',
+    patterns: [
+      /`?redirects\.format`?,? default `?'netlify'`?/i, // the 2.3 default, changed in 2.4
+      /`?<build>\/_redirects`? by default/i,
+    ],
+  },
+  {
+    why: 'kiss-ssg is not three methods, and a first example that stops at .generate() ships a broken site on exit 0',
+    patterns: [
+      /kiss-ssg has 3 methods/i,
+      /^\s*kiss\.generate\(\)\s*\n```/m, // a copyable block that ends before .complete()
+    ],
+  },
+  {
+    why: 'file length is never the trigger for extracting helpers/ — llms.txt § The build script says the first custom helper is, explicitly "not a proportion of the file"',
+    patterns: [
+      /correct up to roughly \d+ lines/i,
+      /helpers\/`? is earned when the custom helpers pass about a third/i,
+    ],
+  },
+  {
+    why: 'a Sass failure fails the build — the pre-R8 "logged and dropped" wording outlived the behaviour it described',
+    patterns: [/leaves the copy successful/i],
+  },
 ]
 
 const consumerFacing = () => {
   const files = ['llms.txt', 'README.md']
-  for (const dir of ['plugins', 'examples']) {
+  // `AIKB/` ships in the tarball on purpose — an agent in a consuming project
+  // reads `node_modules/kiss-ssg/AIKB/` for the per-module notes — so it is a
+  // consumer-facing document set and gets the same contradiction check. It was
+  // left out, and a bullet in `AIKB/assets.md` sat there asserting the
+  // pre-R8 behaviour ("leaves the copy successful") beside the bullet that
+  // replaced it.
+  for (const dir of ['plugins', 'examples', 'AIKB']) {
     const walk = (d) => {
       for (const e of fs.readdirSync(path.join(root, d), {
         withFileTypes: true,

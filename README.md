@@ -56,24 +56,32 @@ The `kiss-ssg` plugin installs four skills, all named `kiss-<something>` so they
 
 Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()` chain, and the `complete()`/`catch()` pair. Custom helpers need no line here — kiss imports `config.folders.helpers` (`./helpers` by default) and calls its `registerHelpers` export itself. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
 
-How much is extracted follows the size of the file, not ambition. One file is correct up to roughly 150 lines; `helpers/` is earned when the custom helpers pass about a third of it, `config/` when a fact appears in both the markup and the structured data. `llms.txt` § The build script has the thresholds, the reasons, and the three mistakes the shape invites — chief among them that renaming an existing build script to `router.js` silently orphans whatever names it, from `package.json` to a CSS toolchain's source globs.
+How much is extracted follows what the site has earned, not the size of the file. **File length is never the trigger** — a long router is a symptom worth looking at, not a reason to split. `helpers/` is earned by the site's **first** custom helper (one, not three and not a proportion of the file: a helper inside `router.js` cannot be imported, so it cannot be unit-tested, and that is as true of the first as of the fourth); `config/` is earned the moment one fact appears in both the markup a visitor reads and the JSON-LD or feed a machine reads. Each trigger is a yes/no question on purpose, because a threshold you have to adjudicate is one two readers answer differently. `llms.txt` § The build script has the tiers in full, the reasons, and the three mistakes the shape invites — chief among them that renaming an existing build script to `router.js` silently orphans whatever names it, from `package.json` to a CSS toolchain's source globs.
 
-kiss-ssg has 3 methods
+Pages are registered three ways:
 
-- .page()
-- .pages()
-- .scan()
+- `.page()` — one page
+- `.pages()` — one view, many pages, from an array
+- `.scan()` — every `\*.hbs` under the pages folder
 
-The simplest usage is to use .scan() to scan your 'pages directory' for \*.hbs files and outputs them to the 'build folder'.
+Those are the registration methods, not the whole API — a build script also ends in the terminal chain (`.generate()`, optionally `.sitemap()`/`.llms()`/`.feed()`/`.robots()`, then `.complete()`), and **`.complete()` is the one that decides whether the build passed**. The simplest usage is `.scan()`, which scans your pages folder for `\*.hbs` files and writes them to the build folder:
 
 ```js
 import Kiss from 'kiss-ssg'
+
 const kiss = new Kiss()
 kiss.scan()
 kiss.generate()
+
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})
 ```
 
-**Note**: kiss will generate the default folders for you when you first run the script. You can overwrite the folder locations bay passing a config to the kiss constructor.
+**The last three lines are not optional, and leaving them off is the most expensive mistake on this page.** Measured, on exactly this script with `.complete()` removed: a page whose partial is missing prints its error in red, is left out of the build entirely, and **the process still exits 0**. Nothing rejects, nothing is thrown, and a deploy step that checks the exit code publishes the site with the page gone. `.complete()` waits for everything queued and rejects with an `AggregateError` carrying every failure — that rejection is the only thing that makes a broken build fail a deploy. See **Reading a failure** below for `err.failures` and `err.report`.
+
+**Note**: kiss will generate the default folders for you when you first run the script. You can override the folder locations by passing a config to the kiss constructor.
 
 The default config options are:
 
@@ -253,7 +261,7 @@ Link an asset with the `asset` helper and the caching policy stops living in you
 | `{ hash: true }`       | `public/css/site.a1b2c3d4.css` | `css/site.a1b2c3d4.css` |
 | `{ version: '1.4.5' }` | `public/css/site.css`          | `css/site.css?v=1.4.5`  |
 
-Ask for the path the file has when nothing is renaming it — a `.scss` source by its compiled `.css` name — and the same template line works under all three. The helper renders no leading slash, so the base is yours: `/{{asset …}}` for a root-relative link, or `{{root}}{{asset …}}` if your layout already climbs back to the build root (which is what makes a nested page work opened straight off the file system). The hash is taken over the bytes that were emitted (a stylesheet after sass compiled it), so the URL changes when, and only when, the file a browser downloads changes; the file it replaces is deleted as it is written, so a `dev` session leaves one stylesheet in the build rather than one per save. Only `.css` and `.js` are renamed: an image, a font or `robots.txt` is reached by URLs kiss does not rewrite — the ones inside a stylesheet, and the ones a host asks for by a fixed name — so those keep their names, and `{{asset}}` still resolves them.
+Ask for the path the file has when nothing is renaming it — a `.scss` source by its compiled `.css` name — and the same template line works under all three. The helper renders no leading slash, so the base is yours: `/{{asset …}}` for a root-relative link, or `{{root}}{{asset …}}` if your layout already climbs back to the build root (which is what makes a nested page work opened straight off the file system — see **`root` is yours** below). The hash is taken over the bytes that were emitted (a stylesheet after sass compiled it), so the URL changes when, and only when, the file a browser downloads changes; the file it replaces is deleted as it is written, so a `dev` session leaves one stylesheet in the build rather than one per save. Only `.css` and `.js` are renamed: an image, a font or `robots.txt` is reached by URLs kiss does not rewrite — the ones inside a stylesheet, and the ones a host asks for by a fixed name — so those keep their names, and `{{asset}}` still resolves them.
 
 The other two forms, for a layout that climbs back to the build root and for an absolute URL — the hashed extension and the `?v=` query both survive the wrap:
 
@@ -261,6 +269,8 @@ The other two forms, for a layout that climbs back to the build root and for an 
 <link rel='stylesheet' href='{{root}}{{asset "css/site.css"}}' />
 <link rel='preload' as='style' href='{{absUrl (asset "css/site.css")}}' />
 ```
+
+**`root` is yours, not kiss's.** There is no `root` helper — it is a value your page or layout supplies, the climb back to the build root (`''`, `'../'`, `'../../'`) for a page that knows how deep it is. Every example sets it, either on the extend (`{{#extend "layout" root="../../"}}`, see `examples/11-blog/src/pages/blog/post.hbs`) or as a page option (`examples/11-blog/router.js`). This matters because an undefined `{{root}}` is a missing _property_ to Handlebars, not a missing helper: it renders **empty and says nothing**, so the line still builds and the stylesheet resolves from whatever directory the page happens to sit in — correct at the top level, broken one folder down. If your pages are all at one depth, or you serve from the domain root, use `/{{asset …}}` and skip `root` entirely.
 
 #### An asset pipeline
 
@@ -612,11 +622,12 @@ Two of the things kiss emits are decided by your **host**, not by the generator.
 
 `links: { trailingSlash: true }` by default. Measured live on 2026-09-16 — not inferred:
 
-| Host                                                                                              | `/courses/` (a directory index)                                            | `/about` (a file page)       |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
-| **Netlify** — verified on `www.a1k9training.co.uk`                                                | **200**; bare `/courses` 301s here                                         | **200**; `/about/` 301s here |
-| **Firebase Hosting** with `cleanUrls: true` + `trailingSlash: false` — verified on `learna.ac.uk` | 301 → `/courses`; the **bare** form is 200                                 | **200**; `/about/` 301s here |
-| Cloudflare Pages, GitHub Pages, nginx                                                             | _unverified — each has a trailing-slash mode; measure your own deployment_ | _unverified_                 |
+| Host                                                                                                                            | `/courses/` (a directory index)                                            | `/about` (a file page)                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Netlify** — verified on `www.a1k9training.co.uk`                                                                              | **200**; bare `/courses` 301s here                                         | **200**; `/about/` 301s here                                                  |
+| **Firebase Hosting** with `cleanUrls: true` + `trailingSlash: false` — verified on `learna.ac.uk`                               | 301 → `/courses`; the **bare** form is 200                                 | **200**; `/about/` 301s here                                                  |
+| **GitHub Pages** — file pages measured on a live deployment (relayed to this branch by a clean-room session, not measured here) | _unverified for a real directory index_                                    | **200**; `/about.html` is also 200, `/about/` **404s**, and nothing redirects |
+| Cloudflare Pages, nginx                                                                                                         | _unverified — each has a trailing-slash mode; measure your own deployment_ | _unverified_                                                                  |
 
 The two verified hosts **agree on file pages and contradict each other on directory indexes**, so no single default can be right for both. `true` matches Netlify and is what kiss has always emitted; `false` matches that Firebase configuration:
 
@@ -889,11 +900,11 @@ Plain pages, partials and `.json` models are deliberately not subjects — a not
 
 Every build reports four findings on `report().aikb.notes`: **missing** (a subject nobody has explained), **dead** (a note under `notes/` whose subject is not in the map), **stale** (a note whose `subject-hash` stamp is no longer its subject's hash — a URL model can never be stale) and **dangling** (`"<note path>: <token>"` for a backticked token in a note, or in `site.md`, that looks like a file reference and resolves to nothing: not a file on disk or under a source folder, a page view or output path, a partial name, a model or controller name, a folder in the map, or a path under the AIKB folder). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` / `note stale:` / `note dangling:` lines. The dangling filter is deliberately narrow — a token needs a `/` or a known extension and must hold no spaces, `<`, `>`, `*`, `{`, `}` or `$`; code fences, trailing-slash folders and anything with a URI scheme are skipped — because a lint that fires on every note is one people learn to ignore. None of the four is a build failure and none changes an exit code.
 
-`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples && npx kiss-ssg aikb <script>`, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
+`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples/<folder> && npx kiss-ssg aikb router.js` — every example is a folder with its own `router.js`, run from inside itself the way a real site is, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
 
 ### Other methods
 
-- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is Markdown rendered to HTML, `.html` is inserted as-is, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only. That is what makes a code sample work without hand-escaping:
+- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is Markdown rendered to HTML and then compiled, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only. That is what makes a code sample work without hand-escaping:
 
 ```hbs
 <!-- src/partials/snippet.txt holds:  <div class="card">{{title}}</div>  -->
