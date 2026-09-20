@@ -119,6 +119,64 @@ describe('watch()', () => {
     await waitFor(async () => (await site.read('public/index.html')) === 'm2')
   })
 
+  // A replay re-reads every model and re-imports every controller, so those
+  // edits take effect. Nothing else the build script imported does: the module
+  // is already in the ESM cache and the replay runs from the registrations
+  // logged at first import. Without a notice the rebuild presents a change
+  // that was never applied as one that was — a helper edit refreshes the
+  // browser and serves the old output.
+  it('says an edited helper module needs a restart, since a rebuild cannot pick it up', async () => {
+    const logger = { ...silentLogger, notice: vi.fn() }
+    site = await makeSite({
+      'src/pages/index.hbs': 'v1',
+      'src/helpers/greet.js': "export const WORD = 'one'",
+    })
+    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+    await kiss.complete()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/helpers/greet.js', "export const WORD = 'two'")
+    await waitFor(() =>
+      logger.notice.mock.calls.some(([m]) => /restart/i.test(String(m))),
+    )
+  })
+
+  it('does not ask for a restart when the edit will take effect', async () => {
+    const logger = { ...silentLogger, notice: vi.fn() }
+    site = await makeSite({
+      'src/pages/index.hbs': '{{title}}',
+      'src/models/index.json': '{ "title": "m1" }',
+    })
+    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+    await kiss.complete()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/models/index.json', '{ "title": "m2" }')
+    await waitFor(async () => (await site.read('public/index.html')) === 'm2')
+    expect(
+      logger.notice.mock.calls.filter(([m]) => /restart/i.test(String(m))),
+    ).toEqual([])
+  })
+
+  // `AIKB/watcher.md` says the entry script is watched because "the page list
+  // itself may have changed". A replay cannot read a changed page list: it
+  // replays the registrations logged at start-up. So the watcher must say so.
+  it('says an edited build script cannot change the page list without a restart', async () => {
+    const logger = { ...silentLogger, notice: vi.fn() }
+    site = await makeSite({
+      'src/pages/index.hbs': 'v1',
+      'router.js': '// the build script',
+    })
+    kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+    await kiss.complete()
+    kiss.watch({ entry: `${site.root}/router.js` })
+    await kiss._watcher.ready
+    await site.touch('router.js', '// the build script, edited')
+    await waitFor(() =>
+      logger.notice.mock.calls.some(([m]) => /restart/i.test(String(m))),
+    )
+  })
+
   it('coalesces overlapping rebuild requests onto the newest edit', async () => {
     // A slow model keeps the first replay in flight while the second is
     // requested: without coalescing the second resets _stack under the first,

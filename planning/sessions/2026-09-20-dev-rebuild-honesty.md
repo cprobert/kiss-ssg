@@ -95,6 +95,18 @@ this session's self-check stand in for one (2026-09-16).
 
 ### Amendments
 
+**2026-09-20 — F5(b) absorbed (operator-authorised).** Listed as a non-goal at open
+("reported, not yet re-derived here"). The swan-love session then sent a standalone
+reproducer, and it has now been re-derived and **widened** here: it is not only the build
+folder. Every folder the site is configured with is reported `dangling` when a note writes
+it with a leading slash, while the same folder written `./x`, `x` or `x/` resolves —
+measured on one record as four findings (`/docs`, `/src`, `/src/assets`, `/src/pages`) and
+zero real problems. Mechanism: `lib/aikb.js:491` normalises known values through
+`posixPath`, `:519` does an exact `known.has`, and `:527`'s fallback looks for a candidate
+ending `/${value}` — i.e. `//docs`. In scope now: normalise the token before the lookup so
+all four cases resolve, plus a regression test seen red first. The AIKB lint is what makes
+`check` trustworthy, so false findings cost it credibility directly.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;

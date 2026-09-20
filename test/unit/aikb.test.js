@@ -687,6 +687,27 @@ describe('evaluateNotes: dangling', () => {
     expect(notes.stale).toEqual([])
   })
 
+  // A note is written the way the deployed site reads, so a folder gets cited
+  // URL-style: `/public` is the same folder as `./public`, which is what
+  // `known` holds once `posixPath` has stripped the `./`. One leading slash
+  // was the whole difference between a reference that resolved and one
+  // reported dangling — on the site's own configured folders. The `endsWith`
+  // fallback cannot cover it: it looks for a candidate ending `//public`.
+  it('resolves a configured folder a note writes URL-style, leading slash and all', async () => {
+    const urlStyle = [
+      '# This site',
+      '',
+      'Deployed from `/public`, and its records live in `/content/records`.',
+      'Without the slash the same folders are `public` and `content/records`.',
+      '',
+    ].join('\n')
+    site = await makeSite({ 'AIKB/site.md': urlStyle })
+    const notes = evaluateNotes(referencedMap(), `${site.root}/AIKB/notes`, {
+      aikbDir: `${site.root}/AIKB`,
+    })
+    expect(notes.dangling).toEqual([])
+  })
+
   it('scans no site.md when it is not there, and none without the folder', async () => {
     site = await makeSite({ 'AIKB/notes/controllers/stockist.md': note })
     const withFolder = evaluateNotes(
