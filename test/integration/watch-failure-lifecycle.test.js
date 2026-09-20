@@ -431,6 +431,45 @@ describe('a failure the replay cannot re-derive', () => {
     expect(kiss.report().duration).toBe(settled)
   })
 
+  // Two copies under one key, where the FIRST succeeds and the second fails.
+  // The registration used to be written synchronously by the caller, so the
+  // first copy's success evicted it before the second copy had run — leaving
+  // an unresolved failure with no registration for a replay to re-run, and no
+  // sequence of edits that could clear it for the rest of the session.
+  //
+  // I could not build this fixture and said so rather than claiming a fix; the
+  // QA session produced it. The trick is chaining the break onto the first
+  // copy's own promise, AHEAD of the second copy's, so the interleaving is
+  // deterministic instead of raced.
+  it('does not strand a failure when an earlier copy under the same key succeeded', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'hi',
+      'vendor/css/lib.scss': 'body { color: red; }',
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, assets: null },
+      logger: silentLogger,
+    })
+    kiss.copyAssets(`${site.root}/vendor`, `${site.root}/out`) // succeeds
+    kiss._assetQueue.then(() =>
+      // Synchronous, so it has certainly landed before the second copy reads it.
+      fs.writeFileSync(`${site.root}/vendor/css/lib.scss`, 'body { color: '),
+    )
+    kiss.copyAssets(`${site.root}/vendor`, `${site.root}/out`) // fails, same key
+    kiss.scan().generate()
+
+    await expect(kiss.complete()).rejects.toThrow()
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+    // The registration the replay needs is still there.
+    expect(kiss._assetCopies.size).toBe(1)
+
+    await site.touch('vendor/css/lib.scss', 'body { color: red; }')
+    await kiss._replay().catch(() => {})
+    await Promise.allSettled(kiss._promises)
+    await kiss._assetQueue
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+  })
+
   // `_assetCopies` is what a replay re-runs, and a replay happens later. A
   // relative path recorded as written is re-resolved against whatever the
   // working directory is by then.
