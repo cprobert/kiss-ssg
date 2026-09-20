@@ -837,3 +837,79 @@ describe('loadSiteHelpers', () => {
     expect(result.registered.map((h) => h.name)).toEqual(['mine'])
   })
 })
+
+// The wrapper that observes what the registrar registered is live across
+// `await register(kiss)`, so without a scope check it captures anything else
+// that registers a helper inside that window. Measured before the fix: a build
+// script doing `const kiss = new Kiss(); await somethingAsync();
+// kiss.handlebars.registerHelper('mine', fn)` had `mine` come back owned by
+// the registrar — and the next helpers save then unregistered it, because its
+// recorded `prior` was undefined. The author's own helper simply disappeared.
+describe('ownership of what the registrar registered', () => {
+  it('claims the registrar own helpers, across its awaits', async () => {
+    site = await makeSite({
+      'helpers/index.js': [
+        'export async function registerHelpers(kiss) {',
+        "  kiss.handlebars.registerHelper('early', () => 'e')",
+        '  await new Promise((r) => setTimeout(r, 5))',
+        "  kiss.handlebars.registerHelper('late', () => 'l')",
+        '}',
+      ].join('\n'),
+    })
+    const kiss = fakeKiss()
+    const { registered } = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    expect(registered.map((h) => h.name).sort()).toEqual(['early', 'late'])
+  })
+
+  it('does not claim a helper registered by someone else meanwhile', async () => {
+    site = await makeSite({
+      'helpers/index.js': [
+        'export async function registerHelpers(kiss) {',
+        '  await new Promise((r) => setTimeout(r, 20))',
+        "  kiss.handlebars.registerHelper('theirs', () => 't')",
+        '}',
+      ].join('\n'),
+    })
+    const kiss = fakeKiss()
+    const loading = loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    // Inside the registrar's await window, on an unrelated stack — the build
+    // script registering a helper of its own.
+    await new Promise((r) => setTimeout(r, 10))
+    kiss.handlebars.registerHelper('mine', () => 'm')
+
+    const { registered } = await loading
+    expect(registered.map((h) => h.name)).toEqual(['theirs'])
+    expect(typeof kiss.registered.mine).toBe('function')
+  })
+
+  it('leaves someone else helper alone when the registrar throws', async () => {
+    site = await makeSite({
+      'helpers/index.js': [
+        'export async function registerHelpers(kiss) {',
+        '  await new Promise((r) => setTimeout(r, 20))',
+        "  kiss.handlebars.registerHelper('temporary', () => 't')",
+        "  throw new Error('boom')",
+        '}',
+      ].join('\n'),
+    })
+    const kiss = fakeKiss()
+    const loading = loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    await new Promise((r) => setTimeout(r, 10))
+    kiss.handlebars.registerHelper('mine', () => 'm')
+
+    const result = await loading
+    expect(result.loaded).toBe(false)
+    // The registrar own half-registration is undone; the other is not.
+    expect(kiss.registered.temporary).toBeUndefined()
+    expect(typeof kiss.registered.mine).toBe('function')
+  })
+})
