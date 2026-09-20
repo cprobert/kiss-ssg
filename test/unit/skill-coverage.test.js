@@ -233,6 +233,17 @@ const CONTRADICTIONS = [
       /checked to different depths, so do not read them as one promise/i,
     ],
   },
+  {
+    why: 'partials are registered in FIVE passes, not four — the .txt pass this branch added kept going missing from half of its own doc',
+    patterns: [
+      /four times in sequence/i,
+      /Registration order is html, then md, then hbs/i,
+    ],
+  },
+  {
+    why: 'examples 4 and 11 hand-type two hrefs on purpose (a build opened off the file system cannot use a root-relative {{link}}); claiming otherwise is falsified by the example itself',
+    patterns: [/Not one view in this site writes a URL/i],
+  },
 ]
 
 const consumerFacing = () => {

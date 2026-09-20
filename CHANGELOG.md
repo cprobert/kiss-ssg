@@ -45,6 +45,10 @@ Two details worth knowing:
   became `missing.css` — a different URL on a nested page.
 - If the file is genuinely put in the build by something other than kiss, copy
   it in with an extra `.copyAssets()` so the manifest knows about it.
+- **A `?query` or `#fragment` is fine**, and so is anything with a scheme or a
+  protocol-relative `//host/…`. `{{asset "img/logo.svg#symbol"}}` resolves the
+  sprite and keeps the fragment; `data:` URIs and `https://` pass straight
+  through. Only the path itself has to be in the build.
 
 ### ⚠️ A stylesheet that will not compile now fails the build
 

@@ -535,6 +535,68 @@ describe('asset', () => {
     expect(warnings).toHaveLength(0)
   })
 
+  // The case for failing rather than warning is that a rejected reference would
+  // otherwise be a 404. That is true of a missing file and false of all four
+  // shapes below, so failing them was the fix overreaching: an SVG sprite
+  // reference `img/logo.svg#symbol` names a file that IS in the manifest, and
+  // the build died telling the author it was not. `lib/links.js` already
+  // settles what counts as a reference into this build; `asset` follows it.
+  describe('references that are not a path into this build', () => {
+    const shapes = [
+      ['a protocol-relative host', '//cdn.example/x.css'],
+      ['a data: URI', 'data:image/png;base64,AA'],
+      ['a mailto: scheme', 'mailto:hi@example.com'],
+      ['an http URL', 'https://cdn.example/x.css'],
+    ]
+    it.each(shapes)('passes %s through untouched', (_name, value) => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(render(`{{asset "${value}"}}`)).toBe(value)
+    })
+  })
+
+  describe('a query or fragment on a path that IS in the build', () => {
+    it('keeps the fragment, and resolves the file', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(render('{{asset "css/site.css#symbol"}}')).toBe(
+        'css/site.css#symbol',
+      )
+    })
+
+    it('keeps the fragment under a renaming policy', () => {
+      hbs = makeHbs(
+        { assets: { hash: true, version: null } },
+        manifestOf(hashed),
+      )
+      expect(render('{{asset "css/site.css#symbol"}}')).toBe(
+        'css/site.a1b2c3d4.css#symbol',
+      )
+    })
+
+    it('keeps the author query, and does not add a second one under version', () => {
+      hbs = makeHbs(
+        { assets: { hash: false, version: '1.4.5' } },
+        manifestOf(plain),
+      )
+      const out = render('{{asset "css/site.css?v=1"}}')
+      expect(out).toContain('css/site.css?v')
+      expect(out).not.toContain('1.4.5')
+    })
+
+    it('still fails when the path under the query is not in the build', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(() => render('{{asset "css/nope.css?v=1"}}')).toThrow(
+        /css\/nope\.css/,
+      )
+    })
+
+    it('names the path it looked up, not the whole reference', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(() => render('{{asset "css/nope.css#x"}}')).toThrow(
+        /'css\/nope\.css'/,
+      )
+    })
+  })
+
   // A path no copy emitted fails the build, the same shape as `{{link}}` on an
   // id no page claims — they are the two halves of "never hand-write an
   // internal URL" and they used to be checked to different depths. Warning and

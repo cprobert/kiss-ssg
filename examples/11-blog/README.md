@@ -7,7 +7,7 @@ A blog is the shape most sites turn out to be underneath, and it is the shape an
 reinvents from first principles every time — usually badly, and usually in four specific places.
 Those four are what this example is: **a folder fan-out with a controller file**, **pagination**,
 **tag pages**, and **a feed**. Copy the one you need. Running through all four is a fifth habit
-worth stealing whole: **not one view in this site writes a URL** — every internal link is asked
+worth stealing whole: **no view in this site derives a page's URL** — every internal link is asked
 for by identity with `{{link}}`, and there is a recipe for that below too.
 
 ## Run it
@@ -159,7 +159,7 @@ also reaches the template, which is how the post page prints "formerly published
 
 ## Linking by identity
 
-Not one view in this site writes a URL. Every internal href that names a page is `{{link}}`:
+Every internal href that names a page **by its id** is `{{link}}`:
 
 ```hbs
 <h3><a href='{{link id}}'>{{title}}</a></h3>
@@ -167,6 +167,16 @@ Not one view in this site writes a URL. Every internal href that names a page is
 <a href='{{link model.prev}}'>&larr; Newer posts</a>
 <a href='{{link "blog"}}'>Back to the journal</a>
 ```
+
+**The two hrefs that are not `{{link}}`, and why.** The brand link in `layouts/layout.hbs` and the
+nav loop beside it are written `{{root}}index.html` and `{{root}}{{href}}` — hand-typed paths,
+against the rule `llms.txt` opens with. That is the one sanctioned exception: `{{link}}` emits a
+**root-relative** path (`/blog/`), which cannot resolve in a build opened straight off the file
+system by double-clicking `public/index.html`, and this example is meant to be openable that way.
+`{{root}}` is the climb back to the build root, supplied by the page — see the layout's own comment.
+The broken-internal-link scan still checks both, so a wrong one is reported rather than silent. A
+site served from a domain root has no reason to do this: use `{{link}}` everywhere and delete
+`{{root}}`.
 
 **What changed.** These were `href="{{url}}"` and `href="/blog/tags/{{slug}}/"`, and the strings
 behind them were built in the two controllers — `urlFor` in `controllers/post.js`, `tagUrl` in
