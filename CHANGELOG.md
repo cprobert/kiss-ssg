@@ -3,7 +3,19 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
-## 3.0.0 — 2026-09-20
+## 2.5.0 — 2026-09-20
+
+### ⚠️ Breaking changes, in a minor release
+
+Three of the changes below will fail a build that used to pass. That is
+deliberate, and it is a minor release on the same reasoning as 2.4.0's redirect
+change: the maintainer owns every site consuming this package, so a break is a
+migration he schedules rather than a promise made to strangers.
+
+**If you installed this from the registry expecting `^2.4.0` to be safe, these
+are the three paragraphs that explain why your build started failing** — and in
+all three cases the thing that now fails was already broken, silently, in the
+output you were publishing.
 
 ### ⚠️ Read this first: a missing asset now fails the build
 

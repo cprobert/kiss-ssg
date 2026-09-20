@@ -129,6 +129,18 @@ What moved it:
 Operator's call, 2026-09-20: **major**. A break that is real is better visible in the version than
 buried in a changelog entry, even when the person doing the migrating owns every consumer.
 
+**Correction, 2026-09-20 (same day, after the bump had been made): the release is 2.5.0, not 3.0.0.**
+The operator's answer at the pulse was read as choosing a major bump; it was not. The cause is mine —
+the question's option was labelled "Major — 2.5.0 is wrong", which reads either way, and I took the
+ambiguous half as confirmation rather than asking. The surface finding above stands unchanged: the
+branch **is** breaking, and `{{asset}}`, the Sass compile failure and the Sass partial skip will each
+fail a build that used to pass. What changes is how that break is versioned — a **minor**, on the
+same reasoning 2.4.0 used for the redirect change: the operator owns every consuming site, so a break
+is a migration he schedules rather than a promise made to strangers, and the changelog entry is where
+it is announced. `CHANGELOG.md` now opens the 2.5.0 entry with a "breaking changes, in a minor
+release" section saying exactly that, because a minor that breaks is only honest if it says so
+loudly.
+
 The branch's _theme_ did not drift — every round since R13 is the same subject it was opened for,
 kiss claiming something it cannot deliver. What drifted is the blast radius, and only that.
 
@@ -217,8 +229,9 @@ consumer, so a small breaking-shaped change costs a version bump rather than a m
   sibling-module restart notice in place, 78 watch tests green across `watch.test.js` and
   `watch-failure-lifecycle.test.js`, `npm run gates` green. Trajectory: 72 commits, 192 files,
   +11608/−670 against `main` — far past the captured intent, but thematically on it. **Drift: the
-  impact surface, recorded as a dated Amendment above** (patch → major; R25 is breaking, R22/R24/R29
-  changed report behaviour). **Eyeball: looked** — operator read R25's new build-failure message on
+  impact surface, recorded as a dated Amendment above** (patch → public API, breaking; R25 is
+  breaking, R22/R24/R29 changed report behaviour; versioned as a minor, see the correction under
+  that Amendment). **Eyeball: looked** — operator read R25's new build-failure message on
   a real build with a typo'd asset path (`asset: 'css/typo.css' is not in the build (asked by
 index.hbs) — no .copyAssets() emitted it…`) and judged it reads fine as it stands, including the
   repeated view name. Decision: **ready to close** — the finding yield inverted (R14–R29 were almost
@@ -374,7 +387,7 @@ index.hbs) — no .copyAssets() emitted it…`) and judged it reads fine as it s
 
 _A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
 
-**What we shipped:** 79 commits, `4d8710b`..`34461e5`, released as **3.0.0**. A branch that opened to make one dev-mode notice honest and closed having made the build's entire machine verdict honest — `{{asset}}` and a failing stylesheet now fail the build instead of shipping a 404 on a green run; `report()` no longer lags the failure list under `.watch()`; and roughly a dozen documentation claims that contradicted the code, or each other, were measured and corrected.
+**What we shipped:** 80 commits, `4d8710b`..`HEAD`, released as **2.5.0**. A branch that opened to make one dev-mode notice honest and closed having made the build's entire machine verdict honest — `{{asset}}` and a failing stylesheet now fail the build instead of shipping a 404 on a green run; `report()` no longer lags the failure list under `.watch()`; and roughly a dozen documentation claims that contradicted the code, or each other, were measured and corrected.
 
 ## Reflect — what the session was
 
@@ -410,6 +423,7 @@ Three dimensions discriminated this session. The rest were unremarkable and are 
 - **Claude — ask "what does this now swallow that it did not before?" at the point of writing a fix, not after.** Five fixes on this branch introduced a quieter defect than the loud one they removed. The QA session's phrasing, adopted here.
 - **Claude — a path comparison is wrong unless both sides are canonicalised, and a canonicalisation that can fail must be stable across the failure.** Seven instances on one branch. Now in `AIKB/kiss.md`. There is no mechanical guard for it and I could not invent one that was not a false-positive factory; the rule is the guard.
 - **Both — label which instrument produced which claim.** The QA session started doing this unprompted ("executed by me" / "relayed unverified" / "Codex ran read-only this round, so its magnitude numbers are stubs") and it changed what I did with individual findings more than the findings themselves did. On the `duration` defect I took its ordering evidence and discarded both magnitude figures, which was only possible because it had said which was which.
+- **Claude — never offer a question option whose label can be read both ways.** "Major — 2.5.0 is wrong" was meant as "a minor would be wrong, so go major", and was read back as the opposite. The operator had to correct a version bump that had already been made, the changelog written and the PR opened. An option label states the choice (`Major — 3.0.0`), and the reasoning goes in the description where it cannot be mistaken for the choice itself.
 - **Process — `/branch-pulse` caught the stale impact surface, and it was the only thing that could have.** The intent block still said "patch bump, no API change" while the branch carried a breaking change; `/branch-close` reads that block to propose the bump. A branch that closes unpulsed proposes the wrong semver from a stale field. Pulse at least once before closing anything that ran long.
 - **Operator — the verification instrument stays outside the loop it checks.** Recorded as a recommendation to keep, not to change: the battery was offered for adoption twice and declined twice, and every defect it found was one the in-repo gates passed.
 
@@ -427,7 +441,7 @@ The captured criteria, ticked against the evidence in the Pulse log:
 - [x] `sitemapLastmod` reachable from `llms.txt` § `.sitemap()`.
 - [x] One sentence states where helper modules live and what a dev edit to one does.
 - [x] A regression test exists for the dev-honesty behaviour and was seen to fail against the unfixed code.
-- [x] `npm run gates` passes — five gates green at 3.0.0.
+- [x] `npm run gates` passes — five gates green at 2.5.0.
 
 **What is concretely better:** a build that reports `ok` now means it. Three separate paths that shipped a broken site on a green verdict — a missing asset, an uncompilable stylesheet, a failure erased by a replay — all fail loudly. `report()` is trustworthy between settles under `.watch()`, where it previously lagged in both directions. Thirty-odd documentation claims that contradicted the code or each other were measured and corrected, and the mention-vs-contradiction blind spot that let them accumulate is now enforced by a `CONTRADICTIONS` table covering `AIKB/` as well as the consumer surfaces.
 
