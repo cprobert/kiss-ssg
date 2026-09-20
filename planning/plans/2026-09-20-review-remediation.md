@@ -264,14 +264,20 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   recorded on the failure object (a `WeakSet`), the key is canonicalised through `realpath`, and a
   replay re-runs the copies still holding a failure. Also corrects an `{{asset}}` claim R16 itself
   introduced — the helper strips a leading slash from an unknown path.
-- `<this commit>` **R18** — the last folder test in `_handleChange` that compared path spellings
+- `5e427b0` **R18** — the last folder test in `_handleChange` that compared path spellings
   rather than resolving. A site naming `src` relatively and `pages` absolutely lost the scoped
   page re-render on every page edit: safe (it fell through to the replay fallback) and therefore
   invisible. Measured on that config before the fix. This is the QA session's long-standing
   finding (e), which its own premise had outlived — `isInside` was fixed in R10; this is the one
   test beside it that was never converted.
 
-**Open at `<this commit>`:**
+- `<R19>` **R19** — restores the ESLint coverage the narrowing dropped (an explicit
+  `new URL('file:///C:/x').pathname`) as a second selector, and pins all three cases — both
+  file-URL forms caught, the http form deliberately not — in `test/unit/eslint-config.test.js`.
+  The coverage was lost silently because a lint rule that stops matching is indistinguishable
+  from a codebase with nothing to match; asserting what is NOT caught is what tells them apart.
+
+**Open at `<R19>`:**
 
 - **`report()` is stale between settles** — a scoped re-render and a watch asset re-copy call no
   `_finishBuild()`, so breaking a stylesheet on a watch save collects and logs the failure at once
@@ -279,8 +285,6 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   (`report()`'s docstring, `AIKB/kiss.md`, `AIKB/build-report.md`, `llms.txt`) rather than fixed:
   re-settling a build per keystroke is the wrong cost, and the honest statement is which rebuilds
   replace the report.
-- The ESLint selector no longer catches an explicit `file:` URL (narrowing it to remove a false
-  positive on `new URL('https://…').pathname` lost that case).
 - **The version string does not distinguish the branch from the release.** `package.json`,
   both plugin manifests and the installed 2.4.0 plugin cache all read `2.4.0` while carrying
   materially different skill text — so a consuming agent cannot tell which it has, and the cached

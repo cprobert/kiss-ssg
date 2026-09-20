@@ -35,6 +35,19 @@ export default [
           message:
             'new URL(..., import.meta.url).pathname is not a filesystem path on Windows (it yields /C:/...). Use fileURLToPath(new URL(..., import.meta.url)) from node:url.',
         },
+        {
+          // The other always-a-file-URL case, and the one the narrowing above
+          // dropped. Scoping to `import.meta.url` removed a false positive on
+          // `new URL('https://…').pathname` and took an explicit
+          // `new URL('file:///C:/x')` with it — same bug, written out longhand
+          // rather than derived from a base. A literal is the only form worth
+          // matching here: a variable holding a file URL is not decidable from
+          // the syntax, and guessing is how a lint rule starts crying wolf.
+          selector:
+            "MemberExpression[property.name='pathname'][object.type='NewExpression'][object.callee.name='URL'][object.arguments.0.value=/^file:/]",
+          message:
+            "new URL('file:…').pathname is not a filesystem path on Windows (it yields /C:/...). Use fileURLToPath() from node:url.",
+        },
       ],
     },
   },
