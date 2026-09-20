@@ -53,6 +53,44 @@ afterEach(async () => {
 })
 
 describe('watch()', () => {
+  // Every folder test in `_handleChange` resolves both sides but one, which
+  // compared two path SPELLINGS. `folders` derives the six from `src` so they
+  // normally share a form — but either can be given explicitly, and a site
+  // naming `src` relatively and `pages` absolutely made the page test false
+  // for every page edit. The consequence was the safe direction and therefore
+  // invisible: the view matched no stack entry and the edit fell through to
+  // the replay fallback, so a scoped re-render of one page silently became a
+  // whole-site rebuild.
+  it('scopes a page edit when src and pages are spelt differently', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'v1' })
+    const cwd = process.cwd()
+    process.chdir(site.root)
+    try {
+      kiss = new Kiss({
+        folders: { src: './src', pages: `${site.root}/src/pages` },
+        logger: silentLogger,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+
+      const calls = []
+      kiss._requestRebuild = (entries) => {
+        calls.push(['scoped', entries.length])
+        return Promise.resolve()
+      }
+      kiss._requestReplay = () => {
+        calls.push(['replay'])
+        return Promise.resolve()
+      }
+      // What the watcher emits for `folders.src`: a path in src's own form.
+      kiss._handleChange('change', 'src/pages/index.hbs')
+      expect(calls).toEqual([['scoped', 1]])
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
   it('rebuilds a changed page and can be closed', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
     kiss = new Kiss({ folders: site.folders, logger: silentLogger })

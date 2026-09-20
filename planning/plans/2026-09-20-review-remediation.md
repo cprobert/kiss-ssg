@@ -255,7 +255,23 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   JS/CSS; and `AIKB/assets.md` asserting the pre-R8 behaviour beside its replacement. Six new
   CONTRADICTIONS rows, and `AIKB/` added to the scanned set — it ships in the tarball.
 
-**Open at `bfc577d`:**
+- `5b44f11` **R17** — R14's carry introduced its mirror image, found by the QA session, plus two of
+  the same family from an independent review. One fix, not four: a second asset root's failure was
+  unclearable (nothing re-ran that copy); a page whose inline-template `view` began `<sass: ` was
+  carried for ever (the carry decision was pattern-matching a string the author writes); the copy
+  key preserved the path's spelling, so two spellings of one directory were two owners on a
+  case-insensitive filesystem; and a successful copy stored an empty map entry. Carriage is now
+  recorded on the failure object (a `WeakSet`), the key is canonicalised through `realpath`, and a
+  replay re-runs the copies still holding a failure. Also corrects an `{{asset}}` claim R16 itself
+  introduced — the helper strips a leading slash from an unknown path.
+- `<this commit>` **R18** — the last folder test in `_handleChange` that compared path spellings
+  rather than resolving. A site naming `src` relatively and `pages` absolutely lost the scoped
+  page re-render on every page edit: safe (it fell through to the replay fallback) and therefore
+  invisible. Measured on that config before the fix. This is the QA session's long-standing
+  finding (e), which its own premise had outlived — `isInside` was fixed in R10; this is the one
+  test beside it that was never converted.
+
+**Open at `<this commit>`:**
 
 - **`report()` is stale between settles** — a scoped re-render and a watch asset re-copy call no
   `_finishBuild()`, so breaking a stylesheet on a watch save collects and logs the failure at once
