@@ -17,4 +17,4 @@ node 1-scan.js --dev   # live preview on http://127.0.0.1:3001
 `1-scan.js` — twelve lines, and the shortest complete kiss script there is. Copy the folder
 convention with it: `pages/`, `models/` and `controllers/` mirroring each other under
 `folders.src`, with `layouts`, `partials` and `assets` named explicitly when they live
-somewhere else (here, the shared theme in `_shared/`).
+somewhere else (here, this example's own `src/assets`).

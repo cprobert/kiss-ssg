@@ -1,14 +1,26 @@
 # kiss-ssg examples
 
-Eleven runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery. The shared
-layout, stylesheet and partials live in `_shared/`; each example keeps its own pages, models and
-controllers, and its own `router.js` at its root. Every site builds into `public/<example>/` at
-the repo root, which is gitignored.
+Eleven runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery. **Each one is
+a standalone project you can copy wholesale**: `router.js` at its root, everything it renders under
+`src/`, its own copy of the layout and stylesheet, and its output in its own gitignored `public/`.
 
 **These are written for an agent reading them as reference while building a site for somebody
-else.** That is why every example is laid out as a real site rather than as a script beside a
-folder: you run one from its own directory (`cd 3-pages && node router`), exactly as you would run
-the site you are about to build. Two things vary across the set, and both are labelled — the
+else**, so copying one has to actually work. That means an example carries nothing that only makes
+sense inside this repository: every one imports the engine as `import Kiss from 'kiss-ssg'`, the
+way a consuming project does, and none of them reaches outside its own folder. They used to share a
+`_shared/` theme and build into a single repo-root `public/`, which made each router carry a
+relative import, an escaping build path and a `folders` block no real project would write — and an
+agent copying the first line got a path that did not exist. The duplicated layout is the price of
+that, and it is worth paying.
+
+Most of them configure **no folders at all**. `src: './src'` and `build: './public'` are the
+defaults, so a site laid out the ordinary way says nothing about folders; the ones that do name a
+folder are demonstrating a reason to (a versioned build target, a knowledge base beside the source).
+That is the convention-first design in `CLAUDE.md` doing its job, and it is the first thing an
+example should teach.
+
+You run one from its own directory (`cd 3-pages && node router`), exactly as you would run the site
+you are about to build. Two things vary across the set, and both are labelled — the
 kiss-ssg **feature** each one demonstrates, and the **router shape** it has grown into. The second
 is the subject of `llms.txt` § The build script, and the table below indexes it, because an agent
 arrives at one example rather than reading the set in order.

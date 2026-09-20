@@ -3,8 +3,27 @@
 // symptom; the trigger for a `helpers/` folder is helpers outgrowing the route
 // table, and there are none (llms.txt § The build script).
 import { existsSync, readdirSync } from 'node:fs'
-import Kiss from '../../lib/kiss.js'
-import { sharedFolders, site } from '../_shared/site.js'
+import Kiss from 'kiss-ssg'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 // The "cohort" here is a season: a fresh menu built once and never rebuilt.
 // It becomes a filesystem path (`folders.build`), so it has to look like a
@@ -19,7 +38,7 @@ if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(season)) {
   process.exit(1)
 }
 
-const archiveDir = '../../public/7-versioned-outputs'
+const archiveDir = './public'
 const seasonDir = `${archiveDir}/${season}`
 
 // One Kiss instance per season. `folders.build` is the only thing that
@@ -30,9 +49,6 @@ const kiss = new Kiss({
   season,
   nav: [{ href: 'index.html', label: 'This season' }],
   folders: {
-    src: '.',
-    layouts: sharedFolders.layouts,
-    partials: sharedFolders.partials,
     build: seasonDir,
     // Each season must still be renderable years after the shared assets
     // folder has moved on, so it carries its own copy of the CSS rather than
@@ -47,7 +63,7 @@ const kiss = new Kiss({
   dev: false,
   verbose: true,
 })
-  .copyAssets(sharedFolders.assets, seasonDir)
+  .copyAssets('./src/assets', seasonDir)
   .scan()
   .generate()
 
@@ -82,7 +98,6 @@ const indexKiss = new Kiss({
   site,
   seasons,
   folders: {
-    src: '.',
     build: archiveDir,
     // No assets of its own: a copied stylesheet would land in `archiveDir`
     // itself and the next run's `readdirSync` above would list it as if it

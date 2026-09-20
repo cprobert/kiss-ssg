@@ -7,16 +7,35 @@
 // adapter over it; the folder cost one file and one import.
 import { existsSync } from 'node:fs'
 // `utils` is a named export in v2, not `kiss-ssg/libs/utils.js`.
-import Kiss, { utils } from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import Kiss, { utils } from 'kiss-ssg'
 import { registerHelpers } from './helpers/index.js'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 const dev = process.argv.includes('--dev')
 
 // Named once, because the page below reports it: under `npx kiss-ssg check` and
 // `npx kiss-ssg aikb` the engine builds into a staging sibling with a random
 // name, so `kiss.config.folders.build` is not the same string twice.
-const buildFolder = '../../public/9-migrated-from-v1'
+const buildFolder = './public'
 
 const kiss = new Kiss({
   site,
@@ -25,10 +44,7 @@ const kiss = new Kiss({
   // v1 defaults but no module ever read them, so they are gone rather than
   // quietly ignored — a `root:` key here would just sit there unread.
   folders: {
-    src: '.',
     build: buildFolder,
-    layouts: sharedFolders.layouts,
-    assets: sharedFolders.assets,
     // The knowledge base is source, not output: it lives beside the site's own
     // files, survives cleanBuild, and is committed. Not derived from `src`,
     // which is why it is named here rather than picked up with the rest.
@@ -181,7 +197,7 @@ kiss
   })
   // v2 fires this after the files are written, so a callback can read them.
   .generate(function () {
-    const written = existsSync('../../public/9-migrated-from-v1/index.html')
+    const written = existsSync('./public/index.html')
     console.log(
       `generate: index.html on disk when the callback ran: ${written}`,
     )

@@ -5,11 +5,30 @@
 // duplication, not by file length, so a site can reach it while its helpers are
 // still at tier 0. This router has no custom helpers and therefore no
 // `helpers/` folder, which is the convention working rather than a gap.
-import Kiss from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
-import { loadPosts, summaryCard } from './controllers/post.js'
-import { tagRecords } from './controllers/tag.js'
+import Kiss from 'kiss-ssg'
+import { loadPosts, summaryCard } from './src/controllers/post.js'
+import { tagRecords } from './src/controllers/tag.js'
 import { journal } from './config/site.js'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 const dev = process.argv.includes('--dev')
 
@@ -31,16 +50,8 @@ const kiss = new Kiss({
     { href: 'blog/index.html', label: 'All posts', folderMatch: true },
     { href: 'blog/tags/index.html', label: 'Tags' },
   ],
-  folders: {
-    src: '.',
-    build: '../../public/11-blog',
-    layouts: sharedFolders.layouts,
-    assets: sharedFolders.assets,
-    // Source, not output: it sits outside the build folder, survives
-    // cleanBuild, and is committed. Nothing here writes it —
-    // `npx kiss-ssg aikb 11-blog.js` does, from a build that passed.
-    aikb: './AIKB',
-  },
+  // No `folders` block: `src: './src'` and `build: './public'` are the
+  // defaults, so a site laid out the ordinary way configures nothing.
   // Every URL derived from the registry — the sitemap's <loc>, the feed's
   // <link> and <guid>, each page's {{canonical}}, and the target of every
   // redirect — is joined onto this. Without it the feed and the sitemap log an
@@ -69,7 +80,7 @@ const kiss = new Kiss({
 // the records *before* any page is registered, so the script reads them too —
 // through the same module that validates them, which is what keeps the two
 // readings from drifting.
-const posts = loadPosts('./models/posts')
+const posts = loadPosts('./src/models/posts')
 const cards = posts.map(summaryCard)
 const tags = tagRecords(cards)
 
@@ -184,7 +195,7 @@ kiss
     sections: { root: 'The site', blog: 'The journal' },
   })
   // And the file that tells a crawler the sitemap above exists. This used to be
-  // a static `robots.txt` copied from `_shared/assets/` — two lines that never
+  // a static `robots.txt` copied from `src/assets/` — two lines that never
   // mentioned the sitemap this very example generates, which is the gap
   // `.robots()` was built to close. The `Sitemap:` line is produced by the same
   // join as every `<loc>`, so it cannot drift from the file `.sitemap()` wrote,

@@ -3,8 +3,27 @@
 // extract. The `helpers/` folder in llms.txt § The build script is earned by
 // YOUR helpers outgrowing the route table, and a site can use all six built-ins
 // without ever writing one.
-import Kiss from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import Kiss from 'kiss-ssg'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 const dev = process.argv.includes('--dev')
 
@@ -14,14 +33,8 @@ const kiss = new Kiss({
     { href: 'index.html', label: 'Helpers' },
     { href: 'brew-guide.html', label: 'Brew guide' },
   ],
-  folders: {
-    src: '.',
-    build: '../../public/5-helpers',
-    // Partials stay local — two of them are here to be pulled in by the
-    // markdown and dynamic-partial demos.
-    layouts: sharedFolders.layouts,
-    assets: sharedFolders.assets,
-  },
+  // No `folders` block: `src: './src'` and `build: './public'` are the
+  // defaults, so a site laid out the ordinary way configures nothing.
   verbose: true,
   dev,
   // A second site can run alongside the others as long as both ports differ.

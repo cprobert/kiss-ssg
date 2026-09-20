@@ -1,22 +1,22 @@
 {
   "site": {
     "siteUrl": null,
-    "build": "../../public/9-migrated-from-v1",
+    "build": "./public",
     "folders": {
       "aikb": "./AIKB",
-      "assets": "../_shared/assets",
-      "controllers": "./controllers",
+      "assets": "./src/assets",
+      "controllers": "./src/controllers",
       "helpers": "./helpers",
-      "layouts": "../_shared/layouts",
-      "models": "./models",
-      "pages": "./pages",
-      "partials": "./partials",
-      "src": "."
+      "layouts": "./src/layouts",
+      "models": "./src/models",
+      "pages": "./src/pages",
+      "partials": "./src/partials",
+      "src": "./src"
     }
   },
   "pages": [
     {
-      "buildTo": "../../public/9-migrated-from-v1/await-complete.html",
+      "buildTo": "./public/await-complete.html",
       "id": "await-complete",
       "view": "await-complete.hbs",
       "model": "none",
@@ -26,7 +26,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/duplicate-paths.html",
+      "buildTo": "./public/duplicate-paths.html",
       "id": "duplicate-paths",
       "view": "duplicate-paths.hbs",
       "model": "inline",
@@ -36,7 +36,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/dynamic-partials.html",
+      "buildTo": "./public/dynamic-partials.html",
       "id": "dynamic-partials",
       "view": "dynamic-partials.hbs",
       "model": "inline",
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/folders.html",
+      "buildTo": "./public/folders.html",
       "id": "folders",
       "view": "folders.hbs",
       "model": "inline",
@@ -58,7 +58,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/handlebars-instance.html",
+      "buildTo": "./public/handlebars-instance.html",
       "id": "handlebars-instance",
       "view": "handlebars-instance.hbs",
       "model": "inline",
@@ -69,7 +69,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/index.html",
+      "buildTo": "./public/index.html",
       "id": "index",
       "view": "index.hbs",
       "model": "none",
@@ -79,7 +79,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/pure-controllers.html",
+      "buildTo": "./public/pure-controllers.html",
       "id": "pure-controllers",
       "view": "pure-controllers.hbs",
       "model": "inline",
@@ -89,7 +89,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/shelf/arch-blend.html",
+      "buildTo": "./public/shelf/arch-blend.html",
       "id": "shelf/item/arch-blend",
       "view": "shelf/item.hbs",
       "model": "inline",
@@ -99,7 +99,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/shelf/guji-uraga.html",
+      "buildTo": "./public/shelf/guji-uraga.html",
       "id": "shelf/item/guji-uraga",
       "view": "shelf/item.hbs",
       "model": "inline",
@@ -109,7 +109,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/shelf/oak-cascara.html",
+      "buildTo": "./public/shelf/oak-cascara.html",
       "id": "shelf/item/oak-cascara",
       "view": "shelf/item.hbs",
       "model": "inline",
@@ -119,7 +119,7 @@
       ]
     },
     {
-      "buildTo": "../../public/9-migrated-from-v1/smaller-changes.html",
+      "buildTo": "./public/smaller-changes.html",
       "id": "smaller-changes",
       "view": "smaller-changes.hbs",
       "model": "none",
@@ -131,38 +131,38 @@
   ],
   "partials": {
     "layout": [
-      "../../public/9-migrated-from-v1/await-complete.html",
-      "../../public/9-migrated-from-v1/duplicate-paths.html",
-      "../../public/9-migrated-from-v1/dynamic-partials.html",
-      "../../public/9-migrated-from-v1/folders.html",
-      "../../public/9-migrated-from-v1/handlebars-instance.html",
-      "../../public/9-migrated-from-v1/index.html",
-      "../../public/9-migrated-from-v1/pure-controllers.html",
-      "../../public/9-migrated-from-v1/shelf/arch-blend.html",
-      "../../public/9-migrated-from-v1/shelf/guji-uraga.html",
-      "../../public/9-migrated-from-v1/shelf/oak-cascara.html",
-      "../../public/9-migrated-from-v1/smaller-changes.html"
+      "./public/await-complete.html",
+      "./public/duplicate-paths.html",
+      "./public/dynamic-partials.html",
+      "./public/folders.html",
+      "./public/handlebars-instance.html",
+      "./public/index.html",
+      "./public/pure-controllers.html",
+      "./public/shelf/arch-blend.html",
+      "./public/shelf/guji-uraga.html",
+      "./public/shelf/oak-cascara.html",
+      "./public/smaller-changes.html"
     ],
     "sourcing-note": [
-      "../../public/9-migrated-from-v1/dynamic-partials.html"
+      "./public/dynamic-partials.html"
     ],
     "stock-note": [
-      "../../public/9-migrated-from-v1/dynamic-partials.html",
-      "../../public/9-migrated-from-v1/handlebars-instance.html"
+      "./public/dynamic-partials.html",
+      "./public/handlebars-instance.html"
     ]
   },
   "models": [
     {
       "source": "inline",
       "pages": [
-        "../../public/9-migrated-from-v1/duplicate-paths.html",
-        "../../public/9-migrated-from-v1/dynamic-partials.html",
-        "../../public/9-migrated-from-v1/folders.html",
-        "../../public/9-migrated-from-v1/handlebars-instance.html",
-        "../../public/9-migrated-from-v1/pure-controllers.html",
-        "../../public/9-migrated-from-v1/shelf/arch-blend.html",
-        "../../public/9-migrated-from-v1/shelf/guji-uraga.html",
-        "../../public/9-migrated-from-v1/shelf/oak-cascara.html"
+        "./public/duplicate-paths.html",
+        "./public/dynamic-partials.html",
+        "./public/folders.html",
+        "./public/handlebars-instance.html",
+        "./public/pure-controllers.html",
+        "./public/shelf/arch-blend.html",
+        "./public/shelf/guji-uraga.html",
+        "./public/shelf/oak-cascara.html"
       ]
     }
   ],
@@ -170,15 +170,15 @@
     {
       "source": "file:shelf-item.js",
       "pages": [
-        "../../public/9-migrated-from-v1/shelf/arch-blend.html",
-        "../../public/9-migrated-from-v1/shelf/guji-uraga.html",
-        "../../public/9-migrated-from-v1/shelf/oak-cascara.html"
+        "./public/shelf/arch-blend.html",
+        "./public/shelf/guji-uraga.html",
+        "./public/shelf/oak-cascara.html"
       ]
     },
     {
       "source": "inline",
       "pages": [
-        "../../public/9-migrated-from-v1/pure-controllers.html"
+        "./public/pure-controllers.html"
       ]
     }
   ],
@@ -188,7 +188,7 @@
       "kind": "controllers",
       "id": "shelf-item.js",
       "note": "notes/controllers/shelf-item.md",
-      "hash": "8bfa290248f68febbcea3d6c759bcc8b55eaf6dd"
+      "hash": "76acd457db16d39eb3c0e3c11ff589b0a06d3632"
     }
   ]
 }
