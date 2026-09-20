@@ -222,6 +222,32 @@ consumer, so a small breaking-shaped change costs a version bump rather than a m
   Decision: **continue** — the branch stays open until the downstream Codex review has run against
   the new tip, since that review is the only thing outside this session that can say the fixes hold.
 
+- **2026-09-20 (second round — the remediation's own defects)** — a downstream Codex review plus a
+  peer session's probe harness found six defects introduced BY the eleven fixes. All six fixed
+  (`43186e2`, `0ab339c`, `3eb949b`), each re-derived here by execution before being acted on.
+  The one that matters:
+
+  - **The feature did not work in its own default configuration, and all five gates were green.**
+    `folders.helpers` defaults to the relative `./helpers`; chokidar emits relative events;
+    `helpersEntry` returns absolute. Every entry edit was classified as an un-reloadable sibling —
+    on the branch whose entire purpose is to stop a dev rebuild lying about what it picked up.
+    Reproduced locally, and confirmed by the peer on Windows and on a real site.
+  - **The coverage gap is the transferable lesson.** Every test named the folder absolutely;
+    `grep -rn "'./helpers'" test/` returned nothing. The tested path and the shipped path were
+    different paths. A convention that ships a default needs a test that exercises the default,
+    not a convenient absolute stand-in for it.
+  - **The same mistake twice in one branch.** The restart notice was narrowed to `.js`/`.mjs`/`.cjs`
+    in `_handleChange` earlier on this branch, because a data file read at render time DOES reload.
+    I then wrote a second dispatch that demanded a restart for `labels.json`.
+  - **"Pages fail loudly" was an overstatement I made and had to withdraw.** Measured: an
+    argument-less `{{copyright}}` renders empty rather than throwing, and `_rebuild` swallows the
+    per-page rejection so the stale file stays on disk.
+  - **P7's Linux-only caveat is retired** on the peer's Windows run — the one thing this session
+    could not verify for itself.
+
+  Decision: **continue**. The peer is in a sustained verification loop at the operator's direction;
+  fixes go out as they land rather than batched.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->

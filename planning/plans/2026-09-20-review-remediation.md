@@ -169,3 +169,45 @@ Left unverified, stated rather than buried:
   editing `helpers/format.js` still has to restart. A loader hook could make it reload; nothing
   here tries.
 - **P10 is a reading, not a test.** Nothing fails if llms.txt contradicts itself again.
+
+## Second round — 2026-09-20, after the peer re-review
+
+The remediation above introduced six defects of its own, found by a downstream Codex review and a
+peer session's probe harness. Every one was re-derived here by execution before being acted on, per
+the repo's rule on relayed findings — and the worst of them was real.
+
+| Finding | Commit    | What it was                                                                    |
+| ------- | --------- | ------------------------------------------------------------------------------ |
+| R1a     | `43186e2` | **the feature was inert in its own default configuration** (see below)         |
+| R1b     | `43186e2` | deleting the active entry never activated an existing `index.mjs` fallback     |
+| R1c     | `43186e2` | a data file beside the helpers was told to restart, when a rebuild picks it up |
+| R2a     | `0ab339c` | a registrar that threw part-way left its own registrations behind, untracked   |
+| R2b     | `0ab339c` | "continues without site helpers" kept the previous load's helpers registered   |
+| R3a     | `3eb949b` | rendering was not ordered against the reload's empty-registry window           |
+| R3b     | `3eb949b` | a helpers folder inside `src` was dispatched by both watchers                  |
+
+**R1a is the one that matters.** `resolveConfig` leaves `./helpers` relative, chokidar emits relative
+events, and `helpersEntry` returns an absolute path; `posixPath` swaps separators and resolves
+nothing. So every edit to the **entry** took the sibling branch: restart notice, no reload, no
+rebuild. Reproduced here in a temp cwd with the shipped default, and confirmed independently by the
+peer on Windows and on a real site.
+
+The coverage gap that hid it is the lesson, not the bug. Every test in the suite named the folder
+absolutely — `grep -rn "'./helpers'" test/` returned nothing — so **the tested path and the shipped
+path were different paths**, and all five gates stayed green through a feature that did not work.
+A convention with a default needs a test that uses the default.
+
+Two more things corrected rather than fixed:
+
+- **"Pages fail loudly" was overstated**, in a commit message and in `AIKB/kiss.md`. Measured:
+  `{{shout "hi"}}` throws and is logged; `{{copyright}}` with no arguments renders **empty**,
+  because Handlebars treats an argument-less mustache as a missing property rather than a missing
+  helper; and `_rebuild` catches per page, so the stale file stays on disk. The console is loud, the
+  served bytes are stale. Corrected in place.
+- **P7's Linux-only caveat is retired.** The peer ran the full gates on Windows: green, and
+  `test/unit/site-helpers.test.js` was 1-failed at the old tip and 14-passed after the fix. That is
+  the evidence this session could not produce.
+
+Still open, and honestly so: Codex's objection to P3's `required` line — that treating _any_ import
+exception as evidence the folder is kiss's own is wrong, with a browser-utility barrel touching
+`window` at top level as the counterexample. It predates this remediation and is not fixed here.
