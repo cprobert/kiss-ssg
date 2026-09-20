@@ -328,6 +328,8 @@ declare class Kiss {
     /** @private */
     private _aikbVerdict;
     /** @private */
+    private _finishedAt;
+    /** @private */
     private _failures;
     /** @private */
     private _carriedFailures;
@@ -628,13 +630,20 @@ declare class Kiss {
      * first `.complete()` has settled. The same object is on the rejection as
      * `err.report`.
      *
-     * A whole-site replay replaces it with its own. Anything else that changes
-     * the failure list without settling a build — a watch asset re-copy, a
-     * helpers reload — refreshes it in place (`_refreshReport()`), so the
-     * verdict is never behind the log: a stylesheet broken by a save is on
-     * `failures` and `ok` is `false` as soon as the copy that found it
-     * finishes. A scoped page re-render changes no failures and so changes
-     * nothing here.
+     * A whole-site replay replaces it with its own. Anything else that puts a
+     * failure on the list without settling a build — a watch asset re-copy, a
+     * helpers reload, a callback that runs after an earlier settle — refreshes
+     * it in place (`_refreshReport()`), so the verdict never trails the
+     * failures: a stylesheet broken by a save is on `failures` and `ok` is
+     * `false` as soon as the copy that found it finishes.
+     *
+     * The honest scope is "never behind `failures`", not "never behind the
+     * log". A scoped page re-render (`_rebuild`) catches each page's rejection
+     * and records nothing, so a page that starts failing under `.watch()` is in
+     * neither list — loud in the console, absent from both. That predates this
+     * and is a gap, not a subtlety: it is on the open list rather than fixed
+     * here, because fixing it changes what a watch rebuild reports rather than
+     * how it reports it.
      *
      * What a refresh does not move is the metadata of the build it describes:
      * `duration` and `startedAt` still name the settle that produced it. It is

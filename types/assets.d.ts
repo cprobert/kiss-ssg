@@ -11,13 +11,17 @@ export function compileSassFiles(sourceDir: string, targetDir: string, { config,
     config: any;
     logger: any;
 }): Promise<SassResult>[];
-export function copyAssets(sourceDir: any, targetDir: any, { config, logger, manifest }: {
+export function copyAssets(sourceDir: any, targetDir: any, { config, logger, manifest, display, }: {
     config: any;
     logger: any;
     manifest?: {
         record(urlPath: any, emittedPath: any): any;
         lookup(urlPath: any): any;
         toObject(): any;
+    };
+    display?: {
+        source?: string;
+        target?: string;
     };
 }): Promise<{
     id: string;

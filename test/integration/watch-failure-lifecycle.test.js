@@ -286,6 +286,42 @@ describe('a failure the replay cannot re-derive', () => {
     },
   )
 
+  // A destination that does not exist AT REGISTRATION but does by the time the
+  // copy has run. Both keys used to be computed synchronously, before any
+  // queued copy had created anything, so two spellings of one destination that
+  // was not there yet — the ordinary case on a fresh build — each kept their
+  // own. Keying after the copy fixes it, because by then the target exists and
+  // both spellings resolve to it.
+  //
+  // Windows-gated like the case test below and for the same reason: on a
+  // case-sensitive filesystem `out` and `OUT` genuinely ARE two destinations,
+  // so the assertion would be false rather than merely unexercised. It runs on
+  // CI's `windows-latest` leg.
+  it.skipIf(process.platform !== 'win32')(
+    'keys two spellings of a not-yet-created destination as one copy',
+    async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'vendor/css/lib.scss': 'body { color: ',
+      })
+      kiss = new Kiss({
+        folders: { ...site.folders, assets: null },
+        logger: silentLogger,
+      })
+      // Neither spelling exists yet; the copies create them.
+      kiss.copyAssets(`${site.root}/vendor`, `${site.root}/out`)
+      kiss.copyAssets(`${site.root}/vendor`, `${site.root}/OUT`)
+      kiss.scan().generate()
+      await expect(kiss.complete()).rejects.toThrow()
+      expect(kiss._sassFailures.size).toBe(1)
+
+      await site.touch('vendor/css/lib.scss', 'body { color: red; }')
+      kiss.copyAssets(`${site.root}/vendor`, `${site.root}/out`)
+      await kiss._assetQueue
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+    },
+  )
+
   // The case half, which only means anything on a case-insensitive
   // filesystem. It is not dead weight in CI: `.github/workflows/ci.yml` runs
   // the gates on `windows-latest` as well as `ubuntu-latest`, precisely
@@ -343,6 +379,57 @@ describe('a failure the replay cannot re-derive', () => {
       expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
     },
   )
+
+  // The INITIAL copy, not just the replayed one. The queued copy used to
+  // re-resolve the caller's raw arguments when the queue drained, so anything
+  // that moved the working directory in between copied a different folder,
+  // wrote it somewhere else, and recorded the result under the original's key.
+  it('runs the initial copy against the directory it was registered in', async () => {
+    site = await makeSite({
+      'a/src/pages/index.hbs': 'hi',
+      'a/vendor/css/lib.scss': 'body { color: red; }',
+      'b/vendor/css/lib.scss': 'body { color: ',
+    })
+    const cwd = process.cwd()
+    process.chdir(`${site.root}/a`)
+    try {
+      kiss = new Kiss({
+        folders: { src: `${site.root}/a/src`, build: `${site.root}/a/public` },
+        logger: silentLogger,
+      })
+      kiss.copyAssets('./vendor', './out')
+      // Before the queue drains.
+      process.chdir(`${site.root}/b`)
+      kiss.scan().generate()
+      await kiss.complete()
+
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+      expect(await site.exists('a/out/css/lib.css')).toBe(true)
+      expect(await site.exists('b/out')).toBe(false)
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  // A refresh re-derives the report; it must not re-measure the build. The
+  // duration is the build's, not the session's — a watch session left open
+  // over lunch reported an hour-long build.
+  it('keeps the settled duration across a refresh', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'hi',
+      'src/assets/css/site.scss': 'body { color: red; }',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger, dev: true })
+      .scan()
+      .generate()
+    await kiss.complete()
+    const settled = kiss.report().duration
+
+    await new Promise((r) => setTimeout(r, 120))
+    kiss.copyAssets(`${site.root}/src/assets`, `${site.root}/public`)
+    await kiss._assetQueue
+    expect(kiss.report().duration).toBe(settled)
+  })
 
   // `_assetCopies` is what a replay re-runs, and a replay happens later. A
   // relative path recorded as written is re-resolved against whatever the
