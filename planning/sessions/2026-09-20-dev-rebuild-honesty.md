@@ -157,6 +157,23 @@ bytes matched; had they drifted, stale CSS ships with a green build and a clean 
 person who notices is a visitor comparing the site to last year. In scope: a warning when one emitted
 path is claimed by both a sass compile and a plain copy, plus a regression test seen red first.
 
+**2026-09-20 — scope and impact surface widened (operator-authorised).** The intent captured at open
+read the branch as "dev honesty + the cheap docs fixes". The operator has restated it: the branch's
+actual remit is **the swan-love correspondence itself — take value from it wherever it improves kiss,
+and stop only when the two sessions have concluded**. That is broader than the captured Objective, and
+it changes two recorded fields:
+
+- **Impact surface: now public API**, not engine internals + tooling & docs. `folders.helpers` and
+  registering `.txt` partials are both observable to a consuming site. **The bump is therefore minor,
+  not patch**, and `/docs-sweep` now obliges `llms.txt`, `README.md` and regenerated `types/`.
+- **The non-goals list is superseded** for anything the correspondence surfaced. `{{url}}` (F4),
+  `.txt` partials, the `src: './src'` example and `folders.helpers` are all in scope now.
+
+The operator's stated reason for widening rather than deferring: swan-love is a legacy site that will
+not be revisited once this closes, so the value has to be extracted while the channel is open. And the
+API latitude is real and deliberate — he owns every repository consuming this library and is its only
+consumer, so a small breaking-shaped change costs a version bump rather than a migration.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;
