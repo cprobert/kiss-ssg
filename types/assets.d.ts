@@ -1,13 +1,16 @@
-export function compileSassFiles(sourceDir: any, targetDir: any, { config, logger }: {
+/**
+ * @typedef {{ file: string, error?: Error, skipped?: boolean }} SassResult
+ *
+ * @param {string} sourceDir
+ * @param {string} targetDir
+ * @param {{ config: any, logger: any }} deps
+ * @returns {Promise<SassResult>[]} one per stylesheet it saw — compiled,
+ * failed, or skipped as a partial
+ */
+export function compileSassFiles(sourceDir: string, targetDir: string, { config, logger }: {
     config: any;
     logger: any;
-}): Promise<{
-    file: string;
-    error?: undefined;
-} | {
-    file: string;
-    error: Error;
-}>[];
+}): Promise<SassResult>[];
 export function copyAssets(sourceDir: any, targetDir: any, { config, logger, manifest }: {
     config: any;
     logger: any;
@@ -24,23 +27,16 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
 } | {
     id: string;
     data: string;
-    sass: ({
-        file: string;
-        error?: undefined;
-    } | {
-        file: string;
-        error: Error;
-    })[];
+    sass: SassResult[];
     error?: undefined;
 } | {
     id: string;
     data: any;
     error: any;
-    sass: ({
-        file: string;
-        error?: undefined;
-    } | {
-        file: string;
-        error: Error;
-    })[];
+    sass: SassResult[];
 }>;
+export type SassResult = {
+    file: string;
+    error?: Error;
+    skipped?: boolean;
+};

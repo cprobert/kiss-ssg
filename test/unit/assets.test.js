@@ -227,14 +227,78 @@ describe('copyAssets manifest', () => {
       logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
       manifest: createAssetManifest(),
     })
-    expect(result.sass.map((s) => s.file)).toEqual(['css/main.scss'])
-    expect(result.sass[0].error).toBeUndefined()
+    // The partial is reported as skipped rather than omitted — the caller
+    // needs to know it was seen and deliberately not compiled.
+    const compiled = result.sass.filter((s) => !s.skipped)
+    expect(compiled.map((s) => s.file)).toEqual(['css/main.scss'])
+    expect(compiled[0].error).toBeUndefined()
+    expect(result.sass.filter((s) => s.skipped).map((s) => s.file)).toEqual([
+      'css/_buttons.scss',
+    ])
     expect(await site.exists('out/css/main.css')).toBe(true)
     // ...and the partial emits nothing of its own, which is the point of it.
     expect(await site.exists('out/css/_buttons.css')).toBe(false)
     // The partial's source is not copied through either — it is Sass, not an
     // asset a page can link.
     expect(await site.exists('out/css/_buttons.scss')).toBe(false)
+  })
+
+  // Adopting the partial convention silently removed a naming choice that
+  // used to work: `_vendor.scss`, self-contained and imported by nothing, was
+  // emitted as `_vendor.css` before and emits nothing now — measured, with
+  // ZERO mentions anywhere in the build log. A site serving that file starts
+  // serving a 404 after a clean build and nothing says why. Third time on this
+  // branch that a fix for a loud wrong behaviour introduced a quiet one, which
+  // is why the skip is now reported rather than assumed.
+  it('says which sass partials it skipped', async () => {
+    site = await makeSite({
+      'a/css/_buttons.scss': '.b{}',
+      'a/css/_forms.scss': '.f{}',
+      'a/css/main.scss': 'body{color:red}',
+    })
+    const info = vi.fn()
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, info },
+      manifest: createAssetManifest(),
+    })
+    const said = info.mock.calls.map((c) => c.join(' ')).join('\n')
+    expect(said).toContain('_buttons.scss')
+    expect(said).toContain('_forms.scss')
+    // One line for the set, not one per file: a site with a dozen partials
+    // should not get a dozen lines every build.
+    expect(
+      info.mock.calls.filter(([m]) => /partial/i.test(String(m))),
+    ).toHaveLength(1)
+    // Skipped files are reported to the caller too, distinguishably.
+    expect(
+      result.sass
+        .filter((s) => s.skipped)
+        .map((s) => s.file)
+        .sort(),
+    ).toEqual(['css/_buttons.scss', 'css/_forms.scss'])
+  })
+
+  // The collision detector claimed the skipped partial as a compiled source,
+  // so a legitimately served `_theme.css` beside a `_theme.scss` was reported
+  // as an overwrite that never happened — advising the author to delete a file
+  // that is correctly consumed by another entry point. That is the P4 warning
+  // firing on a case that no longer exists.
+  it('does not claim a skipped partial as a compiled source', async () => {
+    site = await makeSite({
+      'a/css/_theme.scss': '.t{}',
+      'a/css/_theme.css': '.served{}',
+    })
+    const warn = vi.fn()
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, warn },
+      manifest: createAssetManifest(),
+    })
+    expect(
+      warn.mock.calls.filter(([m]) => /compiles to/.test(String(m))),
+    ).toEqual([])
+    expect((await site.read('out/css/_theme.css')).trim()).toBe('.served{}')
   })
 
   it('does not warn when only a sass source emits that path', async () => {

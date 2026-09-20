@@ -52,7 +52,7 @@ describe('a stylesheet that does not compile', () => {
     })
       .scan()
       .generate()
-    await expect(kiss.complete()).rejects.toThrow(/<sass: css\/style\.scss>/)
+    await expect(kiss.complete()).rejects.toThrow(/<sass: .*css\/style\.scss>/)
     expect(kiss.report().ok).toBe(false)
   })
 
@@ -72,6 +72,48 @@ describe('a stylesheet that does not compile', () => {
       .generate()
     await expect(kiss.complete()).rejects.toThrow()
     expect(await site.exists('public/css/fine.css')).toBe(true)
+  })
+
+  // Failure identity was the source-relative filename alone, so two asset
+  // roots collided: a second `.copyAssets()` whose own `css/theme.scss`
+  // compiles CLEARED the first root's failed `css/theme.scss`, and the build
+  // reported success with the primary stylesheet missing.
+  it("keeps two asset roots' failures apart", async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/theme.scss': 'body { color: $undefined; }',
+      'vendor/css/theme.scss': 'body { color: red; }',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+    kiss.copyAssets(`${site.root}/vendor`, `${site.build}/vendor`)
+    kiss.scan().generate()
+    await expect(kiss.complete()).rejects.toThrow(/theme\.scss/)
+    expect(kiss.report().ok).toBe(false)
+  })
+
+  // Cleanup only covered the files the latest compile returned, so deleting or
+  // renaming a broken stylesheet left its failure recorded with nothing able
+  // to clear it.
+  it('clears a failure when the broken stylesheet is deleted', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/broken.scss': 'body { color: $undefined; }',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow()
+
+    await fs.remove(`${site.src}/assets/css/broken.scss`)
+    kiss.copyAssets(site.folders.src + '/assets', site.build)
+    await kiss._assetQueue
+    expect(kiss._failures.filter((f) => /^<sass:/.test(f.view))).toEqual([])
   })
 
   it('says nothing when every stylesheet compiles', async () => {
