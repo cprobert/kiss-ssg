@@ -468,9 +468,14 @@ declare class Kiss {
     /** @private */
     /**
      * Marks a failure as one a whole-site replay carries rather than drops,
-     * and returns it so the caller can push it in one expression. Only a
-     * producer that can re-check its own failure later may use this — see the
-     * note above the class.
+     * and returns it so the caller can push it in one expression.
+     *
+     * The bar is that the failure must still be TRUE after a replay — which is
+     * satisfied either by a producer that re-checks it (`copyAssets`,
+     * `_loadHelpers`) or by one whose failure is terminal and can never stop
+     * being true (`<dev server>`: startup is constructor-only and nothing
+     * retries it). An earlier version of this block said only the first half,
+     * which made the one deliberate terminal case read as a mistake.
      *
      * @template {{ view: string }} T
      * @param {T} failure

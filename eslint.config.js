@@ -43,8 +43,14 @@ export default [
           // rather than derived from a base. A literal is the only form worth
           // matching here: a variable holding a file URL is not decidable from
           // the syntax, and guessing is how a lint rule starts crying wolf.
+          // Case-insensitive, and tolerant of leading whitespace, because the
+          // URL parser is both: `FILE:///C:/x` and ` file:///C:/x` produce the
+          // same `/C:/x` the rule exists to prevent, and the first version of
+          // this selector missed both — a ban that does not cover the spellings
+          // of the thing it bans. `https://h/file:x` stays unflagged and should:
+          // its pathname is `/file:x`, which is not a filesystem path.
           selector:
-            "MemberExpression[property.name='pathname'][object.type='NewExpression'][object.callee.name='URL'][object.arguments.0.value=/^file:/]",
+            "MemberExpression[property.name='pathname'][object.type='NewExpression'][object.callee.name='URL'][object.arguments.0.value=/^\\s*[Ff][Ii][Ll][Ee]:/]",
           message:
             "new URL('file:…').pathname is not a filesystem path on Windows (it yields /C:/...). Use fileURLToPath() from node:url.",
         },

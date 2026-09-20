@@ -37,6 +37,29 @@ describe('the file-URL pathname ban', () => {
     ).toEqual([1])
   })
 
+  // The URL parser is case-insensitive about the scheme and tolerates leading
+  // whitespace, so a ban that only matches one spelling does not ban the
+  // thing: all three of these produce the same `/C:/x`.
+  it('catches the scheme in any case', async () => {
+    expect(
+      await lintSource("const p = new URL('FILE:///C:/x').pathname"),
+    ).toEqual([1])
+  })
+
+  it('catches a leading space before the scheme', async () => {
+    expect(
+      await lintSource("const p = new URL(' file:///C:/x').pathname"),
+    ).toEqual([1])
+  })
+
+  it('leaves an http URL whose PATH contains file: alone', async () => {
+    // `/file:x` is a pathname, not a filesystem path — flagging it would be
+    // the over-matching the narrowing was done to avoid.
+    expect(
+      await lintSource("const p = new URL('https://h/file:x').pathname"),
+    ).toEqual([])
+  })
+
   it('leaves a real http URL alone, which is correct usage', async () => {
     // `lib/links.js` reads `.pathname` off an http URL on purpose. A blanket
     // ban would reject it, and a lint rule that cries wolf gets disabled.

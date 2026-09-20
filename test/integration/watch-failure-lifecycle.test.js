@@ -217,7 +217,12 @@ describe('a failure the replay cannot re-derive', () => {
       .scan()
       .generate()
     await kiss.complete()
+    // Both maps, pruned together: a replay re-runs a copy only to re-check a
+    // failure, so a copy with none needs no registration either. Keeping one
+    // and not the other is how a long-lived process copying into a fresh
+    // destination each run accumulates an entry per success.
     expect(kiss._sassFailures.size).toBe(0)
+    expect(kiss._assetCopies.size).toBe(0)
   })
 
   // The copy key is canonicalised through `realpath`, not just resolved,
@@ -285,6 +290,72 @@ describe('a failure the replay cannot re-derive', () => {
       expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
     },
   )
+
+  // A copy's key has to be the same string before and after its target
+  // folder exists. `realpath` with a `resolve` fallback is not: it throws
+  // ENOENT for a folder about to be created, falls back to the spelling, and
+  // then returns the canonical spelling once the folder is there — one copy,
+  // two keys, and the failure the first run recorded can never be cleared.
+  it('keys a copy the same before and after its target exists', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'hi',
+      'vendor/css/lib.scss': 'body { color: ',
+    })
+    try {
+      await fs.symlink(`${site.root}/real`, `${site.root}/alias`, 'dir')
+      await fs.ensureDir(`${site.root}/real`)
+    } catch {
+      return // Windows needs a privilege for a directory symlink.
+    }
+    kiss = new Kiss({
+      folders: { ...site.folders, assets: null },
+      logger: silentLogger,
+      dev: true,
+    })
+    // `alias` exists; `alias/out` does not, and this copy creates it.
+    kiss.copyAssets(`${site.root}/vendor`, `${site.root}/alias/out`)
+    kiss.scan().generate()
+    await expect(kiss.complete()).rejects.toThrow()
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+
+    await site.touch('vendor/css/lib.scss', 'body { color: red; }')
+    await kiss._replay().catch(() => {})
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+  })
+
+  // `_assetCopies` is what a replay re-runs, and a replay happens later. A
+  // relative path recorded as written is re-resolved against whatever the
+  // working directory is by then.
+  it('replays a relative copy against the directory it was registered in', async () => {
+    site = await makeSite({
+      'a/src/pages/index.hbs': 'hi',
+      'a/vendor/css/lib.scss': 'body { color: ',
+      'b/vendor/css/lib.scss': 'body { color: blue; }',
+    })
+    const cwd = process.cwd()
+    process.chdir(`${site.root}/a`)
+    try {
+      kiss = new Kiss({
+        folders: { src: './src', assets: null },
+        logger: silentLogger,
+        dev: true,
+      })
+      kiss.copyAssets('./vendor', './out/vendor')
+      kiss.scan().generate()
+      await expect(kiss.complete()).rejects.toThrow()
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+
+      await fs.outputFile(
+        `${site.root}/a/vendor/css/lib.scss`,
+        'body { color: red; }',
+      )
+      process.chdir(`${site.root}/b`)
+      await kiss._replay().catch(() => {})
+      expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+    } finally {
+      process.chdir(cwd)
+    }
+  })
 
   it('still clears a failure the replay does re-derive', async () => {
     site = await makeSite({
