@@ -69,9 +69,20 @@ consuming site" recommendation (09-06, 09-10, 09-12) finally paying out.
 - **Making the edit actually live.** No process restart, no cache-busting re-import. This branch
   makes the failure honest; it does not make helper or entry-script edits take effect.
 - F2 (a sibling `.css` silently overwriting compiled `.scss` — verified: `lib/assets.js:96` compiles,
-  `:98` copies over the top, and `report().assets` shows a single entry so `check` cannot see it).
-  Real and valuable, deferred because it touches the asset manifest, where the `examples.test.js`
-  self-heal problem noted on 2026-09-16 lives.
+  `:98` copies over the top). Real and valuable, deferred because it touches the asset manifest, where the
+  `examples.test.js` self-heal problem noted on 2026-09-16 lives.
+
+  **Correction, 2026-09-20 (this session was wrong).** I told the swan-love session that
+  `report().assets` showing a single entry meant the manifest does not record sass output, so the fix
+  would need a manifest redesign. It does record it. `recordEmitted` (`lib/assets.js:60`) globs the
+  **source** dir and rewrites `.scss`/`.sass` to `.css` for the key, so sass output is keyed by its
+  compiled name — measured here: a `.scss`-only source yields
+  `{source: 'css/only.css', target: 'css/only.css'}` with no `.scss` in the build. A collision is
+  therefore **two writes to one key**, the second overwriting the first, and detecting it is local to
+  that loop. The originally suggested `logger.warn` is viable and the job is smaller than this non-goal
+  first claimed. The peer caught this; I had inferred absence from a single entry without reading the
+  loop that produced it.
+
 - F5(b), the `/docs` dangling-reference bug — reported, not yet re-derived here.
 - F4, a built-in `{{url}}` helper for external URLs — a public API addition, a different impact
   surface and a different bump.
