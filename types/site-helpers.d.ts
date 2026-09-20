@@ -76,13 +76,28 @@ export function isActiveHelpersEntry(folder: string | null | undefined, file: st
  * not an exception thrown through the constructor.
  *
  * `required` says whether the author named this folder or kiss guessed it, and
- * it changes one branch: an entry that exports **no registrar at all**. That is
- * the evidence the folder belongs to someone else — an upgrading site whose
- * root `helpers/` holds unrelated utilities — so a guessed folder warns and the
- * build carries on, while a folder the author pointed kiss at is a failure. A
- * folder that breaks rather than declining (an import that throws, a registrar
- * that throws) fails either way: that one is ours and broken, and shipping it
- * would lose every helper silently.
+ * it decides **how much evidence kiss needs before running a stranger's code**.
+ *
+ * Named by the author: `registerHelpers`, or a default export, and anything
+ * that goes wrong is a build failure. They pointed kiss here.
+ *
+ * Guessed: only the **named** `registerHelpers` export is trusted, because that
+ * name is the opt-in and a default export is the ordinary shape of every module
+ * ever written. `registerHelpers ?? default` used to call any default-exported
+ * function with the kiss instance, so an unrelated utility barrel in a root
+ * `helpers/` — a formatter, a client factory, a `connect()` — was invoked and
+ * its throw killed the build of a site that had never heard of this
+ * convention. Measured on four entry shapes. kiss now does not call it at all:
+ * a side effect is as bad as an exception, and a catch cannot undo one. An
+ * import that throws is the same judgement — a browser-utility barrel touching
+ * `window` at the top level is fine in a bundle and throws in Node, and tells
+ * us nothing about whose folder this is — so a guessed folder warns and carries
+ * on.
+ *
+ * What does **not** soften: a module that exports `registerHelpers` by name is
+ * unambiguously kiss's, whoever chose the folder, so a throw from it is a build
+ * failure either way. A broken registrar on a green build renders every
+ * `{{helper}}` as nothing, which is the failure this module exists to prevent.
  *
  * @param {string|null|undefined} folder `config.folders.helpers`
  * @typedef {{ name: string, prior: import('handlebars').HelperDelegate|undefined }} OwnedHelper
@@ -127,13 +142,28 @@ export function loadSiteHelpers(folder: string | null | undefined, { kiss, logge
  * not an exception thrown through the constructor.
  *
  * `required` says whether the author named this folder or kiss guessed it, and
- * it changes one branch: an entry that exports **no registrar at all**. That is
- * the evidence the folder belongs to someone else — an upgrading site whose
- * root `helpers/` holds unrelated utilities — so a guessed folder warns and the
- * build carries on, while a folder the author pointed kiss at is a failure. A
- * folder that breaks rather than declining (an import that throws, a registrar
- * that throws) fails either way: that one is ours and broken, and shipping it
- * would lose every helper silently.
+ * it decides **how much evidence kiss needs before running a stranger's code**.
+ *
+ * Named by the author: `registerHelpers`, or a default export, and anything
+ * that goes wrong is a build failure. They pointed kiss here.
+ *
+ * Guessed: only the **named** `registerHelpers` export is trusted, because that
+ * name is the opt-in and a default export is the ordinary shape of every module
+ * ever written. `registerHelpers ?? default` used to call any default-exported
+ * function with the kiss instance, so an unrelated utility barrel in a root
+ * `helpers/` — a formatter, a client factory, a `connect()` — was invoked and
+ * its throw killed the build of a site that had never heard of this
+ * convention. Measured on four entry shapes. kiss now does not call it at all:
+ * a side effect is as bad as an exception, and a catch cannot undo one. An
+ * import that throws is the same judgement — a browser-utility barrel touching
+ * `window` at the top level is fine in a bundle and throws in Node, and tells
+ * us nothing about whose folder this is — so a guessed folder warns and carries
+ * on.
+ *
+ * What does **not** soften: a module that exports `registerHelpers` by name is
+ * unambiguously kiss's, whoever chose the folder, so a throw from it is a build
+ * failure either way. A broken registrar on a green build renders every
+ * `{{helper}}` as nothing, which is the failure this module exists to prevent.
  */
 export type OwnedHelper = {
     name: string;

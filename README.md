@@ -756,7 +756,7 @@ If any page fails to render or write, the other pages still build but `.complete
 try {
   await kiss.scan().generate().complete()
 } catch (err) {
-  console.error(err.message) // e.g. 1 page(s) failed to build: public/about.html
+  console.error(err.message) // e.g. 1 build failure: public/about.html
   process.exitCode = 1
 }
 ```

@@ -66,6 +66,27 @@ describe('a root helpers/ folder that kiss does not own', () => {
     ).toBe(true)
   })
 
+  // The message called a helpers module a page — `1 page(s) failed to build:
+  // .../helpers/index.js` — which sends the author to look at their pages.
+  // Every pseudo-view on `_failures` has the same problem: `<pipeline>`,
+  // `<redirects>`, `<dev server>` are not pages either.
+  it('names the failure as site helpers rather than as a page', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js':
+        "export function registerHelpers() { throw new Error('broken registrar') }",
+    })
+    const kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow(
+      /build failure.*<site helpers>/s,
+    )
+  })
+
   it('fails the build when the author named the folder', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'ok',
@@ -244,7 +265,7 @@ describe('build failures', () => {
     kiss.scan().generate()
 
     await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: .*index\.html/,
+      /1 build failure: .*index\.html/,
     )
     expect(await site.exists('public/about.html')).toBe(true)
 
@@ -293,7 +314,7 @@ describe('build failures', () => {
       .generate()
 
     await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: .*broken\.html/,
+      /1 build failure: .*broken\.html/,
     )
     expect(await site.exists('public/good.html')).toBe(true)
     expect(await site.exists('public/broken.html')).toBe(false)
@@ -436,9 +457,7 @@ describe('a bad controller', () => {
       })
       .generate()
 
-    await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: index\.hbs/,
-    )
+    await expect(kiss.complete()).rejects.toThrow(/1 build failure: index\.hbs/)
   })
 })
 

@@ -173,7 +173,7 @@ describe("cleanBuild: 'atomic'", () => {
       logger: silentLogger,
     })
     kiss.scan().generate()
-    await expect(kiss.complete()).rejects.toThrow(/failed to build/)
+    await expect(kiss.complete()).rejects.toThrow(/build failure/)
 
     await kiss.close()
     expect(staging(site.root)).toEqual([])

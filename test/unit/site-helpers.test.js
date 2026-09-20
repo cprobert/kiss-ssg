@@ -567,6 +567,89 @@ describe('loadSiteHelpers', () => {
     expect(logger.notice).not.toHaveBeenCalled()
   })
 
+  // The hole P3 left, measured on four entry shapes rather than argued: the
+  // guard covered a module exporting the wrong THINGS, and missed a module
+  // that is the right SHAPE by accident. `registerHelpers ?? default` calls
+  // any default-exported function with the kiss instance, so an ordinary
+  // utility barrel — a formatter, a client factory, a connect() — was invoked
+  // and its throw killed a build for a folder nobody opted into.
+  //
+  // So a folder kiss GUESSED is trusted only on the named `registerHelpers`
+  // export. That name is the opt-in; a default export is the ordinary shape of
+  // every module ever written. And kiss does not merely survive the stranger's
+  // throw, it never calls the stranger at all — a side effect is as bad as an
+  // exception and a catch cannot undo one.
+  it('does not call a default export at all when it guessed the folder', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "let called = false\nexport default function connect() { called = true; throw new Error('needs a DSN') }\nexport const wasCalled = () => called",
+    })
+    const logger = { ...silentLogger, warn: vi.fn(), error: vi.fn() }
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss: fakeKiss(),
+      logger,
+      required: false,
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.loaded).toBe(false)
+    expect(logger.error).not.toHaveBeenCalled()
+    const { wasCalled } = await import(`${site.root}/helpers/index.js`)
+    expect(wasCalled()).toBe(false)
+  })
+
+  // A module kiss cannot even import tells us nothing about whose it is — a
+  // browser-utility barrel touching `window` at the top level is fine in a
+  // bundle and throws in Node. Measured as a HARD FAIL before this: exit 1 for
+  // a folder the author never pointed kiss at.
+  it('warns rather than failing when a guessed folder will not import', async () => {
+    site = await makeSite({
+      'helpers/index.js': 'export const href = globalThis.window.location.href',
+    })
+    const logger = { ...silentLogger, warn: vi.fn(), error: vi.fn() }
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss: fakeKiss(),
+      logger,
+      required: false,
+    })
+    expect(result.error).toBeUndefined()
+    expect(logger.warn).toHaveBeenCalled()
+  })
+
+  // The other side of the same line, and why it is safe to soften the guessed
+  // case: a module that exports `registerHelpers` BY NAME is unambiguously
+  // kiss's, whoever chose the folder. A throw from that one is a broken
+  // registrar, and a broken registrar on a green build renders every
+  // {{helper}} as nothing.
+  it('still fails on a throwing registerHelpers export, even when guessed', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers() { throw new Error('broken registrar') }",
+    })
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss: fakeKiss(),
+      logger: { ...silentLogger, error: vi.fn() },
+      required: false,
+    })
+    expect(result.error).toBeInstanceOf(Error)
+  })
+
+  // An author who named the folder meant it, so the default export is still
+  // accepted there — that is the documented shape and it does not change.
+  it('still accepts a default export when the author named the folder', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export default (kiss) => kiss.handlebars.registerHelper('x', () => 1)",
+    })
+    const kiss = fakeKiss()
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+      required: true,
+    })
+    expect(result.loaded).toBe(true)
+    expect(kiss.registered.x()).toBe(1)
+  })
+
   // The caller needs to know which names the site's registrar added, and only
   // those: a built-in kiss helper is not the site's to unregister later.
   it('reports only the names the site registrar added', async () => {
