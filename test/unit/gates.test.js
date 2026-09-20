@@ -216,6 +216,29 @@ describe('formatGate', () => {
     expect(result.note).toBe('whole repo (no diff against origin/v2)')
   })
 
+  // Windows' cmd.exe answers a command line over 8191 characters with "The
+  // syntax of the command is incorrect", and this branch's own diff — 202
+  // files, 8117 characters of paths — is what found that: `windows-latest`
+  // failed the format gate while `ubuntu-latest` passed it. The whole-tree
+  // fallback is the answer the empty-diff case already gives, and it asks a
+  // superset of the question. The budget is one number on every platform, so
+  // the two CI legs never check different things.
+  it('checks the whole repo when the changed files would overflow a command line', () => {
+    const { calls, run } = spy()
+    const files = Array.from(
+      { length: 200 },
+      (_, i) => `lib/a-module-with-a-fairly-long-name-${i}.js`,
+    )
+    const result = formatGate('origin/v2', { files }, run)
+    expect(calls).toEqual([
+      { cmd: 'npx', args: ['prettier', '--check', '--ignore-unknown', '.'] },
+    ])
+    expect(result.ok).toBe(true)
+    expect(result.note).toBe(
+      'whole repo (200 changed files overflow one command line)',
+    )
+  })
+
   it('fails with the git error when the diff could not be taken', () => {
     const { calls, run } = spy()
     const result = formatGate(

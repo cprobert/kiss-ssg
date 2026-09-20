@@ -105,6 +105,26 @@ function changedFiles(base) {
 // An empty diff is the normal case on the base branch itself (CI push,
 // prepublishOnly) — checking nothing there would mean the gate never runs. The
 // repo is prettier-clean, so falling back to the whole tree is cheap and honest.
+// Windows' cmd.exe takes a command line of at most 8191 characters and answers
+// a longer one with "The syntax of the command is incorrect" — no mention of
+// length, and nothing prettier said. That is what this branch's own diff did to
+// the `windows-latest` leg: 202 changed files, 8117 characters of paths, one
+// gate red while `ubuntu-latest` was green. `run` uses a shell on win32 because
+// Node cannot spawn `npx.cmd` without one, so the arguments become one command
+// line there and the limit is real.
+//
+// The answer is the one the empty-diff case already gives: check the whole tree.
+// It asks a superset of the gate's question and the repo is prettier-clean by
+// policy, which is the same assumption that branch rests on. The budget is one
+// number on every platform on purpose — a threshold that only existed on Windows
+// would mean the two CI legs check different things, which is the drift the
+// matrix exists to catch rather than create.
+const COMMAND_LINE_BUDGET = 6000
+
+export function commandLineLength(files) {
+  return files.reduce((n, f) => n + f.length + 1, 0)
+}
+
 export function formatGate(base, diff, run) {
   // Same rule as the pack gate: a gate that cannot see its subject fails.
   if (diff.error !== undefined)
@@ -113,13 +133,16 @@ export function formatGate(base, diff, run) {
       output: `could not diff against ${base}:\n${diff.error}`,
     }
   const wholeRepo = diff.files.length === 0
+  const overflows = commandLineLength(diff.files) > COMMAND_LINE_BUDGET
   const note = wholeRepo
     ? `whole repo (no diff against ${base})`
-    : `${diff.files.length} changed files`
+    : overflows
+      ? `whole repo (${diff.files.length} changed files overflow one command line)`
+      : `${diff.files.length} changed files`
   // `.prettierignore` decides what is out of scope (build output, .hbs);
   // `--ignore-unknown` drops anything prettier has no parser for, so the
   // gate can just hand it every changed file.
-  const target = wholeRepo ? ['.'] : diff.files
+  const target = wholeRepo || overflows ? ['.'] : diff.files
   return {
     ...run('npx', ['prettier', '--check', '--ignore-unknown', ...target]),
     note,
