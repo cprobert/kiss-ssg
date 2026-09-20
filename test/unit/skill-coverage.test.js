@@ -129,6 +129,20 @@ const COVERAGE = [
     ],
   },
   {
+    // Added after `folders.helpers` shipped and both skills kept telling an
+    // agent to put helpers under `src/` — the shape kiss now warns about. The
+    // row above matches `/router\.js/`, which stayed true while the prose
+    // around it went wrong, so presence of the filename was never enough: a
+    // skill has to name the config key to have said anything about it.
+    feature:
+      'folders.helpers — where helpers live, and that kiss registers them',
+    pattern: /folders\.helpers/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+    ],
+  },
+  {
     feature: "the site map's Id column as the link targets",
     pattern: /\bId\b.*column|`Id`|\*\*Id\*\*/,
     skills: [
