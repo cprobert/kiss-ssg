@@ -549,6 +549,24 @@ describe('loadSiteHelpers', () => {
     expect(said).toContain('registerHelpers')
   })
 
+  // The diagnostic cannot actually see a second invocation — it sees a name
+  // that was already there — so it must not accuse a site that is deliberately
+  // overriding a helper some other collection registered. Requiring EVERY name
+  // the registrar registered to have been present narrows it to the shape that
+  // really is a re-run, and the wording no longer prescribes a fix for a call
+  // it cannot prove exists.
+  it('says nothing when the registrar only overrides some of what was there', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('url', () => '/x'); kiss.handlebars.registerHelper('fresh', () => 1) }",
+    })
+    const kiss = fakeKiss()
+    kiss.handlebars.registerHelper('url', () => '/from-another-collection')
+    const logger = { ...silentLogger, notice: vi.fn() }
+    await loadSiteHelpers(`${site.root}/helpers`, { kiss, logger })
+    expect(logger.notice).not.toHaveBeenCalled()
+  })
+
   // ...and overriding a kiss built-in is a legitimate thing to do, so it must
   // not be reported as a redundant hand-call.
   it('does not say it about a built-in the registrar deliberately overrides', async () => {
@@ -648,6 +666,84 @@ describe('loadSiteHelpers', () => {
     })
     expect(result.loaded).toBe(true)
     expect(kiss.registered.x()).toBe(1)
+  })
+
+  // R6 drew the trust line by EXPORT NAME, which cannot be read from a module
+  // that did not import — so every import failure in a guessed folder was
+  // downgraded to a warning, and a genuine registrar with a typo in it warned
+  // and let the build continue with no helpers at all, exit 0. That is worse
+  // than the hazard R6 fixed, because the author deliberately wrote that file.
+  //
+  // The discriminator moves BEFORE the import: the entry's source is read, and
+  // a guessed folder is imported only when it declares `registerHelpers`. That
+  // restores the rule at the point where it can still be applied — and means
+  // kiss no longer executes a stranger's module at all, since importing is
+  // executing.
+  it.each([
+    ['a syntax error', 'export function registerHelpers(k) { k.handlebars.'],
+    [
+      'a top-level throw',
+      "export function registerHelpers() {}\nthrow new Error('boom')",
+    ],
+  ])(
+    'fails a guessed folder whose registrar declares itself and %s',
+    async (_l, src) => {
+      site = await makeSite({ 'helpers/index.js': src })
+      const result = await loadSiteHelpers(`${site.root}/helpers`, {
+        kiss: fakeKiss(),
+        logger: { ...silentLogger, error: vi.fn() },
+        required: false,
+      })
+      expect(result.error).toBeInstanceOf(Error)
+    },
+  )
+
+  // ...and the module that started all this still declines, without being run.
+  it('declines a guessed folder that never mentions registerHelpers, without importing it', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        'globalThis.__kissRanAStranger = true\nexport default () => {}',
+    })
+    delete globalThis.__kissRanAStranger
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss: fakeKiss(),
+      logger: { ...silentLogger, warn: vi.fn() },
+      required: false,
+    })
+    expect(result.error).toBeUndefined()
+    expect(globalThis.__kissRanAStranger).toBeUndefined()
+  })
+
+  // An import failure is not this load doing something, so it must not claim
+  // ownership changed. Returning `registered: []` there cleared the caller's
+  // list while the previous load's helpers were still registered — so a later
+  // delete removed nothing and a later success could capture the stale
+  // override as its own `prior` and keep it for ever.
+  it('leaves ownership alone when the import fails', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('a', () => 'A') }",
+    })
+    const kiss = fakeKiss()
+    const first = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    await new Promise((r) => setTimeout(r, 10))
+    await site.touch(
+      'helpers/index.js',
+      'export function registerHelpers(k) { k.handlebars.',
+    )
+    const second = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: { ...silentLogger, error: vi.fn() },
+      fresh: true,
+      previous: first.registered,
+      required: false,
+    })
+    expect(second.error).toBeInstanceOf(Error)
+    expect(second.registered).toBeUndefined() // ownership unchanged
+    expect(kiss.registered.a()).toBe('A') // and the helpers are still live
   })
 
   // The caller needs to know which names the site's registrar added, and only
