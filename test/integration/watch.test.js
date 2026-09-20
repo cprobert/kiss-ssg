@@ -345,6 +345,120 @@ describe('watch()', () => {
     expect(kiss.handlebars.helpers.gone).toBeUndefined()
   })
 
+  // A data file beside the helpers is not a stuck module: whatever helper
+  // reads it reads it at RENDER time, so re-rendering picks the edit up. The
+  // restart notice fired for it anyway — the same lie in reverse that this
+  // branch already had to correct once in `_handleChange`, made again one
+  // dispatch over.
+  it('re-renders for a data file beside the helpers instead of asking for a restart', async () => {
+    const notices = []
+    const logger = {
+      ...silentLogger,
+      notice: (...a) => notices.push(a.join(' ')),
+    }
+    site = await makeSite({
+      'src/pages/index.hbs': '{{label}}',
+      'helpers/labels.json': JSON.stringify({ label: 'ONE' }),
+      'helpers/index.js': [
+        "import fs from 'node:fs'",
+        "const here = new URL('.', import.meta.url).pathname",
+        'export function registerHelpers(kiss) {',
+        "  kiss.handlebars.registerHelper('label', () =>",
+        "    JSON.parse(fs.readFileSync(here + 'labels.json', 'utf8')).label)",
+        '}',
+      ].join('\n'),
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('ONE')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await site.touch('helpers/labels.json', JSON.stringify({ label: 'TWO' }))
+    await waitFor(async () => (await site.read('public/index.html')) === 'TWO')
+    expect(notices.filter((n) => /restart/i.test(n))).toEqual([])
+  })
+
+  // Deleting the entry when a fallback is present is not a delete at all: it
+  // is a change of which file is the entry. Resolving the entry AFTER the
+  // deletion made the file that had just vanished look like a sibling, so
+  // neither the fallback loaded nor the old helpers went away.
+  it('loads the fallback entry when the active one is deleted', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{shout "hi"}}',
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'JS-' + s) }",
+      'helpers/index.mjs':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'MJS-' + s) }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('JS-hi')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+
+    await fs.remove(`${site.root}/helpers/index.js`)
+    await waitFor(
+      async () => (await site.read('public/index.html')) === 'MJS-hi',
+    )
+  })
+
+  // EVERY other test in this file names `helpers` with an absolute path, and
+  // `grep -rn "'./helpers'" test/` returned nothing across the whole suite.
+  // The defaulted configuration — the convention this feature ships, and the
+  // one every real site gets — had no watch test at all, so the tested path
+  // and the shipped path were different paths.
+  //
+  // What that hid: `resolveConfig` does not resolve `./helpers` to an
+  // absolute path, chokidar watches the relative path and emits relative
+  // events, and `helpersEntry` returns an absolute one. Separator
+  // normalisation alone never makes those equal, so an edit to the ENTRY was
+  // classified as a sibling: restart notice, no reload, no rebuild. On this
+  // branch, whose whole purpose is to stop a dev rebuild lying about what it
+  // picked up.
+  it('reloads an edited entry when folders.helpers is the relative default', async () => {
+    const cwd = process.cwd()
+    const notices = []
+    const logger = {
+      ...silentLogger,
+      notice: (...a) => notices.push(a.join(' ')),
+    }
+    site = await makeSite({
+      'src/pages/index.hbs': '{{shout "hi"}}',
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'ONE-' + s) }",
+    })
+    process.chdir(site.root)
+    try {
+      kiss = new Kiss({ logger }).scan().generate()
+      await kiss.complete()
+      expect(await site.read('public/index.html')).toBe('ONE-hi')
+      kiss.watch({ entry: null })
+      await kiss._watcher.ready
+
+      await site.touch(
+        'helpers/index.js',
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'TWO-' + s) }",
+      )
+      await waitFor(
+        async () => (await site.read('public/index.html')) === 'TWO-hi',
+      )
+      expect(notices.filter((n) => /restart/i.test(n))).toEqual([])
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
   // The reload busts the cache for the ENTRY only. `index.js`'s own
   // `import './format.js'` resolves to the un-busted URL, so the sibling comes
   // back from the ESM cache and the registrar re-registers the OLD helper —

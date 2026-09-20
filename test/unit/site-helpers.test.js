@@ -1,5 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { helpersEntry, loadSiteHelpers } from '../../lib/site-helpers.js'
+import {
+  helpersEntry,
+  isHelpersEntry,
+  loadSiteHelpers,
+} from '../../lib/site-helpers.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
@@ -60,6 +64,63 @@ describe('helpersEntry', () => {
     const entry = helpersEntry(`${site.root}/h`)
     expect(entry).not.toContain('\\')
     expect(entry).toBe(`${site.root}/h/index.js`)
+  })
+})
+
+// The question `Kiss` actually has to answer on a watch event is not "what is
+// the entry now" but "is THIS file an entry" — and it has to answer it for a
+// path chokidar produced, which is relative when the watched folder is.
+describe('isHelpersEntry', () => {
+  it('matches a relative folder against a relative event, and an absolute against an absolute', async () => {
+    site = await makeSite({
+      'h/index.js': 'export function registerHelpers() {}',
+    })
+    const cwd = process.cwd()
+    process.chdir(site.root)
+    try {
+      // The shipped default: `resolveConfig` leaves `./helpers` relative,
+      // chokidar watches the relative path and emits relative events, and
+      // `helpersEntry` returns an absolute one. Separator normalisation alone
+      // never makes those equal.
+      expect(isHelpersEntry('./h', 'h/index.js')).toBe(true)
+      expect(isHelpersEntry('./h', `${site.root}/h/index.js`)).toBe(true)
+      expect(isHelpersEntry(`${site.root}/h`, 'h/index.js')).toBe(true)
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  it('is false for a sibling module and for a file outside the folder', async () => {
+    site = await makeSite({
+      'h/index.js': 'export function registerHelpers() {}',
+    })
+    expect(isHelpersEntry(`${site.root}/h`, `${site.root}/h/format.js`)).toBe(
+      false,
+    )
+    expect(isHelpersEntry(`${site.root}/h`, `${site.root}/other.js`)).toBe(
+      false,
+    )
+    expect(isHelpersEntry(null, `${site.root}/h/index.js`)).toBe(false)
+  })
+
+  // It asks whether the path COULD be an entry, not whether it is the one
+  // `helpersEntry` resolves to today. A delete is the case that proves the
+  // difference: with index.js and index.mjs both present, deleting index.js
+  // leaves `helpersEntry` returning index.mjs, so asking "is this the entry"
+  // would classify the file that just vanished as a sibling — and neither the
+  // fallback would load nor the deleted entry's helpers unregister.
+  it('matches every entry name, not just the one precedence picks today', async () => {
+    site = await makeSite({
+      'h/index.js': 'export function registerHelpers() {}',
+      'h/index.mjs': 'export function registerHelpers() {}',
+    })
+    expect(helpersEntry(`${site.root}/h`)).toBe(`${site.root}/h/index.js`)
+    expect(isHelpersEntry(`${site.root}/h`, `${site.root}/h/index.mjs`)).toBe(
+      true,
+    )
+    expect(isHelpersEntry(`${site.root}/h`, `${site.root}/h/index.cjs`)).toBe(
+      true,
+    )
   })
 })
 
