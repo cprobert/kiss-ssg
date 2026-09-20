@@ -59,12 +59,22 @@ sibling and does **not** rebuild — the honest answer, rather than re-rendering
 against the cached copy and reporting success.
 
 **A supported mechanism exists and is declined.** Node's `module.register()`
-plus a `resolve` hook that propagates the parent's `?v=` query to relative child
-specifiers does evict siblings. Measured on this repo's Node:
+plus a `resolve` hook that propagates the parent's `?v=` query to **relative**
+child specifiers does make an edited sibling take effect. **Nothing is
+evicted** — that word was wrong here, and an independent review was right to
+say so: a distinct URL instantiates a _new_ module and the old instance stays
+in the registry for the life of the process. The propagation follows relative
+specifiers only, so a bare package import (`import x from 'lodash'`) keeps the
+instance it already had. What the probe measured is the new code running, which
+is the consequence that decides the question. Measured here on Node 22.22.2:
 
 ```
 before: ONE   after: TWO   siblingEvicted: true
 ```
+
+(The `siblingEvicted` label is the probe's own and is loose in exactly the way
+above: what it observed is the second instance's value, not a cache entry
+disappearing.)
 
 So the limitation is real about the API and **false about the consequence**, and
 saying "cannot be evicted" without that qualifier was wrong. It is declined
@@ -74,9 +84,11 @@ anyway, on two grounds that are about kiss rather than about Node:
    somebody's `router.js`; installing a resolution hook into a consumer's whole
    process, to improve a dev-mode reload, is a large side effect for a small
    convenience, and it would apply to every module that project loads.
-2. It re-instantiates the entry's whole module subtree on every save. The
-   present behaviour leaks one module per helpers edit; this would leak the
-   transitive closure, for the life of a watch session.
+2. It re-instantiates the entry's **relative** module subtree on every save —
+   every sibling reached by a relative specifier, but not the bare package
+   imports the propagation does not touch. The present behaviour leaks one
+   module per helpers edit; this would leak that closure, for the life of a
+   watch session.
 
 **Re-check:** whether Node has since added a scoped invalidation API — one that
 evicts a module graph without registering a global hook. If it has, this becomes

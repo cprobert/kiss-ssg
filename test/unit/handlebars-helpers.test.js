@@ -589,10 +589,25 @@ describe('asset', () => {
       )
     })
 
-    it('names the path it looked up, not the whole reference', () => {
+    // The message used to name only the lookup key, so an author who wrote
+    // `{{asset "/css/nope.css#x"}}` was told `'css/nope.css'` was missing — a
+    // string that does not appear in their template, and a file that may well
+    // be there under the fragment they actually got wrong. It names what was
+    // written, and the key underneath it when the two differ.
+    it('names the reference the template wrote and the key it looked up', () => {
       hbs = makeHbs({}, manifestOf(plain))
-      expect(() => render('{{asset "css/nope.css#x"}}')).toThrow(
-        /'css\/nope\.css'/,
+      expect(() => render('{{asset "/css/nope.css#x"}}')).toThrow(
+        /asset: '\/css\/nope\.css#x' is not in the build/,
+      )
+      expect(() => render('{{asset "/css/nope.css#x"}}')).toThrow(
+        /emitted 'css\/nope\.css'\./,
+      )
+    })
+
+    it('names the path once when the reference is the path', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(() => render('{{asset "css/typo.css"}}')).toThrow(
+        /asset: 'css\/typo\.css' is not in the build.* emitted it\./,
       )
     })
   })
