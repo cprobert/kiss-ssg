@@ -54,7 +54,7 @@ The `kiss-ssg` plugin installs four skills, all named `kiss-<something>` so they
 
 ### The build script
 
-Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, one `registerHelpers(kiss)` call if the site has custom helpers, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()` chain, and the `complete()`/`catch()` pair. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
+Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()` chain, and the `complete()`/`catch()` pair. Custom helpers need no line here — kiss imports `config.folders.helpers` (`./helpers` by default) and calls its `registerHelpers` export itself. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
 
 How much is extracted follows the size of the file, not ambition. One file is correct up to roughly 150 lines; `helpers/` is earned when the custom helpers pass about a third of it, `config/` when a fact appears in both the markup and the structured data. `llms.txt` § The build script has the thresholds, the reasons, and the three mistakes the shape invites — chief among them that renaming an existing build script to `router.js` silently orphans whatever names it, from `package.json` to a CSS toolchain's source globs.
 
