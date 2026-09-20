@@ -411,6 +411,46 @@ describe('a failure the replay cannot re-derive', () => {
     }
   })
 
+  // The `<sass: …>` label was derived at execution time from the caller's raw
+  // argument against whatever the working directory was by then, so the same
+  // copy's same failure came out relative or absolute depending on where the
+  // process happened to be when the queue drained. Worse than unstable: a
+  // relative label re-read from a different directory resolves to a DIFFERENT
+  // file, which may exist and may compile perfectly, so an author following
+  // the message opens a stylesheet with nothing wrong with it. It rides on
+  // `err.failures`, `report().failures` and the KISS_REPORT line.
+  it('names the failing stylesheet the same wherever the process is', async () => {
+    site = await makeSite({
+      'a/src/pages/index.hbs': 'hi',
+      'a/vendor/css/bad.scss': 'body { color: ',
+      'b/.keep': '',
+    })
+    const cwd = process.cwd()
+    const labelAfter = async (moveTo) => {
+      process.chdir(`${site.root}/a`)
+      const k = new Kiss({
+        folders: { src: `${site.root}/a/src`, build: `${site.root}/a/public` },
+        logger: silentLogger,
+      })
+      k.copyAssets(`${site.root}/a/vendor`, `${site.root}/a/out`)
+      if (moveTo) process.chdir(moveTo)
+      k.scan().generate()
+      await expect(k.complete()).rejects.toThrow()
+      const view = k._failures
+        .map((f) => f.view)
+        .find((v) => v.startsWith('<sass:'))
+      await k.close()
+      return view
+    }
+    try {
+      const stayed = await labelAfter(null)
+      const moved = await labelAfter(`${site.root}/b`)
+      expect(moved).toBe(stayed)
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
   // A refresh re-derives the report; it must not re-measure the build. The
   // duration is the build's, not the session's — a watch session left open
   // over lunch reported an hour-long build.
