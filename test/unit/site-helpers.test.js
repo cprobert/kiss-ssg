@@ -509,6 +509,64 @@ describe('loadSiteHelpers', () => {
     expect(second.registered).toEqual([])
   })
 
+  // Diffing the registry across the call cannot see a registrar that
+  // re-registers the IDENTICAL function reference — a site that hoists its
+  // helpers to module scope and registers the same references twice. Nothing
+  // changed, so nothing was owned, so teardown had nothing to undo. Observing
+  // what the registrar actually registers answers exactly, whatever the value.
+  it('owns a helper the registrar re-registered with the identical function', async () => {
+    site = await makeSite({
+      'helpers/index.js': [
+        "const shout = (s) => 'S-' + s",
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', shout) }",
+      ].join('\n'),
+    })
+    const kiss = fakeKiss()
+    const { registerHelpers } = await import(`${site.root}/helpers/index.js`)
+    registerHelpers(kiss) // the router's call, with the same module-scope fn
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    expect(result.registered.map((h) => h.name)).toEqual(['shout'])
+  })
+
+  // The upgrade papercut: every site written before `folders.helpers` existed
+  // still calls the registrar from its router, because the old docs said to.
+  // It is harmless now, but nothing told the author it is redundant.
+  it('says so when the registrar had already been run by hand', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('url', () => '/x') }",
+    })
+    const kiss = fakeKiss()
+    const logger = { ...silentLogger, notice: vi.fn() }
+    const { registerHelpers } = await import(`${site.root}/helpers/index.js`)
+    registerHelpers(kiss)
+    await loadSiteHelpers(`${site.root}/helpers`, { kiss, logger })
+    const [said] = logger.notice.mock.calls.at(-1)
+    expect(said).toContain('url')
+    expect(said).toContain('registerHelpers')
+  })
+
+  // ...and overriding a kiss built-in is a legitimate thing to do, so it must
+  // not be reported as a redundant hand-call.
+  it('does not say it about a built-in the registrar deliberately overrides', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('markdown', () => 'SITE') }",
+    })
+    const kiss = fakeKiss()
+    kiss.handlebars.registerHelper('markdown', () => 'BUILTIN')
+    const logger = { ...silentLogger, notice: vi.fn() }
+    await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger,
+      builtins: ['markdown'],
+    })
+    expect(logger.notice).not.toHaveBeenCalled()
+  })
+
   // The caller needs to know which names the site's registrar added, and only
   // those: a built-in kiss helper is not the site's to unregister later.
   it('reports only the names the site registrar added', async () => {

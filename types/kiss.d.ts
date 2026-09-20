@@ -306,6 +306,16 @@ declare class Kiss {
      */
     private _siteHelpers;
     /**
+     * The helper names kiss itself registered, snapshotted before the site's
+     * own registrar can run. Overriding one of these is a legitimate thing for
+     * a site to do; re-registering anything else that is already there means
+     * the registrar has been run twice.
+     *
+     * @type {string[]}
+     * @private
+     */
+    private _builtinHelperNames;
+    /**
      * Whether the author named `folders.helpers` or kiss defaulted to it. Read
      * from the config as supplied, before `resolveConfig` fills the default in,
      * because by then the two are indistinguishable — and they mean opposite

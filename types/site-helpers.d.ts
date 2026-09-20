@@ -87,15 +87,16 @@ export function isActiveHelpersEntry(folder: string | null | undefined, file: st
  * @param {string|null|undefined} folder `config.folders.helpers`
  * @typedef {{ name: string, prior: import('handlebars').HelperDelegate|undefined }} OwnedHelper
  *
- * @param {{ kiss: any, logger: any, fresh?: boolean, previous?: OwnedHelper[], required?: boolean }} deps
+ * @param {{ kiss: any, logger: any, fresh?: boolean, previous?: OwnedHelper[], required?: boolean, builtins?: string[] }} deps
  * @returns {Promise<{ loaded: boolean, entry: string|null, registered?: OwnedHelper[], error?: Error }>}
  */
-export function loadSiteHelpers(folder: string | null | undefined, { kiss, logger, fresh, previous, required }: {
+export function loadSiteHelpers(folder: string | null | undefined, { kiss, logger, fresh, previous, required, builtins, }: {
     kiss: any;
     logger: any;
     fresh?: boolean;
     previous?: OwnedHelper[];
     required?: boolean;
+    builtins?: string[];
 }): Promise<{
     loaded: boolean;
     entry: string | null;
