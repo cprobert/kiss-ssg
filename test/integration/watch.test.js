@@ -345,6 +345,40 @@ describe('watch()', () => {
     expect(kiss.handlebars.helpers.gone).toBeUndefined()
   })
 
+  // A reload removes the old registrations before it awaits the registrar, so
+  // there is a window in which the registry is short of helpers. Rendering had
+  // no ordering against it: a page edit landing inside that window rendered
+  // against the gap. The rebuild queue serialises renders against each other,
+  // not against the helper load.
+  it('does not render while a helper reload is in flight', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{shout "hi"}}',
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'ONE-' + s) }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+
+    let release
+    kiss._helpersReady = new Promise((r) => {
+      release = r
+    })
+    let rendered = false
+    const run = kiss._rebuild([...kiss._stack]).then(() => {
+      rendered = true
+    })
+    await sleep(60)
+    expect(rendered).toBe(false)
+    release()
+    await run
+    expect(rendered).toBe(true)
+  })
+
   // A data file beside the helpers is not a stuck module: whatever helper
   // reads it reads it at RENDER time, so re-rendering picks the edit up. The
   // restart notice fired for it anyway — the same lie in reverse that this

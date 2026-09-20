@@ -239,6 +239,49 @@ describe('the helpers watcher', () => {
     await waitFor(() => calls.helpers.includes(`${site.root}/helpers/index.js`))
   })
 
+  // A helpers folder pointed inside `src` was dispatched TWICE: once by the
+  // src watcher (a whole-site replay that cannot pick a module edit up) and
+  // once by this one (which can). Rendering is serialised; helper
+  // registration is not, so the two raced over one registry — and the replay
+  // was wasted work either way.
+  it('is the only watcher that sees a helpers folder inside src', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'a',
+      'src/helpers/index.js': 'export function registerHelpers() {}',
+    })
+    const calls = { helpers: [], change: [] }
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          assets: `${site.src}/assets`,
+          helpers: `${site.src}/helpers`,
+        },
+      },
+      entry: null,
+      rebuildSite: () => {},
+      onChange: (event, p) => calls.change.push([event, p]),
+      assetsChanged: () => {},
+      helpersChanged: (p) => calls.helpers.push(p),
+      logger: silentLogger,
+    })
+    await handle.ready
+    await site.touch(
+      'src/helpers/index.js',
+      'export function registerHelpers() { /* edited */ }',
+    )
+    await waitFor(() => calls.helpers.includes(`${site.src}/helpers/index.js`))
+    // A page edit after it proves the src watcher is alive and simply not
+    // reporting the helpers folder, rather than dead.
+    await site.touch('src/pages/index.hbs', 'b')
+    await waitFor(() =>
+      calls.change.some(([, p]) => p === `${site.src}/pages/index.hbs`),
+    )
+    expect(calls.change.map(([, p]) => p)).not.toContain(
+      `${site.src}/helpers/index.js`,
+    )
+  })
+
   it('forwards a delete, and skips an empty write the way the src watcher does', async () => {
     site = await makeSite({
       'helpers/index.js': 'export function registerHelpers() {}',
