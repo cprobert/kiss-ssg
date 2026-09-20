@@ -327,11 +327,18 @@ declare class Kiss {
     private _helpersExplicit;
     /** @private */
     private _failures;
+    /** @private */
+    private _carriedFailures;
     /**
      * @type {Map<string, Set<any>>}
      * @private
      */
     private _sassFailures;
+    /**
+     * @type {Map<string, { sourceDir: string, targetDir: string }>}
+     * @private
+     */
+    private _assetCopies;
     /** @private */
     private _failuresReported;
     /** @private */
@@ -458,6 +465,19 @@ declare class Kiss {
      * @returns {this}
      */
     copyAssets(sourceDir: string, targetDir: string): this;
+    /** @private */
+    /**
+     * Marks a failure as one a whole-site replay carries rather than drops,
+     * and returns it so the caller can push it in one expression. Only a
+     * producer that can re-check its own failure later may use this — see the
+     * note above the class.
+     *
+     * @template {{ view: string }} T
+     * @param {T} failure
+     * @returns {T}
+     * @private
+     */
+    private _carry;
     /** @private */
     private _stagedPath;
     /** @private */

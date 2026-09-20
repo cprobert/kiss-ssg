@@ -138,6 +138,88 @@ describe('a failure the replay cannot re-derive', () => {
     expect(kiss.report().ok).toBe(false)
   })
 
+  // Carrying rests on "each is cleared by its own producer when that producer
+  // runs again", and that was only true of `config.folders.assets`: the replay
+  // and the watcher both re-run that copy and no other. A root the site
+  // registered itself was never re-run, so its failure could not be cleared by
+  // anything — fixed on disk, full replay, still failed, for the rest of the
+  // session.
+  it('clears a SECOND asset root failure once its stylesheet is fixed', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{title}}',
+      'src/controllers/index.js': "module.exports = () => ({ title: 'one' })",
+      'vendor/css/lib.scss': 'body { color: ',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger, dev: true })
+    kiss.copyAssets(`${site.root}/vendor`, `${site.root}/public/vendor`)
+    kiss.scan().generate()
+    await expect(kiss.complete()).rejects.toThrow()
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    // Still broken: a replay must not erase it (the guarantee above).
+    await site.touch(
+      'src/controllers/index.js',
+      "module.exports = () => ({ title: 'two' })",
+    )
+    await waitFor(async () => (await site.read('public/index.html')) === 'two')
+    await settled(kiss)
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(1)
+
+    // Fixed on disk. A non-default asset root is not watched, so the fix
+    // itself raises no event — the next whole-site replay is what re-checks
+    // it, and that replay has to re-run this copy or the failure is stuck.
+    await site.touch('vendor/css/lib.scss', 'body { color: red; }')
+    await site.touch(
+      'src/controllers/index.js',
+      "module.exports = () => ({ title: 'three' })",
+    )
+    await waitFor(
+      async () => (await site.read('public/index.html')) === 'three',
+    )
+    await settled(kiss)
+    expect(views(kiss).filter((v) => v.startsWith('<sass:'))).toHaveLength(0)
+  })
+
+  // Carriage is recorded on the failure object by the producer that pushed it,
+  // never matched on the `view` string — because for an inline template that
+  // string is the TEMPLATE TEXT, which the author writes. A page whose view
+  // happens to start with the Sass sentinel is still a page.
+  it('does not carry a page whose view impersonates a Sass failure', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'hi' })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger, dev: true })
+    kiss.scan()
+    kiss.page({ view: '<sass: example> {{custom "x"}}', path: 'imposter' })
+    kiss.generate()
+    await expect(kiss.complete()).rejects.toThrow()
+    expect(views(kiss).some((v) => v.startsWith('<sass: example>'))).toBe(true)
+
+    // The reason it failed is gone: the helper exists now.
+    kiss.handlebars.registerHelper('custom', (v) => String(v))
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/pages/index.hbs', 'hi again')
+    await kiss._requestReplay()
+    await settled(kiss)
+
+    expect(views(kiss).filter((v) => v.startsWith('<sass: example>'))).toEqual(
+      [],
+    )
+  })
+
+  it('keeps no map entry for a copy that succeeded', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'hi',
+      'src/assets/css/site.scss': 'body { color: red; }',
+    })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(kiss._sassFailures.size).toBe(0)
+  })
+
   it('still clears a failure the replay does re-derive', async () => {
     site = await makeSite({
       'src/pages/index.hbs': '{{title}}',
