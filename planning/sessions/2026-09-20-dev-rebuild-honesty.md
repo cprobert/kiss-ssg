@@ -1,7 +1,7 @@
 ---
 branch: claude/fresh-build-feedback-9x9asm
 base: main
-status: open
+status: closed
 opened: 2026-09-20
 ---
 
@@ -369,3 +369,72 @@ index.hbs) — no .copyAssets() emitted it…`) and judged it reads fine as it s
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-09-20: A Verdict That Tells the Truth
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 79 commits, `4d8710b`..`34461e5`, released as **3.0.0**. A branch that opened to make one dev-mode notice honest and closed having made the build's entire machine verdict honest — `{{asset}}` and a failing stylesheet now fail the build instead of shipping a 404 on a green run; `report()` no longer lags the failure list under `.watch()`; and roughly a dozen documentation claims that contradicted the code, or each other, were measured and corrected.
+
+## Reflect — what the session was
+
+The brief was **planned and small**: a helper edit in dev logs `Rebuilding site:` and serves stale output, so make it say so, and fix the documentation gaps a real conversion off SCMS had found. Nine success criteria, every finding already measured with a reproducer, and a non-goal saying plainly that this branch makes the failure honest and does not make the edit take effect.
+
+It became **emergent**, and the interesting thing is that the theme never moved. Every one of the thirty numbered rounds is the same subject the branch opened for — kiss claiming something it cannot deliver — but the subject turned out to be much larger than the dev-rebuild notice that surfaced it. A stylesheet that would not compile reported `ok: true`. A replay erased failures nothing would re-check. A copy's failure was owned by a prefix of its own display string. A test reported `passed` while executing nothing. Each was the same shape in a new place, and each was found by looking at the previous fix.
+
+The shape served the work, but only because the operator kept re-authorising it explicitly — twice widening the remit in dated Amendments rather than letting it widen silently. A branch that grows from nine criteria to 79 commits without that is scope creep; this one has a paper trail for every expansion.
+
+## Evaluate — how the human supervised the AI
+
+Three dimensions discriminated this session. The rest were unremarkable and are skipped.
+
+**Pushback & steering — the strongest dimension, and it changed outcomes rather than decorating them.** Four operator interventions each produced something the session would not have reached alone:
+
+- _"Record them like any other failure."_ The scoped-re-render gap had been found by the external reviewer, and I had written it up as a design question with two options and no recommendation. The operator answered it in five words. The resulting R29 is a behaviour change I would not have made on my own initiative.
+- _"Fix it"_ on `report()`'s staleness between settles. I had documented it instead, with a cost argument — re-settling a build per keystroke is wrong for dev mode — that the external session agreed with. The operator overruled both of us, and was right: the cost objection ruled out re-running `_finishBuild()`, not re-deriving the report. I had let an answer to one question stand as the answer to a different one, and two agreeing with each other is what made it feel settled.
+- _"Not bound by legacy… architectural elegance as a prime objective."_ This reopened `{{asset}}`, which I had closed the narrow way **twice** — correcting the documentation of a behaviour in R16 and again in R21 without ever asking whether the behaviour was right. "The docs now describe it accurately" and "this is what we want" are different questions and I had only been answering the first.
+- _"If there are upstream errors… document and live with them."_ This cancelled an ESM loader-hook investigation I had already committed to. The operator's framing — a doom loop rather than a flywheel — is sharper than anything in my reasoning, and it converted an open engineering task into a written constraint with a re-check condition (`AIKB/upstream.md`).
+
+**Harness leverage — the decisive structural call was the operator's, and it was a refusal.** The external QA session offered its probe battery for adoption and then offered to send verified patches. Both were declined, and the operator confirmed the reasoning: _a net I own, run and maintain is not a check on me._ My gates were green through every defect that session found. The sharper version of the argument came from the QA session itself — we are the same model family, so its instinct about the right fix shape is very likely to be my instinct, which is the opposite of an independent check. That is the single most transferable thing in this log, and neither half of it was mine.
+
+**Verification & ownership — mixed, and the failure is mine.** The red-first discipline held: 30 rounds, and almost every fix has a test seen failing against the unfixed code, with the two that could not be labelled as such rather than allowed to look like coverage. But five separate times a fix of mine introduced a defect of the same family, and the external session found each one. The pattern, stated once so it outlives the branch: **a decision taken by matching or deriving a string, where the thing the string names should have been resolved or recorded.** R13's prefix over a path, R14's carry test over a view, R15's cwd-relative label, R17's spelling-preserving key, R18's folder test, R21's creation-time key, R28's drain-time label. Seven instances. I fixed each one individually and only named the family after the external reviewer did.
+
+**Where supervision was intended versus where it happened.** The honest answer is that between the operator's interventions, I ran long autonomous chains and self-evaluated them — and the operator said so directly: _"what's missing is having some simple questions for me so that you got a bit of a human in the loop here."_ That was accurate and overdue. I had been making calls and reporting them, with the decisions buried at the bottom of long reports as notes rather than put as questions. After that correction I asked at every genuine fork, and three of the four answers changed what I did next. The lesson is not "ask more questions" — it is that **a decision reported is not a decision delegated**, and I had been treating the two as equivalent.
+
+**Competency level: Agentic engineering lead.** Earned on the evidence, not aspired to. The operator framed the multi-session architecture, ruled on the independence of the verification instrument, set two standing policies that are now repository rules, overruled two of my technical judgements on reasoning I could not fault, ran a mid-branch pulse that caught a stale impact surface before it produced a wrong semver bump, and authorised the close deliberately rather than drifting into it. The one gap — needing to ask for the human-in-the-loop checkpoints rather than being offered them — is a lesson for me, not a mark against the supervision.
+
+## Feedback — recommendations for next session
+
+- **Claude — put decisions as questions, not as notes at the bottom of a report.** The operator had to ask for this. A fork in the work where two readings lead to materially different outcomes is an `AskUserQuestion`, not a paragraph under "one thing I'd flag". Three of four such questions changed the work when finally asked.
+- **Claude — when an external reviewer agrees with you, that is not confirmation.** The `report()` staleness call had my reasoning and the QA session's agreement, and was still wrong. Same model family, same blind spots. Agreement between two instances of the same model is one opinion held twice.
+- **Claude — ask "what does this now swallow that it did not before?" at the point of writing a fix, not after.** Five fixes on this branch introduced a quieter defect than the loud one they removed. The QA session's phrasing, adopted here.
+- **Claude — a path comparison is wrong unless both sides are canonicalised, and a canonicalisation that can fail must be stable across the failure.** Seven instances on one branch. Now in `AIKB/kiss.md`. There is no mechanical guard for it and I could not invent one that was not a false-positive factory; the rule is the guard.
+- **Both — label which instrument produced which claim.** The QA session started doing this unprompted ("executed by me" / "relayed unverified" / "Codex ran read-only this round, so its magnitude numbers are stubs") and it changed what I did with individual findings more than the findings themselves did. On the `duration` defect I took its ordering evidence and discarded both magnitude figures, which was only possible because it had said which was which.
+- **Process — `/branch-pulse` caught the stale impact surface, and it was the only thing that could have.** The intent block still said "patch bump, no API change" while the branch carried a breaking change; `/branch-close` reads that block to propose the bump. A branch that closes unpulsed proposes the wrong semver from a stale field. Pulse at least once before closing anything that ran long.
+- **Operator — the verification instrument stays outside the loop it checks.** Recorded as a recommendation to keep, not to change: the battery was offered for adoption twice and declined twice, and every defect it found was one the in-repo gates passed.
+
+## Verdict — did we achieve the objective?
+
+**The objective was met, and then legitimately moved twice — both times on the record.**
+
+The captured criteria, ticked against the evidence in the Pulse log:
+
+- [x] A helper module edited under `folders.src` in dev no longer presents as a successful rebuild — the restart notice, scoped to JavaScript modules after a mid-branch correction.
+- [x] An entry-script edit that changes the page list says plainly that it cannot take effect.
+- [x] `AIKB/watcher.md` no longer claims a capability the code does not have; every touched `lib/` module's doc updated in the same commit (Check 8 of the corpse scan: clean, across nine rewritten docs).
+- [x] `llms.txt` § Helpers shows `{{#block}}` / `{{#extend}}` / `{{#content}}` — each 0 → 1, attributed to handlebars-layouts.
+- [x] `llms.txt`'s `cleanBuild` paragraph states the is-or-contains-source rule; the `('.', '/')` claim gone.
+- [x] `sitemapLastmod` reachable from `llms.txt` § `.sitemap()`.
+- [x] One sentence states where helper modules live and what a dev edit to one does.
+- [x] A regression test exists for the dev-honesty behaviour and was seen to fail against the unfixed code.
+- [x] `npm run gates` passes — five gates green at 3.0.0.
+
+**What is concretely better:** a build that reports `ok` now means it. Three separate paths that shipped a broken site on a green verdict — a missing asset, an uncompilable stylesheet, a failure erased by a replay — all fail loudly. `report()` is trustworthy between settles under `.watch()`, where it previously lagged in both directions. Thirty-odd documentation claims that contradicted the code or each other were measured and corrected, and the mention-vs-contradiction blind spot that let them accumulate is now enforced by a `CONTRADICTIONS` table covering `AIKB/` as well as the consumer surfaces.
+
+**Good drift, not creep:** both expansions are dated Amendments with the operator's stated reason. The first widened the remit to the whole swan-love correspondence because that channel was closing. The second corrected the impact surface from patch to major, which is the difference between a correct release and a version number that lies about a breaking change.
+
+**What remains open**, carried in `planning/plans/2026-09-20-review-remediation.md`:
+
+- Three fixes assert a property meaningful only on a case-insensitive filesystem and are verified on one Windows machine until CI's `windows-latest` leg runs post-merge. The symlink half covers the same mechanism portably, which is why this is a note rather than a risk.
+- The clean-room re-conversion has not re-run since the documentation fixes landed. It is the instrument that started this branch, and it should run against the published 3.0.0 tarball rather than the branch.
+- `MIGHT_BE_OURS` matching `export *` makes the helpers guess-gate a no-op for a barrel `index.js`. Reviewed as a design note, not a defect — blast radius is first-party code — and left deliberately.
