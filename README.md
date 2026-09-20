@@ -120,7 +120,8 @@ The default config options are:
     partials: './src/partials',
     models: './src/models',
     controllers: './src/controllers',
-    aikb: './AIKB'
+    aikb: './AIKB',
+    helpers: './helpers'
   }
 }
 ```

@@ -6,6 +6,7 @@
       "aikb": "./AIKB",
       "assets": "../_shared/assets",
       "controllers": "./controllers",
+      "helpers": "./helpers",
       "layouts": "../_shared/layouts",
       "models": "./models",
       "pages": "./pages",

@@ -33,13 +33,14 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {string|null} models `.json` models `options.model` names
  * @property {string|null} controllers `.js` controllers `options.controller` names
  * @property {string|null} aikb where `kiss-ssg aikb` records the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
+ * @property {string|null} helpers the site's own Handlebars helpers, auto-registered from its `index.js`; beside the build script rather than derived from `src`, and optional — a site with no helpers simply has no folder
  */
 /**
  * A `folders` block as a site writes it: every key optional. Setting `src`
  * re-derives `pages`, `assets`, `layouts`, `partials`, `models` and
  * `controllers` from it, unless the same object also sets them explicitly.
- * `build` and `aikb` are never derived: one is the output, the other is
- * committed source beside it.
+ * `build`, `aikb` and `helpers` are never derived: one is the output, the
+ * other two are committed source beside the build script.
  *
  * @typedef {Partial<KissFolders>} KissFoldersInput
  */
@@ -164,6 +165,7 @@ export const DEFAULT_FOLDERS: Readonly<{
     models: "./src/models";
     controllers: "./src/controllers";
     aikb: "./AIKB";
+    helpers: "./helpers";
 }>;
 export const DEFAULT_FETCH: Readonly<{
     headers: {};
@@ -269,13 +271,17 @@ export type KissFolders = {
      * where `kiss-ssg aikb` records the site's knowledge base; source-side and committed, so it is not derived from `src` and is not created on start-up
      */
     aikb: string | null;
+    /**
+     * the site's own Handlebars helpers, auto-registered from its `index.js`; beside the build script rather than derived from `src`, and optional — a site with no helpers simply has no folder
+     */
+    helpers: string | null;
 };
 /**
  * A `folders` block as a site writes it: every key optional. Setting `src`
  * re-derives `pages`, `assets`, `layouts`, `partials`, `models` and
  * `controllers` from it, unless the same object also sets them explicitly.
- * `build` and `aikb` are never derived: one is the output, the other is
- * committed source beside it.
+ * `build`, `aikb` and `helpers` are never derived: one is the output, the
+ * other two are committed source beside the build script.
  */
 export type KissFoldersInput = Partial<KissFolders>;
 /**

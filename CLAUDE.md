@@ -27,6 +27,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Logger                                | `lib/logger.js`              | `AIKB/logger.md`              |
 | Config + folder derivation            | `lib/config.js`              | `AIKB/config.md`              |
 | Built-in Handlebars helpers           | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Site's own helpers (auto-registered)  | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
 | Partials / layouts registration       | `lib/partials.js`            | `AIKB/partials.md`            |
 | Dependency graph (partial → page)     | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
 | Assets + Sass                         | `lib/assets.js`              | `AIKB/assets.md`              |

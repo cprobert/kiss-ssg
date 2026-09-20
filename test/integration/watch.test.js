@@ -204,6 +204,67 @@ describe('watch()', () => {
     )
   })
 
+  // The whole point of folders.helpers: a helper edit TAKES EFFECT, rather
+  // than being honestly reported as impossible. Before auto-registration this
+  // was the trap — a full replay ran, live reload fired, and the page still
+  // rendered the old helper, because the module was already in the ESM cache
+  // and the replay never re-ran the build script.
+  it('re-registers an edited helper module and re-renders with it', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{shout "hi"}}',
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'ONE-' + s) }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('ONE-hi')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'TWO-' + s) }",
+    )
+    await waitFor(
+      async () => (await site.read('public/index.html')) === 'TWO-hi',
+    )
+  })
+
+  // A site that puts its helpers inside src gets both watchers on one file.
+  // The helpers watcher makes the edit take effect, so the restart notice
+  // would be exactly the lie it exists to prevent.
+  it('does not ask for a restart for a helpers folder inside src', async () => {
+    const logger = { ...silentLogger, notice: vi.fn() }
+    site = await makeSite({
+      'src/pages/index.hbs': '{{shout "hi"}}',
+      'src/helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'ONE-' + s) }",
+    })
+    kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/src/helpers` },
+      logger,
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch(
+      'src/helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('shout', (s) => 'TWO-' + s) }",
+    )
+    await waitFor(
+      async () => (await site.read('public/index.html')) === 'TWO-hi',
+    )
+    expect(
+      logger.notice.mock.calls.filter(([m]) => /restart/i.test(String(m))),
+    ).toEqual([])
+  })
+
   it('coalesces overlapping rebuild requests onto the newest edit', async () => {
     // A slow model keeps the first replay in flight while the second is
     // requested: without coalescing the second resets _stack under the first,

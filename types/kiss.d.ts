@@ -292,6 +292,8 @@ declare class Kiss {
     private _idIndex;
     /** @private */
     private _idNoticed;
+    /** @private @type {Promise<void>} */
+    private _helpersReady;
     /** @private */
     private _failures;
     /** @private */
@@ -392,7 +394,19 @@ declare class Kiss {
      *
      * @returns {string[]} the names now registered
      */
-    registerPartials(): string[];
+    /**
+     * Imports `config.folders.helpers`' entry and registers what it exports.
+     * A folder that is not there is the ordinary case and says nothing; a
+     * folder that fails to load is a build failure, recorded as
+     * `<site helpers>` so `complete()` rejects rather than shipping a site
+     * whose templates silently lost their helpers.
+     *
+     * @param {boolean} [fresh] bust the module caches (a watch reload)
+     * @returns {Promise<void>}
+     * @private
+     */
+    private _loadHelpers;
+    registerPartials(): any[];
     /** @private */
     private _pipelineEnv;
     /** @private */
