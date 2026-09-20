@@ -8,7 +8,6 @@
 import { existsSync } from 'node:fs'
 // `utils` is a named export in v2, not `kiss-ssg/libs/utils.js`.
 import Kiss, { utils } from 'kiss-ssg'
-import { registerHelpers } from './helpers/index.js'
 
 // Facts the site states more than once. Any extra key on the config reaches
 // every view as `config.<key>`, which is how the layout gets the site name
@@ -58,11 +57,12 @@ const kiss = new Kiss({
   livereloadPort: 35739,
 })
 
-// The site's custom helpers, in helpers/ because it has one and one is the
-// trigger. The v1 trap they replace — a helper reading the global handlebars
-// module, which renders nothing at all, silently, on a green build — is
-// explained where the helper now lives.
-registerHelpers(kiss)
+// The site's custom helpers are in helpers/ because it has one and one is the
+// trigger. There is no call to make: `config.folders.helpers` defaults to
+// `./helpers`, and kiss imports that folder's index.js and calls its
+// registerHelpers export itself. The v1 trap they replace — a helper reading
+// the global handlebars module, which renders nothing at all, silently, on a
+// green build — is explained where the helper now lives.
 
 // Two sources, one output folder. v1 wrote whichever page came last when two
 // claimed one path; v2 fails the build. Dedupe before registering — the
