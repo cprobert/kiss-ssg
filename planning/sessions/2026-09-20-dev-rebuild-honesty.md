@@ -146,6 +146,17 @@ Not taken: the `{{url}}` external-URL helper (F4, a public API addition), `.scan
 for a migration (a skill surface, and skills do not ship in the tarball), and the doubt over whether
 `AIKB/` should be gitignored (`llms.txt` already says plainly that it is committed source).
 
+**2026-09-20 — F2 absorbed (operator-authorised at the pulse).** The sass/css collision was a
+non-goal at open, deferred because it touches the asset manifest. Two things changed. The deferral's
+stated reason dissolved: the manifest does record sass output (see the correction above), so the fix is
+local to `recordEmitted`'s loop and a `logger.warn` changes no report shape — the `examples.test.js`
+self-heal risk that motivated the deferral does not apply. And the downstream session, after testing the
+branch on the real site, ranked it **above anything in its original report**: it is the one defect nobody
+caught. They deleted `layout.css` and `carousel.css` as untidy and only afterwards checked the compiled
+bytes matched; had they drifted, stale CSS ships with a green build and a clean `check`, and the only
+person who notices is a visitor comparing the site to last year. In scope: a warning when one emitted
+path is claimed by both a sass compile and a plain copy, plus a regression test seen red first.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;
@@ -156,6 +167,19 @@ for a migration (a skill surface, and skills do not ship in the tarball), and th
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+- **2026-09-20** — all nine success criteria met with evidence: the helper and entry-script traps
+  measured in a live dev run and covered by tests **seen red first**; `{{#extend}}`/`{{#content}}`/`{{#block}}`
+  each 0→1 in `llms.txt` with the documented example **built and rendered** before being written;
+  `cleanBuild` and `sitemapLastmod` corrected; `AIKB/watcher.md`'s false claim retired. `npm test`
+  green (1349 tests, 65 files); five gates green. Two defects of my own caught mid-branch rather than at
+  close: the notice fired on data files a replay _does_ pick up (narrowed to `.js`/`.mjs`/`.cjs`), and I
+  had told the downstream session the manifest does not record sass output, which was wrong.
+  External validation: the swan-love session ran the branch against the real site — three `dangling`
+  findings to zero, `= 11 unchanged` against its 2.4.0 baseline, notices silent on one-shot builds.
+  No drift: surface is still engine internals + tooling & docs, no new config key, method or report key.
+  **Eyeball: looked** — ran `npm run eg9 -- --dev`, edited `helpers/index.js`, read the notice; wording
+  does its job. Decision: **record amendment** (F2 absorbed) and continue; close once F2 lands.
 
 ---
 
