@@ -106,6 +106,32 @@ this session's self-check stand in for one (2026-09-16).
 
 ### Amendments
 
+**2026-09-20 — Impact surface moved to public API, breaking; bump is MAJOR (operator-authorised).**
+The Intent block declares the surface as "engine internals + tooling & docs — adds no API: no new
+config key, no new method, no changed report shape. Patch bump." That is no longer true, and
+`/branch-close` reads this block to propose the semver bump, so leaving it would have proposed a
+patch for a branch containing a breaking change.
+
+What moved it:
+
+- **`{{asset}}` on a path no `.copyAssets()` emitted now fails the build** (R25, `22ef312`), matching
+  `{{link}}`. Dev warns and renders the path as written. Breaking for any consuming site whose
+  template asks for an asset that is not there — a case that previously warned and shipped a 404 on
+  a green build. Taken under the operator's standing steer that architectural elegance outranks
+  compatibility, because he owns every consumer.
+- **`report()` reports differently under `.watch()`.** It refreshes between settles rather than
+  carrying the last settled verdict (R22, `4f23b76`); a refresh returns a NEW object, so a retained
+  reference is a snapshot; and a page that starts failing under watch is now recorded like any other
+  failure (R29, `a9ffaa7`), which moves `ok` to `false` on a transient mid-edit error until the next
+  save.
+- **`duration` is frozen at the settle** rather than measured at assembly (R24/R28).
+
+Operator's call, 2026-09-20: **major**. A break that is real is better visible in the version than
+buried in a changelog entry, even when the person doing the migrating owns every consumer.
+
+The branch's _theme_ did not drift — every round since R13 is the same subject it was opened for,
+kiss claiming something it cannot deliver. What drifted is the blast radius, and only that.
+
 **2026-09-20 — F5(b) absorbed (operator-authorised).** Listed as a non-goal at open
 ("reported, not yet re-derived here"). The swan-love session then sent a standalone
 reproducer, and it has now been re-derived and **widened** here: it is not only the build
@@ -184,6 +210,22 @@ consumer, so a small breaking-shaped change costs a version bump rather than a m
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+- **2026-09-20 (pulse)** — all nine success criteria met with evidence: `{{#block}}`/`{{#extend}}`/
+  `{{#content}}` each 1 in `llms.txt` (from 0), the `('.', '/')` claim gone, `sitemapLastmod`
+  reachable, the helpers-location sentence present, `AIKB/watcher.md`'s page-list claim gone, the
+  sibling-module restart notice in place, 78 watch tests green across `watch.test.js` and
+  `watch-failure-lifecycle.test.js`, `npm run gates` green. Trajectory: 72 commits, 192 files,
+  +11608/−670 against `main` — far past the captured intent, but thematically on it. **Drift: the
+  impact surface, recorded as a dated Amendment above** (patch → major; R25 is breaking, R22/R24/R29
+  changed report behaviour). **Eyeball: looked** — operator read R25's new build-failure message on
+  a real build with a typo'd asset path (`asset: 'css/typo.css' is not in the build (asked by
+index.hbs) — no .copyAssets() emitted it…`) and judged it reads fine as it stands, including the
+  repeated view name. Decision: **ready to close** — the finding yield inverted (R14–R29 were almost
+  entirely defects introduced by this branch's own fixes rather than pre-existing ones, which is the
+  signal the seam is worked out), three fixes rest on a single Windows machine that only a merge puts
+  on CI's windows leg, and both remaining open items (the 2.4.0 version-string ambiguity, the empty
+  CHANGELOG) are blocked _on_ the close rather than _by_ it. Operator authorised `/branch-close`.
 
 - **2026-09-20** — all nine success criteria met with evidence: the helper and entry-script traps
   measured in a live dev run and covered by tests **seen red first**; `{{#extend}}`/`{{#content}}`/`{{#block}}`
