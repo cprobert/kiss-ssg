@@ -14,6 +14,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`). Treat `docs/` as build output. Design specs, implementation plans and session logs live in `planning/` (`planning/specs/`, `planning/plans/`, `planning/sessions/`) — never under `docs/`, which `docs.js` empties on every run. `scripts/` holds dev tooling that never ships (the `files` whitelist excludes it).
 
+## Design philosophy
+
+**kiss is opinionated, and persuadable.** Convention first: the default is the shape most sites want, stated once and applied everywhere — `folders` derives six folders from `src`, helpers auto-register from `folders.helpers`, a page's `id` is its view's route, an asset is keyed by the name a template asks for, `{{link}}` fails the build rather than emitting a URL nobody checked. Every one of those is overridable, and the override is a config key rather than a fork.
+
+The order is not symmetrical and that is the point. A convention nobody can override is a cage; a configuration option with no default is a questionnaire. kiss asks the author nothing it can answer itself, and refuses nothing the author insists on.
+
+Three consequences, because they settle arguments rather than decorate them:
+
+- **A new capability arrives as a convention with a default, not as a required option.** If a design cannot produce a sensible default, that is evidence it is not finished — not evidence that the author should be asked.
+- **A file extension is a statement about processing, not a naming habit.** `.hbs` is a template, `.md` is rendered Markdown, `.html` is inserted as-is. An author should be able to predict what happens to a file from its name alone, and anything kiss adds has to keep that promise legible.
+- **Agents do the work; humans have to be able to follow it.** The structure an agent produces is opened, read and hand-edited by a person sooner or later. A convention an agent finds convenient and a human cannot follow is the wrong convention — legibility to a person is a design constraint, not a nicety.
+
+**What ships is an example.** `examples/` is in the published tarball precisely so an agent in a consuming project can read it, which means every example is copied as a statement of good practice whether or not it was written as one. An example that models a shape no real project would use is not neutral — it teaches that shape. Fixtures that exist to exercise the engine are a different artefact from examples that exist to be imitated, and the two must not be the same files.
+
 ## Architecture knowledge base
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
