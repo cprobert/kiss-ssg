@@ -395,7 +395,15 @@ describe('watch()', () => {
       'helpers/labels.json': JSON.stringify({ label: 'ONE' }),
       'helpers/index.js': [
         "import fs from 'node:fs'",
-        "const here = new URL('.', import.meta.url).pathname",
+        "import { fileURLToPath } from 'node:url'",
+        // `new URL(...).pathname` is a usable path on POSIX and NOT on
+        // Windows, where it comes back as `/C:/...` and fs resolves the
+        // leading slash against the current drive root — `C:\C:\...`. The
+        // fixture could not read its own data file, so the render threw and
+        // the assertion never ran. Second Windows-only failure on this branch
+        // from a path idiom that is correct on POSIX; `eslint.config.js` now
+        // bans this one outright.
+        "const here = fileURLToPath(new URL('.', import.meta.url))",
         'export function registerHelpers(kiss) {',
         "  kiss.handlebars.registerHelper('label', () =>",
         "    JSON.parse(fs.readFileSync(here + 'labels.json', 'utf8')).label)",

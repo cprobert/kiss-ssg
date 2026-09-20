@@ -171,3 +171,57 @@ describe('every skill names the features an agent following it should use', () =
     })
   }
 })
+
+// The mention test above has a known blind spot, and it has now been hit
+// twice: a row asserting a skill NAMES a feature stays green while the prose
+// around it says the opposite. `folders.helpers` was named in `kiss-site-new`
+// while the same file still told an agent the router holds "one
+// registerHelpers(kiss) call" — and a clean-room agent followed it and wrote
+// the redundant call the whole feature exists to remove.
+//
+// A contradiction cannot be caught by asking what a document mentions. It can
+// be caught by banning the sentence. Each entry below was a real defect in a
+// real consumer-facing file, not a hypothetical.
+const CONTRADICTIONS = [
+  {
+    why: 'kiss loads config.folders.helpers itself; a build script that also calls the registrar runs it twice',
+    patterns: [
+      /^\s*registerHelpers\(kiss\)\s*$/m, // a line the reader would copy
+      /one `?registerHelpers\(kiss\)`? call/i, // the 2.4.0 wording
+    ],
+  },
+]
+
+const consumerFacing = () => {
+  const files = ['llms.txt', 'README.md']
+  for (const dir of ['plugins', 'examples']) {
+    const walk = (d) => {
+      for (const e of fs.readdirSync(path.join(root, d), {
+        withFileTypes: true,
+      })) {
+        const rel = `${d}/${e.name}`
+        if (e.isDirectory()) walk(rel)
+        else if (/\.(md|js)$/.test(e.name)) files.push(rel)
+      }
+    }
+    walk(dir)
+  }
+  return files
+}
+
+describe('no consumer-facing file contradicts the convention it documents', () => {
+  const files = consumerFacing()
+
+  it('has files to check, so a broken walk cannot pass silently', () => {
+    expect(files.length).toBeGreaterThan(20)
+  })
+
+  for (const { why, patterns } of CONTRADICTIONS) {
+    it.each(patterns)(`${why} — %s`, (pattern) => {
+      const offenders = files.filter((f) =>
+        pattern.test(fs.readFileSync(path.join(root, f), 'utf8')),
+      )
+      expect(offenders).toEqual([])
+    })
+  }
+})
