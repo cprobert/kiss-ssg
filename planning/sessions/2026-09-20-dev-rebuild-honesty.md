@@ -118,6 +118,34 @@ ending `/${value}` — i.e. `//docs`. In scope now: normalise the token before t
 all four cases resolve, plus a regression test seen red first. The AIKB lint is what makes
 `check` trustworthy, so false findings cost it credibility directly.
 
+**2026-09-20 — the discarded pile absorbed (operator-authorised).** After the branch was validated
+against the real site, the swan-love session was asked what it had _not_ reported — the findings it had
+filtered out as its own fault, too small, or too embarrassing. Ten items came back. Its own meta-reading
+is the valuable part and is now this branch's second theme: **eight of the ten were cases where the
+documentation was correct and the author still got it wrong. The failure mode is not a missing rule, it
+is a rule whose consequence is not stated beside it.** Five fixes taken, each verified here first rather
+than taken on report:
+
+- `cleanBuild: 'atomic'` degrading in dev is documented; that a dev run therefore writes a dev build
+  into the published folder is not. Cost the reporter hours, found by grepping output for "livereload".
+  Confirmed: `lib/kiss-page.js:206` injects the livereload `<script>` into dev output.
+- `{{#isActive page …}}` reads as though `page` were a keyword. It is the page context passed
+  positionally, and a data-driven nav needs `../page` inside the `{{#each}}`. `lib/handlebars-helpers.js`
+  documents this in a source comment that notes two independent agents hit it — it had never reached
+  `llms.txt`. (The reporter said `..`; the correct form is `../page`.)
+- A non-dev build minifies, so output never diffs clean against a non-minifying generator. The rule was
+  documented; the consequence for anyone migrating a site was not.
+- `check` and `aikb` had no suggested `package.json` script names, so `npm run aikb` was the reporter's
+  own invention and it did not run the command until prompted.
+- A space in an asset filename works end to end. Measured here: manifest, `{{asset}}` and the link scan
+  all handle `hand-in-hand-for syria.png` (`checked: 1, broken: []`). The reporter lost real time to
+  planning a rename that was never needed — a non-defect worth one clause precisely because everyone
+  assumes the opposite.
+
+Not taken: the `{{url}}` external-URL helper (F4, a public API addition), `.scan()` vs `.page()` guidance
+for a migration (a skill surface, and skills do not ship in the tarball), and the doubt over whether
+`AIKB/` should be gitignored (`llms.txt` already says plainly that it is committed source).
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;
