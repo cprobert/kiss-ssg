@@ -1015,7 +1015,7 @@ Both need `siteUrl` on the Kiss config. Without one they render nothing and log 
 <link rel='stylesheet' href='/{{asset "css/site.css"}}' />
 ```
 
-It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` depending on the config — see **Cache-busting asset URLs** above. There is no leading slash, so the template chooses the base: `/{{asset …}}`, `{{root}}{{asset …}}`, or `{{absUrl (asset …)}}` for an absolute URL. A path that is not in the build renders **with any leading slash removed** (`{{asset "/missing.css"}}` renders `missing.css`, not `/missing.css` — and on a nested page those are two different URLs) and logs one warning per page naming it, rather than failing the page.
+It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` depending on the config — see **Cache-busting asset URLs** above. There is no leading slash, so the template chooses the base: `/{{asset …}}`, `{{root}}{{asset …}}`, or `{{absUrl (asset …)}}` for an absolute URL. A path that is not in the build **fails the build** — the same shape as `{{link}}` on an id no page claims. In **dev** it warns once per page per path and renders the path exactly as written, since the file you are about to add legitimately is not there yet.
 
 `env` renders one branch or the other depending on whether you're in dev mode:
 

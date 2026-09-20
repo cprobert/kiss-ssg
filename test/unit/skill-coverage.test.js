@@ -226,6 +226,13 @@ const CONTRADICTIONS = [
       /does not reach `?report\(\)`? until the next settle/i,
     ],
   },
+  {
+    why: '{{asset}} on a path no copy emitted fails the build now — warn-and-render shipped a 404 on a green build, which is the gap kiss own bar exists to close',
+    patterns: [
+      /rather than failing the page/i,
+      /checked to different depths, so do not read them as one promise/i,
+    ],
+  },
 ]
 
 const consumerFacing = () => {

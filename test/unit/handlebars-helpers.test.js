@@ -535,22 +535,48 @@ describe('asset', () => {
     expect(warnings).toHaveLength(0)
   })
 
-  it('degrades to the path it was given, warning once per page per path', () => {
+  // A path no copy emitted fails the build, the same shape as `{{link}}` on an
+  // id no page claims — they are the two halves of "never hand-write an
+  // internal URL" and they used to be checked to different depths. Warning and
+  // rendering meant the build passed, `report().ok` stayed true, and the site
+  // shipped a 404, which is the verdict-versus-reality gap kiss's own bar
+  // exists to close.
+  it('fails the build on a path no copy emitted', () => {
     hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    expect(() =>
+      hbs.compile('{{asset "css/nope.css"}}')({ view: 'index.hbs' }),
+    ).toThrow(/css\/nope\.css/)
+  })
+
+  it('names the view that asked, so the failure is findable', () => {
+    hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    expect(() =>
+      hbs.compile('{{asset "css/nope.css"}}')({ view: 'about.hbs' }),
+    ).toThrow(/about\.hbs/)
+  })
+
+  it('fails with no manifest at all', () => {
+    hbs = makeHbs()
+    expect(() => render('{{asset "css/site.css"}}')).toThrow()
+  })
+
+  // Dev is the one place the file you are about to add legitimately is not
+  // there yet — so it warns, once per page per path, and renders the path AS
+  // WRITTEN rather than the stripped form, so the browser's 404 names what the
+  // template actually asked for.
+  it('warns instead in dev, keeping the path as written', () => {
+    hbs = makeHbs(
+      { dev: true, assets: { hash: true, version: null } },
+      manifestOf(hashed),
+    )
     const page = { view: 'index.hbs' }
     expect(
-      hbs.compile('{{asset "css/nope.css"}}{{asset "css/nope.css"}}')(page),
-    ).toBe('css/nope.csscss/nope.css')
+      hbs.compile('{{asset "/css/nope.css"}}{{asset "/css/nope.css"}}')(page),
+    ).toBe('/css/nope.css/css/nope.css')
     expect(warnings).toHaveLength(1)
     expect(String(warnings[0][0])).toContain('index.hbs')
     hbs.compile('{{asset "css/nope.css"}}')({ view: 'about.hbs' })
     expect(warnings).toHaveLength(2)
-  })
-
-  it('degrades with no manifest at all', () => {
-    hbs = makeHbs()
-    expect(render('{{asset "css/site.css"}}')).toBe('css/site.css')
-    expect(warnings).toHaveLength(1)
   })
 
   it('warns when the path it was handed is not a string', () => {
