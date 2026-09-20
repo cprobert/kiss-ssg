@@ -26,15 +26,25 @@ export function helpersEntry(folder: string | null | undefined): string | null;
  * folder that cannot be loaded is a build failure for the caller to record,
  * not an exception thrown through the constructor.
  *
+ * `required` says whether the author named this folder or kiss guessed it, and
+ * it changes one branch: an entry that exports **no registrar at all**. That is
+ * the evidence the folder belongs to someone else — an upgrading site whose
+ * root `helpers/` holds unrelated utilities — so a guessed folder warns and the
+ * build carries on, while a folder the author pointed kiss at is a failure. A
+ * folder that breaks rather than declining (an import that throws, a registrar
+ * that throws) fails either way: that one is ours and broken, and shipping it
+ * would lose every helper silently.
+ *
  * @param {string|null|undefined} folder `config.folders.helpers`
- * @param {{ kiss: any, logger: any, fresh?: boolean, previous?: string[] }} deps
+ * @param {{ kiss: any, logger: any, fresh?: boolean, previous?: string[], required?: boolean }} deps
  * @returns {Promise<{ loaded: boolean, entry: string|null, registered?: string[], error?: Error }>}
  */
-export function loadSiteHelpers(folder: string | null | undefined, { kiss, logger, fresh, previous }: {
+export function loadSiteHelpers(folder: string | null | undefined, { kiss, logger, fresh, previous, required }: {
     kiss: any;
     logger: any;
     fresh?: boolean;
     previous?: string[];
+    required?: boolean;
 }): Promise<{
     loaded: boolean;
     entry: string | null;

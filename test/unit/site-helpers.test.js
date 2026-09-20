@@ -103,6 +103,43 @@ describe('loadSiteHelpers', () => {
     expect(logger.error).toHaveBeenCalled()
   })
 
+  // The upgrade hazard. `folders.helpers` defaults to `./helpers`, so a site
+  // that already had a root `helpers/` folder of unrelated utilities gets it
+  // imported on the first build after the upgrade — and failed the whole build
+  // over a folder nobody had pointed kiss at. kiss guessed, so kiss says so
+  // and carries on. An entry that exports no registrar is the evidence the
+  // folder belongs to someone else; anything that *breaks* is still a failure,
+  // because a folder that is ours and broken loses every helper silently.
+  it("only warns about a missing registrar when the folder was kiss's own guess", async () => {
+    site = await makeSite({
+      'helpers/index.js': 'export const formatDate = (d) => String(d)',
+    })
+    const logger = { ...silentLogger, warn: vi.fn(), error: vi.fn() }
+    const guessed = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss: fakeKiss(),
+      logger,
+      required: false,
+    })
+    expect(guessed.loaded).toBe(false)
+    expect(guessed.error).toBeUndefined()
+    expect(logger.error).not.toHaveBeenCalled()
+    const [warning] = logger.warn.mock.calls.at(-1)
+    expect(warning).toContain('helpers/index.js')
+    expect(warning).toContain('folders.helpers')
+  })
+
+  it('still fails when the author named folders.helpers explicitly', async () => {
+    site = await makeSite({
+      'helpers/index.js': 'export const formatDate = (d) => String(d)',
+    })
+    const result = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss: fakeKiss(),
+      logger: { ...silentLogger, error: vi.fn() },
+      required: true,
+    })
+    expect(result.error).toBeInstanceOf(Error)
+  })
+
   it('reports a module that throws on import, and does not throw', async () => {
     site = await makeSite({
       'helpers/index.js': "throw new Error('boom from the helper module')",

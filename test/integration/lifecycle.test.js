@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import http from 'node:http'
 import net from 'node:net'
@@ -29,6 +29,55 @@ describe('a bad model', () => {
     const failed = data.find((d) => d.id === 'missing.json')
     expect(failed.data).toBeNull()
     expect(failed.error.message).toBe('Skipping: missing.json')
+  })
+})
+
+// `folders.helpers` defaults to `./helpers`, which is cwd-relative — so these
+// run from inside the temp site, the way a real build script does. That is
+// also the only way to exercise the *defaulted* path at all: naming the folder
+// in the config is what makes it explicit.
+describe('a root helpers/ folder that kiss does not own', () => {
+  const inSite = async (root, fn) => {
+    const cwd = process.cwd()
+    process.chdir(root)
+    try {
+      return await fn()
+    } finally {
+      process.chdir(cwd)
+    }
+  }
+
+  // The upgrade hazard: a site that had `helpers/` for its own utilities long
+  // before `folders.helpers` existed must not lose its whole build to a folder
+  // nobody pointed kiss at.
+  it('warns and builds, because kiss guessed the folder', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js': 'export const formatDate = (d) => String(d)',
+    })
+    const logger = { ...silentLogger, warn: vi.fn() }
+    await inSite(site.root, async () => {
+      const kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+      await expect(kiss.complete()).resolves.toBeDefined()
+    })
+    expect(await site.exists('public/index.html')).toBe(true)
+    expect(
+      logger.warn.mock.calls.some(([m]) => /folders\.helpers/.test(String(m))),
+    ).toBe(true)
+  })
+
+  it('fails the build when the author named the folder', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js': 'export const formatDate = (d) => String(d)',
+    })
+    const kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow()
   })
 })
 

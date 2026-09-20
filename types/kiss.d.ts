@@ -303,6 +303,16 @@ declare class Kiss {
      * @private
      */
     private _siteHelperNames;
+    /**
+     * Whether the author named `folders.helpers` or kiss defaulted to it. Read
+     * from the config as supplied, before `resolveConfig` fills the default in,
+     * because by then the two are indistinguishable — and they mean opposite
+     * things when the folder turns out not to hold a registrar.
+     *
+     * @type {boolean}
+     * @private
+     */
+    private _helpersExplicit;
     /** @private */
     private _failures;
     /** @private */
