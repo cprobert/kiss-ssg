@@ -277,7 +277,20 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   The coverage was lost silently because a lint rule that stops matching is indistinguishable
   from a codebase with nothing to match; asserting what is NOT caught is what tells them apart.
 
-**Open at `a964336`:**
+- `47ba4bd` **R20** — pins R17's copy-identity canonicalisation two ways: a symlink (runs
+  everywhere, and mutation-tested against the refactor that would actually happen — swapping
+  `realpathSync.native` for `path.resolve`) and a Windows-gated case test. Corrects the belief
+  that CI is Linux-only: the gates run on `ubuntu-latest` AND `windows-latest`, so a
+  `skipIf(win32)` test is a real gate. `AIKB/testing.md` carries the convention.
+- `271b416` **R21** — four more of R17's family, each reproduced here first. The copy key changed
+  when its target came into existence (`realpath`'s ENOENT fallback recorded the spelling, then
+  the canonical form once the folder existed) — R17's own fix returning by a new route, and
+  reproducible on Linux through a symlinked parent rather than only on Windows. A relative copy
+  lost its obligation when the working directory moved. `_assetCopies` grew without bound. And the
+  lint selector missed `FILE:` and a leading space — a ban that did not cover the spellings of the
+  thing it banned.
+
+**Open at `271b416`:**
 
 - **`report()` is stale between settles** — a scoped re-render and a watch asset re-copy call no
   `_finishBuild()`, so breaking a stylesheet on a watch save collects and logs the failure at once
