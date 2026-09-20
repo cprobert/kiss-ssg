@@ -451,6 +451,82 @@ describe('a failure the replay cannot re-derive', () => {
     }
   })
 
+  // The one path that recorded nothing at all: a scoped re-render caught each
+  // page's rejection and dropped it, so a page that started failing under
+  // `.watch()` was loud in the console and absent from both `_failures` and
+  // `report()`. Operator decision — record them like any other failure.
+  describe('a page that starts failing under watch', () => {
+    it('is recorded, and clears when the page is fixed', async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'src/pages/about.hbs': 'about',
+      })
+      kiss = new Kiss({
+        folders: site.folders,
+        logger: silentLogger,
+        dev: true,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      expect(kiss.report().ok).toBe(true)
+
+      kiss.watch({ entry: null })
+      await kiss._watcher.ready
+      // A partial that is not registered fails the render of this page only.
+      await site.touch('src/pages/about.hbs', '{{> "no-such-partial"}}')
+      await waitFor(() => kiss._failures.length > 0)
+      await settled(kiss)
+      expect(views(kiss)).toEqual(['about.hbs'])
+      expect(kiss.report().ok).toBe(false)
+
+      await site.touch('src/pages/about.hbs', 'about again')
+      await waitFor(
+        async () =>
+          (await site.read('public/about.html').catch(() => null)) ===
+          'about again',
+      )
+      await settled(kiss)
+      expect(views(kiss)).toEqual([])
+      expect(kiss.report().ok).toBe(true)
+    })
+
+    // One page failing must not take the others' verdict with it, and a
+    // second failing page must not displace the first.
+    it('records each failing page once, and only the failing ones', async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'src/pages/about.hbs': 'about',
+        'src/pages/contact.hbs': 'contact',
+      })
+      kiss = new Kiss({
+        folders: site.folders,
+        logger: silentLogger,
+        dev: true,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+
+      kiss.watch({ entry: null })
+      await kiss._watcher.ready
+      await site.touch('src/pages/about.hbs', '{{> "gone"}}')
+      await waitFor(() => views(kiss).includes('about.hbs'))
+      await settled(kiss)
+      await site.touch('src/pages/contact.hbs', '{{> "gone"}}')
+      await waitFor(() => views(kiss).includes('contact.hbs'))
+      await settled(kiss)
+
+      expect(views(kiss).sort()).toEqual(['about.hbs', 'contact.hbs'])
+
+      // Re-rendering one of them, still broken, must not duplicate its entry.
+      await site.touch('src/pages/about.hbs', '{{> "still-gone"}}')
+      await waitFor(() => kiss._failures.length >= 2)
+      await settled(kiss)
+      expect(views(kiss).sort()).toEqual(['about.hbs', 'contact.hbs'])
+    })
+  })
+
   // A refresh re-derives the report; it must not re-measure the build. The
   // duration is the build's, not the session's — a watch session left open
   // over lunch reported an hour-long build.

@@ -333,6 +333,8 @@ declare class Kiss {
     private _failures;
     /** @private */
     private _carriedFailures;
+    /** @private */
+    private _pageFailures;
     /**
      * @type {Map<string, Set<any>>}
      * @private
@@ -470,6 +472,29 @@ declare class Kiss {
      */
     copyAssets(sourceDir: string, targetDir: string): this;
     /** @private */
+    /**
+     * Records a page's render failure, and remembers which stack entry owns it.
+     *
+     * The ownership is the point. A page failure is the one kind that a later
+     * event can prove wrong — the author fixes the view and it re-renders — so
+     * something has to be able to find and drop it, and that something must not
+     * be a string match on `view`: an inline template's `view` IS the template
+     * text, and two pages can share one. The entry itself is the identity, held
+     * in a `WeakMap` so a replay discarding the stack discards these with it.
+     *
+     * @param {any} entry
+     * @param {Error} error
+     * @private
+     */
+    private _recordPageFailure;
+    /**
+     * Drops the failure a previous render of this entry recorded, if any —
+     * called by whatever is about to re-render it.
+     *
+     * @param {any} entry
+     * @private
+     */
+    private _clearPageFailure;
     /**
      * Marks a failure as one a whole-site replay carries rather than drops,
      * and returns it so the caller can push it in one expression.
@@ -637,13 +662,14 @@ declare class Kiss {
      * failures: a stylesheet broken by a save is on `failures` and `ok` is
      * `false` as soon as the copy that found it finishes.
      *
-     * The honest scope is "never behind `failures`", not "never behind the
-     * log". A scoped page re-render (`_rebuild`) catches each page's rejection
-     * and records nothing, so a page that starts failing under `.watch()` is in
-     * neither list — loud in the console, absent from both. That predates this
-     * and is a gap, not a subtlety: it is on the open list rather than fixed
-     * here, because fixing it changes what a watch rebuild reports rather than
-     * how it reports it.
+     * That now includes a scoped page re-render, which used to catch each
+     * page's rejection and record nothing — the one path that put nothing on
+     * the list at all, so a page that started failing under `.watch()` was loud
+     * in the console and absent from both. It records them like any other
+     * failure, and drops a page's previous failure before re-rendering it, so a
+     * page the author fixes goes green rather than staying red for the session.
+     * The cost is accepted deliberately: a transient mid-edit render error does
+     * move `ok` to `false` until the next save.
      *
      * What a refresh does not move is the metadata of the build it describes:
      * `duration` and `startedAt` still name the settle that produced it. It is
