@@ -45,7 +45,7 @@ const publicMethods = Object.getOwnPropertyNames(Kiss.prototype).filter(
 // a set rather than inline: `testing` was special-cased by name in three
 // places, and the second cross-cutting doc is the point at which that stops
 // scaling.
-const CROSS_CUTTING = new Set(['testing', 'design'])
+const CROSS_CUTTING = new Set(['testing', 'design', 'upstream'])
 
 const HEADINGS = [
   '## Responsibility',
