@@ -158,6 +158,33 @@ describe('watch()', () => {
     ).toEqual([])
   })
 
+  // A data file is not a module: nothing imported it, so nothing is holding a
+  // cached copy, and a replay re-renders every page against whatever is on
+  // disk now. Asking for a restart here would be the same lie in reverse —
+  // telling the author their working edit did not land.
+  it('does not ask for a restart for a data file a replay does pick up', async () => {
+    const logger = { ...silentLogger, notice: vi.fn() }
+    site = await makeSite({
+      'src/pages/index.hbs': '{{tel}}',
+      'src/data/business.json': '{ "tel": "ONE" }',
+    })
+    kiss = new Kiss({ folders: site.folders, logger })
+    kiss.handlebars.registerHelper(
+      'tel',
+      () => fs.readJsonSync(`${site.root}/src/data/business.json`).tel,
+    )
+    kiss.scan().generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('ONE')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/data/business.json', '{ "tel": "TWO" }')
+    await waitFor(async () => (await site.read('public/index.html')) === 'TWO')
+    expect(
+      logger.notice.mock.calls.filter(([m]) => /restart/i.test(String(m))),
+    ).toEqual([])
+  })
+
   // `AIKB/watcher.md` says the entry script is watched because "the page list
   // itself may have changed". A replay cannot read a changed page list: it
   // replays the registrations logged at start-up. So the watcher must say so.
