@@ -166,6 +166,38 @@ describe('.txt partials are literal text', () => {
     expect(graph.dependentsOf('note')).toEqual(['./public/a.html'])
   })
 
+  // Handlebars re-indents a partial whose call is not flush left, and it does
+  // that by calling `.split('\n')` on whatever the partial returned. A
+  // SafeString has no `.split`, so an indented call threw and the page wrote
+  // nothing — and an indented call is the normal case, since the snippet a
+  // `.txt` partial exists for goes inside a `<pre>`.
+  it('survives an indented call, which is how a snippet is actually written', async () => {
+    site = await makeSite({ 'src/partials/snippet.txt': '<b>hi</b>\nsecond' })
+    const hbs = Handlebars.create()
+    register(hbs, site.root)
+    // Every line of the partial picks up the call's indent, and Handlebars
+    // eats the newline after a standalone partial call — both of which only
+    // happen because the return value is now something it can split.
+    expect(hbs.compile('<pre>\n  {{> "snippet"}}\n</pre>')({})).toBe(
+      '<pre>\n  &lt;b&gt;hi&lt;/b&gt;\n  second</pre>',
+    )
+  })
+
+  it('survives an indented call inside a layout block', async () => {
+    site = await makeSite({
+      'src/partials/snippet.txt': '<b>hi</b>',
+      'src/layouts/main.hbs': '<main>{{#block "body"}}{{/block}}</main>',
+    })
+    const hbs = Handlebars.create()
+    layouts.register(hbs)
+    register(hbs, site.root)
+    expect(
+      hbs.compile(
+        '{{#extend "main"}}\n  {{#content "body"}}\n    {{> "snippet"}}\n  {{/content}}\n{{/extend}}',
+      )({}),
+    ).toContain('&lt;b&gt;hi&lt;/b&gt;')
+  })
+
   it('is registered under its path-derived name, like every other partial', async () => {
     site = await makeSite({ 'src/partials/blocks/leadin.txt': 'hello' })
     const hbs = Handlebars.create()
