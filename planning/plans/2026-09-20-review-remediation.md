@@ -298,8 +298,38 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   side effects — a test asserts `KISS_REPORT` still has one line after a save that flips `ok`.
   Both call sites read one `_reportInputs()`.
 
-**Open at `4f23b76`:**
+- `6b61866` **R24** — four P2s from the Codex round. A report refresh counted idle session time as
+  build time (R22 introduced it and R22's own docs denied it); the INITIAL copy ran against the cwd
+  at drain time, not registration time; the copy key is computed after the copy runs, when the
+  target exists. Finding 20 closed by construction, finding 18 unreproducible on Linux — both said
+  so rather than claimed. `report()`'s claim narrowed to "never behind `failures`", because a
+  scoped page re-render records nothing and that gap is real.
+- `22ef312` **R25** — **breaking.** `{{asset}}` on a path no copy emitted fails the build, matching
+  `{{link}}`; dev warns and renders the path as written. Taken under the operator's steer that
+  architectural elegance outranks compatibility — the old behaviour shipped a 404 on a green build,
+  and R16/R21 had corrected its documentation twice without either of us asking whether the
+  behaviour was right.
+- `3d2e216` **R26** — `AIKB/upstream.md`, and the two standing policies behind it: upstream is
+  documented rather than engineered around (with the version observed and how to re-check it), and
+  architectural elegance is the prime objective, not compatibility. The ESM entry records that
+  `module.register()` DOES evict siblings (measured) and is declined anyway, rather than asserting
+  the limitation is absolute — which is what the docs used to do.
+- `eaa8311` **R27** — finding 20 converted from closed-by-construction to closed-by-demonstration,
+  using the deterministic fixture the QA session produced after I said I could not build one.
 
+**Open at `eaa8311`:**
+
+- **Three fixes are verified on one machine only.** Finding 18's not-yet-created destination,
+  R20's case test and R21's canonicalisation all assert a property that is meaningful only on a
+  case-insensitive filesystem. They run on CI's `windows-latest` leg once this merges; until then
+  the QA session's Windows box is the single point of verification. The symlink half covers the
+  same mechanism portably, which is why this is a note rather than a risk.
+- **A scoped page re-render records no failure at all.** `_rebuild` catches each page's rejection
+  and pushes nothing, so a page that starts failing under `.watch()` is loud in the console and
+  absent from both `_failures` and `report()`. Pre-existing, found by Codex while checking R22's
+  claim, and the reason that claim is now scoped to "never behind `failures`" rather than "never
+  behind the log". Fixing it changes what a watch rebuild reports rather than how, so it wants a
+  decision rather than a patch.
 - **The version string does not distinguish the branch from the release.** `package.json`,
   both plugin manifests and the installed 2.4.0 plugin cache all read `2.4.0` while carrying
   materially different skill text — so a consuming agent cannot tell which it has, and the cached
