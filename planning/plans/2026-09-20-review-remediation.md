@@ -271,13 +271,13 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   finding (e), which its own premise had outlived — `isInside` was fixed in R10; this is the one
   test beside it that was never converted.
 
-- `<R19>` **R19** — restores the ESLint coverage the narrowing dropped (an explicit
+- `a964336` **R19** — restores the ESLint coverage the narrowing dropped (an explicit
   `new URL('file:///C:/x').pathname`) as a second selector, and pins all three cases — both
   file-URL forms caught, the http form deliberately not — in `test/unit/eslint-config.test.js`.
   The coverage was lost silently because a lint rule that stops matching is indistinguishable
   from a codebase with nothing to match; asserting what is NOT caught is what tells them apart.
 
-**Open at `<R19>`:**
+**Open at `a964336`:**
 
 - **`report()` is stale between settles** — a scoped re-render and a watch asset re-copy call no
   `_finishBuild()`, so breaking a stylesheet on a watch save collects and logs the failure at once
