@@ -267,6 +267,42 @@ describe('loadSiteHelpers', () => {
     expect(kiss.registered.b()).toBe('B')
   })
 
+  // A site upgrading from before `folders.helpers` existed still has
+  // `registerHelpers(kiss)` in its router, so the same registrar runs twice:
+  // once by hand, once by kiss. Harmless in itself — but if "the site's
+  // helpers" is measured as "names that were not in the registry before", the
+  // manual call has already put them there and kiss sees an EMPTY list. The
+  // teardown above then has nothing to tear down, and a removed helper stays
+  // live on exactly the sites most likely to hit it. Measured on the real
+  // loader before this was fixed: `registered: []`, `banner` still 'OLD'.
+  it('still reports the names when the router registered them by hand too', async () => {
+    site = await makeSite({
+      'helpers/index.js':
+        "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('banner', () => 'OLD'); kiss.handlebars.registerHelper('keep', () => 'K') }",
+    })
+    const kiss = fakeKiss()
+    const { registerHelpers } = await import(`${site.root}/helpers/index.js`)
+    registerHelpers(kiss) // the router's own call, before kiss loads the folder
+    const first = await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+    })
+    expect([...first.registered].sort()).toEqual(['banner', 'keep'])
+
+    await new Promise((r) => setTimeout(r, 10))
+    await site.touch(
+      'helpers/index.js',
+      "export function registerHelpers(kiss) { kiss.handlebars.registerHelper('keep', () => 'K') }",
+    )
+    await loadSiteHelpers(`${site.root}/helpers`, {
+      kiss,
+      logger: silentLogger,
+      fresh: true,
+      previous: first.registered,
+    })
+    expect(kiss.registered.banner).toBeUndefined()
+  })
+
   // The caller needs to know which names the site's registrar added, and only
   // those: a built-in kiss helper is not the site's to unregister later.
   it('reports only the names the site registrar added', async () => {
