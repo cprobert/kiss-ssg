@@ -357,6 +357,113 @@ describe('a failure the replay cannot re-derive', () => {
     }
   })
 
+  // `report()` is the machine verdict. Between settles it was a stale one: a
+  // watch save that breaks a stylesheet puts the failure on `_failures` and
+  // logs it in red at once, while `report().ok` went on saying true until the
+  // next whole-site replay — so an agent reading the report was told the site
+  // was fine while the console said otherwise.
+  describe('report() between settles', () => {
+    it('goes false when a watch save breaks a stylesheet, and back', async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'src/assets/css/site.scss': 'body { color: red; }',
+      })
+      kiss = new Kiss({
+        folders: site.folders,
+        logger: silentLogger,
+        dev: true,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      expect(kiss.report().ok).toBe(true)
+
+      kiss.watch({ entry: null })
+      await kiss._watcher.ready
+      await site.touch('src/assets/css/site.scss', 'body { color: ')
+      await waitFor(() =>
+        kiss._failures.some((f) => f.view.startsWith('<sass:')),
+      )
+      await kiss._assetQueue
+      expect(kiss.report().ok).toBe(false)
+      expect(kiss.report().failures).toHaveLength(1)
+
+      await site.touch('src/assets/css/site.scss', 'body { color: blue; }')
+      await waitFor(
+        () => !kiss._failures.some((f) => f.view.startsWith('<sass:')),
+      )
+      await kiss._assetQueue
+      expect(kiss.report().ok).toBe(true)
+    })
+
+    it('goes false when a helpers reload fails', async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'helpers/index.js':
+          'export function registerHelpers(kiss) { kiss.handlebars.registerHelper("x", () => "ok") }',
+      })
+      kiss = new Kiss({
+        folders: { ...site.folders, helpers: `${site.root}/helpers` },
+        logger: silentLogger,
+        dev: true,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      expect(kiss.report().ok).toBe(true)
+
+      kiss.watch({ entry: null })
+      await kiss._watcher.ready
+      await site.touch(
+        'helpers/index.js',
+        'export function registerHelpers() { throw new Error("boom") }',
+      )
+      await waitFor(() =>
+        kiss._failures.some((f) => f.view === '<site helpers>'),
+      )
+      await kiss._helpersReady
+      expect(kiss.report().ok).toBe(false)
+    })
+
+    // The refresh must re-derive the report and NOTHING else. `_finishBuild()`
+    // carries once-per-build side effects, and `KISS_REPORT` takes one line
+    // per build rather than one per asset save — re-running it here would
+    // trade a stale verdict for a corrupted record.
+    it('does not write another KISS_REPORT line per asset save', async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'hi',
+        'src/assets/css/site.scss': 'body { color: red; }',
+      })
+      const reportFile = `${site.root}/report.jsonl`
+      vi.stubEnv('KISS_REPORT', reportFile)
+      try {
+        kiss = new Kiss({
+          folders: site.folders,
+          logger: silentLogger,
+          dev: true,
+        })
+          .scan()
+          .generate()
+        await kiss.complete()
+        const afterBuild = (await site.read('report.jsonl')).trim().split('\n')
+        expect(afterBuild).toHaveLength(1)
+
+        kiss.watch({ entry: null })
+        await kiss._watcher.ready
+        await site.touch('src/assets/css/site.scss', 'body { color: ')
+        await waitFor(() =>
+          kiss._failures.some((f) => f.view.startsWith('<sass:')),
+        )
+        await kiss._assetQueue
+        expect(kiss.report().ok).toBe(false)
+        const afterSave = (await site.read('report.jsonl')).trim().split('\n')
+        expect(afterSave).toHaveLength(1)
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+  })
+
   it('still clears a failure the replay does re-derive', async () => {
     site = await makeSite({
       'src/pages/index.hbs': '{{title}}',

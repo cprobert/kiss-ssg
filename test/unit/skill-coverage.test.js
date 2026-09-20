@@ -219,6 +219,13 @@ const CONTRADICTIONS = [
     why: 'a Sass failure fails the build — the pre-R8 "logged and dropped" wording outlived the behaviour it described',
     patterns: [/leaves the copy successful/i],
   },
+  {
+    why: 'report() is refreshed between settles now — the "leaves the last report standing" wording was true for two commits and is the kind of half-truth a consumer builds a check on',
+    patterns: [
+      /settle no build, so they leave the last report standing/i,
+      /does not reach `?report\(\)`? until the next settle/i,
+    ],
+  },
 ]
 
 const consumerFacing = () => {
