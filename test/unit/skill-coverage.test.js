@@ -12,6 +12,22 @@ const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
+  // Found on six of six sites during the 2.5.0 fleet upgrade: after a `file:`
+  // link is repinned to a range, a plain `npm install` keeps the link. The
+  // upgrade skill is the one place an upgrading agent reads.
+  {
+    feature:
+      'upgrade: a file: link survives a plain npm install after the pin changes',
+    pattern: /"link": true/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
+  // 2.5.1: a page can name another URL as its canonical. The page-add skill is
+  // where an agent adding a mirrored page would otherwise hand-roll a helper.
+  {
+    feature: 'a page can name another URL as its canonical',
+    pattern: /canonical: 'https:\/\//,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
+  },
   // 2.5 fails builds that used to pass, in three places. The upgrade skill is
   // the only thing a consuming agent reads when a site breaks on upgrade, so
   // each break has to be findable there by the error text the author is

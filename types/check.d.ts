@@ -8,6 +8,40 @@
  * @property {string|null} error a usage error: print it with the help and exit 1
  */
 /**
+ * Which kiss-ssg the site's script will import: the nearest
+ * `node_modules/kiss-ssg` walking up from `from` — the script's own folder,
+ * which is where Node resolves its imports from, not the caller's cwd (Codex,
+ * on review: `check sites/one/build.js` would otherwise report the caller's
+ * copy). Paths in the answer are relative to `cwd`, the folder the person is
+ * standing in.
+ * Says whether that folder is a link — the upgrade hazard the 2.5.0 fleet run
+ * hit on six of six sites: after `file:../../kiss-ssg` is edited to `^2.5.0`,
+ * a plain `npm install` keeps the link because the lockfile's entry already
+ * satisfies the range, so the site reports a registry version while building
+ * against a working tree. `check` is the one command every upgrade runs.
+ *
+ * @param {{ cwd: string, from?: string }} where `from` defaults to `cwd`
+ * @returns {{ version: string, dir: string, linked: boolean, target: string|null }|null}
+ * `null` when no `node_modules/kiss-ssg` exists above `from`
+ */
+export function describeEngine({ cwd, from }: {
+    cwd: string;
+    from?: string;
+}): {
+    version: string;
+    dir: string;
+    linked: boolean;
+    target: string | null;
+} | null;
+/**
+ * The line the bin prints on stderr before the build, in both output modes,
+ * from `describeEngine`.
+ *
+ * @param {ReturnType<typeof describeEngine>} engine
+ * @returns {string}
+ */
+export function engineLine(engine: ReturnType<typeof describeEngine>): string;
+/**
  * @param {string[]} [argv] `process.argv.slice(2)`
  * @returns {CheckArgs}
  */
@@ -115,7 +149,7 @@ export function formatDiff(diff: CheckDiff): string;
  * @returns {0|1}
  */
 export function exitCodeFor(reports: import("./build-report.js").BuildReport[], scriptStatus: number | null): 0 | 1;
-export const HELP: "kiss-ssg <command> <script> [args\u2026]\n\n  check <script>   run the site's own build script with the build staged and\n                   then discarded, and print one JSON report per Kiss instance\n                   it created. Nothing published is touched: the build folder is\n                   neither emptied nor written.\n  aikb <script>    record the site's knowledge base from a passing build. The\n                   same staged, discarded run as check \u2014 it publishes nothing \u2014\n                   but it rewrites config.folders.aikb: the site map, and the\n                   report snapshot the diff measures against. It refuses to\n                   record a failed build.\n\nOptions, for both commands:\n\n  --summary          one line per site instead of the JSON\n  --against <file>   diff this build against an earlier report, and say which\n                     pages were added, removed or changed\n  --help             this text\n\nEverything after the script is passed through to it, so a site that takes its own\narguments is checked the way it is run \u2014 --summary excepted, which is read\nwherever it appears. A site that needs that word itself takes it after a bare --:\nkiss-ssg check menu.js -- --summary\n\n--against takes a file this or another build wrote: a KISS_REPORT JSON Lines\nfile, the JSON array check itself prints, or a single report object. Pages are\nmatched by output path and compared by the hash of the bytes they wrote, per\nbuild folder. In --summary the diff prints under each site's line (+ added,\n- removed, ~ changed, = N unchanged); otherwise stdout becomes\n{ \"reports\": [...], \"diff\": [...] } instead of the bare array. It never changes\nthe exit code \u2014 a diff is a description of the build, not a verdict on it.\n\ncheck diffs without being asked: a site that has recorded its knowledge base is\ncompared against <folders.aikb>/last-build.json unless --against names another\nfile. aikb has just overwritten that file, so it diffs only when --against is\ngiven explicitly.\n\nExits 1 if any site failed to build, if the script itself exited non-zero, or if\nit never settled a build (a script with no awaited complete() reports nothing).";
+export const HELP: "kiss-ssg <command> <script> [args\u2026]\n\n  check <script>   run the site's own build script with the build staged and\n                   then discarded, and print one JSON report per Kiss instance\n                   it created. Nothing published is touched: the build folder is\n                   neither emptied nor written. Before the build it says on\n                   stderr which kiss-ssg the site resolves, and names a\n                   node_modules/kiss-ssg that is a link to a working tree\n                   rather than the registry package.\n  aikb <script>    record the site's knowledge base from a passing build. The\n                   same staged, discarded run as check \u2014 it publishes nothing \u2014\n                   but it rewrites config.folders.aikb: the site map, and the\n                   report snapshot the diff measures against. It refuses to\n                   record a failed build.\n\nOptions, for both commands:\n\n  --summary          one line per site instead of the JSON\n  --against <file>   diff this build against an earlier report, and say which\n                     pages were added, removed or changed\n  --help             this text\n\nEverything after the script is passed through to it, so a site that takes its own\narguments is checked the way it is run \u2014 --summary excepted, which is read\nwherever it appears. A site that needs that word itself takes it after a bare --:\nkiss-ssg check menu.js -- --summary\n\n--against takes a file this or another build wrote: a KISS_REPORT JSON Lines\nfile, the JSON array check itself prints, or a single report object. Pages are\nmatched by output path and compared by the hash of the bytes they wrote, per\nbuild folder. In --summary the diff prints under each site's line (+ added,\n- removed, ~ changed, = N unchanged); otherwise stdout becomes\n{ \"reports\": [...], \"diff\": [...] } instead of the bare array. It never changes\nthe exit code \u2014 a diff is a description of the build, not a verdict on it.\n\ncheck diffs without being asked: a site that has recorded its knowledge base is\ncompared against <folders.aikb>/last-build.json unless --against names another\nfile. aikb has just overwritten that file, so it diffs only when --against is\ngiven explicitly.\n\nExits 1 if any site failed to build, if the script itself exited non-zero, or if\nit never settled a build (a script with no awaited complete() reports nothing).";
 export type CheckArgs = {
     command: "check" | "aikb" | "help";
     /**

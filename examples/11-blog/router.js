@@ -66,7 +66,7 @@ const kiss = new Kiss({
   // host-neutral list — is written whatever this says; `format` names the
   // vendor encodings to put beside it, and takes an array when a site deploys
   // to more than one host (`['netlify', 'firebase']`). Leave it off and a
-  // build with `aliases` writes only the IR and says so in a notice: kiss will
+  // build with `aliases` writes only the IR and warns: kiss will
   // not guess a host and quietly emit a file yours does not read.
   redirects: { format: 'netlify' },
   verbose: true,

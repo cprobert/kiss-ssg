@@ -29,6 +29,8 @@ node -p "require('./package.json').devDependencies?.['kiss-ssg'] ?? require('./p
 node -p "require('./node_modules/kiss-ssg/package.json').version"
 ```
 
+**If the site was on a `file:` link, do not trust a plain `npm install` to move it.** Editing `package.json` from `file:../kiss-ssg` to `^2.5.0` and running `npm install` keeps the link: the lockfile's entry (`"link": true`) already satisfies the range, so `node_modules/kiss-ssg` stays a junction to the working tree while `package.json` says otherwise — six of six sites hit this on the 2.5.0 upgrade. Run `npm install kiss-ssg@^2.5.0 --save-dev` instead, which re-resolves it, then confirm: `node_modules/kiss-ssg` must be a real folder (from the registry it has `CHANGELOG.md`, `llms.txt`, `AIKB/`, `examples/`), and `package-lock.json` must resolve it to `https://registry.npmjs.org/kiss-ssg/-/kiss-ssg-<version>.tgz`. `npx kiss-ssg check <script>` now says which kiss-ssg the site resolves on stderr, and names a link as one.
+
 Then read `node_modules/kiss-ssg/CHANGELOG.md` — every entry between those two versions, not only the
 newest. It is written for people building sites rather than maintaining the engine, so an entry that
 names a folder, a default or a config key is one that can change this site's behaviour without

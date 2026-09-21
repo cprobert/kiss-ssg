@@ -129,3 +129,16 @@ describe('writeSitemap', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('a page whose canonical is elsewhere', () => {
+  it('is left out of the sitemap', () => {
+    const urls = buildSitemapEntries(
+      [
+        entry('out/a.html'),
+        entry('out/b.html', { canonical: 'https://other.example/b' }),
+      ],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(urls.map((u) => u.loc)).toEqual(['https://e.com/a'])
+  })
+})

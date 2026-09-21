@@ -3,6 +3,80 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.5.1 — 2026-09-21
+
+What the fleet upgrade to 2.5.0 taught. Seven sites moved onto the published
+package in one morning, no engine defect was found, and everything the run
+turned up is here. A patch by the maintainer's decision: it adds a page option
+and a report key, which semver would call a minor, but every consumer is his.
+
+### A page can name another URL as its canonical
+
+`canonical: 'https://sister.example/course'` on a page — in its `.page()`
+options, or returned by its controller — and `{{canonical}}` renders that URL
+verbatim. The page is then left out of `sitemap.xml`, `llms.txt` and the
+feed: a page that says another URL is the real one is asking not to be
+advertised. `report().pages[].canonical` carries the URL, and
+`kiss-ssg check --summary` prints one line: `N pages canonical elsewhere —
+not in sitemap.xml, llms.txt or the feed`.
+
+The value must be an absolute `http(s)://` URL with a host. Anything else
+fails the page at registration, whether or not its template renders the
+helper:
+
+```
+canonical must be an absolute http(s) URL, got '/mirror' (mirror.hbs)
+```
+
+Before this, a site mirroring a sister catalogue had to keep a hand-rolled
+canonical helper — learna-kiss has 104 course pages whose canonical is the same
+course on diploma-msc.com. It can drop that helper now.
+
+### `kiss-ssg check` says which kiss-ssg it found
+
+On stderr, before the build, in both output modes:
+
+```
+kiss-ssg 2.5.1 from node_modules/kiss-ssg
+kiss-ssg 2.5.1 from node_modules/kiss-ssg — a link to C:/Code/kiss-ssg, not the registry package
+```
+
+It resolves from the build script's folder, the way Node does, so a script in
+a subfolder with its own `node_modules` is reported from there. **Upgrading a
+site that used a `file:` link?** Editing `package.json` to `^2.5.1` and
+running `npm install` keeps the link — the lockfile's entry still satisfies
+the range — so the site reports a registry version while building against the
+working tree. Six of six sites hit this. Run
+`npm install kiss-ssg@^2.5.1 --save-dev` instead, and read the line.
+
+### Aliases with no `redirects.format` now warn
+
+The message is the same and so is its condition — it fires only when a page
+actually carries an alias — but it arrives at `warn` rather than `notice`.
+Measured on a real site with fourteen aliases and no format: one cyan line was
+all that stood between it and fourteen live 404s on the next deploy.
+
+### The staging folder stays out of `config.folders.build`
+
+Under `kiss-ssg check` and `cleanBuild: 'atomic'`, `this.config.folders.build`
+inside a `complete()` callback, and `{{config.folders.build}}` in a template,
+are the folder you configured — never `…kiss-staging-<pid>-<random>`. A
+site's callback used to print the staging path under `check`, because a check
+never promotes and nothing pointed the folder back. The one reader that still
+sees the staging path is a pipeline step's `KISS_BUILD`, on purpose: a tool's
+output has to land in the build being staged.
+
+### Smaller
+
+- `llms.txt` opens by naming the two Claude Code plugins and how to install
+  them, so an agent about to write its first build script is told before it
+  starts rather than at the knowledge-base section it never reaches.
+- The generated `AIKB/README.md` says what the subject hash is: sha1 of the
+  controller file's bytes with line endings normalised to LF, so a Windows
+  clone agrees with the Linux clone that wrote the stamps.
+- The `kiss-site-migrate` skill carries the `file:` link hazard above;
+  `kiss-page-add` carries the canonical option.
+
 ## 2.5.0 — 2026-09-20
 
 ### ⚠️ Breaking changes, in a minor release

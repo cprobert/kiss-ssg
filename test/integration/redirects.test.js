@@ -186,9 +186,10 @@ describe('_redirects, written from page aliases', () => {
     kiss
       .page({ view: 'index.hbs' })
       .page({ view: 'about.hbs', aliases: ['/team'] })
-      .generate(() =>
-        fs.ensureDirSync(`${kiss.config.folders.build}/_redirects`),
-      )
+      // The squat has to land in the STAGING folder, which is exactly what
+      // config no longer exposes — so the test reaches for the engine's own
+      // write root rather than the folder the author named.
+      .generate(() => fs.ensureDirSync(`${kiss._writeRoot}/_redirects`))
 
     const err = await kiss.complete().catch((e) => e)
     expect(err).toBeInstanceOf(AggregateError)
@@ -277,17 +278,28 @@ describe('the host format, and the upgrade it must not lose in silence', () => {
     // would otherwise lose its redirects with nothing in the log — the exact
     // silent failure the format block was built to abolish, delivered by the
     // block itself.
+    // A warning, not a notice: measured on a1k9training during the 2.5.0 fleet
+    // upgrade, fourteen aliases and no format, and one cyan line was all that
+    // stood between the site and fourteen live 404s on the next deploy.
+    const warns = []
     const notices = []
     await buildSite({
       over: {
         redirects: undefined,
-        logger: { ...silentLogger, notice: (msg) => notices.push(String(msg)) },
+        logger: {
+          ...silentLogger,
+          warn: (msg) => warns.push(String(msg)),
+          notice: (msg) => notices.push(String(msg)),
+        },
       },
     })
 
     expect(await site.exists('public/redirects.json')).toBe(true)
     expect(await site.exists('public/_redirects')).toBe(false)
-    expect(notices).toContain(
+    expect(
+      notices.filter((line) => line.includes('redirects.json only')),
+    ).toEqual([])
+    expect(warns).toContain(
       'aliases written to redirects.json only — set config.redirects.format' +
         " (e.g. 'netlify', 'firebase', or ['netlify','firebase']) to emit a file your host reads",
     )
@@ -306,6 +318,28 @@ describe('the host format, and the upgrade it must not lose in silence', () => {
     expect(await site.exists('public/redirects.json')).toBe(true)
     expect(
       notices.filter((line) => line.includes('redirects.json only')),
+    ).toEqual([])
+  })
+
+  it('warns nobody when no page has an alias, whatever format says', async () => {
+    // The operator's condition for the warning: only a site that would have a
+    // redirect file to lose is told it is missing one. A guard, not a red-first
+    // test — it pins the existing condition against the level change.
+    const warns = []
+    site = await makeSite({ 'src/pages/index.hbs': 'home' })
+    const kiss = track(
+      new Kiss({
+        folders: site.folders,
+        siteUrl: 'https://e.com',
+        logger: { ...silentLogger, warn: (msg) => warns.push(String(msg)) },
+      }),
+    )
+    kiss.page({ view: 'index.hbs' }).generate()
+    await kiss.complete()
+
+    expect(await site.exists('public/redirects.json')).toBe(false)
+    expect(
+      warns.filter((line) => line.includes('redirects.json only')),
     ).toEqual([])
   })
 

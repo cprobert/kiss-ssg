@@ -270,7 +270,7 @@ export type SiteMapSubject = {
      */
     note: string;
     /**
-     * sha1 hex of what the subject *is* — the controller file's bytes, or the step's command — and `null` when there is nothing to hash (a URL model) or nothing to read (a controller file that is not there)
+     * sha1 hex of what the subject *is* — the controller file's bytes with CRLF normalised to LF (so a Windows clone hashes the same), or the step's command — and `null` when there is nothing to hash (a URL model) or nothing to read (a controller file that is not there)
      */
     hash: string | null;
 };

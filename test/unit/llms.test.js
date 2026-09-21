@@ -289,3 +289,19 @@ describe('writeLlms', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('a page whose canonical is elsewhere', () => {
+  it('is left out of llms.txt', () => {
+    const entries = buildLlmsEntries(
+      [
+        entry('out/index.html'),
+        entry('out/b.html', {
+          slug: 'b',
+          canonical: 'https://other.example/b',
+        }),
+      ],
+      context,
+    )
+    expect(entries.map((e) => e.url)).toEqual(['https://e.com/'])
+  })
+})

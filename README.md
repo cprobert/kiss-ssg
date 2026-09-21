@@ -458,7 +458,7 @@ It can be called before or after `.generate()` — both just wait for all your p
 
 Each `<loc>` is the same string the `canonical` helper renders on that page, built by the same code — so a page built to a directory index is listed with its trailing slash (`courses/index.html` → `https://example.com/courses/`), which is the URL Netlify serves without a redirect, or without it under `links: { trailingSlash: false }` for a host that serves the bare form ([Host URL policy](#host-url-policy)). See **canonical / absUrl** below.
 
-Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages): A page with `generate: false` is left out as well.
+A page that names another URL as its canonical — `canonical: 'https://sister.example/course'` on the page, or set by its controller — is left out too, and `{{canonical}}` renders that URL: the page has said another one is the real one, and a sitemap that listed it would advertise a duplicate. The same page is out of `llms.txt` and the feed, `report().pages[].canonical` carries the URL, and `--summary` counts them. A value that is not an absolute `http(s)://` URL fails the page at registration. Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages): A page with `generate: false` is left out as well.
 
 ```js
 kiss.page({
@@ -657,7 +657,7 @@ A page's `aliases` are the old URL paths it now answers. There is no method to c
 
 An alias is a fact about your site — "this page used to answer `/old`" — and that fact is portable. Every alias is a **permanent** redirect: `redirects.json` records `status: 301` on each rule so a consumer has the code in the data rather than hardcoding it, but there is no way to ask for a `302`, a `308` or a `410`, and no forced or wildcard rules. The field marks the place such a thing would live, not a setting. The file it goes into is one host's encoding of it, and hosts disagree. So every settled build with an alias writes `redirects.json` — the host-neutral list — **always**, and then whatever host encodings `config.redirects.format` names beside it.
 
-**`format` is unset by default, and takes a list.** kiss does not guess where you deploy: with no `format` you get the IR and no host file. Because every version before this one always wrote `_redirects`, a build that has aliases and no `format` logs one notice telling you what to set — an explicit `'none'` or `[]` is a decision and stays silent.
+**`format` is unset by default, and takes a list.** kiss does not guess where you deploy: with no `format` you get the IR and no host file. Because every version before this one always wrote `_redirects`, a build that has aliases and no `format` logs one warning telling you what to set — an explicit `'none'` or `[]` is a decision and stays silent.
 
 ```js
 new Kiss({ redirects: { format: ['netlify', 'firebase'] } })
@@ -782,7 +782,7 @@ Your browser is reloaded once per rebuild, when that rebuild has finished writin
 
 ### Checking a build
 
-`npx kiss-ssg check <script>` builds the site your script builds and tells you whether it worked — without publishing anything. The build is staged and then discarded, so the build folder is neither emptied nor written, and what you get back is the verdict instead of the output:
+`npx kiss-ssg check <script>` builds the site your script builds and tells you whether it worked — without publishing anything. Before the build it says on stderr which kiss-ssg the site resolves, and names a `node_modules/kiss-ssg` that is a link to a working tree rather than the registry package — the shape a plain `npm install` leaves behind after a `file:` dependency is repinned to a version range, because the lockfile's entry still satisfies it; `npm install kiss-ssg@^<version> --save-dev` re-resolves it. The build is staged and then discarded, so the build folder is neither emptied nor written, and what you get back is the verdict instead of the output:
 
 ```bash
 npx kiss-ssg check router.js             # JSON, one report per Kiss instance — and, if the
@@ -994,7 +994,7 @@ Hash options: `href` (the link's path), `active` (the class name rendered as `{{
 <link rel='canonical' href='{{canonical}}' />
 ```
 
-It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string. A page built to a file is the bare URL (`courses/bronze.html` → `https://example.com/courses/bronze`); **a page built to a directory index keeps a trailing slash** (`courses/index.html` → `https://example.com/courses/`), because that is the URL Netlify actually serves — it answers the bare `/courses` with a 301, and a canonical must be the URL that returns 200. That is host policy rather than a universal, and `links: { trailingSlash: false }` says the other convention — see [Host URL policy](#host-url-policy). The home page is `siteUrl` with one trailing slash. A `siteUrl` with a trailing slash is fine — you never get a double slash.
+It takes no arguments (`{{canonical this}}` — the shape a hand-rolled helper usually had — works too). It is built by the same code that writes `sitemap.xml`, so a page's canonical link and its `<loc>` are always the same string. A page whose real home is elsewhere sets `canonical: 'https://…'` in its options (or its controller does), and the helper renders that URL verbatim — see [Sitemap](#sitemap) for what else that page option does. A page built to a file is the bare URL (`courses/bronze.html` → `https://example.com/courses/bronze`); **a page built to a directory index keeps a trailing slash** (`courses/index.html` → `https://example.com/courses/`), because that is the URL Netlify actually serves — it answers the bare `/courses` with a 301, and a canonical must be the URL that returns 200. That is host policy rather than a universal, and `links: { trailingSlash: false }` says the other convention — see [Host URL policy](#host-url-policy). The home page is `siteUrl` with one trailing slash. A `siteUrl` with a trailing slash is fine — you never get a double slash.
 
 With `extensionLess: true` every page but the home page builds to `<path>/<slug>/index.html`, so every page but the home page is a directory index and its canonical ends in `/` too (`https://example.com/courses/bronze/`). That is deliberate, and it is the same rule: it is the URL the host serves without a redirect.
 
