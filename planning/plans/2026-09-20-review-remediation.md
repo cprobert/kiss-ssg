@@ -341,3 +341,44 @@ introduced. That ratio is the branch's own warning about turnaround speed.
   llms.txt's opening rule. The rule was wrong, not the examples — `{{link}}` emits a leading slash,
   which cannot resolve in a build opened straight off the file system, which is what those
   examples are for. The rule now carries the exception.
+
+## Verified 2026-09-21 — every open item re-checked at `eb67929` (main, after the 2.5.0 merge)
+
+Operator's Windows laptop, the platform this branch never had. Each line says what was measured;
+"closed" means the code was read and the evidence seen here, not that a log said so.
+
+- **Three fixes verified on one machine only — closed.** CI run 35569913921 on the merge commit:
+  `gates (windows-latest)` and `gates (ubuntu-latest)` both success. Full suite here: 69 files,
+  1514 passed, 2 skipped. The Windows-gated cases ran as real tests, not skips, on this box.
+- **A scoped page re-render records no failure — closed by R29 (`a9ffaa7`)**, which landed after
+  this list was written. `_rebuild` now drops the entry's previous failure and records a new one
+  (`lib/kiss.js:2433`, `AIKB/kiss.md:25`); the accepted cost is `ok: false` on a transient mid-edit
+  error until the next save. The 2.5.0 CHANGELOG names it.
+- **The version string — open, and now a release action rather than a design one.** `package.json`
+  and both plugin manifests read 2.5.0; npm's latest is still 2.4.0 (modified 2026-09-18); no
+  `v2.5.0` tag exists; the installed marketplace plugins are 2.4.0, and the cached 2.4.0
+  `kiss-page-add` and `kiss-site-new` skills still teach `registerHelpers(kiss)` and `src/helpers/`.
+  `npm publish` closes it (the `postpublish` hook tags). The mid-branch prerelease question for
+  `/branch-open` stays open; nothing decided here.
+- **Codex's objection to P3's `required` line (second round, "still open") — closed by R6/R10.**
+  A guessed folder is gated on its source mentioning `registerHelpers` **before** any import
+  (`lib/site-helpers.js:248`); an unrelated barrel that throws on import is never imported, and a
+  guessed folder that does declare the export and then throws is a build failure because it named
+  itself kiss's. The `window`-at-top-level counterexample is the fixture at
+  `test/unit/site-helpers.test.js:619`.
+- **"Left unverified" from the first round:** P7's Linux-only caveat was already retired on the
+  peer's Windows run and is now retired again on this one. The sibling-module restart notice is
+  still the honest answer, not a working reload (`lib/kiss.js:3067`), and `AIKB/upstream.md:61`
+  records `module.register()` as considered and declined. P10 is still a reading, not a test.
+- **Session-log non-goals:** F2 (sass/css collision) and F5(b) (leading-slash `dangling`) were
+  absorbed and fixed on the branch; their tests are in `test/unit/assets.test.js` (the collision
+  detector, `:315`) and `test/unit/aikb.test.js`. F4 (`{{url}}`) is not built — no such helper is
+  registered — and is a feature request, not a defect. The bench-baseline contradiction (CLAUDE.md
+  names `planning/benchmarks/baseline-main.json` as the baseline; the 09-06 follow-up says a
+  committed record is history) has now been asked in three logs and is still the operator's one
+  sentence.
+
+Found while verifying, not on this list — recorded in `to-verify.md` § "Found while verifying":
+every example README and `examples/11-blog/router.js:36` cite the pre-router `node <n>-<name>.js`
+entry files (removed in #17), example 10's README names the tool's fallback output path rather than
+the one kiss uses, and 2.5.0 is merged but unpublished.
