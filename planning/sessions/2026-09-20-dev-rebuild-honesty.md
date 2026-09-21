@@ -3,6 +3,7 @@ branch: claude/fresh-build-feedback-9x9asm
 base: main
 status: closed
 opened: 2026-09-20
+consolidated: 2026-09-21
 ---
 
 # Session — 2026-09-20: Dev Rebuild Honesty, and the Docs a Fresh Build Needed
