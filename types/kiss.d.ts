@@ -382,6 +382,10 @@ declare class Kiss {
     /** @private */
     private _stagingDir;
     /** @private */
+    private get _writeRoot();
+    /** @private */
+    private get _writeConfig();
+    /** @private */
     private _oldDir;
     /** @private */
     private _buildTarget;

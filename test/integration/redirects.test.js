@@ -186,9 +186,10 @@ describe('_redirects, written from page aliases', () => {
     kiss
       .page({ view: 'index.hbs' })
       .page({ view: 'about.hbs', aliases: ['/team'] })
-      .generate(() =>
-        fs.ensureDirSync(`${kiss.config.folders.build}/_redirects`),
-      )
+      // The squat has to land in the STAGING folder, which is exactly what
+      // config no longer exposes — so the test reaches for the engine's own
+      // write root rather than the folder the author named.
+      .generate(() => fs.ensureDirSync(`${kiss._writeRoot}/_redirects`))
 
     const err = await kiss.complete().catch((e) => e)
     expect(err).toBeInstanceOf(AggregateError)
