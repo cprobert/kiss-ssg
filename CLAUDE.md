@@ -104,8 +104,10 @@ npm run bench                  # benchmark harness: 6 scenarios over a generated
                                # scenarios: startup, scan, models, fanout, watch, styled
                                # (`styled` reproduces a real site's shape: a shared stylesheet
                                # compiled by the {{sass}} helper on every page)
-                               # --json=<f> records; --baseline=<f> compares against a record
-                               # baseline for this branch: `planning/benchmarks/baseline-main.json`
+                               # --json=<f> records; --baseline=<f> compares against a record.
+                               # A committed record under planning/benchmarks/ is history, not a
+                               # baseline: numbers from another machine or another day compare
+                               # with nothing. Record the base branch here first, then compare.
                                # --site=<path> times a REAL kiss-ssg site instead of the fixture:
                                # runs its own build script, in its own cwd, with KISS_REPORT set;
                                # nothing installed, linked or edited. Prints which kiss-ssg it
