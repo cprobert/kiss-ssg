@@ -74,6 +74,106 @@ export function aikbStaleness(root, { minCommits = 2 } = {}) {
   )
 }
 
+// ── Consumer-site paths (Check 1) ───────────────────────────────────────────
+// The published surfaces talk to a reader about THEIR site, in this package's
+// own vocabulary: `src/` is `folders.src`'s default, and `AIKB/` is where
+// `kiss-ssg aikb` records a site. So `AIKB/site.md` in README.md is not a file
+// this repo is missing — it is the file a consuming site has — and Check 1
+// reported it, and its `src/assets/css/site.css` neighbours, on every run.
+// Two rules, both narrow:
+//  - the recorded folder has a fixed shape (`lib/aikb.js` writes `site.md`,
+//    `README.md` and `notes/**`; `lib/kiss.js` writes `last-build.json` and
+//    `dependency-graph.json`), and this repo's own `AIKB/` is flat
+//    `<module>.md`, so those names under `AIKB/` are the consumer's from any
+//    citing document;
+//  - `src/` is the consumer's when cited from README.md, llms.txt or an AIKB
+//    doc, and this repo's own docs-site source when cited from CLAUDE.md or a
+//    repo skill. This repo's `src/` IS a kiss site, so the path's shape cannot
+//    tell them apart; the citing document can.
+export const RECORDED_AIKB_FILES =
+  /^AIKB\/(site\.md|README\.md|last-build\.json|dependency-graph\.json|notes\/)/
+const aboutThisRepo = (source) =>
+  source === 'CLAUDE.md' || source.startsWith('.claude/')
+export function isConsumerSitePath(path, source) {
+  if (RECORDED_AIKB_FILES.test(path)) return true
+  if (path.startsWith('src/') && !aboutThisRepo(source)) return true
+  return false
+}
+
+// ── URL prose vs a slash command (Check 3) ───────────────────────────────────
+// `/about` in backticks is a slash command or a URL path, and nothing in the
+// token says which. The line does: a command is never explained beside a
+// directory URL (`/courses/`), an `.html` file, an `href`, a `{{link}}`, a
+// `<loc>` or a redirect. Deliberately a list of signals rather than a grammar —
+// each one is something the host-policy and redirects prose actually uses, and
+// `test/unit/corpse-collector.test.js` pins both directions. A renamed skill is
+// reported whatever the line says (see `formerSkillNames`); this only decides
+// the residual "no such skill" bucket, so a wrong answer here costs a missed
+// typo, never a missed rename.
+const URL_SIGNALS = [
+  /`\/[^`]*\/`/, // a directory URL in backticks: `/courses/`
+  /`[^`]*\.html`/, // `/about.html`, `about.html`
+  /\bhref\b/,
+  /\{\{(link|canonical|absUrl)\b/,
+  /<loc>/,
+  /\bredirects?\b/i,
+]
+export function isUrlProse(line) {
+  return URL_SIGNALS.some((re) => re.test(line))
+}
+
+// ── A template reading an arbitrary config key (Check 6) ─────────────────────
+// Any extra key on the config reaches every view as `{{config.<key>}}` — that
+// is a documented convention, not a key kiss interprets, so `{{config.season}}`
+// or `{{#each config.nav}}` in a doc promises nothing `lib/config.js` has to
+// define. Check 6 is for keys the docs say kiss READS. A mustache is the one
+// place the arbitrary-key convention is exercised, so a match inside one is
+// that convention and not a promise.
+export function isTemplateConfigRead(text, key) {
+  return new RegExp(`\\{\\{[^}]*\\bconfig\\.${key}\\b`).test(text)
+}
+
+// ── Former skill names (Check 3) ─────────────────────────────────────────────
+// A dead reference is to something that EXISTED. Git knows every skill folder
+// (and pre-skill command file) this repo has renamed or removed, so a `/x`
+// whose `x` is one of them is a corpse whatever the sentence around it says.
+// Exported and given a root for the same reason as `aikbStaleness`: the test
+// drives it over a throwaway repository.
+export function formerSkillNames(root) {
+  let out
+  try {
+    out = execFileSync(
+      'git',
+      [
+        'log',
+        '--all',
+        '--diff-filter=DR',
+        '-M',
+        '--name-status',
+        '--format=',
+        '--',
+        '.claude/skills/*/SKILL.md',
+        'plugins/*/skills/*/SKILL.md',
+        '.claude/commands/*.md',
+      ],
+      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    )
+  } catch {
+    return new Set()
+  }
+  const names = new Set()
+  for (const line of out.split(/\r?\n/)) {
+    // `D<tab>old` or `R<score><tab>old<tab>new`: the first path is the one that died.
+    const [status, oldPath] = line.split('\t')
+    if (!status || !oldPath) continue
+    const m =
+      oldPath.match(/skills\/([^/]+)\/SKILL\.md$/) ??
+      oldPath.match(/commands\/([^/]+)\.md$/)
+    if (m) names.add(m[1])
+  }
+  return names
+}
+
 function main() {
   const ROOT = process.cwd()
   if (
@@ -184,12 +284,13 @@ function main() {
   }
 
   const sections = []
-  const section = (title, findings, render, skipped = false) =>
+  const section = (title, findings, render, skipped = false, note = '') =>
     sections.push({
       title,
       count: findings.length,
       lines: findings.map(render),
       skipped,
+      note,
     })
 
   // The prose surfaces a consumer or a future developer actually reads. These are
@@ -209,6 +310,7 @@ function main() {
   const PATH_RE =
     /[`(]((?:lib|test|src|examples|scripts|planning|AIKB|\.claude|\.github)\/[^\s`)]+\.[a-z]{2,5})[`)]/g
   const missingPaths = []
+  let consumerPaths = 0
   for (const rel of collect(DOC_TARGETS, ['.md', '.txt'])) {
     if (skipped(rel)) continue
     const content = read(rel)
@@ -220,8 +322,13 @@ function main() {
         // fragments quoted in a skill are patterns, not paths — "missing on disk"
         // does not apply to them.
         if (/[*{}<>[\]|^$+\\()]/.test(p)) continue
-        if (!existsSync(join(ROOT, p)))
-          missingPaths.push({ file: slash(rel), line: i + 1, path: p })
+        if (existsSync(join(ROOT, p))) continue
+        // The reader's site, not this repo — see isConsumerSitePath.
+        if (isConsumerSitePath(p, slash(rel))) {
+          consumerPaths++
+          continue
+        }
+        missingPaths.push({ file: slash(rel), line: i + 1, path: p })
       }
     })
   }
@@ -229,6 +336,10 @@ function main() {
     'Check 1 — referenced repo paths missing on disk',
     missingPaths,
     (h) => `${h.file}:${h.line} — \`${h.path}\` does not exist`,
+    false,
+    consumerPaths
+      ? `${consumerPaths} not reported: a consuming site's AIKB/ or src/, not this repo's`
+      : '',
   )
 
   // ── Check 2 — skill folder / name mismatches ─────────────────────────────────
@@ -272,15 +383,53 @@ function main() {
     'security-review',
     'simplify',
   ])
+  // The plugins' skills are commands too, once the plugin is installed.
+  const pluginSkills = []
+  let plugins = []
+  try {
+    plugins = readdirSync(join(ROOT, 'plugins'), { withFileTypes: true })
+  } catch {
+    /* no plugins folder */
+  }
+  for (const plugin of plugins) {
+    if (!plugin.isDirectory()) continue
+    try {
+      pluginSkills.push(
+        ...readdirSync(join(ROOT, 'plugins', plugin.name, 'skills')),
+      )
+    } catch {
+      /* a plugin with no skills folder */
+    }
+  }
+  const knownCommands = new Set([...skillFolders, ...pluginSkills, ...BUILTINS])
+  const former = formerSkillNames(ROOT)
+  let urlPaths = 0
   const cmdMissing = grepFiles(
     COMMAND_TARGETS,
     ['.md'],
     '`/([a-z][a-z0-9-]*)`',
-  ).filter((h) => !skillFolders.includes(h.match) && !BUILTINS.has(h.match))
+  ).filter((h) => {
+    if (knownCommands.has(h.match)) return false
+    // Once a skill, now not: a corpse whatever the sentence around it says.
+    if (former.has(h.match)) {
+      h.why = 'was a skill — renamed or removed'
+      return true
+    }
+    if (isUrlProse(h.text)) {
+      urlPaths++
+      return false
+    }
+    h.why = 'no such skill'
+    return true
+  })
   section(
     'Check 3 — /commands with no matching skill or built-in',
     cmdMissing,
-    (h) => `${h.file}:${h.line} — /${h.match} | ${h.text}`,
+    (h) => `${h.file}:${h.line} — /${h.match} (${h.why}) | ${h.text}`,
+    false,
+    urlPaths
+      ? `${urlPaths} not reported: URL paths in prose about hrefs, redirects or .html files`
+      : '',
   )
 
   // ── Check 4 — public API drift ───────────────────────────────────────────────
@@ -313,8 +462,10 @@ function main() {
   }
   // The trailing lookahead keeps `npm run eg<N>` out: a placeholder is not a
   // script name, and without it the match backtracks to a bogus `npm run e`.
+  // llms.txt ships inside the consumer's node_modules and every `npm run` in
+  // it is a script it tells THAT project to add — never one of this repo's.
   const scriptRefs = grepFiles(
-    DOC_TARGETS,
+    DOC_TARGETS.filter((t) => t !== 'llms.txt'),
     ['.md', '.txt'],
     'npm run ([a-z][a-z0-9:-]*)(?=[\\s`)]|$)',
   ).filter((h) => !(h.match in scripts))
@@ -336,17 +487,23 @@ function main() {
   // Anything after `config.` that is really a filename — `lib/config.js`,
   // `vitest.config.mjs`, `AIKB/config.md`, `test/unit/config.test.js`.
   const FILENAME_TAIL = /^(js|mjs|cjs|json|md|txt|test)$/
+  // `\\b` in front: `tsconfig.check.json` is not a config key called `check`.
   const configRefs = [
     ...grepFiles(
       DOC_TARGETS,
       ['.md', '.txt'],
-      'config\\.folders\\.([a-zA-Z_]\\w*)',
+      '\\bconfig\\.folders\\.([a-zA-Z_]\\w*)',
     ).filter((h) => !folderKeys.has(h.match)),
     ...grepFiles(
       DOC_TARGETS,
       ['.md', '.txt'],
-      'config\\.(?!folders\\b)([a-zA-Z_]\\w*)',
-    ).filter((h) => !configKeys.has(h.match) && !FILENAME_TAIL.test(h.match)),
+      '\\bconfig\\.(?!folders\\b)([a-zA-Z_]\\w*)',
+    ).filter(
+      (h) =>
+        !configKeys.has(h.match) &&
+        !FILENAME_TAIL.test(h.match) &&
+        !isTemplateConfigRead(h.text, h.match),
+    ),
   ]
   section(
     'Check 6 — documented config keys not in lib/config.js defaults',
@@ -419,6 +576,7 @@ function main() {
       console.log(`▶ ${s.title}: ${s.count}`)
       for (const line of s.lines) console.log(line)
     }
+    if (s.note) console.log(`  (${s.note})`)
     console.log('')
   }
   console.log(
