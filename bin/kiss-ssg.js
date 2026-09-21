@@ -12,7 +12,9 @@ import { spawnSync } from 'node:child_process'
 import {
   HELP,
   defaultBaseline,
+  describeEngine,
   diffReports,
+  engineLine,
   exitCodeFor,
   formatDiff,
   parseArgs,
@@ -52,6 +54,12 @@ if (parsed.against) {
 const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-check-'))
 const reportFile = path.join(reportDir, 'reports.jsonl')
 try {
+  // Which kiss-ssg the site resolves, said before the build and on stderr
+  // beside the build log: it is a fact about the environment, not part of
+  // the report, so stdout stays the report in both output modes. A link to a
+  // working tree is the one thing an upgrade wants to know and npm does not
+  // volunteer.
+  console.error(engineLine(describeEngine({ cwd: process.cwd() })))
   const run = spawnSync(process.execPath, [parsed.script, ...parsed.args], {
     // The caller's cwd, not the script's folder: a site resolves `folders`
     // against the cwd it is normally run from, and moving it would check a

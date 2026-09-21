@@ -1,8 +1,19 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  symlinkSync,
+  rmSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   HELP,
   defaultBaseline,
+  describeEngine,
   diffReports,
+  engineLine,
   exitCodeFor,
   formatDiff,
   parseArgs,
@@ -595,5 +606,66 @@ describe('exitCodeFor', () => {
 
   it('fails on a report with no ok at all', () => {
     expect(exitCodeFor([{ mode: 'check' }], 0)).toBe(1)
+  })
+})
+
+describe('describeEngine', () => {
+  // The upgrade hazard the 2.5.0 fleet run hit on six of six sites: after
+  // `file:../../kiss-ssg` is edited to `^2.5.0`, a plain `npm install` keeps
+  // the link because the lockfile's entry still satisfies the range — so the
+  // site reports a registry version while building against a working tree.
+  // `check` is the one command every upgrade runs, so it says which it found.
+  const repos = []
+  afterEach(() => {
+    while (repos.length) rmSync(repos.pop(), { recursive: true, force: true })
+  })
+  const consumer = () => {
+    const root = mkdtempSync(join(tmpdir(), 'kiss-engine-'))
+    repos.push(root)
+    return root
+  }
+  const engineAt = (dir, version) => {
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({ name: 'kiss-ssg', version }),
+    )
+  }
+
+  it('names the version and folder of a package installed from the registry', () => {
+    const root = consumer()
+    engineAt(join(root, 'node_modules', 'kiss-ssg'), '2.5.0')
+    const engine = describeEngine({ cwd: root })
+    expect(engine).toMatchObject({ version: '2.5.0', linked: false })
+    expect(engineLine(engine)).toBe('kiss-ssg 2.5.0 from node_modules/kiss-ssg')
+  })
+
+  it('says so when node_modules/kiss-ssg is a link, and where it points', () => {
+    const root = consumer()
+    const tree = join(root, 'working-tree')
+    engineAt(tree, '2.6.0-alpha.1')
+    mkdirSync(join(root, 'node_modules'))
+    symlinkSync(tree, join(root, 'node_modules', 'kiss-ssg'), 'junction')
+    const engine = describeEngine({ cwd: root })
+    expect(engine).toMatchObject({ version: '2.6.0-alpha.1', linked: true })
+    expect(engineLine(engine)).toBe(
+      `kiss-ssg 2.6.0-alpha.1 from node_modules/kiss-ssg — a link to ${tree.replace(/\\/g, '/')}, not the registry package`,
+    )
+  })
+
+  it('walks up to the nearest node_modules, the way Node resolves', () => {
+    const root = consumer()
+    engineAt(join(root, 'node_modules', 'kiss-ssg'), '2.5.0')
+    const nested = join(root, 'sites', 'one')
+    mkdirSync(nested, { recursive: true })
+    expect(describeEngine({ cwd: nested }).version).toBe('2.5.0')
+  })
+
+  it('is honest when no kiss-ssg is installed at all', () => {
+    const root = consumer()
+    expect(describeEngine({ cwd: root })).toBeNull()
+    expect(engineLine(null)).toBe(
+      'kiss-ssg: no node_modules/kiss-ssg found from here — the script resolves the package some other way',
+    )
   })
 })

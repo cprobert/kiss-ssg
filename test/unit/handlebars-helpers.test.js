@@ -871,3 +871,24 @@ describe('link', () => {
     )
   })
 })
+
+describe('canonical override', () => {
+  beforeEach(() => {
+    hbs = makeHbs({ siteUrl: 'https://e.com' })
+  })
+
+  it('renders a page option `canonical` verbatim in place of the derived URL', () => {
+    expect(
+      render('{{canonical}}', {
+        pageURL: 'c/course.html',
+        canonical: 'https://www.diploma-msc.com/c/course',
+      }),
+    ).toBe('https://www.diploma-msc.com/c/course')
+  })
+
+  it('derives the URL as before when the option is absent', () => {
+    expect(render('{{canonical}}', { pageURL: 'c/course.html' })).toBe(
+      'https://e.com/c/course',
+    )
+  })
+})

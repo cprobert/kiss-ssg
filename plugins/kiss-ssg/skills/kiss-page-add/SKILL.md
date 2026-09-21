@@ -50,6 +50,10 @@ If the page needs a Handlebars helper the site does not have, put it where that 
 
 Two things about _when_ a helper runs, both of which bite in dev rather than in the build. Registration happens once per process: a watch rebuild replays the recorded `.page()`/`.pages()`/`.scan()` calls on the same instance and never re-imports the build script, so a helper that reads files as it registers is serving that first reading for the rest of the session, and an edit to a helper module does nothing until you restart the dev server. And a helper that resolves a link must call `{{link}}` at render time, not at registration — the page registry it reads is filled by the `.page()`/`.pages()` calls, so build the binding early if you like, but resolve inside the helper.
 
+### 4c. A page whose real home is elsewhere
+
+A page that mirrors content whose canonical URL is on another site — a course page duplicated from a sister site, a syndicated post — names that URL on the page: `canonical: 'https://sister.example/course'` in its `.page()` options, or returned by its controller. `{{canonical}}` then renders that URL verbatim, and kiss withdraws the page from `sitemap.xml`, `llms.txt` and the feed, because a page that says another URL is the real one is asking not to be advertised; `npx kiss-ssg check --summary` counts them (`N pages canonical elsewhere`). The value must be an absolute `http(s)://` URL — anything else fails the page at registration, naming the page and the value. Do not hand-roll a canonical helper for this; before 2.6.0 that was the only way, and it is what the built-in now does.
+
 ### 5. Verify
 
 Build the site, then run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`) and don't call the change done until it reports `ok: true`. A missing page or a silently empty element is exactly what `check` catches and a build's exit code alone does not.

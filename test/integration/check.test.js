@@ -167,6 +167,7 @@ describe('kiss-ssg check', () => {
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
         // The page's identity, defaulted from the view's route.
         id: 'index',
+        canonical: null,
       },
     ])
     expect(await temp.exists('public')).toBe(false)
@@ -196,6 +197,7 @@ describe('kiss-ssg check', () => {
       ok: true,
       hash: expect.stringMatching(/^[0-9a-f]{40}$/),
       id: 'index',
+      canonical: null,
     })
     // The page that failed wrote nothing, so it names no bytes.
     expect(report.pages.find((p) => p.view === 'missing.hbs')?.hash).toBeNull()
@@ -247,6 +249,37 @@ describe('kiss-ssg check', () => {
     expect(run.status).toBe(0)
     expect(run.stdout.trim()).toMatch(
       /^ok \.\/public \(check\) — 1 pages, 0 failed, \d+ assets, \d+ms$/,
+    )
+  }, 60000)
+
+  it('says which kiss-ssg the site resolves, on stderr, and whether it is a link', async () => {
+    // The upgrade hazard the 2.5.0 fleet run hit on six of six sites: a
+    // `file:` link that a plain `npm install` keeps after the pin changes.
+    // This site imports the engine by path, so there is nothing to find —
+    // and the line says so rather than guessing.
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': ONE_PAGE,
+    })
+    const none = check(temp.root, ['check', '--summary', 'build.js'])
+    expect(none.status).toBe(0)
+    expect(none.stderr).toContain(
+      'kiss-ssg: no node_modules/kiss-ssg found from here — the script resolves the package some other way',
+    )
+    expect(none.stdout.trim()).toMatch(/^ok /)
+
+    // Now the shape the hazard leaves behind: node_modules/kiss-ssg is a
+    // junction to a working tree. Named as such, with its target.
+    fs.mkdirSync(path.join(temp.root, 'node_modules'))
+    fs.symlinkSync(
+      path.resolve(import.meta.dirname, '../..'),
+      path.join(temp.root, 'node_modules', 'kiss-ssg'),
+      'junction',
+    )
+    const linked = check(temp.root, ['check', '--summary', 'build.js'])
+    expect(linked.status).toBe(0)
+    expect(linked.stderr).toMatch(
+      /^kiss-ssg \d+\.\d+\.\d+(-[\w.]+)? from node_modules\/kiss-ssg — a link to .*, not the registry package/m,
     )
   }, 60000)
 
@@ -611,6 +644,7 @@ describe('kiss.report()', () => {
         ok: true,
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
         id: 'index',
+        canonical: null,
       },
     ])
     expect(report.assets).toEqual([

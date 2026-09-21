@@ -49,6 +49,7 @@ describe('buildReport', () => {
       'ok',
       'hash',
       'id',
+      'canonical',
     ])
     expect(report.ok).toBe(true)
     expect(report.mode).toBe('build')
@@ -60,6 +61,7 @@ describe('buildReport', () => {
         ok: true,
         hash: null,
         id: null,
+        canonical: null,
       },
     ])
     expect(report.failures).toEqual([])
@@ -106,6 +108,7 @@ describe('buildReport', () => {
         ok: true,
         hash: null,
         id: null,
+        canonical: null,
       },
       {
         view: 'about.hbs',
@@ -113,6 +116,7 @@ describe('buildReport', () => {
         ok: false,
         hash: null,
         id: null,
+        canonical: null,
       },
     ])
     expect(report.failures).toEqual([

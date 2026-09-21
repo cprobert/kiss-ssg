@@ -7,6 +7,7 @@
  * @property {boolean} ok `false` when a failure names this output path
  * @property {string|null} hash sha1 of the bytes written, or `null` when nothing was
  * @property {string|null} id the page's identity, what `{{link "<id>"}}` resolves — `null` for an inline template, a `generate: false` page, and a default id two pages arrived at (which no page claims)
+ * @property {string|null} canonical the URL the page named as its canonical, when it named one elsewhere — such a page is absent from `sitemap.xml`, `llms.txt` and the feed; `null` when `{{canonical}}` is derived from the page's own URL
  */
 /**
  * One file `.copyAssets()` put in the build, as the asset manifest records it.
@@ -131,7 +132,7 @@ export function reportedView(view: string): string;
  * read as text as often as it is read as data.
  *
  * @param {Object} input
- * @param {{ view: string, buildTo: string|null, id?: string|null, page?: { hash?: string|null } }[]} [input.stack] the prepared pages
+ * @param {{ view: string, buildTo: string|null, id?: string|null, page?: { hash?: string|null, options?: any } }[]} [input.stack] the prepared pages
  * @param {import('./kiss.js').BuildFailure[]} [input.failures]
  * @param {{ toObject: () => Record<string, string> }|null} [input.manifest] the instance's asset manifest
  * @param {string} input.buildDir the real build folder
@@ -161,6 +162,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
         id?: string | null;
         page?: {
             hash?: string | null;
+            options?: any;
         };
     }[];
     failures?: import("./kiss.js").BuildFailure[];
@@ -213,6 +215,10 @@ export type BuildPage = {
      * the page's identity, what `{{link "<id>"}}` resolves — `null` for an inline template, a `generate: false` page, and a default id two pages arrived at (which no page claims)
      */
     id: string | null;
+    /**
+     * the URL the page named as its canonical, when it named one elsewhere — such a page is absent from `sitemap.xml`, `llms.txt` and the feed; `null` when `{{canonical}}` is derived from the page's own URL
+     */
+    canonical: string | null;
 };
 /**
  * One file `.copyAssets()` put in the build, as the asset manifest records it.

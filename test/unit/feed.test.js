@@ -367,3 +367,25 @@ describe('writeFeed', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('a page whose canonical is elsewhere', () => {
+  it('is left out of the feed even when dated', () => {
+    const result = buildFeedItems(
+      [
+        entry('out/blog/a.html', {
+          slug: 'a',
+          path: 'blog',
+          date: '2026-01-02',
+        }),
+        entry('out/blog/b.html', {
+          slug: 'b',
+          path: 'blog',
+          date: '2026-01-03',
+          canonical: 'https://other.example/b',
+        }),
+      ],
+      { ...context, logger: silentLogger },
+    )
+    expect(titles(result)).toEqual(['A'])
+  })
+})

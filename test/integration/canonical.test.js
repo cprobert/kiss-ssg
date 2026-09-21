@@ -1,110 +1,85 @@
+// A page can name another URL as its canonical: `canonical: '<absolute URL>'`
+// on the page. `{{canonical}}` renders it verbatim, and the page is withdrawn
+// from sitemap.xml, llms.txt and the feed — a page that says another URL is
+// the real one is asking not to be advertised. Measured need: learna-kiss has
+// 104 pages (`/c/*`, `/profession/*`) whose canonical must point at
+// diploma-msc.com, so it could not drop its hand-rolled helper on 2.5.0.
 import { describe, it, expect, afterEach } from 'vitest'
-import fs from 'fs-extra'
-import Kiss, { utils } from '../helpers/kiss.js'
+import Kiss from '../../lib/kiss.js'
+import { formatReport } from '../../lib/build-report.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 
 let site
+let kiss
 afterEach(async () => {
-  if (site) await site.cleanup()
+  await kiss?.close?.()
+  await site?.cleanup()
   site = null
+  kiss = null
 })
 
-// The whole point of the helper: a page's `<link rel="canonical">` and its own
-// `<loc>` in sitemap.xml are one URL, whatever the extensionLess setting.
-const buildSite = async (extensionLess) => {
-  site = await makeSite({
-    'src/pages/index.hbs': '{{canonical}}',
-    'src/pages/about.hbs': '{{canonical}}',
-    'src/pages/post.hbs': '{{canonical}}',
-    'src/pages/section.hbs': '{{canonical}}',
-  })
-  const kiss = new Kiss({
+const FILES = {
+  'src/pages/index.hbs': 'home {{canonical}}',
+  'src/pages/mirror.hbs': 'mirror {{canonical}}',
+}
+
+const build = async (mirrorOptions) => {
+  site = await makeSite(FILES)
+  kiss = new Kiss({
     folders: site.folders,
-    siteUrl: 'https://e.com/',
-    extensionLess,
+    siteUrl: 'https://e.com',
     logger: silentLogger,
   })
-    .page({ view: 'index.hbs' })
-    .page({ view: 'about.hbs' })
-    .page({ view: 'post.hbs', path: 'blog/2026' })
-    // A section index — `courses/index.html` under either setting.
-    .page({ view: 'section.hbs', path: 'courses', slug: 'index' })
+  kiss
+    .page({ view: 'index.hbs', title: 'Home' })
+    .page({
+      view: 'mirror.hbs',
+      title: 'Mirror',
+      published: '2026-01-01',
+      ...mirrorOptions,
+    })
     .generate()
     .sitemap()
-  await kiss.complete()
-  const canonicals = utils
-    .globFiles(site.build, '**/*.html')
-    .map((file) => fs.readFileSync(file, 'utf8').trim())
-  const xml = await site.read('public/sitemap.xml')
-  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
-  return { canonicals: canonicals.sort(), locs: locs.sort() }
+    .llms({ title: 'T', summary: 'S' })
+    .feed({ title: 'T', description: 'D' })
+  return kiss.complete()
 }
 
-// A directory index canonicalises with the trailing slash, because that is the
-// URL a static host serves: it answers the bare path with a 301, and a
-// canonical must be the URL that returns 200. Under `extensionLess` every page
-// but the home page builds to `<path>/<slug>/index.html`, so every page but the
-// home page is a directory index and ends in `/` — which is why the two
-// settings no longer emit the same list. What they do still guarantee is that
-// the canonical link and the `<loc>` never disagree.
-const expected = {
-  false: [
-    'https://e.com/',
-    'https://e.com/about',
-    'https://e.com/blog/2026/post',
-    'https://e.com/courses/',
-  ],
-  true: [
-    'https://e.com/',
-    'https://e.com/about/',
-    'https://e.com/blog/2026/post/',
-    'https://e.com/courses/',
-  ],
-}
+describe('a page whose canonical is elsewhere', () => {
+  it('renders the override verbatim and stays out of sitemap, llms and feed', async () => {
+    await build({ canonical: 'https://elsewhere.example/mirror' })
 
-describe('{{canonical}} and sitemap.xml', () => {
-  it.each([false, true])(
-    'agree on every page with extensionLess=%s',
-    async (extensionLess) => {
-      const { canonicals, locs } = await buildSite(extensionLess)
-      expect(locs).toEqual(expected[String(extensionLess)])
-      expect(canonicals).toEqual(locs)
-    },
-  )
-})
+    expect(await site.read('public/mirror.html')).toBe(
+      'mirror https://elsewhere.example/mirror',
+    )
+    expect(await site.read('public/index.html')).toBe('home https://e.com/')
+    expect(await site.read('public/sitemap.xml')).not.toContain('mirror')
+    expect(await site.read('public/llms.txt')).not.toContain('mirror')
+    expect(await site.read('public/feed.xml')).not.toContain('mirror')
+  })
 
-// A site that is extensionLess everywhere still has to emit one literal
-// `404.html`: Netlify and Cloudflare Pages look for that exact filename at the
-// publish root and will not fall back to `404/index.html`. `options.config` is
-// documented as per-page config overrides merged over the global config, so
-// `config: { extensionLess: false }` on that one page is the natural way to
-// ask for it — and it was accepted and then ignored, because the output path
-// was resolved from the instance's config rather than the page's.
-describe('per-page extensionLess', () => {
-  it('lets one page opt out of a site-wide extensionLess', async () => {
-    site = await makeSite({
-      'src/pages/index.hbs': 'home',
-      'src/pages/about.hbs': 'about',
-      'src/pages/404.hbs': 'not found',
-    })
-    const kiss = new Kiss({
-      folders: site.folders,
-      siteUrl: 'https://e.com/',
-      extensionLess: true,
-      logger: silentLogger,
-    })
-      .page({ view: 'index.hbs' })
-      .page({ view: 'about.hbs' })
-      .page({ view: '404.hbs', slug: '404', config: { extensionLess: false } })
-      .generate()
-    await kiss.complete()
+  it('is named in the report, per page and in the summary', async () => {
+    await build({ canonical: 'https://elsewhere.example/mirror' })
+    const report = kiss.report()
 
-    const built = utils.globFiles(site.build, '**/*.html').sort()
-    // The rest of the site is unchanged: still folders.
-    expect(built.some((f) => f.endsWith('about/index.html'))).toBe(true)
-    // The page that opted out is a file.
-    expect(built.some((f) => f.endsWith('404.html'))).toBe(true)
-    expect(built.some((f) => f.endsWith('404/index.html'))).toBe(false)
+    expect(report.pages.map((p) => p.canonical)).toEqual([
+      null,
+      'https://elsewhere.example/mirror',
+    ])
+    expect(formatReport(report)).toContain(
+      '  1 page canonical elsewhere — not in sitemap.xml, llms.txt or the feed',
+    )
+  })
+
+  it('fails the page, naming it and the value, when the URL is not absolute', async () => {
+    const err = await build({ canonical: '/mirror' }).catch((e) => e)
+
+    expect(err).toBeInstanceOf(AggregateError)
+    expect(err.failures).toHaveLength(1)
+    expect(err.failures[0].view).toBe('mirror.hbs')
+    expect(err.failures[0].error.message).toBe(
+      "canonical must be an absolute http(s) URL, got '/mirror' (mirror.hbs)",
+    )
   })
 })
