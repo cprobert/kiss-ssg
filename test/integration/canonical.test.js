@@ -72,7 +72,16 @@ describe('a page whose canonical is elsewhere', () => {
     )
   })
 
-  it.each(['https://?q=x', 'https://#foo', 'https://example.com:bad'])(
+  it.each([
+    'https://?q=x',
+    'https://#foo',
+    'https://example.com:bad',
+    // These two PARSE — WHATWG gives them a host — but the helper renders the
+    // string as written, and a browser resolves a same-scheme URL with no
+    // `//` against the current page. Codex, on the close's review.
+    'https:other.example/mirror',
+    'https:/other.example/mirror',
+  ])(
     'fails the page on %s, which has a scheme and no usable host',
     async (value) => {
       // Codex, reviewing the branch: a scheme-and-non-space regex accepted

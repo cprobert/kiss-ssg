@@ -653,6 +653,29 @@ describe('describeEngine', () => {
     )
   })
 
+  it('reports a link into node_modules neutrally — pnpm lays packages out that way', () => {
+    // Codex, on the close's review: a symbolic link says where the files are,
+    // not where they came from. pnpm's node_modules/kiss-ssg is a link into
+    // node_modules/.pnpm/…, and calling that "not the registry package" would
+    // be wrong on every pnpm install.
+    const root = consumer()
+    const store = join(
+      root,
+      'node_modules',
+      '.pnpm',
+      'kiss-ssg@2.5.1',
+      'node_modules',
+      'kiss-ssg',
+    )
+    engineAt(store, '2.5.1')
+    symlinkSync(store, join(root, 'node_modules', 'kiss-ssg'), 'junction')
+    const engine = describeEngine({ cwd: root })
+    expect(engine).toMatchObject({ version: '2.5.1', linked: true })
+    expect(engineLine(engine)).toBe(
+      `kiss-ssg 2.5.1 from node_modules/kiss-ssg — a link into ${store.replace(/\\/g, '/')}`,
+    )
+  })
+
   it('walks up to the nearest node_modules, the way Node resolves', () => {
     const root = consumer()
     engineAt(join(root, 'node_modules', 'kiss-ssg'), '2.5.0')

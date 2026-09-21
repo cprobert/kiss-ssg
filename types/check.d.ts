@@ -8,10 +8,6 @@
  * @property {string|null} error a usage error: print it with the help and exit 1
  */
 /**
- * @param {string[]} [argv] `process.argv.slice(2)`
- * @returns {CheckArgs}
- */
-/**
  * Which kiss-ssg the site's script will import: the nearest
  * `node_modules/kiss-ssg` walking up from `from` — the script's own folder,
  * which is where Node resolves its imports from, not the caller's cwd (Codex,
@@ -45,7 +41,11 @@ export function describeEngine({ cwd, from }: {
  * @returns {string}
  */
 export function engineLine(engine: ReturnType<typeof describeEngine>): string;
-export function parseArgs(argv?: any[]): CheckArgs;
+/**
+ * @param {string[]} [argv] `process.argv.slice(2)`
+ * @returns {CheckArgs}
+ */
+export function parseArgs(argv?: string[]): CheckArgs;
 /**
  * Reads the JSON Lines file `KISS_REPORT` collects — one line per `Kiss`
  * instance that settled a build. Blank lines (a trailing newline, above all)

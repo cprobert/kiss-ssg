@@ -107,6 +107,17 @@ describe('the entry declaration keeps its load-bearing exports', () => {
     expect(entry).toContain('registerPartials(): string[];')
   })
 
+  // The same hazard, one file over: describeEngine was inserted between
+  // parseArgs and its JSDoc, and the published signature went from
+  // `argv?: string[]` to `argv?: any[]`. Codex, on the close's review.
+  it('keeps parseArgs typed in check.d.ts, rather than orphaning its JSDoc', () => {
+    const check = fs.readFileSync(
+      new URL('../../types/check.d.ts', import.meta.url),
+      'utf8',
+    )
+    expect(check).toContain('parseArgs(argv?: string[]): CheckArgs;')
+  })
+
   it('keeps every private member out of the documented surface', () => {
     expect(entry).not.toMatch(/^ {4}_[A-Za-z]+[:(]/m)
   })
