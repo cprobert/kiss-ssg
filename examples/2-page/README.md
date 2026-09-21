@@ -9,12 +9,12 @@ every page is registered by hand.
 
 ```bash
 npm run eg2            # from the repo root
-node 2-page.js         # from examples/
-node 2-page.js --dev   # live preview on http://127.0.0.1:3001
+node router.js         # from examples/2-page/
+node router.js --dev   # live preview on http://127.0.0.1:3001
 ```
 
 ## What to copy
 
-The `.page()` call that matches your case, from `2-page.js`. The `ext` option is the one to
+The `.page()` call that matches your case, from `router.js`. The `ext` option is the one to
 remember for anything that is not HTML — a feed, a manifest, a `.txt` — and the object-model
 form is how a page gets data that has no file behind it.

@@ -14,15 +14,15 @@ for by identity with `{{link}}`, and there is a recipe for that below too.
 
 ```bash
 npm run eg11                  # from the repo root
-node 11-blog.js               # from examples/
-node 11-blog.js --broken      # same site, one deliberately broken link
-node 11-blog.js --dev         # live preview on http://127.0.0.1:3011
+node router.js               # from examples/11-blog/
+node router.js --broken      # same site, one deliberately broken link
+node router.js --dev         # live preview on http://127.0.0.1:3011
 ```
 
 Fourteen pages, exit 0, no warnings. The check says the same thing in one line:
 
 ```
-$ npx kiss-ssg check 11-blog.js --summary
+$ npx kiss-ssg check router.js --summary
 ok ../public/11-blog (check) — 14 pages, 0 failed, 2 assets, 666ms
   = 14 unchanged
 ```
@@ -64,7 +64,7 @@ it through the module that validates it is what keeps the two readings from drif
 ### 2 · Pagination
 
 Three posts to a page: `/blog/` and `/blog/page/2/`, with prev and next links. The whole recipe
-is a loop in `11-blog.js`:
+is a loop in `router.js`:
 
 ```js
 const pageCount = Math.max(1, Math.ceil(cards.length / PER_PAGE))
@@ -213,7 +213,7 @@ route plus the item's slug. This site sets an id in exactly three places, each f
 - **The two listing pages** (`id: 'blog'`, `id: 'blog/page/2'`) — **required**, because they are
   one view rendered twice. Two pages that arrive at the same _default_ id both withdraw from it,
   and the build says so: `Two pages share the default id "blog/listing" … set an explicit id on
-each`. Neither could be linked until they named themselves. `listingId(n)` in `11-blog.js` is
+each`. Neither could be linked until they named themselves. `listingId(n)` in `router.js` is
   that name, and the same function supplies `model.prev`/`model.next`, so a page and the link to
   it cannot drift.
 - **The tag fan-out** (`id: 'blog/tags'`) — **optional**. A registration's `id` is not an id: it
@@ -280,7 +280,7 @@ to `/blog/the-kenya-microlot/`, a post that was never published, from a `staleLi
 record:
 
 ```
-$ npx kiss-ssg check 11-blog.js --summary -- --broken
+$ npx kiss-ssg check router.js --summary -- --broken
 ok ../public/11-blog (check) — 14 pages, 0 failed, 2 assets, 622ms
   broken link: ../public/11-blog/blog/the-cascara-experiment/index.html -> /blog/the-kenya-microlot/
   ~ ../public/11-blog/blog/the-cascara-experiment/index.html
@@ -310,11 +310,11 @@ it. `--` in the command line above is what stops `check` reading the flag for it
 
 ## The knowledge base it ships
 
-`11-blog/AIKB/` is committed. Nothing in `11-blog.js` writes it; one command does, and only from
+`11-blog/AIKB/` is committed. Nothing in `router.js` writes it; one command does, and only from
 a build that passed:
 
 ```bash
-cd examples && npx kiss-ssg aikb 11-blog.js --summary
+cd examples/11-blog && npx kiss-ssg aikb router.js --summary
 ```
 
 This site has two subjects — `controllers/post.js` and `controllers/tag.js`, the two controller

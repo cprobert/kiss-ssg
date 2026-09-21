@@ -33,7 +33,7 @@ function reportBuildFailure(err) {
 const dev = process.argv.includes('--dev')
 
 // The default run is clean: every link on every page resolves, and
-// `npx kiss-ssg check 11-blog.js --summary` reports no findings at all. Pass
+// `npx kiss-ssg check router.js --summary` reports no findings at all. Pass
 // --broken and one post renders one link to a page this site does not build —
 // the way example 8's --atomic shows the atomic build. It is a *link*, not a
 // failure: the build still exits 0, because a broken link is a finding rather

@@ -9,8 +9,8 @@ and it is careful about the two things that shape gets wrong: cleaning and valid
 
 ```bash
 npm run eg7                          # from the repo root, builds the "test" season
-node 7-versioned-outputs.js          # from examples/
-node 7-versioned-outputs.js 2026-spring   # any lowercase slug is a season
+node router.js          # from examples/7-versioned-outputs/
+node router.js 2026-spring   # any lowercase slug is a season
 ```
 
 No `--dev`: this one builds and exits.

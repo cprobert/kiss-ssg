@@ -20,7 +20,7 @@ const site = path.resolve(here, '..')
 const source = path.join(site, 'styles/tokens.json')
 const assets = process.env.KISS_ASSETS
   ? path.resolve(process.cwd(), process.env.KISS_ASSETS)
-  : path.join(site, 'assets')
+  : path.join(site, 'src/assets')
 const target = path.join(assets, 'css/generated.css')
 
 function compile() {

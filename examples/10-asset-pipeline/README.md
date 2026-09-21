@@ -2,15 +2,15 @@
 
 `config.assets.pipeline` runs an external tool as part of the build. Here the tool is
 `tools/tokens.js` — a dependency-free stand-in for Tailwind or sass — which compiles
-`styles/tokens.json` into `assets/css/generated.css`. kiss knows nothing about it: it is a
+`styles/tokens.json` into `src/assets/css/generated.css`. kiss knows nothing about it: it is a
 command line, run before the asset copy, and the copy picks up whatever it wrote.
 
 ## Run it
 
 ```bash
 npm run eg10                   # from the repo root
-node 10-asset-pipeline.js      # from examples/
-node 10-asset-pipeline.js --dev  # live preview on http://127.0.0.1:3010
+node router.js      # from examples/10-asset-pipeline/
+node router.js --dev  # live preview on http://127.0.0.1:3010
 ```
 
 With `--dev`, the step's `watch` command is started too — once, after `run` has succeeded —
@@ -53,7 +53,7 @@ opened straight off the file system it silently draws nothing.
 
 ## What to copy
 
-The `assets.pipeline` block in `10-asset-pipeline.js`. For Tailwind it is the same shape with
+The `assets.pipeline` block in `router.js`. For Tailwind it is the same shape with
 your real command:
 
 ```js

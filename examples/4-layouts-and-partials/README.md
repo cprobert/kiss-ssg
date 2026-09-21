@@ -9,8 +9,8 @@ each page shows is chosen by its model and resolved at render time with a dynami
 
 ```bash
 npm run eg4                          # from the repo root
-node 4-layouts-and-partials.js       # from examples/
-node 4-layouts-and-partials.js --dev # live preview on http://127.0.0.1:3001
+node router.js       # from examples/4-layouts-and-partials/
+node router.js --dev # live preview on http://127.0.0.1:3001
 ```
 
 ## What to copy

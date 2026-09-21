@@ -9,8 +9,8 @@ own ports, so it can be served alongside another example.
 
 ```bash
 npm run eg5            # from the repo root
-node 5-helpers.js      # from examples/
-node 5-helpers.js --dev  # live preview on http://127.0.0.1:8080
+node router.js      # from examples/5-helpers/
+node router.js --dev  # live preview on http://127.0.0.1:8080
 ```
 
 ## What to copy

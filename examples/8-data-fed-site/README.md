@@ -9,9 +9,9 @@ exits 1 — which is what a real feed does to you, and what your deploy script h
 
 ```bash
 npm run eg8                       # from the repo root
-node 8-data-fed-site.js           # from examples/
-node 8-data-fed-site.js --atomic  # same failure, published nothing
-node 8-data-fed-site.js --dev     # live preview on http://127.0.0.1:3008
+node router.js           # from examples/8-data-fed-site/
+node router.js --atomic  # same failure, published nothing
+node router.js --dev     # live preview on http://127.0.0.1:3008
 ```
 
 ## The intended failure

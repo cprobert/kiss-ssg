@@ -13,13 +13,13 @@ line per page. `rota` is out of both files from the one `ignoreSitemap` on its p
 
 ```bash
 npm run eg6            # from the repo root
-node 6-sitemap.js      # from examples/
-node 6-sitemap.js --dev  # live preview on http://127.0.0.1:3001
+node router.js      # from examples/6-sitemap/
+node router.js --dev  # live preview on http://127.0.0.1:3001
 ```
 
 ## What to copy
 
-The config block in `6-sitemap.js`: `siteUrl`, `extensionLess` and `assets: { hash: true }` are
+The config block in `router.js`: `siteUrl`, `extensionLess` and `assets: { hash: true }` are
 three decisions every published site has to make, and the layout's `{{asset 'css/site.css'}}`
 is unchanged by any of them — the template asks for a file, the config decides how it is cached.
 And the `.sitemap().llms()` pair at the end of the chain: two files, one registry, so a crawler
