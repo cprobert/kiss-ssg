@@ -85,6 +85,14 @@ commit.
 
 ### Amendments
 
+**2026-09-21 — the bump is a patch (2.5.1), by the operator's decision at /branch-close.** The Intent
+block above declares the surface as public API and the bump as minor (2.6.0), which is what semver
+says for a new page option and a new report key. Asked at the close's Step 4a with minor as the
+recommended option, the operator chose patch. Recorded here rather than by editing the Intent:
+the surface finding stands, the versioning of it is the operator's call — the same reasoning 2.4.0
+and 2.5.0 used, that he owns every consuming site — and the CHANGELOG entry says so in its first
+paragraph. Every doc the branch wrote that said "2.6.0" now says 2.5.1.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;

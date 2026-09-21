@@ -21,7 +21,7 @@ const COVERAGE = [
     pattern: /"link": true/,
     skills: [skill('kiss-ssg', 'kiss-site-migrate')],
   },
-  // 2.6: a page can name another URL as its canonical. The page-add skill is
+  // 2.5.1: a page can name another URL as its canonical. The page-add skill is
   // where an agent adding a mirrored page would otherwise hand-roll a helper.
   {
     feature: 'a page can name another URL as its canonical',

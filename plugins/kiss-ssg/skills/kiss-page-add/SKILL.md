@@ -52,7 +52,7 @@ Two things about _when_ a helper runs, both of which bite in dev rather than in 
 
 ### 4c. A page whose real home is elsewhere
 
-A page that mirrors content whose canonical URL is on another site — a course page duplicated from a sister site, a syndicated post — names that URL on the page: `canonical: 'https://sister.example/course'` in its `.page()` options, or returned by its controller. `{{canonical}}` then renders that URL verbatim, and kiss withdraws the page from `sitemap.xml`, `llms.txt` and the feed, because a page that says another URL is the real one is asking not to be advertised; `npx kiss-ssg check --summary` counts them (`N pages canonical elsewhere`). The value must be an absolute `http(s)://` URL — anything else fails the page at registration, naming the page and the value. Do not hand-roll a canonical helper for this; before 2.6.0 that was the only way, and it is what the built-in now does.
+A page that mirrors content whose canonical URL is on another site — a course page duplicated from a sister site, a syndicated post — names that URL on the page: `canonical: 'https://sister.example/course'` in its `.page()` options, or returned by its controller. `{{canonical}}` then renders that URL verbatim, and kiss withdraws the page from `sitemap.xml`, `llms.txt` and the feed, because a page that says another URL is the real one is asking not to be advertised; `npx kiss-ssg check --summary` counts them (`N pages canonical elsewhere`). The value must be an absolute `http(s)://` URL — anything else fails the page at registration, naming the page and the value. Do not hand-roll a canonical helper for this; before 2.5.1 that was the only way, and it is what the built-in now does.
 
 ### 5. Verify
 
