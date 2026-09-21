@@ -886,6 +886,21 @@ describe('canonical override', () => {
     ).toBe('https://www.diploma-msc.com/c/course')
   })
 
+  it('renders the override with no siteUrl at all, and does not warn', () => {
+    // Codex, reviewing the branch: the override sat inside canonicalUrl, which
+    // the helper only reached once siteUrlFor had found a siteUrl — so a site
+    // without one rendered '' for a page that had named its canonical, while
+    // the sitemap, llms.txt and the feed still withdrew the page.
+    hbs = makeHbs({})
+    expect(
+      render('{{canonical}}', {
+        pageURL: 'c/course.html',
+        canonical: 'https://www.diploma-msc.com/c/course',
+      }),
+    ).toBe('https://www.diploma-msc.com/c/course')
+    expect(warnings).toEqual([])
+  })
+
   it('derives the URL as before when the option is absent', () => {
     expect(render('{{canonical}}', { pageURL: 'c/course.html' })).toBe(
       'https://e.com/c/course',

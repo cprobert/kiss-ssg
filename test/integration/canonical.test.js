@@ -72,6 +72,20 @@ describe('a page whose canonical is elsewhere', () => {
     )
   })
 
+  it.each(['https://?q=x', 'https://#foo', 'https://example.com:bad'])(
+    'fails the page on %s, which has a scheme and no usable host',
+    async (value) => {
+      // Codex, reviewing the branch: a scheme-and-non-space regex accepted
+      // these; every one registered, rendered, and withdrew the page from the
+      // three discovery files. `new URL` throws on all three.
+      const err = await build({ canonical: value }).catch((e) => e)
+      expect(err).toBeInstanceOf(AggregateError)
+      expect(err.failures[0].error.message).toBe(
+        `canonical must be an absolute http(s) URL, got '${value}' (mirror.hbs)`,
+      )
+    },
+  )
+
   it('fails the page, naming it and the value, when the URL is not absolute', async () => {
     const err = await build({ canonical: '/mirror' }).catch((e) => e)
 

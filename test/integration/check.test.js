@@ -276,6 +276,38 @@ describe('kiss-ssg check', () => {
       path.join(temp.root, 'node_modules', 'kiss-ssg'),
       'junction',
     )
+    // And from the SCRIPT's folder, not the caller's: Node resolves
+    // `import 'kiss-ssg'` from where the script lives. A script in a
+    // subfolder with its own node_modules/kiss-ssg is what that folder says.
+    // (Codex, reviewing the branch: the bin passed process.cwd().)
+    fs.mkdirSync(
+      path.join(temp.root, 'sites', 'one', 'node_modules', 'kiss-ssg'),
+      {
+        recursive: true,
+      },
+    )
+    fs.writeFileSync(
+      path.join(
+        temp.root,
+        'sites',
+        'one',
+        'node_modules',
+        'kiss-ssg',
+        'package.json',
+      ),
+      JSON.stringify({ name: 'kiss-ssg', version: '0.0.0-nested' }),
+    )
+    fs.writeFileSync(path.join(temp.root, 'sites', 'one', 'build.js'), ONE_PAGE)
+    const nested = check(temp.root, [
+      'check',
+      '--summary',
+      'sites/one/build.js',
+    ])
+    expect(nested.status).toBe(0)
+    expect(nested.stderr).toContain(
+      'kiss-ssg 0.0.0-nested from sites/one/node_modules/kiss-ssg',
+    )
+
     const linked = check(temp.root, ['check', '--summary', 'build.js'])
     expect(linked.status).toBe(0)
     expect(linked.stderr).toMatch(

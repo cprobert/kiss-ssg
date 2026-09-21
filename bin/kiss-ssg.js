@@ -59,7 +59,15 @@ try {
   // the report, so stdout stays the report in both output modes. A link to a
   // working tree is the one thing an upgrade wants to know and npm does not
   // volunteer.
-  console.error(engineLine(describeEngine({ cwd: process.cwd() })))
+  console.error(
+    engineLine(
+      describeEngine({
+        cwd: process.cwd(),
+        // From the script's folder: that is where Node resolves its imports.
+        from: path.dirname(path.resolve(parsed.script)),
+      }),
+    ),
+  )
   const run = spawnSync(process.execPath, [parsed.script, ...parsed.args], {
     // The caller's cwd, not the script's folder: a site resolves `folders`
     // against the cwd it is normally run from, and moving it would check a

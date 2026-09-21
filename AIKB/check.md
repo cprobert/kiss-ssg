@@ -18,7 +18,7 @@ Two commands share all of it. `check <script>` runs the site's build staged and 
 - `recordedLine(report)` → the line `aikb --summary` prints under a site: `  recorded <folder>`, `  not recorded — build failed`, `  not recorded — folders.aikb is null`, or `  not recorded`.
 - `exitCodeFor(reports, scriptStatus)` → `0` only when the script exited `0`, at least one build was reported, and every report is `ok`. Everything else is `1`.
 
-- `describeEngine({ cwd })` → `{ version, dir, linked, target } | null` — the nearest `node_modules/kiss-ssg` walking up from `cwd`, the way Node resolves it: its `package.json` version, its path relative to `cwd`, whether `lstat` says it is a symbolic link (a Windows junction counts), and the link's real target when it is. `null` when there is none above `cwd`.
+- `describeEngine({ cwd, from = cwd })` → `{ version, dir, linked, target } | null` — the nearest `node_modules/kiss-ssg` walking up from `from`, which the bin sets to the **script's** folder because that is where Node resolves its imports (a caller standing elsewhere would otherwise be told about its own copy — Codex, on review), with `dir` relative to `cwd`: its `package.json` version, its path relative to `cwd`, whether `lstat` says it is a symbolic link (a Windows junction counts), and the link's real target when it is. `null` when there is none above `cwd`.
 - `engineLine(engine)` → the line the bin prints on stderr before the build, in both output modes: `kiss-ssg 2.5.0 from node_modules/kiss-ssg`, or `… — a link to C:/Code/kiss-ssg, not the registry package`, or the honest `kiss-ssg: no node_modules/kiss-ssg found from here — the script resolves the package some other way`.
 
 ## Depends on
