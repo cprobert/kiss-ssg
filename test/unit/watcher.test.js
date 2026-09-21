@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { createWatcher, isInside } from '../../lib/watcher.js'
 import { silentLogger } from '../../lib/logger.js'
 import fs from 'fs-extra'
+import path from 'node:path'
 import { makeSite, waitFor } from '../helpers/site.js'
 
 let site, handle
@@ -201,6 +202,118 @@ describe('createWatcher', () => {
   })
 })
 
+describe('the helpers watcher', () => {
+  const spy = () => {
+    const calls = { helpers: [] }
+    return {
+      calls,
+      wiring: {
+        rebuildSite: () => {},
+        onChange: () => {},
+        assetsChanged: () => {},
+        helpersChanged: (p) => calls.helpers.push(p),
+        logger: silentLogger,
+      },
+    }
+  }
+
+  // The folder is optional, so the watcher was installed only when it already
+  // existed at watch() time. Creating a first `helpers/index.js` mid-session
+  // then got no watcher, no rebuild and no notice — and the restart notice
+  // that would have covered it is suppressed for this folder by design.
+  it('picks up a helpers folder created after the watch started', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'a' })
+    const { calls, wiring } = spy()
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          assets: `${site.src}/assets`,
+          helpers: `${site.root}/helpers`,
+        },
+      },
+      entry: null,
+      ...wiring,
+    })
+    await handle.ready
+    await site.touch('helpers/index.js', 'export function registerHelpers() {}')
+    await waitFor(() => calls.helpers.includes(`${site.root}/helpers/index.js`))
+  })
+
+  // A helpers folder pointed inside `src` was dispatched TWICE: once by the
+  // src watcher (a whole-site replay that cannot pick a module edit up) and
+  // once by this one (which can). Rendering is serialised; helper
+  // registration is not, so the two raced over one registry — and the replay
+  // was wasted work either way.
+  it('is the only watcher that sees a helpers folder inside src', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'a',
+      'src/helpers/index.js': 'export function registerHelpers() {}',
+    })
+    const calls = { helpers: [], change: [] }
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          assets: `${site.src}/assets`,
+          helpers: `${site.src}/helpers`,
+        },
+      },
+      entry: null,
+      rebuildSite: () => {},
+      onChange: (event, p) => calls.change.push([event, p]),
+      assetsChanged: () => {},
+      helpersChanged: (p) => calls.helpers.push(p),
+      logger: silentLogger,
+    })
+    await handle.ready
+    await site.touch(
+      'src/helpers/index.js',
+      'export function registerHelpers() { /* edited */ }',
+    )
+    await waitFor(() => calls.helpers.includes(`${site.src}/helpers/index.js`))
+    // A page edit after it proves the src watcher is alive and simply not
+    // reporting the helpers folder, rather than dead.
+    await site.touch('src/pages/index.hbs', 'b')
+    await waitFor(() =>
+      calls.change.some(([, p]) => p === `${site.src}/pages/index.hbs`),
+    )
+    expect(calls.change.map(([, p]) => p)).not.toContain(
+      `${site.src}/helpers/index.js`,
+    )
+  })
+
+  it('forwards a delete, and skips an empty write the way the src watcher does', async () => {
+    site = await makeSite({
+      'helpers/index.js': 'export function registerHelpers() {}',
+    })
+    const { calls, wiring } = spy()
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          assets: `${site.src}/assets`,
+          helpers: `${site.root}/helpers`,
+        },
+      },
+      entry: null,
+      ...wiring,
+    })
+    await handle.ready
+    // The initial scan's `add` for a file that was already there is not an
+    // authoring event, so it must not reload helpers on start-up.
+    expect(calls.helpers).toEqual([])
+
+    await site.touch('helpers/index.js', '')
+    await site.touch('helpers/other.js', 'export const x = 1')
+    await waitFor(() => calls.helpers.includes(`${site.root}/helpers/other.js`))
+    expect(calls.helpers).not.toContain(`${site.root}/helpers/index.js`)
+
+    await fs.remove(`${site.root}/helpers/index.js`)
+    await waitFor(() => calls.helpers.includes(`${site.root}/helpers/index.js`))
+  })
+})
+
 describe('isInside', () => {
   const inAssets = isInside('./src/assets')
 
@@ -212,6 +325,20 @@ describe('isInside', () => {
   it('does not match a sibling that merely shares the prefix', () => {
     expect(inAssets('src/assets-backup/x.txt')).toBe(false)
     expect(inAssets('src/pages/index.hbs')).toBe(false)
+  })
+
+  // The same absolute-versus-relative seam as the helpers entry, third time on
+  // this branch. `isInside` normalised separators and resolved nothing, so a
+  // site with a relative `src` and an absolute helpers path INSIDE it failed
+  // the exclusion and got both dispatches — a whole-site replay racing the
+  // reload, over one registry.
+  it('matches a relative directory against an absolute path and vice versa', () => {
+    const abs = path.resolve('src/assets')
+    expect(isInside('./src/assets')(`${abs}/x.txt`)).toBe(true)
+    expect(isInside(abs)('src/assets/x.txt')).toBe(true)
+    expect(isInside('./src/assets')(path.resolve('src/pages/i.hbs'))).toBe(
+      false,
+    )
   })
 
   it('normalises the leading ./ and Windows separators on both sides', () => {

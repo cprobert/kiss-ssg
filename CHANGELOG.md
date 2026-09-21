@@ -3,6 +3,147 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.5.0 — 2026-09-20
+
+### ⚠️ Breaking changes, in a minor release
+
+Three of the changes below will fail a build that used to pass. That is
+deliberate, and it is a minor release on the same reasoning as 2.4.0's redirect
+change: the maintainer owns every site consuming this package, so a break is a
+migration he schedules rather than a promise made to strangers.
+
+**If you installed this from the registry expecting `^2.4.0` to be safe, these
+are the three paragraphs that explain why your build started failing** — and in
+all three cases the thing that now fails was already broken, silently, in the
+output you were publishing.
+
+**Upgrading?** Run `npx kiss-ssg check router.js --summary` before you change
+anything: it reports all three against a staged build it then throws away, so
+you find out without publishing. If you are working with an agent, the
+`kiss-site-migrate` skill walks each break by the error text you will actually
+be looking at — what it means, and the three things it is usually caused by.
+
+### ⚠️ Read this first: a missing asset now fails the build
+
+`{{asset "css/site.css"}}` on a path no `.copyAssets()` emitted used to log a
+warning and render the path anyway. Your build passed, `report().ok` stayed
+`true`, `kiss-ssg check` said ok — and the site shipped a 404.
+
+It now fails the build, the same way `{{link}}` fails on an id no page claims.
+They are the two halves of "never hand-write an internal URL" and they have
+been checked to different depths the whole time.
+
+```
+asset: 'css/typo.css' is not in the build (asked by index.hbs)
+  — no .copyAssets() emitted it. Check the path, or the folder it should
+    have been copied from.
+```
+
+**Nothing becomes wrong that was not already wrong** — the warning has been in
+your log all along. It becomes visible. If a build starts failing here, the
+404 was already being published.
+
+Two details worth knowing:
+
+- **`dev: true` still warns and carries on**, because the file you are about to
+  add legitimately is not there yet. It now renders the path **as you wrote
+  it**; it used to strip a leading slash first, so `{{asset "/missing.css"}}`
+  became `missing.css` — a different URL on a nested page.
+- If the file is genuinely put in the build by something other than kiss, copy
+  it in with an extra `.copyAssets()` so the manifest knows about it.
+- **A `?query` or `#fragment` is fine**, and so is anything with a scheme or a
+  protocol-relative `//host/…`. `{{asset "img/logo.svg#symbol"}}` resolves the
+  sprite and keeps the fragment; `data:` URIs and `https://` pass straight
+  through. Only the path itself has to be in the build — and when it is not,
+  the message names the reference you wrote **and** the path it looked up
+  underneath it, so a stripped slash or a split-off fragment never leaves you
+  searching your templates for a string you never typed.
+
+### ⚠️ A stylesheet that will not compile now fails the build
+
+A Sass syntax error used to be logged in red and then dropped: the build
+resolved, `report().ok` stayed `true`, and the site shipped with no CSS. It is
+a build failure now, named `<sass: css/site.scss>`, in the same shape as a
+failing page. One broken stylesheet still does not stop the others or the copy.
+
+### ⚠️ Sass partials are no longer compiled on their own
+
+A leading underscore is the Sass convention for "this is a partial, do not
+compile me standalone", and dart-sass never compiles one. kiss did — so
+`_buttons.scss` was emitting a `_buttons.css` nobody asked for, and the most
+ordinary Sass layout there is (a `main.scss` that defines variables and
+`@import`s a `_buttons.scss` reading them) could not build once the rule above
+made a compile error fatal.
+
+**If you were serving one of those emitted files, it will 404 after this
+upgrade.** One `info` line per build names the set that was skipped, so you
+will see which. Rename it without the underscore if you need it compiled.
+
+### Custom helpers register themselves
+
+kiss now loads `config.folders.helpers` (default `./helpers`, beside your build
+script) and calls its `registerHelpers` export itself. Your router needs no
+line for it:
+
+```js
+// helpers/index.js
+export function registerHelpers(kiss) {
+  kiss.handlebars.registerHelper('shout', (s) => String(s).toUpperCase())
+}
+```
+
+- **If your router already calls `registerHelpers(kiss)` by hand**, it now runs
+  twice. Harmless, and a `notice` tells you the line is redundant so you can
+  delete it.
+- **If you already had an unrelated root `helpers/` folder**, kiss says so and
+  carries on without site helpers rather than failing your build — it guessed
+  the folder, so it does not get to break you over it. Point
+  `folders.helpers` somewhere else, or set it to `null`.
+- **It is watched in dev.** Editing the entry re-imports and re-renders. A
+  helper the edited file no longer registers is unregistered. Editing a
+  _sibling module_ the entry imports cannot take effect — ESM has no
+  cache-invalidation API — so kiss prints a restart notice and does **not**
+  rebuild, rather than reloading the page and implying your edit landed.
+
+### `report()` tells the truth between builds under `.watch()`
+
+`report()` is the machine verdict, and in watch mode it used to lag: breaking a
+stylesheet, or a page, put the failure in the log immediately while
+`report().ok` went on saying `true` until the next whole-site rebuild.
+
+- An asset re-copy, a helpers reload, a scoped page re-render and a callback
+  running after an earlier settle all refresh the verdict now.
+- **A page that starts failing under `.watch()` is recorded** — it used to be
+  loud in the console and absent from both `failures` and `report()`. The cost
+  is that a transient mid-edit render error moves `ok` to `false` until your
+  next save.
+- `duration` is frozen at the settle, so a session left open does not report an
+  hour-long build. A refresh returns a **new object**, so a reference you kept
+  is a snapshot of when you took it.
+
+### Smaller fixes you may have hit
+
+- An indented `{{> "snippet"}}` calling a `.txt` partial threw, and the page
+  wrote nothing. Fixed.
+- The "two sources, one emitted file" warning was dead under
+  `assets.hash` — the one configuration a production site builds with.
+- A Sass **write** failure (a directory in the way, a read-only target) said
+  `Error parsing sass file`. It now names the write.
+- `registerPartials()` was typed `any[]` in the published `types/`.
+- `{{root}}` is documented as what it is: a value **your** page or layout
+  supplies (the climb back to the build root), not a kiss helper. An undefined
+  `{{root}}` renders empty and says nothing.
+
+### Packaging
+
+- `examples/*/public/` no longer ships — 75 files of example build output were
+  in the tarball.
+- `CHANGELOG.md` now does, so an agent working in `node_modules/kiss-ssg/` can
+  read what changed between the version a site was written against and the one
+  it has.
+- Every example is a self-contained project you can copy:
+  `examples/<n>-<name>/router.js`, run from its own folder.
+
 ## 2.4.0 — 2026-09-16
 
 ### ⚠️ Read this first if your site uses `aliases`

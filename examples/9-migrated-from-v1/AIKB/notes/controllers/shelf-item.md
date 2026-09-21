@@ -1,5 +1,5 @@
 ---
-subject-hash: 8bfa290248f68febbcea3d6c759bcc8b55eaf6dd
+subject-hash: 76acd457db16d39eb3c0e3c11ff589b0a06d3632
 ---
 
 # shelf-item.js

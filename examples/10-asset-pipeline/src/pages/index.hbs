@@ -1,0 +1,113 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "head"}}
+  {{!-- The stylesheet the pipeline step wrote, linked like any other asset:
+        `asset` resolves it out of the manifest the copy filled in, so the
+        template never has to know a tool produced it. --}}
+  <link rel="stylesheet" href="{{root}}{{asset 'css/generated.css'}}">
+  {{/content}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 10 &middot; asset pipeline</p>
+    <h1>A tool kiss knows nothing about</h1>
+    <p>
+      The colours on this page were not written by hand and were not compiled by kiss.
+      A command ran before the asset copy, wrote a stylesheet into the assets folder, and
+      the copy picked it up like any other file.
+    </p>
+  </section>
+
+  <div class="token-card">
+    <p>
+      <span class="token-badge">generated</span>
+      This card is styled by <code>css/generated.css</code>, built from
+      <code>styles/tokens.json</code> by <code>{{model.command}}</code>.
+    </p>
+  </div>
+
+  <section class="card">
+    <h2>One helper, four kinds of reference</h2>
+    <p>
+      Every reference below is emitted by the same <code>\{{asset}}</code> call. Two of them
+      name a file this build wrote and are checked against it; two carry their own origin and
+      are handed straight back.
+    </p>
+    <ul>
+      <li>
+        <svg width="18" height="18" aria-hidden="true"><use href="{{root}}{{asset 'img/icons.svg#bean'}}"></use></svg>
+        <code>\{{root}}\{{asset 'img/icons.svg#bean'}}</code> &mdash; a file the copy emitted,
+        plus a sprite fragment. The <code>#&hellip;</code> comes off before the lookup and goes
+        back on after it, so cache busting can rename the file and the fragment still names the
+        right symbol. A path into the build, so it takes <code>\{{root}}</code> like any other.
+        (An external sprite needs the page to be <em>served</em> &mdash; <code>--dev</code> does
+        that; opened straight off the file system the browser refuses to fetch it.)
+      </li>
+      <li>
+        <img src="{{asset model.badge}}" alt="" width="18" height="18">
+        <code>\{{asset model.badge}}</code> &mdash; a <code>data:</code> URI, drawn by the
+        browser from the string itself. It carries no <code>//</code>, which is exactly how it
+        used to be mistaken for a path into the build and fail it.
+      </li>
+      <li>
+        <code>\{{asset config.cdn.fonts}}</code> &mdash; renders
+        <code>{{asset config.cdn.fonts}}</code>, unchanged and unlooked-up, with
+        <strong>no <code>\{{root}}</code></strong>: a URL that names its own origin has no base
+        to climb back to.
+      </li>
+      <li>
+        <code>\{{asset config.cdn.insights}}</code> &mdash; protocol-relative, no scheme at all:
+        renders <code>{{asset config.cdn.insights}}</code>, so a snippet pasted from a vendor
+        works as given. Prefer <code>https://</code> when the choice is yours; this form is here
+        because plenty of CDN snippets still hand it to you.
+      </li>
+    </ul>
+  </section>
+
+  <div class="card">
+    {{> "newsletter"}}
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <code>config.assets.pipeline</code> is an ordered list of
+    <code>{ name?, run, watch?, cwd? }</code> steps. Every <code>run</code> is executed
+    through a shell, in order, awaited, <strong>before</strong> the asset copy &mdash; which is
+    what puts the generated stylesheet in the build in time for the first page to link it.
+    A step that exits non-zero fails the build like a failed page:
+    <code>complete()</code> rejects and the failure is named
+    <code>&lt;pipeline: tokens&gt;</code>.
+  </p>
+  <p>
+    Run this with <code>--dev</code> and the step's <code>watch</code> command is started
+    too &mdash; once, after <code>run</code> has succeeded &mdash; and kept for the session.
+    Edit <code>styles/tokens.json</code> while it is up: the tool
+    recompiles the stylesheet on its own, kiss's assets watcher copies it into the build,
+    and the browser reloads. <code>close()</code> ends the watch process, so nothing is
+    left running when the server stops.
+  </p>
+  <p>
+    Each command inherits <code>process.env</code> plus <code>KISS_BUILD</code>,
+    <code>KISS_ASSETS</code> and <code>KISS_DEV</code> &mdash; this example's tool writes to
+    <code>KISS_ASSETS</code> rather than guessing where the site keeps its assets. In a real
+    project the step is your actual toolchain: <code>npx @tailwindcss/cli -i
+    src/styles/site.css -o src/assets/css/site.css --minify</code>, with the same command
+    plus <code>--watch</code> as the <code>watch</code> half.
+  </p>
+  <p>
+    Every URL these pages emit goes through <code>\{{asset}}</code>, which is the point of the
+    helper rather than an accident of it: the references kiss owns are checked against the build
+    &mdash; a path no copy emitted <strong>fails the build</strong> rather than shipping a 404 &mdash;
+    and the rest are handed back untouched. Anything carrying a scheme (<code>https:</code>,
+    <code>data:</code>, <code>mailto:</code>) or a protocol-relative <code>//host/&hellip;</code>
+    names no file this build wrote, so there is nothing to look up and nothing to fail.
+    A <code>?query</code> is split off like a <code>#fragment</code>:
+    <code>\{{asset 'css/generated.css?v=2'}}</code> renders
+    <code>{{asset 'css/generated.css?v=2'}}</code>, keeping your query and suppressing the one
+    <code>assets.version</code> would have added &mdash; two query strings on one URL is not a
+    thing, and yours is the explicit one.
+  </p>
+  {{/content}}
+
+{{/extend}}

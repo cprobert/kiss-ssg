@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import http from 'node:http'
 import net from 'node:net'
@@ -29,6 +29,169 @@ describe('a bad model', () => {
     const failed = data.find((d) => d.id === 'missing.json')
     expect(failed.data).toBeNull()
     expect(failed.error.message).toBe('Skipping: missing.json')
+  })
+})
+
+// `folders.helpers` defaults to `./helpers`, which is cwd-relative — so these
+// run from inside the temp site, the way a real build script does. That is
+// also the only way to exercise the *defaulted* path at all: naming the folder
+// in the config is what makes it explicit.
+// Found by a clean-room conversion: an agent working only from the published
+// docs built a site whose stylesheet never compiled, and every machine signal
+// said the build was good. `kiss-build-check` tells an agent "ok:true and
+// exit 0 is the only passing result", which makes that verdict load-bearing.
+describe('a stylesheet that does not compile', () => {
+  it('fails the build rather than shipping a site with no CSS', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '<link href="{{asset "css/style.css"}}">',
+      'src/assets/css/style.scss': 'body { color: red;',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow(/<sass: .*css\/style\.scss>/)
+    expect(kiss.report().ok).toBe(false)
+  })
+
+  // One broken stylesheet must not take the others with it, the same rule a
+  // failing page follows.
+  it('still compiles the stylesheets that are fine', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/broken.scss': 'body { color: red;',
+      'src/assets/css/fine.scss': 'body { color: blue; }',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow()
+    expect(await site.exists('public/css/fine.css')).toBe(true)
+  })
+
+  // Failure identity was the source-relative filename alone, so two asset
+  // roots collided: a second `.copyAssets()` whose own `css/theme.scss`
+  // compiles CLEARED the first root's failed `css/theme.scss`, and the build
+  // reported success with the primary stylesheet missing.
+  it("keeps two asset roots' failures apart", async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/theme.scss': 'body { color: $undefined; }',
+      'vendor/css/theme.scss': 'body { color: red; }',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+    kiss.copyAssets(`${site.root}/vendor`, `${site.build}/vendor`)
+    kiss.scan().generate()
+    await expect(kiss.complete()).rejects.toThrow(/theme\.scss/)
+    expect(kiss.report().ok).toBe(false)
+  })
+
+  // Cleanup only covered the files the latest compile returned, so deleting or
+  // renaming a broken stylesheet left its failure recorded with nothing able
+  // to clear it.
+  it('clears a failure when the broken stylesheet is deleted', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/broken.scss': 'body { color: $undefined; }',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow()
+
+    await fs.remove(`${site.src}/assets/css/broken.scss`)
+    kiss.copyAssets(site.folders.src + '/assets', site.build)
+    await kiss._assetQueue
+    expect(kiss._failures.filter((f) => /^<sass:/.test(f.view))).toEqual([])
+  })
+
+  it('says nothing when every stylesheet compiles', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/assets/css/fine.scss': 'body { color: blue; }',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).resolves.toBeDefined()
+    expect(kiss.report().ok).toBe(true)
+  })
+})
+
+describe('a root helpers/ folder that kiss does not own', () => {
+  const inSite = async (root, fn) => {
+    const cwd = process.cwd()
+    process.chdir(root)
+    try {
+      return await fn()
+    } finally {
+      process.chdir(cwd)
+    }
+  }
+
+  // The upgrade hazard: a site that had `helpers/` for its own utilities long
+  // before `folders.helpers` existed must not lose its whole build to a folder
+  // nobody pointed kiss at.
+  it('warns and builds, because kiss guessed the folder', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js': 'export const formatDate = (d) => String(d)',
+    })
+    const logger = { ...silentLogger, warn: vi.fn() }
+    await inSite(site.root, async () => {
+      const kiss = new Kiss({ folders: site.folders, logger }).scan().generate()
+      await expect(kiss.complete()).resolves.toBeDefined()
+    })
+    expect(await site.exists('public/index.html')).toBe(true)
+    expect(
+      logger.warn.mock.calls.some(([m]) => /folders\.helpers/.test(String(m))),
+    ).toBe(true)
+  })
+
+  // The message called a helpers module a page — `1 page(s) failed to build:
+  // .../helpers/index.js` — which sends the author to look at their pages.
+  // Every pseudo-view on `_failures` has the same problem: `<pipeline>`,
+  // `<redirects>`, `<dev server>` are not pages either.
+  it('names the failure as site helpers rather than as a page', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js':
+        "export function registerHelpers() { throw new Error('broken registrar') }",
+    })
+    const kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow(
+      /build failure.*<site helpers>/s,
+    )
+  })
+
+  it('fails the build when the author named the folder', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'helpers/index.js': 'export const formatDate = (d) => String(d)',
+    })
+    const kiss = new Kiss({
+      folders: { ...site.folders, helpers: `${site.root}/helpers` },
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow()
   })
 })
 
@@ -195,7 +358,7 @@ describe('build failures', () => {
     kiss.scan().generate()
 
     await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: .*index\.html/,
+      /1 build failure: .*index\.html/,
     )
     expect(await site.exists('public/about.html')).toBe(true)
 
@@ -244,7 +407,7 @@ describe('build failures', () => {
       .generate()
 
     await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: .*broken\.html/,
+      /1 build failure: .*broken\.html/,
     )
     expect(await site.exists('public/good.html')).toBe(true)
     expect(await site.exists('public/broken.html')).toBe(false)
@@ -387,9 +550,7 @@ describe('a bad controller', () => {
       })
       .generate()
 
-    await expect(kiss.complete()).rejects.toThrow(
-      /1 page\(s\) failed to build: index\.hbs/,
-    )
+    await expect(kiss.complete()).rejects.toThrow(/1 build failure: index\.hbs/)
   })
 })
 

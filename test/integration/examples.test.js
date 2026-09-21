@@ -8,15 +8,18 @@ import { spawnSync } from 'node:child_process'
 // `files`) — so relative paths off import.meta.dirname are all that is needed.
 const repoRoot = path.resolve(import.meta.dirname, '../..')
 const examplesDir = path.join(repoRoot, 'examples')
-const publicDir = path.join(repoRoot, 'public')
 const hasExamples = existsSync(examplesDir)
 
-// Every example writes into the one shared repo-root `public/`, so the suite
-// runs sequentially (never `concurrent`) and clears each example's own output
-// folder immediately before building it — the only way a page count is exact
-// rather than a leftover from a previous run or a previous example.
+// Each example is a standalone project and builds into its OWN `public/`,
+// exactly as a copied one would — nothing writes to a shared repo-root folder
+// any more, which is what makes `examples/<name>/` copyable as it stands.
+const outputDir = (name) => path.join(examplesDir, name, 'public')
+
+// The suite still runs sequentially (never `concurrent`) and clears an
+// example's output immediately before building it — the only way a page count
+// is exact rather than a leftover from a previous run.
 function cleanOutput(name) {
-  rmSync(path.join(publicDir, name), { recursive: true, force: true })
+  rmSync(outputDir(name), { recursive: true, force: true })
 }
 
 function countHtmlFiles(dir) {
@@ -99,70 +102,68 @@ describe.skipIf(!hasExamples)('example builds', () => {
       cleanOutput('1-scan')
       const r = runExample('1-scan')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '1-scan'))).toBe(2)
+      expect(countHtmlFiles(outputDir('1-scan'))).toBe(2)
     }, 60000)
 
     it('2 · page builds 3 pages, including feed.xml', () => {
       cleanOutput('2-page')
       const r = runExample('2-page')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '2-page'))).toBe(3)
-      expect(existsSync(path.join(publicDir, '2-page/feed.xml'))).toBe(true)
+      expect(countHtmlFiles(outputDir('2-page'))).toBe(3)
+      expect(existsSync(path.join(outputDir('2-page'), 'feed.xml'))).toBe(true)
     }, 60000)
 
     it('3 · pages fans out to 8 pages', () => {
       cleanOutput('3-pages')
       const r = runExample('3-pages')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '3-pages'))).toBe(8)
+      expect(countHtmlFiles(outputDir('3-pages'))).toBe(8)
     }, 60000)
 
     it('4 · layouts and partials builds 2 pages', () => {
       cleanOutput('4-layouts-and-partials')
       const r = runExample('4-layouts-and-partials')
       expect(r.status).toBe(0)
-      expect(
-        countHtmlFiles(path.join(publicDir, '4-layouts-and-partials')),
-      ).toBe(2)
+      expect(countHtmlFiles(outputDir('4-layouts-and-partials'))).toBe(2)
     }, 60000)
 
     it('5 · helpers builds 2 pages', () => {
       cleanOutput('5-helpers')
       const r = runExample('5-helpers')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '5-helpers'))).toBe(2)
+      expect(countHtmlFiles(outputDir('5-helpers'))).toBe(2)
     }, 60000)
 
     it('6 · sitemap builds 4 pages, a sitemap, an llms.txt, a robots.txt and a hashed stylesheet', () => {
       cleanOutput('6-sitemap')
       const r = runExample('6-sitemap')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '6-sitemap'))).toBe(4)
-      expect(existsSync(path.join(publicDir, '6-sitemap/sitemap.xml'))).toBe(
+      expect(countHtmlFiles(outputDir('6-sitemap'))).toBe(4)
+      expect(existsSync(path.join(outputDir('6-sitemap'), 'sitemap.xml'))).toBe(
         true,
       )
       // The one example that writes both: llms.txt lists the three pages the
       // sitemap does, and not the `ignoreSitemap` one.
       const llms = readFileSync(
-        path.join(publicDir, '6-sitemap/llms.txt'),
+        path.join(outputDir('6-sitemap'), 'llms.txt'),
         'utf8',
       )
       expect(llms.match(/^- \[/gm)).toHaveLength(3)
 
       // And the file that points a crawler at the sitemap beside it. This is
       // the guard on the claim `.robots()` was built for: until v2.4 every
-      // example shipped a *static* `robots.txt` copied from `_shared/assets/`
+      // example shipped a *static* `robots.txt` copied from a shared assets folder
       // that never mentioned the sitemap the same example generated. The
       // `Sitemap:` line is generated from the registry, so it cannot go stale.
       expect(
-        readFileSync(path.join(publicDir, '6-sitemap/robots.txt'), 'utf8'),
+        readFileSync(path.join(outputDir('6-sitemap'), 'robots.txt'), 'utf8'),
       ).toBe(
         'User-agent: *\nAllow: /\n\nSitemap: https://asterandoak.example/sitemap.xml\n',
       )
       expect(llms).not.toContain('rota')
       expect(
         countMatching(
-          path.join(publicDir, '6-sitemap/css'),
+          path.join(outputDir('6-sitemap'), 'css'),
           /^site\.[0-9a-f]{8}\.css$/,
         ),
       ).toBe(1)
@@ -175,11 +176,11 @@ describe.skipIf(!hasExamples)('example builds', () => {
       cleanOutput('7-versioned-outputs')
       const r = runExample('7-versioned-outputs')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '7-versioned-outputs'))).toBe(
-        2,
-      )
+      expect(countHtmlFiles(outputDir('7-versioned-outputs'))).toBe(2)
       expect(
-        existsSync(path.join(publicDir, '7-versioned-outputs/test/index.html')),
+        existsSync(
+          path.join(outputDir('7-versioned-outputs'), 'test/index.html'),
+        ),
       ).toBe(true)
     }, 60000)
 
@@ -192,7 +193,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
         'stockists/stockist.hbs [item 3: harbour-market-stall]',
       )
       expect(text).toContain('missing address')
-      expect(countHtmlFiles(path.join(publicDir, '8-data-fed-site'))).toBe(6)
+      expect(countHtmlFiles(outputDir('8-data-fed-site'))).toBe(6)
 
       // A build that fails can never be recorded, so this example ships no
       // knowledge base at all — and an ordinary build writes none either.
@@ -205,9 +206,12 @@ describe.skipIf(!hasExamples)('example builds', () => {
       cleanOutput('8-data-fed-site')
       const r = runExample('8-data-fed-site', ['--atomic'])
       expect(r.status).toBe(1)
-      const leftoverStaging = readdirSync(publicDir).filter((f) =>
-        f.startsWith('8-data-fed-site.kiss-staging-'),
-      )
+      // The staging sibling is named after the build folder, so it lands
+      // beside it — inside the example, now that each builds into its own
+      // `public/` rather than into a shared repo-root one.
+      const leftoverStaging = readdirSync(
+        path.join(examplesDir, '8-data-fed-site'),
+      ).filter((f) => f.startsWith('public.kiss-staging-'))
       expect(leftoverStaging).toEqual([])
     }, 60000)
 
@@ -215,9 +219,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       cleanOutput('9-migrated-from-v1')
       const r = runExample('9-migrated-from-v1')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '9-migrated-from-v1'))).toBe(
-        11,
-      )
+      expect(countHtmlFiles(outputDir('9-migrated-from-v1'))).toBe(11)
 
       // The guarded dynamic-partial block warns exactly once — the `lookup`
       // helper dedupes per page per key, not per call (see handlebars-helpers.js).
@@ -233,7 +235,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // the dedupe keeps only the catalogue's — never a second shelf page.
       expect(
         countMatching(
-          path.join(publicDir, '9-migrated-from-v1/shelf'),
+          path.join(outputDir('9-migrated-from-v1'), 'shelf'),
           /guji-uraga/,
         ),
       ).toBe(1)
@@ -242,8 +244,8 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // `kiss.handlebars.partials`, not the global module, so the partial
       // actually renders into the page rather than an empty string.
       const handlebarsInstancePage = path.join(
-        publicDir,
-        '9-migrated-from-v1/handlebars-instance.html',
+        outputDir('9-migrated-from-v1'),
+        'handlebars-instance.html',
       )
       expect(existsSync(handlebarsInstancePage)).toBe(true)
       expect(readFileSync(handlebarsInstancePage, 'utf8')).toContain(
@@ -305,24 +307,41 @@ describe.skipIf(!hasExamples)('example builds', () => {
       cleanOutput('10-asset-pipeline')
       const r = runExample('10-asset-pipeline')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(path.join(publicDir, '10-asset-pipeline'))).toBe(1)
+      expect(countHtmlFiles(outputDir('10-asset-pipeline'))).toBe(1)
 
       // The step ran before the asset copy, so what it wrote is in the build —
       // which is the whole feature, and the one thing a page count cannot show.
       const generated = path.join(
-        publicDir,
-        '10-asset-pipeline/css/generated.css',
+        outputDir('10-asset-pipeline'),
+        'css/generated.css',
       )
       expect(existsSync(generated)).toBe(true)
       expect(readFileSync(generated, 'utf8')).toContain('--accent:')
       expect(output(r)).toContain('pipeline: tokens ok')
+
+      // The other half of the example: one `{{asset}}` call, four kinds of
+      // reference. The two build paths are looked up (the sprite's `#fragment`
+      // split off and re-appended), and the two URLs that name their own
+      // origin are handed back. Every one of these shapes failed the build
+      // when `{{asset}}` first learned to throw — `data:` and `mailto:` carry
+      // no `//`, and `//cdn/x` carries no scheme, so all three fell through to
+      // a manifest lookup they could never satisfy.
+      const html = readFileSync(
+        path.join(outputDir('10-asset-pipeline'), 'index.html'),
+        'utf8',
+      )
+      expect(html).toContain('href="img/icons.svg#bean"')
+      expect(html).toContain('src="data:image/svg+xml,%3Csvg')
+      expect(html).toContain('https://fonts.asterandoak.example/inter.css')
+      expect(html).toContain('//cdn.asterandoak.example/js/insights.js')
+      expect(html).toContain('css/generated.css?v=2')
     }, 60000)
 
     it('11 · blog builds 14 pages, one redirect and a feed of six posts newest first', () => {
       cleanOutput('11-blog')
       const r = runExample('11-blog')
       expect(r.status).toBe(0)
-      const dir = path.join(publicDir, '11-blog')
+      const dir = outputDir('11-blog')
       expect(countHtmlFiles(dir)).toBe(14)
 
       // The rename recipe: one post's record carries `aliases`, so the build
@@ -391,7 +410,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // id the registry does not hold fails the render instead.
       expect(broken.report.links.broken).toEqual([
         {
-          page: '../../public/11-blog/blog/the-cascara-experiment/index.html',
+          page: './public/blog/the-cascara-experiment/index.html',
           href: '/blog/the-kenya-microlot/',
         },
       ])
@@ -406,26 +425,24 @@ describe.skipIf(!hasExamples)('example builds', () => {
         map.pages.find((page) => page.buildTo === buildTo)?.id
 
       // A fan-out item's default id is `<registration>/<slug>` …
-      expect(
-        idOf('../../public/11-blog/blog/pour-over-at-home/index.html'),
-      ).toBe('blog/post/pour-over-at-home')
+      expect(idOf('./public/blog/pour-over-at-home/index.html')).toBe(
+        'blog/post/pour-over-at-home',
+      )
       // … and a record's own `id` wins outright. This is the one that makes
       // `moved` able to follow a slug rename: it does not contain the slug.
-      expect(
-        idOf('../../public/11-blog/blog/the-cascara-experiment/index.html'),
-      ).toBe('blog/post/cascara')
+      expect(idOf('./public/blog/the-cascara-experiment/index.html')).toBe(
+        'blog/post/cascara',
+      )
       // The registration's `id` is the items' prefix, never an id of theirs.
-      expect(idOf('../../public/11-blog/blog/tags/brewing/index.html')).toBe(
+      expect(idOf('./public/blog/tags/brewing/index.html')).toBe(
         'blog/tags/brewing',
       )
 
       // The two pagination pages are one view rendered twice, so neither gets
       // a default id at all — these are explicit, and without them the build
       // prints the withdrawn-id notice and `{{link model.prev}}` fails.
-      expect(idOf('../../public/11-blog/blog/index.html')).toBe('blog')
-      expect(idOf('../../public/11-blog/blog/page/2/index.html')).toBe(
-        'blog/page/2',
-      )
+      expect(idOf('./public/blog/index.html')).toBe('blog')
+      expect(idOf('./public/blog/page/2/index.html')).toBe('blog/page/2')
 
       // Nothing on this site is unlinkable.
       expect(map.pages.filter((page) => !page.id)).toEqual([])

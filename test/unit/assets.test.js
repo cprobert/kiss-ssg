@@ -81,6 +81,39 @@ describe('copyAssets', () => {
   })
 })
 
+// A compile failure and a write failure are different problems with
+// different fixes, and both used to be reported as "Error parsing sass file".
+// A stylesheet that parses perfectly and cannot be written sent the author
+// looking for a syntax error that was not there.
+describe('copyAssets sass diagnostics', () => {
+  it('names the write, not the parse, when the output cannot be written', async () => {
+    site = await makeSite({ 'a/css/x.scss': 'b { color: red }' })
+    // A directory where `x.css` has to go: the source parses, the write cannot.
+    await fs.ensureDir(`${site.root}/out/css/x.css`)
+    const logger = { ...silentLogger, error: vi.fn(), warn: vi.fn() }
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+    })
+    expect(result.sass[0].error).toBeInstanceOf(Error)
+    const said = logger.error.mock.calls.map((c) => c.join(' ')).join('\n')
+    expect(said).toContain('Error writing compiled sass to: ')
+    expect(said).not.toContain('Error parsing sass file')
+  })
+
+  it('still names the parse when the stylesheet will not compile', async () => {
+    site = await makeSite({ 'a/css/x.scss': 'b { color: ' })
+    const logger = { ...silentLogger, error: vi.fn(), warn: vi.fn() }
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+    })
+    expect(result.sass[0].error).toBeInstanceOf(Error)
+    const said = logger.error.mock.calls.map((c) => c.join(' ')).join('\n')
+    expect(said).toContain('Error parsing sass file')
+  })
+})
+
 describe('copyAssets manifest', () => {
   const hashing = (extra = {}) => ({
     config: { ...deps.config, assets: { hash: true, version: null, ...extra } },
@@ -105,6 +138,211 @@ describe('copyAssets manifest', () => {
     expect(manifest.lookup('img/logo.png')).toBe('img/logo.png')
     expect(manifest.lookup('robots.txt')).toBe('robots.txt')
     expect(await site.exists('out/css/x.css')).toBe(true)
+  })
+
+  // The migration shape: a project moving off a pipeline that committed its
+  // compiled CSS has site.scss and site.css side by side. Both are emitted to
+  // one path, the copy runs after the compile, and the plain file wins — so
+  // every .scss edit silently does nothing, on a green build and a clean
+  // check. The pages are correct and the asset is wrong, so page hashes can
+  // never catch it. Nothing said so before this warning.
+  it('warns when a sass compile and a plain copy claim one emitted path', async () => {
+    const logger = { ...silentLogger, warn: vi.fn() }
+    site = await makeSite({
+      'a/css/site.scss': 'body { color: #111; }',
+      'a/css/site.css': 'body{color:#eee}',
+    })
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+      manifest: createAssetManifest(),
+    })
+    const warned = logger.warn.mock.calls.map((c) => c.join(' '))
+    expect(warned).toHaveLength(1)
+    // The DIRECTION is the load-bearing part, and glob order is the opposite
+    // of write order: `site.css` sorts first but `fs.copy` runs after the
+    // compile, so the copied file is served and the Sass is discarded. Naming
+    // them the wrong way round sends the author to edit the winning file.
+    expect(warned[0]).toContain(
+      'css/site.scss compiles to css/site.css, then css/site.css is copied over it',
+    )
+    // Consequence before mechanism: what the reader needs first is that their
+    // edits are not reaching the site.
+    expect(warned[0]).toContain(
+      'edits to css/site.scss are not reaching the site',
+    )
+    // ...and it says the precedence is intended, not an accident: a copied
+    // `.css` is often an assets.pipeline step's output, which must beat
+    // kiss's built-in Sass.
+    expect(warned[0]).toContain('wins by design')
+    // ...and the claim is true: the plain file's bytes are what is served.
+    expect((await site.read('out/css/site.css')).trim()).toBe(
+      'body{color:#eee}',
+    )
+  })
+
+  // Hashing renames the emitted file, so the second source's stat found
+  // nothing and the detector short-circuited before it ever compared claims —
+  // silent in exactly the configuration a production site builds with, which
+  // is the one configuration where a silently dead stylesheet matters.
+  it('warns the same way when assets.hash is on', async () => {
+    const logger = { ...silentLogger, warn: vi.fn() }
+    site = await makeSite({
+      'a/css/site.scss': 'body { color: #111; }',
+      'a/css/site.css': 'body{color:#eee}',
+    })
+    const manifest = createAssetManifest()
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      config: { ...deps.config, assets: { hash: true } },
+      logger,
+      manifest,
+    })
+    const warned = logger.warn.mock.calls.map((c) => c.join(' '))
+    expect(warned).toHaveLength(1)
+    expect(warned[0]).toContain(
+      'css/site.scss compiles to css/site.css, then css/site.css is copied over it',
+    )
+    // The hashed file is still emitted and still the copied bytes: the fix
+    // moves when the claim is recorded, not what is served.
+    const emitted = manifest.lookup('css/site.css')
+    expect(emitted).toMatch(/^css\/site\.[0-9a-f]+\.css$/)
+    expect((await site.read(`out/${emitted}`)).trim()).toBe('body{color:#eee}')
+  })
+
+  // A Sass syntax error was logged in red and then dropped on the floor:
+  // complete() resolved, report().ok was true, `kiss-ssg check` said ok, and
+  // the site shipped with no stylesheet. An agent following kiss's own
+  // documented bar — "ok:true and exit 0 is the only passing result" — would
+  // publish that. Same family as the dishonest dev rebuild this branch
+  // exists to remove, in a corner nobody had looked at.
+  it('reports a sass compile failure to its caller', async () => {
+    site = await makeSite({
+      'a/css/broken.scss': 'body { color: red;',
+      'a/css/fine.scss': 'body { color: blue; }',
+    })
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+      manifest: createAssetManifest(),
+    })
+    // Every file it tried is reported, so a caller can clear the entry for one
+    // that has since started compiling.
+    expect(result.sass.map((s) => s.file).sort()).toEqual([
+      'css/broken.scss',
+      'css/fine.scss',
+    ])
+    const failed = result.sass.filter((s) => s.error)
+    expect(failed).toHaveLength(1)
+    expect(failed[0].file).toBe('css/broken.scss')
+    // ...and the sibling still compiled: one broken stylesheet does not stop
+    // the rest, the same rule a failed page follows.
+    expect(await site.exists('out/css/fine.css')).toBe(true)
+  })
+
+  // A leading underscore is THE Sass convention for "this is a partial, do not
+  // compile me standalone" — dart-sass itself never compiles one. kiss globbed
+  // them anyway, which was a red log line until a Sass error became a build
+  // failure; then a site with the most ordinary stylesheet layout there is
+  // could not build at all. Measured: main.css compiled correctly and the
+  // build failed on _buttons.scss.
+  it('does not compile _-prefixed sass partials standalone', async () => {
+    site = await makeSite({
+      'a/css/_buttons.scss': '.button { color: $brand; }',
+      // `@import` rather than `@use`, because that is what the partial
+      // convention is for: the importer defines the variable the partial
+      // reads, which is exactly why the partial cannot compile alone. It is
+      // also what the real sites in this estate use.
+      'a/css/main.scss': "$brand: #c00;\n@import 'buttons';",
+    })
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, error: vi.fn(), warn: vi.fn() },
+      manifest: createAssetManifest(),
+    })
+    // The partial is reported as skipped rather than omitted — the caller
+    // needs to know it was seen and deliberately not compiled.
+    const compiled = result.sass.filter((s) => !s.skipped)
+    expect(compiled.map((s) => s.file)).toEqual(['css/main.scss'])
+    expect(compiled[0].error).toBeUndefined()
+    expect(result.sass.filter((s) => s.skipped).map((s) => s.file)).toEqual([
+      'css/_buttons.scss',
+    ])
+    expect(await site.exists('out/css/main.css')).toBe(true)
+    // ...and the partial emits nothing of its own, which is the point of it.
+    expect(await site.exists('out/css/_buttons.css')).toBe(false)
+    // The partial's source is not copied through either — it is Sass, not an
+    // asset a page can link.
+    expect(await site.exists('out/css/_buttons.scss')).toBe(false)
+  })
+
+  // Adopting the partial convention silently removed a naming choice that
+  // used to work: `_vendor.scss`, self-contained and imported by nothing, was
+  // emitted as `_vendor.css` before and emits nothing now — measured, with
+  // ZERO mentions anywhere in the build log. A site serving that file starts
+  // serving a 404 after a clean build and nothing says why. Third time on this
+  // branch that a fix for a loud wrong behaviour introduced a quiet one, which
+  // is why the skip is now reported rather than assumed.
+  it('says which sass partials it skipped', async () => {
+    site = await makeSite({
+      'a/css/_buttons.scss': '.b{}',
+      'a/css/_forms.scss': '.f{}',
+      'a/css/main.scss': 'body{color:red}',
+    })
+    const info = vi.fn()
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, info },
+      manifest: createAssetManifest(),
+    })
+    const said = info.mock.calls.map((c) => c.join(' ')).join('\n')
+    expect(said).toContain('_buttons.scss')
+    expect(said).toContain('_forms.scss')
+    // One line for the set, not one per file: a site with a dozen partials
+    // should not get a dozen lines every build.
+    expect(
+      info.mock.calls.filter(([m]) => /partial/i.test(String(m))),
+    ).toHaveLength(1)
+    // Skipped files are reported to the caller too, distinguishably.
+    expect(
+      result.sass
+        .filter((s) => s.skipped)
+        .map((s) => s.file)
+        .sort(),
+    ).toEqual(['css/_buttons.scss', 'css/_forms.scss'])
+  })
+
+  // The collision detector claimed the skipped partial as a compiled source,
+  // so a legitimately served `_theme.css` beside a `_theme.scss` was reported
+  // as an overwrite that never happened — advising the author to delete a file
+  // that is correctly consumed by another entry point. That is the P4 warning
+  // firing on a case that no longer exists.
+  it('does not claim a skipped partial as a compiled source', async () => {
+    site = await makeSite({
+      'a/css/_theme.scss': '.t{}',
+      'a/css/_theme.css': '.served{}',
+    })
+    const warn = vi.fn()
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger: { ...silentLogger, warn },
+      manifest: createAssetManifest(),
+    })
+    expect(
+      warn.mock.calls.filter(([m]) => /compiles to/.test(String(m))),
+    ).toEqual([])
+    expect((await site.read('out/css/_theme.css')).trim()).toBe('.served{}')
+  })
+
+  it('does not warn when only a sass source emits that path', async () => {
+    const logger = { ...silentLogger, warn: vi.fn() }
+    site = await makeSite({ 'a/css/only.scss': 'body { color: #111; }' })
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+      manifest: createAssetManifest(),
+    })
+    expect(logger.warn).not.toHaveBeenCalled()
   })
 
   it('keys the manifest to the build root when the target is below it', async () => {

@@ -1,8 +1,27 @@
 // Tier 0: one file. `.sitemap()` and `.llms()` belong in the terminal chain of
 // the router itself — they are part of what the site emits, not logic to lift
 // out. See llms.txt § The build script for what does leave this file.
-import Kiss from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import Kiss from 'kiss-ssg'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 const dev = process.argv.includes('--dev')
 
@@ -13,11 +32,8 @@ const kiss = new Kiss({
     { href: 'about/index.html', label: 'About' },
     { href: 'stockists/index.html', label: 'Stockists' },
   ],
-  folders: {
-    src: '.',
-    build: '../../public/6-sitemap',
-    ...sharedFolders,
-  },
+  // No `folders` block: `src: './src'` and `build: './public'` are the
+  // defaults, so a site laid out the ordinary way configures nothing.
   // The sitemap needs to know where the site will live; without it kiss logs
   // an error and skips the file rather than guessing.
   siteUrl: 'https://asterandoak.example',

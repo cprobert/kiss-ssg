@@ -1,81 +1,81 @@
 {
   "ok": true,
   "mode": "check",
-  "buildDir": "../../public/9-migrated-from-v1",
+  "buildDir": "./public",
   "pages": [
     {
       "view": "index.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/index.html",
+      "buildTo": "./public/index.html",
       "ok": true,
       "hash": "6c04dabbf11a3182b1efd92d8e0197a117b50a57",
       "id": "index"
     },
     {
       "view": "await-complete.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/await-complete.html",
+      "buildTo": "./public/await-complete.html",
       "ok": true,
-      "hash": "28c1895c3aff100e557918961050eceec485005f",
+      "hash": "bf8452ff81bdcc325118130ab9b6bcb2badfc07d",
       "id": "await-complete"
     },
     {
       "view": "folders.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/folders.html",
+      "buildTo": "./public/folders.html",
       "ok": true,
-      "hash": "27c71c4b175d296fa1685589f2342ea63b89b33e",
+      "hash": "6819210e1edf979e97443031aa78b1202ed95b53",
       "id": "folders"
     },
     {
       "view": "handlebars-instance.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/handlebars-instance.html",
+      "buildTo": "./public/handlebars-instance.html",
       "ok": true,
       "hash": "7706828c76c2aa0bfa4ea9f7b640ec62e9fbe629",
       "id": "handlebars-instance"
     },
     {
       "view": "dynamic-partials.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/dynamic-partials.html",
+      "buildTo": "./public/dynamic-partials.html",
       "ok": true,
       "hash": "02c0fe74a30139a6ee7522725fb9fe1332044430",
       "id": "dynamic-partials"
     },
     {
       "view": "duplicate-paths.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/duplicate-paths.html",
+      "buildTo": "./public/duplicate-paths.html",
       "ok": true,
       "hash": "aa3625efabb1222186b5fd99c7149a26bf65cf45",
       "id": "duplicate-paths"
     },
     {
       "view": "pure-controllers.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/pure-controllers.html",
+      "buildTo": "./public/pure-controllers.html",
       "ok": true,
       "hash": "814a56b20e8c2ebbf2d637812257162dcdf4cc77",
       "id": "pure-controllers"
     },
     {
       "view": "smaller-changes.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/smaller-changes.html",
+      "buildTo": "./public/smaller-changes.html",
       "ok": true,
       "hash": "f4dfaf28bdec58c4cab8683644e4ae47140d4228",
       "id": "smaller-changes"
     },
     {
       "view": "shelf/item.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/shelf/arch-blend.html",
+      "buildTo": "./public/shelf/arch-blend.html",
       "ok": true,
       "hash": "0105add91d94317fd5af4b41bc6aaf55074bc890",
       "id": "shelf/item/arch-blend"
     },
     {
       "view": "shelf/item.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/shelf/oak-cascara.html",
+      "buildTo": "./public/shelf/oak-cascara.html",
       "ok": true,
       "hash": "7815d7788080c087e62c20f6856beedfb6bb921c",
       "id": "shelf/item/oak-cascara"
     },
     {
       "view": "shelf/item.hbs",
-      "buildTo": "../../public/9-migrated-from-v1/shelf/guji-uraga.html",
+      "buildTo": "./public/shelf/guji-uraga.html",
       "ok": true,
       "hash": "4aa1cfd0d0b91d932a3660f2ea949c7b6bb4556f",
       "id": "shelf/item/guji-uraga"
@@ -105,7 +105,7 @@
         "kind": "controllers",
         "id": "shelf-item.js",
         "note": "notes/controllers/shelf-item.md",
-        "hash": "8bfa290248f68febbcea3d6c759bcc8b55eaf6dd"
+        "hash": "76acd457db16d39eb3c0e3c11ff589b0a06d3632"
       }
     ]
   },

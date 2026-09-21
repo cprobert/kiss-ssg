@@ -1,10 +1,23 @@
 // Tier 0: one file. Layouts and partials live in their own folders because kiss
 // puts them there, not because this router was split — the convention in
 // llms.txt § The build script is about what leaves `router.js`, and nothing has.
-import Kiss from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+//
+// Note what is NOT here: a `folders` block. `src: './src'` and `build:
+// './public'` are the defaults, so a site laid out the ordinary way configures
+// nothing. That is the point of the convention — see CLAUDE.md § Design
+// philosophy — and every example in this folder is shaped the way a real
+// project is, so you can copy one wholesale.
+import Kiss from 'kiss-ssg'
 
 const dev = process.argv.includes('--dev')
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
 
 const kiss = new Kiss({
   site,
@@ -12,13 +25,6 @@ const kiss = new Kiss({
     { href: 'index.html', label: 'The bar' },
     { href: 'stockists.html', label: 'Stockists' },
   ],
-  folders: {
-    src: '.',
-    build: '../../public/4-layouts-and-partials',
-    // Layouts and partials are what this example is about, so it keeps its
-    // own and borrows only the shared stylesheet.
-    assets: sharedFolders.assets,
-  },
   verbose: true,
   dev,
 })
@@ -43,5 +49,15 @@ const kiss = new Kiss({
   .generate()
 
 if (!dev) {
-  await kiss.complete().catch(reportBuildFailure)
+  // A failed build must be loud: print each failing page and exit non-zero,
+  // rather than exiting 0 with a page missing. The recipe llms.txt shows.
+  await kiss.complete().catch((err) => {
+    console.error(err.message)
+    for (const failure of err.failures ?? []) {
+      console.error(
+        `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+      )
+    }
+    process.exitCode = 1
+  })
 }

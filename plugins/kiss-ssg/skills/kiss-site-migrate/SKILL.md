@@ -1,14 +1,128 @@
 ---
 name: kiss-site-migrate
-description: Migrate a site built on kiss-ssg v1 to v2. Use when a project's build script targets kiss-ssg 1.x, when a v2 upgrade fails with an unhandled AggregateError or silently empty output, or when asked to "upgrade kiss", "migrate to kiss-ssg v2", "migrate kiss-ssg", or "why did my kiss site break after the upgrade".
+description: Upgrade a site built on kiss-ssg across any version boundary — a v1 to v2 migration, or a minor release that changed what a folder or a default means. Use when a project's build script targets an older kiss-ssg than the installed one, when an upgrade fails with an unhandled AggregateError or silently empty output, or when asked to "upgrade kiss", "migrate to kiss-ssg v2", "migrate kiss-ssg", "update kiss-ssg", or "why did my kiss site break after the upgrade".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
-# Migrate a v1 kiss site to v2
+# Upgrade a kiss site
 
-The migration is short — real consumer sites needed two or three edits each — but each one is silent if you miss it. Work from the shipped recipes, not from memory.
+Two jobs share this skill because they fail the same way — silently.
+
+**A v1 → v2 migration** is short: real consumer sites needed two or three edits each, but each one is
+silent if you miss it. That is §1 onward.
+
+**A point upgrade within v2** is shorter still and easier to skip, which is the trap. A minor release
+can change what a folder or a default _means_ without changing any signature, so nothing fails at
+install time and the site keeps building — differently. Do §0 for any upgrade, including a v1 → v2
+one, then continue.
+
+Work from the shipped recipes and the CHANGELOG, not from memory.
 
 ## Execution instructions
+
+### 0. Read what changed between the two versions
+
+Compare what the project depends on with what is installed:
+
+```bash
+node -p "require('./package.json').devDependencies?.['kiss-ssg'] ?? require('./package.json').dependencies?.['kiss-ssg']"
+node -p "require('./node_modules/kiss-ssg/package.json').version"
+```
+
+Then read `node_modules/kiss-ssg/CHANGELOG.md` — every entry between those two versions, not only the
+newest. It is written for people building sites rather than maintaining the engine, so an entry that
+names a folder, a default or a config key is one that can change this site's behaviour without
+changing its code.
+
+**A new default that adopts a folder you already have is the hazard to look for.** Concretely, from
+2.5: `config.folders.helpers` defaults to `./helpers`, and kiss now imports that folder's `index.js`
+itself and calls its `registerHelpers` export. A site that already had a root `helpers/` folder for
+unrelated utilities now has it imported on every build. Check for one:
+
+```bash
+ls helpers/index.js helpers/index.mjs helpers/index.cjs 2>/dev/null
+```
+
+If it is there and is **not** a kiss registrar, either point `folders.helpers` somewhere else, move
+the folder, or leave it — kiss warns and carries on when it defaulted to a folder whose entry exports
+no registrar, and only fails the build when you named the folder explicitly. If it **is** a registrar
+that `router.js` also calls by hand, drop the manual call: it now runs twice.
+
+### 0a. Three things in 2.5 fail a build that used to pass
+
+A point upgrade usually changes what something _means_. This one also changes what **fails**, in
+three places. All three were already wrong in the site's published output — they were being logged
+and then ignored — so treat a new failure as a bug the upgrade surfaced, not one it caused.
+
+**Run the check before you change anything.** It reports every one of them at once, against a staged
+build it then throws away, so nothing is published while you are finding out:
+
+```bash
+npx kiss-ssg check router.js --summary
+```
+
+Work the `failures` entries first: a page that fails to render is absent from the output, which makes
+every `{{link}}` to it a `broken link:` finding as well, so fixing the failure clears findings
+downstream of it.
+
+#### 1. `{{asset}}` on a path no `.copyAssets()` emitted
+
+```
+asset: 'css/typo.css' is not in the build (asked by index.hbs)
+  — no .copyAssets() emitted it. Check the path, or the folder it should have been copied from.
+```
+
+It used to warn and render the path anyway, so the build passed and the site served a 404. Three
+things it might be:
+
+- **A typo, or a file that moved.** Fix the path in the template.
+- **A real file that kiss never copied** — put there by a bundler, a CSS toolchain, or committed
+  into the build folder by hand. kiss only knows what a `.copyAssets()` emitted, so add one:
+  `kiss.copyAssets('./vendor', './public/vendor')`.
+- **Not a path into this build at all.** Anything carrying a scheme (`https:`, `data:`, `mailto:`)
+  or the protocol-relative `//cdn/x.css` passes through untouched, and a `?query`/`#fragment` on a
+  path that _is_ in the build is fine — `{{asset "img/logo.svg#symbol"}}` resolves the sprite and
+  keeps the fragment. If one of those is failing, you are on 2.5.0 before that was fixed; upgrade.
+
+**In `dev: true` it still warns and carries on**, rendering the path as written, because the file you
+are about to add legitimately is not there yet. So a dev session will not show you these — the check
+above is how you find them.
+
+#### 2. A stylesheet that will not compile
+
+```
+1 build failure: <sass: css/site.scss>
+```
+
+A Sass syntax error used to be red in the log and then dropped: the build resolved, the report said
+`ok`, and the site shipped with no CSS. Fix the stylesheet. If the site has been shipping without
+that CSS for a while, expect the first successful compile to change the rendered page — compare it
+before you deploy.
+
+#### 3. A `_`-prefixed Sass file is no longer compiled on its own
+
+```
+Skipped 1 Sass partial (a leading underscore means "do not compile standalone"): css/_vendor.scss
+```
+
+A leading underscore is the Sass convention for "this is a partial", and dart-sass never compiles
+one. kiss did, so `_vendor.scss` was emitting a `_vendor.css`. **If a page or a stylesheet references
+one of those emitted files, it will 404 after this upgrade.** The `info` line names the set that was
+skipped; check whether anything asks for them:
+
+```bash
+grep -rn "_[a-z0-9-]*\.css" src/ --include=*.hbs --include=*.html --include=*.css --include=*.scss
+```
+
+If a file genuinely needs compiling on its own, rename it without the underscore and update whatever
+`@use`/`@import`s it. If nothing references it, the emitted file was dead weight and you are done.
+
+#### And one that changes what a _green_ build means
+
+Under `.watch()`, a page that starts failing mid-edit now moves `report().ok` to `false` until the
+next save, where it used to be absent from the report entirely. Nothing to fix — but if the site has
+tooling that reads `report()` during a dev session, it will see failures it did not see before, and
+they are real ones.
 
 ### 1. Check the floor, then read the recipes
 

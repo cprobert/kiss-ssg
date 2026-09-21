@@ -97,6 +97,16 @@ describe('the entry declaration keeps its load-bearing exports', () => {
     expect(entry).toContain(`export type ${name} `)
   })
 
+  // A `@returns` that is not the JSDoc block directly above its definition is
+  // not that method's at all. Inserting `_loadHelpers` between this block and
+  // `registerPartials()` silently downgraded a documented `string[]` to
+  // `any[]` in the published declarations — the same displacement hazard
+  // CLAUDE.md names for `@private @type` fields, and the byte-identity check
+  // above cannot see it, because a fresh emit is wrong in the same way.
+  it('keeps registerPartials typed, rather than orphaning its JSDoc', () => {
+    expect(entry).toContain('registerPartials(): string[];')
+  })
+
   it('keeps every private member out of the documented surface', () => {
     expect(entry).not.toMatch(/^ {4}_[A-Za-z]+[:(]/m)
   })

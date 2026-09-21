@@ -1,9 +1,28 @@
 // Tier 0: one file. The validation that makes this example what it is lives in
 // a controller, which is where kiss already puts it — not a seam this convention
 // adds. See llms.txt § The build script.
-import Kiss from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
-import { missingFields, slugFor } from './controllers/stockist.js'
+import Kiss from 'kiss-ssg'
+import { missingFields, slugFor } from './src/controllers/stockist.js'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 const dev = process.argv.includes('--dev')
 
@@ -17,11 +36,8 @@ const cleanBuild = process.argv.includes('--atomic') ? 'atomic' : true
 const kiss = new Kiss({
   site,
   nav: [{ href: 'index.html', label: 'Where to buy' }],
-  folders: {
-    src: '.',
-    build: '../../public/8-data-fed-site',
-    ...sharedFolders,
-  },
+  // No `folders` block: `src: './src'` and `build: './public'` are the
+  // defaults, so a site laid out the ordinary way configures nothing.
   siteUrl: 'https://asterandoak.example',
   // The layout asks for `css/site.css`; the config decides it ships as
   // css/site.<hash>.css. No template changes when the policy does.

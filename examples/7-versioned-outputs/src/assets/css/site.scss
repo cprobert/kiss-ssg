@@ -1,0 +1,413 @@
+// Aster & Oak — the one stylesheet behind all six kiss-ssg examples.
+// kiss compiles every .scss under the assets folder on its way into the build,
+// so this file lands as <build>/css/site.css with no extra tooling.
+
+$font-sans:
+  system-ui,
+  -apple-system,
+  'Segoe UI',
+  Roboto,
+  'Helvetica Neue',
+  Arial,
+  sans-serif;
+$font-mono:
+  ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+$measure: 64rem;
+$radius: 12px;
+
+// Light palette. The dark one below only re-declares the same custom
+// properties, so every rule in the sheet is written once.
+$ink: #23201c;
+$ink-soft: #6c6259;
+$paper: #f7f4ef;
+$card: #ffffff;
+$line: #e5ddd2;
+$accent: #9a5b34;
+$accent-ink: #7d4526;
+$accent-wash: #f2e7dd;
+
+:root {
+  --bg: #{$paper};
+  --surface: #{$card};
+  --ink: #{$ink};
+  --ink-soft: #{$ink-soft};
+  --line: #{$line};
+  --accent: #{$accent};
+  --accent-ink: #{$accent-ink};
+  --accent-wash: #{$accent-wash};
+  --shadow: 0 1px 2px rgba(35, 32, 28, 0.06), 0 8px 24px rgba(35, 32, 28, 0.05);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15120f;
+    --surface: #1d1915;
+    --ink: #f1ece4;
+    --ink-soft: #a99e91;
+    --line: #322b23;
+    --accent: #e0a274;
+    --accent-ink: #f0c9a8;
+    --accent-wash: #2a2019;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: $font-sans;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.5em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+}
+h2 {
+  font-size: 1.45rem;
+}
+h3 {
+  font-size: 1.1rem;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: var(--accent-ink);
+  text-underline-offset: 3px;
+}
+
+code {
+  font-family: $font-mono;
+  font-size: 0.86em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.wrap {
+  width: 100%;
+  max-width: $measure;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+
+  &:focus {
+    left: 1rem;
+    top: 1rem;
+    z-index: 10;
+    background: var(--surface);
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+  }
+}
+
+// ---------- header ----------
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+
+  &__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    padding-block: 0.75rem;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-right: auto;
+  text-decoration: none;
+  color: inherit;
+
+  &__mark {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+
+    strong {
+      font-size: 1.02rem;
+    }
+
+    small {
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+    }
+  }
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+
+  &__link {
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+    }
+
+    &.is-active {
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      font-weight: 650;
+    }
+  }
+}
+
+// ---------- content ----------
+
+main {
+  padding-block: 2.5rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.hero {
+  p {
+    max-width: 44rem;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+  }
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@mixin panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: $radius;
+  box-shadow: var(--shadow);
+}
+
+.card {
+  @include panel;
+  padding: 1.25rem 1.35rem;
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+
+  h3 {
+    margin-bottom: 0.25rem;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.meta {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.price {
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.callout {
+  @include panel;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--accent);
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Each demo page labels the feature it is showing; the tones keep those
+// labels apart at a glance.
+$tones: (
+  note: var(--ink-soft),
+  good: #2f7d51,
+  warn: #9a6b12,
+);
+
+@each $name, $colour in $tones {
+  .tone-#{$name} {
+    color: #{$colour};
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  th {
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+// ---------- the "how this works" panel ----------
+
+.source-panel {
+  @include panel;
+  padding: 1.35rem 1.5rem;
+
+  h2 {
+    margin-top: 0;
+  }
+
+  summary {
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    padding-block: 0.35rem;
+  }
+
+  pre {
+    margin: 0.5rem 0 0;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--accent-wash);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    tab-size: 2;
+  }
+}
+
+// ---------- footer ----------
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+
+  &__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    justify-content: space-between;
+    padding-block: 1.5rem 2.5rem;
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+.build-badge {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 34rem) {
+  body {
+    font-size: 16px;
+  }
+
+  .site-header__inner {
+    gap: 0.5rem;
+  }
+
+  .brand__text small {
+    display: none;
+  }
+}

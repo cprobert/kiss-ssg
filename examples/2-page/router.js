@@ -1,8 +1,27 @@
 // Tier 0: one file. Config, the page table, the terminal chain. Extract
 // `helpers/` once custom helpers pass about a third of the file or there are
 // more than about three (llms.txt § The build script) — this has none.
-import Kiss from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
+import Kiss from 'kiss-ssg'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 const dev = process.argv.includes('--dev')
 
@@ -12,7 +31,6 @@ const kiss = new Kiss({
     { href: 'index.html', label: 'Today on the shelf' },
     { href: 'about.html', label: 'The roastery' },
   ],
-  folders: { src: '.', build: '../../public/2-page', ...sharedFolders },
   verbose: true,
   dev,
 })

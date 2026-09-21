@@ -292,8 +292,59 @@ declare class Kiss {
     private _idIndex;
     /** @private */
     private _idNoticed;
+    /** @private @type {Promise<void>} */
+    private _helpersReady;
+    /**
+     * What the site's own registrar registered on its last load, as
+     * `{ name, prior }` pairs, so a reload can undo exactly what that load did
+     * — restoring what each registration displaced rather than deleting the
+     * name. A kiss built-in the registrar overrode is displaced, not owned, and
+     * deleting it silently removed the built-in.
+     *
+     * @type {import('./site-helpers.js').OwnedHelper[]}
+     * @private
+     */
+    private _siteHelpers;
+    /**
+     * The helper names kiss itself registered, snapshotted before the site's
+     * own registrar can run. Overriding one of these is a legitimate thing for
+     * a site to do; re-registering anything else that is already there means
+     * the registrar has been run twice.
+     *
+     * @type {string[]}
+     * @private
+     */
+    private _builtinHelperNames;
+    /**
+     * Whether the author named `folders.helpers` or kiss defaulted to it. Read
+     * from the config as supplied, before `resolveConfig` fills the default in,
+     * because by then the two are indistinguishable — and they mean opposite
+     * things when the folder turns out not to hold a registrar.
+     *
+     * @type {boolean}
+     * @private
+     */
+    private _helpersExplicit;
+    /** @private */
+    private _aikbVerdict;
+    /** @private */
+    private _finishedAt;
     /** @private */
     private _failures;
+    /** @private */
+    private _carriedFailures;
+    /** @private */
+    private _pageFailures;
+    /**
+     * @type {Map<string, Set<any>>}
+     * @private
+     */
+    private _sassFailures;
+    /**
+     * @type {Map<string, { sourceDir: string, targetDir: string }>}
+     * @private
+     */
+    private _assetCopies;
     /** @private */
     private _failuresReported;
     /** @private */
@@ -393,6 +444,18 @@ declare class Kiss {
      * @returns {string[]} the names now registered
      */
     registerPartials(): string[];
+    /**
+     * Imports `config.folders.helpers`' entry and registers what it exports.
+     * A folder that is not there is the ordinary case and says nothing; a
+     * folder that fails to load is a build failure, recorded as
+     * `<site helpers>` so `complete()` rejects rather than shipping a site
+     * whose templates silently lost their helpers.
+     *
+     * @param {boolean} [fresh] bust the module caches (a watch reload)
+     * @returns {Promise<void>}
+     * @private
+     */
+    private _loadHelpers;
     /** @private */
     private _pipelineEnv;
     /** @private */
@@ -409,6 +472,47 @@ declare class Kiss {
      */
     copyAssets(sourceDir: string, targetDir: string): this;
     /** @private */
+    /**
+     * Records a page's render failure, and remembers which stack entry owns it.
+     *
+     * The ownership is the point. A page failure is the one kind that a later
+     * event can prove wrong — the author fixes the view and it re-renders — so
+     * something has to be able to find and drop it, and that something must not
+     * be a string match on `view`: an inline template's `view` IS the template
+     * text, and two pages can share one. The entry itself is the identity, held
+     * in a `WeakMap` so a replay discarding the stack discards these with it.
+     *
+     * @param {any} entry
+     * @param {Error} error
+     * @private
+     */
+    private _recordPageFailure;
+    /**
+     * Drops the failure a previous render of this entry recorded, if any —
+     * called by whatever is about to re-render it.
+     *
+     * @param {any} entry
+     * @private
+     */
+    private _clearPageFailure;
+    /**
+     * Marks a failure as one a whole-site replay carries rather than drops,
+     * and returns it so the caller can push it in one expression.
+     *
+     * The bar is that the failure must still be TRUE after a replay — which is
+     * satisfied either by a producer that re-checks it (`copyAssets`,
+     * `_loadHelpers`) or by one whose failure is terminal and can never stop
+     * being true (`<dev server>`: startup is constructor-only and nothing
+     * retries it). An earlier version of this block said only the first half,
+     * which made the one deliberate terminal case read as a mistake.
+     *
+     * @template {{ view: string }} T
+     * @param {T} failure
+     * @returns {T}
+     * @private
+     */
+    private _carry;
+    /** @private */
     private _stagedPath;
     /** @private */
     private _reportedPath;
@@ -416,6 +520,43 @@ declare class Kiss {
     private _promote;
     /** @private */
     private _finishBuild;
+    /**
+     * Everything `buildReport` needs, in one place. It is read twice — once by
+     * `_finishBuild()` when a build settles, and once by `_refreshReport()` when
+     * something changes the failure list without settling a build — and two call
+     * sites assembling this literal separately is exactly the shape that has
+     * gone wrong repeatedly on this branch: they drift, and the one nobody looks
+     * at is the one that lies.
+     *
+     * @returns {any}
+     * @private
+     */
+    private _reportInputs;
+    /**
+     * Re-assembles the settled report against the CURRENT failure list.
+     *
+     * `report()` is the machine verdict, and between settles it was a stale one:
+     * a watch asset save that broke a stylesheet, or a helpers reload that
+     * failed, put the failure on `_failures` and logged it in red immediately
+     * while `report().ok` went on saying `true` until the next whole-site
+     * replay. Measured. A scoped re-render and an asset re-copy settle no build,
+     * so neither calls `_finishBuild()` — and re-running `_finishBuild()` here
+     * would be wrong in the other direction, because it carries the once-per-
+     * build side effects: a `KISS_REPORT` line (one per BUILD, not per call), a
+     * `last-build.json` record, a `dependency-graph.json` write. This re-derives
+     * the report and nothing else.
+     *
+     * What it deliberately does NOT re-derive is what an asset copy or a helpers
+     * reload cannot change: the aikb verdict (a map of pages and partials) and
+     * the redirect findings (page aliases). Both are reused from the settle that
+     * produced them, which is why they are held on the instance.
+     *
+     * A no-op before the first build settles — there is nothing to refresh, and
+     * `report()` correctly answers `null`.
+     *
+     * @private
+     */
+    private _refreshReport;
     /** @private */
     private _buildAikb;
     /** @private */
@@ -509,10 +650,30 @@ declare class Kiss {
      */
     complete(callback?: (data: BuildData) => void): Promise<BuildData>;
     /**
-     * The last settled build, as data: what `.complete()` resolved or rejected
-     * with, in a JSON-safe shape a script can act on. `null` until the first
-     * `.complete()` has settled; a watch rebuild replaces it with its own. The
-     * same object is on the rejection as `err.report`.
+     * The last **settled** build, as data: what `.complete()` resolved or
+     * rejected with, in a JSON-safe shape a script can act on. `null` until the
+     * first `.complete()` has settled. The same object is on the rejection as
+     * `err.report`.
+     *
+     * A whole-site replay replaces it with its own. Anything else that puts a
+     * failure on the list without settling a build — a watch asset re-copy, a
+     * helpers reload, a callback that runs after an earlier settle — refreshes
+     * it in place (`_refreshReport()`), so the verdict never trails the
+     * failures: a stylesheet broken by a save is on `failures` and `ok` is
+     * `false` as soon as the copy that found it finishes.
+     *
+     * That now includes a scoped page re-render, which used to catch each
+     * page's rejection and record nothing — the one path that put nothing on
+     * the list at all, so a page that started failing under `.watch()` was loud
+     * in the console and absent from both. It records them like any other
+     * failure, and drops a page's previous failure before re-rendering it, so a
+     * page the author fixes goes green rather than staying red for the session.
+     * The cost is accepted deliberately: a transient mid-edit render error does
+     * move `ok` to `false` until the next save.
+     *
+     * What a refresh does not move is the metadata of the build it describes:
+     * `duration` and `startedAt` still name the settle that produced it. It is
+     * the last settled build with a current verdict, not a new build.
      *
      * @returns {BuildReport|null}
      */

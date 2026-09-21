@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Simple Static Website Generator",
   "main": "lib/kiss.js",
   "types": "./types/kiss.d.ts",
@@ -22,7 +22,9 @@
     "types",
     "llms.txt",
     "AIKB",
-    "examples"
+    "examples",
+    "!examples/*/public",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=22.12.0"

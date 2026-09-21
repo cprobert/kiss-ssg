@@ -69,6 +69,7 @@ Update order (so you don't read docs you are about to change):
 2. `llms.txt` — the shipped consumer cheat-sheet
 3. `README.md` — the front door
 4. `CLAUDE.md` — the lookup table, the one-paragraph pipeline, the rules
+5. `plugins/*/skills/*/SKILL.md` — the procedures an agent actually follows. Easiest of the five to forget, because nothing in `lib/` points at them and they do not ship in the tarball, so a stale one is invisible until an agent follows it. `test/unit/skill-coverage.test.js` pins which skill must name which feature, but it checks **presence, not correctness** — a skill can match its pattern while the prose around it describes a shape the engine now warns about. Read the prose.
 
 ### Step 4 — Verify
 

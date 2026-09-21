@@ -40,6 +40,13 @@ const publicMethods = Object.getOwnPropertyNames(Kiss.prototype).filter(
     !name.startsWith('_') &&
     typeof Kiss.prototype[name] === 'function',
 )
+// Docs that describe the repo rather than one `lib/` module, so they have no
+// module to be orphaned against and no public interface to template. Named as
+// a set rather than inline: `testing` was special-cased by name in three
+// places, and the second cross-cutting doc is the point at which that stops
+// scaling.
+const CROSS_CUTTING = new Set(['testing', 'design', 'upstream'])
+
 const HEADINGS = [
   '## Responsibility',
   '## Public interface',
@@ -57,14 +64,14 @@ describe('AIKB stays in sync with lib/', () => {
     expect(claudeMd).toContain(`AIKB/${d}.md`)
   })
 
-  it.each(docs.filter((d) => d !== 'testing'))(
+  it.each(docs.filter((d) => !CROSS_CUTTING.has(d)))(
     'AIKB/%s.md has a matching lib/%s.js',
     (d) => {
       expect(modules).toContain(d)
     },
   )
 
-  it.each(docs.filter((d) => d !== 'testing'))(
+  it.each(docs.filter((d) => !CROSS_CUTTING.has(d)))(
     'AIKB/%s.md follows the module template',
     (d) => {
       const text = fs.readFileSync(path.join(root, 'AIKB', `${d}.md`), 'utf8')

@@ -63,7 +63,7 @@ Go through the success criteria one at a time. For each, state **met / partial /
 - **Public API or generated output changed** → smoke-run the example that exercises it and look at what it wrote:
 
   ```bash
-  timeout 20 node examples/6-sitemap.js; ls -R examples/public | head
+  timeout 20 node examples/6-sitemap/router.js; ls -R examples/6-sitemap/public | head
   ```
 
   **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Naming the artefact is this step's job; getting a human to look at it is **Step 4**, which is a stop rather than a bullet.
@@ -107,7 +107,7 @@ State the call plainly, with its reason: **continue** (on track) / **adjust cour
 Append one dated line to the intent file's `## Pulse log` section (the file `/branch-open` wrote, or the one just captured retrospectively in Step 1; create the section once if an older file lacks it), capturing the evidence, **the Step 4 eyeball answer** and the decision — e.g.:
 
 ```markdown
-- **2026-09-05** — criteria 1–2 met (`test/unit/sitemap.test.js` green, 12 cases); criterion 3 not yet (llms.txt unwritten); no drift. **Eyeball: looked** — opened `examples/public/6-sitemap/sitemap.xml`, 12 `<loc>`s, all absolute. Decision: continue.
+- **2026-09-05** — criteria 1–2 met (`test/unit/sitemap.test.js` green, 12 cases); criterion 3 not yet (llms.txt unwritten); no drift. **Eyeball: looked** — opened `examples/6-sitemap/public/sitemap.xml`, 12 `<loc>`s, all absolute. Decision: continue.
 ```
 
 Do **not** tick the Intent block's `[ ]` checkboxes — status is reported live and logged here; the close's **Verdict** does the final tick against the pristine baseline. Then commit **only the session file** (never `-A` — keep code out of this commit):

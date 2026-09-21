@@ -54,26 +54,34 @@ The `kiss-ssg` plugin installs four skills, all named `kiss-<something>` so they
 
 ### The build script
 
-Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, one `registerHelpers(kiss)` call if the site has custom helpers, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()` chain, and the `complete()`/`catch()` pair. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
+Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()` chain, and the `complete()`/`catch()` pair. Custom helpers need no line here — kiss imports `config.folders.helpers` (`./helpers` by default) and calls its `registerHelpers` export itself. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
 
-How much is extracted follows the size of the file, not ambition. One file is correct up to roughly 150 lines; `helpers/` is earned when the custom helpers pass about a third of it, `config/` when a fact appears in both the markup and the structured data. `llms.txt` § The build script has the thresholds, the reasons, and the three mistakes the shape invites — chief among them that renaming an existing build script to `router.js` silently orphans whatever names it, from `package.json` to a CSS toolchain's source globs.
+How much is extracted follows what the site has earned, not the size of the file. **File length is never the trigger** — a long router is a symptom worth looking at, not a reason to split. `helpers/` is earned by the site's **first** custom helper (one, not three and not a proportion of the file: a helper inside `router.js` cannot be imported, so it cannot be unit-tested, and that is as true of the first as of the fourth); `config/` is earned the moment one fact appears in both the markup a visitor reads and the JSON-LD or feed a machine reads. Each trigger is a yes/no question on purpose, because a threshold you have to adjudicate is one two readers answer differently. `llms.txt` § The build script has the tiers in full, the reasons, and the three mistakes the shape invites — chief among them that renaming an existing build script to `router.js` silently orphans whatever names it, from `package.json` to a CSS toolchain's source globs.
 
-kiss-ssg has 3 methods
+Pages are registered three ways:
 
-- .page()
-- .pages()
-- .scan()
+- `.page()` — one page
+- `.pages()` — one view, many pages, from an array
+- `.scan()` — every `\*.hbs` under the pages folder
 
-The simplest usage is to use .scan() to scan your 'pages directory' for \*.hbs files and outputs them to the 'build folder'.
+Those are the registration methods, not the whole API — a build script also ends in the terminal chain (`.generate()`, optionally `.sitemap()`/`.llms()`/`.feed()`/`.robots()`, then `.complete()`), and **`.complete()` is the one that decides whether the build passed**. The simplest usage is `.scan()`, which scans your pages folder for `\*.hbs` files and writes them to the build folder:
 
 ```js
 import Kiss from 'kiss-ssg'
+
 const kiss = new Kiss()
 kiss.scan()
 kiss.generate()
+
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})
 ```
 
-**Note**: kiss will generate the default folders for you when you first run the script. You can overwrite the folder locations bay passing a config to the kiss constructor.
+**The last three lines are not optional, and leaving them off is the most expensive mistake on this page.** Measured, on exactly this script with `.complete()` removed: a page whose partial is missing prints its error in red, is left out of the build entirely, and **the process still exits 0**. Nothing rejects, nothing is thrown, and a deploy step that checks the exit code publishes the site with the page gone. `.complete()` waits for everything queued and rejects with an `AggregateError` carrying every failure — that rejection is the only thing that makes a broken build fail a deploy. See **Reading a failure** below for `err.failures` and `err.report`.
+
+**Note**: kiss will generate the default folders for you when you first run the script. You can override the folder locations by passing a config to the kiss constructor.
 
 The default config options are:
 
@@ -120,7 +128,8 @@ The default config options are:
     partials: './src/partials',
     models: './src/models',
     controllers: './src/controllers',
-    aikb: './AIKB'
+    aikb: './AIKB',
+    helpers: './helpers'
   }
 }
 ```
@@ -252,7 +261,7 @@ Link an asset with the `asset` helper and the caching policy stops living in you
 | `{ hash: true }`       | `public/css/site.a1b2c3d4.css` | `css/site.a1b2c3d4.css` |
 | `{ version: '1.4.5' }` | `public/css/site.css`          | `css/site.css?v=1.4.5`  |
 
-Ask for the path the file has when nothing is renaming it — a `.scss` source by its compiled `.css` name — and the same template line works under all three. The helper renders no leading slash, so the base is yours: `/{{asset …}}` for a root-relative link, or `{{root}}{{asset …}}` if your layout already climbs back to the build root (which is what makes a nested page work opened straight off the file system). The hash is taken over the bytes that were emitted (a stylesheet after sass compiled it), so the URL changes when, and only when, the file a browser downloads changes; the file it replaces is deleted as it is written, so a `dev` session leaves one stylesheet in the build rather than one per save. Only `.css` and `.js` are renamed: an image, a font or `robots.txt` is reached by URLs kiss does not rewrite — the ones inside a stylesheet, and the ones a host asks for by a fixed name — so those keep their names, and `{{asset}}` still resolves them.
+Ask for the path the file has when nothing is renaming it — a `.scss` source by its compiled `.css` name — and the same template line works under all three. The helper renders no leading slash, so the base is yours: `/{{asset …}}` for a root-relative link, or `{{root}}{{asset …}}` if your layout already climbs back to the build root (which is what makes a nested page work opened straight off the file system — see **`root` is yours** below). The hash is taken over the bytes that were emitted (a stylesheet after sass compiled it), so the URL changes when, and only when, the file a browser downloads changes; the file it replaces is deleted as it is written, so a `dev` session leaves one stylesheet in the build rather than one per save. Only `.css` and `.js` are renamed: an image, a font or `robots.txt` is reached by URLs kiss does not rewrite — the ones inside a stylesheet, and the ones a host asks for by a fixed name — so those keep their names, and `{{asset}}` still resolves them.
 
 The other two forms, for a layout that climbs back to the build root and for an absolute URL — the hashed extension and the `?v=` query both survive the wrap:
 
@@ -260,6 +269,8 @@ The other two forms, for a layout that climbs back to the build root and for an 
 <link rel='stylesheet' href='{{root}}{{asset "css/site.css"}}' />
 <link rel='preload' as='style' href='{{absUrl (asset "css/site.css")}}' />
 ```
+
+**`root` is yours, not kiss's.** There is no `root` helper — it is a value your page or layout supplies, the climb back to the build root (`''`, `'../'`, `'../../'`) for a page that knows how deep it is. Every example sets it, either on the extend (`{{#extend "layout" root="../../"}}`, see `examples/11-blog/src/pages/blog/post.hbs`) or as a page option (`examples/11-blog/router.js`). This matters because an undefined `{{root}}` is a missing _property_ to Handlebars, not a missing helper: it renders **empty and says nothing**, so the line still builds and the stylesheet resolves from whatever directory the page happens to sit in — correct at the top level, broken one folder down. If your pages are all at one depth, or you serve from the domain root, use `/{{asset …}}` and skip `root` entirely.
 
 #### An asset pipeline
 
@@ -611,11 +622,12 @@ Two of the things kiss emits are decided by your **host**, not by the generator.
 
 `links: { trailingSlash: true }` by default. Measured live on 2026-09-16 — not inferred:
 
-| Host                                                                                              | `/courses/` (a directory index)                                            | `/about` (a file page)       |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
-| **Netlify** — verified on `www.a1k9training.co.uk`                                                | **200**; bare `/courses` 301s here                                         | **200**; `/about/` 301s here |
-| **Firebase Hosting** with `cleanUrls: true` + `trailingSlash: false` — verified on `learna.ac.uk` | 301 → `/courses`; the **bare** form is 200                                 | **200**; `/about/` 301s here |
-| Cloudflare Pages, GitHub Pages, nginx                                                             | _unverified — each has a trailing-slash mode; measure your own deployment_ | _unverified_                 |
+| Host                                                                                                                            | `/courses/` (a directory index)                                            | `/about` (a file page)                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Netlify** — verified on `www.a1k9training.co.uk`                                                                              | **200**; bare `/courses` 301s here                                         | **200**; `/about/` 301s here                                                  |
+| **Firebase Hosting** with `cleanUrls: true` + `trailingSlash: false` — verified on `learna.ac.uk`                               | 301 → `/courses`; the **bare** form is 200                                 | **200**; `/about/` 301s here                                                  |
+| **GitHub Pages** — file pages measured on a live deployment (relayed to this branch by a clean-room session, not measured here) | _unverified for a real directory index_                                    | **200**; `/about.html` is also 200, `/about/` **404s**, and nothing redirects |
+| Cloudflare Pages, nginx                                                                                                         | _unverified — each has a trailing-slash mode; measure your own deployment_ | _unverified_                                                                  |
 
 The two verified hosts **agree on file pages and contradict each other on directory indexes**, so no single default can be right for both. `true` matches Netlify and is what kiss has always emitted; `false` matches that Firebase configuration:
 
@@ -755,7 +767,7 @@ If any page fails to render or write, the other pages still build but `.complete
 try {
   await kiss.scan().generate().complete()
 } catch (err) {
-  console.error(err.message) // e.g. 1 page(s) failed to build: public/about.html
+  console.error(err.message) // e.g. 1 build failure: public/about.html
   process.exitCode = 1
 }
 ```
@@ -764,7 +776,7 @@ A bad model is not a build failure — it is logged, that page is skipped, and i
 
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server. It waits for a rebuild that is already running to finish, so once it resolves nothing more is written and it is safe to clean or deploy the build folder.
 
-Editing a page template re-renders that page; deleting one, or creating any file under `src/`, rebuilds the whole site. Editing a partial or a layout re-renders only the pages that rendered it, and nothing more: your models are not re-read, your controllers are not re-run, and a model you load from a URL is not fetched again — a partial cannot change which pages exist or where they are written, so there is nothing else to redo. Which pages use which partial is learned while rendering rather than parsed out of your templates, so a partial chosen with `lookup`, one reached through another partial, and a layout reached with `{{#extend}}` all count; a partial no page has rendered yet re-renders every page and logs a notice naming it. With `verbose: true` a dev build writes `dependency-graph.json` (`{ partial: [built pages…] }`) beside `debug.json`, and each page's `.json` sibling lists the `partials` it used. Editing anything else under `src/` — a model JSON or a controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A rebuild replays each page from a shallow snapshot of its original `.page()`/`.pages()` call, so keep controllers pure (see the note under "Controller" above) — one that mutates its model in place carries that mutation into every later rebuild. A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, one dropped from a `.pages()` fan-out, or a page `.scan()` had discovered whose template you deleted — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. A partial or layout you add mid-session is registered by that rebuild and usable straight away, and one you delete is unregistered — so a page still referencing a deleted partial fails the rebuild with `The partial <name> could not be found` rather than quietly rendering the deleted content until you restart. If you used `.scan()`, a rebuild scans your pages folder again, so a page template you create while watching is built without a restart; on a site where you registered pages by name with `.page()`, adding the file is not enough — add the call too. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
+Editing a page template re-renders that page; deleting one, or creating any file under `src/`, rebuilds the whole site. Editing a partial or a layout re-renders only the pages that rendered it, and nothing more: your models are not re-read, your controllers are not re-run, and a model you load from a URL is not fetched again — a partial cannot change which pages exist or where they are written, so there is nothing else to redo. Which pages use which partial is learned while rendering rather than parsed out of your templates, so a partial chosen with `lookup`, one reached through another partial, and a layout reached with `{{#extend}}` all count; a partial no page has rendered yet re-renders every page and logs a notice naming it. With `verbose: true` a dev build writes `dependency-graph.json` (`{ partial: [built pages…] }`) beside `debug.json`, and each page's `.json` sibling lists the `partials` it used. Editing anything else under `src/` — a model JSON or a controller — rebuilds the whole site by replaying every page you registered, so models are re-read and controllers re-run (edited controller files are reloaded from disk, whether they use `export default` or `module.exports`). A rebuild replays each page from a shallow snapshot of its original `.page()`/`.pages()` call, so keep controllers pure (see the note under "Controller" above) — one that mutates its model in place carries that mutation into every later rebuild. A whole-site rebuild also tidies up after itself: output files the previous build wrote that the new one no longer produces — a page whose slug changed, one dropped from a `.pages()` fan-out, or a page `.scan()` had discovered whose template you deleted — are deleted, and `sitemap.xml` is regenerated if you called `.sitemap()`. A partial or layout you add mid-session is registered by that rebuild and usable straight away, and one you delete is unregistered — so a page still referencing a deleted partial fails the rebuild with `The partial <name> could not be found` rather than quietly rendering the deleted content until you restart. If you used `.scan()`, a rebuild scans your pages folder again, so a page template you create while watching is built without a restart; on a site where you registered pages by name with `.page()`, adding the file is not enough — add the call too, **and restart**: a rebuild replays the registrations recorded at start-up and never re-imports your build script, so a `.page()` you add while watching is not picked up. kiss says so rather than letting the rebuild imply otherwise. The same goes for a helper module the build script imports: helpers are registered once per process, so editing one needs a restart too. If a model or controller fails to resolve during a watch rebuild (e.g. a half-saved JSON file caught mid-write), that page's previous output is removed rather than left in place, so the dev server 404s on it until the next valid save instead of serving stale HTML.
 
 Your browser is reloaded once per rebuild, when that rebuild has finished writing every page — not once per file — so a reload never lands on a page that has not been re-rendered yet, however large the site. The first build reloads the browser too, so a tab left open across a restart picks the new output up. Editing a stylesheet reloads just that stylesheet, leaving the page where it was.
 
@@ -888,14 +900,22 @@ Plain pages, partials and `.json` models are deliberately not subjects — a not
 
 Every build reports four findings on `report().aikb.notes`: **missing** (a subject nobody has explained), **dead** (a note under `notes/` whose subject is not in the map), **stale** (a note whose `subject-hash` stamp is no longer its subject's hash — a URL model can never be stale) and **dangling** (`"<note path>: <token>"` for a backticked token in a note, or in `site.md`, that looks like a file reference and resolves to nothing: not a file on disk or under a source folder, a page view or output path, a partial name, a model or controller name, a folder in the map, or a path under the AIKB folder). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` / `note stale:` / `note dangling:` lines. The dangling filter is deliberately narrow — a token needs a `/` or a known extension and must hold no spaces, `<`, `>`, `*`, `{`, `}` or `$`; code fences, trailing-slash folders and anything with a URI scheme are skipped — because a lint that fires on every note is one people learn to ignore. None of the four is a build failure and none changes an exit code.
 
-`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples && npx kiss-ssg aikb <script>`, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
+`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples/<folder> && npx kiss-ssg aikb router.js` — every example is a folder with its own `router.js`, run from inside itself the way a real site is, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` Claude Code plugin (see [Using an AI coding agent?](#using-an-ai-coding-agent)) is what reads the folder back.
 
 ### Other methods
 
-- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`.
+- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is Markdown rendered to HTML and then compiled, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only. That is what makes a code sample work without hand-escaping:
+
+```hbs
+<!-- src/partials/snippet.txt holds:  <div class="card">{{title}}</div>  -->
+<pre>{{> "snippet"}}</pre>
+```
+
+…renders that line verbatim, tags and braces included. Partial names are path-derived and extension-less, so `note.txt` and `note.hbs` collide and the template wins.
+
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }`. Chainable; handy from a `.generate()` callback to see what the build actually produced.
 - `.getModelByID(id, data)` — pulls one entry out of the `[{ id, data }]` array `.generate()`/`.complete()` hand back, returning its `data` (or `{ error }` if no entry has that id). The id is the model's filename or URL.
-- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled: `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb, links, redirects, feed }`, every value JSON-safe. `aikb` is `null` unless the site has a knowledge base to report on (`folders.aikb` set, and a record already made — see "Recording the knowledge base"), and otherwise `{ folder, written, notes: { missing, dead, stale, dangling }, subjects }` — where it lives, whether _this_ build wrote it (`true` only for a passing `npx kiss-ssg aikb` run; every ordinary build reports `false`), the four note findings (paths, except `dangling`'s `<note path>: <token>`), and `{ kind, id, note, hash }` per subject of this build. `pages` is `{ view, buildTo, ok, hash, id }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. `links`, `redirects` and `feed` are new in this version, appended after `aikb` in that order, and each is `null` until a build actually does that piece of work — which is not the same as doing it and finding nothing. `links` is the broken-internal-link scan of the build's own output, `{ checked, broken: [{ page, href }] }` (`null` in dev, on a watch rebuild, and under `links: { check: false }`); `redirects` is what the build did about page `aliases`, `{ file, aliases, removed, collisions, moved }` — the `_redirects` file written, the alias count in it, the pages the last record had that this build no longer has and no alias covers, and the aliases a live page already answers; `feed` is the feed file written, like `sitemap` and `llms`. Every path in them names the build folder you asked for, never a staging sibling. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
+- `.report()` — the last settled build as data, or `null` before the first `.complete()` has settled. Under `.watch()` a whole-site rebuild replaces it, and anything else that puts a failure on the list without settling a build — an asset re-copy, a helpers reload, a callback running after an earlier settle — refreshes the verdict in place, so `ok` never trails `failures`. A refresh re-derives the report and returns a **new object**: a reference you kept is a snapshot of the moment you took it, and `duration` still measures the build that settled rather than the time the session has been open. `{ ok, mode, buildDir, duration, pages, failures, assets, sitemap, pipeline, llms, aikb, links, redirects, feed }`, every value JSON-safe. `aikb` is `null` unless the site has a knowledge base to report on (`folders.aikb` set, and a record already made — see "Recording the knowledge base"), and otherwise `{ folder, written, notes: { missing, dead, stale, dangling }, subjects }` — where it lives, whether _this_ build wrote it (`true` only for a passing `npx kiss-ssg aikb` run; every ordinary build reports `false`), the four note findings (paths, except `dangling`'s `<note path>: <token>`), and `{ kind, id, note, hash }` per subject of this build. `pages` is `{ view, buildTo, ok, hash, id }` per queued page — `hash` being the sha1 of the bytes that page wrote, or `null` when it wrote none — and `failures` is `{ view, buildTo, message }` — the same list as `err.failures`, with each `Error` reduced to its message. `links`, `redirects` and `feed` are new in this version, appended after `aikb` in that order, and each is `null` until a build actually does that piece of work — which is not the same as doing it and finding nothing. `links` is the broken-internal-link scan of the build's own output, `{ checked, broken: [{ page, href }] }` (`null` in dev, on a watch rebuild, and under `links: { check: false }`); `redirects` is what the build did about page `aliases`, `{ file, aliases, removed, collisions, moved }` — the `_redirects` file written, the alias count in it, the pages the last record had that this build no longer has and no alias covers, and the aliases a live page already answers; `feed` is the feed file written, like `sitemap` and `llms`. Every path in them names the build folder you asked for, never a staging sibling. The same object is on the rejection as `err.report`, so a failed build can be read as data rather than parsed out of a log. See "Checking a build" above.
 
 ```js
 kiss.scan().generate(function (data) {
@@ -951,14 +971,18 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 `lookup` is Handlebars' own `lookup` helper with one addition: when the key is undefined it logs `lookup: 'moodleAccess' is undefined in handbooks/uob.hbs`, so a dynamic partial `{{> (lookup . 'key')}}` whose key is missing from your data tells you which key and which page — it still fails the build with `The partial undefined could not be found`, as before.
 
-`isActive` renders its block only when the current page matches `href`, handy for highlighting the current nav item. The block sees the surrounding context **plus** the hash you pass, the hash winning on a clash — so inside an `{{#each}}` the item's own keys are still in scope, and `active`, `href`, `folderMatch` and `pageURL` are always the helper's own:
+`isActive` **always renders its block**; the match is exposed as `{{active}}` inside it, so a nav item's label appears either way and only the class changes. There is no `{{else}}` branch — and the positional argument is the page context itself (`this`, or a bare `..` inside an `{{#each}}`), not a key called `page`. The block sees the surrounding context **plus** the hash you pass, the hash winning on a clash — so inside an `{{#each}}` the item's own keys are still in scope, and `active`, `href`, `folderMatch` and `pageURL` are always the helper's own:
 
 ```handlebars
 <nav>
-  {{#isActive page href='/about'}}<a
-      class='active'
-      href='/about'
-    >About</a>{{else}}<a href='/about'>About</a>{{/isActive}}
+  <a class='{{#isActive this href="/about"}}{{active}}{{/isActive}}' href='/about'
+    >About</a
+  >
+  {{#each config.nav}}
+    <a class='{{#isActive .. href=href}}{{active}}{{/isActive}}' href='{{href}}'
+      >{{label}}</a
+    >
+  {{/each}}
 </nav>
 ```
 
@@ -991,7 +1015,7 @@ Both need `siteUrl` on the Kiss config. Without one they render nothing and log 
 <link rel='stylesheet' href='/{{asset "css/site.css"}}' />
 ```
 
-It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` depending on the config — see **Cache-busting asset URLs** above. There is no leading slash, so the template chooses the base: `/{{asset …}}`, `{{root}}{{asset …}}`, or `{{absUrl (asset …)}}` for an absolute URL. A path that is not in the build renders as you wrote it and logs one warning per page naming it, rather than failing the page.
+It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` depending on the config — see **Cache-busting asset URLs** above. There is no leading slash, so the template chooses the base: `/{{asset …}}`, `{{root}}{{asset …}}`, or `{{absUrl (asset …)}}` for an absolute URL. A path that is not in the build **fails the build** — the same shape as `{{link}}` on an id no page claims. In **dev** it warns once per page per path and renders the path exactly as written, since the file you are about to add legitimately is not there yet.
 
 `env` renders one branch or the other depending on whether you're in dev mode:
 
@@ -1021,7 +1045,7 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
 <meta property='og:url' content='{{link "about" absolute=true}}' />
 ```
 
-`{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/blog/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (add `absolute=true` for `https://example.com/about`). A site whose host serves the pretty form on every page sets `links: { canonical: true }` once instead of writing `canonical=true` at every call site; the per-call hash still wins either way, `canonical=false` included, and `canonical` and `absolute` compose — with both, the link is the absolute URL of the pretty path. **It is the one helper that fails the build**: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
+`{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/blog/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (add `absolute=true` for `https://example.com/about`). A site whose host serves the pretty form on every page sets `links: { canonical: true }` once instead of writing `canonical=true` at every call site; the per-call hash still wins either way, `canonical=false` included, and `canonical` and `absolute` compose — with both, the link is the absolute URL of the pretty path. **It fails the build** — as `{{asset}}` now does, on a path no copy emitted: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
 
 ## Migrating from v1
 

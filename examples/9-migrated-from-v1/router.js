@@ -7,16 +7,34 @@
 // adapter over it; the folder cost one file and one import.
 import { existsSync } from 'node:fs'
 // `utils` is a named export in v2, not `kiss-ssg/libs/utils.js`.
-import Kiss, { utils } from '../../lib/kiss.js'
-import { sharedFolders, site, reportBuildFailure } from '../_shared/site.js'
-import { registerHelpers } from './helpers/index.js'
+import Kiss, { utils } from 'kiss-ssg'
+
+// Facts the site states more than once. Any extra key on the config reaches
+// every view as `config.<key>`, which is how the layout gets the site name
+// without each page carrying it in a model.
+const site = {
+  name: 'Aster & Oak',
+  tagline: 'Small-batch coffee, roasted in Bristol',
+}
+
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
+function reportBuildFailure(err) {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+}
 
 const dev = process.argv.includes('--dev')
 
 // Named once, because the page below reports it: under `npx kiss-ssg check` and
 // `npx kiss-ssg aikb` the engine builds into a staging sibling with a random
 // name, so `kiss.config.folders.build` is not the same string twice.
-const buildFolder = '../../public/9-migrated-from-v1'
+const buildFolder = './public'
 
 const kiss = new Kiss({
   site,
@@ -25,10 +43,7 @@ const kiss = new Kiss({
   // v1 defaults but no module ever read them, so they are gone rather than
   // quietly ignored — a `root:` key here would just sit there unread.
   folders: {
-    src: '.',
     build: buildFolder,
-    layouts: sharedFolders.layouts,
-    assets: sharedFolders.assets,
     // The knowledge base is source, not output: it lives beside the site's own
     // files, survives cleanBuild, and is committed. Not derived from `src`,
     // which is why it is named here rather than picked up with the rest.
@@ -42,11 +57,12 @@ const kiss = new Kiss({
   livereloadPort: 35739,
 })
 
-// The site's custom helpers, in helpers/ because it has one and one is the
-// trigger. The v1 trap they replace — a helper reading the global handlebars
-// module, which renders nothing at all, silently, on a green build — is
-// explained where the helper now lives.
-registerHelpers(kiss)
+// The site's custom helpers are in helpers/ because it has one and one is the
+// trigger. There is no call to make: `config.folders.helpers` defaults to
+// `./helpers`, and kiss imports that folder's index.js and calls its
+// registerHelpers export itself. The v1 trap they replace — a helper reading
+// the global handlebars module, which renders nothing at all, silently, on a
+// green build — is explained where the helper now lives.
 
 // Two sources, one output folder. v1 wrote whichever page came last when two
 // claimed one path; v2 fails the build. Dedupe before registering — the
@@ -181,7 +197,7 @@ kiss
   })
   // v2 fires this after the files are written, so a callback can read them.
   .generate(function () {
-    const written = existsSync('../../public/9-migrated-from-v1/index.html')
+    const written = existsSync('./public/index.html')
     console.log(
       `generate: index.html on disk when the callback ran: ${written}`,
     )

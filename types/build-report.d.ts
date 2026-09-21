@@ -138,6 +138,12 @@ export function reportedView(view: string): string;
  * @param {string|null} [input.stagingDir] the staging sibling every path is reported against, if there is one
  * @param {'build'|'check'} [input.mode]
  * @param {number} [input.startedAt] `Date.now()` at construction
+ * @param {number} [input.finishedAt] when the build settled. Defaults to now,
+ * which is right for the settle itself and wrong for anything that re-derives
+ * the report afterwards: `Kiss._refreshReport()` re-runs this when a watch
+ * asset copy or a helpers reload changes the verdict, and without a fixed end
+ * the duration would grow with the idle time of the session. Measured: a
+ * seven-millisecond build reported as 1226ms after a 1.2s pause.
  * @param {string|null} [input.sitemap] the sitemap written by this build
  * @param {import('./pipeline.js').PipelineResult[]} [input.pipeline] what the asset pipeline's steps did
  * @param {string|null} [input.llms] the llms.txt written by this build
@@ -148,7 +154,7 @@ export function reportedView(view: string): string;
  * @param {string|null} [input.feed] the feed file written by this build
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -165,6 +171,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     stagingDir?: string | null;
     mode?: "build" | "check";
     startedAt?: number;
+    finishedAt?: number;
     sitemap?: string | null;
     pipeline?: import("./pipeline.js").PipelineResult[];
     llms?: string | null;

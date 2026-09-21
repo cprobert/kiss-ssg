@@ -10,7 +10,7 @@ Turns one settled build into data: the JSON-safe `BuildReport` that `Kiss.report
   - `ok` — `failures.length === 0`.
   - `mode` — `'build'` for a build that publishes, `'check'` for one that is staged and discarded.
   - `buildDir` — the folder the site asked for, never the staging sibling.
-  - `duration` — ms since `startedAt` (`Kiss` passes its construction time).
+  - `duration` — ms from `startedAt` (`Kiss` passes its construction time) to `finishedAt`, which `Kiss` captures once the settle has done everything it does, the knowledge-base record and the redirect findings included. Both ends are passed in rather than read from the clock here, and that is what makes a re-derived report honest: `Kiss._refreshReport()` re-runs this whenever a watch asset copy or a helpers reload changes the verdict, and a duration measured at assembly time would grow with the idle time of the session. Measured before the fix: a 9ms build reported as 1216ms after a 1.2-second pause.
   - `pages` — `{ view, buildTo, ok, hash, id }` per stack entry, in registration order; `ok` is `false` when a failure names that output path, `hash` is the sha1 the page recorded for the bytes it wrote (`null` when it wrote none), and `id` is the page's identity — what `{{link "<id>"}}` resolves — read straight off the stack entry, `null` for an inline template, a `generate: false` page and a default id two pages arrived at (`AIKB/kiss.md`).
   - `failures` — `{ view, buildTo, message }` per entry of `Kiss._failures`; the `Error` itself is not in the report.
   - `assets` — `{ source, target }` per asset-manifest entry: the build-relative path a template asks for, and the file that is actually there.
@@ -30,7 +30,7 @@ Nothing.
 
 ## Depended on by
 
-`lib/kiss.js` (assembles one report per settled build in `_finishBuild()`), `bin/kiss-ssg.js` (`formatReport` for `--summary`).
+`lib/kiss.js` (assembles one report per settled build in `_finishBuild()`, and re-derives it in place through `_refreshReport()` whenever something changes the failure list without settling a build — a watch asset re-copy, a helpers reload — so `ok` is never behind the log. The refresh re-runs `buildReport` and nothing else: `_finishBuild()`'s once-per-build side effects (the `KISS_REPORT` line, the `last-build.json` record, `dependency-graph.json`) stay per build, and both call sites read one `_reportInputs()`), `bin/kiss-ssg.js` (`formatReport` for `--summary`).
 
 ## Non-obvious behavior
 

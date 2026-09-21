@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   REQUIRED_PACKED,
+  FORBIDDEN_PACKED,
+  forbiddenPackedFiles,
   formatGate,
   missingPackedFiles,
   parsePackedFiles,
@@ -37,6 +39,46 @@ describe('parsePackedFiles', () => {
 
   it('returns null when there is no JSON at all, so the gate can fail loudly', () => {
     expect(parsePackedFiles('npm error code ENOENT\n')).toBeNull()
+  })
+})
+
+// The whitelist overrides .gitignore, so a gitignored build folder inside a
+// whitelisted one ships anyway. `examples/*/public/` did exactly that — 75
+// files of generated output in a tarball CLAUDE.md says never ships — and the
+// gate could not see it, because it only ever asked what was MISSING.
+describe('forbiddenPackedFiles', () => {
+  it('names example build output that slipped into the tarball', () => {
+    expect(
+      forbiddenPackedFiles([
+        'lib/kiss.js',
+        'examples/1-scan/router.js',
+        'examples/1-scan/public/index.html',
+        'examples/11-blog/public/css/site.css',
+      ]),
+    ).toEqual([
+      'examples/1-scan/public/index.html',
+      'examples/11-blog/public/css/site.css',
+    ])
+  })
+
+  it("leaves an example's own source alone", () => {
+    expect(
+      forbiddenPackedFiles([
+        'examples/1-scan/router.js',
+        'examples/1-scan/src/pages/index.hbs',
+        'examples/README.md',
+      ]),
+    ).toEqual([])
+  })
+
+  it('accepts a windows-style path the way missingPackedFiles does', () => {
+    expect(
+      forbiddenPackedFiles(['examples\\1-scan\\public\\index.html']),
+    ).toEqual(['examples/1-scan/public/index.html'])
+  })
+
+  it('is declared, so the gate has something to check against', () => {
+    expect(FORBIDDEN_PACKED.length).toBeGreaterThan(0)
   })
 })
 
@@ -172,6 +214,29 @@ describe('formatGate', () => {
     ])
     expect(result.ok).toBe(true)
     expect(result.note).toBe('whole repo (no diff against origin/v2)')
+  })
+
+  // Windows' cmd.exe answers a command line over 8191 characters with "The
+  // syntax of the command is incorrect", and this branch's own diff — 202
+  // files, 8117 characters of paths — is what found that: `windows-latest`
+  // failed the format gate while `ubuntu-latest` passed it. The whole-tree
+  // fallback is the answer the empty-diff case already gives, and it asks a
+  // superset of the question. The budget is one number on every platform, so
+  // the two CI legs never check different things.
+  it('checks the whole repo when the changed files would overflow a command line', () => {
+    const { calls, run } = spy()
+    const files = Array.from(
+      { length: 200 },
+      (_, i) => `lib/a-module-with-a-fairly-long-name-${i}.js`,
+    )
+    const result = formatGate('origin/v2', { files }, run)
+    expect(calls).toEqual([
+      { cmd: 'npx', args: ['prettier', '--check', '--ignore-unknown', '.'] },
+    ])
+    expect(result.ok).toBe(true)
+    expect(result.note).toBe(
+      'whole repo (200 changed files overflow one command line)',
+    )
   })
 
   it('fails with the git error when the diff could not be taken', () => {

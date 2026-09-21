@@ -110,6 +110,108 @@ describe('registerPartials', () => {
 // recompiled on every page render: `handlebars-layouts`' `extend` helper reads
 // `handlebars.partials[name]` and compiles it when it finds a string, without
 // ever writing the result back.
+describe('.txt partials are literal text', () => {
+  const register = (hbs, root, graph) =>
+    registerPartials(
+      hbs,
+      {
+        folders: {
+          partials: `${root}/src/partials`,
+          layouts: `${root}/src/layouts`,
+        },
+      },
+      { ...deps, graph },
+    )
+
+  // The extension is a statement about processing: .hbs is a template, .md is
+  // rendered Markdown, .html is HTML — and all three are compiled — while .txt
+  // is the file's own characters. Escaped exactly as `{{ }}` escapes a value.
+  it('shows markup as source rather than rendering it', async () => {
+    site = await makeSite({
+      'src/partials/snippet.txt': '<div class="card">hi</div>',
+      'src/partials/real.html': '<div class="card">hi</div>',
+    })
+    const hbs = Handlebars.create()
+    register(hbs, site.root)
+    expect(hbs.compile('{{> "snippet"}}')({})).toBe(
+      '&lt;div class&#x3D;&quot;card&quot;&gt;hi&lt;/div&gt;',
+    )
+    // ...and the .html sibling is untouched by the new branch.
+    expect(hbs.compile('{{> "real"}}')({})).toBe('<div class="card">hi</div>')
+  })
+
+  // The case with no good answer before: a snippet that shows template syntax
+  // without being one. A .hbs or .html partial would interpolate this.
+  it('prints handlebars syntax instead of interpolating it', async () => {
+    site = await makeSite({
+      'src/partials/example.txt': 'Write {{title}} in your view.',
+      'src/partials/compiled.html': 'Write {{title}} in your view.',
+    })
+    const hbs = Handlebars.create()
+    register(hbs, site.root)
+    expect(hbs.compile('{{> "example"}}')({ title: 'LEAKED' })).toBe(
+      'Write {{title}} in your view.',
+    )
+    expect(hbs.compile('{{> "compiled"}}')({ title: 'LEAKED' })).toBe(
+      'Write LEAKED in your view.',
+    )
+  })
+
+  it('records itself on the dependency graph, so a scoped rebuild finds it', async () => {
+    site = await makeSite({ 'src/partials/note.txt': 'plain & simple' })
+    const hbs = Handlebars.create()
+    const graph = new DependencyGraph()
+    register(hbs, site.root, graph)
+    hbs.compile('{{> "note"}}')({}, { data: { kissPage: './public/a.html' } })
+    expect(graph.dependentsOf('note')).toEqual(['./public/a.html'])
+  })
+
+  // Handlebars re-indents a partial whose call is not flush left, and it does
+  // that by calling `.split('\n')` on whatever the partial returned. A
+  // SafeString has no `.split`, so an indented call threw and the page wrote
+  // nothing — and an indented call is the normal case, since the snippet a
+  // `.txt` partial exists for goes inside a `<pre>`.
+  it('survives an indented call, which is how a snippet is actually written', async () => {
+    site = await makeSite({ 'src/partials/snippet.txt': '<b>hi</b>\nsecond' })
+    const hbs = Handlebars.create()
+    register(hbs, site.root)
+    // Every line of the partial picks up the call's indent, and Handlebars
+    // eats the newline after a standalone partial call — both of which only
+    // happen because the return value is now something it can split.
+    expect(hbs.compile('<pre>\n  {{> "snippet"}}\n</pre>')({})).toBe(
+      '<pre>\n  &lt;b&gt;hi&lt;/b&gt;\n  second</pre>',
+    )
+  })
+
+  it('survives an indented call inside a layout block', async () => {
+    site = await makeSite({
+      'src/partials/snippet.txt': '<b>hi</b>',
+      'src/layouts/main.hbs': '<main>{{#block "body"}}{{/block}}</main>',
+    })
+    const hbs = Handlebars.create()
+    layouts.register(hbs)
+    register(hbs, site.root)
+    expect(
+      hbs.compile(
+        '{{#extend "main"}}\n  {{#content "body"}}\n    {{> "snippet"}}\n  {{/content}}\n{{/extend}}',
+      )({}),
+    ).toContain('&lt;b&gt;hi&lt;/b&gt;')
+  })
+
+  it('is registered under its path-derived name, like every other partial', async () => {
+    site = await makeSite({ 'src/partials/blocks/leadin.txt': 'hello' })
+    const hbs = Handlebars.create()
+    const names = register(hbs, site.root)
+    expect(names).toContain('blocks/leadin')
+    expect(
+      partialNameFor(`${site.root}/src/partials/blocks/leadin.txt`, {
+        partials: `${site.root}/src/partials`,
+        layouts: `${site.root}/src/layouts`,
+      }),
+    ).toBe('blocks/leadin')
+  })
+})
+
 describe('partials are registered compiled', () => {
   const folders = (site) => ({
     folders: {

@@ -535,22 +535,125 @@ describe('asset', () => {
     expect(warnings).toHaveLength(0)
   })
 
-  it('degrades to the path it was given, warning once per page per path', () => {
+  // The case for failing rather than warning is that a rejected reference would
+  // otherwise be a 404. That is true of a missing file and false of all four
+  // shapes below, so failing them was the fix overreaching: an SVG sprite
+  // reference `img/logo.svg#symbol` names a file that IS in the manifest, and
+  // the build died telling the author it was not. `lib/links.js` already
+  // settles what counts as a reference into this build; `asset` follows it.
+  describe('references that are not a path into this build', () => {
+    const shapes = [
+      ['a protocol-relative host', '//cdn.example/x.css'],
+      ['a data: URI', 'data:image/png;base64,AA'],
+      ['a mailto: scheme', 'mailto:hi@example.com'],
+      ['an http URL', 'https://cdn.example/x.css'],
+    ]
+    it.each(shapes)('passes %s through untouched', (_name, value) => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(render(`{{asset "${value}"}}`)).toBe(value)
+    })
+  })
+
+  describe('a query or fragment on a path that IS in the build', () => {
+    it('keeps the fragment, and resolves the file', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(render('{{asset "css/site.css#symbol"}}')).toBe(
+        'css/site.css#symbol',
+      )
+    })
+
+    it('keeps the fragment under a renaming policy', () => {
+      hbs = makeHbs(
+        { assets: { hash: true, version: null } },
+        manifestOf(hashed),
+      )
+      expect(render('{{asset "css/site.css#symbol"}}')).toBe(
+        'css/site.a1b2c3d4.css#symbol',
+      )
+    })
+
+    it('keeps the author query, and does not add a second one under version', () => {
+      hbs = makeHbs(
+        { assets: { hash: false, version: '1.4.5' } },
+        manifestOf(plain),
+      )
+      const out = render('{{asset "css/site.css?v=1"}}')
+      expect(out).toContain('css/site.css?v')
+      expect(out).not.toContain('1.4.5')
+    })
+
+    it('still fails when the path under the query is not in the build', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(() => render('{{asset "css/nope.css?v=1"}}')).toThrow(
+        /css\/nope\.css/,
+      )
+    })
+
+    // The message used to name only the lookup key, so an author who wrote
+    // `{{asset "/css/nope.css#x"}}` was told `'css/nope.css'` was missing — a
+    // string that does not appear in their template, and a file that may well
+    // be there under the fragment they actually got wrong. It names what was
+    // written, and the key underneath it when the two differ.
+    it('names the reference the template wrote and the key it looked up', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(() => render('{{asset "/css/nope.css#x"}}')).toThrow(
+        /asset: '\/css\/nope\.css#x' is not in the build/,
+      )
+      expect(() => render('{{asset "/css/nope.css#x"}}')).toThrow(
+        /emitted 'css\/nope\.css'\./,
+      )
+    })
+
+    it('names the path once when the reference is the path', () => {
+      hbs = makeHbs({}, manifestOf(plain))
+      expect(() => render('{{asset "css/typo.css"}}')).toThrow(
+        /asset: 'css\/typo\.css' is not in the build.* emitted it\./,
+      )
+    })
+  })
+
+  // A path no copy emitted fails the build, the same shape as `{{link}}` on an
+  // id no page claims — they are the two halves of "never hand-write an
+  // internal URL" and they used to be checked to different depths. Warning and
+  // rendering meant the build passed, `report().ok` stayed true, and the site
+  // shipped a 404, which is the verdict-versus-reality gap kiss's own bar
+  // exists to close.
+  it('fails the build on a path no copy emitted', () => {
     hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    expect(() =>
+      hbs.compile('{{asset "css/nope.css"}}')({ view: 'index.hbs' }),
+    ).toThrow(/css\/nope\.css/)
+  })
+
+  it('names the view that asked, so the failure is findable', () => {
+    hbs = makeHbs({ assets: { hash: true, version: null } }, manifestOf(hashed))
+    expect(() =>
+      hbs.compile('{{asset "css/nope.css"}}')({ view: 'about.hbs' }),
+    ).toThrow(/about\.hbs/)
+  })
+
+  it('fails with no manifest at all', () => {
+    hbs = makeHbs()
+    expect(() => render('{{asset "css/site.css"}}')).toThrow()
+  })
+
+  // Dev is the one place the file you are about to add legitimately is not
+  // there yet — so it warns, once per page per path, and renders the path AS
+  // WRITTEN rather than the stripped form, so the browser's 404 names what the
+  // template actually asked for.
+  it('warns instead in dev, keeping the path as written', () => {
+    hbs = makeHbs(
+      { dev: true, assets: { hash: true, version: null } },
+      manifestOf(hashed),
+    )
     const page = { view: 'index.hbs' }
     expect(
-      hbs.compile('{{asset "css/nope.css"}}{{asset "css/nope.css"}}')(page),
-    ).toBe('css/nope.csscss/nope.css')
+      hbs.compile('{{asset "/css/nope.css"}}{{asset "/css/nope.css"}}')(page),
+    ).toBe('/css/nope.css/css/nope.css')
     expect(warnings).toHaveLength(1)
     expect(String(warnings[0][0])).toContain('index.hbs')
     hbs.compile('{{asset "css/nope.css"}}')({ view: 'about.hbs' })
     expect(warnings).toHaveLength(2)
-  })
-
-  it('degrades with no manifest at all', () => {
-    hbs = makeHbs()
-    expect(render('{{asset "css/site.css"}}')).toBe('css/site.css')
-    expect(warnings).toHaveLength(1)
   })
 
   it('warns when the path it was handed is not a string', () => {
