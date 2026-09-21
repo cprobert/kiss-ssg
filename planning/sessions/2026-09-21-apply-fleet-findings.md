@@ -96,6 +96,31 @@ commit.
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-21 (first pulse, after seven slices)** — hash wording **met** (`a3b641a`; `AIKB/aikb.md`
+  had said the opposite of the code and now agrees with it); bench sentence **met** (`5d036ff`); warn
+  **met** (`ed35ced`; the notice test flipped to warn and seen red first, plus a guard pinning silence
+  with no aliases; every doc that said "notice" now says warning; `to-verify.md`'s item deleted);
+  staging path **met** (`90bf69d`; config never repointed, an engine write root instead; three tests
+  seen red first — callback under check, template under atomic, gate over every written file, the
+  report, the KISS_REPORT line and last-build.json; one existing test re-aimed at the write root);
+  canonical **met bar one measurement** (`cab8664`; eleven tests seen red first across the helper,
+  the three readers, the report and an end-to-end build; validated at registration rather than at
+  render — stricter than the criterion's wording and in its spirit, recorded here rather than
+  silently; the learna-kiss-shape measurement is for the close); engine line **met** (`cab8664`; unit
+  over a temp tree with a real junction, end-to-end through the bin for both wordings; on stderr in
+  both modes so stdout stays the report — a design call the criterion left open); plugin pointer
+  **met** (`cab8664`, llms.txt's opening); AIKB docs updated in the same commits, gates green on this
+  Windows machine (1540 tests, lint, typecheck, format, pack), CI **not yet** — nothing pushed. No
+  drift: the surface is the declared public API, minor bump. One observation, not a defect: this
+  repo's own examples resolve the engine by package self-reference, so the line says "no
+  node_modules/kiss-ssg found from here — the script resolves the package some other way", which is
+  true and could later name self-reference. Three slices share one commit because the pre-commit
+  formatter refused a hunk-level split of the check test; the message names all three. **Eyeball:
+  looked** — the operator ran `node ../../bin/kiss-ssg.js check router.js --summary` in
+  `examples/11-blog` and quoted the stderr line verbatim: "kiss-ssg: no node_modules/kiss-ssg found
+  from here — the script resolves the package some other way". Decision: **continue** — measure the
+  canonical option on learna-kiss's shape, push for CI's two legs, then close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
