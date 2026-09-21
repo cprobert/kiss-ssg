@@ -31,20 +31,6 @@ checkout; the only kiss consumer on disk is `cprobert.github.io`, pinned to
 - [ ] then the site's hand-rolled `canonical` helper can be deleted — check that
       removing it changes no output
 
-## Judgement call: is a `notice` loud enough?
-
-Measured on example 11 with `redirects.format` removed:
-
-- `verbose: true` — the cyan notice is line 60 of a 61-line log, directly after the
-  green `./public/redirects.json` line.
-- `verbose: false` — line 17 of 18, same position; only the grey `Links:` summary
-  follows it.
-
-So it survives a scroll only because the build ends right after it. In a CI log
-nobody reads to the end it is one cyan line among green ones. If that is not loud
-enough for a change that silently breaks live redirects, it is a one-line change:
-`lib/kiss.js` `_writeRedirects()`, `notice` → `warn`. Your call; not made here.
-
 ---
 
 ## Open decisions, not verification

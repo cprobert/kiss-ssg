@@ -657,7 +657,7 @@ A page's `aliases` are the old URL paths it now answers. There is no method to c
 
 An alias is a fact about your site — "this page used to answer `/old`" — and that fact is portable. Every alias is a **permanent** redirect: `redirects.json` records `status: 301` on each rule so a consumer has the code in the data rather than hardcoding it, but there is no way to ask for a `302`, a `308` or a `410`, and no forced or wildcard rules. The field marks the place such a thing would live, not a setting. The file it goes into is one host's encoding of it, and hosts disagree. So every settled build with an alias writes `redirects.json` — the host-neutral list — **always**, and then whatever host encodings `config.redirects.format` names beside it.
 
-**`format` is unset by default, and takes a list.** kiss does not guess where you deploy: with no `format` you get the IR and no host file. Because every version before this one always wrote `_redirects`, a build that has aliases and no `format` logs one notice telling you what to set — an explicit `'none'` or `[]` is a decision and stays silent.
+**`format` is unset by default, and takes a list.** kiss does not guess where you deploy: with no `format` you get the IR and no host file. Because every version before this one always wrote `_redirects`, a build that has aliases and no `format` logs one warning telling you what to set — an explicit `'none'` or `[]` is a decision and stays silent.
 
 ```js
 new Kiss({ redirects: { format: ['netlify', 'firebase'] } })
