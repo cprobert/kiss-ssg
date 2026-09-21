@@ -23,7 +23,7 @@ Two commands share all of it. `check <script>` runs the site's build staged and 
 
 ## Depends on
 
-Nothing (`readReports`' return type refers to `./build-report.js`, but only as a type).
+`node:fs` and `node:path`, for `describeEngine` alone — it `lstat`s `node_modules/kiss-ssg` and reads its `package.json`, walking up from the script's folder. Everything else here is pure. (`readReports`' return type refers to `./build-report.js`, but only as a type.)
 
 ## Depended on by
 

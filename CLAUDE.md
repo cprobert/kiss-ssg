@@ -82,6 +82,8 @@ npx kiss-ssg check <script>    # dry-run a site's build script: report it, publi
                                # Diffs against the site's own AIKB/last-build.json when it has
                                # one, so it says what this working tree changed since the last
                                # record; --against <file> names a different baseline.
+                               # Says on stderr which kiss-ssg the site resolves, and names a
+                               # node_modules/kiss-ssg that is a link to a working tree as one.
                                # e.g. from examples/8-data-fed-site/: `node ../../bin/kiss-ssg.js check router.js`
                                # (exits 1 — example 8 fails one page on purpose)
 npx kiss-ssg aikb <script>     # record the site's knowledge base into config.folders.aikb from
