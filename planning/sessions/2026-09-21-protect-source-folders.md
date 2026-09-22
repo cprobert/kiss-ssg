@@ -50,6 +50,22 @@ None.
   platform-aware verification, and checking actual consumer shapes. No independent
   review has run.
 
+- **2026-09-22** — All seven success criteria met: source/output guards run
+  before construction mutates the filesystem, protect every configured source
+  in all three cleanup modes, resolve aliases and missing descendants, and retain
+  safe `src/public` layouts. A temporary checkout of the old engine failed 39
+  regression cases (49 passed); the fixed full suite passed 1,595 tests with two
+  skipped. Type checking passed; lint had zero errors and one unrelated existing
+  unused-function warning in example 7. Documentation, consuming skills, generated
+  declarations and the TODO table are updated. UNC prefix preservation was needed
+  so safety checks inspect the configured network-share location.
+  **Eyeball: looked** — the operator ran the requested root-source command and
+  pasted: `Error: folders.src (./) must not be the project root or a filesystem root; use a dedicated source folder such as ./src`.
+  This is the expected early rejection; no separate wording endorsement was given.
+  No independent review has run. Separate benchmark-skill working-tree edits were
+  left untouched. Decision: ready for branch-close when requested; no release or
+  PR requested in this session.
+
 ---
 
 <!-- Reflection and final verdict are reserved for branch-close. -->
