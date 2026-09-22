@@ -187,6 +187,18 @@ describe('createWatcher', () => {
   })
 
   // An empty file is real content, including a newly discovered page.
+  it('round three: cancels an empty new file removed before delivery', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'PAGE' })
+    const { calls, wiring } = spy()
+    handle = createWatcher({ config: folders(site), entry: null, ...wiring })
+    await handle.ready
+    await site.touch('src/pages/cancelled.hbs', '')
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    await fs.unlink(`${site.src}/pages/cancelled.hbs`)
+    await new Promise((resolve) => setTimeout(resolve, 350))
+    expect(calls.change).toEqual([])
+  })
+
   it('forwards a deliberately empty add after a bounded grace period', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',

@@ -10,6 +10,12 @@ export function createAssetManifest(): {
     reconcileSass(owner: string, current: Map<string, string>): Set<string>;
     readonly urlRevision: number;
     hasOwner(owner: any): boolean;
+    /** Last-good output from this copy only, never another copy's mapping.
+     * @param {string} owner
+     * @param {string} name
+     * @returns {string|null}
+     */
+    previous(owner: string, name: string): string | null;
     reconcile(owner: any, current: any): any[];
     lookup(urlPath: any): any;
     toObject(): any;

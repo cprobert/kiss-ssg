@@ -56,3 +56,5 @@ They agree on file pages and contradict each other on directory indexes, so one 
 ## Types
 
 Every exported function carries `@param`/`@returns` JSDoc, because the default export is what `import { utils } from 'kiss-ssg'` hands a consumer — `types/utils.d.ts` is generated from it. Regenerate with `npm run types` after any signature or JSDoc change; `test/unit/types.test.js` byte-compares. `toSlug`, `toURLKey`, `toCanonicalPath` and `hashId` take `unknown` rather than `string`: each stringifies its argument itself, and narrowing the declaration would refuse calls the runtime handles.
+
+- `isInside(directory)` returns a whole-segment containment predicate with resolved paths and platform case semantics. Config validation, watcher exclusions and Kiss event dispatch share it; it is a named export. Depends on `node:path`.

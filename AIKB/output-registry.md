@@ -12,6 +12,8 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 - `owns(file, owner)`, `owner(file)`, `kind(file)` — query current ownership.
 - `release(file, owner)` — releases only that producer's claim after removal.
 - `relocate(from, to)` — moves claims and collision paths with atomic build promotion.
+- `beginPages()` retires page producers at replay start, keeping their last-written ownership until replacement or orphan cleanup.
+- `retain(owner, paths)` retires asset producers absent from the copy's current attempted outputs, including refused writes.
 - `snapshot()` — detached collision observations: `{ file, producers, winner, refused }`.
 - `clearUnder(directory)` — clears live claims after successful staging disposal, preserving observations for the discarded build's report.
 
@@ -32,4 +34,6 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 - Paths are resolved with Windows case normalization. This is an in-process ownership ledger, not a filesystem lock or a defence against external processes changing files during a build.
 
 - `OutputKind` is the closed union `asset | generated | page`; claims, parameters and collision records have JSDoc types checked by consumers.
-- Collisions are advisory observations accumulated during this instance, not an active-conflict scan. Producers list observed writers; `winner` follows successful writes and explicit releases, and is preserved as the last build outcome on discard. `refused` lists owners whose attempts were blocked until a successful claim clears that refusal. The warning is deduplicated independently of the report. Between asset copies the later copy wins; only mixed asset/generated collisions use the generated-precedence wording.
+- Collisions are advisory records with at least two active producers. Asset and generated producers survive replay; old page producers retire before replacement pages write. Asset reconciliation releases removed sources even if a generated writer now owns their output. Producers include refused asset attempts; `winner` follows successful writes and explicit releases, and is preserved as the last build outcome on discard. `refused` lists owners whose attempts were blocked until a successful claim clears that refusal. The warning is deduplicated independently of the report. Between asset copies the later copy wins; only mixed asset/generated collisions use the generated-precedence wording.
+
+- Registration sites pass absolute filesystem paths; relative display paths belong to the report. Releasing a producer removes it from collision records even when another producer owns the bytes. Warnings involving a released producer may fire again if that conflict returns. Staging disposal preserves the final observations for its report.

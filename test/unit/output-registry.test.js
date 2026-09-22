@@ -2,6 +2,23 @@ import { describe, it, expect, vi } from 'vitest'
 import { OutputRegistry } from '../../lib/output-registry.js'
 
 describe('output ownership', () => {
+  it('retires page producers without giving asset copies permission to erase their bytes', () => {
+    const outputs = new OutputRegistry({ warn: vi.fn() })
+    outputs.claim('public/x.html', 'assets', 'asset')
+    outputs.claim('public/x.html', 'old page', 'page')
+    outputs.beginPages()
+    expect(outputs.owner('public/x.html')).toBe('old page')
+    expect(outputs.snapshot()).toEqual([])
+    expect(outputs.canWriteAsset('public/x.html', 'assets')).toBe(false)
+    outputs.claim('public/x.html', 'new page', 'page')
+    expect(outputs.snapshot()[0].producers).toEqual([
+      { owner: 'assets', kind: 'asset' },
+      { owner: 'new page', kind: 'page' },
+    ])
+    outputs.retain('assets', new Set())
+    expect(outputs.snapshot()).toEqual([])
+    expect(outputs.owner('public/x.html')).toBe('new page')
+  })
   it('reports asset precedence, refusals, recovery and detached snapshots', () => {
     const warn = vi.fn()
     const outputs = new OutputRegistry({ warn })

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
+import path from 'node:path'
 
 // One shared refresh spy, so a test can assert how many times the browser was
 // told to reload and what it was told to reload.
@@ -61,6 +62,159 @@ describe('review regressions', () => {
     await kiss._runRebuildQueue()
     await rebuildSettled()
   }
+
+  it('round three: failed hashed Sass preserves the preview, recovers, and still deletes removed sources', async () => {
+    await start(
+      {
+        'src/pages/index.hbs':
+          '<link rel="stylesheet" href="{{asset "main.css"}}">',
+        'src/assets/main.scss': 'body { color: red; }',
+      },
+      { assets: { hash: true } },
+    )
+    const old = kiss._assetManifest.lookup('main.css')
+    const html = await site.read('public/index.html')
+    await site.touch('src/assets/main.scss', 'body { color:')
+    await event('main.scss')
+    expect(kiss._assetManifest.lookup('main.css')).toBe(old)
+    expect(await site.exists(`public/${old}`)).toBe(true)
+    expect(await site.read('public/index.html')).toBe(html)
+    expect(kiss.report().failures).toHaveLength(1)
+    expect(kiss.report().failures[0].view).toMatch(/^<sass:/)
+    await site.touch('src/assets/main.scss', 'body { color: blue; }')
+    await event('main.scss')
+    const next = kiss._assetManifest.lookup('main.css')
+    expect(next).not.toBe(old)
+    expect(kiss.report().ok).toBe(true)
+    expect(await site.exists(`public/${old}`)).toBe(false)
+    await fs.unlink(`${site.src}/assets/main.scss`)
+    await event('main.scss', 'unlink')
+    expect(kiss._assetManifest.lookup('main.css')).toBeNull()
+    expect(await site.exists(`public/${next}`)).toBe(false)
+  })
+
+  it('round three: standing collisions survive replay and disappear when the source is removed', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    await kiss._requestReplay()
+    expect(kiss.report().outputs.collisions).toHaveLength(1)
+    await fs.unlink(`${site.src}/assets/robots.txt`)
+    kiss._pendingReplay = true
+    await event('robots.txt', 'unlink')
+    expect(kiss.report().outputs.collisions).toEqual([])
+    expect(await site.read('public/robots.txt')).toContain('User-agent:')
+  })
+
+  it('round three: a page rename taking over its old slug is not a collision', async () => {
+    await start({
+      'src/pages/a.hbs': 'PAGE',
+      'src/controllers/a.js': "module.exports = () => ({ slug: 'shared' })",
+      'src/controllers/b.js': "module.exports = () => ({ slug: 'shared' })",
+    })
+    expect(await site.read('public/shared.html')).toContain('PAGE')
+    await fs.move(`${site.src}/pages/a.hbs`, `${site.src}/pages/b.hbs`)
+    await kiss._requestReplay()
+    expect(await site.read('public/shared.html')).toContain('PAGE')
+    expect(kiss.report().outputs.collisions).toEqual([])
+  })
+
+  it('round three: repeated watch copies do not retain settled promises', async () => {
+    await start({ 'src/assets/a.txt': 'A' })
+    const count = kiss._promises.length
+    for (let i = 0; i < 6; i++) await event('a.txt')
+    expect(kiss._promises).toHaveLength(count)
+  })
+
+  it('round three: page writes and orphan cleanup keep their registered paths across chdir', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'PAGE' })
+    const cwd = process.cwd()
+    try {
+      process.chdir(site.root)
+      kiss = new Kiss({
+        folders: { ...site.folders, build: './public', assets: null },
+        logger: silentLogger,
+      }).scan()
+      await fs.ensureDir(`${site.root}/other`)
+      process.chdir(`${site.root}/other`)
+      kiss.generate()
+      await kiss.complete()
+      expect(await site.read('public/index.html')).toBe('PAGE')
+      expect(kiss._outputs.kind(`${site.build}/index.html`)).toBe('page')
+      await fs.unlink(`${site.src}/pages/index.hbs`)
+      await kiss._requestReplay()
+      expect(await site.exists('public/index.html')).toBe(false)
+      expect(kiss._outputs.owner(`${site.build}/index.html`)).toBeNull()
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  it('round three: discard clears the captured staging path if close clears the field', async () => {
+    site = await makeSite({ 'src/assets/file.txt': 'A' })
+    kiss = new Kiss({
+      folders: site.folders,
+      cleanBuild: 'atomic',
+      logger: silentLogger,
+    })
+    await kiss._assetQueue
+    const staging = kiss._stagingDir
+    const remove = fs.remove.bind(fs)
+    const spy = vi.spyOn(fs, 'remove').mockImplementation(async (file) => {
+      await remove(file)
+      if (file === staging) kiss._stagingDir = null
+    })
+    try {
+      await kiss._discardStaging()
+      expect(kiss._outputs.owner(`${staging}/file.txt`)).toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('round three: a standing refusal does not cause a second copy in a replay batch', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    const info = vi.fn()
+    kiss.logger.info = info
+    kiss._pendingReplay = true
+    await event('robots.txt')
+    expect(
+      info.mock.calls.filter(([message]) =>
+        message.startsWith('Copied assets:'),
+      ),
+    ).toHaveLength(1)
+    expect(kiss.report().outputs.collisions).toHaveLength(1)
+  })
+
+  it.each(['plain', 'atomic', 'check'])(
+    'round three: %s collision paths use the configured build spelling',
+    async (mode) => {
+      site = await makeSite({
+        'src/assets/robots.txt': 'STATIC',
+        'src/pages/index.hbs': 'PAGE',
+      })
+      const build =
+        './' + path.relative(process.cwd(), site.build).replaceAll('\\', '/')
+      if (mode === 'check') vi.stubEnv('KISS_CHECK', '1')
+      try {
+        kiss = new Kiss({
+          folders: { ...site.folders, build },
+          cleanBuild: mode === 'atomic' ? 'atomic' : true,
+          logger: silentLogger,
+        })
+          .scan()
+          .generate()
+          .robots()
+        await kiss.complete()
+        expect(kiss.report().outputs.collisions[0].file).toBe(
+          `${build}/robots.txt`,
+        )
+        expect(path.isAbsolute(kiss.report().outputs.collisions[0].file)).toBe(
+          false,
+        )
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    },
+  )
 
   it('round two: reports collisions as advisory with the current winner', async () => {
     await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())

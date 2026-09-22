@@ -13,6 +13,12 @@ const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
   {
+    feature: 'current output collision lifecycle',
+    pattern:
+      /active producers[\s\S]*resolved collision disappears[\s\S]*configured build-folder spelling/,
+    skills: [skill('kiss-ssg', 'kiss-build-check')],
+  },
+  {
     feature: 'advisory structured output collisions',
     pattern:
       /outputs\.collisions[\s\S]*advisory[\s\S]*do not change the exit code/,
@@ -247,6 +253,14 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    patterns: [
+      /They accumulate during an instance/,
+      /These observations accumulate for the instance/,
+    ],
+    why: 'Resolved output collisions leave the current report',
+  },
+
   {
     why: 'Sass changes compare retained fingerprints, not a plain file hashing has moved',
     patterns: [

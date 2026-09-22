@@ -479,6 +479,12 @@ declare class Kiss {
      * @returns {this}
      */
     copyAssets(sourceDir: string, targetDir: string): this;
+    /** @private
+     * @param {string} sourceDir
+     * @param {string} targetDir
+     * @param {boolean} [watch] tracked by the rebuild queue instead of registration results
+     */
+    private _copyAssets;
     /** @private */
     /**
      * Records a page's render failure, and remembers which stack entry owns it.
@@ -605,6 +611,13 @@ declare class Kiss {
      * @returns {this}
      */
     page(options: PageOptions): this;
+    /** @private @type {WeakMap<object, string>} */
+    private _registrationDirectories;
+    /** @private
+     * @param {PageOptions} options
+     * @param {string} directory
+     */
+    private _page;
     /**
      * Queues one page per item of an array model, appending `-N` to the slug
      * unless the controller sets one. A bad item fails only its own page.

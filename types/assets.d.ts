@@ -20,6 +20,7 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
         reconcileSass(owner: string, current: Map<string, string>): Set<string>;
         readonly urlRevision: number;
         hasOwner(owner: any): boolean;
+        previous(owner: string, name: string): string | null;
         reconcile(owner: any, current: any): any[];
         lookup(urlPath: any): any;
         toObject(): any;

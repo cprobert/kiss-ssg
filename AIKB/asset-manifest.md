@@ -10,7 +10,7 @@ Holds what an asset copy emitted — the path a template writes mapped to the fi
 - `isHashable(urlPath)` → boolean. True for `.css` and `.js` (case-insensitive) only.
 - `contentHash(bytes)` → the first `HASH_LENGTH` hex characters of the MD5 of `bytes` (a `Buffer` or a string).
 - `hashedName(urlPath, hash)` → the same path with the hash inserted before the last extension (`css/site.css` → `css/site.a1b2c3d4.css`). A path whose last dot is in a folder name, or which has no dot at all, gets the hash appended instead (`css/site` → `css/site.a1b2c3d4`).
-- `createAssetManifest()` → `{ lookup, toObject, hasOwner, reconcile, reconcileSass, urlRevision }`, a fresh manifest.
+- `createAssetManifest()` → `{ lookup, toObject, hasOwner, previous, reconcile, reconcileSass, urlRevision }`, a fresh manifest.
   - `lookup(urlPath)` — the emitted path, or `null`.
   - `toObject()` — a plain object copy of the map, for debugging.
 
@@ -36,3 +36,5 @@ Holds what an asset copy emitted — the path a template writes mapped to the fi
 - MD5 is a fingerprint, not a security claim — it is comparing a file to its own previous bytes.
 
 - `reconcileSass(owner, fingerprints)` retains the latest successful, unshadowed Sass fingerprints per copy and returns the changed source names. It does not change URL mappings or their revision; replacing the map also retires removed entries.
+
+- `previous(owner, name)` returns that copy's last-good output or null. Failed Sass compiles may carry it into reconciliation; removed sources do not. This does not read another copy's global mapping.

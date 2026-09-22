@@ -65,6 +65,29 @@ and documentation of the stricter contract.
   junction, and settled event logging. Reproductions for findings 1–3 must fail
   against the current head before implementation; no new branch or release.
 
+- **2026-09-22 Amendment (round three):** Accepted the operator's relayed
+  review and lifecycle refinement on this branch. Preserve last-good hashed
+  Sass on compile failure without retaining genuinely deleted sources; track
+  collisions between active producers while retaining previous-page bytes for
+  the sweep; normalize collision file paths at the report boundary. Also address
+  conditional copy retry, staging-discard race, cancelled empty discovery,
+  registration-time page paths, shared containment, sweep simplification and
+  bounded watch-copy tracking. Benchmark edits remain separate.
+  Transition tests were executed against HEAD before acceptance: Sass failure,
+  resolved collision, page rename, standing refusal retry, settled-promise growth,
+  plain/atomic report spelling, chdir, staging-field race and cancelled empty add
+  failed as expected. Check-mode spelling already passed. Two initial fixture
+  setup errors were corrected before their failures were counted as evidence.
+  Round-two's blanket completion statement is superseded by these transitions;
+  the fleet's one-shot builds could not establish watch lifecycle correctness.
+  **Verification:** Final full suite: 1,659 passed, two skipped. Type checking
+  passes; lint has no errors and retains the existing example-7 warning. Types,
+  module notes and consumer collision guidance are updated, with obsolete
+  accumulation wording banned. Runtime evidence is this session's own; the
+  supplied browser and fleet evidence was not re-executed. Findings 1-11 are
+  addressed within the tested transitions; finding 12 remains the operator's
+  separate benchmark work. Ready for another review, with no push or release.
+
 ## Pulse log
 
 - **2026-09-21** — Started from `main`; the only working-tree change was the

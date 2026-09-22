@@ -72,7 +72,7 @@ A site opts into a knowledge base by recording one — `npx kiss-ssg aikb <site-
 
 ## Output collisions
 
-Inspect `outputs.collisions` even when `ok` is true. Each entry names the file, observed producers, winner and refused owners; the summary prints `output collision:`. A refused Sass entry is not an intentional partial skip. Resolve unintended duplicate outputs or explain deliberate precedence. These observations are advisory and do not change the exit code. They accumulate during an instance; a discarded check reports its last successful writer before disposal.
+Inspect `outputs.collisions` even when `ok` is true. Each entry names the file, observed producers, winner and refused owners; the summary prints `output collision:`. A refused Sass entry is not an intentional partial skip. Resolve unintended duplicate outputs or explain deliberate precedence. These observations are advisory and do not change the exit code. They track active producers: a resolved collision disappears, while a standing collision survives replay. File paths use the configured build-folder spelling. A discarded check reports its last successful writer before disposal.
 
 ## Reading a failure
 

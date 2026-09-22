@@ -114,7 +114,7 @@
  * @property {BuildRedirects|null} redirects the redirects file and the two rename findings, or `null` when there is nothing to say
  * @property {string|null} feed the feed file written, or `null` if none was
  * @property {BuildRobots|null} robots what `.robots()` wrote, or `null` when it was never called
- * @property {{collisions: import('./output-registry.js').OutputCollision[]}} outputs advisory output collisions observed by this instance
+ * @property {{collisions: import('./output-registry.js').OutputCollision[]}} outputs advisory output collisions between active producers
  */
 /**
  * @param {string|null|undefined} target
@@ -462,7 +462,7 @@ export type BuildReport = {
      */
     robots: BuildRobots | null;
     /**
-     * advisory output collisions observed by this instance
+     * advisory output collisions between active producers
      */
     outputs: {
         collisions: import("./output-registry.js").OutputCollision[];

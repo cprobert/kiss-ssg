@@ -40,11 +40,18 @@ export class OutputRegistry {
     relocate(from: string, to: string): void;
     /** @param {string} file @param {string} owner */
     release(file: string, owner: string): void;
+    /** Retire page producers, keeping their last-written bytes for the sweep. */
+    beginPages(): void;
+    /** Reconcile attempted asset outputs, including writes refused by another owner.
+     * @param {string} owner
+     * @param {Set<string>} current absolute output paths still produced by this copy
+     */
+    retain(owner: string, current: Set<string>): void;
     /** Drop live claims after discard; preserve build observations for its report.
      * @param {string} directory
      */
     clearUnder(directory: string): void;
-    /** @returns {OutputCollision[]} detached observations from this instance */
+    /** @returns {OutputCollision[]} detached collisions between active producers */
     snapshot(): OutputCollision[];
 }
 export type OutputKind = "asset" | "generated" | "page";

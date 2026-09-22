@@ -874,7 +874,7 @@ You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns
 
 Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
 
-`outputs.collisions` lists output paths claimed by multiple producers, their observed `producers` (`{ owner, kind }`), current `winner` (or null), and `refused` owner names. These observations accumulate for the instance and remain advisory: they do not change `ok` or the check exit code. On a discarded check build, the winner describes the last successful writer before disposal.
+`outputs.collisions` lists output paths claimed by multiple producers, their observed `producers` (`{ owner, kind }`), current `winner` (or null), and `refused` owner names. Collisions track active producers and disappear when a conflicting source is removed; page renames do not collide with the previous build. File paths use the configured build-folder spelling in plain, atomic and check builds. They remain advisory: they do not change `ok` or the check exit code. On a discarded check build, the winner describes the last successful writer before disposal.
 
 ### Recording the knowledge base
 
