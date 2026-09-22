@@ -62,6 +62,63 @@ describe('review regressions', () => {
     await rebuildSettled()
   }
 
+  it('round two: reports collisions as advisory with the current winner', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    const report = kiss.report()
+    expect(report.ok).toBe(true)
+    expect(report.outputs?.collisions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          file: `${site.build}/robots.txt`,
+          winner: { owner: 'robots', kind: 'generated' },
+        }),
+      ]),
+    )
+  })
+
+  it('round two: a no-op hashed Sass save neither renders nor refreshes', async () => {
+    await start(
+      {
+        'src/assets/a.scss': 'a { color: red; }',
+        'src/assets/b.scss': 'b { color: blue; }',
+      },
+      { assets: { hash: true } },
+    )
+    const render = vi.spyOn(kiss, '_rebuild')
+    const reload = vi.spyOn(kiss, '_reload')
+    await event('a.scss')
+    expect(render).not.toHaveBeenCalled()
+    expect(reload).not.toHaveBeenCalled()
+  })
+
+  it('round two: a page-to-asset replacement lands in the same save-all batch', async () => {
+    await start({ 'src/pages/old.hbs': 'PAGE' })
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await site.touch('src/assets/old.html', 'ASSET')
+    kiss._pendingReplay = true
+    await event('old.html', 'add')
+    expect(await site.read('public/old.html')).toBe('ASSET')
+  })
+
+  it('round two: discarding a staging build clears its output claims', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE',
+      'src/assets/file.txt': 'ASSET',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      cleanBuild: 'atomic',
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await Promise.all(kiss._promises)
+    const file = `${kiss._stagingDir}/file.txt`
+    expect(kiss._outputs.owner(file)).not.toBeNull()
+    await kiss._discardStaging()
+    expect(kiss._outputs.owner(file)).toBeNull()
+  })
+
   it('keeps image edits on the asset fast path with hashing enabled', async () => {
     await start({ 'src/assets/logo.png': 'image' }, { assets: { hash: true } })
     const render = vi.spyOn(kiss, '_rebuild')

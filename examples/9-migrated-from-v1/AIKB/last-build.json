@@ -126,5 +126,8 @@
   },
   "redirects": null,
   "feed": null,
-  "robots": null
+  "robots": null,
+  "outputs": {
+    "collisions": []
+  }
 }

@@ -126,3 +126,9 @@ reads changed", which a compiler instance does not — so the two are
 complementary and only the first is implemented. **Re-check:** whether a site
 using `sass-embedded` shows compiler start-up in `npm run bench`'s `styled`
 scenario.
+
+### Live-reload reconnect window after navigation
+
+Fable measured this on 2026-09-22 at `c69c2a7`, using Python Playwright 1.58 and headless Chromium 145 against example 4. A save immediately after a page reload at DOM-ready was rebuilt and available over HTTP but never fetched by the browser. The fresh page's live-reload socket connected about 200 ms later; the earlier broadcast had no connected recipient and was not replayed. Waiting for the socket before each edit made all thirteen checks pass. Footer clearing/restoration, Sass swapping without navigation, and page edits were verified; the console was empty and fixture files were restored byte-for-byte.
+
+The reconnect explanation is supported by that probe. Attribution to the pre-existing upstream mechanism is inferred: Fable did not compare against `main`. We accept this window and add no replay mechanism. **Re-check:** start example 4 in dev mode, count browser navigations, compare an HTTP fetch with the rendered DOM after each save, and compare a second edit immediately at DOM-ready with one after the live-reload socket opens. The reviewer's `eg4_browser_check.py` is in its session scratchpad, not a repository dependency or checked-in script.

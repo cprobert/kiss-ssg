@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildReport, formatReport } from '../../lib/build-report.js'
+import { exitCodeFor } from '../../lib/check.js'
+import path from 'node:path'
 
 const manifest = (entries) => ({ toObject: () => entries })
 
@@ -13,6 +15,31 @@ const failure = (view, buildTo, message) => ({
 })
 
 describe('buildReport', () => {
+  it('reports staged collisions in JSON and summaries without failing check', () => {
+    const report = buildReport({
+      buildDir: './public',
+      stagingDir: './staging',
+      outputs: {
+        collisions: [
+          {
+            file: path.resolve('staging/robots.txt').replaceAll('\\', '/'),
+            producers: [
+              { owner: 'assets', kind: 'asset' },
+              { owner: 'robots', kind: 'generated' },
+            ],
+            winner: { owner: 'robots', kind: 'generated' },
+            refused: ['assets'],
+          },
+        ],
+      },
+    })
+    expect(report.outputs.collisions[0].file).toBe('./public/robots.txt')
+    expect(formatReport(report)).toContain(
+      'output collision: ./public/robots.txt',
+    )
+    expect(formatReport(report)).toContain('winner: robots; refused: assets')
+    expect(exitCodeFor([JSON.parse(JSON.stringify(report))], 0)).toBe(0)
+  })
   it('reports a clean build as ok, in a fixed key order', () => {
     const report = buildReport({
       stack: [page('index.hbs', './public/index.html')],
@@ -42,6 +69,7 @@ describe('buildReport', () => {
       // Appended last, the rule every key here follows: a consumer diffing two
       // reports sees a new key at the end rather than a reshuffle.
       'robots',
+      'outputs',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -228,6 +256,7 @@ describe('buildReport', () => {
       redirects: null,
       feed: null,
       robots: null,
+      outputs: { collisions: [] },
     })
   })
 

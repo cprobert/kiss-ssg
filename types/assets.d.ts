@@ -1,5 +1,5 @@
 /**
- * @typedef {{ file: string, error?: Error, skipped?: boolean, changed?: boolean }} SassResult
+ * @typedef {{ file: string, error?: Error, skipped?: boolean, refused?: boolean, changed?: boolean, fingerprint?: string }} SassResult
  *
  * @param {string} sourceDir
  * @param {string} targetDir
@@ -17,6 +17,7 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
     config: any;
     logger: any;
     manifest?: {
+        reconcileSass(owner: string, current: Map<string, string>): Set<string>;
         readonly urlRevision: number;
         hasOwner(owner: any): boolean;
         reconcile(owner: any, current: any): any[];
@@ -33,21 +34,26 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
     id: string;
     data: any;
     sass?: undefined;
+    refused?: undefined;
     error?: undefined;
 } | {
     id: string;
     data: string;
     sass: SassResult[];
+    refused: string[];
     error?: undefined;
 } | {
     id: string;
     data: any;
     error: any;
     sass: SassResult[];
+    refused?: undefined;
 }>;
 export type SassResult = {
     file: string;
     error?: Error;
     skipped?: boolean;
+    refused?: boolean;
     changed?: boolean;
+    fingerprint?: string;
 };

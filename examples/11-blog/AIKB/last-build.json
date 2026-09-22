@@ -183,5 +183,8 @@
     "sitemaps": [
       "https://asterandoak.example/sitemap.xml"
     ]
+  },
+  "outputs": {
+    "collisions": []
   }
 }

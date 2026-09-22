@@ -19,7 +19,8 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 ## Non-obvious behavior
 
-- Sass results include `changed`, comparing the previous compiled CSS bytes with the new bytes. The watcher swaps one changed stylesheet in place; multiple affected stylesheets use a full refresh. This comparison reads CSS only, not every image or font.
+- Sass results include `changed`, comparing retained fingerprints of compiled bytes across copies. The fingerprint is computed in memory, without reading the previous CSS file, so hashing may move that file without making an identical compile look changed. A copied CSS sibling wins and is excluded from Sass changes. The watcher swaps one changed stylesheet in place; multiple affected stylesheets use a full refresh; an unchanged Sass save sends no refresh. Failed or removed entries leave the next successful copy to establish a fresh fingerprint.
+- A generated owner refusing a Sass write returns `refused: true`, distinct from `skipped: true` for underscore partials. The copy returns `refused` source paths for the watcher's bounded retry after replay. Refusals appear in advisory `outputs.collisions`, not the failure list.
 
 - Each resolved source/target pair owns an inventory in the manifest. After copying, `recordEmitted` reconciles that inventory and unlinks only stale files; it never empties an output folder. Missing previously copied roots are empty inventories, allowing directory deletion in watch mode; a missing first-time source remains an error. Other copies retain their claims. Kiss passes the shared output registry: asset copies yield to generated outputs, warn on collisions, and unlink a stale file only while that copy still owns it. Copy identity uses the requested destination across atomic promotion.
 

@@ -1,15 +1,60 @@
+/**
+ * @typedef {'asset'|'generated'|'page'} OutputKind
+ * @typedef {{owner: string, kind: OutputKind}} OutputClaim
+ * @typedef {{file: string, producers: OutputClaim[], winner: OutputClaim|null, refused: string[]}} OutputCollision
+ */
 export class OutputRegistry {
-    constructor(logger: any);
-    logger: any;
-    files: Map<any, any>;
-    warned: Set<any>;
-    key(file: any): string;
-    collision(file: any, previous: any, owner: any, kind?: string): void;
-    canWriteAsset(file: any, owner: any): boolean;
-    claim(file: any, owner: any, kind?: string): void;
-    owns(file: any, owner: any): boolean;
-    owner(file: any): any;
-    kind(file: any): any;
-    relocate(from: any, to: any): void;
-    release(file: any, owner: any): void;
+    /** @param {{warn: (message: string) => void}} logger */
+    constructor(logger: {
+        warn: (message: string) => void;
+    });
+    logger: {
+        warn: (message: string) => void;
+    };
+    /** @type {Map<string, OutputClaim>} */
+    files: Map<string, OutputClaim>;
+    /** @type {Map<string, OutputCollision>} */
+    collisions: Map<string, OutputCollision>;
+    /** @type {Set<string>} */
+    warned: Set<string>;
+    /** @param {string} file */
+    key(file: string): string;
+    /**
+     * @param {string} file
+     * @param {OutputClaim|undefined} previous
+     * @param {string} owner
+     * @param {OutputKind} [kind]
+     */
+    collision(file: string, previous: OutputClaim | undefined, owner: string, kind?: OutputKind): void;
+    /** @param {string} file @param {string} owner */
+    canWriteAsset(file: string, owner: string): boolean;
+    /** @param {string} file @param {string} owner @param {OutputKind} [kind] */
+    claim(file: string, owner: string, kind?: OutputKind): void;
+    /** @param {string} file @param {string} owner */
+    owns(file: string, owner: string): boolean;
+    /** @param {string} file @returns {string|null} */
+    owner(file: string): string | null;
+    /** @param {string} file @returns {OutputKind|null} */
+    kind(file: string): OutputKind | null;
+    /** @param {string} from @param {string} to */
+    relocate(from: string, to: string): void;
+    /** @param {string} file @param {string} owner */
+    release(file: string, owner: string): void;
+    /** Drop live claims after discard; preserve build observations for its report.
+     * @param {string} directory
+     */
+    clearUnder(directory: string): void;
+    /** @returns {OutputCollision[]} detached observations from this instance */
+    snapshot(): OutputCollision[];
 }
+export type OutputKind = "asset" | "generated" | "page";
+export type OutputClaim = {
+    owner: string;
+    kind: OutputKind;
+};
+export type OutputCollision = {
+    file: string;
+    producers: OutputClaim[];
+    winner: OutputClaim | null;
+    refused: string[];
+};

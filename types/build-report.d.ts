@@ -114,6 +114,7 @@
  * @property {BuildRedirects|null} redirects the redirects file and the two rename findings, or `null` when there is nothing to say
  * @property {string|null} feed the feed file written, or `null` if none was
  * @property {BuildRobots|null} robots what `.robots()` wrote, or `null` when it was never called
+ * @property {{collisions: import('./output-registry.js').OutputCollision[]}} outputs advisory output collisions observed by this instance
  */
 /**
  * @param {string|null|undefined} target
@@ -153,9 +154,10 @@ export function reportedView(view: string): string;
  * @param {BuildRedirects|null} [input.redirects] what the build did about page `aliases`, `null` when there is nothing to say
  * @param {BuildRobots|null} [input.robots] what `.robots()` wrote, `null` when it was never called
  * @param {string|null} [input.feed] the feed file written by this build
+ * @param {{collisions: import('./output-registry.js').OutputCollision[]}} [input.outputs]
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -182,6 +184,9 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     redirects?: BuildRedirects | null;
     robots?: BuildRobots | null;
     feed?: string | null;
+    outputs?: {
+        collisions: import("./output-registry.js").OutputCollision[];
+    };
 }): BuildReport;
 /**
  * The one-line human rendering of a report, plus one line per failure — what
@@ -456,4 +461,10 @@ export type BuildReport = {
      * what `.robots()` wrote, or `null` when it was never called
      */
     robots: BuildRobots | null;
+    /**
+     * advisory output collisions observed by this instance
+     */
+    outputs: {
+        collisions: import("./output-registry.js").OutputCollision[];
+    };
 };

@@ -70,3 +70,9 @@ try {
   for (const failure of failed.failures)
     console.error(failure.view, failure.buildTo, failure.error.message)
 }
+// The internal registry declaration must reject unknown producer kinds too.
+import { OutputRegistry } from '../../../types/output-registry.js'
+const outputs = new OutputRegistry({ warn: console.warn })
+outputs.claim('public/test.html', 'page', 'page')
+// @ts-expect-error A typo must not silently become a new precedence category.
+outputs.claim('public/test.html', 'page', 'paeg')
