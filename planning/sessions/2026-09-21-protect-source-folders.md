@@ -47,6 +47,13 @@ and documentation of the stricter contract.
   tests, update docs and consuming guidance. This expands the original watcher
   non-goal explicitly; no new branch or release requested.
 
+- **2026-09-22 (review corrections)** — Operator approved one corrective pass on
+  the open branch after Fable's review: manifest-driven hashed reloads, single-output
+  Sass swapping, write-time output ownership plus collision warnings, removal of
+  the unused manifest writer, accurate cwd errors, explicit unlink of the test
+  junction, and settled event logging. Reproductions for findings 1–3 must fail
+  against the current head before implementation; no new branch or release.
+
 ## Pulse log
 
 - **2026-09-21** — Started from `main`; the only working-tree change was the
@@ -88,6 +95,28 @@ and documentation of the stricter contract.
   and restore its footer partial, and confirm the preview follows both saves.
   No response received yet; this remains a manual checkpoint for branch-close.
   Decision: implementation complete, browser verification outstanding.
+
+- **2026-09-22 (Fable correction checkpoint)** — Findings 1–7 addressed.
+  The three reproduction fixtures became integration tests and all failed at
+  the previous head before implementation. Expanded regression checks against
+  that head produced nine failures and three passing controls; the final
+  KISS_REPORT deletion case also failed before its write-site registration.
+  The shared output registry now covers pages and JSON siblings, sitemap, llms,
+  custom feed and redirect paths, debug files and report appends. Skipped writes
+  claim nothing; page deletion releases ownership; atomic promotion moves it.
+  Generated output collisions warn and later asset copies yield to the owner.
+  Hashable manifest URL changes decide page re-rendering; Sass byte changes
+  distinguish single-stylesheet swaps from full refreshes. Smaller diagnostic,
+  logging and junction-cleanup corrections landed alongside removal of record().
+  Full suite: 1,631 passed, two skipped; type checking passed; lint has zero
+  errors and the existing example-7 warning. Coverage advisory: every touched
+  engine module has its expected unit or integration coverage, including the new
+  registry. Docs, types and consuming guidance updated; obsolete guidance banned.
+  Fable's independent source review was considered; execution evidence for this
+  corrective pass is this session's own, not an independent runtime review.
+  **Eyeball: pending** — the original example-4 footer browser check still has
+  no operator response. Decision: corrections complete; ready for review, with
+  that manual checkpoint carried forward. No branch-close, release or push.
 
 ---
 
