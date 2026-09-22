@@ -40,7 +40,12 @@ and documentation of the stricter contract.
 
 ### Amendments
 
-None.
+- **2026-09-22** — Operator approved addressing the watcher review finding on
+  this branch: asset additions/deletions and stale output, intentionally empty
+  saves, configured content outside `src`, output exclusion, and serialized
+  asset/page updates. Keep ordinary edit fast paths; add filesystem regression
+  tests, update docs and consuming guidance. This expands the original watcher
+  non-goal explicitly; no new branch or release requested.
 
 ## Pulse log
 
@@ -65,6 +70,24 @@ None.
   No independent review has run. Separate benchmark-skill working-tree edits were
   left untouched. Decision: ready for branch-close when requested; no release or
   PR requested in this session.
+
+- **2026-09-22 (watcher checkpoint)** — Approved amendment implemented: asset
+  add/change/unlink and directory deletion/recreation; per-copy output ownership
+  and manifest reconciliation; bounded empty-save delivery; external configured
+  content roots; overlapping-root deduplication and output exclusion; asset work
+  serialized with rendering. Eight regression checks failed against the old
+  engine (one rapid-edit check already passed). Full suite: 1,607 passed, two
+  skipped. Type checking passed; lint has the same existing example-7 warning.
+  The example-4 build completed within its 20-second timeout and produced the
+  expected site name and footer. Final review added coverage for the development
+  JSON sibling: observed deletion before correcting its protected filename;
+  all six reconciliation integration cases then passed, including asset-root
+  recreation. README, llms, AIKB, consuming skill and generated types updated;
+  watcher TODO marked implemented. No independent review ran.
+  **Eyeball: pending** — asked the operator to run example 4 in dev mode, clear
+  and restore its footer partial, and confirm the preview follows both saves.
+  No response received yet; this remains a manual checkpoint for branch-close.
+  Decision: implementation complete, browser verification outstanding.
 
 ---
 
