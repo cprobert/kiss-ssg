@@ -40,6 +40,17 @@ and documentation of the stricter contract.
 
 ### Amendments
 
+- **2026-09-22 — Round-two corrective pass.** Absorb Fable's eight findings on
+  this branch: advisory collision reports and distinct Sass refusals; retained
+  Sass fingerprints without the prior-file read; truthful orphan logs; one
+  post-replay asset retry for save-all; accurate precedence warnings; typed
+  registry claims; and staging-discard cleanup. Preserve advisory exit policy.
+  Four boundary fixtures were observed red at `c69c2a7` before implementation
+  (missing report collisions, unwanted no-op Sass refresh, missing same-batch
+  replacement asset, retained staging claim). Commit both review reports with
+  this pass. Benchmark changes are outside scope. Accept and document the
+  measured browser reconnect window without adding a replay mechanism.
+
 - **2026-09-22** — Operator approved addressing the watcher review finding on
   this branch: asset additions/deletions and stale output, intentionally empty
   saves, configured content outside `src`, output exclusion, and serialized
@@ -119,5 +130,23 @@ and documentation of the stricter contract.
   that manual checkpoint carried forward. No branch-close, release or push.
 
 ---
+
+- **2026-09-22 (round-two checkpoint)** — The four boundary regressions passed
+  after being observed red at `c69c2a7`. All eight review items are addressed;
+  collision reporting stays advisory. Expanded ownership, refusal, fingerprint,
+  report/exit-policy and declaration-consumer checks pass. Full suite: 1,644
+  passed, two skipped, including bounded example builds and reproducible example
+  9/11 records updated for the appended report field. Type checking passes;
+  lint has zero errors and the existing example-7 unused-variable warning.
+  Original source-root, overlap, alias and preservation criteria remain met by
+  the full suite; documentation/types are updated. Watcher scope and public
+  report addition are covered by the Amendments; benchmark edits remain outside
+  this pass. **Eyeball: supplied verification accepted** — the operator relayed
+  Fable's statement, "Verified in a real browser, and the pulse log's outstanding
+  eyeball is closed." This closes the original checkpoint on that supplied
+  evidence, not a claim that Codex or the operator personally drove the browser.
+  Fable reports thirteen passing Playwright checks at `c69c2a7`; the reconnect
+  window is documented with its probe and the absence of a `main` comparison.
+  Decision: corrective pass complete, ready for review. No branch-close or push.
 
 <!-- Reflection and final verdict are reserved for branch-close. -->
