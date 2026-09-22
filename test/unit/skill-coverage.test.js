@@ -12,6 +12,14 @@ const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
+  {
+    feature: 'folder safety — dedicated source and no cleanup-policy bypass',
+    pattern: /dedicated[\s\S]*cleanBuild: false/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
+    ],
+  },
   // Found on six of six sites during the 2.5.0 fleet upgrade: after a `file:`
   // link is repinned to a range, a plain `npm install` keeps the link. The
   // upgrade skill is the one place an upgrading agent reads.

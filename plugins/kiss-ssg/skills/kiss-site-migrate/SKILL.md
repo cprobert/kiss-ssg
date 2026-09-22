@@ -18,6 +18,12 @@ one, then continue.
 
 Work from the shipped recipes and the CHANGELOG, not from memory.
 
+When the installed version enforces folder safety, migrate a project-root
+`folders.src` (`./`) to a dedicated directory such as `./src`. Separate output
+from every configured content folder, including helpers and AIKB; aliases count
+as the same location. Follow the installed `llms.txt` Config rules and the
+setting named in the error. `cleanBuild: false` does not bypass the guard.
+
 ## Execution instructions
 
 ### 0. Read what changed between the two versions

@@ -182,7 +182,16 @@ await kiss.complete() // the folder is replaced here, in one step
 
 Until that line, the previous output is untouched — and if any page fails, `complete()` rejects, the staging folder is deleted and the old output is still there, byte for byte. Everything the build writes follows the staging folder: pages, copied assets, `sitemap.xml`, and a `.copyAssets()` you aimed explicitly at the build folder. The swap itself is two renames — your old output is renamed aside, the new build is renamed into place, and the old folder is then deleted — so there is no moment where the folder is half-copied, and a failed swap puts the old output straight back. A build killed mid-flight leaves a `.kiss-staging-…` or `.kiss-old-…` folder beside your build folder; the next build removes it and says so. Two things to know: only `complete()` promotes, so a chain that ends at `.generate()` swaps nothing in; and in `dev: true` it behaves as `true` and says so in one line, because the dev server has been serving the build folder since it started.
 
-Whatever `cleanBuild` is set to, kiss refuses to build into a folder that would swallow the site's own source — the build folder being the source folder, containing it, or being `'.'` or `'/'`. That is a floor, not a licence: if your build folder is built from a variable (`./handbooks/${cohort}`), validate it before you construct, because an empty value resolves to the parent folder.
+Folder safety is checked **before the constructor creates, empties, copies, or stages anything**, whatever `cleanBuild` is set to (including `false`):
+
+- `folders.src` must be a dedicated source folder, never the working project root (`.`, `./`, its absolute path, or an alias) or a filesystem root. Use `./src` or another dedicated directory.
+- `folders.build` must not be the working project root or a filesystem root, even when `src` is disabled or located elsewhere.
+- The build folder must not equal or contain any configured source folder: `src`, `pages`, `layouts`, `partials`, `models`, `controllers`, `assets`, `helpers`, or `aikb`.
+- The build folder must not sit inside any of those content folders either. `src` is the exception: `src/public` is allowed when it is separate from every individual content folder.
+
+The checks cover both the configured paths and their real filesystem locations, including symlinks, Windows junctions and case differences, and missing descendants below an existing alias. A folder set to `null` is disabled and excluded; an unreadable or dangling link is rejected rather than assumed safe. Errors name the conflicting folder setting. Move overlapping inputs and output into separate folders; changing `cleanBuild` does not bypass the guard.
+
+This protects configured source locations, not arbitrary files or custom code: validate variable output names (`./handbooks/${cohort}`) so an empty value cannot select an archive root. Pipeline commands and explicitly directed extra copies remain the site's responsibility.
 
 ### Building more than one site from one source tree
 

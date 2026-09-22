@@ -37,6 +37,11 @@ Read `node_modules/kiss-ssg/llms.txt` — it is the API cheat-sheet that ships i
 
 Per-module detail, if you need it, is in `node_modules/kiss-ssg/AIKB/`.
 
+Use a dedicated `folders.src`, normally `./src`, never the project root (`./`).
+Read the folder-safety rules in `## Config` before overriding paths: output must
+be separate from every configured content folder, including helpers and AIKB.
+The constructor rejects overlap before touching files, even with `cleanBuild: false`.
+
 ### 4. Copy an exemplar by shape
 
 `node_modules/kiss-ssg/examples/README.md` lists eleven runnable sites in two tiers. Pick the one whose _situation_ matches and copy its structure — its folder layout, its script shape, its controller pattern — never its content.

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import path from 'node:path'
 import {
   resolveConfig,
   resolveFolders,
@@ -32,6 +33,12 @@ describe('resolveFolders', () => {
     expect(f.src).toBe('./site')
     expect(f.models).toBe('./site/models')
     expect(f.build).toBe('out/dist')
+  })
+
+  it('preserves the UNC share prefix when normalising Windows folders', () => {
+    expect(resolveFolders({ src: '\\\\server\\share\\site\\' }).src).toBe(
+      '//server/share/site',
+    )
   })
 
   it('keeps a folder usable when it is only a slash', () => {
@@ -372,6 +379,53 @@ describe('the build folder may never contain the source folder', () => {
 
   it('leaves resolveFolders alone — the guard is a config-level refusal', () => {
     expect(resolveFolders({ build: '/' }).build).toBe('/')
+  })
+})
+
+describe('source and output boundaries', () => {
+  it.each(['.', './', path.resolve('.'), path.resolve('child', '..')])(
+    'rejects a source rooted at the working project: %s',
+    (src) => {
+      expect(() => resolveConfig({ folders: { src } })).toThrow(
+        /folders\.src.*project root/i,
+      )
+    },
+  )
+
+  it('rejects a filesystem root as source', () => {
+    expect(() =>
+      resolveConfig({ folders: { src: path.parse(process.cwd()).root } }),
+    ).toThrow(/folders\.src.*root/i)
+  })
+
+  it.each(['.', path.parse(process.cwd()).root])(
+    'protects a root output even with src disabled: %s',
+    (build) => {
+      expect(() => resolveConfig({ folders: { src: null, build } })).toThrow(
+        /build folder/i,
+      )
+    },
+  )
+
+  it('allows a separate output under src', () => {
+    expect(
+      resolveConfig({ folders: { build: './src/public' } }).folders.build,
+    ).toBe('./src/public')
+  })
+
+  it('compares path segments, not shared name prefixes', () => {
+    expect(
+      resolveConfig({
+        folders: { pages: './content', build: './content-output' },
+      }).folders.build,
+    ).toBe('./content-output')
+  })
+
+  it('ignores disabled source folders', () => {
+    expect(
+      resolveConfig({ folders: { pages: null, build: './src/pages' } }).folders
+        .pages,
+    ).toBeNull()
   })
 })
 
