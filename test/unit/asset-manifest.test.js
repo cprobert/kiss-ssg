@@ -60,6 +60,34 @@ describe('isHashable', () => {
 })
 
 describe('createAssetManifest', () => {
+  it('reconciles deletions and hashes without forgetting another copy', () => {
+    const manifest = createAssetManifest()
+    manifest.reconcile(
+      'first',
+      new Map([
+        ['a.css', 'a.old.css'],
+        ['shared.txt', 'shared.txt'],
+      ]),
+    )
+    manifest.reconcile(
+      'second',
+      new Map([
+        ['shared.txt', 'shared.txt'],
+        ['other.txt', 'other.txt'],
+      ]),
+    )
+    expect(
+      manifest.reconcile('first', new Map([['a.css', 'a.new.css']])),
+    ).toEqual(['a.old.css'])
+    expect(manifest.lookup('shared.txt')).toBe('shared.txt')
+    expect(manifest.lookup('other.txt')).toBe('other.txt')
+    expect(manifest.reconcile('first', new Map())).toEqual(['a.new.css'])
+    expect(manifest.lookup('a.css')).toBeNull()
+    expect(manifest.reconcile('second', new Map()).sort()).toEqual([
+      'other.txt',
+      'shared.txt',
+    ])
+  })
   it('looks up what was recorded, and null for anything else', () => {
     const manifest = createAssetManifest()
     manifest.record('css/site.css', 'css/site.a1b2c3d4.css')

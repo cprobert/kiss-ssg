@@ -45,6 +45,130 @@ const recordingLogger = () => {
 }
 
 let site, kiss
+
+describe('watch filesystem reconciliation', () => {
+  const start = async (config = {}) => {
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger, ...config })
+      .scan()
+      .generate()
+    await kiss.complete()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+  }
+
+  it('copies new assets, removes renamed/deleted outputs and preserves unrelated files', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE',
+      'src/assets/old.txt': 'old',
+    })
+    await start()
+    await site.touch('public/keep.txt', 'keep')
+    await site.touch('src/assets/new.txt', 'new')
+    await waitFor(async () => await site.exists('public/new.txt'))
+    await fs.rename(
+      `${site.src}/assets/old.txt`,
+      `${site.src}/assets/moved.txt`,
+    )
+    await waitFor(
+      async () =>
+        (await site.exists('public/moved.txt')) &&
+        !(await site.exists('public/old.txt')),
+    )
+    await fs.remove(`${site.src}/assets`)
+    await waitFor(
+      async () =>
+        !(await site.exists('public/new.txt')) &&
+        !(await site.exists('public/moved.txt')),
+    )
+    expect(await site.read('public/index.html')).toBe('PAGE')
+    expect(await site.read('public/keep.txt')).toBe('keep')
+    await site.touch('src/assets/restored.txt', 'restored')
+    await waitFor(async () => await site.exists('public/restored.txt'))
+    expect(await site.read('public/restored.txt')).toBe('restored')
+  })
+
+  it('renders deliberately emptied partials and newly added empty pages', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'a{{> p}}b',
+      'src/partials/p.hbs': 'OLD',
+    })
+    await start()
+    await site.touch('src/partials/p.hbs', '')
+    await waitFor(async () => (await site.read('public/index.html')) === 'ab')
+    await site.touch('src/pages/empty.hbs', '')
+    await waitFor(async () => await site.exists('public/empty.html'))
+    expect(await site.read('public/empty.html')).toBe('')
+  })
+
+  it('watches configured content outside src', async () => {
+    site = await makeSite({ 'views/index.hbs': 'one' })
+    await start({ folders: { ...site.folders, pages: `${site.root}/views` } })
+    await site.touch('views/index.hbs', 'two')
+    await waitFor(async () => (await site.read('public/index.html')) === 'two')
+  })
+
+  it('removes deleted assets without deleting a page that replaced an asset output', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE',
+      'src/assets/index.html': 'ASSET',
+      'src/assets/index.json': 'ASSET MODEL',
+      'src/assets/gone.txt': 'gone',
+    })
+    await start({ dev: true })
+    const model = await site.read('public/index.json')
+    await fs.remove(`${site.src}/assets/index.html`)
+    await fs.remove(`${site.src}/assets/index.json`)
+    await fs.remove(`${site.src}/assets/gone.txt`)
+    await waitFor(async () => !(await site.exists('public/gone.txt')))
+    await rebuildSettled()
+    expect(await site.read('public/index.html')).toContain('PAGE')
+    expect(await site.read('public/index.json')).toBe(model)
+  })
+
+  it('settles rapid asset and page edits together', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'one {{asset "style.css"}}',
+      'src/assets/style.css': 'a { color: red }',
+    })
+    await start({ assets: { hash: true } })
+    await Promise.all([
+      site.touch('src/assets/style.css', 'a { color: blue }'),
+      site.touch('src/pages/index.hbs', 'two {{asset "style.css"}}'),
+    ])
+    await waitFor(async () => {
+      const name = kiss._assetManifest.lookup('style.css')
+      return (
+        (await site.read('public/index.html')) === `two ${name}` &&
+        (await site.read(`public/${name}`)).includes('blue')
+      )
+    })
+    await rebuildSettled()
+    expect(
+      (await fs.readdir(site.build)).filter((p) => p.endsWith('.css')),
+    ).toHaveLength(1)
+  })
+
+  it('updates hashed Sass references after a partial edit and forgets deleted stylesheets', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{asset "main.css"}}',
+      'src/assets/main.scss': '@use "theme"; body { color: theme.$color; }',
+      'src/assets/_theme.scss': '$color: red;',
+    })
+    await start({ dev: true, assets: { hash: true } })
+    const before = await site.read('public/index.html')
+    const oldAsset = kiss._assetManifest.lookup('main.css')
+    await site.touch('src/assets/_theme.scss', '$color: blue;')
+    await waitFor(async () => (await site.read('public/index.html')) !== before)
+    expect(await site.exists(`public/${oldAsset}`)).toBe(false)
+    await fs.remove(`${site.src}/assets/main.scss`)
+    await waitFor(() => kiss._assetManifest.lookup('main.css') === null)
+    await rebuildSettled()
+    expect(
+      (await fs.readdir(site.build)).filter((p) => p.endsWith('.css')),
+    ).toEqual([])
+    expect(await site.read('public/index.html')).toContain('main.css')
+  })
+})
 afterEach(async () => {
   if (kiss) await kiss.close()
   if (site) await site.cleanup()

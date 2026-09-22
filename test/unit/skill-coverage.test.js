@@ -13,6 +13,11 @@ const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
   {
+    feature: 'watcher reconciliation and intentional empty saves',
+    pattern: /asset additions and deletions[\s\S]*intentionally empty saves/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
     feature: 'folder safety — dedicated source and no cleanup-policy bypass',
     pattern: /dedicated[\s\S]*cleanBuild: false/,
     skills: [
@@ -231,6 +236,13 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: 'intentionally empty saves are delivered after a bounded grace period',
+    patterns: [
+      /on an empty file is dropped, not forwarded/i,
+      /a file deliberately left empty is not seen until it gains content/i,
+    ],
+  },
   {
     why: 'kiss loads config.folders.helpers itself; a build script that also calls the registrar runs it twice',
     patterns: [

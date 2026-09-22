@@ -358,6 +358,8 @@ declare class Kiss {
     /** @private */
     private _pendingTargets;
     /** @private */
+    private _pendingAssets;
+    /** @private */
     private _closing;
     /** @private */
     private _sitemapRequest;
