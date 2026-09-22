@@ -46,6 +46,190 @@ const recordingLogger = () => {
 
 let site, kiss
 
+describe('review regressions', () => {
+  const start = async (files, config = {}, setup = (k) => k) => {
+    site = await makeSite({ 'src/pages/index.hbs': 'PAGE', ...files })
+    kiss = setup(
+      new Kiss({ folders: site.folders, logger: silentLogger, ...config })
+        .scan()
+        .generate(),
+    )
+    await kiss.complete()
+  }
+  const event = async (file, type = 'change') => {
+    kiss._pendingAssets.set(`${site.src}/assets/${file}`, type)
+    await kiss._runRebuildQueue()
+    await rebuildSettled()
+  }
+
+  it('keeps image edits on the asset fast path with hashing enabled', async () => {
+    await start({ 'src/assets/logo.png': 'image' }, { assets: { hash: true } })
+    const render = vi.spyOn(kiss, '_rebuild')
+    const reload = vi.spyOn(kiss, '_reload')
+    await site.touch('src/assets/logo.png', 'new image')
+    await event('logo.png')
+    expect(await site.read('public/logo.png')).toBe('new image')
+    expect(render).not.toHaveBeenCalled()
+    expect(reload.mock.calls.at(-1)[0].replace(/\\/g, '/')).toBe(
+      `${site.build}/logo.png`,
+    )
+  })
+
+  it('swaps a single changed Sass output without reloading the page', async () => {
+    await start({ 'src/assets/main.scss': 'body { color: red; }' })
+    const reload = vi.spyOn(kiss, '_reload')
+    await site.touch('src/assets/main.scss', 'body { color: blue; }')
+    await event('main.scss')
+    expect(await site.read('public/main.css')).toContain('blue')
+    expect(reload.mock.calls.at(-1)[0].replace(/\\/g, '/')).toBe(
+      `${site.build}/main.css`,
+    )
+  })
+
+  it('preserves generated robots after deleting its static asset and warns about the collision', async () => {
+    const warn = vi.fn()
+    await start(
+      { 'src/assets/robots.txt': 'STATIC' },
+      { logger: { ...silentLogger, warn } },
+      (k) => k.robots(),
+    )
+    const generated = await site.read('public/robots.txt')
+    expect(generated).toContain('User-agent:')
+    await fs.unlink(`${site.src}/assets/robots.txt`)
+    await event('robots.txt', 'unlink')
+    expect(await site.exists('public/robots.txt')).toBe(true)
+    expect(await site.read('public/robots.txt')).toBe(generated)
+    expect(warn.mock.calls.flat().join(' ')).toMatch(/collision.*robots\.txt/i)
+  })
+
+  it('does not overwrite generated outputs when a conflicting asset is edited again', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    const generated = await site.read('public/robots.txt')
+    await site.touch('src/assets/robots.txt', 'CHANGED STATIC')
+    await event('robots.txt')
+    expect(await site.read('public/robots.txt')).toBe(generated)
+  })
+
+  it('preserves all registered auxiliary outputs when static copies disappear', async () => {
+    const outputs = [
+      'sitemap.xml',
+      'llms.txt',
+      'news.xml',
+      'redirects.json',
+      'custom/routes.txt',
+      'dependency-graph.json',
+      'debug.json',
+    ]
+    const files = Object.fromEntries(
+      outputs.map((file) => [`src/assets/${file}`, 'STATIC']),
+    )
+    await start(
+      files,
+      {
+        dev: true,
+        verbose: true,
+        siteUrl: 'https://example.test',
+        redirects: {
+          format: () => ({ file: 'custom/routes.txt', contents: 'CUSTOM' }),
+        },
+      },
+      (k) =>
+        k
+          .page({ view: 'OTHER', slug: 'other', aliases: ['/old'] })
+          .sitemap()
+          .llms({ title: 'Site', summary: 'Summary' })
+          .feed({ title: 'News', filename: 'news.xml' }),
+    )
+    kiss.viewStats()
+    await waitFor(
+      async () => (await site.read('public/debug.json')) !== 'STATIC',
+    )
+    const before = await Promise.all(
+      outputs.map((file) => site.read(`public/${file}`)),
+    )
+    for (const body of before) expect(body).not.toBe('STATIC')
+    await fs.remove(`${site.src}/assets`)
+    await event('', 'unlinkDir')
+    for (const [index, file] of outputs.entries())
+      expect(await site.read(`public/${file}`)).toBe(before[index])
+  })
+
+  it('re-renders hashed references when a directory disappears, but not when emitted URLs stay the same', async () => {
+    await start(
+      { 'src/assets/css/main.css': 'body { color: red; }' },
+      { assets: { hash: true } },
+    )
+    const render = vi.spyOn(kiss, '_rebuild')
+    await event('css/main.css')
+    expect(render).not.toHaveBeenCalled()
+    await fs.remove(`${site.src}/assets/css`)
+    await event('css', 'unlinkDir')
+    expect(render).toHaveBeenCalledTimes(1)
+    expect(kiss._assetManifest.lookup('css/main.css')).toBeNull()
+  })
+
+  it('uses a full refresh when a Sass partial changes multiple outputs', async () => {
+    await start({
+      'src/assets/_theme.scss': '$color: red;',
+      'src/assets/a.scss': '@use "theme"; a { color: theme.$color; }',
+      'src/assets/b.scss': '@use "theme"; b { color: theme.$color; }',
+    })
+    const reload = vi.spyOn(kiss, '_reload')
+    await site.touch('src/assets/_theme.scss', '$color: blue;')
+    await event('_theme.scss')
+    expect(await site.read('public/a.css')).toContain('blue')
+    expect(await site.read('public/b.css')).toContain('blue')
+    expect(reload).toHaveBeenCalledWith('/')
+  })
+
+  it('does not claim an auxiliary file whose writer skipped it', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) =>
+      k.robots({ overwrite: false }),
+    )
+    await fs.unlink(`${site.src}/assets/robots.txt`)
+    await event('robots.txt', 'unlink')
+    expect(await site.exists('public/robots.txt')).toBe(false)
+  })
+
+  it('releases removed page ownership so a later asset can use that path', async () => {
+    await start({ 'src/pages/old.hbs': 'OLD' })
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await kiss._requestReplay()
+    await rebuildSettled()
+    await site.touch('src/assets/old.html', 'ASSET')
+    await event('old.html', 'add')
+    expect(await site.read('public/old.html')).toBe('ASSET')
+  })
+
+  it('preserves auxiliary ownership across atomic promotion', async () => {
+    await start(
+      { 'src/assets/robots.txt': 'STATIC' },
+      { cleanBuild: 'atomic' },
+      (k) => k.robots(),
+    )
+    const generated = await site.read('public/robots.txt')
+    await site.touch('src/assets/robots.txt', 'CHANGED STATIC')
+    await event('robots.txt')
+    expect(await site.read('public/robots.txt')).toBe(generated)
+  })
+
+  it('protects a build report written into the output folder', async () => {
+    try {
+      await start({ 'src/assets/report.jsonl': '' }, {}, (k) => {
+        vi.stubEnv('KISS_REPORT', `${site.build}/report.jsonl`)
+        return k
+      })
+      const report = await site.read('public/report.jsonl')
+      expect(JSON.parse(report).ok).toBe(true)
+      await fs.unlink(`${site.src}/assets/report.jsonl`)
+      await event('report.jsonl', 'unlink')
+      expect(await site.read('public/report.jsonl')).toBe(report)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+})
+
 describe('watch filesystem reconciliation', () => {
   const start = async (config = {}) => {
     kiss = new Kiss({ folders: site.folders, logger: silentLogger, ...config })

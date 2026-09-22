@@ -359,6 +359,8 @@ declare class Kiss {
     private _pendingTargets;
     /** @private */
     private _pendingAssets;
+    /** @private @type {OutputRegistry} */
+    private _outputs;
     /** @private */
     private _closing;
     /** @private */

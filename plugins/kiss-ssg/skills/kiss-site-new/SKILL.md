@@ -42,6 +42,8 @@ Read the folder-safety rules in `## Config` before overriding paths: output must
 be separate from every configured content folder, including helpers and AIKB.
 The constructor rejects overlap before touching files, even with `cleanBuild: false`.
 
+Treat an output collision warning as a configuration issue: remove the duplicate static file or generated writer deliberately. Generated output takes precedence over later asset copies; cleanup respects the last successful writer.
+
 During development, use the installed watcher contract: asset additions and deletions are reconciled, configured content outside `src` is watched, and intentionally empty saves take effect after a short grace period. Restart when changing the build script or a cached imported module.
 
 ### 4. Copy an exemplar by shape

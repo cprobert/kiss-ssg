@@ -49,6 +49,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Assets + Sass                         | `lib/assets.js`              | `AIKB/assets.md`              |
 | Asset pipeline (external tools)       | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
 | Asset manifest + cache busting        | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Output ownership                      | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
 | Sass binding                          | `lib/sass.js`                | `AIKB/sass.md`                |
 | Model resolution                      | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
 | URL-model fetch policy                | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |

@@ -13,6 +13,11 @@ const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
   {
+    feature: 'output collision ownership',
+    pattern: /output collision warning[\s\S]*last successful writer/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
     feature: 'watcher reconciliation and intentional empty saves',
     pattern: /asset additions and deletions[\s\S]*intentionally empty saves/,
     skills: [skill('kiss-ssg', 'kiss-site-new')],
@@ -236,6 +241,13 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: 'reloads follow changed emitted URLs and reconcile is the only manifest writer',
+    patterns: [
+      /Hashed assets re-render all pages even for Sass partial edits/,
+      /The `record` primitive remains available for direct callers/,
+    ],
+  },
   {
     why: 'intentionally empty saves are delivered after a bounded grace period',
     patterns: [

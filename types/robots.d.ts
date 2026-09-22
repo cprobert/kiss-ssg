@@ -117,14 +117,16 @@ export function renderRobotsTxt(agents?: {
  *
  * @param {Object} deps
  * @param {any} deps.config the resolved config — `folders.build`, `siteUrl`, `links.trailingSlash`
+ * @param {import('./output-registry.js').OutputRegistry} [deps.outputs]
  * @param {any} deps.logger
  * @param {RobotsOptions} [deps.options]
  * @param {boolean} [deps.hasSitemap] whether `.sitemap()` was called on this build
  * @param {boolean} [deps.overwrite] default `true`
  * @returns {Promise<RobotsWriteResult>}
  */
-export function writeRobots({ config, logger, options, hasSitemap, overwrite, }: {
+export function writeRobots({ config, logger, options, outputs, hasSitemap, overwrite, }: {
     config: any;
+    outputs?: import("./output-registry.js").OutputRegistry;
     logger: any;
     options?: RobotsOptions;
     hasSitemap?: boolean;

@@ -28,7 +28,7 @@ The orchestrator and public API. `Kiss` owns config, a per-instance Handlebars e
 
 ## Depends on
 
-`fs-extra`, `node:path`, `handlebars`, `handlebars-layouts`, `remarkable`; and `./utils.js`, `./logger.js`, `./config.js`, `./build-report.js`, `./aikb.js`, `./handlebars-helpers.js`, `./partials.js`, `./dependency-graph.js`, `./assets.js`, `./asset-manifest.js`, `./pipeline.js`, `./model-resolver.js`, `./controller-resolver.js`, `./sitemap.js`, `./llms.js`, `./feed.js`, `./links.js`, `./redirects.js`, `./check.js` (`readReportsFile`, for the redirects baseline), `./kiss-page.js`, `./dev-server.js`, `./watcher.js`.
+`fs-extra`, `node:path`, `handlebars`, `handlebars-layouts`, `remarkable`; and `./utils.js`, `./logger.js`, `./config.js`, `./build-report.js`, `./aikb.js`, `./handlebars-helpers.js`, `./partials.js`, `./dependency-graph.js`, `./assets.js`, `./asset-manifest.js`, `./output-registry.js`, `./pipeline.js`, `./model-resolver.js`, `./controller-resolver.js`, `./sitemap.js`, `./llms.js`, `./feed.js`, `./links.js`, `./redirects.js`, `./check.js` (`readReportsFile`, for the redirects baseline), `./kiss-page.js`, `./dev-server.js`, `./watcher.js`.
 
 ## Depended on by
 
@@ -36,7 +36,7 @@ Nothing in `lib/` — it is the entry point (`package.json`'s `main`). `bin/kiss
 
 ## Non-obvious behavior
 
-- Asset watcher events join `_pendingAssets` in the rebuild queue. Each batch waits for initial rendering, copies/reconciles assets, then performs its replay or scoped render. Hashed assets re-render all pages even for Sass partial edits; a single ordinary non-Sass asset edit retains targeted live reload, while structural/Sass changes use a whole-page refresh. Reload follows completion, and `close()` drains the active batch. Page output paths are protected during asset cleanup.
+- Asset watcher events join `_pendingAssets` in the rebuild queue. Each batch waits for initial rendering, copies/reconciles assets, then performs its replay or scoped render. With hashing enabled, all pages re-render only when the manifest's CSS/JS URL revision changes; image/font edits and identical emitted URLs keep the fast path. One changed Sass output gets a stylesheet refresh; multiple outputs get a full refresh. Reload follows completion, and `close()` drains the active batch. The shared output registry protects generated files at write and cleanup time, including custom auxiliary filenames, releases removed page ownership, and follows atomic promotion.
 
 - `_preparePage` takes `extLess` from **the page's** resolved config (`options.config?.extensionLess`), not the instance's, falling back to the instance when a page has none. `page()` merges the global config with the page's overrides before the page is prepared, so this is the resolved value for that page. It matters because a site that is `extensionLess` everywhere still owes its host one literal `404.html` — Netlify and Cloudflare Pages look for that exact filename and do not fall back to `404/index.html`. Before this, an `options.config` override naming `extensionLess` was accepted and silently ignored, which is the worst shape of bug: the config is documented as per-page, the page took it, and the output path came out the other way. Covered by `test/integration/canonical.test.js` § per-page extensionLess.
 

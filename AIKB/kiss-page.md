@@ -32,6 +32,8 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
 
 ## Non-obvious behavior
 
+- The optional `outputs` dependency registers the HTML and development JSON sibling separately after each successful write, with kind `page`. Asset reconciliation then respects ownership without inspecting the page stack.
+
 - **The render carries the page's identity in Handlebars' data frame**: `template(this.options, { data: { kissPage: this.buildTo } })`. Handlebars copies the frame into every nested partial invocation and handlebars-layouts passes `{ data }` through `extend`/`embed`, so a recording partial (`AIKB/partials.md`) reads `options.data.kissPage` and attributes itself to the right page whatever the render order — there is no "current page" variable and no assumption that pages render one at a time. Before rendering, the page calls `graph.clearPage(buildTo)` so its edge set is exactly what this render reached. `graph` is optional (`deps.graph`); without it the render is byte-identical to before — the extra `data` only adds a key to a frame Handlebars creates anyway.
 - In dev mode the `.json` sibling gains `partials`: the names this page recorded, from `graph.usesOf(buildTo)` — the per-page view of `dependency-graph.json`.
 - `_title` is computed from the _default_ slug (`'index'`) in the constructor, before any page-specific slug is set — so a page without an explicit title or model title falls back to `'Index'`, not a title derived from its own slug. This is a preserved v1 quirk, not a bug to fix.

@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import fs from 'node:fs'
 import path from 'node:path'
 import {
   resolveConfig,
@@ -6,6 +7,21 @@ import {
   foldersToEnsure,
   DEFAULT_FOLDERS,
 } from '../../lib/config.js'
+
+it('names a working-directory inspection failure without blaming folders.src', () => {
+  const realpath = vi
+    .spyOn(fs.realpathSync, 'native')
+    .mockImplementationOnce(() => {
+      throw Object.assign(new Error('denied'), { code: 'EACCES' })
+    })
+  try {
+    expect(() => resolveConfig({ folders: { src: null } })).toThrow(
+      /Cannot safely resolve working directory/,
+    )
+  } finally {
+    realpath.mockRestore()
+  }
+})
 
 describe('resolveFolders', () => {
   it('returns the defaults when nothing is given', () => {

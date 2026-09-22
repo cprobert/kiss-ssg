@@ -4,12 +4,13 @@ export class KissPage {
     /**
      * @param {string} view a `.hbs` filename under `pagesDir`, or inline template
      *   source
-     * @param {{ hbs?: any, logger?: any, graph?: import('./dependency-graph.js').DependencyGraph }} [deps]
+     * @param {{ hbs?: any, logger?: any, graph?: import('./dependency-graph.js').DependencyGraph, outputs?: import('./output-registry.js').OutputRegistry }} [deps]
      */
-    constructor(view: string, { hbs, logger, graph }?: {
+    constructor(view: string, { hbs, logger, graph, outputs }?: {
         hbs?: any;
         logger?: any;
         graph?: import("./dependency-graph.js").DependencyGraph;
+        outputs?: import("./output-registry.js").OutputRegistry;
     });
     _path: string;
     _slug: string;
@@ -32,6 +33,7 @@ export class KissPage {
     hbs: any;
     logger: any;
     graph: import("./dependency-graph.js").DependencyGraph;
+    outputs: import("./output-registry.js").OutputRegistry;
     set path(path: any);
     set slug(slug: string);
     get slug(): string;

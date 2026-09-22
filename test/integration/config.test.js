@@ -130,9 +130,19 @@ describe('filesystem aliases', () => {
     await linkDirectory(process.cwd(), alias)
     // No recursive snapshot through this alias: it points at the actual repo.
     const { resolveConfig } = await import('../../lib/config.js')
-    expect(() =>
-      resolveConfig({ folders: isolatedFolders({ src: alias }) }),
-    ).toThrow(/folders\.src.*project root/i)
+    try {
+      expect(() =>
+        resolveConfig({ folders: isolatedFolders({ src: alias }) }),
+      ).toThrow(/folders\.src.*project root/i)
+    } finally {
+      // Remove the live-repository link before any recursive fixture cleanup.
+      await fs.unlink(alias).catch((error) => {
+        // If unlink fails, retain the fixture rather than recursively clean
+        // a tree that still contains a link to the live checkout.
+        site = null
+        throw error
+      })
+    }
   })
 
   it.each(['build', 'pages'])('protects an existing %s alias', async (key) => {

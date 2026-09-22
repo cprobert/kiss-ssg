@@ -36,6 +36,32 @@ describe('createWatcher', () => {
     },
   })
 
+  it('logs asset events once after settling and names deletions accurately', async () => {
+    site = await makeSite({ 'src/assets/file.txt': 'old' })
+    const { calls, wiring } = spy()
+    const messages = []
+    handle = createWatcher({
+      config: folders(site),
+      entry: null,
+      ...wiring,
+      logger: {
+        ...silentLogger,
+        info: (...args) => messages.push(args.join(' ')),
+      },
+    })
+    await handle.ready
+    await site.touch('src/assets/file.txt', '')
+    await new Promise((r) => setTimeout(r, 120))
+    expect(messages).toEqual([])
+    await site.touch('src/assets/file.txt', 'new')
+    await waitFor(() => calls.assets === 1)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toMatch(/^Asset change:/)
+    await fs.unlink(`${site.src}/assets/file.txt`)
+    await waitFor(() => calls.assets === 2)
+    expect(messages[1]).toMatch(/^Asset unlink:/)
+  })
+
   it('forwards a src change to onChange, an entry change to rebuildSite, and an asset change to assetsChanged', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',

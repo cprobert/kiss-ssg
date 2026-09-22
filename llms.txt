@@ -56,7 +56,7 @@ each one is checkable, and all five came from watching an agent convert a real s
 
 ## Development file changes
 
-The development watcher handles asset additions, edits, renames and deletions, removing only outputs tracked for those copies. It watches configured content folders outside `src` too, excludes build output, and applies intentionally empty saves after a short grace period. Asset updates and page rebuilds share a serial queue; hashed asset changes refresh page references, including changes through Sass partials. Changes to the build script or cached imported modules still require the documented restart.
+The development watcher handles asset additions, edits, renames and deletions, removing only outputs tracked for those copies. It watches configured content folders outside `src` too, excludes build output, and applies intentionally empty saves after a short grace period. Asset updates and page rebuilds share a serial queue. Pages re-render when emitted CSS/JS URLs change under hashing, including directory deletions; image/font edits keep the fast path. One changed Sass output swaps its stylesheet, while multiple affected outputs reload the page. Writers register output ownership after successful writes: collisions warn, and generated pages and auxiliary outputs take precedence over later asset copies and cleanup. Changes to the build script or cached imported modules still require the documented restart.
 
 ## API
 
