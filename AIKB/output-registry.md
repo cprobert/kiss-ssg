@@ -11,7 +11,7 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 - `canWriteAsset(file, owner)` — warns about conflicts and refuses an asset overwrite of a generated output or page.
 - `owns(file, owner)`, `owner(file)`, `kind(file)` — query current ownership.
 - `release(file, owner)` — releases only that producer's claim after removal.
-- `assetOwners(file)` and `hasProducer(owner)` retain visibility of asset producers after a shadowing page is released; `retain(owner, paths)` retires them when their sources disappear. This lifecycle is pinned by a unit test.
+- `assetOwners(file)` and `hasProducer(owner)` retain visibility of asset producers after a shadowing page is released. This lifecycle is pinned by a unit test.
 - `relocate(from, to)` — moves claims and collision paths with atomic build promotion.
 - `beginPages()` retires page producers at replay start, keeping their last-written ownership until replacement or orphan cleanup.
 - `retain(owner, paths)` retires asset producers absent from the copy's current attempted outputs, including refused writes.
@@ -40,4 +40,5 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 - Registration sites pass absolute filesystem paths; relative display paths belong to the report. Releasing a producer removes it from collision records even when another producer owns the bytes. Warnings involving a released producer may fire again if that conflict returns. Staging disposal preserves the final observations for its report.
 
 - `producers` stores one record per observed output; single-producer records are normal and are not collisions. `snapshot()` filters to two or more active producers. `assetOwners(file)` identifies asset copies to restore after the sweep releases a page; `hasProducer(owner)` keeps restoration registrations only while outputs remain registered.
+- **This ledger is the hard road, chosen on purpose.** Jekyll wipes the destination per build, Eleventy never cleans, Hugo renders its dev build to memory; kiss tracks ownership so a watch replay re-copies nothing it does not have to, and every defect the 2026-09 review rounds found was a transition this ledger got wrong. The comparison, kiss's split across `cleanBuild` modes, and the fallback design (a replay that stages and swaps like one-shot `'atomic'`) are in `AIKB/design.md` § Prior art. Read that before extending the lifecycle.
 - Case folding is Windows-only. Case aliases on case-insensitive macOS volumes are not currently unified by this registry; blindly folding all Darwin paths would be wrong on case-sensitive volumes. Use consistent path spelling. Volume-aware identity is deferred, not claimed as verified coverage.

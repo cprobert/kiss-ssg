@@ -51,6 +51,69 @@ produce, and every defect a real conversion found in 2.4.0 was an instance of it
 overwritten, a dev build written into the published folder, a watch rebuild that reported success and
 served stale output, an AIKB lint noisy about something correct (the same failure inverted).
 
+## Prior art: the same three problems in other generators
+
+Recorded 2026-09-23, after six review rounds on `codex/protect-source-folders` had all landed on the same
+three problems: two producers writing one output path, stale output after a rebuild, and a live-reload
+message with no recipient. Every static site generator meets them. Checked against Jekyll, Eleventy, Hugo
+and Astro (whose dev server is Vite), from their current docs and issue trackers; the sources are listed at
+the end of this section so the check can be repeated rather than re-derived.
+
+**Two producers, one path.** Everyone warns or fails; nobody restores the loser afterwards.
+
+| Generator | Behaviour                                                                                                                                      |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Jekyll    | warns `Conflict: The following destination is shared by multiple files`, extended to static files in 2020; the build continues                 |
+| Eleventy  | throws `DuplicatePermalinkOutputError`; the build fails (an open issue asks for a config key to soften it)                                     |
+| Astro     | `prerenderConflictBehavior`: `warn` (default), `error` or `ignore`; the highest-priority route wins                                            |
+| Hugo      | silent overwrite unless `--printPathWarnings` is passed                                                                                        |
+| kiss      | warns, names both producers, and puts the collision on the report as `outputs.collisions`; advisory, no config key (`AIKB/output-registry.md`) |
+
+kiss's is Jekyll's shape plus the report. Astro's configurable warn-or-error is the nicest version and is a
+one-key addition if a site ever wants a collision to fail the build.
+
+**Stale output after a rebuild.** The others avoid the problem rather than solve it.
+
+- Jekyll wipes the destination on every build ("files or folders that are not created by your site will be
+  removed"), with `keep_files` for what other tools put there. Its incremental mode is still labelled
+  experimental and "may break site generation".
+- Eleventy never cleans: a deleted source stays in `_site` and the docs say delete the folder. A community
+  plugin keeps an inventory of "files previously created but no longer", which is what kiss's asset
+  reconcile does.
+- Hugo's dev server can render to memory (`--renderToMemory`), so there is no stale file on disk to clean;
+  production has `--cleanDestinationDir`.
+
+kiss does three different things, and the split is the point: a one-shot `cleanBuild: true` empties the
+folder in the constructor (Jekyll's wipe), `'atomic'` stages and swaps (Hugo's "nothing stale can exist"
+without the memory), and `false` never cleans (Eleventy's default). A **watch replay** is the exception: it
+does not wipe, it sweeps by ownership — the output registry for pages and generated files, the manifest
+inventory for assets. That is the hard road, and it is where the six rounds went: every defect was a
+transition the ledger got wrong (a Sass error deleting the last-good stylesheet, a rename recorded as a
+collision, an asset shadowed by a deleted page never restored). It was chosen so a replay re-copies nothing
+it does not have to. **The fallback, if the lifecycle keeps costing more than it saves:** a replay already
+re-renders every page, so a replay that stages and swaps, exactly as one-shot `'atomic'` does, would delete
+the sweep, the page side of the registry and the restore logic, at the price of re-copying assets per
+replay (Hugo's `--forceSyncStatic` is that trade, named). Not adopted; recorded so the next person weighing
+it starts from here.
+
+**A reload with no recipient.** livereload-js reconnects with a one-second backoff and replays nothing, so a
+refresh broadcast in the ~200 ms between a reload's DOM-ready and the new socket is lost (measured; see
+`AIKB/upstream.md`). Vite's client reloads the page whenever its socket reconnects, which covers the lost
+message at the price of the opposite complaint, needless reloads. Eleventy's dev server has its own
+WebSocket server and updates the DOM by diffing, so the page rarely reloads and the window rarely opens. kiss
+keeps the documented window: the client is livereload-js's, not ours, and a human saving files cannot hit
+it.
+
+**The watcher.** Chokidar is the Node norm. Eleventy uses it outright; Vite still uses chokidar 3.6 for files
+outside its module graph, with a WSL2 caveat that needs polling. kiss is on chokidar 5.0.0, the latest, and
+none of the three problems above is the watcher's.
+
+Sources, as checked on 2026-09-23: Jekyll PR jekyll/jekyll#8459 and `docs/configuration/options` and
+`docs/configuration/incremental-regeneration`; Eleventy issue 11ty/eleventy#3001, discussion #2294,
+`docs/dev-server`, and `kentaroi/eleventy-plugin-clean`; Hugo `commands/hugo_server` and `commands/hugo`;
+Astro `reference/configuration-reference` (`prerenderConflictBehavior`); Vite `config/server-options`
+(`server.watch`) and issue vitejs/vite#5675; the livereload-js README.
+
 ## The documentation rule
 
 **Any behaviour whose consequence is a wrong artefact rather than an error states that consequence in the
