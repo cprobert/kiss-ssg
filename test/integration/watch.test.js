@@ -63,6 +63,19 @@ describe('review regressions', () => {
     await rebuildSettled()
   }
 
+  it('round five: links are rechecked after a restoration copies newly added assets', async () => {
+    await start({ 'src/pages/old.hbs': 'PAGE', 'extra/old.html': 'ASSET' })
+    kiss.copyAssets(`${site.root}/extra`, site.build)
+    await kiss._assetQueue
+    await site.touch('extra/new.txt', 'NEW')
+    await site.touch('src/pages/index.hbs', '<a href="/new.txt">New</a>')
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await kiss._requestReplay()
+    expect(await site.read('public/old.html')).toBe('ASSET')
+    expect(await site.read('public/new.txt')).toBe('NEW')
+    expect(kiss.report().links).toEqual({ checked: 1, broken: [] })
+  })
+
   it('round four: a failed replay still restores a refused asset and refreshes the report', async () => {
     await start({ 'src/pages/old.hbs': 'OLD' })
     await fs.unlink(`${site.src}/pages/old.hbs`)

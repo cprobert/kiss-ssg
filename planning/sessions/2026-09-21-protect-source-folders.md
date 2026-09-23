@@ -40,6 +40,23 @@ and documentation of the stricter contract.
 
 ### Amendments
 
+- **2026-09-23 Amendment (round five):** Address the confirmed stale link
+  verdict after replay restoration and add direct coverage for registry asset
+  producer retention. The integration fixture failed at `321693c`: restoration
+  wrote a newly added `new.txt`, but the final report still called its link
+  broken. Invalidating `_links` before rechecking makes that fixture pass;
+  dev-mode link checking remains disabled. All 103 watcher integration and
+  registry unit tests pass. Fable independently reports the full suite, fleet,
+  performance and browser checks passing at `321693c`; those are supplied
+  results, not reruns in this pass.
+  Findings 3 (display paths/ids), 7 (watch anchors) and 8 (report mapper style)
+  remain follow-up work; findings 4 and 5 stay with the deferred registry
+  refactor. Finding 6's extra restoration copy is retained: an earlier copy
+  can have been refused before the page claim was released, so skipping it
+  because that owner already ran would lose the asset. Finding 2 requires no
+  correction. This is a focused correction, not a claim to close every row.
+  Separate operator edits remain untouched. No branch-close or push.
+
 - **2026-09-22 — Round-two corrective pass.** Absorb Fable's eight findings on
   this branch: advisory collision reports and distinct Sass refusals; retained
   Sass fingerprints without the prior-file read; truthful orphan logs; one

@@ -11,6 +11,7 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 - `canWriteAsset(file, owner)` — warns about conflicts and refuses an asset overwrite of a generated output or page.
 - `owns(file, owner)`, `owner(file)`, `kind(file)` — query current ownership.
 - `release(file, owner)` — releases only that producer's claim after removal.
+- `assetOwners(file)` and `hasProducer(owner)` retain visibility of asset producers after a shadowing page is released; `retain(owner, paths)` retires them when their sources disappear. This lifecycle is pinned by a unit test.
 - `relocate(from, to)` — moves claims and collision paths with atomic build promotion.
 - `beginPages()` retires page producers at replay start, keeping their last-written ownership until replacement or orphan cleanup.
 - `retain(owner, paths)` retires asset producers absent from the copy's current attempted outputs, including refused writes.
