@@ -3,6 +3,39 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.6.0 — 2026-09-23
+
+### Source folders are protected before a build touches disk
+
+Unsafe folder layouts now throw at construction, even with `cleanBuild: false`.
+Use a dedicated source directory, normally `./src`: neither source nor output
+may be the working project root or a filesystem root. Output cannot contain
+configured source folders or sit inside a content folder, including helpers
+and AIKB. Symlinks and junctions count as their actual locations. A separate
+`src/public` remains valid.
+
+**Upgrade note:** previously accepted unsafe layouts must be separated before
+building. This is a compatibility restriction; 2.6.0 is the maintainer's explicit
+version choice rather than a claim that every 2.5 layout remains accepted.
+
+### Development rebuilds follow additions, deletions and empty saves
+
+New content is discovered, removed content and assets lose their stale output,
+and clearing a partial updates the preview after a bounded empty-save delay.
+Configured content outside `src` is watched too. Asset saves retain fast reloads:
+one changed Sass output can swap in place, while hashed CSS/JS URL changes
+re-render pages. A Sass error retains the last-good stylesheet while reporting
+the build failure.
+
+Cleanup respects output ownership. Generated files survive asset reconciliation,
+and deleting a page restores an asset it had shadowed. `report().outputs.collisions`
+lists conflicting producers and their winner; these findings stay advisory.
+Non-dev watch replays refresh link findings after output cleanup.
+
+Build performance at 2,000 pages remains comparable to main after removing the
+repeated path-resolution cost exposed during verification. Atomic builds remain
+one-shot only; non-dev atomic watch recovery is unsupported.
+
 ## 2.5.1 — 2026-09-21
 
 What the fleet upgrade to 2.5.0 taught. Seven sites moved onto the published

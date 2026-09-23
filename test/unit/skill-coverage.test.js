@@ -254,6 +254,14 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: 'non-dev whole-site watch replays check links after cleanup',
+    patterns: [
+      /in dev, on a watch rebuild, and under/i,
+      /on a dev build, on a watch rebuild and under/i,
+      /and therefore on every watch rebuild:/i,
+    ],
+  },
+  {
     patterns: [
       /They accumulate during an instance/,
       /These observations accumulate for the instance/,

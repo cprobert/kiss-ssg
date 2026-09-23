@@ -6,7 +6,6 @@ Watches the entry script, configured content folders, assets and helpers. Source
 
 ## Public interface
 
-- `isInside(dir)` — resolved, segment-aware containment using `path.relative`, including Windows case semantics.
 - `createWatcher({ config, entry = process.argv[1], rebuildSite, onChange, assetsChanged, helpersChanged, logger })` → `{ ready, close }`.
   - `ready` — `Promise` that resolves once every underlying chokidar watcher has fired its own `'ready'` event.
   - `close()` — `async`; closes every watcher. Required for the Node process to be able to exit (chokidar watchers otherwise keep the event loop alive).
@@ -14,7 +13,7 @@ Watches the entry script, configured content folders, assets and helpers. Source
 
 ## Depends on
 
-`chokidar` (required on first `createWatcher()`), `node:fs` (`statSync`, for the empty-file check); `node:path` (containment); `./utils.js` (`posixPath`).
+`chokidar` (required on first `createWatcher()`), `node:fs` (`statSync`, for the empty-file check); `node:path` (containment); `./utils.js` (`posixPath`, `isInside`).
 
 ## Depended on by
 
