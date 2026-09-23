@@ -189,6 +189,26 @@ describe('filesystem aliases', () => {
     )
   })
 
+  it('protects a nested source link when the project parent is also aliased', async () => {
+    site = await makeSite({ 'content/sentinel.txt': 'irreplaceable source' })
+    await fs.ensureDir(`${site.root}/project/public`)
+    await linkDirectory(`${site.root}/project`, `${site.root}/project-alias`)
+    await linkDirectory(
+      `${site.root}/content`,
+      `${site.root}/project/public/pages`,
+    )
+    await linkDirectory(
+      `${site.root}/project/public`,
+      `${site.root}/project/output-alias`,
+    )
+    await expectPreserved(
+      isolatedFolders({
+        pages: `${site.root}/project-alias/public/pages/nested`,
+        build: `${site.root}/project-alias/output-alias`,
+      }),
+    )
+  })
+
   it.skipIf(process.platform !== 'win32')(
     'protects case-different paths on Windows',
     async () => {

@@ -341,3 +341,13 @@ anchor the relative-build fixture inside its temporary site. No engine behavior
 changes. The targeted containment/watch suite passes (138 tests). The old CI
 run reported four Windows test failures but only exposed the last in the gate
 tail, so remote green is required before considering this follow-up complete.
+
+CI at `5d05fec` confirmed Ubuntu green and exposed the remaining Windows
+source-alias failure. This was an engine defect: a project/temp parent alias
+plus a source junction inside an aliased build folder defeated comparison of
+only lexical and fully resolved paths. A new isolated nested-junction fixture
+reproduced the missed rejection locally before the fix. `folderLocations` now
+retains intermediate resolved parent-prefix spellings, protecting the junction
+entry as well as its final target. Paths with identical lexical/real locations
+skip that extra walk. All 90 config unit/integration tests pass afterwards.
+This corrects an original source-preservation criterion, not a new review scope.
