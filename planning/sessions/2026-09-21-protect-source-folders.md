@@ -1,7 +1,7 @@
 ---
 branch: codex/protect-source-folders
 base: main
-status: open
+status: closed
 opened: 2026-09-21
 ---
 
@@ -227,3 +227,104 @@ and documentation of the stricter contract.
   Decision: corrective pass complete, ready for review. No branch-close or push.
 
 <!-- Reflection and final verdict are reserved for branch-close. -->
+
+## Reflect — what the session was
+
+The planned source-folder guard expanded, with explicit Amendments, into watch
+reconciliation and output ownership. The original risk was destructive cleanup;
+the expanded risk was a long-running instance retaining the wrong state after a
+save, deletion, failed compile or rename. Six Fable reviews exposed transitions
+that one-shot builds could not exercise. A separate 2,000-page benchmark exposed
+the duplicate-output getter cost that the small fleet sites could not reveal.
+
+The final corrective commit is `cb1ae11`: a real non-dev watcher now rescans links
+after orphan removal and asset restoration. Its regression failed first, then
+passed alongside the other watcher/link cases (106 tests). `b78d7d7` prepares
+2.6.0, the operator's explicit choice despite the guard restricting previously
+accepted layouts. No package publication is part of this close.
+
+Fable's prior-art note in `AIKB/design.md` informed the stopping decision:
+ownership tracking buys selective rebuilds at the cost of lifecycle complexity.
+Staging every replay is a recorded alternative, not another change on this branch.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering** and **Verification & ownership** distinguish this session.
+The operator chose the first safety constraint, relayed independent reviews,
+required reproduction tests to fail before fixes, and kept the work on one branch.
+Later, the operator stopped the review cycle once the remaining findings were
+pre-existing limitations or deferred refinements, and explicitly selected 2.6.0.
+Those are product and scope decisions, not acceptance of an agent's summary.
+
+**Iteration discipline** improved the result but revealed a cost: corrective
+passes themselves introduced ownership and report-state defects. Codex's earlier
+"all addressed" wording was too broad. The large-site benchmark and transition
+tests were more discriminating than another green one-shot fleet run. The final
+pass deliberately fixed the general link-sweep case without starting round seven.
+
+**Harness leverage:** shared repository skills, dated Amendments, Fable's separate
+verification, real-browser checks and fresh-main benchmarks formed a reproducible
+workflow. The pulse-time eyeball is closed on supplied Fable evidence: thirteen
+browser checks, including footer clearing/restoration, a Sass swap preserving
+page state and page edits. This is not a claim that the operator or Codex drove
+that browser. The fleet and browser results were not rerun for the final
+non-dev link correction; the final local gates were.
+
+The intended supervisory checkpoints were held through explicit review and
+triage. Competency level: **Agentic engineering lead**, evidenced by orchestrating
+independent verification and durable guidance, then making the stopping and
+version decisions. Implementation ownership still rests with Codex: repeated
+review rounds were needed because its initial lifecycle model was incomplete.
+
+## Feedback — recommendations for next session
+
+- **Codex — test transitions before broadening ownership logic.** Write the
+  valid/error/recovery/deletion and producer-takeover matrix before changing a
+  long-lived registry; static end-state tests cannot establish its lifecycle.
+- **Both — benchmark at the scale that exercises the algorithm.** Retain a
+  2,000-page scan/fanout comparison alongside small real-site checks whenever
+  per-page preparation changes; the fleet did not expose quadratic getter cost.
+- **Operator — keep the explicit stopping rule.** Separate introduced regressions
+  from old limitations and design preferences, then close once the agreed
+  evidence passes instead of commissioning another unrestricted review.
+- **Process — distinguish reported evidence from reruns.** Record the tested head,
+  platform and scenario with each claim; preserve failing-before-fix evidence and
+  label peer-supplied browser/fleet results as supplied.
+
+## Verdict — did we achieve the objective?
+
+**Met, with authorised scope expansion.** The original guard and the amended
+watcher contract are implemented and documented.
+
+- [x] Reject project-root source paths, including aliases: config unit and
+      integration regressions pass in the final gate run.
+- [x] Reject output equal to or containing configured sources, and output inside
+      individual content folders: preservation tests pass; separate `src/public`
+      remains allowed.
+- [x] Check actual filesystem locations, Windows case differences and missing
+      descendants of existing aliases: the corresponding config tests pass.
+- [x] Guard every `cleanBuild` mode before filesystem mutation: sentinel and
+      directory-preservation tests pass.
+- [x] Observe regressions fail before fixes: the Pulse log records the earlier
+      red/green runs; the final real-watcher test also failed before correction.
+- [x] Update config guidance and retain unrelated suggestions in `TODO.md`.
+      The watcher suggestion was subsequently accepted and implemented through
+      its Amendment rather than silently dropped from the original non-goals.
+
+**Close evidence (2026-09-23):** `npm run gates` passed test, lint, typecheck,
+format (86 changed files) and pack (244 files). Secrets regex scan found no
+key-shaped strings. Coverage gate found the new registry's unit test. Docs sweep
+corrected the non-dev link-check wording and removed the stale watcher export
+listing; all three new wording guards were observed failing on the old docs.
+Corpse-collector's three candidates were intentional absence/history notes, not
+live broken references. Bench guidance and the accumulated reviews are committed
+together in `9f66562`. No further semantic review ran, per the operator's stop
+decision. Supplied browser verification was accepted at the pulse and close.
+
+**Deferred:** registry representation/consolidation, replay copy display paths and
+IDs, watcher anchoring across a script's mid-run `chdir`, macOS case aliases and
+report-mapper simplification. Extra restoration copies remain intentional because
+earlier copies can be refused before page claims are released. Non-dev atomic
+watch recovery is documented as unsupported; one-shot atomic builds remain the
+publication path. The livereload reconnect window remains an upstream constraint.
+No release, tag or merge is authorised by this close.
