@@ -40,6 +40,17 @@ and documentation of the stricter contract.
 
 ### Amendments
 
+- **2026-09-23 Amendment (final correction and close):** The operator chose
+  2.6.0 explicitly despite the stricter folder guard rejecting previously
+  accepted layouts. Generalise the round-five link rescan to every completed
+  replay sweep, with the preliminary scan quiet and the final verdict logged
+  once. The real non-dev watcher regression failed before the fix; all 106
+  watcher and link integration tests pass afterwards. The restoration regression
+  now also enters through the actual watcher. The registry doc correction was
+  included in Fable's prior-art commit `b4c485a`. Read that comparison and retain
+  the current ownership design; no redesign and no further review round.
+  Close includes the operator's bench guidance and accumulated review records.
+
 - **2026-09-23 Amendment (round five):** Address the confirmed stale link
   verdict after replay restoration and add direct coverage for registry asset
   producer retention. The integration fixture failed at `321693c`: restoration

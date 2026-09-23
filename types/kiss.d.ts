@@ -577,7 +577,10 @@ declare class Kiss {
     private _refreshReport;
     /** @private */
     private _buildAikb;
-    /** @private */
+    /**
+     * @private
+     * @param {{ quiet?: boolean }} [options]
+     */
     private _checkLinks;
     /** @private */
     private _writeRedirects;

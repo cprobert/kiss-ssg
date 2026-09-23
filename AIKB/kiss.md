@@ -36,7 +36,7 @@ Nothing in `lib/` — it is the entry point (`package.json`'s `main`). `bin/kiss
 
 ## Non-obvious behavior
 
-- Replay restoration invalidates the settled link-check cache before rechecking: a restored copy can bring in newly added files that were absent during `complete()`. The refreshed report uses the final asset inventory. Dev mode and `links.check: false` still skip link checking.
+- Replay invalidates the settled link-check cache after orphan removal and asset restoration: removed pages must no longer resolve, and restored copies can bring in newly added files. The rebuild queue's preliminary scan is quiet; the final scan logs its verdict and refreshes the report. Dev mode and `links.check: false` still skip link checking.
 
 - Asset watcher events join `_pendingAssets` in the rebuild queue. Each batch waits for initial rendering, copies/reconciles assets, then performs its replay or scoped render. With hashing enabled, all pages re-render only when the manifest's CSS/JS URL revision changes; image/font edits and identical emitted URLs keep the fast path. One changed Sass output gets a stylesheet refresh; multiple outputs get a full refresh. Reload follows completion, and `close()` drains the active batch. The shared output registry protects generated files at write and cleanup time, including custom auxiliary filenames, releases removed page ownership, and follows atomic promotion.
 

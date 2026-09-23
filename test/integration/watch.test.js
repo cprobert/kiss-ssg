@@ -69,11 +69,46 @@ describe('review regressions', () => {
     await kiss._assetQueue
     await site.touch('extra/new.txt', 'NEW')
     await site.touch('src/pages/index.hbs', '<a href="/new.txt">New</a>')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
     await fs.unlink(`${site.src}/pages/old.hbs`)
-    await kiss._requestReplay()
+    await waitFor(async () => await site.exists('public/new.txt'))
+    await rebuildSettled()
     expect(await site.read('public/old.html')).toBe('ASSET')
     expect(await site.read('public/new.txt')).toBe('NEW')
     expect(kiss.report().links).toEqual({ checked: 1, broken: [] })
+  })
+
+  it('round six: a non-dev watcher checks links after deleting stale page output', async () => {
+    const logger = { ...silentLogger, info: vi.fn(), notice: vi.fn() }
+    await start(
+      {
+        'src/pages/index.hbs': '<a href="/old.html">Old</a>',
+        'src/pages/old.hbs': 'OLD',
+      },
+      { logger },
+    )
+    expect(kiss.report().links.broken).toEqual([])
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    logger.info.mockClear()
+    logger.notice.mockClear()
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await waitFor(async () => !(await site.exists('public/old.html')))
+    await rebuildSettled()
+    expect(kiss.report().links.broken).toEqual([
+      { page: `${site.build}/index.html`, href: '/old.html' },
+    ])
+    expect(
+      logger.info.mock.calls
+        .flat()
+        .filter((s) => String(s).startsWith('Links:')),
+    ).toEqual([])
+    expect(
+      logger.notice.mock.calls
+        .flat()
+        .filter((s) => String(s).startsWith('broken link:')),
+    ).toHaveLength(1)
   })
 
   it('round four: a failed replay still restores a refused asset and refreshes the report', async () => {
