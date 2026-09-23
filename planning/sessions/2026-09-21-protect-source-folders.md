@@ -328,3 +328,16 @@ earlier copies can be refused before page claims are released. Non-dev atomic
 watch recovery is documented as unsupported; one-shot atomic builds remain the
 publication path. The livereload reconnect window remains an upstream constraint.
 No release, tag or merge is authorised by this close.
+
+### CI follow-up — 2026-09-23
+
+The repeated `/branch-close` request exposed failing CI on PR #21 despite the
+local gates passing. Ubuntu's log showed an incorrect test expectation that a
+backslash is a separator on POSIX. Windows' truncated failure tail showed the
+collision-report fixture manufacturing a `./C:/...` path when the checkout and
+temporary site are on different drives; `path.win32.relative` reproduced that
+fixture spelling locally. Correct the tests to use native separators and to
+anchor the relative-build fixture inside its temporary site. No engine behavior
+changes. The targeted containment/watch suite passes (138 tests). The old CI
+run reported four Windows test failures but only exposed the last in the gate
+tail, so remote green is required before considering this follow-up complete.

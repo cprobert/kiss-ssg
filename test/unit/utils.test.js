@@ -299,9 +299,13 @@ describe('isInside', () => {
     )
   })
 
-  it('normalises the leading ./ and Windows separators on both sides', () => {
+  it('normalises the leading ./', () => {
     expect(inAssets('./src/assets/x.txt')).toBe(true)
-    expect(inAssets('src\\assets\\x.txt')).toBe(true)
-    expect(isInside('src\\assets')('src/assets/x.txt')).toBe(true)
+  })
+
+  it('uses native separator semantics on both sides', () => {
+    const windows = process.platform === 'win32'
+    expect(inAssets('src\\assets\\x.txt')).toBe(windows)
+    expect(isInside('src\\assets')('src/assets/x.txt')).toBe(windows)
   })
 })

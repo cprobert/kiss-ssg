@@ -321,8 +321,11 @@ describe('review regressions', () => {
         'src/assets/robots.txt': 'STATIC',
         'src/pages/index.hbs': 'PAGE',
       })
-      const build =
-        './' + path.relative(process.cwd(), site.build).replaceAll('\\', '/')
+      const cwd = process.cwd()
+      // CI may check out on D: with temp sites on C:. Keep this deliberately
+      // relative-path fixture on its own volume rather than inventing ./C:/...
+      process.chdir(site.root)
+      const build = './public'
       if (mode === 'check') vi.stubEnv('KISS_CHECK', '1')
       try {
         kiss = new Kiss({
@@ -341,6 +344,7 @@ describe('review regressions', () => {
           false,
         )
       } finally {
+        process.chdir(cwd)
         vi.unstubAllEnvs()
       }
     },
