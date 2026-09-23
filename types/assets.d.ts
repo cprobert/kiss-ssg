@@ -1,24 +1,32 @@
 /**
- * @typedef {{ file: string, error?: Error, skipped?: boolean }} SassResult
+ * @typedef {{ file: string, error?: Error, skipped?: boolean, refused?: boolean, changed?: boolean, fingerprint?: string }} SassResult
  *
  * @param {string} sourceDir
  * @param {string} targetDir
- * @param {{ config: any, logger: any }} deps
+ * @param {{ config: any, logger: any, outputs?: import('./output-registry.js').OutputRegistry, owner?: string }} deps
  * @returns {Promise<SassResult>[]} one per stylesheet it saw — compiled,
  * failed, or skipped as a partial
  */
-export function compileSassFiles(sourceDir: string, targetDir: string, { config, logger }: {
+export function compileSassFiles(sourceDir: string, targetDir: string, { config, logger, outputs, owner }: {
     config: any;
     logger: any;
+    outputs?: import("./output-registry.js").OutputRegistry;
+    owner?: string;
 }): Promise<SassResult>[];
-export function copyAssets(sourceDir: any, targetDir: any, { config, logger, manifest, display, }: {
+export function copyAssets(sourceDir: any, targetDir: any, { config, logger, manifest, outputs, owner, display, }: {
     config: any;
     logger: any;
     manifest?: {
-        record(urlPath: any, emittedPath: any): any;
+        reconcileSass(owner: string, current: Map<string, string>): Set<string>;
+        readonly urlRevision: number;
+        hasOwner(owner: any): boolean;
+        previous(owner: string, name: string): string | null;
+        reconcile(owner: any, current: any): any[];
         lookup(urlPath: any): any;
         toObject(): any;
     };
+    outputs?: any;
+    owner?: any;
     display?: {
         source?: string;
         target?: string;
@@ -27,20 +35,27 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
     id: string;
     data: any;
     sass?: undefined;
+    refused?: undefined;
     error?: undefined;
 } | {
     id: string;
     data: string;
     sass: SassResult[];
+    refused: string[];
     error?: undefined;
 } | {
     id: string;
     data: any;
     error: any;
     sass: SassResult[];
+    refused?: undefined;
 }>;
+export function assetCopyOwner(sourceDir: string, targetDir: string): string;
 export type SassResult = {
     file: string;
     error?: Error;
     skipped?: boolean;
+    refused?: boolean;
+    changed?: boolean;
+    fingerprint?: string;
 };

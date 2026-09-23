@@ -4,13 +4,21 @@ export class KissPage {
     /**
      * @param {string} view a `.hbs` filename under `pagesDir`, or inline template
      *   source
-     * @param {{ hbs?: any, logger?: any, graph?: import('./dependency-graph.js').DependencyGraph }} [deps]
+     * @param {{ hbs?: any, logger?: any, directory?: string, graph?: import('./dependency-graph.js').DependencyGraph, outputs?: import('./output-registry.js').OutputRegistry }} [deps]
      */
-    constructor(view: string, { hbs, logger, graph }?: {
+    constructor(view: string, { hbs, logger, graph, outputs, directory }?: {
         hbs?: any;
         logger?: any;
+        directory?: string;
         graph?: import("./dependency-graph.js").DependencyGraph;
+        outputs?: import("./output-registry.js").OutputRegistry;
     });
+    /** @private @type {string} */
+    private _directory;
+    /** @private @type {string|null} */
+    private _outputPath;
+    /** @private @type {string} */
+    private _buildDir;
     _path: string;
     _slug: string;
     _ext: string;
@@ -25,19 +33,23 @@ export class KissPage {
     hash: string | null;
     /** @type {string[]|null} */
     links: string[] | null;
-    buildDir: string;
+    set buildDir(value: string);
+    get buildDir(): string;
     pagesDir: string;
     /** @type {number} */
     livereloadPort: number;
     hbs: any;
     logger: any;
     graph: import("./dependency-graph.js").DependencyGraph;
+    outputs: import("./output-registry.js").OutputRegistry;
     set path(path: any);
     set slug(slug: string);
     get slug(): string;
     set ext(extension: any);
     set extLess(val: any);
     get buildTo(): string;
+    get outputPath(): string;
+    get outputOwner(): string;
     pageURL(): string;
     set isDev(dev: any);
     set debug(dev: any);

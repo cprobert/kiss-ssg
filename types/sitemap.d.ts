@@ -5,9 +5,10 @@ export function buildSitemapEntries(stack: any, { siteUrl, buildDir, now, traili
     trailingSlash?: boolean;
 }): any;
 export function renderSitemapXml(urls: any): string;
-export function writeSitemap(stack: any, { config, logger, overwrite }: {
+export function writeSitemap(stack: any, { config, logger, outputs, overwrite }: {
     config: any;
     logger: any;
+    outputs?: any;
     overwrite?: boolean;
 }): Promise<{
     status: string;

@@ -1,3 +1,5 @@
+import path from 'node:path'
+import { isInside } from '../../lib/utils.js'
 import { describe, it, expect, afterEach } from 'vitest'
 import utils from '../../lib/utils.js'
 import { makeSite } from '../helpers/site.js'
@@ -267,5 +269,43 @@ describe('toAbsoluteUrl / servedPathFor under links.trailingSlash', () => {
     for (const value of ['courses/index.html', '/courses/', 'courses'])
       expect(utils.toURLKey(value, { trailingSlash: false })).toBe('courses')
     expect(utils.toURLKey('index.html', { trailingSlash: false })).toBe('')
+  })
+})
+
+describe('isInside', () => {
+  const inAssets = isInside('./src/assets')
+
+  it('matches the directory itself and everything under it', () => {
+    expect(inAssets('src/assets')).toBe(true)
+    expect(inAssets('src/assets/css/site.scss')).toBe(true)
+  })
+
+  it('does not match a sibling that merely shares the prefix', () => {
+    expect(inAssets('src/assets-backup/x.txt')).toBe(false)
+    expect(inAssets('src/pages/index.hbs')).toBe(false)
+  })
+
+  // The same absolute-versus-relative seam as the helpers entry, third time on
+  // this branch. `isInside` normalised separators and resolved nothing, so a
+  // site with a relative `src` and an absolute helpers path INSIDE it failed
+  // the exclusion and got both dispatches — a whole-site replay racing the
+  // reload, over one registry.
+  it('matches a relative directory against an absolute path and vice versa', () => {
+    const abs = path.resolve('src/assets')
+    expect(isInside('./src/assets')(`${abs}/x.txt`)).toBe(true)
+    expect(isInside(abs)('src/assets/x.txt')).toBe(true)
+    expect(isInside('./src/assets')(path.resolve('src/pages/i.hbs'))).toBe(
+      false,
+    )
+  })
+
+  it('normalises the leading ./', () => {
+    expect(inAssets('./src/assets/x.txt')).toBe(true)
+  })
+
+  it('uses native separator semantics on both sides', () => {
+    const windows = process.platform === 'win32'
+    expect(inAssets('src\\assets\\x.txt')).toBe(windows)
+    expect(isInside('src\\assets')('src/assets/x.txt')).toBe(windows)
   })
 })

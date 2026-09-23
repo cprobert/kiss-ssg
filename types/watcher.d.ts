@@ -10,4 +10,3 @@ export function createWatcher({ config, entry, rebuildSite, onChange, assetsChan
     ready: Promise<any[]>;
     close: () => Promise<void>;
 };
-export function isInside(dir: any): (p: any) => boolean;

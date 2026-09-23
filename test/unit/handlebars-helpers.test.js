@@ -457,8 +457,7 @@ describe('lookup', () => {
 describe('asset', () => {
   const manifestOf = (entries) => {
     const manifest = createAssetManifest()
-    for (const [key, value] of Object.entries(entries))
-      manifest.record(key, value)
+    manifest.reconcile('fixture', new Map(Object.entries(entries)))
     return manifest
   }
   const plain = { 'css/site.css': 'css/site.css' }

@@ -49,6 +49,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Assets + Sass                         | `lib/assets.js`              | `AIKB/assets.md`              |
 | Asset pipeline (external tools)       | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
 | Asset manifest + cache busting        | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Output ownership                      | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
 | Sass binding                          | `lib/sass.js`                | `AIKB/sass.md`                |
 | Model resolution                      | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
 | URL-model fetch policy                | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
@@ -100,33 +101,9 @@ node scripts/tag-release.mjs   # tag the current commit `v<package.json version>
                                # tag. Wired to npm's `postpublish`, so `npm publish` already ran
                                # it — the tag names the commit a version shipped from, which is
                                # also the commit a plugin install of that version came from
-npm run bench                  # benchmark harness: 6 scenarios over a generated fixture,
-                               # fresh child process per iteration, median of N runs
-                               # --pages=50,500 --runs=5 --scenario=scan,watch
-                               # scenarios: startup, scan, models, fanout, watch, styled
-                               # (`styled` reproduces a real site's shape: a shared stylesheet
-                               # compiled by the {{sass}} helper on every page)
-                               # --json=<f> records; --baseline=<f> compares against a record.
-                               # A committed record under planning/benchmarks/ is history, not a
-                               # baseline: numbers from another machine or another day compare
-                               # with nothing. Record the base branch here first, then compare.
-                               # --site=<path> times a REAL kiss-ssg site instead of the fixture:
-                               # runs its own build script, in its own cwd, with KISS_REPORT set;
-                               # nothing installed, linked or edited. Prints which kiss-ssg it
-                               # resolved, since two runs on different copies are not comparable.
-                               # --entry=<script> when package.json's build script isn't a bare `node x.js`
-                               # --dev="<script> [args]" adds a WATCH reading to every --site: starts
-                               # that dev entry, then edits a page, a partial and a model in turn and
-                               # times each save to its live reload. The partial row re-registers the
-                               # partials and re-renders the pages that rendered it (every page for a
-                               # layout-wide partial, when partial/model is the registration-vs-render
-                               # split). --livereload-port / --dev-port say
-                               # where that dev process listens (35729 / 3001); --partial / --model /
-                               # --page name the files to touch, else the first candidate under
-                               # src/partials, src/models and src/pages. --partial should be one a page
-                               # renders: one nothing has rendered yet re-renders every page (the
-                               # fallback, not a scoped save), and one whose pages have all dropped it
-                               # re-renders nothing, broadcasts no live reload, and the reading times out
+npm run bench            # benchmark harness: 6 scenarios over a generated fixture, or a REAL
+                         # site with --site/--dev. Scenarios, flags, baseline discipline and the
+                         # watch-reading protocol: the `/bench` skill (.claude/skills/bench/SKILL.md)
 node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
 npm run eg1 … eg11       # run an example (examples/<n>-<name>/router.js, run from its own
                          # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding

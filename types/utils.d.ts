@@ -85,6 +85,7 @@ export function servedPathFor(pageURL: unknown, { trailingSlash }?: {
  * @returns {string} MD5 hex digest of the string, or of its JSON if it is not one
  */
 export function hashId(input: unknown): string;
+export function isInside(directory: string): (file: string) => boolean;
 export default utils;
 declare namespace utils {
     export { trimLines };

@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import { copyAssets } from '../../lib/assets.js'
+import { OutputRegistry } from '../../lib/output-registry.js'
 import { contentHash, createAssetManifest } from '../../lib/asset-manifest.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -15,6 +16,77 @@ const deps = {
 }
 
 describe('copyAssets', () => {
+  it('round four: a source disappearing between glob and stat does not fail the copy', async () => {
+    site = await makeSite({ 'a/file.txt': 'HEALTHY', 'a/gone.txt': 'GONE' })
+    const stat = fs.stat.bind(fs)
+    const spy = vi.spyOn(fs, 'stat').mockImplementation(async (file) => {
+      if (file === `${site.root}/a/gone.txt`)
+        throw Object.assign(new Error('gone'), { code: 'ENOENT' })
+      return stat(file)
+    })
+    try {
+      const manifest = createAssetManifest()
+      const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+        ...deps,
+        manifest,
+      })
+      expect(result.error).toBeUndefined()
+      expect(manifest.lookup('file.txt')).toBe('file.txt')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+  it('reports a refused Sass write separately from an intentional partial skip', async () => {
+    site = await makeSite({
+      'a/site.scss': 'b { color: red }',
+      'a/_partial.scss': '',
+    })
+    const outputs = new OutputRegistry(silentLogger)
+    outputs.claim(`${site.root}/out/site.css`, 'page', 'page')
+    const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      outputs,
+    })
+    expect(result.sass).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ file: 'site.scss', refused: true }),
+        expect.objectContaining({ file: '_partial.scss', skipped: true }),
+      ]),
+    )
+    expect(
+      result.sass.find((item) => item.file === 'site.scss').skipped,
+    ).toBeUndefined()
+    expect(result.refused).toEqual(['site.scss'])
+  })
+
+  it.each([false, true])(
+    'compares Sass fingerprints across copies with hash=%s',
+    async (hash) => {
+      site = await makeSite({ 'a/site.scss': 'b { color: red }' })
+      const options = {
+        ...deps,
+        manifest: createAssetManifest(),
+        config: { ...deps.config, assets: { hash } },
+      }
+      const copy = () =>
+        copyAssets(`${site.root}/a`, `${site.root}/out`, options)
+      const read = vi.spyOn(fs, 'readFile')
+      try {
+        expect((await copy()).sass[0].changed).toBe(true)
+        expect((await copy()).sass[0].changed).toBe(false)
+        await site.touch('a/site.scss', 'b { color: blue }')
+        expect((await copy()).sass[0].changed).toBe(true)
+        // Only the hashing post-pass reads emitted CSS, once per copy.
+        expect(
+          read.mock.calls.filter(([file]) =>
+            String(file).endsWith('/out/site.css'),
+          ),
+        ).toHaveLength(hash ? 3 : 0)
+      } finally {
+        read.mockRestore()
+      }
+    },
+  )
   it('compiles sass and copies the rest', async () => {
     site = await makeSite({
       'a/css/x.scss': '$c: red; b { color: $c }',

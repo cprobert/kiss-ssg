@@ -47,6 +47,8 @@ npm run types                   # regenerate types/ from the JSDoc in lib/
 
 ## Gotchas
 
+- Relative-path fixtures must anchor their working directory inside the temporary site: Windows CI can put the checkout and OS temp directory on different drives, where `path.relative` returns an absolute drive path. Prefixing that with `./` does not make it relative. Containment tests use native separator semantics; on POSIX a backslash is a filename character, not a separator.
+
 - **`examples.test.js`'s byte-identical AIKB assertions self-heal, so a report-shape change fails exactly once and then passes.** Examples 9 and 11 are recorded **in place**, in the committed `examples/*/AIKB/` folders, and the test asserts the files are unchanged before and after. `last-build.json` is the whole `BuildReport`, so adding any report key rewrites both files: the first run fails and leaves them matching, and every run after it is green. Read a green re-run as evidence of nothing — the first run already healed it. The correct response is never to re-run: it is `npx kiss-ssg aikb router.js` in `examples/9-migrated-from-v1/` and `examples/11-blog/`, then commit the re-recorded files as part of the change. (Found the hard way twice on 2026-09-16, once per report key added; the first instance was committed by a `git add -A` before anyone understood what it was.)
 
 - `npm run lint`'s `@eslint/js` (v10) requires Node ≥22.13, even though the package's own runtime floor (`package.json`'s `engines.node`) is 22.12 — on Node 22.12.x exactly, `npm test` passes but `npm run lint` may refuse to run.

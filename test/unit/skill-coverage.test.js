@@ -12,6 +12,36 @@ const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
+  {
+    feature: 'current output collision lifecycle',
+    pattern:
+      /active producers[\s\S]*resolved collision disappears[\s\S]*configured build-folder spelling/,
+    skills: [skill('kiss-ssg', 'kiss-build-check')],
+  },
+  {
+    feature: 'advisory structured output collisions',
+    pattern:
+      /outputs\.collisions[\s\S]*advisory[\s\S]*do not change the exit code/,
+    skills: [skill('kiss-ssg', 'kiss-build-check')],
+  },
+  {
+    feature: 'output collision ownership',
+    pattern: /output collision warning[\s\S]*last successful writer/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'watcher reconciliation and intentional empty saves',
+    pattern: /asset additions and deletions[\s\S]*intentionally empty saves/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'folder safety — dedicated source and no cleanup-policy bypass',
+    pattern: /dedicated[\s\S]*cleanBuild: false/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-migrate'),
+    ],
+  },
   // Found on six of six sites during the 2.5.0 fleet upgrade: after a `file:`
   // link is repinned to a range, a plain `npm install` keeps the link. The
   // upgrade skill is the one place an upgrading agent reads.
@@ -223,6 +253,43 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: 'non-dev whole-site watch replays check links after cleanup',
+    patterns: [
+      /in dev, on a watch rebuild, and under/i,
+      /on a dev build, on a watch rebuild and under/i,
+      /and therefore on every watch rebuild:/i,
+    ],
+  },
+  {
+    patterns: [
+      /They accumulate during an instance/,
+      /These observations accumulate for the instance/,
+    ],
+    why: 'Resolved output collisions leave the current report',
+  },
+
+  {
+    why: 'Sass changes compare retained fingerprints, not a plain file hashing has moved',
+    patterns: [
+      /comparing the previous compiled CSS bytes with the new bytes/,
+      /This comparison reads CSS only, not every image or font/,
+    ],
+  },
+  {
+    why: 'reloads follow changed emitted URLs and reconcile is the only manifest writer',
+    patterns: [
+      /Hashed assets re-render all pages even for Sass partial edits/,
+      /The `record` primitive remains available for direct callers/,
+    ],
+  },
+  {
+    why: 'intentionally empty saves are delivered after a bounded grace period',
+    patterns: [
+      /on an empty file is dropped, not forwarded/i,
+      /a file deliberately left empty is not seen until it gains content/i,
+    ],
+  },
   {
     why: 'kiss loads config.folders.helpers itself; a build script that also calls the registrar runs it twice',
     patterns: [

@@ -294,6 +294,7 @@ export function redirectFindings({ rules, currentPages, previousPages, buildDir,
  * @param {{ buildTo: string, page: { options: Record<string, any> } }[]} stack
  * @param {Object} deps
  * @param {any} deps.config the resolved config — `folders.build`, `links.trailingSlash`, `redirects.format`
+ * @param {import('./output-registry.js').OutputRegistry} [deps.outputs]
  * @param {any} deps.logger
  * @param {boolean} [deps.overwrite] default `true`
  * @returns {Promise<RedirectWriteResult>}
@@ -303,8 +304,9 @@ export function writeRedirects(stack: {
     page: {
         options: Record<string, any>;
     };
-}[], { config, logger, overwrite }: {
+}[], { config, logger, outputs, overwrite }: {
     config: any;
+    outputs?: import("./output-registry.js").OutputRegistry;
     logger: any;
     overwrite?: boolean;
 }): Promise<RedirectWriteResult>;

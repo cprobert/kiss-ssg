@@ -1,8 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { createWatcher, isInside } from '../../lib/watcher.js'
+import { createWatcher } from '../../lib/watcher.js'
 import { silentLogger } from '../../lib/logger.js'
 import fs from 'fs-extra'
-import path from 'node:path'
 import { makeSite, waitFor } from '../helpers/site.js'
 
 let site, handle
@@ -34,6 +33,32 @@ describe('createWatcher', () => {
       pages: `${site.src}/pages`,
       assets: `${site.src}/assets`,
     },
+  })
+
+  it('logs asset events once after settling and names deletions accurately', async () => {
+    site = await makeSite({ 'src/assets/file.txt': 'old' })
+    const { calls, wiring } = spy()
+    const messages = []
+    handle = createWatcher({
+      config: folders(site),
+      entry: null,
+      ...wiring,
+      logger: {
+        ...silentLogger,
+        info: (...args) => messages.push(args.join(' ')),
+      },
+    })
+    await handle.ready
+    await site.touch('src/assets/file.txt', '')
+    await new Promise((r) => setTimeout(r, 120))
+    expect(messages).toEqual([])
+    await site.touch('src/assets/file.txt', 'new')
+    await waitFor(() => calls.assets === 1)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toMatch(/^Asset change:/)
+    await fs.unlink(`${site.src}/assets/file.txt`)
+    await waitFor(() => calls.assets === 2)
+    expect(messages[1]).toMatch(/^Asset unlink:/)
   })
 
   it('forwards a src change to onChange, an entry change to rebuildSite, and an asset change to assetsChanged', async () => {
@@ -134,11 +159,8 @@ describe('createWatcher', () => {
 
   // The torn state a 30ms settle can still expose: a truncate-then-write save
   // whose gap outlasts the threshold arrives as a `change` on an empty file.
-  // Rather than widen the threshold back out, the empty event is dropped —
-  // the content lands as its own `change` (the size moved again) and that one
-  // is forwarded. The gap here is deliberately longer than the threshold, so
-  // this is the case the coalescing test above does not cover.
-  it('drops a change on an empty file and forwards the one that follows with content', async () => {
+  // A bounded empty-save grace period lets the content arrive before dispatch.
+  it('coalesces a briefly empty save with the content that follows', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'seed' })
     const seen = []
     const { wiring } = spy()
@@ -163,9 +185,20 @@ describe('createWatcher', () => {
     expect(seen).toEqual(['whole'])
   })
 
-  // A file deliberately created empty is the trade: it is not seen until it
-  // gains content. An empty page or partial renders nothing either way.
-  it('drops an add on an empty file until it has content', async () => {
+  // An empty file is real content, including a newly discovered page.
+  it('round three: cancels an empty new file removed before delivery', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'PAGE' })
+    const { calls, wiring } = spy()
+    handle = createWatcher({ config: folders(site), entry: null, ...wiring })
+    await handle.ready
+    await site.touch('src/pages/cancelled.hbs', '')
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    await fs.unlink(`${site.src}/pages/cancelled.hbs`)
+    await new Promise((resolve) => setTimeout(resolve, 350))
+    expect(calls.change).toEqual([])
+  })
+
+  it('forwards a deliberately empty add after a bounded grace period', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',
       'src/partials/p.hbs': 'p',
@@ -175,11 +208,63 @@ describe('createWatcher', () => {
     await handle.ready
 
     fs.writeFileSync(`${site.src}/partials/new.hbs`, '')
-    await new Promise((r) => setTimeout(r, 150))
-    expect(calls.change.filter(([, p]) => p.endsWith('new.hbs'))).toEqual([])
+    await waitFor(() =>
+      calls.change.some(
+        ([event, p]) => event === 'add' && p.endsWith('new.hbs'),
+      ),
+    )
+  })
 
-    fs.writeFileSync(`${site.src}/partials/new.hbs`, 'now')
-    await waitFor(() => calls.change.some(([, p]) => p.endsWith('new.hbs')))
+  it('excludes nested build output and honours disabled folders', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'page',
+      'src/public/index.html': 'built',
+    })
+    const { calls, wiring } = spy()
+    handle = createWatcher({
+      config: {
+        folders: {
+          src: site.src,
+          pages: `${site.src}/pages`,
+          build: `${site.src}/public`,
+          assets: null,
+        },
+      },
+      entry: null,
+      ...wiring,
+    })
+    await handle.ready
+    await site.touch('src/public/index.html', 'new output')
+    await site.touch('src/pages/index.hbs', 'new page')
+    await waitFor(() =>
+      calls.change.some(([, p]) => p.endsWith('pages/index.hbs')),
+    )
+    await new Promise((r) => setTimeout(r, 100))
+    expect(calls.change.map(([, p]) => p)).not.toContain(
+      `${site.src}/public/index.html`,
+    )
+    expect(
+      calls.change.filter(([, p]) => p.endsWith('pages/index.hbs')),
+    ).toHaveLength(1)
+    await handle.close()
+    handle = createWatcher({
+      config: { folders: { src: null, assets: null } },
+      entry: null,
+      ...wiring,
+    })
+    await handle.ready
+  })
+
+  it('cancels pending empty events when closed', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'page' })
+    const { calls, wiring } = spy()
+    handle = createWatcher({ config: folders(site), entry: null, ...wiring })
+    await handle.ready
+    await site.touch('src/pages/index.hbs', '')
+    await new Promise((r) => setTimeout(r, 100))
+    await handle.close()
+    await new Promise((r) => setTimeout(r, 250))
+    expect(calls.change).toEqual([])
   })
 
   it('forwards an unlink like any other event', async () => {
@@ -311,39 +396,5 @@ describe('the helpers watcher', () => {
 
     await fs.remove(`${site.root}/helpers/index.js`)
     await waitFor(() => calls.helpers.includes(`${site.root}/helpers/index.js`))
-  })
-})
-
-describe('isInside', () => {
-  const inAssets = isInside('./src/assets')
-
-  it('matches the directory itself and everything under it', () => {
-    expect(inAssets('src/assets')).toBe(true)
-    expect(inAssets('src/assets/css/site.scss')).toBe(true)
-  })
-
-  it('does not match a sibling that merely shares the prefix', () => {
-    expect(inAssets('src/assets-backup/x.txt')).toBe(false)
-    expect(inAssets('src/pages/index.hbs')).toBe(false)
-  })
-
-  // The same absolute-versus-relative seam as the helpers entry, third time on
-  // this branch. `isInside` normalised separators and resolved nothing, so a
-  // site with a relative `src` and an absolute helpers path INSIDE it failed
-  // the exclusion and got both dispatches — a whole-site replay racing the
-  // reload, over one registry.
-  it('matches a relative directory against an absolute path and vice versa', () => {
-    const abs = path.resolve('src/assets')
-    expect(isInside('./src/assets')(`${abs}/x.txt`)).toBe(true)
-    expect(isInside(abs)('src/assets/x.txt')).toBe(true)
-    expect(isInside('./src/assets')(path.resolve('src/pages/i.hbs'))).toBe(
-      false,
-    )
-  })
-
-  it('normalises the leading ./ and Windows separators on both sides', () => {
-    expect(inAssets('./src/assets/x.txt')).toBe(true)
-    expect(inAssets('src\\assets\\x.txt')).toBe(true)
-    expect(isInside('src\\assets')('src/assets/x.txt')).toBe(true)
   })
 })

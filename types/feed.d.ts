@@ -66,6 +66,7 @@ export function renderRss(channel: FeedChannel, items: FeedItem[]): string;
  * @param {{ buildTo: string, page: { options: Record<string, any> } }[]} stack
  * @param {Object} deps
  * @param {any} deps.config the resolved config — `siteUrl` and `folders.build`
+ * @param {import('./output-registry.js').OutputRegistry} [deps.outputs]
  * @param {any} deps.logger
  * @param {Record<string, any>} [deps.options] the `.feed()` options
  * @param {boolean} [deps.overwrite] default `true`
@@ -76,8 +77,9 @@ export function writeFeed(stack: {
     page: {
         options: Record<string, any>;
     };
-}[], { config, logger, options, overwrite }: {
+}[], { config, logger, outputs, options, overwrite }: {
     config: any;
+    outputs?: import("./output-registry.js").OutputRegistry;
     logger: any;
     options?: Record<string, any>;
     overwrite?: boolean;

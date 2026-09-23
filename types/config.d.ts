@@ -7,8 +7,8 @@ export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
  * @param {KissConfigInput} [userConfig]
  * @returns {KissConfig} the defaults with `userConfig` merged over them
  * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if
- * `assets.pipeline` is not an array of `{ run: string }` steps, or if the build
- * folder contains the source folder
+ * `assets.pipeline` is not an array of `{ run: string }` steps, or if source
+ * and output folders violate the root/overlap safety rules
  */
 export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
 /**

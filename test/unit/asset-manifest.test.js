@@ -60,31 +60,78 @@ describe('isHashable', () => {
 })
 
 describe('createAssetManifest', () => {
+  it('reconciles deletions and hashes without forgetting another copy', () => {
+    const manifest = createAssetManifest()
+    manifest.reconcile(
+      'first',
+      new Map([
+        ['a.css', 'a.old.css'],
+        ['shared.txt', 'shared.txt'],
+      ]),
+    )
+    manifest.reconcile(
+      'second',
+      new Map([
+        ['shared.txt', 'shared.txt'],
+        ['other.txt', 'other.txt'],
+      ]),
+    )
+    expect(
+      manifest.reconcile('first', new Map([['a.css', 'a.new.css']])),
+    ).toEqual(['a.old.css'])
+    expect(manifest.lookup('shared.txt')).toBe('shared.txt')
+    expect(manifest.lookup('other.txt')).toBe('other.txt')
+    expect(manifest.reconcile('first', new Map())).toEqual(['a.new.css'])
+    expect(manifest.lookup('a.css')).toBeNull()
+    expect(manifest.reconcile('second', new Map()).sort()).toEqual([
+      'other.txt',
+      'shared.txt',
+    ])
+  })
   it('looks up what was recorded, and null for anything else', () => {
     const manifest = createAssetManifest()
-    manifest.record('css/site.css', 'css/site.a1b2c3d4.css')
+    manifest.reconcile(
+      'copy',
+      new Map([['css/site.css', 'css/site.a1b2c3d4.css']]),
+    )
     expect(manifest.lookup('css/site.css')).toBe('css/site.a1b2c3d4.css')
     expect(manifest.lookup('css/other.css')).toBeNull()
   })
 
   it('reports the name it replaced, so the caller can delete it', () => {
     const manifest = createAssetManifest()
-    expect(manifest.record('css/site.css', 'css/site.aaaaaaaa.css')).toBeNull()
-    expect(manifest.record('css/site.css', 'css/site.bbbbbbbb.css')).toBe(
-      'css/site.aaaaaaaa.css',
-    )
+    expect(
+      manifest.reconcile(
+        'copy',
+        new Map([['css/site.css', 'css/site.aaaaaaaa.css']]),
+      ),
+    ).toEqual([])
+    expect(
+      manifest.reconcile(
+        'copy',
+        new Map([['css/site.css', 'css/site.bbbbbbbb.css']]),
+      ),
+    ).toEqual(['css/site.aaaaaaaa.css'])
   })
 
   it('reports nothing stale when the name has not changed', () => {
     const manifest = createAssetManifest()
-    manifest.record('css/site.css', 'css/site.aaaaaaaa.css')
-    expect(manifest.record('css/site.css', 'css/site.aaaaaaaa.css')).toBeNull()
+    manifest.reconcile(
+      'copy',
+      new Map([['css/site.css', 'css/site.aaaaaaaa.css']]),
+    )
+    expect(
+      manifest.reconcile(
+        'copy',
+        new Map([['css/site.css', 'css/site.aaaaaaaa.css']]),
+      ),
+    ).toEqual([])
   })
 
   it('is per instance — two manifests never see each other', () => {
     const a = createAssetManifest()
     const b = createAssetManifest()
-    a.record('css/site.css', 'css/site.aaaaaaaa.css')
+    a.reconcile('copy', new Map([['css/site.css', 'css/site.aaaaaaaa.css']]))
     expect(b.lookup('css/site.css')).toBeNull()
   })
 })

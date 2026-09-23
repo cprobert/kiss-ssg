@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
+import path from 'node:path'
 
 // One shared refresh spy, so a test can assert how many times the browser was
 // told to reload and what it was told to reload.
@@ -45,6 +46,658 @@ const recordingLogger = () => {
 }
 
 let site, kiss
+
+describe('review regressions', () => {
+  const start = async (files, config = {}, setup = (k) => k) => {
+    site = await makeSite({ 'src/pages/index.hbs': 'PAGE', ...files })
+    kiss = setup(
+      new Kiss({ folders: site.folders, logger: silentLogger, ...config })
+        .scan()
+        .generate(),
+    )
+    await kiss.complete()
+  }
+  const event = async (file, type = 'change') => {
+    kiss._pendingAssets.set(`${site.src}/assets/${file}`, type)
+    await kiss._runRebuildQueue()
+    await rebuildSettled()
+  }
+
+  it('round five: links are rechecked after a restoration copies newly added assets', async () => {
+    await start({ 'src/pages/old.hbs': 'PAGE', 'extra/old.html': 'ASSET' })
+    kiss.copyAssets(`${site.root}/extra`, site.build)
+    await kiss._assetQueue
+    await site.touch('extra/new.txt', 'NEW')
+    await site.touch('src/pages/index.hbs', '<a href="/new.txt">New</a>')
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await waitFor(async () => await site.exists('public/new.txt'))
+    await rebuildSettled()
+    expect(await site.read('public/old.html')).toBe('ASSET')
+    expect(await site.read('public/new.txt')).toBe('NEW')
+    expect(kiss.report().links).toEqual({ checked: 1, broken: [] })
+  })
+
+  it('round six: a non-dev watcher checks links after deleting stale page output', async () => {
+    const logger = { ...silentLogger, info: vi.fn(), notice: vi.fn() }
+    await start(
+      {
+        'src/pages/index.hbs': '<a href="/old.html">Old</a>',
+        'src/pages/old.hbs': 'OLD',
+      },
+      { logger },
+    )
+    expect(kiss.report().links.broken).toEqual([])
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    logger.info.mockClear()
+    logger.notice.mockClear()
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await waitFor(async () => !(await site.exists('public/old.html')))
+    await rebuildSettled()
+    expect(kiss.report().links.broken).toEqual([
+      { page: `${site.build}/index.html`, href: '/old.html' },
+    ])
+    expect(
+      logger.info.mock.calls
+        .flat()
+        .filter((s) => String(s).startsWith('Links:')),
+    ).toEqual([])
+    expect(
+      logger.notice.mock.calls
+        .flat()
+        .filter((s) => String(s).startsWith('broken link:')),
+    ).toHaveLength(1)
+  })
+
+  it('round four: a failed replay still restores a refused asset and refreshes the report', async () => {
+    await start({ 'src/pages/old.hbs': 'OLD' })
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await site.touch('src/pages/index.hbs', '{{missingHelper "value"}}')
+    await site.touch('src/assets/old.html', 'ASSET')
+    kiss._pendingReplay = true
+    await event('old.html', 'add')
+    expect(await site.read('public/old.html')).toBe('ASSET')
+    expect(kiss.report().ok).toBe(false)
+    expect(kiss.report().failures).toHaveLength(1)
+    expect(kiss.report().outputs.collisions).toEqual([])
+  })
+
+  it.each([false, true])(
+    'round four: removing a shadowing page restores an extra asset copy, failing replay=%s',
+    async (broken) => {
+      await start({ 'src/pages/old.hbs': 'PAGE', 'extra/old.html': 'ASSET' })
+      kiss.copyAssets(`${site.root}/extra`, site.build)
+      await kiss._assetQueue
+      expect(await site.read('public/old.html')).toBe('PAGE')
+      await fs.unlink(`${site.src}/pages/old.hbs`)
+      if (broken)
+        await site.touch('src/pages/index.hbs', '{{missingHelper "value"}}')
+      await kiss._requestReplay()
+      expect(await site.read('public/old.html')).toBe('ASSET')
+      expect(kiss._assetManifest.lookup('old.html')).toBe('old.html')
+      expect(kiss.report().outputs.collisions).toEqual([])
+      expect(kiss.report().ok).toBe(!broken)
+    },
+  )
+
+  it('round four: deleting a page restores the default asset that it overwrote on the first build', async () => {
+    await start({ 'src/assets/old.html': 'ASSET', 'src/pages/old.hbs': 'PAGE' })
+    expect(await site.read('public/old.html')).toBe('PAGE')
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await kiss._requestReplay()
+    expect(await site.read('public/old.html')).toBe('ASSET')
+    expect(kiss.report().outputs.collisions).toEqual([])
+  })
+
+  it('round four: watch asset copies retain their registered directories after chdir', async () => {
+    site = await makeSite({
+      'src/assets/file.txt': 'FIRST',
+      'src/pages/index.hbs': 'PAGE',
+    })
+    const cwd = process.cwd()
+    try {
+      process.chdir(site.root)
+      kiss = new Kiss({
+        folders: { src: './src', build: './public' },
+        logger: silentLogger,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      const owner = kiss._outputs.owner(`${site.build}/file.txt`)
+      const reload = vi.spyOn(kiss, '_reload')
+      await fs.ensureDir(`${site.root}/elsewhere`)
+      process.chdir(`${site.root}/elsewhere`)
+      await site.touch('src/assets/file.txt', 'SECOND')
+      await event('file.txt')
+      expect(await site.read('public/file.txt')).toBe('SECOND')
+      expect(kiss._outputs.owner(`${site.build}/file.txt`)).toBe(owner)
+      expect(reload.mock.calls.at(-1)[0]).toBe(
+        path.resolve(site.build, 'file.txt'),
+      )
+      expect(kiss.report().ok).toBe(true)
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  it('round four: inline page collision owners do not contain template bodies', async () => {
+    const template = '<article>PRIVATE TEMPLATE BODY {{title}}</article>'
+    await start({ 'src/assets/inline.html': 'ASSET' }, {}, (k) =>
+      k.page({ view: template, slug: 'inline' }).generate(),
+    )
+    const collisions = JSON.stringify(kiss.report().outputs.collisions)
+    expect(collisions).not.toContain('PRIVATE TEMPLATE BODY')
+    expect(kiss.report().outputs.collisions).toHaveLength(1)
+  })
+
+  it('round three: failed hashed Sass preserves the preview, recovers, and still deletes removed sources', async () => {
+    await start(
+      {
+        'src/pages/index.hbs':
+          '<link rel="stylesheet" href="{{asset "main.css"}}">',
+        'src/assets/main.scss': 'body { color: red; }',
+      },
+      { assets: { hash: true } },
+    )
+    const old = kiss._assetManifest.lookup('main.css')
+    const html = await site.read('public/index.html')
+    await site.touch('src/assets/main.scss', 'body { color:')
+    await event('main.scss')
+    expect(kiss._assetManifest.lookup('main.css')).toBe(old)
+    expect(await site.exists(`public/${old}`)).toBe(true)
+    expect(await site.read('public/index.html')).toBe(html)
+    expect(kiss.report().failures).toHaveLength(1)
+    expect(kiss.report().failures[0].view).toMatch(/^<sass:/)
+    await site.touch('src/assets/main.scss', 'body { color: blue; }')
+    await event('main.scss')
+    const next = kiss._assetManifest.lookup('main.css')
+    expect(next).not.toBe(old)
+    expect(kiss.report().ok).toBe(true)
+    expect(await site.exists(`public/${old}`)).toBe(false)
+    await fs.unlink(`${site.src}/assets/main.scss`)
+    await event('main.scss', 'unlink')
+    expect(kiss._assetManifest.lookup('main.css')).toBeNull()
+    expect(await site.exists(`public/${next}`)).toBe(false)
+  })
+
+  it('round three: standing collisions survive replay and disappear when the source is removed', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    await kiss._requestReplay()
+    expect(kiss.report().outputs.collisions).toHaveLength(1)
+    await fs.unlink(`${site.src}/assets/robots.txt`)
+    kiss._pendingReplay = true
+    await event('robots.txt', 'unlink')
+    expect(kiss.report().outputs.collisions).toEqual([])
+    expect(await site.read('public/robots.txt')).toContain('User-agent:')
+  })
+
+  it('round three: a page rename taking over its old slug is not a collision', async () => {
+    await start({
+      'src/pages/a.hbs': 'PAGE',
+      'src/controllers/a.js': "module.exports = () => ({ slug: 'shared' })",
+      'src/controllers/b.js': "module.exports = () => ({ slug: 'shared' })",
+    })
+    expect(await site.read('public/shared.html')).toContain('PAGE')
+    await fs.move(`${site.src}/pages/a.hbs`, `${site.src}/pages/b.hbs`)
+    await kiss._requestReplay()
+    expect(await site.read('public/shared.html')).toContain('PAGE')
+    expect(kiss.report().outputs.collisions).toEqual([])
+  })
+
+  it('round three: repeated watch copies do not retain settled promises', async () => {
+    await start({ 'src/assets/a.txt': 'A' })
+    const count = kiss._promises.length
+    for (let i = 0; i < 6; i++) await event('a.txt')
+    expect(kiss._promises).toHaveLength(count)
+  })
+
+  it('round three: page writes and orphan cleanup keep their registered paths across chdir', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'PAGE' })
+    const cwd = process.cwd()
+    try {
+      process.chdir(site.root)
+      kiss = new Kiss({
+        folders: { ...site.folders, build: './public', assets: null },
+        logger: silentLogger,
+      }).scan()
+      await fs.ensureDir(`${site.root}/other`)
+      process.chdir(`${site.root}/other`)
+      kiss.generate()
+      await kiss.complete()
+      expect(await site.read('public/index.html')).toBe('PAGE')
+      expect(kiss._outputs.kind(`${site.build}/index.html`)).toBe('page')
+      await fs.unlink(`${site.src}/pages/index.hbs`)
+      await kiss._requestReplay()
+      expect(await site.exists('public/index.html')).toBe(false)
+      expect(kiss._outputs.owner(`${site.build}/index.html`)).toBeNull()
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  it('round three: discard clears the captured staging path if close clears the field', async () => {
+    site = await makeSite({ 'src/assets/file.txt': 'A' })
+    kiss = new Kiss({
+      folders: site.folders,
+      cleanBuild: 'atomic',
+      logger: silentLogger,
+    })
+    await kiss._assetQueue
+    const staging = kiss._stagingDir
+    const remove = fs.remove.bind(fs)
+    const spy = vi.spyOn(fs, 'remove').mockImplementation(async (file) => {
+      await remove(file)
+      if (file === staging) kiss._stagingDir = null
+    })
+    try {
+      await kiss._discardStaging()
+      expect(kiss._outputs.owner(`${staging}/file.txt`)).toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('round three: a standing refusal does not cause a second copy in a replay batch', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    const info = vi.fn()
+    kiss.logger.info = info
+    kiss._pendingReplay = true
+    await event('robots.txt')
+    expect(
+      info.mock.calls.filter(([message]) =>
+        message.startsWith('Copied assets:'),
+      ),
+    ).toHaveLength(1)
+    expect(kiss.report().outputs.collisions).toHaveLength(1)
+  })
+
+  it.each(['plain', 'atomic', 'check'])(
+    'round three: %s collision paths use the configured build spelling',
+    async (mode) => {
+      site = await makeSite({
+        'src/assets/robots.txt': 'STATIC',
+        'src/pages/index.hbs': 'PAGE',
+      })
+      const cwd = process.cwd()
+      // CI may check out on D: with temp sites on C:. Keep this deliberately
+      // relative-path fixture on its own volume rather than inventing ./C:/...
+      process.chdir(site.root)
+      const build = './public'
+      if (mode === 'check') vi.stubEnv('KISS_CHECK', '1')
+      try {
+        kiss = new Kiss({
+          folders: { ...site.folders, build },
+          cleanBuild: mode === 'atomic' ? 'atomic' : true,
+          logger: silentLogger,
+        })
+          .scan()
+          .generate()
+          .robots()
+        await kiss.complete()
+        expect(kiss.report().outputs.collisions[0].file).toBe(
+          `${build}/robots.txt`,
+        )
+        expect(path.isAbsolute(kiss.report().outputs.collisions[0].file)).toBe(
+          false,
+        )
+      } finally {
+        process.chdir(cwd)
+        vi.unstubAllEnvs()
+      }
+    },
+  )
+
+  it('round two: reports collisions as advisory with the current winner', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    const report = kiss.report()
+    expect(report.ok).toBe(true)
+    expect(report.outputs?.collisions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          file: `${site.build}/robots.txt`,
+          winner: { owner: 'robots', kind: 'generated' },
+        }),
+      ]),
+    )
+  })
+
+  it('round two: a no-op hashed Sass save neither renders nor refreshes', async () => {
+    await start(
+      {
+        'src/assets/a.scss': 'a { color: red; }',
+        'src/assets/b.scss': 'b { color: blue; }',
+      },
+      { assets: { hash: true } },
+    )
+    const render = vi.spyOn(kiss, '_rebuild')
+    const reload = vi.spyOn(kiss, '_reload')
+    await event('a.scss')
+    expect(render).not.toHaveBeenCalled()
+    expect(reload).not.toHaveBeenCalled()
+  })
+
+  it('round two: a page-to-asset replacement lands in the same save-all batch', async () => {
+    await start({ 'src/pages/old.hbs': 'PAGE' })
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await site.touch('src/assets/old.html', 'ASSET')
+    kiss._pendingReplay = true
+    await event('old.html', 'add')
+    expect(await site.read('public/old.html')).toBe('ASSET')
+  })
+
+  it('round two: discarding a staging build clears its output claims', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE',
+      'src/assets/file.txt': 'ASSET',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      cleanBuild: 'atomic',
+      logger: silentLogger,
+    })
+      .scan()
+      .generate()
+    await Promise.all(kiss._promises)
+    const file = `${kiss._stagingDir}/file.txt`
+    expect(kiss._outputs.owner(file)).not.toBeNull()
+    await kiss._discardStaging()
+    expect(kiss._outputs.owner(file)).toBeNull()
+  })
+
+  it('keeps image edits on the asset fast path with hashing enabled', async () => {
+    await start({ 'src/assets/logo.png': 'image' }, { assets: { hash: true } })
+    const render = vi.spyOn(kiss, '_rebuild')
+    const reload = vi.spyOn(kiss, '_reload')
+    await site.touch('src/assets/logo.png', 'new image')
+    await event('logo.png')
+    expect(await site.read('public/logo.png')).toBe('new image')
+    expect(render).not.toHaveBeenCalled()
+    expect(reload.mock.calls.at(-1)[0].replace(/\\/g, '/')).toBe(
+      `${site.build}/logo.png`,
+    )
+  })
+
+  it('swaps a single changed Sass output without reloading the page', async () => {
+    await start({ 'src/assets/main.scss': 'body { color: red; }' })
+    const reload = vi.spyOn(kiss, '_reload')
+    await site.touch('src/assets/main.scss', 'body { color: blue; }')
+    await event('main.scss')
+    expect(await site.read('public/main.css')).toContain('blue')
+    expect(reload.mock.calls.at(-1)[0].replace(/\\/g, '/')).toBe(
+      `${site.build}/main.css`,
+    )
+  })
+
+  it('preserves generated robots after deleting its static asset and warns about the collision', async () => {
+    const warn = vi.fn()
+    await start(
+      { 'src/assets/robots.txt': 'STATIC' },
+      { logger: { ...silentLogger, warn } },
+      (k) => k.robots(),
+    )
+    const generated = await site.read('public/robots.txt')
+    expect(generated).toContain('User-agent:')
+    await fs.unlink(`${site.src}/assets/robots.txt`)
+    await event('robots.txt', 'unlink')
+    expect(await site.exists('public/robots.txt')).toBe(true)
+    expect(await site.read('public/robots.txt')).toBe(generated)
+    expect(warn.mock.calls.flat().join(' ')).toMatch(/collision.*robots\.txt/i)
+  })
+
+  it('does not overwrite generated outputs when a conflicting asset is edited again', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) => k.robots())
+    const generated = await site.read('public/robots.txt')
+    await site.touch('src/assets/robots.txt', 'CHANGED STATIC')
+    await event('robots.txt')
+    expect(await site.read('public/robots.txt')).toBe(generated)
+  })
+
+  it('preserves all registered auxiliary outputs when static copies disappear', async () => {
+    const outputs = [
+      'sitemap.xml',
+      'llms.txt',
+      'news.xml',
+      'redirects.json',
+      'custom/routes.txt',
+      'dependency-graph.json',
+      'debug.json',
+    ]
+    const files = Object.fromEntries(
+      outputs.map((file) => [`src/assets/${file}`, 'STATIC']),
+    )
+    await start(
+      files,
+      {
+        dev: true,
+        verbose: true,
+        siteUrl: 'https://example.test',
+        redirects: {
+          format: () => ({ file: 'custom/routes.txt', contents: 'CUSTOM' }),
+        },
+      },
+      (k) =>
+        k
+          .page({ view: 'OTHER', slug: 'other', aliases: ['/old'] })
+          .sitemap()
+          .llms({ title: 'Site', summary: 'Summary' })
+          .feed({ title: 'News', filename: 'news.xml' }),
+    )
+    kiss.viewStats()
+    await waitFor(
+      async () => (await site.read('public/debug.json')) !== 'STATIC',
+    )
+    const before = await Promise.all(
+      outputs.map((file) => site.read(`public/${file}`)),
+    )
+    for (const body of before) expect(body).not.toBe('STATIC')
+    await fs.remove(`${site.src}/assets`)
+    await event('', 'unlinkDir')
+    for (const [index, file] of outputs.entries())
+      expect(await site.read(`public/${file}`)).toBe(before[index])
+  })
+
+  it('re-renders hashed references when a directory disappears, but not when emitted URLs stay the same', async () => {
+    await start(
+      { 'src/assets/css/main.css': 'body { color: red; }' },
+      { assets: { hash: true } },
+    )
+    const render = vi.spyOn(kiss, '_rebuild')
+    await event('css/main.css')
+    expect(render).not.toHaveBeenCalled()
+    await fs.remove(`${site.src}/assets/css`)
+    await event('css', 'unlinkDir')
+    expect(render).toHaveBeenCalledTimes(1)
+    expect(kiss._assetManifest.lookup('css/main.css')).toBeNull()
+  })
+
+  it('uses a full refresh when a Sass partial changes multiple outputs', async () => {
+    await start({
+      'src/assets/_theme.scss': '$color: red;',
+      'src/assets/a.scss': '@use "theme"; a { color: theme.$color; }',
+      'src/assets/b.scss': '@use "theme"; b { color: theme.$color; }',
+    })
+    const reload = vi.spyOn(kiss, '_reload')
+    await site.touch('src/assets/_theme.scss', '$color: blue;')
+    await event('_theme.scss')
+    expect(await site.read('public/a.css')).toContain('blue')
+    expect(await site.read('public/b.css')).toContain('blue')
+    expect(reload).toHaveBeenCalledWith('/')
+  })
+
+  it('does not claim an auxiliary file whose writer skipped it', async () => {
+    await start({ 'src/assets/robots.txt': 'STATIC' }, {}, (k) =>
+      k.robots({ overwrite: false }),
+    )
+    await fs.unlink(`${site.src}/assets/robots.txt`)
+    await event('robots.txt', 'unlink')
+    expect(await site.exists('public/robots.txt')).toBe(false)
+  })
+
+  it('releases removed page ownership so a later asset can use that path', async () => {
+    await start({ 'src/pages/old.hbs': 'OLD' })
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await kiss._requestReplay()
+    await rebuildSettled()
+    await site.touch('src/assets/old.html', 'ASSET')
+    await event('old.html', 'add')
+    expect(await site.read('public/old.html')).toBe('ASSET')
+  })
+
+  it('preserves auxiliary ownership across atomic promotion', async () => {
+    await start(
+      { 'src/assets/robots.txt': 'STATIC' },
+      { cleanBuild: 'atomic' },
+      (k) => k.robots(),
+    )
+    const generated = await site.read('public/robots.txt')
+    await site.touch('src/assets/robots.txt', 'CHANGED STATIC')
+    await event('robots.txt')
+    expect(await site.read('public/robots.txt')).toBe(generated)
+  })
+
+  it('protects a build report written into the output folder', async () => {
+    try {
+      await start({ 'src/assets/report.jsonl': '' }, {}, (k) => {
+        vi.stubEnv('KISS_REPORT', `${site.build}/report.jsonl`)
+        return k
+      })
+      const report = await site.read('public/report.jsonl')
+      expect(JSON.parse(report).ok).toBe(true)
+      await fs.unlink(`${site.src}/assets/report.jsonl`)
+      await event('report.jsonl', 'unlink')
+      expect(await site.read('public/report.jsonl')).toBe(report)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+})
+
+describe('watch filesystem reconciliation', () => {
+  const start = async (config = {}) => {
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger, ...config })
+      .scan()
+      .generate()
+    await kiss.complete()
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+  }
+
+  it('copies new assets, removes renamed/deleted outputs and preserves unrelated files', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE',
+      'src/assets/old.txt': 'old',
+    })
+    await start()
+    await site.touch('public/keep.txt', 'keep')
+    await site.touch('src/assets/new.txt', 'new')
+    await waitFor(async () => await site.exists('public/new.txt'))
+    await fs.rename(
+      `${site.src}/assets/old.txt`,
+      `${site.src}/assets/moved.txt`,
+    )
+    await waitFor(
+      async () =>
+        (await site.exists('public/moved.txt')) &&
+        !(await site.exists('public/old.txt')),
+    )
+    await fs.remove(`${site.src}/assets`)
+    await waitFor(
+      async () =>
+        !(await site.exists('public/new.txt')) &&
+        !(await site.exists('public/moved.txt')),
+    )
+    expect(await site.read('public/index.html')).toBe('PAGE')
+    expect(await site.read('public/keep.txt')).toBe('keep')
+    await site.touch('src/assets/restored.txt', 'restored')
+    await waitFor(async () => await site.exists('public/restored.txt'))
+    expect(await site.read('public/restored.txt')).toBe('restored')
+  })
+
+  it('renders deliberately emptied partials and newly added empty pages', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'a{{> p}}b',
+      'src/partials/p.hbs': 'OLD',
+    })
+    await start()
+    await site.touch('src/partials/p.hbs', '')
+    await waitFor(async () => (await site.read('public/index.html')) === 'ab')
+    await site.touch('src/pages/empty.hbs', '')
+    await waitFor(async () => await site.exists('public/empty.html'))
+    expect(await site.read('public/empty.html')).toBe('')
+  })
+
+  it('watches configured content outside src', async () => {
+    site = await makeSite({ 'views/index.hbs': 'one' })
+    await start({ folders: { ...site.folders, pages: `${site.root}/views` } })
+    await site.touch('views/index.hbs', 'two')
+    await waitFor(async () => (await site.read('public/index.html')) === 'two')
+  })
+
+  it('removes deleted assets without deleting a page that replaced an asset output', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE',
+      'src/assets/index.html': 'ASSET',
+      'src/assets/index.json': 'ASSET MODEL',
+      'src/assets/gone.txt': 'gone',
+    })
+    await start({ dev: true })
+    const model = await site.read('public/index.json')
+    await fs.remove(`${site.src}/assets/index.html`)
+    await fs.remove(`${site.src}/assets/index.json`)
+    await fs.remove(`${site.src}/assets/gone.txt`)
+    await waitFor(async () => !(await site.exists('public/gone.txt')))
+    await rebuildSettled()
+    expect(await site.read('public/index.html')).toContain('PAGE')
+    expect(await site.read('public/index.json')).toBe(model)
+  })
+
+  it('settles rapid asset and page edits together', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'one {{asset "style.css"}}',
+      'src/assets/style.css': 'a { color: red }',
+    })
+    await start({ assets: { hash: true } })
+    await Promise.all([
+      site.touch('src/assets/style.css', 'a { color: blue }'),
+      site.touch('src/pages/index.hbs', 'two {{asset "style.css"}}'),
+    ])
+    await waitFor(async () => {
+      const name = kiss._assetManifest.lookup('style.css')
+      return (
+        (await site.read('public/index.html')) === `two ${name}` &&
+        (await site.read(`public/${name}`)).includes('blue')
+      )
+    })
+    await rebuildSettled()
+    expect(
+      (await fs.readdir(site.build)).filter((p) => p.endsWith('.css')),
+    ).toHaveLength(1)
+  })
+
+  it('updates hashed Sass references after a partial edit and forgets deleted stylesheets', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '{{asset "main.css"}}',
+      'src/assets/main.scss': '@use "theme"; body { color: theme.$color; }',
+      'src/assets/_theme.scss': '$color: red;',
+    })
+    await start({ dev: true, assets: { hash: true } })
+    const before = await site.read('public/index.html')
+    const oldAsset = kiss._assetManifest.lookup('main.css')
+    await site.touch('src/assets/_theme.scss', '$color: blue;')
+    await waitFor(async () => (await site.read('public/index.html')) !== before)
+    expect(await site.exists(`public/${oldAsset}`)).toBe(false)
+    await fs.remove(`${site.src}/assets/main.scss`)
+    await waitFor(() => kiss._assetManifest.lookup('main.css') === null)
+    await rebuildSettled()
+    expect(
+      (await fs.readdir(site.build)).filter((p) => p.endsWith('.css')),
+    ).toEqual([])
+    expect(await site.read('public/index.html')).toContain('main.css')
+  })
+})
 afterEach(async () => {
   if (kiss) await kiss.close()
   if (site) await site.cleanup()

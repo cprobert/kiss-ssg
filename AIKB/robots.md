@@ -30,6 +30,8 @@ Unlike `_redirects` there **is** a method to call. A crawl policy is a statement
 
 ## Non-obvious behavior
 
+- The optional `outputs` dependency is Kiss's shared output registry. Each successful file write claims its actual path at the write site; skipped or failed writes claim nothing. Collisions warn, and later asset cleanup cannot delete this writer's output. Custom filenames participate without a whitelist.
+
 - **`ignoreSitemap` deliberately does NOT imply `Disallow`, and must never be wired to it.** It is the obvious-looking connection and it is actively harmful: blocking a crawler stops it fetching the page, which stops it seeing a `noindex` meta tag, so the URL can stay indexed with no snippet — worse than leaving it crawlable. Excluded-from-the-sitemap and blocked-from-crawling are different intents, and this module takes the second only from an explicit `disallow`.
 
 - **`Disallow: /` is the sharpest edge in the package, so it is reported rather than merely written.** It removes a site from search, it is one character from the bare `Disallow:` that means the opposite, and nothing about the build looks wrong afterwards. `disallowsEverything` is what lets `Kiss.robots()` log a `notice` on **every** build that emits it and put `disallowAll` on `report().robots`, so a staging policy promoted to production shows up in a `kiss-ssg check` diff rather than in Search Console a month later. That is also why the report's `robots` key is an object where `sitemap`, `llms` and `feed` are bare path strings: a path cannot carry the fact.
