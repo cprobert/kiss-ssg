@@ -88,6 +88,32 @@ and documentation of the stricter contract.
   addressed within the tested transitions; finding 12 remains the operator's
   separate benchmark work. Ready for another review, with no push or release.
 
+- **2026-09-23 Amendment (round four):** Reproduce and correct the measured
+  duplicate-output getter cost, failed-replay restoration, page-shadowed asset
+  restoration, disappearing asset stat, watch-copy path anchoring and inline
+  template owner disclosure. Rename the registry producer map, centralize report
+  path projection, move containment tests and remove the watcher re-export.
+  The sweep now owns restoration even on rejection, eliminating the queue's
+  source-to-output retry reconstruction. Source-stat ENOENT, failed replay,
+  default and extra asset restoration, chdir and inline owner tests failed on
+  ec94a9f before acceptance. Real file symlinks require privileges unavailable
+  here; the unexecuted symlink test was not accepted, and the source-stat ENOENT
+  seam was observed red then green on Windows instead. Cache invalidation is checked across all route setters and promotion.
+  Defer the release/warning representation refactor (8c) and volume-aware case
+  identity (10); document the latter explicitly rather than folding all Darwin
+  paths. Retain copy-before-render ordering (11) with sweep-owned restoration.
+  Operator benchmark guidance and earlier review additions remain separate.
+  **Verification:** Final suite: 1,667 passed, two skipped. Type checking and
+  formatting pass; lint retains only the existing example-7 warning. The first
+  full run exposed the cache bypassing a deliberately mutated private route in
+  a safety test; the write boundary now independently resolves and validates
+  the destination. A separate red/green check pins reload paths after chdir.
+  Three-run local build medians at 2,000 pages: scan 5,000 ms before / 2,652 ms
+  after / 2,566 ms main; fanout 4,088 / 1,760 / 1,758 ms. The final after record
+  includes the safety recheck. Raw records and interpretation are under
+  `planning/benchmarks/2026-09-23-round4*`; the isolated main worktree and its
+  dependency junction were removed. No browser run, push or release in this pass.
+
 ## Pulse log
 
 - **2026-09-21** — Started from `main`; the only working-tree change was the

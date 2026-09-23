@@ -1,8 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { createWatcher, isInside } from '../../lib/watcher.js'
+import { createWatcher } from '../../lib/watcher.js'
 import { silentLogger } from '../../lib/logger.js'
 import fs from 'fs-extra'
-import path from 'node:path'
 import { makeSite, waitFor } from '../helpers/site.js'
 
 let site, handle
@@ -397,39 +396,5 @@ describe('the helpers watcher', () => {
 
     await fs.remove(`${site.root}/helpers/index.js`)
     await waitFor(() => calls.helpers.includes(`${site.root}/helpers/index.js`))
-  })
-})
-
-describe('isInside', () => {
-  const inAssets = isInside('./src/assets')
-
-  it('matches the directory itself and everything under it', () => {
-    expect(inAssets('src/assets')).toBe(true)
-    expect(inAssets('src/assets/css/site.scss')).toBe(true)
-  })
-
-  it('does not match a sibling that merely shares the prefix', () => {
-    expect(inAssets('src/assets-backup/x.txt')).toBe(false)
-    expect(inAssets('src/pages/index.hbs')).toBe(false)
-  })
-
-  // The same absolute-versus-relative seam as the helpers entry, third time on
-  // this branch. `isInside` normalised separators and resolved nothing, so a
-  // site with a relative `src` and an absolute helpers path INSIDE it failed
-  // the exclusion and got both dispatches — a whole-site replay racing the
-  // reload, over one registry.
-  it('matches a relative directory against an absolute path and vice versa', () => {
-    const abs = path.resolve('src/assets')
-    expect(isInside('./src/assets')(`${abs}/x.txt`)).toBe(true)
-    expect(isInside(abs)('src/assets/x.txt')).toBe(true)
-    expect(isInside('./src/assets')(path.resolve('src/pages/i.hbs'))).toBe(
-      false,
-    )
-  })
-
-  it('normalises the leading ./ and Windows separators on both sides', () => {
-    expect(inAssets('./src/assets/x.txt')).toBe(true)
-    expect(inAssets('src\\assets\\x.txt')).toBe(true)
-    expect(isInside('src\\assets')('src/assets/x.txt')).toBe(true)
   })
 })

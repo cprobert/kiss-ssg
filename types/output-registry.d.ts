@@ -14,7 +14,7 @@ export class OutputRegistry {
     /** @type {Map<string, OutputClaim>} */
     files: Map<string, OutputClaim>;
     /** @type {Map<string, OutputCollision>} */
-    collisions: Map<string, OutputCollision>;
+    producers: Map<string, OutputCollision>;
     /** @type {Set<string>} */
     warned: Set<string>;
     /** @param {string} file */
@@ -36,6 +36,13 @@ export class OutputRegistry {
     owner(file: string): string | null;
     /** @param {string} file @returns {OutputKind|null} */
     kind(file: string): OutputKind | null;
+    /** Asset producers still registered for a released file.
+     * @param {string} file
+     * @returns {string[]}
+     */
+    assetOwners(file: string): string[];
+    /** @param {string} owner @returns {boolean} */
+    hasProducer(owner: string): boolean;
     /** @param {string} from @param {string} to */
     relocate(from: string, to: string): void;
     /** @param {string} file @param {string} owner */

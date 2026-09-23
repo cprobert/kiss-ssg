@@ -15,6 +15,10 @@ export class KissPage {
     });
     /** @private @type {string} */
     private _directory;
+    /** @private @type {string|null} */
+    private _outputPath;
+    /** @private @type {string} */
+    private _buildDir;
     _path: string;
     _slug: string;
     _ext: string;
@@ -29,7 +33,8 @@ export class KissPage {
     hash: string | null;
     /** @type {string[]|null} */
     links: string[] | null;
-    buildDir: string;
+    set buildDir(value: string);
+    get buildDir(): string;
     pagesDir: string;
     /** @type {number} */
     livereloadPort: number;
@@ -44,6 +49,7 @@ export class KissPage {
     set extLess(val: any);
     get buildTo(): string;
     get outputPath(): string;
+    get outputOwner(): string;
     pageURL(): string;
     set isDev(dev: any);
     set debug(dev: any);

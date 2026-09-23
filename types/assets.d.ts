@@ -50,6 +50,7 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
     sass: SassResult[];
     refused?: undefined;
 }>;
+export function assetCopyOwner(sourceDir: string, targetDir: string): string;
 export type SassResult = {
     file: string;
     error?: Error;

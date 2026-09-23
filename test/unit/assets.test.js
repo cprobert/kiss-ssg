@@ -16,6 +16,26 @@ const deps = {
 }
 
 describe('copyAssets', () => {
+  it('round four: a source disappearing between glob and stat does not fail the copy', async () => {
+    site = await makeSite({ 'a/file.txt': 'HEALTHY', 'a/gone.txt': 'GONE' })
+    const stat = fs.stat.bind(fs)
+    const spy = vi.spyOn(fs, 'stat').mockImplementation(async (file) => {
+      if (file === `${site.root}/a/gone.txt`)
+        throw Object.assign(new Error('gone'), { code: 'ENOENT' })
+      return stat(file)
+    })
+    try {
+      const manifest = createAssetManifest()
+      const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+        ...deps,
+        manifest,
+      })
+      expect(result.error).toBeUndefined()
+      expect(manifest.lookup('file.txt')).toBe('file.txt')
+    } finally {
+      spy.mockRestore()
+    }
+  })
   it('reports a refused Sass write separately from an intentional partial skip', async () => {
     site = await makeSite({
       'a/site.scss': 'b { color: red }',

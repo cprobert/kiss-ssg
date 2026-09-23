@@ -63,6 +63,88 @@ describe('review regressions', () => {
     await rebuildSettled()
   }
 
+  it('round four: a failed replay still restores a refused asset and refreshes the report', async () => {
+    await start({ 'src/pages/old.hbs': 'OLD' })
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await site.touch('src/pages/index.hbs', '{{missingHelper "value"}}')
+    await site.touch('src/assets/old.html', 'ASSET')
+    kiss._pendingReplay = true
+    await event('old.html', 'add')
+    expect(await site.read('public/old.html')).toBe('ASSET')
+    expect(kiss.report().ok).toBe(false)
+    expect(kiss.report().failures).toHaveLength(1)
+    expect(kiss.report().outputs.collisions).toEqual([])
+  })
+
+  it.each([false, true])(
+    'round four: removing a shadowing page restores an extra asset copy, failing replay=%s',
+    async (broken) => {
+      await start({ 'src/pages/old.hbs': 'PAGE', 'extra/old.html': 'ASSET' })
+      kiss.copyAssets(`${site.root}/extra`, site.build)
+      await kiss._assetQueue
+      expect(await site.read('public/old.html')).toBe('PAGE')
+      await fs.unlink(`${site.src}/pages/old.hbs`)
+      if (broken)
+        await site.touch('src/pages/index.hbs', '{{missingHelper "value"}}')
+      await kiss._requestReplay()
+      expect(await site.read('public/old.html')).toBe('ASSET')
+      expect(kiss._assetManifest.lookup('old.html')).toBe('old.html')
+      expect(kiss.report().outputs.collisions).toEqual([])
+      expect(kiss.report().ok).toBe(!broken)
+    },
+  )
+
+  it('round four: deleting a page restores the default asset that it overwrote on the first build', async () => {
+    await start({ 'src/assets/old.html': 'ASSET', 'src/pages/old.hbs': 'PAGE' })
+    expect(await site.read('public/old.html')).toBe('PAGE')
+    await fs.unlink(`${site.src}/pages/old.hbs`)
+    await kiss._requestReplay()
+    expect(await site.read('public/old.html')).toBe('ASSET')
+    expect(kiss.report().outputs.collisions).toEqual([])
+  })
+
+  it('round four: watch asset copies retain their registered directories after chdir', async () => {
+    site = await makeSite({
+      'src/assets/file.txt': 'FIRST',
+      'src/pages/index.hbs': 'PAGE',
+    })
+    const cwd = process.cwd()
+    try {
+      process.chdir(site.root)
+      kiss = new Kiss({
+        folders: { src: './src', build: './public' },
+        logger: silentLogger,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      const owner = kiss._outputs.owner(`${site.build}/file.txt`)
+      const reload = vi.spyOn(kiss, '_reload')
+      await fs.ensureDir(`${site.root}/elsewhere`)
+      process.chdir(`${site.root}/elsewhere`)
+      await site.touch('src/assets/file.txt', 'SECOND')
+      await event('file.txt')
+      expect(await site.read('public/file.txt')).toBe('SECOND')
+      expect(kiss._outputs.owner(`${site.build}/file.txt`)).toBe(owner)
+      expect(reload.mock.calls.at(-1)[0]).toBe(
+        path.resolve(site.build, 'file.txt'),
+      )
+      expect(kiss.report().ok).toBe(true)
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  it('round four: inline page collision owners do not contain template bodies', async () => {
+    const template = '<article>PRIVATE TEMPLATE BODY {{title}}</article>'
+    await start({ 'src/assets/inline.html': 'ASSET' }, {}, (k) =>
+      k.page({ view: template, slug: 'inline' }).generate(),
+    )
+    const collisions = JSON.stringify(kiss.report().outputs.collisions)
+    expect(collisions).not.toContain('PRIVATE TEMPLATE BODY')
+    expect(kiss.report().outputs.collisions).toHaveLength(1)
+  })
+
   it('round three: failed hashed Sass preserves the preview, recovers, and still deletes removed sources', async () => {
     await start(
       {

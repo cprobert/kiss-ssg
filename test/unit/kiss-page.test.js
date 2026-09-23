@@ -25,6 +25,20 @@ const make = (view, opts = {}) => {
 }
 
 describe('url inference', () => {
+  it('updates the cached filesystem path after route changes and build promotion', () => {
+    const p = make('v.hbs', { slug: 'first' })
+    expect(p.outputPath).toBe(path.resolve('out/first.html'))
+    p.slug = 'second'
+    expect(p.outputPath).toBe(path.resolve('out/second.html'))
+    p.path = 'nested'
+    expect(p.outputPath).toBe(path.resolve('out/nested/second.html'))
+    p.ext = 'xml'
+    expect(p.outputPath).toBe(path.resolve('out/nested/second.xml'))
+    p.extLess = true
+    expect(p.outputPath).toBe(path.resolve('out/nested/second/index.xml'))
+    p.buildDir = 'promoted'
+    expect(p.outputPath).toBe(path.resolve('promoted/nested/second/index.xml'))
+  })
   it('builds <path>/<slug>.<ext> with a slugified path and slug', () => {
     const p = make('v.hbs', {
       path: '/About Us/',

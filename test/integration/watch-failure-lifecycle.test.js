@@ -233,7 +233,7 @@ describe('a failure the replay cannot re-derive', () => {
     )
   })
 
-  it('keeps no map entry for a copy that succeeded', async () => {
+  it('keeps no failure-retry entry for a copy that succeeded', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'hi',
       'src/assets/css/site.scss': 'body { color: red; }',
@@ -242,10 +242,8 @@ describe('a failure the replay cannot re-derive', () => {
       .scan()
       .generate()
     await kiss.complete()
-    // Both maps, pruned together: a replay re-runs a copy only to re-check a
-    // failure, so a copy with none needs no registration either. Keeping one
-    // and not the other is how a long-lived process copying into a fresh
-    // destination each run accumulates an entry per success.
+    // Failure retries remain separate from restoration registrations, which
+    // live while a copy has output producers that a page could shadow.
     expect(kiss._sassFailures.size).toBe(0)
     expect(kiss._assetCopies.size).toBe(0)
   })

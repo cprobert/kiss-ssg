@@ -345,6 +345,10 @@ declare class Kiss {
      * @private
      */
     private _assetCopies;
+    /** @private @type {Map<string, {sourceDir: string, targetDir: string}>} */
+    private _restorableAssets;
+    /** @private @type {{sourceDir: string, targetDir: string, directory: string}} */
+    private _defaultAssetCopy;
     /** @private */
     private _failuresReported;
     /** @private */
