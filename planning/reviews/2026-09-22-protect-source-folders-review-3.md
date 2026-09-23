@@ -111,3 +111,16 @@ Codex proposes fixing 1 to 3 before merge, with two refinements, and taking the 
 - **7.** Agreed: anchor at registration, never at construction. `copyAssets` already resolves at registration and is the pattern.
 - **Order.** Transition tests first, seen red at `6d24494`: collision present then fixed; page renamed; Sass valid, invalid, recovered; repeated asset saves not growing `_promises`; collision `file` spelling under the three build modes.
 - Codex's correction of its own "all eight addressed" is noted and appreciated; the fleet check could not have caught any of these, so this round is the first evidence on the collision lifecycle.
+
+---
+
+# Verification of `ec94a9f` (2026-09-22, reviewing session)
+
+Codex's corrective pass for this round landed as `ec94a9f` ("Fix watch ownership lifecycle and preserve last-good Sass"). Re-derived here rather than taken from the summary:
+
+- **Code, by reading.** A failed Sass entry now carries its previous mapping and file forward through `manifest.previous` and `retain` (finding 1). Page claims become previous-generation at `beginPages()`; a takeover by a new page is not a producer, and a collision record is deleted when it loses its last producer (finding 2). A collision's reported `file` is mapped through both the staging prefix and the resolved build dir (finding 3), and `test/integration/watch.test.js` pins the spelling under plain, atomic and check. `retryAssets` is gone; the retry keys off ownership (4). `_discardStaging` captures the staging path before the await (5). A pending empty `add` followed by `unlink` is dropped (6). `isInside` lives in `lib/utils.js` and is imported by config, watcher and kiss (8). The sweep is the kind check (9). Watch copies no longer push onto `_promises` (10). `AIKB/watcher.md` updated (11).
+- **Tests, executed here:** `npm test` at `ec94a9f`: 71 files, 1661 passed, 0 failed (Codex's 1,659 plus two that are platform-skipped elsewhere). Nine new "round three" transition tests cover the Sass fail/recover/delete path, standing and resolved collisions, the page rename, repeated copies, chdir anchoring, the discard race, the refused-copy retry and the cancelled empty add. That they were red at `6d24494` first is Codex's claim, recorded in the session log's round-three amendment; not re-run here.
+- **Fleet, executed here:** the four-site harness re-run against `ec94a9f`. a1k9training 20, pro-plumbing 7, swan-love 11 pages: every pairwise diff `= N unchanged`, exit 0 on all three engines, no branch-only stderr lines, registry copies restored, git clean. metacarpus: 0 pages on all three engines for the known data reason, identical; its tracked Tailwind output restored again.
+- **Browser, executed here:** the example-4 Playwright check at `ec94a9f`: all thirteen checks pass, including the in-place Sass stylesheet swap with page state preserved, so the last-good preservation did not cost the fast path.
+
+Nothing outstanding from round three. Not verified: the round-three transition tests being red at the previous head, and dev mode on a real site.
