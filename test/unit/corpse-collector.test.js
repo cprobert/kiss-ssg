@@ -161,6 +161,16 @@ describe('isConsumerSitePath', () => {
     )
   })
 
+  // `npx kiss-ssg init` writes the site's `.claude/settings.json`, and the
+  // published surfaces tell a site to commit it. This repo has none, so every
+  // mention read as a missing file.
+  it('reads .claude/settings.json as the consuming site’s in the published surfaces only', () => {
+    const p = '.claude/settings.json'
+    for (const source of ['README.md', 'GUIDE.md', 'llms.txt', 'AIKB/init.md'])
+      expect(isConsumerSitePath(p, source), source).toBe(true)
+    expect(isConsumerSitePath(p, 'CLAUDE.md')).toBe(false)
+  })
+
   it('never excuses a path under any other root', () => {
     expect(isConsumerSitePath('examples/1-scan/router.js', 'README.md')).toBe(
       false,

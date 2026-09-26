@@ -10,12 +10,15 @@ Two things in the folder are written by these skills and never by the engine. **
 
 ## Install
 
+From the site's folder, in a shell:
+
 ```
-/plugin marketplace add cprobert/kiss-ssg
-/plugin install kiss-memory@kiss-ssg
+claude plugin marketplace add cprobert/kiss-ssg --scope project
+claude plugin install kiss-ssg@kiss-ssg --scope project
+claude plugin install kiss-memory@kiss-ssg --scope project
 ```
 
-The first command registers this repository as a marketplace (skip it if you already added it for the `kiss-ssg` plugin); the second installs this plugin from it.
+The first command registers this repository as a marketplace; the other two install its two plugins. **Project scope** records them in the site's `.claude/settings.json`, which is committed with the site, so the site says which skills it is built with. `npx kiss-ssg@latest init` — the one-line setup for a new site — writes the same entries and prints these three commands, because declaring a plugin in the settings file does not install it. Inside a session that is already running, `/plugin` can install them too (pick project scope if it asks); restart `claude` afterwards so the skills load. See the root [README's Quick start](../../README.md#quick-start).
 
 Skills are then available as `/kiss-memory:<name>` — but you don't have to invoke them by name. Each skill's frontmatter `description` is written as "use when…" triggers, which is what Claude Code matches against your request. Say "catch me up on this site", "we're done, ship it" or "the same feedback keeps coming back" and the matching skill loads without you naming it.
 

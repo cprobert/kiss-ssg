@@ -83,48 +83,35 @@ describe('forbiddenPackedFiles', () => {
 })
 
 describe('missingPackedFiles', () => {
+  // Each case drops one path from the full list rather than spelling the list
+  // out, so adding a required path is one line in scripts/gates.mjs and not an
+  // edit to every case here.
+  const allBut = (path) => REQUIRED_PACKED.filter((f) => f !== path)
+
   it('reports nothing when every required path ships', () => {
     expect(missingPackedFiles([...REQUIRED_PACKED, 'README.md'])).toEqual([])
   })
 
   it('names the paths dropped from the tarball', () => {
-    expect(missingPackedFiles(['lib/kiss.js'])).toEqual([
-      'bin/kiss-ssg.js',
-      'types/kiss.d.ts',
-      'llms.txt',
-      'AIKB/kiss.md',
-      'examples/README.md',
-    ])
+    expect(missingPackedFiles(['lib/kiss.js'])).toEqual(allBut('lib/kiss.js'))
   })
 
   // The declarations are only useful to a consumer if they are in the tarball:
   // `types`/`exports` point at a path npm would otherwise not ship.
   it('requires the generated declarations entry', () => {
     expect(REQUIRED_PACKED).toContain('types/kiss.d.ts')
-    expect(
-      missingPackedFiles([
-        'bin/kiss-ssg.js',
-        'lib/kiss.js',
-        'llms.txt',
-        'AIKB/kiss.md',
-        'examples/README.md',
-      ]),
-    ).toEqual(['types/kiss.d.ts'])
+    expect(missingPackedFiles(allBut('types/kiss.d.ts'))).toEqual([
+      'types/kiss.d.ts',
+    ])
   })
 
   // `npx kiss-ssg check` is only reachable if the bin ships: package.json's
   // `bin` entry points at a path `files` could drop silently.
   it('requires the check bin', () => {
     expect(REQUIRED_PACKED).toContain('bin/kiss-ssg.js')
-    expect(
-      missingPackedFiles([
-        'lib/kiss.js',
-        'types/kiss.d.ts',
-        'llms.txt',
-        'AIKB/kiss.md',
-        'examples/README.md',
-      ]),
-    ).toEqual(['bin/kiss-ssg.js'])
+    expect(missingPackedFiles(allBut('bin/kiss-ssg.js'))).toEqual([
+      'bin/kiss-ssg.js',
+    ])
   })
 
   // Proves the examples actually ship: `files` in package.json could drop
@@ -132,16 +119,21 @@ describe('missingPackedFiles', () => {
   // would show up.
   it('requires the examples README', () => {
     expect(REQUIRED_PACKED).toContain('examples/README.md')
-    expect(
-      missingPackedFiles([
-        'bin/kiss-ssg.js',
-        'lib/kiss.js',
-        'types/kiss.d.ts',
-        'llms.txt',
-        'AIKB/kiss.md',
-      ]),
-    ).toEqual(['examples/README.md'])
+    expect(missingPackedFiles(allBut('examples/README.md'))).toEqual([
+      'examples/README.md',
+    ])
   })
+
+  // `npx kiss-ssg init` copies starter/ and the README links GUIDE.md: both are
+  // top-level entries in `files`, and `gitignore` is the file npm would drop
+  // if it were spelled with its dot.
+  it.each(['starter/router.js', 'starter/gitignore', 'GUIDE.md'])(
+    'requires %s',
+    (path) => {
+      expect(REQUIRED_PACKED).toContain(path)
+      expect(missingPackedFiles(allBut(path))).toEqual([path])
+    },
+  )
 
   it('normalises Windows separators before comparing', () => {
     expect(missingPackedFiles(['lib\\kiss.js'], ['lib/kiss.js'])).toEqual([])

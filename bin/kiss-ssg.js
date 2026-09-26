@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// `kiss-ssg check <script>` and `kiss-ssg aikb <script>`: run the site's own
-// build script as a dry run and print what it built, or run the same dry run
-// and let it record the site's knowledge base. Thin on purpose — every decision
-// it makes lives in `lib/check.js` (argv, the reports file, the baseline, the
-// exit code) and in `lib/build-report.js` (the report itself); this file is the
-// I/O around them.
+// `kiss-ssg init` sets a folder up for a coding agent and drops a starter site;
+// `kiss-ssg check <script>` and `kiss-ssg aikb <script>` run the site's own build
+// script as a dry run and print what it built, or run the same dry run and let
+// it record the site's knowledge base. Thin on purpose — every decision it makes
+// lives in `lib/init.js` (what to create, merge or leave alone), `lib/check.js`
+// (argv, the reports file, the baseline, the exit code) and
+// `lib/build-report.js` (the report itself); this file is the I/O around them.
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -23,6 +24,126 @@ import {
   recordedLine,
 } from '../lib/check.js'
 import { formatReport } from '../lib/build-report.js'
+import {
+  INIT_HELP,
+  describeAction,
+  nextSteps,
+  parseInitArgs,
+  planInit,
+} from '../lib/init.js'
+
+// `init` is its own command with its own arguments, so it is handled before
+// check's parse: it runs no build script and prints no report.
+if (process.argv[2] === 'init') {
+  const init = parseInitArgs(process.argv.slice(3))
+  if (init.error || init.help) {
+    if (init.error) console.error(`kiss-ssg: ${init.error}\n`)
+    ;(init.error ? console.error : console.log)(INIT_HELP)
+    process.exit(init.error ? 1 : 0)
+  }
+  const cwd = process.cwd()
+  const here = (p) => path.join(cwd, p)
+  const read = (p) =>
+    fs.existsSync(here(p)) ? fs.readFileSync(here(p), 'utf8') : null
+  const starterDir = path.join(import.meta.dirname, '..', 'starter')
+  /** @type {Record<string, string>} */
+  const starter = {}
+  const walk = (rel) => {
+    for (const e of fs.readdirSync(path.join(starterDir, rel), {
+      withFileTypes: true,
+    })) {
+      const p = rel ? `${rel}/${e.name}` : e.name
+      if (e.isDirectory()) walk(p)
+      else starter[p] = fs.readFileSync(path.join(starterDir, p), 'utf8')
+    }
+  }
+  walk('')
+  const { version } = JSON.parse(
+    fs.readFileSync(
+      path.join(import.meta.dirname, '..', 'package.json'),
+      'utf8',
+    ),
+  )
+  const actions = planInit({
+    folderName: path.basename(cwd),
+    version,
+    install: init.install,
+    // Its package.json, not the folder: an empty folder is not an engine.
+    hasEngine: fs.existsSync(here('node_modules/kiss-ssg/package.json')),
+    hasRouter: fs.existsSync(here('router.js')),
+    hasSrc: fs.existsSync(here('src')),
+    hasMain: (() => {
+      try {
+        const { main } = JSON.parse(read('package.json') ?? '{}')
+        return typeof main === 'string' && fs.statSync(here(main)).isFile()
+      } catch {
+        return false
+      }
+    })(),
+    files: {
+      'package.json': read('package.json'),
+      'CLAUDE.md': read('CLAUDE.md'),
+      'AGENTS.md': read('AGENTS.md'),
+      '.claude/settings.json': read('.claude/settings.json'),
+      '.gitignore': read('.gitignore'),
+    },
+    starter,
+  })
+  // A `create` refuses to replace anything (`wx` fails on an existing path,
+  // a dangling link included), and a `merge` or `append` lands whole or not
+  // at all: written beside the file, then renamed over it. The first failure
+  // stops the run, so nothing is reported as done that was not.
+  const write = (action) => {
+    const target = here(action.path)
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    if (action.verb === 'create') {
+      fs.writeFileSync(target, action.content, { flag: 'wx' })
+      return
+    }
+    const temp = `${target}.kiss-init-${process.pid}`
+    try {
+      fs.writeFileSync(temp, action.content, { flag: 'wx' })
+      fs.renameSync(temp, target)
+    } finally {
+      fs.rmSync(temp, { force: true })
+    }
+  }
+  let status = 0
+  for (const action of actions) {
+    if (action.kind === 'write') {
+      try {
+        write(action)
+      } catch (err) {
+        console.error(
+          `kiss-ssg: could not ${action.verb} ${action.path} (${err.message}); stopped here, and nothing after it was done`,
+        )
+        process.exit(1)
+      }
+    }
+    console.log(describeAction(action))
+    if (action.kind === 'install') {
+      // npm is npm.cmd on Windows, which Node will not spawn without a shell,
+      // and a shell given an argument array prints DEP0190 on every run. One
+      // command string instead: the only value in it is our own version.
+      const command = `npm install --save-dev ${action.spec}`
+      const npm =
+        process.platform === 'win32'
+          ? spawnSync(command, { cwd, stdio: 'inherit', shell: true })
+          : spawnSync('npm', ['install', '--save-dev', action.spec], {
+              cwd,
+              stdio: 'inherit',
+            })
+      if (npm.status !== 0) {
+        console.error(
+          `kiss-ssg: npm install --save-dev ${action.spec} failed; run it yourself before building`,
+        )
+        status = 1
+      }
+    }
+  }
+  console.log(`\n${nextSteps()}`)
+  process.exit(status)
+}
 
 const parsed = parseArgs(process.argv.slice(2))
 if (parsed.error) {

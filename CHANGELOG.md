@@ -3,6 +3,52 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.6.1 — 2026-09-26
+
+### `npx kiss-ssg init` — an empty folder to a site an agent can grow
+
+```sh
+mkdir my-site && cd my-site
+npx kiss-ssg@latest init
+```
+
+`init` installs kiss-ssg, drops a one-page starter site (`router.js`,
+`src/layouts/layout.hbs`, `src/pages/index.hbs`, a `.gitignore`), adds the
+`build`, `dev`, `check` and `aikb` scripts to `package.json`, points
+`CLAUDE.md` and `AGENTS.md` at `node_modules/kiss-ssg/llms.txt`, and declares
+kiss-ssg's two Claude Code plugins in `.claude/settings.json`. It ends by
+printing the three commands that install those plugins at project scope —
+declaring a plugin does not install it — and a prompt to paste into the agent.
+
+It never overwrites a file. `package.json` and `.claude/settings.json` are
+merged key by key, `CLAUDE.md`, `AGENTS.md` and `.gitignore` are only appended
+to, and the starter is written only when no project is there yet (no
+`router.js`, no `src/`, no `package.json` `main` file or `build` script of its
+own). On an existing site `"type"` and `"main"` are left as they are, and a
+`kiss-ssg` version your `package.json` already asks for is not replaced — run
+`npm install` instead. Running it twice changes nothing. `--no-install` skips
+npm; `kiss-ssg init --help` lists exactly what it writes.
+
+### The README is the agent quick start; the reference is `GUIDE.md`
+
+The README now opens with the setup above, prompts to copy for each skill, and
+how to set things up by hand or for agents other than Claude Code. Everything
+it used to document — every method, option and helper, and migrating from v1 —
+moved unchanged to `GUIDE.md`, which ships in the package beside `llms.txt`.
+
+### Plugins install at project scope
+
+Every install instruction — the README, `llms.txt`, both plugin READMEs — is now
+
+```sh
+claude plugin marketplace add cprobert/kiss-ssg --scope project
+claude plugin install kiss-ssg@kiss-ssg --scope project
+claude plugin install kiss-memory@kiss-ssg --scope project
+```
+
+so the site's committed `.claude/settings.json` records which skills it is
+built with.
+
 ## 2.6.0 — 2026-09-23
 
 ### Source folders are protected before a build touches disk

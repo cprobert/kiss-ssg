@@ -8,9 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `llms.txt` at the repo root is an LLM-oriented API cheat-sheet (per the [llmstxt.org](https://llmstxt.org) convention) that ships in the npm package so an agent working in a project that depends on `kiss-ssg` can read `node_modules/kiss-ssg/llms.txt` instead of the source. Keep it in sync with `lib/kiss.js` when the public API changes.
 
-`package.json`'s `files` whitelist keeps the published tarball to `bin/`, `lib/`, `types/`, `llms.txt`, `AIKB/`, `examples/` and `CHANGELOG.md` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `AIKB/`, `examples/` and `CHANGELOG.md` ship deliberately, so an agent in a consuming project can read the per-module notes, the runnable examples (`node_modules/kiss-ssg/examples/`) and what changed between the version a site was written against and the one it now has, alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/` and the configs are all excluded. Each example builds into its own gitignored `public/`, which never ships — and does not ship only because `files` carries `"!examples/*/public"`: the whitelist overrides `.gitignore`, so a gitignored folder inside a whitelisted one is published anyway. It did, for 75 files, until the `pack` gate learned to ask what is in the tarball that should not be (`forbiddenPackedFiles`) as well as what is missing from it.
+`package.json`'s `files` whitelist keeps the published tarball to `bin/`, `lib/`, `types/`, `llms.txt`, `GUIDE.md`, `AIKB/`, `examples/`, `starter/` and `CHANGELOG.md` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `README.md` is the agent quick start and `GUIDE.md` the library reference it links to; `starter/` is the site `npx kiss-ssg init` copies, shipping its ignore file as `starter/gitignore` because npm never packs a `.gitignore`; `AIKB/`, `examples/` and `CHANGELOG.md` ship deliberately, so an agent in a consuming project can read the per-module notes, the runnable examples (`node_modules/kiss-ssg/examples/`) and what changed between the version a site was written against and the one it now has, alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/` and the configs are all excluded. Each example builds into its own gitignored `public/`, which never ships — and does not ship only because `files` carries `"!examples/*/public"`: the whitelist overrides `.gitignore`, so a gitignored folder inside a whitelisted one is published anyway. It did, for 75 files, until the `pack` gate learned to ask what is in the tarball that should not be (`forbiddenPackedFiles`) as well as what is missing from it.
 
-`bin/kiss-ssg.js` is the published command line (`npx kiss-ssg check <script>` and `npx kiss-ssg aikb <script>`) — a thin wrapper whose decisions all live in `lib/check.js`.
+`bin/kiss-ssg.js` is the published command line (`npx kiss-ssg init`, `npx kiss-ssg check <script>` and `npx kiss-ssg aikb <script>`) — a thin wrapper whose decisions all live in `lib/init.js` and `lib/check.js`.
 
 `src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`). Treat `docs/` as build output. Design specs, implementation plans and session logs live in `planning/` (`planning/specs/`, `planning/plans/`, `planning/sessions/`) — never under `docs/`, which `docs.js` empties on every run. `scripts/` holds dev tooling that never ships (the `files` whitelist excludes it).
 
@@ -40,6 +40,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Page renderer                         | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
 | Build report (the machine verdict)    | `lib/build-report.js`        | `AIKB/build-report.md`        |
 | `kiss-ssg check` decision core        | `lib/check.js`               | `AIKB/check.md`               |
+| `kiss-ssg init` plan                  | `lib/init.js`                | `AIKB/init.md`                |
 | Logger                                | `lib/logger.js`              | `AIKB/logger.md`              |
 | Config + folder derivation            | `lib/config.js`              | `AIKB/config.md`              |
 | Built-in Handlebars helpers           | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
@@ -79,6 +80,11 @@ npm run typecheck        # tsc --checkJs over lib/, scripts/ and bin/ — checks
                          # (tsconfig.check.json; tsconfig.types.json is the one that emits types/)
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the five pre-PR gates: test, lint, typecheck, format, pack
+npx kiss-ssg init              # set a folder up for an agent: CLAUDE.md/AGENTS.md, package.json
+                               # scripts, the plugins declared in .claude/settings.json, and a
+                               # starter site when there is none. Never overwrites; --no-install.
+                               # Prints the three `claude plugin … --scope project` commands —
+                               # a declared plugin is not installed until they run.
 npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing.
                                # Diffs against the site's own AIKB/last-build.json when it has
                                # one, so it says what this working tree changed since the last
@@ -145,7 +151,7 @@ Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc stale
 
 - Engine code goes in `lib/`, one responsibility per file, with a unit test in `test/unit/` (the orchestrator `lib/kiss.js` is covered by `test/integration/` instead) and an `AIKB/` doc.
 - Dev tooling in `scripts/` gets a `test/unit/` test too — it is outside the engine, so nothing else exercises it. Exempt a genuinely thin file with `// @test-exempt: <reason>` near the top.
-- `bin/` holds the published command line and nothing else: one thin wrapper per command, every decision in a `lib/` module with its own unit test, and the wrapper itself covered end-to-end by `test/integration/check.test.js`.
+- `bin/` holds the published command line and nothing else: one thin wrapper per command, every decision in a `lib/` module with its own unit test, and the wrapper itself covered end-to-end by `test/integration/check.test.js` (check, aikb) and `test/integration/init.test.js` (init).
 - Only `lib/logger.js` imports `colors`. Everything else logs through the injected `logger`.
 - Never push an unhandled promise onto `Kiss._promises` — see `AIKB/kiss.md`.
 - Public API changes: update `llms.txt` and `README.md`, and regenerate `types/` with `npm run types`, in the same commit. A feature an agent should reach for also goes into the skill that would use it (`plugins/*/skills/`) and gets a row in `test/unit/skill-coverage.test.js`, which is what makes that obligation fail loudly rather than surface as a question months later. **A row asserting a doc _mentions_ something does not catch a doc that contradicts itself** — that blind spot has now been hit twice, and the second time a clean-room agent followed the stale half and wrote the very call the feature removed. When a change makes an old instruction _wrong_ rather than merely incomplete, ban the old sentence in that file's `CONTRADICTIONS` table too: a mention test is satisfied by the correct paragraph sitting next to the wrong one.

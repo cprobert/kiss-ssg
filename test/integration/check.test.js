@@ -427,13 +427,13 @@ describe('kiss-ssg check', () => {
       'cannot read --against file no-such-report.json',
     )
     // A usage error, so it prints the help the way every other one does.
-    expect(run.stderr).toContain('kiss-ssg <command> <script>')
+    expect(run.stderr).toContain('kiss-ssg <command> [args…]')
   })
 
   it('prints the help for --help, and a usage error for anything it cannot parse', () => {
     const help = check(repoRoot, ['--help'])
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain('kiss-ssg <command> <script>')
+    expect(help.stdout).toContain('kiss-ssg <command> [args…]')
     expect(help.stdout).toContain('aikb <script>')
 
     const wrong = check(repoRoot, ['build', 'site.js'])

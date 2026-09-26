@@ -97,6 +97,8 @@ const aboutThisRepo = (source) =>
 export function isConsumerSitePath(path, source) {
   if (RECORDED_AIKB_FILES.test(path)) return true
   if (path.startsWith('src/') && !aboutThisRepo(source)) return true
+  // `npx kiss-ssg init` writes the site's plugin settings; this repo has none.
+  if (path === '.claude/settings.json' && !aboutThisRepo(source)) return true
   return false
 }
 
@@ -297,13 +299,21 @@ function main() {
   // what the checks below hold to account — not the engine, which the test suite
   // already covers. `planning/` is excluded by the walk: specs and plans record
   // what was true when they were written, the same as a session log.
-  const DOC_TARGETS = ['CLAUDE.md', 'README.md', 'llms.txt', 'AIKB', '.claude']
+  const DOC_TARGETS = [
+    'CLAUDE.md',
+    'README.md',
+    'GUIDE.md',
+    'llms.txt',
+    'AIKB',
+    '.claude',
+  ]
   // Where a slash command can legitimately appear. AIKB notes describe engine
   // internals, where a `/index` path fragment is not a dead command.
   const COMMAND_TARGETS = ['CLAUDE.md', 'README.md', '.claude']
   // The two files that promise an API to someone who cannot see the source:
-  // llms.txt ships inside the npm package, README.md is the front door.
-  const API_TARGETS = ['llms.txt', 'README.md', 'CLAUDE.md']
+  // llms.txt ships inside the npm package, README.md is the front door and
+  // GUIDE.md the reference it links to.
+  const API_TARGETS = ['llms.txt', 'README.md', 'GUIDE.md', 'CLAUDE.md']
 
   // ── Check 1 — referenced repo paths missing on disk ──────────────────────────
   // The highest-value check: a wrong path is almost always a real corpse.
@@ -464,8 +474,10 @@ function main() {
   // script name, and without it the match backtracks to a bogus `npm run e`.
   // llms.txt ships inside the consumer's node_modules and every `npm run` in
   // it is a script it tells THAT project to add — never one of this repo's.
+  // README.md is the same since it became the consuming site's quick start:
+  // its `npm run build` is the script `init` adds to the site.
   const scriptRefs = grepFiles(
-    DOC_TARGETS.filter((t) => t !== 'llms.txt'),
+    DOC_TARGETS.filter((t) => t !== 'llms.txt' && t !== 'README.md'),
     ['.md', '.txt'],
     'npm run ([a-z][a-z0-9:-]*)(?=[\\s`)]|$)',
   ).filter((h) => !(h.match in scripts))
