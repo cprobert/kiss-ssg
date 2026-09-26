@@ -358,14 +358,21 @@ describe('planInit on a folder that already has things in it', () => {
     expect(pkg.scripts.build).toBe('node router.js')
   })
 
-  it('adds no router.js scripts to a site that has src/ but no router.js', () => {
-    const action = byPath(
-      planInit(state({ hasSrc: true, files: { 'package.json': '{}' } })),
-      'package.json',
-    )
-    expect(action.kind).toBe('skip')
-    expect(action.reason).toMatch(/no router\.js/)
-  })
+  // Codex, at /branch-close: the create path lacked the guard the merge path had.
+  it.each([
+    ['an existing package.json', '{}'],
+    ['no package.json', null],
+  ])(
+    'adds no router.js scripts to a site that has src/ but no router.js, with %s',
+    (_, text) => {
+      const action = byPath(
+        planInit(state({ hasSrc: true, files: { 'package.json': text } })),
+        'package.json',
+      )
+      expect(action.kind).toBe('skip')
+      expect(action.reason).toMatch(/no router\.js/)
+    },
+  )
 
   // Found by the final review: router.js and src/ are kiss's shape, not every
   // project's. A CommonJS app with `main: index.js` got "type": "module".
