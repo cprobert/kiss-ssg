@@ -1,35 +1,71 @@
 # kiss-ssg
 
-Kiss Static Site Generator, is an open-source MVC html website builder (for node), that leverages handlebar templates to make quick, simple and blisteringly fast websites.
+A static site generator built to be driven by a coding agent. You describe the site; the agent writes it with kiss-ssg's skills, and every build hands back a verdict the agent can act on (`kiss-ssg check`) and a memory of what the site is (`kiss-ssg aikb`). Handlebars views, JSON or fetched models, small JS controllers — nothing to learn before the first page, and nothing hidden from the person who opens it later.
 
-Kiss-ssg uses [handlebar partials](https://handlebarsjs.com/guide/partials.html#partials) and [handlebar-layouts](https://www.npmjs.com/package/handlebars-layouts) to help you make DRY static websites.
+## Quick start
 
-Install with `npm install kiss-ssg --save-dev`.
+You need [Node 22.12+](https://nodejs.org) and [Claude Code](https://claude.com/claude-code).
+
+```sh
+mkdir my-site && cd my-site
+npx kiss-ssg@latest init
+claude plugin marketplace add cprobert/kiss-ssg --scope project
+claude plugin install kiss-ssg@kiss-ssg --scope project
+claude plugin install kiss-memory@kiss-ssg --scope project
+claude
+```
+
+`init` installs kiss-ssg, drops a one-page starter site, points `CLAUDE.md` and `AGENTS.md` at the API contract, and adds the build scripts to `package.json`. The three `claude plugin` lines install kiss-ssg's skills at **project scope**: they are recorded in the site's `.claude/settings.json`, which you commit, so the site says which skills it is built with. `init` prints the same commands when it finishes. Once `claude` is open, paste:
+
+> Use the kiss-site-new skill to build me a site for **a small bakery in Leeds: home, menu, about, and a news section for seasonal specials**. Run the build check when you're done.
+
+Change the bold part. That's the whole setup. `npm run dev` previews the site with live reload; `npm run build` writes it to `public/`; `npm run check` verifies it.
+
+Running `init` in a folder that already has a site is safe: it never overwrites a file, merges into `package.json` and `.claude/settings.json` key by key, and leaves an existing `router.js` or `src/` alone. Running it twice changes nothing.
+
+## Prompts to copy
+
+You don't have to name the skills — each one's description is written so Claude reaches for it on its own — but naming one makes the first run predictable.
+
+| You want to…                  | Paste                                                                                          | Skill it reaches                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Start a site                  | Use the kiss-site-new skill to build me a site for …                                           | `kiss-site-new`                          |
+| Add a whole section           | Add a blog section to this site: posts from Markdown files, a paginated index and an RSS feed. | `kiss-site-new`                          |
+| Add or change one page        | Add a Contact page with our address and opening hours, linked from the nav.                    | `kiss-page-add`                          |
+| Find out why a build fails    | The kiss build is failing — run the check and fix what it reports.                             | `kiss-build-check`                       |
+| Catch up on a site            | Catch me up on this site: what it is, how it's built and what bites.                           | `kiss-site-brief`                        |
+| Upgrade kiss-ssg              | Upgrade this site to the latest kiss-ssg and tell me what changed.                             | `kiss-site-migrate`                      |
+| Frame, steer, finish a change | Open a branch for … / Pulse this branch / We're done, close the branch.                        | `kiss-branch-open` / `-pulse` / `-close` |
+
+## What you just installed
+
+**The `kiss-ssg` plugin builds sites.** `kiss-site-new` (a site or a whole section from a description), `kiss-page-add` (one page on a site that already builds), `kiss-build-check` (verify a build and read its report) and `kiss-site-migrate` (move a site across kiss-ssg versions). The skills carry no copy of the API — each reads the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. See [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
+
+**The `kiss-memory` plugin remembers them.** `npx kiss-ssg aikb router.js` records what the site is into `AIKB/`; `kiss-site-brief` reads it back to a developer returning after two years, and `kiss-branch-open`, `kiss-branch-pulse` and `kiss-branch-close` frame, steer and close a piece of work against the site's own build output, moving that baseline only when the close records it. `kiss-memory-consolidate` tidies what the loop accumulates, between pieces of work. See [`plugins/kiss-memory/`](plugins/kiss-memory/).
+
+**In `node_modules/kiss-ssg/`**, for any agent: `llms.txt` (the API contract — `CLAUDE.md` imports it), `examples/` (eleven runnable sites to copy by shape), `AIKB/` (per-module notes), `GUIDE.md` (the full reference), `types/` (declarations your editor reads) and `CHANGELOG.md`.
+
+**The verdict.** `npx kiss-ssg check router.js` runs your build as a dry run and prints one JSON report per site, exit 1 on any failure, without touching the published output — see [Checking a build](GUIDE.md#checking-a-build).
+
+## Setting up by hand
+
+If you'd rather not run `init`, or the site already exists, from its folder:
+
+```sh
+npm install --save-dev kiss-ssg
+claude plugin marketplace add cprobert/kiss-ssg --scope project
+claude plugin install kiss-ssg@kiss-ssg --scope project
+claude plugin install kiss-memory@kiss-ssg --scope project
+```
+
+Then add the line `@node_modules/kiss-ssg/llms.txt` to the project's `CLAUDE.md`, so every session reads the API contract. Inside a session that is already running, `/plugin` can install them too (pick project scope if it asks); restart `claude` afterwards so their skills load.
+
+**Other agents** (Codex, Cursor, Copilot…): the plugins are Claude Code's, but everything they point at ships in the package. Tell the agent, in its own instructions file (`AGENTS.md` for Codex — `init` writes one), to read `node_modules/kiss-ssg/llms.txt` before touching the site and to verify every change with `npx kiss-ssg check router.js`.
 
 ## Requirements
 
-Node 22.12 or newer. kiss-ssg v2 is an ES module: use `import Kiss from 'kiss-ssg'`. Plain `require('kiss-ssg')` also works on Node ≥22.12.
+Node 22.12 or newer. kiss-ssg is an ES module (`import Kiss from 'kiss-ssg'`); `require('kiss-ssg')` also works on Node ≥22.12.
 
-## Using an AI coding agent?
+## Using the library directly
 
-Everything an agent needs ships in the package, so point it at `node_modules` rather than at this README. In the project's `CLAUDE.md` (or the equivalent for your agent), import the cheat-sheet:
-
-```markdown
-@node_modules/kiss-ssg/llms.txt
-```
-
-That file is the API contract: the pipeline, every method and option, the helpers, the migration recipes. Beside it sit `node_modules/kiss-ssg/AIKB/` (per-module notes), `node_modules/kiss-ssg/types/` (declarations the agent's editor reads) and `node_modules/kiss-ssg/examples/` (eleven runnable sites with a README each — copy the exemplar whose shape matches).
-
-Give the agent a verdict it can act on: `npx kiss-ssg check router.js` runs your build script as a dry run and prints one JSON report per site built, exit 1 on any failure, without touching the published output (see [Checking a build](#checking-a-build)), and `npx kiss-ssg aikb router.js` records what the site is into `AIKB/`, which the agent reads back next time.
-
-If the agent is Claude Code, this repository is also a plugin marketplace. In Claude Code, run:
-
-```
-/plugin marketplace add cprobert/kiss-ssg
-/plugin install kiss-ssg@kiss-ssg
-/plugin install kiss-memory@kiss-ssg
-```
-
-The first line registers this repository as a marketplace; the other two install its two plugins. `kiss-ssg` builds sites; `kiss-memory` remembers them — it reads the `AIKB/` folder `npx kiss-ssg aikb <build-script>` records, and the diff `kiss-ssg check` produces against that record by default, so a developer returning after two years can be briefed on what the site is and what bites (`/kiss-memory:kiss-site-brief`), and a piece of work can be framed, steered and closed against the site's own output (`/kiss-memory:kiss-branch-open`, `kiss-branch-pulse`, `kiss-branch-close`) — the baseline moving only when the close records it. Between pieces of work, `/kiss-memory:kiss-memory-consolidate` tidies what the loop accumulates: it folds the session logs' durable lessons into `AIKB/site.md`, an authored page the build never writes, retires feedback that keeps recurring so it stops being surfaced at every open, and repairs the notes `check` reports as stale, dangling or dead. See [`plugins/kiss-memory/`](plugins/kiss-memory/).
-
-The `kiss-ssg` plugin installs four skills, all named `kiss-<something>` so they're easy to spot alongside skills from other plugins — `/kiss-ssg:kiss-site-new` (build a site from a description, or a whole new section on one), `/kiss-ssg:kiss-page-add` (add or update a single page on a site that's already set up), `/kiss-ssg:kiss-site-migrate` (move a v1 project to v2) and `/kiss-ssg:kiss-build-check` (verify a build and read its report). They carry no copy of the API: each points at the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. You don't have to invoke them by name — each skill's description is written for automatic discovery, so a request like "add a page to this site" or "why is my kiss-ssg build failing" reaches for the matching skill on its own. The plugin source is [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
+Every method, option and helper — the build script, `.page()` / `.pages()` / `.scan()`, controllers, assets and cache busting, the sitemap, `llms.txt`, RSS and `robots.txt`, redirects, host URL policy, checking and recording a build, the helpers, and migrating from v1 — is in **[GUIDE.md](GUIDE.md)**.
