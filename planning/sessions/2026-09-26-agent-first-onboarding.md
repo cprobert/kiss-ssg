@@ -32,6 +32,8 @@ opened: 2026-09-26
 
 ### Amendments
 
+- **2026-09-26 — corpse-collector scanner taught the new surfaces.** Adjacent drift, absorbed here: the README became the consuming site's quick start, so the scanner reported that site's `.claude/settings.json` and `npm run build/dev/check` as this repo's corpses (11 rows), and it did not read `GUIDE.md` at all. `isConsumerSitePath` now excuses `.claude/settings.json` from the published surfaces (test seen red), Check 5 skips `README.md` as it skips `llms.txt`, and `GUIDE.md` joins the doc and API targets.
+
 ## Pulse log
 
 <!-- Slices: (1) plugin probe, (2) init + starter + tests, (3) docs move. Pulse at each boundary. -->
