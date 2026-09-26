@@ -8,7 +8,7 @@ Two commands share all of it. `check <script>` runs the site's build staged and 
 
 ## Public interface
 
-- `HELP` — the usage text both `--help` and a usage error print; it documents both commands.
+- `HELP` — the usage text both `--help` and a usage error print; it documents both commands, and names `init` in one line. `init` is not parsed here: the bin dispatches it to `lib/init.js` before `parseArgs` runs, because it takes no script and none of these options — so `parseArgs(['init'])` still answers `unknown command: init`, and `CheckArgs.command` stays `'check'|'aikb'|'help'`.
 - `parseArgs(argv)` → `{ command, script, args, summary, against, error }`. `command` is `'check'`, `'aikb'` or `'help'`; `script` is the site's build script and `args` everything after it, less our own `--summary`; `summary` is set by `--summary` on either side of the script; `against` is the report file `--against <file>` named, or `null`; `error` is a usage error (print it with `HELP` and exit 1), and it names the command it could not complete.
 - `readReports(text)` → the JSON Lines file `KISS_REPORT` collects, parsed into `BuildReport[]`. Blank lines are skipped; a malformed line throws.
 - `readReportsFile(text)` → the same `BuildReport[]`, from any of the three shapes a kept report file has: JSON Lines (a `KISS_REPORT` file), the JSON array `check` prints, or a single report object. What `--against` reads.
