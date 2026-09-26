@@ -72,6 +72,14 @@ if (process.argv[2] === 'init') {
     hasEngine: fs.existsSync(here('node_modules/kiss-ssg/package.json')),
     hasRouter: fs.existsSync(here('router.js')),
     hasSrc: fs.existsSync(here('src')),
+    hasMain: (() => {
+      try {
+        const { main } = JSON.parse(read('package.json') ?? '{}')
+        return typeof main === 'string' && fs.statSync(here(main)).isFile()
+      } catch {
+        return false
+      }
+    })(),
     files: {
       'package.json': read('package.json'),
       'CLAUDE.md': read('CLAUDE.md'),

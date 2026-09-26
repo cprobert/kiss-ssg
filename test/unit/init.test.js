@@ -28,6 +28,7 @@ const state = (over = {}) => ({
   hasEngine: false,
   hasRouter: false,
   hasSrc: false,
+  hasMain: false,
   starter: STARTER,
   ...over,
   files: {
@@ -161,7 +162,7 @@ describe('planInit never destroys anything', () => {
       dependencies: { x: '1' },
     })
     const action = byPath(
-      planInit(state({ files: { 'package.json': existing } })),
+      planInit(state({ hasRouter: true, files: { 'package.json': existing } })),
       'package.json',
     )
     expect(action.verb).toBe('merge')
@@ -364,6 +365,53 @@ describe('planInit on a folder that already has things in it', () => {
     )
     expect(action.kind).toBe('skip')
     expect(action.reason).toMatch(/no router\.js/)
+  })
+
+  // Found by the final review: router.js and src/ are kiss's shape, not every
+  // project's. A CommonJS app with `main: index.js` got "type": "module".
+  it('takes a package.json whose main file exists for a site, and leaves it alone', () => {
+    const actions = planInit(
+      state({
+        hasMain: true,
+        files: {
+          'package.json': JSON.stringify({
+            main: 'index.js',
+            scripts: { start: 'node index.js' },
+          }),
+        },
+      }),
+    )
+    expect(starterWrites(actions)).toEqual([])
+    expect(byPath(actions, 'package.json').kind).toBe('skip')
+  })
+
+  it('takes a package.json with its own build script for a site', () => {
+    const actions = planInit(
+      state({
+        files: {
+          'package.json': JSON.stringify({ scripts: { build: 'eleventy' } }),
+        },
+      }),
+    )
+    expect(starterWrites(actions)).toEqual([])
+    expect(byPath(actions, 'router.js').reason).toMatch(/scripts\.build/)
+  })
+
+  // `npm init -y` names an index.js that does not exist and a placeholder
+  // test script: that folder is empty, and still gets the starter.
+  it('still starts a site in a folder npm init -y has just made', () => {
+    const actions = planInit(
+      state({
+        files: {
+          'package.json': JSON.stringify({
+            main: 'index.js',
+            scripts: { test: 'echo "Error: no test specified" && exit 1' },
+          }),
+        },
+      }),
+    )
+    expect(byPath(actions, 'router.js').kind).toBe('write')
+    expect(json(byPath(actions, 'package.json')).type).toBe('module')
   })
 
   it('appends to a CRLF CLAUDE.md with CRLF', () => {

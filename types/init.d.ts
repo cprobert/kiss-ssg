@@ -48,7 +48,7 @@ export const STARTER_MARKER: "Started by `npx kiss-ssg init`";
 /** @type {Record<string, string>} */
 export const STARTER_RENAMES: Record<string, string>;
 export const FIRST_PROMPT: "Use the kiss-site-new skill to build me a site for <who it is for and what it should say>, with <the pages it needs>. It will be served by <the host, e.g. Netlify> at <https://its-address>. Run the build check when you are done.";
-export const INIT_HELP: "kiss-ssg init [--no-install]\n\n  Set this folder up for a coding agent, and start a site if there is none:\n\n    package.json           created, or merged: the build, dev, check and aikb\n                           scripts, and \u2014 only with the starter \u2014 \"type\":\n                           \"module\" and \"main\": \"router.js\"\n    CLAUDE.md, AGENTS.md   point the agent at node_modules/kiss-ssg/llms.txt\n    .claude/settings.json  the kiss-ssg marketplace and its two plugins, the\n                           entries claude plugin install --scope project\n                           writes, so the site records which skills it uses\n    router.js, src/        a starter site \u2014 only when neither exists yet \u2014\n                           and its node_modules/ and public/ ignore rules,\n                           added to any .gitignore already here\n    node_modules/kiss-ssg  npm install --save-dev kiss-ssg@<this version>,\n                           unless it is installed, package.json already asks\n                           for a version, or --no-install is given\n\n  Claude Code does not install plugins a settings file declares, so init ends\n  by printing the three --scope project install commands to run before claude.\n\n  An existing file is never overwritten. Running it twice changes nothing.";
+export const INIT_HELP: "kiss-ssg init [--no-install]\n\n  Set this folder up for a coding agent, and start a site if there is none:\n\n    package.json           created, or merged: the build, dev, check and aikb\n                           scripts, and \u2014 only with the starter \u2014 \"type\":\n                           \"module\" and \"main\": \"router.js\"\n    CLAUDE.md, AGENTS.md   point the agent at node_modules/kiss-ssg/llms.txt\n    .claude/settings.json  the kiss-ssg marketplace and its two plugins, the\n                           entries claude plugin install --scope project\n                           writes, so the site records which skills it uses\n    router.js, src/        a starter site \u2014 only when no project is here yet\n                           (no router.js, no src/, no package.json main file\n                           or build script) \u2014 and its node_modules/ and\n                           public/ ignore rules,\n                           added to any .gitignore already here\n    node_modules/kiss-ssg  npm install --save-dev kiss-ssg@<this version>,\n                           unless it is installed, package.json already asks\n                           for a version, or --no-install is given\n\n  Claude Code does not install plugins a settings file declares, so init ends\n  by printing the three --scope project install commands to run before claude.\n\n  An existing file is never overwritten. Running it twice changes nothing.";
 export type InitArgs = {
     /**
      * run npm when the engine is missing
@@ -88,6 +88,10 @@ export type InitState = {
      * `src/` exists
      */
     hasSrc: boolean;
+    /**
+     * `package.json`'s `main` names a file that exists
+     */
+    hasMain: boolean;
     /**
      * each file's text, or null when absent
      */

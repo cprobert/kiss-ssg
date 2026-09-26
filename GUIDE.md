@@ -759,6 +759,10 @@ Editing a page template re-renders that page; deleting one, or creating any file
 
 Your browser is reloaded once per rebuild, when that rebuild has finished writing every page — not once per file — so a reload never lands on a page that has not been re-rendered yet, however large the site. The first build reloads the browser too, so a tab left open across a restart picks the new output up. Editing a stylesheet reloads just that stylesheet, leaving the page where it was.
 
+### Starting a site
+
+`npx kiss-ssg init` sets a folder up for a coding agent — `package.json` scripts, `CLAUDE.md` and `AGENTS.md` pointing at `llms.txt`, kiss-ssg's plugins declared in `.claude/settings.json`, and a one-page starter site when it finds no project there — and never overwrites a file. `npx kiss-ssg init --help` lists exactly what it writes; the [README](README.md#quick-start) is the walkthrough.
+
 ### Checking a build
 
 `npx kiss-ssg check <script>` builds the site your script builds and tells you whether it worked — without publishing anything. Before the build it says on stderr which kiss-ssg the site resolves, and names a `node_modules/kiss-ssg` that is a link to a working tree rather than the registry package — the shape a plain `npm install` leaves behind after a `file:` dependency is repinned to a version range, because the lockfile's entry still satisfies it; `npm install kiss-ssg@^<version> --save-dev` re-resolves it. The build is staged and then discarded, so the build folder is neither emptied nor written, and what you get back is the verdict instead of the output:

@@ -21,7 +21,7 @@ claude
 
 Change the bold parts. The host and address matter: kiss writes the sitemap, the feed and every canonical link from the address, and the host decides whether a folder's URL keeps its trailing slash. That's the whole setup. `npm run dev` previews the site with live reload; `npm run build` writes it to `public/`; `npm run check` verifies it.
 
-Running `init` in a folder that already has a site is safe: it never overwrites a file, merges into `package.json` and `.claude/settings.json` key by key, and leaves an existing `router.js` or `src/` alone. Running it twice changes nothing.
+Running `init` in a folder that already has a project is safe: it never overwrites a file, merges into `package.json` and `.claude/settings.json` key by key, and writes the starter only when it finds no project — no `router.js`, no `src/`, no `main` file and no `build` script of its own. Running it twice changes nothing.
 
 ## Prompts to copy
 
@@ -39,9 +39,9 @@ You don't have to name the skills — each one's description is written so Claud
 
 ## What you just installed
 
-**The `kiss-ssg` plugin builds sites.** `kiss-site-new` (a site or a whole section from a description), `kiss-page-add` (one page on a site that already builds), `kiss-build-check` (verify a build and read its report) and `kiss-site-migrate` (move a site across kiss-ssg versions). The skills carry no copy of the API — each reads the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. See [`plugins/kiss-ssg/`](plugins/kiss-ssg/).
+**The `kiss-ssg` plugin builds sites.** `kiss-site-new` (a site or a whole section from a description), `kiss-page-add` (one page on a site that already builds), `kiss-build-check` (verify a build and read its report) and `kiss-site-migrate` (move a site across kiss-ssg versions). The skills carry no copy of the API — each reads the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. See [`plugins/kiss-ssg/`](https://github.com/cprobert/kiss-ssg/tree/main/plugins/kiss-ssg).
 
-**The `kiss-memory` plugin remembers them.** `npx kiss-ssg aikb router.js` records what the site is into `AIKB/`; `kiss-site-brief` reads it back to a developer returning after two years, and `kiss-branch-open`, `kiss-branch-pulse` and `kiss-branch-close` frame, steer and close a piece of work against the site's own build output, moving that baseline only when the close records it. `kiss-memory-consolidate` tidies what the loop accumulates, between pieces of work. See [`plugins/kiss-memory/`](plugins/kiss-memory/).
+**The `kiss-memory` plugin remembers them.** `npx kiss-ssg aikb router.js` records what the site is into `AIKB/`; `kiss-site-brief` reads it back to a developer returning after two years, and `kiss-branch-open`, `kiss-branch-pulse` and `kiss-branch-close` frame, steer and close a piece of work against the site's own build output, moving that baseline only when the close records it. `kiss-memory-consolidate` tidies what the loop accumulates, between pieces of work. See [`plugins/kiss-memory/`](https://github.com/cprobert/kiss-ssg/tree/main/plugins/kiss-memory).
 
 **In `node_modules/kiss-ssg/`**, for any agent: `llms.txt` (the API contract — `CLAUDE.md` imports it), `examples/` (eleven runnable sites to copy by shape), `AIKB/` (per-module notes), `GUIDE.md` (the full reference), `types/` (declarations your editor reads) and `CHANGELOG.md`.
 
