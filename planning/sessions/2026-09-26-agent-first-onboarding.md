@@ -3,6 +3,7 @@ branch: feat/agent-first-onboarding
 base: main
 status: closed
 opened: 2026-09-26
+consolidated: 2026-09-26
 ---
 
 # Session — 2026-09-26: Agent-first onboarding

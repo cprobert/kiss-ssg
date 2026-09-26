@@ -102,6 +102,8 @@ If the remit has _legitimately_ expanded (adjacent, shares the theme), append a 
 
 State the call plainly, with its reason: **continue** (on track) / **adjust course** (re-steer, named correction) / **record amendment** (remit moved) / **ready to close** (criteria met, hand to `/branch-close`). This is the anti-rush, anti-abandon moment — the decision is deliberate, not drift.
 
+Then **offer one explanation**: name the single decision Claude took since the last pulse whose reasoning the operator is least likely to have seen — one sentence of what, one of why, one of what it would cost if wrong — and ask whether they want it explained further or overturned. One, not a digest. The operator was told twice to ask for an explanation (2026-09-05, 09-26) and did not; a lesson that depends on someone remembering to ask belongs in the beat that stops for them.
+
 ### Step 7 — Log the beat
 
 Append one dated line to the intent file's `## Pulse log` section (the file `/branch-open` wrote, or the one just captured retrospectively in Step 1; create the section once if an older file lacks it), capturing the evidence, **the Step 4 eyeball answer** and the decision — e.g.:

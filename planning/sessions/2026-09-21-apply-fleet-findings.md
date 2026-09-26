@@ -3,6 +3,7 @@ branch: feat/apply-fleet-findings
 base: main
 status: closed
 opened: 2026-09-21
+consolidated: 2026-09-26
 ---
 
 # Session — 2026-09-21: Apply what the 2.5.0 fleet upgrade taught

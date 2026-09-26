@@ -180,7 +180,7 @@ CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so gr
 
 ### Step 7 — Codex review (judgment call)
 
-If the branch carries **substantive engine changes**, run an independent Codex review of the diff before reflecting — skip it for docs-only or trivial branches, where a code review is a multi-minute round trip that finds nothing (the same judgment call as `/corpse-collector`). Skip it too — noting why in the close — if the Codex plugin isn't installed or authenticated in this environment: it needs per-user OpenAI auth that committed config can't supply, so not every operator will have it, and a missing reviewer must never block the ritual.
+**The default is to run it whenever the branch changed `lib/` or `bin/`**, and a close that skips it there says why in its report — "this session reviewed it" is not a reason, because an author reviewing its own diff has the author's blind spots. Four reflections asked for exactly this before it was the default (2026-09-06, 09-16, 09-21, 09-26), and on the two where one ran (09-21, 09-26) it found defects the gates and the session's self-check had passed. Otherwise skip it for docs-only or trivial branches, where a code review is a multi-minute round trip that finds nothing (the same judgment call as `/corpse-collector`). Skip it too — noting why in the close — if the Codex plugin isn't installed or authenticated in this environment: it needs per-user OpenAI auth that committed config can't supply, so not every operator will have it, and a missing reviewer must never block the ritual.
 
 ```bash
 node "$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs | tail -1)" \
