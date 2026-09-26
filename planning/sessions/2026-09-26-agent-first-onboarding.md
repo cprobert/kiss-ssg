@@ -36,6 +36,8 @@ opened: 2026-09-26
 
 <!-- Slices: (1) plugin probe, (2) init + starter + tests, (3) docs move. Pulse at each boundary. -->
 
+- **2026-09-26 — slices 1–2 (probe, init).** Probe (operator, clean `CLAUDE_CONFIG_DIR`, a folder `init` set up): after trusting the folder Claude Code did **not** offer the declared marketplace/plugins → criterion 1 met, negative; Quick start carries the three `--scope project` commands before `claude`. Criterion 2 met (measured): packed tarball on Windows, `npm i <tgz> && npx kiss-ssg init && npm run check` exit 0; `npx --package <tgz> kiss-ssg init` in an empty folder installed kiss-ssg@2.6.0 via npm.cmd and `npm run build` wrote the starter page (read it). Criterion 3 met: integration test hashes an initialised folder across a second run; four merge guards and the pack-gate row seen red by mutation. Drift: none in scope; three plan deviations ledgered (gates tests derive from `REQUIRED_PACKED`; next steps install before `claude`; `nextSteps` probe parameter removed). Impact surface unchanged (public API, minor). **Continue** to slice 3.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
