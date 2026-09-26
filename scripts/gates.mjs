@@ -21,6 +21,9 @@ export const REQUIRED_PACKED = [
   'llms.txt',
   'AIKB/kiss.md',
   'examples/README.md',
+  'GUIDE.md',
+  'starter/router.js',
+  'starter/gitignore',
 ]
 
 export function missingPackedFiles(packedFiles, required = REQUIRED_PACKED) {

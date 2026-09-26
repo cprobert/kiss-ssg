@@ -21,8 +21,10 @@
     "lib",
     "types",
     "llms.txt",
+    "GUIDE.md",
     "AIKB",
     "examples",
+    "starter",
     "!examples/*/public",
     "CHANGELOG.md"
   ],

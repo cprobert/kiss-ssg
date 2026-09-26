@@ -1,8 +1,11 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   LLMS_IMPORT,
   PLUGINS,
   STARTER_MARKER,
+  STARTER_RENAMES,
   packageName,
   parseInitArgs,
   planInit,
@@ -273,5 +276,19 @@ describe('nextSteps', () => {
     expect(nextSteps({ probeOffered: false })).toContain(
       'claude plugin install kiss-ssg@kiss-ssg --scope project',
     )
+  })
+})
+
+describe('the shipped starter', () => {
+  const dir = path.resolve(import.meta.dirname, '../../starter')
+  it('carries the marker kiss-site-new reads', () => {
+    expect(fs.readFileSync(path.join(dir, 'router.js'), 'utf8')).toContain(
+      STARTER_MARKER,
+    )
+  })
+  it('ships its ignore file without the dot, which npm would drop', () => {
+    expect(fs.existsSync(path.join(dir, '.gitignore'))).toBe(false)
+    for (const from of Object.keys(STARTER_RENAMES))
+      expect(fs.existsSync(path.join(dir, from))).toBe(true)
   })
 })
