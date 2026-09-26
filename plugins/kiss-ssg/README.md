@@ -6,12 +6,15 @@ A sibling plugin in the same marketplace, `kiss-memory`, covers the other half �
 
 ## Install
 
+From the site's folder, in a shell:
+
 ```
-/plugin marketplace add cprobert/kiss-ssg
-/plugin install kiss-ssg@kiss-ssg
+claude plugin marketplace add cprobert/kiss-ssg --scope project
+claude plugin install kiss-ssg@kiss-ssg --scope project
+claude plugin install kiss-memory@kiss-ssg --scope project
 ```
 
-The first command registers this repository as a marketplace; the second installs the plugin from it. See the root [README's "Using an AI coding agent?" section](../../README.md#using-an-ai-coding-agent) for the same steps in context.
+The first command registers this repository as a marketplace; the other two install its two plugins. **Project scope** records them in the site's `.claude/settings.json`, which is committed with the site, so the site says which skills it is built with. `npx kiss-ssg@latest init` — the one-line setup for a new site — writes the same entries and prints these three commands, because declaring a plugin in the settings file does not install it. Inside a session that is already running, `/plugin` can install them too (pick project scope if it asks); restart `claude` afterwards so the skills load. See the root [README's Quick start](../../README.md#quick-start).
 
 Skills are then available as `/kiss-ssg:<name>` — but you don't have to invoke them by name. Each skill's frontmatter `description` is written as "use when…" triggers (specific phrasing, symptoms and file types), which is what Claude Code — and any other agent that reads plugin skill descriptions — matches against your request to decide whether to reach for it on its own. Ask to "add a page to this kiss-ssg site" or say a build is failing, and the matching skill loads without you naming it.
 

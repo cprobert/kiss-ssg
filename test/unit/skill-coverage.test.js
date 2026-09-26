@@ -13,6 +13,11 @@ const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
   {
+    feature: 'kiss-ssg init — a starter to grow, not a site to preserve',
+    pattern: /Started by `npx kiss-ssg init`[\s\S]*grow/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
     feature: 'current output collision lifecycle',
     pattern:
       /active producers[\s\S]*resolved collision disappears[\s\S]*configured build-folder spelling/,
@@ -253,6 +258,17 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: 'plugins install at project scope, and init prints the commands; a bare user-scope /plugin install line is the instruction this replaced',
+    patterns: [
+      /^\/plugin install kiss-(?:ssg|memory)@kiss-ssg`?$/m,
+      /`\/plugin install kiss-(?:ssg|memory)@kiss-ssg`/,
+    ],
+  },
+  {
+    why: 'Claude Code does not offer plugins a settings file declares (probe, 2026-09-26) — a doc must not promise that opening the folder installs them',
+    patterns: [/Claude Code offers them the next time it opens/i],
+  },
   {
     why: 'non-dev whole-site watch replays check links after cleanup',
     patterns: [

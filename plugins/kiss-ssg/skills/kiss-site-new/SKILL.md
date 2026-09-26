@@ -14,6 +14,8 @@ Build the site from the package's own shipped docs. They are the contract; this 
 
 `node_modules/kiss-ssg/package.json` must exist; read its `version` so you know which API you are coding against. If it is missing, `npm install kiss-ssg --save-dev` before writing a line of build script.
 
+If the folder was set up with `npx kiss-ssg init`, the engine is already installed and step 2's import is already in `CLAUDE.md` — say so and move on. `init` also drops a one-page starter: a `router.js` whose first line reads `` // Started by `npx kiss-ssg init` ``. That file is a starter to grow, not a site to preserve — edit its config and add to `src/` in place rather than writing a second build script beside it. A `router.js` **without** that line is somebody's site: build around it.
+
 ### 2. Point every future session at the contract
 
 Open the project's `CLAUDE.md` (create it if the project has none) and make sure it carries this line:
