@@ -100,7 +100,7 @@ if (process.argv[2] === 'init') {
       }
     }
   }
-  console.log(`\n${nextSteps({ probeOffered: false })}`)
+  console.log(`\n${nextSteps()}`)
   process.exit(status)
 }
 

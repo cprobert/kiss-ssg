@@ -31,14 +31,15 @@ export function planInit(state: InitState): InitAction[];
  */
 export function describeAction(action: InitAction): string;
 /**
- * What to do after `init`: open the agent, accept the plugins, paste a prompt.
+ * What to do after `init`: install the plugins, open the agent, paste a prompt.
+ * The install commands are printed rather than implied by the settings file:
+ * Claude Code does not offer to install plugins a project's
+ * `.claude/settings.json` declares when it first opens the folder (observed
+ * 2026-09-26 on a clean profile), so a declaration alone installs nothing.
  *
- * @param {{ probeOffered: boolean }} options whether Claude Code offers the plugins `.claude/settings.json` declares when it first opens the folder; when it does not, the steps name the three install commands
  * @returns {string}
  */
-export function nextSteps({ probeOffered }: {
-    probeOffered: boolean;
-}): string;
+export function nextSteps(): string;
 export const MARKETPLACE: "kiss-ssg";
 export const MARKETPLACE_REPO: "cprobert/kiss-ssg";
 export const PLUGINS: string[];
@@ -47,7 +48,7 @@ export const STARTER_MARKER: "Started by `npx kiss-ssg init`";
 /** @type {Record<string, string>} */
 export const STARTER_RENAMES: Record<string, string>;
 export const FIRST_PROMPT: "Use the kiss-site-new skill to build me a site for <who it is for and what it should say>, with <the pages it needs>. Run the build check when you are done.";
-export const INIT_HELP: "kiss-ssg init [--no-install]\n\n  Set this folder up for a coding agent, and start a site if there is none:\n\n    package.json           created, or merged: \"type\": \"module\", and the\n                           build, dev and check scripts\n    CLAUDE.md, AGENTS.md   point the agent at node_modules/kiss-ssg/llms.txt\n    .claude/settings.json  the kiss-ssg marketplace and its two plugins, at\n                           project scope, so everyone who opens the folder in\n                           Claude Code is offered the same skills\n    router.js, src/        a starter site \u2014 only when neither exists yet\n    node_modules/kiss-ssg  npm install --save-dev kiss-ssg@<this version>,\n                           unless it is there already or --no-install is given\n\n  An existing file is never overwritten. Running it twice changes nothing.";
+export const INIT_HELP: "kiss-ssg init [--no-install]\n\n  Set this folder up for a coding agent, and start a site if there is none:\n\n    package.json           created, or merged: \"type\": \"module\", and the\n                           build, dev and check scripts\n    CLAUDE.md, AGENTS.md   point the agent at node_modules/kiss-ssg/llms.txt\n    .claude/settings.json  the kiss-ssg marketplace and its two plugins, the\n                           entries claude plugin install --scope project\n                           writes, so the site records which skills it uses\n    router.js, src/        a starter site \u2014 only when neither exists yet\n    node_modules/kiss-ssg  npm install --save-dev kiss-ssg@<this version>,\n                           unless it is there already or --no-install is given\n\n  Claude Code does not install plugins a settings file declares, so init ends\n  by printing the three --scope project install commands to run before claude.\n\n  An existing file is never overwritten. Running it twice changes nothing.";
 export type InitArgs = {
     /**
      * run npm when the engine is missing

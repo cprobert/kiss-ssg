@@ -4,7 +4,7 @@
 
 The decision core of `kiss-ssg init`: given what is already in a folder, which files to create, which to merge into, which to leave alone, and whether to install the engine. `bin/kiss-ssg.js` is the thin wrapper around it — it reads the folder and the shipped `starter/`, writes exactly what the plan says, runs npm for an `install` action and prints one line per action; every decision it acts on comes from here.
 
-It exists so that a new user reaches a site through a coding agent in three shell lines: `init` declares kiss-ssg's two Claude Code plugins at project scope, points `CLAUDE.md` and `AGENTS.md` at `node_modules/kiss-ssg/llms.txt`, and drops a starter the `kiss-site-new` skill grows.
+It exists so that a new user reaches a site through a coding agent in three shell lines: `init` declares kiss-ssg's two Claude Code plugins in the project's `.claude/settings.json` (and prints the `--scope project` commands that install them), points `CLAUDE.md` and `AGENTS.md` at `node_modules/kiss-ssg/llms.txt`, and drops a starter the `kiss-site-new` skill grows.
 
 ## Public interface
 
@@ -13,7 +13,7 @@ It exists so that a new user reaches a site through a coding agent in three shel
 - `packageName(folderName)` → a valid npm package name for a new `package.json`: lower case, runs of anything npm refuses collapsed to one hyphen, no leading `.`/`_`/`-`; `kiss-site` when nothing is left (`..`).
 - `planInit(state)` → `InitAction[]`, in order: `package.json`, the starter files (or one `skip` for `router.js`), `CLAUDE.md`, `AGENTS.md`, `.claude/settings.json`, then the install (or a `skip` for `node_modules/kiss-ssg` under `--no-install`). An action is `{ kind: 'write', path, content, verb: 'create'|'merge'|'append', detail? }`, `{ kind: 'skip', path, reason }` or `{ kind: 'install', spec }`. `state` is `InitState`: the folder name, the running version, `install`, `hasEngine`/`hasRouter`/`hasSrc`, the current text (or `null`) of the four files it may touch, and the starter as `{ relativePath: text }`.
 - `describeAction(action)` → the printed line: `  create   router.js`, `  merge    package.json (added scripts.dev; kept scripts.build)`, `  skip     CLAUDE.md — already points at llms.txt`, `  install  kiss-ssg@2.7.0`.
-- `nextSteps({ probeOffered })` → the closing text: run `claude`, get the plugins (accept the offer, or the three `claude plugin … --scope project` commands when Claude Code does not offer declared plugins), paste `FIRST_PROMPT`.
+- `nextSteps()` → the closing text: the three `claude plugin … --scope project` install commands, then run `claude`, then paste `FIRST_PROMPT`. The commands come first because Claude Code does not offer to install plugins a project's `.claude/settings.json` declares (observed 2026-09-26 on a clean profile) — the declaration records which skills the site uses; it installs nothing on its own.
 - Constants: `MARKETPLACE`, `MARKETPLACE_REPO`, `PLUGINS`, `LLMS_IMPORT`, `STARTER_MARKER`, `STARTER_RENAMES`, `FIRST_PROMPT`.
 
 ## Depends on

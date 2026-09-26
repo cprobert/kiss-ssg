@@ -12,6 +12,7 @@ import {
   describeAction,
   nextSteps,
   FIRST_PROMPT,
+  INIT_HELP,
 } from '../../lib/init.js'
 
 const STARTER = {
@@ -268,21 +269,30 @@ describe('describeAction', () => {
 })
 
 describe('nextSteps', () => {
-  it('always ends on the prompt to paste', () => {
-    for (const probeOffered of [true, false])
-      expect(nextSteps({ probeOffered })).toContain(FIRST_PROMPT)
+  it('ends on the prompt to paste', () => {
+    expect(nextSteps()).toContain(FIRST_PROMPT)
   })
-  it('installs the plugins before claude is started, when they are not offered', () => {
-    const text = nextSteps({ probeOffered: false })
+
+  // Claude Code does not offer the plugins a settings file declares, so the
+  // install has to happen before the session that would use them starts.
+  it('installs the plugins before claude is started', () => {
+    const text = nextSteps()
     expect(text.indexOf('claude plugin install')).toBeLessThan(
       text.indexOf('Run `claude`'),
     )
   })
 
-  it('names the project-scope install commands when plugins are not offered', () => {
-    expect(nextSteps({ probeOffered: false })).toContain(
+  it('names every install command at project scope', () => {
+    for (const line of [
+      'claude plugin marketplace add cprobert/kiss-ssg --scope project',
       'claude plugin install kiss-ssg@kiss-ssg --scope project',
-    )
+      'claude plugin install kiss-memory@kiss-ssg --scope project',
+    ])
+      expect(nextSteps()).toContain(line)
+  })
+
+  it('help says the install commands still have to be run', () => {
+    expect(INIT_HELP).toMatch(/--scope project/)
   })
 })
 
