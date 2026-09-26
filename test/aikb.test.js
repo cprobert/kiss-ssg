@@ -17,7 +17,7 @@ const docs = fs
   .filter(Boolean)
 const claudeMd = fs.readFileSync(path.join(root, 'CLAUDE.md'), 'utf8')
 const llmsTxt = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8')
-const readmeMd = fs.readFileSync(path.join(root, 'README.md'), 'utf8')
+const guideMd = fs.readFileSync(path.join(root, 'GUIDE.md'), 'utf8')
 
 // Pulls the object literal out of the first ```js fenced block found after
 // `marker`, and evaluates it. Doc-block extraction, not a general parser —
@@ -158,9 +158,9 @@ describe('shipped config defaults match resolveConfig({})', () => {
     expect(documented).toEqual(defaults)
   })
 
-  it('README.md default config block matches resolveConfig({})', () => {
+  it('GUIDE.md default config block matches resolveConfig({})', () => {
     const documented = extractDefaultsBlock(
-      readmeMd,
+      guideMd,
       'The default config options are:',
     )
     expect(documented).toEqual(defaults)

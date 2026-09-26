@@ -354,7 +354,7 @@ const CONTRADICTIONS = [
 ]
 
 const consumerFacing = () => {
-  const files = ['llms.txt', 'README.md']
+  const files = ['llms.txt', 'README.md', 'GUIDE.md']
   // `AIKB/` ships in the tarball on purpose — an agent in a consuming project
   // reads `node_modules/kiss-ssg/AIKB/` for the per-module notes — so it is a
   // consumer-facing document set and gets the same contradiction check. It was
