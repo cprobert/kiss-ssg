@@ -34,6 +34,8 @@ opened: 2026-09-26
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-09-26 — the versioning rule, settled by the operator (adjacent, absorbed here).** The contradiction `/memory-consolidate` left open — `CLAUDE.md` said breaking changes are major, while 2.5.1, 2.6.0 and 2.6.1 were each chosen smaller — is resolved in the operator's words: "I only change version numbers 2 => 3 when it's a new version of the lib … I won't bump to 3 until it's practically a new project … The little fixes are tiny increments but if it's a bit meatier I don't mind going up a 2.x." `CLAUDE.md` (design philosophy and § Git workflow), `/branch-close` Step 4a's table and `/branch-open`'s Impact surface now say: the major counts generations; a minor is meatier work, including changes sites must adapt to (with an upgrade note); a patch is a small fix or increment; Claude proposes, the operator decides. Unrelated to the flaky test; no code change.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

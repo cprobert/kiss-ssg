@@ -111,7 +111,7 @@ Produce a concise summary in this format:
 
 Do not guess at these — surface them explicitly in the report:
 
-- **A public API change that isn't obviously intentional.** If the diff changed a method signature, a config default, or `engines.node`, say so plainly and let the operator confirm it is deliberate — it decides the semver bump at `/branch-close` Step 4a.
+- **A public API change that isn't obviously intentional.** If the diff changed a method signature, a config default, or `engines.node`, say so plainly and let the operator confirm it is deliberate — it decides the version bump at `/branch-close` Step 4a.
 - **Rewriting an `AIKB/` doc's Non-obvious behavior section.** These record hard-won findings (v1 bugs, race conditions, Windows path quirks). Note that a claim looks stale, but do not delete a warning you cannot prove is obsolete.
 - **New `AIKB/` docs for a new module.** Propose the five-heading skeleton, but the Non-obvious behavior section has to come from whoever wrote the module.
 - **Anything under `planning/`.** Specs and plans are historical: they record what was decided at the time. Never "correct" one to match the code.

@@ -94,7 +94,7 @@ The pulse continues either way. This is a stop for an answer, not a gate that bl
 
 ### Step 5 — Drift check
 
-Compare the trajectory against the **Non-goals**, the **Objective**, and the declared **Impact surface**. A branch opened as "engine internals" that has started editing `llms.txt` has moved surface — that is a real signal, not a formality, because it changes the semver bump at close.
+Compare the trajectory against the **Non-goals**, the **Objective**, and the declared **Impact surface**. A branch opened as "engine internals" that has started editing `llms.txt` has moved surface — that is a real signal, not a formality, because it changes the version bump at close.
 
 If the remit has _legitimately_ expanded (adjacent, shares the theme), append a dated entry to the intent file's `### Amendments` list — the one sanctioned channel for scope drift. If it looks like scope **creep** (a genuinely different subsystem or objective), say so and recommend stopping or deferring; never absorb it silently, and never spawn a new branch on initiative (the operator's call).
 

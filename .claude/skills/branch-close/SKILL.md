@@ -109,15 +109,15 @@ Reason for running **after** docs-sweep: docs-sweep handles the targeted obligat
 
 ### Step 4a — Version bump
 
-kiss-ssg is a **published npm package**, so semver here is a promise to consumers, not internal bookkeeping. The public API is: the methods on `Kiss` (`lib/kiss.js`), the `config` shape (`lib/config.js`), the built-in Handlebars helpers, the `utils` named export, `package.json`'s `files` whitelist, and `engines.node`. Anything a consuming site can observe.
+kiss-ssg is a **published npm package**, and its version counts **generations, not breaks** (`CLAUDE.md` § Git workflow): the major is the library's generation and moves only when kiss is reinvented, as v1 → v2 was. The public API is: the methods on `Kiss` (`lib/kiss.js`), the `config` shape (`lib/config.js`), the built-in Handlebars helpers, the `utils` named export, `package.json`'s `files` whitelist, and `engines.node`. Anything a consuming site can observe.
 
 Read the branch's **Impact surface** from its intent artefact (captured at `/branch-open`) — it was recorded to answer exactly this question. Then:
 
-| Bump                  | When                                                                                                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **patch** (x.y.**z**) | Engine internals with the API unchanged, bug fixes, dependency updates, tooling and docs. The default for most branches.                           |
-| **minor** (x.**y**.0) | A backwards-compatible addition to the public API — a new method, a new config option, a new built-in helper, a new file in the published tarball. |
-| **major** (**x**.0.0) | A breaking change — a removed or renamed method, a changed default, a raised `engines.node` floor, a dropped export.                               |
+| Bump                  | When                                                                                                                                                                                                                                                                                                        |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **patch** (x.y.**z**) | Small fixes and small increments — engine internals, bug fixes, dependency updates, tooling and docs, and a small addition a site may use. The default for most branches.                                                                                                                                   |
+| **minor** (x.**y**.0) | Meatier work — a real feature, or a change existing sites must adapt to (a removed or renamed method, a changed default, a raised `engines.node` floor). A change sites must adapt to also gets an upgrade note in `CHANGELOG.md` and in the `kiss-site-migrate` skill, because a site on `^2` receives it. |
+| **major** (**x**.0.0) | A new generation of the library — kiss reinvented, practically a new project, as v1 → v2 was. Never proposed because of one change, however breaking; it is the operator's call alone.                                                                                                                      |
 
 **While the version carries a prerelease tag** (`2.0.0-alpha.0` today), the line is not yet published as stable and the bump is `npm version prerelease --preid alpha` regardless of surface — unless the operator is deliberately cutting the release, which is their call to make explicitly, never yours to infer.
 
