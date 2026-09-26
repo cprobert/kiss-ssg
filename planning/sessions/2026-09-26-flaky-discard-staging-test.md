@@ -42,6 +42,8 @@ opened: 2026-09-26
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-26** — criteria 1–3 met: root cause is the test waiting on `_promises` while `generate()`'s render sits on `_generating`; the write lands in staging mid-removal, `fs.remove` fails `ENOTEMPTY`, `_discardStaging` swallows it before `clearUnder` (probe 32/120, each with a swallowed ENOTEMPTY and `index.html` left). Forced ordering (page writes held 50 ms): old wait left a render in flight 10/10, `_drain()` 0/10 — the root cause is forced; the ENOTEMPTY consequence itself only statistically. Fix `f8ca4a8` (test-only): `watch.test.js` 30/30 on Windows. Criterion 4 n/a (no `lib/` change); 5 is the close's. Impact surface settled: tooling & docs, no bump. **Eyeball: deferred** — the operator's own 10-run re-measure, to be asked again at `/branch-close` Step 5a. **Explained:** fixing the test and not the engine; operator kept the engine out of scope. Follow-up recorded: `_discardStaging` skips `clearUnder` whenever the removal fails, so a transient Windows lock (antivirus, indexer) during a failed build would leave the staging folder and stale claims — not reachable by a concurrent writer after `_drain()`, not fixed here. Decision: ready to close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
