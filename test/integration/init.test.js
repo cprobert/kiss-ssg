@@ -82,6 +82,41 @@ describe('kiss-ssg init', () => {
     expect(snapshot(dir)).toEqual(before)
   })
 
+  // The promise that matters most is about the files that were there first:
+  // every byte of them survives, and what init adds comes after it.
+  it('keeps every byte of the files a folder already had', () => {
+    const dir = emptySite()
+    const before = {
+      '.gitignore': '.env\r\nsecrets/\r\n',
+      'CLAUDE.md': '# Our rules\n\nNever deploy on Friday.\n',
+      'AGENTS.md': '## House style\n',
+    }
+    for (const [f, text] of Object.entries(before))
+      fs.writeFileSync(path.join(dir, f), text)
+    const init = run(dir, 'init', '--no-install')
+    expect(init.status, init.stderr).toBe(0)
+    for (const [f, text] of Object.entries(before))
+      expect(
+        fs.readFileSync(path.join(dir, f), 'utf8').startsWith(text),
+        f,
+      ).toBe(true)
+    expect(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8')).toContain(
+      'node_modules/',
+    )
+    expect(init.stdout).toMatch(/append\s+\.gitignore/)
+  })
+
+  // An engine folder that holds no package is not an installed engine.
+  it('does not take an empty node_modules/kiss-ssg for an installed engine', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-init-'))
+    dirs.push(dir)
+    fs.mkdirSync(path.join(dir, 'node_modules', 'kiss-ssg'), {
+      recursive: true,
+    })
+    const init = run(dir, 'init', '--no-install')
+    expect(init.stdout).toMatch(/skip\s+node_modules\/kiss-ssg — --no-install/)
+  })
+
   it('rejects an argument with the help', () => {
     const res = run(emptySite(), 'init', 'router.js')
     expect(res.status).toBe(1)

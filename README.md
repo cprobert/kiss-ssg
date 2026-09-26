@@ -15,11 +15,11 @@ claude plugin install kiss-memory@kiss-ssg --scope project
 claude
 ```
 
-`init` installs kiss-ssg, drops a one-page starter site, points `CLAUDE.md` and `AGENTS.md` at the API contract, and adds the build scripts to `package.json`. The three `claude plugin` lines install kiss-ssg's skills at **project scope**: they are recorded in the site's `.claude/settings.json`, which you commit, so the site says which skills it is built with. `init` prints the same commands when it finishes. Once `claude` is open, paste:
+`init` installs kiss-ssg, drops a one-page starter site, points `CLAUDE.md` and `AGENTS.md` at the API contract, and adds the build scripts to `package.json`. It also declares kiss-ssg's two plugins in the site's `.claude/settings.json` — but declaring a plugin does not install it, so the three `claude plugin` lines do that, at **project scope**. The settings file is committed with the site, so the site says which skills it is built with; `init` prints the same three commands when it finishes. Once `claude` is open, paste:
 
-> Use the kiss-site-new skill to build me a site for **a small bakery in Leeds: home, menu, about, and a news section for seasonal specials**. Run the build check when you're done.
+> Use the kiss-site-new skill to build me a site for **a small bakery in Leeds: home, menu, about, and a news section for seasonal specials**. It will be served by **Netlify** at **https://kirkgate-bakery.co.uk**. Run the build check when you're done.
 
-Change the bold part. That's the whole setup. `npm run dev` previews the site with live reload; `npm run build` writes it to `public/`; `npm run check` verifies it.
+Change the bold parts. The host and address matter: kiss writes the sitemap, the feed and every canonical link from the address, and the host decides whether a folder's URL keeps its trailing slash. That's the whole setup. `npm run dev` previews the site with live reload; `npm run build` writes it to `public/`; `npm run check` verifies it.
 
 Running `init` in a folder that already has a site is safe: it never overwrites a file, merges into `package.json` and `.claude/settings.json` key by key, and leaves an existing `router.js` or `src/` alone. Running it twice changes nothing.
 

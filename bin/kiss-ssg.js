@@ -68,7 +68,8 @@ if (process.argv[2] === 'init') {
     folderName: path.basename(cwd),
     version,
     install: init.install,
-    hasEngine: fs.existsSync(here('node_modules/kiss-ssg')),
+    // Its package.json, not the folder: an empty folder is not an engine.
+    hasEngine: fs.existsSync(here('node_modules/kiss-ssg/package.json')),
     hasRouter: fs.existsSync(here('router.js')),
     hasSrc: fs.existsSync(here('src')),
     files: {
@@ -76,22 +77,54 @@ if (process.argv[2] === 'init') {
       'CLAUDE.md': read('CLAUDE.md'),
       'AGENTS.md': read('AGENTS.md'),
       '.claude/settings.json': read('.claude/settings.json'),
+      '.gitignore': read('.gitignore'),
     },
     starter,
   })
+  // A `create` refuses to replace anything (`wx` fails on an existing path,
+  // a dangling link included), and a `merge` or `append` lands whole or not
+  // at all: written beside the file, then renamed over it. The first failure
+  // stops the run, so nothing is reported as done that was not.
+  const write = (action) => {
+    const target = here(action.path)
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    if (action.verb === 'create') {
+      fs.writeFileSync(target, action.content, { flag: 'wx' })
+      return
+    }
+    const temp = `${target}.kiss-init-${process.pid}`
+    try {
+      fs.writeFileSync(temp, action.content, { flag: 'wx' })
+      fs.renameSync(temp, target)
+    } finally {
+      fs.rmSync(temp, { force: true })
+    }
+  }
   let status = 0
   for (const action of actions) {
-    console.log(describeAction(action))
     if (action.kind === 'write') {
-      fs.mkdirSync(path.dirname(here(action.path)), { recursive: true })
-      fs.writeFileSync(here(action.path), action.content)
-    } else if (action.kind === 'install') {
-      // npm is npm.cmd on Windows, which Node will not spawn without a shell.
-      const npm = spawnSync('npm', ['install', '--save-dev', action.spec], {
-        cwd,
-        stdio: 'inherit',
-        shell: process.platform === 'win32',
-      })
+      try {
+        write(action)
+      } catch (err) {
+        console.error(
+          `kiss-ssg: could not ${action.verb} ${action.path} (${err.message}); stopped here, and nothing after it was done`,
+        )
+        process.exit(1)
+      }
+    }
+    console.log(describeAction(action))
+    if (action.kind === 'install') {
+      // npm is npm.cmd on Windows, which Node will not spawn without a shell,
+      // and a shell given an argument array prints DEP0190 on every run. One
+      // command string instead: the only value in it is our own version.
+      const command = `npm install --save-dev ${action.spec}`
+      const npm =
+        process.platform === 'win32'
+          ? spawnSync(command, { cwd, stdio: 'inherit', shell: true })
+          : spawnSync('npm', ['install', '--save-dev', action.spec], {
+              cwd,
+              stdio: 'inherit',
+            })
       if (npm.status !== 0) {
         console.error(
           `kiss-ssg: npm install --save-dev ${action.spec} failed; run it yourself before building`,

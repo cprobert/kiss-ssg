@@ -35,6 +35,7 @@ const state = (over = {}) => ({
     'CLAUDE.md': null,
     'AGENTS.md': null,
     '.claude/settings.json': null,
+    '.gitignore': null,
     ...(over.files ?? {}),
   },
 })
@@ -75,16 +76,18 @@ describe('packageName', () => {
 describe('planInit on an empty folder', () => {
   const actions = planInit(state())
 
-  it('creates package.json as an ES module with build, dev and check scripts', () => {
+  it('creates package.json as an ES module pointing main and its scripts at router.js', () => {
     const pkg = json(byPath(actions, 'package.json'))
     expect(pkg).toMatchObject({
       name: 'my-site',
       private: true,
       type: 'module',
+      main: 'router.js',
       scripts: {
         build: 'node router.js',
         dev: 'node router.js --dev',
         check: 'kiss-ssg check router.js',
+        aikb: 'kiss-ssg aikb router.js',
       },
     })
   })
@@ -116,6 +119,15 @@ describe('planInit on an empty folder', () => {
   })
 })
 
+const starterWrites = (actions) =>
+  actions.filter(
+    (a) =>
+      a.kind === 'write' &&
+      (a.path === 'router.js' ||
+        a.path === '.gitignore' ||
+        a.path.startsWith('src/')),
+  )
+
 describe('planInit never destroys anything', () => {
   it('skips the install when the engine is there, or with --no-install', () => {
     expect(
@@ -130,18 +142,13 @@ describe('planInit never destroys anything', () => {
 
   it('leaves an existing site alone: no starter file when router.js exists', () => {
     const actions = planInit(state({ hasRouter: true }))
-    expect(
-      actions.filter(
-        (a) =>
-          a.kind === 'write' && a.path in { 'router.js': 1, '.gitignore': 1 },
-      ),
-    ).toEqual([])
+    expect(starterWrites(actions)).toEqual([])
     expect(byPath(actions, 'router.js')).toMatchObject({ kind: 'skip' })
   })
 
   it('leaves an existing site alone: no starter file when src/ exists', () => {
     const actions = planInit(state({ hasSrc: true }))
-    expect(byPath(actions, 'src/pages/index.hbs')).toBeUndefined()
+    expect(starterWrites(actions)).toEqual([])
     expect(byPath(actions, 'router.js').kind).toBe('skip')
   })
 
@@ -160,12 +167,15 @@ describe('planInit never destroys anything', () => {
     expect(action.verb).toBe('merge')
     const pkg = json(action)
     expect(pkg.name).toBe('theirs')
+    expect(pkg.version).toBe('1.0.0')
+    expect(pkg.type).toBe('module')
     expect(pkg.dependencies).toEqual({ x: '1' })
     expect(pkg.scripts).toEqual({
       build: 'node build.js',
       test: 'vitest',
       dev: 'node router.js --dev',
       check: 'kiss-ssg check router.js',
+      aikb: 'kiss-ssg aikb router.js',
     })
     expect(action.detail).toMatch(/kept scripts\.build/)
   })
@@ -238,10 +248,130 @@ describe('planInit never destroys anything', () => {
           'CLAUDE.md': written['CLAUDE.md'],
           'AGENTS.md': written['AGENTS.md'],
           '.claude/settings.json': written['.claude/settings.json'],
+          '.gitignore': written['.gitignore'],
         },
       }),
     )
     expect(again.every((a) => a.kind === 'skip')).toBe(true)
+  })
+})
+
+// Found by the Codex review of this branch; each reproduced before it was fixed.
+describe('planInit on a folder that already has things in it', () => {
+  it('adds the starter ignores to an existing .gitignore instead of replacing it', () => {
+    const action = byPath(
+      planInit(state({ files: { '.gitignore': '.env\nsecrets/\npublic/\n' } })),
+      '.gitignore',
+    )
+    expect(action.verb).toBe('append')
+    expect(action.content).toBe('.env\nsecrets/\npublic/\nnode_modules/\n')
+  })
+
+  it('leaves a .gitignore alone when it already has every starter entry', () => {
+    const action = byPath(
+      planInit(state({ files: { '.gitignore': 'public/\nnode_modules/\n' } })),
+      '.gitignore',
+    )
+    expect(action.kind).toBe('skip')
+  })
+
+  it.each(['dependencies', 'devDependencies'])(
+    'does not reinstall over a kiss-ssg the site already declares in %s',
+    (field) => {
+      const actions = planInit(
+        state({
+          hasRouter: true,
+          files: {
+            'package.json': JSON.stringify({
+              [field]: { 'kiss-ssg': '^1.4.0' },
+            }),
+          },
+        }),
+      )
+      expect(actions.some((a) => a.kind === 'install')).toBe(false)
+      expect(byPath(actions, 'node_modules/kiss-ssg').reason).toMatch(
+        /\^1\.4\.0/,
+      )
+    },
+  )
+
+  it.each(['"keep me"', '["keep"]', 'null'])(
+    'skips a package.json whose scripts is %s rather than rewrite it',
+    (scripts) => {
+      const action = byPath(
+        planInit(
+          state({ files: { 'package.json': `{"scripts":${scripts}}` } }),
+        ),
+        'package.json',
+      )
+      expect(action.kind).toBe('skip')
+      expect(action.reason).toMatch(/scripts/)
+    },
+  )
+
+  it.each(['enabledPlugins', 'extraKnownMarketplaces'])(
+    'skips a settings.json whose %s is not an object',
+    (key) => {
+      const action = byPath(
+        planInit(
+          state({
+            files: {
+              '.claude/settings.json': JSON.stringify({ [key]: false }),
+            },
+          }),
+        ),
+        '.claude/settings.json',
+      )
+      expect(action.kind).toBe('skip')
+      expect(action.reason).toMatch(key)
+    },
+  )
+
+  it('keeps a marketplace entry the user set, even to null', () => {
+    const settings = json(
+      byPath(
+        planInit(
+          state({
+            files: {
+              '.claude/settings.json': JSON.stringify({
+                extraKnownMarketplaces: { 'kiss-ssg': null },
+              }),
+            },
+          }),
+        ),
+        '.claude/settings.json',
+      ),
+    )
+    expect(settings.extraKnownMarketplaces['kiss-ssg']).toBeNull()
+  })
+
+  it('does not change the module type or main of a site whose router.js it did not write', () => {
+    const pkg = json(
+      byPath(
+        planInit(state({ hasRouter: true, files: { 'package.json': '{}' } })),
+        'package.json',
+      ),
+    )
+    expect(pkg.type).toBeUndefined()
+    expect(pkg.main).toBeUndefined()
+    expect(pkg.scripts.build).toBe('node router.js')
+  })
+
+  it('adds no router.js scripts to a site that has src/ but no router.js', () => {
+    const action = byPath(
+      planInit(state({ hasSrc: true, files: { 'package.json': '{}' } })),
+      'package.json',
+    )
+    expect(action.kind).toBe('skip')
+    expect(action.reason).toMatch(/no router\.js/)
+  })
+
+  it('appends to a CRLF CLAUDE.md with CRLF', () => {
+    const action = byPath(
+      planInit(state({ files: { 'CLAUDE.md': '# Mine\r\n' } })),
+      'CLAUDE.md',
+    )
+    expect(action.content).toBe(`# Mine\r\n\r\n${LLMS_IMPORT}\r\n`)
   })
 })
 
@@ -269,14 +399,21 @@ describe('describeAction', () => {
 })
 
 describe('nextSteps', () => {
-  it('ends on the prompt to paste', () => {
+  it('includes the prompt to paste', () => {
     expect(nextSteps()).toContain(FIRST_PROMPT)
+  })
+
+  // The clean-room run asked why it was told to install plugins init had
+  // just declared; the answer has to be where the question arises.
+  it('says why the declared plugins still have to be installed', () => {
+    expect(nextSteps()).toMatch(/declar[\s\S]*installs nothing/)
   })
 
   // Claude Code does not offer the plugins a settings file declares, so the
   // install has to happen before the session that would use them starts.
   it('installs the plugins before claude is started', () => {
     const text = nextSteps()
+    expect(text.indexOf('claude plugin install')).toBeGreaterThan(-1)
     expect(text.indexOf('claude plugin install')).toBeLessThan(
       text.indexOf('Run `claude`'),
     )
@@ -292,7 +429,7 @@ describe('nextSteps', () => {
   })
 
   it('help says the install commands still have to be run', () => {
-    expect(INIT_HELP).toMatch(/--scope project/)
+    expect(INIT_HELP).toMatch(/does not install plugins/)
   })
 })
 
