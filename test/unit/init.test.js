@@ -272,6 +272,13 @@ describe('nextSteps', () => {
     for (const probeOffered of [true, false])
       expect(nextSteps({ probeOffered })).toContain(FIRST_PROMPT)
   })
+  it('installs the plugins before claude is started, when they are not offered', () => {
+    const text = nextSteps({ probeOffered: false })
+    expect(text.indexOf('claude plugin install')).toBeLessThan(
+      text.indexOf('Run `claude`'),
+    )
+  })
+
   it('names the project-scope install commands when plugins are not offered', () => {
     expect(nextSteps({ probeOffered: false })).toContain(
       'claude plugin install kiss-ssg@kiss-ssg --scope project',

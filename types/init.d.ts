@@ -33,7 +33,7 @@ export function describeAction(action: InitAction): string;
 /**
  * What to do after `init`: open the agent, accept the plugins, paste a prompt.
  *
- * @param {{ probeOffered: boolean }} options whether Claude Code offers declared plugins on first launch (Task 1's probe)
+ * @param {{ probeOffered: boolean }} options whether Claude Code offers the plugins `.claude/settings.json` declares when it first opens the folder; when it does not, the steps name the three install commands
  * @returns {string}
  */
 export function nextSteps({ probeOffered }: {
