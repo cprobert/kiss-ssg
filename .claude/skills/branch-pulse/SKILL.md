@@ -94,13 +94,15 @@ The pulse continues either way. This is a stop for an answer, not a gate that bl
 
 ### Step 5 — Drift check
 
-Compare the trajectory against the **Non-goals**, the **Objective**, and the declared **Impact surface**. A branch opened as "engine internals" that has started editing `llms.txt` has moved surface — that is a real signal, not a formality, because it changes the semver bump at close.
+Compare the trajectory against the **Non-goals**, the **Objective**, and the declared **Impact surface**. A branch opened as "engine internals" that has started editing `llms.txt` has moved surface — that is a real signal, not a formality, because it changes the version bump at close.
 
 If the remit has _legitimately_ expanded (adjacent, shares the theme), append a dated entry to the intent file's `### Amendments` list — the one sanctioned channel for scope drift. If it looks like scope **creep** (a genuinely different subsystem or objective), say so and recommend stopping or deferring; never absorb it silently, and never spawn a new branch on initiative (the operator's call).
 
 ### Step 6 — Decide, out loud
 
 State the call plainly, with its reason: **continue** (on track) / **adjust course** (re-steer, named correction) / **record amendment** (remit moved) / **ready to close** (criteria met, hand to `/branch-close`). This is the anti-rush, anti-abandon moment — the decision is deliberate, not drift.
+
+Then **offer one explanation**: name the single decision Claude took since the last pulse whose reasoning the operator is least likely to have seen — one sentence of what, one of why, one of what it would cost if wrong — and ask whether they want it explained further or overturned. One, not a digest. The operator was told twice to ask for an explanation (2026-09-05, 09-26) and did not; a lesson that depends on someone remembering to ask belongs in the beat that stops for them.
 
 ### Step 7 — Log the beat
 

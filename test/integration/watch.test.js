@@ -400,7 +400,12 @@ describe('review regressions', () => {
     })
       .scan()
       .generate()
-    await Promise.all(kiss._promises)
+    // Wait the way the engine does before it discards: `_drain()`, not
+    // `_promises`. generate()'s renders are on `_generating`, so the old wait
+    // returned with the page write still in flight about one run in four on
+    // Windows; the write landed in the folder mid-removal, fs.remove failed
+    // with ENOTEMPTY, and _discardStaging swallows that before clearing claims.
+    await kiss._drain()
     const file = `${kiss._stagingDir}/file.txt`
     expect(kiss._outputs.owner(file)).not.toBeNull()
     await kiss._discardStaging()

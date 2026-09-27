@@ -3,6 +3,7 @@ branch: codex/protect-source-folders
 base: main
 status: closed
 opened: 2026-09-21
+consolidated: 2026-09-26
 ---
 
 # Session — 2026-09-21: Protect configured source folders
