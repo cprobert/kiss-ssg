@@ -27,6 +27,4 @@ const kiss = new Kiss({
   .scan()
   .generate()
 
-if (!dev) {
-  await kiss.complete().catch(reportBuildFailure)
-}
+await kiss.complete().catch(reportBuildFailure)

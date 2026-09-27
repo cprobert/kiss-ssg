@@ -48,16 +48,14 @@ const kiss = new Kiss({
   })
   .generate()
 
-if (!dev) {
-  // A failed build must be loud: print each failing page and exit non-zero,
-  // rather than exiting 0 with a page missing. The recipe llms.txt shows.
-  await kiss.complete().catch((err) => {
-    console.error(err.message)
-    for (const failure of err.failures ?? []) {
-      console.error(
-        `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-      )
-    }
-    process.exitCode = 1
-  })
-}
+// A failed build must be loud: print each failing page and exit non-zero,
+// rather than exiting 0 with a page missing. The recipe llms.txt shows.
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  for (const failure of err.failures ?? []) {
+    console.error(
+      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
+    )
+  }
+  process.exitCode = 1
+})

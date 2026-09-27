@@ -268,6 +268,17 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: 'complete() is awaited in dev too: measured 2026-09-27, the if (!dev) guard made a dev server that could not bind exit 0, and awaiting in dev keeps serving',
+    patterns: [
+      /if \(!dev\) \{(?:\s*\/\/[^\n]*)*\s*await kiss/,
+      /inside `if \(!dev\) \{ … \}`/,
+    ],
+  },
+  {
+    why: 'the skill\'s seven are decisions a site makes, not habits; "habits" is llms.txt\'s five working practices, and two lists under one name read as one stale list',
+    patterns: [/Seven habits to build in/, /five of the seven habits/],
+  },
+  {
     why: 'found by the 2026-09-27 clean-room run: llms.txt is over 100 KB, the build-script contract has yes/no triggers rather than thresholds, and the feature reference is examples 1–6 and 10',
     patterns: [
       /short enough to read whole/,

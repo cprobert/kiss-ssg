@@ -204,11 +204,9 @@ kiss
     this.viewStats()
   })
 
-if (!dev) {
-  await kiss
-    .complete(() => finish('successful'))
-    .catch((err) => {
-      reportBuildFailure(err)
-      finish('failed')
-    })
-}
+await kiss
+  .complete(() => finish('successful'))
+  .catch((err) => {
+    reportBuildFailure(err)
+    finish('failed')
+  })

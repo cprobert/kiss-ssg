@@ -84,6 +84,4 @@ const kiss = new Kiss({
     this.viewStats()
   })
 
-if (!dev) {
-  await kiss.complete().catch(reportBuildFailure)
-}
+await kiss.complete().catch(reportBuildFailure)

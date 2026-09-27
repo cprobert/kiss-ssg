@@ -87,8 +87,6 @@ kiss
   .generate()
   .sitemap()
 
-if (!dev) {
-  // Without this await a broken feed exits 0 and ships a site with a hole in
-  // it. reportBuildFailure prints each failure and sets the exit code.
-  await kiss.complete().catch(reportBuildFailure)
-}
+// Without this await a broken feed exits 0 and ships a site with a hole in
+// it. reportBuildFailure prints each failure and sets the exit code.
+await kiss.complete().catch(reportBuildFailure)

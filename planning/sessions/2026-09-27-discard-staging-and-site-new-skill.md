@@ -38,6 +38,8 @@ opened: 2026-09-27
 
 - **2026-09-27 — `close()` absorbed (adjacent).** `close()` removes an unpromoted staging folder (a build that never called `complete()`) with the same `fs.remove` + debug-only catch the intent targeted in `_discardStaging()`. Same folder, same silence, same file: both now share `_removeStaging()`, with its own test seen red first. `_oldDir` removal in `close()` keeps its debug-only catch — it is the previous output renamed aside, a different folder with its own guard — and is not changed here.
 
+- **2026-09-27 — the dev guard and the habits (operator's decisions, absorbed here).** The clean-room run surfaced that every example awaits `complete()` only outside `--dev`. Measured with a probe and then on example 1 itself: awaited in dev, `complete()` resolves after the first build and the server keeps serving; behind `if (!dev)`, a dev server that cannot bind its port logs the error and exits **0** instead of **1**. The guard arrived in `bbd4b16` with no recorded reason. Operator: drop it here — the `init` starter and nine example routers now await `complete()` in both modes, and `kiss-site-new` says not to guard it. And the skill's "seven habits" became **seven decisions**, pointing at `llms.txt's` five working habits instead of sharing their name (operator's choice over merging the lists). Impact surface unchanged in kind — the starter and examples ship, but no API moved; still a patch.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
