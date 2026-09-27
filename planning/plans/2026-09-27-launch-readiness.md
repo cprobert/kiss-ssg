@@ -176,13 +176,13 @@ Starts only after A is committed.
 Framing: **launch readiness**. It is not "hide how it was built". The steps:
 
 1. Run `npx kiss-ssg check <script>` and read `audit` (and `links`). Group the findings by check, and give the fix for each in kiss terms: the layout's `<head>`, a `404` view with `extensionLess` in mind, `{{canonical}}`, `siteUrl`, an asset folder that is shipping a `.map`, `verbose` plus `viewStats()` left on. It says what `skipped` and `ignored` mean.
-2. The judgement pass, with a browser when one is available, over a built preview: widths of 320, 768 and 1440 plus one odd width; long text and long unbroken strings; spacing, type, radius and button consistency across page templates; anything that looks clickable but is not; whether the 404 page helps someone who is lost. Without a browser, it says the pass did not run. It does not infer the result from the templates.
+2. The judgement pass, with a browser when one is available, over a built preview **served with the build folder as the site root** (`--dev`, or any static server rooted at `public/`) — never a server rooted above it, such as VS Code Live Server on the repo, where every root-relative `{{link}}` resolves outside the site and reads as broken (2026-09-27: ten false 404s on example 11 that way, zero from the root): widths of 320, 768 and 1440 plus one odd width; long text and long unbroken strings; spacing, type, radius and button consistency across page templates; anything that looks clickable but is not; whether the 404 page helps someone who is lost. Without a browser, it says the pass did not run. It does not infer the result from the templates.
 3. **Report first.** Findings go in a table (where, what, why it matters, proposed fix). The operator picks what to fix. Every fix is followed by a re-run of `check`.
 4. Checks the site deliberately does not want go in `config.audit.ignore`, with a comment explaining why. They are not suppressed silently.
 
 ### Example sweep
 
-Build every example with the audit and read the findings. What ships is an example, so each finding is either fixed in the example or ignored with a one-line comment giving the reason, in examples whose point is something else. Five examples ship `verbose` plus `viewStats()`, so `debug-dump` fires on them, and whether a teaching example should keep modelling that is part of the question. **Open question for the operator after the measurement:** how much `<head>` boilerplate the minimal examples 1–5 should carry, against how many `ignore` lines they should show. This goes to the operator as an `AskUserQuestion` with the counts in hand. It is not decided here.
+Build every example with the audit and read the findings. Example 11 also moves its hand-written `{{root}}`-relative nav, brand and stylesheet links to `{{link}}`/`{{asset}}`, so one example does not model two link styles — the mix is why half its links worked under a subpath preview and half did not (logged as a follow-up by the 2026-09-27 discard-staging session). What ships is an example, so each finding is either fixed in the example or ignored with a one-line comment giving the reason, in examples whose point is something else. Five examples ship `verbose` plus `viewStats()`, so `debug-dump` fires on them, and whether a teaching example should keep modelling that is part of the question. **Open question for the operator after the measurement:** how much `<head>` boilerplate the minimal examples 1–5 should carry, against how many `ignore` lines they should show. This goes to the operator as an `AskUserQuestion` with the counts in hand. It is not decided here.
 
 ## Seams and ordering
 
@@ -223,3 +223,7 @@ The operator's decision. Workstream B also owns:
 - A coverage row for that handoff in `test/unit/skill-coverage.test.js`.
 
 `lib/init.js` and the declared plugins are **not** changed. The clean-room run (step 5) is done once with `example-skills` installed, to test whether `web-artifacts-builder` (React) competes with `kiss-site-new`. That risk is inferred, not measured.
+
+## Amendment — 2026-09-27, preview root and example 11's link styles
+
+From the operator's Live Server test of example 11, verified with Playwright: served from the repo root, 10 of 15 links 404'd; served with `public/` as the root (a static server, then `npm run eg11 -- --dev` on :3011), every link returned 200 and the operator clicked through them all. Two additions to Workstream B, both inside its existing scope: the review skill's judgement pass names the preview root, and the example sweep makes example 11 use one link style.

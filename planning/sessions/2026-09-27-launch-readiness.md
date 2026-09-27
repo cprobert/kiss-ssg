@@ -66,6 +66,8 @@ opened: 2026-09-27
 
   Decision: **continue** to step 2 (wiring, config, report, docs, types).
 
+- **2026-09-27** — Workstream A complete and committed (`3becec3`): wiring, config, report, docs, `types/`, example 9/11 records. Reviewed: the per-page `siteUrl` path (`options.config` is the merged config, `kiss.js:2268`) and the wiring against `_checkLinks`. `npm test`: 1854 passed, 1 failed — example 7 times out on an `EPERM` staging rename in this checkout; **reproduced on `main` with every change stashed**, so environmental, not this branch. `AGENTS.md` fails prettier on disk only (mixed CRLF; committed blob clean). Criteria: detection, advisory, per-check opt-out, report/summary, public-API docs and types **met in code**; examples, skill, clean-room, Codex still to come. Eyeball: **looked** — operator opened example 11 under Live Server and reported the links broken; Playwright showed 10/15 404 from the repo root and 15/15 + 9/9 200 served from `public/`; operator then clicked every link on the dev server (:3011): "Looks good." Two Workstream B additions recorded as a contract amendment (preview root in the skill; example 11 onto `{{link}}`). Pending operator answer: whether the duplicate summary line should show the shared value. Decision: **continue** to Workstream B.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
