@@ -3,6 +3,7 @@ branch: fix/flaky-discard-staging-test
 base: main
 status: closed
 opened: 2026-09-26
+consolidated: 2026-09-27
 ---
 
 # Session — 2026-09-26: Flaky discard-staging ownership test

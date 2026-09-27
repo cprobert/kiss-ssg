@@ -3,6 +3,7 @@ branch: fix/discard-staging-and-site-new-skill
 base: main
 status: closed
 opened: 2026-09-27
+consolidated: 2026-09-27
 ---
 
 # Session — 2026-09-27: A discard that cannot fail silently, and a skill that counts its habits
