@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
+import { CHECKS } from '../../lib/audit.js'
 
 // The agent-facing counterpart of test/aikb.test.js. That file proves the
 // shipped docs name every public method and helper; this one proves the
@@ -236,6 +237,54 @@ const COVERAGE = [
     feature: 'the CHANGELOG as the list of what an upgrade changed',
     pattern: /CHANGELOG\.md/,
     skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
+  // The launch-readiness audit. The review skill is where an agent turns a
+  // finding into a fix, so it has to name every check id — built from CHECKS,
+  // so a check added to lib/audit.js fails here until the skill says what to
+  // do about it — plus the ignore list and the report-before-fixing rule.
+  {
+    feature:
+      'the launch-readiness audit: every check id, audit.ignore, report first',
+    pattern: new RegExp(
+      [...CHECKS.map((id) => `\`${id}\``), 'audit\\.ignore', 'Report first']
+        .map((needle) => `(?=[\\s\\S]*${needle})`)
+        .join(''),
+    ),
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  // 2026-09-27: example 11 served from the repo root by VS Code Live Server
+  // showed ten false 404s; served from its build folder, none.
+  {
+    feature: 'the judgement pass serves the build folder as the site root',
+    pattern: /build folder as the site root[\s\S]*Live Server/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  {
+    feature: 'the audit is advisory and hands off to kiss-site-review',
+    pattern: /`audit`[\s\S]*advisory[\s\S]*kiss-site-review/,
+    skills: [skill('kiss-ssg', 'kiss-build-check')],
+  },
+  // A minor reaches every ^2 site unasked, and this one adds lines to every
+  // build log and a key to every record.
+  {
+    feature:
+      'upgrade: the launch-readiness audit — log lines, report key, ignore',
+    pattern:
+      /^(?=[\s\S]*launch-readiness audit)(?=[\s\S]*`Audit: )(?=[\s\S]*last-build\.json)(?=[\s\S]*audit: \{ ignore)(?=[\s\S]*audit: false)(?=[\s\S]*throws at construction)/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
+  // Operator decision 2026-09-27: Anthropic's frontend-design skill is an
+  // optional companion. It sets the look; kiss keeps the structure — and never
+  // a single-file page, which is the shape that skill reaches for on its own.
+  {
+    feature:
+      'frontend-design sets the visual direction, kiss keeps the structure',
+    pattern:
+      /^(?=[\s\S]*`frontend-design`)(?=[\s\S]*visual direction)(?=[\s\S]*structure)(?=[\s\S]*single-file page)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-review'),
+    ],
   },
   {
     feature: "the site map's Id column as the link targets",
