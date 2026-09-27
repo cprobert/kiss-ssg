@@ -24,7 +24,6 @@ export class KissPage {
     _ext: string;
     _extLess: boolean;
     _buildTo: string;
-    _title: string;
     _dev: boolean;
     _debug: boolean;
     view: any;

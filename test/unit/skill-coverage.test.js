@@ -273,6 +273,14 @@ const COVERAGE = [
       /^(?=[\s\S]*launch-readiness audit)(?=[\s\S]*`Audit: )(?=[\s\S]*last-build\.json)(?=[\s\S]*audit: \{ ignore)(?=[\s\S]*audit: false)(?=[\s\S]*throws at construction)/,
     skills: [skill('kiss-ssg', 'kiss-site-migrate')],
   },
+  // Operator decision 2026-09-27, found by the audit: the default title was
+  // "Index" on every page that set none. A site that relied on it sees every
+  // such page's <title> change on upgrade, and has to be told why.
+  {
+    feature: 'upgrade: the default page title is the page’s own slug',
+    pattern: /default title[\s\S]*"Index"[\s\S]*own slug/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
   // Operator decision 2026-09-27: Anthropic's frontend-design skill is an
   // optional companion. It sets the look; kiss keeps the structure — and never
   // a single-file page, which is the shape that skill reaches for on its own.

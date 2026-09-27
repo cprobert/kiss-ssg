@@ -153,6 +153,12 @@ They are advisory: `ok` and the exit code do not move.
   **throws at construction**, naming the valid ids — so a typo in `ignore` stops the build before
   anything is written. The ids and what each one means are in `node_modules/kiss-ssg/llms.txt` § Checking a
   build.
+- **The default title is the page's own slug.** A page that set no `title` (no option, no controller
+  return) used to get the default title `"Index"` whatever it was called, so a layout rendering
+  `{{title}}` titled every such page the same. It now gets its own slug, title-cased with hyphens
+  as spaces — `about-us.hbs` is `About Us`, the rule `llms.txt` entries already used. On such a
+  site `kiss-ssg check` reports those pages as **changed**: their `<title>` is the only difference,
+  and it is the fix. A page that should keep a particular title sets `title` explicitly.
 
 Do not start fixing findings as part of the upgrade: the upgrade is done when the site builds the
 way it did. Offer the findings as their own piece of work with the `kiss-site-review` skill.

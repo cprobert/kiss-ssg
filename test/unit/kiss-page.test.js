@@ -72,6 +72,17 @@ describe('url inference', () => {
     const p = make('v.hbs', { slug: 'x', options: { title: 'T' } })
     expect(p.options).toMatchObject({ title: 'T', slug: 'x', generate: true })
   })
+
+  // Until the launch-readiness release the default title was computed in the constructor, from the
+  // default slug `'index'`, before the page's own slug was set — so every
+  // untitled page was "Index", and the launch-readiness audit reported the
+  // whole site as `title-duplicate`. It is the page's own slug now.
+  it('defaults the title to the page’s own slug, title-cased', () => {
+    expect(make('about.hbs', { slug: 'about-us' }).options.title).toBe(
+      'About Us',
+    )
+    expect(make('index.hbs', { slug: 'index' }).options.title).toBe('Index')
+  })
 })
 
 describe('generate', () => {
