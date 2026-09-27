@@ -468,6 +468,33 @@ describe('kiss-ssg aikb', () => {
     expect(siblings(temp.root)).toEqual([])
   }, 60000)
 
+  // Found upgrading a real site: once a site has recorded, check prints
+  // { reports, diff } rather than the bare array, and handing that output back
+  // as --against diffed every page as added. The loop has to close on itself.
+  it('takes check’s own output back as --against once the site has recorded', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': WITH_AIKB,
+    })
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+
+    const first = check(temp.root, ['check', 'build.js'])
+    expect(first.status).toBe(0)
+    expect(JSON.parse(first.stdout)).toHaveProperty('reports')
+    fs.writeFileSync(path.join(temp.root, 'previous.json'), first.stdout)
+
+    const again = check(temp.root, [
+      'check',
+      '--summary',
+      '--against',
+      'previous.json',
+      'build.js',
+    ])
+    expect(again.status).toBe(0)
+    expect(again.stdout).toContain('  = 1 unchanged')
+    expect(again.stdout).not.toMatch(/^ {2}\+ /m)
+  }, 60000)
+
   it('refuses to record a failed build, writes nothing and exits 1', async () => {
     temp = await makeSite({
       'src/pages/index.hbs': '<p>hello</p>',
