@@ -51,6 +51,21 @@ opened: 2026-09-27
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-27** — Workstream A step 1 (`lib/audit.js`, 60 unit tests) done by a sub-agent and reviewed. Criteria status:
+  - **Detection logic** for head metadata, content structure, site-level and hygiene: in place for all four groups (`test/unit/audit.test.js` green). Not yet wired into the build.
+  - **Red-first:** partial. The sub-agent read 44 stub failures, then proved the 15 negative cases with a 12-mutation pass. Its one never-red case (`testing.io`) was replaced with `site.contest`, which was seen red under a dot-dropping mutation.
+  - **Everything else:** not started (wiring, config, report, docs, skill, examples, clean-room).
+
+  The review found one real defect. `auditBuild` rewrote `buildDir`'s `\` to `/`, which would have leaked `kiss-staging` into the report for a site whose `folders.build` uses Windows separators. I wrote a regression test through `reportedPath`, saw it red (`C:/site/…` against `C:\site\…`), then fixed it.
+
+  `npm test`: 1820 passed. The 3 failures are the ones expected before step 2 (`AIKB/audit.md`, and `types/` for `audit.js` and `links.js`).
+
+  No drift: `lib/links.js` only gained two `export` keywords.
+
+  **Eyeball: looked** — the operator ran the facts script over example 11's built pages and opened `blog/index.html` (screenshot). "Looks good": one h1 then h3s with no h2, which matches `13333`, so `heading-skip` is a real finding. Every page sharing one description means `description-duplicate` will fire across example 11 in the sweep.
+
+  Decision: **continue** to step 2 (wiring, config, report, docs, types).
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
