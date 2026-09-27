@@ -3,6 +3,7 @@ branch: fix/check-against-reads-its-own-output
 base: main
 status: closed
 opened: 2026-09-27
+consolidated: 2026-09-27
 ---
 
 # Session — 2026-09-27: `check --against` reads check's own output
