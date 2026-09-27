@@ -38,6 +38,7 @@ opened: 2026-09-27
 
 ### Amendments
 
+- **2026-09-27: the default page title is fixed on this branch** (operator's decision). The audit's `title-duplicate` exposed a documented engine quirk: `KissPage` computed its default title from the default slug `'index'`, so every untitled page was "Index" (example 3's six roasts; the starter as soon as a second page is added). The default is now the page's own slug, title-cased with hyphens as spaces, the rule `lib/llms.js` already used (`78b0258`). A site that relied on the default sees those pages as changed, and `kiss-site-migrate` has the upgrade note. This is a public behaviour change, inside the minor the branch already expected.
 - **2026-09-27: recommend Anthropic's `frontend-design` skill as an optional companion** (operator's decision). What it covers: a README paragraph with the install commands, saying the skill ships inside the `example-skills` plugin with 11 others; and one line each in `kiss-site-new` and `kiss-site-review` saying to use it for visual direction when it is present, while kiss keeps the file structure (layouts, partials, Sass). `init` and the declared plugins are unchanged. The clean-room run is done once with the plugin installed, to test whether `example-skills`' React-based `web-artifacts-builder` competes with `kiss-site-new`. That risk is inferred, not measured. Assigned to workstream B.
 
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
@@ -67,6 +68,23 @@ opened: 2026-09-27
   Decision: **continue** to step 2 (wiring, config, report, docs, types).
 
 - **2026-09-27** — Workstream A complete and committed (`3becec3`): wiring, config, report, docs, `types/`, example 9/11 records. Reviewed: the per-page `siteUrl` path (`options.config` is the merged config, `kiss.js:2268`) and the wiring against `_checkLinks`. `npm test`: 1854 passed, 1 failed — example 7 times out on an `EPERM` staging rename in this checkout; **reproduced on `main` with every change stashed**, so environmental, not this branch. `AGENTS.md` fails prettier on disk only (mixed CRLF; committed blob clean). Criteria: detection, advisory, per-check opt-out, report/summary, public-API docs and types **met in code**; examples, skill, clean-room, Codex still to come. Eyeball: **looked** — operator opened example 11 under Live Server and reported the links broken; Playwright showed 10/15 404 from the repo root and 15/15 + 9/9 200 served from `public/`; operator then clicked every link on the dev server (:3011): "Looks good." Two Workstream B additions recorded as a contract amendment (preview root in the skill; example 11 onto `{{link}}`). Pending operator answer: whether the duplicate summary line should show the shared value. Decision: **continue** to Workstream B.
+
+- **2026-09-27** — Workstream B landed and was reviewed:
+  - skills and docs (`d4bf12e`);
+  - the duplicate summary line now names the shared value (`bffd55b`, operator's pick);
+  - `check` now reads folder ownership from what the author declared (`ad7207b`): measuring the examples showed it disagreed with the real build for example 7's archive instance;
+  - the example sweep (`bbb594e`): **every audited example re-measured at 0 findings** by me, not relayed. I fixed the sweep's card titles, which had grown visibly when they moved from h3 to h2, by sizing them in the card style;
+  - the default title fix (`78b0258`, amendment above).
+
+  `npm test`: 1866 passed, and the 1 failure is the known example 7 `EPERM`.
+
+  Criteria: all four check groups, advisory, per-check opt-out, docs and types, the skill, and the example sweep are **met**. Clean-room, Codex review and gates are still to come.
+
+  **Eyeball: looked** — operator on example 11's dev server (:3011, restarted on the new code once an orphaned node process holding the port was killed): "Looked — all good": card titles the same size as before, tab icon present, 404 page helpful. Operator decisions:
+  - the starter gets the title fix only (no favicon, 404 or og:image);
+  - fix the default title on this branch.
+
+  Decision: **continue** to the clean-room run.
 
 ---
 
