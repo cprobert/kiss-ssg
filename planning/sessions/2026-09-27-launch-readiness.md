@@ -86,6 +86,17 @@ opened: 2026-09-27
 
   Decision: **continue** to the clean-room run.
 
+- **2026-09-27** — **Clean-room: met.** A fresh agent had only the packed tarball, the shipped `kiss-site-review` skill and Playwright, and reviewed a bookshop site with 18 planted problems (13 audit, plus canonical, plus 5 judgement-only).
+  - It found all 18, plus 3 unplanted ones: image overflow at 320px, the 404 page listed in the sitemap, and an unstyled nav.
+  - It served `public/` as the site root.
+  - Its 14 guesses produced one skill-fix commit (`215d372`): build before the browser pass; judge `/404.html` directly, because the `--dev` preview answers a missing URL with a bare `Cannot GET` (**measured**); a `.scan()` site's 404 is registered via an earlier `.page()`; fix `site-url-local` first; the `{{title}}` fix; `pages[].canonical` and `detail` values documented in `llms.txt`.
+
+  **`example-skills` competition: measured, partially.** Setup: a scratch folder run through `init` from the tarball, both marketplaces installed at project scope (both README install commands work as written), and one headless `claude -p` run with "Build me a website for Harbour Books… Make it look good."
+  - Exactly one `Skill` call, `kiss-ssg:kiss-site-new`; `frontend-design` and `web-artifacts-builder` were offered and not used.
+  - The output kept kiss's structure: a layout, 4 partials, 4 pages including a 404, a model.
+  - It stopped at the 15-turn cap, and `acceptEdits` denied its `check`.
+  - **Limit:** the marketplace installs from GitHub `main`, so this was the published `kiss-site-new`, without this branch's `frontend-design` line. The competition risk is measured as absent; the handoff line itself is not exercised.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
