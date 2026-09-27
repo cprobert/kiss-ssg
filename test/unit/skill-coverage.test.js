@@ -259,6 +259,18 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: 'every example and llms.txt end the chain with await kiss.complete().catch(reportBuildFailure); kiss-site-new prescribed a try/catch the recipe it cited does not contain',
+    patterns: [/inside a `try`\/`catch` that prints every entry/],
+  },
+  {
+    why: 'kiss-site-new announced "Four habits" over seven, and claimed example 11 runs them all; it runs five',
+    patterns: [
+      /Four habits to build in/,
+      /All four run together in/,
+      /exemplar for the four habits/,
+    ],
+  },
+  {
     why: 'plugins install at project scope, and init prints the commands; a bare user-scope /plugin install line is the instruction this replaced',
     patterns: [
       /^\/plugin install kiss-(?:ssg|memory)@kiss-ssg`?$/m,
