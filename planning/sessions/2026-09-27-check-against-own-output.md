@@ -37,6 +37,8 @@ opened: 2026-09-27
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-27** — criteria 1–3 met: unit test red first (the wrapper returned as one element), end-to-end test red first (`+ ./public/index.html`, `= 0 unchanged`), both green after `ba587c5`; `HELP`, `AIKB/check.md`, `llms.txt`, `GUIDE.md` name the fourth shape; full suite 1762 passed / 2 skipped. Criterion 4 (gates, Codex) is the close's. No drift. **Eyeball: looked** — operator ran this branch's bin against a fresh `check` output on the real K9-Solutions site: `ok ./public (check) — 10 pages, 0 failed, 9 assets` / `= 10 unchanged` (2.6.2 read the same shape as ten added pages). (The first attempt ran from the wrong folder because the instructions were prose, not a command to paste; it left an empty `prev.json,` in this repo, removed.) **Explained:** the wrapper is recognised by `reports` being an array alone; operator: keep it. Decision: ready to close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
