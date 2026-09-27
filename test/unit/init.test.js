@@ -500,4 +500,11 @@ describe('the shipped starter', () => {
     for (const from of Object.keys(STARTER_RENAMES))
       expect(fs.existsSync(path.join(dir, from))).toBe(true)
   })
+  // Measured 2026-09-27: behind `if (!dev)`, a dev server that could not bind
+  // its port exited 0; awaited, it exits 1, and a free port keeps serving.
+  it('awaits complete() in dev too, so a dev server that cannot start exits 1', () => {
+    const router = fs.readFileSync(path.join(dir, 'router.js'), 'utf8')
+    expect(router).toContain('await kiss.complete().catch(reportBuildFailure)')
+    expect(router).not.toContain('if (!dev)')
+  })
 })

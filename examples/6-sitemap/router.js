@@ -84,6 +84,4 @@ const kiss = new Kiss({
   // sitemap that does not exist is a fetch error in every crawler that reads it.
   .robots()
 
-if (!dev) {
-  await kiss.complete().catch(reportBuildFailure)
-}
+await kiss.complete().catch(reportBuildFailure)

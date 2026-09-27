@@ -144,3 +144,82 @@ describe('no artefact carries the staging folder name', () => {
     await fs.remove(path.dirname(reportFile))
   })
 })
+
+// A discard whose removal fails. On Windows a transient lock (an antivirus or
+// indexer holding a file, or a delete still pending) makes the removal throw
+// EBUSY / ENOTEMPTY; the discard used to swallow that at debug level and skip
+// clearing the output claims, so the failure was silent and the claims stale.
+describe('discarding a staging folder that will not go', () => {
+  async function staged(logger = silentLogger) {
+    site = await makeSite({ 'src/assets/file.txt': 'A' })
+    kiss = new Kiss({ folders: site.folders, cleanBuild: 'atomic', logger })
+    await kiss._drain()
+    return kiss._stagingDir
+  }
+  // Both spellings: the discard used to call fs.remove, and a test that
+  // mocked only the new call would pass against the old code for nothing.
+  // Before the file's own afterEach, which closes the instance and removes the
+  // site: both need the real fs back.
+  afterEach(() => vi.restoreAllMocks())
+  const lockEverything = () => {
+    vi.spyOn(fs, 'rm').mockRejectedValue(locked())
+    vi.spyOn(fs, 'remove').mockRejectedValue(locked())
+  }
+  const locked = () =>
+    Object.assign(new Error('EBUSY: resource busy or locked'), {
+      code: 'EBUSY',
+    })
+
+  it('removes with Node’s own retries for transient Windows errors', async () => {
+    const staging = await staged()
+    const rm = vi.spyOn(fs, 'rm')
+    await kiss._discardStaging()
+    expect(rm).toHaveBeenCalledWith(
+      staging,
+      expect.objectContaining({ recursive: true, force: true }),
+    )
+    expect(rm.mock.calls[0][1].maxRetries).toBeGreaterThan(0)
+    expect(await fs.pathExists(staging)).toBe(false)
+  })
+
+  it('clears the output claims even when the folder cannot be removed', async () => {
+    const staging = await staged()
+    lockEverything()
+    expect(kiss._outputs.owner(`${staging}/file.txt`)).not.toBeNull()
+    await kiss._discardStaging()
+    expect(kiss._outputs.owner(`${staging}/file.txt`)).toBeNull()
+  })
+
+  it('warns once, naming the folder and what to do about it', async () => {
+    const warn = vi.fn()
+    const staging = await staged({ ...silentLogger, warn })
+    lockEverything()
+    await kiss._discardStaging()
+    expect(warn).toHaveBeenCalledTimes(1)
+    const [message] = warn.mock.calls[0]
+    expect(message).toContain(staging)
+    expect(message).toMatch(/EBUSY/)
+    expect(message).toMatch(/delete it by hand/)
+  })
+
+  // The other way a staged build ends: close() with nothing promoted (a build
+  // that never called complete()). Same folder, same silence, same fix.
+  it('close() warns the same way when it cannot remove an unpromoted staging folder', async () => {
+    const warn = vi.fn()
+    const staging = await staged({ ...silentLogger, warn })
+    lockEverything()
+    await kiss.close()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain(staging)
+    expect(warn.mock.calls[0][0]).toMatch(/delete it by hand/)
+    vi.restoreAllMocks()
+    await fs.remove(staging)
+  })
+
+  it('says nothing when the removal succeeds', async () => {
+    const warn = vi.fn()
+    await staged({ ...silentLogger, warn })
+    await kiss._discardStaging()
+    expect(warn).not.toHaveBeenCalled()
+  })
+})

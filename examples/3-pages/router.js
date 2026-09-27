@@ -70,6 +70,4 @@ kiss
     })
   })
 
-if (!dev) {
-  await kiss.complete().catch(reportBuildFailure)
-}
+await kiss.complete().catch(reportBuildFailure)

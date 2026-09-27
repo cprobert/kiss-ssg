@@ -590,6 +590,11 @@ declare class Kiss {
     private _redirectFindings;
     /** @private */
     private _discardStaging;
+    /** @private
+     * @param {string} staging
+     * @param {string} which the adjective the warning uses for the folder
+     */
+    private _removeStaging;
     /**
      * @private
      * @param {any} options

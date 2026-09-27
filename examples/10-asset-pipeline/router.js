@@ -114,14 +114,12 @@ kiss
     this.viewStats()
   })
 
-if (!dev) {
-  await kiss
-    .complete(function () {
-      for (const step of this.report().pipeline) {
-        console.log(
-          `pipeline: ${step.name} ${step.ok ? 'ok' : 'FAILED'} in ${step.duration}ms`,
-        )
-      }
-    })
-    .catch(reportBuildFailure)
-}
+await kiss
+  .complete(function () {
+    for (const step of this.report().pipeline) {
+      console.log(
+        `pipeline: ${step.name} ${step.ok ? 'ok' : 'FAILED'} in ${step.duration}ms`,
+      )
+    }
+  })
+  .catch(reportBuildFailure)

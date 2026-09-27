@@ -3,6 +3,34 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.6.2 — 2026-09-27
+
+### A staging folder that will not delete is said out loud
+
+Under `cleanBuild: 'atomic'` (and `kiss-ssg check`), a failed build's staging
+folder is removed with a few retries, which clears the brief locks a Windows
+antivirus or indexer takes. If it still cannot be removed, kiss now logs one
+warning naming the folder — nothing was published from it, so delete it by
+hand; the next atomic build sweeps leftovers when it starts. Previously the
+failure was silent. `close()` does the same for a staged build that was never
+completed.
+
+### `await complete()` in dev too
+
+The `init` starter and every example now end with
+`await kiss.complete().catch(reportBuildFailure)` in both modes, instead of
+only outside `--dev`. Awaited in dev, it resolves after the first build and
+the server keeps serving; behind the old `if (!dev)` guard, a dev server that
+could not bind its port exited 0 instead of 1. If your `router.js` came from
+an example or the starter, you can drop the guard the same way.
+
+### `kiss-site-new` corrected
+
+The skill's list of **seven decisions** (it said "four habits") is now
+distinct from the five working habits in `llms.txt`, and its instructions
+match what the examples do: `"type": "module"`, the `check` and `aikb`
+scripts, and the unguarded `complete()`.
+
 ## 2.6.1 — 2026-09-26
 
 ### `npx kiss-ssg init` — an empty folder to a site an agent can grow
