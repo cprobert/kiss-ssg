@@ -21,7 +21,10 @@ const dev = process.argv.includes('--dev')
 // No `folders` block: `src: './src'` and `build: './public'` are the defaults.
 // Any extra key reaches every view as `config.<key>`.
 const kiss = new Kiss({
-  site: { name: 'My kiss site' },
+  site: {
+    name: 'My kiss site',
+    description: 'A site built with kiss-ssg.',
+  },
   dev,
 })
   .scan()

@@ -1,8 +1,7 @@
 {{!-- One view, rendered at two depths: /blog/index.html and
-      /blog/page/2/index.html. That is why `root` is read from the page's
-      options here instead of being written into this line — the build script
-      knows how deep each page of the listing sits, and the view does not. --}}
-{{#extend "layout" root=root}}
+      /blog/page/2/index.html. Nothing here depends on which: every link is
+      asked for by identity, and `{{link}}` answers with a root-relative path. --}}
+{{#extend "layout"}}
 
   {{#content "head"}}{{> "head-feed"}}{{/content}}
 
@@ -26,7 +25,7 @@
   </nav>
 
   <div class="card">
-    <h3>Browse by tag</h3>
+    <h2>Browse by tag</h2>
     <p>{{#each model.tags}}<a class="tag" href="{{link 'blog/tags' slug=slug}}">{{tag}} ({{count}})</a> {{/each}}</p>
     <p class="meta"><a href="{{link 'blog/tags'}}">Every tag</a> &middot; <a href="/feed.xml">RSS feed</a></p>
   </div>

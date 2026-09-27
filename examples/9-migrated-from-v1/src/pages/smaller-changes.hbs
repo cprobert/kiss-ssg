@@ -12,7 +12,7 @@
 
   <div class="grid">
     <article class="card">
-      <h3>Node 22.12 first</h3>
+      <h2>Node 22.12 first</h2>
       <p>
         <code>engines.node</code> is <code>&gt;=22.12.0</code>. Check it before touching any
         code: v2 will not install or run below it, and a pinned dev version in
@@ -20,7 +20,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>ESM, and CJS still works</h3>
+      <h2>ESM, and CJS still works</h2>
       <p>
         <code>import Kiss from 'kiss-ssg'</code> is the form. <code>require('kiss-ssg')</code>
         still resolves on Node 22.12 and up, so a CommonJS build script does not have to be
@@ -28,7 +28,7 @@
       </p>
     </article>
     <article class="card">
-      <h3><code>utils</code> is a named export</h3>
+      <h2><code>utils</code> is a named export</h2>
       <p>
         <code>import Kiss, &#123; utils &#125; from 'kiss-ssg'</code>, not a deep path into
         <code>libs/</code>. This script uses <code>utils.toSlug</code> for the deduplication on
@@ -36,7 +36,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>Controllers <code>export default</code></h3>
+      <h2>Controllers <code>export default</code></h2>
       <p>
         <code>controllers/shelf-item.js</code> is an ES module with a default export.
         <code>module.exports =</code> is still accepted, so controllers can be migrated one at
@@ -44,7 +44,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>The generate callback fires last</h3>
+      <h2>The generate callback fires last</h2>
       <p>
         In v1 it ran before the files were written. In v2 it runs after, so a callback can read
         its own output — this build's console line
@@ -52,7 +52,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>What did not change</h3>
+      <h2>What did not change</h2>
       <p>
         The per-page <code>generate: false</code> option, <code>ext</code>,
         <code>copyAssets()</code>, <code>viewStats()</code>, <code>getModelByID()</code>, and

@@ -1,0 +1,23 @@
+{{!-- The host serves this for any URL the site does not have, at any depth.
+      Every link on it is `link` or `asset` output — root-relative — so it
+      works wherever the visitor got lost, with nothing to climb back from. --}}
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Page not found</p>
+    <h1>This page is not in the journal</h1>
+    <p>
+      It may have moved, or the link may have a typo in it. Posts that were renamed still
+      answer at their old address, so a post that is missing here was probably never
+      published. <a href="{{link 'blog'}}">Every post</a> &middot;
+      <a href="{{link 'blog/tags'}}">Browse by tag</a>
+    </p>
+  </section>
+
+  <div class="stack">
+    {{#each model.latest}}{{> "post-card"}}{{/each}}
+  </div>
+  {{/content}}
+
+{{/extend}}

@@ -12,7 +12,7 @@
 
   <div class="grid">
     <article class="card">
-      <h3>The v1 idiom</h3>
+      <h2>The v1 idiom</h2>
       <p>
         A chain that ends at <code>generate()</code>, or a callback-style
         <code>complete(function () { … })</code> with no <code>.catch</code>. v1 logged a
@@ -21,7 +21,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>What v2 does</h3>
+      <h2>What v2 does</h2>
       <p>
         <code>complete()</code> rejects with an <code>AggregateError</code>, and
         <code>err.failures</code> lists every failed page as
@@ -30,7 +30,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>The catch has to do the work too</h3>
+      <h2>The catch has to do the work too</h2>
       <p>
         A failed build never runs <code>complete()</code>'s own callback. Anything that lived
         there — a sitemap, an index, a deploy step — has to run again in the

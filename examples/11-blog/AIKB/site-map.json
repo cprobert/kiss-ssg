@@ -16,6 +16,17 @@
   },
   "pages": [
     {
+      "buildTo": "./public/404.html",
+      "id": "404",
+      "view": "404.hbs",
+      "model": "inline",
+      "controller": "none",
+      "partials": [
+        "layout",
+        "post-card"
+      ]
+    },
+    {
       "buildTo": "./public/blog/a-year-of-bench-lots/index.html",
       "id": "blog/post/a-year-of-bench-lots",
       "view": "blog/post.hbs",
@@ -195,6 +206,7 @@
       "./public/index.html"
     ],
     "layout": [
+      "./public/404.html",
       "./public/blog/a-year-of-bench-lots/index.html",
       "./public/blog/grind-size-is-the-dial/index.html",
       "./public/blog/guji-uraga-has-landed/index.html",
@@ -211,6 +223,7 @@
       "./public/index.html"
     ],
     "post-card": [
+      "./public/404.html",
       "./public/blog/index.html",
       "./public/blog/page/2/index.html",
       "./public/blog/tags/brewing/index.html",
@@ -235,6 +248,7 @@
     {
       "source": "inline",
       "pages": [
+        "./public/404.html",
         "./public/blog/index.html",
         "./public/blog/page/2/index.html",
         "./public/blog/tags/brewing/index.html",

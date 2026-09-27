@@ -134,16 +134,21 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(countHtmlFiles(outputDir('5-helpers'))).toBe(2)
     }, 60000)
 
-    it('6 · sitemap builds 4 pages, a sitemap, an llms.txt, a robots.txt and a hashed stylesheet', () => {
+    it('6 · sitemap builds 5 pages, a sitemap, an llms.txt, a robots.txt and a hashed stylesheet', () => {
       cleanOutput('6-sitemap')
       const r = runExample('6-sitemap')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(outputDir('6-sitemap'))).toBe(4)
+      // Four content pages and the 404, which lands at the build root as
+      // 404.html — the one page on this extensionLess site that opts out.
+      expect(countHtmlFiles(outputDir('6-sitemap'))).toBe(5)
+      expect(existsSync(path.join(outputDir('6-sitemap'), '404.html'))).toBe(
+        true,
+      )
       expect(existsSync(path.join(outputDir('6-sitemap'), 'sitemap.xml'))).toBe(
         true,
       )
       // The one example that writes both: llms.txt lists the three pages the
-      // sitemap does, and not the `ignoreSitemap` one.
+      // sitemap does, and not the two `ignoreSitemap` ones (the rota, the 404).
       const llms = readFileSync(
         path.join(outputDir('6-sitemap'), 'llms.txt'),
         'utf8',
@@ -215,11 +220,12 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(leftoverStaging).toEqual([])
     }, 60000)
 
-    it('9 · migrated from v1 builds 11 pages with the recipes intact', () => {
+    it('9 · migrated from v1 builds 12 pages with the recipes intact', () => {
       cleanOutput('9-migrated-from-v1')
       const r = runExample('9-migrated-from-v1')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(outputDir('9-migrated-from-v1'))).toBe(11)
+      // Eleven recipe and shelf pages, plus the 404.
+      expect(countHtmlFiles(outputDir('9-migrated-from-v1'))).toBe(12)
 
       // The guarded dynamic-partial block warns exactly once — the `lookup`
       // helper dedupes per page per key, not per call (see handlebars-helpers.js).
@@ -303,11 +309,11 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(note).toContain(`subject-hash: ${report.aikb.subjects[0].hash}`)
     }, 60000)
 
-    it('10 · asset pipeline builds 1 page and the stylesheet its step generated', () => {
+    it('10 · asset pipeline builds its page, a 404 and the stylesheet its step generated', () => {
       cleanOutput('10-asset-pipeline')
       const r = runExample('10-asset-pipeline')
       expect(r.status).toBe(0)
-      expect(countHtmlFiles(outputDir('10-asset-pipeline'))).toBe(1)
+      expect(countHtmlFiles(outputDir('10-asset-pipeline'))).toBe(2)
 
       // The step ran before the asset copy, so what it wrote is in the build —
       // which is the whole feature, and the one thing a page count cannot show.
@@ -337,12 +343,14 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(html).toContain('css/generated.css?v=2')
     }, 60000)
 
-    it('11 · blog builds 14 pages, one redirect and a feed of six posts newest first', () => {
+    it('11 · blog builds 15 pages, one redirect and a feed of six posts newest first', () => {
       cleanOutput('11-blog')
       const r = runExample('11-blog')
       expect(r.status).toBe(0)
       const dir = outputDir('11-blog')
-      expect(countHtmlFiles(dir)).toBe(14)
+      // Fourteen pages of journal and the 404, at the root as 404.html.
+      expect(countHtmlFiles(dir)).toBe(15)
+      expect(existsSync(path.join(dir, '404.html'))).toBe(true)
 
       // The rename recipe: one post's record carries `aliases`, so the build
       // writes exactly one 301 — and its target is the page's canonical path,
@@ -390,12 +398,12 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(clean.report.links.broken).toEqual([])
       // Pinned, not `> 0`: every internal href in this site's own views is
       // `{{link}}` output, so the number is what the helper and the shared
-      // layout actually emitted across fourteen pages. `checked` deduplicates
+      // layout actually emitted across fifteen pages. `checked` deduplicates
       // per page, so it is a property of the site rather than a render count —
       // and a drop in it is the symptom of a link quietly stopping being
       // rendered, which is exactly what a pinned number catches and a
       // `> 0` does not.
-      expect(clean.report.links.checked).toBe(171)
+      expect(clean.report.links.checked).toBe(177)
       expect(clean.report.redirects.aliases).toBe(1)
       expect(clean.report.redirects.removed).toEqual([])
       expect(clean.report.redirects.collisions).toEqual([])

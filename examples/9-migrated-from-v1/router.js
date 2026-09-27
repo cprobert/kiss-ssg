@@ -51,6 +51,10 @@ const kiss = new Kiss({
     // from a build that passed. An ordinary build only reports on it.
     aikb: './AIKB',
   },
+  // Where the site will live. The layout's share card (`og:image`) has to be an
+  // absolute URL — a scraper never resolves a relative one — and this is what
+  // `absUrl` joins it onto; `{{canonical}}` reads it too.
+  siteUrl: 'https://asterandoak.example',
   verbose: true,
   dev,
   port: 3009,
@@ -103,11 +107,25 @@ const finish = (outcome) =>
   console.log(`post-build step ran after a ${outcome} build`)
 
 kiss
-  .page({ view: 'index.hbs', title: 'The recipes' })
-  .page({ view: 'await-complete.hbs', title: 'Awaiting complete()' })
+  // Every page says what it is about in its own `description`, which the
+  // layout's meta tag reads; the site tagline is only the fallback.
+  .page({
+    view: 'index.hbs',
+    title: 'The recipes',
+    description:
+      'Every kiss-ssg v1 to v2 migration recipe, as one site that builds clean.',
+  })
+  .page({
+    view: 'await-complete.hbs',
+    title: 'Awaiting complete()',
+    description:
+      'Await complete() and catch it, or a build with missing pages still exits 0.',
+  })
   .page({
     view: 'folders.hbs',
     title: 'The folders v2 reads',
+    description:
+      'The folder keys v2 reads, and where v1’s unread root and static keys went.',
     // The resolved folders, straight off the instance — the page cannot claim
     // a key the engine does not have. `build` is the exception, and deliberately
     // so: a staged run (check, or a record) is building into a sibling folder
@@ -124,11 +142,15 @@ kiss
   .page({
     view: 'handlebars-instance.hbs',
     title: 'One Handlebars per instance',
+    description:
+      'Helpers and partials belong to kiss.handlebars, not the global handlebars module.',
     model: { stock: '12 kg', roasted: '2 March' },
   })
   .page({
     view: 'dynamic-partials.hbs',
     title: 'Dynamic partials',
+    description:
+      'Guarding a dynamic partial whose name comes from the model and may be undefined.',
     model: {
       blocks: [
         { label: 'Stock note', partial: 'stock-note' },
@@ -144,6 +166,8 @@ kiss
   .page({
     view: 'duplicate-paths.hbs',
     title: 'Two sources, one path',
+    description:
+      'Two fan-outs into one folder: dedupe the slugs before registering either.',
     model: {
       catalogue: catalogue.map((item) => ({
         ...item,
@@ -162,6 +186,8 @@ kiss
   .page({
     view: 'pure-controllers.hbs',
     title: 'Controllers that return',
+    description:
+      'Controllers return new values rather than mutating the model they were handed.',
     model: {
       pours: [
         { name: 'V60', ratio: '15 g : 250 g' },
@@ -182,7 +208,12 @@ kiss
       },
     }),
   })
-  .page({ view: 'smaller-changes.hbs', title: 'The smaller changes' })
+  .page({
+    view: 'smaller-changes.hbs',
+    title: 'The smaller changes',
+    description:
+      'Node 22.12, ESM, the utils named export and the other one-line v2 changes.',
+  })
   .pages({
     view: 'shelf/item.hbs',
     path: 'shelf',
@@ -195,13 +226,23 @@ kiss
     model: benchToBuild,
     controller: 'shelf-item.js',
   })
+  // What the host serves for a URL the site does not have — `404.html` at the
+  // build root. Not content to index, so it stays out of any sitemap.
+  .page({
+    view: '404.hbs',
+    title: 'Page not found',
+    description: 'This page is not on the Aster & Oak migration site.',
+    ignoreSitemap: true,
+  })
   // v2 fires this after the files are written, so a callback can read them.
   .generate(function () {
     const written = existsSync('./public/index.html')
     console.log(
       `generate: index.html on disk when the callback ran: ${written}`,
     )
-    this.viewStats()
+    // Dev only: under `verbose` it writes debug.json — every page's options
+    // and model — into the build, which a published site should not carry.
+    if (dev) this.viewStats()
   })
 
 await kiss

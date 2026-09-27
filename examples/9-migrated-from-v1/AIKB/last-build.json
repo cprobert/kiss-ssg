@@ -7,7 +7,7 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "6c04dabbf11a3182b1efd92d8e0197a117b50a57",
+      "hash": "5327e69b3bda7971d193403813cd3b4dcd7828fc",
       "id": "index",
       "canonical": null
     },
@@ -15,7 +15,7 @@
       "view": "await-complete.hbs",
       "buildTo": "./public/await-complete.html",
       "ok": true,
-      "hash": "bf8452ff81bdcc325118130ab9b6bcb2badfc07d",
+      "hash": "42549180722069377efe95d72540fec8e2a658d2",
       "id": "await-complete",
       "canonical": null
     },
@@ -23,7 +23,7 @@
       "view": "folders.hbs",
       "buildTo": "./public/folders.html",
       "ok": true,
-      "hash": "6819210e1edf979e97443031aa78b1202ed95b53",
+      "hash": "bdeb5df536ff072eca8c3f3914967fe0891e7204",
       "id": "folders",
       "canonical": null
     },
@@ -31,7 +31,7 @@
       "view": "handlebars-instance.hbs",
       "buildTo": "./public/handlebars-instance.html",
       "ok": true,
-      "hash": "7706828c76c2aa0bfa4ea9f7b640ec62e9fbe629",
+      "hash": "1c7be0076acf2776ea452f749e312a88039fe476",
       "id": "handlebars-instance",
       "canonical": null
     },
@@ -39,7 +39,7 @@
       "view": "dynamic-partials.hbs",
       "buildTo": "./public/dynamic-partials.html",
       "ok": true,
-      "hash": "02c0fe74a30139a6ee7522725fb9fe1332044430",
+      "hash": "ca0571a97d6baae769e68e47112a8ceda1ce3063",
       "id": "dynamic-partials",
       "canonical": null
     },
@@ -47,7 +47,7 @@
       "view": "duplicate-paths.hbs",
       "buildTo": "./public/duplicate-paths.html",
       "ok": true,
-      "hash": "aa3625efabb1222186b5fd99c7149a26bf65cf45",
+      "hash": "11d426e8fcc70a14415bf1daf0582f2a04b48fbe",
       "id": "duplicate-paths",
       "canonical": null
     },
@@ -55,7 +55,7 @@
       "view": "pure-controllers.hbs",
       "buildTo": "./public/pure-controllers.html",
       "ok": true,
-      "hash": "814a56b20e8c2ebbf2d637812257162dcdf4cc77",
+      "hash": "6b345c0aebdecbc6409de5c12a898c34349a38a4",
       "id": "pure-controllers",
       "canonical": null
     },
@@ -63,15 +63,23 @@
       "view": "smaller-changes.hbs",
       "buildTo": "./public/smaller-changes.html",
       "ok": true,
-      "hash": "f4dfaf28bdec58c4cab8683644e4ae47140d4228",
+      "hash": "fef8cf4870e1e40fe8aeabbb2d0deeed90a0c137",
       "id": "smaller-changes",
+      "canonical": null
+    },
+    {
+      "view": "404.hbs",
+      "buildTo": "./public/404.html",
+      "ok": true,
+      "hash": "7c04e3e7f897397965f121c7d48638bf2c243ade",
+      "id": "404",
       "canonical": null
     },
     {
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/arch-blend.html",
       "ok": true,
-      "hash": "0105add91d94317fd5af4b41bc6aaf55074bc890",
+      "hash": "2f9b49585c8638a510045f2ef5a0717232ed6e2a",
       "id": "shelf/item/arch-blend",
       "canonical": null
     },
@@ -79,7 +87,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/oak-cascara.html",
       "ok": true,
-      "hash": "7815d7788080c087e62c20f6856beedfb6bb921c",
+      "hash": "7a96181fdfe752989ec68fcc10f64faf083ef796",
       "id": "shelf/item/oak-cascara",
       "canonical": null
     },
@@ -87,7 +95,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/guji-uraga.html",
       "ok": true,
-      "hash": "4aa1cfd0d0b91d932a3660f2ea949c7b6bb4556f",
+      "hash": "738b806c2ec47a684ef380abbc426e11cd63bb4b",
       "id": "shelf/item/guji-uraga",
       "canonical": null
     }
@@ -97,6 +105,14 @@
     {
       "source": "css/site.css",
       "target": "css/site.css"
+    },
+    {
+      "source": "img/icon.png",
+      "target": "img/icon.png"
+    },
+    {
+      "source": "img/og-card.png",
+      "target": "img/og-card.png"
     }
   ],
   "sitemap": null,
@@ -116,12 +132,12 @@
         "kind": "controllers",
         "id": "shelf-item.js",
         "note": "notes/controllers/shelf-item.md",
-        "hash": "76acd457db16d39eb3c0e3c11ff589b0a06d3632"
+        "hash": "83a88934aab0d7656e0e055bdd6331101234d246"
       }
     ]
   },
   "links": {
-    "checked": 36,
+    "checked": 64,
     "broken": []
   },
   "redirects": null,
@@ -131,175 +147,9 @@
     "collisions": []
   },
   "audit": {
-    "checked": 11,
+    "checked": 12,
     "ignored": [],
     "skipped": [],
-    "findings": [
-      {
-        "check": "description-duplicate",
-        "page": "./public/await-complete.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/duplicate-paths.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/dynamic-partials.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/folders.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/handlebars-instance.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/index.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/pure-controllers.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/shelf/arch-blend.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/shelf/guji-uraga.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/shelf/oak-cascara.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "description-duplicate",
-        "page": "./public/smaller-changes.html",
-        "detail": "Small-batch coffee, roasted in Bristol"
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/await-complete.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/duplicate-paths.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/dynamic-partials.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/folders.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/handlebars-instance.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/index.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/pure-controllers.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/shelf/arch-blend.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/shelf/guji-uraga.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/shelf/oak-cascara.html",
-        "detail": null
-      },
-      {
-        "check": "og-image-missing",
-        "page": "./public/smaller-changes.html",
-        "detail": null
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/await-complete.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/duplicate-paths.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/dynamic-partials.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/folders.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/handlebars-instance.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/index.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/pure-controllers.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "heading-skip",
-        "page": "./public/smaller-changes.html",
-        "detail": "h1 -> h3"
-      },
-      {
-        "check": "favicon-missing",
-        "page": null,
-        "detail": null
-      },
-      {
-        "check": "not-found-missing",
-        "page": null,
-        "detail": null
-      },
-      {
-        "check": "debug-dump",
-        "page": "./public/debug.json",
-        "detail": null
-      }
-    ]
+    "findings": []
   }
 }

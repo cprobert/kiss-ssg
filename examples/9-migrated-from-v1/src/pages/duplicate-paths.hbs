@@ -13,7 +13,7 @@
 
   <div class="grid">
     <article class="card">
-      <h3>The catalogue owns its slugs</h3>
+      <h2>The catalogue owns its slugs</h2>
       <ul>
         {{#each model.catalogue}}
         <li><a href="shelf/{{slug}}.html">{{name}}</a> &mdash; {{origin}}</li>
@@ -21,7 +21,7 @@
       </ul>
     </article>
     <article class="card">
-      <h3>Bench lots, after the filter</h3>
+      <h2>Bench lots, after the filter</h2>
       <ul>
         {{#each model.built}}
         <li><a href="shelf/{{slug}}.html">{{name}}</a> &mdash; {{origin}}</li>
@@ -29,7 +29,7 @@
       </ul>
     </article>
     <article class="card">
-      <h3>Dropped before registering</h3>
+      <h2>Dropped before registering</h2>
       <ul>
         {{#each model.dropped}}
         <li><code>{{slug}}</code> &mdash; {{note}}</li>

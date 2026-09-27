@@ -1,6 +1,6 @@
 {
   "site": {
-    "siteUrl": null,
+    "siteUrl": "https://asterandoak.example",
     "build": "./public",
     "folders": {
       "aikb": "./AIKB",
@@ -15,6 +15,16 @@
     }
   },
   "pages": [
+    {
+      "buildTo": "./public/404.html",
+      "id": "404",
+      "view": "404.hbs",
+      "model": "none",
+      "controller": "none",
+      "partials": [
+        "layout"
+      ]
+    },
     {
       "buildTo": "./public/await-complete.html",
       "id": "await-complete",
@@ -131,6 +141,7 @@
   ],
   "partials": {
     "layout": [
+      "./public/404.html",
       "./public/await-complete.html",
       "./public/duplicate-paths.html",
       "./public/dynamic-partials.html",
@@ -188,7 +199,7 @@
       "kind": "controllers",
       "id": "shelf-item.js",
       "note": "notes/controllers/shelf-item.md",
-      "hash": "76acd457db16d39eb3c0e3c11ff589b0a06d3632"
+      "hash": "83a88934aab0d7656e0e055bdd6331101234d246"
     }
   ]
 }

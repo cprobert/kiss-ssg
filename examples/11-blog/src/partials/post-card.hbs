@@ -8,7 +8,7 @@
       `extensionLess`, or that posts live under /blog/ — that is the engine's to
       know, and this partial's not to guess. --}}
 <article class="card">
-  <h3><a href="{{link id}}">{{title}}</a></h3>
+  <h2><a href="{{link id}}">{{title}}</a></h2>
   <p class="meta"><time datetime="{{date}}">{{dateLabel}}</time></p>
   <p>{{summary}}</p>
   <p>{{#each tags}}<a class="tag" href="{{link 'blog/tags' slug=this}}">{{this}}</a> {{/each}}</p>

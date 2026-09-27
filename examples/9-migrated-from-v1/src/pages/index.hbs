@@ -14,31 +14,31 @@
 
   <div class="grid">
     <article class="card">
-      <h3><a href="await-complete.html">Await complete()</a></h3>
+      <h2><a href="await-complete.html">Await complete()</a></h2>
       <p>A chain that ends at <code>generate()</code> exits 0 on a broken build. v2 rejects, and the post-build work moves into a function both branches call.</p>
     </article>
     <article class="card">
-      <h3><a href="folders.html">The folders v2 reads</a></h3>
+      <h2><a href="folders.html">The folders v2 reads</a></h2>
       <p><code>folders.root</code> and <code>folders.static</code> are gone. Here is the resolved folder table, read off the instance itself.</p>
     </article>
     <article class="card">
-      <h3><a href="handlebars-instance.html">One Handlebars per instance</a></h3>
+      <h2><a href="handlebars-instance.html">One Handlebars per instance</a></h2>
       <p>Helpers and partials belong to <code>kiss.handlebars</code>. A helper reading the global module renders nothing, quietly.</p>
     </article>
     <article class="card">
-      <h3><a href="dynamic-partials.html">Dynamic partials</a></h3>
+      <h2><a href="dynamic-partials.html">Dynamic partials</a></h2>
       <p>A partial name that resolves to <code>undefined</code>. v2 names the key and the view in a warning; the guard keeps the page.</p>
     </article>
     <article class="card">
-      <h3><a href="duplicate-paths.html">Two sources, one path</a></h3>
+      <h2><a href="duplicate-paths.html">Two sources, one path</a></h2>
       <p>Duplicate output paths fail the build in v2. Dedupe the slugs before registering and decide which source wins.</p>
     </article>
     <article class="card">
-      <h3><a href="pure-controllers.html">Controllers that return</a></h3>
+      <h2><a href="pure-controllers.html">Controllers that return</a></h2>
       <p>A controller that mutates an object model in place drifts a little further on every rebuild. Return new values instead.</p>
     </article>
     <article class="card">
-      <h3><a href="smaller-changes.html">The smaller changes</a></h3>
+      <h2><a href="smaller-changes.html">The smaller changes</a></h2>
       <p>Node 22.12, ESM, the <code>utils</code> named export, <code>export default</code> controllers, and when the generate callback fires.</p>
     </article>
   </div>

@@ -1,0 +1,26 @@
+{{!-- The host serves this for any URL the site does not have, at any depth, so
+      its links climb from the host root ("/") rather than from wherever the
+      visitor got lost. --}}
+{{#extend "layout" root="/"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Page not found</p>
+    <h1>No recipe at this address</h1>
+    <p>
+      The page you asked for is not part of this site. It may have moved, or the link may
+      have a typo in it.
+    </p>
+  </section>
+
+  <div class="card">
+    <h2>Where to go from here</h2>
+    <ul>
+      <li><a href="/index.html">Every recipe</a> &mdash; the index of v1 &rarr; v2 migrations</li>
+      <li><a href="/await-complete.html">Await complete()</a> &mdash; the one that costs most if missed</li>
+      <li><a href="/smaller-changes.html">The smaller changes</a></li>
+    </ul>
+  </div>
+  {{/content}}
+
+{{/extend}}

@@ -27,10 +27,17 @@ const kiss = new Kiss({
   ],
   verbose: true,
   dev,
+  // A teaching example, not a site: it publishes no share card, favicon or 404
+  // page, so the audit's checks for those three are turned off here, by name.
+  audit: {
+    ignore: ['og-image-missing', 'favicon-missing', 'not-found-missing'],
+  },
 })
   .page({
     view: 'index.hbs',
     title: 'The bar',
+    description:
+      'The espresso bar under the arch: prices, hours and how we buy.',
     model: {
       buyer: 'Tom',
       // The name of the partial to drop in — chosen by the model, resolved
@@ -41,6 +48,7 @@ const kiss = new Kiss({
   .page({
     view: 'stockists.hbs',
     title: 'Stockists',
+    description: 'The Bristol cafes and delis that carry Aster & Oak.',
     model: {
       buyer: 'Priya',
       partials: { board: 'boards/filter' },

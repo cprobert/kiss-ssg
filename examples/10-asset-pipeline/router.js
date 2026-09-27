@@ -68,6 +68,9 @@ const kiss = new Kiss({
   },
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
+  // Where the site will live: the layout's share card (`og:image`) must be an
+  // absolute URL, and `absUrl` joins it onto this.
+  siteUrl: 'https://asterandoak.example',
   assets: {
     pipeline: [
       {
@@ -108,10 +111,19 @@ kiss
         'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Ccircle%20cx%3D%228%22%20cy%3D%228%22%20r%3D%227%22%20fill%3D%22%23b4531f%22%2F%3E%3C%2Fsvg%3E',
     },
   })
+  // What the host serves for a URL the site does not have: `404.html` at the
+  // build root.
+  .page({
+    view: '404.hbs',
+    title: 'Page not found',
+    model: { description: 'This page is not on the Aster & Oak site.' },
+  })
   .generate(function () {
     // `report()` is null until complete() settles; the pipeline is reported
-    // there as `[{ name, ok, duration }]`.
-    this.viewStats()
+    // there as `[{ name, ok, duration }]`. Dev only: under `verbose` this
+    // writes debug.json — every page's options and model — into the build,
+    // which a published site should not carry.
+    if (dev) this.viewStats()
   })
 
 await kiss

@@ -1,4 +1,4 @@
-// Tier 0, at 123 lines and deliberately so: the shape here is two Kiss
+// Tier 0, at 152 lines and deliberately so: the shape here is two Kiss
 // instances in sequence, which is what makes the file long. Length alone is the
 // symptom; the trigger for a `helpers/` folder is helpers outgrowing the route
 // table, and there are none (llms.txt § The build script).
@@ -62,6 +62,11 @@ const kiss = new Kiss({
   cleanBuild: 'atomic',
   dev: false,
   verbose: true,
+  // A teaching example, not a site: it publishes no share card, favicon or 404
+  // page, so the audit's checks for those three are turned off here, by name.
+  audit: {
+    ignore: ['og-image-missing', 'favicon-missing', 'not-found-missing'],
+  },
 })
   .copyAssets('./src/assets', seasonDir)
   .scan()
@@ -106,6 +111,10 @@ const indexKiss = new Kiss({
   },
   cleanBuild: false,
   dev: false,
+  // The same teaching-example exemption as the season build. No 404 check to
+  // turn off: under `cleanBuild: false` the audit does not own this folder and
+  // skips it by itself.
+  audit: { ignore: ['og-image-missing', 'favicon-missing'] },
 })
 
 indexKiss
@@ -114,6 +123,7 @@ indexKiss
     title: 'Every season',
     view: `<!doctype html><html lang="en"><head><meta charset="utf-8">
       <title>Every season &middot; {{config.site.name}}</title>
+      <meta name="description" content="Every seasonal menu {{config.site.name}} has printed, each kept exactly as it shipped.">
       <style>
         body { font: 16px/1.6 system-ui, sans-serif; background: #f7f4ef; color: #23201c; margin: 0; }
         main { max-width: 40rem; margin: 0 auto; padding: 2.5rem 1.25rem; }

@@ -33,6 +33,11 @@ const kiss = new Kiss({
   ],
   verbose: true,
   dev,
+  // A teaching example, not a site: it publishes no share card, favicon or 404
+  // page, so the audit's checks for those three are turned off here, by name.
+  audit: {
+    ignore: ['og-image-missing', 'favicon-missing', 'not-found-missing'],
+  },
 })
   // View only. models/index.json and controllers/index.js are picked up
   // because their filenames match the view's.
@@ -70,7 +75,8 @@ const kiss = new Kiss({
   // to infer from, so it gets its slug spelled out.
   .page({
     view: `<!doctype html><html lang="en"><head><meta charset="utf-8">
-      <title>{{model.name}}</title><link rel="stylesheet" href="css/site.css"></head>
+      <title>{{model.name}}</title><meta name="description" content="{{model.note}}">
+      <link rel="stylesheet" href="css/site.css"></head>
       <body><main class="wrap"><h1>{{model.name}}</h1><p>{{model.note}}</p>
       <p><a href="index.html">Back to the shop</a></p></main></body></html>`,
     model: {
@@ -81,7 +87,9 @@ const kiss = new Kiss({
   })
 
   .generate(function () {
-    this.viewStats()
+    // Dev only: under `verbose` it writes debug.json — every page's options
+    // and model — into the build, which a published site should not carry.
+    if (dev) this.viewStats()
   })
 
 await kiss.complete().catch(reportBuildFailure)

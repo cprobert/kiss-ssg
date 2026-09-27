@@ -33,6 +33,11 @@ const kiss = new Kiss({
   ],
   verbose: true,
   dev,
+  // A teaching example, not a site: it publishes no share card, favicon or 404
+  // page, so the audit's checks for those three are turned off here, by name.
+  audit: {
+    ignore: ['og-image-missing', 'favicon-missing', 'not-found-missing'],
+  },
 })
 
 // Every roast is one JSON file in models/roasts. Naming the folder as the
@@ -48,6 +53,11 @@ kiss
     controller: ({ model }) => ({
       // Without a slug of its own each page would be roast-0, roast-1, …
       slug: utils.toSlug(model.name),
+      // … and a title of its own. The default, the slug title-cased, reads
+      // the same for these six names — but not for one with an accent or
+      // punctuation, which the slug drops ("Finca La Ilusión" would default
+      // to "Finca La Ilusion").
+      title: model.name,
       model,
     }),
   })
@@ -66,7 +76,9 @@ kiss
         })),
       }),
     }).generate(function () {
-      this.viewStats()
+      // Dev only: under `verbose` it writes debug.json — every page's options
+      // and model — into the build, which a published site should not carry.
+      if (dev) this.viewStats()
     })
   })
 
