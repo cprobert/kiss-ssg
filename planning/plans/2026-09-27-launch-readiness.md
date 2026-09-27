@@ -227,3 +227,17 @@ The operator's decision. Workstream B also owns:
 ## Amendment — 2026-09-27, preview root and example 11's link styles
 
 From the operator's Live Server test of example 11, verified with Playwright: served from the repo root, 10 of 15 links 404'd; served with `public/` as the root (a static server, then `npm run eg11 -- --dev` on :3011), every link returned 200 and the operator clicked through them all. Two additions to Workstream B, both inside its existing scope: the review skill's judgement pass names the preview root, and the example sweep makes example 11 use one link style.
+
+## Amendment — 2026-09-27, the example sweep decided
+
+Measured first. Every example (8 excepted: it fails a page by design) fired `og-image-missing`, `favicon-missing` and `not-found-missing`. Nine fired `heading-skip`, four fired `description-duplicate`, example 3 fired `title-duplicate` (6 pages), examples 2 and 7 fired `description-missing`, and five fired `debug-dump`. The operator decided:
+
+- **Fix the mistakes, ignore the furniture.**
+  - Every example fixes heading skips and duplicate or missing titles and descriptions.
+  - The whole-site examples (6, 9, 10, 11) also get `og:image`, a favicon and a `404` page, so their audit is clean.
+  - The small teaching examples (1–5, 7) list `og-image-missing`, `favicon-missing` and `not-found-missing` in `audit.ignore`, with a comment explaining that they are teaching examples, not sites. That models `ignore` used honestly.
+- **`viewStats()` only in dev.** The five examples keep demonstrating it, but call it only under `--dev`, so no production build publishes `debug.json`, and `debug-dump` is clean with no ignore line.
+
+`starter/` is what `init` copies, so it is a site to grow rather than a teaching example. It is measured and its mistakes are fixed. How much furniture it ships is brought back to the operator with the numbers; it is not guessed.
+
+Found during this measurement and fixed in `ad7207b`: `check` audited folder ownership from the rewritten `cleanBuild`, so it disagreed with the real build for `cleanBuild: false` instances.
