@@ -287,13 +287,16 @@ describe('review regressions', () => {
     })
     await kiss._assetQueue
     const staging = kiss._stagingDir
-    const remove = fs.remove.bind(fs)
-    const spy = vi.spyOn(fs, 'remove').mockImplementation(async (file) => {
-      await remove(file)
+    // fs.rm, not fs.remove: the discard removes with Node's own retries now,
+    // and a spy on the old call would let this test pass without running.
+    const rm = fs.rm.bind(fs)
+    const spy = vi.spyOn(fs, 'rm').mockImplementation(async (file, options) => {
+      await rm(file, options)
       if (file === staging) kiss._stagingDir = null
     })
     try {
       await kiss._discardStaging()
+      expect(spy).toHaveBeenCalledWith(staging, expect.anything())
       expect(kiss._outputs.owner(`${staging}/file.txt`)).toBeNull()
     } finally {
       spy.mockRestore()
