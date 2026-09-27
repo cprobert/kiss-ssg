@@ -178,6 +178,28 @@ describe('the launch-readiness audit', () => {
     expect(fired).toContain('title-missing')
   })
 
+  // `check` rewrites `cleanBuild` to `'atomic'` so it can stage and discard,
+  // and it must still predict the real build: example 7's archive instance
+  // (`cleanBuild: false`, sharing its folder) was told under `check` to add a
+  // 404 page the real build had correctly skipped. Found 2026-09-27.
+  it('skips them under KISS_CHECK too, when the author said cleanBuild: false', async () => {
+    site = await makeSite(UNFINISHED)
+    process.env.KISS_CHECK = '1'
+    let report
+    try {
+      report = await build(siteConfig(site, { cleanBuild: false }))
+    } finally {
+      delete process.env.KISS_CHECK
+    }
+
+    expect(report.mode).toBe('check')
+    expect(report.audit.skipped).toEqual([
+      'not-found-missing',
+      'stray-file',
+      'console-log',
+    ])
+  })
+
   it('reports a debug.json viewStats() wrote into the build', async () => {
     site = await makeSite(CLEAN)
     kiss = new Kiss(siteConfig(site, { verbose: true }))

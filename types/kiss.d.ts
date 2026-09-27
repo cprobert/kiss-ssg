@@ -416,6 +416,8 @@ declare class Kiss {
     /** @private */
     private _debugWritten;
     /** @private */
+    private _ownsFolder;
+    /** @private */
     private _redirectsPath;
     /** @private */
     private _redirectsJsonPath;

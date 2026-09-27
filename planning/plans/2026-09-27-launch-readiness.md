@@ -64,7 +64,7 @@ auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten }) → {
 //     siteUrl = the page's own merged config.siteUrl, falling back to the instance's (the {{canonical}} rule,
 //       handlebars-helpers.js siteUrlFor)
 //   buildDir: this._writeRoot. Never config.folders.build: under 'atomic' and check the pages are in staging.
-//   ownsFolder: config.cleanBuild !== false (see "folder walk")
+//   ownsFolder: the author's `cleanBuild !== false`, read before check mode rewrites it (see "folder walk")
 //   Finding: { check: CheckId, page: string|null, detail: string|null }
 //   findings sorted by check (in CHECKS order), then page, then detail
 ```
