@@ -3,6 +3,18 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.6.3 — 2026-09-27
+
+### reads check's own output
+
+Once a site has recorded its knowledge base, prints
+rather than a bare array — and
+handing that output back as the next run's used to diff every
+page as added. It is now read as the reports it holds, so saving one check's
+output and comparing the next build against it works as it looks like it
+should: , change something, then
+.
+
 ## 2.6.2 — 2026-09-27
 
 ### A staging folder that will not delete is said out loud
