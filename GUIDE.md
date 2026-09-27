@@ -847,10 +847,11 @@ An absolute URL on your own `siteUrl` counts as **internal** — that is what ca
 
 The finding is advisory: it never changes `ok` and never changes the exit code. Set `links: { check: false }` to turn the scan off. `{{link}}` and the checker are two halves of one thing: the helper renders a path the resolver accepts by construction, so a site whose internal hrefs are all `{{link}}` reports no broken links and the scan stays the net for the hand-written references beside them — with one qualifier, that the scan only knows the pages which wrote bytes, so a `{{link}}` to a page that failed to render _is_ reported broken on every page that linked it. A dev build or a watch rebuild always reports `links: null` — a scoped re-render has not rewritten every page, so there is nothing honest to scan.
 
-**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on:
+**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on — except the two duplicate checks, which get one line per shared value, so you can see what to change:
 
 ```
   audit description-missing: 12 pages (./public/about.html, ./public/contact.html, ./public/index.html, …)
+  audit title-duplicate: "Aster & Oak" on 2 pages (./public/about.html, ./public/contact.html)
   audit favicon-missing
   audit stray-file: 2 files (./public/css/site.css.map, ./public/.DS_Store)
 ```

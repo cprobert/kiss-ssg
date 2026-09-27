@@ -652,6 +652,35 @@ describe('formatReport — audit lines', () => {
     ])
   })
 
+  // A duplicate is only actionable once you know what is duplicated: the
+  // operator's call at the 2026-09-27 pulse, on example 11's 14 pages sharing
+  // one tagline. One line per shared value, the value quoted and capped.
+  it('names the shared value of a duplicate, one line per value', () => {
+    const long = `${'Every post from the roastery, '.repeat(4)}and more`
+    expect(
+      format([
+        { check: 'title-duplicate', page: './public/a.html', detail: 'Home' },
+        { check: 'title-duplicate', page: './public/b.html', detail: 'Home' },
+        { check: 'title-duplicate', page: './public/c.html', detail: 'Blog' },
+        { check: 'title-duplicate', page: './public/d.html', detail: 'Blog' },
+        {
+          check: 'description-duplicate',
+          page: './public/a.html',
+          detail: long,
+        },
+        {
+          check: 'description-duplicate',
+          page: './public/b.html',
+          detail: long,
+        },
+      ]),
+    ).toEqual([
+      '  audit title-duplicate: "Blog" on 2 pages (./public/c.html, ./public/d.html)',
+      '  audit title-duplicate: "Home" on 2 pages (./public/a.html, ./public/b.html)',
+      `  audit description-duplicate: "${long.slice(0, 60)}…" on 2 pages (./public/a.html, ./public/b.html)`,
+    ])
+  })
+
   it('says which checks were skipped because the build does not own its folder', () => {
     expect(
       format([], {
