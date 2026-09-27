@@ -44,6 +44,8 @@ opened: 2026-09-27
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-09-27 — engine slice.** Criteria 1 and 3 met: four tests red first (rm not called with retries; claims left after a locked removal; no warning from the discard; no warning from `close()`), green after `05e113f`; full suite 1747 passed / 2 skipped. Criterion 2 partial by construction: the `fs.rm` call and options are tested, a lock that clears on retry is Node's own behaviour and not mockable from outside. Criterion 4 half (AIKB note in the commit; Codex at close). 5–7 not yet. Drift: `close()` only, recorded as an Amendment. **Eyeball: looked** — operator read the warning copy: "reads right". **Explained:** a leftover folder is a warning, not a build failure; operator: keep it a warning. Decision: continue to the `kiss-site-new` slice.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
