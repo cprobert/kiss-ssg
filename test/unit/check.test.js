@@ -283,6 +283,19 @@ describe('readReportsFile', () => {
     expect(readReportsFile(text)).toEqual([report(true), report(false)])
   })
 
+  // check prints { reports, diff } whenever it diffs — above all when the site
+  // has a recorded knowledge base — so feeding one check's output back as the
+  // next --against is the ordinary workflow. It used to be read as a single
+  // report with no pages, and every page then diffed as "added".
+  it('reads the { reports, diff } object check prints when it diffs', () => {
+    const text = JSON.stringify(
+      { reports: [report(true), report(false)], diff: [] },
+      null,
+      2,
+    )
+    expect(readReportsFile(text)).toEqual([report(true), report(false)])
+  })
+
   it('reads a single report object as one report', () => {
     expect(readReportsFile(JSON.stringify(report(true), null, 2))).toEqual([
       report(true),
