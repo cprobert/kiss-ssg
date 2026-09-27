@@ -36,6 +36,8 @@ opened: 2026-09-27
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-09-27 — `close()` absorbed (adjacent).** `close()` removes an unpromoted staging folder (a build that never called `complete()`) with the same `fs.remove` + debug-only catch the intent targeted in `_discardStaging()`. Same folder, same silence, same file: both now share `_removeStaging()`, with its own test seen red first. `_oldDir` removal in `close()` keeps its debug-only catch — it is the previous output renamed aside, a different folder with its own guard — and is not changed here.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
