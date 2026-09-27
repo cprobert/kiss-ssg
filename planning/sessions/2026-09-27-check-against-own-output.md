@@ -1,7 +1,7 @@
 ---
 branch: fix/check-against-reads-its-own-output
 base: main
-status: open
+status: closed
 opened: 2026-09-27
 ---
 
@@ -13,10 +13,10 @@ opened: 2026-09-27
 
 **Success criteria:**
 
-- [ ] A unit test feeds `readReportsFile` the `{ reports, diff }` shape and expects the reports array — seen red against the current code for the right reason.
-- [ ] An end-to-end test: a site with a recorded knowledge base, `check`'s JSON output saved and passed back via `--against`, reports its pages as unchanged rather than added.
-- [ ] `HELP`, `AIKB/check.md`, `llms.txt` and `GUIDE.md` name the fourth accepted shape wherever they list the three.
-- [ ] `npm run gates` green; Codex review at close (the branch changes `lib/`).
+- [x] A unit test feeds `readReportsFile` the `{ reports, diff }` shape and expects the reports array — seen red against the current code for the right reason.
+- [x] An end-to-end test: a site with a recorded knowledge base, `check`'s JSON output saved and passed back via `--against`, reports its pages as unchanged rather than added.
+- [x] `HELP`, `AIKB/check.md`, `llms.txt` and `GUIDE.md` name the fourth accepted shape wherever they list the three.
+- [x] `npm run gates` green; Codex review at close (the branch changes `lib/`).
 
 **Non-goals / out of scope:** Any other change to how `--against` pairs or diffs reports; the null-hash-counts-as-changed rule (documented, and correct); the sites under `C:\Code\kiss`.
 
@@ -42,3 +42,24 @@ opened: 2026-09-27
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-09-27: `check --against` reads check's own output
+
+**What we shipped (2.6.3):** `ba587c5` — `readReportsFile` (`lib/check.js`) unwraps the `{ reports, diff }` object `check` prints whenever it diffs, so one check's output can be fed back as the next one's `--against`; `HELP`, `AIKB/check.md`, `llms.txt` and `GUIDE.md` name the fourth shape. `bbdccf9` + `90b28a6` — the bump and a repaired changelog entry.
+
+**Supervision:** planned, small, and found in the field: the defect surfaced while I was comparing K9-Solutions across the 2.6.0 → 2.6.2 upgrade, and the operator's "should we fix that?" turned an aside into a branch. Both tests were red for the right reason before the fix — the end-to-end one printing exactly the K9 symptom (`+ ./public/index.html`, `= 0 unchanged`). The pulse ran as the skill: the operator ran the eyeball on the real K9 site (`= 10 unchanged` with the fix) and then, unprompted, the contrast with the published 2.6.2 (ten `+` lines, `= 0 unchanged`) — same input, only the fix different, which is the strongest evidence this branch has. The explained decision (recognise the wrapper by `reports` alone) was the operator's to keep. The operator also caught a process error in real time: rejecting a question until the instructions were clear, after my prose instruction ran from the wrong folder and left an empty `prev.json,` in the repo. **Active supervisor.**
+
+**Feedback for next time:**
+
+- **Claude — the "never pass prose through the shell" rule has now failed again, a third time after it was retired.** At the close I passed the changelog entry to `node -e` inside double quotes; bash ran every backtick span as a command (`check`, a stray `npx kiss-ssg check …`, a redirect) and committed the entry with those spans blanked (`bbdccf9`, repaired in `90b28a6`). Nothing else was harmed, but the rule in `CLAUDE.md` covers commit messages and long commands, not "text passed into a script". It needs sharpening to: any text that contains backticks, `$` or quotes goes into a file via the Write/Edit tool — never inline into `node -e`, `sed` or a double-quoted string. A `/memory-consolidate` candidate.
+- **Claude — give the operator paste-ready commands, never prose.** Saved as a memory the same day: one `! cd /c/abs/path && …` line per command, output to `$TEMP`, expected result named.
+- **Operator — the contrast run was the best check on the branch; keep asking for the "before" alongside the "after".**
+
+**Did we achieve the objective?** **Met.**
+
+- [x] Unit test for the `{ reports, diff }` shape, red first (the wrapper came back as one element).
+- [x] End-to-end: record, check, feed the output back — red first with the K9 symptom, `= 1 unchanged` after.
+- [x] `HELP`, `AIKB/check.md`, `llms.txt`, `GUIDE.md` name the fourth shape.
+- [x] Gates green; Codex review: no actionable regressions, all four shapes asserted directly.
+
+Open: nothing on this branch. The `CLAUDE.md` shell rule needs sharpening (above).
