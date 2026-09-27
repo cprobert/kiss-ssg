@@ -38,6 +38,8 @@ opened: 2026-09-27
 
 ### Amendments
 
+- **2026-09-27: recommend Anthropic's `frontend-design` skill as an optional companion** (operator's decision). What it covers: a README paragraph with the install commands, saying the skill ships inside the `example-skills` plugin with 11 others; and one line each in `kiss-site-new` and `kiss-site-review` saying to use it for visual direction when it is present, while kiss keeps the file structure (layouts, partials, Sass). `init` and the declared plugins are unchanged. The clean-room run is done once with the plugin installed, to test whether `example-skills`' React-based `web-artifacts-builder` competes with `kiss-site-new`. That risk is inferred, not measured. Assigned to workstream B.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;

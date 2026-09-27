@@ -209,5 +209,17 @@ A critique by a fresh-context agent against the code returned 15 items. The main
 9. `html` is decided by extension first.
 10. `canonicalElsewhere` is defined from `options.canonical`, and `siteUrl` per page.
 11. Config: the `audit: false` shorthand, and validation that throws.
-    12–14. The watch re-check re-runs the audit; the types notes; the entity-decoding subset.
-12. The `kiss-site-migrate` upgrade note goes to B.
+12. The watch re-check re-runs the audit.
+13. Types notes: `@type` on `KissPage.audit`, a `CheckId` union, `audit?` on the input typedef.
+14. Entity decoding uses the `links.js` subset.
+15. The `kiss-site-migrate` upgrade note goes to B.
+
+## Amendment — 2026-09-27, `frontend-design` as an optional companion
+
+The operator's decision. Workstream B also owns:
+
+- `README.md`: an **optional** paragraph in the setup section. It covers Anthropic's `frontend-design` skill, how to install it (`claude plugin marketplace add anthropics/skills --scope project`, then `claude plugin install example-skills@anthropic-agent-skills --scope project`; confirm both commands against the marketplace before writing them), and that it arrives inside `example-skills` alongside 11 other skills. A's README edits are about the audit, and B's paragraph sits in a different section.
+- `plugins/kiss-ssg/skills/kiss-site-new/SKILL.md` and `kiss-site-review/SKILL.md`: one line each saying that when `frontend-design` is available it sets the **visual direction** (type, colour, spacing tokens, layout character), and kiss keeps the **structure** (layouts, partials, the Sass folder, one view per page). Never a single-file page.
+- A coverage row for that handoff in `test/unit/skill-coverage.test.js`.
+
+`lib/init.js` and the declared plugins are **not** changed. The clean-room run (step 5) is done once with `example-skills` installed, to test whether `web-artifacts-builder` (React) competes with `kiss-site-new`. That risk is inferred, not measured.
