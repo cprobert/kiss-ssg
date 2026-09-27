@@ -12,6 +12,15 @@ const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
+  // The 2026-09-27 clean-room agent: router.js uses import and top-level
+  // await, and `npm init -y` writes "type": "commonjs", so a literal follower's
+  // build script did not run until it guessed.
+  {
+    feature:
+      'the build script needs an ES-module package, and check/aikb scripts',
+    pattern: /^(?=[\s\S]*"type": "module")(?=[\s\S]*`check` and `aikb`)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
   {
     feature: 'kiss-ssg init — a starter to grow, not a site to preserve',
     pattern: /Started by `npx kiss-ssg init`[\s\S]*grow/,
@@ -258,6 +267,14 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: 'found by the 2026-09-27 clean-room run: llms.txt is over 100 KB, the build-script contract has yes/no triggers rather than thresholds, and the feature reference is examples 1–6 and 10',
+    patterns: [
+      /short enough to read whole/,
+      /carries the extraction thresholds/,
+      /Examples 1–6, the feature reference/,
+    ],
+  },
   {
     why: 'every example and llms.txt end the chain with await kiss.complete().catch(reportBuildFailure); kiss-site-new prescribed a try/catch the recipe it cited does not contain',
     patterns: [/inside a `try`\/`catch` that prints every entry/],
