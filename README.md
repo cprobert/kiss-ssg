@@ -45,7 +45,7 @@ You don't have to name the skills — each one's description is written so Claud
 
 **In `node_modules/kiss-ssg/`**, for any agent: `llms.txt` (the API contract — `CLAUDE.md` imports it), `examples/` (eleven runnable sites to copy by shape), `AIKB/` (per-module notes), `GUIDE.md` (the full reference), `types/` (declarations your editor reads) and `CHANGELOG.md`.
 
-**The verdict.** `npx kiss-ssg check router.js` runs your build as a dry run and prints one JSON report per site, exit 1 on any failure, without touching the published output — see [Checking a build](GUIDE.md#checking-a-build).
+**The verdict.** `npx kiss-ssg check router.js` runs your build as a dry run and prints one JSON report per site, exit 1 on any failure, without touching the published output — see [Checking a build](GUIDE.md#checking-a-build). The report also says whether the site looks finished: `audit` lists pages with no title, description or `og:image`, images with no alt text, a missing favicon or 404 page, a source map or `debug.json` shipped by accident. Those findings are advisory and never change the exit code; `config.audit.ignore` takes the check ids a site deliberately does without, and `audit: false` turns the pass off.
 
 ## Setting up by hand
 
@@ -68,4 +68,4 @@ Node 22.12 or newer. kiss-ssg is an ES module (`import Kiss from 'kiss-ssg'`); `
 
 ## Using the library directly
 
-Every method, option and helper — the build script, `.page()` / `.pages()` / `.scan()`, controllers, assets and cache busting, the sitemap, `llms.txt`, RSS and `robots.txt`, redirects, host URL policy, checking and recording a build, the helpers, and migrating from v1 — is in **[GUIDE.md](GUIDE.md)**.
+Every method, option and helper — the build script, `.page()` / `.pages()` / `.scan()`, controllers, assets and cache busting, the sitemap, `llms.txt`, RSS and `robots.txt`, redirects, host URL policy, checking and recording a build, the launch-readiness audit and its check ids, the helpers, and migrating from v1 — is in **[GUIDE.md](GUIDE.md)**.

@@ -129,5 +129,177 @@
   "robots": null,
   "outputs": {
     "collisions": []
+  },
+  "audit": {
+    "checked": 11,
+    "ignored": [],
+    "skipped": [],
+    "findings": [
+      {
+        "check": "description-duplicate",
+        "page": "./public/await-complete.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/duplicate-paths.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/dynamic-partials.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/folders.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/handlebars-instance.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/pure-controllers.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/shelf/arch-blend.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/shelf/guji-uraga.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/shelf/oak-cascara.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/smaller-changes.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/await-complete.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/duplicate-paths.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/dynamic-partials.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/folders.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/handlebars-instance.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/pure-controllers.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/shelf/arch-blend.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/shelf/guji-uraga.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/shelf/oak-cascara.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/smaller-changes.html",
+        "detail": null
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/await-complete.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/duplicate-paths.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/dynamic-partials.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/folders.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/handlebars-instance.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/pure-controllers.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/smaller-changes.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "favicon-missing",
+        "page": null,
+        "detail": null
+      },
+      {
+        "check": "not-found-missing",
+        "page": null,
+        "detail": null
+      },
+      {
+        "check": "debug-dump",
+        "page": "./public/debug.json",
+        "detail": null
+      }
+    ]
   }
 }

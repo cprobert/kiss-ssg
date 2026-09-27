@@ -1,4 +1,14 @@
 /**
+ * Decodes the entity subset Handlebars emits into attribute values and text:
+ * `&amp;` `&lt;` `&gt;` `&quot;` `&apos;` and the numeric forms. Shared with
+ * `lib/audit.js`, so a title and an href are decoded alike.
+ *
+ * @param {string} value raw text as written to the page
+ * @returns {string} the text with that subset decoded; any other entity, and
+ * any numeric one outside Unicode, is left as written
+ */
+export function decodeEntities(value: string): string;
+/**
  * Every reference the rendered HTML asks a browser to fetch, as written.
  *
  * @param {string} html one page's output, exactly as it was written to disk
@@ -87,6 +97,7 @@ export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTa
         href: string;
     }[];
 };
+export function attribute(name: string): RegExp;
 /**
  * One page's output as the scan needs it: where it was written, and what it
  * referenced. `links` is `KissPage.links`, extracted at write time.

@@ -95,6 +95,26 @@
  * @property {{ id: string, from: string, to: string }[]} moved sorted by `from`; pages the last record and this build share an `id` with, whose path changed and whose old path no alias covers
  */
 /**
+ * One launch-readiness finding, as the report carries it.
+ *
+ * @typedef {Object} BuildAuditFinding
+ * @property {import('./audit.js').CheckId} check which check fired — one of `CHECKS` in `lib/audit.js`
+ * @property {string|null} page the page or walked file it is about, against the real build folder; `null` for a finding about the whole site
+ * @property {string|null} detail the value that tripped the check, when one helps find it
+ */
+/**
+ * What the launch-readiness audit found. Advisory: it never touches `ok`,
+ * `failures` or the exit code. `null` on the report when no audit ran — a dev
+ * build, `config.audit.check: false`, and a build with any failure, whose
+ * missing pages would make every site-level finding a false one.
+ *
+ * @typedef {Object} BuildAudit
+ * @property {number} checked HTML pages audited
+ * @property {import('./audit.js').CheckId[]} ignored `config.audit.ignore`, sorted — checks turned off, so a clean audit is not read as a clean site
+ * @property {import('./audit.js').CheckId[]} skipped checks not run because the build does not own its folder (`cleanBuild: false`), in `CHECKS` order
+ * @property {BuildAuditFinding[]} findings sorted by check, then page, then detail
+ */
+/**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
  * shape a script can act on without parsing log output.
  *
@@ -115,6 +135,7 @@
  * @property {string|null} feed the feed file written, or `null` if none was
  * @property {BuildRobots|null} robots what `.robots()` wrote, or `null` when it was never called
  * @property {{collisions: import('./output-registry.js').OutputCollision[]}} outputs advisory output collisions between active producers
+ * @property {BuildAudit|null} audit the launch-readiness audit, or `null` when this build ran none
  */
 /**
  * @param {string|null|undefined} target
@@ -155,9 +176,10 @@ export function reportedView(view: string): string;
  * @param {BuildRobots|null} [input.robots] what `.robots()` wrote, `null` when it was never called
  * @param {string|null} [input.feed] the feed file written by this build
  * @param {{collisions: import('./output-registry.js').OutputCollision[]}} [input.outputs]
+ * @param {BuildAudit|null} [input.audit] what the launch-readiness audit found, `null` when none ran
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -187,7 +209,18 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     outputs?: {
         collisions: import("./output-registry.js").OutputCollision[];
     };
+    audit?: BuildAudit | null;
 }): BuildReport;
+/**
+ * The audit's summary lines, unindented: one per check that fired, naming up
+ * to three of the paths it fired on, plus one for any checks the build did not
+ * own its folder to run. Shared by `formatReport` and the build log
+ * (`Kiss._runAudit`), so the two cannot word a finding differently.
+ *
+ * @param {BuildAudit|null|undefined} audit with its paths already as they are to be shown
+ * @returns {string[]} empty when no audit ran and when it found nothing
+ */
+export function auditLines(audit: BuildAudit | null | undefined): string[];
 /**
  * The one-line human rendering of a report, plus one line per failure — what
  * `kiss-ssg check --summary` prints in place of the JSON.
@@ -403,6 +436,47 @@ export type BuildRedirects = {
     }[];
 };
 /**
+ * One launch-readiness finding, as the report carries it.
+ */
+export type BuildAuditFinding = {
+    /**
+     * which check fired — one of `CHECKS` in `lib/audit.js`
+     */
+    check: import("./audit.js").CheckId;
+    /**
+     * the page or walked file it is about, against the real build folder; `null` for a finding about the whole site
+     */
+    page: string | null;
+    /**
+     * the value that tripped the check, when one helps find it
+     */
+    detail: string | null;
+};
+/**
+ * What the launch-readiness audit found. Advisory: it never touches `ok`,
+ * `failures` or the exit code. `null` on the report when no audit ran — a dev
+ * build, `config.audit.check: false`, and a build with any failure, whose
+ * missing pages would make every site-level finding a false one.
+ */
+export type BuildAudit = {
+    /**
+     * HTML pages audited
+     */
+    checked: number;
+    /**
+     * `config.audit.ignore`, sorted — checks turned off, so a clean audit is not read as a clean site
+     */
+    ignored: import("./audit.js").CheckId[];
+    /**
+     * checks not run because the build does not own its folder (`cleanBuild: false`), in `CHECKS` order
+     */
+    skipped: import("./audit.js").CheckId[];
+    /**
+     * sorted by check, then page, then detail
+     */
+    findings: BuildAuditFinding[];
+};
+/**
  * What `.report()` returns and `KISS_REPORT` writes: one settled build, in a
  * shape a script can act on without parsing log output.
  */
@@ -467,4 +541,8 @@ export type BuildReport = {
     outputs: {
         collisions: import("./output-registry.js").OutputCollision[];
     };
+    /**
+     * the launch-readiness audit, or `null` when this build ran none
+     */
+    audit: BuildAudit | null;
 };

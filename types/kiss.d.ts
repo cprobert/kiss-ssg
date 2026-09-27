@@ -411,6 +411,10 @@ declare class Kiss {
     private _feedPath;
     /** @private @type {BuildLinks|null} */
     private _links;
+    /** @private @type {import('./build-report.js').BuildAudit|null} */
+    private _audit;
+    /** @private */
+    private _debugWritten;
     /** @private */
     private _redirectsPath;
     /** @private */
@@ -582,6 +586,11 @@ declare class Kiss {
      * @param {{ quiet?: boolean }} [options]
      */
     private _checkLinks;
+    /**
+     * @private
+     * @param {{ quiet?: boolean }} [options]
+     */
+    private _runAudit;
     /** @private */
     private _writeRedirects;
     /** @private */

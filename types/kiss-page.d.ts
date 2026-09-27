@@ -33,6 +33,8 @@ export class KissPage {
     hash: string | null;
     /** @type {string[]|null} */
     links: string[] | null;
+    /** @type {import('./audit.js').PageFacts|null} */
+    audit: import("./audit.js").PageFacts | null;
     set buildDir(value: string);
     get buildDir(): string;
     pagesDir: string;

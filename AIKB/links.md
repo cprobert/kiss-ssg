@@ -13,6 +13,7 @@ The finding is **advisory**. It never moves `ok`, never moves an exit code, and 
 - `resolveReference(ref, { pageBuildTo, buildDir, extensionLess, exists, known })` → `boolean`. Resolves root-relative against `buildDir` and relative against the page's own directory, `..` included, then accepts the path itself, `<path>/index.html` for a trailing slash, `<path>.html` or `<path>/index.html` for an extension-less path — each either on disk (`exists`) or in `known`. A path that escapes the build folder is always broken.
 - `checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, exists })` → `{ checked, broken: [{ page, href }] }`. `pages` is `[{ buildTo, links }]` for the pages that actually wrote bytes; `known` is built inside, from those `buildTo`s (made build-relative) plus `manifestTargets`. `checked` counts every reference classified internal; `broken` is sorted by page, then href, and records the href exactly as the page wrote it.
 - The `LinkPage` typedef (`{ buildTo, links }`).
+- `attribute(name)` → `RegExp` and `decodeEntities(value)` → `string`: the attribute matcher (whitespace-anchored, value in group 1, 2 or 3 for double-quoted, single-quoted or unquoted) and the entity subset below. Exported for `lib/audit.js`, so the audit reads a tag's attributes and decodes a title exactly as this scan reads an `href` — two readings of the same bytes that disagreed would be worse than either being wrong alone. They stay here because this is where the compromise they encode is explained.
 
 ## Depends on
 
@@ -20,7 +21,7 @@ The finding is **advisory**. It never moves `ok`, never moves an exit code, and 
 
 ## Depended on by
 
-`lib/kiss-page.js` (`extractReferences`, at write time, parking the result on `KissPage.links`) and `lib/kiss.js` (`checkLinks`, from `Kiss._checkLinks()` in `complete()`'s settle path, latched on `_links` and handed to `buildReport` as the report's `links` key — `AIKB/build-report.md`).
+`lib/kiss-page.js` (`extractReferences`, at write time, parking the result on `KissPage.links`), `lib/audit.js` (`attribute`, `decodeEntities`) and `lib/kiss.js` (`checkLinks`, from `Kiss._checkLinks()` in `complete()`'s settle path, latched on `_links` and handed to `buildReport` as the report's `links` key — `AIKB/build-report.md`).
 
 ## Non-obvious behavior
 

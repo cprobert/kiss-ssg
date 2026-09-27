@@ -186,5 +186,207 @@
   },
   "outputs": {
     "collisions": []
+  },
+  "audit": {
+    "checked": 14,
+    "ignored": [],
+    "skipped": [],
+    "findings": [
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/a-year-of-bench-lots/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/grind-size-is-the-dial/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/guji-uraga-has-landed/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/page/2/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/pour-over-at-home/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/tags/brewing/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/tags/experiments/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/tags/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/tags/roastery/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/tags/sourcing/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/the-cascara-experiment/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/blog/why-we-roast-on-wednesdays/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "description-duplicate",
+        "page": "./public/index.html",
+        "detail": "Small-batch coffee, roasted in Bristol"
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/a-year-of-bench-lots/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/grind-size-is-the-dial/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/guji-uraga-has-landed/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/page/2/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/pour-over-at-home/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/tags/brewing/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/tags/experiments/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/tags/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/tags/roastery/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/tags/sourcing/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/the-cascara-experiment/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/blog/why-we-roast-on-wednesdays/index.html",
+        "detail": null
+      },
+      {
+        "check": "og-image-missing",
+        "page": "./public/index.html",
+        "detail": null
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/blog/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/blog/page/2/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/blog/tags/brewing/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/blog/tags/experiments/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/blog/tags/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/blog/tags/roastery/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/blog/tags/sourcing/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "heading-skip",
+        "page": "./public/index.html",
+        "detail": "h1 -> h3"
+      },
+      {
+        "check": "favicon-missing",
+        "page": null,
+        "detail": null
+      },
+      {
+        "check": "not-found-missing",
+        "page": null,
+        "detail": null
+      },
+      {
+        "check": "debug-dump",
+        "page": "./public/debug.json",
+        "detail": null
+      }
+    ]
   }
 }
