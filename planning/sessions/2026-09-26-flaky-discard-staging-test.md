@@ -1,7 +1,7 @@
 ---
 branch: fix/flaky-discard-staging-test
 base: main
-status: open
+status: closed
 opened: 2026-09-26
 ---
 
@@ -13,11 +13,11 @@ opened: 2026-09-26
 
 **Success criteria:**
 
-- [ ] Root cause named with evidence: a test-ordering bug, or an engine race between an in-flight asset copy and `_discardStaging()`.
-- [ ] Reproduced deterministically (a forced ordering that fails every time) before the fix.
-- [ ] Fixed: the reproduction passes, and the whole `watch.test.js` file passes 30 consecutive runs on this Windows machine (measured).
-- [ ] If the fix is in `lib/`: the module's `AIKB/` doc updated in the same commit, and a Codex review at close.
-- [ ] `npm run gates` green.
+- [x] Root cause named with evidence: a test-ordering bug, or an engine race between an in-flight asset copy and `_discardStaging()`.
+- [x] Reproduced deterministically (a forced ordering that fails every time) before the fix.
+- [x] Fixed: the reproduction passes, and the whole `watch.test.js` file passes 30 consecutive runs on this Windows machine (measured).
+- [x] If the fix is in `lib/`: the module's `AIKB/` doc updated in the same commit, and a Codex review at close.
+- [x] `npm run gates` green.
 
 **Non-goals / out of scope:** Other flaky tests; refactoring watch or staging code beyond the fix; any change a consuming site can observe.
 
@@ -47,3 +47,26 @@ opened: 2026-09-26
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-09-26: Flaky discard-staging ownership test
+
+**What we shipped:** `f8ca4a8` — the "round two" discard test in `test/integration/watch.test.js` now waits with `kiss._drain()` instead of `Promise.all(kiss._promises)`; `3b081a5` records the gotcha in `AIKB/testing.md`. Riding along: `923508d`, the operator's versioning rule (the major counts generations; a minor is meatier work, including changes sites must adapt to; a patch is a small fix), and `ab61004`, the 2026-09-26 consolidation, which was committed on local `main` and never pushed. No version bump (operator).
+
+**Supervision:** planned-to-emergent as intended — the open named both possible causes (test ordering or an engine race) and wrote criteria that held either. Systematic debugging did the work: a 120-iteration probe tied every failure to a swallowed `ENOTEMPTY` with `index.html` left in staging and `_generating` pending; a forced ordering made the root cause deterministic (render in flight 10/10 under the old wait, 0/10 under `_drain()`); the fix was one line and 30/30 runs passed. One honest limit, stated at the pulse: the root cause was forced, the `ENOTEMPTY` consequence only shown statistically. The pulse ran as the skill, not by hand — the 09-26 feedback applied — and its new "offer one explanation" step surfaced the one real judgment call (fix the test, leave the engine's swallow-and-skip in `_discardStaging` alone), which the operator decided: out of scope, recorded as a follow-up. The operator's strongest contribution was the versioning rule, stated plainly in their own words and written into `CLAUDE.md` and three skills the same hour. Verification stayed with the machine and Codex: the operator's 10-run re-measure was deferred twice, at the pulse and at the close. **Assisted operator**, with a clear decision on the one question that needed a human.
+
+**Feedback for next time:**
+
+- **Operator — run the 10-run re-measure before merging.** It is the deferred eyeball, it takes about a minute, and it is the one check on this branch that is yours rather than an agent's.
+- **Claude — commit governance changes where they will be pushed.** `ab61004` sat unpushed on local `main` and only reached a PR because this branch was cut from it; a consolidation on `main` should be pushed (or put on its own branch) in the same sitting, and the close should check `origin/<base>..HEAD` rather than `<base>..HEAD`, which hid it.
+- **Process — the `_discardStaging` follow-up needs a home.** A failed removal skips `clearUnder`, so a transient Windows lock during a failed build would leave the staging folder and stale claims. Not reachable by a concurrent writer after `_drain()`; worth a small engine branch with a retry and an unconditional clear.
+- **Process — background Codex runs die under memory pressure on this machine.** One was reaped while idle; the foreground run succeeded. Twenty-four orphaned Plaud MCP servers (about 2 GB) were the avoidable part — each Codex and Claude session starts its own and never stops it.
+
+**Did we achieve the objective?** **Met.**
+
+- [x] Root cause named with evidence — the test's wait did not cover `_generating`; 32/120 probe failures, each a swallowed `ENOTEMPTY` with `index.html` left in staging.
+- [x] Reproduced deterministically — forced ordering, render in flight 10/10 under the old wait, 0/10 under `_drain()`.
+- [x] Fixed — `watch.test.js` 30/30 on Windows.
+- [x] `lib/` criterion — not applicable; test-only, confirmed by reading the engine's discard call sites (only after `_settle()`).
+- [x] `npm run gates` green at the close (test, lint, typecheck, format, pack).
+
+Open: the operator's 10-run re-measure (PR item); the `_discardStaging` engine follow-up.
