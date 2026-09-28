@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
+import fsp from 'node:fs/promises'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
 
@@ -242,6 +243,42 @@ describe("cleanBuild: 'atomic'", () => {
     expect(staging(site.root)).toEqual([])
   })
 
+  // The copy fallback exists for a build folder on another filesystem
+  // (EXDEV). A lock is not that, and copying under one fails the same way
+  // after doing far more work — so a locked swap never reaches fs.move.
+  it('never falls back to copying when the swap fails on a lock', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'new',
+      'public/published.html': 'old',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      cleanBuild: 'atomic',
+      logger: silentLogger,
+    })
+    kiss.scan().generate()
+
+    const realRename = fsp.rename
+    const rename = vi
+      .spyOn(fsp, 'rename')
+      .mockImplementation(async (src, dest) => {
+        if (String(src).includes('.kiss-staging'))
+          throw Object.assign(new Error('simulated lock'), { code: 'EPERM' })
+        return realRename(src, dest)
+      })
+    const move = vi.spyOn(fs, 'move')
+
+    const err = await kiss.complete().catch((e) => e)
+    const moved = move.mock.calls.length
+    rename.mockRestore()
+    move.mockRestore()
+
+    expect(moved).toBe(0)
+    expect(err?.message).toMatch(/open in another program/)
+    expect(fs.readdirSync(site.build)).toEqual(['published.html'])
+    expect(await site.read('public/published.html')).toBe('old')
+  })
+
   it('restores the previous output when the swap itself fails', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'new',
@@ -258,9 +295,11 @@ describe("cleanBuild: 'atomic'", () => {
 
     // The swap of staging into the target — and its cross-device fallback —
     // both fail: the previous output must come back exactly as it was.
-    const realRename = fs.rename
+    // The promotion renames through node:fs/promises, not fs-extra (whose
+    // graceful-fs retries a locked rename for 60 s on Windows).
+    const realRename = fsp.rename
     const rename = vi
-      .spyOn(fs, 'rename')
+      .spyOn(fsp, 'rename')
       .mockImplementation(async (src, dest) => {
         if (src.includes('.kiss-staging'))
           throw Object.assign(new Error('simulated EXDEV'), { code: 'EXDEV' })
@@ -281,6 +320,61 @@ describe("cleanBuild: 'atomic'", () => {
     await kiss.close()
     expect(staging(site.root)).toEqual([])
   })
+
+  // A preview server or an editor holding a file open in the build folder
+  // makes Windows refuse to rename it. fs-extra's graceful-fs retries that
+  // rename for 60 s before giving up, so the build sat silent for a minute and
+  // then failed with a bare EPERM (measured 2026-09-28: 60136 ms). An open
+  // file handle is the in-process stand-in for the lock: it fails a native
+  // rename at once, where an fs.watch on the folder does not.
+  it.skipIf(process.platform !== 'win32')(
+    'fails fast and says why when a program holds the build folder open',
+    async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': 'new',
+        'public/published.html': 'old',
+      })
+      kiss = new Kiss({
+        folders: site.folders,
+        cleanBuild: 'atomic',
+        logger: silentLogger,
+      })
+      kiss.scan().generate()
+
+      const fd = fs.openSync(`${site.build}/published.html`, 'r')
+      const started = Date.now()
+      let err
+      try {
+        err = await Promise.race([
+          kiss.complete().then(
+            () => new Error('complete() resolved'),
+            (e) => e,
+          ),
+          new Promise((resolve) =>
+            setTimeout(
+              () => resolve(new Error('complete() had not settled after 10 s')),
+              10_000,
+            ),
+          ),
+        ])
+      } finally {
+        fs.closeSync(fd)
+      }
+
+      expect(err.message).not.toMatch(/had not settled|resolved/)
+      expect(Date.now() - started).toBeLessThan(10_000)
+      // Names the folder, and what the operator can do about it.
+      expect(err.message).toContain(site.build)
+      expect(err.message).toMatch(/open in another program/)
+      // Nothing was swapped: the previous output is exactly where it was.
+      expect(fs.readdirSync(site.build)).toEqual(['published.html'])
+      expect(await site.read('public/published.html')).toBe('old')
+
+      await kiss.close()
+      expect(staging(site.root)).toEqual([])
+    },
+    30_000,
+  )
 
   it('removes a stale sibling left by a crashed earlier run, with a notice', async () => {
     site = await makeSite({

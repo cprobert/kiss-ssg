@@ -540,6 +540,19 @@ declare class Kiss {
     private _stagedPath;
     /** @private */
     private _reportedPath;
+    /**
+     * @private
+     * @param {string} from
+     * @param {string} to
+     * @param {string} folder the build folder the operator named, for the message
+     */
+    private _renameForPromote;
+    /**
+     * @private
+     * @param {string} old
+     * @param {string} target
+     */
+    private _restorePrevious;
     /** @private */
     private _promote;
     /** @private */
