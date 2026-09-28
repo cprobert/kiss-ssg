@@ -120,6 +120,16 @@ describe('extractPageFacts', () => {
     expect(facts.imgMissingAlt).toEqual([])
   })
 
+  // Found by the Codex review, 2026-09-28: the word "alt" inside another
+  // attribute's value was read as the attribute, hiding a missing alt.
+  it('does not read "alt" inside another attribute’s value as an alt', () => {
+    const facts = extractPageFacts(
+      `<html><img src="/a.png" title="An alt caption"><img src='/b.png' data-note='x alt y'></html>`,
+      'a.html',
+    )
+    expect(facts.imgMissingAlt).toEqual(['/a.png', '/b.png'])
+  })
+
   it("records an <img> with no src and no alt as ''", () => {
     expect(
       extractPageFacts('<html><img class="x"></html>', 'a.html').imgMissingAlt,
