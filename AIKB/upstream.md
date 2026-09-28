@@ -94,6 +94,24 @@ anyway, on two grounds that are about kiss rather than about Node:
 evicts a module graph without registering a global hook. If it has, this becomes
 an implementation rather than a note.
 
+### graceful-fs retries a locked rename on Windows for 60 seconds
+
+**Observed:** graceful-fs 4.2.11 (via fs-extra 11.4.0) wraps `fs.rename` on
+Windows to retry `EACCES`/`EPERM`/`EBUSY` until 60 s have passed
+(`node_modules/graceful-fs/polyfills.js`, the `rename` wrapper). **Effect:** a
+rename of a folder another program holds a file open in — VS Code's Live
+Server, an editor, antivirus — waits silently for a minute before failing. An
+`'atomic'` build's promotion is that rename, so the build stalled for 60136 ms
+(measured 2026-09-28) and then failed with a bare `EPERM`. **What kiss does:**
+a cheap local guard, not a mechanism — the promotion's renames call
+`node:fs/promises` directly and retry for about 1.5 s themselves, then fail
+naming the folder and the likely holder (`Kiss._renameForPromote`,
+`AIKB/kiss.md`). Every other fs-extra call keeps graceful-fs's behaviour.
+**Re-check:** read the `rename` wrapper in `node_modules/graceful-fs/polyfills.js`
+for the 60000 ms window; and on Windows, hold a file open inside a folder with
+`fs.openSync` and time `fs-extra`'s `rename` of it (`fs.watch` on the folder
+does not block the rename, so it is not a stand-in).
+
 ### `@eslint/js` requires a higher Node than kiss does
 
 **Observed:** `engines.node` is 22.12; `@eslint/js` needs 22.13. **Effect:** on

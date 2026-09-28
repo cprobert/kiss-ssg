@@ -540,8 +540,27 @@ declare class Kiss {
     private _stagedPath;
     /** @private */
     private _reportedPath;
+    /**
+     * @private
+     * @param {string} from
+     * @param {string} to
+     * @param {string} folder the build folder the operator named, for the message
+     */
+    private _renameForPromote;
+    /**
+     * @private
+     * @param {string} old
+     * @param {string} target
+     */
+    private _restorePrevious;
     /** @private */
     private _promote;
+    /**
+     * @private
+     * @param {string} staging
+     * @param {string} target
+     */
+    private _swapIn;
     /** @private */
     private _finishBuild;
     /**
@@ -601,6 +620,11 @@ declare class Kiss {
     private _redirectFindings;
     /** @private */
     private _discardStaging;
+    /**
+     * @private
+     * @param {string} staging
+     */
+    private _abandonStaging;
     /** @private
      * @param {string} staging
      * @param {string} which the adjective the warning uses for the folder

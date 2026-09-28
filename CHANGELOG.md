@@ -3,6 +3,26 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.6.5 — 2026-09-28
+
+### A locked build folder fails in seconds, and says why
+
+On Windows, a `cleanBuild: 'atomic'` build whose folder another program had
+open — VS Code's Live Server, an editor, antivirus — sat silent for a minute or
+more and then failed with a bare `EPERM`. It now retries for about a second and
+a half and fails with a message you can act on:
+
+```
+Could not replace ./public/test: a file in it is open in another program — a
+preview server such as VS Code's Live Server, an editor, or antivirus (EPERM).
+Close it, or point it at another folder, and build again. Nothing was
+published; the previous output is unchanged.
+```
+
+The previous output stays exactly as it was, and the staged copy of the site
+is now deleted when the swap fails — it used to stay beside your build folder
+until the next build swept it. Nothing to change in your site.
+
 ## 2.6.4 — 2026-09-28
 
 ### Every build now asks whether the site looks finished
