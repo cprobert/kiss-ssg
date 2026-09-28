@@ -555,6 +555,12 @@ declare class Kiss {
     private _restorePrevious;
     /** @private */
     private _promote;
+    /**
+     * @private
+     * @param {string} staging
+     * @param {string} target
+     */
+    private _swapIn;
     /** @private */
     private _finishBuild;
     /**
@@ -614,6 +620,11 @@ declare class Kiss {
     private _redirectFindings;
     /** @private */
     private _discardStaging;
+    /**
+     * @private
+     * @param {string} staging
+     */
+    private _abandonStaging;
     /** @private
      * @param {string} staging
      * @param {string} which the adjective the warning uses for the folder

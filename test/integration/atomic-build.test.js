@@ -277,6 +277,40 @@ describe("cleanBuild: 'atomic'", () => {
     expect(err?.message).toMatch(/open in another program/)
     expect(fs.readdirSync(site.build)).toEqual(['published.html'])
     expect(await site.read('public/published.html')).toBe('old')
+    // Before close(): a one-shot build script never calls it, and the staged
+    // copy of the whole site is litter from the moment the swap has failed.
+    expect(staging(site.root)).toEqual([])
+  })
+
+  // What a real lock fails first: the rename that moves the published folder
+  // aside, before the staged one is ever touched.
+  it('removes the staged copy when the published folder cannot be moved aside', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'new',
+      'public/published.html': 'old',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      cleanBuild: 'atomic',
+      logger: silentLogger,
+    })
+    kiss.scan().generate()
+
+    const realRename = fsp.rename
+    const rename = vi
+      .spyOn(fsp, 'rename')
+      .mockImplementation(async (src, dest) => {
+        if (String(dest).includes('.kiss-old'))
+          throw Object.assign(new Error('simulated lock'), { code: 'EPERM' })
+        return realRename(src, dest)
+      })
+
+    const err = await kiss.complete().catch((e) => e)
+    rename.mockRestore()
+
+    expect(err?.message).toMatch(/open in another program/)
+    expect(fs.readdirSync(site.build)).toEqual(['published.html'])
+    expect(staging(site.root)).toEqual([])
   })
 
   it('restores the previous output when the swap itself fails', async () => {
@@ -316,8 +350,6 @@ describe("cleanBuild: 'atomic'", () => {
     expect(fs.readdirSync(site.build).sort()).toEqual(before)
     expect(await site.read('public/published.html')).toBe('old')
     expect(await site.read('public/deep/page.html')).toBe('also old')
-
-    await kiss.close()
     expect(staging(site.root)).toEqual([])
   })
 
@@ -369,8 +401,6 @@ describe("cleanBuild: 'atomic'", () => {
       // Nothing was swapped: the previous output is exactly where it was.
       expect(fs.readdirSync(site.build)).toEqual(['published.html'])
       expect(await site.read('public/published.html')).toBe('old')
-
-      await kiss.close()
       expect(staging(site.root)).toEqual([])
     },
     30_000,

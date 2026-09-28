@@ -46,6 +46,8 @@ Today it stalls silently for one to two minutes. `_promote()` in `lib/kiss.js` r
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-09-28 — a failed promote removes its staging folder at once.** The Live Server check on example 7 (failed in 2.4 s, correct message) showed each locked run leaving `public/test.kiss-staging-*` behind, swept only by the next build. The staging folder was left for `close()`, which a one-shot build script never calls. The existing tests only checked for leftovers after `close()`. Under a real lock the rename that fails is the one that moves the published folder aside, which was outside the `try`. The fix: `_swapIn()` holds the swap, and `_promote()` removes the staging folder through `_abandonStaging()` (shared with `_discardStaging()`) on any throw. Four tests now check for leftovers before `close()`, one of them new: it simulates a lock on the rename-aside. All four were seen red on the unfixed code. The operator chose to fix it on this branch rather than note it. Pre-existing, not a regression of this branch.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
