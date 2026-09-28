@@ -527,6 +527,8 @@ describe('auditBuild — site-level checks', () => {
     const buildDir = buildFolder({
       '404.html': 'x',
       'js/lib.min.js': 'console.log(1)',
+      // `assets.hash` renames it before the audit runs (Codex review, 2026-09-28).
+      'js/lib.min.a1b2c3d4.js': 'console.log(1)',
       'js/vendor/lib.js': 'console.log(1)',
       'vendor/lib.js': 'console.log(1)',
       'node_modules/x/index.js': 'console.log(1)',
