@@ -1,7 +1,7 @@
 ---
 branch: feat/launch-readiness
 base: main
-status: open
+status: closed
 opened: 2026-09-27
 ---
 
@@ -114,3 +114,104 @@ opened: 2026-09-27
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-09-27/28: Launch readiness — an audit on every build, and a skill that reads it
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped (version 2.6.4):**
+
+- **The audit** (`3becec3`), with three follow-ups: `bffd55b` (the summary names the shared value), `ad7207b` (`check` reads the author's `cleanBuild`), and `7189e74` and `39f630a` (the two Codex fixes). `lib/audit.js` makes 16 advisory launch-readiness checks on every settled non-dev build, reported as `report().audit` and configured by `config.audit`.
+- **The default page title** is now the page's own slug, not `Index` (`78b0258`), and `llms.txt` and the feed keep an explicit `Index` (`b8265db`).
+- **The skill:** `kiss-site-review` (`d4bf12e`, `215d372`).
+- **The examples:** every audited example at 0 findings, plus the starter's title and description (`bbb594e`).
+- **`frontend-design`:** recommended as an optional companion, with its handoff measured.
+
+## Reflect — what the session was
+
+It began as a question, not a task. The operator pasted a viral "make my app not look vibe-coded" prompt and asked whether it could become a kiss review skill. The first answer did the framing that shaped everything after it:
+
+- the SPA concerns do not apply to a static site;
+- the mechanical checks belong in the engine, where every build and every `check` runs them, and not in a skill somebody has to remember;
+- the judgement checks are the real skill;
+- the "hide how it was built" framing is dropped in favour of launch readiness.
+
+`/branch-open` captured that as a **planned** branch with two workstreams and a contract, and the contract was critiqued by a fresh-context agent before any code. That critique returned 15 items, two of them blockers: `last-build.json` spreads the whole report, and `types/` is byte-compared. Both would have failed the first workstream's gates.
+
+The route then turned **emergent** in a useful way. Four times the audit, pointed at kiss's own output, found something beyond its brief:
+
+- `check` disagreed with the real build about `cleanBuild: false` (`ad7207b`);
+- the default title was `Index` on every untitled page — a quirk `AIKB/kiss-page.md` had called "not a bug to fix";
+- that fix made `lib/llms.js`'s `UNTITLED` guard redundant;
+- the examples carried heading skips, duplicate descriptions and a published `debug.json`.
+
+Each was brought to the operator as a decision and recorded as an Amendment. The planned shape held the work; the emergent findings were absorbed through it rather than around it.
+
+## Evaluate — how the human supervised the AI
+
+**Verification & ownership was the standout, and it came from the operator's own hands.** The pulses asked for three looks, and all three happened while the artefact was fresh:
+
+- the facts script over example 11, checked against a screenshot the operator took;
+- every link clicked on the dev server;
+- card titles, tab icon and 404 page after the sweep.
+
+The most valuable verification was one nobody asked for. The operator opened example 11 under VS Code Live Server and reported "the links don't work". The links were fine; the preview served the repo root, so every root-relative `{{link}}` resolved outside the site. That report became a rule in the review skill: preview with the build folder as the root. A day later it explained a failure nobody had diagnosed: example 7's `EPERM` rename had been blamed on "the environment" and reproduced on `main`, and it came from that same Live Server's watcher. Stopping it made the test pass. Neither partner would have got there alone: the operator's hands-on test produced the observation, and Claude's measurement turned it into two causes.
+
+**Pushback & steering was real, and in both directions.**
+
+- The operator overruled Claude three times: the handoff test was run when Claude recommended recording it as untested; the `Index` guard was removed at the close when Claude recommended a follow-up; and **2.6.4** was chosen against the proposed minor, now recorded as an Amendment.
+- The operator also refused two dense questions — "can you explain it to me a little bit more simply?" and "explain further" — and each time Claude's second answer was better. The second produced a correction: Claude had claimed that the helpers exported from `links.js` would become public API, and checking `package.json`'s `exports` map showed that `types/links.d.ts` is not reachable by a consuming site.
+
+**Harness leverage was heavy.**
+
+- `/branch-open`, four pulses and `/branch-close`.
+- A contract critique by a fresh agent.
+- Five implementation sub-agents; none committed.
+- A clean-room agent that found all 18 planted problems and 14 places the skill made it guess.
+- Two headless `claude -p` runs to measure plugin competition, Playwright for the link check, and three Codex passes.
+
+Codex earned its place: two real P2 defects that every gate and the clean-room had passed, both edges of the audit's tolerant-regex design — a hashed `lib.min.<hash>.js` escaping the minified exemption, and `alt` inside another attribute's value hiding a missing alt.
+
+**Where the operator intended to supervise, and where they actually did.** The checkpoints held. The one place momentum ran past a boundary was Claude's, in the plugin test. Adding a local marketplace named `kiss-ssg` re-registered it machine-wide and overwrote the shared 2.6.3 plugin cache with unreleased skills. Claude caught it on the next command (the reinstall still showed `kiss-site-review`), reverted it and verified the cache byte-identical to `origin/main`. But the operator approved "a headless run" without being told it would touch machine-wide state. Claude should have named that risk before asking. The same momentum showed once more at the close itself: this reflection's first draft was passed through a bash heredoc, which `CLAUDE.md` forbids, and bash rejected it. Nothing landed, and it was rewritten with the Write tool.
+
+**Competency level: Active supervisor.** The operator framed the idea, made every fork a decision (about twenty `AskUserQuestion` answers, three of them overruling Claude), verified by eye at every pulse, and refused explanations they could not follow. The branch used every independent check the repo has. It stops short of _agentic engineering lead_ only because the workflow it ran was already built; this session exercised the system rather than improving it.
+
+## Feedback — recommendations for next session
+
+- **Claude — one decision per question, plain words first.** The operator had to ask twice for a simpler explanation of a question that bundled an eyeball, a design option and jargon ("does the summary read as something you'd act on?"). Lead with what the thing is and what you want to know, then the options.
+- **Claude — commands on their own line, never inside a sentence.** A command embedded in a sentence was pasted with the prose and its backtick broke bash. The 2026-09-27 check-against log already says "give the operator paste-ready commands, never prose", so this is its second appearance. The dev-server instruction also named the wrong port (3001; example 11 uses 3011) and did not warn that a dev server never exits.
+- **Claude — never pass prose through the shell, reflections included.** The rule in `CLAUDE.md` § Git workflow was broken once more at the close, with a long heredoc of markdown. Bash rejected it before anything was written. Text headed for a file goes through the Write tool, every time, however late in the ritual.
+- **Claude — anything that can touch machine-wide state gets named before the operator approves it.** `claude plugin marketplace add <dir>` under a published marketplace's name rewrites `~/.claude/plugins/known_marketplaces.json` and the shared version-keyed cache. A local-marketplace test needs a distinct name, or a version the published line does not have.
+- **Claude — regenerate `types/` after any JSDoc edit in `lib/`, not only after API changes.** The `UNTITLED` removal rewrote `entryTitle`'s doc comment, and `test/unit/types.test.js` caught the stale `types/llms.d.ts` at the gates.
+- **Claude — a comment's example has to be real.** The first draft of example 3's controller comment cited a roast ("Ethiopia Guji") that does not exist and a reason that was not true of any of the six names. It was caught by checking the models before committing, and is now a real, verified case.
+- **Operator — stop Live Server (or any watcher over the repo) before `npm run gates`, and preview a built site with `--dev` rather than from the repo root.** Both costs showed up this branch: ten false 404s, and example 7 hanging on an `EPERM` promote.
+- **Operator — "run it on this branch" and "remove it now" were the right calls.** Both overruled a cheaper recommendation, and both turned a claim into a measurement. Keep doing it when a recommendation leans on "the risk is small".
+- **Process — follow-ups this branch surfaced and did not take:**
+  - an `EPERM` on the atomic promote **hangs** `complete()` instead of rejecting — an engine defect, recorded in `AIKB/testing.md`;
+  - the review skill could flag externally hosted fonts (Google Fonts), a privacy question for UK/EU sites;
+  - the audit could check that `404.html` is kept out of `sitemap.xml`;
+  - example 8's `newsletter.md` keeps an `h3` its siblings lost;
+  - example 7's season page reports a broken `../index.html`;
+  - example 11's tags index lights two nav items at once;
+  - `lib/build-report.js` has an unclosed doc comment above `BuildRobots` (from 2.4.0).
+
+## Verdict — did we achieve the objective?
+
+**The brief:** advisory launch-readiness findings on every build, decided from what the build wrote, and a `kiss-site-review` skill that reads them and does the judgement pass. **Met**, and widened by operator decisions: the default-title fix, the guard removal and the `frontend-design` recommendation. That was good drift, each piece found by the feature itself and each recorded as an Amendment.
+
+- [x] **Head metadata** per page (title, description, `og:image`, canonical) and the site-wide favicon: `test/unit/audit.test.js`, and the examples re-measured by Claude.
+- [x] **Content structure** — alt text, one `<h1>`, heading skips — including the Codex `alt`-in-a-value fix (`39f630a`).
+- [x] **Site-level** — `404.html` including the `extensionLess` trap, and a local or preview `siteUrl`.
+- [x] **Output hygiene** — stray files, `console.log` in your own scripts (the hashed-minified exemption fixed in `7189e74`), and `debug-dump` decided from state.
+- [x] **Advisory, with an opt-out** for each check and for the whole audit (`ignore`, `audit: false`, a throw on an unknown id), and off in dev: `test/integration/audit.test.js`.
+- [x] **Every test seen red for the right reason**, the failure message read, including the sub-agent's 12-mutation pass for the negative cases.
+- [x] **Every example's findings fixed or justified:** 0 findings on all ten audited examples, with `ignore` plus a comment on the teaching examples; card titles unchanged, per the operator's look.
+- [x] **Public API obligations:** `llms.txt`, `README.md`, `GUIDE.md`, `types/`, `AIKB/audit.md` and its table row, and coverage rows.
+- [x] **The `kiss-site-review` skill:** report first, then fix; preview with the build folder as the root; the `frontend-design` handoff.
+- [x] **Clean-room:** a fresh agent with only the tarball and the skill found all 18 planted problems; its guesses became `215d372`.
+- [x] **Contract critiqued** by a fresh-context agent before any build: 15 items, two of them blockers.
+- [x] **`npm run gates` green**; Codex: two P2s fixed, the third pass clean.
+
+**What is concretely better:** a site owner running `npx kiss-ssg check` now hears, in a line per problem, that their site shares one description across every page, publishes a debug dump, or has no 404 a host will serve — and an agent has a skill that turns those lines into a reviewed list before touching anything.
+
+**Still open:** the follow-ups under Process, above all the `EPERM` hang. The version is 2.6.4 by the operator's decision, against the proposed minor.
