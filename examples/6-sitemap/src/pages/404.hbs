@@ -1,0 +1,23 @@
+{{!-- The host serves this for any URL the site does not have, at any depth, so
+      its links climb from the host root ("/") rather than from wherever the
+      visitor got lost. --}}
+{{#extend "layout" root="/"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">{{model.title}}</p>
+    <h1>{{model.heading}}</h1>
+    <p>{{model.lede}}</p>
+  </section>
+
+  <div class="card">
+    <h2>Where to go from here</h2>
+    <ul>
+      <li><a href="/index.html">The home page</a> &mdash; what is on the shelf this week</li>
+      <li><a href="/stockists/index.html">Stockists</a> &mdash; the cafes and shops that carry us</li>
+      <li><a href="/about/index.html">About the roastery</a></li>
+    </ul>
+  </div>
+  {{/content}}
+
+{{/extend}}

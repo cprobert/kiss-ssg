@@ -48,6 +48,8 @@ npm run types                   # regenerate types/ from the JSDoc in lib/
 
 ## Gotchas
 
+- **A file watcher over the repo makes example 7 hang on Windows.** VS Code's Live Server serving the repo root (`127.0.0.1:5500`) holds handles inside `examples/*/public`, and example 7's `'atomic'` promote then fails its rename with `EPERM` — and the build **hangs** until the 60 s test timeout instead of rejecting. Measured 2026-09-28: failing with Live Server on (and on `main` with every change stashed), passing the moment it was stopped. Stop any watcher on the repo before `npm run gates`. The hang itself — an `EPERM` on promote that never settles `complete()` — is an open engine follow-up, not yet investigated.
+
 - **`await Promise.all(kiss._promises)` does not wait for `generate()`'s renders** — those go on `kiss._generating`. A test that inspects or discards the staging folder after it must `await kiss._drain()`, the wait the engine itself uses before it discards or promotes. The "round two" discard test in `watch.test.js` waited on `_promises` and failed about one run in four on Windows: the page write landed in staging mid-removal, `fs.remove` failed with `ENOTEMPTY`, and `_discardStaging` swallows that before clearing the output claims (2026-09-26).
 
 - Relative-path fixtures must anchor their working directory inside the temporary site: Windows CI can put the checkout and OS temp directory on different drives, where `path.relative` returns an absolute drive path. Prefixing that with `./` does not make it relative. Containment tests use native separator semantics; on POSIX a backslash is a filename character, not a separator.

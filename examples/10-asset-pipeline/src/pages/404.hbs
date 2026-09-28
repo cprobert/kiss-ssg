@@ -1,0 +1,17 @@
+{{!-- The host serves this for any URL the site does not have, at any depth, so
+      its links climb from the host root ("/") rather than from wherever the
+      visitor got lost. --}}
+{{#extend "layout" root="/"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Page not found</p>
+    <h1>Nothing at this address</h1>
+    <p>
+      The page you asked for is not part of this site. It may have moved, or the link may
+      have a typo in it. <a href="/index.html">The asset pipeline page</a> is the whole of it.
+    </p>
+  </section>
+  {{/content}}
+
+{{/extend}}

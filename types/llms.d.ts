@@ -17,7 +17,8 @@ export function resolveText(value: unknown): Promise<string>;
 export function sectionNameFor(segment: string, sections?: Record<string, string>): string;
 /**
  * A page's display title: its own `title`, or its slug title-cased when it has
- * none (see `UNTITLED`). Shared with `lib/feed.js`.
+ * none — the same rule `KissPage.prepare()` uses for a page's default title,
+ * so the two agree. Shared with `lib/feed.js`.
  *
  * @param {Record<string, any>} options a page's options
  * @returns {string}

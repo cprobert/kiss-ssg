@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{#if model.title}}{{model.title}}{{else}}{{title}}{{/if}} · {{config.site.name}}</title>
-  <meta name="description" content="{{#if model.description}}{{model.description}}{{else}}{{config.site.tagline}}{{/if}}">
+  {{!-- The page's own `description` option, set beside its `title` in the build
+        script; the tagline is only the fallback for a page that has none. --}}
+  <meta name="description" content="{{#if description}}{{description}}{{else}}{{config.site.tagline}}{{/if}}">
   <meta name="generator" content="kiss-ssg">
   {{#if config.siteUrl}}<link rel="canonical" href="{{canonical}}">{{/if}}
   {{!-- `root` is the climb back to the build root ("", "../", "../../"), set by
@@ -14,6 +16,11 @@
         `root` like any other link and the caching policy lives in the config
         (example 6 turns hashing on) rather than in this line. --}}
   <link rel="stylesheet" href="{{root}}{{asset 'css/site.css'}}">
+  <link rel="icon" type="image/png" href="{{root}}{{asset 'img/icon.png'}}">
+  {{!-- The card a link preview shows. Absolute, because a scraper never
+        resolves a relative URL: `absUrl` joins `siteUrl` to the name `asset`
+        emitted. --}}
+  <meta property="og:image" content="{{absUrl (asset 'img/og-card.png')}}">
   {{#block "head"}}{{/block}}
 </head>
 <body>

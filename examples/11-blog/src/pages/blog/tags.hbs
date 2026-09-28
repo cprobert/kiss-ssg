@@ -1,4 +1,4 @@
-{{#extend "layout" root="../../"}}
+{{#extend "layout"}}
 
   {{#content "head"}}{{> "head-feed"}}{{/content}}
 
@@ -16,7 +16,7 @@
   <div class="grid">
     {{#each model.tags}}
     <article class="card">
-      <h3><a href="{{link 'blog/tags' slug=slug}}">{{tag}}</a></h3>
+      <h2><a href="{{link 'blog/tags' slug=slug}}">{{tag}}</a></h2>
       <p class="meta">{{count}} posts</p>
       <p>{{#each posts}}<a href="{{link id}}">{{title}}</a>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
     </article>

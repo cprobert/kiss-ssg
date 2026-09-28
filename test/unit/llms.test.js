@@ -69,19 +69,22 @@ describe('buildLlmsEntries', () => {
   })
 
   it('falls back to the slug for a page with no title of its own', () => {
-    // `KissPage.prepare()` fills every untitled page's title with `Index`, so
-    // that value is what "no title" looks like by the time the stack is built.
     const entries = buildLlmsEntries(
-      [
-        entry('out/puppy-classes.html', {
-          slug: 'puppy-classes',
-          title: 'Index',
-        }),
-        entry('out/index.html'),
-      ],
+      [entry('out/puppy-classes.html', { slug: 'puppy-classes' })],
       context,
     )
-    expect(entries.map((e) => e.title)).toEqual(['Puppy Classes', 'Index'])
+    expect(entries.map((e) => e.title)).toEqual(['Puppy Classes'])
+  })
+
+  // "Index" was treated as unset while `KissPage` gave every untitled page that
+  // default. Since the default became the page's own slug, the only title
+  // "Index" can be is one somebody wrote, and it is kept as written.
+  it('keeps an explicit title of Index as written', () => {
+    const entries = buildLlmsEntries(
+      [entry('out/contents.html', { slug: 'contents', title: 'Index' })],
+      context,
+    )
+    expect(entries.map((e) => e.title)).toEqual(['Index'])
   })
 
   it('leaves out ignoreLlms, ignoreSitemap and generate: false pages', () => {

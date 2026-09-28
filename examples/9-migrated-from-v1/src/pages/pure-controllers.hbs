@@ -13,7 +13,7 @@
 
   <div class="grid">
     <article class="card">
-      <h3>Why the model kind matters</h3>
+      <h2>Why the model kind matters</h2>
       <p>
         A <code>.json</code> file, a models folder or an <code>http(s)://</code> model is
         re-resolved on every build, so an in-place change is thrown away with it. A
@@ -22,7 +22,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>What that looks like</h3>
+      <h2>What that looks like</h2>
       <p>
         A controller doing <code>model.pours.push(&hellip;)</code> adds one more row on every
         save. The dev server looks fine at first and drifts further from a fresh build with
@@ -30,7 +30,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>This page's controller</h3>
+      <h2>This page's controller</h2>
       <p>
         It numbers the pours and counts them by building a new object:
         <code>&#123; ...model, pours: model.pours.map(&hellip;), count &#125;</code>. Nothing it
@@ -40,7 +40,7 @@
   </div>
 
   <div class="card">
-    <h3>{{model.count}} brew recipes, numbered by the controller</h3>
+    <h2>{{model.count}} brew recipes, numbered by the controller</h2>
     <table>
       <thead><tr><th>step</th><th>method</th><th>ratio</th></tr></thead>
       <tbody>

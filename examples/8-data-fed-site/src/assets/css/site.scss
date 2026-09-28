@@ -260,7 +260,12 @@ main {
     margin-bottom: 0;
   }
 
+  // A card's title is an h2 when the card is a section of its page, and an
+  // h3 when it sits under one: the level is the outline, and the card sets
+  // the size, so both read the same.
+  h2,
   h3 {
+    font-size: 1.1rem;
     margin-bottom: 0.25rem;
   }
 }

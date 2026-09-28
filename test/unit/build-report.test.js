@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { buildReport, formatReport } from '../../lib/build-report.js'
+import {
+  auditLines,
+  buildReport,
+  formatReport,
+} from '../../lib/build-report.js'
 import { exitCodeFor } from '../../lib/check.js'
 import path from 'node:path'
 
@@ -70,6 +74,7 @@ describe('buildReport', () => {
       // reports sees a new key at the end rather than a reshuffle.
       'robots',
       'outputs',
+      'audit',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -257,6 +262,7 @@ describe('buildReport', () => {
       feed: null,
       robots: null,
       outputs: { collisions: [] },
+      audit: null,
     })
   })
 
@@ -494,5 +500,210 @@ describe('formatReport', () => {
       startedAt: Date.now(),
     })
     expect(formatReport(report).split('\n')).toHaveLength(1)
+  })
+})
+
+describe('the audit key', () => {
+  const staging = './public.kiss-staging-123-abcdef'
+  const audit = (findings, extra = {}) => ({
+    checked: 3,
+    ignored: [],
+    skipped: [],
+    findings,
+    ...extra,
+  })
+
+  it('is appended last, after outputs', () => {
+    const keys = Object.keys(
+      buildReport({ buildDir: './public', startedAt: Date.now() }),
+    )
+    expect(keys.at(-1)).toBe('audit')
+    expect(keys.indexOf('audit')).toBe(keys.indexOf('outputs') + 1)
+  })
+
+  it('is null when no audit ran, and an object when one ran and found nothing', () => {
+    expect(
+      buildReport({ buildDir: './public', startedAt: Date.now() }).audit,
+    ).toBeNull()
+    const report = buildReport({
+      buildDir: './public',
+      startedAt: Date.now(),
+      audit: audit([], { checked: 0 }),
+    })
+    expect(report.audit).toEqual({
+      checked: 0,
+      ignored: [],
+      skipped: [],
+      findings: [],
+    })
+    expect(Object.keys(report.audit)).toEqual([
+      'checked',
+      'ignored',
+      'skipped',
+      'findings',
+    ])
+  })
+
+  it('maps every finding page out of staging, and leaves a site-wide null alone', () => {
+    const report = buildReport({
+      buildDir: './public',
+      stagingDir: staging,
+      mode: 'check',
+      startedAt: Date.now(),
+      audit: audit(
+        [
+          {
+            check: 'title-missing',
+            page: `${staging}/index.html`,
+            detail: null,
+          },
+          { check: 'favicon-missing', page: null, detail: null },
+          { check: 'stray-file', page: `${staging}/.DS_Store`, detail: null },
+        ],
+        { ignored: ['h1-count'], skipped: [] },
+      ),
+    })
+    expect(report.audit.findings).toEqual([
+      { check: 'title-missing', page: './public/index.html', detail: null },
+      { check: 'favicon-missing', page: null, detail: null },
+      { check: 'stray-file', page: './public/.DS_Store', detail: null },
+    ])
+    expect(report.audit.ignored).toEqual(['h1-count'])
+    expect(JSON.stringify(report)).not.toContain('kiss-staging')
+  })
+})
+
+describe('formatReport — audit lines', () => {
+  const format = (findings, extra = {}) =>
+    formatReport(
+      buildReport({
+        buildDir: './public',
+        startedAt: Date.now(),
+        audit: { checked: 5, ignored: [], skipped: [], findings, ...extra },
+      }),
+    )
+      .split('\n')
+      .slice(1)
+
+  it('prints one line per check that fired, naming up to three pages then …', () => {
+    const missing = [
+      './public/about.html',
+      './public/contact.html',
+      './public/index.html',
+      './public/news.html',
+    ].map((page) => ({ check: 'description-missing', page, detail: null }))
+    expect(format(missing)).toEqual([
+      '  audit description-missing: 4 pages (./public/about.html, ./public/contact.html, ./public/index.html, …)',
+    ])
+  })
+
+  it('names three pages with no ellipsis, and counts a page once however often it fired', () => {
+    expect(
+      format([
+        { check: 'img-alt-missing', page: './public/a.html', detail: 'x.png' },
+        { check: 'img-alt-missing', page: './public/a.html', detail: 'y.png' },
+        { check: 'img-alt-missing', page: './public/b.html', detail: 'z.png' },
+        { check: 'h1-count', page: './public/a.html', detail: '0' },
+      ]),
+    ).toEqual([
+      '  audit img-alt-missing: 2 pages (./public/a.html, ./public/b.html)',
+      '  audit h1-count: 1 page (./public/a.html)',
+    ])
+  })
+
+  it('prints a site-wide finding as the bare check, with its detail when it has one', () => {
+    expect(
+      format([
+        { check: 'favicon-missing', page: null, detail: null },
+        {
+          check: 'not-found-missing',
+          page: null,
+          detail: '404/index.html exists — hosts serve /404.html',
+        },
+        {
+          check: 'site-url-local',
+          page: null,
+          detail: 'http://localhost:3000',
+        },
+      ]),
+    ).toEqual([
+      '  audit favicon-missing',
+      '  audit not-found-missing: 404/index.html exists — hosts serve /404.html',
+      '  audit site-url-local: http://localhost:3000',
+    ])
+  })
+
+  it('counts walked files as files', () => {
+    expect(
+      format([
+        { check: 'debug-dump', page: './public/debug.json', detail: null },
+        {
+          check: 'stray-file',
+          page: './public/css/site.css.map',
+          detail: null,
+        },
+        { check: 'stray-file', page: './public/.DS_Store', detail: null },
+        { check: 'console-log', page: './public/js/app.js', detail: '2' },
+      ]),
+    ).toEqual([
+      '  audit debug-dump: 1 file (./public/debug.json)',
+      '  audit stray-file: 2 files (./public/css/site.css.map, ./public/.DS_Store)',
+      '  audit console-log: 1 file (./public/js/app.js)',
+    ])
+  })
+
+  // A duplicate is only actionable once you know what is duplicated: the
+  // operator's call at the 2026-09-27 pulse, on example 11's 14 pages sharing
+  // one tagline. One line per shared value, the value quoted and capped.
+  it('names the shared value of a duplicate, one line per value', () => {
+    const long = `${'Every post from the roastery, '.repeat(4)}and more`
+    expect(
+      format([
+        { check: 'title-duplicate', page: './public/a.html', detail: 'Home' },
+        { check: 'title-duplicate', page: './public/b.html', detail: 'Home' },
+        { check: 'title-duplicate', page: './public/c.html', detail: 'Blog' },
+        { check: 'title-duplicate', page: './public/d.html', detail: 'Blog' },
+        {
+          check: 'description-duplicate',
+          page: './public/a.html',
+          detail: long,
+        },
+        {
+          check: 'description-duplicate',
+          page: './public/b.html',
+          detail: long,
+        },
+      ]),
+    ).toEqual([
+      '  audit title-duplicate: "Blog" on 2 pages (./public/c.html, ./public/d.html)',
+      '  audit title-duplicate: "Home" on 2 pages (./public/a.html, ./public/b.html)',
+      `  audit description-duplicate: "${long.slice(0, 60)}…" on 2 pages (./public/a.html, ./public/b.html)`,
+    ])
+  })
+
+  it('says which checks were skipped because the build does not own its folder', () => {
+    expect(
+      format([], {
+        skipped: ['not-found-missing', 'stray-file', 'console-log'],
+      }),
+    ).toEqual([
+      '  audit skipped (cleanBuild: false): not-found-missing, stray-file, console-log',
+    ])
+  })
+
+  it('prints nothing for a clean audit, nor for none', () => {
+    expect(format([])).toEqual([])
+  })
+
+  it('shares its lines with the build log', () => {
+    expect(
+      auditLines({
+        checked: 1,
+        ignored: [],
+        skipped: [],
+        findings: [{ check: 'favicon-missing', page: null, detail: null }],
+      }),
+    ).toEqual(['audit favicon-missing'])
+    expect(auditLines(null)).toEqual([])
   })
 })

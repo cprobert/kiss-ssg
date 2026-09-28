@@ -58,6 +58,16 @@ const kiss = new Kiss({
     sitemapPriority: '0.5',
     sitemapChangefreq: 'weekly',
   })
+
+  // What the host serves for a URL the site does not have. On this
+  // `extensionLess` site a `404` view would land at 404/index.html, which no
+  // host looks for — so this one page opts out and is written as 404.html.
+  // Not content to index, so it stays out of the sitemap and llms.txt too.
+  .page({
+    view: '404.hbs',
+    config: { extensionLess: false },
+    ignoreSitemap: true,
+  })
   .generate()
   .sitemap({}, function (urls) {
     console.log('sitemap.xml lists:', urls)

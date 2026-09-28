@@ -3,6 +3,66 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.6.4 — 2026-09-28
+
+### Every build now asks whether the site looks finished
+
+A passing build is not the same as a site ready to launch. Every non-dev build
+whose pages all succeeded — and every `npx kiss-ssg check` — now runs a
+launch-readiness audit over the HTML it wrote and the files in its build
+folder, and says what it found:
+
+```
+  audit description-duplicate: "Small-batch coffee, roasted in Bristol" on 14 pages (./public/…, …)
+  audit heading-skip: 8 pages (./public/blog/index.html, …)
+  audit favicon-missing
+  audit not-found-missing: 404/index.html exists — hosts serve /404.html
+  audit debug-dump: 1 file (./public/debug.json)
+```
+
+Per page it checks the `<title>` and meta description (missing, or the same on
+several pages), `og:image` (missing, or relative — scrapers never resolve one),
+a canonical link when `siteUrl` is set, images with no `alt`, one `<h1>`, and
+skipped heading levels. Across the site: a favicon, a `404.html` a host will
+actually serve, a `siteUrl` still pointing at localhost or a preview deploy, a
+`debug.json` from `viewStats()` published with the site, stray files (`.map`,
+`.log`, dotfiles, `.DS_Store`) and `console.log(` in scripts you wrote.
+
+It is **advisory**: `ok` and the exit code never move. The result is
+`report().audit` — `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`
+— the last key in the report, and in `AIKB/last-build.json` the next time you
+record it. A check your site deliberately does not want goes in config, with a
+comment saying why:
+
+```js
+audit: {
+  // Never shared on social, so no og:image.
+  ignore: ['og-image-missing'],
+},
+```
+
+`audit: false` turns it off. An id that is not a check throws when the site
+starts, so a typo cannot silently switch nothing off. Under `cleanBuild: false`
+the build folder holds other builds' files, so the three checks that walk it are
+listed under `skipped` instead of run.
+
+The new **`kiss-site-review`** skill reads these findings, adds a pass in a
+browser (widths, long text, consistency, things that look clickable and are
+not, the 404 page) and reports before it fixes anything. Anthropic's
+`frontend-design` skill is recommended in the README as an optional companion
+for the look; kiss keeps the structure.
+
+### Upgrading: a page's default title is its own name
+
+A page that set no `title` used to get the default title `Index`, whatever it
+was called — so a layout printing `{{title}}` gave every such page the same
+title. It now gets its own slug, title-cased: `about-us.hbs` is `About Us`, the
+rule `llms.txt` entries already used. On such a site `kiss-ssg check` shows
+those pages as changed, and the `<title>` is the only difference. A page that
+should keep a particular title sets `title` explicitly. Relatedly, a page you
+explicitly titled `Index` now appears under that title in `llms.txt` and the
+feed, rather than its slug.
+
 ## 2.6.3 — 2026-09-27
 
 ### `check --against` reads check's own output

@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{config.site.name}}</title>
+  {{!-- "<Page> · <Site>" by default, so every page you add has its own title;
+       a page overrides the whole thing with {{#content "title"}}. --}}
+  <title>{{#block "title"}}{{title}} · {{config.site.name}}{{/block}}</title>
+  {{!-- A page's own `description` option, else the site's. --}}
+  <meta name="description" content="{{#if description}}{{description}}{{else}}{{config.site.description}}{{/if}}">
 </head>
 <body>
   <main>

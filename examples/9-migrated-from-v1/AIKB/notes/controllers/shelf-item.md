@@ -1,5 +1,5 @@
 ---
-subject-hash: 76acd457db16d39eb3c0e3c11ff589b0a06d3632
+subject-hash: 83a88934aab0d7656e0e055bdd6331101234d246
 ---
 
 # shelf-item.js
@@ -7,10 +7,11 @@ subject-hash: 76acd457db16d39eb3c0e3c11ff589b0a06d3632
 ## What it does
 
 Turns one shelf record — `{ name, origin, note }`, a plain object handed straight to `.pages()`
-in the build script — into the page that record gets. It returns three things: `slug`, which
+in the build script — into the page that record gets. It returns four things: `slug`, which
 becomes the output filename (`shelf/arch-blend.html`), `title`, which the layout prints in
-`<title>`, and `model`, passed back unchanged so the view can read `model.origin` and
-`model.note`. The slug comes from `utils.toSlug(model.name)`, the same helper the build script
+`<title>`, `description`, the record's `note` again, which the layout prints as the meta
+description so no two shelf pages share one, and `model`, passed back unchanged so the view can
+read `model.origin` and `model.note`. The slug comes from `utils.toSlug(model.name)`, the same helper the build script
 itself calls — so the name in the data is the only thing that decides the URL.
 
 ## Why it is this way

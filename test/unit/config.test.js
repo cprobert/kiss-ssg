@@ -6,7 +6,9 @@ import {
   resolveFolders,
   foldersToEnsure,
   DEFAULT_FOLDERS,
+  DEFAULT_AUDIT,
 } from '../../lib/config.js'
+import { CHECKS } from '../../lib/audit.js'
 
 it('names a working-directory inspection failure without blaming folders.src', () => {
   const realpath = vi
@@ -223,6 +225,60 @@ describe('resolveConfig', () => {
     )
     // `null` is legal: it is the default and means "no host format".
     expect(() => resolveConfig({ redirects: { format: null } })).not.toThrow()
+  })
+
+  it('defaults the audit block: on, nothing ignored', () => {
+    expect(resolveConfig({}).audit).toEqual({ check: true, ignore: [] })
+    expect(DEFAULT_AUDIT).toEqual({ check: true, ignore: [] })
+    expect(Object.isFrozen(DEFAULT_AUDIT)).toBe(true)
+  })
+
+  it('merges the audit block one level deep, like links', () => {
+    expect(
+      resolveConfig({ audit: { ignore: ['og-image-missing'] } }).audit,
+    ).toEqual({ check: true, ignore: ['og-image-missing'] })
+    expect(resolveConfig({ audit: { check: false } }).audit).toEqual({
+      check: false,
+      ignore: [],
+    })
+    expect(resolveConfig({ audit: { check: undefined } }).audit).toEqual({
+      check: true,
+      ignore: [],
+    })
+  })
+
+  it('reads audit: false as the whole audit off, and true as the defaults', () => {
+    expect(resolveConfig({ audit: false }).audit).toEqual({
+      check: false,
+      ignore: [],
+    })
+    expect(resolveConfig({ audit: true }).audit).toEqual({
+      check: true,
+      ignore: [],
+    })
+  })
+
+  it('refuses an audit that is neither a boolean nor a plain object', () => {
+    for (const audit of ['off', 0, null, ['title-missing']])
+      expect(() => resolveConfig({ audit })).toThrow(
+        /config\.audit must be true, false or an object/,
+      )
+  })
+
+  it('refuses an ignore list that is not an array', () => {
+    expect(() =>
+      resolveConfig({ audit: { ignore: 'og-image-missing' } }),
+    ).toThrow(/config\.audit\.ignore must be an array/)
+  })
+
+  it('refuses an unknown check id, naming it and every valid one', () => {
+    // The same stance as `redirects.format`: a misspelled id that silently
+    // ignored nothing would leave the finding on every build while the author
+    // believed it turned off.
+    const attempt = () =>
+      resolveConfig({ audit: { ignore: ['og-image-mising'] } })
+    expect(attempt).toThrow(/"og-image-mising"/)
+    for (const check of CHECKS) expect(attempt).toThrow(check)
   })
 
   it('carries an unknown links key through, like the other blocks', () => {

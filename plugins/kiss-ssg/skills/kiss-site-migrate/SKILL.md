@@ -132,6 +132,37 @@ next save, where it used to be absent from the report entirely. Nothing to fix �
 tooling that reads `report()` during a dev session, it will see failures it did not see before, and
 they are real ones.
 
+### 0b. The release that adds the launch-readiness audit
+
+Nothing new fails, but every build says more, and a site on `^2` gets it without asking. Every
+non-dev build whose pages all succeeded now runs the launch-readiness audit and logs it: one `info`
+line, `Audit: N pages, M findings`, then one `notice` line per check that fired
+(`audit description-missing: 12 pages (…)`). Expect those lines on the first build after upgrading —
+every shipped example fired `og-image-missing`, `favicon-missing` and `not-found-missing` the first
+time the audit ran over it.
+They are advisory: `ok` and the exit code do not move.
+
+- **The report gains a key.** `audit` is appended **last**, after `outputs`, on `report()`,
+  `err.report` and every `kiss-ssg check` report. Tooling that asserts the exact key list needs the
+  new key.
+- **So does the record.** `AIKB/last-build.json` is the report, so the first `npx kiss-ssg aikb`
+  after upgrading writes an `audit` key the committed record never had. That is the new key showing
+  up in the commit, not a change to the site.
+- **Turning a check off is a config line with a reason.** `audit: { ignore: ['og-image-missing'] }`,
+  with a comment saying why; `audit: false` turns the pass off. An id that is not a check
+  **throws at construction**, naming the valid ids — so a typo in `ignore` stops the build before
+  anything is written. The ids and what each one means are in `node_modules/kiss-ssg/llms.txt` § Checking a
+  build.
+- **The default title is the page's own slug.** A page that set no `title` (no option, no controller
+  return) used to get the default title `"Index"` whatever it was called, so a layout rendering
+  `{{title}}` titled every such page the same. It now gets its own slug, title-cased with hyphens
+  as spaces — `about-us.hbs` is `About Us`, the rule `llms.txt` entries already used. On such a
+  site `kiss-ssg check` reports those pages as **changed**: their `<title>` is the only difference,
+  and it is the fix. A page that should keep a particular title sets `title` explicitly.
+
+Do not start fixing findings as part of the upgrade: the upgrade is done when the site builds the
+way it did. Offer the findings as their own piece of work with the `kiss-site-review` skill.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.

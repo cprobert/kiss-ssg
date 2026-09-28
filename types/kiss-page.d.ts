@@ -24,7 +24,6 @@ export class KissPage {
     _ext: string;
     _extLess: boolean;
     _buildTo: string;
-    _title: string;
     _dev: boolean;
     _debug: boolean;
     view: any;
@@ -33,6 +32,8 @@ export class KissPage {
     hash: string | null;
     /** @type {string[]|null} */
     links: string[] | null;
+    /** @type {import('./audit.js').PageFacts|null} */
+    audit: import("./audit.js").PageFacts | null;
     set buildDir(value: string);
     get buildDir(): string;
     pagesDir: string;

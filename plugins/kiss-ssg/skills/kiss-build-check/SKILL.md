@@ -74,6 +74,10 @@ A site opts into a knowledge base by recording one — `npx kiss-ssg aikb <site-
 
 Inspect `outputs.collisions` even when `ok` is true. Each entry names the file, observed producers, winner and refused owners; the summary prints `output collision:`. A refused Sass entry is not an intentional partial skip. Resolve unintended duplicate outputs or explain deliberate precedence. These observations are advisory and do not change the exit code. They track active producers: a resolved collision disappears, while a standing collision survives replay. File paths use the configured build-folder spelling. A discarded check reports its last successful writer before disposal.
 
+## The launch-readiness audit
+
+A build whose pages all succeeded also carries `audit` — the last key of each report, `{ checked, ignored, skipped, findings: [{ check, page, detail }] }` — and one `audit <check>: …` summary line per check that fired: a page with no title or description, no `og:image`, an image with no `alt`, a skipped heading level, no favicon or 404 page, a `debug.json` or `.map` in the build. It is **advisory**, like the link scan: it never changes `ok`, `failures` or the exit code, and it is `null` on a dev build and on any build with a failure — fix the failures first. Whether the site is ready to launch is a separate question from whether it builds; for that, hand off to the `kiss-site-review` skill, which works through the findings and looks at the site in a browser.
+
 ## Reading a failure
 
 Each entry in `failures` is `{ view, buildTo, message }`.

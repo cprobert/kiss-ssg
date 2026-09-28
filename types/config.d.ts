@@ -7,7 +7,8 @@ export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
  * @param {KissConfigInput} [userConfig]
  * @returns {KissConfig} the defaults with `userConfig` merged over them
  * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if
- * `assets.pipeline` is not an array of `{ run: string }` steps, or if source
+ * `assets.pipeline` is not an array of `{ run: string }` steps, if `audit` is
+ * malformed or ignores a check that does not exist, or if source
  * and output folders violate the root/overlap safety rules
  */
 export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
@@ -88,6 +89,15 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {boolean} trailingSlash keep a directory index's trailing `/` in every URL kiss emits (`/courses/`, the default) or drop it (`/courses`)
  */
 /**
+ * The audit block (`config.audit`): what the launch-readiness audit does on a
+ * settled non-dev build. Advisory, like the link scan. Merged exactly one level
+ * deep; `audit: false` is shorthand for `{ check: false, ignore: [] }`.
+ *
+ * @typedef {Object} KissAudit
+ * @property {boolean} check run the audit at all; `false` leaves the report's `audit` key `null`
+ * @property {import('./audit.js').CheckId[]} ignore checks not to run, by id — each must be one of `CHECKS` in `lib/audit.js`
+ */
+/**
  * The redirect block (`config.redirects`): how page `aliases` are encoded. The
  * host-neutral `redirects.json` is written whatever this says. Merged exactly
  * one level deep.
@@ -126,6 +136,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissMarkdown & Record<string, any>} markdown
  * @property {KissLinks} links gates the broken-internal-link scan on a settled non-dev build
  * @property {KissRedirects} redirects how page `aliases` are encoded on a settled build
+ * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
  * @property {string} devHost interface the dev and live reload servers bind to
@@ -142,16 +153,18 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown`, `links` and `redirects` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links`, `redirects` and `audit` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
+ * `audit` also takes a bare boolean: `false` turns the whole audit off.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'>> & {
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
  *   markdown?: Partial<KissMarkdown> & Record<string, any>,
  *   links?: Partial<KissLinks>,
  *   redirects?: Partial<KissRedirects>,
+ *   audit?: boolean|Partial<KissAudit>,
  *   folders?: KissFoldersInput,
  * } & Record<string, any>} KissConfigInput
  */
@@ -188,6 +201,10 @@ export const DEFAULT_LINKS: Readonly<{
     canonical: false;
     trailingSlash: true;
 }>;
+export const DEFAULT_AUDIT: Readonly<{
+    check: true;
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
+}>;
 export const DEFAULT_REDIRECTS: Readonly<{
     format: any;
 }>;
@@ -223,6 +240,10 @@ export const DEFAULT_CONFIG: Readonly<{
     }>;
     redirects: Readonly<{
         format: any;
+    }>;
+    audit: Readonly<{
+        check: true;
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -367,6 +388,21 @@ export type KissLinks = {
     trailingSlash: boolean;
 };
 /**
+ * The audit block (`config.audit`): what the launch-readiness audit does on a
+ * settled non-dev build. Advisory, like the link scan. Merged exactly one level
+ * deep; `audit: false` is shorthand for `{ check: false, ignore: [] }`.
+ */
+export type KissAudit = {
+    /**
+     * run the audit at all; `false` leaves the report's `audit` key `null`
+     */
+    check: boolean;
+    /**
+     * checks not to run, by id — each must be one of `CHECKS` in `lib/audit.js`
+     */
+    ignore: import("./audit.js").CheckId[];
+};
+/**
  * The redirect block (`config.redirects`): how page `aliases` are encoded. The
  * host-neutral `redirects.json` is written whatever this says. Merged exactly
  * one level deep.
@@ -448,6 +484,10 @@ export type KissSettings = {
      */
     redirects: KissRedirects;
     /**
+     * gates the launch-readiness audit on a settled non-dev build
+     */
+    audit: KissAudit;
+    /**
      * dev server port
      */
     port: number;
@@ -473,10 +513,11 @@ export type KissConfig = KissSettings & {
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown`, `links` and `redirects` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links`, `redirects` and `audit` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
+ * `audit` also takes a bare boolean: `false` turns the whole audit off.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit">> & {
     sass?: {
         includePaths?: string[];
     };
@@ -485,5 +526,6 @@ export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "ass
     markdown?: Partial<KissMarkdown> & Record<string, any>;
     links?: Partial<KissLinks>;
     redirects?: Partial<KissRedirects>;
+    audit?: boolean | Partial<KissAudit>;
     folders?: KissFoldersInput;
 } & Record<string, any>;

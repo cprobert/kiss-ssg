@@ -2,5 +2,12 @@
 import { utils } from 'kiss-ssg'
 
 export default function shelfItem({ model }) {
-  return { slug: utils.toSlug(model.name), title: model.name, model }
+  return {
+    slug: utils.toSlug(model.name),
+    title: model.name,
+    // The record's one-line note is what the page is about, so it is the
+    // meta description too — three shelf pages, three descriptions.
+    description: model.note,
+    model,
+  }
 }

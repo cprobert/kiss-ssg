@@ -1,4 +1,4 @@
-### How we buy
+## How we buy
 
 We buy in whole containers with two other roasters, which is the only way a shop this size gets to talk to a producer directly.
 

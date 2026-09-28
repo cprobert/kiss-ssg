@@ -40,11 +40,19 @@ const kiss = new Kiss({
   // A second site can run alongside the others as long as both ports differ.
   port: 8080,
   livereloadPort: 35730,
+  // A teaching example, not a site: it publishes no share card, favicon or 404
+  // page, so the audit's checks for those three are turned off here, by name.
+  audit: {
+    ignore: ['og-image-missing', 'favicon-missing', 'not-found-missing'],
+  },
 })
   .page({
     view: 'index.hbs',
     title: 'Six built-in helpers',
     model: {
+      // The layout's meta description reads it; the tagline is the fallback.
+      description:
+        'The six Handlebars helpers kiss ships, each doing real work on one page.',
       tastingNotes:
         '**Guji Uraga** — white peach, jasmine, demerara.\n\nRoasted 18 February, best from the 22nd.',
       steps: [
@@ -61,6 +69,8 @@ const kiss = new Kiss({
     view: 'brew-guide.hbs',
     title: 'Brew guide',
     model: {
+      description:
+        'Three brew recipes from the Aster & Oak bar: V60, cafetiere and espresso.',
       intro:
         'Three recipes we actually use behind the bar. Scale them, do not agonise over them.',
       recipes: [

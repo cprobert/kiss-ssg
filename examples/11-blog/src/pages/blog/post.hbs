@@ -1,8 +1,7 @@
-{{!-- Every post sits at blog/<slug>/index.html, so the climb back to the build
-      root is the same for all six and can be written here. Nothing else in this
-      view knows that: the tag links and the link back to the journal are asked
-      for by identity, and the engine answers with a path. --}}
-{{#extend "layout" root="../../"}}
+{{!-- Every post sits at blog/<slug>/index.html, and nothing in this view knows
+      that: the tag links and the link back to the journal are asked for by
+      identity, and the engine answers with a path. --}}
+{{#extend "layout"}}
 
   {{#content "head"}}{{> "head-feed"}}{{/content}}
 
@@ -41,13 +40,13 @@
       a record — like the handful of markdown links in the post bodies above — and a string is
       only ever checked by a reader. Nothing fails and nothing warns; the page
       builds and the run still exits 0. It is
-      <code>npx kiss-ssg check 11-blog.js --summary -- --broken</code> that says so, in one
+      <code>npx kiss-ssg check router.js --summary -- --broken</code> that says so, in one
       line:
     </p>
-    <pre><code>ok ../public/11-blog (check) — 14 pages, 0 failed, 2 assets, 622ms
-  broken link: ../public/11-blog/blog/the-cascara-experiment/index.html -&gt; {{model.staleLink}}
-  ~ ../public/11-blog/blog/the-cascara-experiment/index.html
-  = 13 unchanged</code></pre>
+    <pre><code>ok ./public (check) — 15 pages, 0 failed, 3 assets, 622ms
+  broken link: ./public/blog/the-cascara-experiment/index.html -&gt; {{model.staleLink}}
+  ~ ./public/blog/the-cascara-experiment/index.html
+  = 14 unchanged</code></pre>
   </div>
   {{/if}}
   {{/if}}

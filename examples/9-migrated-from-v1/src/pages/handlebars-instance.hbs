@@ -12,7 +12,7 @@
 
   <div class="grid">
     <article class="card">
-      <h3>The v1 idiom</h3>
+      <h2>The v1 idiom</h2>
       <p>
         A project helper that did <code>require('handlebars').partials[name]</code>. Under v2
         that object is empty: the helper returns an empty string, the page renders, the build
@@ -20,7 +20,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>The v2 form</h3>
+      <h2>The v2 form</h2>
       <p>
         Register on <code>kiss.handlebars</code> and read the partials off the same
         environment. This site registers a <code>renderPartial</code> helper that way; the card
@@ -28,7 +28,7 @@
       </p>
     </article>
     <article class="card">
-      <h3>Rendered by the helper</h3>
+      <h2>Rendered by the helper</h2>
       {{renderPartial "stock-note" model}}
       <p class="meta tone-good">If the helper had read the global module, this card would be empty and nothing would have said so.</p>
     </article>

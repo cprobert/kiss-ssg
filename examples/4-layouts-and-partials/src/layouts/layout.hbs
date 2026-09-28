@@ -7,7 +7,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{title}} · {{config.site.name}}</title>
-  <meta name="description" content="{{config.site.tagline}}">
+  {{!-- Each page says what it is about; the tagline is only the fallback for
+        one that does not, so no two pages share a description by accident. --}}
+  <meta name="description" content="{{#if description}}{{description}}{{else}}{{config.site.tagline}}{{/if}}">
   <link rel="stylesheet" href="{{root}}{{asset 'css/site.css'}}">
   {{#block "head"}}{{/block}}
 </head>

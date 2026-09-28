@@ -1,7 +1,8 @@
 # 11 · a blog
 
-An exemplar site: six posts, three to a page, four tag pages, an RSS feed and a `_redirects`
-file for the one post that was renamed. It builds clean and exits 0.
+An exemplar site: six posts, three to a page, four tag pages, an RSS feed, a `_redirects`
+file for the one post that was renamed, and a `404.html` for everything else. It builds clean
+and exits 0.
 
 A blog is the shape most sites turn out to be underneath, and it is the shape an agent
 reinvents from first principles every time — usually badly, and usually in four specific places.
@@ -19,17 +20,24 @@ node router.js --broken      # same site, one deliberately broken link
 node router.js --dev         # live preview on http://127.0.0.1:3011
 ```
 
-Fourteen pages, exit 0, no warnings. The check says the same thing in one line:
+Fifteen pages, exit 0, no warnings. The check says the same thing in one line:
 
 ```
 $ npx kiss-ssg check router.js --summary
-ok ../public/11-blog (check) — 14 pages, 0 failed, 2 assets, 666ms
-  = 14 unchanged
+ok ./public (check) — 15 pages, 0 failed, 3 assets, 666ms
+  = 15 unchanged
 ```
 
-No finding lines at all, and `= 14 unchanged` is the diff against `AIKB/last-build.json` — the
-site is recorded, so the check compares this build against the last one that was committed
-without being asked to.
+No finding lines at all — no broken link, and nothing from the launch-readiness audit: every
+page has its own title and description, a share card (`og:image`) and a favicon, and the site
+has a `404.html`. `= 15 unchanged` is the diff against `AIKB/last-build.json` — the site is
+recorded, so the check compares this build against the last one that was committed without
+being asked to.
+
+It is previewed **served**, with the build folder as the site root — `node router.js --dev`, or
+any static server rooted at `public/`. Every link is root-relative (see "Linking by identity"),
+so opening `public/index.html` straight off the file system, or serving the repository from
+above `public/`, resolves every one of them outside the site.
 
 ## The four recipes
 
@@ -74,7 +82,6 @@ for (let number = 1; number <= pageCount; number++) {
     id: listingId(number), // 'blog', 'blog/page/2' — see "Linking by identity"
     path: number === 1 ? 'blog' : 'blog/page',
     slug: number === 1 ? 'index' : String(number),
-    root: number === 1 ? '../' : '../../../',
     model: { posts: cards.slice(...), number, of: pageCount, prev, next, tags },
   })
 }
@@ -88,11 +95,10 @@ controller cannot know belongs in the script that knows it.
 **Why page 1 is `/blog/` and not `/blog/page/1/`.** The section index is the URL people link to
 and the one the nav points at. Numbering it would move it the day a seventh post is written.
 
-**`root` is a page option here.** One view is rendered at two depths — `blog/index.html` and
-`blog/page/2/index.html` — and the shared layout builds its stylesheet and nav links from
-`{{root}}`, the climb back to the build root. The template cannot know how deep it is, so the
-script tells it: `{{#extend "layout" root=root}}`. Every other view in this site is at one fixed
-depth and writes its own (`root="../../"`).
+**One view at two depths needs nothing extra.** The listing renders to `blog/index.html` and to
+`blog/page/2/index.html`, and not one line of it depends on which: every link it emits is
+root-relative (`{{link}}`, or `/` plus `{{asset}}`), so there is no climb back to the build root
+for the script to pass in.
 
 ### 3 · Tag pages are a second fan-out
 
@@ -159,24 +165,33 @@ also reaches the template, which is how the post page prints "formerly published
 
 ## Linking by identity
 
-Every internal href that names a page **by its id** is `{{link}}`:
+Every internal href that names a page **by its id** is `{{link}}` — the brand link and the nav
+in the layout included:
 
 ```hbs
-<h3><a href='{{link id}}'>{{title}}</a></h3>
+<h2><a href='{{link id}}'>{{title}}</a></h2>
 <a class='tag' href='{{link "blog/tags" slug=this}}'>{{this}}</a>
 <a href='{{link model.prev}}'>&larr; Newer posts</a>
-<a href='{{link "blog"}}'>Back to the journal</a>
+<a class='brand' href='{{link "index"}}'>…</a>
+{{#each config.nav}}
+  {{#isActive .. href=(link id) folderMatch=folderMatch active='is-active'}}
+    <a class='nav__link {{active}}' href='{{href}}'>{{label}}</a>
+  {{/isActive}}
+{{/each}}
 ```
 
-**The two hrefs that are not `{{link}}`, and why.** The brand link in `layouts/layout.hbs` and the
-nav loop beside it are written `{{root}}index.html` and `{{root}}{{href}}` — hand-typed paths,
-against the rule `llms.txt` opens with. That is the one sanctioned exception: `{{link}}` emits a
-**root-relative** path (`/blog/`), which cannot resolve in a build opened straight off the file
-system by double-clicking `public/index.html`, and this example is meant to be openable that way.
-`{{root}}` is the climb back to the build root, supplied by the page — see the layout's own comment.
-The broken-internal-link scan still checks both, so a wrong one is reported rather than silent. A
-site served from a domain root has no reason to do this: use `{{link}}` everywhere and delete
-`{{root}}`.
+The nav is data — `{ id: 'blog', label: 'All posts', folderMatch: true }` in `router.js` — and
+`isActive` is handed the path `{{link}}` resolved, so the link and the active state are decided
+from one string. A file the build wrote rather than a page it registered is `/` plus `{{asset}}`:
+`href="/{{asset 'css/site.css'}}"`.
+
+**One link style, and what it costs.** This site used to write its brand, nav and stylesheet
+links as `{{root}}index.html` — a climb back to the build root supplied by each page — so a build
+could be opened by double-clicking `public/index.html`. That made two link styles in one site,
+and they disagreed: served from above `public/` (VS Code's Live Server on the repository), the
+`{{root}}` links resolved and every `{{link}}` pointed outside the site, ten 404s out of fifteen
+links. Now every link is root-relative, and the price is stated once: preview the site
+**served from its build folder**, as its host will serve it.
 
 **What changed.** These were `href="{{url}}"` and `href="/blog/tags/{{slug}}/"`, and the strings
 behind them were built in the two controllers — `urlFor` in `controllers/post.js`, `tagUrl` in
@@ -193,7 +208,7 @@ slug=name}}` slugs it with the same `toSlug` the tag page was built with.
 
 **Where the valid targets are written down.** The `Id` column of `AIKB/site-map.md` — the
 recorded knowledge base, regenerated by `npx kiss-ssg aikb` — is the complete list of what
-`{{link}}` will answer to on this site (seven of the fourteen rows, output paths shown relative
+`{{link}}` will answer to on this site (seven of the fifteen rows, output paths shown relative
 to the build folder):
 
 | Output                                   | Id                            |
@@ -273,7 +288,7 @@ written down in `AIKB/notes/controllers/tag.md` rather than left to be discovere
 
 ## What `--broken` shows
 
-The default run is clean — 171 internal references, none broken. It is clean the way a site with
+The default run is clean — 177 internal references, none broken. It is clean the way a site with
 `{{link}}` in it is clean: a helper link resolves by construction, so the scan can only ever find
 something a person wrote by hand. `--broken` is that hand-written href — one post renders a link
 to `/blog/the-kenya-microlot/`, a post that was never published, from a `staleLink` string in its
@@ -281,10 +296,10 @@ record:
 
 ```
 $ npx kiss-ssg check router.js --summary -- --broken
-ok ../public/11-blog (check) — 14 pages, 0 failed, 2 assets, 622ms
-  broken link: ../public/11-blog/blog/the-cascara-experiment/index.html -> /blog/the-kenya-microlot/
-  ~ ../public/11-blog/blog/the-cascara-experiment/index.html
-  = 13 unchanged
+ok ./public (check) — 15 pages, 0 failed, 3 assets, 622ms
+  broken link: ./public/blog/the-cascara-experiment/index.html -> /blog/the-kenya-microlot/
+  ~ ./public/blog/the-cascara-experiment/index.html
+  = 14 unchanged
 ```
 
 Two readings of the same edit: the finding says the link goes nowhere, and the diff line says

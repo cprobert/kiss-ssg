@@ -45,10 +45,12 @@ const PER_PAGE = 3
 
 const kiss = new Kiss({
   site,
+  // Pages by id, like every other link on this site: the layout asks `{{link}}`
+  // for each one's path, so the nav cannot name a page the build does not have.
   nav: [
-    { href: 'index.html', label: 'The journal' },
-    { href: 'blog/index.html', label: 'All posts', folderMatch: true },
-    { href: 'blog/tags/index.html', label: 'Tags' },
+    { id: 'index', label: 'The journal' },
+    { id: 'blog', label: 'All posts', folderMatch: true },
+    { id: 'blog/tags', label: 'Tags' },
   ],
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
@@ -113,9 +115,6 @@ for (let number = 1; number <= pageCount; number++) {
     // Page 1 is the section index; the rest are numbered folders under it.
     path: number === 1 ? 'blog' : 'blog/page',
     slug: number === 1 ? 'index' : String(number),
-    // One view rendered at two depths, so the climb back to the build root is
-    // a page option rather than a line in the template.
-    root: number === 1 ? '../' : '../../../',
     title:
       number === 1
         ? 'The journal'
@@ -175,8 +174,23 @@ kiss
       'The four tags the Aster & Oak journal uses, and the posts filed under each.',
     model: { tags },
   })
+  // What the host serves for a URL the site does not have. On this
+  // `extensionLess` site a `404` view would land at 404/index.html, which no
+  // host looks for — so this one page opts out and is written as 404.html. Not
+  // content to index, so it stays out of the sitemap and llms.txt; it has no
+  // `date`, so the feed passes it by on its own.
+  .page({
+    view: '404.hbs',
+    title: 'Page not found',
+    description: 'This page is not in the Aster & Oak journal.',
+    config: { extensionLess: false },
+    ignoreSitemap: true,
+    model: { latest: cards.slice(0, 3) },
+  })
   .generate(function () {
-    this.viewStats()
+    // Dev only: under `verbose` it writes debug.json — every page's options
+    // and model — into the build, which a published site should not carry.
+    if (dev) this.viewStats()
   })
   .sitemap()
   // The third file derived from the same registry, and the reason the posts
