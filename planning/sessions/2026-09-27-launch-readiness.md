@@ -97,6 +97,16 @@ opened: 2026-09-27
   - It stopped at the 15-turn cap, and `acceptEdits` denied its `check`.
   - **Limit:** the marketplace installs from GitHub `main`, so this was the published `kiss-site-new`, without this branch's `frontend-design` line. The competition risk is measured as absent; the handoff line itself is not exercised.
 
+- **2026-09-28** — **The `frontend-design` handoff: measured, met** (the operator chose to run it).
+  - Setup: a scratch folder run through `init`, with the kiss marketplace pointed at this working tree (`directory` source) plus `example-skills`, and one headless run: the same prompt, 30 turns, Bash limited to `npx kiss-ssg`/`npm run`/`node`/`ls`/`cat`.
+  - Skill calls, in order: `kiss-ssg:kiss-site-new`, then `example-skills:frontend-design` ("Visual direction for Harbour Books … (kiss-…"), then `kiss-ssg:kiss-build-check`.
+  - The output kept kiss's structure: a layout, 4 partials, a model, `site.scss`, and 4 pages with the 404 at `/404.html`.
+  - `check`: 4 pages, 0 failed, no broken links, **no audit findings**.
+
+  **Incident, caught and reverted:** `marketplace add <dir>` re-registered the `kiss-ssg` marketplace **machine-wide** (`~/.claude/plugins/known_marketplaces.json`) as the directory source. It also overwrote the shared `cache/kiss-ssg/kiss-ssg/2.6.3/` with this branch's skills, because the branch is still versioned 2.6.3, so every real site on this machine would have loaded unreleased skills. Restored: the declaration was removed from the scratch folder, `cprobert/kiss-ssg` re-added, and the plugin reinstalled. The registry is back on GitHub, and the cached `kiss-site-new` is byte-identical to `origin/main` (no `kiss-site-review` in the cache).
+
+  Lesson: a local-marketplace test needs a distinct version or name, or it poisons the shared cache.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
