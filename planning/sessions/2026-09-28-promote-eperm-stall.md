@@ -1,7 +1,7 @@
 ---
 branch: fix/promote-eperm-stall
 base: main
-status: open
+status: closed
 opened: 2026-09-28
 ---
 
@@ -57,3 +57,47 @@ Today it stalls silently for one to two minutes. `_promote()` in `lib/kiss.js` r
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-09-28: A locked build folder fails the promote fast and clearly
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** `dbbff12` (the promote renames through `node:fs/promises` with a ~1.5 s retry and an actionable error, bypassing graceful-fs's 60 s Windows retry), `b6d1016` (a failed promote removes its staging folder at once), `ac158d8` (GUIDE.md and llms.txt say what a locked swap does), `dce843c` (2.6.5).
+
+## Reflect — what the session was
+
+The branch was **planned**, and the plan held: the cause had been read in `node_modules/graceful-fs/polyfills.js` before the branch opened, and the Intent named one function and its tests. The work ran across **two session windows**. The first crashed after committing `dbbff12`. The second resumed from this file and `git log`, not from memory. **What happened inside the first window is not known to this reflection.** That includes how the 60136 ms stall was measured, whether the Windows test was seen red, and what the operator checked. It is recorded only in the commit and the AIKB text. The resume worked because the Intent was written down and every step up to the crash was committed. That is the concrete payoff of `/branch-open`'s artefact: the crash cost one window's conversation and none of its work.
+
+The second window added one piece of emergent scope. The operator's own run of example 7 under Live Server showed a staging folder being swept at every start ("Removed leftovers of an interrupted build"). Reading `_promote()` found that the failure path left staging for `close()`. A one-shot build script never calls `close()`, and the existing tests only asserted after `close()`, so they could not see it. Under a real lock, the rename that fails is the **rename-aside of the published folder**, which sat outside the `try`. The test that simulated a lock failed the other rename, so the fix had to cover both.
+
+## Evaluate — how the human supervised the AI
+
+- **Verification & ownership: the standout, and it produced the finding.** The success criteria asked for an operator eyeball, and the operator did it: they started Live Server and ran `npm run eg7`, then pasted their own output when Claude's run matched it. That pasted output is what exposed the leftover staging folder. It was visible in the same log as the fix's message, one line above it. The sum beat the parts: the operator's real run supplied the evidence, and Claude read the pattern ("each run removes the previous run's copy") and the code path behind it. Neither the tests nor the message alone would have shown it.
+- **Pushback & steering: a decision point was offered and taken.** The leftover was pre-existing, not a regression, so "note it" was a defensible answer. It was raised as an `AskUserQuestion` rather than a footnote, and the operator chose to fix it on the branch. It is recorded as an Amendment.
+- **Iteration discipline: weak.** The branch was **never pulsed**. The `## Pulse log` is empty, and this close did the verification cold. The crash is part of why, but not all of it: `dbbff12` was committed with no checkpoint recorded before it.
+- **The eyeball after the fix did not happen with the lock held.** Claude's re-run of example 7 after `b6d1016` built cleanly in 737 ms because Live Server was no longer holding the folder. Claude reported that as not demonstrating the locked case rather than as confirmation. The operator recorded the eyeball as "looked: pre-fix run only". The cleanup rests on four tests, all seen red first, one of them simulating the lock on the rename-aside.
+- **Independent review:** Codex ran and found nothing, but read-only, four commands, no tests run. It counts as an independent review, a light one.
+
+**Competency level: Active supervisor.** The operator framed the branch in full, including a manual verification criterion, and then acted on it. The run they did is what found the only defect fixed in this window, and the scope decision was theirs, made explicitly. It falls short of the level above because there was no mid-branch cadence (no pulse) and no re-check with the lock held after the fix.
+
+## Feedback — recommendations for next session
+
+- **Operator — re-run the eyeball after any fix it prompts.** A check that finds a defect needs repeating once the fix lands. Here the cleanup was confirmed only by tests, because the second run happened without Live Server. When a manual check produces a code change, keep the condition it needed (the lock) in place for one more run.
+- **Claude — a test that asserts after `close()` cannot see a one-shot script's behaviour.** Four atomic tests checked for leftovers only after `close()`, which no real `router.js` calls. When a test's teardown does work the production path never does, assert the state **before** the teardown too.
+- **Claude — simulate the failure the real world produces first.** The simulated lock failed the staging rename, but a real lock fails the rename-aside of the published folder first. When mocking a failure, check which call a real lock actually fails before choosing the one the mock breaks.
+- **Both — pulse before a crash can take the reasoning with it.** The committed work survived the crash; the reasoning behind `dbbff12` did not, except where it was written into AIKB. A `/branch-pulse` line after the first commit would have kept the measurement and the red test on record here.
+- **Process — `git commit -F -` does not read a PowerShell here-string.** A docs commit failed that way this session. It failed loudly, since git treated the message as a pathspec, and was redone from a file. In PowerShell, write the message to a file and pass `-F <file>`.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** a locked build folder fails an `'atomic'` build's promote fast and clearly, rather than stalling silently.
+
+- [x] **Measured first.** The stall was 60136 ms, recorded in `AIKB/upstream.md` and the Windows test. Whether that test was seen red happened in the crashed window and cannot be re-verified here.
+- [x] **Fails fast after the fix.** Example 7 failed under Live Server in 2.4 s with a message naming the folder, the likely cause and what to do. The previous output is restored (tests), and the staging copy is now removed too (`b6d1016`, four tests seen red).
+- [x] **Copy fallback only for `EXDEV`.** `never falls back to copying when the swap fails on a lock` asserts that `fs.move` is not called.
+- [x] **Normal atomic builds unchanged.** The full suite passes, and example 7 built cleanly without the lock.
+- [x] **Docs.** `AIKB/kiss.md`, `upstream.md` and `testing.md` are updated, plus `GUIDE.md` and `llms.txt` for site authors.
+- [x] **Operator eyeball.** Done on the fix's message. The staging cleanup was not checked with the lock held.
+- [x] **Close checks.** `npm run gates` passes, and the Codex review found nothing.
+
+**Met**, with one piece of good drift: the staging cleanup, recorded as an Amendment and chosen by the operator. The concrete gain is that a Windows author with a preview server open now waits about 2 s, not 60+, is told what to close, and is left with no copy of the site beside their build folder. **Open:** a hand check of the cleanup with the lock held.
