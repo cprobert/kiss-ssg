@@ -3,6 +3,28 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.6.6 — 2026-09-30
+
+### The dev server no longer rebuilds forever when the script shares a name with the build folder
+
+Running a build script without its extension — `node docs --dev` — makes Node
+report the script's path as `docs`, not `docs.js`. The watcher watched that
+path to rebuild when the script changed, and when a folder had the same name —
+a `docs.js` building into `docs/`, the usual shape for a site published to
+GitHub Pages — it was watching the build folder instead. Every page the build
+wrote looked like an edit to the script, so the dev server rebuilt in a loop
+and the browser kept reloading. The watcher now finds the script file itself
+(the path, then with `.js`, `.mjs` or `.cjs`) and never watches a folder.
+Nothing to change in your site.
+
+### `kiss-site-review` checks that external links open in a new tab
+
+The review skill has a new step: it lists every link in the built site that
+leaves for another address without `target="_blank"`, and fixes it in the
+template that writes it, with `rel="noopener noreferrer"` and a hidden
+"(opens in a new tab)" for screen-reader users. Links to your own `siteUrl`,
+`mailto:` and `tel:` links are left alone.
+
 ## 2.6.5 — 2026-09-28
 
 ### A locked build folder fails in seconds, and says why
