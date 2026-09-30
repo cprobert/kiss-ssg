@@ -1,22 +1,29 @@
-// kiss-ssg docs. Colour carries meaning here: --pass and --fail appear only
-// where something passed or failed, so green on this site always means "ok".
+// kiss-ssg docs. The palette is the logo's: its wordmark ink, the blue of
+// "ssg", the brackets' navy and the heart's rose. Colour still carries meaning:
+// --pass and --fail appear only where something passed or failed, so green on
+// this site always means "ok", and the rose is kept for the logo and selection.
 
 :root {
-  --paper: #f6f7f4;
+  --paper: #f6f7fc;
   --surface: #ffffff;
-  --ink: #18212e;
-  --muted: #56606d;
-  --rule: #d4d9d2;
-  --wash: #edf0ea;
-  --pass: #1d7a4e;
-  --pass-wash: #dcefe3;
-  --fail: #b42318;
-  --focus: #2f5bd3;
+  --ink: #0d1333;
+  --muted: #50577a;
+  --rule: #d9dcee;
+  --wash: #eceef9;
+  --brand-navy: #1f2672;
+  --brand-blue: #3a48da;
+  --heart: #fb5a6e;
+  --pass: #146b4b;
+  --pass-wash: #ddf1e8;
+  --fail: #c62f48;
+  --focus: #3a48da;
+  // Behind the logo mark: nothing on paper, a pale sticker in dark mode.
+  --mark-backing: transparent;
 
-  --code-keyword: #18212e;
-  --code-string: #3b4f9c;
-  --code-literal: #8a5300;
-  --code-comment: #6b7480;
+  --code-keyword: #1f2672;
+  --code-string: #3342b8;
+  --code-literal: #a8405a;
+  --code-comment: #5a6084;
 
   --font-text: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
   --font-code:
@@ -40,21 +47,27 @@
 }
 
 @mixin dark-tokens {
-  --paper: #12171f;
-  --surface: #182029;
-  --ink: #e6e9e3;
-  --muted: #9aa3ae;
-  --rule: #2c3540;
-  --wash: #1c242e;
-  --pass: #52c28a;
-  --pass-wash: #173527;
-  --fail: #f0776b;
-  --focus: #8fb0ff;
+  --paper: #0b0e22;
+  --surface: #13173a;
+  --ink: #e9ebf9;
+  --muted: #a4a9cc;
+  --rule: #272c58;
+  --wash: #181d46;
+  --brand-navy: #aeb6ff;
+  --brand-blue: #8f9bff;
+  --heart: #ff7a8b;
+  --pass: #52cc9c;
+  --pass-wash: #13362b;
+  --fail: #ff8597;
+  --focus: #8f9bff;
+  // The logo's navy brackets vanish on a dark page, so the mark sits on a
+  // pale backing there rather than being recoloured.
+  --mark-backing: #e3e6f8;
 
-  --code-keyword: #e6e9e3;
-  --code-string: #a9b6f0;
-  --code-literal: #e2b86b;
-  --code-comment: #8a939e;
+  --code-keyword: #d7dbff;
+  --code-string: #a9b3ff;
+  --code-literal: #ff9ead;
+  --code-comment: #8c92b8;
 
   color-scheme: dark;
 }
@@ -127,14 +140,18 @@ table {
 a {
   color: inherit;
   text-decoration-line: underline;
-  text-decoration-color: var(--muted);
+  text-decoration-color: var(--brand-blue);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
 }
 
 a:hover {
-  text-decoration-color: var(--ink);
+  text-decoration-color: var(--brand-blue);
   text-decoration-thickness: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--heart) 28%, transparent);
 }
 
 :focus-visible {
@@ -241,28 +258,25 @@ pre code {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   font-weight: 800;
   font-size: var(--step-1);
   text-decoration: none;
   letter-spacing: -0.02em;
+  padding: 0.35rem 0;
 }
 
 .brand__mark {
-  width: 1.6rem;
-  height: 1.6rem;
+  display: block;
+  height: 3.4rem;
+  width: auto;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius-panel);
+  background: var(--mark-backing);
+}
 
-  rect {
-    fill: var(--ink);
-  }
-
-  path {
-    fill: none;
-    stroke: var(--paper);
-    stroke-width: 3;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
+.brand__ssg {
+  color: var(--brand-blue);
 }
 
 .site-nav {
@@ -287,7 +301,7 @@ pre code {
 
   a[aria-current='page'] {
     color: var(--ink);
-    border-bottom-color: var(--ink);
+    border-bottom-color: var(--brand-blue);
   }
 }
 
@@ -562,7 +576,8 @@ pre code {
     width: 1.9rem;
     height: 1.9rem;
     margin-right: 0.6rem;
-    border: 2px solid var(--ink);
+    border: 2px solid var(--brand-blue);
+    color: var(--brand-blue);
     border-radius: 50%;
     font-size: var(--step--1);
     vertical-align: 0.15em;
@@ -651,7 +666,7 @@ pre code {
   > li > a[aria-current='page'] {
     color: var(--ink);
     font-weight: 700;
-    border-left-color: var(--ink);
+    border-left-color: var(--brand-blue);
   }
 }
 
