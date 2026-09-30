@@ -1,0 +1,41 @@
+{{#extend "layout"}}
+{{#content "main"}}
+<div class="wrap page">
+  <header class="page__head">
+    <h1>Examples</h1>
+    <p class="lede">
+      Eleven runnable sites ship inside the package, in <code class="path"><span>node_modules/</span><wbr><span>kiss-ssg/</span><wbr><span>examples/</span></code>. Each is a
+      standalone project: copy the folder, run it, change it.
+    </p>
+  </header>
+
+  <section aria-labelledby="exemplars">
+    <h2 id="exemplars">Whole sites to copy</h2>
+    <p class="section-intro">Start from the one whose situation matches yours rather than assembling a site from the feature examples.</p>
+    <ul class="examples examples--wide">
+      {{#each model.exemplars}}
+      <li class="example">
+        <h3><a href="https://github.com/cprobert/kiss-ssg/tree/main/examples/{{folder}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></h3>
+        <p>{{summary}}</p>
+        <p class="example__when">Copy this when {{copyWhen}}</p>
+        <p class="example__run"><code>cd examples/{{folder}} &amp;&amp; node router</code></p>
+      </li>
+      {{/each}}
+    </ul>
+  </section>
+
+  <section aria-labelledby="features">
+    <h2 id="features">One feature each</h2>
+    <p class="section-intro">Short scripts that answer a narrower question: which call, which option, which helper.</p>
+    <ul class="examples">
+      {{#each model.features}}
+      <li class="example">
+        <h3><a href="https://github.com/cprobert/kiss-ssg/tree/main/examples/{{folder}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></h3>
+        <p>{{summary}}</p>
+      </li>
+      {{/each}}
+    </ul>
+  </section>
+</div>
+{{/content}}
+{{/extend}}

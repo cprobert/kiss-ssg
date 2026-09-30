@@ -259,6 +259,14 @@ const COVERAGE = [
     pattern: /build folder as the site root[\s\S]*Live Server/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
+  // 2026-09-30: an operator rule, not an audit check — so the skill is the only
+  // place it lives, and this row is what keeps it there.
+  {
+    feature: 'external links open in a new tab, with noopener and a cue',
+    pattern:
+      /target="_blank"[\s\S]*noopener noreferrer[\s\S]*opens in a new tab/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
   {
     feature: 'the audit is advisory and hands off to kiss-site-review',
     pattern: /`audit`[\s\S]*advisory[\s\S]*kiss-site-review/,

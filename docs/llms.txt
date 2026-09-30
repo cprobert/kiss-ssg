@@ -1,0 +1,19 @@
+# kiss-ssg
+
+> A static site generator for Node built to be driven by a coding agent. The package ships its own API contract at node_modules/kiss-ssg/llms.txt; this file indexes the documentation site.
+
+## Pages
+
+- [Home](https://cprobert.github.io/kiss-ssg/): kiss-ssg is a static site generator for Node built to be driven by a coding agent: you describe the site, the agent builds it, and kiss-ssg check verifies it.
+- [Examples](https://cprobert.github.io/kiss-ssg/examples/): Eleven runnable kiss-ssg sites that ship inside the package: whole sites to copy by situation, and short scripts that show one feature each.
+
+## Guide
+
+- [Getting started](https://cprobert.github.io/kiss-ssg/guide/): How a kiss-ssg site is laid out: starting one, the router.js build script, and the TypeScript types that ship with the package.
+- [Pages and data](https://cprobert.github.io/kiss-ssg/guide/pages/): Registering pages with .page() and .pages(), shaping their data with controllers, fetching remote models, and Markdown options.
+- [Assets and builds](https://cprobert.github.io/kiss-ssg/guide/assets/): Copying and compiling assets, cache-busting URLs, running an external asset pipeline, cleaning the build folder and building several sites from one source.
+- [Sitemap, llms.txt and feeds](https://cprobert.github.io/kiss-ssg/guide/discovery/): The files search engines and answer engines read, derived from the same page registry: sitemap.xml, llms.txt, an RSS feed and robots.txt.
+- [URLs and redirects](https://cprobert.github.io/kiss-ssg/guide/urls/): Telling kiss how your host serves URLs, trailing slashes included, and keeping old addresses alive with aliases and redirect files.
+- [Checking a build](https://cprobert.github.io/kiss-ssg/guide/checking/): Waiting for a build, dry-running it with kiss-ssg check, reading the report, and recording a site's knowledge base with kiss-ssg aikb.
+- [Helpers](https://cprobert.github.io/kiss-ssg/guide/helpers/): The Handlebars helpers kiss-ssg registers for you, from link and asset to markdown, canonical and isActive, and how to add your own.
+- [Migrating from v1](https://cprobert.github.io/kiss-ssg/guide/migrating/): What changes when a kiss-ssg v1 site moves to v2, and how development file changes are picked up.

@@ -49,7 +49,35 @@ Group the findings by check. The fix for each, in kiss terms — nearly all of t
 | `stray-file`            | A `.map`, `.log`, `.bak`, dotfile or OS file in the build, almost always from an asset folder copied whole. Remove it from the asset folder, or stop the pipeline step emitting source maps for production                                                                                                                                                                                                                                                                             |
 | `console-log`           | `console.log(` left in a script you wrote. Remove it; a third-party file belongs under `vendor/` or as `*.min.js`, which the check skips                                                                                                                                                                                                                                                                                                                                               |
 
-### 2. The judgement pass, in a browser
+### 2. External links open in a new tab
+
+A link to another site opens in a new tab, so a visitor keeps their place on this one. The audit does not check this, so check the built HTML. Build the site for real first (see step 3), then list every link that leaves the site without `target="_blank"`:
+
+```bash
+grep -rhoE "<a [^>]*href=[\"']https?://[^>]*>" public | grep -vE "target=[\"']_blank" | grep -v 'https://your-site.example'
+```
+
+Replace `public` with the build folder and `https://your-site.example` with the site's `siteUrl`. Either quote style matches, so a link written as in the example below is not reported. An absolute URL on the site's own address is internal: `{{link … absolute=true}}`, `{{absUrl}}` and `{{canonical}}` all produce one, and none of them opens a new tab. Neither do `mailto:` and `tel:` links, or a `#` anchor.
+
+The fix is in the template or the partial that writes the link, never per page:
+
+```handlebars
+<a
+  href='https://github.com/acme/site'
+  target='_blank'
+  rel='noopener noreferrer'
+>
+  GitHub<span class='visually-hidden'> (opens in a new tab)</span>
+</a>
+```
+
+- **`rel="noopener noreferrer"`** stops the new page reaching back into this one through `window.opener`.
+- **Say that it opens a new tab.** A screen-reader user gets no other signal that the context changed. Hidden text, as above, or a visible icon with the same words as its accessible name.
+- **A link in Markdown** cannot carry `target`. Write that one link as an `<a>` in the `.md` file (Markdown allows raw HTML by default, `config.markdown.html: true`), or render the external links from a model through a partial that adds it.
+
+List every offender in the report (step 4), grouped by the template that writes it.
+
+### 3. The judgement pass, in a browser
 
 The audit reads markup. Whether the site looks finished needs eyes. `check` publishes nothing, so there is nothing on disk to look at yet: build the site for real first (`npm run build` on a site set up by `init`, or `node <site-script>`). That writes the build folder — including anything the audit flagged, such as a `debug.json` — so say in the report that you did, and remove it afterwards if it was not there when you started. With a browser tool available, look at the built site **served with the build folder as the site root**: the site's own `--dev` preview (`npm run dev`), or any static server started in the build folder (`public/` by default). Never a server rooted above it — VS Code Live Server opened on the repo is the usual one — because every root-relative `{{link}}` then resolves outside the site and reads as broken when it is not.
 
@@ -65,16 +93,16 @@ Then, on every distinct page template (not every page):
 
 When Anthropic's `frontend-design` skill is available and the look itself needs work, it sets the **visual direction** — type, colour, spacing tokens, layout character — and kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Never collapse a page into a single-file page to restyle it.
 
-### 3. Report first, then fix what the operator picks
+### 4. Report first, then fix what the operator picks
 
-**Report first.** Before editing anything, put every finding — the audit's and the browser pass's — in one table:
+**Report first.** Before editing anything, put every finding — the audit's, the external-link pass's and the browser pass's — in one table:
 
 | Where | What | Why it matters | Proposed fix |
 | ----- | ---- | -------------- | ------------ |
 
 Then ask the operator which to fix. Fix those, and **re-run `npx kiss-ssg check` after each fix** — a layout edit changes every page, and the next run says whether it cleared the finding or made new ones.
 
-### 4. A check the site does not want goes in `ignore`, with the reason
+### 5. A check the site does not want goes in `ignore`, with the reason
 
 Some findings are decisions, not mistakes — a site with no social sharing may not want `og:image`. Put the check id in `config.audit.ignore`, with a comment saying why:
 

@@ -1,0 +1,65 @@
+[
+  {
+    "slug": "index",
+    "title": "Getting started",
+    "description": "How a kiss-ssg site is laid out: starting one, the router.js build script, and the TypeScript types that ship with the package.",
+    "sections": ["Starting a site", "The build script", "Types"]
+  },
+  {
+    "slug": "pages",
+    "title": "Pages and data",
+    "description": "Registering pages with .page() and .pages(), shaping their data with controllers, fetching remote models, and Markdown options.",
+    "sections": [
+      ".page()",
+      ".pages()",
+      "Controller",
+      "Remote models",
+      "Markdown options"
+    ]
+  },
+  {
+    "slug": "assets",
+    "title": "Assets and builds",
+    "description": "Copying and compiling assets, cache-busting URLs, running an external asset pipeline, cleaning the build folder and building several sites from one source.",
+    "sections": [
+      "Assets",
+      "Cleaning the build folder",
+      "Building more than one site from one source tree"
+    ]
+  },
+  {
+    "slug": "discovery",
+    "title": "Sitemap, llms.txt and feeds",
+    "description": "The files search engines and answer engines read, derived from the same page registry: sitemap.xml, llms.txt, an RSS feed and robots.txt.",
+    "sections": [".sitemap()", ".llms()", ".feed()", ".robots()"]
+  },
+  {
+    "slug": "urls",
+    "title": "URLs and redirects",
+    "description": "Telling kiss how your host serves URLs, trailing slashes included, and keeping old addresses alive with aliases and redirect files.",
+    "sections": ["Host URL policy", "Redirects"]
+  },
+  {
+    "slug": "checking",
+    "title": "Checking a build",
+    "description": "Waiting for a build, dry-running it with kiss-ssg check, reading the report, and recording a site's knowledge base with kiss-ssg aikb.",
+    "sections": [
+      "Waiting for the build",
+      "Checking a build",
+      "Recording the knowledge base",
+      "Other methods"
+    ]
+  },
+  {
+    "slug": "helpers",
+    "title": "Helpers",
+    "description": "The Handlebars helpers kiss-ssg registers for you, from link and asset to markdown, canonical and isActive, and how to add your own.",
+    "sections": ["Helpers"]
+  },
+  {
+    "slug": "migrating",
+    "title": "Migrating from v1",
+    "description": "What changes when a kiss-ssg v1 site moves to v2, and how development file changes are picked up.",
+    "sections": ["Migrating from v1", "Development file changes"]
+  }
+]
