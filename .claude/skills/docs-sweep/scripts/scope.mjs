@@ -145,7 +145,7 @@ const RULES = [
     label: 'Docs-site source',
     test: (f) => f.startsWith('src/'),
     docs: () => [
-      'ACTION: `timeout 20 node docs` to regenerate docs/ — it starts a dev server and never exits on its own',
+      'ACTION: `node docs` to regenerate docs/ — it builds and exits; `--dev` is the live preview, which does not exit',
     ],
   },
   {

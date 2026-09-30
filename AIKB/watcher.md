@@ -14,7 +14,7 @@ Watches the entry script, configured content folders, assets and helpers. Source
 
 ## Depends on
 
-`chokidar` (required on first `createWatcher()`), `node:fs` (`statSync`, for the empty-file check); `node:path` (containment); `./utils.js` (`posixPath`, `isInside`).
+`chokidar` (required on first `createWatcher()`), `node:fs` (`statSync`, for the empty-file check and to resolve the entry to a file); `node:path` (containment); `./utils.js` (`posixPath`, `isInside`).
 
 ## Depended on by
 
