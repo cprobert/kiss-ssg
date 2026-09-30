@@ -60,7 +60,7 @@
     </ol>
     <p class="band__note">
       The full setup, including the two Claude Code plugins, is in the
-      <a href="https://github.com/cprobert/kiss-ssg#quick-start">README quick start</a>. Using another agent?
+      {{> "external-link" href="https://github.com/cprobert/kiss-ssg#quick-start" text="README quick start"}}. Using another agent?
       Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
     </p>
   </div>
@@ -85,7 +85,7 @@
     <h2 id="built-with">Built with kiss</h2>
     <div>
       <ul class="sites">
-        {{#each model.sites}}<li><a href="{{url}}">{{name}}</a></li>{{/each}}
+        {{#each model.sites}}<li><a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></li>{{/each}}
       </ul>
       <p class="band__note">
         Writing it yourself instead? The <a href="{{link "guide/index" absolute=true}}">guide</a> covers every

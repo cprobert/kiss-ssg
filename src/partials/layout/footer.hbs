@@ -2,12 +2,12 @@
   <div class="wrap site-footer__inner">
     <p>
       kiss-ssg {{version}}, MIT licence. This site is built with kiss-ssg from the
-      <a href="https://github.com/cprobert/kiss-ssg/tree/main/src">src folder</a> of its own repository.
+      {{> "external-link" href="https://github.com/cprobert/kiss-ssg/tree/main/src" text="src folder"}} of its own repository.
     </p>
     <ul class="site-footer__links">
-      <li><a href="https://github.com/cprobert/kiss-ssg/blob/main/CHANGELOG.md">Changelog</a></li>
-      <li><a href="https://github.com/cprobert/kiss-ssg/blob/main/llms.txt">llms.txt for agents</a></li>
-      <li><a href="https://github.com/cprobert/kiss-ssg/issues">Report an issue</a></li>
+      <li>{{> "external-link" href="https://github.com/cprobert/kiss-ssg/blob/main/CHANGELOG.md" text="Changelog"}}</li>
+      <li>{{> "external-link" href="https://github.com/cprobert/kiss-ssg/blob/main/llms.txt" text="llms.txt for agents"}}</li>
+      <li>{{> "external-link" href="https://github.com/cprobert/kiss-ssg/issues" text="Report an issue"}}</li>
     </ul>
   </div>
 </footer>

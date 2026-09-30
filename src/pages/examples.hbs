@@ -4,7 +4,7 @@
   <header class="page__head">
     <h1>Examples</h1>
     <p class="lede">
-      Eleven runnable sites ship inside the package, in <code>node_modules/kiss-ssg/examples/</code>. Each is a
+      Eleven runnable sites ship inside the package, in <code class="path"><span>node_modules/</span><wbr><span>kiss-ssg/</span><wbr><span>examples/</span></code>. Each is a
       standalone project: copy the folder, run it, change it.
     </p>
   </header>
@@ -15,7 +15,7 @@
     <ul class="examples examples--wide">
       {{#each model.exemplars}}
       <li class="example">
-        <h3><a href="https://github.com/cprobert/kiss-ssg/tree/main/examples/{{folder}}">{{name}}</a></h3>
+        <h3><a href="https://github.com/cprobert/kiss-ssg/tree/main/examples/{{folder}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></h3>
         <p>{{summary}}</p>
         <p class="example__when">Copy this when {{copyWhen}}</p>
         <p class="example__run"><code>cd examples/{{folder}} &amp;&amp; node router</code></p>
@@ -30,7 +30,7 @@
     <ul class="examples">
       {{#each model.features}}
       <li class="example">
-        <h3><a href="https://github.com/cprobert/kiss-ssg/tree/main/examples/{{folder}}">{{name}}</a></h3>
+        <h3><a href="https://github.com/cprobert/kiss-ssg/tree/main/examples/{{folder}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></h3>
         <p>{{summary}}</p>
       </li>
       {{/each}}

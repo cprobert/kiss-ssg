@@ -26,6 +26,16 @@ const headingHtml = (text) =>
     ? `<code>${escapeHtml(text)}</code>`
     : escapeHtml(text)
 
+// Every absolute link left in a guide page leaves the site, because
+// `rewriteLink` below turns GUIDE.md's links to itself into relative ones. The
+// site's rule is that those open in a new tab, marked up exactly as the
+// external-link partial does it.
+const openExternalInNewTab = (html) =>
+  html.replace(
+    /<a href="(https?:\/\/[^"]+)"([^>]*)>([\s\S]*?)<\/a>/g,
+    '<a href="$1"$2 target="_blank" rel="noopener noreferrer">$3<span class="visually-hidden"> (opens in a new tab)</span></a>',
+  )
+
 // Splits GUIDE.md into its `##`/`###` sections, ignoring anything inside a code
 // fence. `## Usage` is only a container for the `###` sections under it.
 function readSections() {
@@ -136,11 +146,11 @@ export default function guide({ model }) {
     })
     .join('\n\n')
 
-  const html = new Remarkable({
-    html: true,
-    xhtmlOut: true,
-    breaks: false,
-  }).render(markdown)
+  const html = openExternalInNewTab(
+    new Remarkable({ html: true, xhtmlOut: true, breaks: false }).render(
+      markdown,
+    ),
+  )
   const position = pages.findIndex((page) => page.slug === here)
   const neighbour = (page) => page && { slug: page.slug, title: page.title }
 
