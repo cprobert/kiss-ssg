@@ -1,0 +1,34 @@
+{{#extend "layout"}}
+{{#content "main"}}
+<div class="wrap docs">
+  <nav class="docs__nav" aria-label="Guide">
+    <details class="docs__menu" open>
+      <summary>Guide contents</summary>
+      <ol class="docs__pages">
+        {{#each model.nav}}
+        <li>
+          <a href="{{link "guide" slug=slug absolute=true}}" {{#if current}}aria-current="page"{{/if}}>{{title}}</a>
+          {{#if current}}{{#if @root.model.toc.length}}
+          <ul class="docs__toc">
+            {{#each @root.model.toc}}<li><a href="#{{anchor}}">{{{html}}}</a></li>{{/each}}
+          </ul>
+          {{/if}}{{/if}}
+        </li>
+        {{/each}}
+      </ol>
+    </details>
+  </nav>
+
+  <article class="docs__body prose">
+    <h1{{#if model.anchor}} id="{{model.anchor}}"{{/if}}>{{title}}</h1>
+    <p class="lede">{{description}}</p>
+    {{{model.html}}}
+
+    <nav class="pager" aria-label="Guide pages">
+      {{#if model.prev}}<a class="pager__prev" href="{{link "guide" slug=model.prev.slug absolute=true}}"><span>Previous</span> {{model.prev.title}}</a>{{/if}}
+      {{#if model.next}}<a class="pager__next" href="{{link "guide" slug=model.next.slug absolute=true}}"><span>Next</span> {{model.next.title}}</a>{{/if}}
+    </nav>
+  </article>
+</div>
+{{/content}}
+{{/extend}}

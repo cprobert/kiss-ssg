@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `bin/kiss-ssg.js` is the published command line (`npx kiss-ssg init`, `npx kiss-ssg check <script>` and `npx kiss-ssg aikb <script>`) — a thin wrapper whose decisions all live in `lib/init.js` and `lib/check.js`.
 
-`src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`). Treat `docs/` as build output. Design specs, implementation plans and session logs live in `planning/` (`planning/specs/`, `planning/plans/`, `planning/sessions/`) — never under `docs/`, which `docs.js` empties on every run. `scripts/` holds dev tooling that never ships (the `files` whitelist excludes it).
+`src/` is **not** engine code: it is the source of this repo's own docs site (`docs.js` builds it into `docs/`, which `.github/workflows/static.yml` deploys to GitHub Pages under `/kiss-ssg/`). Treat `docs/` as build output. The guide pages are cut from `GUIDE.md` by `src/controllers/guide.js`, one page per entry in `src/models/guide.json`: a new `##`/`###` section in `GUIDE.md` fails `node docs` until it is given a page there. Design specs, implementation plans and session logs live in `planning/` (`planning/specs/`, `planning/plans/`, `planning/sessions/`) — never under `docs/`, which `docs.js` empties on every run. `scripts/` holds dev tooling that never ships (the `files` whitelist excludes it).
 
 ## Design philosophy
 

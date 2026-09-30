@@ -1,0 +1,64 @@
+{
+  "prompt": "Build a blog for Aster & Oak, a Bristol roastery: posts, tag pages and an RSS feed.",
+  "files": [
+    "router.js",
+    "src/layouts/layout.hbs",
+    "src/pages/index.hbs",
+    "src/pages/blog/post.hbs",
+    "src/pages/blog/tag.hbs",
+    "src/controllers/post.js",
+    "src/models/posts/*.json"
+  ],
+  "verdict": {
+    "command": "npx kiss-ssg check router.js --summary",
+    "status": "ok",
+    "line": "./public (check) — 15 pages, 0 failed, 3 assets",
+    "facts": [
+      "177 links checked, 0 broken",
+      "sitemap.xml and feed.xml written",
+      "0 launch-readiness findings"
+    ]
+  },
+  "steps": [
+    {
+      "title": "Set it up",
+      "text": "One command installs kiss-ssg, adds a starter site, and points your agent at the API contract. Then add the two Claude Code plugins it prints.",
+      "code": "npx kiss-ssg@latest init"
+    },
+    {
+      "title": "Describe the site",
+      "text": "Open Claude Code and say what the site is for, who it's for, where it will be hosted and its address. The skills do the rest.",
+      "code": "claude"
+    },
+    {
+      "title": "Check the build",
+      "text": "A dry run that reports every page, broken link and missing launch detail as data, and publishes nothing. Exit 0 means it's right.",
+      "code": "npx kiss-ssg check router.js"
+    }
+  ],
+  "reasons": [
+    {
+      "title": "Conventions, not questions",
+      "text": "Folders, routes, helpers and asset names all have defaults, so an agent has fewer choices to get wrong, and every default can be overridden."
+    },
+    {
+      "title": "A verdict, not a log",
+      "text": "A failed page or a link to a page that doesn't exist fails the build. Mistakes can't ship quietly."
+    },
+    {
+      "title": "Readable by the next person",
+      "text": "Handlebars views, JSON models and small controllers. Whoever opens the site in two years can follow what the agent wrote."
+    },
+    {
+      "title": "A memory of the site",
+      "text": "npx kiss-ssg aikb records what the site is, so the next session starts from facts rather than guesses."
+    }
+  ],
+  "sites": [
+    { "name": "Learna", "url": "https://www.learna.ac.uk/" },
+    { "name": "Diploma MSc", "url": "https://www.diploma-msc.com/" },
+    { "name": "A1K9 Training", "url": "https://www.a1k9training.co.uk/" },
+    { "name": "K9 Solutions", "url": "https://k9solutions.uk/" },
+    { "name": "Pro Plumbing", "url": "https://pro-plumbing.trade/" }
+  ]
+}

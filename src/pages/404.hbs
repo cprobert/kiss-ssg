@@ -1,0 +1,12 @@
+{{#extend "layout"}}
+{{#content "main"}}
+<div class="wrap page page--narrow">
+  <h1>Page not found</h1>
+  <p class="lede">There's no page at this address. The documentation used to be a single page, so an old link may point to a section that now has its own page.</p>
+  <ul class="not-found__links">
+    <li><a href="{{link "index" absolute=true}}">Go to the home page</a></li>
+    <li><a href="{{link "guide/index" absolute=true}}">Browse the guide</a></li>
+  </ul>
+</div>
+{{/content}}
+{{/extend}}

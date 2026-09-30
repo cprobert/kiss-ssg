@@ -1,23 +1,98 @@
 {{#extend "layout"}}
+{{#content "main"}}
+<section class="hero">
+  <div class="wrap hero__inner">
+    <div class="hero__copy">
+      <h1 class="hero__title">Describe the site.<br>Your agent builds it.<br>kiss checks it.</h1>
+      <p class="lede">
+        kiss-ssg is a static site generator for Node, built to be driven by a coding agent. The agent writes
+        plain Handlebars, JSON and a little JavaScript, and every build ends in a verdict it can act on.
+      </p>
+      <div class="hero__actions">
+        <div class="command">
+          <code>npx kiss-ssg@latest init</code>
+          <button type="button" class="command__copy" data-copy="npx kiss-ssg@latest init">Copy</button>
+        </div>
+        <a class="text-link" href="{{link "guide/index" absolute=true}}">Read the guide</a>
+      </div>
+    </div>
 
-  {{#content "jumbotron"}}
-    {{> "home/jumbotron"}}
-  {{/content}}
-
-  {{#content "body"}}
-
-  <h3 class="pb-4 mb-4 font-italic border-bottom">
-    Usage
-  </h3>
-
-  <div class="blog-post">   
-    {{> "usage/setup"}}
-    <hr />
-    {{> "usage/methods"}}
-    <hr />
-    {{> "usage/controllers"}}
-    <hr />
-    {{> "usage/helpers"}}
+    <figure class="verdict">
+      <ol class="verdict__turns">
+        <li class="verdict__turn">
+          <p class="verdict__who">You</p>
+          <p class="verdict__prompt">{{model.prompt}}</p>
+        </li>
+        <li class="verdict__turn">
+          <p class="verdict__who">Your agent writes</p>
+          <ul class="verdict__files">
+            {{#each model.files}}<li><code>{{this}}</code></li>{{/each}}
+          </ul>
+        </li>
+        <li class="verdict__turn verdict__turn--result">
+          <p class="verdict__who">kiss checks</p>
+          <p class="verdict__command"><code>$ {{model.verdict.command}}</code></p>
+          <p class="verdict__line"><span class="verdict__ok">{{model.verdict.status}}</span> <code>{{model.verdict.line}}</code></p>
+          <ul class="verdict__facts">
+            {{#each model.verdict.facts}}<li>{{this}}</li>{{/each}}
+          </ul>
+        </li>
+      </ol>
+      <figcaption>
+        Example 11 from the repository, checked as shown.
+        <a href="{{link "examples" absolute=true}}">See all eleven examples</a>
+      </figcaption>
+    </figure>
   </div>
-  {{/content}}
+</section>
+
+<section class="band" aria-labelledby="how">
+  <div class="wrap">
+    <h2 id="how">How it works</h2>
+    <ol class="steps">
+      {{#each model.steps}}
+      <li class="steps__item">
+        <h3>{{title}}</h3>
+        <p>{{text}}</p>
+        <pre><code class="language-bash">{{code}}</code></pre>
+      </li>
+      {{/each}}
+    </ol>
+    <p class="band__note">
+      The full setup, including the two Claude Code plugins, is in the
+      <a href="https://github.com/cprobert/kiss-ssg#quick-start">README quick start</a>. Using another agent?
+      Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
+    </p>
+  </div>
+</section>
+
+<section class="band band--split" aria-labelledby="why">
+  <div class="wrap band__grid">
+    <h2 id="why">Why it suits agents</h2>
+    <ul class="reasons">
+      {{#each model.reasons}}
+      <li>
+        <h3>{{title}}</h3>
+        <p>{{text}}</p>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+</section>
+
+<section class="band band--split" aria-labelledby="built-with">
+  <div class="wrap band__grid">
+    <h2 id="built-with">Built with kiss</h2>
+    <div>
+      <ul class="sites">
+        {{#each model.sites}}<li><a href="{{url}}">{{name}}</a></li>{{/each}}
+      </ul>
+      <p class="band__note">
+        Writing it yourself instead? The <a href="{{link "guide/index" absolute=true}}">guide</a> covers every
+        method, option and helper.
+      </p>
+    </div>
+  </div>
+</section>
+{{/content}}
 {{/extend}}

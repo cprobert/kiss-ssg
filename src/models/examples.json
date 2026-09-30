@@ -1,0 +1,65 @@
+{
+  "exemplars": [
+    {
+      "folder": "11-blog",
+      "name": "Blog",
+      "summary": "Posts as a fan-out, pagination, tag pages, an RSS feed, a rename kept alive with aliases, and every internal link written with {{link}}.",
+      "copyWhen": "the site has posts in it: a blog, a news section, a changelog."
+    },
+    {
+      "folder": "8-data-fed-site",
+      "name": "Data-fed site",
+      "summary": "A site built from a folder of records, each validated in its controller. One record is broken on purpose, so the build fails and says which.",
+      "copyWhen": "the content comes from data you don't control."
+    },
+    {
+      "folder": "7-versioned-outputs",
+      "name": "Versioned outputs",
+      "summary": "One build per season into its own folder, published atomically, with an archive index beside them.",
+      "copyWhen": "you publish a new edition beside the old ones."
+    },
+    {
+      "folder": "9-migrated-from-v1",
+      "name": "Migrated from v1",
+      "summary": "Every v1 to v2 migration recipe as running code, in a site that builds clean and ships a recorded knowledge base.",
+      "copyWhen": "you're moving a v1 project across."
+    }
+  ],
+  "features": [
+    {
+      "folder": "1-scan",
+      "name": "Scan",
+      "summary": ".scan() registers every view in pages/, matching models and controllers by filename."
+    },
+    {
+      "folder": "2-page",
+      "name": "Page",
+      "summary": ".page() four ways: matched, explicit, an object model with its own extension, and a template string."
+    },
+    {
+      "folder": "3-pages",
+      "name": "Pages",
+      "summary": ".pages() fans out one page per JSON file, and the index reuses the same array."
+    },
+    {
+      "folder": "4-layouts-and-partials",
+      "name": "Layouts and partials",
+      "summary": "One layout with blocks, nested .hbs, .html and .md partials, and a partial chosen at render time."
+    },
+    {
+      "folder": "5-helpers",
+      "name": "Helpers",
+      "summary": "The built-in helpers on one page, plus custom dev-server ports."
+    },
+    {
+      "folder": "6-sitemap",
+      "name": "Sitemap and llms.txt",
+      "summary": ".sitemap() and .llms() with a siteUrl, per-page tuning, extension-less URLs and hashed assets."
+    },
+    {
+      "folder": "10-asset-pipeline",
+      "name": "Asset pipeline",
+      "summary": "An external tool run before the asset copy, kept watching in dev mode, and the four shapes {{asset}} takes."
+    }
+  ]
+}
