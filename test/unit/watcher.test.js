@@ -105,6 +105,53 @@ describe('createWatcher', () => {
     await waitFor(() => calls.site >= 1)
   })
 
+  // 2026-09-30: `node docs` beside a `docs/` build folder. Node reports
+  // `process.argv[1]` without the `.js`, so the watcher was handed the build
+  // folder as the entry: every page the build wrote read as "the build script
+  // changed", and each rebuild wrote the pages that triggered the next.
+  it('resolves an extension-less entry to its script, never to a folder of the same name', async () => {
+    site = await makeSite({
+      'docs.js': '// entry',
+      'docs/index.html': 'built',
+      'src/pages/index.hbs': 'a',
+    })
+    const { calls, wiring } = spy()
+    handle = createWatcher({
+      config: folders(site),
+      entry: `${site.root}/docs`,
+      ...wiring,
+    })
+    await handle.ready
+
+    await site.touch('docs/index.html', 'rebuilt')
+    await site.touch('docs/about.html', 'a new page')
+    await new Promise((r) => setTimeout(r, 300))
+    expect(calls.site).toBe(0)
+
+    await site.touch('docs.js', '// changed')
+    await waitFor(() => calls.site >= 1)
+  })
+
+  it('watches no entry at all when the path names only a folder', async () => {
+    site = await makeSite({ 'build/index.html': 'built' })
+    const { calls, wiring } = spy()
+    const notices = []
+    handle = createWatcher({
+      config: folders(site),
+      entry: `${site.root}/build`,
+      ...wiring,
+      logger: {
+        ...silentLogger,
+        notice: (...args) => notices.push(args.join(' ')),
+      },
+    })
+    await handle.ready
+    await site.touch('build/index.html', 'rebuilt')
+    await new Promise((r) => setTimeout(r, 300))
+    expect(calls.site).toBe(0)
+    expect(notices.some((n) => /not a file/.test(n))).toBe(true)
+  })
+
   it('suppresses the initial scan add burst and forwards adds after ready', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',
