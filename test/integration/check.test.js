@@ -332,6 +332,11 @@ describe('kiss-ssg check', () => {
     expect(lines).toContain(
       '  broken link: ./public/index.html -> /news/gone.html',
     )
+    // Once, not twice: the build's own log goes to stderr, which a terminal
+    // shows beside the summary, so under check it says how many and leaves the
+    // list to the report.
+    expect(run.stderr).not.toContain('broken link:')
+    expect(run.stderr).toContain('1 broken link')
     expect(await temp.exists('public')).toBe(false)
   }, 60000)
 
