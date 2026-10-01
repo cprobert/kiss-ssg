@@ -23,12 +23,24 @@ export function attr(node: HtmlNode, name: string): string;
 /**
  * Renders nodes back to HTML.
  *
- * Re-indents only where it cannot change rendering: an element whose children
- * are all elements or comments. With any significant text among them the
- * children are emitted verbatim on one line, because collapsing or inserting
- * whitespace around inline content changes what the page looks like. That is
- * why the output of a conversion is structured at the block level and untouched
- * inside a paragraph — which is also how a person would have done it.
+ * THE PRINTER NEVER ADDS WHITESPACE. A line break and indent are written only
+ * where the source already had whitespace between two nodes; where it had
+ * none, the nodes stay touching on one line. Collapsible whitespace renders
+ * the same however much of it there is, so swapping one run of it for a
+ * newline and an indent cannot change the page — but putting whitespace
+ * where there was none can, for any element CSS makes inline-level, and the
+ * markup cannot say which those are. Every earlier rule here tried to say:
+ * "re-indent unless the children are inline", with a list of inline elements
+ * that each review round found incomplete (`<svg>`, `<input>`, SVG `<text>`,
+ * an inline-block `<li>` nobody had flagged yet). The operator chose
+ * construction over the list (2026-10-01).
+ *
+ * Text is emitted exactly as written, and so is everything inside an element
+ * whose whitespace renders (`keepsWhitespace`) — there even a gap is content.
+ *
+ * What it costs: a minified source stays dense. Its structure is still cut
+ * into a layout, partials and a page view; inside a partial, a formatter is
+ * the caller's deliberate, separate step.
  *
  * @param {HtmlNode[]} nodes
  * @param {number} [depth]
@@ -37,7 +49,7 @@ export function attr(node: HtmlNode, name: string): string;
  * text, attributes, comments and raw text alike, because Handlebars compiles
  * the whole file. Pass `false` only for a document you wrote and intend to
  * carry template syntax.
- * @returns {string}
+ * @returns {string} the first line indented to `depth`
  */
 export function serializeNodes(nodes: HtmlNode[], depth?: number, options?: {
     escapeExpressions?: boolean;

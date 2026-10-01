@@ -11,7 +11,7 @@ Someone has a page that already works and that they already approved the look of
 Two things make this different from building a site:
 
 - **The design is settled. You are not redesigning.** A conversion that also improves the markup cannot be verified, because nothing can tell your improvements from your mistakes. Convert first, verify it renders the same, and only then change anything — as a separate, named step the author agreed to.
-- **The engine does the mechanical half for you.** `splitDocument` and `splitStylesheet` ship in the package. They parse, cut, re-indent and guarantee the cascade and the markup did not move. Do not hand-roll any of that; what they deliberately leave to you is everything requiring judgement, and that is where your effort goes.
+- **The engine does the mechanical half for you.** `splitDocument` and `splitStylesheet` ship in the package. They parse, cut and guarantee the cascade and the markup did not move. `splitDocument` never adds whitespace, so a partial cut from a **minified** page is as dense as the page was; if you format it for legibility, do it as a separate, deliberate step and re-run the comparison after, because a formatter that puts a line break between two inline-block elements opens a visible gap. Do not hand-roll any of that; what they deliberately leave to you is everything requiring judgement, and that is where your effort goes.
 
 ## Execution instructions
 

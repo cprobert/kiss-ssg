@@ -427,4 +427,38 @@ describe('Sass syntax inside a CSS literal', () => {
     expect(out).toContain('/*! #{1+1} */')
     expect(out).toContain('url(/x#{y}.png)')
   })
+
+  it('leaves an interpolation the source already escaped', async () => {
+    // Codex round 4: `"\#{x}"` is a CSS escape, and Sass honours it too. The
+    // shield turned it into `"\#{"#"}{x}"`, whose backslash then escaped the
+    // shield's own `#` and left its quotes bare — a compile error.
+    const input = 'a{content:"\\#{x}"}.hero{c:d}'
+    const out = await compileSplit(
+      splitStylesheet(input, { sections: ['hero'], minNodes: 1 }),
+    )
+    expect(out).toBe(compileCss(input))
+  })
+
+  it('shields a comment even behind a backslash', async () => {
+    // Inside a comment Sass interpolates regardless: `/*! \#{x} */` compiled
+    // to `/*! \x */`.
+    const out = await compileSplit(
+      splitStylesheet('/*! \\#{x} */.hero{c:d}', {
+        sections: ['hero'],
+        minNodes: 1,
+      }),
+    )
+    expect(out).toContain('/*! \\#{x} */')
+  })
+})
+
+describe('a browser @import', () => {
+  // Codex round 4: `@import "theme";` is a request a browser makes. In SCSS
+  // the same line is a compile-time import, which failed to find `theme` —
+  // or would have inlined a local Sass file of that name.
+  it('stays a browser import', async () => {
+    const input = '@import "theme";@import \'print.css\' print;.hero{c:d}'
+    const result = splitStylesheet(input, { sections: ['hero'], minNodes: 1 })
+    expect(await compileSplit(result)).toBe(compileCss(input))
+  })
 })

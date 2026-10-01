@@ -95,10 +95,16 @@ describe('parseHtml', () => {
 })
 
 describe('serializeNodes', () => {
-  it('indents element-only children', () => {
+  it('re-indents where the source broke the line, and nowhere else', () => {
+    // The printer never adds whitespace: tags the source wrote touching stay
+    // touching, whatever they are. A line break the source had is kept as a
+    // line break at this module's indent.
     expect(serializeNodes(parseHtml('<div><p></p><p></p></div>'))).toBe(
-      '<div>\n  <p></p>\n  <p></p>\n</div>',
+      '<div><p></p><p></p></div>',
     )
+    expect(
+      serializeNodes(parseHtml('<div>\n<p></p>\n      <p></p>\n</div>')),
+    ).toBe('<div>\n  <p></p>\n  <p></p>\n</div>')
   })
 
   it('emits an element with significant text verbatim on one line', () => {
@@ -870,5 +876,46 @@ describe('elements whose whitespace renders', () => {
   it('keeps an element styled white-space: pre exactly', () => {
     const inner = '<div style="white-space: pre-wrap"><p>a</p>  <p>b</p></div>'
     expect(out(inner)).toContain(inner)
+  })
+})
+
+describe('the printer never adds whitespace', () => {
+  // Codex round 4: `<input><input>` gained a gap, and so did two body-level
+  // `<svg>`s, because each was missing from a list of inline elements. The
+  // printer no longer consults a list: it breaks a line only where the source
+  // had whitespace, so no element of any display can gain a gap.
+  const page = (inner) =>
+    `<!doctype html><html><head><title>t</title></head><body>${inner}</body></html>`
+
+  it('adds nothing between form controls', () => {
+    const inner =
+      '<div id="a"><input><input><select><option>x</option></select><textarea>t</textarea></div>'
+    expect(assemble(splitDocument(page(inner)))).toContain(inner)
+  })
+
+  it('adds nothing between body-level svgs, and does not make them regions', () => {
+    const inner = '<svg id="x"></svg><svg id="y"></svg>'
+    const result = splitDocument(page(`${inner}<section id="a">A</section>`))
+    expect(result.partials.map((p) => p.name)).toEqual(['sections/a.hbs'])
+    expect(assemble(result)).toContain(inner)
+  })
+
+  it('adds nothing between list items a stylesheet may have made inline-block', () => {
+    const inner =
+      '<ul class="nav"><li><a href="/">A</a></li><li><a href="/b">B</a></li></ul>'
+    expect(
+      assemble(splitDocument(page(`<header>${inner}</header>`))),
+    ).toContain(inner)
+  })
+
+  it('keeps a <main> whose whitespace renders whole and exact', () => {
+    const inner = '<main style="white-space:pre">  <span>A</span>  </main>'
+    const result = splitDocument(page(inner))
+    expect(assemble(result)).toContain(inner)
+  })
+
+  it('warns about a <body> whose whitespace renders', () => {
+    const html = `<!doctype html><html><head><title>t</title></head><body style="white-space: pre"><section id="a">A</section></body></html>`
+    expect(splitDocument(html).warnings.join(' ')).toMatch(/white-space: pre/)
   })
 })
