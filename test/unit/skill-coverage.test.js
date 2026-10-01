@@ -164,6 +164,11 @@ const COVERAGE = [
     ],
   },
   {
+    feature: 'links.hostServed',
+    pattern: /hostServed/,
+    skills: [skill('kiss-ssg', 'kiss-build-check')],
+  },
+  {
     feature: 'the rename findings',
     pattern: /moved without redirect:|removed without redirect:/,
     skills: [

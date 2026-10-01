@@ -50,6 +50,20 @@ await kiss.complete().catch((err) => {
   process.exitCode = 1
 })`)
 
+// The same dead link, plus a form posting to a function the host rewrites and
+// a file a post-build step writes — paths no build folder holds, declared as
+// the host's.
+const HOST_SERVED = site(`
+const kiss = new Kiss({
+  folders: { src: './src', build: './public' },
+  links: { hostServed: ['/v1/**', '/llms.txt'] },
+})
+kiss.scan().generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
 const NEVER_COMPLETES = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public' } })
 kiss.scan().generate()`)
@@ -338,6 +352,24 @@ describe('kiss-ssg check', () => {
     expect(run.stderr).not.toContain('broken link:')
     expect(run.stderr).toContain('1 broken link')
     expect(await temp.exists('public')).toBe(false)
+  }, 60000)
+
+  it('counts references to host-served paths instead of naming them broken', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs':
+        '<form action="/v1/contact"></form><a href="/llms.txt">AI</a><a href="/news/gone.html">Gone</a>',
+      'build.js': HOST_SERVED,
+    })
+
+    const run = check(temp.root, ['check', 'build.js'])
+
+    expect(run.status).toBe(0)
+    const [report] = JSON.parse(run.stdout)
+    expect(report.links).toEqual({
+      checked: 3,
+      hostServed: 2,
+      broken: [{ page: './public/index.html', href: '/news/gone.html' }],
+    })
   }, 60000)
 
   it('fails when the script never settles a build', async () => {

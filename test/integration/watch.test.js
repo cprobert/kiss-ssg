@@ -76,7 +76,11 @@ describe('review regressions', () => {
     await rebuildSettled()
     expect(await site.read('public/old.html')).toBe('ASSET')
     expect(await site.read('public/new.txt')).toBe('NEW')
-    expect(kiss.report().links).toEqual({ checked: 1, broken: [] })
+    expect(kiss.report().links).toEqual({
+      checked: 1,
+      hostServed: 0,
+      broken: [],
+    })
   })
 
   it('round six: a non-dev watcher checks links after deleting stale page output', async () => {

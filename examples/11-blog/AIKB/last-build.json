@@ -168,6 +168,7 @@
   },
   "links": {
     "checked": 177,
+    "hostServed": 0,
     "broken": []
   },
   "redirects": {

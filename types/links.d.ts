@@ -78,25 +78,40 @@ export function resolveReference(ref: string, { pageBuildTo, buildDir, extension
  * @param {string[]} [options.manifestTargets] the asset manifest's **values** —
  * the names actually emitted, which under `assets.hash` are the only strings a
  * template may legitimately have written
+ * @param {string[]} [options.hostServed] `config.links.hostServed` — patterns
+ * for paths the host serves that no build folder holds
  * @param {(file: string) => boolean} [options.exists] injected for tests
- * @returns {{ checked: number, broken: { page: string, href: string }[] }}
- * `checked` counts every reference classified internal; `broken` is sorted by
- * page, then href
+ * @returns {{ checked: number, hostServed: number, broken: { page: string, href: string }[] }}
+ * `checked` counts every reference classified internal; `hostServed` the ones
+ * among them that resolved to nothing in the build but match a `hostServed`
+ * pattern; `broken` is sorted by page, then href
  */
-export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, exists, }: {
+export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, hostServed: patterns, exists, }: {
     pages: LinkPage[];
     buildDir: string;
     siteUrl?: string | null;
     extensionLess?: boolean;
     manifestTargets?: string[];
+    hostServed?: string[];
     exists?: (file: string) => boolean;
 }): {
     checked: number;
+    hostServed: number;
     broken: {
         page: string;
         href: string;
     }[];
 };
+/**
+ * A predicate over root-relative paths for `config.links.hostServed`. A
+ * pattern is the whole path, not a prefix: `**` matches across `/`, `*` within
+ * one segment, and every other character is literal — the two wildcards a
+ * host's own rewrite rules use, and nothing a reader has to look up.
+ *
+ * @param {readonly string[]} [patterns]
+ * @returns {(sitePath: string|null) => boolean}
+ */
+export function hostServedMatcher(patterns?: readonly string[]): (sitePath: string | null) => boolean;
 export function attribute(name: string): RegExp;
 /**
  * One page's output as the scan needs it: where it was written, and what it

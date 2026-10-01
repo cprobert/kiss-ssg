@@ -138,6 +138,7 @@
   },
   "links": {
     "checked": 64,
+    "hostServed": 0,
     "broken": []
   },
   "redirects": null,

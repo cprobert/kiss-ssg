@@ -76,6 +76,7 @@
  *
  * @typedef {Object} BuildLinks
  * @property {number} checked internal references resolved
+ * @property {number} hostServed of those, the ones no build file answers but a `config.links.hostServed` pattern does
  * @property {BuildBrokenLink[]} broken sorted by page, then href
  */
 /**
@@ -380,6 +381,10 @@ export type BuildLinks = {
      * internal references resolved
      */
     checked: number;
+    /**
+     * of those, the ones no build file answers but a `config.links.hostServed` pattern does
+     */
+    hostServed: number;
     /**
      * sorted by page, then href
      */

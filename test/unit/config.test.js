@@ -135,6 +135,7 @@ describe('resolveConfig', () => {
       check: true,
       canonical: false,
       trailingSlash: true,
+      hostServed: [],
     })
   })
 
@@ -143,6 +144,7 @@ describe('resolveConfig', () => {
       check: false,
       canonical: false,
       trailingSlash: true,
+      hostServed: [],
     })
   })
 
@@ -154,6 +156,7 @@ describe('resolveConfig', () => {
       check: true,
       canonical: true,
       trailingSlash: true,
+      hostServed: [],
     })
   })
 
@@ -167,7 +170,27 @@ describe('resolveConfig', () => {
       check: true,
       canonical: false,
       trailingSlash: false,
+      hostServed: [],
     })
+  })
+
+  it('defaults links.hostServed empty, and keeps the patterns a site gives it', () => {
+    // Paths the host serves that the build never writes — a function rewrite,
+    // a post-build bundle. Empty by default: kiss does not guess a host.
+    expect(resolveConfig({}).links.hostServed).toEqual([])
+    expect(
+      resolveConfig({ links: { hostServed: ['/v1/**', '/llms.txt'] } }).links
+        .hostServed,
+    ).toEqual(['/v1/**', '/llms.txt'])
+  })
+
+  it('refuses a links.hostServed that is not a list of root-relative paths', () => {
+    expect(() => resolveConfig({ links: { hostServed: '/v1/**' } })).toThrow(
+      /config\.links\.hostServed must be an array/,
+    )
+    expect(() => resolveConfig({ links: { hostServed: ['v1/**'] } })).toThrow(
+      /"v1\/\*\*" must start with "\/"/,
+    )
   })
 
   it('defaults the redirects block to no host format at all', () => {
@@ -282,18 +305,21 @@ describe('resolveConfig', () => {
   })
 
   it('carries an unknown links key through, like the other blocks', () => {
-    // A one-level-merged block rather than a bare boolean is what makes the
-    // second knob (an ignore list) an addition rather than a breaking rename.
-    expect(resolveConfig({ links: { ignore: ['/cdn-cgi/*'] } }).links).toEqual({
+    // A one-level-merged block rather than a bare boolean is what made the
+    // second knob (`hostServed`) an addition rather than a breaking rename, and
+    // what keeps the next one an addition too.
+    expect(resolveConfig({ links: { future: true } }).links).toEqual({
       check: true,
       canonical: false,
       trailingSlash: true,
-      ignore: ['/cdn-cgi/*'],
+      hostServed: [],
+      future: true,
     })
     expect(resolveConfig({ links: { check: undefined } }).links).toEqual({
       check: true,
       canonical: false,
       trailingSlash: true,
+      hostServed: [],
     })
   })
 
