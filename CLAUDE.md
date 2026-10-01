@@ -34,42 +34,43 @@ Three consequences, because they settle arguments rather than decorate them:
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
 
-| Module                                   | File                         | AIKB doc                      |
-| ---------------------------------------- | ---------------------------- | ----------------------------- |
-| Orchestrator / public API                | `lib/kiss.js`                | `AIKB/kiss.md`                |
-| Page renderer                            | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
-| Build report (the machine verdict)       | `lib/build-report.js`        | `AIKB/build-report.md`        |
-| `kiss-ssg check` decision core           | `lib/check.js`               | `AIKB/check.md`               |
-| `kiss-ssg init` plan                     | `lib/init.js`                | `AIKB/init.md`                |
-| Logger                                   | `lib/logger.js`              | `AIKB/logger.md`              |
-| Config + folder derivation               | `lib/config.js`              | `AIKB/config.md`              |
-| Built-in Handlebars helpers              | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
-| Site's own helpers (auto-registered)     | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
-| Partials / layouts registration          | `lib/partials.js`            | `AIKB/partials.md`            |
-| Dependency graph (partial → page)        | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
-| Assets + Sass                            | `lib/assets.js`              | `AIKB/assets.md`              |
-| Stylesheet splitter (single-file → Sass) | `lib/css-split.js`           | `AIKB/css-split.md`           |
-| Asset pipeline (external tools)          | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
-| Asset manifest + cache busting           | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
-| Output ownership                         | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
-| Sass binding                             | `lib/sass.js`                | `AIKB/sass.md`                |
-| Model resolution                         | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
-| URL-model fetch policy                   | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
-| Controller resolution                    | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
-| Sitemap                                  | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
-| llms.txt (the AI-facing index)           | `lib/llms.js`                | `AIKB/llms.md`                |
-| RSS feed (from the registry)             | `lib/feed.js`                | `AIKB/feed.md`                |
-| robots.txt (`.robots()`)                 | `lib/robots.js`              | `AIKB/robots.md`              |
-| Site knowledge base (`kiss-ssg aikb`)    | `lib/aikb.js`                | `AIKB/aikb.md`                |
-| Broken internal links                    | `lib/links.js`               | `AIKB/links.md`               |
-| Launch-readiness audit                   | `lib/audit.js`               | `AIKB/audit.md`               |
-| Redirects (`aliases` → `_redirects`)     | `lib/redirects.js`           | `AIKB/redirects.md`           |
-| Dev server                               | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
-| File watcher                             | `lib/watcher.js`             | `AIKB/watcher.md`             |
-| String/path utils                        | `lib/utils.js`               | `AIKB/utils.md`               |
-| Cross-cutting: design & lineage          | —                            | `AIKB/design.md`              |
-| Cross-cutting: testing conventions       | `test/`                      | `AIKB/testing.md`             |
-| Cross-cutting: upstream constraints      | —                            | `AIKB/upstream.md`            |
+| Module                                     | File                         | AIKB doc                      |
+| ------------------------------------------ | ---------------------------- | ----------------------------- |
+| Orchestrator / public API                  | `lib/kiss.js`                | `AIKB/kiss.md`                |
+| Page renderer                              | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Build report (the machine verdict)         | `lib/build-report.js`        | `AIKB/build-report.md`        |
+| `kiss-ssg check` decision core             | `lib/check.js`               | `AIKB/check.md`               |
+| `kiss-ssg init` plan                       | `lib/init.js`                | `AIKB/init.md`                |
+| Logger                                     | `lib/logger.js`              | `AIKB/logger.md`              |
+| Config + folder derivation                 | `lib/config.js`              | `AIKB/config.md`              |
+| Built-in Handlebars helpers                | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Site's own helpers (auto-registered)       | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
+| Partials / layouts registration            | `lib/partials.js`            | `AIKB/partials.md`            |
+| Dependency graph (partial → page)          | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
+| Assets + Sass                              | `lib/assets.js`              | `AIKB/assets.md`              |
+| Stylesheet splitter (single-file → Sass)   | `lib/css-split.js`           | `AIKB/css-split.md`           |
+| Markup decomposition (single-file → views) | `lib/html-split.js`          | `AIKB/html-split.md`          |
+| Asset pipeline (external tools)            | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
+| Asset manifest + cache busting             | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Output ownership                           | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
+| Sass binding                               | `lib/sass.js`                | `AIKB/sass.md`                |
+| Model resolution                           | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| URL-model fetch policy                     | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
+| Controller resolution                      | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
+| Sitemap                                    | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
+| llms.txt (the AI-facing index)             | `lib/llms.js`                | `AIKB/llms.md`                |
+| RSS feed (from the registry)               | `lib/feed.js`                | `AIKB/feed.md`                |
+| robots.txt (`.robots()`)                   | `lib/robots.js`              | `AIKB/robots.md`              |
+| Site knowledge base (`kiss-ssg aikb`)      | `lib/aikb.js`                | `AIKB/aikb.md`                |
+| Broken internal links                      | `lib/links.js`               | `AIKB/links.md`               |
+| Launch-readiness audit                     | `lib/audit.js`               | `AIKB/audit.md`               |
+| Redirects (`aliases` → `_redirects`)       | `lib/redirects.js`           | `AIKB/redirects.md`           |
+| Dev server                                 | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
+| File watcher                               | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| String/path utils                          | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: design & lineage            | —                            | `AIKB/design.md`              |
+| Cross-cutting: testing conventions         | `test/`                      | `AIKB/testing.md`             |
+| Cross-cutting: upstream constraints        | —                            | `AIKB/upstream.md`            |
 
 ## Commands
 
