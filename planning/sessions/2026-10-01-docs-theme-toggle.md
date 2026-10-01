@@ -40,6 +40,18 @@ opened: 2026-10-01
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-01**
+  - **Criteria.**
+    - (1) met: a click switches and saves, and the choice holds on another page (browser JS check). No-flash is inferred from the head script's position, not observed.
+    - (2) met: with nothing saved, the page followed the device (dark).
+    - (3) met: a real `<button>` named for its action, and it works with storage blocked. Keyboard use was confirmed by the operator, not by Claude.
+    - (4) met at `df79989`: 128 links, 0 broken, 0 audit findings. Gates not yet run.
+    - (5) met by this pulse.
+  - **Drift:** the two content changes are recorded as an Amendment. The surface is still tooling & docs.
+  - **Found this beat:** the operator's preview showed no toggle. A production `node docs` run by Claude at 10:07 overwrote the `docs/` folder the 10:04 preview was serving, so the page loaded the live site's old `site.js` and the button stayed hidden. Touching `docs.js` made the preview rebuild, which fixed it. Proposed, not yet answered: build the preview into its own ignored folder. Also noted: nested `docs/**/index.json` debug files escape the `docs/*.json` ignore rule.
+  - **Eyeball: looked.** "it works": switching, persistence across pages, and Tab to the toggle and Enter with a visible focus ring.
+  - **Decision:** continue.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
