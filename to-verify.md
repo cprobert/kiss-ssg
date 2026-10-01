@@ -33,35 +33,54 @@ checkout; the only kiss consumer on disk is `cprobert.github.io`, pinned to
 
 ---
 
-## 4. The conversion's output shape — deferred at the 2026-10-01 pulse
+## 4. The conversion's output shape — deferred twice, now a one-liner
 
-Branch `feat/artifact-import`. Deferred because the operator was away from a laptop;
-this is the eyeball `/branch-pulse` Step 4 asked for, and `/branch-close` Step 5a
-reads the pulse log rather than asking again, so it has to be closed here.
+Branch `feat/artifact-import`. Deferred at the 2026-10-01 pulse and again at the
+one after it, both times because the operator was away from a laptop. This is the
+eyeball `/branch-pulse` Step 4 asks for, and `/branch-close` Step 5a reads the pulse
+log rather than asking again, so it has to be closed here.
 
-**What to look at.** The real conversion of the live `k9solutions.uk` home page —
-one 21,213-byte HTML file and one 14,120-byte stylesheet in, 28 files out. Four of
-those files were attached in the session of 2026-10-01 and are the thing to read:
+**It got smaller.** The first version of this item named four files attached in a
+session, with no committed way to regenerate them. `examples/12-from-a-single-file`
+replaced that: it builds, so the artefact is reproducible and the comparison is
+automated.
 
-- `src/layouts/layout.hbs` — does the chrome/`{{#block "main"}}` split read right?
-- `src/pages/index.hbs` — eight `{{> "sections/…"}}` calls and nothing else.
-- `src/partials/sections/hero.hbs` — is the indentation something you would hand over?
-- `src/assets/css/_hero.scss` — 110 lines, longest line 82 chars (was 1,803).
+Run this from the repo root — it builds and exits:
 
-There is no committed way to regenerate them yet — the script that produced them
-lives in the session scratchpad, not in the repo. `examples/12-…` is the slice that
-fixes that, and running it will be a one-liner (`npm run eg12`). **If you would
-rather wait for that than read four attached files, say so and this item moves to
-the example instead** — that is a better artefact anyway, because it builds.
+```
+cd C:/Code/kiss-ssg && npm run eg12
+```
 
-- [ ] The structure is what you would hand a web developer, or say what is off
-- [ ] The region **names** read as meaning rather than as markup (`help`, `approach`
-      and `enquire` came from the live page's own ids; the hand conversion called the
-      same three `problems`, `method` and `enquiry`)
+Then open these two side by side:
 
-**Why it matters now:** the `kiss-site-import` skill is about to encode this shape.
-A naming or indentation complaint is far cheaper before that than after.
+```
+C:/Code/kiss-ssg/examples/12-from-a-single-file/source/original.html
+C:/Code/kiss-ssg/examples/12-from-a-single-file/public/index.html
+```
 
+The first is the artifact as it arrived; the second is what kiss builds from the
+converted site. They should look the same in a browser.
+
+- [ ] They look the same
+- [ ] The structure under `examples/12-from-a-single-file/src/` is what you would
+      hand a web developer — layout, one partial per section, copy in
+      `models/index.json`, per-section Sass
+- [ ] The region **names** read as meaning rather than as markup. This is the one
+      judgement the engine refuses to make: on the live `k9solutions.uk` page the
+      proposals were `help`, `approach` and `enquire` (from the page's own ids)
+      where the hand conversion had called the same three `problems`, `method` and
+      `enquiry`
+
+Already automated, so **not** what to spend the look on: whether the elements and
+text match. `node tools/compare.mjs` in that folder reports 118 elements in, 118
+out, same order, and text identical once the one declared difference is applied —
+the artifact spells its own address two ways, 47 lines apart, and `config/site.js`
+now gives one spelling to both places. `test/integration/examples.test.js` runs that
+comparison on every `npm test`.
+
+**Why it still matters:** `kiss-site-import` has now encoded this shape, and
+`examples/` ships in the tarball as a statement of good practice. A naming or
+layout complaint is cheap now and expensive once sites are built from it.
 ---
 
 ## Open decisions, not verification

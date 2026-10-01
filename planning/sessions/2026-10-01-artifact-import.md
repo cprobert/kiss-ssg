@@ -203,6 +203,40 @@ separate beat and its `CLAUDE.md` edits do not belong in this branch's diff.
   continue** — next slice is the `kiss-site-import` skill, which now has a settled
   contract to encode.
 
+- **2026-10-01 (third)** — the `kiss-site-import` skill and
+  `examples/12-from-a-single-file` both landed. Criteria **1, 3, 4, 5 and 8 met**,
+  **2 met mechanically**, **7 partial**, **6 not yet**. Evidence: the example builds
+  through the published CLI from its own folder —
+  `ok ./public (check) — 2 pages, 0 failed, 5 assets`, 10 links none broken, audit
+  **none**; full suite 1,954 passed / 4 skipped; all five gates green. Criterion 7's
+  remainder is **`GUIDE.md`**, which also needs a page in `src/models/guide.json` or
+  `node docs` fails — so it travels with the docs work rather than ahead of it.
+
+  The skill's six coverage rows and two `CONTRADICTIONS` bans were all seen red
+  before being accepted, by writing both wrong sentences into the skill and watching
+  three tests fail. The example's own test was weak when first written — it passed,
+  but `compare.mjs` only exited non-zero on structure, so a conversion that mangled a
+  paragraph would have looked clean. Fixed by giving the tool a declared `ACCEPTED`
+  list, after which a one-word change to the model turns the test red; verified both
+  ways.
+
+  **Four repo-level gaps surfaced by building the example**, each fixed rather than
+  worked around: `findTag` was not exported (a caller verifying a conversion needs
+  one element out of a parsed document); eslint ignored `public/**` at the root only,
+  so an example's build output was linted as Node and failed on `document`;
+  `.converted/` had neither a `!` entry in `files` nor a `FORBIDDEN_PACKED` pattern,
+  which is the exact shape that once shipped 75 files; and prettier wants to rewrite
+  `.9fr` to `0.9fr` in the splitter's output, where the splitter is right to copy
+  declarations verbatim — both it and the artifact are now prettierignored with the
+  reason recorded.
+
+  **Eyeball: deferred (second time)** — operator still away from a laptop.
+  `to-verify.md` § 4 rewritten: it no longer names four attached files with no way to
+  regenerate them, but a single `npm run eg12` and the two paths to open side by
+  side, with the element/text comparison explicitly marked as already automated so
+  the look is spent only on what a person can judge. Decision: **continue** — the
+  clean-room run (criterion 6) is the last substantive slice.
+
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
