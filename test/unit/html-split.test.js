@@ -830,3 +830,45 @@ describe('inline content directly in <body>', () => {
     expect(result.partials.map((p) => p.name)).toEqual(['sections/a.hbs'])
   })
 })
+
+describe('elements whose whitespace renders', () => {
+  // Codex review: the re-indenting decision looked only at the children —
+  // significant text, HTML inline elements — and not at the parent, so
+  // `<pre>` and SVG `<text>` were re-indented as if whitespace in them did
+  // not render. Raw render again, because `normalise` hides it.
+  const page = (inner) =>
+    `<!doctype html><html><head><title>t</title></head><body><section id="a">${inner}</section></body></html>`
+  const out = (inner) => assemble(splitDocument(page(inner)))
+
+  // Each sensitive element is asserted on its own: the whitespace BETWEEN two
+  // `<text>`s in an `<svg>`, or two `<pre>`s, does not render, and the
+  // printer is free to re-indent it.
+  it('adds nothing between tspans inside svg text', () => {
+    const a = '<text><tspan>A</tspan><tspan>B</tspan></text>'
+    const b = '<text><textPath href="#p"><tspan>C</tspan></textPath></text>'
+    const html = out(`<svg>${a}${b}</svg>`)
+    expect(html).toContain(a)
+    expect(html).toContain(b)
+  })
+
+  it('does not indent a multi-line pre inside a layout partial', () => {
+    // An indented `{{> …}}` makes Handlebars indent every line the partial
+    // outputs, so the calls are written flush left — in the layout too.
+    const pre = '<pre>line one\nline two</pre>'
+    const html = `<!doctype html><html><head><title>t</title></head><body><header>${pre}</header><section id="a">A</section></body></html>`
+    expect(assemble(splitDocument(html))).toContain(pre)
+  })
+
+  it('keeps whitespace-only content of a pre exactly', () => {
+    const a = '<pre>   \n   </pre>'
+    const b = '<pre><code>x</code>\n  <code>y</code></pre>'
+    const html = out(`${a}${b}`)
+    expect(html).toContain(a)
+    expect(html).toContain(b)
+  })
+
+  it('keeps an element styled white-space: pre exactly', () => {
+    const inner = '<div style="white-space: pre-wrap"><p>a</p>  <p>b</p></div>'
+    expect(out(inner)).toContain(inner)
+  })
+})

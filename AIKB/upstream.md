@@ -36,6 +36,19 @@ This is a local guard, not a mechanism — one return type, at one call site.
 **Re-check:** register a `.txt` partial, render `<pre>\n  {{> snippet}}\n</pre>`,
 and see whether returning a `SafeString` still throws.
 
+### handlebars indents a standalone partial's every line
+
+**Observed:** handlebars 4.7.9. **Effect:** a `{{> "x"}}` alone on a line
+indented by N spaces has every line of the partial's output indented by N
+spaces — its documented "standalone" rule. That is invisible in ordinary
+markup and changes the page inside a multi-line `<pre>` or `<textarea>`.
+**What kiss does:** nothing globally — it does not compile with
+`preventIndent`, which would change every existing site's output.
+`lib/html-split.js` writes the partial calls it generates flush left, which is
+where the rule adds nothing (Codex review, 2026-10-01). A local guard at one
+call site. **Re-check:** render `{{> "p"}}` indented two spaces, with `p`
+registered as `<pre>a\nb</pre>`, and see whether `b` gains the indent.
+
 ### handlebars renders a missing zero-argument helper as empty
 
 **Observed:** handlebars 4.7. **Effect:** `{{shout "hi"}}` on a helper that is

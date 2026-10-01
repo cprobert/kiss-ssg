@@ -134,6 +134,8 @@ Hand each section partial its own slice at the call site, so a partial only sees
 {{> "sections/hero" model.hero}}
 ```
 
+**Keep every partial call flush left**, as the split wrote it. Handlebars indents each line a standalone partial outputs by the call's own indentation, which is invisible in ordinary markup and adds spaces inside a multi-line `<pre>` or `<textarea>`.
+
 **A fact that appears more than once is not model data — it is config.** A phone number in the markup, in a WhatsApp link and in the JSON-LD belongs in `config/site.js`, spread into `new Kiss()`. That is the seam `llms.txt` § The build script describes, and duplication is what earns it, not length.
 
 **In a partial you handed a slice, that is `{{@root.config.…}}`.** The slice replaces the context, so plain `{{config.business.phone}}` resolves to nothing and renders **empty** — no warning, no failed page, `check` still green, `links` and `audit` both clean. Nothing but reading the page catches it. Chrome partials invoked without a slice (`{{> "site/footer"}}`) still use plain `{{config.…}}`, so a converted site legitimately contains both spellings; `examples/12-from-a-single-file/src/partials/` shows each in place.

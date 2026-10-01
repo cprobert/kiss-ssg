@@ -10,7 +10,14 @@ import {
   segmentNodes,
   splitStylesheet,
 } from '../../lib/css-split.js'
-import { compileFile, compileSource, clearSassCache } from '../../lib/sass.js'
+import { compileFile, clearSassCache, loadSass } from '../../lib/sass.js'
+
+// The ORIGINAL is compiled as plain CSS, never as SCSS. It is a stylesheet a
+// browser loaded, so CSS is what it means; compiling it as SCSS too would make
+// both sides of the comparison read Sass syntax the same wrong way, which is
+// how `content:"#{1+1}"` turning into `"2"` passed (Codex review, 2026-10-01).
+const compileCss = (css) =>
+  loadSass().compileString(css, { syntax: 'css', style: 'compressed' }).css
 
 let temp
 afterEach(async () => {
@@ -265,9 +272,7 @@ describe('coalescing short runs', () => {
       sections: ['hero', 'footer', 'x'],
       minNodes: 3,
     })
-    expect(await compileSplit(result)).toBe(
-      compileSource(css, { style: 'compressed' }),
-    )
+    expect(await compileSplit(result)).toBe(compileCss(css))
   })
 })
 
@@ -299,7 +304,7 @@ describe('losslessness', () => {
     expect(result.partials.length).toBeGreaterThan(1)
 
     const fromSplit = await compileSplit(result)
-    const fromOriginal = compileSource(css, { style: 'compressed' })
+    const fromOriginal = compileCss(css)
     expect(fromSplit).toBe(fromOriginal)
   })
 
@@ -319,9 +324,7 @@ describe('losslessness', () => {
       '_hero.scss',
       '_btn-2.scss',
     ])
-    expect(await compileSplit(result)).toBe(
-      compileSource(css, { style: 'compressed' }),
-    )
+    expect(await compileSplit(result)).toBe(compileCss(css))
   })
 
   it('breaks the long lines that made the original unreviewable', () => {
@@ -349,9 +352,7 @@ describe('selector lists', () => {
   it('compiles a selector with a comma in a string to the same CSS', async () => {
     const css = `a[title="x, y"],.b{color:red}.hero{color:blue}`
     const result = splitStylesheet(css, { sections: ['hero'], minNodes: 1 })
-    expect(await compileSplit(result)).toBe(
-      compileSource(css, { style: 'compressed' }),
-    )
+    expect(await compileSplit(result)).toBe(compileCss(css))
   })
 })
 
@@ -371,9 +372,7 @@ describe('partial names', () => {
 
   it('compiles to the same CSS when a suffix would have collided', async () => {
     const result = splitStylesheet(css, { sections, minNodes: 1 })
-    expect(await compileSplit(result)).toBe(
-      compileSource(css, { style: 'compressed' }),
-    )
+    expect(await compileSplit(result)).toBe(compileCss(css))
   })
 
   it('never names a partial after the entry', async () => {
@@ -385,9 +384,7 @@ describe('partial names', () => {
       minNodes: 1,
     })
     expect(result.partials.map((p) => p.name)).not.toContain('_site.scss')
-    expect(await compileSplit(result)).toBe(
-      compileSource(input, { style: 'compressed' }),
-    )
+    expect(await compileSplit(result)).toBe(compileCss(input))
   })
 })
 
@@ -402,8 +399,32 @@ describe('escapes outside strings', () => {
   it('compiles an escaped selector to the same CSS', async () => {
     const input = '.foo\\{bar{color:red}.a\\}b{color:blue}.hero{color:green}'
     const result = splitStylesheet(input, { sections: ['hero'], minNodes: 1 })
-    expect(await compileSplit(result)).toBe(
-      compileSource(input, { style: 'compressed' }),
+    expect(await compileSplit(result)).toBe(compileCss(input))
+  })
+})
+
+describe('Sass syntax inside a CSS literal', () => {
+  // Codex review: the partials are SCSS, and SCSS interpolates `#{…}` even
+  // inside a quoted string, a custom property and a comment. Written out
+  // unchanged, `content:"#{1+1}"` compiled to `content:"2"`. Plain CSS cannot
+  // be the reference here — dart-sass refuses `#{` in CSS syntax too — so the
+  // expected output is stated.
+  const css = [
+    'a{content:"#{1+1}"}',
+    ':root{--x:#{1+1}}',
+    'b[title="#{x}"]{c:d}',
+    '/*! #{1+1} */',
+    '.hero{background:url(/x#{y}.png)}',
+  ].join('')
+
+  it('compiles every literal back to exactly what it said', async () => {
+    const out = await compileSplit(
+      splitStylesheet(css, { sections: ['hero'], minNodes: 1 }),
     )
+    expect(out).toContain('content:"#{1+1}"')
+    expect(out).toContain('--x:#{1+1}')
+    expect(out).toContain('b[title="#{x}"]')
+    expect(out).toContain('/*! #{1+1} */')
+    expect(out).toContain('url(/x#{y}.png)')
   })
 })
