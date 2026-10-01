@@ -3,6 +3,7 @@ branch: fix/promote-eperm-stall
 base: main
 status: closed
 opened: 2026-09-28
+consolidated: 2026-10-01
 ---
 
 # Session — 2026-09-28: A locked build folder fails the promote fast and clearly

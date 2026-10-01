@@ -3,6 +3,7 @@ branch: feat/docs-theme-toggle
 base: main
 status: closed
 opened: 2026-10-01
+consolidated: 2026-10-01
 ---
 
 # Session — 2026-10-01: A light/dark toggle in the docs site header

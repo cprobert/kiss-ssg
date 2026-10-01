@@ -170,6 +170,8 @@ Either way the ritual continues: this is a stop for an answer, not a gate that b
 
 ### Step 6 — Run the gates
 
+**Stop any preview or watcher over the repo first** — VS Code's Live Server, an example's `--dev`, `node docs --dev`. It holds build folders open on Windows, so example 7's atomic promote fails inside the test run (2026-09-27), and a build can overwrite the folder it is serving (2026-10-01). If one is running, ask before stopping it.
+
 ```bash
 npm run gates
 ```
