@@ -109,7 +109,52 @@ separate beat and its `CLAUDE.md` edits do not belong in this branch's diff.
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-01 — the input is AI-generated single-page HTML, not "a Claude artifact".**
+  The real precedent (`Probert-Family/k9-solutions`, `cb0b5b2`) states in its own commit
+  message that it rebuilt "the ChatGPT-generated single-page site". The Objective above
+  says Claude artifact; read it as any agent-written single-page HTML. Widens who the
+  skill serves and costs nothing — the decomposition does not care which model wrote
+  the file. The branch name `feat/artifact-import` stands.
+
+- **2026-10-01 — the stylesheet is in scope, by operator decision at the first pulse.**
+  Measured on the precedent: the import decomposed the markup into 15 partials and a
+  213-line model, and carried the CSS across untouched — 14,120 bytes in 20 lines,
+  longest line 1,803 characters, average 705. Its own first line says "carried over
+  from the original single-file site". Two later polish branches touched the file and
+  neither split it; at HEAD it is still 5 lines over 1,000 characters. The site
+  therefore uses no Sass at all, despite kiss shipping first-class Sass support.
+
+  Asked at the pulse whether that meets the "handoverable to a web developer without a
+  rewrite" bar, the operator answered **no — make it a criterion**. A new success
+  criterion is therefore added:
+
+  - [ ] The conversion breaks the stylesheet into readable, structured Sass under
+        `folders.sass`, partitioned to match the section partials — not carried across
+        as one blob. No line in the output exceeds a reviewable length.
+
+  This expands the remit from "decompose the markup" to "decompose the page", which is
+  what the objective's handover promise actually requires. Recorded here rather than
+  split off, per the one-open-branch rule.
+
 ## Pulse log
+
+- **2026-10-01** — research slice; 0 of 7 criteria met, nothing built (branch carries
+  the intent file alone, 120 insertions). No checks run: no `lib/`, `test/` or example
+  changed, so a test run would have been theatre. The slice replaced the planned
+  hand-conversion of a fixture with the real precedent — `Probert-Family/k9-solutions`,
+  attached read-only and cloned, where `cb0b5b2` converted one single-page site into 37
+  files. **Measured** there: the CSS was carried across unsplit (20 lines, 14,120 bytes,
+  longest 1,803 chars) and is still so at HEAD after two polish branches; the source
+  artefact was never committed, so that conversion cannot be diffed or re-run.
+  **Inferred** from the output (which has had two polish passes since import, so this is
+  the refined shape rather than day-one): one `<section>` → one partial under
+  `partials/sections/`, chrome → `partials/site/`, inline SVG → `partials/icons/`; the
+  page view becomes a list of partial calls each handed a model slice; the model's
+  top-level keys mirror the partial names; facts stated more than once move to
+  `config/site.js`; a repeated page shape becomes `.pages()` + a model folder + a
+  controller. **Eyeball: looked** — operator opened `site.css` at `cb0b5b2` and judged it
+  does not meet the handover bar, directing that CSS decomposition become a success
+  criterion. Both amendments above recorded. Decision: **record amendment, continue.**
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
