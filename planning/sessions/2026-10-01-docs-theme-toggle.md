@@ -1,7 +1,7 @@
 ---
 branch: feat/docs-theme-toggle
 base: main
-status: open
+status: closed
 opened: 2026-10-01
 ---
 
@@ -56,3 +56,42 @@ opened: 2026-10-01
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-10-01: A light/dark toggle in the docs site header
+
+**What we shipped:**
+
+- a header toggle that remembers the visitor's choice and is applied before the first paint (`6797f22`);
+- Pro Plumbing as the home page's example, and no "Migrating from v1" page (`df79989`);
+- a docs preview that builds into its own `.preview/` folder (`86e7d78`).
+
+No version bump: nothing on the branch ships in the npm package.
+
+**Supervision:** **Active supervisor.** Planned, then grew by two operator requests, both recorded as Amendments as they came.
+
+- **This branch applied the last one's feedback.** It was opened before the work. It was pulsed after the first slice. The eyeball was taken mid-branch while the preview was warm, with the answer "looked, it works", including the keyboard check Claude's browser tool could not perform.
+- **Verification & ownership was the standout:** the human check happened where it was cheap. It also surfaced a real defect: the toggle had "disappeared".
+- **The defect was Claude's.** A production `node docs` run for a commit overwrote the `docs/` folder the operator's preview was serving. Claude traced it with evidence (the process's start time against the file's write time) rather than guessing.
+- **The structural fix was the operator's call** from the options Claude put forward: the preview builds into its own folder.
+- **The codex review was skipped correctly:** no `lib/` or `bin/` change.
+
+**Feedback for next time:**
+
+- **Claude — before writing a folder someone else is serving, check what is running.** `node docs` ran while the operator's preview served `docs/`. The new `.preview/` folder removes this case. The habit still applies anywhere two processes share an output folder: `netstat`, or ask, before building into it.
+- **Claude — answer "where did it go?" by checking every place it should be.** The toggle was in the source, the local build and the branch, but not the live site (unmerged) or the preview (overwritten). Checking all five at once found the cause in two commands.
+- **Operator — keep taking the eyeball at the pulse.** It caught what no gate could, at no cost to the close.
+- **Process — `docs/*.json` misses nested debug files.** Moot now that the preview no longer writes into `docs/`. Revisit it if a production build ever writes `index.json` files.
+
+**Did we achieve the objective?** **Met.**
+
+- [x] **It works without the device setting.** It switches, and the choice is saved and holds across pages (browser check plus the operator). No-flash is inferred from the head script's position.
+- [x] **The device setting is still the default.** With nothing saved, the page followed the device.
+- [x] **It is usable.** It's a real `<button>`, named for its action, and works with storage blocked. Keyboard use and the visible focus ring were confirmed by the operator.
+- [x] **Builds clean.** `node docs` gives 128 links, none broken, and 0 audit findings. `npm run gates` exits 0.
+- [x] **Operator eyeball, mid-branch.** Looked, at the pulse.
+
+**Still open:**
+
+- The live site gets the toggle, the Pro Plumbing example and the new guide only when this merges.
+- `/guide/migrating/` will then 404.
+- npm is still at 2.6.2, behind `main`'s 2.6.6.
