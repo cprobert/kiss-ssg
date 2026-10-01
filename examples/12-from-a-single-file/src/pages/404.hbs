@@ -1,0 +1,19 @@
+{{!-- The artifact had no 404 — a single file served at one address has nowhere
+      to get lost. A hosted site does, and the audit says so. Every link here
+      is root-relative, so it works whatever URL the visitor mistyped. --}}
+{{#extend "layout"}}
+{{#content "main"}}
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1>That page isn't here.</h1>
+      <p>It may have moved, or the link may have a typo in it. Everything this site has is on the front page.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="{{link "index"}}">Back to the front page</a>
+        <a class="btn btn-plain" href="mailto:{{config.business.email}}">Email us instead</a>
+      </div>
+    </div>
+  </div>
+</section>
+{{/content}}
+{{/extend}}

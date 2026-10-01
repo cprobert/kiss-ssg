@@ -97,7 +97,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
   // `public/`, so two builds racing would corrupt each other's page counts.
   // Vitest runs a plain `describe`'s tests in declaration order by default,
   // which is all sequencing this needs.
-  describe('the eleven examples, built in place', () => {
+  describe('the twelve examples, built in place', () => {
     it('1 · scan builds 2 pages', () => {
       cleanOutput('1-scan')
       const r = runExample('1-scan')
@@ -422,6 +422,42 @@ describe.skipIf(!hasExamples)('example builds', () => {
           href: '/blog/the-kenya-microlot/',
         },
       ])
+    }, 60000)
+
+    it('12 · from a single file builds 2 pages and still looks like the artifact', () => {
+      cleanOutput('12-from-a-single-file')
+      const r = runExample('12-from-a-single-file')
+      expect(r.status).toBe(0)
+      const dir = outputDir('12-from-a-single-file')
+      // The converted page and the 404 the artifact never had.
+      expect(countHtmlFiles(dir)).toBe(2)
+      expect(existsSync(path.join(dir, '404.html'))).toBe(true)
+
+      // The stylesheet is Sass now, so the build compiles one CSS file and the
+      // eight `_partial.scss` beside it are skipped rather than emitted.
+      expect(existsSync(path.join(dir, 'css/site.css'))).toBe(true)
+      expect(countMatching(dir, /\.scss$/)).toBe(0)
+      expect(output(r)).toMatch(/Skipped 8 Sass partials/)
+
+      // The example's own claim, run as the example documents it rather than
+      // re-implemented here: the built body has the same elements, in the same
+      // order, as `source/original.html`. This is the whole point of a
+      // conversion and no other assertion in this file covers it.
+      const compared = spawnSync(process.execPath, ['tools/compare.mjs'], {
+        cwd: path.join(examplesDir, '12-from-a-single-file'),
+        encoding: 'utf8',
+        timeout: 60000,
+      })
+      expect(compared.status).toBe(0)
+      expect(output(compared)).toMatch(/Element sequence: identical/)
+      // The text too — which only means anything because the one difference
+      // the conversion does introduce is DECLARED in the tool's `ACCEPTED`
+      // list (the artifact spelled its own address two ways) rather than
+      // tolerated by a loose comparison. Without that, a text assertion could
+      // never fail and a conversion that mangled a paragraph would look
+      // exactly like a clean one.
+      expect(output(compared)).toMatch(/Visible text: identical/)
+      expect(output(compared)).toMatch(/spelled its own address two ways/)
     }, 60000)
 
     it('11 · gives every page an id, explicitly where the default withdraws', () => {

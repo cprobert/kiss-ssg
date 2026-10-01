@@ -1,0 +1,31 @@
+.enquiry {
+  padding: 76px 0;
+}
+.enquiry .wrap {
+  max-width: 640px;
+}
+.enquiry form {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field label {
+  font-size: .85rem;
+  font-weight: 700;
+}
+.field input,
+.field textarea {
+  font: inherit;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--cream);
+}
+.field textarea {
+  min-height: 110px;
+  resize: vertical;
+}

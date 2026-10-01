@@ -1,0 +1,25 @@
+{{!-- Four near-identical `.field` blocks became one, over an array. The form
+      still posts nowhere — it did not in the artifact either, and wiring it to
+      a host's form handler is a decision for whoever deploys this, not
+      something a conversion should invent. --}}
+<section class="enquiry" id="enquiry">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>{{heading}}</h2>
+      <p>{{intro}}</p>
+    </div>
+    <form method="post" action="#">
+      {{#each fields}}
+      <div class="field">
+        <label for="{{id}}">{{label}}</label>
+        {{#if textarea}}
+        <textarea id="{{id}}" name="{{id}}"></textarea>
+        {{else}}
+        <input id="{{id}}" name="{{id}}" type="{{type}}"{{#if autocomplete}} autocomplete="{{autocomplete}}"{{/if}}{{#if placeholder}} placeholder="{{placeholder}}"{{/if}}>
+        {{/if}}
+      </div>
+      {{/each}}
+      <button class="btn btn-primary" type="submit">{{submit}}</button>
+    </form>
+  </div>
+</section>

@@ -1,0 +1,21 @@
+{{!-- Three hand-written <article>s in the artifact, which is the clearest
+      signal there is that the content is data: adding a fourth meant copying a
+      block of markup and editing it. Now it is a row in the model's array and
+      the markup exists once. --}}
+<section class="offers" id="offers">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>{{heading}}</h2>
+      <p>{{intro}}</p>
+    </div>
+    <div class="offer-grid">
+      {{#each items}}
+      <article class="offer">
+        <h3>{{name}}</h3>
+        <p>{{summary}}</p>
+        <p class="price">{{price}}<span>{{terms}}</span></p>
+      </article>
+      {{/each}}
+    </div>
+  </div>
+</section>

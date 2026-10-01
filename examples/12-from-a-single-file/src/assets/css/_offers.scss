@@ -1,0 +1,52 @@
+.offers {
+  padding: 72px 0;
+  background: var(--cream);
+  border-block: 1px solid var(--line);
+}
+.section-head {
+  max-width: 54ch;
+  margin: 0 0 36px;
+}
+.section-head h2 {
+  font-size: clamp(1.8rem,3.4vw,2.6rem);
+  line-height: 1.1;
+  letter-spacing: -.015em;
+  margin: 0 0 10px;
+}
+.section-head p {
+  color: var(--muted);
+  margin: 0;
+}
+.offer-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 18px;
+}
+.offer {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+.offer h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+.offer p {
+  color: var(--muted);
+  margin: 0 0 18px;
+  font-size: .95rem;
+}
+.offer .price {
+  margin-top: auto;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.offer .price span {
+  display: block;
+  font-weight: 400;
+  font-size: .8rem;
+  color: var(--muted);
+}

@@ -1,0 +1,15 @@
+{{!-- Chrome: the split put this under site/ because it is a <header>, and the
+      layout renders it on every page rather than the page view. The nav is
+      config.nav now — four hand-typed <li>s in the artifact. The brand keeps
+      its markup: the <em> is a logotype, not a fact about the business. --}}
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#top">Aster <em>&amp;</em> Oak</a>
+    <button class="nav-toggle" type="button" aria-expanded="false">Menu</button>
+    <ul class="nav-links">
+      {{#each config.nav}}
+      <li><a {{#if cta}}class="nav-cta" {{/if}}href="{{href}}">{{label}}</a></li>
+      {{/each}}
+    </ul>
+  </div>
+</header>

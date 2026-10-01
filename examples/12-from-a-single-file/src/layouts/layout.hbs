@@ -1,0 +1,35 @@
+{{!-- What splitDocument produced, with the edits the lift requires. The inline
+      <style> and <script> it REPORTED (it never removes them — the document it
+      hands back is whole) are now files under src/assets/, linked with
+      {{asset}} so cache busting works. The chrome partials, the <main> wrapper
+      and the scripts block are exactly as they were cut.
+
+      The four tags below the stylesheet are the other kind of edit: things the
+      artifact did not have at all, added after the conversion was verified
+      rather than during it. `kiss-ssg check`'s audit named every one. --}}
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}">
+  <link rel="stylesheet" href="/{{asset "css/site.css"}}">
+  {{!-- A page with no canonical is indexed at whichever URL a crawler found. --}}
+  <link rel="canonical" href="{{canonical}}">
+  <link rel="icon" type="image/png" href="/{{asset "img/icon.png"}}">
+  {{!-- Absolute, because a link-preview scraper never resolves a relative URL:
+        `absUrl` joins `siteUrl` to the name `asset` emitted. --}}
+  <meta property="og:image" content="{{absUrl (asset "img/og-card.png")}}">
+  {{#block "head"}}{{/block}}
+</head>
+<body>
+  {{> "site/header"}}
+  <main>
+    {{#block "main"}}{{/block}}
+  </main>
+  {{> "site/footer"}}
+  <script src="/{{asset "js/site.js"}}" defer></script>
+  {{#block "scripts"}}{{/block}}
+</body>
+</html>

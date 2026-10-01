@@ -1,0 +1,34 @@
+.beans {
+  padding: 76px 0;
+}
+.beans .wrap {
+  display: grid;
+  grid-template-columns: .95fr 1.05fr;
+  gap: 52px;
+  align-items: center;
+}
+.beans img {
+  border-radius: 14px;
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  background: #ded5c6;
+}
+.bean-list {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.bean-list li {
+  border-left: 3px solid var(--rust);
+  padding-left: 14px;
+}
+.bean-list strong {
+  display: block;
+}
+.bean-list span {
+  color: var(--muted);
+  font-size: .92rem;
+}

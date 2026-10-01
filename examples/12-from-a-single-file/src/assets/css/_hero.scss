@@ -1,0 +1,71 @@
+.hero {
+  padding: 88px 0 72px;
+}
+.hero .wrap {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 56px;
+  align-items: center;
+}
+.hero h1 {
+  font-size: clamp(2.4rem,5vw,3.9rem);
+  line-height: 1.04;
+  letter-spacing: -.02em;
+  margin: 0 0 18px;
+}
+.hero p {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 46ch;
+  margin: 0 0 28px;
+}
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.btn {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 13px 20px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: .95rem;
+}
+.btn-primary {
+  background: var(--rust);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--rust-dark);
+}
+.btn-plain {
+  border: 1px solid var(--line);
+  background: var(--cream);
+}
+.hero-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 26px;
+}
+.hero-card h2 {
+  font-size: 1rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+.hero-card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 18px;
+  margin: 0;
+}
+.hero-card dt {
+  font-weight: 700;
+}
+.hero-card dd {
+  margin: 0;
+  color: var(--muted);
+}

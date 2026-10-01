@@ -873,5 +873,6 @@ import { splitStylesheet } from './css-split.js';
 import { parseStylesheet } from './css-split.js';
 import { splitDocument } from './html-split.js';
 import { parseHtml } from './html-split.js';
+import { findTag } from './html-split.js';
 import Handlebars from 'handlebars';
-export { Kiss as 'module.exports', utils, renderRedirects, renderRedirectsJson, renderFirebaseRedirects, renderVercelRedirects, renderHtaccessRedirects, splitStylesheet, parseStylesheet, splitDocument, parseHtml };
+export { Kiss as 'module.exports', utils, renderRedirects, renderRedirectsJson, renderFirebaseRedirects, renderVercelRedirects, renderHtaccessRedirects, splitStylesheet, parseStylesheet, splitDocument, parseHtml, findTag };

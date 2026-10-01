@@ -37,3 +37,17 @@ examples/9-migrated-from-v1/AIKB/*.json
 
 # Written by `npx kiss-ssg aikb 11-blog.js` and committed, for the same reason.
 examples/11-blog/AIKB/*.json
+
+# The artifact example 12 was converted from, kept exactly as it arrived. It is
+# input, not source: formatting it would change the thing the conversion is
+# measured against, and `tools/compare.mjs` compares the built page to this file.
+examples/12-from-a-single-file/source/
+
+# Written by `splitStylesheet` and committed as what it emits. Prettier would
+# normalise the values inside them — `.9fr` to `0.9fr`, `clamp(a,b,c)` to
+# `clamp(a, b, c)` — and the splitter deliberately does not: it re-indents
+# structure and copies every declaration verbatim, which is what lets it promise
+# the compiled CSS is byte-identical to the input. Formatting these would make
+# the committed files differ from what `node tools/convert.mjs` produces, which
+# is the one thing this example is claiming.
+examples/12-from-a-single-file/src/assets/css/
