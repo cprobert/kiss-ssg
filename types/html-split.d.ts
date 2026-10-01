@@ -32,9 +32,26 @@ export function attr(node: HtmlNode, name: string): string;
  *
  * @param {HtmlNode[]} nodes
  * @param {number} [depth]
+ * @param {{ escapeExpressions?: boolean }} [options] `escapeExpressions`
+ * defaults to **true**: `{{` is rewritten as `\{{` everywhere it is emitted —
+ * text, attributes, comments and raw text alike, because Handlebars compiles
+ * the whole file. Pass `false` only for a document you wrote and intend to
+ * carry template syntax.
  * @returns {string}
  */
-export function serializeNodes(nodes: HtmlNode[], depth?: number): string;
+export function serializeNodes(nodes: HtmlNode[], depth?: number, options?: {
+    escapeExpressions?: boolean;
+}): string;
+/**
+ * Every `{{…}}` the source document carries, as short excerpts. Reported on
+ * the split so a caller cannot escape them without being told they were there
+ * — an Alpine page and a hostile one look identical at this layer, and only
+ * the author knows which they have.
+ *
+ * @param {HtmlNode[]} nodes
+ * @returns {string[]}
+ */
+export function findExpressions(nodes: HtmlNode[]): string[];
 /**
  * Finds a descendant element by tag, breadth-first.
  *
@@ -95,6 +112,10 @@ export function nameRegions(regions: HtmlRegion[], names?: (string | null)[] | R
  * @property {{ name: string, content: string }[]} partials paths relative to `folders.partials`
  * @property {{ styles: string[], scripts: { src: string, content: string }[] }} assets
  * @property {HtmlRegion[]} regions the named regions, for a caller that wants to report them
+ * @property {string[]} expressions every `{{…}}` the SOURCE document carried, as
+ * excerpts — see `findExpressions`. Non-empty means the input contains template
+ * syntax, which is either another framework's interpolation or an injection;
+ * only the author can tell which, so it is reported rather than judged
  * @property {{ regions: number, chrome: number, sections: number }} stats
  */
 /**
@@ -105,12 +126,16 @@ export function nameRegions(regions: HtmlRegion[], names?: (string | null)[] | R
  * @param {(string|null)[]} [options.names] per-region names overriding the proposals
  * @param {string} [options.layoutName] default `layout`
  * @param {string} [options.pageName] default `index`
+ * @param {boolean} [options.escapeExpressions] default `true` — see
+ * `serializeNodes`. Leave it on unless you wrote the document yourself and mean
+ * its `{{…}}` to be compiled by kiss.
  * @returns {HtmlSplitResult}
  */
 export function splitDocument(html: string, options?: {
     names?: (string | null)[];
     layoutName?: string;
     pageName?: string;
+    escapeExpressions?: boolean;
 }): HtmlSplitResult;
 export type HtmlNode = {
     type: "element" | "text" | "comment" | "doctype";
@@ -181,6 +206,13 @@ export type HtmlSplitResult = {
      * the named regions, for a caller that wants to report them
      */
     regions: HtmlRegion[];
+    /**
+     * every `{{…}}` the SOURCE document carried, as
+     * excerpts — see `findExpressions`. Non-empty means the input contains template
+     * syntax, which is either another framework's interpolation or an injection;
+     * only the author can tell which, so it is reported rather than judged
+     */
+    expressions: string[];
     stats: {
         regions: number;
         chrome: number;

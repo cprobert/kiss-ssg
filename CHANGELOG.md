@@ -34,11 +34,25 @@ inspecting a document without splitting it.
 **What they guarantee is that they changed nothing.** Assembling the layout,
 partials and page view back through Handlebars reproduces the document —
 attributes verbatim, a self-closing `<path/>` still self-closing, the space
-between `<em>a</em> <em>b</em>` intact, `<main>` re-emitted only if it was
-there. The stylesheet is cut into contiguous runs and never gathered by
-selector, so the cascade cannot move. Measured on a real 21KB page: 118
-elements in, 118 out, same order; and on a real 14KB stylesheet, compiled
-byte-identically with its longest line down from 1,803 characters to 82.
+between `<em>a</em> <em>b</em>` intact, every body node still in the place it
+was written (a `<script>` included, so one before the content still runs
+before it), `<main>` re-emitted only if it was there. The stylesheet is cut
+into contiguous runs and never gathered by selector, so the cascade cannot
+move. Measured on a real 21KB page: 118 elements in, 118 out, same order; and
+on a real 14KB stylesheet, compiled byte-identically with its longest line
+down from 1,803 characters to 82.
+
+**`{{` in the source is escaped, and it is the one byte a conversion changes
+on purpose.** What `splitDocument` writes is `.hbs`, and kiss compiles `.hbs`
+— so braces in a document you hand it are not text, they are code. A page
+using Alpine or Vue interpolation (ordinary for something written in a chat)
+would have every one of them evaluated against kiss's context and erased, and
+a page written to attack you would have them evaluated too, including in
+attributes, where no body comparison looks. They are emitted as `\{{`, which
+renders the literal `{{` the source meant. `result.expressions` lists what was
+found, because only you can say which kind of page you have; pass
+`escapeExpressions: false` for a document you wrote and mean kiss to compile,
+which is the one case where assembling does not give the input back.
 
 **What they refuse to do is guess.** You name the regions — the proposals come
 from `id` and class, which are markup names, so a hero carrying `id="top"` is

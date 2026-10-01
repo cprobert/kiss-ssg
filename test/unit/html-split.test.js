@@ -3,6 +3,7 @@ import Handlebars from 'handlebars'
 import layouts from 'handlebars-layouts'
 import {
   attr,
+  findExpressions,
   findRegions,
   findTag,
   nameRegions,
@@ -342,5 +343,125 @@ describe('assembly round trip', () => {
   it('reproduces a region containing a self-closing svg icon', () => {
     const html = `<!doctype html><html><head><title>t</title></head><body><footer><svg viewBox="0 0 24 24"><path d="M0 0"/></svg></footer><section class="s"><p>x</p></section></body></html>`
     expect(normalise(assemble(splitDocument(html)))).toBe(normalise(html))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// What a security review of the branch found
+// ---------------------------------------------------------------------------
+//
+// Seven findings, every one re-derived here before it was fixed and every test
+// below seen red against the unfixed module. Five were the invariant being
+// false — the module said assembling gives back the document, and for these
+// shapes it did not, silently. Two were the other half of the same fact: what
+// this module emits is `.hbs`, so anything in a foreign document that looks
+// like Handlebars BECOMES Handlebars.
+
+describe('losslessness on shapes the first cut got wrong', () => {
+  it('does not treat an apostrophe as an opening quote unless it follows =', () => {
+    // `alt=don't` is one unquoted attribute value. Skipping to the "matching"
+    // quote ran to the end of the document, so the whole page became one
+    // opening tag and every element after it disappeared.
+    const nodes = parseHtml("<img src=/a.png alt=don't><p>after</p>")
+    expect(nodes).toHaveLength(2)
+    expect(nodes[1].children[0].text).toBe('after')
+  })
+
+  it('ends a script only at a real close tag, not at a JS string', () => {
+    // `"</scriptfoo"` is not a close tag — the spec needs whitespace, `/` or
+    // `>` after the name. Ending there resumed scanning from inside the
+    // script, and everything after it was lost with a green build.
+    const html = `<!doctype html><html><head><title>t</title></head><body>
+<section class="hero">hi</section>
+<script>var s = "</scriptfoo";</script>
+<footer class="site-footer">keepme</footer>
+</body></html>`
+    const result = splitDocument(html)
+    expect(result.partials.map((p) => p.name)).toContain('site/site-footer.hbs')
+    expect(assemble(result)).toContain('keepme')
+  })
+
+  it('keeps a script that sits inside main', () => {
+    // Collected by nothing: filtered out of the regions as "an asset", and
+    // invisible to the body-level script sweep because its parent was `main`.
+    // The tag was deleted outright — subresource integrity and all.
+    const html = `<!doctype html><html><head><title>t</title></head><body>
+<main>
+  <section class="hero">hi</section>
+  <script src="https://cdn.example/lib.js" integrity="sha384-AAA"></script>
+</main>
+</body></html>`
+    const result = splitDocument(html)
+    expect(result.layout.content).toContain('cdn.example/lib.js')
+    expect(result.layout.content).toContain('sha384-AAA')
+    expect(normalise(assemble(result))).toBe(normalise(html))
+  })
+
+  it('leaves a leading body script where it was written', () => {
+    // A bootstrap script written as the body's first child was re-emitted
+    // last, so it ran after the page it was there to set up.
+    const html = `<!doctype html><html><head><title>t</title></head><body>
+<script nonce="abc">window.__BOOTSTRAP__ = 1</script>
+<section class="hero">hi</section>
+</body></html>`
+    const layout = splitDocument(html).layout.content
+    expect(layout.indexOf('__BOOTSTRAP__')).toBeLessThan(
+      layout.indexOf('{{#block "main"}}'),
+    )
+  })
+
+  it('keeps the head attributes and top-level body nodes', () => {
+    const html = `<!doctype html><html><head prefix="og: http://ogp.me/ns#"><title>t</title></head><body><!-- build marker --><section class="hero">hi</section>trailing text</body></html>`
+    const layout = splitDocument(html).layout.content
+    expect(layout).toContain('<head prefix="og: http://ogp.me/ns#">')
+    expect(layout).toContain('build marker')
+    expect(layout).toContain('trailing text')
+  })
+
+  it('gives two regions proposing the same suffixed name different files', () => {
+    // `hero`, `hero`, `hero-2`: the second is renamed `hero-2`, and the third
+    // — whose own base is already `hero-2` — took it again. Two partials, one
+    // filename, one region's markup gone.
+    const html = `<!doctype html><html><head><title>t</title></head><body>
+<section class="hero">ONE</section><section class="hero">TWO</section><section class="hero-2">THREE</section>
+</body></html>`
+    const names = splitDocument(html).partials.map((p) => p.name)
+    expect(new Set(names).size).toBe(names.length)
+  })
+})
+
+describe('template syntax in a foreign document', () => {
+  const hostile = `<!doctype html><html><head><title>t</title>
+<meta name="x" content="{{config.secrets.apiKey}}"></head><body>
+<section class="hero"><p>Hello {{ name }}</p></section>
+</body></html>`
+
+  it('reports every expression it found', () => {
+    // An Alpine page and an injected one are identical at this layer, so the
+    // module says what is there rather than deciding what it meant.
+    const found = splitDocument(hostile).expressions
+    expect(found).toContain('{{config.secrets.apiKey}}')
+    expect(found).toContain('{{ name }}')
+    expect(findExpressions(parseHtml('<p>none</p>'))).toEqual([])
+  })
+
+  it('escapes expressions by default, in text and in attributes', () => {
+    const result = splitDocument(hostile)
+    expect(result.layout.content).toContain('\\{{config.secrets.apiKey}}')
+    expect(result.partials[0].content).toContain('\\{{ name }}')
+    // The point of the escape: the rendered page says what the source said,
+    // rather than whatever the build's config happens to hold.
+    expect(assemble(result)).toContain('Hello {{ name }}')
+    expect(assemble(result)).not.toContain('\\{{')
+  })
+
+  it('leaves them alone when the caller opts out', () => {
+    const result = splitDocument(hostile, { escapeExpressions: false })
+    expect(result.partials[0].content).toContain('<p>Hello {{ name }}</p>')
+    expect(result.layout.content).not.toContain('\\{{')
+  })
+
+  it('round-trips a document carrying expressions', () => {
+    expect(normalise(assemble(splitDocument(hostile)))).toBe(normalise(hostile))
   })
 })

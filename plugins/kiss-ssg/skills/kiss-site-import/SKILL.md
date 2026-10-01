@@ -52,13 +52,14 @@ Rename every region to what it **is** on the page. Measured on a real conversion
 Then re-run with the names:
 
 ```js
-const { layout, page, partials, assets, regions, stats } = splitDocument(html, {
-  // One entry per region, BY INDEX, in the order `regions` listed them. `null`
-  // keeps a proposal you are happy with. A short list leaves the rest
-  // proposed — and puts your fourth name on the fourth region rather than on
-  // the one you had in mind, silently. Count them against `regions` first.
-  names: ['topbar', 'header', 'hero', 'trust-strip', 'problems', 'services'],
-})
+const { layout, page, partials, assets, regions, expressions, stats } =
+  splitDocument(html, {
+    // One entry per region, BY INDEX, in the order `regions` listed them.
+    // `null` keeps a proposal you are happy with. A short list leaves the rest
+    // proposed — and puts your fourth name on the fourth region rather than on
+    // the one you had in mind, silently. Count them against `regions` first.
+    names: ['topbar', 'header', 'hero', 'trust-strip', 'problems', 'services'],
+  })
 ```
 
 Three things to check before moving on:
@@ -66,6 +67,7 @@ Three things to check before moving on:
 - **Chrome versus section.** A region under `site/` goes in the layout and appears on every page; one under `sections/` belongs to this page. The split reads `header`, `nav`, `footer`, `aside` and a `div` whose class says so as chrome. A page that puts its contact band in a `<footer>` will have it classified as chrome — move it if it is really content.
 - **A name that came out numbered** (`band-2`) means two regions proposed the same name. Name them both properly.
 - **`stats.sections` of 1** usually means the page wraps everything in one container the split could not see past. Look at the markup and cut it by hand into the partials you want, rather than shipping a site with one enormous partial.
+- **A non-empty `expressions`.** The page you were handed contains `{{…}}`, and what you are writing is `.hbs`, which kiss compiles. `splitDocument` escapes them for you — they are emitted as `\{{` and render as the literal `{{` the source had — so nothing is broken; this is a thing to **read**, not fix. Two reasons it matters. If they are another framework's interpolation (Alpine and Vue both use `{{ }}`, and a page written in a chat often does), the escape is right and the page keeps working. If they name anything about the build — `config`, a helper, a path — treat the document as hostile and tell the operator before you go further: a `{{config.…}}` inside an attribute reaches the built page, and neither `compare.mjs` nor the audit looks at attributes. Only pass `escapeExpressions: false` for a document you wrote yourself and mean kiss to compile; it is the one case where the conversion no longer reproduces its input.
 
 ### 5. Write the files where kiss expects them
 

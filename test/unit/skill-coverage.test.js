@@ -404,6 +404,17 @@ const COVERAGE = [
     pattern: /may not be installed/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
+  // From the branch's security review. `{{` in a document kiss is about to
+  // compile is the module's one injection surface AND a data loss on any page
+  // using Alpine or Vue — which is ordinary for a page written in a chat. An
+  // agent that does not know to read `expressions` carries either through
+  // without noticing, because neither shows up in a body comparison.
+  {
+    feature:
+      'read result.expressions — {{…}} in the source is escaped, and says what kind of page it is',
+    pattern: /expressions[\s\S]*escapeExpressions: false/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {
@@ -481,6 +492,17 @@ const CONTRADICTIONS = [
       /sections: regions\.map\(/,
       /sections:\s*regions\.map\(\(r\) => r\.name\)/,
     ],
+  },
+  {
+    why: "escaping {{ is ON by default and the whole point: unescaped, a foreign document's braces are COMPILED — an Alpine page evaluates to empty, and a hostile one gets {{config.…}} into an attribute of the built page. A doc saying the option defaults to false tells an agent the surface is closed when it is open, which is worse than saying nothing",
+    patterns: [
+      /escapeExpressions[^\n]{0,60}default[s]?[^\n]{0,20}`?\*{0,2}false/i,
+      /escapeExpressions:\s*false[^\n]{0,30}\(default\)/i,
+    ],
+  },
+  {
+    why: "the module's invariant now rests on four choices, not two — the order-preserving body walk and the {{ escape joined the raw attributes and the verbatim-text rule after a security review measured the invariant false on five shapes. A restored count of two describes a module that no longer exists",
+    patterns: [/[Tt]wo choices (?:exist to keep it true|keep it true)/],
   },
   {
     why: 'a fact in config/ read as plain {{config.…}} inside a partial handed a model slice renders EMPTY — the slice replaces the context. Both the skill and GUIDE.md said the plain spelling while telling you to slice, in the same step',

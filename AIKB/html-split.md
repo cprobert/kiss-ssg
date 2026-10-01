@@ -18,7 +18,8 @@ The other mechanical half of converting a single-file site; `AIKB/css-split.md` 
 - `regionKind(node)` → `'chrome'` or `'section'`.
 - `findRegions(nodes)` → `{ regions, wrappedInMain }`. Each region carries `kind`, `tag`, `name`, `classes` and `node`.
 - `nameRegions(regions, names)` → the regions with caller names applied and made unique.
-- `splitDocument(html, { names, layoutName, pageName })` → `{ layout, page, partials, assets, regions, stats }`. Also re-exported from `lib/kiss.js`.
+- `findExpressions(nodes)` → every `{{…}}` the document carries, as short excerpts.
+- `splitDocument(html, { names, layoutName, pageName, escapeExpressions })` → `{ layout, page, partials, assets, regions, expressions, stats }`. Also re-exported from `lib/kiss.js`.
 - The `HtmlNode`, `HtmlRegion` and `HtmlSplitResult` typedefs.
 
 ## Depends on
@@ -31,7 +32,19 @@ Nothing. No imports at all — not even `node:` builtins.
 
 ## Non-obvious behavior
 
-- **THE INVARIANT: assembling the layout, the partials and the page view through Handlebars reproduces the document that was split.** `test/unit/html-split.test.js` proves it by actually rendering them through `handlebars-layouts`, the same way `lib/kiss.js` does. Two choices keep it true, and both cost something that looked like an improvement.
+- **THE INVARIANT: assembling the layout, the partials and the page view through Handlebars reproduces the document that was split.** `test/unit/html-split.test.js` proves it by actually rendering them through `handlebars-layouts`, the same way `lib/kiss.js` does. Four choices keep it true, and the first two each cost something that looked like an improvement.
+
+  It has **one stated exception**, and stating it is the point: `escapeExpressions: false` on a document containing `{{…}}` does not round-trip, because those braces are then compiled rather than reproduced. A qualified invariant is worth more than an absolute one that is wrong.
+
+  The last two of the four, and the parse fixes under them, exist because a security review of the import branch **measured the invariant false** on five shapes before it ever claimed to be true. The claim was in this file, in `GUIDE.md`, in `llms.txt` and in the module header; the code did not keep it. The lesson is the repo's own rule applied to its own prose — a doc is a claim about the code, and "lossless" is exactly the kind of adjective nothing checks. Each of the five has a test in `test/unit/html-split.test.js` under `losslessness on shapes the first cut got wrong`, every one seen red first.
+
+- **The layout is rebuilt by walking the body in document order**, not by emitting chrome-before, the content block, then chrome-after. A region becomes its partial call, the first section becomes `{{#block "main"}}`, and everything else is serialised where it stood. The positional shape broke three ways at once: a bootstrap `<script>` written as the body's first child was re-emitted last, so it ran after the page it set up; a `<script integrity=…>` inside `<main>` was collected by nothing at all — filtered out of the regions as an asset, invisible to the body-level script sweep — and vanished, subresource integrity and all; and a comment or stray text node between two sections was never looked at, because only elements were. Root-level nodes outside `<html>` and the `<head>`'s own attributes (`<head prefix="og: …">`) are emitted for the same reason.
+
+- **`{{` is escaped as `\{{` by default, everywhere — text, attributes, comments and raw text alike.** What this module emits is `.hbs`, and kiss compiles `.hbs`, so braces in a foreign document are not content, they are code. Unescaped, an Alpine or Vue page — squarely the house style of "a page produced in an AI chat", the stated input — has every interpolation evaluated to empty and erased. And the same mechanism was measured carrying three things from one hostile artifact into a published page: a config dump, a tracking pixel whose query string held a secret, and a file read from outside the site. None of them is visible text or an element, so the comparison the skill prescribes reports the page identical. `\{{` is Handlebars' own escape and renders the literal `{{` the source meant. `escapeExpressions: false` opts out, for a document you wrote and intend kiss to compile; `result.expressions` reports what was found either way, because an Alpine page and a hostile one are indistinguishable at this layer and only the author knows which they have.
+
+- **Two regions can propose the same suffixed name, and the uniquifier has to loop.** `hero`, `hero`, `hero-2` renames the second to `hero-2` — and the third, whose own base is already `hero-2`, took it again under a per-base counter. One filename, two partials, one region's markup gone. The final name goes into the set and the suffix search repeats until it is free.
+
+- **A quote opens an attribute value only when it follows `=`.** `alt=don't` is one unquoted value; skipping to the "matching" quote ran to the end of the document, so the whole page became a single opening tag. **And a raw-text element ends only at a spec-shaped close tag** — `</script` followed by whitespace, `/` or `>`. A JS string containing `"</scriptfoo"` is not one, and treating it as one resumed scanning from inside the script and lost every element after it, silently, with a green build.
 
 - **Attributes are stored as raw text and never re-serialised.** Quoting, ordering and spacing inside a tag survive untouched, so the round trip is byte-comparable rather than approximately right. `attr()` reads out of that text when a name or a class is needed.
 
@@ -45,7 +58,7 @@ Nothing. No imports at all — not even `node:` builtins.
 
 - **Inline `<style>` and `<script>` are reported, not removed.** `assets.styles` and `assets.scripts` say what is worth lifting; the document keeps them. Removing them was the first shape of this and it was wrong twice: it broke the invariant, and it did so silently — the live round trip against `k9solutions.uk` lost both the page's `<script src>` tags outright. Lifting an asset is not a structural move either: it means choosing a filename, writing the file and rewriting the tag that points at it. The caller is already doing that work, because the CSS has to go through `splitStylesheet` anyway, and it is the only party that knows where the site keeps things.
 
-- **Body-level `<script>` tags go into the layout, ahead of the `scripts` block.** Every page needs them, so they are furniture; the per-page `{{#block "scripts"}}` sits after. This is the shape the precedent's hand-written layout arrived at independently.
+- **`<script>` tags in the body go into the layout at the position they were written**, and the per-page `{{#block "scripts"}}` sits after all of them. Every page needs them, so they are furniture — which is the shape the precedent's hand-written layout arrived at independently — but _where_ in the body is the page's statement, not this module's: a bootstrap script before the content and an analytics tag after it are different pages.
 
 - **It is not a conforming parser and does not try to be.** No implied tags, no mis-nesting repair, no invented `<tbody>`. The input it exists for is machine-written — a Claude or ChatGPT artifact, an exported page — which is well-formed and explicitly closed. A close tag for something that is not open pops nothing, so malformed input degrades into a flatter cut rather than a wrong one. Void elements and raw-text elements (`script`, `style`, `textarea`, `title`) are handled, because `<img>` treated as open swallows the rest of the document and `if (a<b)` inside a script is not a tag.
 
