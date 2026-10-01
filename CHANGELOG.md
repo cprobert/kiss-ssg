@@ -3,6 +3,70 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.0 — 2026-10-01
+
+### A page you already have can become a kiss site
+
+Until now kiss had no door for the commonest way a small site starts: somebody
+already has a working page. A Claude or ChatGPT artifact, a page exported from
+a builder, a hand-written HTML file edited for years. `kiss-site-new` wants a
+description of a site, not the site; `kiss-site-migrate` is for moving across
+kiss versions. The single-file page appeared in the shipped guidance only as
+the shape to avoid.
+
+Two new exports convert one, and they do the half that can be proved:
+
+```js
+import { splitDocument, splitStylesheet } from 'kiss-ssg'
+
+const { layout, page, partials, assets, regions } = splitDocument(html)
+const sheet = splitStylesheet(css, {
+  sections: regions.flatMap((r) => r.classes),
+})
+```
+
+`splitDocument` cuts the document into a layout holding `<head>` and the
+chrome, one partial per region under `site/` or `sections/`, and a page view
+that is a list of partial calls. `splitStylesheet` cuts the stylesheet into
+Sass partials. `parseHtml`, `findTag` and `parseStylesheet` come with them, for
+inspecting a document without splitting it.
+
+**What they guarantee is that they changed nothing.** Assembling the layout,
+partials and page view back through Handlebars reproduces the document —
+attributes verbatim, a self-closing `<path/>` still self-closing, the space
+between `<em>a</em> <em>b</em>` intact, `<main>` re-emitted only if it was
+there. The stylesheet is cut into contiguous runs and never gathered by
+selector, so the cascade cannot move. Measured on a real 21KB page: 118
+elements in, 118 out, same order; and on a real 14KB stylesheet, compiled
+byte-identically with its longest line down from 1,803 characters to 82.
+
+**What they refuse to do is guess.** You name the regions — the proposals come
+from `id` and class, which are markup names, so a hero carrying `id="top"` is
+proposed as `top`. You decide which words become model fields. You lift the
+inline `<style>` and `<script>`, which are reported rather than removed. Those
+are judgements nothing could check, and a module that made them would produce
+field names no human would have chosen.
+
+`sections` takes **CSS class names**, not the region names you chose — which is
+why each region carries a `classes` array. Passing the names instead matches
+nothing and collapses the whole sheet into one file, with no error.
+
+### The `kiss-site-import` skill, and example 12
+
+`/kiss-ssg:kiss-site-import` walks the whole sequence. `kiss-site-new` now
+routes you to it when you arrive with a page rather than a description.
+
+`examples/12-from-a-single-file/` is the job done end to end: the artifact it
+started from, the conversion script, a comparison tool that proves the page
+unchanged, and the site that came out. `npm run eg12`.
+
+The rule it all turns on, if you read nothing else: **convert first, improve
+second.** A conversion that also tidies the markup cannot be verified, because
+nothing can tell your improvements from your mistakes. Get to "the same page,
+in pieces", prove it, then change things as a step with its own name.
+
+Nothing in an existing site changes — this release is additive.
+
 ## 2.6.6 — 2026-09-30
 
 ### The dev server no longer rebuilds forever when the script shares a name with the build folder
