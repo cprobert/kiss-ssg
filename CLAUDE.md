@@ -111,7 +111,7 @@ node scripts/tag-release.mjs   # tag the current commit `v<package.json version>
 npm run bench            # benchmark harness: 6 scenarios over a generated fixture, or a REAL
                          # site with --site/--dev. Scenarios, flags, baseline discipline and the
                          # watch-reading protocol: the `/bench` skill (.claude/skills/bench/SKILL.md)
-node docs                # regenerate docs/, minified, and exit; --dev keeps the old live-preview server running (does not exit, Ctrl-C to stop)
+node docs                # regenerate docs/, minified, and exit; --dev is the live preview, built into the ignored .preview/ so it never touches docs/ (does not exit, Ctrl-C to stop)
 npm run eg1 … eg11       # run an example (examples/<n>-<name>/router.js, run from its own
                          # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding
 ```

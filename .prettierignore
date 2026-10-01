@@ -1,5 +1,7 @@
-# Build output — docs.js empties and regenerates docs/ on every run
+# Build output — docs.js empties and regenerates docs/ on every run, and builds
+# its --dev preview into .preview/
 docs/
+.preview/
 public/
 examples/*/public/
 

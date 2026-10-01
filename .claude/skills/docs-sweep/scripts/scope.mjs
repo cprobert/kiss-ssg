@@ -145,7 +145,7 @@ const RULES = [
     label: 'Docs-site source',
     test: (f) => f.startsWith('src/'),
     docs: () => [
-      'ACTION: `node docs` to regenerate docs/ — it builds and exits; `--dev` is the live preview, which does not exit',
+      'ACTION: `node docs` to regenerate docs/ — it builds and exits; `--dev` is the live preview, built into .preview/, which does not exit',
     ],
   },
   {

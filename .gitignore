@@ -108,6 +108,8 @@ dist
 public/
 deploy.md
 docs/*.json
+# `node docs --dev` builds the docs site's live preview here, never into docs/.
+.preview/
 
 # superpowers SDD scratch workspace (ledgers, briefs, review packages)
 .superpowers/
