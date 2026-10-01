@@ -51,8 +51,26 @@ a page written to attack you would have them evaluated too, including in
 attributes, where no body comparison looks. They are emitted as `\{{`, which
 renders the literal `{{` the source meant. `result.expressions` lists what was
 found, because only you can say which kind of page you have; pass
-`escapeExpressions: false` for a document you wrote and mean kiss to compile,
-which is the one case where assembling does not give the input back.
+`escapeExpressions: false` for a document you wrote and mean kiss to compile.
+
+**`warnings` is the list to read before you ship.** It is empty for an
+ordinary page. Non-empty means the conversion did something it could not do
+losslessly and is telling you which — there are exactly two such things, and
+with `escapeExpressions: false` they make three places where assembling does
+not give the input back:
+
+- **A `{{` with a backslash already in front of it.** Handlebars has exactly
+  one escape, `\{{`, and a preceding backslash eats it; measured across runs
+  of nought to five, two or more backslashes emit one fewer and evaluate
+  anyway. There is no sequence that yields a literal run followed by a
+  literal `{{`, so those braces are emitted as `&#123;&#123;`. The page
+  renders the same; the bytes differ, and inside `<script>` or `<style>`,
+  where a character reference is not decoded, so does the text.
+- **A node written between two sections** — a `<nav>`, an `<aside>`, a
+  comment, stray text — comes out after all of them. Chrome goes in the
+  layout so every page gets it, and sections render at a single content
+  block, so an interleaved node has nowhere else to go. Move it above the
+  first section or below the last if the order matters.
 
 **What they refuse to do is guess.** You name the regions — the proposals come
 from `id` and class, which are markup names, so a hero carrying `id="top"` is

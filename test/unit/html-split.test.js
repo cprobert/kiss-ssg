@@ -17,7 +17,11 @@ import {
 // Assembles a split back into one document the way kiss would: a per-instance
 // Handlebars with handlebars-layouts, partials registered under the same
 // `site/x` and `sections/x` names `partialNameFor` derives from the folders.
-const assemble = (result) => {
+// `context` matters for the injection tests and nothing else: an escape test
+// that renders against `{}` cannot fail, because there is nothing for a live
+// expression to resolve to. Two of them passed that way before this argument
+// existed.
+const assemble = (result, context = {}) => {
   const hbs = Handlebars.create()
   hbs.registerHelper(layouts(hbs))
   hbs.registerPartial(
@@ -26,7 +30,7 @@ const assemble = (result) => {
   )
   for (const partial of result.partials)
     hbs.registerPartial(partial.name.replace(/\.hbs$/, ''), partial.content)
-  return hbs.compile(result.page.content)({})
+  return hbs.compile(result.page.content)(context)
 }
 
 // Comparing rendered HTML needs whitespace BETWEEN tags ignored (the split
@@ -463,5 +467,128 @@ describe('template syntax in a foreign document', () => {
 
   it('round-trips a document carrying expressions', () => {
     expect(normalise(assemble(splitDocument(hostile)))).toBe(normalise(hostile))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// What a SECOND security review found, after the first round of fixes
+// ---------------------------------------------------------------------------
+//
+// Nine more, all re-derived locally before anything was changed and all nine
+// reproduced. The lesson is in the shape of them rather than in any one: four
+// were ways past the escape that the first round's own commit message claimed
+// was complete, and two were the first round's own fix — "walk the stream so
+// nothing is dropped" — not applied one level up, inside `<html>`. A fix
+// verified only on the inputs that prompted it is a fix with a boundary
+// nobody has looked over.
+
+describe('ways past the expression escape', () => {
+  const page = (inner) =>
+    `<!doctype html><html><head><title>t</title></head><body>${inner}</body></html>`
+  const ctx = { config: { secrets: { apiKey: 'LEAKED' } } }
+
+  it('escapes the html, head, body and main attribute strings too', () => {
+    // These four are the only attributes not emitted by `openingTag`, and
+    // they were interpolated raw into the layout — so they bypassed the one
+    // guard the module has, on the surface its own comment calls the one
+    // that matters most.
+    const html = `<!doctype html><html data-a="{{config.secrets.apiKey}}"><head data-b="{{config.secrets.apiKey}}"></head><body data-c="{{config.secrets.apiKey}}"><main data-d="{{config.secrets.apiKey}}"><section id="a">x</section></main></body></html>`
+    expect(assemble(splitDocument(html), ctx)).not.toContain('LEAKED')
+  })
+
+  it('neutralises an expression a backslash in the source would un-escape', () => {
+    // Handlebars has exactly ONE escape: `\{{`. A backslash already in the
+    // document eats it, and no number of backslashes puts it back —
+    // measured across runs of 0 to 5, two or more emit N-1 and evaluate. So
+    // the braces go out as a character reference instead.
+    const html = page(
+      `<section id="a"><img src="/p?k=\\{{config.secrets.apiKey}}"></section>`,
+    )
+    const result = splitDocument(html)
+    expect(assemble(result, ctx)).not.toContain('LEAKED')
+    expect(result.warnings.join(' ')).toMatch(/preceded by a backslash/)
+  })
+
+  it('does not let two text nodes join into an expression', () => {
+    // A stray close tag is dropped, which left the text either side of it as
+    // two siblings that the printer joined with nothing — assembling a live
+    // `{{…}}` out of two harmless halves. The source contains no `{{`, so
+    // there was nothing for the escape to escape and `expressions` reported
+    // an empty list beside an executable partial.
+    const html = page(
+      `<section id="a">Pricing{</span>{config.secrets.apiKey}}</section>`,
+    )
+    const result = splitDocument(html)
+    expect(assemble(result, ctx)).not.toContain('LEAKED')
+    expect(result.expressions.join(' ')).toContain('config.secrets.apiKey')
+  })
+
+  it('escapes the doctype on the fragment branch', () => {
+    const html = `<!DOCTYPE html SYSTEM "{{config.secrets.apiKey}}"><body><section id="a">x</section></body>`
+    expect(assemble(splitDocument(html), ctx)).not.toContain('LEAKED')
+  })
+})
+
+describe('losslessness one level up the tree', () => {
+  it('keeps a child of <html> that is neither head nor body', () => {
+    // The same deletion the first round fixed inside the body, missed
+    // outside it: the layout reached for `head` and `body` by name and
+    // emitted a fixed skeleton, so everything else `<html>` held vanished.
+    const html = `<!doctype html><html><head><title>t</title></head><!-- build:2026 --><body><section id="a">hi</section></body><script src="/boot.js" integrity="sha384-AAA"></script></html>`
+    const layout = splitDocument(html).layout.content
+    expect(layout).toContain('sha384-AAA')
+    expect(layout).toContain('build:2026')
+  })
+
+  it('handles a document with no <body> without duplicating it', () => {
+    // `<body>` is optional and `parseHtml` does not imply one, so the root's
+    // only element was `<html>` itself — which became a single region
+    // holding the whole document, wrapped in a synthesised body with a
+    // second doctype inside it.
+    const html = `<!doctype html><html><head><title>t</title></head><section id="hero">hi</section><footer>f</footer></html>`
+    const result = splitDocument(html)
+    expect(result.partials.map((p) => p.name)).toEqual([
+      'sections/hero.hbs',
+      'site/footer.hbs',
+    ])
+    expect(assemble(result).match(/<html/g) ?? []).toHaveLength(1)
+  })
+
+  it('does not nest a second <main> inside the first', () => {
+    // Only one was unwrapped; the other became a region, which renders at
+    // the content block — i.e. inside the `<main>` the layout rebuilt.
+    const html = `<!doctype html><html><head><title>t</title></head><body><main><section id="a">A</section></main><main><section id="b">B</section></main></body></html>`
+    expect(normalise(assemble(splitDocument(html)))).toBe(normalise(html))
+  })
+
+  it('keeps the case of a camelCase SVG tag', () => {
+    // Inside `<svg>` the document is foreign content and case is
+    // significant. A browser corrects it back, so nothing renders wrong —
+    // but the bytes differ, and the bytes are what this module promises.
+    const html = `<!doctype html><html><head><title>t</title></head><body><section id="a"><svg><linearGradient id="g"></linearGradient><clipPath id="c"></clipPath></svg></section></body></html>`
+    const out = assemble(splitDocument(html))
+    expect(out).toContain('<linearGradient id="g">')
+    expect(out).toContain('<clipPath id="c">')
+  })
+})
+
+describe('warnings — what the conversion could not do losslessly', () => {
+  it('names a node that had to move out from between two sections', () => {
+    // The second stated exception, and deliberately not fixed: chrome lives
+    // in the layout and sections render at one content block, so a node
+    // written between two sections has nowhere to go but after them. It has
+    // done this since the module was written. What changed is only that it
+    // is no longer silent.
+    const html = `<!doctype html><html><head><title>t</title></head><body><section id="a">A</section><nav>N</nav><section id="b">B</section></body></html>`
+    const { warnings } = splitDocument(html)
+    expect(warnings.join(' ')).toMatch(/between two sections/)
+    expect(warnings.join(' ')).toContain('<nav>')
+  })
+
+  it('says nothing about an ordinary page', () => {
+    // A warning that fires on the normal shape is noise, and noise is how a
+    // real one gets skipped.
+    const html = `<!doctype html><html><head><title>t</title></head><body><header>H</header><section id="a">A</section><section id="b">B</section><footer>F</footer></body></html>`
+    expect(splitDocument(html).warnings).toEqual([])
   })
 })

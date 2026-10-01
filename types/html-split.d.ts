@@ -88,12 +88,36 @@ export function regionKind(node: HtmlNode): "chrome" | "section";
  * instead, which is where it belongs on every page rather than on this one.
  *
  * @param {HtmlNode[]} nodes a parsed document
- * @returns {{ regions: HtmlRegion[], wrappedInMain: boolean }}
+ * @returns {{ regions: HtmlRegion[], wrappedInMain: boolean, container:
+ * HtmlNode[], main: HtmlNode|undefined, body: HtmlNode|null }} `container` is
+ * the stream the body's children stand in (see `bodyNodesOf`) and `main` is
+ * the single `<main>` that was unwrapped, if there was exactly one. Both are
+ * returned rather than recomputed by the caller: `splitDocument` has to walk
+ * the same stream and unwrap the same element, and deriving them twice is how
+ * a `<script>` inside `<main>` came to be deleted.
  */
 export function findRegions(nodes: HtmlNode[]): {
     regions: HtmlRegion[];
     wrappedInMain: boolean;
+    container: HtmlNode[];
+    main: HtmlNode | undefined;
+    body: HtmlNode | null;
 };
+/**
+ * The nodes that stand for the body's children.
+ *
+ * `<body>` is optional in HTML and `parseHtml` does not imply one, so a
+ * document can put its content straight inside `<html>` — or, as a fragment,
+ * at the top level. Reaching for `findTag(nodes, 'body')` and falling back to
+ * the document root broke both: with no `<body>`, the root's only element is
+ * `<html>` itself, so the whole document became a single region and the
+ * layout wrapped a second copy of it (doctype included) inside a synthesised
+ * `<body>`. Falling through `<html>` instead is what a browser does.
+ *
+ * @param {HtmlNode[]} nodes a parsed document
+ * @returns {HtmlNode[]}
+ */
+export function bodyNodesOf(nodes: HtmlNode[]): HtmlNode[];
 /**
  * Applies caller-supplied names over the proposals, and makes the result
  * unique — two `<section class="band">` elements would otherwise overwrite one
@@ -112,6 +136,9 @@ export function nameRegions(regions: HtmlRegion[], names?: (string | null)[] | R
  * @property {{ name: string, content: string }[]} partials paths relative to `folders.partials`
  * @property {{ styles: string[], scripts: { src: string, content: string }[] }} assets
  * @property {HtmlRegion[]} regions the named regions, for a caller that wants to report them
+ * @property {string[]} warnings things the conversion could not do losslessly
+ * and did anyway, each a whole sentence. Empty for every ordinary document;
+ * non-empty means read it before shipping
  * @property {string[]} expressions every `{{…}}` the SOURCE document carried, as
  * excerpts — see `findExpressions`. Non-empty means the input contains template
  * syntax, which is either another framework's interpolation or an injection;
@@ -140,9 +167,15 @@ export function splitDocument(html: string, options?: {
 export type HtmlNode = {
     type: "element" | "text" | "comment" | "doctype";
     /**
-     * lower-cased tag name
+     * lower-cased tag name — what every decision keys on
      */
     tag?: string;
+    /**
+     * the tag name AS WRITTEN, present only when it differs
+     * from `tag`. Case matters inside `<svg>`: `<linearGradient>` is not
+     * `<lineargradient>`, and the serialiser emits this
+     */
+    name?: string;
     /**
      * the opening tag's attribute text, exactly as written
      */
@@ -206,6 +239,12 @@ export type HtmlSplitResult = {
      * the named regions, for a caller that wants to report them
      */
     regions: HtmlRegion[];
+    /**
+     * things the conversion could not do losslessly
+     * and did anyway, each a whole sentence. Empty for every ordinary document;
+     * non-empty means read it before shipping
+     */
+    warnings: string[];
     /**
      * every `{{…}}` the SOURCE document carried, as
      * excerpts — see `findExpressions`. Non-empty means the input contains template

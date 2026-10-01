@@ -415,6 +415,15 @@ const COVERAGE = [
     pattern: /expressions[\s\S]*escapeExpressions: false/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
+  // The second security review. `warnings` is where the two shapes the
+  // conversion cannot reproduce are reported, and a report an agent does not
+  // read is the same as no report.
+  {
+    feature:
+      'read result.warnings — the conversion names what it could not do losslessly',
+    pattern: /non-empty `warnings`[\s\S]*between two sections/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {
@@ -501,8 +510,19 @@ const CONTRADICTIONS = [
     ],
   },
   {
-    why: "the module's invariant now rests on four choices, not two — the order-preserving body walk and the {{ escape joined the raw attributes and the verbatim-text rule after a security review measured the invariant false on five shapes. A restored count of two describes a module that no longer exists",
-    patterns: [/[Tt]wo choices (?:exist to keep it true|keep it true)/],
+    why: 'a node written between two sections is MOVED, not kept in place — chrome lives in the layout and sections render at one content block. The first round of fixes stopped it being dropped and its own commit message then claimed "in place", which is the overclaim this ban exists to stop being re-copied',
+    patterns: [
+      /comment or stray text node between two sections is not quietly dropped/,
+      /between two sections[^.\n]{0,40}(?:kept|stays|survives) in place/i,
+    ],
+  },
+  {
+    why: "the module's invariant now rests on six choices, not four or two — two security reviews measured it false on fourteen shapes between them, and each round added to the list. The count and the phrase 'one stated exception' are both banned because both were true once and a later edit re-copies the sentence it remembers; there are three exceptions now, two of them reported in warnings",
+    patterns: [
+      /[Tt]wo choices (?:exist to keep it true|keep it true)/,
+      /[Ff]our choices (?:exist to keep it true|keep it true)/,
+      /\bone stated exception\b/i,
+    ],
   },
   {
     why: 'a fact in config/ read as plain {{config.…}} inside a partial handed a model slice renders EMPTY — the slice replaces the context. Both the skill and GUIDE.md said the plain spelling while telling you to slice, in the same step',
