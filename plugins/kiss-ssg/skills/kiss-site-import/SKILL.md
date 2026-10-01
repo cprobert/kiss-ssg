@@ -49,6 +49,10 @@ Then re-run with the names:
 
 ```js
 const { layout, page, partials, assets, regions, stats } = splitDocument(html, {
+  // One entry per region, BY INDEX, in the order `regions` listed them. `null`
+  // keeps a proposal you are happy with. A short list leaves the rest
+  // proposed — and puts your fourth name on the fourth region rather than on
+  // the one you had in mind, silently. Count them against `regions` first.
   names: ['topbar', 'header', 'hero', 'trust-strip', 'problems', 'services'],
 })
 ```

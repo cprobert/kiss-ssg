@@ -347,6 +347,14 @@ const COVERAGE = [
     pattern: /never committed its source/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
+  // Found by running GUIDE.md's own snippet against a real artifact: a
+  // four-name list on a seven-region page silently named the wrong regions,
+  // because `names` is positional. Both docs carried the misleading shape.
+  {
+    feature: 'splitDocument names are positional, and a short list misnames',
+    pattern: /BY INDEX[\s\S]*short list/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {

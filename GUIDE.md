@@ -768,6 +768,78 @@ Your browser is reloaded once per rebuild, when that rebuild has finished writin
 
 `npx kiss-ssg init` sets a folder up for a coding agent — `package.json` scripts, `CLAUDE.md` and `AGENTS.md` pointing at `llms.txt`, kiss-ssg's plugins declared in `.claude/settings.json`, and a one-page starter site when it finds no project there — and never overwrites a file. `npx kiss-ssg init --help` lists exactly what it writes; the [README](README.md#quick-start) is the walkthrough.
 
+### Converting an existing page
+
+The other way a site starts: you already have a page. A Claude or ChatGPT artifact, a page exported from a builder, a hand-written HTML file somebody has been editing for years. It works, its look has been approved, and it has nowhere to go — no host, no history, no way for two people to change it, and nothing a web developer could take over without starting again.
+
+kiss exports two functions for turning that into a site. They do the mechanical half; the half that needs judgement stays with you, and the split between them is deliberate rather than a gap somebody will close later.
+
+**One rule governs the whole job: convert first, improve second.** A conversion that also tidies the markup cannot be verified, because nothing can tell your improvements from your mistakes. Get to "the same page, in pieces", prove it, and then make changes as a step with its own name. Every instruction below is in that order for that reason.
+
+#### What the engine does
+
+`splitDocument(html, options)` cuts the document into the files kiss expects:
+
+```js
+import { splitDocument, splitStylesheet } from 'kiss-ssg'
+
+const { layout, page, partials, assets, regions, stats } = splitDocument(html)
+```
+
+- `layout` — `<head>`, the chrome and `{{#block "main"}}`, for `folders.layouts`.
+- `partials` — one per region, named `site/<name>.hbs` for furniture (`header`, `nav`, `footer`, `aside`, or a `div` whose class says so) and `sections/<name>.hbs` for content.
+- `page` — a page view that is a list of `{{> "sections/…"}}` calls and nothing else.
+- `assets` — `{ styles, scripts }`, the inline `<style>` and `<script>` worth lifting. **Reported, not removed**: the document you get back is whole, because lifting one means choosing a filename and rewriting the tag that pointed at it, and you are the only party who knows where the site keeps things.
+- `regions` — the named regions, and `stats` — `{ regions, chrome, sections }`.
+
+`splitStylesheet(css, options)` does the same for the stylesheet:
+
+```js
+const { entry, partials, stats } = splitStylesheet(css, {
+  sections: regions.map((r) => r.name),
+})
+```
+
+`entry` is a `site.scss` of `@use` lines; `partials` are `_name.scss` files to sit beside it. kiss compiles every non-underscore `.scss` under `folders.assets` and skips partials, so the output builds with no config change. `stats` carries `{ nodes, segments, longestLine, bytesIn, bytesOut }` — `longestLine` is the number worth reporting, because an artifact's stylesheet routinely arrives with a line over a thousand characters.
+
+**What both guarantee is that they did not change anything.** Assembling the layout, the partials and the page view back through Handlebars reproduces the document: attributes are kept verbatim, a self-closing `<path/>` stays self-closing, whitespace between inline elements is preserved (`<em>a</em> <em>b</em>` reads "a b" and the indented version reads "ab"), and `<main>` is re-emitted only if it was there. The stylesheet is cut into **contiguous runs** and never gathered by selector across the file, so the cascade cannot move — `.btn` defined before `.hero .btn` is not the same stylesheet as the reverse. A section appearing in two places therefore yields `_hero.scss` and `_hero-2.scss`, which is a true report of how the stylesheet is written rather than a defect to merge away.
+
+`parseHtml`, `findTag` and `parseStylesheet` are exported too, for a caller that wants to inspect a document without splitting it — `findTag(parseHtml(html), 'body')` is how you compare a conversion's output to its input.
+
+#### What you do
+
+**Name the regions.** `splitDocument` proposes a name from each element's `id`, then its first class, then its tag, and those are markup names. A hero carrying `id="top"` so the brand link can jump to it is proposed as `top`, which says nothing about what the region is. Read the proposals, correct them, and pass them back:
+
+```js
+// By INDEX, one entry per region in the order `regions` lists them. `null`
+// keeps a proposal you are happy with, and a short list leaves the rest
+// proposed — so count them. Four names on a seven-region page puts the fourth
+// on the fourth region, not on the one you had in mind, and nothing says so.
+const named = splitDocument(html, {
+  names: ['header', 'hero', 'offers', 'beans', 'visit', 'enquiry', 'footer'],
+})
+```
+
+**Pitch the stylesheet's section names at page sections, not elements.** `minNodes` (default 3) folds a run too short to earn a file, so the names need to be at the right altitude rather than exact. Offering element-level names (`kicker`, `stars`, `field`) as if they were sections cuts a 14KB sheet into fifty-odd partials holding a rule each, which is a different way of being unreadable.
+
+**Lift the assets and rewrite what pointed at them.** The `<style>` block becomes the Sass above; replace it in the layout with `<link rel="stylesheet" href="/{{asset "css/site.css"}}">`. An inline `<script>` becomes a file under the asset folder, referenced the same way. Use `{{asset}}` rather than a typed path, or cache busting cannot work. Images and fonts the page links are not in the HTML — collect them, or the converted site builds green and renders broken.
+
+**Lift the copy into a model.** The test that settles most cases: _a person should be able to change the copy without opening a `.hbs` file._ Headings, prose, labels, prices and an image's `src`/`alt` go into `src/models/<page>.json`; elements, classes and ARIA stay in the partial; a repeated block becomes an array with one `{{#each}}` over it. Hand each partial its own slice at the call site — `{{> "sections/hero" model.hero}}` — so a section can only read what belongs to it.
+
+The engine does not do this part and will not learn to. `hero: { kicker, heading, intro }` is semantic naming, and nothing could check a guess at it.
+
+**A fact that appears more than once is not model data — it is config.** An address in a Visit section and again in a footer, a phone number in the markup and in a `tel:` link, a business name in the `<title>` and the brand: those go in a `config/` module spread into `new Kiss()` and read as `{{config.business.…}}`. Duplication is what earns that folder, not file length.
+
+#### Verifying it
+
+A conversion is finished when the built page **looks like the input**, not when it builds. Compare the two bodies by element sequence and by visible text, decoding HTML entities on both sides first — moving copy into a model means Handlebars escapes it, so an apostrophe becomes `&#x27;` in the source and an apostrophe on screen. That is escaping working; reaching for a triple-stache to make the bytes match would turn it off, which is worse than the difference it hides.
+
+Declare any difference you accept rather than loosening the comparison until it stops reporting one. A comparison that can never fail tells you nothing, and a conversion that normalises something — an address a page spelled two ways, say — has still changed the page.
+
+Then run `npx kiss-ssg check` (see [Checking a build](#checking-a-build)) and read the `audit` findings. An artifact almost never has a canonical link, a favicon, an `og:image` or a 404 page, and all four are worth adding — **after** the comparison came back clean.
+
+`examples/12-from-a-single-file/` is the whole sequence as running code: the artifact it started from, the conversion script, the comparison, and the site that came out. For an agent doing this on a real page, the `kiss-site-import` skill walks the same steps.
+
 ### Checking a build
 
 `npx kiss-ssg check <script>` builds the site your script builds and tells you whether it worked — without publishing anything. Before the build it says on stderr which kiss-ssg the site resolves, and names a `node_modules/kiss-ssg` that is a link to a working tree rather than the registry package — the shape a plain `npm install` leaves behind after a `file:` dependency is repinned to a version range, because the lockfile's entry still satisfies it; `npm install kiss-ssg@^<version> --save-dev` re-resolves it. The build is staged and then discarded, so the build folder is neither emptied nor written, and what you get back is the verdict instead of the output:
