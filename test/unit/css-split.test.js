@@ -354,3 +354,25 @@ describe('selector lists', () => {
     )
   })
 })
+
+describe('partial names', () => {
+  // Codex review: a repeat's suffix could equal another section's own name.
+  // `hero`, `other`, `hero`, `hero-2` gave `_hero-2.scss` twice — one run
+  // overwritten on disk, and a duplicate `@use`.
+  const css = '.hero{a:1}.other{a:2}.hero{a:3}.hero-2{a:4}'
+  const sections = ['hero', 'other', 'hero-2']
+
+  it('never gives two partials the same file', () => {
+    const names = splitStylesheet(css, { sections, minNodes: 1 }).partials.map(
+      (p) => p.name,
+    )
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  it('compiles to the same CSS when a suffix would have collided', async () => {
+    const result = splitStylesheet(css, { sections, minNodes: 1 })
+    expect(await compileSplit(result)).toBe(
+      compileSource(css, { style: 'compressed' }),
+    )
+  })
+})

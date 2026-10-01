@@ -770,3 +770,35 @@ describe('the third review — what goes where', () => {
     expect(scripts[0]).not.toHaveProperty('src')
   })
 })
+
+describe('sections on both sides of <main>', () => {
+  // Codex review: unwrapping `<main>` while sections also sit outside it put
+  // every section at one content block, so they crossed the boundary — an
+  // outside section was pulled into `<main>`, or an inside one pushed out of
+  // it. That changes the landmark and every `main > section` selector.
+  const page = (inner) =>
+    `<!doctype html><html><head><title>t</title></head><body>${inner}</body></html>`
+
+  it('keeps a section before <main> outside it', () => {
+    const html = page(
+      '<section id="before">Before</section><main><section id="inside">Inside</section></main>',
+    )
+    expect(normalise(assemble(splitDocument(html)))).toBe(normalise(html))
+  })
+
+  it('keeps a section after <main> outside it', () => {
+    const html = page(
+      '<main><section id="inside">Inside</section></main><section id="after">After</section>',
+    )
+    expect(normalise(assemble(splitDocument(html)))).toBe(normalise(html))
+  })
+
+  it('still unwraps <main> when every section is inside it', () => {
+    const html = page(
+      '<header>H</header><main><section id="a">A</section><section id="b">B</section></main><footer>F</footer>',
+    )
+    const result = splitDocument(html)
+    expect(result.partials.map((p) => p.name)).toContain('sections/a.hbs')
+    expect(normalise(assemble(result))).toBe(normalise(html))
+  })
+})
