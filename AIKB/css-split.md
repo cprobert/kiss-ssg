@@ -1,0 +1,53 @@
+# css-split.js
+
+## Responsibility
+
+Splits one stylesheet into a Sass entry plus one partial per section, without changing what it compiles to. Pure — no fs, no config, no logger, no knowledge of `Kiss`. The caller decides where the files go.
+
+This is the **mechanical half** of converting a single-file site into a kiss one. The judgement half — what a section _is_, and what it is called — stays with the agent doing the conversion, which is why `sections` is an input rather than something this module infers. That split is the whole architectural claim of the module: parsing, segmenting, pretty-printing and proving the cascade did not move are things a person should never have to do by hand; naming the hero section is not.
+
+**Why it exists, measured.** The one real precedent for this conversion — `Probert-Family/k9-solutions`, commit `cb0b5b2`, "Import K9 Solutions site into kiss-ssg" — turned one ChatGPT-generated page into 37 files: fifteen partials, a 213-line model, a config module. It carried the stylesheet across untouched: **14,120 bytes on 20 lines, longest line 1,803 characters, average 705**. Its own first line said so — `/* carried over from the original single-file site */`. Two later polish branches touched that file and neither split it; at HEAD it is still five lines over 1,000 characters, and the site uses no Sass at all despite kiss shipping first-class support for it. The markup half of "handoverable to a web developer without a rewrite" was kept. The styles half was not.
+
+## Public interface
+
+- `parseStylesheet(src)` → `CssNode[]`. Recursive, so a rule inside `@media` is a `rule` node like any other. Also re-exported from `lib/kiss.js`.
+- `formatNodes(nodes, depth)` → readable source, newline-terminated. A selector list goes one-per-line.
+- `classNames(selector)` → the class names a selector mentions, in source order, without the dot.
+- `sectionFor(selector, sections)` → the section a selector belongs to, or `null`. Longest section name wins.
+- `segmentNodes(nodes, sections, minNodes)` → `CssSegment[]`, contiguous and in order.
+- `splitStylesheet(css, { sections, entryName, banner, minNodes })` → `{ entry, partials, stats }`. Also re-exported from `lib/kiss.js`.
+- The `CssNode`, `CssSegment` and `CssSplitResult` typedefs.
+
+## Depends on
+
+Nothing. No imports at all — not even `node:` builtins.
+
+## Depended on by
+
+`lib/kiss.js`, for the re-export only. Nothing in the build pipeline calls it; it is a tool a conversion reaches for, not a step a build runs.
+
+## Non-obvious behavior
+
+- **A segment is a CONTIGUOUS RUN, and that is the module's load-bearing decision.** CSS is cascade-ordered, so `.btn` defined before `.hero .btn` is not the same stylesheet as the reverse. Grouping by selector _across_ the file — collecting every `.hero` rule into `_hero.scss` wherever it appeared — reads better and silently changes what the page looks like. Here, segment _n_ holds only nodes that appeared before every node in segment _n+1_, the entry `@use`s them in cut order, and sass emits a module's CSS where it is first loaded. Concatenation therefore reproduces the original node order exactly, which is what makes losslessness provable rather than hoped for.
+
+- **Merging same-named runs is the one change to never make**, and it is the first thing anyone reading the output asks for. It was tried on this branch and watched fail three tests, `preserves cascade order when a section recurs after another` among them. A section whose rules appear in two places yields `_hero.scss` and `_hero-2.scss`: a true report of how the stylesheet is written, not a defect to paper over.
+
+- **Coalescing short runs is the one reshaping that _is_ safe**, because it merges segments that are already adjacent. `minNodes` (default 3) folds a run below that size into its predecessor; a short _leading_ run has no predecessor, so it takes the name of what follows instead of leaving a one-rule `_base.scss` at the top. This exists because of a measurement, not a hunch: the first run against the real precedent offered element-level names (`kicker`, `stars`, `field`) as if they were sections and got **51 partials** back, several holding one rule — a different way of being unreadable. With page-level names and `minNodes: 3` the same input gives **19 partials, longest line 82 characters**, compiling byte-identically.
+
+- **Strings and comments are skipped atomically, because both can contain a brace.** `content: "}"` and `/* } */` are the two inputs that break every naive brace counter, and the second is everywhere in minified CSS. Paren depth is tracked alongside, because `url(` is the one place CSS allows an unquoted value carrying a `;` or a `:` — a data URI for an inline SVG carries both.
+
+- **A declaration splits on its FIRST colon.** `background: url(a:b)` and `grid-template-areas: "a:b"` both carry a later one.
+
+- **A custom property's value is kept raw, and printed with no space after the colon.** CSS preserves a custom property's value as a token stream and sass does not normalise the whitespace inside one the way it does a real declaration's. Trimming it and re-printing `--ink: #111` for a source of `--ink:#111` therefore _survives compilation_ and makes the output differ from the input by a byte. This was caught by the losslessness test on its first run, and fixing it rather than loosening the assertion is what lets that test compare bytes instead of something fuzzier.
+
+- **A top-level `@media` touching more than one section goes to `_responsive.scss`, whole.** Distributing its rules into the section partials would read better — a developer editing `.hero` would see its breakpoints — and would reorder the cascade, because those rules currently come last. A block touching exactly one section joins that section, where it is both safe and useful.
+
+- **Block-less at-rules (`@import`, `@charset`) are forced to `base`**, which is cut first, because they must stay at the top of the output and a partial `@use`d fifth is not the top.
+
+- **A comment-only run is attached to the segment before it, not given a file.** A banner comment introduces what follows, but it is cut as its own run by the name change it precedes; the fold puts it back.
+
+- **The output is bigger than the input, and that is the point.** 14,120 bytes in became 17,898 out on the precedent. Pretty-printing costs ~27%; the file that ships is the _compiled_ `site.css`, which is byte-identical.
+
+## Checked against upstream
+
+The alternative considered and rejected is a CSS parser dependency (postcss). `AIKB/upstream.md` records it: the grammar that matters here is small, the module's value is partly that whoever inherits the site can audit it, and adding a parser to a package whose pitch is "nothing to learn before the first page" would buy correctness on CSS nobody in this corpus writes at the cost of a dependency on every install.

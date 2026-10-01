@@ -129,7 +129,7 @@ separate beat and its `CLAUDE.md` edits do not belong in this branch's diff.
   criterion is therefore added:
 
   - [ ] The conversion breaks the stylesheet into readable, structured Sass under
-        `folders.sass`, partitioned to match the section partials — not carried across
+        `folders.assets`, partitioned to match the section partials — not carried across
         as one blob. No line in the output exceeds a reviewable length.
 
   This expands the remit from "decompose the markup" to "decompose the page", which is
