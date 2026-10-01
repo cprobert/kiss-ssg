@@ -110,7 +110,7 @@ A section appearing twice gives `_hero.scss` and `_hero-2.scss`. **That is corre
 `splitDocument` **reports** inline assets, it does not remove them — `assets.styles` and `assets.scripts` say what is worth lifting while the document stays whole. Doing the lift is yours, because it means choosing filenames:
 
 - The `<style>` block becomes the Sass of step 6. Delete it from the layout and put `<link rel="stylesheet" href="/{{asset "css/site.css"}}">` in its place — `{{asset}}`, never a typed path, so cache busting works.
-- An inline `<script>` becomes a file under `src/assets/js/`, referenced with `<script src="/{{asset "js/site.js"}}" defer></script>`.
+- An inline `<script>` becomes a file under `src/assets/js/`, referenced with `<script src="/{{asset "js/site.js"}}" defer></script>` — **when its `type` is `''`** (a classic script). Each entry in `assets.scripts` carries `type` and the raw `attrs` because they decide what the text is: a `type: 'module'` script keeps `type="module"` on the tag that loads it, or its first `import` fails; `application/ld+json` and `importmap` are data, not JavaScript, and stay inline in the layout.
 - A `<script src>` the page already had is left alone; it is in the layout already, ahead of `{{#block "scripts"}}`.
 - **Images and fonts the page links are not in the HTML.** Collect them into `src/assets/`, or the converted site builds green and renders broken. Say which ones you could not find rather than leaving a dead `src`.
 

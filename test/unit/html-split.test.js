@@ -592,3 +592,181 @@ describe('warnings — what the conversion could not do losslessly', () => {
     expect(splitDocument(html).warnings).toEqual([])
   })
 })
+
+// ---------------------------------------------------------------------------
+// The third review
+// ---------------------------------------------------------------------------
+//
+// Ten findings from a review run after the two security rounds, eight of them
+// probed against the branch. The first is the same class as the four the
+// second round found: a surface the escape was never applied to.
+
+describe('the third review — the escape and the tag name', () => {
+  const page = (inner) =>
+    `<!doctype html><html><head><title>t</title></head><body>${inner}</body></html>`
+  const ctx = { config: { secrets: { apiKey: 'LEAKED' } } }
+
+  it('escapes an expression written into a tag name', () => {
+    // The tag name was the one piece of an element nothing escaped:
+    // `openingTag` escaped the attributes and wrote the name raw, and every
+    // closing tag was written raw too.
+    const html = page(
+      `<section class="a"><x{{config.secrets.apiKey}}>hi</x{{config.secrets.apiKey}}></section>`,
+    )
+    const result = splitDocument(html)
+    expect(assemble(result, ctx)).not.toContain('LEAKED')
+    expect(result.expressions.join(' ')).toContain('config.secrets.apiKey')
+  })
+
+  it('escapes an expression split between the tag name and its attributes', () => {
+    // The name ends at the first space, so `<x{{lookup config 'k'}}>` put
+    // `x{{lookup` in the name and the rest in the attributes — neither half
+    // holding a `{{` that the attribute escape could see.
+    const html = page(
+      `<section class="a"><x{{lookup config.secrets 'apiKey'}}>hi</section>`,
+    )
+    expect(assemble(splitDocument(html), ctx)).not.toContain('LEAKED')
+  })
+})
+
+describe('the third review — legal HTML the split broke', () => {
+  const page = (inner, head = '') =>
+    `<!doctype html><html><head><title>t</title>${head}</head><body>${inner}</body></html>`
+
+  it('treats a slash on a non-void HTML element the way a browser does — as nothing', () => {
+    // `<script src="a.js" />` is NOT self-closing in HTML. Treating it as
+    // closed dropped the real `</script>` as a stray, and a browser then read
+    // the rest of the page as script.
+    const html = page(
+      '<section id="a">A</section>',
+      '<script src="a.js" /></script>',
+    )
+    const result = splitDocument(html)
+    expect(result.layout.content).toContain('<script src="a.js" /></script>')
+    expect(normalise(assemble(result))).toBe(normalise(html))
+  })
+
+  it('keeps self-closing inside svg, where it is honoured', () => {
+    const html = page(
+      '<section id="a"><svg><path d="M0 0"/><circle r="1" /></svg></section>',
+    )
+    const out = assemble(splitDocument(html))
+    expect(out).toContain('<path d="M0 0"/>')
+    expect(out).toContain('<circle r="1" />')
+    expect(normalise(out)).toBe(normalise(html))
+  })
+
+  it('reads a < that does not start a tag as text', () => {
+    // `Price < 10` is text in HTML. It was parsed as an element with an empty
+    // name, pushed open, and closed with an invented `</>`.
+    const html = page(
+      '<section id="a"><p>Price < 10 today</p><p>b</p></section>',
+    )
+    const result = splitDocument(html)
+    expect(result.partials[0].content).not.toContain('</>')
+    expect(normalise(assemble(result))).toBe(normalise(html))
+  })
+
+  it('keeps every root node of a document with head and body but no <html>', () => {
+    // `<html>` is optional. The no-`<html>` branch emitted only the doctype and
+    // a rebuilt skeleton, so a script after `</body>` was deleted — the same
+    // silent deletion the `<html>` branch had been fixed for.
+    const html = `<!doctype html><head><title>t</title></head><body><section id="a">A</section></body><script src="late.js"></script>`
+    const result = splitDocument(html)
+    expect(result.layout.content).toContain('late.js')
+    expect(result.layout.content).not.toContain('<html')
+  })
+
+  it('keeps the slash on a void element written self-closing', () => {
+    // The commonest void spelling in agent-written HTML.
+    const html = page(
+      '<section id="a"><img src="a.png"/><br /></section>',
+      '<meta charset="utf-8" />',
+    )
+    const out = assemble(splitDocument(html))
+    expect(out).toContain('<meta charset="utf-8" />')
+    expect(out).toContain('<img src="a.png"/>')
+    expect(out).toContain('<br />')
+  })
+
+  it('does not invent a closing tag the document never wrote', () => {
+    // An element closed by its parent rather than by its own close tag is
+    // written back the same way, so the bytes still match.
+    const html = page('<section id="a"><ul><li>one<li>two</ul></section>')
+    expect(normalise(assemble(splitDocument(html)))).toBe(normalise(html))
+  })
+})
+
+describe('the third review — what goes where', () => {
+  const page = (inner) =>
+    `<!doctype html><html><head><title>t</title></head><body>${inner}</body></html>`
+
+  it('does not read a content class that merely contains a chrome word as chrome', () => {
+    // `\b` matches at a hyphen, so `hero-banner` and `card-header` were
+    // furniture and moved into every page's layout.
+    for (const cls of [
+      'hero-banner',
+      'cta-banner',
+      'page-header',
+      'card-header',
+      'nav-tabs',
+    ])
+      expect(regionKind(parseHtml(`<div class="${cls}"></div>`)[0])).toBe(
+        'section',
+      )
+    for (const cls of [
+      'site-header',
+      'header',
+      'navbar',
+      'topbar',
+      'site-footer',
+    ])
+      expect(regionKind(parseHtml(`<div class="x ${cls}"></div>`)[0])).toBe(
+        'chrome',
+      )
+    expect(regionKind(parseHtml('<div role="banner"></div>')[0])).toBe('chrome')
+  })
+
+  it('reports inline assets in a document with no <body>', () => {
+    // `collect()` walked `<body>` and nothing else, so with none, nothing was
+    // reported — and a top-level `<style>` became a section.
+    const html = `<html><head></head><section class="a">A</section><style>.a{color:red}</style><script>go()</script></html>`
+    const result = splitDocument(html)
+    expect(result.assets.styles).toEqual(['.a{color:red}'])
+    expect(result.assets.scripts.map((s) => s.content)).toEqual(['go()'])
+    expect(result.partials.map((p) => p.name)).toEqual(['sections/a.hbs'])
+  })
+
+  it('does not make a body-level style, template or noscript a region', () => {
+    const html = page(
+      '<style>.a{}</style><section id="a">A</section><noscript>n</noscript><template><p>t</p></template>',
+    )
+    expect(splitDocument(html).partials.map((p) => p.name)).toEqual([
+      'sections/a.hbs',
+    ])
+  })
+
+  it('warns about a script moved out from between two sections', () => {
+    // Moved like every other interleaved node, and the one whose position
+    // changes behaviour: it now runs after the second section exists.
+    const html = page(
+      '<section id="a">A</section><script>x()</script><section id="b">B</section>',
+    )
+    const { warnings } = splitDocument(html)
+    expect(warnings.join(' ')).toMatch(/between two sections/)
+    expect(warnings.join(' ')).toContain('<script>')
+  })
+
+  it("reports each inline script's attributes, so a module is not lifted as a classic script", () => {
+    const html = page(
+      '<section id="a">A</section><script type="module">import x from "./x.js"</script><script type="application/ld+json">{"a":1}</script>',
+    )
+    const { scripts } = splitDocument(html).assets
+    expect(scripts.map((s) => s.type)).toEqual([
+      'module',
+      'application/ld+json',
+    ])
+    expect(scripts[0].attrs).toBe(' type="module"')
+    expect(scripts[0]).not.toHaveProperty('src')
+  })
+})

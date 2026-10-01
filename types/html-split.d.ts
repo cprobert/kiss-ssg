@@ -134,7 +134,10 @@ export function nameRegions(regions: HtmlRegion[], names?: (string | null)[] | R
  * @property {{ name: string, content: string }} layout
  * @property {{ name: string, content: string }} page
  * @property {{ name: string, content: string }[]} partials paths relative to `folders.partials`
- * @property {{ styles: string[], scripts: { src: string, content: string }[] }} assets
+ * @property {{ styles: string[], scripts: { attrs: string, type: string, content: string }[] }} assets
+ * inline `<style>` text, and every src-less `<script>` with its raw attribute
+ * text and its lower-cased `type` (`''` for a classic script) — `module`,
+ * `application/ld+json` and `importmap` are not lifted the same way
  * @property {HtmlRegion[]} regions the named regions, for a caller that wants to report them
  * @property {string[]} warnings things the conversion could not do losslessly
  * and did anyway, each a whole sentence. Empty for every ordinary document;
@@ -177,7 +180,8 @@ export type HtmlNode = {
      */
     name?: string;
     /**
-     * the opening tag's attribute text, exactly as written
+     * everything in the opening tag after its name,
+     * exactly as written — a trailing `/` included
      */
     attrs?: string;
     children?: HtmlNode[];
@@ -190,10 +194,16 @@ export type HtmlNode = {
      */
     raw?: boolean;
     /**
-     * written as `<tag/>` and not a void element —
-     * the SVG spelling, which has to survive serialisation
+     * written as `<tag/>` inside `<svg>` or
+     * `<math>`, where that closes it: no children and no close tag. On an HTML
+     * element the slash closes nothing, so it is never set there
      */
     selfClosed?: boolean;
+    /**
+     * the document never wrote this element's close
+     * tag — an ancestor's closed it, or the document ended — so none is written back
+     */
+    unclosed?: boolean;
 };
 export type HtmlRegion = {
     /**
@@ -228,10 +238,16 @@ export type HtmlSplitResult = {
         name: string;
         content: string;
     }[];
+    /**
+     * inline `<style>` text, and every src-less `<script>` with its raw attribute
+     * text and its lower-cased `type` (`''` for a classic script) — `module`,
+     * `application/ld+json` and `importmap` are not lifted the same way
+     */
     assets: {
         styles: string[];
         scripts: {
-            src: string;
+            attrs: string;
+            type: string;
             content: string;
         }[];
     };

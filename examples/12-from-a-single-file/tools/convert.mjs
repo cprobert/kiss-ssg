@@ -82,7 +82,13 @@ await write(`src/assets/css/${sheet.entry.name}`, sheet.entry.content)
 for (const partial of sheet.partials)
   await write(`src/assets/css/${partial.name}`, partial.content)
 
-for (const [i, script] of named.assets.scripts.entries())
+// Only CLASSIC scripts are lifted. A script's `type` says what its text is:
+// `module` needs `type="module"` on the tag that loads it, and JSON-LD or an
+// import map is data that has to stay inline. Those stay where they are.
+const classic = named.assets.scripts.filter(
+  (s) => s.type === '' || s.type === 'text/javascript',
+)
+for (const [i, script] of classic.entries())
   await write(`src/assets/js/site${i || ''}.js`, `${script.content.trim()}\n`)
 
 const longest = (text) =>

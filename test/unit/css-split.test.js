@@ -335,3 +335,22 @@ describe('losslessness', () => {
     expect(result.stats.longestLine).toBeLessThan(40)
   })
 })
+
+describe('selector lists', () => {
+  it('splits a selector list only at its top-level commas', () => {
+    // A comma inside a string or a function is not a list separator. Splitting
+    // there put a newline inside `[title="x, y"]` — a bad-string token.
+    const out = formatNodes(
+      parseStylesheet('a[title="x, y"], .b:is(.c, .d) { color: red }'),
+    )
+    expect(out).toContain('a[title="x, y"],\n.b:is(.c, .d) {')
+  })
+
+  it('compiles a selector with a comma in a string to the same CSS', async () => {
+    const css = `a[title="x, y"],.b{color:red}.hero{color:blue}`
+    const result = splitStylesheet(css, { sections: ['hero'], minNodes: 1 })
+    expect(await compileSplit(result)).toBe(
+      compileSource(css, { style: 'compressed' }),
+    )
+  })
+})

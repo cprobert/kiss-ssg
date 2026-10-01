@@ -67,7 +67,7 @@ not give the input back:
   renders the same; the bytes differ, and inside `<script>` or `<style>`,
   where a character reference is not decoded, so does the text.
 - **A node written between two sections** — a `<nav>`, an `<aside>`, a
-  comment, stray text — comes out after all of them. Chrome goes in the
+  `<script>`, a comment, stray text — comes out after all of them. Chrome goes in the
   layout so every page gets it, and sections render at a single content
   block, so an interleaved node has nowhere else to go. Move it above the
   first section or below the last if the order matters.

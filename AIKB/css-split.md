@@ -48,6 +48,8 @@ Nothing. No imports at all — not even `node:` builtins.
 
 - **Block-less at-rules (`@import`, `@charset`) are forced to `base`**, which is cut first, because they must stay at the top of the output and a partial `@use`d fifth is not the top.
 
+- **A selector list is cut only at its top-level commas.** A comma inside a string, `( )` or `[ ]` separates nothing. A bare `.split(',')` put a newline inside `a[title="x, y"]` — an unescaped newline in a CSS string is a bad-string token, so the rule failed to compile or was dropped — and re-spaced `:is(.a, .b)`, against a module whose claim is that it compiles byte-identically. `splitSelectorList` tracks quotes, escapes and bracket depth, and trims only at the cut.
+
 - **A comment-only run is attached to the segment before it, not given a file.** A banner comment introduces what follows, but it is cut as its own run by the name change it precedes; the fold puts it back.
 
 - **The output is bigger than the input, and that is the point.** 14,120 bytes in became 17,898 out on the precedent. Pretty-printing costs ~27%; the file that ships is the _compiled_ `site.css`, which is byte-identical.
