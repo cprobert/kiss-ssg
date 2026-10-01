@@ -136,6 +136,29 @@ separate beat and its `CLAUDE.md` edits do not belong in this branch's diff.
   what the objective's handover promise actually requires. Recorded here rather than
   split off, per the one-open-branch rule.
 
+- **2026-10-01 — the model is the skill's to produce, not the engine's.** Criterion 3
+  asks the conversion to lift repeated content into a JSON model. Building the two
+  splitters made the boundary concrete: `lib/html-split.js` cuts the document into a
+  layout, partials and a page view, and stops there. `hero: { kicker, heading, intro }`
+  is semantic naming — a module guessing at it would emit field names no human would
+  have chosen, and no test could tell a good guess from a bad one. Put to the operator
+  at the second pulse with three options; the answer was **the skill does it, the lib
+  does not**.
+
+  So the division across this branch is now explicit, and it is the same one in both
+  halves: the engine does what is provable and the skill does what is judged.
+
+  | Mechanical, in `lib/`, unit-tested     | Judged, in the skill, reviewed by a person |
+  | -------------------------------------- | ------------------------------------------ |
+  | Parse, cut, re-indent, round-trip      | What a region means and is called          |
+  | Segment a stylesheet, keep the cascade | Which words become model fields            |
+  | Report inline assets worth lifting     | Where they go, and rewriting the tags      |
+
+  Criterion 3 is therefore met by the engine only as far as _structure_; its model
+  clause is carried by the skill slice and is not a `lib/` obligation. Recorded so the
+  close scores it against what was actually agreed rather than against the original
+  wording.
+
 ## Pulse log
 
 - **2026-10-01** — research slice; 0 of 7 criteria met, nothing built (branch carries
@@ -155,6 +178,30 @@ separate beat and its `CLAUDE.md` edits do not belong in this branch's diff.
   controller. **Eyeball: looked** — operator opened `site.css` at `cb0b5b2` and judged it
   does not meet the handover bar, directing that CSS decomposition become a success
   criterion. Both amendments above recorded. Decision: **record amendment, continue.**
+
+- **2026-10-01 (second)** — both splitters built. Criteria **5 and 8 met**:
+  `lib/css-split.js` and `lib/html-split.js` each carry an `AIKB/` doc, a `CLAUDE.md`
+  row, a `test/unit/` sibling and regenerated types (`/test-coverage-check` advisory:
+  both added modules covered, nothing uncovered); the stylesheet comes out as 19
+  partials with a longest line of 82 characters against the input's 1,803. Criteria
+  **2, 3 and 7 partial**, **1, 4 and 6 not yet**. Evidence: 238 tests green across
+  `aikb`, `css-split` and `html-split`; full suite 1,939 passed / 4 skipped; all five
+  gates pass. End-to-end against the **live** `k9solutions.uk` page (21,213 bytes,
+  longest line 17,405) — 28 files out, both round trips exact, and the cut found the
+  same eleven regions the hand conversion chose.
+
+  Three defects were found by the round trip rather than by design, and no gate would
+  have caught any of them: whitespace between inline `<em>` elements was being eaten,
+  `<path/>` was being normalised to `<path></path>`, and the live page's two
+  `<script src>` tags were dropped outright. The third exposed an inconsistency worth
+  naming — the module was removing inline assets while claiming to reproduce the
+  document, which it cannot do both of; assets are now reported, not removed.
+
+  **Eyeball: deferred** — operator away from a laptop; written to `to-verify.md` § 4
+  with the four files named, and a note that `examples/12-…` supersedes it as the
+  artefact once that slice lands, since that one builds. Decision: **record amendment,
+  continue** — next slice is the `kiss-site-import` skill, which now has a settled
+  contract to encode.
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.

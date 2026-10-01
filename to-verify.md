@@ -33,6 +33,37 @@ checkout; the only kiss consumer on disk is `cprobert.github.io`, pinned to
 
 ---
 
+## 4. The conversion's output shape — deferred at the 2026-10-01 pulse
+
+Branch `feat/artifact-import`. Deferred because the operator was away from a laptop;
+this is the eyeball `/branch-pulse` Step 4 asked for, and `/branch-close` Step 5a
+reads the pulse log rather than asking again, so it has to be closed here.
+
+**What to look at.** The real conversion of the live `k9solutions.uk` home page —
+one 21,213-byte HTML file and one 14,120-byte stylesheet in, 28 files out. Four of
+those files were attached in the session of 2026-10-01 and are the thing to read:
+
+- `src/layouts/layout.hbs` — does the chrome/`{{#block "main"}}` split read right?
+- `src/pages/index.hbs` — eight `{{> "sections/…"}}` calls and nothing else.
+- `src/partials/sections/hero.hbs` — is the indentation something you would hand over?
+- `src/assets/css/_hero.scss` — 110 lines, longest line 82 chars (was 1,803).
+
+There is no committed way to regenerate them yet — the script that produced them
+lives in the session scratchpad, not in the repo. `examples/12-…` is the slice that
+fixes that, and running it will be a one-liner (`npm run eg12`). **If you would
+rather wait for that than read four attached files, say so and this item moves to
+the example instead** — that is a better artefact anyway, because it builds.
+
+- [ ] The structure is what you would hand a web developer, or say what is off
+- [ ] The region **names** read as meaning rather than as markup (`help`, `approach`
+      and `enquire` came from the live page's own ids; the hand conversion called the
+      same three `problems`, `method` and `enquiry`)
+
+**Why it matters now:** the `kiss-site-import` skill is about to encode this shape.
+A naming or indentation complaint is far cheaper before that than after.
+
+---
+
 ## Open decisions, not verification
 
 - **2.4.0 is a minor carrying a behavioural break.** Your call, recorded. 2.5.0
