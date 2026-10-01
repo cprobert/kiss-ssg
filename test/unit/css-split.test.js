@@ -375,4 +375,35 @@ describe('partial names', () => {
       compileSource(css, { style: 'compressed' }),
     )
   })
+
+  it('never names a partial after the entry', async () => {
+    // Codex review: `site.scss` beside `_site.scss` makes `@use 'site'`
+    // ambiguous, and Sass refuses it.
+    const input = '.site{color:red}.other{color:blue}'
+    const result = splitStylesheet(input, {
+      sections: ['site', 'other'],
+      minNodes: 1,
+    })
+    expect(result.partials.map((p) => p.name)).not.toContain('_site.scss')
+    expect(await compileSplit(result)).toBe(
+      compileSource(input, { style: 'compressed' }),
+    )
+  })
+})
+
+describe('escapes outside strings', () => {
+  // Codex review: `\{` is an escaped character, not a block. Reading it as
+  // one turned the class `foo{bar` into a different selector.
+  it('does not read an escaped brace as structure', () => {
+    const nodes = parseStylesheet('.foo\\{bar{color:red}.b{color:blue}')
+    expect(nodes.map((n) => n.prelude)).toEqual(['.foo\\{bar', '.b'])
+  })
+
+  it('compiles an escaped selector to the same CSS', async () => {
+    const input = '.foo\\{bar{color:red}.a\\}b{color:blue}.hero{color:green}'
+    const result = splitStylesheet(input, { sections: ['hero'], minNodes: 1 })
+    expect(await compileSplit(result)).toBe(
+      compileSource(input, { style: 'compressed' }),
+    )
+  })
 })

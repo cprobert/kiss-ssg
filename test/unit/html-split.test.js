@@ -802,3 +802,31 @@ describe('sections on both sides of <main>', () => {
     expect(normalise(assemble(result))).toBe(normalise(html))
   })
 })
+
+describe('inline content directly in <body>', () => {
+  // Codex review: each inline element became a region, and the partial calls
+  // went out one per indented line — so `<span>A</span><span>B</span>`
+  // rendered "A B". `normalise` drops whitespace between tags, which is
+  // exactly the difference here, so these assert on the raw render.
+  const page = (inner) =>
+    `<!doctype html><html><head><title>t</title></head><body>${inner}</body></html>`
+
+  it('adds no whitespace between adjacent inline elements', () => {
+    const out = assemble(splitDocument(page('<span>A</span><span>B</span>')))
+    expect(out).toContain('<span>A</span><span>B</span>')
+  })
+
+  it('keeps the whitespace that was there', () => {
+    const out = assemble(
+      splitDocument(page('<em>a</em> <em>b</em>text <b>c</b>')),
+    )
+    expect(out).toContain('<em>a</em> <em>b</em>text <b>c</b>')
+  })
+
+  it('does not make an inline element a region', () => {
+    const result = splitDocument(
+      page('<a class="skip" href="#a">Skip</a><section id="a">A</section>'),
+    )
+    expect(result.partials.map((p) => p.name)).toEqual(['sections/a.hbs'])
+  })
+})
