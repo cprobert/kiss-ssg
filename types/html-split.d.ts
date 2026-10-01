@@ -147,6 +147,11 @@ export type HtmlRegion = {
      * the proposed partial name
      */
     name: string;
+    /**
+     * the class names on the region's root element, which
+     * are what `splitStylesheet`'s `sections` matches on — see `findRegions`
+     */
+    classes: string[];
     node: HtmlNode;
 };
 export type HtmlSplitResult = {

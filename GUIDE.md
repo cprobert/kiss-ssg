@@ -795,8 +795,14 @@ const { layout, page, partials, assets, regions, stats } = splitDocument(html)
 `splitStylesheet(css, options)` does the same for the stylesheet:
 
 ```js
+// `classes`, NOT `name`. A region's `name` is what it means — the one you
+// renamed in the step below — and `sections` matches the class names in the
+// selectors. On a page whose hero is `<section class="lede">` those differ,
+// and passing the names matches nothing: every rule falls into one run and you
+// get a single `_base.scss`, with no error, because "nothing matched" and
+// "one section, correctly" look identical from inside.
 const { entry, partials, stats } = splitStylesheet(css, {
-  sections: regions.map((r) => r.name),
+  sections: regions.flatMap((r) => r.classes),
 })
 ```
 
@@ -828,13 +834,22 @@ const named = splitDocument(html, {
 
 The engine does not do this part and will not learn to. `hero: { kicker, heading, intro }` is semantic naming, and nothing could check a guess at it.
 
-**A fact that appears more than once is not model data — it is config.** An address in a Visit section and again in a footer, a phone number in the markup and in a `tel:` link, a business name in the `<title>` and the brand: those go in a `config/` module spread into `new Kiss()` and read as `{{config.business.…}}`. Duplication is what earns that folder, not file length.
+**A fact that appears more than once is not model data — it is config.** An address in a Visit section and again in a footer, a phone number in the markup and in a `tel:` link, a business name in the `<title>` and the brand: those go in a `config/` module spread into `new Kiss()`. Duplication is what earns that folder, not file length.
+
+**Inside a partial you handed a model slice, that is `{{@root.config.…}}`.** Giving a partial `model.visit` as its context replaces the context, so plain `{{config.…}}` resolves to nothing and renders **empty** — no warning, no failed page, `check` still green, `links` and `audit` both clean. The only thing that catches it is reading the page. An unsliced partial (chrome invoked as `{{> "site/footer"}}`) still sees plain `{{config.…}}`, which is why both spellings appear in a converted site and why the difference is easy to miss.
+
+Two more things belong in `router.js` rather than in the model, and the second is the quieter of the two:
+
+- **`siteUrl`**, which `{{canonical}}`, `.sitemap()` and `.robots()` all need. An artifact rarely carries its own domain; if you genuinely cannot establish it, say so rather than inventing one silently, because it is baked into every canonical link.
+- **`title` and `description` are page options**, set on `.page()`, not model fields. A page with neither still builds: `title` falls back to the slug, title-cased, so a converted home page ships as `<title>Index</title>`. That is plausible enough to survive review, and nothing catches it — the audit only flags an absent title, and a body-level comparison never looks at `<head>`.
 
 #### Verifying it
 
 A conversion is finished when the built page **looks like the input**, not when it builds. Compare the two bodies by element sequence and by visible text, decoding HTML entities on both sides first — moving copy into a model means Handlebars escapes it, so an apostrophe becomes `&#x27;` in the source and an apostrophe on screen. That is escaping working; reaching for a triple-stache to make the bytes match would turn it off, which is worse than the difference it hides.
 
 Declare any difference you accept rather than loosening the comparison until it stops reporting one. A comparison that can never fail tells you nothing, and a conversion that normalises something — an address a page spelled two ways, say — has still changed the page.
+
+**Compare the stylesheet too, and the `<title>`.** A body comparison covers neither, and the stylesheet is where "keep what it looks like" actually lives. Compiling the original `<style>` block with `sass --style=compressed` and diffing it against the built CSS is a two-minute check that either proves the split lossless on your input or tells you it is not.
 
 Then run `npx kiss-ssg check` (see [Checking a build](#checking-a-build)) and read the `audit` findings. An artifact almost never has a canonical link, a favicon, an `og:image` or a 404 page, and all four are worth adding — **after** the comparison came back clean.
 

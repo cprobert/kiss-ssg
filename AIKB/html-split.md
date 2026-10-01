@@ -16,7 +16,7 @@ The other mechanical half of converting a single-file site; `AIKB/css-split.md` 
 - `findTag(nodes, tag)` → the first matching descendant, breadth-first, or `null`.
 - `suggestName(node)` → a kebab-case name from `id`, else the first class, else the tag.
 - `regionKind(node)` → `'chrome'` or `'section'`.
-- `findRegions(nodes)` → `{ regions, wrappedInMain }`.
+- `findRegions(nodes)` → `{ regions, wrappedInMain }`. Each region carries `kind`, `tag`, `name`, `classes` and `node`.
 - `nameRegions(regions, names)` → the regions with caller names applied and made unique.
 - `splitDocument(html, { names, layoutName, pageName })` → `{ layout, page, partials, assets, regions, stats }`. Also re-exported from `lib/kiss.js`.
 - The `HtmlNode`, `HtmlRegion` and `HtmlSplitResult` typedefs.
@@ -48,6 +48,10 @@ Nothing. No imports at all — not even `node:` builtins.
 - **Body-level `<script>` tags go into the layout, ahead of the `scripts` block.** Every page needs them, so they are furniture; the per-page `{{#block "scripts"}}` sits after. This is the shape the precedent's hand-written layout arrived at independently.
 
 - **It is not a conforming parser and does not try to be.** No implied tags, no mis-nesting repair, no invented `<tbody>`. The input it exists for is machine-written — a Claude or ChatGPT artifact, an exported page — which is well-formed and explicitly closed. A close tag for something that is not open pops nothing, so malformed input degrades into a flatter cut rather than a wrong one. Void elements and raw-text elements (`script`, `style`, `textarea`, `title`) are handled, because `<img>` treated as open swallows the rest of the document and `if (a<b)` inside a script is not a tag.
+
+- **A region carries both what it MEANS and what its markup is called**, because two different things read them. `name` names the partial and is the one a caller renames; `classes` is the class list on the region's root element, and is what `splitStylesheet`'s `sections` matches selectors against.
+
+  The field exists because leaving it out cost a clean-room run its stylesheet split. Every document used to tell a caller to map the regions to their **names** and pass those as `sections` — correct only while a page's class names happen to be semantic. On a page whose `hero`, `services` and `testimonials` were `.lede`, `.craft` and `.proof`, it matched nothing and collapsed nine partials into one. That spelling is now banned outright in `test/unit/skill-coverage.test.js`'s `CONTRADICTIONS`, rather than merely corrected, because it looks right and fails silently — which is also why this paragraph describes it instead of quoting it. Deriving a selector from markup is mechanical, so the engine owes it rather than leaving every caller to keep a parallel list in step by hand — which is what `examples/12-from-a-single-file/tools/convert.mjs` had been doing with two separate arrays and no explanation of why there were two.
 
 - **Chrome is detected by tag _and_ by class.** `header`, `nav`, `footer` and `aside` are furniture; so is a `div` whose id or class matches `CHROME_HINTS` (`topbar`, `site-header`, `masthead`, …), because an agent-written page uses `<div class="site-header">` about as often as it uses `<header>`.
 

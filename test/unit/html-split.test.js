@@ -190,6 +190,35 @@ describe('regions', () => {
     expect(nameRegions(regions).map((r) => r.name)).toEqual(['band', 'band-2'])
   })
 
+  it("carries each region's root classes, for the stylesheet split", () => {
+    // The clean-room finding: `name` is what a region MEANS and `classes` is
+    // what its markup is called, and `splitStylesheet` matches the second.
+    // A page whose hero is `<section class="lede">` is the normal case, and
+    // passing the names to the stylesheet matched nothing.
+    const doc = parseHtml(
+      '<body><header class="masthead bar">h</header><section class="lede">a</section><section>b</section></body>',
+    )
+    const { regions } = findRegions(doc)
+    expect(regions.map((r) => r.classes)).toEqual([
+      ['masthead', 'bar'],
+      ['lede'],
+      [],
+    ])
+    // And the spelling the docs now prescribe produces a usable list.
+    expect(regions.flatMap((r) => r.classes)).toEqual([
+      'masthead',
+      'bar',
+      'lede',
+    ])
+  })
+
+  it('keeps classes through a rename', () => {
+    const doc = parseHtml('<body><section class="lede">a</section></body>')
+    const named = nameRegions(findRegions(doc).regions, ['hero'])
+    expect(named[0].name).toBe('hero')
+    expect(named[0].classes).toEqual(['lede'])
+  })
+
   it('finds a tag anywhere in the tree', () => {
     expect(findTag(parseHtml(page), 'title').children[0].text).toBe('t')
     expect(findTag(parseHtml(page), 'nope')).toBeNull()

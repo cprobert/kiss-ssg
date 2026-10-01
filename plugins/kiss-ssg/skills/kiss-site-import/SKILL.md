@@ -39,6 +39,10 @@ Read `node_modules/kiss-ssg/llms.txt` — the API contract that ships with the e
 
 Per-module detail is in `node_modules/kiss-ssg/AIKB/html-split.md` and `node_modules/kiss-ssg/AIKB/css-split.md`. Read both before you run anything: they say what each module guarantees and, more usefully, what it deliberately refuses to do.
 
+**Then read `node_modules/kiss-ssg/examples/12-from-a-single-file/` — it is this job, already done.** Not an illustration of a feature: the artifact it started from (`source/original.html`), the conversion that produced the site (`tools/convert.mjs`), the comparison that proved the page unchanged (`tools/compare.mjs`), the `router.js`, the model, the `config/` module and the Sass. Its `README.md` is the shortest complete account of the sequence you are about to follow.
+
+Leaving this out cost a clean-room run four separate mistakes, every one of which that folder answers in a line of working code. Read it before step 4, and copy `tools/compare.mjs` rather than writing your own — step 10 needs it.
+
 ### 4. Cut the document, then **name the regions yourself**
 
 Run `splitDocument(html)` once with no names and look at what it found. It proposes a name per region from the element's `id`, then its first class, then its tag — and those are markup names, not meaning. This is the step where you earn your keep.
@@ -72,7 +76,16 @@ Three things to check before moving on:
 The CSS is where the handover promise is kept or lost. Pass the region names you just chose, so the Sass partitions line up with the markup partials:
 
 ```js
-const sheet = splitStylesheet(css, { sections: regions.map((r) => r.name) })
+// `classes`, NOT `name`. A region's `name` is what it MEANS — the thing you
+// just renamed — and `sections` matches the CLASS NAMES in the selectors. On a
+// page whose hero is `<section class="lede">` they differ, and passing the
+// names matches nothing: every rule falls into one run and you get a single
+// `_base.scss`. There is no error, because "nothing matched" and "one section,
+// correctly" are indistinguishable from inside. Measured on a clean-room run:
+// nine partials became one.
+const sheet = splitStylesheet(css, {
+  sections: regions.flatMap((r) => r.classes),
+})
 ```
 
 Write `sheet.entry` to `src/assets/css/site.scss` and each of `sheet.partials` beside it. kiss compiles every non-underscore `.scss` under `folders.assets` and skips `_partials`, so this builds with no config change.
@@ -110,26 +123,38 @@ Hand each section partial its own slice at the call site, so a partial only sees
 {{> "sections/hero" model.hero}}
 ```
 
-**A fact that appears more than once is not model data — it is config.** A phone number in the markup, in a WhatsApp link and in the JSON-LD belongs in `config/site.js`, spread into `new Kiss()` and read as `{{config.business.phone}}`. That is the seam `llms.txt` § The build script describes, and duplication is what earns it, not length.
+**A fact that appears more than once is not model data — it is config.** A phone number in the markup, in a WhatsApp link and in the JSON-LD belongs in `config/site.js`, spread into `new Kiss()`. That is the seam `llms.txt` § The build script describes, and duplication is what earns it, not length.
+
+**In a partial you handed a slice, that is `{{@root.config.…}}`.** The slice replaces the context, so plain `{{config.business.phone}}` resolves to nothing and renders **empty** — no warning, no failed page, `check` still green, `links` and `audit` both clean. Nothing but reading the page catches it. Chrome partials invoked without a slice (`{{> "site/footer"}}`) still use plain `{{config.…}}`, so a converted site legitimately contains both spellings; `examples/12-from-a-single-file/src/partials/` shows each in place.
 
 ### 9. Write the build script, then the site decisions
 
-Follow `kiss-site-new` steps 5 onwards for `router.js` — it carries the full contract and this skill does not repeat it. The decisions that matter most here, because an imported page arrives with URLs that already exist somewhere:
+`kiss-site-new` carries the full contract for `router.js`. **It ships from the plugin marketplace rather than in the tarball, so it may not be installed** — the same is true of `kiss-site-review` and `kiss-build-check` named below. When a skill this one points at is not there, the contract is `node_modules/kiss-ssg/llms.txt` § The build script, and `examples/12-from-a-single-file/router.js` is it as working code. Say which you used.
 
-- **Ask which host serves the site and set `links: { trailingSlash: … }`** to match. It cannot be guessed from the code.
+Five things a converted site needs that nothing else will remind you of:
+
+- **`package.json` needs `"type": "module"`** and the four scripts (`build`, `dev`, `check`, `aikb`). `router.js` uses `import` and top-level `await`; without the module type every run prints a `MODULE_TYPELESS_PACKAGE_JSON` warning and works anyway, which is how it ships unnoticed. `npx kiss-ssg init` writes both, but step 1 only sends you there when the project has no kiss at all.
+- **`title` and `description` go on `.page()`**, not in the model. A page with neither still builds, titled after its slug — a converted home page ships as `<title>Index</title>`, which nothing catches: the audit only flags an absent title, and a body comparison never looks at `<head>`.
+- **`siteUrl`**, which `{{canonical}}`, `.sitemap()` and `.robots()` need. An artifact rarely states its own domain.
+- **Chain `.sitemap()`, `.robots()`** and — if the page has dated content — `.feed()`.
 - **If the page is replacing something already published, every old URL goes in `aliases`**, and `redirects: { format: … }` must name the host or kiss writes the host-neutral list and no host file.
-- Chain `.sitemap()`, `.robots()` and — if the page has dated content — `.feed()`.
+
+Two decisions genuinely cannot be read off the code: **which host serves the site** (which sets `links: { trailingSlash: … }`) and **the site's domain** (`siteUrl`). Ask. **When there is nobody to ask — and in an agent run there usually is not — do not guess silently.** Take `trailingSlash: true` (the default, Netlify's) and the most likely domain, write a `TODO` comment on each naming it as unverified, and list both in what you report back. A guess you flagged is a question; a guess you did not is a defect with a green build on top of it.
 
 ### 10. Verify it renders the same, then say so
 
 Build it and run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`). Do not stop at `ok: true`: this is a conversion, so the bar is that the output **looks like the input**.
 
-- Open the built page and the original side by side in a browser. This is the check that matters and no gate performs it.
-- `broken link:` findings are references the original typed by hand; they were broken before you arrived or they point at an asset step 7 missed. Say which.
-- Then run `kiss-site-review` for the launch-readiness findings — an artifact almost never has a favicon, a 404 page or an `og:image`.
+Three checks, and the first is the only one a person has to do:
 
-Report what moved: regions found, partials written, the stylesheet's longest line before and after. Those are the numbers that show the handover promise was kept.
+- **Open the built page and the original side by side in a browser.** No gate performs this. If you are an agent and cannot, say so plainly and hand the operator the two paths — do not let the other two checks stand in for it.
+- **Compare the bodies programmatically.** Copy `node_modules/kiss-ssg/examples/12-from-a-single-file/tools/compare.mjs`: it diffs element sequence and visible text, decoding entities on both sides. **Declare each difference you accept** in its `ACCEPTED` list rather than loosening the comparison — a comparison that can never fail reports nothing, and that one started out unable to fail.
+- **Compare the stylesheet, and check the `<title>`.** The body comparison covers neither. Compiling the original `<style>` with `sass --style=compressed` and diffing it against the built CSS takes two minutes and is the strongest evidence you will have. The `<title>` is outside `<body>`: read it.
+
+Take the comparison baseline **before** adding anything. `broken link:` findings are references the original typed by hand — broken before you arrived, or pointing at an asset step 7 missed. Say which. Then run `kiss-site-review` (if installed) for the launch-readiness findings; an artifact almost never has a favicon, a 404 page or an `og:image`.
+
+Report what moved: regions found, partials written, the stylesheet's longest line before and after, and **every guess you flagged in step 9**. Those are the numbers and the caveats that show the handover promise was kept.
 
 ### 11. Record the knowledge base
 
-Once it builds green, `npx kiss-ssg aikb router.js` writes `AIKB/` — the pages, models, controllers and partials the build actually saw. Commit it. For an imported site this matters more than usual: the next person has no history to read, because the site did not exist as files until today.
+Once it builds green, `npx kiss-ssg aikb router.js` writes `AIKB/` — `site-map.md`, `site-map.json`, `last-build.json` and a `README.md` explaining them, covering the pages, models, controllers and partials the build actually saw. It prints the full build report to stdout on success, which is expected rather than an error. Commit the folder. For an imported site this matters more than usual: the next person has no history to read, because the site did not exist as files until today.

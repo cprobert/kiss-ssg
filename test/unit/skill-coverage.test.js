@@ -355,6 +355,55 @@ const COVERAGE = [
     pattern: /BY INDEX[\s\S]*short list/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
+  // The 2026-10-01 clean-room run. Every row below is a mistake it actually
+  // made, or a silent failure it only avoided by reading example 12 unprompted.
+  {
+    feature:
+      "splitStylesheet's sections are CSS class names, not the region names",
+    pattern: /`classes`, NOT `name`[\s\S]*matches the CLASS NAMES/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: '{{@root.config}} inside a partial handed a model slice',
+    pattern: /@root\.config[\s\S]*renders \*\*empty\*\*/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'read examples/12-from-a-single-file — it is this job already done',
+    pattern:
+      /examples\/12-from-a-single-file\/`? ?—? ?.{0,20}it is this job, already done/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'title/description are page options; an untitled page ships as Index',
+    pattern: /<title>Index<\/title>/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'a converted project needs "type": "module" and the four scripts',
+    pattern: /"type": "module"[\s\S]*MODULE_TYPELESS_PACKAGE_JSON/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'flag an unverifiable guess rather than making it silently (host, siteUrl)',
+    pattern: /do not guess silently[\s\S]*TODO/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'verify the stylesheet and the <title> too — the body comparison covers neither',
+    pattern: /Compare the stylesheet, and check the `<title>`/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'the skills this one points at ship from the marketplace and may be absent',
+    pattern: /may not be installed/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {
@@ -424,6 +473,20 @@ const CONTRADICTIONS = [
     patterns: [
       /merge (?:the |those |any )?(?:numbered |repeated |duplicate )?(?:Sass )?partials/i,
       /combine `?_[a-z-]+-2\.scss`? (?:back )?into/i,
+    ],
+  },
+  {
+    why: 'splitStylesheet matches CSS class names, so `sections: regions.map(r => r.name)` is wrong the moment a region was renamed off its class — which step 4 says is normal. Measured in the 2026-10-01 clean room: nine partials collapsed into one, with no error. `regions.flatMap(r => r.classes)` is the spelling; the old one is banned because it looks right and fails silently',
+    patterns: [
+      /sections: regions\.map\(/,
+      /sections:\s*regions\.map\(\(r\) => r\.name\)/,
+    ],
+  },
+  {
+    why: 'a fact in config/ read as plain {{config.…}} inside a partial handed a model slice renders EMPTY — the slice replaces the context. Both the skill and GUIDE.md said the plain spelling while telling you to slice, in the same step',
+    patterns: [
+      /spread into `new Kiss\(\)` and read as `\{\{config\./,
+      /read as `\{\{config\.business\.phone\}\}`/,
     ],
   },
   {

@@ -35,20 +35,19 @@ const NAMES = [
   'footer', // proposed `site-footer`
 ]
 
-// Pitched at PAGE SECTIONS, not elements. `splitStylesheet` cuts contiguous
-// runs, so the names only have to be at the right altitude — `minNodes` folds
-// anything too short to earn a file. Element-level names (`btn`, `field`,
-// `hours`) would cut this sheet into twice as many partials holding one rule
-// each, which is a different way of being unreadable.
-const SECTIONS = [
-  'site-header',
-  'hero',
-  'offers',
-  'beans',
-  'visit',
-  'enquiry',
-  'site-footer',
-]
+// The stylesheet's section names are NOT the region names above. `NAMES` says
+// what each region MEANS; `splitStylesheet` matches the CLASS NAMES in the
+// selectors, and on this page two of them differ — the chrome is `header` and
+// `footer` by meaning and `.site-header` and `.site-footer` in the markup.
+//
+// So they are derived rather than typed. `splitDocument` puts a `classes`
+// array on every region for exactly this, and a derived list cannot drift from
+// the markup the way a hand-maintained one can. This file used to carry a
+// second literal array here with no explanation of why there were two, and a
+// clean-room run following the documented `regions.map((r) => r.name)` on a
+// page whose classes were less obliging collapsed nine partials into one,
+// silently.
+const sectionsFrom = (regions) => regions.flatMap((region) => region.classes)
 
 const write = async (rel, content) => {
   const target = path.join(out, rel)
@@ -76,7 +75,7 @@ for (const partial of named.partials)
 // it gives back is whole. Lifting it is this script's job, because lifting
 // means choosing a filename and rewriting the tag that pointed at it.
 const sheet = splitStylesheet(named.assets.styles.join('\n'), {
-  sections: SECTIONS,
+  sections: sectionsFrom(named.regions),
   banner: 'Carried over from source/original.html, split by section.',
 })
 await write(`src/assets/css/${sheet.entry.name}`, sheet.entry.content)
