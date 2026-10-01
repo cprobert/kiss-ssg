@@ -36,20 +36,21 @@ It arrives inside the `example-skills` plugin, alongside eleven other example sk
 
 You don't have to name the skills — each one's description is written so Claude reaches for it on its own — but naming one makes the first run predictable.
 
-| You want to…                  | Paste                                                                                          | Skill it reaches                         |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Start a site                  | Use the kiss-site-new skill to build me a site for …                                           | `kiss-site-new`                          |
-| Add a whole section           | Add a blog section to this site: posts from Markdown files, a paginated index and an RSS feed. | `kiss-site-new`                          |
-| Add or change one page        | Add a Contact page with our address and opening hours, linked from the nav.                    | `kiss-page-add`                          |
-| Find out why a build fails    | The kiss build is failing — run the check and fix what it reports.                             | `kiss-build-check`                       |
-| Get a site ready to launch    | Is this site ready to launch? Review it and show me what's unfinished before fixing anything.  | `kiss-site-review`                       |
-| Catch up on a site            | Catch me up on this site: what it is, how it's built and what bites.                           | `kiss-site-brief`                        |
-| Upgrade kiss-ssg              | Upgrade this site to the latest kiss-ssg and tell me what changed.                             | `kiss-site-migrate`                      |
-| Frame, steer, finish a change | Open a branch for … / Pulse this branch / We're done, close the branch.                        | `kiss-branch-open` / `-pulse` / `-close` |
+| You want to…                             | Paste                                                                                                | Skill it reaches                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Start a site                             | Use the kiss-site-new skill to build me a site for …                                                 | `kiss-site-new`                          |
+| Turn a page you already have into a site | I've got a site I built in Claude — here's the HTML. Turn it into a real site, keeping how it looks. | `kiss-site-import`                       |
+| Add a whole section                      | Add a blog section to this site: posts from Markdown files, a paginated index and an RSS feed.       | `kiss-site-new`                          |
+| Add or change one page                   | Add a Contact page with our address and opening hours, linked from the nav.                          | `kiss-page-add`                          |
+| Find out why a build fails               | The kiss build is failing — run the check and fix what it reports.                                   | `kiss-build-check`                       |
+| Get a site ready to launch               | Is this site ready to launch? Review it and show me what's unfinished before fixing anything.        | `kiss-site-review`                       |
+| Catch up on a site                       | Catch me up on this site: what it is, how it's built and what bites.                                 | `kiss-site-brief`                        |
+| Upgrade kiss-ssg                         | Upgrade this site to the latest kiss-ssg and tell me what changed.                                   | `kiss-site-migrate`                      |
+| Frame, steer, finish a change            | Open a branch for … / Pulse this branch / We're done, close the branch.                              | `kiss-branch-open` / `-pulse` / `-close` |
 
 ## What you just installed
 
-**The `kiss-ssg` plugin builds sites.** `kiss-site-new` (a site or a whole section from a description), `kiss-page-add` (one page on a site that already builds), `kiss-build-check` (verify a build and read its report), `kiss-site-review` (is it ready to launch: the audit's findings, a look in a browser, a report before any fix) and `kiss-site-migrate` (move a site across kiss-ssg versions). The skills carry no copy of the API — each reads the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. See [`plugins/kiss-ssg/`](https://github.com/cprobert/kiss-ssg/tree/main/plugins/kiss-ssg).
+**The `kiss-ssg` plugin builds sites.** `kiss-site-new` (a site or a whole section from a description), `kiss-site-import` (a page you already have — a Claude or ChatGPT artifact, an exported page — made into a structured site that still looks the same), `kiss-page-add` (one page on a site that already builds), `kiss-build-check` (verify a build and read its report), `kiss-site-review` (is it ready to launch: the audit's findings, a look in a browser, a report before any fix) and `kiss-site-migrate` (move a site across kiss-ssg versions). The skills carry no copy of the API — each reads the docs installed in `node_modules/kiss-ssg/`, so the guidance cannot drift from the engine you have. See [`plugins/kiss-ssg/`](https://github.com/cprobert/kiss-ssg/tree/main/plugins/kiss-ssg).
 
 **The `kiss-memory` plugin remembers them.** `npx kiss-ssg aikb router.js` records what the site is into `AIKB/`; `kiss-site-brief` reads it back to a developer returning after two years, and `kiss-branch-open`, `kiss-branch-pulse` and `kiss-branch-close` frame, steer and close a piece of work against the site's own build output, moving that baseline only when the close records it. `kiss-memory-consolidate` tidies what the loop accumulates, between pieces of work. See [`plugins/kiss-memory/`](https://github.com/cprobert/kiss-ssg/tree/main/plugins/kiss-memory).
 

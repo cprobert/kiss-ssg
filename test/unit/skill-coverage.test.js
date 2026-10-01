@@ -310,6 +310,43 @@ const COVERAGE = [
       skill('kiss-memory', 'kiss-site-brief'),
     ],
   },
+  // The two splitters, and the four things about them an agent gets wrong by
+  // reaching for the obvious instead of the documented behaviour.
+  {
+    feature: 'splitDocument and splitStylesheet do the mechanical half',
+    pattern: /splitDocument[\s\S]*splitStylesheet/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'the proposed region names are markup names — rename them to meaning',
+    pattern: /proposes a name per region[\s\S]*Rename every region/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'a repeated section gives _hero-2.scss and merging it moves the cascade',
+    pattern: /_hero-2\.scss[\s\S]*must not merge/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'inline assets are reported, not removed — the lift is the caller’s',
+    pattern: /reports.{0,40}inline assets, it does not remove them/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'section names are pitched at page sections, not elements (51 partials)',
+    pattern: /51 partials/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'commit the source artifact — the precedent did not and nothing can be diffed',
+    pattern: /never committed its source/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {
@@ -373,6 +410,20 @@ const CONTRADICTIONS = [
   {
     why: 'Claude Code does not offer plugins a settings file declares (probe, 2026-09-26) — a doc must not promise that opening the folder installs them',
     patterns: [/Claude Code offers them the next time it opens/i],
+  },
+  {
+    why: 'splitStylesheet cuts CONTIGUOUS runs: a section appearing twice yields _hero.scss and _hero-2.scss, and merging them across the gap reorders the cascade. Merging is the output everyone asks for first, which is why the wrong instruction is banned rather than merely counter-stated',
+    patterns: [
+      /merge (?:the |those |any )?(?:numbered |repeated |duplicate )?(?:Sass )?partials/i,
+      /combine `?_[a-z-]+-2\.scss`? (?:back )?into/i,
+    ],
+  },
+  {
+    why: 'splitDocument REPORTS inline <style>/<script> and leaves the document whole; an earlier shape removed them and silently dropped a real page’s script tags. A doc claiming it lifts them teaches an agent not to do the lift itself',
+    patterns: [
+      /splitDocument (?:also )?(?:lifts|extracts|removes|strips) (?:the )?inline/i,
+      /`?assets\.styles`? (?:has|holds) the (?:stylesheet|CSS) (?:it|that it) removed/i,
+    ],
   },
   {
     why: 'non-dev whole-site watch replays check links after cleanup',
