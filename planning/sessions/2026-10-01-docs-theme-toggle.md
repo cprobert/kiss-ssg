@@ -32,6 +32,8 @@ opened: 2026-10-01
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-01 — two content changes to the docs site, at the operator's request.** (1) The home page's example is Pro Plumbing, not Aster & Oak: "Replace Aster & Oak, a Bristol roastery, with Pro-Plumbing as the example". The verdict panel shows a real `kiss-ssg check` of `C:\Code\kiss\pro-plumbing` (7 pages, 0 failed, 131 links checked with 0 broken). It drops the "0 launch-readiness findings" line, because that site is on kiss-ssg 2.6.2, which has no audit. The social card's line is redrawn with the same numbers. (2) "Migrating from v1" is removed from the guide: "not needed". The guide controller names it in a `LEFT_OUT` list, so the rule that every `GUIDE.md` section has a page still catches new ones. "Development file changes", which shared that page but is not about v1, moves to "Assets and builds". `/guide/migrating/` now 404s on the live site.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

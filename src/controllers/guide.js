@@ -9,6 +9,11 @@ const REPO = 'https://github.com/cprobert/kiss-ssg/blob/main/'
 const GUIDE = new URL('../../GUIDE.md', import.meta.url)
 const PAGES = new URL('../models/guide.json', import.meta.url)
 
+// GUIDE.md sections the docs site leaves out on purpose. The v1 migration notes
+// stay in GUIDE.md (and the kiss-site-migrate skill) for anyone upgrading; the
+// site is for people starting on v2. Operator's call, 2026-10-01.
+const LEFT_OUT = ['Migrating from v1']
+
 // GitHub's heading anchor rule, so a `#fragment` written against GUIDE.md on
 // GitHub is the same fragment here.
 const anchorFor = (text) =>
@@ -62,8 +67,9 @@ export default function guide({ model }) {
   const byTitle = new Map(sections.map((section) => [section.title, section]))
 
   // Every GUIDE.md section lands on exactly one page, so a section added to the
-  // reference fails this build until it is given a home.
-  const assigned = pages.flatMap((page) => page.sections)
+  // reference fails this build until it is given a home — or is named here as
+  // deliberately left off the site.
+  const assigned = [...pages.flatMap((page) => page.sections), ...LEFT_OUT]
   const homeless = sections.filter((s) => !assigned.includes(s.title))
   const missing = assigned.filter((title) => !byTitle.has(title))
   if (homeless.length || missing.length)

@@ -1,23 +1,27 @@
 {
-  "prompt": "Build a blog for Aster & Oak, a Bristol roastery: posts, tag pages and an RSS feed.",
+  "prompt": "Build a site for Pro Plumbing, a local plumber in Aberdare: small jobs, bigger jobs, questions people ask and a contact page.",
   "files": [
     "router.js",
     "src/layouts/layout.hbs",
     "src/pages/index.hbs",
-    "src/pages/blog/post.hbs",
-    "src/pages/blog/tag.hbs",
-    "src/controllers/post.js",
-    "src/models/posts/*.json"
+    "src/pages/small-jobs/index.hbs",
+    "src/controllers/jobList.js",
+    "src/models/jobs/*.json",
+    "helpers/schema.js"
   ],
   "verdict": {
     "command": "npx kiss-ssg check router.js --summary",
     "status": "ok",
-    "line": "./public (check) — 15 pages, 0 failed, 3 assets",
+    "line": "./docs (check) — 7 pages, 0 failed, 43 assets",
     "facts": [
-      "177 links checked, 0 broken",
-      "sitemap.xml and feed.xml written",
-      "0 launch-readiness findings"
+      "131 links checked, 0 broken",
+      "sitemap.xml, llms.txt and robots.txt written"
     ]
+  },
+  "caption": "Pro Plumbing, a site built with kiss, checked as shown.",
+  "captionLink": {
+    "name": "pro-plumbing.trade",
+    "url": "https://pro-plumbing.trade/"
   },
   "steps": [
     {
