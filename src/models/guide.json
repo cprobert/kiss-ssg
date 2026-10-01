@@ -20,11 +20,12 @@
   {
     "slug": "assets",
     "title": "Assets and builds",
-    "description": "Copying and compiling assets, cache-busting URLs, running an external asset pipeline, cleaning the build folder and building several sites from one source.",
+    "description": "Copying and compiling assets, cache-busting URLs, running an external asset pipeline, cleaning the build folder, building several sites from one source, and how the dev watcher handles file changes.",
     "sections": [
       "Assets",
       "Cleaning the build folder",
-      "Building more than one site from one source tree"
+      "Building more than one site from one source tree",
+      "Development file changes"
     ]
   },
   {
@@ -55,11 +56,5 @@
     "title": "Helpers",
     "description": "The Handlebars helpers kiss-ssg registers for you, from link and asset to markdown, canonical and isActive, and how to add your own.",
     "sections": ["Helpers"]
-  },
-  {
-    "slug": "migrating",
-    "title": "Migrating from v1",
-    "description": "What changes when a kiss-ssg v1 site moves to v2, and how development file changes are picked up.",
-    "sections": ["Migrating from v1", "Development file changes"]
   }
 ]

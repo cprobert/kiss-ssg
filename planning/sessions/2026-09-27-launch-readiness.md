@@ -3,6 +3,7 @@ branch: feat/launch-readiness
 base: main
 status: closed
 opened: 2026-09-27
+consolidated: 2026-10-01
 ---
 
 # Session — 2026-09-27: Launch readiness — audit findings in the report, and a review skill that reads them

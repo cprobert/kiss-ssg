@@ -4,6 +4,11 @@ import Kiss from './lib/kiss.js'
 // Builds this repository's own docs site from src/ into docs/, which GitHub
 // Pages serves under /kiss-ssg/. Every internal URL goes through {{link}} or
 // {{absUrl}}, so siteUrl carries that prefix and the dev server swaps in its own.
+//
+// The --dev preview builds into its own ignored folder, .preview/. Sharing
+// docs/ meant each build overwrote the other: a production build left a
+// running preview loading the live site's scripts, and a preview left docs/
+// full of localhost links waiting to be committed.
 const dev = process.argv.includes('--dev')
 const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8'))
 
@@ -15,7 +20,7 @@ const kiss = new Kiss({
     ? 'http://127.0.0.1:3001'
     : 'https://cprobert.github.io/kiss-ssg',
   // No site helpers, and no knowledge base: ./AIKB is the engine's own.
-  folders: { build: 'docs', helpers: null, aikb: null },
+  folders: { build: dev ? '.preview' : 'docs', helpers: null, aikb: null },
 })
 
 kiss

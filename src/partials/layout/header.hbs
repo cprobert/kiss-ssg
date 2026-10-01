@@ -12,5 +12,11 @@
         <li>{{> "external-link" href="https://www.npmjs.com/package/kiss-ssg" text="npm"}}</li>
       </ul>
     </nav>
+    {{!-- Hidden until site.js runs, because without it the button would do nothing. --}}
+    <button type="button" class="theme-toggle" data-theme-toggle hidden>
+      <svg class="theme-toggle__icon theme-toggle__icon--to-dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+      <svg class="theme-toggle__icon theme-toggle__icon--to-light" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" /></svg>
+      <span class="visually-hidden" data-theme-toggle-label>Switch to dark mode</span>
+    </button>
   </div>
 </header>

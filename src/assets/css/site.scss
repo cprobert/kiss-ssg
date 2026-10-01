@@ -249,8 +249,7 @@ pre code {
 .site-header__inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 1rem 1.4rem;
   min-height: 3.75rem;
   flex-wrap: wrap;
 }
@@ -303,6 +302,55 @@ pre code {
     color: var(--ink);
     border-bottom-color: var(--brand-blue);
   }
+}
+
+// The nav and the theme toggle sit together at the right of the header.
+.site-header__inner > nav {
+  margin-left: auto;
+}
+
+// Shows the mode a click switches *to*: a moon on a light page, a sun on a
+// dark one. `data-next` is set by site.js, which also reveals the button.
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
+}
+
+.theme-toggle[hidden] {
+  display: none;
+}
+
+.theme-toggle__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle__icon--to-dark {
+  fill: currentColor;
+  stroke: none;
+}
+
+.theme-toggle[data-next='dark'] .theme-toggle__icon--to-light,
+.theme-toggle[data-next='light'] .theme-toggle__icon--to-dark {
+  display: none;
 }
 
 .site-footer {

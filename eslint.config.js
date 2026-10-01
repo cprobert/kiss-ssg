@@ -60,6 +60,7 @@ export default [
   {
     ignores: [
       'docs/**',
+      '.preview/**',
       'public/**',
       'examples/**/assets/**',
       'src/**',
