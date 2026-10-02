@@ -355,3 +355,84 @@ Everything above was written at what looked like the end of the branch. It was n
 **And the invariant is now written as a list rather than an adjective** — six things that keep it true and three that do not — because "lossless" was asserted in four documents while the code did not keep it, and nothing but an outside reader was ever going to catch that.
 
 **Open:** the operator eyeball (`to-verify.md` § 4); **no non-Claude review of `lib/css-split.js` or `lib/html-split.js`**, which two review rounds have made the most load-bearing gap on the branch rather than the least; `/memory-consolidate` overdue.
+
+---
+
+# Second close — 2026-10-02: the Codex loop, a rethink, and a live-page clean room
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This section reads the supervision after the first close, as CPD for both._
+
+**What we shipped:** 40 commits on top of the first close (`fe21355` → `587a864`), on the already-open PR #30. Ten Codex review rounds, ending clean on `057c85b`. `lib/css-split.js` removed; `lib/html-split.js` re-based on htmlparser2 and checked by a fidelity corpus of about 10,000 generated documents (`test/unit/html-split.corpus.test.js`). The docs site rewritten for a newcomer. A clean-room import of a live page. `init` fixed for npm 11's `"type": "commonjs"` default.
+
+## Reflect — what the session was
+
+**Emergent, and deliberately so, after the operator stopped it being planned.** The first half was a loop the operator set — "keep looping with Codex until it gives this branch a clean bill of health". Every round found the next defect in the same families, and the fixes landed one at a time. Five rounds in, the operator called it: "our current approach doesn't seem to be yielding results … step back and look at this from a more holistic perspective." That instruction changed the shape of the work. The rounds after it fixed classes rather than cases, and the loop converged.
+
+The second half was product work led by a person rather than a review: what "Drew" (someone who has a page and wants it maintainable) sees on the home page, what the import does with a link instead of a file, and a clean room against a real live page.
+
+## Evaluate — how the human supervised the AI
+
+- **Pushback & steering — the session's strongest dimension.**
+  - The operator broke a non-converging loop by naming it, not by tolerating it.
+  - Three of my recommendations were declined, each for a reason that held up: cutting by offsets, plain `.css` partials and keeping a Sass split all lost to "I'm not concerned about the CSS, throw it in whole — it's this HTML that I'd like componentised".
+  - That one sentence deleted a module and three rounds of findings with it.
+  - The operator asked "are there any third-party libraries for componentising HTML?". That question, not my analysis, led to htmlparser2, and the tokenizer family of findings ended with it.
+- **Problem framing.** Strong where it was the operator's own: the Drew persona, "kiss is the upgrade path for these sites", "Ronseal headings for what someone would search". Each reframed the work in one line. Each `AskUserQuestion` was answered decisively, including the reversals.
+- **Verification & ownership — mixed, and the gap is still the same one.**
+  - The operator verified the docs site the way a user would: a screenshot of the hero, judged not to "add value for a newb".
+  - The operator also sent the import to a real person, and that report ("Drew has to go to the GitHub README") drove the whole home-page rewrite. That is ownership in the most useful form there is.
+  - **No person has opened a converted page beside its original in a browser.** That check is the brief's own success criterion, and the import skill names it as the one no gate performs.
+- **Iteration discipline.**
+  - Every fix was test-first and seen red.
+  - Gates ran before every commit. One commit went through on a failing format gate, because `grep` matched the failure line and so exited 0. It was the deleted-file artifact and was confirmed harmless, but it was luck, not discipline. After that, the gate's own exit code was checked.
+- **Harness leverage.**
+  - A clean-room sub-agent against a live URL found 22 friction points, 6 of them real defects, that no review of the code could have found.
+  - Codex supplied the independent-family review the first close lacked.
+  - I asked "which way do you want it" at each real fork, and did not ask at the ones with a clear default.
+
+**Intended versus actual supervision.** The operator intended to supervise through Codex: "loop until you get a green light". The loop alone would not have converged. The actual supervision that worked was the operator's own interventions: "step back", "throw the CSS in whole", the library question, Drew's report. Codex found defects; the operator decided which kind of product this was.
+
+**Competency level: Agentic engineering lead.**
+
+- Long autonomous runs were allowed and punctuated by decisions that redirected them.
+- A real user was used as the acceptance test.
+- Tool choice (Codex, a clean room) was driven by the operator.
+
+It stops short of complete on one point: the rendering check the brief named still has no human eye on it.
+
+## Feedback — recommendations for next session
+
+- **Operator — open one converted page beside its original.** The clean room left one ready: `source/as-served.html` beside `public/one-to-one-dog-training.html`, under the scratchpad's `cleanroom/site`. This is the brief's one unmet criterion, three closes running.
+- **Both — when a review loop's findings stay in one family for three rounds, stop and change the method, not the fix.** Here it was a fidelity corpus and a third-party tokenizer. The operator had to say it. I should have proposed it at round three, with the round-by-round counts as evidence.
+- **Claude — never trust a gate through a pipe.** `gates | grep … && commit` committed through a red gate. Capture the exit code: `node scripts/gates.mjs >/dev/null; echo $?`.
+- **Claude — check a port before starting a server on it, and wait for the answer.** I launched a preview in the same message as the port check, onto the operator's running server. It did no harm only because the second one failed to bind.
+- **Claude — write prose to a file with the Write tool, never a shell heredoc.** Two heredocs in this session failed to parse on apostrophes. Neither wrote anything, but `CLAUDE.md` already says why this matters.
+- **Process — a clean room should start from the input a user actually has.** The first clean room used a file. This one used a live URL, and that is where most of the import's real problems turned out to be: host injection, Netlify Forms, a page of a larger site, a preview versus production. `/branch-open`'s clean-room criterion should name the realistic input.
+- **Process — `/memory-consolidate` is now well overdue.** The same "operator eyeball" lesson appears in this log three times.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** give someone who already has a working page a supported path into a structured kiss site, without the page being rewritten.
+
+**Met on function, and stronger than at the first close. The objective moved, and it was good drift:** the path now starts from a link, which is what someone with a Claude or ChatGPT site actually has, and covers a live page, not just a single file.
+
+- [x] A real page produces a site whose check passes: the clean room's live K9 page, `ok ./public (check) — 1 pages, 0 failed`. Its 12 broken links are all pages of the larger site not imported, now a named third class in the skill.
+- [ ] Renders equivalently, **operator eyeball** — byte-for-byte in the clean room apart from attribute quoting and one deliberate form fix, and identical in example 12. Still no person has looked.
+- [~] Structure: layout, partials, model and config, yes. "Styles in the Sass folder" was dropped by the operator: the stylesheet stays whole.
+- [x] Example 12 ships, runs and is tested, and its own contradictions are now fixed.
+- [x] `lib/html-split.js` is documented, tested (unit tests plus the corpus) and typed. `lib/css-split.js` is removed along with every trace of it.
+- [x] Clean room, twice. The second, from a live URL, drove the skill's rewrite.
+
+**Concretely better:**
+
+- The splitter's fidelity is now checked across about 10,000 generated documents rather than a few dozen hand-picked ones.
+- Its injection guard is backed by an output check.
+- An outside-family reviewer found no defects in the final state.
+- A newcomer can get from nothing to a site from the home page alone.
+- Someone with an AI-made site is told kiss is their upgrade path, on the home page, in `init` and in the skill.
+
+**Open:**
+
+- The operator eyeball.
+- The H1 wording question ("real" or "professional"), raised and not yet answered.
+- `/memory-consolidate`.
