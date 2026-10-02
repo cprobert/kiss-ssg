@@ -45,21 +45,40 @@ describe('the home page carries the whole quick start', () => {
     expect(node.what).toContain(floor)
   })
 
-  it('lists the tools a newcomer installs, each with a link and an icon that exists', () => {
-    // The hero's "What you'll need" panel: required first, recommended after.
+  it('lists the tools a newcomer needs, each with an icon that exists', () => {
+    // The hero's "What you'll need" panel: required first, then Git (with
+    // GitHub as the example), then a host to go live on.
     const tools = home.toolkit.tools
     expect(tools.map((t) => t.name)).toEqual([
       'Node.js',
       'Claude Code',
       'Git',
-      'GitHub',
+      'A host',
     ])
+    const icon = (rel) =>
+      fs.existsSync(path.join(root, 'src/partials', `${rel}.hbs`))
     for (const tool of tools) {
-      expect(tool.url).toMatch(/^https:\/\//)
-      expect(
-        fs.existsSync(path.join(root, 'src/partials', `${tool.icon}.hbs`)),
-      ).toBe(true)
+      expect(icon(tool.icon)).toBe(true)
+      expect(['required', 'recommended', 'live']).toContain(tool.level)
+      if (tool.url) expect(tool.url).toMatch(/^https:\/\//)
+      for (const option of tool.options ?? []) {
+        expect(option.url).toMatch(/^https:\/\//)
+        expect(icon(option.icon)).toBe(true)
+      }
     }
+  })
+
+  it('links each host to its own guide to publishing a built site', () => {
+    // A host's home page tells a newcomer nothing about publishing; its
+    // build-and-deploy guide does. Checked by hand on 2026-10-02.
+    const host = home.toolkit.tools.find((t) => t.name === 'A host')
+    expect(host.options.map((o) => o.name)).toEqual([
+      'GitHub Pages',
+      'Netlify',
+      'Cloudflare Pages',
+    ])
+    for (const option of host.options)
+      expect(new URL(option.url).pathname).not.toBe('/')
   })
 
   it('offers a prompt for a new site and one for a page you already have, naming real skills', () => {

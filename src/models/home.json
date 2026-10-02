@@ -1,13 +1,14 @@
 {
   "toolkit": {
     "heading": "What you'll need",
-    "intro": "Four free tools. Install the first two before you start; the other two are worth having from day one.",
+    "intro": "Install the first two before you start. The other two keep your work safe and put it online — free plans are plenty for a small site.",
     "tools": [
       {
         "icon": "icons/node",
         "name": "Node.js",
         "url": "https://nodejs.org",
         "need": "Required",
+        "level": "required",
         "what": "Runs kiss and builds your site. Version 22.12 or later — the LTS download is fine."
       },
       {
@@ -15,6 +16,7 @@
         "name": "Claude Code",
         "url": "https://claude.com/claude-code",
         "need": "Required",
+        "level": "required",
         "what": "The coding agent that writes the site for you. Needs a Claude account."
       },
       {
@@ -22,14 +24,39 @@
         "name": "Git",
         "url": "https://git-scm.com",
         "need": "Recommended",
-        "what": "Keeps every version of your site, so any change can be undone."
+        "level": "recommended",
+        "what": "Keeps every version of your site, so any change can be undone. Push it to a service such as GitHub to keep a copy online — the hosts below publish straight from there.",
+        "options": [
+          {
+            "icon": "icons/github",
+            "name": "GitHub",
+            "url": "https://github.com"
+          }
+        ]
       },
       {
-        "icon": "icons/github",
-        "name": "GitHub",
-        "url": "https://github.com",
-        "need": "Recommended",
-        "what": "Stores a copy online and can publish it — Netlify and GitHub Pages both deploy from it."
+        "icon": "icons/globe",
+        "name": "A host",
+        "need": "To go live",
+        "level": "live",
+        "what": "Puts the finished site on the web. Each builds it from your repository with npm run build and publishes the public folder; each link is that host's own guide to doing it.",
+        "options": [
+          {
+            "icon": "icons/github-pages",
+            "name": "GitHub Pages",
+            "url": "https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages"
+          },
+          {
+            "icon": "icons/netlify",
+            "name": "Netlify",
+            "url": "https://docs.netlify.com/configure-builds/overview/"
+          },
+          {
+            "icon": "icons/cloudflare-pages",
+            "name": "Cloudflare Pages",
+            "url": "https://developers.cloudflare.com/pages/framework-guides/deploy-anything/"
+          }
+        ]
       }
     ]
   },
@@ -84,10 +111,25 @@
     }
   ],
   "sites": [
-    { "name": "Learna", "url": "https://www.learna.ac.uk/" },
-    { "name": "Diploma MSc", "url": "https://www.diploma-msc.com/" },
-    { "name": "A1K9 Training", "url": "https://www.a1k9training.co.uk/" },
-    { "name": "K9 Solutions", "url": "https://k9solutions.uk/" },
-    { "name": "Pro Plumbing", "url": "https://pro-plumbing.trade/" }
+    {
+      "name": "Learna",
+      "url": "https://www.learna.ac.uk/"
+    },
+    {
+      "name": "Diploma MSc",
+      "url": "https://www.diploma-msc.com/"
+    },
+    {
+      "name": "A1K9 Training",
+      "url": "https://www.a1k9training.co.uk/"
+    },
+    {
+      "name": "K9 Solutions",
+      "url": "https://k9solutions.uk/"
+    },
+    {
+      "name": "Pro Plumbing",
+      "url": "https://pro-plumbing.trade/"
+    }
   ]
 }

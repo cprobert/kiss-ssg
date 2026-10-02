@@ -26,10 +26,17 @@
           <span class="tool__icon">{{> (lookup . "icon")}}</span>
           <div class="tool__body">
             <p class="tool__name">
-              <a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a>
-              <span class="tool__need tool__need--{{need}}">{{need}}</span>
+              {{#if url}}<a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a>{{else}}{{name}}{{/if}}
+              <span class="tool__need tool__need--{{level}}">{{need}}</span>
             </p>
             <p class="tool__what">{{what}}</p>
+            {{#if options}}
+            <ul class="tool__options">
+              {{#each options}}
+              <li><a href="{{url}}" target="_blank" rel="noopener noreferrer"><span class="tool__option-icon">{{> (lookup . "icon")}}</span>{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></li>
+              {{/each}}
+            </ul>
+            {{/if}}
           </div>
         </li>
         {{/each}}
