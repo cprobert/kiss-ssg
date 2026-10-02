@@ -670,6 +670,14 @@ describe('.codex/config.toml records the skills for Codex', () => {
       '[plugins]\n"kiss-memory@kiss-ssg" = { enabled = false }\n',
     ],
     ['a [marketplaces] table', '[marketplaces]\nkiss-ssg = { source = "x" }\n'],
+    // An inline table cannot be extended from outside it, so even one that
+    // names none of kiss's plugins makes an appended [plugins."…"] invalid
+    // (Codex's second review, 2026-10-02).
+    ['an empty inline plugins table', 'plugins = {}\n'],
+    [
+      'an inline plugins table of other plugins',
+      'plugins = { "other@x" = { enabled = true } }\n',
+    ],
   ])(
     'leaves a file that defines a key as %s untouched, and says why',
     (_, existing) => {
