@@ -662,14 +662,84 @@ pre code {
 }
 
 // The setup band runs top to bottom: its first step is six commands, the
-// longest 63 characters, which a third of the page cannot hold.
+// longest 63 characters, which a third of the page cannot hold. It takes the
+// full width so that step's two agent boxes can sit side by side; the prose
+// keeps to a readable measure.
 .steps--stacked {
   grid-template-columns: minmax(0, 1fr);
-  max-width: 52rem;
+
+  > .steps__item > p {
+    max-width: var(--measure);
+  }
 
   pre {
     margin-top: 0.25rem;
   }
+}
+
+// Set-up step 1: one box per agent, side by side, stacked on a narrow screen.
+// Each box is the whole setup for that agent, so its Copy button takes all six
+// lines at once.
+.agent-boxes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.agent-box {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-panel);
+  padding: 1rem 1.1rem 1.1rem;
+
+  // The longest line is 63 characters; at this size and padding it fits a
+  // half-width box on a 1280px screen, and scrolls rather than wraps below that.
+  pre {
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.74rem;
+  }
+}
+
+.agent-box__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.agent-box__label {
+  font-size: var(--step-0);
+  margin: 0;
+}
+
+.agent-box__copy {
+  font: inherit;
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  padding: 0.2rem 0.75rem;
+  cursor: pointer;
+  min-width: 5.5rem;
+}
+
+.agent-box__copy:hover,
+.agent-box__copy:focus-visible {
+  border-color: var(--brand-blue);
+}
+
+.steps__item .agent-box__note {
+  font-size: var(--step--1);
+  line-height: 1.5;
+  margin: 0.75rem 0 0;
 }
 
 .prompts {
@@ -729,15 +799,51 @@ pre code {
   }
 }
 
+// Websites built with kiss-ssg: a card per site, as many across as fit.
+// The screenshots are light pages in either theme, so the card frames them
+// with the theme's rule and surface rather than a shadow (no shadow token).
 .sites {
   list-style: none;
-  margin: 0;
+  margin: 1.5rem 0 0;
   padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 1.5rem;
+}
+
+.site-card {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 2rem;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.site-card__shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 768 / 480;
+  object-fit: cover;
+  border-bottom: 1px solid var(--rule);
+  background: var(--wash);
+}
+
+.site-card__body {
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.site-card__name {
   font-size: var(--step-1);
-  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.site-card__what {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+  line-height: 1.5;
 }
 
 // Guide
@@ -1019,7 +1125,8 @@ pre code {
 
   .steps,
   .reasons,
-  .prompts {
+  .prompts,
+  .agent-boxes {
     grid-template-columns: minmax(0, 1fr);
   }
 

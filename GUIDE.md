@@ -633,7 +633,7 @@ If you are not sure what your host does, measure it rather than guess: deploy on
 
 #### The redirect file format
 
-See [Redirects](#redirects) below. `_redirects` is a Netlify and Cloudflare Pages file; Firebase and Vercel read their own, so the default writes a file those hosts ignore. `redirects: { format: … }` says which, and `redirects.json` carries the rules as data whatever you pick.
+See [Redirects](#redirects) below. `_redirects` is a Netlify and Cloudflare Pages file; Firebase and Vercel read their own, so kiss writes no host file until you name one. `redirects: { format: … }` says which, and `redirects.json` carries the rules as data whatever you pick.
 
 ### Redirects
 
@@ -650,15 +650,15 @@ new Kiss({ redirects: { format: ['netlify', 'firebase'] } })
 
 A list because a site can legitimately deploy to more than one host — Netlify previews and Firebase production is a real shape, and choosing one at build time would mean building twice. A bare string or a single function is a list of one. Duplicates collapse, order is kept, and a typo anywhere in the list throws at `new Kiss()` rather than being quietly dropped.
 
-| `redirects.format`      | Writes                                          | For                                                                                                                                          |
-| ----------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'netlify'` _(default)_ | `_redirects`                                    | [Netlify](https://docs.netlify.com/routing/redirects/), [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) |
-| `'firebase'`            | `redirects.firebase.json` — a fragment to merge | Firebase Hosting, which ignores `_redirects` entirely                                                                                        |
-| `'vercel'`              | `redirects.vercel.json` — a fragment to merge   | Vercel                                                                                                                                       |
-| `'htaccess'`            | `redirects.htaccess` — a fragment to `Include`  | Apache                                                                                                                                       |
-| `'none'` / `[]`         | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
-| _unset_ (the default)   | nothing but the IR, plus one notice             | a site that has not said where it deploys                                                                                                    |
-| a function              | whatever it returns                             | anything else — nginx, Apache, a CDN API                                                                                                     |
+| `redirects.format`    | Writes                                          | For                                                                                                                                          |
+| --------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'netlify'`           | `_redirects`                                    | [Netlify](https://docs.netlify.com/routing/redirects/), [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) |
+| `'firebase'`          | `redirects.firebase.json` — a fragment to merge | Firebase Hosting, which ignores `_redirects` entirely                                                                                        |
+| `'vercel'`            | `redirects.vercel.json` — a fragment to merge   | Vercel                                                                                                                                       |
+| `'htaccess'`          | `redirects.htaccess` — a fragment to `Include`  | Apache                                                                                                                                       |
+| `'none'` / `[]`       | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
+| _unset_ (the default) | nothing but the IR, plus one notice             | a site that has not said where it deploys                                                                                                    |
+| a function            | whatever it returns                             | anything else — nginx, Apache, a CDN API                                                                                                     |
 
 The Firebase, Vercel and Apache formats emit **a fragment**, not a `firebase.json`, a `vercel.json` or a `.htaccess`. Your real config file holds hosting targets, headers, rewrites and often years of hand-maintained redirect history; kiss will not rewrite it. Merge the fragment on your own terms — for Apache, by `Include`-ing `redirects.htaccess` or concatenating it. (That fragment uses mod_alias `Redirect`, not `RewriteRule`: a rewrite's left-hand side is a regex, so an alias containing a `.` would match more paths than the one it names.)
 
@@ -766,7 +766,17 @@ Your browser is reloaded once per rebuild, when that rebuild has finished writin
 
 ### Starting a site
 
-`npx kiss-ssg init` sets a folder up for a coding agent — `package.json` scripts, `CLAUDE.md` and `AGENTS.md` pointing at `llms.txt`, kiss-ssg's plugins declared in `.claude/settings.json`, and a one-page starter site when it finds no project there — and never overwrites a file. `npx kiss-ssg init --help` lists exactly what it writes; the [README](README.md#quick-start) is the walkthrough.
+`npx kiss-ssg init` sets a folder up for a coding agent — `package.json` scripts, `CLAUDE.md` and `AGENTS.md` pointing at `llms.txt`, kiss-ssg's plugins declared in `.claude/settings.json` and `.codex/config.toml`, and a one-page starter site when it finds no project there — and never overwrites a file. `npx kiss-ssg init --help` lists exactly what it writes; the [README](README.md#quick-start) is the walkthrough.
+
+The same two plugins carry kiss-ssg's skills for Claude Code and for Codex, from one marketplace, and `init` ends by printing both agents' install commands. Claude Code's install at project scope, recorded in the site's `.claude/settings.json`. For Codex, `init` writes the same marketplace and plugins to `.codex/config.toml`, which enables them for this site once Codex trusts the folder. Codex still installs plugins per user, so its three lines run once per user, and `codex plugin add` also switches the plugins on for every folder. `AGENTS.md` (the file Codex reads) names the skills and those lines:
+
+```sh
+codex plugin marketplace add cprobert/kiss-ssg
+codex plugin add kiss-ssg@kiss-ssg
+codex plugin add kiss-memory@kiss-ssg
+```
+
+A site set up before the Codex lines existed gains them by running `npx kiss-ssg init` again: it adds the section to an `AGENTS.md` that lacks it, writes `.codex/config.toml` (or appends to one only the tables it does not define, leaving a file that defines them some other way untouched), always after everything already there, and rewrites none of it.
 
 ### Converting an existing page
 
@@ -997,7 +1007,7 @@ Plain pages, partials and `.json` models are deliberately not subjects — a not
 
 Every build reports four findings on `report().aikb.notes`: **missing** (a subject nobody has explained), **dead** (a note under `notes/` whose subject is not in the map), **stale** (a note whose `subject-hash` stamp is no longer its subject's hash — a URL model can never be stale) and **dangling** (`"<note path>: <token>"` for a backticked token in a note, or in `site.md`, that looks like a file reference and resolves to nothing: not a file on disk or under a source folder, a page view or output path, a partial name, a model or controller name, a folder in the map, or a path under the AIKB folder). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` / `note stale:` / `note dangling:` lines. The dangling filter is deliberately narrow — a token needs a `/` or a known extension and must hold no spaces, `<`, `>`, `*`, `{`, `}` or `$`; code fences, trailing-slash folders and anything with a URI scheme are skipped — because a lint that fires on every note is one people learn to ignore. None of the four is a build failure and none changes an exit code.
 
-`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples/<folder> && npx kiss-ssg aikb router.js` — every example is a folder with its own `router.js`, run from inside itself the way a real site is, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` Claude Code plugin (see [the README](README.md#what-you-just-installed)) is what reads the folder back.
+`examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples/<folder> && npx kiss-ssg aikb router.js` — every example is a folder with its own `router.js`, run from inside itself the way a real site is, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` plugin, for Claude Code or Codex (see [the README](README.md#what-you-just-installed)) is what reads the folder back.
 
 ### Other methods
 

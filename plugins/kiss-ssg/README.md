@@ -1,12 +1,12 @@
-# kiss-ssg plugin for Claude Code
+# kiss-ssg plugin for Claude Code and Codex
 
-Six skills, all prefixed `kiss-` so they're easy to pick out in a skill list, that teach Claude to set up, import into, extend, migrate, verify and review [kiss-ssg](https://github.com/cprobert/kiss-ssg) sites. They carry no copy of the API: each one points at the docs the npm package ships (`node_modules/kiss-ssg/llms.txt`, `node_modules/kiss-ssg/examples/`, `node_modules/kiss-ssg/AIKB/`), so the guidance cannot drift away from the engine you have installed.
+Six skills, all prefixed `kiss-` so they're easy to pick out in a skill list, that teach a coding agent — Claude Code or Codex, from the same marketplace — to set up, import into, extend, migrate, verify and review [kiss-ssg](https://github.com/cprobert/kiss-ssg) sites. They carry no copy of the API: each one points at the docs the npm package ships (`node_modules/kiss-ssg/llms.txt`, `node_modules/kiss-ssg/examples/`, `node_modules/kiss-ssg/AIKB/`), so the guidance cannot drift away from the engine you have installed.
 
 A sibling plugin in the same marketplace, `kiss-memory`, covers the other half — remembering a site rather than building one: a catch-up briefing over the `AIKB/` knowledge base `npx kiss-ssg aikb` records, a site-shaped open/pulse/close loop that keeps it recorded, and a consolidation beat that folds the session logs' durable lessons into the authored `AIKB/site.md` and repairs the notes `check` reports as missing, dead, stale or dangling.
 
 ## Install
 
-From the site's folder, in a shell:
+**Claude Code**, from the site's folder, in a shell:
 
 ```
 claude plugin marketplace add cprobert/kiss-ssg --scope project
@@ -14,9 +14,19 @@ claude plugin install kiss-ssg@kiss-ssg --scope project
 claude plugin install kiss-memory@kiss-ssg --scope project
 ```
 
-The first command registers this repository as a marketplace; the other two install its two plugins. **Project scope** records them in the site's `.claude/settings.json`, which is committed with the site, so the site says which skills it is built with. `npx kiss-ssg@latest init` — the one-line setup for a new site — writes the same entries and prints these three commands, because declaring a plugin in the settings file does not install it. Inside a session that is already running, `/plugin` can install them too (pick project scope if it asks); restart `claude` afterwards so the skills load. See the root [README's Quick start](../../README.md#quick-start).
+The first command registers this repository as a marketplace; the other two install its two plugins. **Project scope** records them in the site's `.claude/settings.json`, which is committed with the site, so the site says which skills it is built with. `npx kiss-ssg@latest init` — the one-line setup for a new site — writes the same entries and prints these three commands, because declaring a plugin in the settings file does not install it. Inside a session that is already running, `/plugin` can install them too (pick project scope if it asks); restart `claude` afterwards so the skills load.
 
-Skills are then available as `/kiss-ssg:<name>` — but you don't have to invoke them by name. Each skill's frontmatter `description` is written as "use when…" triggers (specific phrasing, symptoms and file types), which is what Claude Code — and any other agent that reads plugin skill descriptions — matches against your request to decide whether to reach for it on its own. Ask to "add a page to this kiss-ssg site" or say a build is failing, and the matching skill loads without you naming it.
+**Codex**, in a shell, once per user:
+
+```
+codex plugin marketplace add cprobert/kiss-ssg
+codex plugin add kiss-ssg@kiss-ssg
+codex plugin add kiss-memory@kiss-ssg
+```
+
+Codex reads the same marketplace. It enables plugins per project, from a trusted project's `.codex/config.toml` (which `init` writes), but installs them per user, and `codex plugin add` also switches them on for every folder; start a new `codex` session afterwards. `init` prints these three too, and writes them into the site's `AGENTS.md`. See the root [README's Quick start](../../README.md#quick-start).
+
+In Claude Code, skills are then available as `/kiss-ssg:<name>` — but you don't have to invoke them by name. Each skill's frontmatter `description` is written as "use when…" triggers (specific phrasing, symptoms and file types), which is what Claude Code — and any other agent that reads plugin skill descriptions — matches against your request to decide whether to reach for it on its own. Ask to "add a page to this kiss-ssg site" or say a build is failing, and the matching skill loads without you naming it.
 
 ## Skills
 

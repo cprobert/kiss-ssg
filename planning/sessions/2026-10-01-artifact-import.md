@@ -3,6 +3,7 @@ branch: feat/artifact-import
 base: main
 status: closed
 opened: 2026-10-01
+consolidated: 2026-10-02
 ---
 
 # Session — 2026-10-01: Importing a Claude artifact into a kiss site

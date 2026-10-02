@@ -155,7 +155,57 @@ development tool, so the split is stated in `CLAUDE.md` and `.nvmrc` pins the
 development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
 whether kiss's own floor has moved past it.
 
+### Codex enables plugins per project, installs them per user
+
+**Observed:** Codex CLI 0.157.1 on Windows, 2026-10-02, against a throwaway
+`CODEX_HOME` (the operator's own config never touched), with the Codex source
+(`codex-rs/core-plugins`) read first. `codex plugin marketplace add
+cprobert/kiss-ssg` reads kiss's existing `.claude-plugin/marketplace.json`
+unchanged, so one marketplace serves both agents. **Effect:**
+
+| Setup                                                                                       | Result                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A trusted project's `.codex/config.toml` declares `[marketplaces.kiss-ssg]` and the plugins | Codex merges it as a config layer; the marketplace is listed from the project                                                                                                |
+| …with the marketplace as `source_type = "git"`, before any install                          | `codex plugin list` / `add` fail ("marketplace root does not contain a supported manifest"): the clone lives in the user's home. A plain `codex` session still runs (exit 0) |
+| …then the three `CODEX_STEPS` lines, run in the project                                     | All succeed, from GitHub; a session lists all 11 skills (listed — invocation is for a clean room to show)                                                                    |
+| Plugin cached, user-level `enabled` removed, only the project declares it                   | Skills appear in the project only; an unrelated folder lists none                                                                                                            |
+| `codex plugin add` run inside the project                                                   | Writes `enabled = true` to the **user** config (it has no project flag), so the plugins are then on in every folder                                                          |
+| Project not trusted                                                                         | The project config is ignored (inert, harmless)                                                                                                                              |
+
+So Codex _enables_ plugins per project (a trusted project's
+`.codex/config.toml`) but _installs_ them per user, and `codex plugin add` also
+enables them for the user. An earlier reading (same day) that a project's file
+did not load plugins was wrong: its trust entry was malformed (a forward-slash
+path). **What kiss does:** `init` writes `.codex/config.toml` beside
+`.claude/settings.json` — the marketplace and both plugin tables, in the form
+Codex writes itself, appending to an existing file only the tables it lacks —
+prints the three `codex plugin` lines (`CODEX_STEPS` in `lib/init.js`) to run
+once per user, and writes them into `AGENTS.md`.
+**Re-check:** point `CODEX_HOME` at an empty folder holding only a copy of
+`auth.json`. In a scratch folder with `init`'s `.codex/config.toml`, mark the
+folder trusted in `$CODEX_HOME/config.toml` **in the form Codex itself writes**
+— on Windows, measured 2026-10-02:
+`[projects.'c:\users\me\scratch\site']` then `trust_level = "trusted"`, the
+path lowercase with backslashes inside a single-quoted (literal) key. A
+forward-slash path is silently ignored, which is what made the first run
+report "not shown to work"; if in doubt, let Codex write it by trusting the
+folder when it asks, and copy that. Then run the three `codex plugin` lines and
+`codex exec --skip-git-repo-check -s read-only "list skills whose names start with kiss-"`.
+Remove the user-level `enabled` lines and list again in the project and in an
+unrelated folder. Revisit if `codex plugin add --help` grows a project flag, or
+if a git-sourced project marketplace starts resolving without a user install.
+Delete the copied `auth.json` afterwards.
+
 ## Supported alternatives not used
+
+### Codex project skills in `.agents/skills/`
+
+Measured with the entry above (Codex CLI 0.157.1): a skill folder copied into a
+project's `.agents/skills/` is picked up, project-scoped, with no install step.
+Not used (operator, 2026-10-02): it means shipping the skills in the npm
+tarball and copying eleven folders into every site, which go stale on upgrade
+because `init` never overwrites a file. The per-user plugin keeps one copy that
+updates with the marketplace.
 
 ### parse5 for `lib/html-split.js`
 

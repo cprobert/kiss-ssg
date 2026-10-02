@@ -29,11 +29,14 @@ kiss
     model: 'home.json',
     title: 'Home',
     // Written for search: what someone types to find this, not what kiss is
-    // internally. The two searches kiss answers best lead, in this order.
+    // internally. The two searches kiss answers best lead, in this order:
+    // "professional website with AI" (the outcome, not one agent's name, now
+    // that Claude Code and Codex both use kiss's skills), then the upgrade path
+    // for a site made in Claude or ChatGPT. Same order as the page's <h1>.
     fullTitle:
-      'Build a website with Claude Code, or upgrade your Claude or ChatGPT site – kiss-ssg',
+      'Build a professional website with AI, or upgrade your Claude or ChatGPT site – kiss-ssg',
     description:
-      'kiss-ssg lets Claude Code build a real website you can host anywhere, or turn a site you made in Claude or ChatGPT into one that keeps its look. Every build is checked before it goes live. Free and open source.',
+      'kiss-ssg lets an AI coding agent – Claude Code or Codex – build a professional website you can host anywhere, or turn a site you made in Claude or ChatGPT into one that keeps its look. Every build is checked before it goes live. Free and open source.',
     version,
   })
   .pages({

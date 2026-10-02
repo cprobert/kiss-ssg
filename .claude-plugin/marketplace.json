@@ -4,7 +4,7 @@
     "name": "Courtenay Probert",
     "url": "https://github.com/cprobert"
   },
-  "description": "Claude Code skills for building, migrating and verifying kiss-ssg static sites.",
+  "description": "Skills for Claude Code and Codex for building, migrating and verifying kiss-ssg static sites.",
   "plugins": [
     {
       "name": "kiss-ssg",

@@ -4,10 +4,12 @@
   <div class="wrap hero__inner">
     <div class="hero__copy">
       {{!-- Written for what someone types into a search box or an AI, not for
-            what kiss is internally: the two searches kiss answers best are
-            building a site with Claude Code, and upgrading one made in Claude
-            or ChatGPT. Both are in the heading, the stronger one first. --}}
-      <h1 class="hero__title">Build a real website with Claude Code <span class="hero__title-more">— or upgrade the one you made in Claude or ChatGPT</span></h1>
+            what kiss is internally. The first search is "professional website
+            with AI": it names the outcome rather than one agent, now that the
+            skills serve Claude Code and Codex alike. The second is the upgrade
+            path for a site already made in Claude or ChatGPT. Both are in the
+            heading, the broader one first. --}}
+      <h1 class="hero__title">Build a professional website with AI <span class="hero__title-more">— or upgrade the one you made in Claude or ChatGPT</span></h1>
       <p class="lede">
         kiss-ssg turns a description, or a site you already have, into a website you can host anywhere,
         edit yourself and hand to a developer. It checks every build before it goes live. Free and open source.
@@ -59,6 +61,21 @@
         <h3>{{title}}</h3>
         <p>{{text}}</p>
         {{#if code}}<pre><code class="language-bash">{{code}}</code></pre>{{/if}}
+        {{#if boxes}}
+        {{!-- One box per agent, each complete on its own so it copies in one go. --}}
+        <div class="agent-boxes">
+          {{#each boxes}}
+          <div class="agent-box">
+            <div class="agent-box__head">
+              <h4 class="agent-box__label">{{label}}</h4>
+              <button type="button" class="agent-box__copy" data-copy="{{code}}" aria-label="Copy the {{label}} commands">Copy</button>
+            </div>
+            <pre><code class="language-bash">{{code}}</code></pre>
+            <p class="agent-box__note">{{note}}</p>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
         {{#if prompts}}
         <ul class="prompts">
           {{#each prompts}}
@@ -76,8 +93,9 @@
     <p class="band__note">
       kiss is the upgrade path for a site you made in Claude or ChatGPT: converting keeps it looking exactly
       the same and gives it a layout, partials and content a web developer could take over:
-      <a href="{{link "guide/converting" absolute=true}}">how converting works</a>. Using another agent
-      than Claude Code? Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
+      <a href="{{link "guide/converting" absolute=true}}">how converting works</a>. Using an agent other
+      than these two, such as Cursor or Copilot? Point it at <code>node_modules/kiss-ssg/llms.txt</code>
+      and have it run the check.
     </p>
   </div>
 </section>
@@ -96,18 +114,28 @@
   </div>
 </section>
 
-<section class="band band--split" aria-labelledby="built-with">
-  <div class="wrap band__grid">
+<section class="band" aria-labelledby="built-with">
+  <div class="wrap">
     <h2 id="built-with">Websites built with kiss-ssg</h2>
-    <div>
-      <ul class="sites">
-        {{#each model.sites}}<li><a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></li>{{/each}}
-      </ul>
-      <p class="band__note">
-        Writing it yourself instead? The <a href="{{link "guide/index" absolute=true}}">guide</a> covers every
-        method, option and helper.
-      </p>
-    </div>
+    {{!-- Full width, under the heading. The image sits outside the link, so the
+          site's name is the only link and the alt text says what the screenshot
+          shows. width/height are the files' own (768×480), so the card keeps its
+          shape before the image loads; CSS scales it to the card. --}}
+    <ul class="sites">
+      {{#each model.sites}}
+      <li class="site-card">
+        <img class="site-card__shot" src="{{absUrl (asset image)}}" width="768" height="480" loading="lazy" alt="{{alt}}">
+        <div class="site-card__body">
+          <h3 class="site-card__name"><a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></h3>
+          <p class="site-card__what">{{description}}</p>
+        </div>
+      </li>
+      {{/each}}
+    </ul>
+    <p class="band__note">
+      Writing it yourself instead? The <a href="{{link "guide/index" absolute=true}}">guide</a> covers every
+      method, option and helper.
+    </p>
   </div>
 </section>
 {{/content}}

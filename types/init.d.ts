@@ -31,11 +31,17 @@ export function planInit(state: InitState): InitAction[];
  */
 export function describeAction(action: InitAction): string;
 /**
- * What to do after `init`: install the plugins, open the agent, paste a prompt.
- * The install commands are printed rather than implied by the settings file:
- * Claude Code does not offer to install plugins a project's
+ * What to do after `init`, for either agent: install the plugins, open the
+ * agent, paste a prompt. Claude Code's block comes first, then Codex's, each
+ * ending with its own "Run …" line, then the prompts both share.
+ *
+ * The Claude Code commands are printed rather than implied by the settings
+ * file: Claude Code does not offer to install plugins a project's
  * `.claude/settings.json` declares when it first opens the folder (observed
  * 2026-09-26 on a clean profile), so a declaration alone installs nothing.
+ * Codex enables plugins per project, from the `.codex/config.toml` `init`
+ * wrote, once it trusts the folder, but installs them per user, and
+ * `codex plugin add` also switches them on for every folder (CLI 0.157.1).
  *
  * @returns {string}
  */
@@ -44,12 +50,31 @@ export const MARKETPLACE: "kiss-ssg";
 export const MARKETPLACE_REPO: "cprobert/kiss-ssg";
 export const PLUGINS: string[];
 export const LLMS_IMPORT: "@node_modules/kiss-ssg/llms.txt";
+/**
+ * Claude Code's plugin lines, and only those (no `mkdir`, `init` or `claude`):
+ * the README, the docs homepage and `llms.txt` carry the same lines, and a test
+ * compares them with these. They install at project scope, recorded in the
+ * site's `.claude/settings.json`.
+ *
+ * @type {string[]}
+ */
+export const CLAUDE_STEPS: string[];
+/**
+ * Codex's plugin lines, and only those. Codex reads the same marketplace
+ * (`.claude-plugin/marketplace.json`). It enables plugins per project, from a
+ * trusted project's `.codex/config.toml` (which `init` writes), but installs
+ * them per user, and `codex plugin add` also switches them on for every folder
+ * — so these run once per user (Codex CLI 0.157.1; `AIKB/upstream.md`).
+ *
+ * @type {string[]}
+ */
+export const CODEX_STEPS: string[];
 export const STARTER_MARKER: "Started by `npx kiss-ssg init`";
 /** @type {Record<string, string>} */
 export const STARTER_RENAMES: Record<string, string>;
 export const FIRST_PROMPT: "Use the kiss-site-new skill to build me a site for <who it is for and what it should say>, with <the pages it needs>. It will be served by <the host, e.g. Netlify> at <https://its-address>. Run the build check when you are done.";
 export const IMPORT_PROMPT: "Use the kiss-site-import skill to turn <the link to your Claude artifact, ChatGPT share or live page> into a real site, keeping exactly how it looks. Run the build check when you are done.";
-export const INIT_HELP: "kiss-ssg init [--no-install]\n\n  Set this folder up for a coding agent, and start a site if there is none:\n\n    package.json           created, or merged: the build, dev, check and aikb\n                           scripts, and \u2014 only with the starter \u2014 \"type\":\n                           \"module\" and \"main\": \"router.js\"\n    CLAUDE.md, AGENTS.md   point the agent at node_modules/kiss-ssg/llms.txt\n    .claude/settings.json  the kiss-ssg marketplace and its two plugins, the\n                           entries claude plugin install --scope project\n                           writes, so the site records which skills it uses\n    router.js, src/        a starter site \u2014 only when no project is here yet\n                           (no router.js, no src/, no package.json main file\n                           or build script) \u2014 and its node_modules/ and\n                           public/ ignore rules,\n                           added to any .gitignore already here\n    node_modules/kiss-ssg  npm install --save-dev kiss-ssg@<this version>,\n                           unless it is installed, package.json already asks\n                           for a version, or --no-install is given\n\n  Claude Code does not install plugins a settings file declares, so init ends\n  by printing the three --scope project install commands to run before claude.\n\n  An existing file is never overwritten. Running it twice changes nothing.";
+export const INIT_HELP: "kiss-ssg init [--no-install]\n\n  Set this folder up for a coding agent, and start a site if there is none:\n\n    package.json           created, or merged: the build, dev, check and aikb\n                           scripts, and \u2014 only with the starter \u2014 \"type\":\n                           \"module\" and \"main\": \"router.js\"\n    CLAUDE.md, AGENTS.md   point the agent at node_modules/kiss-ssg/llms.txt;\n                           AGENTS.md also names the kiss skills and the\n                           codex plugin commands \u2014 added at the end of an\n                           AGENTS.md that lacks them, such as one an\n                           earlier init wrote\n    .claude/settings.json  the kiss-ssg marketplace and its two plugins, the\n                           entries claude plugin install --scope project\n                           writes, so the site records which skills it uses\n    .codex/config.toml     the same marketplace and plugins for Codex, which\n                           a trusted project's config enables for that folder;\n                           an existing file gains only the tables it lacks\n    router.js, src/        a starter site \u2014 only when no project is here yet\n                           (no router.js, no src/, no package.json main file\n                           or build script) \u2014 and its node_modules/ and\n                           public/ ignore rules,\n                           added to any .gitignore already here\n    node_modules/kiss-ssg  npm install --save-dev kiss-ssg@<this version>,\n                           unless it is installed, package.json already asks\n                           for a version, or --no-install is given\n\n  Claude Code does not install plugins a settings file declares, so init ends\n  by printing the three --scope project install commands to run before claude.\n  Codex enables plugins per project, from .codex/config.toml once it trusts\n  the folder, but installs them per user, and codex plugin add also switches\n  them on for every folder: init prints its three codex plugin commands too,\n  to run once per user before codex.\n\n  An existing file is never overwritten. Running it twice changes nothing.";
 export type InitArgs = {
     /**
      * run npm when the engine is missing
@@ -101,6 +126,7 @@ export type InitState = {
         "CLAUDE.md": string | null;
         "AGENTS.md": string | null;
         ".claude/settings.json": string | null;
+        ".codex/config.toml": string | null;
         ".gitignore": string | null;
     };
     /**
