@@ -425,6 +425,38 @@ describe('checkLinks', () => {
       { page: './public/index.html', href: '/v1/../gone.html' },
     ])
   })
+
+  // The same rule, all the way (Codex's second review, 2026-10-02): the path
+  // is resolved in URL space, as the browser resolves it, not in the build
+  // folder. `..` above the site root stops at the origin root, and a site
+  // deployed under a path prefix requests paths that carry the prefix.
+  it('clamps a relative climb at the origin root, as a browser does', () => {
+    const result = checkLinks({
+      pages: [{ buildTo: './public/index.html', links: ['../v1/contact'] }],
+      buildDir: './public',
+      hostServed: ['/v1/**'],
+      exists: () => false,
+    })
+    expect(result.hostServed).toBe(1)
+    expect(result.broken).toEqual([])
+  })
+
+  it('matches a prefixed deployment by the full request path, written either way', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: ['https://example.com/docs/api/contact', 'api/form'],
+        },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs',
+      hostServed: ['/docs/api/**'],
+      exists: () => false,
+    })
+    expect(result.hostServed).toBe(2)
+    expect(result.broken).toEqual([])
+  })
 })
 
 describe('hostServedMatcher', () => {

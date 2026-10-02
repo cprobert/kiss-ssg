@@ -117,8 +117,10 @@ new Kiss({
 Patterns are root-relative: `*` matches within one segment, `**` across
 segments, and everything else is literal. A reference the build can't
 resolve that matches one is **counted** in `report.links.hostServed`
-instead of listed in `links.broken`. The default is `[]`, and a pattern
-without a leading `/` throws at `new Kiss()`. On that site its patterns took
+instead of listed in `links.broken`. Patterns match the path the browser
+actually requests: `..` is resolved, and a site whose `siteUrl` has a path
+prefix writes its patterns with it (`/docs/api/**`). The default is `[]`, and
+a pattern without a leading `/` throws at `new Kiss()`. On that site its patterns took
 the findings from 2,738 to 88.
 
 **Every finding once.** `npx kiss-ssg check` sends the build log to stderr
