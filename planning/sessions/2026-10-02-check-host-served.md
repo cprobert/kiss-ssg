@@ -66,6 +66,27 @@ call, because 2.7.0 is still unpublished.
   Nothing since 2.6.2 is on npm, so one publish ships the import work, Codex and `hostServed`, and
   diploma-msc can take `hostServed` from it.
 
+- **2026-10-02: Codex review (P2) fixed on this branch.** A root-relative reference was matched
+  against `hostServed` as written, so `/v1/../gone.html` counted as host-served under `/v1/**`. The
+  path is now normalised the way a browser does (`e93a9ad`), test seen red.
+- **2026-10-02: queued from the operator's manual Codex import run, not for this branch.** Codex
+  converted two real pages with `kiss-site-import`, and `check` passed with zero broken links; that
+  answers PR #31's open Codex clean-room criterion. Its recommendations:
+  - **Skills ahead of the engine.** The installed skills were 2.7.0 while npm's engine was 2.6.2,
+    which lacks `splitDocument` and example 12. Publishing 2.7.0 removes this instance. The lasting
+    fix is a version check in the skills, naming the engine version they need and the fallback.
+  - **Outer wrappers.** `<body><div class="shell">…</div></body>` came back as one region from
+    `splitDocument`. Unwrapping by hand and restoring the wrapper in the layout worked, and verified
+    identical. Support that shape directly.
+  - **Comparison tooling.** Example 12's `tools/compare.mjs` missed `&#38;` when decoding entities
+    and reported a false difference. Use a complete decoder, and offer a whole-document comparison
+    (attributes, metadata, CSS, scripts).
+  - **A multi-page import example:** shared navigation, active states, a different stylesheet per
+    page, and deciding which models are shared and which belong to a page.
+  - **A lightweight path for experimental imports.** Keep source preservation and output comparison
+    required, and make the branch rituals, the knowledge-base record and the launch review optional
+    for a trial run.
+
 ## Pulse log
 
 - **2026-10-02** — Criteria 1–5 met:
