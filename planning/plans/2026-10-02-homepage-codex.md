@@ -239,3 +239,56 @@ a1k9-training,k9-solutions,pro-plumbing}.webp`, each **768×480**, 20–35 KB, c
     family dogs and problem behaviour, at Cyfarthfa Park, at home or remotely.
   - **Pro Plumbing**: Greg Probert's plumbing business in Aberdare and the Cynon Valley: small jobs
     and bigger installs, booked by WhatsApp or a call-back.
+
+### 2026-10-02 — Codex does have a project layer: `init` writes `.codex/config.toml`
+
+The §1 row "declared in a project's `.codex/config.toml`: not shown to work" was **wrong**: the
+trust entry was malformed. Measured again (Codex CLI 0.157.1, throwaway `CODEX_HOME`, trust key in
+the form Codex itself writes: lowercase Windows path with backslashes), with the Codex source
+(`codex-rs/core-plugins`) read first:
+
+| Setup                                                                                                                     | Result                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Trusted project's `.codex/config.toml` declares `[marketplaces.kiss-ssg]` and `[plugins."…"] enabled`                     | Codex merges it (config layers); the marketplace is listed from the project                                                                                                                            |
+| …marketplace declared as `source_type = "git"`, `source = "https://github.com/cprobert/kiss-ssg.git"`, before any install | `codex plugin list` / `codex plugin add` **fail** ("marketplace root does not contain a supported manifest"): the clone lives in the user's home. A plain `codex` session still runs normally (exit 0) |
+| …then the same three `CODEX_STEPS` lines, run in the project                                                              | All succeed; the session lists **all 11 skills**. This is the GitHub end-to-end run §1 lacked (listing; invocation is still the clean room's)                                                          |
+| Plugin cached, user-level `enabled` removed, only the project declares it                                                 | Skills appear **in the project only**; an unrelated folder lists none                                                                                                                                  |
+| `codex plugin add` run inside the project                                                                                 | Writes `enabled = true` to the **user** config (no project flag), so the plugins are then on in every folder                                                                                           |
+| Project not trusted                                                                                                       | Project config is ignored (inert, harmless)                                                                                                                                                            |
+
+**So, precisely:** Codex _enables_ plugins per project (a trusted project's `.codex/config.toml`), but
+_installs_ them per user, and `codex plugin add` also enables them for the user. "Codex has no project
+scope" is wrong wherever it was written; the accurate sentence is the bold one above.
+
+**Operator decision (2026-10-02): `init` also writes `.codex/config.toml`**, the counterpart of
+`.claude/settings.json`, so the site records which skills it uses for both agents. Exact content
+(the form Codex writes itself):
+
+```toml
+[marketplaces.kiss-ssg]
+source_type = "git"
+source = "https://github.com/cprobert/kiss-ssg.git"
+
+[plugins."kiss-ssg@kiss-ssg"]
+enabled = true
+
+[plugins."kiss-memory@kiss-ssg"]
+enabled = true
+```
+
+- **No TOML dependency.** An absent file is written whole. An existing file gets each of the three
+  tables **appended** only when its header line (`[marketplaces.kiss-ssg]`,
+  `[plugins."kiss-ssg@kiss-ssg"]`, `[plugins."kiss-memory@kiss-ssg"]`) is not already present; existing
+  text is never rewritten, in the file's own line ending. (Appending a whole table at the end of a TOML
+  file is valid as long as that table is not already defined, which the header check guarantees.)
+- The three `CODEX_STEPS` lines and their order do not change. The docs say the project file records
+  and enables the skills for this site in Codex, and that the install lines still run once per user
+  (and switch them on everywhere).
+- **Wording sweep:** every "Codex has no project scope" (README, `llms.txt`, `GUIDE.md`, `AGENTS_MD`,
+  `INIT_HELP`, `AIKB/init.md`, `AIKB/upstream.md`, the home page's Codex note in `home.json`) becomes
+  the precise sentence. `AIKB/upstream.md` gets this table and the re-check recipe (including the trust
+  key's form). Ban "no project scope" in `CONTRADICTIONS`.
+- Tests seen red first: fresh folder gets the file; an existing `.codex/config.toml` with other
+  content gains only the missing tables; one with all three is skipped; init twice changes nothing; the
+  integration test sees the file. `types/` regenerated if the state typedef changes.
+- The upgrade note gains: "re-run `npx kiss-ssg init` to add `.codex/config.toml`".

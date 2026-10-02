@@ -14,6 +14,8 @@ import {
   FIRST_PROMPT,
   IMPORT_PROMPT,
   INIT_HELP,
+  CLAUDE_STEPS,
+  CODEX_STEPS,
 } from '../../lib/init.js'
 
 const STARTER = {
@@ -37,6 +39,7 @@ const state = (over = {}) => ({
     'CLAUDE.md': null,
     'AGENTS.md': null,
     '.claude/settings.json': null,
+    '.codex/config.toml': null,
     '.gitignore': null,
     ...(over.files ?? {}),
   },
@@ -269,6 +272,7 @@ describe('planInit never destroys anything', () => {
           'CLAUDE.md': written['CLAUDE.md'],
           'AGENTS.md': written['AGENTS.md'],
           '.claude/settings.json': written['.claude/settings.json'],
+          '.codex/config.toml': written['.codex/config.toml'],
           '.gitignore': written['.gitignore'],
         },
       }),
@@ -514,6 +518,188 @@ describe('nextSteps', () => {
 
   it('help says the install commands still have to be run', () => {
     expect(INIT_HELP).toMatch(/does not install plugins/)
+  })
+})
+
+// One marketplace and one set of skills serve both agents (measured
+// 2026-10-02, Codex CLI 0.157.1: `codex plugin marketplace add` reads the
+// existing .claude-plugin/marketplace.json). Codex has no project scope, so
+// its lines install per user and are printed beside Claude Code's.
+describe('Codex beside Claude Code', () => {
+  it('CLAUDE_STEPS are the three project-scope plugin lines, in order', () => {
+    expect(CLAUDE_STEPS).toEqual([
+      'claude plugin marketplace add cprobert/kiss-ssg --scope project',
+      'claude plugin install kiss-ssg@kiss-ssg --scope project',
+      'claude plugin install kiss-memory@kiss-ssg --scope project',
+    ])
+  })
+
+  it('CODEX_STEPS are the three codex plugin lines, in order', () => {
+    expect(CODEX_STEPS).toEqual([
+      'codex plugin marketplace add cprobert/kiss-ssg',
+      'codex plugin add kiss-ssg@kiss-ssg',
+      'codex plugin add kiss-memory@kiss-ssg',
+    ])
+  })
+
+  // Each agent's block is followed by its own "Run …" line, and the prompts
+  // come after both: the order a person reads them in is the order to run them.
+  it('prints the Claude block, Run claude, the Codex block, Run codex, then the prompts', () => {
+    const text = nextSteps()
+    const order = [
+      ...CLAUDE_STEPS,
+      'Run `claude` in this folder.',
+      ...CODEX_STEPS,
+      'Run `codex` in this folder.',
+      FIRST_PROMPT,
+      IMPORT_PROMPT,
+    ].map((line) => {
+      const at = text.indexOf(line)
+      expect(at, line).toBeGreaterThan(-1)
+      return at
+    })
+    expect(order).toEqual([...order].sort((a, b) => a - b))
+  })
+
+  it('says the Codex plugins install once per user, not per folder', () => {
+    expect(nextSteps()).toMatch(/Codex[\s\S]*once per user/)
+    expect(INIT_HELP).toMatch(/Codex[\s\S]*per user/)
+  })
+})
+
+// Codex does have a project layer (measured 2026-10-02, Codex CLI 0.157.1): a
+// trusted project's .codex/config.toml enables plugins for that folder. init
+// writes it as the counterpart of .claude/settings.json, in the form Codex
+// writes itself, and appends only the tables a file lacks — no TOML parser.
+const CODEX_TOML = `[marketplaces.kiss-ssg]
+source_type = "git"
+source = "https://github.com/cprobert/kiss-ssg.git"
+
+[plugins."kiss-ssg@kiss-ssg"]
+enabled = true
+
+[plugins."kiss-memory@kiss-ssg"]
+enabled = true
+`
+
+describe('.codex/config.toml records the skills for Codex', () => {
+  const codex = (text) =>
+    byPath(
+      planInit(state({ files: { '.codex/config.toml': text } })),
+      '.codex/config.toml',
+    )
+
+  it('a fresh folder gets the whole file, exactly', () => {
+    expect(codex(null)).toMatchObject({
+      kind: 'write',
+      verb: 'create',
+      content: CODEX_TOML,
+    })
+  })
+
+  it('an existing file gains only the tables whose header it lacks, after every byte it had', () => {
+    const existing =
+      'model = "o4"\n\n[plugins."kiss-ssg@kiss-ssg"]\nenabled = false\n'
+    const action = codex(existing)
+    expect(action).toMatchObject({ kind: 'write', verb: 'append' })
+    expect(action.content.startsWith(existing)).toBe(true)
+    const added = action.content.slice(existing.length)
+    expect(added).toContain('[marketplaces.kiss-ssg]')
+    expect(added).toContain('[plugins."kiss-memory@kiss-ssg"]')
+    // The site switched kiss-ssg off: its table is not written a second time.
+    expect(added).not.toContain('[plugins."kiss-ssg@kiss-ssg"]')
+    expect(action.content.split('[plugins."kiss-ssg@kiss-ssg"]')).toHaveLength(
+      2,
+    )
+  })
+
+  it('a file with all three tables is skipped', () => {
+    expect(codex(CODEX_TOML).kind).toBe('skip')
+    expect(codex(`# mine\n${CODEX_TOML}`).kind).toBe('skip')
+  })
+
+  it('appending twice changes nothing the second time', () => {
+    const once = codex('model = "o4"').content
+    expect(codex(once).kind).toBe('skip')
+  })
+
+  it('appends to a CRLF file with CRLF, on a line of its own', () => {
+    const crlf = 'model = "o4"\r\n'
+    const action = codex(crlf)
+    expect(action.content.startsWith(crlf)).toBe(true)
+    expect(action.content.slice(crlf.length)).not.toMatch(/[^\r]\n/)
+    expect(action.content).toContain('\r\n[marketplaces.kiss-ssg]\r\n')
+  })
+
+  it('nextSteps and the help name the project file and the per-user install', () => {
+    expect(nextSteps()).toContain('.codex/config.toml')
+    expect(INIT_HELP).toContain('.codex/config.toml')
+  })
+})
+
+// What every site `init`'d before 2.8.0 has in AGENTS.md: the llms.txt
+// pointer and nothing about the skills.
+const OLD_AGENTS_MD = `## kiss-ssg
+
+This is a kiss-ssg static site. Before changing the build script, views, models or
+controllers, read \`node_modules/kiss-ssg/llms.txt\` (the API contract) and copy the
+shape of the matching site in \`node_modules/kiss-ssg/examples/\`. Verify every change
+with \`npx kiss-ssg check router.js\`, which exits 1 on any failed page.
+`
+
+describe('AGENTS.md carries the Codex install', () => {
+  const agents = (text) =>
+    byPath(planInit(state({ files: { 'AGENTS.md': text } })), 'AGENTS.md')
+
+  it('a fresh AGENTS.md is written whole: llms.txt, check, the skills and every Codex line', () => {
+    const action = agents(null)
+    expect(action).toMatchObject({ kind: 'write', verb: 'create' })
+    expect(action.content).toContain('node_modules/kiss-ssg/llms.txt')
+    expect(action.content).toContain('npx kiss-ssg check router.js')
+    for (const skill of [
+      'kiss-site-new',
+      'kiss-site-import',
+      'kiss-page-add',
+      'kiss-build-check',
+      'kiss-site-review',
+      'kiss-site-migrate',
+      'kiss-site-brief',
+    ])
+      expect(action.content).toContain(skill)
+    for (const line of CODEX_STEPS) expect(action.content).toContain(line)
+    expect(action.content).toMatch(/once per user/)
+  })
+
+  it('an old-style AGENTS.md gains the Codex section, after every byte it had', () => {
+    const action = agents(OLD_AGENTS_MD)
+    expect(action).toMatchObject({ kind: 'write', verb: 'append' })
+    expect(action.content.startsWith(`${OLD_AGENTS_MD}\n`)).toBe(true)
+    for (const line of CODEX_STEPS) expect(action.content).toContain(line)
+    // The pointer is already there, so it is not written a second time.
+    expect(action.content.split('node_modules/kiss-ssg/llms.txt')).toHaveLength(
+      OLD_AGENTS_MD.split('node_modules/kiss-ssg/llms.txt').length,
+    )
+  })
+
+  it('appends to a CRLF AGENTS.md with CRLF', () => {
+    const crlf = OLD_AGENTS_MD.replace(/\n/g, '\r\n')
+    const action = agents(crlf)
+    expect(action.content.startsWith(crlf)).toBe(true)
+    expect(action.content.slice(crlf.length)).not.toMatch(/[^\r]\n/)
+  })
+
+  it('an AGENTS.md that already has the section is skipped', () => {
+    const fresh = agents(null).content
+    expect(agents(fresh).kind).toBe('skip')
+    expect(agents(agents(OLD_AGENTS_MD).content).kind).toBe('skip')
+  })
+
+  it('an AGENTS.md of the site owner’s own gains the pointer and the section', () => {
+    const action = agents('## House style\n')
+    expect(action.verb).toBe('append')
+    expect(action.content.startsWith('## House style\n')).toBe(true)
+    expect(action.content).toContain('node_modules/kiss-ssg/llms.txt')
+    for (const line of CODEX_STEPS) expect(action.content).toContain(line)
   })
 })
 

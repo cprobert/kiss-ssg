@@ -48,6 +48,14 @@ opened: 2026-10-02
   (operator, after the contract critique's finding 5). Until now `planPointer` skipped any
   `AGENTS.md` that already pointed at `llms.txt`. This is a behaviour change, on top of printing new
   lines, and it goes in the upgrade note.
+- **2026-10-02: operator review of the first slice.**
+  - The showcase order is now Diploma MSc, A1K9, Pro Plumbing, K9 Solutions, Learna, so the two
+    look-alike education sites are split and the plumber sits between the dog sites.
+  - The Codex link uses OpenAI's mark (Simple Icons 15.22.0). It was removed in 16.0.0 pending
+    OpenAI's permission; the operator chose to use it anyway.
+  - GitLab and Bitbucket sit beside GitHub in the Git row.
+  - "Codex has no project scope" was wrong: a trusted project's `.codex/config.toml` enables
+    plugins (re-measured; see the contract amendment). `init` now also writes that file.
 
 ## Pulse log
 
