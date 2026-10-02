@@ -63,6 +63,30 @@ opened: 2026-10-02
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-02** — Criteria 1–5 and 9 met:
+  - Codex measured twice (contract §1 and its amendment), GitHub end to end lists all 11 skills.
+  - The init tests were seen red and re-run by the main session (11→0, then 8→0).
+  - The seam test went red on a deliberate README drift.
+  - Gates exit 0, `node docs` exit 0.
+  - No page overflow at a 390px emulated viewport.
+
+  Criterion 6 (clean rooms) not yet: the operator's own terminal run confirms the Codex install from
+  GitHub, but no agent has built a site from the packed tarball. Criterion 8 (non-Claude review of
+  `lib/init.js`) not yet.
+
+  Drift: the GitLab/Bitbucket chips and the `.codex/config.toml` writer, both recorded as Amendments.
+  Surface unchanged (public API, minor).
+
+  **Eyeball: looked.** The operator reviewed the preview and asked for: Diploma MSc first and Learna
+  last, Pro Plumbing between the dog sites, OpenAI's logo, GitLab and Bitbucket, and the Codex
+  project-scope question (which overturned "no project scope"). All are done and re-screenshotted.
+
+  Release gap found: npm's newest is 2.6.2 (2.7.0 was never published), while the plugins from
+  GitHub `main` are 2.7.0.
+
+  Decision: adjust (run the clean rooms and the Codex review), then `/branch-close` as the operator
+  authorised.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
