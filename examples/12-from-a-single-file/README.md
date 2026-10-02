@@ -7,7 +7,7 @@ cd examples/12-from-a-single-file
 node router.js
 ```
 
-Builds and exits. `node router.js --dev` serves it with live reload on <http://localhost:3000> and does **not** exit — Ctrl-C to stop.
+Builds and exits. `node router.js --dev` serves it with live reload on <http://localhost:3001> and does **not** exit — Ctrl-C to stop.
 
 ## What is here
 
@@ -43,7 +43,7 @@ line 160    Unit 4 Mill Lane           ← the footer
 
 Nobody did that on purpose. It is what happens when one fact is typed in two places, and it is the reason `config/site.js` exists — the address, the email and the phone each appeared twice, and all three now have one spelling that both places read.
 
-It also means **the conversion changed one character of the page**, and `tools/compare.mjs` reports it rather than hiding it behind a looser comparison. A conversion that silently normalises a contradiction has still changed the page, and you should know which.
+It also means **the conversion changed one character of the page**, and `tools/compare.mjs` names it, in its `ACCEPTED` list, rather than hiding it behind a looser comparison. A conversion that silently normalises a contradiction has still changed the page, and you should know which.
 
 ## Verifying it
 
@@ -51,8 +51,10 @@ It also means **the conversion changed one character of the page**, and `tools/c
 
 ```
 Element sequence: identical
-Visible text: DIFFERENT
-  ^ expected: the artifact contradicted itself about its own address
+Visible text: identical
+
+Accepted differences, applied before comparing:
+  - the artifact spelled its own address two ways …
 ```
 
 **118 elements in, 118 out, in the same order.** Entities are decoded on both sides before comparing text, because moving copy into a model means Handlebars escapes it — an apostrophe becomes `&#x27;` in the source and an apostrophe on screen. That is escaping doing its job. Reaching for a triple-stache to make the bytes match would turn it off, which is a different and much worse thing.

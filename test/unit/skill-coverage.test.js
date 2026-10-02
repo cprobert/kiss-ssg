@@ -675,3 +675,21 @@ describe('no consumer-facing file contradicts the convention it documents', () =
     })
   }
 })
+
+// llms.txt is how an agent in a consuming project learns which skills exist,
+// and its two lists named five after a sixth (kiss-site-import) had shipped —
+// the clean-room import run found the skill it was following missing from the
+// contract it was told to read. Every plugin skill must be named in both.
+describe('llms.txt names every skill the plugins ship', () => {
+  const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8')
+  const shipped = fs.readdirSync(path.join(root, 'plugins/kiss-ssg/skills'))
+  it.each(shipped)('names %s where it lists the kiss-ssg skills', (name) => {
+    const lists = llms
+      .split('\n')
+      .filter(
+        (line) => /kiss-site-new/.test(line) && /kiss-page-add/.test(line),
+      )
+    expect(lists.length).toBeGreaterThanOrEqual(2)
+    for (const line of lists) expect(line).toContain(`\`${name}\``)
+  })
+})
