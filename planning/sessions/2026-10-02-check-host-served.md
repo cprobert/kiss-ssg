@@ -1,7 +1,7 @@
 ---
 branch: check-mode-broken-link-count
 base: main
-status: open
+status: closed
 opened: 2026-10-02
 ---
 
@@ -107,3 +107,63 @@ call, because 2.7.0 is still unpublished.
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-10-02: `check` output that a large site can read, and `links.hostServed`
+
+**What we shipped:** the diploma-msc session's two commits, rebased (`9bba3c9`, `1e552b2`); handover
+item 3, audit findings printed once under check (`f7251c7`); and `hostServed` matching resolved in
+URL space as a browser does (`e93a9ad`, `8c99cc1`). All folded into the unpublished 2.7.0.
+
+**Supervision:** emergent from a handover rather than planned; **active supervisor**.
+
+The work arrived from a peer session, so the standout dimension is **verification of relayed work**:
+
+- **The peer's tests:** 15 failed against `main`'s `lib/`, re-derived here rather than taken from
+  the handover.
+- **Handover item 3:** reproduced before it was fixed, and it was real.
+- **A false negative caught on Claude's side.** A `sed` range truncated stderr, which briefly made the
+  duplication look unreproducible. The full output was checked before anything was concluded from it.
+
+The operator decided the version (2.7.0 again) and confirmed the eyeball from diploma-msc's own run
+(2,738 findings down to 88).
+
+The weak point repeated the previous branch's lesson **inside the same day**. The first Codex
+finding about request paths (dot segments) got a narrow patch (`e93a9ad`); the second review then
+found two more cases of the same cause (a path prefix, and a climb above the root). The URL-space
+rewrite (`8c99cc1`) is what should have followed the first finding. It is the method this branch's
+own sibling log had just recommended.
+
+**Feedback for next time:**
+
+- **Claude — when a reviewer finds a path, URL or format bug, look for the semantic the code
+  promised before patching the case.** `requestPath` promised "the path a browser requests"; the
+  right fix was always to ask the browser's algorithm (`URL`), not to add `normalize`. This is the
+  same lesson as `2026-10-02-homepage-codex` (allow-list after the first TOML finding), now in
+  three logs counting 2026-10-01. That makes it a `/memory-consolidate` candidate: it belongs in
+  `CLAUDE.md` § Rules.
+- **Claude — print a stream whole before concluding from it.** A `sed` range ending at the first
+  `<<` hid stderr and nearly produced a wrong "could not reproduce".
+- **Process — `watch.test.js`'s "copies new assets…" failed once under the full suite, and passed
+  5 of 5 alone and in the next full run.** It is a Windows timing flake to watch. If it recurs,
+  record it in `AIKB/testing.md` § Gotchas.
+- **Operator — after both PRs merge, rebuild `docs/` once (`node docs`), then publish 2.7.0.**
+  This branch deliberately does not commit `docs/`, because it would conflict with #31's rebuild.
+  `CHANGELOG.md`'s 2.7.0 entry will also need a trivial merge, since both branches add sections
+  before its last line.
+
+**Did we achieve the objective?** Met.
+
+- [x] Broken links are counted, not listed twice, under check (peer's commit, re-verified).
+- [x] Audit findings are counted, not listed twice, under check. Reproduced, then a test seen red.
+- [x] `config.links.hostServed`, with matching hardened against three review findings. Two Codex
+      rounds found issues; the third was clean.
+- [x] Every test seen red against `main`'s `lib/` (15 from the peer, 6 added here).
+- [x] Docs, types and the skill row. The changelog snippet was run against the engine.
+- [x] `npm run gates` green, and an independent review.
+- [x] Real-site measurement: the operator saw diploma-msc's 2,738 findings drop to 88.
+
+Still open:
+
+- the rest of the diploma-msc handover;
+- the operator's Codex-import findings (queued above);
+- the corpse-collector `config.toml` false positive.
