@@ -99,7 +99,46 @@ second.** A conversion that also tidies the markup cannot be verified, because
 nothing can tell your improvements from your mistakes. Get to "the same page,
 in pieces", prove it, then change things as a step with its own name.
 
-Nothing in an existing site changes — this release is additive.
+### Codex beside Claude Code
+
+kiss-ssg's two plugins now serve **Codex** as well as Claude Code, from the
+same marketplace: Codex reads `.claude-plugin/marketplace.json` as it is
+(measured with Codex CLI 0.157.1). `npx kiss-ssg init` sets a folder up for
+both agents.
+
+- **It writes `.codex/config.toml`**, the counterpart of
+  `.claude/settings.json`: the `kiss-ssg` marketplace and both plugins. Once
+  Codex trusts the folder, this switches kiss's skills on for that project.
+- **It prints the Codex install lines** after the Claude Code ones:
+
+  ```sh
+  codex plugin marketplace add cprobert/kiss-ssg
+  codex plugin add kiss-ssg@kiss-ssg
+  codex plugin add kiss-memory@kiss-ssg
+  ```
+
+  Codex installs plugins **per user**, not per project, and adding one also
+  switches it on in every folder, so these run once; a second site needs only
+  the project file.
+
+- **`AGENTS.md`**, the file Codex reads, now names the kiss skills and those
+  three lines.
+- **`lib/init.js` exports `CLAUDE_STEPS` and `CODEX_STEPS`**, each agent's
+  three plugin lines, which is what `init` prints.
+
+One smaller fix to the starter: after `npm init -y`, `init` used to keep
+npm's `"main": "index.js"`, a file nothing writes; it now points `main` at
+`router.js`, as it already did for `"type"`, and says so.
+
+### Upgrading
+
+Nothing in a site's build changes. To set an existing site up for Codex,
+**re-run `npx kiss-ssg init`** in it. It appends the Codex section to an
+`AGENTS.md` that lacks it and adds `.codex/config.toml`. An existing
+`.codex/config.toml` gains only the tables it does not already define, and a
+file that defines them in some other shape (a dotted key, an inline table) is
+left exactly as it is, with a note to add the rest by hand. It never rewrites
+text that is already there.
 
 ## 2.6.6 — 2026-09-30
 

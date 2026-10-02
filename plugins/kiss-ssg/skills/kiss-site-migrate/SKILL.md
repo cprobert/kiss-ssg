@@ -163,6 +163,22 @@ They are advisory: `ok` and the exit code do not move.
 Do not start fixing findings as part of the upgrade: the upgrade is done when the site builds the
 way it did. Offer the findings as their own piece of work with the `kiss-site-review` skill.
 
+### 0c. 2.7.0: Codex beside Claude Code
+
+Nothing in the build changes. What changes is how the folder is set up for an agent: the kiss
+plugins now serve Codex too, and `init` writes a `.codex/config.toml` that switches them on for the
+project once Codex trusts the folder. A site set up by an earlier `init` has neither that file nor
+the Codex section in `AGENTS.md`.
+
+- **Re-run `npx kiss-ssg init`** in the site. It appends the Codex section to an `AGENTS.md` that
+  lacks it and adds `.codex/config.toml`, and it never rewrites text already there. An existing
+  `.codex/config.toml` gains only the tables it does not define. One that defines them in another
+  shape (a dotted key, an inline table) is left alone, and `init` says to add the rest by hand.
+- **The install is per user.** If the owner uses Codex, they run the three `codex plugin` lines
+  `init` prints once on their machine; a second site needs only its project file.
+- Commit the new and changed files with the upgrade, so the site records which skills it uses for
+  both agents.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.

@@ -82,6 +82,16 @@ opened: 2026-10-02
     shown under the real Codex CLI. The build was not: Codex's Windows sandbox reported `read-only`
     under `-s workspace-write` and rejected every command. The operator chose to run it themselves in
     `C:\Code\kiss\codex`, rather than run it unsandboxed.
+  - **Corpse collector:** one real corpse, `GUIDE.md`'s description of the old exact-line TOML check,
+    fixed. Its Check 6 reads `.codex/config.toml` as a config key `toml` (19 false positives), so the
+    scanner is queued for the next branch.
+- **2026-10-02: version stays 2.7.0, against the proposal (operator).** The impact surface is public
+  API, and Claude proposed a minor, 2.8.0. 2.7.0 was never published to npm (the newest there is
+  2.6.2), so the operator chose to fold this branch into the unpublished 2.7.0: no `npm version`,
+  and the notes go into the 2.7.0 `CHANGELOG.md` entry ("Codex beside Claude Code", "Upgrading")
+  and `kiss-site-migrate` § 0c. The plugin manifests on GitHub have said 2.7.0 since #30 merged, so
+  installs taken from `main` before and after this merge report the same version with different
+  contents.
 
 ## Pulse log
 
