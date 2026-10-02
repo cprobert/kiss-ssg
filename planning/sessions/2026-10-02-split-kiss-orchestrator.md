@@ -69,6 +69,28 @@ out to leak state, check every seam for the same leak before the next commit.
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-02 — five groups, not four; the line estimate was wrong.** Read-only exploration
+  measured what cannot move while state stays on `Kiss`: about 305 lines of `@private` field
+  declarations and about 157 lines of public `@typedef`s. Four groups would leave ≈2,000 lines.
+  Operator chose a fifth group, the asset-copy orchestration (`_copyAssets`, ≈160 lines), and an
+  estimate of **≈1,800** replaces "roughly 1,200–1,600". Still measured, not asserted, at the close.
+- **2026-10-02 — the flake fix is tests plus an upstream note, not an engine change.** The
+  mechanism was proven with a scratchpad harness (5 s of continuous re-copying against a reader on
+  this Windows machine):
+  - fs-extra 11.4.0's `copy` (unlink, then copy): 694 `ENOENT` and 13,177 `EBUSY` reads;
+  - an in-place `copyFile`: no `ENOENT`, but **370 truncated reads**;
+  - temp file then rename: every read whole, but **4,020 lost writes** (`EPERM`).
+
+  No strategy gives a reader a clean result while a copy is in flight on Windows. The operator
+  first chose an engine fix, then, shown the measurement, chose tests plus an `AIKB/upstream.md`
+  record. Test-level reproduction: 2 tests × 100 repeats under 14 CPU/disk burner processes, **0
+  failures**; the full suite under load is the next attempt.
+
+- **2026-10-02 — the env readers move to `lib/check.js`.** The contract critique found
+  `aikbRecordRequested`'s only caller moving to build-finish.js. Both readers, and
+  `CHECK_MODE_OFF`, go to `lib/check.js`, beside the protocol that sets `KISS_CHECK` / `KISS_AIKB`
+  — a small move outside the five groups, recorded here so it is not a surprise in the diff.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
