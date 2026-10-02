@@ -1,0 +1,8 @@
+{{!-- The second place the address, the email and the phone appeared. All three
+      read from config now, so the footer cannot drift from the Visit section. --}}
+<footer class="site-footer">
+  <div class="wrap">
+    <p>{{config.business.addressLine}}</p>
+    <p><a href="mailto:{{config.business.email}}">{{config.business.email}}</a> · {{config.business.phone}}</p>
+  </div>
+</footer>

@@ -3,10 +3,14 @@
 <section class="hero">
   <div class="wrap hero__inner">
     <div class="hero__copy">
-      <h1 class="hero__title">Describe the site.<br>Your agent builds it.<br>kiss checks it.</h1>
+      {{!-- Written for what someone types into a search box or an AI, not for
+            what kiss is internally: the two searches kiss answers best are
+            building a site with Claude Code, and upgrading one made in Claude
+            or ChatGPT. Both are in the heading, the stronger one first. --}}
+      <h1 class="hero__title">Build a real website with Claude Code <span class="hero__title-more">— or upgrade the one you made in Claude or ChatGPT</span></h1>
       <p class="lede">
-        kiss-ssg is a static site generator for Node, built to be driven by a coding agent. The agent writes
-        plain Handlebars, JSON and a little JavaScript, and every build ends in a verdict it can act on.
+        kiss-ssg turns a description, or a site you already have, into a website you can host anywhere,
+        edit yourself and hand to a developer. It checks every build before it goes live. Free and open source.
       </p>
       <div class="hero__actions">
         <div class="command">
@@ -17,58 +21,70 @@
       </div>
     </div>
 
-    <figure class="verdict">
-      <ol class="verdict__turns">
-        <li class="verdict__turn">
-          <p class="verdict__who">You</p>
-          <p class="verdict__prompt">{{model.prompt}}</p>
+    <aside class="toolkit" aria-labelledby="toolkit">
+      <h2 class="toolkit__title" id="toolkit">{{model.toolkit.heading}}</h2>
+      <p class="toolkit__intro">{{model.toolkit.intro}}</p>
+      <ul class="toolkit__list">
+        {{#each model.toolkit.tools}}
+        <li class="tool">
+          <span class="tool__icon">{{> (lookup . "icon")}}</span>
+          <div class="tool__body">
+            <p class="tool__name">
+              {{#if url}}<a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a>{{else}}{{name}}{{/if}}
+              <span class="tool__need tool__need--{{level}}">{{need}}</span>
+            </p>
+            <p class="tool__what">{{what}}</p>
+            {{#if options}}
+            <ul class="tool__options">
+              {{#each options}}
+              <li><a href="{{url}}" target="_blank" rel="noopener noreferrer"><span class="tool__option-icon">{{> (lookup . "icon")}}</span>{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></li>
+              {{/each}}
+            </ul>
+            {{/if}}
+          </div>
         </li>
-        <li class="verdict__turn">
-          <p class="verdict__who">Your agent writes</p>
-          <ul class="verdict__files">
-            {{#each model.files}}<li><code>{{this}}</code></li>{{/each}}
-          </ul>
-        </li>
-        <li class="verdict__turn verdict__turn--result">
-          <p class="verdict__who">kiss checks</p>
-          <p class="verdict__command"><code>$ {{model.verdict.command}}</code></p>
-          <p class="verdict__line"><span class="verdict__ok">{{model.verdict.status}}</span> <code>{{model.verdict.line}}</code></p>
-          <ul class="verdict__facts">
-            {{#each model.verdict.facts}}<li>{{this}}</li>{{/each}}
-          </ul>
-        </li>
-      </ol>
-      <figcaption>
-        {{model.caption}}
-        <a href="{{model.captionLink.url}}" target="_blank" rel="noopener noreferrer">{{model.captionLink.name}}<span class="visually-hidden"> (opens in a new tab)</span></a>
-      </figcaption>
-    </figure>
+        {{/each}}
+      </ul>
+    </aside>
   </div>
 </section>
 
 <section class="band" aria-labelledby="how">
   <div class="wrap">
-    <h2 id="how">How it works</h2>
-    <ol class="steps">
-      {{#each model.steps}}
+    <h2 id="how">{{model.setup.heading}}</h2>
+    <p class="band__lede">{{model.setup.intro}}</p>
+    <ol class="steps steps--stacked">
+      {{#each model.setup.steps}}
       <li class="steps__item">
         <h3>{{title}}</h3>
         <p>{{text}}</p>
-        <pre><code class="language-bash">{{code}}</code></pre>
+        {{#if code}}<pre><code class="language-bash">{{code}}</code></pre>{{/if}}
+        {{#if prompts}}
+        <ul class="prompts">
+          {{#each prompts}}
+          <li class="prompts__item">
+            <p class="prompts__label">{{label}}</p>
+            <p class="prompts__note">{{note}}</p>
+            <p class="prompts__text">{{text}}</p>
+          </li>
+          {{/each}}
+        </ul>
+        {{/if}}
       </li>
       {{/each}}
     </ol>
     <p class="band__note">
-      The full setup, including the two Claude Code plugins, is in the
-      {{> "external-link" href="https://github.com/cprobert/kiss-ssg#quick-start" text="README quick start"}}. Using another agent?
-      Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
+      kiss is the upgrade path for a site you made in Claude or ChatGPT: converting keeps it looking exactly
+      the same and gives it a layout, partials and content a web developer could take over:
+      <a href="{{link "guide/converting" absolute=true}}">how converting works</a>. Using another agent
+      than Claude Code? Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
     </p>
   </div>
 </section>
 
 <section class="band band--split" aria-labelledby="why">
   <div class="wrap band__grid">
-    <h2 id="why">Why it suits agents</h2>
+    <h2 id="why">Why kiss-ssg suits AI coding agents</h2>
     <ul class="reasons">
       {{#each model.reasons}}
       <li>
@@ -82,7 +98,7 @@
 
 <section class="band band--split" aria-labelledby="built-with">
   <div class="wrap band__grid">
-    <h2 id="built-with">Built with kiss</h2>
+    <h2 id="built-with">Websites built with kiss-ssg</h2>
     <div>
       <ul class="sites">
         {{#each model.sites}}<li><a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></li>{{/each}}

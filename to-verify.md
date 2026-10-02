@@ -33,6 +33,56 @@ checkout; the only kiss consumer on disk is `cprobert.github.io`, pinned to
 
 ---
 
+## 4. The conversion's output shape — deferred twice, now a one-liner
+
+Branch `feat/artifact-import`. Deferred at the 2026-10-01 pulse and again at the
+one after it, both times because the operator was away from a laptop. This is the
+eyeball `/branch-pulse` Step 4 asks for, and `/branch-close` Step 5a reads the pulse
+log rather than asking again, so it has to be closed here.
+
+**It got smaller.** The first version of this item named four files attached in a
+session, with no committed way to regenerate them. `examples/12-from-a-single-file`
+replaced that: it builds, so the artefact is reproducible and the comparison is
+automated.
+
+Run this from the repo root — it builds and exits:
+
+```
+cd C:/Code/kiss-ssg && npm run eg12
+```
+
+Then open these two side by side:
+
+```
+C:/Code/kiss-ssg/examples/12-from-a-single-file/source/original.html
+C:/Code/kiss-ssg/examples/12-from-a-single-file/public/index.html
+```
+
+The first is the artifact as it arrived; the second is what kiss builds from the
+converted site. They should look the same in a browser.
+
+- [ ] They look the same
+- [ ] The structure under `examples/12-from-a-single-file/src/` is what you would
+      hand a web developer — layout, one partial per section, copy in
+      `models/index.json`, per-section Sass
+- [ ] The region **names** read as meaning rather than as markup. This is the one
+      judgement the engine refuses to make: on the live `k9solutions.uk` page the
+      proposals were `help`, `approach` and `enquire` (from the page's own ids)
+      where the hand conversion had called the same three `problems`, `method` and
+      `enquiry`
+
+Already automated, so **not** what to spend the look on: whether the elements and
+text match. `node tools/compare.mjs` in that folder reports 118 elements in, 118
+out, same order, and text identical once the one declared difference is applied —
+the artifact spells its own address two ways, 47 lines apart, and `config/site.js`
+now gives one spelling to both places. `test/integration/examples.test.js` runs that
+comparison on every `npm test`.
+
+**Why it still matters:** `kiss-site-import` has now encoded this shape, and
+`examples/` ships in the tarball as a statement of good practice. A naming or
+layout complaint is cheap now and expensive once sites are built from it.
+---
+
 ## Open decisions, not verification
 
 - **2.4.0 is a minor carrying a behavioural break.** Your call, recorded. 2.5.0

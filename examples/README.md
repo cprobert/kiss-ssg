@@ -1,6 +1,6 @@
 # kiss-ssg examples
 
-Eleven runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery. **Each one is
+Twelve runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery. **Each one is
 a standalone project you can copy wholesale**: `router.js` at its root, everything it renders under
 `src/`, its own copy of the layout and stylesheet, and its output in its own gitignored `public/`.
 
@@ -33,26 +33,27 @@ helpers, the sitemap and llms.txt, an external tool in the asset pipeline. Each 
 in a "How this example works" panel, the feature it is demonstrating — with the script that built
 it printed underneath. Read one when you want to know how a single thing works.
 
-**Examples 7–9 and 11 are exemplars: whole sites to copy by shape.** They are not about one
+**Examples 7–9, 11 and 12 are exemplars: whole sites to copy by shape.** They are not about one
 feature; they are about a situation you will recognise — publishing a new edition beside the old
 ones, building a site from a data feed that is sometimes wrong, migrating a v1 project, running
-a blog. Each is deliberate about the things that shape gets wrong, and the comments in the
+a blog, arriving with a page that already works and nowhere to put it. Each is deliberate about the things that shape gets wrong, and the comments in the
 script name what to copy and why. Start from the one whose situation matches yours rather than
 assembling it from the feature reference.
 
-| Example                                             | Tier      | Router shape | What it shows                                                                                                                          | Run                                                    |
-| --------------------------------------------------- | --------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [1 · scan](1-scan/)                                 | Reference | tier 0       | `.scan()` registers every view under `pages/`, matching models and controllers by filename                                             | `npm run eg1` · `--dev`                                |
-| [2 · page](2-page/)                                 | Reference | tier 0       | `.page()` four ways: matched, explicit, object model with `ext`, and a template string                                                 | `npm run eg2` · `--dev`                                |
-| [3 · pages](3-pages/)                               | Reference | tier 0       | `.pages()` fans out one page per JSON file; the index reuses the same resolved array                                                   | `npm run eg3` · `--dev`                                |
-| [4 · layouts and partials](4-layouts-and-partials/) | Reference | tier 0       | One layout, blocks and content, nested `.hbs`/`.html`/`.md` partials, a dynamic partial                                                | `npm run eg4` · `--dev`                                |
-| [5 · helpers](5-helpers/)                           | Reference | tier 0       | The six built-in helpers, all on one page, plus custom dev ports                                                                       | `npm run eg5` · `--dev`                                |
-| [6 · sitemap and llms.txt](6-sitemap/)              | Reference | tier 0       | `.sitemap()` and `.llms()` with `siteUrl`, per-page tuning, `extensionLess`, hashed assets                                             | `npm run eg6` · `--dev`                                |
-| [7 · versioned outputs](7-versioned-outputs/)       | Exemplar  | tier 0       | One build per season into its own folder, atomically, with an archive index beside them                                                | `npm run eg7` · `node 7-versioned-outputs.js <season>` |
-| [8 · data-fed site](8-data-fed-site/)               | Exemplar  | tier 0       | A site built from a folder of records, validated in the controller — one record is broken                                              | `npm run eg8` · exits 1 · `--dev`                      |
-| [9 · migrated from v1](9-migrated-from-v1/)         | Exemplar  | **tier 1** ¹ | Every v1 → v2 migration recipe as running code, in a site that builds clean; ships a recorded `AIKB/`                                  | `npm run eg9` · `--dev`                                |
-| [10 · asset pipeline](10-asset-pipeline/)           | Reference | tier 0       | `config.assets.pipeline` runs an external tool before the asset copy, `watch` in dev mode; the four reference shapes `{{asset}}` takes | `npm run eg10` · `--dev`                               |
-| [11 · blog](11-blog/)                               | Exemplar  | **tier 2** ² | Posts as a fan-out, pagination, tag pages, `.feed()`, a rename's `aliases`, links by `{{link}}`; recorded `AIKB/`                      | `npm run eg11` · `--broken` · `--dev`                  |
+| Example                                             | Tier      | Router shape | What it shows                                                                                                                                                       | Run                                                    |
+| --------------------------------------------------- | --------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [1 · scan](1-scan/)                                 | Reference | tier 0       | `.scan()` registers every view under `pages/`, matching models and controllers by filename                                                                          | `npm run eg1` · `--dev`                                |
+| [2 · page](2-page/)                                 | Reference | tier 0       | `.page()` four ways: matched, explicit, object model with `ext`, and a template string                                                                              | `npm run eg2` · `--dev`                                |
+| [3 · pages](3-pages/)                               | Reference | tier 0       | `.pages()` fans out one page per JSON file; the index reuses the same resolved array                                                                                | `npm run eg3` · `--dev`                                |
+| [4 · layouts and partials](4-layouts-and-partials/) | Reference | tier 0       | One layout, blocks and content, nested `.hbs`/`.html`/`.md` partials, a dynamic partial                                                                             | `npm run eg4` · `--dev`                                |
+| [5 · helpers](5-helpers/)                           | Reference | tier 0       | The six built-in helpers, all on one page, plus custom dev ports                                                                                                    | `npm run eg5` · `--dev`                                |
+| [6 · sitemap and llms.txt](6-sitemap/)              | Reference | tier 0       | `.sitemap()` and `.llms()` with `siteUrl`, per-page tuning, `extensionLess`, hashed assets                                                                          | `npm run eg6` · `--dev`                                |
+| [7 · versioned outputs](7-versioned-outputs/)       | Exemplar  | tier 0       | One build per season into its own folder, atomically, with an archive index beside them                                                                             | `npm run eg7` · `node 7-versioned-outputs.js <season>` |
+| [8 · data-fed site](8-data-fed-site/)               | Exemplar  | tier 0       | A site built from a folder of records, validated in the controller — one record is broken                                                                           | `npm run eg8` · exits 1 · `--dev`                      |
+| [9 · migrated from v1](9-migrated-from-v1/)         | Exemplar  | **tier 1** ¹ | Every v1 → v2 migration recipe as running code, in a site that builds clean; ships a recorded `AIKB/`                                                               | `npm run eg9` · `--dev`                                |
+| [10 · asset pipeline](10-asset-pipeline/)           | Reference | tier 0       | `config.assets.pipeline` runs an external tool before the asset copy, `watch` in dev mode; the four reference shapes `{{asset}}` takes                              | `npm run eg10` · `--dev`                               |
+| [11 · blog](11-blog/)                               | Exemplar  | **tier 2** ² | Posts as a fan-out, pagination, tag pages, `.feed()`, a rename's `aliases`, links by `{{link}}`; recorded `AIKB/`                                                   | `npm run eg11` · `--broken` · `--dev`                  |
+| [12 · from a single file](12-from-a-single-file/)   | Exemplar  | **tier 1** ³ | An existing page — an artifact, an export, a hand-written file — converted into a site that still looks the same, with the source and the conversion both committed | `npm run eg12` · `--dev`                               |
 
 ¹ Example 9 registers exactly one custom helper, and therefore has a `helpers/` folder. One is the
 trigger: a helper inside `router.js` cannot be imported and so cannot be tested, which is as true
@@ -61,10 +62,13 @@ of the first as of the fourth.
 markup. That trigger is **duplication**, not file length, and it is independent of the helper one —
 which is why example 11 has `config/` and no `helpers/` (it registers none), while example 9 has
 `helpers/` and no `config/`. The tiers are not stages to pass through in order.
+³ Example 12 has `config/` for the same reason, and it is the clearest case in the set because the
+duplication is visible in the file it was converted from: `source/original.html` spells its own
+address two ways, 47 lines apart. One fact typed twice drifts; that is the whole trigger.
 
 `npm run egN` runs from the repo root; from this folder the same thing is `cd N-name && node
 router`. Each router's own header states its tier and why it is there.
-Examples 1–6 and 8–11 take `--dev` for a live-reloading preview; 7 builds and exits, and takes a
+Examples 1–6 and 8–12 take `--dev` for a live-reloading preview; 7 builds and exits, and takes a
 season slug instead. Example 8 is the only one that exits non-zero, and it does so on purpose;
 example 11 takes `--broken`, which adds one broken link — a finding, not a failure, so that run
 still exits 0 and only `npx kiss-ssg check` reports it.

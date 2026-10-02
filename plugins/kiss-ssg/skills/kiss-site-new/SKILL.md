@@ -1,12 +1,14 @@
 ---
 name: kiss-site-new
-description: Build a new static site with kiss-ssg from a description of what it should contain, or add a whole new section to an existing site (its own model, controller and view pattern). Use when scaffolding a kiss-ssg site from scratch, doing kiss-ssg initial setup, or when asked to "make a site with kiss", "set up kiss-ssg", "initialise a kiss-ssg site", or "write the build script for this site". For adding or updating a single page on a site that is already set up, use the kiss-page-add skill instead.
+description: Build a new static site with kiss-ssg from a description of what it should contain, or add a whole new section to an existing site (its own model, controller and view pattern). Use when scaffolding a kiss-ssg site from scratch, doing kiss-ssg initial setup, or when asked to "make a site with kiss", "set up kiss-ssg", "initialise a kiss-ssg site", or "write the build script for this site". For adding or updating a single page on a site that is already set up, use the kiss-page-add skill instead. If the person already HAS a working page — a Claude or ChatGPT artifact, an exported page, a hand-written HTML file — they want kiss-site-import, which keeps what it looks like rather than rebuilding it from a description.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # New kiss-ssg site
 
 Build the site from the package's own shipped docs. They are the contract; this skill only sequences them, so read them rather than trusting a summary — including this one.
+
+**First, check you are the right skill.** If the person already has a working page and wants it to become a site — including one they hand you as a link to a Claude artifact, a ChatGPT share or a live page — this is the wrong one: rebuilding from a description throws away a look they have already approved, and nothing can then tell your improvements from your mistakes. Use `kiss-site-import`, which decomposes the page they have and proves the result still renders the same. This skill is for a site that does not exist yet.
 
 ## Execution instructions
 

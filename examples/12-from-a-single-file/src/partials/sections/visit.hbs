@@ -1,0 +1,25 @@
+{{!-- The address was typed here AND in the footer in the artifact, with
+      nothing keeping the two in step. It is config now, so there is one
+      postcode in this project and the <address> and the footer both read it. --}}
+<section class="visit" id="visit">
+  <div class="wrap">
+    <div>
+      <div class="section-head">
+        <h2>{{heading}}</h2>
+        <p>{{intro}}</p>
+      </div>
+      <address>
+        {{@root.config.business.fullName}}<br>
+        {{@root.config.business.address.line1}}<br>
+        {{@root.config.business.address.town}} {{@root.config.business.address.postcode}}
+      </address>
+    </div>
+    <div>
+      <ul class="hours">
+        {{#each hours}}
+        <li>{{days}} <span>{{time}}</span></li>
+        {{/each}}
+      </ul>
+    </div>
+  </div>
+</section>

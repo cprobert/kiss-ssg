@@ -1,45 +1,107 @@
 {
-  "prompt": "Build a site for Pro Plumbing, a local plumber in Aberdare: small jobs, bigger jobs, questions people ask and a contact page.",
-  "files": [
-    "router.js",
-    "src/layouts/layout.hbs",
-    "src/pages/index.hbs",
-    "src/pages/small-jobs/index.hbs",
-    "src/controllers/jobList.js",
-    "src/models/jobs/*.json",
-    "helpers/schema.js"
-  ],
-  "verdict": {
-    "command": "npx kiss-ssg check router.js --summary",
-    "status": "ok",
-    "line": "./docs (check) — 7 pages, 0 failed, 43 assets",
-    "facts": [
-      "131 links checked, 0 broken",
-      "sitemap.xml, llms.txt and robots.txt written"
+  "toolkit": {
+    "heading": "What you need to build a website with Claude Code",
+    "intro": "Install the first two before you start. The other two keep your work safe and put it online — free plans are plenty for a small site.",
+    "tools": [
+      {
+        "icon": "icons/node",
+        "name": "Node.js",
+        "url": "https://nodejs.org",
+        "need": "Required",
+        "level": "required",
+        "what": "Runs kiss and builds your site. Version 22.12 or later — the LTS download is fine."
+      },
+      {
+        "icon": "icons/claude",
+        "name": "Claude Code",
+        "url": "https://claude.com/claude-code",
+        "need": "Required",
+        "level": "required",
+        "what": "The coding agent that writes the site for you. Needs a Claude account."
+      },
+      {
+        "icon": "icons/git",
+        "name": "Git",
+        "url": "https://git-scm.com",
+        "need": "Recommended",
+        "level": "recommended",
+        "what": "Keeps every version of your site, so any change can be undone. Push it to a service such as GitHub to keep a copy online — the hosts below publish straight from there.",
+        "options": [
+          {
+            "icon": "icons/github",
+            "name": "GitHub",
+            "url": "https://github.com"
+          }
+        ]
+      },
+      {
+        "icon": "icons/globe",
+        "name": "A host",
+        "need": "To go live",
+        "level": "live",
+        "what": "Puts the finished site on the web. Each builds it from your repository with npm run build and publishes the public folder; each link is that host's own guide to doing it.",
+        "options": [
+          {
+            "icon": "icons/github",
+            "name": "GitHub Pages",
+            "url": "https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages"
+          },
+          {
+            "icon": "icons/netlify",
+            "name": "Netlify",
+            "url": "https://docs.netlify.com/configure-builds/overview/"
+          },
+          {
+            "icon": "icons/cloudflare-pages",
+            "name": "Cloudflare Pages",
+            "url": "https://developers.cloudflare.com/pages/framework-guides/deploy-anything/"
+          },
+          {
+            "icon": "icons/vercel",
+            "name": "Vercel",
+            "url": "https://vercel.com/docs/builds/configure-a-build"
+          },
+          {
+            "icon": "icons/firebase",
+            "name": "Firebase Hosting",
+            "url": "https://firebase.google.com/docs/hosting/quickstart"
+          }
+        ]
+      }
     ]
   },
-  "caption": "Pro Plumbing, a site built with kiss, checked as shown.",
-  "captionLink": {
-    "name": "pro-plumbing.trade",
-    "url": "https://pro-plumbing.trade/"
+  "setup": {
+    "heading": "From nothing to a live website in six commands",
+    "intro": "With Node.js and Claude Code installed, these do the rest.",
+    "steps": [
+      {
+        "title": "Set it up, in a new folder",
+        "text": "init installs kiss-ssg, adds a starter site and the build scripts, and points your agent at the API contract. The three claude plugin lines install kiss's skills into this folder — init declares them, but a declared plugin is not installed until these run. The last line opens Claude Code.",
+        "code": "mkdir my-site && cd my-site\nnpx kiss-ssg@latest init\nclaude plugin marketplace add cprobert/kiss-ssg --scope project\nclaude plugin install kiss-ssg@kiss-ssg --scope project\nclaude plugin install kiss-memory@kiss-ssg --scope project\nclaude"
+      },
+      {
+        "title": "Say what you want",
+        "text": "In Claude Code, paste one of these.",
+        "prompts": [
+          {
+            "label": "A new site",
+            "note": "Change the business, the host and the address: kiss writes the sitemap, the feed and every canonical link from them.",
+            "text": "Use the kiss-site-new skill to build me a site for a small bakery in Leeds: home, menu, about, and a news section for seasonal specials. It will be served by Netlify at https://kirkgate-bakery.co.uk. Run the build check when you're done."
+          },
+          {
+            "label": "A site you made in Claude or ChatGPT",
+            "note": "kiss is its upgrade path. Paste the link to the published artifact or share in place of the one below — or, if you have it as an HTML file, put it in the folder and name the file instead.",
+            "text": "Use the kiss-site-import skill to turn https://claude.ai/public/artifacts/… into a real site, keeping exactly how it looks. Run the build check when you're done."
+          }
+        ]
+      },
+      {
+        "title": "See it, and check it",
+        "text": "npm run dev serves the site with live reload at the address it prints (localhost:3001 by default) and keeps running — Ctrl-C to stop. npm run check reports every page, broken link and missing launch detail, and publishes nothing: exit 0 means it's right. npm run build writes the site to public/ to deploy.",
+        "code": "npm run dev\nnpm run check"
+      }
+    ]
   },
-  "steps": [
-    {
-      "title": "Set it up",
-      "text": "One command installs kiss-ssg, adds a starter site, and points your agent at the API contract. Then add the two Claude Code plugins it prints.",
-      "code": "npx kiss-ssg@latest init"
-    },
-    {
-      "title": "Describe the site",
-      "text": "Open Claude Code and say what the site is for, who it's for, where it will be hosted and its address. The skills do the rest.",
-      "code": "claude"
-    },
-    {
-      "title": "Check the build",
-      "text": "A dry run that reports every page, broken link and missing launch detail as data, and publishes nothing. Exit 0 means it's right.",
-      "code": "npx kiss-ssg check router.js"
-    }
-  ],
   "reasons": [
     {
       "title": "Conventions, not questions",
@@ -59,10 +121,25 @@
     }
   ],
   "sites": [
-    { "name": "Learna", "url": "https://www.learna.ac.uk/" },
-    { "name": "Diploma MSc", "url": "https://www.diploma-msc.com/" },
-    { "name": "A1K9 Training", "url": "https://www.a1k9training.co.uk/" },
-    { "name": "K9 Solutions", "url": "https://k9solutions.uk/" },
-    { "name": "Pro Plumbing", "url": "https://pro-plumbing.trade/" }
+    {
+      "name": "Learna",
+      "url": "https://www.learna.ac.uk/"
+    },
+    {
+      "name": "Diploma MSc",
+      "url": "https://www.diploma-msc.com/"
+    },
+    {
+      "name": "A1K9 Training",
+      "url": "https://www.a1k9training.co.uk/"
+    },
+    {
+      "name": "K9 Solutions",
+      "url": "https://k9solutions.uk/"
+    },
+    {
+      "name": "Pro Plumbing",
+      "url": "https://pro-plumbing.trade/"
+    }
   ]
 }

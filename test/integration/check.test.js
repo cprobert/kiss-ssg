@@ -466,6 +466,12 @@ describe('kiss-ssg aikb', () => {
     // published, and the only thing on disk afterwards is the knowledge base.
     expect(await temp.exists('public')).toBe(false)
     expect(siblings(temp.root)).toEqual([])
+    // The log says what was written, not just what was not: it used to say
+    // "the build succeeded and nothing was written" straight after AIKB/ had
+    // been, and a clean-room run read that as the recording having failed.
+    const said = `${run.stdout}\n${run.stderr}`
+    expect(said).toMatch(/Recorded the knowledge base in /)
+    expect(said).not.toMatch(/the build succeeded and nothing was written/)
   }, 60000)
 
   // Found upgrading a real site: once a site has recorded, check prints

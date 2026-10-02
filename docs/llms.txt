@@ -4,12 +4,13 @@
 
 ## Pages
 
-- [Home](https://cprobert.github.io/kiss-ssg/): kiss-ssg is a static site generator for Node built to be driven by a coding agent: you describe the site, the agent builds it, and kiss-ssg check verifies it.
+- [Home](https://cprobert.github.io/kiss-ssg/): kiss-ssg lets Claude Code build a real website you can host anywhere, or turn a site you made in Claude or ChatGPT into one that keeps its look. Every build is checked before it goes live. Free and open source.
 - [Examples](https://cprobert.github.io/kiss-ssg/examples/): Eleven runnable kiss-ssg sites that ship inside the package: whole sites to copy by situation, and short scripts that show one feature each.
 
 ## Guide
 
 - [Getting started](https://cprobert.github.io/kiss-ssg/guide/): How a kiss-ssg site is laid out: starting one, the router.js build script, and the TypeScript types that ship with the package.
+- [Converting an existing page](https://cprobert.github.io/kiss-ssg/guide/converting/): Turning a page you already have — a Claude or ChatGPT artifact, an exported page, a hand-written HTML file — into a structured kiss site that still looks the same.
 - [Pages and data](https://cprobert.github.io/kiss-ssg/guide/pages/): Registering pages with .page() and .pages(), shaping their data with controllers, fetching remote models, and Markdown options.
 - [Assets and builds](https://cprobert.github.io/kiss-ssg/guide/assets/): Copying and compiling assets, cache-busting URLs, running an external asset pipeline, cleaning the build folder, building several sites from one source, and how the dev watcher handles file changes.
 - [Sitemap, llms.txt and feeds](https://cprobert.github.io/kiss-ssg/guide/discovery/): The files search engines and answer engines read, derived from the same page registry: sitemap.xml, llms.txt, an RSS feed and robots.txt.

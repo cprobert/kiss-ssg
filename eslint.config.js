@@ -61,7 +61,12 @@ export default [
     ignores: [
       'docs/**',
       '.preview/**',
-      'public/**',
+      // `**/`, not just the repo root: an example's build output is also
+      // `public/`, and example 12 is the first to copy a browser script into
+      // it — which lint then read as Node code and failed on `document`.
+      // Linting generated output is wrong wherever it sits.
+      '**/public/**',
+      '**/.converted/**',
       'examples/**/assets/**',
       'src/**',
       'coverage/**',

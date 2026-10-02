@@ -310,6 +310,151 @@ const COVERAGE = [
       skill('kiss-memory', 'kiss-site-brief'),
     ],
   },
+  // The splitter, and the things about a conversion an agent gets wrong by
+  // reaching for the obvious instead of the documented behaviour.
+  {
+    feature:
+      'splitDocument does the mechanical half; the stylesheet stays whole, inline',
+    pattern: /splitDocument[\s\S]*stays whole, inline/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'lifting inline assets is an improvement, not the conversion (cascade, url(), timing)',
+    pattern: /Lifting them into files is an \*\*improvement\*\*/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'the import starts from a link (an artifact or share), and a fetched loader shell is not the page',
+    pattern: /Most often you are given a link[\s\S]*loader/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'the stylesheet is not Sass — Sass reads plain CSS differently',
+    pattern: /Do not rename the stylesheet `\.scss`/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'the proposed region names are markup names — rename them to meaning',
+    pattern: /proposes a name per region[\s\S]*Rename every region/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'inline assets are reported, not removed — the lift is the caller’s',
+    pattern: /reports.{0,40}inline assets, it does not remove them/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'commit the source artifact — the precedent did not and nothing can be diffed',
+    pattern: /never committed its source/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  // Found by running GUIDE.md's own snippet against a real artifact: a
+  // four-name list on a seven-region page silently named the wrong regions,
+  // because `names` is positional. Both docs carried the misleading shape.
+  {
+    feature: 'splitDocument names are positional, and a short list misnames',
+    pattern: /BY INDEX[\s\S]*short list/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  // The 2026-10-01 clean-room run. Every row below is a mistake it actually
+  // made, or a silent failure it only avoided by reading example 12 unprompted.
+  {
+    feature: '{{@root.config}} inside a partial handed a model slice',
+    pattern: /@root\.config[\s\S]*renders \*\*empty\*\*/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'read examples/12-from-a-single-file — it is this job already done',
+    pattern:
+      /examples\/12-from-a-single-file\/`? ?—? ?.{0,20}it is this job, already done/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'title/description are page options; an untitled page ships as Index',
+    pattern: /<title>Index<\/title>/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'a converted project needs "type": "module" and the four scripts',
+    pattern: /"type": "module"[\s\S]*MODULE_TYPELESS_PACKAGE_JSON/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'flag an unverifiable guess rather than making it silently (host, siteUrl)',
+    pattern: /do not guess silently[\s\S]*TODO/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'verify the whole document, the assets and the <title> — the body comparison covers none of them',
+    pattern:
+      /Compare the whole document[\s\S]*Compare the assets, and check the `<title>`/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  // The 2026-10-02 clean-room run importing a LIVE page. Each row is a place
+  // the skill sent it wrong or left it guessing.
+  {
+    feature:
+      'a live page is build output: strip host injections, restore what the host took',
+    pattern: /Strip the injections[\s\S]*Restore what the host took/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'a live page may be one page of a larger site — ask for the source repo first',
+    pattern: /Ask first whether a source repository exists/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'a page that is not the home page passes its pageName',
+    pattern: /pageName/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      "the layout's <head> is the imported page's — template it before a second page inherits it",
+    pattern: /The layout's `<head>` is this page's head/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'JSON-LD values need a triple-stash, and nowhere else does',
+    pattern: /application\/ld\+json[\s\S]*\{\{\{ \}\}\}/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'the skills this one points at ship from the marketplace and may be absent',
+    pattern: /may not be installed/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  // From the branch's security review. `{{` in a document kiss is about to
+  // compile is the module's one injection surface AND a data loss on any page
+  // using Alpine or Vue — which is ordinary for a page written in a chat. An
+  // agent that does not know to read `expressions` carries either through
+  // without noticing, because neither shows up in a body comparison.
+  {
+    feature:
+      'read result.expressions — {{…}} in the source is escaped, and says what kind of page it is',
+    pattern: /expressions[\s\S]*escapeExpressions: false/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  // The second security review. `warnings` is where the two shapes the
+  // conversion cannot reproduce are reported, and a report an agent does not
+  // read is the same as no report.
+  {
+    feature:
+      'read result.warnings — the conversion names what it could not do losslessly',
+    pattern: /non-empty `warnings`[\s\S]*between two sections/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {
@@ -373,6 +518,54 @@ const CONTRADICTIONS = [
   {
     why: 'Claude Code does not offer plugins a settings file declares (probe, 2026-09-26) — a doc must not promise that opening the folder installs them',
     patterns: [/Claude Code offers them the next time it opens/i],
+  },
+  {
+    why: 'splitStylesheet was removed before 2.7.0 shipped (2026-10-02): the stylesheet stays whole, because Sass reads plain CSS differently in more places than a translation could keep up with. A doc still telling an agent to split it names a function that does not exist',
+    patterns: [/splitStylesheet/, /parseStylesheet/],
+  },
+  {
+    why: 'lifting inline <style>/<script> into files is an improvement, not part of the conversion (2026-10-02): merging reorders the cascade around an external <link>, moves relative url() resolution, and `defer` changes when a script runs. The two instructions that made it a conversion step are banned, because each looked like a safe default and Codex found a way each changed the page',
+    patterns: [
+      /referenced with `<script src="\/\{\{asset "js\/site\.js"\}\}" defer>/,
+      /copy their `content` in whole to `src\/assets\/css\/site\.css`/,
+      /write their `content`, in order and joined with a newline, to `src\/assets\/css\/site\.css`/,
+    ],
+  },
+  {
+    why: "escaping {{ is ON by default and the whole point: unescaped, a foreign document's braces are COMPILED — an Alpine page evaluates to empty, and a hostile one gets {{config.…}} into an attribute of the built page. A doc saying the option defaults to false tells an agent the surface is closed when it is open, which is worse than saying nothing",
+    patterns: [
+      /escapeExpressions[^\n]{0,60}default[s]?[^\n]{0,20}`?\*{0,2}false/i,
+      /escapeExpressions:\s*false[^\n]{0,30}\(default\)/i,
+    ],
+  },
+  {
+    why: 'a node written between two sections is MOVED, not kept in place — chrome lives in the layout and sections render at one content block. The first round of fixes stopped it being dropped and its own commit message then claimed "in place", which is the overclaim this ban exists to stop being re-copied',
+    patterns: [
+      /comment or stray text node between two sections is not quietly dropped/,
+      /between two sections[^.\n]{0,40}(?:kept|stays|survives) in place/i,
+    ],
+  },
+  {
+    why: "the module's invariant now rests on six choices, not four or two — two security reviews measured it false on fourteen shapes between them, and each round added to the list. The count and the phrase 'one stated exception' are both banned because both were true once and a later edit re-copies the sentence it remembers; there are three exceptions now, two of them reported in warnings",
+    patterns: [
+      /[Tt]wo choices (?:exist to keep it true|keep it true)/,
+      /[Ff]our choices (?:exist to keep it true|keep it true)/,
+      /\bone stated exception\b/i,
+    ],
+  },
+  {
+    why: 'a fact in config/ read as plain {{config.…}} inside a partial handed a model slice renders EMPTY — the slice replaces the context. Both the skill and GUIDE.md said the plain spelling while telling you to slice, in the same step',
+    patterns: [
+      /spread into `new Kiss\(\)` and read as `\{\{config\./,
+      /read as `\{\{config\.business\.phone\}\}`/,
+    ],
+  },
+  {
+    why: 'splitDocument REPORTS inline <style>/<script> and leaves the document whole; an earlier shape removed them and silently dropped a real page’s script tags. A doc claiming it lifts them teaches an agent not to do the lift itself',
+    patterns: [
+      /splitDocument (?:also )?(?:lifts|extracts|removes|strips) (?:the )?inline/i,
+      /`?assets\.styles`? (?:has|holds) the (?:stylesheet|CSS) (?:it|that it) removed/i,
+    ],
   },
   {
     why: 'non-dev whole-site watch replays check links after cleanup',
@@ -512,4 +705,22 @@ describe('no consumer-facing file contradicts the convention it documents', () =
       expect(offenders).toEqual([])
     })
   }
+})
+
+// llms.txt is how an agent in a consuming project learns which skills exist,
+// and its two lists named five after a sixth (kiss-site-import) had shipped —
+// the clean-room import run found the skill it was following missing from the
+// contract it was told to read. Every plugin skill must be named in both.
+describe('llms.txt names every skill the plugins ship', () => {
+  const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8')
+  const shipped = fs.readdirSync(path.join(root, 'plugins/kiss-ssg/skills'))
+  it.each(shipped)('names %s where it lists the kiss-ssg skills', (name) => {
+    const lists = llms
+      .split('\n')
+      .filter(
+        (line) => /kiss-site-new/.test(line) && /kiss-page-add/.test(line),
+      )
+    expect(lists.length).toBeGreaterThanOrEqual(2)
+    for (const line of lists) expect(line).toContain(`\`${name}\``)
+  })
 })

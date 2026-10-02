@@ -12,6 +12,7 @@ import {
   describeAction,
   nextSteps,
   FIRST_PROMPT,
+  IMPORT_PROMPT,
   INIT_HELP,
 } from '../../lib/init.js'
 
@@ -181,14 +182,33 @@ describe('planInit never destroys anything', () => {
     expect(action.detail).toMatch(/kept scripts\.build/)
   })
 
-  it('keeps "type": "commonjs" and says router.js will not run', () => {
+  // Reversed 2026-10-02. This used to keep "commonjs" and print a note — but
+  // npm 11's `npm init -y` writes `"type": "commonjs"` by default, so anyone
+  // who ran it first got a starter whose build crashed with "Cannot use import
+  // statement outside a module" (the clean-room import run). When init is
+  // writing the starter there is no code yet that could depend on CommonJS:
+  // the value is npm's boilerplate, not the site's choice.
+  it('switches "type": "commonjs" to "module" when it writes the starter, and says so', () => {
     const existing = JSON.stringify({ name: 'x', type: 'commonjs' })
     const action = byPath(
       planInit(state({ files: { 'package.json': existing } })),
       'package.json',
     )
+    expect(json(action).type).toBe('module')
+    expect(action.detail).toMatch(/commonjs/)
+  })
+
+  it('keeps "type": "commonjs" in a project that already has code', () => {
+    const existing = JSON.stringify({
+      name: 'x',
+      type: 'commonjs',
+      scripts: { build: 'node router.js' },
+    })
+    const action = byPath(
+      planInit(state({ hasRouter: true, files: { 'package.json': existing } })),
+      'package.json',
+    )
     expect(json(action).type).toBe('commonjs')
-    expect(action.detail).toMatch(/"type": "module"/)
   })
 
   it.each(['package.json', '.claude/settings.json'])(
@@ -456,6 +476,15 @@ describe('describeAction', () => {
 describe('nextSteps', () => {
   it('includes the prompt to paste', () => {
     expect(nextSteps()).toContain(FIRST_PROMPT)
+  })
+
+  // The other front door. Someone who already has a site — most often one
+  // made in Claude or ChatGPT, given as a link — was only ever shown the
+  // new-site prompt, telling them to describe a site they already had.
+  it('offers the import prompt too, naming the import skill and a link', () => {
+    expect(nextSteps()).toContain(IMPORT_PROMPT)
+    expect(IMPORT_PROMPT).toMatch(/kiss-site-import/)
+    expect(IMPORT_PROMPT).toMatch(/link/)
   })
 
   // The clean-room run asked why it was told to install plugins init had

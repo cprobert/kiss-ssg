@@ -37,7 +37,16 @@ export function missingPackedFiles(packedFiles, required = REQUIRED_PACKED) {
 // example builds into its own `public/`, which put 75 files of generated
 // output into the tarball that `CLAUDE.md` says never ships. Asking only what
 // was *missing* could never have caught it.
-export const FORBIDDEN_PACKED = [/^examples\/[^/]+\/public\//]
+// `.converted/` is the second instance of exactly that shape: example 12's
+// one-off conversion writes there, it is gitignored, and gitignored is not
+// what keeps something out of the tarball. It happens not to ship today, and
+// "happens not to" is not a guarantee — the `public/` case did not ship either
+// until it did, for 75 files. Both halves are named now: a `!` entry in
+// package.json's `files`, and this pattern, which is the one that fails loudly.
+export const FORBIDDEN_PACKED = [
+  /^examples\/[^/]+\/public\//,
+  /^examples\/[^/]+\/\.converted\//,
+]
 
 export function forbiddenPackedFiles(
   packedFiles,

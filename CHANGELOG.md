@@ -3,6 +3,104 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.0 — 2026-10-01
+
+### A page you already have can become a kiss site
+
+Until now kiss had no door for the commonest way a small site starts: somebody
+already has a working page. A Claude or ChatGPT artifact, a page exported from
+a builder, a hand-written HTML file edited for years. `kiss-site-new` wants a
+description of a site, not the site; `kiss-site-migrate` is for moving across
+kiss versions. The single-file page appeared in the shipped guidance only as
+the shape to avoid.
+
+A new export converts one, and it does the half that can be proved:
+
+```js
+import { splitDocument } from 'kiss-ssg'
+
+const { layout, page, partials, assets, regions } = splitDocument(html)
+```
+
+`splitDocument` cuts the document into a layout holding `<head>` and the
+chrome, one partial per region under `site/` or `sections/`, and a page view
+that is a list of partial calls. `parseHtml` and `findTag` come with it, for
+inspecting a document without splitting it.
+
+**The stylesheet stays whole, and stays where it was.** Every inline `<style>`
+and `<script>` is still in the layout, byte for byte, where the page had it. It
+is not split and not renamed `.scss`: Sass reads plain CSS differently in
+places — `#{` inside a string is interpolated, a string `@import` becomes a
+compile-time import, native nesting is flattened. Lifting them into files is a
+separate improvement, because a move reorders the cascade around an external
+`<link>`, changes what a relative `url()` resolves against, and with `defer`
+changes when a script runs.
+
+**What it guarantees is that it changed nothing.** Assembling the layout,
+partials and page view back through Handlebars reproduces the document — every
+tag exactly as written, no whitespace added anywhere (a line break appears only
+where the page had one, so a minified page stays dense inside its partials),
+every body node still in the place it was written (a `<script>` included, so
+one before the content still runs before it), `<main>` re-emitted only if it
+was there. Measured on a real 21KB page: 118 elements in, 118 out, same order.
+The page is read by **htmlparser2**, a new runtime dependency, which reads HTML
+the way the spec does without adding tags the page never wrote.
+
+**`{{` in the source is escaped, and it is the one byte a conversion changes
+on purpose.** What `splitDocument` writes is `.hbs`, and kiss compiles `.hbs`
+— so braces in a document you hand it are not text, they are code. A page
+using Alpine or Vue interpolation (ordinary for something written in a chat)
+would have every one of them evaluated against kiss's context and erased, and
+a page written to attack you would have them evaluated too, including in
+attributes, where no body comparison looks. They are emitted as `\{{`, which
+renders the literal `{{` the source meant. `result.expressions` lists what was
+found, because only you can say which kind of page you have; pass
+`escapeExpressions: false` for a document you wrote and mean kiss to compile.
+
+**`warnings` is the list to read before you ship.** It is empty for an
+ordinary page. Non-empty means the conversion did something it could not do
+losslessly and is telling you which — there are exactly two such things, and
+with `escapeExpressions: false` they make three places where assembling does
+not give the input back:
+
+- **A `{{` with a backslash already in front of it.** Handlebars has exactly
+  one escape, `\{{`, and a preceding backslash eats it; measured across runs
+  of nought to five, two or more backslashes emit one fewer and evaluate
+  anyway. There is no sequence that yields a literal run followed by a
+  literal `{{`, so those braces are emitted as `&#123;&#123;`. The page
+  renders the same; the bytes differ, and inside `<script>` or `<style>`,
+  where a character reference is not decoded, so does the text.
+- **A node written between two sections** — a `<nav>`, an `<aside>`, a
+  `<script>`, a comment, stray text — comes out after all of them. Chrome goes
+  in the layout so every page gets it, and sections render at a single content
+  block, so an interleaved node has nowhere else to go. Move it above the
+  first section or below the last if the order matters.
+
+**What it refuses to do is guess.** You name the regions — the proposals come
+from `id` and class, which are markup names, so a hero carrying `id="top"` is
+proposed as `top`. You decide which words become model fields. Whether to lift
+the inline `<style>` and `<script>` into files later is yours too — they are
+reported, each with its `attrs`, and left where they were. Those are judgements
+nothing could check, and a module that made them would produce field names no
+human would
+have chosen.
+
+### The `kiss-site-import` skill, and example 12
+
+`/kiss-ssg:kiss-site-import` walks the whole sequence. `kiss-site-new` now
+routes you to it when you arrive with a page rather than a description.
+
+`examples/12-from-a-single-file/` is the job done end to end: the artifact it
+started from, the conversion script, a comparison tool that proves the page
+unchanged, and the site that came out. `npm run eg12`.
+
+The rule it all turns on, if you read nothing else: **convert first, improve
+second.** A conversion that also tidies the markup cannot be verified, because
+nothing can tell your improvements from your mistakes. Get to "the same page,
+in pieces", prove it, then change things as a step with its own name.
+
+Nothing in an existing site changes — this release is additive.
+
 ## 2.6.6 — 2026-09-30
 
 ### The dev server no longer rebuilds forever when the script shares a name with the build folder

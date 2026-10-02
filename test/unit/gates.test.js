@@ -61,6 +61,21 @@ describe('forbiddenPackedFiles', () => {
     ])
   })
 
+  it('names a scratch conversion folder too', () => {
+    // The same shape as `public/`, found when example 12 added a second
+    // gitignored folder inside a whitelisted one. It does not ship today, and
+    // "does not ship today" is what was true of `public/` for 75 files.
+    expect(
+      forbiddenPackedFiles([
+        'examples/12-from-a-single-file/router.js',
+        'examples/12-from-a-single-file/source/original.html',
+        'examples/12-from-a-single-file/.converted/src/layouts/layout.hbs',
+      ]),
+    ).toEqual([
+      'examples/12-from-a-single-file/.converted/src/layouts/layout.hbs',
+    ])
+  })
+
   it("leaves an example's own source alone", () => {
     expect(
       forbiddenPackedFiles([

@@ -1,0 +1,105 @@
+{
+  "hero": {
+    "heading": "Coffee roasted on Wednesday, on your bar by Friday.",
+    "intro": "We roast in small batches on Mill Lane and deliver to cafés, kitchens and offices across Bristol and the South West. No contracts, no minimum order after your first.",
+    "primary": { "href": "#enquiry", "label": "Get a wholesale quote" },
+    "secondary": { "href": "#beans", "label": "See what we're roasting" },
+    "card": {
+      "heading": "This week",
+      "rows": [
+        { "term": "Roasting", "detail": "Wednesday, 6am" },
+        { "term": "Cut-off", "detail": "Tuesday, 5pm" },
+        { "term": "Delivery", "detail": "Thursday and Friday" },
+        { "term": "Collection", "detail": "Any weekday, from 9am" }
+      ]
+    }
+  },
+  "offers": {
+    "heading": "Three ways to buy",
+    "intro": "Every account starts with a free tasting and a bag on us. Pricing is per kilo and holds for twelve months.",
+    "items": [
+      {
+        "name": "Café",
+        "summary": "Weekly delivery, a house espresso and one rotating filter, with a grinder dial-in on your first order.",
+        "price": "£19.50",
+        "terms": "per kg, from 10kg a week"
+      },
+      {
+        "name": "Kitchen",
+        "summary": "For restaurants pouring under ten kilos a week. Same coffee, fortnightly delivery, no minimum after the first order.",
+        "price": "£22.00",
+        "terms": "per kg, no minimum"
+      },
+      {
+        "name": "Office",
+        "summary": "Ground to your machine, delivered monthly, with a loan grinder if you would rather buy whole bean.",
+        "price": "£24.00",
+        "terms": "per kg, monthly"
+      }
+    ]
+  },
+  "beans": {
+    "heading": "What's on the roster",
+    "intro": "Three coffees we always have, and one bench lot that changes when the sack runs out.",
+    "image": {
+      "src": "img/roastery.png",
+      "alt": "Hessian sacks stacked beside the roaster on Mill Lane",
+      "width": 880,
+      "height": 660
+    },
+    "items": [
+      {
+        "name": "Arch Blend",
+        "note": "Brazil and Colombia. Cocoa, toasted hazelnut, a soft finish. Our house espresso."
+      },
+      {
+        "name": "Guji Uraga",
+        "note": "Ethiopia, natural. Blueberry and bergamot. Filter, and a very good flat white."
+      },
+      {
+        "name": "Huila Decaf",
+        "note": "Colombia, sugarcane process. Baked apple and demerara. Nobody guesses."
+      },
+      {
+        "name": "Bench lot",
+        "note": "Whatever is on the sample roaster this month. Ask and we'll send a bag."
+      }
+    ]
+  },
+  "visit": {
+    "heading": "Come and taste it",
+    "intro": "The roastery door is open on weekdays. There is no shop, but there is always a pot on.",
+    "hours": [
+      { "days": "Monday to Thursday", "time": "9am – 5pm" },
+      { "days": "Friday", "time": "9am – 3pm" },
+      { "days": "Saturday", "time": "Cupping, 10am (book ahead)" },
+      { "days": "Sunday", "time": "Closed" }
+    ]
+  },
+  "enquiry": {
+    "heading": "Ask for a quote",
+    "intro": "Tell us roughly what you pour in a week and we'll come back with a price and a sample box.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "autocomplete": "name"
+      },
+      {
+        "id": "email",
+        "label": "Email",
+        "type": "email",
+        "autocomplete": "email"
+      },
+      {
+        "id": "volume",
+        "label": "Roughly how much a week?",
+        "type": "text",
+        "placeholder": "e.g. 12kg"
+      },
+      { "id": "message", "label": "Anything else", "textarea": true }
+    ],
+    "submit": "Send enquiry"
+  }
+}

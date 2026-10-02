@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aster &amp; Oak — Wholesale Coffee, Bristol</title>
+<meta name="description" content="Small-batch coffee roasted in Bristol and delivered to cafés, kitchens and offices across the South West.">
+<style>
+:root{--ink:#1d1b18;--paper:#faf7f2;--cream:#fffdf8;--rust:#b5542a;--rust-dark:#8d3f1e;--line:#e2dace;--muted:#6b6459}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 "Iowan Old Style",Georgia,serif}img{display:block;max-width:100%}a{color:inherit}.wrap{width:min(1120px,calc(100% - 40px));margin:0 auto}
+.site-header{border-bottom:1px solid var(--line);background:var(--cream);position:sticky;top:0;z-index:5}.site-header .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:72px}.brand{font-size:1.15rem;font-weight:700;letter-spacing:.02em;text-decoration:none}.brand em{color:var(--rust);font-style:normal}.nav-links{display:flex;gap:22px;align-items:center;list-style:none;margin:0;padding:0}.nav-links a{text-decoration:none;font-size:.9rem;color:var(--muted)}.nav-links a:hover{color:var(--ink)}.nav-cta{background:var(--rust);color:#fff!important;border-radius:6px;padding:9px 15px;font-weight:700}.nav-toggle{display:none;background:none;border:1px solid var(--line);border-radius:6px;padding:7px 10px;font:inherit;cursor:pointer}
+.hero{padding:88px 0 72px}.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:center}.hero h1{font-size:clamp(2.4rem,5vw,3.9rem);line-height:1.04;letter-spacing:-.02em;margin:0 0 18px}.hero p{font-size:1.1rem;color:var(--muted);max-width:46ch;margin:0 0 28px}.hero-actions{display:flex;gap:12px;flex-wrap:wrap}.btn{display:inline-block;border-radius:6px;padding:13px 20px;text-decoration:none;font-weight:700;font-size:.95rem}.btn-primary{background:var(--rust);color:#fff}.btn-primary:hover{background:var(--rust-dark)}.btn-plain{border:1px solid var(--line);background:var(--cream)}.hero-card{background:var(--cream);border:1px solid var(--line);border-radius:14px;padding:26px}.hero-card h2{font-size:1rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}.hero-card dl{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;margin:0}.hero-card dt{font-weight:700}.hero-card dd{margin:0;color:var(--muted)}
+.offers{padding:72px 0;background:var(--cream);border-block:1px solid var(--line)}.section-head{max-width:54ch;margin:0 0 36px}.section-head h2{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.1;letter-spacing:-.015em;margin:0 0 10px}.section-head p{color:var(--muted);margin:0}.offer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.offer{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column}.offer h3{margin:0 0 8px;font-size:1.2rem}.offer p{color:var(--muted);margin:0 0 18px;font-size:.95rem}.offer .price{margin-top:auto;font-weight:700;font-size:1.1rem}.offer .price span{display:block;font-weight:400;font-size:.8rem;color:var(--muted)}
+.beans{padding:76px 0}.beans .wrap{display:grid;grid-template-columns:.95fr 1.05fr;gap:52px;align-items:center}.beans img{border-radius:14px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#ded5c6}.bean-list{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:14px}.bean-list li{border-left:3px solid var(--rust);padding-left:14px}.bean-list strong{display:block}.bean-list span{color:var(--muted);font-size:.92rem}
+.visit{padding:72px 0;background:var(--cream);border-block:1px solid var(--line)}.visit .wrap{display:grid;grid-template-columns:1fr 1fr;gap:48px}.hours{list-style:none;margin:0;padding:0}.hours li{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px dashed var(--line)}.hours li:last-child{border-bottom:0}.hours span{color:var(--muted)}.visit address{font-style:normal;color:var(--muted);line-height:1.8}
+.enquiry{padding:76px 0}.enquiry .wrap{max-width:640px}.enquiry form{display:grid;gap:14px;margin-top:24px}.field{display:grid;gap:6px}.field label{font-size:.85rem;font-weight:700}.field input,.field textarea{font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:6px;background:var(--cream)}.field textarea{min-height:110px;resize:vertical}
+.site-footer{background:var(--ink);color:#efe9e0;padding:40px 0}.site-footer .wrap{display:flex;justify-content:space-between;gap:28px;flex-wrap:wrap}.site-footer a{color:var(--rust)}.site-footer p{margin:0;font-size:.9rem;color:#b7afa3}
+@media(max-width:860px){.hero .wrap,.beans .wrap,.visit .wrap{grid-template-columns:1fr}.offer-grid{grid-template-columns:1fr}.nav-links{display:none}.nav-links.open{display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;background:var(--cream);border-bottom:1px solid var(--line);padding:18px 20px}.nav-toggle{display:block}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#top">Aster <em>&amp;</em> Oak</a>
+    <button class="nav-toggle" type="button" aria-expanded="false">Menu</button>
+    <ul class="nav-links">
+      <li><a href="#offers">Wholesale</a></li>
+      <li><a href="#beans">Our coffee</a></li>
+      <li><a href="#visit">Visit</a></li>
+      <li><a class="nav-cta" href="#enquiry">Get a quote</a></li>
+    </ul>
+  </div>
+</header>
+
+<main>
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <h1>Coffee roasted on Wednesday, on your bar by Friday.</h1>
+      <p>We roast in small batches on Mill Lane and deliver to cafés, kitchens and offices across Bristol and the South West. No contracts, no minimum order after your first.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#enquiry">Get a wholesale quote</a>
+        <a class="btn btn-plain" href="#beans">See what we're roasting</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <h2>This week</h2>
+      <dl>
+        <dt>Roasting</dt><dd>Wednesday, 6am</dd>
+        <dt>Cut-off</dt><dd>Tuesday, 5pm</dd>
+        <dt>Delivery</dt><dd>Thursday and Friday</dd>
+        <dt>Collection</dt><dd>Any weekday, from 9am</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="offers" id="offers">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Three ways to buy</h2>
+      <p>Every account starts with a free tasting and a bag on us. Pricing is per kilo and holds for twelve months.</p>
+    </div>
+    <div class="offer-grid">
+      <article class="offer">
+        <h3>Café</h3>
+        <p>Weekly delivery, a house espresso and one rotating filter, with a grinder dial-in on your first order.</p>
+        <p class="price">£19.50<span>per kg, from 10kg a week</span></p>
+      </article>
+      <article class="offer">
+        <h3>Kitchen</h3>
+        <p>For restaurants pouring under ten kilos a week. Same coffee, fortnightly delivery, no minimum after the first order.</p>
+        <p class="price">£22.00<span>per kg, no minimum</span></p>
+      </article>
+      <article class="offer">
+        <h3>Office</h3>
+        <p>Ground to your machine, delivered monthly, with a loan grinder if you would rather buy whole bean.</p>
+        <p class="price">£24.00<span>per kg, monthly</span></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="beans" id="beans">
+  <div class="wrap">
+    <img src="assets/img/roastery.png" alt="Hessian sacks stacked beside the roaster on Mill Lane" width="880" height="660">
+    <div>
+      <div class="section-head">
+        <h2>What's on the roster</h2>
+        <p>Three coffees we always have, and one bench lot that changes when the sack runs out.</p>
+      </div>
+      <ul class="bean-list">
+        <li><strong>Arch Blend</strong><span>Brazil and Colombia. Cocoa, toasted hazelnut, a soft finish. Our house espresso.</span></li>
+        <li><strong>Guji Uraga</strong><span>Ethiopia, natural. Blueberry and bergamot. Filter, and a very good flat white.</span></li>
+        <li><strong>Huila Decaf</strong><span>Colombia, sugarcane process. Baked apple and demerara. Nobody guesses.</span></li>
+        <li><strong>Bench lot</strong><span>Whatever is on the sample roaster this month. Ask and we'll send a bag.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="visit" id="visit">
+  <div class="wrap">
+    <div>
+      <div class="section-head">
+        <h2>Come and taste it</h2>
+        <p>The roastery door is open on weekdays. There is no shop, but there is always a pot on.</p>
+      </div>
+      <address>
+        Aster &amp; Oak Roastery<br>
+        Unit 4, Mill Lane<br>
+        Bristol BS3 4QT
+      </address>
+    </div>
+    <div>
+      <ul class="hours">
+        <li>Monday to Thursday <span>9am – 5pm</span></li>
+        <li>Friday <span>9am – 3pm</span></li>
+        <li>Saturday <span>Cupping, 10am (book ahead)</span></li>
+        <li>Sunday <span>Closed</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="enquiry" id="enquiry">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Ask for a quote</h2>
+      <p>Tell us roughly what you pour in a week and we'll come back with a price and a sample box.</p>
+    </div>
+    <form method="post" action="#">
+      <div class="field">
+        <label for="name">Your name</label>
+        <input id="name" name="name" type="text" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="volume">Roughly how much a week?</label>
+        <input id="volume" name="volume" type="text" placeholder="e.g. 12kg">
+      </div>
+      <div class="field">
+        <label for="message">Anything else</label>
+        <textarea id="message" name="message"></textarea>
+      </div>
+      <button class="btn btn-primary" type="submit">Send enquiry</button>
+    </form>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Aster &amp; Oak Roastery, Unit 4 Mill Lane, Bristol BS3 4QT</p>
+    <p><a href="mailto:wholesale@asterandoak.example">wholesale@asterandoak.example</a> · 0117 496 0000</p>
+  </div>
+</footer>
+
+<script>
+var toggle = document.querySelector('.nav-toggle')
+var links = document.querySelector('.nav-links')
+if (toggle && links) {
+  toggle.addEventListener('click', function () {
+    var open = links.classList.toggle('open')
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+  })
+}
+</script>
+
+</body>
+</html>

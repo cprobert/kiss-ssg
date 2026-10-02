@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `llms.txt` at the repo root is an LLM-oriented API cheat-sheet (per the [llmstxt.org](https://llmstxt.org) convention) that ships in the npm package so an agent working in a project that depends on `kiss-ssg` can read `node_modules/kiss-ssg/llms.txt` instead of the source. Keep it in sync with `lib/kiss.js` when the public API changes.
 
-`package.json`'s `files` whitelist keeps the published tarball to `bin/`, `lib/`, `types/`, `llms.txt`, `GUIDE.md`, `AIKB/`, `examples/`, `starter/` and `CHANGELOG.md` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `README.md` is the agent quick start and `GUIDE.md` the library reference it links to; `starter/` is the site `npx kiss-ssg init` copies, shipping its ignore file as `starter/gitignore` because npm never packs a `.gitignore`; `AIKB/`, `examples/` and `CHANGELOG.md` ship deliberately, so an agent in a consuming project can read the per-module notes, the runnable examples (`node_modules/kiss-ssg/examples/`) and what changed between the version a site was written against and the one it now has, alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/` and the configs are all excluded. Each example builds into its own gitignored `public/`, which never ships — and does not ship only because `files` carries `"!examples/*/public"`: the whitelist overrides `.gitignore`, so a gitignored folder inside a whitelisted one is published anyway. It did, for 75 files, until the `pack` gate learned to ask what is in the tarball that should not be (`forbiddenPackedFiles`) as well as what is missing from it.
+`package.json`'s `files` whitelist keeps the published tarball to `bin/`, `lib/`, `types/`, `llms.txt`, `GUIDE.md`, `AIKB/`, `examples/`, `starter/` and `CHANGELOG.md` (plus the always-included `README.md`, `LICENSE` and `package.json`) — `README.md` is the agent quick start and `GUIDE.md` the library reference it links to; `starter/` is the site `npx kiss-ssg init` copies, shipping its ignore file as `starter/gitignore` because npm never packs a `.gitignore`; `AIKB/`, `examples/` and `CHANGELOG.md` ship deliberately, so an agent in a consuming project can read the per-module notes, the runnable examples (`node_modules/kiss-ssg/examples/`) and what changed between the version a site was written against and the one it now has, alongside `llms.txt`; `planning/`, `test/`, `src/`, `docs/` and the configs are all excluded. Each example builds into its own gitignored `public/`, which never ships — and does not ship only because `files` carries `"!examples/*/public"`: the whitelist overrides `.gitignore`, so a gitignored folder inside a whitelisted one is published anyway. It did, for 75 files, until the `pack` gate learned to ask what is in the tarball that should not be (`forbiddenPackedFiles`) as well as what is missing from it. `"!examples/*/.converted"` is the second entry of that kind, for the scratch folder example 12's one-off conversion writes into: it happens not to ship today, and "happens not to" is exactly what was true of `public/` until it was not, so both the `!` entry and the `FORBIDDEN_PACKED` pattern name it.
 
 `bin/kiss-ssg.js` is the published command line (`npx kiss-ssg init`, `npx kiss-ssg check <script>` and `npx kiss-ssg aikb <script>`) — a thin wrapper whose decisions all live in `lib/init.js` and `lib/check.js`.
 
@@ -34,41 +34,42 @@ Three consequences, because they settle arguments rather than decorate them:
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
 
-| Module                                | File                         | AIKB doc                      |
-| ------------------------------------- | ---------------------------- | ----------------------------- |
-| Orchestrator / public API             | `lib/kiss.js`                | `AIKB/kiss.md`                |
-| Page renderer                         | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
-| Build report (the machine verdict)    | `lib/build-report.js`        | `AIKB/build-report.md`        |
-| `kiss-ssg check` decision core        | `lib/check.js`               | `AIKB/check.md`               |
-| `kiss-ssg init` plan                  | `lib/init.js`                | `AIKB/init.md`                |
-| Logger                                | `lib/logger.js`              | `AIKB/logger.md`              |
-| Config + folder derivation            | `lib/config.js`              | `AIKB/config.md`              |
-| Built-in Handlebars helpers           | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
-| Site's own helpers (auto-registered)  | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
-| Partials / layouts registration       | `lib/partials.js`            | `AIKB/partials.md`            |
-| Dependency graph (partial → page)     | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
-| Assets + Sass                         | `lib/assets.js`              | `AIKB/assets.md`              |
-| Asset pipeline (external tools)       | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
-| Asset manifest + cache busting        | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
-| Output ownership                      | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
-| Sass binding                          | `lib/sass.js`                | `AIKB/sass.md`                |
-| Model resolution                      | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
-| URL-model fetch policy                | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
-| Controller resolution                 | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
-| Sitemap                               | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
-| llms.txt (the AI-facing index)        | `lib/llms.js`                | `AIKB/llms.md`                |
-| RSS feed (from the registry)          | `lib/feed.js`                | `AIKB/feed.md`                |
-| robots.txt (`.robots()`)              | `lib/robots.js`              | `AIKB/robots.md`              |
-| Site knowledge base (`kiss-ssg aikb`) | `lib/aikb.js`                | `AIKB/aikb.md`                |
-| Broken internal links                 | `lib/links.js`               | `AIKB/links.md`               |
-| Launch-readiness audit                | `lib/audit.js`               | `AIKB/audit.md`               |
-| Redirects (`aliases` → `_redirects`)  | `lib/redirects.js`           | `AIKB/redirects.md`           |
-| Dev server                            | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
-| File watcher                          | `lib/watcher.js`             | `AIKB/watcher.md`             |
-| String/path utils                     | `lib/utils.js`               | `AIKB/utils.md`               |
-| Cross-cutting: design & lineage       | —                            | `AIKB/design.md`              |
-| Cross-cutting: testing conventions    | `test/`                      | `AIKB/testing.md`             |
-| Cross-cutting: upstream constraints   | —                            | `AIKB/upstream.md`            |
+| Module                                     | File                         | AIKB doc                      |
+| ------------------------------------------ | ---------------------------- | ----------------------------- |
+| Orchestrator / public API                  | `lib/kiss.js`                | `AIKB/kiss.md`                |
+| Page renderer                              | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Build report (the machine verdict)         | `lib/build-report.js`        | `AIKB/build-report.md`        |
+| `kiss-ssg check` decision core             | `lib/check.js`               | `AIKB/check.md`               |
+| `kiss-ssg init` plan                       | `lib/init.js`                | `AIKB/init.md`                |
+| Logger                                     | `lib/logger.js`              | `AIKB/logger.md`              |
+| Config + folder derivation                 | `lib/config.js`              | `AIKB/config.md`              |
+| Built-in Handlebars helpers                | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Site's own helpers (auto-registered)       | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
+| Partials / layouts registration            | `lib/partials.js`            | `AIKB/partials.md`            |
+| Dependency graph (partial → page)          | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
+| Assets + Sass                              | `lib/assets.js`              | `AIKB/assets.md`              |
+| Markup decomposition (single-file → views) | `lib/html-split.js`          | `AIKB/html-split.md`          |
+| Asset pipeline (external tools)            | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
+| Asset manifest + cache busting             | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Output ownership                           | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
+| Sass binding                               | `lib/sass.js`                | `AIKB/sass.md`                |
+| Model resolution                           | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| URL-model fetch policy                     | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
+| Controller resolution                      | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
+| Sitemap                                    | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
+| llms.txt (the AI-facing index)             | `lib/llms.js`                | `AIKB/llms.md`                |
+| RSS feed (from the registry)               | `lib/feed.js`                | `AIKB/feed.md`                |
+| robots.txt (`.robots()`)                   | `lib/robots.js`              | `AIKB/robots.md`              |
+| Site knowledge base (`kiss-ssg aikb`)      | `lib/aikb.js`                | `AIKB/aikb.md`                |
+| Broken internal links                      | `lib/links.js`               | `AIKB/links.md`               |
+| Launch-readiness audit                     | `lib/audit.js`               | `AIKB/audit.md`               |
+| Redirects (`aliases` → `_redirects`)       | `lib/redirects.js`           | `AIKB/redirects.md`           |
+| Dev server                                 | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
+| File watcher                               | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| String/path utils                          | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: design & lineage            | —                            | `AIKB/design.md`              |
+| Cross-cutting: testing conventions         | `test/`                      | `AIKB/testing.md`             |
+| Cross-cutting: upstream constraints        | —                            | `AIKB/upstream.md`            |
 
 ## Commands
 
@@ -112,8 +113,8 @@ npm run bench            # benchmark harness: 6 scenarios over a generated fixtu
                          # site with --site/--dev. Scenarios, flags, baseline discipline and the
                          # watch-reading protocol: the `/bench` skill (.claude/skills/bench/SKILL.md)
 node docs                # regenerate docs/, minified, and exit; --dev is the live preview, built into the ignored .preview/ so it never touches docs/ (does not exit, Ctrl-C to stop)
-npm run eg1 … eg11       # run an example (examples/<n>-<name>/router.js, run from its own
-                         # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding
+npm run eg1 … eg12       # run an example (examples/<n>-<name>/router.js, run from its own
+                         # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11, 12); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding; 12 also carries `tools/convert.mjs` (the one-off conversion, writes to the ignored .converted/) and `tools/compare.mjs` (did the conversion change the page)
 ```
 
 `.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.

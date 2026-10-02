@@ -1,0 +1,15 @@
+{{!-- What splitDocument produced, with one addition: each partial is handed
+      its own slice of the model, so a section can only read what belongs to
+      it. The page view is otherwise untouched — a list of partial calls and
+      nothing else, which is the shape to copy. The calls stay FLUSH LEFT: an
+      indented call alone on its line makes Handlebars indent every line of the
+      partial, which changes a multi-line <pre> or <textarea>. --}}
+{{#extend "layout"}}
+{{#content "main"}}
+{{> "sections/hero" model.hero}}
+{{> "sections/offers" model.offers}}
+{{> "sections/beans" model.beans}}
+{{> "sections/visit" model.visit}}
+{{> "sections/enquiry" model.enquiry}}
+{{/content}}
+{{/extend}}

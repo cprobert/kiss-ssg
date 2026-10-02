@@ -302,6 +302,19 @@ pre code {
     color: var(--ink);
     border-bottom-color: var(--brand-blue);
   }
+
+  // GitHub and npm carry their mark, so the two external destinations read
+  // as places rather than as more pages of this site.
+  a.has-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .icon {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
 }
 
 // The nav and the theme toggle sit together at the right of the header.
@@ -383,7 +396,7 @@ pre code {
   padding: 0;
 }
 
-// Home: hero and the verdict panel
+// Home: hero and what you'll need
 
 .hero {
   padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(2.5rem, 5vw, 4rem);
@@ -401,6 +414,17 @@ pre code {
   line-height: 1.08;
   letter-spacing: -0.025em;
   margin-bottom: 0.6em;
+}
+
+// The heading's second search — the upgrade path — on its own line, smaller,
+// but still inside the <h1> so a search engine reads both as the heading.
+.hero__title-more {
+  display: block;
+  margin-top: 0.4em;
+  font-size: 0.5em;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--muted);
 }
 
 .hero__actions {
@@ -449,138 +473,129 @@ pre code {
   font-weight: 700;
 }
 
-.verdict {
+// What you'll need — the hero's second column. It replaced a sample
+// transcript (prompt, files written, check result), which showed a newcomer
+// output they could not yet read; this shows what to install first.
+.toolkit {
   margin: 0;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: var(--radius-panel);
   padding: 1.5rem;
-  font-size: var(--step--1);
-
-  figcaption {
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--rule);
-    color: var(--muted);
-  }
 }
 
-.verdict__turns {
+.toolkit__title {
+  font-size: var(--step-1);
+  margin: 0 0 0.35rem;
+}
+
+.toolkit__intro {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin: 0 0 1.25rem;
+}
+
+.toolkit__list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 1.25rem;
+  gap: 1.1rem;
 }
 
-.verdict__turn p {
-  margin: 0;
+.tool {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+
+  p {
+    margin: 0;
+  }
 }
 
-// Scoped under the turn so they outrank its margin reset above.
-.verdict__turn .verdict__who {
-  margin-bottom: 0.35rem;
+.tool__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-small);
+  background: var(--wash);
+  color: var(--ink);
+
+  .icon {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
 }
 
-.verdict__turn .verdict__command {
-  margin-bottom: 0.5rem;
-}
-
-.verdict__who {
+.tool__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
   font-weight: 700;
+}
+
+.tool__need {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-radius: var(--radius-small);
+  padding: 0.05em 0.45em;
   color: var(--muted);
+  background: var(--wash);
 }
 
-.verdict__prompt {
-  font-size: var(--step-0);
-  line-height: 1.45;
+.tool__need--required {
+  color: var(--pass);
+  background: var(--pass-wash);
 }
 
-.verdict__files {
+.tool__need--live {
+  color: var(--brand-blue);
+}
+
+// The concrete choices under an entry — GitHub under Git, the hosts under
+// "A host" — each linking to the page that says how, not to a home page.
+.tool__options {
   list-style: none;
-  margin: 0;
+  margin: 0.55rem 0 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.4rem;
 
-  code {
-    display: inline-block;
-    font-size: 0.85rem;
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-small);
+    padding: 0.3rem 0.6rem;
+  }
+
+  a:hover,
+  a:focus-visible {
+    border-color: var(--brand-blue);
   }
 }
 
-.verdict__command {
+.tool__option-icon .icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+}
+
+.tool__what {
   color: var(--muted);
-
-  code {
-    background: none;
-    padding: 0;
-  }
-}
-
-.verdict__line {
-  font-size: 0.95rem;
-  line-height: 1.7;
-
-  code {
-    background: none;
-    padding: 0;
-  }
-}
-
-.verdict__ok {
-  font-family: var(--font-code);
-  font-weight: 600;
-  color: var(--pass);
-  background: var(--pass-wash);
-  border-radius: var(--radius-small);
-  padding: 0.05em 0.5em;
-  margin-right: 0.4rem;
-}
-
-.verdict__facts {
-  margin: 0.6rem 0 0;
-  padding-left: 1.2rem;
-  color: var(--muted);
-
-  li::marker {
-    color: var(--pass);
-  }
-}
-
-// The page's one moment: the transcript plays through once on load, and the
-// verdict lands last. Reduced motion shows the finished panel.
-@media (prefers-reduced-motion: no-preference) {
-  .verdict__turn {
-    animation: turn-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  }
-
-  .verdict__turn:nth-child(2) {
-    animation-delay: 0.7s;
-  }
-
-  .verdict__turn:nth-child(3) {
-    animation-delay: 1.4s;
-  }
-
-  .verdict__ok {
-    animation: verdict-in 0.6s ease-out 2s both;
-  }
-
-  @keyframes turn-in {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-  }
-
-  @keyframes verdict-in {
-    from {
-      color: var(--muted);
-      background: var(--wash);
-    }
-  }
+  font-size: var(--step--1);
+  line-height: 1.5;
+  margin-top: 0.15rem;
 }
 
 // Home: bands below the hero
@@ -639,6 +654,60 @@ pre code {
     margin-top: auto;
     margin-bottom: 0;
   }
+}
+
+.band__lede {
+  max-width: var(--measure);
+  margin-top: 0.5rem;
+}
+
+// The setup band runs top to bottom: its first step is six commands, the
+// longest 63 characters, which a third of the page cannot hold.
+.steps--stacked {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 52rem;
+
+  pre {
+    margin-top: 0.25rem;
+  }
+}
+
+.prompts {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.prompts__item {
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+
+  p {
+    margin: 0;
+  }
+}
+
+.prompts__label {
+  font-weight: 700;
+}
+
+.steps__item .prompts__note {
+  font-size: var(--step--1);
+  margin: 0.25rem 0 0.75rem;
+}
+
+.prompts__text {
+  margin-top: auto;
+  font-family: var(--font-code);
+  font-size: var(--step--1);
+  line-height: 1.5;
+  user-select: all;
 }
 
 .reasons {
@@ -949,7 +1018,8 @@ pre code {
   }
 
   .steps,
-  .reasons {
+  .reasons,
+  .prompts {
     grid-template-columns: minmax(0, 1fr);
   }
 

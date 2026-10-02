@@ -37,3 +37,15 @@ examples/9-migrated-from-v1/AIKB/*.json
 
 # Written by `npx kiss-ssg aikb 11-blog.js` and committed, for the same reason.
 examples/11-blog/AIKB/*.json
+
+# The artifact example 12 was converted from, kept exactly as it arrived. It is
+# input, not source: formatting it would change the thing the conversion is
+# measured against, and `tools/compare.mjs` compares the built page to this file.
+examples/12-from-a-single-file/source/
+
+# The artifact's stylesheet, copied in whole by `tools/convert.mjs` and committed
+# as it emits it. Prettier would normalise the values inside — `.9fr` to
+# `0.9fr`, `clamp(a,b,c)` to `clamp(a, b, c)` — and the point of copying it whole
+# is that the browser gets the stylesheet the artifact had. Formatting it would
+# make the committed file differ from what the conversion produces.
+examples/12-from-a-single-file/src/assets/css/

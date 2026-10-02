@@ -1,0 +1,20 @@
+{{!-- The artifact linked the photo as `assets/img/roastery.jpg` — a relative
+      path that only worked because everything sat in one folder. `{{asset}}`
+      resolves the name the build actually wrote, so cache busting works and a
+      missing file fails the check rather than 404ing in production. --}}
+<section class="beans" id="beans">
+  <div class="wrap">
+    <img src="/{{asset image.src}}" alt="{{image.alt}}" width="{{image.width}}" height="{{image.height}}">
+    <div>
+      <div class="section-head">
+        <h2>{{heading}}</h2>
+        <p>{{intro}}</p>
+      </div>
+      <ul class="bean-list">
+        {{#each items}}
+        <li><strong>{{name}}</strong><span>{{note}}</span></li>
+        {{/each}}
+      </ul>
+    </div>
+  </div>
+</section>

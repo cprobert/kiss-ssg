@@ -36,6 +36,40 @@ This is a local guard, not a mechanism — one return type, at one call site.
 **Re-check:** register a `.txt` partial, render `<pre>\n  {{> snippet}}\n</pre>`,
 and see whether returning a `SafeString` still throws.
 
+### handlebars treats a partial call alone on a line as "standalone"
+
+**Observed:** handlebars 4.7.9. **Effect:** a `{{> "x"}}` alone on a line
+indented by N spaces has every line of the partial's output indented by N
+spaces, and the line's own newline is swallowed — its documented "standalone"
+rule. Both are invisible in ordinary markup; the first changes the page inside
+a multi-line `<pre>` or `<textarea>`, and the second removes whitespace that
+renders between two inline-block elements. **What kiss does:** nothing
+globally — it does not compile with `preventIndent` or `ignoreStandalone`,
+which would change every existing site's output. `lib/html-split.js`'s
+`LineWriter` writes the calls it generates so the rule adds and removes
+nothing: column 0 when a call starts a line, a line break written twice after
+one (Codex review, 2026-10-01 and 10-02). A local guard at one call site.
+**Re-check:** render `{{> "p"}}` indented two spaces, with `p` registered as
+`<pre>a\nb</pre>`, and see whether `b` gains the indent; render
+`{{> "p"}}\nx` and see whether the newline survives.
+
+### htmlparser2 drops malformed input and needs lower-cased tags
+
+**Observed:** htmlparser2 10.1.0, the tokenizer under `lib/html-split.js`
+(added 2026-10-02). **Effect:** two things. It reports no event at all for
+some malformed source — `</ x>` (a bogus comment to a browser), a stray
+`</span>`, an unfinished `<b` at the end of input — so a tree built from its
+events alone silently loses those bytes. And with `lowerCaseTags: false` it
+stops recognising void and raw-text elements written in capitals: `<IMG>` was
+treated as open and swallowed the `<P>` after it. **What kiss does:**
+`parseHtml` fills every gap between two events with the source between them,
+so each byte lands in exactly one node, and runs the tokenizer with
+`lowerCaseTags: true`, keeping the spelling from the source slice it stores
+as `open`/`close`. A local guard in one function. **Re-check:** parse
+`text </ x> more` and `<SCRIPT>a<b</SCRIPT><IMG SRC=x><P>q</P>` with a bare
+`Parser` and see whether every byte has an event and `<P>` is a sibling of
+`<IMG>`.
+
 ### handlebars renders a missing zero-argument helper as empty
 
 **Observed:** handlebars 4.7. **Effect:** `{{shout "hi"}}` on a helper that is
@@ -122,6 +156,16 @@ development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
 whether kiss's own floor has moved past it.
 
 ## Supported alternatives not used
+
+### parse5 for `lib/html-split.js`
+
+parse5 is the spec-exact HTML parser (jsdom's). It was considered beside
+htmlparser2 (2026-10-02) and not used: it builds the browser's tree, inserting
+`<html>`, `<head>`, `<body>` and `<tbody>` the page never wrote, and a
+conversion whose promise is to give back what it was given would then have to
+tell implied nodes from written ones through its location data. htmlparser2
+never implies an element (it only closes them, as a browser does), and its
+event positions were enough to keep every source byte.
 
 ### chokidar's `ignoreInitial`
 

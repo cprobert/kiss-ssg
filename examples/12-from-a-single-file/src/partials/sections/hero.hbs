@@ -1,0 +1,24 @@
+{{!-- Handed `model.hero` by the page view, so this partial sees only its own
+      slice. `id="top"` is why splitDocument proposed the name `top` for this
+      region — a markup name, renamed by hand to `hero`. --}}
+<section class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <h1>{{heading}}</h1>
+      <p>{{intro}}</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="{{primary.href}}">{{primary.label}}</a>
+        <a class="btn btn-plain" href="{{secondary.href}}">{{secondary.label}}</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <h2>{{card.heading}}</h2>
+      <dl>
+        {{#each card.rows}}
+        <dt>{{term}}</dt>
+        <dd>{{detail}}</dd>
+        {{/each}}
+      </dl>
+    </div>
+  </div>
+</section>

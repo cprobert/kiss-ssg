@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.6.6",
+  "version": "2.7.0",
   "description": "Simple Static Website Generator",
   "main": "lib/kiss.js",
   "types": "./types/kiss.d.ts",
@@ -26,6 +26,7 @@
     "examples",
     "starter",
     "!examples/*/public",
+    "!examples/*/.converted",
     "CHANGELOG.md"
   ],
   "engines": {
@@ -57,7 +58,8 @@
     "eg8": "cd examples/8-data-fed-site && node router",
     "eg9": "cd examples/9-migrated-from-v1 && node router",
     "eg10": "cd examples/10-asset-pipeline && node router",
-    "eg11": "cd examples/11-blog && node router"
+    "eg11": "cd examples/11-blog && node router",
+    "eg12": "cd examples/12-from-a-single-file && node router"
   },
   "repository": {
     "type": "git",
@@ -78,6 +80,7 @@
     "handlebars": "^4.7.7",
     "handlebars-layouts": "^3.1.4",
     "html-minifier-terser": "^7.2.0",
+    "htmlparser2": "^10.1.0",
     "livereload": "^0.10.3",
     "remarkable": "^2.0.1",
     "sass": "^1.104.0",

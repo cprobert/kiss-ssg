@@ -6,6 +6,12 @@
     "sections": ["Starting a site", "The build script", "Types"]
   },
   {
+    "slug": "converting",
+    "title": "Converting an existing page",
+    "description": "Turning a page you already have \u2014 a Claude or ChatGPT artifact, an exported page, a hand-written HTML file \u2014 into a structured kiss site that still looks the same.",
+    "sections": ["Converting an existing page"]
+  },
+  {
     "slug": "pages",
     "title": "Pages and data",
     "description": "Registering pages with .page() and .pages(), shaping their data with controllers, fetching remote models, and Markdown options.",
