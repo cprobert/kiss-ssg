@@ -42,7 +42,7 @@
         "what": "Puts the finished site on the web. Each builds it from your repository with npm run build and publishes the public folder; each link is that host's own guide to doing it.",
         "options": [
           {
-            "icon": "icons/github-pages",
+            "icon": "icons/github",
             "name": "GitHub Pages",
             "url": "https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages"
           },
