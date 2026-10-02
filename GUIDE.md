@@ -776,7 +776,7 @@ codex plugin add kiss-ssg@kiss-ssg
 codex plugin add kiss-memory@kiss-ssg
 ```
 
-A site set up before the Codex lines existed gains them by running `npx kiss-ssg init` again: it adds the section to an `AGENTS.md` that lacks it, writes `.codex/config.toml` (or appends to one only the tables whose header line it lacks), always after everything already there, and rewrites none of it.
+A site set up before the Codex lines existed gains them by running `npx kiss-ssg init` again: it adds the section to an `AGENTS.md` that lacks it, writes `.codex/config.toml` (or appends to one only the tables it does not define, leaving a file that defines them some other way untouched), always after everything already there, and rewrites none of it.
 
 ### Converting an existing page
 
