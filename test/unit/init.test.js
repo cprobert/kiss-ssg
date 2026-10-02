@@ -12,6 +12,7 @@ import {
   describeAction,
   nextSteps,
   FIRST_PROMPT,
+  IMPORT_PROMPT,
   INIT_HELP,
 } from '../../lib/init.js'
 
@@ -456,6 +457,15 @@ describe('describeAction', () => {
 describe('nextSteps', () => {
   it('includes the prompt to paste', () => {
     expect(nextSteps()).toContain(FIRST_PROMPT)
+  })
+
+  // The other front door. Someone who already has a site — most often one
+  // made in Claude or ChatGPT, given as a link — was only ever shown the
+  // new-site prompt, telling them to describe a site they already had.
+  it('offers the import prompt too, naming the import skill and a link', () => {
+    expect(nextSteps()).toContain(IMPORT_PROMPT)
+    expect(IMPORT_PROMPT).toMatch(/kiss-site-import/)
+    expect(IMPORT_PROMPT).toMatch(/link/)
   })
 
   // The clean-room run asked why it was told to install plugins init had
