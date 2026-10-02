@@ -274,6 +274,8 @@ declare class Kiss {
     private _generateRequested;
     /** @private */
     private _registrations;
+    /** @private @type {WeakMap<object, string>} */
+    private _registrationDirectories;
     /** @private */
     private _scanned;
     /** @private */
@@ -606,27 +608,23 @@ declare class Kiss {
     private _lastBuildRecord;
     /** @private */
     private _redirectFindings;
-    /**
-     * @private
-     * @param {any} options
-     * @param {any} [origin]
-     * @param {string|null} [idPrefix] given only by `_prepareMultiplePages`: what
-     * this fan-out's items prefix their default ids with, in place of the view
-     * route. Its presence is also what tells a fan-out item from a `.page()` page.
-     */
+    /** @private */
     private _preparePage;
     /** @private */
     private _idIndexFor;
-    /**
-     * @private
-     * @param {string} id
-     * @returns {{ entry: any }|{ withdrawn: true, views: string[] }|null}
-     */
+    /** @private */
     private _lookupPage;
     /** @private */
     private _stackForRecord;
     /** @private */
     private _prepareMultiplePages;
+    /**
+     * @private
+     * @param {PageOptions} options
+     * @param {string} directory
+     * @returns {this}
+     */
+    private _page;
     /**
      * Queues one page. Nothing is rendered until `.generate()`.
      *
@@ -634,13 +632,6 @@ declare class Kiss {
      * @returns {this}
      */
     page(options: PageOptions): this;
-    /** @private @type {WeakMap<object, string>} */
-    private _registrationDirectories;
-    /** @private
-     * @param {PageOptions} options
-     * @param {string} directory
-     */
-    private _page;
     /**
      * Queues one page per item of an array model, appending `-N` to the slug
      * unless the controller sets one. A bad item fails only its own page.
