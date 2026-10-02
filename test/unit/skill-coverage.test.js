@@ -314,14 +314,19 @@ const COVERAGE = [
   // reaching for the obvious instead of the documented behaviour.
   {
     feature:
-      'splitDocument does the mechanical half; the stylesheet goes in whole',
-    pattern: /splitDocument[\s\S]*copied in whole/,
+      'splitDocument does the mechanical half; the stylesheet stays whole, inline',
+    pattern: /splitDocument[\s\S]*stays whole, inline/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
     feature:
-      'the stylesheet stays plain .css — Sass reads plain CSS differently',
-    pattern: /Do not rename it `\.scss`/,
+      'lifting inline assets is an improvement, not the conversion (cascade, url(), timing)',
+    pattern: /Lifting them into files is an \*\*improvement\*\*/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'the stylesheet is not Sass — Sass reads plain CSS differently',
+    pattern: /Do not rename the stylesheet `\.scss`/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
@@ -478,8 +483,16 @@ const CONTRADICTIONS = [
     patterns: [/Claude Code offers them the next time it opens/i],
   },
   {
-    why: 'splitStylesheet was removed before 2.7.0 shipped (2026-10-02): the stylesheet is copied in whole as plain .css, because Sass reads plain CSS differently in more places than a translation could keep up with. A doc still telling an agent to split it names a function that does not exist',
+    why: 'splitStylesheet was removed before 2.7.0 shipped (2026-10-02): the stylesheet stays whole, because Sass reads plain CSS differently in more places than a translation could keep up with. A doc still telling an agent to split it names a function that does not exist',
     patterns: [/splitStylesheet/, /parseStylesheet/],
+  },
+  {
+    why: 'lifting inline <style>/<script> into files is an improvement, not part of the conversion (2026-10-02): merging reorders the cascade around an external <link>, moves relative url() resolution, and `defer` changes when a script runs. The two instructions that made it a conversion step are banned, because each looked like a safe default and Codex found a way each changed the page',
+    patterns: [
+      /referenced with `<script src="\/\{\{asset "js\/site\.js"\}\}" defer>/,
+      /copy their `content` in whole to `src\/assets\/css\/site\.css`/,
+      /write their `content`, in order and joined with a newline, to `src\/assets\/css\/site\.css`/,
+    ],
   },
   {
     why: "escaping {{ is ON by default and the whole point: unescaped, a foreign document's braces are COMPILED — an Alpine page evaluates to empty, and a hostile one gets {{config.…}} into an attribute of the built page. A doc saying the option defaults to false tells an agent the surface is closed when it is open, which is worse than saying nothing",

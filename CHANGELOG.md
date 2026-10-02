@@ -27,13 +27,14 @@ chrome, one partial per region under `site/` or `sections/`, and a page view
 that is a list of partial calls. `parseHtml` and `findTag` come with it, for
 inspecting a document without splitting it.
 
-**The stylesheet is copied in whole**, as `src/assets/css/site.css`, which kiss
-serves unchanged. It is not split and not renamed `.scss`: Sass reads plain CSS
-differently in places — `#{` inside a string is interpolated, a string
-`@import` becomes a compile-time import, native nesting is flattened — and the
-approved look is the thing being preserved. A page whose `<style>` blocks carry
-attributes (`media="print"`, `title`) keeps them inline instead: a merged file
-cannot say what such a block means.
+**The stylesheet stays whole, and stays where it was.** Every inline `<style>`
+and `<script>` is still in the layout, byte for byte, where the page had it. It
+is not split and not renamed `.scss`: Sass reads plain CSS differently in
+places — `#{` inside a string is interpolated, a string `@import` becomes a
+compile-time import, native nesting is flattened. Lifting them into files is a
+separate improvement, because a move reorders the cascade around an external
+`<link>`, changes what a relative `url()` resolves against, and with `defer`
+changes when a script runs.
 
 **What it guarantees is that it changed nothing.** Assembling the layout,
 partials and page view back through Handlebars reproduces the document — every
@@ -77,12 +78,11 @@ not give the input back:
 
 **What it refuses to do is guess.** You name the regions — the proposals come
 from `id` and class, which are markup names, so a hero carrying `id="top"` is
-proposed as `top`. You decide which words become model fields. You lift the
-inline `<style>` and `<script>`, which are reported rather than removed — each
-with its `attrs` (and a script with its `type`), because a `module`, JSON-LD or
-an import map is not lifted as a classic script, and a `<style media="print">`
-is not merged into a stylesheet that applies on screen. Those are judgements nothing could
-check, and a module that made them would produce field names no human would
+proposed as `top`. You decide which words become model fields. Whether to lift
+the inline `<style>` and `<script>` into files later is yours too — they are
+reported, each with its `attrs`, and left where they were. Those are judgements
+nothing could check, and a module that made them would produce field names no
+human would
 have chosen.
 
 ### The `kiss-site-import` skill, and example 12

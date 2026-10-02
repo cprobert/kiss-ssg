@@ -57,51 +57,26 @@ await write(`src/pages/${named.page.name}`, named.page.content)
 for (const partial of named.partials)
   await write(`src/partials/${partial.name}`, partial.content)
 
-// The `<style>` block is REPORTED by splitDocument, not removed — the document
-// it gives back is whole. Lifting it is this script's job, because lifting
-// means choosing a filename and rewriting the tag that pointed at it. It is
-// lifted WHOLE, as plain `.css`: kiss serves a `.css` asset unchanged, so the
-// stylesheet the browser gets is the one the artifact had. Passing it through
-// Sass would not be — SCSS reads plain CSS differently in places (`#{`, a
-// string `@import`, native nesting).
-//
-// Only when EVERY `<style>` is unconditional. One with an attribute —
-// `media="print"`, `title`, `nonce` — means something a merged file cannot
-// say, and lifting the others around it would reorder the cascade, so then
-// none are lifted and they all stay inline where the page had them.
-const conditional = named.assets.styles.filter((s) => s.attrs.trim() !== '')
-if (conditional.length === 0)
-  await write(
-    'src/assets/css/site.css',
-    `${named.assets.styles
-      .map((s) => s.content)
-      .join('\n')
-      .trim()}\n`,
-  )
-else
-  console.log(
-    `\n${conditional.length} <style> block(s) carry attributes, so no stylesheet was lifted: they stay inline in the layout.`,
-  )
+// The inline `<style>` and `<script>` are REPORTED by splitDocument, not
+// removed, and this conversion leaves them where they are: in the layout,
+// byte for byte, the stylesheet whole. Lifting them into files is an
+// improvement, not part of the conversion — a move can reorder the cascade
+// around an external `<link>`, change what a relative `url()` resolves
+// against, and with `defer` change when a script runs. This site's
+// `css/site.css` and `js/site.js` were lifted afterwards, by hand, once
+// `compare.mjs` had passed; `assets` says what there is to lift.
+const { styles, scripts } = named.assets
 
-// Only CLASSIC scripts are lifted. A script's `type` says what its text is:
-// `module` needs `type="module"` on the tag that loads it, and JSON-LD or an
-// import map is data that has to stay inline. Those stay where they are.
-const classic = named.assets.scripts.filter(
-  (s) => s.type === '' || s.type === 'text/javascript',
-)
-for (const [i, script] of classic.entries())
-  await write(`src/assets/js/site${i || ''}.js`, `${script.content.trim()}\n`)
-
-console.log(
-  `\nWrote ${named.partials.length + 3 + classic.length} files to .converted/`,
-)
+console.log(`\nWrote ${named.partials.length + 2} files to .converted/`)
 console.log(
   `  markup     ${named.stats.chrome} chrome + ${named.stats.sections} sections`,
 )
-console.log(`  stylesheet site.css, whole`)
+console.log(
+  `  inline     ${styles.length} <style>, ${scripts.length} <script> — left in the layout, whole`,
+)
 console.log(`\nStill to do by hand, and only by hand:`)
 console.log(`  - lift the copy out of the partials into src/models/index.json`)
 console.log(`  - move the facts said twice into config/site.js`)
 console.log(
-  `  - swap the inline <style>/<script> in the layout for {{asset}} links`,
+  `  - then, as an improvement once compare.mjs passes: lift the <style>/<script> into {{asset}} files`,
 )

@@ -11,7 +11,7 @@ Someone has a page that already works and that they already approved the look of
 Two things make this different from building a site:
 
 - **The design is settled. You are not redesigning.** A conversion that also improves the markup cannot be verified, because nothing can tell your improvements from your mistakes. Convert first, verify it renders the same, and only then change anything — as a separate, named step the author agreed to.
-- **The engine does the mechanical half for you.** `splitDocument` ships in the package. It parses and cuts the markup and guarantees the page did not change. The stylesheet needs no tool: it is copied in whole. `splitDocument` never adds whitespace, so a partial cut from a **minified** page is as dense as the page was; if you format it for legibility, do it as a separate, deliberate step and re-run the comparison after, because a formatter that puts a line break between two inline-block elements opens a visible gap. Do not hand-roll any of that; what it deliberately leaves to you is everything requiring judgement, and that is where your effort goes.
+- **The engine does the mechanical half for you.** `splitDocument` ships in the package. It parses and cuts the markup and guarantees the page did not change. The stylesheet needs no tool: it stays whole, inline in the layout where the page had it. `splitDocument` never adds whitespace, so a partial cut from a **minified** page is as dense as the page was; if you format it for legibility, do it as a separate, deliberate step and re-run the comparison after, because a formatter that puts a line break between two inline-block elements opens a visible gap. Do not hand-roll any of that; what it deliberately leaves to you is everything requiring judgement, and that is where your effort goes.
 
 ## Execution instructions
 
@@ -82,22 +82,25 @@ Three things to check before moving on:
 
 `layout` → `src/layouts/`, `page` → `src/pages/`, each partial at `src/partials/<its name>` (the names already carry `site/` or `sections/`). Those are `folders.layouts`, `folders.pages` and `folders.partials`; if the project overrides them in `router.js`, follow the override.
 
-### 6. Copy the stylesheet in whole
+### 6. Leave the stylesheet and scripts where they are
 
-Each entry in `assets.styles` is `{ attrs, content }`. **If every one has empty `attrs`**, write their `content`, in order and joined with a newline, to `src/assets/css/site.css`, unchanged. kiss copies a `.css` asset into the build as it is, so the browser gets exactly the stylesheet the page had.
+`splitDocument` **reports** inline assets, it does not remove them: every inline `<style>` and `<script>` is still in the layout, byte for byte, exactly where the page had it. **That is the converted state — leave it.** The stylesheet is in the site whole, and nothing about how the page styles or runs has changed.
 
-**If any `<style>` carries an attribute — `media="print"`, `title`, `nonce`, a `type` — lift none of them.** That block means something a merged file cannot say (a print sheet merged in applies on screen), and lifting the others around it would reorder the cascade. Leave every `<style>` inline in the layout, exactly where the split put it, and say so in your report.
+Lifting them into files is an **improvement**, not part of the conversion, because a move changes more than it looks like it does:
 
-**Do not rename it `.scss`, and do not split it.** Sass reads plain CSS differently in places — `#{` inside a string is interpolated, a string `@import` becomes a compile-time import, native CSS nesting is flattened — so a stylesheet passed through Sass is no longer guaranteed to be the one that was approved. Turning it into Sass, or into per-section files, is an improvement with its own name, made after the conversion is verified and only if the author wants it.
+- **Cascade order.** Two `<style>` blocks merged into one file land at the first one's position; an external `<link rel="stylesheet">` that sat between them now overrides rules that used to follow it.
+- **Conditions.** A `<style media="print">`, `title` or `nonce` means something a merged file cannot say; a print sheet merged in applies on screen.
+- **Relative URLs.** A `url(img/x.png)` inside an inline `<style>` resolves against the page; in `css/site.css` it resolves against `css/`, and every background image and font breaks.
+- **Script timing.** An inline classic script runs the moment it is parsed. `<script src defer>` runs after parsing; a script that sets up configuration for a later `<script src>` then runs too late. A `type="module"` script is deferred by nature and must keep its `type`; JSON-LD and import maps are data and must stay inline.
+- **Content-Security-Policy.** A `nonce` or hash that allowed the inline block does not allow a file.
 
-### 7. Lift the assets and rewrite what pointed at them
+`assets.styles` (`{ attrs, content }`) and `assets.scripts` (`{ attrs, type, content }`) say what is there, for the day you make that improvement.
 
-`splitDocument` **reports** inline assets, it does not remove them — `assets.styles` and `assets.scripts` say what is worth lifting while the document stays whole. Doing the lift is yours, because it means choosing filenames:
+**Do not rename the stylesheet `.scss`, and do not split it.** Sass reads plain CSS differently in places — `#{` inside a string is interpolated, a string `@import` becomes a compile-time import, native CSS nesting is flattened — so a stylesheet passed through Sass is no longer guaranteed to be the one that was approved.
 
-- If step 6 lifted the `<style>` blocks, they become its `site.css`. Delete them from the layout and put one `<link rel="stylesheet" href="/{{asset "css/site.css"}}">` where the first one was — `{{asset}}`, never a typed path, so cache busting works. If step 6 lifted none, leave them.
-- An inline `<script>` becomes a file under `src/assets/js/`, referenced with `<script src="/{{asset "js/site.js"}}" defer></script>` — **when its `type` is `''`** (a classic script). Each entry in `assets.scripts` carries `type` and the raw `attrs` because they decide what the text is: a `type: 'module'` script keeps `type="module"` on the tag that loads it, or its first `import` fails; `application/ld+json` and `importmap` are data, not JavaScript, and stay inline in the layout.
-- A `<script src>` the page already had is left alone; it is in the layout already, ahead of `{{#block "scripts"}}`.
-- **Images and fonts the page links are not in the HTML.** Collect them into `src/assets/`, or the converted site builds green and renders broken. Say which ones you could not find rather than leaving a dead `src`.
+### 7. Collect the files the page links
+
+**Images and fonts the page links are not in the HTML.** Collect them into `src/assets/`, or the converted site builds green and renders broken. Say which ones you could not find rather than leaving a dead `src`. A `<script src>` or `<link rel="stylesheet" href>` the page already had stays where it is, in the layout, ahead of `{{#block "scripts"}}`.
 
 ### 8. Lift the content into models — the judgement half
 

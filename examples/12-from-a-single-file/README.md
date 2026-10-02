@@ -24,7 +24,7 @@ Builds and exits. `node router.js --dev` serves it with live reload on <http://l
 The engine does what can be proved and nothing else:
 
 - **`splitDocument`** cuts the document into a layout, chrome partials and one partial per section. Assembling them back through Handlebars reproduces the input — attributes kept verbatim, `<path/>` still self-closing, no whitespace added anywhere, `<main>` re-emitted only if it was there.
-- **The stylesheet is copied in whole**, as `src/assets/css/site.css`. kiss serves a `.css` asset unchanged, so the browser gets the stylesheet the artifact had. It is not split and not run through Sass: SCSS reads plain CSS differently in places, and a split stylesheet bought nothing the page needed.
+- **The stylesheet and the script stay whole, where they were.** The conversion leaves the inline `<style>` and `<script>` in the layout, byte for byte. Neither is split, and the stylesheet is never run through Sass: SCSS reads plain CSS differently in places. This site's `css/site.css` and `js/site.js` were lifted out **afterwards**, as an improvement with its own name, once `compare.mjs` had passed — a lift can reorder the cascade, move what a relative `url()` resolves against, and change when a script runs, so it is not something a conversion does on the way past.
 
 Everything else is judgement, and `tools/convert.mjs` prints the list when it finishes:
 

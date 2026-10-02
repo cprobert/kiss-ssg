@@ -37,7 +37,15 @@ const assemble = (result) => {
 
 const SENSITIVE =
   /<(pre|textarea|script|style)\b[^>]*>[\s\S]*?<\/\1>|<div style="white-space:pre">[\s\S]*?<\/div>/gi
-const STRUCTURE = /\s*(<\/?(?:html|head|body)\b[^>]*>|<!doctype[^>]*>)\s*/gi
+// HTML's whitespace — space, tab, LF, FF, CR — and nothing else. JavaScript's
+// `\s` also matches U+00A0, which is CONTENT in HTML: a normaliser using it
+// would hide exactly the non-breaking space Codex caught the module losing.
+const WS = '[ \\t\\n\\f\\r]'
+const STRUCTURE = new RegExp(
+  `${WS}*(<\\/?(?:html|head|body)\\b[^>]*>|<!doctype[^>]*>)${WS}*`,
+  'gi',
+)
+const LINE_RUN = new RegExp(`[ \\t\\f\\r]*\\n${WS}*`, 'g')
 
 /**
  * Why `out` is not the page `src` describes, or `null` when it is.
@@ -63,7 +71,7 @@ const difference = (src, out) => {
         .replace(/&#123;/g, '{')
         .replace(/&#125;/g, '}')
         .replace(STRUCTURE, '$1')
-        .replace(/[ \t]*\n\s*/g, '\n')
+        .replace(LINE_RUN, '\n')
         .trim()
     )
   }
@@ -118,7 +126,14 @@ const ATOMS = [
   '\\',
   '\\\\',
 ]
-const SEPARATORS = { touching: '', space: ' ', newline: '\n    ' }
+const SEPARATORS = {
+  touching: '',
+  space: ' ',
+  newline: '\n    ',
+  // A non-breaking space is content, not a gap — even beside a line break
+  // (Codex round 8).
+  'a non-breaking space and a newline': ' \n    ',
+}
 const PLACES = {
   'the body': (x) => x,
   '<main>': (x) => `<main>${x}</main>`,
@@ -146,8 +161,16 @@ describe('html-split fidelity corpus', () => {
                     (w) => !/preceded by a backslash/.test(w),
                   )
                 : result.warnings
-              problem =
-                expected.length > 0
+              // The other: a separator that is CONTENT (a non-breaking space)
+              // between two sections is the stated "between two sections"
+              // exception — moved, and warned. Nothing to compare.
+              const moved =
+                /[^ \t\n\f\r]/.test(sep) &&
+                expected.length === 1 &&
+                /between two sections/.test(expected[0])
+              problem = moved
+                ? null
+                : expected.length > 0
                   ? `warned: ${expected.join(' | ')}`
                   : difference(src, assemble(result))
             } catch (error) {
