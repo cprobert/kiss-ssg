@@ -528,6 +528,17 @@ const CONTRADICTIONS = [
     patterns: [/no project scope/i],
   },
   {
+    why: 'redirects.format is unset by default (no host file until a site names one); GUIDE.md still marked netlify as the default in the same table that said otherwise, found by the Claude clean room 2026-10-02',
+    patterns: [
+      /'netlify'`\s*_\(default\)_/,
+      /the default writes a file those hosts ignore/,
+    ],
+  },
+  {
+    why: 'there are twelve examples since example 12 (a single-file page converted); kiss-site-new still said eleven, found by the Claude clean room 2026-10-02',
+    patterns: [/eleven runnable sites/i],
+  },
+  {
     why: 'Claude Code does not offer plugins a settings file declares (probe, 2026-09-26) — a doc must not promise that opening the folder installs them',
     patterns: [/Claude Code offers them the next time it opens/i],
   },

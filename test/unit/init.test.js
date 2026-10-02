@@ -201,6 +201,20 @@ describe('planInit never destroys anything', () => {
     expect(action.detail).toMatch(/commonjs/)
   })
 
+  // The same boilerplate's other half: `npm init -y` also writes
+  // "main": "index.js", a file nobody writes. The starter was given no main,
+  // so `main` still named a file that did not exist (Claude clean room,
+  // 2026-10-02) although llms.txt says the starter sets it to router.js.
+  it('points "main" at router.js when it writes the starter and main names no file', () => {
+    const existing = JSON.stringify({ name: 'x', main: 'index.js' })
+    const action = byPath(
+      planInit(state({ files: { 'package.json': existing } })),
+      'package.json',
+    )
+    expect(json(action).main).toBe('router.js')
+    expect(action.detail).toMatch(/index\.js/)
+  })
+
   it('keeps "type": "commonjs" in a project that already has code', () => {
     const existing = JSON.stringify({
       name: 'x',
@@ -622,6 +636,48 @@ describe('.codex/config.toml records the skills for Codex', () => {
     const once = codex('model = "o4"').content
     expect(codex(once).kind).toBe('skip')
   })
+
+  // TOML forbids defining a table twice, so appending one the file already
+  // has makes the whole file unloadable. Codex's review (2026-10-02) found the
+  // first header check compared exact lines: a trailing comment, other quotes
+  // or spacing slipped past it and init corrupted a valid config.
+  it.each([
+    ['a trailing comment', '[plugins."kiss-ssg@kiss-ssg"] # off on purpose'],
+    ['single quotes and spacing', "[ plugins . 'kiss-ssg@kiss-ssg' ]"],
+  ])(
+    'recognises a header written with %s, and does not define it again',
+    (_, header) => {
+      const existing = `${header}\nenabled = false\n`
+      const action = codex(existing)
+      expect(action.content.startsWith(existing)).toBe(true)
+      expect(action.content.slice(existing.length)).not.toContain(
+        'kiss-ssg@kiss-ssg"]',
+      )
+    },
+  )
+
+  it('recognises a quoted marketplace header', () => {
+    const existing = '[marketplaces."kiss-ssg"]\nsource_type = "local"\n'
+    expect(codex(existing).content.slice(existing.length)).not.toContain(
+      '[marketplaces.',
+    )
+  })
+
+  it.each([
+    ['a dotted key', 'plugins."kiss-ssg@kiss-ssg".enabled = false\n'],
+    [
+      'an inline table',
+      '[plugins]\n"kiss-memory@kiss-ssg" = { enabled = false }\n',
+    ],
+    ['a [marketplaces] table', '[marketplaces]\nkiss-ssg = { source = "x" }\n'],
+  ])(
+    'leaves a file that defines a key as %s untouched, and says why',
+    (_, existing) => {
+      const action = codex(existing)
+      expect(action.kind).toBe('skip')
+      expect(action.reason).toMatch(/by hand/)
+    },
+  )
 
   it('appends to a CRLF file with CRLF, on a line of its own', () => {
     const crlf = 'model = "o4"\r\n'

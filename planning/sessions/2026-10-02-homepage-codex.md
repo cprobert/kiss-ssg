@@ -56,6 +56,32 @@ opened: 2026-10-02
   - GitLab and Bitbucket sit beside GitHub in the Git row.
   - "Codex has no project scope" was wrong: a trusted project's `.codex/config.toml` enables
     plugins (re-measured; see the contract amendment). `init` now also writes that file.
+- **2026-10-02: findings from the independent review and the clean rooms, fixed on this branch.**
+  - **Codex review (P2):** the `.codex/config.toml` merge compared exact header lines, so a valid
+    header with a trailing comment, other quotes or other spacing slipped past, and `init` appended a
+    duplicate table. TOML forbids that, so Codex could no longer load the file. Headers are now
+    compared by meaning, and a file that defines a key another way is left untouched, with "add the
+    rest by hand". 6 tests, seen red.
+  - **Claude clean room:** after `npm init -y`, the starter kept `"main": "index.js"`, a file that
+    does not exist. It is now pointed at `router.js`, with a note. 1 test, seen red.
+  - **Claude clean room, shipped docs:**
+    - `GUIDE.md` marked `'netlify'` as the redirects default in a table that also said it is unset.
+    - `kiss-site-new` said "eleven runnable sites" (there are twelve).
+    - `llms.txt` left example 12 out and gave a flat `node examples/<N>-name.js` run line that
+      contradicts its own folder rule.
+    - `kiss-site-new`'s `complete()` paragraph had a garbled sentence.
+
+    All four are fixed, and the first two are banned in `CONTRADICTIONS`.
+
+  - **Queued, not fixed** (recorded for the next branch):
+    - under `check`, the log says "Copied assets: … to ./public" while it writes to staging;
+    - example 11 hand-writes `/feed.xml` against habit 1;
+    - no guidance on Sass deprecation warnings;
+    - making an og:image needed a hand-written script.
+  - **Codex clean room:** `init`, the GitHub install of all three lines and skill discovery were all
+    shown under the real Codex CLI. The build was not: Codex's Windows sandbox reported `read-only`
+    under `-s workspace-write` and rejected every command. The operator chose to run it themselves in
+    `C:\Code\kiss\codex`, rather than run it unsandboxed.
 
 ## Pulse log
 

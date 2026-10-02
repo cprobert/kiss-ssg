@@ -633,7 +633,7 @@ If you are not sure what your host does, measure it rather than guess: deploy on
 
 #### The redirect file format
 
-See [Redirects](#redirects) below. `_redirects` is a Netlify and Cloudflare Pages file; Firebase and Vercel read their own, so the default writes a file those hosts ignore. `redirects: { format: … }` says which, and `redirects.json` carries the rules as data whatever you pick.
+See [Redirects](#redirects) below. `_redirects` is a Netlify and Cloudflare Pages file; Firebase and Vercel read their own, so kiss writes no host file until you name one. `redirects: { format: … }` says which, and `redirects.json` carries the rules as data whatever you pick.
 
 ### Redirects
 
@@ -650,15 +650,15 @@ new Kiss({ redirects: { format: ['netlify', 'firebase'] } })
 
 A list because a site can legitimately deploy to more than one host — Netlify previews and Firebase production is a real shape, and choosing one at build time would mean building twice. A bare string or a single function is a list of one. Duplicates collapse, order is kept, and a typo anywhere in the list throws at `new Kiss()` rather than being quietly dropped.
 
-| `redirects.format`      | Writes                                          | For                                                                                                                                          |
-| ----------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'netlify'` _(default)_ | `_redirects`                                    | [Netlify](https://docs.netlify.com/routing/redirects/), [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) |
-| `'firebase'`            | `redirects.firebase.json` — a fragment to merge | Firebase Hosting, which ignores `_redirects` entirely                                                                                        |
-| `'vercel'`              | `redirects.vercel.json` — a fragment to merge   | Vercel                                                                                                                                       |
-| `'htaccess'`            | `redirects.htaccess` — a fragment to `Include`  | Apache                                                                                                                                       |
-| `'none'` / `[]`         | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
-| _unset_ (the default)   | nothing but the IR, plus one notice             | a site that has not said where it deploys                                                                                                    |
-| a function              | whatever it returns                             | anything else — nginx, Apache, a CDN API                                                                                                     |
+| `redirects.format`    | Writes                                          | For                                                                                                                                          |
+| --------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'netlify'`           | `_redirects`                                    | [Netlify](https://docs.netlify.com/routing/redirects/), [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) |
+| `'firebase'`          | `redirects.firebase.json` — a fragment to merge | Firebase Hosting, which ignores `_redirects` entirely                                                                                        |
+| `'vercel'`            | `redirects.vercel.json` — a fragment to merge   | Vercel                                                                                                                                       |
+| `'htaccess'`          | `redirects.htaccess` — a fragment to `Include`  | Apache                                                                                                                                       |
+| `'none'` / `[]`       | nothing but the IR                              | a site that owns its own redirects                                                                                                           |
+| _unset_ (the default) | nothing but the IR, plus one notice             | a site that has not said where it deploys                                                                                                    |
+| a function            | whatever it returns                             | anything else — nginx, Apache, a CDN API                                                                                                     |
 
 The Firebase, Vercel and Apache formats emit **a fragment**, not a `firebase.json`, a `vercel.json` or a `.htaccess`. Your real config file holds hosting targets, headers, rewrites and often years of hand-maintained redirect history; kiss will not rewrite it. Merge the fragment on your own terms — for Apache, by `Include`-ing `redirects.htaccess` or concatenating it. (That fragment uses mod_alias `Redirect`, not `RewriteRule`: a rewrite's left-hand side is a regex, so an alias containing a `.` would match more paths than the one it names.)
 
