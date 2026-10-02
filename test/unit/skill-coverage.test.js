@@ -394,8 +394,39 @@ const COVERAGE = [
   },
   {
     feature:
-      'verify the stylesheet and the <title> too — the body comparison covers neither',
-    pattern: /Compare the stylesheet, and check the `<title>`/,
+      'verify the whole document, the assets and the <title> — the body comparison covers none of them',
+    pattern:
+      /Compare the whole document[\s\S]*Compare the assets, and check the `<title>`/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  // The 2026-10-02 clean-room run importing a LIVE page. Each row is a place
+  // the skill sent it wrong or left it guessing.
+  {
+    feature:
+      'a live page is build output: strip host injections, restore what the host took',
+    pattern: /Strip the injections[\s\S]*Restore what the host took/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'a live page may be one page of a larger site — ask for the source repo first',
+    pattern: /Ask first whether a source repository exists/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'a page that is not the home page passes its pageName',
+    pattern: /pageName/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      "the layout's <head> is the imported page's — template it before a second page inherits it",
+    pattern: /The layout's `<head>` is this page's head/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature: 'JSON-LD values need a triple-stash, and nowhere else does',
+    pattern: /application\/ld\+json[\s\S]*\{\{\{ \}\}\}/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
