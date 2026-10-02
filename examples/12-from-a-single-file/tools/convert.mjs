@@ -64,10 +64,24 @@ for (const partial of named.partials)
 // stylesheet the browser gets is the one the artifact had. Passing it through
 // Sass would not be — SCSS reads plain CSS differently in places (`#{`, a
 // string `@import`, native nesting).
-await write(
-  'src/assets/css/site.css',
-  `${named.assets.styles.join('\n').trim()}\n`,
-)
+//
+// Only when EVERY `<style>` is unconditional. One with an attribute —
+// `media="print"`, `title`, `nonce` — means something a merged file cannot
+// say, and lifting the others around it would reorder the cascade, so then
+// none are lifted and they all stay inline where the page had them.
+const conditional = named.assets.styles.filter((s) => s.attrs.trim() !== '')
+if (conditional.length === 0)
+  await write(
+    'src/assets/css/site.css',
+    `${named.assets.styles
+      .map((s) => s.content)
+      .join('\n')
+      .trim()}\n`,
+  )
+else
+  console.log(
+    `\n${conditional.length} <style> block(s) carry attributes, so no stylesheet was lifted: they stay inline in the layout.`,
+  )
 
 // Only CLASSIC scripts are lifted. A script's `type` says what its text is:
 // `module` needs `type="module"` on the tag that loads it, and JSON-LD or an

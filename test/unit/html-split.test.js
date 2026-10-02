@@ -257,7 +257,9 @@ describe('splitDocument', () => {
     // broke the assembly round trip against a real page by losing its script
     // tags outright.
     const result = splitDocument(page)
-    expect(result.assets.styles).toEqual(['.a{color:red}'])
+    expect(result.assets.styles).toEqual([
+      { attrs: '', content: '.a{color:red}' },
+    ])
     expect(result.assets.scripts[0].content).toBe('console.log(1)')
     expect(result.layout.content).toContain('color:red')
   })
@@ -722,7 +724,9 @@ describe('the third review — what goes where', () => {
     // reported — and a top-level `<style>` became a section.
     const html = `<html><head></head><section class="a">A</section><style>.a{color:red}</style><script>go()</script></html>`
     const result = splitDocument(html)
-    expect(result.assets.styles).toEqual(['.a{color:red}'])
+    expect(result.assets.styles).toEqual([
+      { attrs: '', content: '.a{color:red}' },
+    ])
     expect(result.assets.scripts.map((s) => s.content)).toEqual(['go()'])
     expect(result.partials.map((p) => p.name)).toEqual(['sections/a.hbs'])
   })
@@ -745,6 +749,18 @@ describe('the third review — what goes where', () => {
     const { warnings } = splitDocument(html)
     expect(warnings.join(' ')).toMatch(/between two sections/)
     expect(warnings.join(' ')).toContain('<script>')
+  })
+
+  it("reports each inline style's attributes, so a print sheet is not merged into the screen one", () => {
+    // Codex review: `<style media="print">` merged into one unconditional
+    // stylesheet applied print rules on screen.
+    const html = page(
+      '<section id="a">A</section><style>.a{c:d}</style><style media="print">.a{e:f}</style>',
+    )
+    expect(splitDocument(html).assets.styles).toEqual([
+      { attrs: '', content: '.a{c:d}' },
+      { attrs: ' media="print"', content: '.a{e:f}' },
+    ])
   })
 
   it("reports each inline script's attributes, so a module is not lifted as a classic script", () => {

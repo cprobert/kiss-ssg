@@ -56,10 +56,16 @@ const difference = (src, out) => {
     exact.forEach((piece, i) => {
       text = text.split(piece).join(`\u0000${i}\u0000`)
     })
-    return text
-      .replace(STRUCTURE, '$1')
-      .replace(/[ \t]*\n\s*/g, '\n')
-      .trim()
+    return (
+      text
+        // A brace touching a region is written as its character reference,
+        // which renders the same — the one place the bytes may differ.
+        .replace(/&#123;/g, '{')
+        .replace(/&#125;/g, '}')
+        .replace(STRUCTURE, '$1')
+        .replace(/[ \t]*\n\s*/g, '\n')
+        .trim()
+    )
   }
   const a = normalise(src)
   const b = normalise(out)
@@ -103,6 +109,14 @@ const ATOMS = [
   '<x-widget>W</x-widget>',
   '<span>{{x}}</span>',
   `<div data-x="set class='site-header' here" class="hero">H</div>`,
+  // Characters that turn into template syntax when they touch the `{{` of a
+  // partial call or the content block: `{{{`, `\{{` and `}}}` (Codex round 6).
+  '{',
+  '}',
+  '{{',
+  '}}',
+  '\\',
+  '\\\\',
 ]
 const SEPARATORS = { touching: '', space: ' ', newline: '\n    ' }
 const PLACES = {
@@ -124,9 +138,17 @@ describe('html-split fidelity corpus', () => {
             let problem
             try {
               const result = splitDocument(src)
+              // The one warning a pair may earn: a backslash written before
+              // `{{` — the module's stated exception, whose braces go out as
+              // `&#123;&#123;`. The render is still compared.
+              const expected = /\\\{\{/.test(src)
+                ? result.warnings.filter(
+                    (w) => !/preceded by a backslash/.test(w),
+                  )
+                : result.warnings
               problem =
-                result.warnings.length > 0
-                  ? `warned: ${result.warnings.join(' | ')}`
+                expected.length > 0
+                  ? `warned: ${expected.join(' | ')}`
                   : difference(src, assemble(result))
             } catch (error) {
               problem = `threw: ${error.message}`

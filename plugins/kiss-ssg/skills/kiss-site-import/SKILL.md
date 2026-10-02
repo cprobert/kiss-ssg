@@ -84,7 +84,9 @@ Three things to check before moving on:
 
 ### 6. Copy the stylesheet in whole
 
-Write `assets.styles.join('\n')` to `src/assets/css/site.css`, unchanged. kiss copies a `.css` asset into the build as it is, so the browser gets exactly the stylesheet the page had.
+Each entry in `assets.styles` is `{ attrs, content }`. **If every one has empty `attrs`**, write their `content`, in order and joined with a newline, to `src/assets/css/site.css`, unchanged. kiss copies a `.css` asset into the build as it is, so the browser gets exactly the stylesheet the page had.
+
+**If any `<style>` carries an attribute — `media="print"`, `title`, `nonce`, a `type` — lift none of them.** That block means something a merged file cannot say (a print sheet merged in applies on screen), and lifting the others around it would reorder the cascade. Leave every `<style>` inline in the layout, exactly where the split put it, and say so in your report.
 
 **Do not rename it `.scss`, and do not split it.** Sass reads plain CSS differently in places — `#{` inside a string is interpolated, a string `@import` becomes a compile-time import, native CSS nesting is flattened — so a stylesheet passed through Sass is no longer guaranteed to be the one that was approved. Turning it into Sass, or into per-section files, is an improvement with its own name, made after the conversion is verified and only if the author wants it.
 
@@ -92,7 +94,7 @@ Write `assets.styles.join('\n')` to `src/assets/css/site.css`, unchanged. kiss c
 
 `splitDocument` **reports** inline assets, it does not remove them — `assets.styles` and `assets.scripts` say what is worth lifting while the document stays whole. Doing the lift is yours, because it means choosing filenames:
 
-- The `<style>` block becomes the `site.css` of step 6. Delete it from the layout and put `<link rel="stylesheet" href="/{{asset "css/site.css"}}">` in its place — `{{asset}}`, never a typed path, so cache busting works.
+- If step 6 lifted the `<style>` blocks, they become its `site.css`. Delete them from the layout and put one `<link rel="stylesheet" href="/{{asset "css/site.css"}}">` where the first one was — `{{asset}}`, never a typed path, so cache busting works. If step 6 lifted none, leave them.
 - An inline `<script>` becomes a file under `src/assets/js/`, referenced with `<script src="/{{asset "js/site.js"}}" defer></script>` — **when its `type` is `''`** (a classic script). Each entry in `assets.scripts` carries `type` and the raw `attrs` because they decide what the text is: a `type: 'module'` script keeps `type="module"` on the tag that loads it, or its first `import` fails; `application/ld+json` and `importmap` are data, not JavaScript, and stay inline in the layout.
 - A `<script src>` the page already had is left alone; it is in the layout already, ahead of `{{#block "scripts"}}`.
 - **Images and fonts the page links are not in the HTML.** Collect them into `src/assets/`, or the converted site builds green and renders broken. Say which ones you could not find rather than leaving a dead `src`.

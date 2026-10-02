@@ -195,10 +195,12 @@ export function nameRegions(regions: HtmlRegion[], names?: (string | null)[] | R
  * @property {{ name: string, content: string }} layout
  * @property {{ name: string, content: string }} page
  * @property {{ name: string, content: string }[]} partials paths relative to `folders.partials`
- * @property {{ styles: string[], scripts: { attrs: string, type: string, content: string }[] }} assets
- * inline `<style>` text, and every src-less `<script>` with its raw attribute
- * text and its lower-cased `type` (`''` for a classic script) — `module`,
- * `application/ld+json` and `importmap` are not lifted the same way
+ * @property {{ styles: { attrs: string, content: string }[], scripts: { attrs: string, type: string, content: string }[] }} assets
+ * every inline `<style>` with its raw attribute text — one with any attribute
+ * (`media`, `title`, `nonce`, `type`) is conditional and is not merged into an
+ * unconditional stylesheet — and every src-less `<script>` with its raw
+ * attribute text and its lower-cased `type` (`''` for a classic script):
+ * `module`, `application/ld+json` and `importmap` are not lifted the same way
  * @property {HtmlRegion[]} regions the named regions, for a caller that wants to report them
  * @property {string[]} warnings things the conversion could not do losslessly
  * and did anyway, each a whole sentence. Empty for every ordinary document;
@@ -297,12 +299,17 @@ export type HtmlSplitResult = {
         content: string;
     }[];
     /**
-     * inline `<style>` text, and every src-less `<script>` with its raw attribute
-     * text and its lower-cased `type` (`''` for a classic script) — `module`,
-     * `application/ld+json` and `importmap` are not lifted the same way
+     * every inline `<style>` with its raw attribute text — one with any attribute
+     * (`media`, `title`, `nonce`, `type`) is conditional and is not merged into an
+     * unconditional stylesheet — and every src-less `<script>` with its raw
+     * attribute text and its lower-cased `type` (`''` for a classic script):
+     * `module`, `application/ld+json` and `importmap` are not lifted the same way
      */
     assets: {
-        styles: string[];
+        styles: {
+            attrs: string;
+            content: string;
+        }[];
         scripts: {
             attrs: string;
             type: string;

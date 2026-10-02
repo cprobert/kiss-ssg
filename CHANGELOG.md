@@ -31,7 +31,9 @@ inspecting a document without splitting it.
 serves unchanged. It is not split and not renamed `.scss`: Sass reads plain CSS
 differently in places — `#{` inside a string is interpolated, a string
 `@import` becomes a compile-time import, native nesting is flattened — and the
-approved look is the thing being preserved.
+approved look is the thing being preserved. A page whose `<style>` blocks carry
+attributes (`media="print"`, `title`) keeps them inline instead: a merged file
+cannot say what such a block means.
 
 **What it guarantees is that it changed nothing.** Assembling the layout,
 partials and page view back through Handlebars reproduces the document — every
@@ -77,8 +79,9 @@ not give the input back:
 from `id` and class, which are markup names, so a hero carrying `id="top"` is
 proposed as `top`. You decide which words become model fields. You lift the
 inline `<style>` and `<script>`, which are reported rather than removed — each
-script with its `attrs` and `type`, because a `module`, JSON-LD or an import
-map is not lifted as a classic script. Those are judgements nothing could
+with its `attrs` (and a script with its `type`), because a `module`, JSON-LD or
+an import map is not lifted as a classic script, and a `<style media="print">`
+is not merged into a stylesheet that applies on screen. Those are judgements nothing could
 check, and a module that made them would produce field names no human would
 have chosen.
 
