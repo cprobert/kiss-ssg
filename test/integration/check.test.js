@@ -354,6 +354,31 @@ describe('kiss-ssg check', () => {
     expect(await temp.exists('public')).toBe(false)
   }, 60000)
 
+  // The audit had the broken links' problem too (diploma-msc's real check,
+  // 2026-10-02): every finding was logged to stderr and printed again by
+  // --summary on stdout, which a terminal shows side by side.
+  it('prints each audit finding once under check: the report lists them, the log counts them', async () => {
+    temp = await makeSite({
+      // A whole document with none of the launch details: no title, no
+      // description, no favicon, no 404 page.
+      'src/pages/index.hbs':
+        '<!doctype html><html><head></head><body><p>Bare.</p></body></html>',
+      'build.js': ONE_PAGE,
+    })
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    expect(run.status).toBe(0)
+    const listed = run.stdout
+      .split('\n')
+      .filter((line) => /^\s*audit [a-z-]+/.test(line))
+    expect(listed.length).toBeGreaterThan(0)
+    expect(run.stderr).toMatch(
+      /Audit: 1 page, \d+ findings? \(listed in the check report\)/,
+    )
+    expect(run.stderr).not.toMatch(/^\s*audit [a-z-]+/m)
+  }, 60000)
+
   it('counts references to host-served paths instead of naming them broken', async () => {
     temp = await makeSite({
       'src/pages/index.hbs':
