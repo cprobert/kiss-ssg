@@ -62,7 +62,26 @@ call, because 2.7.0 is still unpublished.
 
 ### Amendments
 
+- **2026-10-02: version folded into the unpublished 2.7.0 (operator)**, as on `feat/homepage-codex`.
+  Nothing since 2.6.2 is on npm, so one publish ships the import work, Codex and `hostServed`, and
+  diploma-msc can take `hostServed` from it.
+
 ## Pulse log
+
+- **2026-10-02** — Criteria 1–5 met:
+  - Adoption rebased cleanly onto `main`, and the gates pass.
+  - The peer's 15 tests fail against `main`'s `lib/`, re-derived here.
+  - Item 3 (audit printed twice) was reproduced: the same six findings appeared on stderr and
+    stdout. It was fixed in `f7251c7`, test seen red.
+  - `llms.txt`, `AIKB/kiss.md`, `GUIDE.md`, `types/` and the `kiss-build-check` skill cover it. The
+    README documents no config keys, by design.
+
+  Criterion 6 (independent review) is next, at the close.
+
+  **Eyeball: looked.** The operator saw diploma-msc's check drop from 2,738 findings to 88 with its
+  `hostServed` patterns.
+
+  Decision: close.
 
 ---
 

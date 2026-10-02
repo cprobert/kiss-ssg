@@ -99,6 +99,35 @@ second.** A conversion that also tidies the markup cannot be verified, because
 nothing can tell your improvements from your mistakes. Get to "the same page,
 in pieces", prove it, then change things as a step with its own name.
 
+### `check` on a large site: paths the host serves, and every finding once
+
+Two things a real upgrade (a 686-page site) ran into.
+
+**`links.hostServed`.** Some paths are served by the host but written by no
+build: a Firebase function rewrite at `/v1/…`, a folder another tool bundles
+into after kiss, a file a deploy step adds. The link scan could only call
+those broken, and on that site they buried the real findings. Declare them:
+
+```js
+new Kiss({
+  links: { hostServed: ['/v1/**', '/js/bundle-*.js', '/llms.txt'] },
+})
+```
+
+Patterns are root-relative: `*` matches within one segment, `**` across
+segments, and everything else is literal. A reference the build can't
+resolve that matches one is **counted** in `report.links.hostServed`
+instead of listed in `links.broken`. The default is `[]`, and a pattern
+without a leading `/` throws at `new Kiss()`. On that site its patterns took
+the findings from 2,738 to 88.
+
+**Every finding once.** `npx kiss-ssg check` sends the build log to stderr
+and the report to stdout, and a terminal shows both, so every broken link
+and every audit finding printed twice. Under check, the log now gives the
+count, `N broken links (listed in the check report)` and
+`Audit: N pages, M findings (listed in the check report)`, and the report is
+the list. A normal build logs each finding as before.
+
 Nothing in an existing site changes — this release is additive.
 
 ## 2.6.6 — 2026-09-30
