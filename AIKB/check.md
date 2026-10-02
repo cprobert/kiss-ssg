@@ -8,6 +8,12 @@ Two commands share all of it. `check <script>` runs the site's build staged and 
 
 ## Public interface
 
+- `checkModeRequested(env = process.env)` / `aikbRecordRequested(env = process.env)` → whether
+  `KISS_CHECK` / `KISS_AIKB` is on: anything but `''`, `'0'` or `'false'` (`CHECK_MODE_OFF`,
+  case-insensitive) counts, so `KISS_CHECK=true` cannot fall through to a real build over
+  published output. The engine's side of the protocol the bin sets up; they moved here from
+  `lib/kiss.js` (2026-10-02) when the method that reads `KISS_AIKB` left it for
+  `lib/build-finish.js`, so that no module has to import `kiss.js`.
 - `HELP` — the usage text both `--help` and a usage error print; it documents both commands, and names `init` in one line. `init` is not parsed here: the bin dispatches it to `lib/init.js` before `parseArgs` runs, because it takes no script and none of these options — so `parseArgs(['init'])` still answers `unknown command: init`, and `CheckArgs.command` stays `'check'|'aikb'|'help'`.
 - `parseArgs(argv)` → `{ command, script, args, summary, against, error }`. `command` is `'check'`, `'aikb'` or `'help'`; `script` is the site's build script and `args` everything after it, less our own `--summary`; `summary` is set by `--summary` on either side of the script; `against` is the report file `--against <file>` named, or `null`; `error` is a usage error (print it with `HELP` and exit 1), and it names the command it could not complete.
 - `readReports(text)` → the JSON Lines file `KISS_REPORT` collects, parsed into `BuildReport[]`. Blank lines are skipped; a malformed line throws.
@@ -27,7 +33,10 @@ Two commands share all of it. `check <script>` runs the site's build staged and 
 
 ## Depended on by
 
-`bin/kiss-ssg.js`.
+`bin/kiss-ssg.js`. And the engine, for the other half of the protocol the bin starts:
+`lib/kiss.js` reads `checkModeRequested()` in its constructor, and `lib/build-finish.js` reads
+`aikbRecordRequested()` and `readReportsFile()` (the redirects baseline, read by the same code
+`check --against` uses).
 
 ## Non-obvious behavior
 

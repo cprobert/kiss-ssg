@@ -244,6 +244,149 @@ export type WatchOptions = {
      */
     entry?: string;
 };
+/** @typedef {import('./build-report.js').BuildReport} BuildReport */
+/** @typedef {import('./build-report.js').BuildPage} BuildPage */
+/** @typedef {import('./build-report.js').BuildAsset} BuildAsset */
+/** @typedef {import('./build-report.js').BuildReportFailure} BuildReportFailure */
+/** @typedef {import('./build-report.js').BuildPipelineStep} BuildPipelineStep */
+/** @typedef {import('./build-report.js').BuildAikb} BuildAikb */
+/** @typedef {import('./build-report.js').BuildLinks} BuildLinks */
+/** @typedef {import('./build-report.js').BuildBrokenLink} BuildBrokenLink */
+/** @typedef {import('./build-report.js').BuildRedirects} BuildRedirects */
+/** @typedef {import('./build-report.js').BuildRobots} BuildRobots */
+/** @typedef {import('./aikb.js').SiteMap} SiteMap */
+/** @typedef {import('./pipeline.js').PipelineStep} PipelineStep */
+/** @typedef {import('./config.js').KissConfig} KissConfig */
+/** @typedef {import('./config.js').KissConfigInput} KissConfigInput */
+/** @typedef {import('./config.js').KissFolders} KissFolders */
+/**
+ * The documented options of one page. Only `view` is required. Any key not
+ * listed here is allowed too — `PageOptions` adds an index signature for them —
+ * and reaches the template as top-level render context.
+ *
+ * @typedef {Object} PageOptionsKnown
+ * @property {string} view a `.hbs` filename relative to `config.folders.pages`, or a template string
+ * @property {string} [id] this page's identity, what `{{link "<id>"}}` resolves. Default: the view's route without its extension (`blog/listing.hbs` → `blog/listing`); on a `.pages()` fan-out the registration's `id` is the *prefix* its items' default ids use (`<prefix>/<slug>`) and a *record*'s own `id` wins outright, the way `aliases` belongs to the record. An inline template and a `generate: false` page have no id
+ * @property {any} [model] a `.json` filename, a models folder name, an `http(s)://` URL, a plain object or an array — and the resolved data itself by the time a controller sees it
+ * @property {string|KissController} [controller] a `.js` filename relative to `config.folders.controllers`, or the function itself
+ * @property {string} [title] filled from `model.title` when the model has one and this is unset
+ * @property {string} [description]
+ * @property {string} [path] output folder, inferred from `view` when omitted
+ * @property {string} [slug] output filename, inferred from `view` when omitted
+ * @property {string} [ext] output extension, default `html`
+ * @property {boolean} [generate] `false` skips building this one page entirely
+ * @property {KissConfigInput} [config] per-page config overrides, merged over the site config for this page alone
+ * @property {boolean} [ignoreSitemap] keep this page out of `sitemap.xml`
+ * @property {string} [sitemapPriority] default `'1.00'`
+ * @property {string} [sitemapChangefreq] omitted from the XML unless set
+ * @property {string} [sitemapLastmod] default: one timestamp shared by every page
+ * @property {boolean} [ignoreLlms] keep this page out of `llms.txt`
+ * @property {string} [llmsSection] the `llms.txt` section this page is listed under, overriding its path
+ * @property {boolean} [ignoreFeed] keep this page out of the `.feed()` document
+ * @property {Date|number|string} [date] the page's date; `.feed()` orders by it and leaves out a page without one (the field name is `.feed()`'s `dateField`)
+ * @property {string[]} [aliases] old URL paths this page now answers (`['/old-slug']`); each becomes one `301` line in `<build>/_redirects`. On a `.pages()` fan-out it belongs to the *record*, not to the registration
+ */
+/**
+ * The options `.page()` takes: {@link PageOptionsKnown} plus any extra keys of
+ * your own, which the page renders with.
+ *
+ * @typedef {PageOptionsKnown & Record<string, any>} PageOptions
+ */
+/**
+ * The options `.pages()` takes. Identical to {@link PageOptions}: the fan-out
+ * requirement is that the model *resolves* to an array — a `.json` file or
+ * models folder holding one, a URL that returns one, or an array passed
+ * directly — which is a property of the resolved data, not of the option.
+ *
+ * @typedef {PageOptions} PagesOptions
+ */
+/**
+ * What a controller returns: any subset of the page's options, merged over
+ * them. Returning nothing leaves the options as they were.
+ *
+ * @typedef {Partial<PageOptionsKnown> & Record<string, any>} PageOptionsPatch
+ */
+/**
+ * A page's controller, run once its model has resolved and before the page is
+ * prepared. Synchronous: the patch is spread over the options as it is
+ * returned, so a promise would be spread rather than awaited. A controller that
+ * throws fails that page and makes `complete()` reject.
+ *
+ * @callback KissController
+ * @param {PageOptions} options the page's options, with `model` resolved
+ * @returns {PageOptionsPatch|void}
+ */
+/**
+ * One entry of the array `.generate()` and `.complete()` hand back: one
+ * resolved model, in registration order. The construction-time asset copy is
+ * queued first, so entry 0 is that copy rather than your first page — look
+ * models up with `.getModelByID()` instead of by position.
+ *
+ * @typedef {Object} BuildDatum
+ * @property {string} [id] the model filename or URL; an object model gets a hash, a page with no model has no id
+ * @property {any} data the resolved model, or `null` when it failed to resolve
+ * @property {Error} [error] why the model failed to resolve
+ */
+/** @typedef {BuildDatum[]} BuildData */
+/**
+ * One thing that failed to build. `buildTo` is `null` when the failure happened
+ * before the page had an output path — a controller, a `.pages()` item, a
+ * `generate`/`sitemap` callback, or the dev server.
+ *
+ * @typedef {Object} BuildFailure
+ * @property {string} view
+ * @property {string|null} buildTo
+ * @property {Error} error
+ */
+/**
+ * What `complete()` rejects with when anything failed to build: an
+ * `AggregateError` over the underlying errors, carrying the whole list on
+ * `failures` and the same build as data on `report`.
+ *
+ * @typedef {AggregateError & { failures: BuildFailure[], report: BuildReport }} BuildError
+ */
+/**
+ * One `<url>` of the sitemap, as handed to `.sitemap()`'s callback.
+ *
+ * @typedef {Object} SitemapUrl
+ * @property {string} loc
+ * @property {string} lastmod
+ * @property {string} priority
+ * @property {string} [changefreq]
+ */
+/**
+ * @typedef {Object} SitemapOptions
+ * @property {boolean} [overwrite] default `true`; `false` leaves an existing `sitemap.xml` alone
+ */
+/**
+ * The options `.llms()` takes. `title` and `summary` are required — without
+ * either, kiss logs an error and writes nothing, exactly as it does for a
+ * sitemap with no `siteUrl`.
+ *
+ * @typedef {Object} LlmsOptions
+ * @property {string} title the site's name — the file's `# ` heading
+ * @property {string} summary what the site is, as a `> ` blockquote: the text itself, or a path (relative to `process.cwd()`) to a `.md`/`.txt` file holding it
+ * @property {string} [notes] a trailing `## Notes` section; same text-or-file rule as `summary`
+ * @property {Record<string, string>} [sections] top-level path segment → section heading (`{ courses: 'Courses' }`); the key `root` names the section holding pages with no path (default `Pages`). An unmapped segment is title-cased.
+ * @property {boolean} [overwrite] default `true`; `false` leaves an existing `llms.txt` alone
+ */
+/**
+ * The options `.feed()` takes. `title` is required — without it, kiss logs an
+ * error and writes nothing, exactly as it does for a sitemap with no `siteUrl`.
+ *
+ * @typedef {Object} FeedOptions
+ * @property {string} title the feed's `<title>` — the site's name, or the section's
+ * @property {string} [description] the feed's `<description>`
+ * @property {string} [section] a top-level `path` segment to include (`'blog'`); omit for every page
+ * @property {number} [limit] default `20`; how many items the feed carries, newest first
+ * @property {string} [filename] default `feed.xml`, relative to `config.folders.build`
+ * @property {string} [dateField] default `'date'`; the page option (or model field) each item's date is read from
+ * @property {boolean} [overwrite] default `true`; `false` leaves an existing feed file alone
+ */
+/**
+ * @typedef {Object} WatchOptions
+ * @property {string} [entry] the script whose own change triggers a whole-site rebuild; defaults to `process.argv[1]`
+ */
 /**
  * A site. Everything is driven from one instance: `.page()`/`.pages()`/`.scan()`
  * queue pages, `.generate()` renders them, `.complete()` resolves once the whole
@@ -553,54 +696,15 @@ declare class Kiss {
     private _removeStaging;
     /** @private */
     private _finishBuild;
-    /**
-     * Everything `buildReport` needs, in one place. It is read twice — once by
-     * `_finishBuild()` when a build settles, and once by `_refreshReport()` when
-     * something changes the failure list without settling a build — and two call
-     * sites assembling this literal separately is exactly the shape that has
-     * gone wrong repeatedly on this branch: they drift, and the one nobody looks
-     * at is the one that lies.
-     *
-     * @returns {any}
-     * @private
-     */
+    /** @private */
     private _reportInputs;
-    /**
-     * Re-assembles the settled report against the CURRENT failure list.
-     *
-     * `report()` is the machine verdict, and between settles it was a stale one:
-     * a watch asset save that broke a stylesheet, or a helpers reload that
-     * failed, put the failure on `_failures` and logged it in red immediately
-     * while `report().ok` went on saying `true` until the next whole-site
-     * replay. Measured. A scoped re-render and an asset re-copy settle no build,
-     * so neither calls `_finishBuild()` — and re-running `_finishBuild()` here
-     * would be wrong in the other direction, because it carries the once-per-
-     * build side effects: a `KISS_REPORT` line (one per BUILD, not per call), a
-     * `last-build.json` record, a `dependency-graph.json` write. This re-derives
-     * the report and nothing else.
-     *
-     * What it deliberately does NOT re-derive is what an asset copy or a helpers
-     * reload cannot change: the aikb verdict (a map of pages and partials) and
-     * the redirect findings (page aliases). Both are reused from the settle that
-     * produced them, which is why they are held on the instance.
-     *
-     * A no-op before the first build settles — there is nothing to refresh, and
-     * `report()` correctly answers `null`.
-     *
-     * @private
-     */
+    /** @private */
     private _refreshReport;
     /** @private */
     private _buildAikb;
-    /**
-     * @private
-     * @param {{ quiet?: boolean }} [options]
-     */
+    /** @private */
     private _checkLinks;
-    /**
-     * @private
-     * @param {{ quiet?: boolean }} [options]
-     */
+    /** @private */
     private _runAudit;
     /** @private */
     private _writeRedirects;

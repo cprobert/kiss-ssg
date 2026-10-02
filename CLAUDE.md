@@ -40,6 +40,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Page renderer                              | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
 | Page registration + identity (the stack)   | `lib/page-registry.js`       | `AIKB/page-registry.md`       |
 | Build report (the machine verdict)         | `lib/build-report.js`        | `AIKB/build-report.md`        |
+| Settled build (report, links, redirects)   | `lib/build-finish.js`        | `AIKB/build-finish.md`        |
 | `kiss-ssg check` decision core             | `lib/check.js`               | `AIKB/check.md`               |
 | `kiss-ssg init` plan                       | `lib/init.js`                | `AIKB/init.md`                |
 | Logger                                     | `lib/logger.js`              | `AIKB/logger.md`              |

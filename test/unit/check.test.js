@@ -10,6 +10,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   HELP,
+  aikbRecordRequested,
+  checkModeRequested,
   defaultBaseline,
   describeEngine,
   diffReports,
@@ -46,6 +48,21 @@ const withAssets = (report, assets) => ({
     source,
     target,
   })),
+})
+
+describe('checkModeRequested and aikbRecordRequested', () => {
+  it('count anything but empty, 0 or false as on, case-insensitively', () => {
+    for (const value of ['1', 'true', 'TRUE', 'yes', 'on'])
+      expect(checkModeRequested({ KISS_CHECK: value })).toBe(true)
+    for (const value of [undefined, '', '0', 'false', 'False'])
+      expect(checkModeRequested({ KISS_CHECK: value })).toBe(false)
+  })
+
+  it('read their own variable each', () => {
+    expect(aikbRecordRequested({ KISS_AIKB: '1' })).toBe(true)
+    expect(aikbRecordRequested({ KISS_CHECK: '1' })).toBe(false)
+    expect(checkModeRequested({ KISS_AIKB: '1' })).toBe(false)
+  })
 })
 
 describe('parseArgs', () => {
