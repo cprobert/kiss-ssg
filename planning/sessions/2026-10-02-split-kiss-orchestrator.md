@@ -106,6 +106,17 @@ out to leak state, check every seam for the same leak before the next commit.
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-02** — split partial (1/5: `lib/staging.js`, `4c30b33`); shape, per-module
+  test/doc/row and no-public-change met so far (`test/aikb.test.js` 183/183, examples
+  byte-identical with timestamps masked and the comparer seen to catch a change, `kiss.d.ts`
+  private-only); flake met with a caveat (`asset-hashing` red 11/11 → green 11/11 under an
+  injected window, full suite green 5×; the `watch.test` change never seen red); gates/Codex not
+  yet. No drift. Signal: delegators cost ≈9 lines each, projecting ≈2,100 not ≈1,800. **Eyeball:
+  looked** — the staging delegators beside `lib/staging.js`: "shape is right". Operator chose
+  **slim delegators** (`/** @private — lib/<m>.js */` + a one-line body; docs live once, on the
+  module function), applied to staging too. Decision: adjust (slim), then continue with
+  asset-copy.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
