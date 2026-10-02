@@ -24,11 +24,11 @@ export const business = {
 // One line, used by the footer and by the Visit section's `<address>`.
 business.addressLine = `${business.fullName}, ${business.address.line1}, ${business.address.town} ${business.address.postcode}`
 
-// The nav. In the artifact these were four hand-typed `#fragment` links; they
-// stay fragments here because this is still one page, but they are data now,
-// so adding a fifth is an edit to this list rather than to the markup — and
-// when the site grows a second page they become `{{link}}` ids without the
-// header partial changing shape.
+// The nav. In the artifact these were four hand-typed `#fragment` links;
+// they are data now, so adding a fifth is an edit to this list rather than to
+// the markup. They stay fragments of the home page, and the header puts
+// `{{link "index"}}` in front of each — the site has a second page, the 404,
+// and a bare fragment there points at a section it does not have.
 export const nav = [
   { href: '#offers', label: 'Wholesale' },
   { href: '#beans', label: 'Our coffee' },
