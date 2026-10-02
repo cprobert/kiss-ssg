@@ -40,6 +40,15 @@ opened: 2026-10-02
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-02: Codex measured, and the mechanism chosen.** The kiss marketplace and both plugins
+  load in Codex as they are (`codex plugin`, user scope). A project's `.codex/config.toml` did not
+  load them, and `.agents/skills/` does (project scope). Operator chose the plugin route; the
+  findings are in the contract §1.
+- **2026-10-02: `init` appends the Codex section to an existing `AGENTS.md`** that lacks it
+  (operator, after the contract critique's finding 5). Until now `planPointer` skipped any
+  `AGENTS.md` that already pointed at `llms.txt`. This is a behaviour change, on top of printing new
+  lines, and it goes in the upgrade note.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
