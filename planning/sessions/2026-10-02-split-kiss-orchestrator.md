@@ -116,6 +116,17 @@ out to leak state, check every seam for the same leak before the next commit.
   **slim delegators** (`/** @private — lib/<m>.js */` + a one-line body; docs live once, on the
   module function), applied to staging too. Decision: adjust (slim), then continue with
   asset-copy.
+- **2026-10-02** — split **met**: all five modules landed (`0f66c7c`, `6d68ae9`, `add4d86`,
+  `4a9d2a7`), `lib/kiss.js` measured at **1,774** lines (from 3,773; estimate ≈1,800). Shape met
+  (no stray `this` in any module; the suite's on-instance patches pass unchanged). Per-module
+  test/doc/row met (`test/aikb.test.js` 199/199) with a caveat: 13 sibling docs' "Depended on by"
+  went stale across commits 2–4 and were corrected only in `4a9d2a7`. No public change (examples
+  byte-identical after every extraction; `kiss.d.ts` private-only; `llms.txt`/`README.md`/
+  `GUIDE.md`/`package.json` untouched). `npm run gates` exit 0, all five. Codex review not yet —
+  a `/branch-close` step. Correction to the line above: the slim form landed as a plain
+  `/** @private */` under one header comment per module, not `@private — lib/<m>.js`. No drift.
+  **Eyeball: deferred** — reading `lib/kiss.js` top to bottom as an orchestrator, to be confirmed
+  at `/branch-close` Step 5a. Decision: **ready to close** when the operator asks.
 
 ---
 
