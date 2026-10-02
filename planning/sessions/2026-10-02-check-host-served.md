@@ -1,0 +1,69 @@
+---
+branch: check-mode-broken-link-count
+base: main
+status: open
+opened: 2026-10-02
+---
+
+# Session — 2026-10-02: `check` output that a 686-page site can read, and `links.hostServed`
+
+## Intent (_inferred retrospectively_, captured at adoption)
+
+_This branch was started by the diploma-msc session (kiss-ssg v1 → v2 upgrade, PR
+learna-ltd/diploma-msc#477), in this checkout, without `/branch-open`. The main session adopted it
+on 2026-10-02, after closing `feat/homepage-codex`, on the operator's instruction to "proceed to
+address feedback if there's value in the comments". The intent below is reconstructed from that
+session's handover and from the two commits, and it adds handover item 3, which has the same cause._
+
+**Objective:** make `npx kiss-ssg check` usable on a large real site, and release it.
+diploma-msc is blocked until `links.hostServed` is on npm.
+
+- **Broken links printed twice.** `check` printed every broken link twice: once in the build log on
+  stderr, once in the report on stdout, and a terminal shows both. On diploma-msc's 686 pages that
+  was 2,756 findings as 5,512 lines.
+- **Host-served paths.** The site had no way to say that a path is served by the host rather than
+  written by the build (a Firebase function rewrite, a bundle folder written by another tool), so
+  those paths drowned the real broken links.
+
+**Success criteria:**
+
+- [ ] Under `check`, the build log names the broken-link **count** in one line, and the report alone
+      lists the links (`d479071`, rebased as `9bba3c9`).
+- [ ] Under `check`, **audit findings** are not printed twice either (handover item 3: `lib/kiss.js`'s
+      `auditLines` loop, and `--summary` again). Same shape as the link fix, with a test seen red.
+- [ ] `config.links.hostServed`: root-relative patterns (`*` within a segment, `**` across segments,
+      otherwise literal). A reference the build can't resolve that matches one is counted in
+      `report.links.hostServed` instead of being listed as broken. The default is `[]`, and a pattern
+      without a leading `/` throws (`4290829`, rebased as `1e552b2`).
+- [ ] Every test on the branch was seen red against `main`'s `lib/`. Re-derived at adoption: 15
+      failed against `main`, all pass on the branch.
+- [ ] Docs: `llms.txt`, `GUIDE.md`, `AIKB/{config,links,build-report,kiss}.md`, the `kiss-build-check`
+      skill and a skill-coverage row; types regenerated.
+- [ ] `npm run gates` green, and an independent (Codex) review, since `lib/` changed.
+- [ ] Measured on a real site: diploma-msc's findings drop from 2,738 to 88 with its patterns.
+      Reported by the peer session and not re-measured here, because that site's checkout is not
+      this session's to run; the operator can confirm it.
+
+**Non-goals / out of scope:**
+
+- the rest of the handover: the migration docs (items 4, 6, 7 and 9), the slug notice (5), the
+  logger's TTY colours (10) and a v1/v2 build-diff step (8). Each is its own branch, in the order
+  proposed to the operator.
+- the corpse-collector `config.toml` false positive, and the four smaller clean-room findings queued
+  from `feat/homepage-codex`.
+
+**Impact surface:** public API. `config.links.hostServed` and `report.links.hostServed` are new keys a
+site can observe, and `check`'s output changes shape. Normally a minor; the number is the operator's
+call, because 2.7.0 is still unpublished.
+
+**Expected shape:** planned. The work exists; adoption adds one item of the same kind and the close.
+
+**Delegation convention:** none. One session, because the branch is small and already built.
+
+### Amendments
+
+## Pulse log
+
+---
+
+<!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
