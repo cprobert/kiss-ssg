@@ -1,6 +1,12 @@
 {
   "exemplars": [
     {
+      "folder": "12-from-a-single-file",
+      "name": "From a single file",
+      "summary": "A one-page artifact converted into a site that still looks the same: the original kept beside it, the conversion script, a tool that proves the page unchanged, and the site that came out.",
+      "copyWhen": "you already have a page — an AI artifact, an export, a hand-written HTML file — and want a site a web developer could take over."
+    },
+    {
       "folder": "11-blog",
       "name": "Blog",
       "summary": "Posts as a fan-out, pagination, tag pages, an RSS feed, a rename kept alive with aliases, and every internal link written with {{link}}.",

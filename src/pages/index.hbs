@@ -59,6 +59,13 @@
       {{/each}}
     </ol>
     <p class="band__note">
+      <strong>Already have a page?</strong> A Claude or ChatGPT artifact, a page
+      exported from a builder, a hand-written HTML file: instead of describing it,
+      run <code>/kiss-ssg:kiss-site-import</code> and it becomes a site that looks
+      exactly the same, with a layout, partials and content a web developer could
+      take over. <a href="{{link "guide/converting" absolute=true}}">How converting works</a>.
+    </p>
+    <p class="band__note">
       The full setup, including the two Claude Code plugins, is in the
       {{> "external-link" href="https://github.com/cprobert/kiss-ssg#quick-start" text="README quick start"}}. Using another agent?
       Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
