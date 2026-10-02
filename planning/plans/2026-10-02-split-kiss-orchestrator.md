@@ -199,6 +199,24 @@ section and the text above disagree, this section wins.
   `_*Request` fields. The module function for `_replay` is `replaySession` (a local `const replay`
   exists in `_handleChange` and `_runRebuildQueue`).
 
+## Amendment — 2026-10-02: slim delegators (first pulse)
+
+The full-JSDoc delegator in "The shape" cost ≈9 lines a method, projecting `kiss.js` to ≈2,100
+rather than ≈1,800. Private members emit into `types/` without signatures, so the doc block only
+served readers. Operator's call at the pulse: each module's delegators sit together in one block
+under one header comment naming the module and its AIKB doc, each as
+
+```js
+/** @private */
+_name(a, b) {
+  return name(this, a, b)
+}
+```
+
+The description and `@param` types live once, on the module function. B3 still holds: the
+delegator names its parameters (no rest args, no defaults). Applied to staging in the same commit
+as this note.
+
 ## Found, not changed
 
 - `lib/kiss.js` ≈86–98: the first paragraph of the `canonical` comment is an older version of the

@@ -454,11 +454,6 @@ declare class Kiss {
     /** @private */
     private _setupFolders;
     /**
-     * Removes the staging siblings a crashed run left behind (`lib/staging.js`).
-     * @private
-     */
-    private _sweepStaleSiblings;
-    /**
      * Re-registers every partial and layout from disk, unregistering any name
      * whose file has since gone. Runs at construction and on every watch rebuild.
      *
@@ -538,50 +533,26 @@ declare class Kiss {
      * @private
      */
     private _carry;
-    /**
-     * Where a write aimed at the build folder lands while staging is active
-     * (`lib/staging.js`).
-     * @param {string} target
-     * @returns {string}
-     * @private
-     */
+    /** @private */
+    private _sweepStaleSiblings;
+    /** @private */
     private _stagedPath;
-    /**
-     * A staged path as the build folder the operator asked for
-     * (`lib/staging.js`).
-     * @param {any} target
-     * @returns {any}
-     * @private
-     */
+    /** @private */
     private _reportedPath;
-    /**
-     * One rename of the promotion, with a brief retry on a lock
-     * (`lib/staging.js`).
-     * @param {string} from
-     * @param {string} to
-     * @param {string} folder the build folder the operator named, for the message
-     * @private
-     */
+    /** @private */
     private _renameForPromote;
-    /**
-     * Puts the previous output back after a failed promotion (`lib/staging.js`).
-     * @param {string} old
-     * @param {string} target
-     * @private
-     */
+    /** @private */
     private _restorePrevious;
-    /**
-     * Swaps the staged build into place, once (`lib/staging.js`).
-     * @private
-     */
+    /** @private */
     private _promote;
-    /**
-     * The swap itself (`lib/staging.js`).
-     * @param {string} staging
-     * @param {string} target
-     * @private
-     */
+    /** @private */
     private _swapIn;
+    /** @private */
+    private _discardStaging;
+    /** @private */
+    private _abandonStaging;
+    /** @private */
+    private _removeStaging;
     /** @private */
     private _finishBuild;
     /**
@@ -639,24 +610,6 @@ declare class Kiss {
     private _lastBuildRecord;
     /** @private */
     private _redirectFindings;
-    /**
-     * Discards a failed build's staging folder, once (`lib/staging.js`).
-     * @private
-     */
-    private _discardStaging;
-    /**
-     * Removes a staging folder and clears its output claims (`lib/staging.js`).
-     * @param {string} staging
-     * @private
-     */
-    private _abandonStaging;
-    /**
-     * Removes a staging folder, warning rather than throwing (`lib/staging.js`).
-     * @param {string} staging
-     * @param {string} which the adjective the warning uses for the folder
-     * @private
-     */
-    private _removeStaging;
     /**
      * @private
      * @param {any} options
