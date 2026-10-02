@@ -41,7 +41,25 @@ describe('the home page carries the whole quick start', () => {
     const floor = /(\d+\.\d+)/.exec(
       JSON.parse(read('package.json')).engines.node,
     )[1]
-    expect(home.setup.needs.map((n) => n.name).join(' ')).toContain(floor)
+    const node = home.toolkit.tools.find((t) => t.name === 'Node.js')
+    expect(node.what).toContain(floor)
+  })
+
+  it('lists the tools a newcomer installs, each with a link and an icon that exists', () => {
+    // The hero's "What you'll need" panel: required first, recommended after.
+    const tools = home.toolkit.tools
+    expect(tools.map((t) => t.name)).toEqual([
+      'Node.js',
+      'Claude Code',
+      'Git',
+      'GitHub',
+    ])
+    for (const tool of tools) {
+      expect(tool.url).toMatch(/^https:\/\//)
+      expect(
+        fs.existsSync(path.join(root, 'src/partials', `${tool.icon}.hbs`)),
+      ).toBe(true)
+    }
   })
 
   it('offers a prompt for a new site and one for a page you already have, naming real skills', () => {

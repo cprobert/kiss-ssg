@@ -383,7 +383,7 @@ pre code {
   padding: 0;
 }
 
-// Home: hero and the verdict panel
+// Home: hero and what you'll need
 
 .hero {
   padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(2.5rem, 5vw, 4rem);
@@ -449,138 +449,91 @@ pre code {
   font-weight: 700;
 }
 
-.verdict {
+// What you'll need — the hero's second column. It replaced a sample
+// transcript (prompt, files written, check result), which showed a newcomer
+// output they could not yet read; this shows what to install first.
+.toolkit {
   margin: 0;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: var(--radius-panel);
   padding: 1.5rem;
-  font-size: var(--step--1);
-
-  figcaption {
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--rule);
-    color: var(--muted);
-  }
 }
 
-.verdict__turns {
+.toolkit__title {
+  font-size: var(--step-1);
+  margin: 0 0 0.35rem;
+}
+
+.toolkit__intro {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin: 0 0 1.25rem;
+}
+
+.toolkit__list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 1.25rem;
+  gap: 1.1rem;
 }
 
-.verdict__turn p {
-  margin: 0;
+.tool {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+
+  p {
+    margin: 0;
+  }
 }
 
-// Scoped under the turn so they outrank its margin reset above.
-.verdict__turn .verdict__who {
-  margin-bottom: 0.35rem;
+.tool__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-small);
+  background: var(--wash);
+  color: var(--ink);
+
+  .icon {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
 }
 
-.verdict__turn .verdict__command {
-  margin-bottom: 0.5rem;
-}
-
-.verdict__who {
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.verdict__prompt {
-  font-size: var(--step-0);
-  line-height: 1.45;
-}
-
-.verdict__files {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.tool__name {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-
-  code {
-    display: inline-block;
-    font-size: 0.85rem;
-  }
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  font-weight: 700;
 }
 
-.verdict__command {
-  color: var(--muted);
-
-  code {
-    background: none;
-    padding: 0;
-  }
-}
-
-.verdict__line {
-  font-size: 0.95rem;
-  line-height: 1.7;
-
-  code {
-    background: none;
-    padding: 0;
-  }
-}
-
-.verdict__ok {
-  font-family: var(--font-code);
+.tool__need {
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-radius: var(--radius-small);
+  padding: 0.05em 0.45em;
+  color: var(--muted);
+  background: var(--wash);
+}
+
+.tool__need--Required {
   color: var(--pass);
   background: var(--pass-wash);
-  border-radius: var(--radius-small);
-  padding: 0.05em 0.5em;
-  margin-right: 0.4rem;
 }
 
-.verdict__facts {
-  margin: 0.6rem 0 0;
-  padding-left: 1.2rem;
+.tool__what {
   color: var(--muted);
-
-  li::marker {
-    color: var(--pass);
-  }
-}
-
-// The page's one moment: the transcript plays through once on load, and the
-// verdict lands last. Reduced motion shows the finished panel.
-@media (prefers-reduced-motion: no-preference) {
-  .verdict__turn {
-    animation: turn-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  }
-
-  .verdict__turn:nth-child(2) {
-    animation-delay: 0.7s;
-  }
-
-  .verdict__turn:nth-child(3) {
-    animation-delay: 1.4s;
-  }
-
-  .verdict__ok {
-    animation: verdict-in 0.6s ease-out 2s both;
-  }
-
-  @keyframes turn-in {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-  }
-
-  @keyframes verdict-in {
-    from {
-      color: var(--muted);
-      background: var(--wash);
-    }
-  }
+  font-size: var(--step--1);
+  line-height: 1.5;
+  margin-top: 0.15rem;
 }
 
 // Home: bands below the hero

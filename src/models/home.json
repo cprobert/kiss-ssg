@@ -1,34 +1,41 @@
 {
-  "prompt": "Build a site for Pro Plumbing, a local plumber in Aberdare: small jobs, bigger jobs, questions people ask and a contact page.",
-  "files": [
-    "router.js",
-    "src/layouts/layout.hbs",
-    "src/pages/index.hbs",
-    "src/pages/small-jobs/index.hbs",
-    "src/controllers/jobList.js",
-    "src/models/jobs/*.json",
-    "helpers/schema.js"
-  ],
-  "verdict": {
-    "command": "npx kiss-ssg check router.js --summary",
-    "status": "ok",
-    "line": "./docs (check) — 7 pages, 0 failed, 43 assets",
-    "facts": [
-      "131 links checked, 0 broken",
-      "sitemap.xml, llms.txt and robots.txt written"
+  "toolkit": {
+    "heading": "What you'll need",
+    "intro": "Four free tools. Install the first two before you start; the other two are worth having from day one.",
+    "tools": [
+      {
+        "icon": "icons/node",
+        "name": "Node.js",
+        "url": "https://nodejs.org",
+        "need": "Required",
+        "what": "Runs kiss and builds your site. Version 22.12 or later — the LTS download is fine."
+      },
+      {
+        "icon": "icons/claude",
+        "name": "Claude Code",
+        "url": "https://claude.com/claude-code",
+        "need": "Required",
+        "what": "The coding agent that writes the site for you. Needs a Claude account."
+      },
+      {
+        "icon": "icons/git",
+        "name": "Git",
+        "url": "https://git-scm.com",
+        "need": "Recommended",
+        "what": "Keeps every version of your site, so any change can be undone."
+      },
+      {
+        "icon": "icons/github",
+        "name": "GitHub",
+        "url": "https://github.com",
+        "need": "Recommended",
+        "what": "Stores a copy online and can publish it — Netlify and GitHub Pages both deploy from it."
+      }
     ]
-  },
-  "caption": "Pro Plumbing, a site built with kiss, checked as shown.",
-  "captionLink": {
-    "name": "pro-plumbing.trade",
-    "url": "https://pro-plumbing.trade/"
   },
   "setup": {
     "heading": "From nothing to a site in six commands",
-    "needs": [
-      { "name": "Node 22.12 or later", "url": "https://nodejs.org" },
-      { "name": "Claude Code", "url": "https://claude.com/claude-code" }
-    ],
+    "intro": "With Node.js and Claude Code installed, these do the rest.",
     "steps": [
       {
         "title": "Set it up, in a new folder",

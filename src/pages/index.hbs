@@ -17,43 +17,31 @@
       </div>
     </div>
 
-    <figure class="verdict">
-      <ol class="verdict__turns">
-        <li class="verdict__turn">
-          <p class="verdict__who">You</p>
-          <p class="verdict__prompt">{{model.prompt}}</p>
+    <aside class="toolkit" aria-labelledby="toolkit">
+      <h2 class="toolkit__title" id="toolkit">{{model.toolkit.heading}}</h2>
+      <p class="toolkit__intro">{{model.toolkit.intro}}</p>
+      <ul class="toolkit__list">
+        {{#each model.toolkit.tools}}
+        <li class="tool">
+          <span class="tool__icon">{{> (lookup . "icon")}}</span>
+          <div class="tool__body">
+            <p class="tool__name">
+              <a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a>
+              <span class="tool__need tool__need--{{need}}">{{need}}</span>
+            </p>
+            <p class="tool__what">{{what}}</p>
+          </div>
         </li>
-        <li class="verdict__turn">
-          <p class="verdict__who">Your agent writes</p>
-          <ul class="verdict__files">
-            {{#each model.files}}<li><code>{{this}}</code></li>{{/each}}
-          </ul>
-        </li>
-        <li class="verdict__turn verdict__turn--result">
-          <p class="verdict__who">kiss checks</p>
-          <p class="verdict__command"><code>$ {{model.verdict.command}}</code></p>
-          <p class="verdict__line"><span class="verdict__ok">{{model.verdict.status}}</span> <code>{{model.verdict.line}}</code></p>
-          <ul class="verdict__facts">
-            {{#each model.verdict.facts}}<li>{{this}}</li>{{/each}}
-          </ul>
-        </li>
-      </ol>
-      <figcaption>
-        {{model.caption}}
-        <a href="{{model.captionLink.url}}" target="_blank" rel="noopener noreferrer">{{model.captionLink.name}}<span class="visually-hidden"> (opens in a new tab)</span></a>
-      </figcaption>
-    </figure>
+        {{/each}}
+      </ul>
+    </aside>
   </div>
 </section>
 
 <section class="band" aria-labelledby="how">
   <div class="wrap">
     <h2 id="how">{{model.setup.heading}}</h2>
-    <p class="band__lede">
-      You need
-      {{#each model.setup.needs}}{{#if @last}} and {{else}}{{#unless @first}}, {{/unless}}{{/if}}{{> "external-link" href=url text=name}}{{/each}}.
-      Everything else, these install.
-    </p>
+    <p class="band__lede">{{model.setup.intro}}</p>
     <ol class="steps steps--stacked">
       {{#each model.setup.steps}}
       <li class="steps__item">
