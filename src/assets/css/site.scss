@@ -641,6 +641,60 @@ pre code {
   }
 }
 
+.band__lede {
+  max-width: var(--measure);
+  margin-top: 0.5rem;
+}
+
+// The setup band runs top to bottom: its first step is six commands, the
+// longest 63 characters, which a third of the page cannot hold.
+.steps--stacked {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 52rem;
+
+  pre {
+    margin-top: 0.25rem;
+  }
+}
+
+.prompts {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.prompts__item {
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+
+  p {
+    margin: 0;
+  }
+}
+
+.prompts__label {
+  font-weight: 700;
+}
+
+.steps__item .prompts__note {
+  font-size: var(--step--1);
+  margin: 0.25rem 0 0.75rem;
+}
+
+.prompts__text {
+  margin-top: auto;
+  font-family: var(--font-code);
+  font-size: var(--step--1);
+  line-height: 1.5;
+  user-select: all;
+}
+
 .reasons {
   list-style: none;
   margin: 0;
@@ -949,7 +1003,8 @@ pre code {
   }
 
   .steps,
-  .reasons {
+  .reasons,
+  .prompts {
     grid-template-columns: minmax(0, 1fr);
   }
 

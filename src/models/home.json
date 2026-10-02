@@ -23,23 +23,41 @@
     "name": "pro-plumbing.trade",
     "url": "https://pro-plumbing.trade/"
   },
-  "steps": [
-    {
-      "title": "Set it up",
-      "text": "One command installs kiss-ssg, adds a starter site, and points your agent at the API contract. Then add the two Claude Code plugins it prints.",
-      "code": "npx kiss-ssg@latest init"
-    },
-    {
-      "title": "Describe the site",
-      "text": "Open Claude Code and say what the site is for, who it's for, where it will be hosted and its address. The skills do the rest.",
-      "code": "claude"
-    },
-    {
-      "title": "Check the build",
-      "text": "A dry run that reports every page, broken link and missing launch detail as data, and publishes nothing. Exit 0 means it's right.",
-      "code": "npx kiss-ssg check router.js"
-    }
-  ],
+  "setup": {
+    "heading": "From nothing to a site in six commands",
+    "needs": [
+      { "name": "Node 22.12 or later", "url": "https://nodejs.org" },
+      { "name": "Claude Code", "url": "https://claude.com/claude-code" }
+    ],
+    "steps": [
+      {
+        "title": "Set it up, in a new folder",
+        "text": "init installs kiss-ssg, adds a starter site and the build scripts, and points your agent at the API contract. The three claude plugin lines install kiss's skills into this folder — init declares them, but a declared plugin is not installed until these run. The last line opens Claude Code.",
+        "code": "mkdir my-site && cd my-site\nnpx kiss-ssg@latest init\nclaude plugin marketplace add cprobert/kiss-ssg --scope project\nclaude plugin install kiss-ssg@kiss-ssg --scope project\nclaude plugin install kiss-memory@kiss-ssg --scope project\nclaude"
+      },
+      {
+        "title": "Say what you want",
+        "text": "In Claude Code, paste one of these.",
+        "prompts": [
+          {
+            "label": "A new site",
+            "note": "Change the business, the host and the address: kiss writes the sitemap, the feed and every canonical link from them.",
+            "text": "Use the kiss-site-new skill to build me a site for a small bakery in Leeds: home, menu, about, and a news section for seasonal specials. It will be served by Netlify at https://kirkgate-bakery.co.uk. Run the build check when you're done."
+          },
+          {
+            "label": "A page you already have",
+            "note": "A Claude or ChatGPT artifact, an export, a hand-written HTML file. Save it in the folder as source/original.html first.",
+            "text": "Use the kiss-site-import skill to turn source/original.html into a real site, keeping exactly how it looks. Run the build check when you're done."
+          }
+        ]
+      },
+      {
+        "title": "See it, and check it",
+        "text": "npm run dev serves the site with live reload at the address it prints (localhost:3001 by default) and keeps running — Ctrl-C to stop. npm run check reports every page, broken link and missing launch detail, and publishes nothing: exit 0 means it's right. npm run build writes the site to public/ to deploy.",
+        "code": "npm run dev\nnpm run check"
+      }
+    ]
+  },
   "reasons": [
     {
       "title": "Conventions, not questions",

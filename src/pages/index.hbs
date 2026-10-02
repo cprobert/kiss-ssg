@@ -48,27 +48,37 @@
 
 <section class="band" aria-labelledby="how">
   <div class="wrap">
-    <h2 id="how">How it works</h2>
-    <ol class="steps">
-      {{#each model.steps}}
+    <h2 id="how">{{model.setup.heading}}</h2>
+    <p class="band__lede">
+      You need
+      {{#each model.setup.needs}}{{#if @last}} and {{else}}{{#unless @first}}, {{/unless}}{{/if}}{{> "external-link" href=url text=name}}{{/each}}.
+      Everything else, these install.
+    </p>
+    <ol class="steps steps--stacked">
+      {{#each model.setup.steps}}
       <li class="steps__item">
         <h3>{{title}}</h3>
         <p>{{text}}</p>
-        <pre><code class="language-bash">{{code}}</code></pre>
+        {{#if code}}<pre><code class="language-bash">{{code}}</code></pre>{{/if}}
+        {{#if prompts}}
+        <ul class="prompts">
+          {{#each prompts}}
+          <li class="prompts__item">
+            <p class="prompts__label">{{label}}</p>
+            <p class="prompts__note">{{note}}</p>
+            <p class="prompts__text">{{text}}</p>
+          </li>
+          {{/each}}
+        </ul>
+        {{/if}}
       </li>
       {{/each}}
     </ol>
     <p class="band__note">
-      <strong>Already have a page?</strong> A Claude or ChatGPT artifact, a page
-      exported from a builder, a hand-written HTML file: instead of describing it,
-      run <code>/kiss-ssg:kiss-site-import</code> and it becomes a site that looks
-      exactly the same, with a layout, partials and content a web developer could
-      take over. <a href="{{link "guide/converting" absolute=true}}">How converting works</a>.
-    </p>
-    <p class="band__note">
-      The full setup, including the two Claude Code plugins, is in the
-      {{> "external-link" href="https://github.com/cprobert/kiss-ssg#quick-start" text="README quick start"}}. Using another agent?
-      Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
+      Converting a page you already have keeps it looking exactly the same and gives it a layout,
+      partials and content a web developer could take over:
+      <a href="{{link "guide/converting" absolute=true}}">how converting works</a>. Using another agent
+      than Claude Code? Point it at <code>node_modules/kiss-ssg/llms.txt</code> and have it run the check.
     </p>
   </div>
 </section>
