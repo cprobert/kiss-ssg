@@ -678,6 +678,10 @@ describe('.codex/config.toml records the skills for Codex', () => {
       'an inline plugins table of other plugins',
       'plugins = { "other@x" = { enabled = true } }\n',
     ],
+    // `[[plugins]]` makes plugins an array of tables, which a [plugins."…"]
+    // header cannot extend either.
+    ['an array of plugins tables', '[[plugins]]\nname = "other"\n'],
+    ['a quoted inline parent key', '"plugins" = {}\n'],
   ])(
     'leaves a file that defines a key as %s untouched, and says why',
     (_, existing) => {
