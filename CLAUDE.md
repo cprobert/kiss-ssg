@@ -83,10 +83,12 @@ npm run typecheck        # tsc --checkJs over lib/, scripts/ and bin/ — checks
 npm run format           # Prettier, write; format:check to verify
 npm run gates            # the five pre-PR gates: test, lint, typecheck, format, pack
 npx kiss-ssg init              # set a folder up for an agent: CLAUDE.md/AGENTS.md, package.json
-                               # scripts, the plugins declared in .claude/settings.json, and a
-                               # starter site when there is none. Never overwrites; --no-install.
-                               # Prints the three `claude plugin … --scope project` commands —
-                               # a declared plugin is not installed until they run.
+                               # scripts, the plugins declared in .claude/settings.json and
+                               # .codex/config.toml, and a starter site when there is none.
+                               # Never overwrites; --no-install. Prints the three
+                               # `claude plugin … --scope project` commands and the three
+                               # `codex plugin` ones (Codex installs per user) — a declared
+                               # plugin is not installed until they run.
 npx kiss-ssg check <script>    # dry-run a site's build script: report it, publish nothing.
                                # Diffs against the site's own AIKB/last-build.json when it has
                                # one, so it says what this working tree changed since the last
