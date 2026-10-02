@@ -1,1 +1,1 @@
-<a href="{{href}}" target="_blank" rel="noopener noreferrer">{{text}}<span class="visually-hidden"> (opens in a new tab)</span></a>
+<a href="{{href}}" target="_blank" rel="noopener noreferrer"{{#if icon}} class="has-icon"{{/if}}>{{#if icon}}{{> (lookup . "icon")}}{{/if}}{{text}}<span class="visually-hidden"> (opens in a new tab)</span></a>

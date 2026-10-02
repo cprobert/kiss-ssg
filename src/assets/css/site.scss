@@ -302,6 +302,19 @@ pre code {
     color: var(--ink);
     border-bottom-color: var(--brand-blue);
   }
+
+  // GitHub and npm carry their mark, so the two external destinations read
+  // as places rather than as more pages of this site.
+  a.has-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .icon {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
 }
 
 // The nav and the theme toggle sit together at the right of the header.

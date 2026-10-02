@@ -8,8 +8,8 @@
       <ul class="site-nav">
         <li><a href="{{link "guide/index" absolute=true}}" {{#isActive this href="/guide" folderMatch=true active='aria-current="page"'}}{{{active}}}{{/isActive}}>Guide</a></li>
         <li><a href="{{link "examples" absolute=true}}" {{#isActive this href="/examples" active='aria-current="page"'}}{{{active}}}{{/isActive}}>Examples</a></li>
-        <li>{{> "external-link" href="https://github.com/cprobert/kiss-ssg" text="GitHub"}}</li>
-        <li>{{> "external-link" href="https://www.npmjs.com/package/kiss-ssg" text="npm"}}</li>
+        <li>{{> "external-link" href="https://github.com/cprobert/kiss-ssg" text="GitHub" icon="icons/github"}}</li>
+        <li>{{> "external-link" href="https://www.npmjs.com/package/kiss-ssg" text="npm" icon="icons/npm"}}</li>
       </ul>
     </nav>
     {{!-- Hidden until site.js runs, because without it the button would do nothing. --}}
