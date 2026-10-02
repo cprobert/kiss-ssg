@@ -80,7 +80,7 @@ const difference = (src, out) => {
   if (a === b) return null
   let at = 0
   while (at < a.length && a[at] === b[at]) at += 1
-  return `differs at ${at}: source ${JSON.stringify(a.slice(at - 20, at + 30))} vs output ${JSON.stringify(b.slice(at - 20, at + 30))}`
+  return `differs at ${at}: source ${JSON.stringify(a.slice(Math.max(0, at - 20), at + 40))} vs output ${JSON.stringify(b.slice(Math.max(0, at - 20), at + 40))}`
 }
 
 // Each atom is something a review found, or a shape of the same family.
@@ -181,4 +181,48 @@ describe('html-split fidelity corpus', () => {
           }
         expect(failures.slice(0, 15)).toEqual([])
       })
+})
+
+// Document SHAPES. The pairs above all sit in one shape — doctype, <html>,
+// <head>, <body> — so they could not see the layout changing the document's
+// own structure. Codex (2026-10-02) found two: whitespace before <head> in a
+// document with no <body> put the whole body BEFORE the head, and a document
+// with no doctype got one, switching the browser out of quirks mode. Every
+// shape HTML allows, with each atom in it, must come back as it was.
+const SHAPES = {
+  'the full shape': (x) =>
+    `<!doctype html><html><head><title>t</title></head><body>${x}</body></html>`,
+  'no doctype': (x) =>
+    `<html><head><title>t</title></head><body>${x}</body></html>`,
+  'no <body>': (x) =>
+    `<!doctype html><html><head><title>t</title></head>${x}</html>`,
+  'no <body>, whitespace before <head>': (x) =>
+    `<!doctype html><html>\n  <head><script>var s = 1</script></head>\n  ${x}\n</html>`,
+  'a comment before <head>': (x) =>
+    `<!doctype html><html><!-- build 7 --><head><title>t</title></head><body>${x}</body></html>`,
+  'no <html>': (x) =>
+    `<!doctype html><head><title>t</title></head><body>${x}</body>`,
+  'no <head>': (x) => `<!doctype html><html><body>${x}</body></html>`,
+}
+
+describe('html-split fidelity corpus — document shapes', () => {
+  for (const [shape, wrap] of Object.entries(SHAPES))
+    it(`every atom beside a section, in ${shape}`, () => {
+      const failures = []
+      for (const atom of ATOMS) {
+        const src = wrap(`<section id="s">S</section>${atom}`)
+        let problem
+        try {
+          const result = splitDocument(src)
+          problem =
+            result.warnings.length > 0
+              ? `warned: ${result.warnings.join(' | ')}`
+              : difference(src, assemble(result))
+        } catch (error) {
+          problem = `threw: ${error.message}`
+        }
+        if (problem) failures.push(`${JSON.stringify(atom)} → ${problem}`)
+      }
+      expect(failures.slice(0, 15)).toEqual([])
+    })
 })
