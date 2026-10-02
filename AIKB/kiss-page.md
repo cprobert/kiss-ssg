@@ -29,7 +29,7 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
 
 ## Depended on by
 
-`lib/kiss.js` (`_preparePage` constructs and stacks a `KissPage`).
+`lib/page-registry.js` (`_preparePage` constructs and stacks a `KissPage`), and `lib/kiss.js` (`preloadMinifier`).
 
 ## Non-obvious behavior
 

@@ -15,7 +15,7 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/asset-copy.js` (`copyAssets`, `assetCopyOwner`, in the queued copy behind `Kiss._copyAssets()`).
 
 ## Non-obvious behavior
 

@@ -15,7 +15,7 @@ Loads the **site's own** Handlebars helpers from `config.folders.helpers` and re
 
 ## Depended on by
 
-`lib/kiss.js` only — the constructor starts `_loadHelpers()`, `generate()` awaits it, and the helpers watcher calls it again with `fresh: true`.
+`lib/kiss.js` — the constructor starts `_loadHelpers()`, `generate()` awaits it, and the helpers watcher calls it again with `fresh: true` — and `lib/rebuild.js` (`isActiveHelpersEntry`, deciding in that watcher callback whether an edit is the entry itself).
 
 ## Non-obvious behavior
 

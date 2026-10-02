@@ -70,6 +70,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Redirects (`aliases` → `_redirects`)       | `lib/redirects.js`           | `AIKB/redirects.md`           |
 | Dev server                                 | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
 | File watcher                               | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| Watch session (dispatch, rebuild queue)    | `lib/rebuild.js`             | `AIKB/rebuild.md`             |
 | String/path utils                          | `lib/utils.js`               | `AIKB/utils.md`               |
 | Cross-cutting: design & lineage            | —                            | `AIKB/design.md`              |
 | Cross-cutting: testing conventions         | `test/`                      | `AIKB/testing.md`             |

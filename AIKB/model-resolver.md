@@ -22,7 +22,7 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/page-registry.js` (`resolveModel`, in `_page()`).
 
 ## Non-obvious behavior
 

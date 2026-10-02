@@ -19,7 +19,7 @@ The findings are **advisory**. They never move `ok`, `failures` or an exit code,
 
 ## Depended on by
 
-`lib/kiss-page.js` (`extractPageFacts`, at write time, on `KissPage.audit`), `lib/kiss.js` (`auditBuild`, from `Kiss._runAudit()` in `complete()`'s settle path directly after `_checkLinks()`, latched on `_audit` and handed to `buildReport` as the report's last key, `audit` — `AIKB/build-report.md`) and `lib/config.js` (`CHECKS`, to refuse an unknown id in `audit.ignore`).
+`lib/kiss-page.js` (`extractPageFacts`, at write time, on `KissPage.audit`), `lib/build-finish.js` (`auditBuild`, from `Kiss._runAudit()` in `complete()`'s settle path directly after `_checkLinks()`, latched on `_audit` and handed to `buildReport` as the report's last key, `audit` — `AIKB/build-report.md`) and `lib/config.js` (`CHECKS`, to refuse an unknown id in `audit.ignore`).
 
 ## Non-obvious behavior
 

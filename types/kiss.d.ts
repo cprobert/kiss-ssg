@@ -913,6 +913,10 @@ declare class Kiss {
     private _rebuild;
     /** @private */
     private _handleChange;
+    /** @private */
+    private _builtAssetPath;
+    /** @private */
+    private _reload;
     /**
      * Starts the file watcher (once). Only meaningful with `dev: true`, which
      * also starts the dev server. Started for you in dev mode.
@@ -921,10 +925,6 @@ declare class Kiss {
      * @returns {this}
      */
     watch({ entry }?: WatchOptions): this;
-    /** @private */
-    private _builtAssetPath;
-    /** @private */
-    private _reload;
     /**
      * Stops the watcher and dev server, and removes an un-promoted staging
      * folder. Resolves once any in-flight rebuild has finished, so nothing is

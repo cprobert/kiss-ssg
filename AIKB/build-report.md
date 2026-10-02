@@ -32,7 +32,7 @@ Nothing.
 
 ## Depended on by
 
-`lib/kiss.js` (assembles one report per settled build in `_finishBuild()`, and re-derives it in place through `_refreshReport()` whenever something changes the failure list without settling a build — a watch asset re-copy, a helpers reload — so `ok` is never behind the log. The refresh re-runs `buildReport` and nothing else: `_finishBuild()`'s once-per-build side effects (the `KISS_REPORT` line, the `last-build.json` record, `dependency-graph.json`) stay per build, and both call sites read one `_reportInputs()`), `bin/kiss-ssg.js` (`formatReport` for `--summary`).
+`lib/build-finish.js` (assembles one report per settled build in `_finishBuild()`, and re-derives it in place through `_refreshReport()` whenever something changes the failure list without settling a build — a watch asset re-copy, a helpers reload — so `ok` is never behind the log. The refresh re-runs `buildReport` and nothing else: `_finishBuild()`'s once-per-build side effects (the `KISS_REPORT` line, the `last-build.json` record, `dependency-graph.json`) stay per build, and both call sites read one `_reportInputs()`), `bin/kiss-ssg.js` (`formatReport` for `--summary`).
 
 ## Non-obvious behavior
 

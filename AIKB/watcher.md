@@ -18,7 +18,7 @@ Watches the entry script, configured content folders, assets and helpers. Source
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/rebuild.js` (`createWatcher`, in `startWatching` — the body of `Kiss.watch()`).
 
 ## Non-obvious behavior
 
