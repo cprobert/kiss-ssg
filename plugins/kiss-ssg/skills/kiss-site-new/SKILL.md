@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 
 Build the site from the package's own shipped docs. They are the contract; this skill only sequences them, so read them rather than trusting a summary — including this one.
 
-**First, check you are the right skill.** If the person already has a working page and wants it to become a site, this is the wrong one: rebuilding from a description throws away a look they have already approved, and nothing can then tell your improvements from your mistakes. Use `kiss-site-import`, which decomposes the page they have and proves the result still renders the same. This skill is for a site that does not exist yet.
+**First, check you are the right skill.** If the person already has a working page and wants it to become a site — including one they hand you as a link to a Claude artifact, a ChatGPT share or a live page — this is the wrong one: rebuilding from a description throws away a look they have already approved, and nothing can then tell your improvements from your mistakes. Use `kiss-site-import`, which decomposes the page they have and proves the result still renders the same. This skill is for a site that does not exist yet.
 
 ## Execution instructions
 
