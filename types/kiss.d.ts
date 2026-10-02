@@ -487,11 +487,7 @@ declare class Kiss {
      * @returns {this}
      */
     copyAssets(sourceDir: string, targetDir: string): this;
-    /** @private
-     * @param {string} sourceDir
-     * @param {string} targetDir
-     * @param {boolean} [watch] tracked by the rebuild queue instead of registration results
-     */
+    /** @private */
     private _copyAssets;
     /**
      * Records a page's render failure, and remembers which stack entry owns it.
