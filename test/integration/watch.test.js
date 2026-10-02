@@ -623,8 +623,15 @@ describe('watch filesystem reconciliation', () => {
     )
     expect(await site.read('public/index.html')).toBe('PAGE')
     expect(await site.read('public/keep.txt')).toBe('keep')
+    // Removing the root fires several events, and a late one can start another
+    // whole-folder re-copy after the outputs have gone. That re-copy unlinks an
+    // existing `restored.txt` before writing it again (fs-extra,
+    // AIKB/upstream.md), so the file appearing is not the end of the rebuild:
+    // settle the queue before reading it.
+    await rebuildSettled()
     await site.touch('src/assets/restored.txt', 'restored')
     await waitFor(async () => await site.exists('public/restored.txt'))
+    await rebuildSettled()
     expect(await site.read('public/restored.txt')).toBe('restored')
   })
 

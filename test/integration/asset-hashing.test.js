@@ -108,9 +108,13 @@ describe('{{asset}} cache busting', () => {
     const before = await site.read('public/index.html')
 
     await site.touch('src/assets/robots.txt', 'User-agent: nobody')
+    // fs-extra re-copies an existing file by unlinking it first, so a read can
+    // land in that gap and find nothing: that is "not yet", not a failure
+    // (AIKB/upstream.md).
     await waitFor(
       async () =>
-        (await site.read('public/robots.txt')) === 'User-agent: nobody',
+        (await site.read('public/robots.txt').catch(() => null)) ===
+        'User-agent: nobody',
     )
     while (kiss._rebuildInFlight) await kiss._rebuildInFlight
     expect(await site.read('public/index.html')).toBe(before)

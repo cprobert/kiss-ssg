@@ -146,6 +146,36 @@ for the 60000 ms window; and on Windows, hold a file open inside a folder with
 `fs.openSync` and time `fs-extra`'s `rename` of it (`fs.watch` on the folder
 does not block the rename, so it is not a stand-in).
 
+### fs-extra re-copies an existing file by deleting it first
+
+**Observed:** fs-extra 11.4.0's `copy`, with its default `overwrite: true`, unlinks an existing
+destination file and then copies the new one in, as two separate steps
+(`node_modules/fs-extra/lib/copy/copy.js`, `onFile`). **Effect:** every watch-mode asset re-copy
+(`lib/assets.js` `copyAssets` → `fs.copy` over the whole folder) leaves each already-copied asset
+briefly absent. A reader in that gap — a test's `readFile`, or a dev-server request — gets
+`ENOENT`, or a 404. Two integration tests hit it under full-suite load on Windows (2026-10-02,
+`AIKB/testing.md`).
+
+**Why it is accepted rather than worked around (measured 2026-10-02, Windows 11, Node 22):** five
+seconds of continuous re-copying against one continuous reader, three ways —
+
+| Strategy                    | Whole reads | Reader failures                        | Writer failures                        |
+| --------------------------- | ----------- | -------------------------------------- | -------------------------------------- |
+| fs-extra `copy` (today)     | 4,495       | `ENOENT` 694, `EBUSY` 13,177           | none                                   |
+| `fsp.copyFile` in place     | 7,005       | **370 truncated reads**, `EBUSY` 1,574 | none                                   |
+| temp file, then `fs.rename` | 10,385      | none                                   | **`EPERM` 4,020 — the update is lost** |
+
+On Windows no strategy gives a reader a clean result while a copy is in flight: in place trades
+the missing file for a half-written one, and rename-into-place cannot replace a file a reader
+holds. The gap is a dev-mode, mid-rebuild state that the next request or reload resolves, so it
+is documented here and tests wait for the rebuild to settle (or treat a missing file as "not
+yet") before reading.
+
+**Re-check:** read `onFile` in `node_modules/fs-extra/lib/copy/copy.js` for the
+`unlink` before `copyFile`. To re-measure, race a loop of `fs.copy(srcDir, existingDestDir)`
+against a loop of `fs.readFile(destFile)` with no wait, and count error codes; the three-way
+harness above was a scratch script of about sixty lines and is described here rather than kept.
+
 ### `@eslint/js` requires a higher Node than kiss does
 
 **Observed:** `engines.node` is 22.12; `@eslint/js` needs 22.13. **Effect:** on

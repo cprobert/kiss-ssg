@@ -86,6 +86,15 @@ out to leak state, check every seam for the same leak before the next commit.
   record. Test-level reproduction: 2 tests × 100 repeats under 14 CPU/disk burner processes, **0
   failures**; the full suite under load is the next attempt.
 
+- **2026-10-02 — the flake: proven by injection, fixed in the tests; a separate defect recorded,
+  not fixed.** Load alone never reproduced the test failure (also two clean full-suite rounds
+  under load). A delay injected between fs-extra's unlink and copy, in `node_modules` only, made
+  `asset-hashing.test.js` fail 11/11, and pass 11/11 after its `waitFor` predicate treated a
+  missing file as "not yet". The `watch.test.js` change (settle the queue before reading) rests on
+  the mechanism, not a red run: the injection cannot force its second overlapping re-copy. The
+  injection also exposed a **real engine defect**: a copy that fails partway never records what it
+  wrote, so those outputs are never cleaned up (`AIKB/assets.md`, Known issue). Operator's call:
+  **record it, fix it on a later branch.**
 - **2026-10-02 — the env readers move to `lib/check.js`.** The contract critique found
   `aikbRecordRequested`'s only caller moving to build-finish.js. Both readers, and
   `CHECK_MODE_OFF`, go to `lib/check.js`, beside the protocol that sets `KISS_CHECK` / `KISS_AIKB`
