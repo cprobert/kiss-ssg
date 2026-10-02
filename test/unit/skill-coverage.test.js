@@ -521,6 +521,29 @@ const CONTRADICTIONS = [
     ],
   },
   {
+    why: 'the plugins serve Claude Code AND Codex (measured 2026-10-02, Codex CLI 0.157.1: codex plugin marketplace add reads the same marketplace) — a doc calling them Claude Code\'s, or Codex "another agent", sends a Codex user to llms.txt alone when init prints the three codex plugin lines',
+    patterns: [
+      /the plugins are Claude Code's/i,
+      /If you are an agent in Claude Code, two plugins/,
+      /\*\*Other agents\*\* \(Codex/,
+    ],
+  },
+  {
+    why: 'Codex DOES have a project layer (re-measured 2026-10-02, Codex CLI 0.157.1, with a well-formed trust entry): a trusted project\'s .codex/config.toml enables plugins for that folder, and init writes one. What is per user is the install, and codex plugin add also enables them everywhere. "No project scope" was written into five files from a test whose trust key was malformed',
+    patterns: [/no project scope/i],
+  },
+  {
+    why: 'redirects.format is unset by default (no host file until a site names one); GUIDE.md still marked netlify as the default in the same table that said otherwise, found by the Claude clean room 2026-10-02',
+    patterns: [
+      /'netlify'`\s*_\(default\)_/,
+      /the default writes a file those hosts ignore/,
+    ],
+  },
+  {
+    why: 'there are twelve examples since example 12 (a single-file page converted); kiss-site-new still said eleven, found by the Claude clean room 2026-10-02',
+    patterns: [/eleven runnable sites/i],
+  },
+  {
     why: 'Claude Code does not offer plugins a settings file declares (probe, 2026-09-26) — a doc must not promise that opening the folder installs them',
     patterns: [/Claude Code offers them the next time it opens/i],
   },

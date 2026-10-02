@@ -65,6 +65,7 @@ describe('kiss-ssg init', () => {
       'CLAUDE.md',
       'AGENTS.md',
       '.claude/settings.json',
+      '.codex/config.toml',
       'src/pages/index.hbs',
     ])
       expect(fs.existsSync(path.join(dir, f)), f).toBe(true)
@@ -104,6 +105,70 @@ describe('kiss-ssg init', () => {
       'node_modules/',
     )
     expect(init.stdout).toMatch(/append\s+\.gitignore/)
+  })
+
+  // Codex beside Claude Code: the wrapper prints both agents' plugin lines,
+  // each followed by its own "Run …" line, and AGENTS.md carries Codex's.
+  const CODEX_LINES = [
+    'codex plugin marketplace add cprobert/kiss-ssg',
+    'codex plugin add kiss-ssg@kiss-ssg',
+    'codex plugin add kiss-memory@kiss-ssg',
+  ]
+
+  it('prints the Codex plugin lines after the Claude ones, and writes them into AGENTS.md', () => {
+    const dir = emptySite()
+    const init = run(dir, 'init', '--no-install')
+    expect(init.status, init.stderr).toBe(0)
+    const out = init.stdout
+    const order = [
+      'claude plugin install kiss-memory@kiss-ssg --scope project',
+      'Run `claude` in this folder.',
+      ...CODEX_LINES,
+      'Run `codex` in this folder.',
+    ].map((line) => {
+      const at = out.indexOf(line)
+      expect(at, line).toBeGreaterThan(-1)
+      return at
+    })
+    expect(order).toEqual([...order].sort((a, b) => a - b))
+    const agents = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8')
+    for (const line of CODEX_LINES) expect(agents).toContain(line)
+  })
+
+  // Every site init'd before the Codex section existed has an AGENTS.md that
+  // points at llms.txt and says nothing else; re-running init must add it.
+  it('adds the Codex section to an AGENTS.md an earlier init wrote, once', () => {
+    const dir = emptySite()
+    const old =
+      '## kiss-ssg\n\nThis is a kiss-ssg static site. Before changing the build script, read `node_modules/kiss-ssg/llms.txt`.\n'
+    fs.writeFileSync(path.join(dir, 'AGENTS.md'), old)
+    const init = run(dir, 'init', '--no-install')
+    expect(init.status, init.stderr).toBe(0)
+    expect(init.stdout).toMatch(/append\s+AGENTS\.md/)
+    const agents = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8')
+    expect(agents.startsWith(old)).toBe(true)
+    for (const line of CODEX_LINES) expect(agents).toContain(line)
+    const before = snapshot(dir)
+    const again = run(dir, 'init', '--no-install')
+    expect(again.stdout).toMatch(/skip\s+AGENTS\.md/)
+    expect(snapshot(dir)).toEqual(before)
+  })
+
+  it('appends the missing tables to a .codex/config.toml already there, once', () => {
+    const dir = emptySite()
+    const own = 'model = "o4"\r\n'
+    fs.mkdirSync(path.join(dir, '.codex'))
+    fs.writeFileSync(path.join(dir, '.codex/config.toml'), own)
+    const init = run(dir, 'init', '--no-install')
+    expect(init.status, init.stderr).toBe(0)
+    expect(init.stdout).toMatch(/append\s+\.codex\/config\.toml/)
+    const toml = fs.readFileSync(path.join(dir, '.codex/config.toml'), 'utf8')
+    expect(toml.startsWith(own)).toBe(true)
+    expect(toml).toContain('[plugins."kiss-memory@kiss-ssg"]')
+    const before = snapshot(dir)
+    const again = run(dir, 'init', '--no-install')
+    expect(again.stdout).toMatch(/skip\s+\.codex\/config\.toml/)
+    expect(snapshot(dir)).toEqual(before)
   })
 
   // An engine folder that holds no package is not an installed engine.

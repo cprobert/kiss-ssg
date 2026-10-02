@@ -1,6 +1,6 @@
 {
   "toolkit": {
-    "heading": "What you need to build a website with Claude Code",
+    "heading": "What you need to build a website with AI",
     "intro": "Install the first two before you start. The other two keep your work safe and put it online — free plans are plenty for a small site.",
     "tools": [
       {
@@ -12,12 +12,23 @@
         "what": "Runs kiss and builds your site. Version 22.12 or later — the LTS download is fine."
       },
       {
-        "icon": "icons/claude",
-        "name": "Claude Code",
-        "url": "https://claude.com/claude-code",
+        "icon": "icons/agent",
+        "name": "Claude Code or Codex",
         "need": "Required",
         "level": "required",
-        "what": "The coding agent that writes the site for you. Needs a Claude account."
+        "what": "The coding agent that writes the site for you: Anthropic's Claude Code or OpenAI's Codex. Either works with kiss's skills, and each needs its own account — a Claude account for Claude Code, a ChatGPT account for Codex.",
+        "options": [
+          {
+            "icon": "icons/claude",
+            "name": "Claude Code",
+            "url": "https://claude.com/claude-code"
+          },
+          {
+            "icon": "icons/codex",
+            "name": "Codex",
+            "url": "https://learn.chatgpt.com/docs/codex/cli"
+          }
+        ]
       },
       {
         "icon": "icons/git",
@@ -25,12 +36,22 @@
         "url": "https://git-scm.com",
         "need": "Recommended",
         "level": "recommended",
-        "what": "Keeps every version of your site, so any change can be undone. Push it to a service such as GitHub to keep a copy online — the hosts below publish straight from there.",
+        "what": "Keeps every version of your site, so any change can be undone. Push it to GitHub, GitLab or Bitbucket to keep a copy online — the hosts below publish straight from GitHub, and most from GitLab or Bitbucket too.",
         "options": [
           {
             "icon": "icons/github",
             "name": "GitHub",
             "url": "https://github.com"
+          },
+          {
+            "icon": "icons/gitlab",
+            "name": "GitLab",
+            "url": "https://gitlab.com"
+          },
+          {
+            "icon": "icons/bitbucket",
+            "name": "Bitbucket",
+            "url": "https://bitbucket.org"
           }
         ]
       },
@@ -72,16 +93,27 @@
   },
   "setup": {
     "heading": "From nothing to a live website in six commands",
-    "intro": "With Node.js and Claude Code installed, these do the rest.",
+    "intro": "With Node.js and Claude Code or Codex installed, these do the rest.",
     "steps": [
       {
         "title": "Set it up, in a new folder",
-        "text": "init installs kiss-ssg, adds a starter site and the build scripts, and points your agent at the API contract. The three claude plugin lines install kiss's skills into this folder — init declares them, but a declared plugin is not installed until these run. The last line opens Claude Code.",
-        "code": "mkdir my-site && cd my-site\nnpx kiss-ssg@latest init\nclaude plugin marketplace add cprobert/kiss-ssg --scope project\nclaude plugin install kiss-ssg@kiss-ssg --scope project\nclaude plugin install kiss-memory@kiss-ssg --scope project\nclaude"
+        "text": "init installs kiss-ssg, adds a starter site and the build scripts, and points your agent at the API contract. The three plugin lines install kiss's skills, and the last line opens your agent. Use the box for the agent you have.",
+        "boxes": [
+          {
+            "label": "Claude Code",
+            "code": "mkdir my-site && cd my-site\nnpx kiss-ssg@latest init\nclaude plugin marketplace add cprobert/kiss-ssg --scope project\nclaude plugin install kiss-ssg@kiss-ssg --scope project\nclaude plugin install kiss-memory@kiss-ssg --scope project\nclaude",
+            "note": "The plugins install for this folder. init declares them in the site's settings, but a declared plugin is not installed until these lines run."
+          },
+          {
+            "label": "Codex",
+            "code": "mkdir my-site && cd my-site\nnpx kiss-ssg@latest init\ncodex plugin marketplace add cprobert/kiss-ssg\ncodex plugin add kiss-ssg@kiss-ssg\ncodex plugin add kiss-memory@kiss-ssg\ncodex",
+            "note": "init enables the plugins for this folder in .codex/config.toml, but Codex installs them once, for your user, and that also switches them on in every folder: your next site needs only the first two lines and codex."
+          }
+        ]
       },
       {
         "title": "Say what you want",
-        "text": "In Claude Code, paste one of these.",
+        "text": "In Claude Code or Codex, paste one of these.",
         "prompts": [
           {
             "label": "A new site",
@@ -122,24 +154,39 @@
   ],
   "sites": [
     {
-      "name": "Learna",
-      "url": "https://www.learna.ac.uk/"
-    },
-    {
       "name": "Diploma MSc",
-      "url": "https://www.diploma-msc.com/"
+      "url": "https://www.diploma-msc.com/",
+      "image": "img/sites/diploma-msc.webp",
+      "alt": "Diploma MSc's home page: a banner reading Online Postgraduate Qualifications For Healthcare Professionals with a course search, above the University of South Wales and University of Buckingham logos.",
+      "description": "Online postgraduate certificates, diplomas, MScs and MBAs for healthcare professionals, delivered with university partners including the University of Buckingham."
     },
     {
       "name": "A1K9 Training",
-      "url": "https://www.a1k9training.co.uk/"
-    },
-    {
-      "name": "K9 Solutions",
-      "url": "https://k9solutions.uk/"
+      "url": "https://www.a1k9training.co.uk/",
+      "image": "img/sites/a1k9-training.webp",
+      "alt": "A1K9 Training's home page: a woman hugging a pale dog behind the heading A well behaved dog is a joy to live with, under a dark green navigation bar.",
+      "description": "Gaynor Probert's dog behaviour and training academy: weekend group courses at Pontarddulais, and behaviour consultations at the academy or at home."
     },
     {
       "name": "Pro Plumbing",
-      "url": "https://pro-plumbing.trade/"
+      "url": "https://pro-plumbing.trade/",
+      "image": "img/sites/pro-plumbing.webp",
+      "alt": "Pro Plumbing's home page: the heading Local plumber in Aberdare with a WhatsApp Greg button and Google reviews, beside a photo of a fitted grey bathroom with a lit round mirror.",
+      "description": "Greg Probert's plumbing business in Aberdare and the Cynon Valley: small jobs and bigger installs, booked by WhatsApp or a call-back."
+    },
+    {
+      "name": "K9 Solutions",
+      "url": "https://k9solutions.uk/",
+      "image": "img/sites/k9-solutions.webp",
+      "alt": "K9 Solutions' home page: the heading Better walks start here in white on black, beside a photo of two German Shepherds lying in front of Cyfarthfa Castle.",
+      "description": "One-to-one dog training in Merthyr Tydfil: practical coaching for puppies, family dogs and problem behaviour, at Cyfarthfa Park, at home or remotely."
+    },
+    {
+      "name": "Learna",
+      "url": "https://www.learna.ac.uk/",
+      "image": "img/sites/learna.webp",
+      "alt": "Learna's home page: a navy banner reading Welcome to Learna with a course search box, above Medical School and Business School course tiles.",
+      "description": "Online postgraduate education for medical and business professionals: PGDips, MScs, exam revision and an eMBA, across a medical school and a business school."
     }
   ]
 }

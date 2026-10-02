@@ -85,6 +85,7 @@ if (process.argv[2] === 'init') {
       'CLAUDE.md': read('CLAUDE.md'),
       'AGENTS.md': read('AGENTS.md'),
       '.claude/settings.json': read('.claude/settings.json'),
+      '.codex/config.toml': read('.codex/config.toml'),
       '.gitignore': read('.gitignore'),
     },
     starter,

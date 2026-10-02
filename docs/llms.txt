@@ -4,7 +4,7 @@
 
 ## Pages
 
-- [Home](https://cprobert.github.io/kiss-ssg/): kiss-ssg lets Claude Code build a real website you can host anywhere, or turn a site you made in Claude or ChatGPT into one that keeps its look. Every build is checked before it goes live. Free and open source.
+- [Home](https://cprobert.github.io/kiss-ssg/): kiss-ssg lets an AI coding agent – Claude Code or Codex – build a professional website you can host anywhere, or turn a site you made in Claude or ChatGPT into one that keeps its look. Every build is checked before it goes live. Free and open source.
 - [Examples](https://cprobert.github.io/kiss-ssg/examples/): Eleven runnable kiss-ssg sites that ship inside the package: whole sites to copy by situation, and short scripts that show one feature each.
 
 ## Guide
