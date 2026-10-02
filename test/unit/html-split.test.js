@@ -54,7 +54,8 @@ describe('parseHtml', () => {
     // Never re-serialised, so quoting, order and spacing survive — which is
     // what makes the assembly round trip byte-comparable.
     const nodes = parseHtml('<a  href=\'/x\'   data-n=3 class="b c">t</a>')
-    expect(nodes[0].attrs).toBe('  href=\'/x\'   data-n=3 class="b c"')
+    expect(nodes[0].open).toBe('<a  href=\'/x\'   data-n=3 class="b c">')
+    expect(nodes[0].close).toBe('</a>')
     expect(attr(nodes[0], 'href')).toBe('/x')
     expect(attr(nodes[0], 'data-n')).toBe('3')
     expect(attr(nodes[0], 'class')).toBe('b c')
@@ -201,33 +202,14 @@ describe('regions', () => {
     expect(nameRegions(regions).map((r) => r.name)).toEqual(['band', 'band-2'])
   })
 
-  it("carries each region's root classes, for the stylesheet split", () => {
-    // The clean-room finding: `name` is what a region MEANS and `classes` is
-    // what its markup is called, and `splitStylesheet` matches the second.
-    // A page whose hero is `<section class="lede">` is the normal case, and
-    // passing the names to the stylesheet matched nothing.
-    const doc = parseHtml(
-      '<body><header class="masthead bar">h</header><section class="lede">a</section><section>b</section></body>',
+  it('reads attributes as the tokenizer does, not by pattern', () => {
+    // Codex review: a regex found `class='site-header'` written INSIDE
+    // another attribute's quoted value, and classed a hero as chrome.
+    const [node] = parseHtml(
+      `<div data-example="set class='site-header' here" class="hero">A</div>`,
     )
-    const { regions } = findRegions(doc)
-    expect(regions.map((r) => r.classes)).toEqual([
-      ['masthead', 'bar'],
-      ['lede'],
-      [],
-    ])
-    // And the spelling the docs now prescribe produces a usable list.
-    expect(regions.flatMap((r) => r.classes)).toEqual([
-      'masthead',
-      'bar',
-      'lede',
-    ])
-  })
-
-  it('keeps classes through a rename', () => {
-    const doc = parseHtml('<body><section class="lede">a</section></body>')
-    const named = nameRegions(findRegions(doc).regions, ['hero'])
-    expect(named[0].name).toBe('hero')
-    expect(named[0].classes).toEqual(['lede'])
+    expect(attr(node, 'class')).toBe('hero')
+    expect(regionKind(node)).toBe('section')
   })
 
   it('finds a tag anywhere in the tree', () => {
@@ -271,9 +253,9 @@ describe('splitDocument', () => {
 
   it('reports inline assets without removing them', () => {
     // Reported, not lifted. Lifting means choosing a filename, writing the file
-    // and rewriting the tag — which the caller is doing anyway, because the CSS
-    // has to go through splitStylesheet. Removing them here broke the assembly
-    // round trip against a real page by losing its script tags outright.
+    // and rewriting the tag, which only the caller can do. Removing them here
+    // broke the assembly round trip against a real page by losing its script
+    // tags outright.
     const result = splitDocument(page)
     expect(result.assets.styles).toEqual(['.a{color:red}'])
     expect(result.assets.scripts[0].content).toBe('console.log(1)')
@@ -516,17 +498,19 @@ describe('ways past the expression escape', () => {
   })
 
   it('does not let two text nodes join into an expression', () => {
-    // A stray close tag is dropped, which left the text either side of it as
-    // two siblings that the printer joined with nothing — assembling a live
-    // `{{…}}` out of two harmless halves. The source contains no `{{`, so
-    // there was nothing for the escape to escape and `expressions` reported
-    // an empty list beside an executable partial.
+    // The hand-rolled parser dropped a stray close tag, which left the text
+    // either side of it as two siblings that the printer joined with nothing —
+    // assembling a live `{{…}}` out of two harmless halves. Since htmlparser2
+    // (2026-10-02), source the tokenizer reports nothing for is kept as text,
+    // so the stray `</span>` stays between the braces and no expression ever
+    // forms: not in the output, and so not in `expressions` either.
     const html = page(
       `<section id="a">Pricing{</span>{config.secrets.apiKey}}</section>`,
     )
     const result = splitDocument(html)
-    expect(assemble(result, ctx)).not.toContain('LEAKED')
-    expect(result.expressions.join(' ')).toContain('config.secrets.apiKey')
+    const out = assemble(result, ctx)
+    expect(out).not.toContain('LEAKED')
+    expect(out).toContain('Pricing{</span>{config.secrets.apiKey}}')
   })
 
   it('escapes the doctype on the fragment branch', () => {

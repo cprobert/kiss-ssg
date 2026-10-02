@@ -310,11 +310,18 @@ const COVERAGE = [
       skill('kiss-memory', 'kiss-site-brief'),
     ],
   },
-  // The two splitters, and the four things about them an agent gets wrong by
+  // The splitter, and the things about a conversion an agent gets wrong by
   // reaching for the obvious instead of the documented behaviour.
   {
-    feature: 'splitDocument and splitStylesheet do the mechanical half',
-    pattern: /splitDocument[\s\S]*splitStylesheet/,
+    feature:
+      'splitDocument does the mechanical half; the stylesheet goes in whole',
+    pattern: /splitDocument[\s\S]*copied in whole/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
+    feature:
+      'the stylesheet stays plain .css — Sass reads plain CSS differently',
+    pattern: /Do not rename it `\.scss`/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
@@ -325,20 +332,8 @@ const COVERAGE = [
   },
   {
     feature:
-      'a repeated section gives _hero-2.scss and merging it moves the cascade',
-    pattern: /_hero-2\.scss[\s\S]*must not merge/,
-    skills: [skill('kiss-ssg', 'kiss-site-import')],
-  },
-  {
-    feature:
       'inline assets are reported, not removed — the lift is the caller’s',
     pattern: /reports.{0,40}inline assets, it does not remove them/,
-    skills: [skill('kiss-ssg', 'kiss-site-import')],
-  },
-  {
-    feature:
-      'section names are pitched at page sections, not elements (51 partials)',
-    pattern: /51 partials/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
@@ -357,12 +352,6 @@ const COVERAGE = [
   },
   // The 2026-10-01 clean-room run. Every row below is a mistake it actually
   // made, or a silent failure it only avoided by reading example 12 unprompted.
-  {
-    feature:
-      "splitStylesheet's sections are CSS class names, not the region names",
-    pattern: /`classes`, NOT `name`[\s\S]*matches the CLASS NAMES/,
-    skills: [skill('kiss-ssg', 'kiss-site-import')],
-  },
   {
     feature: '{{@root.config}} inside a partial handed a model slice',
     pattern: /@root\.config[\s\S]*renders \*\*empty\*\*/,
@@ -489,18 +478,8 @@ const CONTRADICTIONS = [
     patterns: [/Claude Code offers them the next time it opens/i],
   },
   {
-    why: 'splitStylesheet cuts CONTIGUOUS runs: a section appearing twice yields _hero.scss and _hero-2.scss, and merging them across the gap reorders the cascade. Merging is the output everyone asks for first, which is why the wrong instruction is banned rather than merely counter-stated',
-    patterns: [
-      /merge (?:the |those |any )?(?:numbered |repeated |duplicate )?(?:Sass )?partials/i,
-      /combine `?_[a-z-]+-2\.scss`? (?:back )?into/i,
-    ],
-  },
-  {
-    why: 'splitStylesheet matches CSS class names, so `sections: regions.map(r => r.name)` is wrong the moment a region was renamed off its class — which step 4 says is normal. Measured in the 2026-10-01 clean room: nine partials collapsed into one, with no error. `regions.flatMap(r => r.classes)` is the spelling; the old one is banned because it looks right and fails silently',
-    patterns: [
-      /sections: regions\.map\(/,
-      /sections:\s*regions\.map\(\(r\) => r\.name\)/,
-    ],
+    why: 'splitStylesheet was removed before 2.7.0 shipped (2026-10-02): the stylesheet is copied in whole as plain .css, because Sass reads plain CSS differently in more places than a translation could keep up with. A doc still telling an agent to split it names a function that does not exist',
+    patterns: [/splitStylesheet/, /parseStylesheet/],
   },
   {
     why: "escaping {{ is ON by default and the whole point: unescaped, a foreign document's braces are COMPILED — an Alpine page evaluates to empty, and a hostile one gets {{config.…}} into an attribute of the built page. A doc saying the option defaults to false tells an agent the surface is closed when it is open, which is worse than saying nothing",

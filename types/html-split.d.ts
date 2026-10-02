@@ -1,19 +1,68 @@
 /**
+ * @typedef {Object} HtmlNode
+ * @property {'element'|'text'|'comment'|'doctype'} type
+ * @property {string} [tag] lower-cased tag name — what every decision keys on
+ * @property {string} [name] the tag name AS WRITTEN, present only when it differs
+ * from `tag`. Case matters inside `<svg>`: `<linearGradient>` is not
+ * `<lineargradient>`
+ * @property {string} [open] the opening tag exactly as the source wrote it,
+ * `<` to `>` — empty for an element a stray close tag implied
+ * @property {string} [close] the closing tag exactly as written, or empty when
+ * the source wrote none: a void element, a self-closed one inside `<svg>`, or
+ * one closed by its parent or by the end of the document
+ * @property {Record<string, string>} [attribs] the attributes, as the parser
+ * read them — names lower-cased, values undecoded. Read with `attr()`; never
+ * printed, because `open` is
+ * @property {HtmlNode[]} [children]
+ * @property {string} [text] text, comment or doctype source, exactly as written
+ * @property {boolean} [raw] set on text inside a raw-text element, where it is
+ * not markup and whitespace is never a gap
+ */
+/**
+ * @typedef {Object} HtmlRegion
+ * @property {'chrome'|'section'} kind where the region belongs — the layout, or the page
+ * @property {string} tag
+ * @property {string} name the proposed partial name
+ * @property {HtmlNode} node
+ */
+/**
  * Parses an HTML document or fragment into a node tree.
  *
- * Deliberately not a conforming parser: it does not imply omitted tags, fix
- * mis-nesting or build a `<tbody>` nobody wrote. The input this exists for is
- * machine-written — a Claude or ChatGPT artifact, an exported page — which is
- * well-formed and explicitly closed. A stray close tag is dropped rather than
- * restructuring the tree around it, so malformed input degrades into a flatter
- * cut rather than a wrong one.
+ * THE TOKENIZER IS htmlparser2's, AND THE TREE IS MADE OF SOURCE SLICES. Until
+ * 2026-10-02 this was a hand-rolled scanner, and roughly half of what five
+ * review rounds found was that scanner's reading of HTML differing from a
+ * browser's: a `<` before a non-letter, `/>` on an HTML element, an apostrophe
+ * in an unquoted value, attributes read by a regex that matched text inside
+ * another attribute's quotes. htmlparser2 is a maintained tokenizer that
+ * reads those the way the HTML spec does, and — unlike parse5 — never adds an
+ * `<html>`, `<body>` or `<tbody>` the page did not write, which is what a
+ * conversion that gives back what it was given needs. Recorded in
+ * `AIKB/upstream.md`.
+ *
+ * Two choices make the tree lossless whatever the tokenizer decides:
+ *
+ *   1. Every tag is kept as the exact source text that spelled it (`open`,
+ *      `close`), and printed from there. Quoting, attribute order, case, a
+ *      trailing `/`, a malformed close tag — all of it is the source's own
+ *      bytes, never re-serialised.
+ *   2. Any source the tokenizer reports no event for is kept as text. It does
+ *      drop malformed input silently — `</ x>`, a trailing unfinished `<b` —
+ *      so every gap between two events is filled from the source. Each byte of
+ *      the document belongs to exactly one node, by construction.
+ *
+ * What the tokenizer still decides is the STRUCTURE: which element a node
+ * sits in. It closes a `<p>` at the next `<div>` and an `<li>` at the next
+ * `<li>`, as a browser does; such an element simply has no `close`.
  *
  * @param {string} src
  * @returns {HtmlNode[]}
  */
 export function parseHtml(src: string): HtmlNode[];
 /**
- * The value of one attribute on a node, read from the raw attribute text.
+ * The value of one attribute on a node, as the parser read it — so a
+ * `class='site-header'` written INSIDE another attribute's quoted value is
+ * text, not an attribute. The regex this replaced matched it, and classed a
+ * hero as page furniture (Codex review, 2026-10-02).
  *
  * @param {HtmlNode} node
  * @param {string} name
@@ -188,34 +237,36 @@ export type HtmlNode = {
     /**
      * the tag name AS WRITTEN, present only when it differs
      * from `tag`. Case matters inside `<svg>`: `<linearGradient>` is not
-     * `<lineargradient>`, and the serialiser emits this
+     * `<lineargradient>`
      */
     name?: string;
     /**
-     * everything in the opening tag after its name,
-     * exactly as written — a trailing `/` included
+     * the opening tag exactly as the source wrote it,
+     * `<` to `>` — empty for an element a stray close tag implied
      */
-    attrs?: string;
+    open?: string;
+    /**
+     * the closing tag exactly as written, or empty when
+     * the source wrote none: a void element, a self-closed one inside `<svg>`, or
+     * one closed by its parent or by the end of the document
+     */
+    close?: string;
+    /**
+     * the attributes, as the parser
+     * read them — names lower-cased, values undecoded. Read with `attr()`; never
+     * printed, because `open` is
+     */
+    attribs?: Record<string, string>;
     children?: HtmlNode[];
     /**
-     * text, comment or doctype content
+     * text, comment or doctype source, exactly as written
      */
     text?: string;
     /**
-     * set on the single text child of a raw-text element
+     * set on text inside a raw-text element, where it is
+     * not markup and whitespace is never a gap
      */
     raw?: boolean;
-    /**
-     * written as `<tag/>` inside `<svg>` or
-     * `<math>`, where that closes it: no children and no close tag. On an HTML
-     * element the slash closes nothing, so it is never set there
-     */
-    selfClosed?: boolean;
-    /**
-     * the document never wrote this element's close
-     * tag — an ancestor's closed it, or the document ended — so none is written back
-     */
-    unclosed?: boolean;
 };
 export type HtmlRegion = {
     /**
@@ -227,11 +278,6 @@ export type HtmlRegion = {
      * the proposed partial name
      */
     name: string;
-    /**
-     * the class names on the region's root element, which
-     * are what `splitStylesheet`'s `sections` matches on — see `findRegions`
-     */
-    classes: string[];
     node: HtmlNode;
 };
 export type HtmlSplitResult = {

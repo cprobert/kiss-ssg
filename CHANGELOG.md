@@ -14,33 +14,34 @@ description of a site, not the site; `kiss-site-migrate` is for moving across
 kiss versions. The single-file page appeared in the shipped guidance only as
 the shape to avoid.
 
-Two new exports convert one, and they do the half that can be proved:
+A new export converts one, and it does the half that can be proved:
 
 ```js
-import { splitDocument, splitStylesheet } from 'kiss-ssg'
+import { splitDocument } from 'kiss-ssg'
 
 const { layout, page, partials, assets, regions } = splitDocument(html)
-const sheet = splitStylesheet(css, {
-  sections: regions.flatMap((r) => r.classes),
-})
 ```
 
 `splitDocument` cuts the document into a layout holding `<head>` and the
 chrome, one partial per region under `site/` or `sections/`, and a page view
-that is a list of partial calls. `splitStylesheet` cuts the stylesheet into
-Sass partials. `parseHtml`, `findTag` and `parseStylesheet` come with them, for
+that is a list of partial calls. `parseHtml` and `findTag` come with it, for
 inspecting a document without splitting it.
 
-**What they guarantee is that they changed nothing.** Assembling the layout,
-partials and page view back through Handlebars reproduces the document —
-attributes verbatim, a self-closing `<path/>` still self-closing, the space
-between `<em>a</em> <em>b</em>` intact, every body node still in the place it
-was written (a `<script>` included, so one before the content still runs
-before it), `<main>` re-emitted only if it was there. The stylesheet is cut
-into contiguous runs and never gathered by selector, so the cascade cannot
-move. Measured on a real 21KB page: 118 elements in, 118 out, same order; and
-on a real 14KB stylesheet, compiled byte-identically with its longest line
-down from 1,803 characters to 82.
+**The stylesheet is copied in whole**, as `src/assets/css/site.css`, which kiss
+serves unchanged. It is not split and not renamed `.scss`: Sass reads plain CSS
+differently in places — `#{` inside a string is interpolated, a string
+`@import` becomes a compile-time import, native nesting is flattened — and the
+approved look is the thing being preserved.
+
+**What it guarantees is that it changed nothing.** Assembling the layout,
+partials and page view back through Handlebars reproduces the document — every
+tag exactly as written, no whitespace added anywhere (a line break appears only
+where the page had one, so a minified page stays dense inside its partials),
+every body node still in the place it was written (a `<script>` included, so
+one before the content still runs before it), `<main>` re-emitted only if it
+was there. Measured on a real 21KB page: 118 elements in, 118 out, same order.
+The page is read by **htmlparser2**, a new runtime dependency, which reads HTML
+the way the spec does without adding tags the page never wrote.
 
 **`{{` in the source is escaped, and it is the one byte a conversion changes
 on purpose.** What `splitDocument` writes is `.hbs`, and kiss compiles `.hbs`
@@ -67,21 +68,19 @@ not give the input back:
   renders the same; the bytes differ, and inside `<script>` or `<style>`,
   where a character reference is not decoded, so does the text.
 - **A node written between two sections** — a `<nav>`, an `<aside>`, a
-  `<script>`, a comment, stray text — comes out after all of them. Chrome goes in the
-  layout so every page gets it, and sections render at a single content
+  `<script>`, a comment, stray text — comes out after all of them. Chrome goes
+  in the layout so every page gets it, and sections render at a single content
   block, so an interleaved node has nowhere else to go. Move it above the
   first section or below the last if the order matters.
 
-**What they refuse to do is guess.** You name the regions — the proposals come
+**What it refuses to do is guess.** You name the regions — the proposals come
 from `id` and class, which are markup names, so a hero carrying `id="top"` is
 proposed as `top`. You decide which words become model fields. You lift the
-inline `<style>` and `<script>`, which are reported rather than removed. Those
-are judgements nothing could check, and a module that made them would produce
-field names no human would have chosen.
-
-`sections` takes **CSS class names**, not the region names you chose — which is
-why each region carries a `classes` array. Passing the names instead matches
-nothing and collapses the whole sheet into one file, with no error.
+inline `<style>` and `<script>`, which are reported rather than removed — each
+script with its `attrs` and `type`, because a `module`, JSON-LD or an import
+map is not lifted as a classic script. Those are judgements nothing could
+check, and a module that made them would produce field names no human would
+have chosen.
 
 ### The `kiss-site-import` skill, and example 12
 

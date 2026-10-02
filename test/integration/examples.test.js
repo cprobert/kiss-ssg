@@ -433,11 +433,18 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(countHtmlFiles(dir)).toBe(2)
       expect(existsSync(path.join(dir, '404.html'))).toBe(true)
 
-      // The stylesheet is Sass now, so the build compiles one CSS file and the
-      // eight `_partial.scss` beside it are skipped rather than emitted.
-      expect(existsSync(path.join(dir, 'css/site.css'))).toBe(true)
+      // The stylesheet was copied in whole as plain CSS, so the build serves
+      // it unchanged and runs nothing through Sass.
+      expect(readFileSync(path.join(dir, 'css/site.css'), 'utf8')).toBe(
+        readFileSync(
+          path.join(
+            examplesDir,
+            '12-from-a-single-file/src/assets/css/site.css',
+          ),
+          'utf8',
+        ),
+      )
       expect(countMatching(dir, /\.scss$/)).toBe(0)
-      expect(output(r)).toMatch(/Skipped 8 Sass partials/)
 
       // The example's own claim, run as the example documents it rather than
       // re-implemented here: the built body has the same elements, in the same

@@ -1,17 +1,17 @@
 ---
 name: kiss-site-import
-description: Convert an existing single-file web page into a structured kiss-ssg site — a Claude or ChatGPT artifact, an exported page, a hand-written HTML file — keeping what it looks like while giving it a layout, partials, models and Sass. Use when someone arrives with a working page rather than a description, or asks to "turn my artifact into a real site", "convert this HTML to kiss", "make this page maintainable", "I built a site in Claude, now what", "import an existing page", or "get this off a chat and onto a host". For a site described rather than supplied, use kiss-site-new; for moving a site across kiss-ssg versions, use kiss-site-migrate.
+description: Convert an existing single-file web page into a structured kiss-ssg site — a Claude or ChatGPT artifact, an exported page, a hand-written HTML file — keeping what it looks like while giving it a layout, partials and models. Use when someone arrives with a working page rather than a description, or asks to "turn my artifact into a real site", "convert this HTML to kiss", "make this page maintainable", "I built a site in Claude, now what", "import an existing page", or "get this off a chat and onto a host". For a site described rather than supplied, use kiss-site-new; for moving a site across kiss-ssg versions, use kiss-site-migrate.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # Import a single-file page into kiss-ssg
 
-Someone has a page that already works and that they already approved the look of. The job is to keep that look **exactly** and give it the structure a person can maintain: a layout, one partial per section, content in models, styles in Sass.
+Someone has a page that already works and that they already approved the look of. The job is to keep that look **exactly** and give it the structure a person can maintain: a layout, one partial per section, content in models, the stylesheet as it was.
 
 Two things make this different from building a site:
 
 - **The design is settled. You are not redesigning.** A conversion that also improves the markup cannot be verified, because nothing can tell your improvements from your mistakes. Convert first, verify it renders the same, and only then change anything — as a separate, named step the author agreed to.
-- **The engine does the mechanical half for you.** `splitDocument` and `splitStylesheet` ship in the package. They parse, cut and guarantee the cascade and the markup did not move. `splitDocument` never adds whitespace, so a partial cut from a **minified** page is as dense as the page was; if you format it for legibility, do it as a separate, deliberate step and re-run the comparison after, because a formatter that puts a line break between two inline-block elements opens a visible gap. Do not hand-roll any of that; what they deliberately leave to you is everything requiring judgement, and that is where your effort goes.
+- **The engine does the mechanical half for you.** `splitDocument` ships in the package. It parses and cuts the markup and guarantees the page did not change. The stylesheet needs no tool: it is copied in whole. `splitDocument` never adds whitespace, so a partial cut from a **minified** page is as dense as the page was; if you format it for legibility, do it as a separate, deliberate step and re-run the comparison after, because a formatter that puts a line break between two inline-block elements opens a visible gap. Do not hand-roll any of that; what it deliberately leaves to you is everything requiring judgement, and that is where your effort goes.
 
 ## Execution instructions
 
@@ -35,11 +35,11 @@ If the page is in a chat rather than a file, ask for the HTML; if it is live, fe
 
 ### 3. Read the contract
 
-Read `node_modules/kiss-ssg/llms.txt` — the API contract that ships with the engine. It is long, so read it in sections. For this job you need the entries for `splitDocument` and `splitStylesheet` under `## API`, plus `## Config` (`folders`, `siteUrl`) and `## Helpers` (`asset`, `link`, `canonical`).
+Read `node_modules/kiss-ssg/llms.txt` — the API contract that ships with the engine. It is long, so read it in sections. For this job you need the entry for `splitDocument` under `## API`, plus `## Config` (`folders`, `siteUrl`) and `## Helpers` (`asset`, `link`, `canonical`).
 
-Per-module detail is in `node_modules/kiss-ssg/AIKB/html-split.md` and `node_modules/kiss-ssg/AIKB/css-split.md`. Read both before you run anything: they say what each module guarantees and, more usefully, what it deliberately refuses to do.
+Per-module detail is in `node_modules/kiss-ssg/AIKB/html-split.md`. Read it before you run anything: it says what the module guarantees and, more usefully, what it deliberately refuses to do.
 
-**Then read `node_modules/kiss-ssg/examples/12-from-a-single-file/` — it is this job, already done.** Not an illustration of a feature: the artifact it started from (`source/original.html`), the conversion that produced the site (`tools/convert.mjs`), the comparison that proved the page unchanged (`tools/compare.mjs`), the `router.js`, the model, the `config/` module and the Sass. Its `README.md` is the shortest complete account of the sequence you are about to follow.
+**Then read `node_modules/kiss-ssg/examples/12-from-a-single-file/` — it is this job, already done.** Not an illustration of a feature: the artifact it started from (`source/original.html`), the conversion that produced the site (`tools/convert.mjs`), the comparison that proved the page unchanged (`tools/compare.mjs`), the `router.js`, the model, the `config/` module and the stylesheet. Its `README.md` is the shortest complete account of the sequence you are about to follow.
 
 Leaving this out cost a clean-room run four separate mistakes, every one of which that folder answers in a line of working code. Read it before step 4, and copy `tools/compare.mjs` rather than writing your own — step 10 needs it.
 
@@ -82,34 +82,17 @@ Three things to check before moving on:
 
 `layout` → `src/layouts/`, `page` → `src/pages/`, each partial at `src/partials/<its name>` (the names already carry `site/` or `sections/`). Those are `folders.layouts`, `folders.pages` and `folders.partials`; if the project overrides them in `router.js`, follow the override.
 
-### 6. Split the stylesheet with the **same** region names
+### 6. Copy the stylesheet in whole
 
-The CSS is where the handover promise is kept or lost. Pass the region names you just chose, so the Sass partitions line up with the markup partials:
+Write `assets.styles.join('\n')` to `src/assets/css/site.css`, unchanged. kiss copies a `.css` asset into the build as it is, so the browser gets exactly the stylesheet the page had.
 
-```js
-// `classes`, NOT `name`. A region's `name` is what it MEANS — the thing you
-// just renamed — and `sections` matches the CLASS NAMES in the selectors. On a
-// page whose hero is `<section class="lede">` they differ, and passing the
-// names matches nothing: every rule falls into one run and you get a single
-// `_base.scss`. There is no error, because "nothing matched" and "one section,
-// correctly" are indistinguishable from inside. Measured on a clean-room run:
-// nine partials became one.
-const sheet = splitStylesheet(css, {
-  sections: regions.flatMap((r) => r.classes),
-})
-```
-
-Write `sheet.entry` to `src/assets/css/site.scss` and each of `sheet.partials` beside it. kiss compiles every non-underscore `.scss` under `folders.assets` and skips `_partials`, so this builds with no config change.
-
-Pitch the names at **page sections**, not elements. Measured: a list pitched at element granularity (`kicker`, `stars`, `field`) cut 14KB into 51 partials, several holding one rule; the same input with section names gave 19 partials and a longest line of 82 characters against the original's 1,803. `minNodes` (default 3) folds runs too short to earn a file, so you do not need to be precise — you need to be at the right altitude.
-
-A section appearing twice gives `_hero.scss` and `_hero-2.scss`. **That is correct and you must not merge them.** The split preserves source order because CSS is cascade-ordered; gathering a section's rules from across the file reads better and silently changes what the page looks like.
+**Do not rename it `.scss`, and do not split it.** Sass reads plain CSS differently in places — `#{` inside a string is interpolated, a string `@import` becomes a compile-time import, native CSS nesting is flattened — so a stylesheet passed through Sass is no longer guaranteed to be the one that was approved. Turning it into Sass, or into per-section files, is an improvement with its own name, made after the conversion is verified and only if the author wants it.
 
 ### 7. Lift the assets and rewrite what pointed at them
 
 `splitDocument` **reports** inline assets, it does not remove them — `assets.styles` and `assets.scripts` say what is worth lifting while the document stays whole. Doing the lift is yours, because it means choosing filenames:
 
-- The `<style>` block becomes the Sass of step 6. Delete it from the layout and put `<link rel="stylesheet" href="/{{asset "css/site.css"}}">` in its place — `{{asset}}`, never a typed path, so cache busting works.
+- The `<style>` block becomes the `site.css` of step 6. Delete it from the layout and put `<link rel="stylesheet" href="/{{asset "css/site.css"}}">` in its place — `{{asset}}`, never a typed path, so cache busting works.
 - An inline `<script>` becomes a file under `src/assets/js/`, referenced with `<script src="/{{asset "js/site.js"}}" defer></script>` — **when its `type` is `''`** (a classic script). Each entry in `assets.scripts` carries `type` and the raw `attrs` because they decide what the text is: a `type: 'module'` script keeps `type="module"` on the tag that loads it, or its first `import` fails; `application/ld+json` and `importmap` are data, not JavaScript, and stay inline in the layout.
 - A `<script src>` the page already had is left alone; it is in the layout already, ahead of `{{#block "scripts"}}`.
 - **Images and fonts the page links are not in the HTML.** Collect them into `src/assets/`, or the converted site builds green and renders broken. Say which ones you could not find rather than leaving a dead `src`.

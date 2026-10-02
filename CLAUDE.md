@@ -48,7 +48,6 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Partials / layouts registration            | `lib/partials.js`            | `AIKB/partials.md`            |
 | Dependency graph (partial → page)          | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
 | Assets + Sass                              | `lib/assets.js`              | `AIKB/assets.md`              |
-| Stylesheet splitter (single-file → Sass)   | `lib/css-split.js`           | `AIKB/css-split.md`           |
 | Markup decomposition (single-file → views) | `lib/html-split.js`          | `AIKB/html-split.md`          |
 | Asset pipeline (external tools)            | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
 | Asset manifest + cache busting             | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |

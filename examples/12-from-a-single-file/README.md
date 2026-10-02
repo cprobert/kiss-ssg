@@ -23,8 +23,8 @@ Builds and exits. `node router.js --dev` serves it with live reload on <http://l
 
 The engine does what can be proved and nothing else:
 
-- **`splitDocument`** cuts the document into a layout, chrome partials and one partial per section. Assembling them back through Handlebars reproduces the input — attributes kept verbatim, `<path/>` still self-closing, whitespace between inline elements untouched, `<main>` re-emitted only if it was there.
-- **`splitStylesheet`** cuts the stylesheet into Sass partials **without moving the cascade**. It segments contiguous runs, never gathering a section's rules from across the file, because `.btn` defined before `.hero .btn` is not the same stylesheet as the reverse.
+- **`splitDocument`** cuts the document into a layout, chrome partials and one partial per section. Assembling them back through Handlebars reproduces the input — attributes kept verbatim, `<path/>` still self-closing, no whitespace added anywhere, `<main>` re-emitted only if it was there.
+- **The stylesheet is copied in whole**, as `src/assets/css/site.css`. kiss serves a `.css` asset unchanged, so the browser gets the stylesheet the artifact had. It is not split and not run through Sass: SCSS reads plain CSS differently in places, and a split stylesheet bought nothing the page needed.
 
 Everything else is judgement, and `tools/convert.mjs` prints the list when it finishes:
 
