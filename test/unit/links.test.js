@@ -403,6 +403,28 @@ describe('checkLinks', () => {
       { page: './public/index.html', href: '/gone.html' },
     ])
   })
+
+  // A browser resolves dot segments before it requests a root-relative URL,
+  // so a pattern is matched against that path, not the string as written
+  // (Codex's review, 2026-10-02): `/v1/../gone.html` is a request for
+  // `/gone.html`, which no `/v1/**` rule serves.
+  it('matches a root-relative reference by the path a browser requests', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: ['/v1/../gone.html', '/other/../v1/contact'],
+        },
+      ],
+      buildDir: './public',
+      hostServed: ['/v1/**'],
+      exists: () => false,
+    })
+    expect(result.hostServed).toBe(1)
+    expect(result.broken).toEqual([
+      { page: './public/index.html', href: '/v1/../gone.html' },
+    ])
+  })
 })
 
 describe('hostServedMatcher', () => {
