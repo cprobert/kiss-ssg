@@ -4,6 +4,7 @@ import {
   classifyReference,
   resolveReference,
   checkLinks,
+  hostServedMatcher,
 } from '../../lib/links.js'
 
 // A realistic production page: minified (one line, no comments), a layout's
@@ -369,6 +370,115 @@ describe('checkLinks', () => {
   it('reports nothing for a build with no pages, and does not throw on an empty manifest', () => {
     expect(
       checkLinks({ pages: [], buildDir: './public', manifestTargets: [] }),
-    ).toEqual({ checked: 0, broken: [] })
+    ).toEqual({ checked: 0, hostServed: 0, broken: [] })
+  })
+
+  it('counts a reference the host serves instead of reporting it broken', () => {
+    // A form posting to a Cloud Function, a bundle a post-build step writes,
+    // and an llms.txt a separate script writes: real on the deployed site,
+    // absent from every build folder kiss can see.
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: [
+            'https://site.example/v1/reg-int',
+            '/css-site-1.2.3/site.min.css',
+            '/llms.txt',
+            '/gone.html',
+          ],
+        },
+        // Relative to a nested page, so it is matched as the root-relative path
+        // a browser would request, `/v1/contact`.
+        { buildTo: './public/shelf/item.html', links: ['../v1/contact'] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://site.example',
+      hostServed: ['/v1/**', '/css-*/**', '/llms.txt'],
+      exists: () => false,
+    })
+    expect(result.checked).toBe(5)
+    expect(result.hostServed).toBe(4)
+    expect(result.broken).toEqual([
+      { page: './public/index.html', href: '/gone.html' },
+    ])
+  })
+
+  // A browser resolves dot segments before it requests a root-relative URL,
+  // so a pattern is matched against that path, not the string as written
+  // (Codex's review, 2026-10-02): `/v1/../gone.html` is a request for
+  // `/gone.html`, which no `/v1/**` rule serves.
+  it('matches a root-relative reference by the path a browser requests', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: ['/v1/../gone.html', '/other/../v1/contact'],
+        },
+      ],
+      buildDir: './public',
+      hostServed: ['/v1/**'],
+      exists: () => false,
+    })
+    expect(result.hostServed).toBe(1)
+    expect(result.broken).toEqual([
+      { page: './public/index.html', href: '/v1/../gone.html' },
+    ])
+  })
+
+  // The same rule, all the way (Codex's second review, 2026-10-02): the path
+  // is resolved in URL space, as the browser resolves it, not in the build
+  // folder. `..` above the site root stops at the origin root, and a site
+  // deployed under a path prefix requests paths that carry the prefix.
+  it('clamps a relative climb at the origin root, as a browser does', () => {
+    const result = checkLinks({
+      pages: [{ buildTo: './public/index.html', links: ['../v1/contact'] }],
+      buildDir: './public',
+      hostServed: ['/v1/**'],
+      exists: () => false,
+    })
+    expect(result.hostServed).toBe(1)
+    expect(result.broken).toEqual([])
+  })
+
+  it('matches a prefixed deployment by the full request path, written either way', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: ['https://example.com/docs/api/contact', 'api/form'],
+        },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs',
+      hostServed: ['/docs/api/**'],
+      exists: () => false,
+    })
+    expect(result.hostServed).toBe(2)
+    expect(result.broken).toEqual([])
+  })
+})
+
+describe('hostServedMatcher', () => {
+  it('matches * inside one segment and ** across segments', () => {
+    const served = hostServedMatcher(['/v1/**', '/css-*/site.css', '/feed'])
+    expect(served('/v1/reg-int')).toBe(true)
+    expect(served('/v1/deep/er')).toBe(true)
+    expect(served('/css-site-1.2.3/site.css')).toBe(true)
+    // `*` stops at a slash, and a pattern is the whole path, not a prefix.
+    expect(served('/css-a/b/site.css')).toBe(false)
+    expect(served('/feed')).toBe(true)
+    expect(served('/feed/extra')).toBe(false)
+    expect(served('/v1')).toBe(false)
+  })
+
+  it('takes every other character literally', () => {
+    const served = hostServedMatcher(['/a.b+c(d)'])
+    expect(served('/a.b+c(d)')).toBe(true)
+    expect(served('/aXb+c(d)')).toBe(false)
+  })
+
+  it('matches nothing when there are no patterns', () => {
+    expect(hostServedMatcher([])('/anything')).toBe(false)
   })
 })

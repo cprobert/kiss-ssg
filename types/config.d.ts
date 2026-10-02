@@ -7,7 +7,8 @@ export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
  * @param {KissConfigInput} [userConfig]
  * @returns {KissConfig} the defaults with `userConfig` merged over them
  * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if
- * `assets.pipeline` is not an array of `{ run: string }` steps, if `audit` is
+ * `assets.pipeline` is not an array of `{ run: string }` steps, if
+ * `links.hostServed` is not an array of `/`-rooted patterns, if `audit` is
  * malformed or ignores a check that does not exist, or if source
  * and output folders violate the root/overlap safety rules
  */
@@ -87,6 +88,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {boolean} check scan every written page for internal references that resolve to nothing
  * @property {boolean} canonical make `{{link}}` emit the extension-less canonical path by default
  * @property {boolean} trailingSlash keep a directory index's trailing `/` in every URL kiss emits (`/courses/`, the default) or drop it (`/courses`)
+ * @property {string[]} hostServed root-relative path patterns the host serves and the build never writes (`/v1/**`, `/llms.txt`) — counted, never reported broken; `*` matches within a segment, `**` across them
  */
 /**
  * The audit block (`config.audit`): what the launch-readiness audit does on a
@@ -200,6 +202,7 @@ export const DEFAULT_LINKS: Readonly<{
     check: true;
     canonical: false;
     trailingSlash: true;
+    hostServed: readonly string[];
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
@@ -237,6 +240,7 @@ export const DEFAULT_CONFIG: Readonly<{
         check: true;
         canonical: false;
         trailingSlash: true;
+        hostServed: readonly string[];
     }>;
     redirects: Readonly<{
         format: any;
@@ -386,6 +390,10 @@ export type KissLinks = {
      * keep a directory index's trailing `/` in every URL kiss emits (`/courses/`, the default) or drop it (`/courses`)
      */
     trailingSlash: boolean;
+    /**
+     * root-relative path patterns the host serves and the build never writes (`/v1/**`, `/llms.txt`) — counted, never reported broken; `*` matches within a segment, `**` across them
+     */
+    hostServed: string[];
 };
 /**
  * The audit block (`config.audit`): what the launch-readiness audit does on a

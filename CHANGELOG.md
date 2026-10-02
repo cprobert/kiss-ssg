@@ -130,6 +130,37 @@ One smaller fix to the starter: after `npm init -y`, `init` used to keep
 npm's `"main": "index.js"`, a file nothing writes; it now points `main` at
 `router.js`, as it already did for `"type"`, and says so.
 
+### `check` on a large site: paths the host serves, and every finding once
+
+Two things a real upgrade (a 686-page site) ran into.
+
+**`links.hostServed`.** Some paths are served by the host but written by no
+build: a Firebase function rewrite at `/v1/…`, a folder another tool bundles
+into after kiss, a file a deploy step adds. The link scan could only call
+those broken, and on that site they buried the real findings. Declare them:
+
+```js
+new Kiss({
+  links: { hostServed: ['/v1/**', '/js/bundle-*.js', '/llms.txt'] },
+})
+```
+
+Patterns are root-relative: `*` matches within one segment, `**` across
+segments, and everything else is literal. A reference the build can't
+resolve that matches one is **counted** in `report.links.hostServed`
+instead of listed in `links.broken`. Patterns match the path the browser
+actually requests: `..` is resolved, and a site whose `siteUrl` has a path
+prefix writes its patterns with it (`/docs/api/**`). The default is `[]`, and
+a pattern without a leading `/` throws at `new Kiss()`. On that site its patterns took
+the findings from 2,738 to 88.
+
+**Every finding once.** `npx kiss-ssg check` sends the build log to stderr
+and the report to stdout, and a terminal shows both, so every broken link
+and every audit finding printed twice. Under check, the log now gives the
+count, `N broken links (listed in the check report)` and
+`Audit: N pages, M findings (listed in the check report)`, and the report is
+the list. A normal build logs each finding as before.
+
 ### Upgrading
 
 Nothing in a site's build changes. To set an existing site up for Codex,
@@ -139,6 +170,11 @@ Nothing in a site's build changes. To set an existing site up for Codex,
 file that defines them in some other shape (a dotted key, an inline table) is
 left exactly as it is, with a note to add the rest by hand. It never rewrites
 text that is already there.
+
+`links.hostServed` is opt-in, with a default of `[]`. The one visible change
+is in `check`'s build log, which now counts findings instead of listing them;
+the report, `--summary` and the JSON are unchanged. Tooling that read
+individual findings from that log should read the report instead.
 
 ## 2.6.6 — 2026-09-30
 

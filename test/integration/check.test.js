@@ -50,6 +50,20 @@ await kiss.complete().catch((err) => {
   process.exitCode = 1
 })`)
 
+// The same dead link, plus a form posting to a function the host rewrites and
+// a file a post-build step writes — paths no build folder holds, declared as
+// the host's.
+const HOST_SERVED = site(`
+const kiss = new Kiss({
+  folders: { src: './src', build: './public' },
+  links: { hostServed: ['/v1/**', '/llms.txt'] },
+})
+kiss.scan().generate()
+await kiss.complete().catch((err) => {
+  console.error(err.message)
+  process.exitCode = 1
+})`)
+
 const NEVER_COMPLETES = site(`
 const kiss = new Kiss({ folders: { src: './src', build: './public' } })
 kiss.scan().generate()`)
@@ -332,7 +346,55 @@ describe('kiss-ssg check', () => {
     expect(lines).toContain(
       '  broken link: ./public/index.html -> /news/gone.html',
     )
+    // Once, not twice: the build's own log goes to stderr, which a terminal
+    // shows beside the summary, so under check it says how many and leaves the
+    // list to the report.
+    expect(run.stderr).not.toContain('broken link:')
+    expect(run.stderr).toContain('1 broken link')
     expect(await temp.exists('public')).toBe(false)
+  }, 60000)
+
+  // The audit had the broken links' problem too (diploma-msc's real check,
+  // 2026-10-02): every finding was logged to stderr and printed again by
+  // --summary on stdout, which a terminal shows side by side.
+  it('prints each audit finding once under check: the report lists them, the log counts them', async () => {
+    temp = await makeSite({
+      // A whole document with none of the launch details: no title, no
+      // description, no favicon, no 404 page.
+      'src/pages/index.hbs':
+        '<!doctype html><html><head></head><body><p>Bare.</p></body></html>',
+      'build.js': ONE_PAGE,
+    })
+
+    const run = check(temp.root, ['check', '--summary', 'build.js'])
+
+    expect(run.status).toBe(0)
+    const listed = run.stdout
+      .split('\n')
+      .filter((line) => /^\s*audit [a-z-]+/.test(line))
+    expect(listed.length).toBeGreaterThan(0)
+    expect(run.stderr).toMatch(
+      /Audit: 1 page, \d+ findings? \(listed in the check report\)/,
+    )
+    expect(run.stderr).not.toMatch(/^\s*audit [a-z-]+/m)
+  }, 60000)
+
+  it('counts references to host-served paths instead of naming them broken', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs':
+        '<form action="/v1/contact"></form><a href="/llms.txt">AI</a><a href="/news/gone.html">Gone</a>',
+      'build.js': HOST_SERVED,
+    })
+
+    const run = check(temp.root, ['check', 'build.js'])
+
+    expect(run.status).toBe(0)
+    const [report] = JSON.parse(run.stdout)
+    expect(report.links).toEqual({
+      checked: 3,
+      hostServed: 2,
+      broken: [{ page: './public/index.html', href: '/news/gone.html' }],
+    })
   }, 60000)
 
   it('fails when the script never settles a build', async () => {
