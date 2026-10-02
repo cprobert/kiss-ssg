@@ -159,6 +159,31 @@ separate beat and its `CLAUDE.md` edits do not belong in this branch's diff.
   close scores it against what was actually agreed rather than against the original
   wording.
 
+- **2026-10-02 — the Codex loop, and three operator calls that reshaped the branch.**
+  After the close, the operator ran Codex review in a loop "until it gives this branch
+  a clean bill of health". Rounds 1–5 each found the next defect in the same families
+  (whitespace, tokenizer, SCSS translation), and the operator asked for a holistic
+  step back. Decisions, each the operator's, each made on an `AskUserQuestion`:
+  1. **The printer never adds whitespace** (2026-10-01, round 4): a line break only
+     where the source had one. Minified input stays dense; stated in the docs.
+  2. **Keep the tree printer and `.scss`** (round 5): the recommended alternatives —
+     cutting by source offsets, plain `.css` partials — were declined.
+  3. **The stylesheet is not split; `lib/css-split.js` is removed** (round 5): "throw
+     it in whole … it's this HTML that I'd like componentized". 2.7.0 unpublished, so
+     no upgrade note. Success criteria naming Sass partials no longer apply.
+  4. **htmlparser2 replaces the hand-rolled tokenizer** — a new runtime dependency,
+     recorded in `AIKB/upstream.md` (with parse5 as considered and not used).
+  5. **The conversion lifts no inline `<style>`/`<script>`** (round 8): they stay in
+     the layout where the page had them; lifting is a named improvement.
+
+  The change of method that made the loop converge was mine to propose and is
+  recorded in `AIKB/html-split.md`: `test/unit/html-split.corpus.test.js` checks every
+  pair of ~35 awkward atoms in four separators and three places, so each finding
+  became a class to hunt rather than a case to patch. Codex round 9 (commit
+  `420279e`): "No actionable defects were identified beyond the explicitly documented
+  conversion limitations." That is one opinion from a different model family, not a
+  proof; the corpus is the standing check.
+
 ## Pulse log
 
 - **2026-10-01** — research slice; 0 of 7 criteria met, nothing built (branch carries
