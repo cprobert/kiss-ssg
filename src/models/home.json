@@ -55,6 +55,16 @@
             "icon": "icons/cloudflare-pages",
             "name": "Cloudflare Pages",
             "url": "https://developers.cloudflare.com/pages/framework-guides/deploy-anything/"
+          },
+          {
+            "icon": "icons/vercel",
+            "name": "Vercel",
+            "url": "https://vercel.com/docs/builds/configure-a-build"
+          },
+          {
+            "icon": "icons/firebase",
+            "name": "Firebase Hosting",
+            "url": "https://firebase.google.com/docs/hosting/quickstart"
           }
         ]
       }
@@ -79,9 +89,9 @@
             "text": "Use the kiss-site-new skill to build me a site for a small bakery in Leeds: home, menu, about, and a news section for seasonal specials. It will be served by Netlify at https://kirkgate-bakery.co.uk. Run the build check when you're done."
           },
           {
-            "label": "A page you already have",
-            "note": "A Claude or ChatGPT artifact, an export, a hand-written HTML file. Save it in the folder as source/original.html first.",
-            "text": "Use the kiss-site-import skill to turn source/original.html into a real site, keeping exactly how it looks. Run the build check when you're done."
+            "label": "A site you made in Claude or ChatGPT",
+            "note": "kiss is its upgrade path. Paste the link to the published artifact or share in place of the one below — or, if you have it as an HTML file, put it in the folder and name the file instead.",
+            "text": "Use the kiss-site-import skill to turn https://claude.ai/public/artifacts/… into a real site, keeping exactly how it looks. Run the build check when you're done."
           }
         ]
       },

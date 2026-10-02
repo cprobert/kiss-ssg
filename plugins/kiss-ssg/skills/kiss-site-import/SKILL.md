@@ -1,6 +1,6 @@
 ---
 name: kiss-site-import
-description: Convert an existing single-file web page into a structured kiss-ssg site — a Claude or ChatGPT artifact, an exported page, a hand-written HTML file — keeping what it looks like while giving it a layout, partials and models. Use when someone arrives with a working page rather than a description, or asks to "turn my artifact into a real site", "convert this HTML to kiss", "make this page maintainable", "I built a site in Claude, now what", "import an existing page", or "get this off a chat and onto a host". For a site described rather than supplied, use kiss-site-new; for moving a site across kiss-ssg versions, use kiss-site-migrate.
+description: Convert an existing single-file web page into a structured kiss-ssg site — a Claude or ChatGPT artifact (often given as a link to the published artifact or share), an exported page, a hand-written HTML file — keeping what it looks like while giving it a layout, partials and models. Use when someone arrives with a working page rather than a description, or asks to "turn my artifact into a real site", "convert this HTML to kiss", "make this page maintainable", "I built a site in Claude, now what", "here's the link to my artifact", "import an existing page", or "get this off a chat and onto a host". For a site described rather than supplied, use kiss-site-new; for moving a site across kiss-ssg versions, use kiss-site-migrate.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -31,7 +31,9 @@ Save the artifact as a real file before touching it — `source/original.html` b
 
 **This is not housekeeping.** The one real precedent for this conversion never committed its source, so nobody can diff what the conversion did, re-run it against a better importer, or answer "did we lose something?" six months later. Keep the stylesheet too if it is a separate file.
 
-If the page is in a chat rather than a file, ask for the HTML; if it is live, fetch it. Say which you did.
+**Most often you are given a link, not a file** — a published Claude artifact, a ChatGPT share, a page somebody put live. kiss is the upgrade path for exactly those sites. Fetch the raw HTML with `curl -L <url> -o source/original.html` (never a tool that converts the page to Markdown — that throws the HTML away), then **look at what you got before going further.** A share page often renders the site in the browser with JavaScript, so the download is a loader — a few kilobytes, a `<script>` bundle, and none of the page's own words or `<style>`. If it is, do not rebuild the page from what you can see, from a screenshot or from memory: that is a rewrite, and nothing could verify it. Ask the person for the page's own code — artifacts and ChatGPT canvases both let you copy or download the code behind the preview — and save that as `source/original.html`.
+
+If the page is pasted into the chat instead, save exactly what was pasted. Either way, say where the HTML came from, and keep the link beside it (`source/SOURCE.md`) so the next person can find the original.
 
 ### 3. Read the contract
 

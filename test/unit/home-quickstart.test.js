@@ -76,6 +76,8 @@ describe('the home page carries the whole quick start', () => {
       'GitHub Pages',
       'Netlify',
       'Cloudflare Pages',
+      'Vercel',
+      'Firebase Hosting',
     ])
     for (const option of host.options)
       expect(new URL(option.url).pathname).not.toBe('/')

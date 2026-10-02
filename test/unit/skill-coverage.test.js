@@ -325,6 +325,12 @@ const COVERAGE = [
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
+    feature:
+      'the import starts from a link (an artifact or share), and a fetched loader shell is not the page',
+    pattern: /Most often you are given a link[\s\S]*loader/,
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  {
     feature: 'the stylesheet is not Sass — Sass reads plain CSS differently',
     pattern: /Do not rename the stylesheet `\.scss`/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
