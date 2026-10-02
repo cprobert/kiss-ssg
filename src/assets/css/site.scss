@@ -416,6 +416,17 @@ pre code {
   margin-bottom: 0.6em;
 }
 
+// The heading's second search — the upgrade path — on its own line, smaller,
+// but still inside the <h1> so a search engine reads both as the heading.
+.hero__title-more {
+  display: block;
+  margin-top: 0.4em;
+  font-size: 0.5em;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--muted);
+}
+
 .hero__actions {
   display: flex;
   flex-wrap: wrap;

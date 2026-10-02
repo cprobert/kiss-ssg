@@ -28,9 +28,12 @@ kiss
     view: 'index.hbs',
     model: 'home.json',
     title: 'Home',
-    fullTitle: 'kiss-ssg: a static site generator your coding agent drives',
+    // Written for search: what someone types to find this, not what kiss is
+    // internally. The two searches kiss answers best lead, in this order.
+    fullTitle:
+      'Build a website with Claude Code, or upgrade your Claude or ChatGPT site – kiss-ssg',
     description:
-      'kiss-ssg is a static site generator for Node built to be driven by a coding agent: you describe the site, the agent builds it, and kiss-ssg check verifies it.',
+      'kiss-ssg lets Claude Code build a real website you can host anywhere, or turn a site you made in Claude or ChatGPT into one that keeps its look. Every build is checked before it goes live. Free and open source.',
     version,
   })
   .pages({

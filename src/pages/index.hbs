@@ -3,10 +3,14 @@
 <section class="hero">
   <div class="wrap hero__inner">
     <div class="hero__copy">
-      <h1 class="hero__title">Describe the site.<br>Your agent builds it.<br>kiss checks it.</h1>
+      {{!-- Written for what someone types into a search box or an AI, not for
+            what kiss is internally: the two searches kiss answers best are
+            building a site with Claude Code, and upgrading one made in Claude
+            or ChatGPT. Both are in the heading, the stronger one first. --}}
+      <h1 class="hero__title">Build a real website with Claude Code <span class="hero__title-more">— or upgrade the one you made in Claude or ChatGPT</span></h1>
       <p class="lede">
-        kiss-ssg is a static site generator for Node, built to be driven by a coding agent. The agent writes
-        plain Handlebars, JSON and a little JavaScript, and every build ends in a verdict it can act on.
+        kiss-ssg turns a description, or a site you already have, into a website you can host anywhere,
+        edit yourself and hand to a developer. It checks every build before it goes live. Free and open source.
       </p>
       <div class="hero__actions">
         <div class="command">
@@ -80,7 +84,7 @@
 
 <section class="band band--split" aria-labelledby="why">
   <div class="wrap band__grid">
-    <h2 id="why">Why it suits agents</h2>
+    <h2 id="why">Why kiss-ssg suits AI coding agents</h2>
     <ul class="reasons">
       {{#each model.reasons}}
       <li>
@@ -94,7 +98,7 @@
 
 <section class="band band--split" aria-labelledby="built-with">
   <div class="wrap band__grid">
-    <h2 id="built-with">Built with kiss</h2>
+    <h2 id="built-with">Websites built with kiss-ssg</h2>
     <div>
       <ul class="sites">
         {{#each model.sites}}<li><a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></li>{{/each}}

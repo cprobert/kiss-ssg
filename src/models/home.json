@@ -1,6 +1,6 @@
 {
   "toolkit": {
-    "heading": "What you'll need",
+    "heading": "What you need to build a website with Claude Code",
     "intro": "Install the first two before you start. The other two keep your work safe and put it online — free plans are plenty for a small site.",
     "tools": [
       {
@@ -71,7 +71,7 @@
     ]
   },
   "setup": {
-    "heading": "From nothing to a site in six commands",
+    "heading": "From nothing to a live website in six commands",
     "intro": "With Node.js and Claude Code installed, these do the rest.",
     "steps": [
       {
