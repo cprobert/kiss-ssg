@@ -119,3 +119,16 @@ What verified this branch was the ritual's machinery: red-first tests, the gates
 - The Ubuntu CI result on the PR.
 - No human has looked at any artefact.
 - One known edge: a file appearing between the clearing's `readdir` and its `rmdir` stops the clearing, safely, but no test covers it.
+
+### Addendum — after the PR opened (2026-10-03)
+
+- **Ubuntu CI passed on the PR at `4304f7d`** (run 37114624135). That was the first real POSIX run of the `ENOTDIR` fix.
+- **The operator ran `/codex:review`** once the usage limit allowed. It found one more P2 in the clearing (`site.scss` beside a folder `site.css/`): the compile wrote and claimed the stylesheet, the copy's filter then cleared it as this copy's own output in the way, and the build reported success with no stylesheet.
+- **Fixed in `90f7f20`.** `ownsOutput` is false for anything in `touched`, so clearing only touches output a previous run left. The test asserts that every stylesheet reported compiled is still a file on disk, and it was seen red in all three shapes.
+- **The operator then asked for a loop until green.** One round was enough:
+  - gates pass;
+  - the fleet is identical (50 pages);
+  - Codex on the whole branch: "No actionable regressions were identified";
+  - CI passed on `ubuntu-latest` and `windows-latest` at `90f7f20` (run 37116725218).
+- **Feedback this confirms.** This was the fourth defect found at the close in code that deletes files, which confirms the reflection's main recommendation. It was also the operator's third override that paid: running Codex when Claude's plan had been to merge with the gap recorded.
+- **Still open:** no human eyeball, and the untested `readdir`/`rmdir` edge.
