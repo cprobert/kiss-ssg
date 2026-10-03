@@ -547,8 +547,14 @@ describe('copyAssets that fails partway', () => {
         }
       })
 
-  const run = async (options) => {
-    site = await makeSite({ 'a/old.txt': 'old' })
+  // `seed` is the asset root's starting files. A test whose REAL `fs.copy`
+  // fails seeds none: fs-extra copies a folder's entries concurrently and
+  // rejects on the first failure while a sibling is still being written, so
+  // `a/old.txt` was still in flight when the test ended and its cleanup hit
+  // EBUSY on Windows. Nothing awaits an entry fs-extra had already started.
+  const run = async (options, seed = { 'a/old.txt': 'old' }) => {
+    site = await makeSite(seed)
+    await fs.ensureDir(`${site.root}/a`)
     const opts = {
       ...deps,
       logger: quiet,
@@ -620,7 +626,7 @@ describe('copyAssets that fails partway', () => {
   // and record it again, so the session never recovered after the source
   // was fixed (found by the Codex review, 2026-10-03).
   it('recovers once a file that collided with an output directory is removed', async () => {
-    const { copy } = await run()
+    const { copy } = await run({}, {})
     expect((await copy()).error).toBeUndefined()
     await site.touch('out/x/keep.txt', 'keep')
     await site.touch('a/x', 'a file where a directory is')
@@ -778,7 +784,7 @@ describe('copyAssets that fails partway', () => {
     ])(
       'fails a later copy rather than drop the stylesheet, %s',
       async (_l, registry) => {
-        const { copy } = await run({ outputs: registry() })
+        const { copy } = await run({ outputs: registry() }, {})
         await site.touch('a/site.scss', 'b { color: red }')
         expect((await copy()).error).toBeUndefined()
         await site.touch('a/site.css/child.txt', 'child')
@@ -792,7 +798,7 @@ describe('copyAssets that fails partway', () => {
   describe('a source that changes type, with something foreign in the way', () => {
     it('clears nothing when a page owns a file in the folder', async () => {
       const outputs = new OutputRegistry(silentLogger)
-      const { copy } = await run({ outputs })
+      const { copy } = await run({ outputs }, {})
       await site.touch('a/x/inner.txt', 'inner')
       expect((await copy()).error).toBeUndefined()
       await site.touch('out/x/page.html', 'PAGE')
@@ -805,7 +811,7 @@ describe('copyAssets that fails partway', () => {
     })
 
     it('neither clears nor walks into a link it did not write', async () => {
-      const { copy } = await run()
+      const { copy } = await run({}, {})
       await site.touch('a/x/inner.txt', 'inner')
       expect((await copy()).error).toBeUndefined()
       await site.touch('elsewhere/precious.txt', 'precious')
