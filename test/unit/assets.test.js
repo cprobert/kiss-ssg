@@ -738,6 +738,57 @@ describe('copyAssets that fails partway', () => {
 
   // Clearing is all or nothing: one file in the way that is not this copy's
   // own vetoes it, so nothing is deleted and the copy fails as it did before.
+  // Clearing is for output a PREVIOUS run left. A stylesheet compiled seconds
+  // earlier in this same run is this copy's too, and a folder named like it
+  // (`site.css/` beside `site.scss`) cleared it and copied the folder in: the
+  // compile reported success, the stylesheet was gone, and the build said ok.
+  // Before clearing existed the collision failed the copy, loudly; it must
+  // still (found by the Codex review, 2026-10-03).
+  describe('never clears an output this run already wrote', () => {
+    const compiledStillServed = async (result) => {
+      for (const item of result.sass.filter(
+        (s) => !s.error && !s.skipped && !s.refused,
+      )) {
+        const css = item.file.replace(/\.(scss|sass)$/i, '.css')
+        const stat = await fs.lstat(`${site.root}/out/${css}`).catch(() => null)
+        expect(stat?.isFile(), `${css} reported compiled but not served`).toBe(
+          true,
+        )
+      }
+    }
+
+    it('fails a first copy rather than drop the stylesheet', async () => {
+      site = await makeSite({
+        'a/site.scss': 'b { color: red }',
+        'a/site.css/child.txt': 'child',
+      })
+      const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+        ...deps,
+        logger: quiet,
+        manifest: createAssetManifest(),
+        outputs: new OutputRegistry(silentLogger),
+      })
+      expect(result.error).toBeTruthy()
+      await compiledStillServed(result)
+    })
+
+    it.each([
+      ['with a registry', () => new OutputRegistry(silentLogger)],
+      ['without a registry', () => undefined],
+    ])(
+      'fails a later copy rather than drop the stylesheet, %s',
+      async (_l, registry) => {
+        const { copy } = await run({ outputs: registry() })
+        await site.touch('a/site.scss', 'b { color: red }')
+        expect((await copy()).error).toBeUndefined()
+        await site.touch('a/site.css/child.txt', 'child')
+        const result = await copy()
+        expect(result.error).toBeTruthy()
+        await compiledStillServed(result)
+      },
+    )
+  })
+
   describe('a source that changes type, with something foreign in the way', () => {
     it('clears nothing when a page owns a file in the folder', async () => {
       const outputs = new OutputRegistry(silentLogger)
