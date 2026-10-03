@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import path from 'node:path'
 import fs from 'fs-extra'
 import { assetCopyOwner, copyAssets } from '../../lib/assets.js'
 import { OutputRegistry } from '../../lib/output-registry.js'
@@ -161,7 +162,10 @@ describe('copyAssets sass diagnostics', () => {
   it('names the write, not the parse, when the output cannot be written', async () => {
     site = await makeSite({ 'a/css/x.scss': 'b { color: red }' })
     // A directory where `x.css` has to go: the source parses, the write cannot.
-    await fs.ensureDir(`${site.root}/out/css/x.css`)
+    // It holds a file that is not this copy's, because an empty folder in the
+    // way is cleared (kiss leaves those behind itself; see "a source that
+    // changes type").
+    await site.touch('out/css/x.css/foreign.txt', 'not ours')
     const logger = { ...silentLogger, error: vi.fn(), warn: vi.fn() }
     const result = await copyAssets(`${site.root}/a`, `${site.root}/out`, {
       ...deps,
@@ -682,6 +686,91 @@ describe('copyAssets that fails partway', () => {
       expect((await copy()).error).toBeUndefined()
       expect(await site.read('out/x/inner.txt')).toBe('inner')
       expect((await copy()).error).toBeUndefined()
+    })
+
+    // POSIX answers `unlink` of a path whose parent is now a FILE with
+    // ENOTDIR; Windows answers ENOENT. Both mean the file is gone, and
+    // treating ENOTDIR as a failure re-recorded the path on every run, so
+    // a folder replaced by a file never recovered on Linux or macOS. This
+    // makes `fs.unlink` answer the POSIX way on any platform.
+    it('treats a stale output under a parent that became a file as gone', async () => {
+      const unlink = fs.unlink.bind(fs)
+      const spy = vi.spyOn(fs, 'unlink').mockImplementation(async (file) => {
+        for (let dir = path.dirname(file); ; dir = path.dirname(dir)) {
+          const stat = await fs.lstat(dir).catch(() => null)
+          if (stat && !stat.isDirectory())
+            throw Object.assign(new Error('not a directory'), {
+              code: 'ENOTDIR',
+            })
+          if (path.dirname(dir) === dir) break
+        }
+        return unlink(file)
+      })
+      try {
+        const { copy } = await run({ outputs: registry() })
+        await site.touch('a/x/inner.txt', 'inner')
+        expect((await copy()).error).toBeUndefined()
+        await fs.remove(`${site.root}/a/x`)
+        await site.touch('a/x', 'now a file')
+        expect((await copy()).error).toBeUndefined()
+        expect((await copy()).error).toBeUndefined()
+        expect(await site.read('out/x')).toBe('now a file')
+      } finally {
+        spy.mockRestore()
+      }
+    })
+
+    // Sass compiles before the copy runs, so a stylesheet in a folder that
+    // used to be a file meets that old output file before the copy's filter
+    // could clear it, and the rebuild reported a write failure.
+    it('compiles into a folder that used to be its own output file', async () => {
+      const { copy } = await run({ outputs: registry() })
+      await site.touch('a/x', 'a file')
+      expect((await copy()).error).toBeUndefined()
+      await fs.remove(`${site.root}/a/x`)
+      await site.touch('a/x/site.scss', 'b { color: red }')
+      const result = await copy()
+      expect(result.error).toBeUndefined()
+      expect(result.sass.filter((item) => item.error)).toEqual([])
+      expect(await site.read('out/x/site.css')).toContain('color')
+    })
+  })
+
+  // Clearing is all or nothing: one file in the way that is not this copy's
+  // own vetoes it, so nothing is deleted and the copy fails as it did before.
+  describe('a source that changes type, with something foreign in the way', () => {
+    it('clears nothing when a page owns a file in the folder', async () => {
+      const outputs = new OutputRegistry(silentLogger)
+      const { copy } = await run({ outputs })
+      await site.touch('a/x/inner.txt', 'inner')
+      expect((await copy()).error).toBeUndefined()
+      await site.touch('out/x/page.html', 'PAGE')
+      outputs.claim(`${site.root}/out/x/page.html`, 'page:x', 'page')
+      await fs.remove(`${site.root}/a/x`)
+      await site.touch('a/x', 'now a file')
+      expect((await copy()).error).toBeTruthy()
+      expect(await site.read('out/x/page.html')).toBe('PAGE')
+      expect(await site.read('out/x/inner.txt')).toBe('inner')
+    })
+
+    it('neither clears nor walks into a link it did not write', async () => {
+      const { copy } = await run()
+      await site.touch('a/x/inner.txt', 'inner')
+      expect((await copy()).error).toBeUndefined()
+      await site.touch('elsewhere/precious.txt', 'precious')
+      fs.symlinkSync(
+        `${site.root}/elsewhere`,
+        `${site.root}/out/x/link`,
+        'junction',
+      )
+      await fs.remove(`${site.root}/a/x`)
+      await site.touch('a/x', 'now a file')
+      expect((await copy()).error).toBeTruthy()
+      expect(await site.read('elsewhere/precious.txt')).toBe('precious')
+      expect(await site.read('out/x/inner.txt')).toBe('inner')
+      expect(fs.lstatSync(`${site.root}/out/x/link`).isSymbolicLink()).toBe(
+        true,
+      )
     })
   })
 

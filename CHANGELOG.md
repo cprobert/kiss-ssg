@@ -16,7 +16,9 @@ asset before writing it, so the next copy cleans up whatever a failed one left b
 A second `--dev` case recovers now too. If you replaced an assets folder with a file of the same
 name, or a file with a folder, every rebuild failed until restart, because the copy refused to put
 one over the other's leftovers. kiss now clears its own old output out of the way first. It never
-removes anything it did not write, so a file of yours in the way still stops the copy, as before.
+removes a file it did not write, so a file of yours in the way still stops the copy, as before. An
+empty folder in the way is removed, because kiss leaves those behind itself when a source folder
+is deleted, and an empty folder holds nothing to lose.
 
 A production build was never affected: every build there starts from an empty folder. Five real
 sites built exactly the same on 2.7.1 and on this version.
