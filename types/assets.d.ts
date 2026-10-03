@@ -3,15 +3,17 @@
  *
  * @param {string} sourceDir
  * @param {string} targetDir
- * @param {{ config: any, logger: any, outputs?: import('./output-registry.js').OutputRegistry, owner?: string }} deps
+ * @param {{ config: any, logger: any, outputs?: import('./output-registry.js').OutputRegistry, owner?: string, touched?: Set<string> }} deps
+ * `touched` receives each output path before it is written
  * @returns {Promise<SassResult>[]} one per stylesheet it saw — compiled,
  * failed, or skipped as a partial
  */
-export function compileSassFiles(sourceDir: string, targetDir: string, { config, logger, outputs, owner }: {
+export function compileSassFiles(sourceDir: string, targetDir: string, { config, logger, outputs, owner, touched }: {
     config: any;
     logger: any;
     outputs?: import("./output-registry.js").OutputRegistry;
     owner?: string;
+    touched?: Set<string>;
 }): Promise<SassResult>[];
 export function copyAssets(sourceDir: any, targetDir: any, { config, logger, manifest, outputs, owner, display, }: {
     config: any;
@@ -20,6 +22,7 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
         reconcileSass(owner: string, current: Map<string, string>): Set<string>;
         readonly urlRevision: number;
         hasOwner(owner: any): boolean;
+        unrecorded(owner: string, outputs: Iterable<string>): void;
         previous(owner: string, name: string): string | null;
         reconcile(owner: any, current: any): any[];
         lookup(urlPath: any): any;

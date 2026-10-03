@@ -515,3 +515,149 @@ describe('copyAssets manifest', () => {
     expect(manifest.lookup('css/broken.css')).toBeNull()
   })
 })
+
+// A copy that failed partway left what it had already written out of the
+// manifest, so a later run that found the asset root gone removed only the
+// outputs the manifest knew and the rest stayed in the build for good. In use:
+// a `git checkout` during `--dev` left a stale asset until restart. Every
+// writer in a copy — the copy itself, the Sass compile, the hash move, and the
+// stale-output unlink — is a place the run can stop between writing and
+// recording, so each is pinned.
+describe('copyAssets that fails partway', () => {
+  const enoent = () => Object.assign(new Error('gone'), { code: 'ENOENT' })
+  const quiet = { ...silentLogger, error: vi.fn(), warn: vi.fn() }
+
+  // fs-extra's contract: the filter is asked about each item before the item
+  // is written. This stand-in keeps that contract and stops at `stopAt`, the
+  // shape of a source file vanishing between the filter and its copyfile.
+  const copyStoppingAt = (names, stopAt) =>
+    vi
+      .spyOn(fs, 'copy')
+      .mockImplementationOnce(async (src, dest, { filter }) => {
+        for (const name of names) {
+          const from = `${src}/${name}`
+          const to = `${dest}/${name}`
+          if (!(await filter(from, to))) continue
+          if (name === stopAt) throw enoent()
+          await fs.copy(from, to)
+        }
+      })
+
+  const run = async (options) => {
+    site = await makeSite({ 'a/old.txt': 'old' })
+    const opts = {
+      ...deps,
+      logger: quiet,
+      manifest: createAssetManifest(),
+      outputs: new OutputRegistry(silentLogger),
+      ...options,
+    }
+    const copy = () => copyAssets(`${site.root}/a`, `${site.root}/out`, opts)
+    return { opts, copy }
+  }
+
+  it('removes the files a failed copy had already written once the root is gone', async () => {
+    const { copy } = await run()
+    expect((await copy()).error).toBeUndefined()
+    await site.touch('a/one.txt', 'one')
+    await site.touch('a/two.txt', 'two')
+    const spy = copyStoppingAt(['one.txt', 'two.txt'], 'two.txt')
+    try {
+      expect((await copy()).error).toBeTruthy()
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await site.exists('out/one.txt')).toBe(true)
+    await fs.remove(`${site.root}/a`)
+    expect((await copy()).error).toBeUndefined()
+    expect(await site.exists('out/one.txt')).toBe(false)
+    expect(await site.exists('out/old.txt')).toBe(false)
+  })
+
+  it('removes them when the very first copy was the one that failed', async () => {
+    site = await makeSite({ 'a/one.txt': 'one', 'a/two.txt': 'two' })
+    const opts = {
+      ...deps,
+      logger: quiet,
+      manifest: createAssetManifest(),
+      outputs: new OutputRegistry(silentLogger),
+    }
+    const copy = () => copyAssets(`${site.root}/a`, `${site.root}/out`, opts)
+    const spy = copyStoppingAt(['one.txt', 'two.txt'], 'two.txt')
+    try {
+      expect((await copy()).error).toBeTruthy()
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await site.exists('out/one.txt')).toBe(true)
+    await fs.remove(`${site.root}/a`)
+    // The root existed — this copy wrote from it — so its disappearing is a
+    // deletion to reconcile, not the typo a missing first root is.
+    expect((await copy()).error).toBeUndefined()
+    expect(await site.exists('out/one.txt')).toBe(false)
+  })
+
+  it('removes a compiled stylesheet when the copy after the compile failed', async () => {
+    const { copy } = await run()
+    expect((await copy()).error).toBeUndefined()
+    await site.touch('a/site.scss', 'b { color: red }')
+    const spy = vi.spyOn(fs, 'copy').mockRejectedValueOnce(enoent())
+    try {
+      expect((await copy()).error).toBeTruthy()
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await site.exists('out/site.css')).toBe(true)
+    await fs.remove(`${site.root}/a`)
+    expect((await copy()).error).toBeUndefined()
+    expect(await site.exists('out/site.css')).toBe(false)
+  })
+
+  it('removes a hashed file when a later rename in the same copy failed', async () => {
+    const { copy } = await run({
+      config: { ...deps.config, assets: { hash: true } },
+    })
+    expect((await copy()).error).toBeUndefined()
+    await site.touch('a/a.js', 'let a = 1')
+    await site.touch('a/b.js', 'let b = 2')
+    const move = fs.move.bind(fs)
+    let moves = 0
+    const spy = vi
+      .spyOn(fs, 'move')
+      .mockImplementation(async (from, to, options) => {
+        if (++moves === 2)
+          throw Object.assign(new Error('busy'), { code: 'EBUSY' })
+        return move(from, to, options)
+      })
+    try {
+      expect((await copy()).error).toBeTruthy()
+    } finally {
+      spy.mockRestore()
+    }
+    expect((await fs.readdir(`${site.root}/out`)).length).toBeGreaterThan(1)
+    await fs.remove(`${site.root}/a`)
+    expect((await copy()).error).toBeUndefined()
+    expect(await fs.readdir(`${site.root}/out`)).toEqual([])
+  })
+
+  it('retries a stale output whose removal failed, rather than forgetting it', async () => {
+    const { copy } = await run()
+    await site.touch('a/keep.txt', 'keep')
+    expect((await copy()).error).toBeUndefined()
+    await fs.remove(`${site.root}/a/old.txt`)
+    const spy = vi
+      .spyOn(fs, 'unlink')
+      .mockRejectedValueOnce(
+        Object.assign(new Error('locked'), { code: 'EPERM' }),
+      )
+    try {
+      expect((await copy()).error).toBeTruthy()
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await site.exists('out/old.txt')).toBe(true)
+    expect((await copy()).error).toBeUndefined()
+    expect(await site.exists('out/old.txt')).toBe(false)
+    expect(await site.exists('out/keep.txt')).toBe(true)
+  })
+})

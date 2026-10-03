@@ -128,6 +128,23 @@ describe('createAssetManifest', () => {
     ).toEqual([])
   })
 
+  // A copy that stopped partway wrote files no reconcile ever saw. The next
+  // reconcile of that copy reports them stale unless it produced them again,
+  // or another copy did — and reports them once, not on every run after.
+  it('reports outputs a copy wrote but never recorded, once', () => {
+    const manifest = createAssetManifest()
+    expect(manifest.hasOwner('copy')).toBe(false)
+    manifest.unrecorded('copy', ['a.txt', 'b.txt', 'shared.txt'])
+    expect(manifest.hasOwner('copy')).toBe(true)
+    expect(manifest.lookup('a.txt')).toBeNull()
+    manifest.reconcile('other', new Map([['shared.txt', 'shared.txt']]))
+    expect(manifest.reconcile('copy', new Map([['b.txt', 'b.txt']]))).toEqual([
+      'a.txt',
+    ])
+    expect(manifest.reconcile('copy', new Map())).toEqual(['b.txt'])
+    expect(manifest.reconcile('copy', new Map())).toEqual([])
+  })
+
   it('is per instance — two manifests never see each other', () => {
     const a = createAssetManifest()
     const b = createAssetManifest()
