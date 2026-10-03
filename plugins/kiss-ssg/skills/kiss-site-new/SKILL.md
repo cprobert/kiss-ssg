@@ -97,6 +97,14 @@ Seven decisions to make while the views are still being written — things each 
 
 When Anthropic's `frontend-design` skill is available, let it set the **visual direction** — type, colour, spacing tokens, layout character — while kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Its look goes into those files; the site never becomes a single-file page.
 
+When a page needs a little interactivity, reach for it in this order, and keep the content in the rendered HTML either way — that is what keeps it crawlable:
+
+1. **The platform first, with no script at all.** An accordion is `<details>`/`<summary>` (a shared `name` makes a group exclusive); a dropdown or a mobile menu is the `popover` attribute with a `popovertarget` button, which brings light-dismiss and Escape with it; a modal is `<dialog>`.
+2. **Alpine.js's CSP build (`@alpinejs/csp`) when a component holds state the platform cannot** — tabs with their ARIA pattern, filtering a list, a form section that depends on an earlier answer. Self-host its `dist/cdn.min.js` as an asset loaded with `defer`, and keep the logic in `Alpine.data()` components in one script file that the markup names, which is the shape the CSP build is made for.
+3. **Never scattered hand-written scripts**, one toggle per page in a different shape each time: a person reading the template has to be able to see what it does.
+
+Most sites never reach step 2, and should not install Alpine until they do. kiss knows nothing about either; this is a recommendation, not a dependency.
+
 Three mistakes real consumer sites made, all of which passed review before they bit:
 
 - **A chain that ends at `.generate()` exits 0 on a broken build.** Page failures surface only through `complete()`'s rejection. A deploy script that does not await it ships a half-built tree and reports success.
