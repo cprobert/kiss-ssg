@@ -3,6 +3,24 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.1 — 2026-10-03
+
+### Nothing for a site to change
+
+The engine's main file was reorganised: the work it did is now split across five smaller modules,
+each with one job. Nothing a site can call, configure or observe has changed. Every page of five
+real sites built byte-for-byte the same on 2.7.0 and on this version, along with every example in
+the package.
+
+If you or your agent read the engine's notes in `node_modules/kiss-ssg/AIKB/`, they now follow the
+new layout: `staging.md`, `asset-copy.md`, `page-registry.md`, `build-finish.md` and `rebuild.md`
+sit beside `kiss.md`, which describes how they fit together.
+
+One thing worth knowing if you run `--dev` on Windows: when an asset is re-copied, the old copy is
+removed a moment before the new one is written, so a request in that instant can get a 404. The
+next request or reload resolves it. That comes from the copying library kiss uses and is recorded
+in `AIKB/upstream.md`.
+
 ## 2.7.0 — 2026-10-01
 
 ### A page you already have can become a kiss site
