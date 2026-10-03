@@ -46,5 +46,35 @@ if (toggle) {
   toggle.hidden = false
 }
 
+// The home page's agent selector: one set-up box at a time, Claude Code until
+// the visitor picks another. A remembered choice that no longer names a box
+// falls back to the first.
+const AGENT_KEY = 'kiss-docs-agent'
+const picker = document.querySelector('[data-agent-picker]')
+if (picker) {
+  const select = picker.querySelector('select')
+  const boxes = document.querySelectorAll('[data-agent-boxes] [data-agent]')
+  const show = (id) => {
+    for (const box of boxes) box.hidden = box.dataset.agent !== id
+  }
+  let saved = null
+  try {
+    saved = localStorage.getItem(AGENT_KEY)
+  } catch {
+    // Blocked storage: start from the default.
+  }
+  if ([...select.options].some((o) => o.value === saved)) select.value = saved
+  select.addEventListener('change', () => {
+    show(select.value)
+    try {
+      localStorage.setItem(AGENT_KEY, select.value)
+    } catch {
+      // Blocked storage: the choice holds until the next page load.
+    }
+  })
+  show(select.value)
+  picker.hidden = false
+}
+
 const menu = document.querySelector('.docs__menu')
 if (menu && window.matchMedia('(max-width: 60rem)').matches) menu.open = false
