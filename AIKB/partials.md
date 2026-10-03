@@ -16,7 +16,7 @@ Registers Handlebars partials and layouts from `config.folders.partials` and `co
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/kiss.js` (`registerPartials`) and `lib/rebuild.js` (`partialNameFor`, mapping an edited partial or layout to its name in `_handleChange()`).
 
 ## Non-obvious behavior
 

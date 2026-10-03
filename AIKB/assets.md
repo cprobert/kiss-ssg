@@ -15,7 +15,7 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/asset-copy.js` (`copyAssets`, `assetCopyOwner`, in the queued copy behind `Kiss._copyAssets()`).
 
 ## Non-obvious behavior
 
@@ -50,3 +50,4 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 - Source-stat failures during inventory discovery are skipped, including dangling links and files disappearing between glob and stat. Healthy files still reconcile. The source-stat ENOENT transition was tested on Windows; creating a real file symlink was denied by the host, so actual dangling-link behavior was not executed here.
 - `assetCopyOwner(source, target)` derives the shared owner identity. Kiss supplies the requested destination before staging; direct module callers use their target. Watch copies use the original registration paths, including the build-root anchor used for manifest names.
+- **Known issue (found 2026-10-02, not yet fixed): a copy that fails partway leaves what it already wrote untracked.** `copyAssets` calls `recordEmitted` only after `fs.copy` resolves, so when a source file vanishes mid-copy (`ENOENT` on its `copyfile`) the `catch` returns the error and the files this run had already written into the build folder never reach the manifest. A later run that finds the root gone removes only the outputs the manifest knows, so those survive. Reproduced with `watch.test.js`'s "copies new assets…" sequence and a 20 ms delay injected between fs-extra's unlink and copy: after the asset root was deleted, `public/moved.txt` stayed for good. In use, a `git checkout` or a bulk delete during `--dev` can leave a stale asset in the build until the next restart. Recorded for a later branch (`planning/sessions/2026-10-02-split-kiss-orchestrator.md`, Amendments). The every-copy unlink-first gap that led here is `AIKB/upstream.md`.

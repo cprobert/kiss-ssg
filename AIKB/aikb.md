@@ -35,7 +35,7 @@ Everything but the two writers is pure, and nothing anywhere reads a clock: two 
 
 ## Depended on by
 
-`lib/kiss.js` (`Kiss._buildAikb()`, inside `_finishBuild()`). The generated files are read by the `kiss-memory` plugin's `kiss-site-brief`, `kiss-branch-pulse` and `kiss-branch-close` skills, and `last-build.json` is the file `kiss-ssg check` diffs against by default (`defaultBaseline` in `lib/check.js` derives its path from the report's own `aikb.folder`).
+`lib/build-finish.js` (`Kiss._buildAikb()`, inside `_finishBuild()`), and `lib/page-registry.js` (`pageOrigin`, in `_page()`). The generated files are read by the `kiss-memory` plugin's `kiss-site-brief`, `kiss-branch-pulse` and `kiss-branch-close` skills, and `last-build.json` is the file `kiss-ssg check` diffs against by default (`defaultBaseline` in `lib/check.js` derives its path from the report's own `aikb.folder`).
 
 ## Non-obvious behavior
 

@@ -22,7 +22,7 @@ The finding is **advisory**. It never moves `ok`, never moves an exit code, and 
 
 ## Depended on by
 
-`lib/kiss-page.js` (`extractReferences`, at write time, parking the result on `KissPage.links`), `lib/audit.js` (`attribute`, `decodeEntities`) and `lib/kiss.js` (`checkLinks`, from `Kiss._checkLinks()` in `complete()`'s settle path, latched on `_links` and handed to `buildReport` as the report's `links` key — `AIKB/build-report.md`).
+`lib/kiss-page.js` (`extractReferences`, at write time, parking the result on `KissPage.links`), `lib/audit.js` (`attribute`, `decodeEntities`) and `lib/build-finish.js` (`checkLinks`, from `Kiss._checkLinks()` in `complete()`'s settle path, latched on `_links` and handed to `buildReport` as the report's `links` key — `AIKB/build-report.md`).
 
 ## Non-obvious behavior
 

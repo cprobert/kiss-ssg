@@ -3,6 +3,7 @@ branch: check-mode-broken-link-count
 base: main
 status: closed
 opened: 2026-10-02
+consolidated: 2026-10-03
 ---
 
 # Session — 2026-10-02: `check` output that a 686-page site can read, and `links.hostServed`

@@ -16,7 +16,7 @@ Resolves `options.controller` (a function, or a filename to load) and runs it ag
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/page-registry.js` (`applyController`, in `_page()` and the `.pages()` fan-out).
 
 ## Non-obvious behavior
 
