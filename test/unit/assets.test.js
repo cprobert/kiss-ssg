@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
-import { copyAssets } from '../../lib/assets.js'
+import { assetCopyOwner, copyAssets } from '../../lib/assets.js'
 import { OutputRegistry } from '../../lib/output-registry.js'
 import { contentHash, createAssetManifest } from '../../lib/asset-manifest.js'
 import { silentLogger } from '../../lib/logger.js'
@@ -622,6 +622,24 @@ describe('copyAssets that fails partway', () => {
     await site.touch('a/x', 'a file where a directory is')
     expect((await copy()).error).toBeTruthy()
     await fs.remove(`${site.root}/a/x`)
+    expect((await copy()).error).toBeUndefined()
+    expect((await copy()).error).toBeUndefined()
+    expect(await site.read('out/x/keep.txt')).toBe('keep')
+  })
+
+  // The guard in the catch keeps a directory out of the record in the case
+  // above, so that case never reaches the unlink loop. A directory can still
+  // reach it: a source that turns from a file into a directory between the
+  // filter's lstat and fs-extra's own is recorded as a file and then created
+  // as a directory. The unlink loop must release it rather than retry it.
+  it('does not retry a recorded output that turns out to be a directory', async () => {
+    const { opts, copy } = await run({ outputs: undefined })
+    expect((await copy()).error).toBeUndefined()
+    await site.touch('out/x/keep.txt', 'keep')
+    opts.manifest.unrecorded(
+      assetCopyOwner(`${site.root}/a`, `${site.root}/out`),
+      ['x'],
+    )
     expect((await copy()).error).toBeUndefined()
     expect((await copy()).error).toBeUndefined()
     expect(await site.read('out/x/keep.txt')).toBe('keep')
