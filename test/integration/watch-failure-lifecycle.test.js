@@ -149,7 +149,9 @@ describe('a failure the replay cannot re-derive', () => {
     // The nested copy cannot WRITE its output — a directory sits where
     // theme.css must go — though the stylesheet itself parses. The parent
     // copy compiles the same source successfully, to a different target.
-    await fs.ensureDir(`${site.root}/out-nested/theme.css`)
+    // The directory holds a file that is not this copy's: an empty folder in
+    // the way is cleared (AIKB/assets.md, a source that changes type).
+    await fs.outputFile(`${site.root}/out-nested/theme.css/foreign.txt`, 'x')
     kiss = new Kiss({
       folders: { ...site.folders, assets: null },
       logger: silentLogger,
