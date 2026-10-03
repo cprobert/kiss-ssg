@@ -135,6 +135,16 @@ export function isTemplateConfigRead(text, key) {
   return new RegExp(`\\{\\{[^}]*\\bconfig\\.${key}\\b`).test(text)
 }
 
+// ── A file whose name is `config.<ext>` (Check 6) ────────────────────────────
+// Anything after `config.` that is really a file extension — `lib/config.js`,
+// `vitest.config.mjs`, `AIKB/config.md`, `test/unit/config.test.js`,
+// `.codex/config.toml`. The list is the formats a config FILE comes in, not the
+// ones seen so far: it began as the six this repo had, and `.codex/config.toml`
+// was then reported as a key called `toml` in three session logs running.
+export function isFileNameTail(key) {
+  return /^(js|mjs|cjs|ts|json|jsonc|md|txt|test|toml|ya?ml|ini)$/.test(key)
+}
+
 // ── Former skill names (Check 3) ─────────────────────────────────────────────
 // A dead reference is to something that EXISTED. Git knows every skill folder
 // (and pre-skill command file) this repo has renamed or removed, so a `/x`
@@ -496,9 +506,6 @@ function main() {
     'logger',
   ])
   const folderKeys = new Set(Object.keys(DEFAULT_FOLDERS))
-  // Anything after `config.` that is really a filename — `lib/config.js`,
-  // `vitest.config.mjs`, `AIKB/config.md`, `test/unit/config.test.js`.
-  const FILENAME_TAIL = /^(js|mjs|cjs|json|md|txt|test)$/
   // `\\b` in front: `tsconfig.check.json` is not a config key called `check`.
   const configRefs = [
     ...grepFiles(
@@ -513,7 +520,7 @@ function main() {
     ).filter(
       (h) =>
         !configKeys.has(h.match) &&
-        !FILENAME_TAIL.test(h.match) &&
+        !isFileNameTail(h.match) &&
         !isTemplateConfigRead(h.text, h.match),
     ),
   ]

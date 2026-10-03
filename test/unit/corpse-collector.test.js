@@ -7,6 +7,7 @@ import {
   aikbStaleness,
   formerSkillNames,
   isConsumerSitePath,
+  isFileNameTail,
   isTemplateConfigRead,
   isUrlProse,
 } from '../../.claude/skills/corpse-collector/scripts/scan.mjs'
@@ -252,6 +253,22 @@ describe('formerSkillNames', () => {
     const root = mkdtempSync(join(tmpdir(), 'kiss-corpse-'))
     repos.push(root)
     expect(formerSkillNames(root)).toEqual(new Set())
+  })
+})
+
+describe('isFileNameTail', () => {
+  it('reads a config file of any common format as a file, not a key', () => {
+    // `.codex/config.toml` was reported as a config key `toml` in three
+    // session logs (2026-10-02 twice, 2026-10-03) before this was a test.
+    for (const ext of ['js', 'mjs', 'cjs', 'ts', 'json', 'md', 'txt', 'test'])
+      expect(isFileNameTail(ext)).toBe(true)
+    for (const ext of ['toml', 'yaml', 'yml', 'ini', 'jsonc'])
+      expect(isFileNameTail(ext)).toBe(true)
+  })
+
+  it('leaves a real key alone', () => {
+    for (const key of ['siteUrl', 'dev', 'links', 'assets', 'cleanBuild'])
+      expect(isFileNameTail(key)).toBe(false)
   })
 })
 

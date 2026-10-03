@@ -71,7 +71,7 @@ If hits are found: surface them and ask the operator to confirm each is not a re
 An SSG's attack surface is not authentication — it is what the engine reads, executes, and writes, on a developer's machine. Check whether the diff touches it:
 
 ```bash
-git diff --name-only "$BASE...HEAD" | grep -E '(lib/(model-resolver|controller-resolver|dev-server|watcher|assets|utils|kiss-page)\.js|package\.json)'
+git diff --name-only "$BASE...HEAD" | grep -E '(lib/(model-resolver|controller-resolver|dev-server|watcher|assets|utils|kiss-page|page-registry|staging|asset-copy)\.js|package\.json)'
 ```
 
 Why each one:
@@ -83,7 +83,19 @@ Why each one:
 | `lib/dev-server.js`                                 | Binds a port and serves the build directory                                                                                 |
 | `lib/watcher.js`                                    | Watches and re-reads files, and re-imports controllers on change                                                            |
 | `lib/assets.js`, `lib/kiss-page.js`, `lib/utils.js` | Compute output paths from user-supplied `slug` / `path` and write files there — the path-traversal surface (`sanitizePath`) |
+| `lib/page-registry.js`                              | Calls the model and controller resolvers for every registered page, and computes each page's output path from its options   |
+| `lib/staging.js`, `lib/asset-copy.js`               | Rename, copy and remove folders beside the build folder (`cleanBuild: 'atomic'`) and copy asset trees into it               |
 | `package.json`                                      | A new or bumped dependency, or a changed `files` whitelist that could publish something unintended                          |
+
+**The table names files, so it cannot see a new one.** Code that reaches this surface can move into a module the table has never heard of — twice now: two new parsers of untrusted input (2026-10-01), then `lib/page-registry.js` and `lib/staging.js`, which took over the calls into the model and controller resolvers and the renames beside the build folder (2026-10-03). Neither matched, and the review happened only because Claude read past the grep. So also list every `lib/` module the branch **adds**, and every changed one that **imports** a module in the table:
+
+```bash
+git diff --name-only --diff-filter=A "$BASE...HEAD" -- 'lib/*.js'
+git diff --name-only "$BASE...HEAD" -- 'lib/*.js' \
+  | xargs -r grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'"
+```
+
+`utils.js` is left out of the second grep on purpose: nearly every module imports it, so the grep would list everything and say nothing. Read each file these print and decide whether it now does one of the things in the table — parses external input, executes code by path, computes an output path, or writes outside the build folder. If it does, it is in scope exactly as if it were in the table, and the table gains a row for it in the same commit.
 
 If any match: this branch is **security-relevant**. Proceed to Step 3.
 

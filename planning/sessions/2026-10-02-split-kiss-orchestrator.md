@@ -3,6 +3,7 @@ branch: refactor/split-kiss-orchestrator
 base: main
 status: closed
 opened: 2026-10-02
+consolidated: 2026-10-03
 ---
 
 # Session — 2026-10-02: Split `lib/kiss.js` down to the orchestrator, and the Windows ENOENT flake

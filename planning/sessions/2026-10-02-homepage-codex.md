@@ -3,6 +3,7 @@ branch: feat/homepage-codex
 base: main
 status: closed
 opened: 2026-10-02
+consolidated: 2026-10-03
 ---
 
 # Session — 2026-10-02: Homepage showcase, "with AI" hero, and Codex beside Claude Code
