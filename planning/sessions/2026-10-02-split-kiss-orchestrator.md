@@ -127,6 +127,16 @@ out to leak state, check every seam for the same leak before the next commit.
   `/** @private */` under one header comment per module, not `@private — lib/<m>.js`. No drift.
   **Eyeball: deferred** — reading `lib/kiss.js` top to bottom as an orchestrator, to be confirmed
   at `/branch-close` Step 5a. Decision: **ready to close** when the operator asks.
+- **2026-10-03** — fleet check, at the operator's request ("do the existing kiss sites build
+  correctly after the refactor"). Each site under `C:\Code\kiss` built twice under `kiss-ssg check`
+  (stage and discard, nothing published), once on a `main` worktree's engine and once on this
+  branch's, with the engine line confirming which was resolved. Reports compared with the check
+  command's own `diffReports`. **No page changed on any site:** a1k9training 20/20, pro-plumbing
+  7/7, k9-solutions 10/10, swan-love 11/11, codex 2/2 unchanged by hash, all `ok`, the same link,
+  audit, redirect and failure results. The only other difference was the Tailwind step's
+  `duration`. metacarpus built 0 pages on both (no CMS data on disk), so it proves nothing about
+  rendering; medulla was left out (no data, and its router writes `.env` into the site). Codex
+  review (2026-10-03): "no actionable regressions"; typecheck passes; it did not run the tests.
 
 ---
 
