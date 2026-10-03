@@ -635,6 +635,36 @@ describe('watch filesystem reconciliation', () => {
     expect(await site.read('public/restored.txt')).toBe('restored')
   })
 
+  // A source that changes type mid-session met its own previous output and
+  // failed every rebuild until restart: fs-extra will not put a file over a
+  // folder, and the empty folder kiss leaves behind was in the way.
+  it('follows an asset folder that becomes a file, and back', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'PAGE',
+      'src/assets/x/inner.txt': 'inner',
+    })
+    await start()
+    expect(await site.read('public/x/inner.txt')).toBe('inner')
+    await fs.remove(`${site.src}/assets/x`)
+    await waitFor(async () => !(await site.exists('public/x/inner.txt')))
+    await rebuildSettled()
+    await site.touch('src/assets/x', 'now a file')
+    await waitFor(
+      async () =>
+        (await fs.stat(`${site.build}/x`).catch(() => null))?.isFile() &&
+        (await site.read('public/x').catch(() => null)) === 'now a file',
+    )
+    await rebuildSettled()
+    await fs.remove(`${site.src}/assets/x`)
+    await site.touch('src/assets/x/again.txt', 'again')
+    await waitFor(
+      async () =>
+        (await site.read('public/x/again.txt').catch(() => null)) === 'again',
+    )
+    await rebuildSettled()
+    expect(await site.read('public/x/again.txt')).toBe('again')
+  })
+
   it('renders deliberately emptied partials and newly added empty pages', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a{{> p}}b',
@@ -1279,10 +1309,14 @@ describe('watch()', () => {
         async () => (await site.read('public/index.html')) === 'P2|M2|C2|v2',
       )
 
-      // ...and the assets watcher, whose folder is relative too.
+      // ...and the assets watcher, whose folder is relative too. A failed read
+      // is "not yet": fs-extra re-copies the existing file by unlinking it
+      // first, and `waitFor` does not catch (AIKB/testing.md, the re-copy gap).
       await site.touch('src/assets/css/site.css', 'a{color:red}')
       await waitFor(
-        async () => (await site.read('public/css/site.css')) === 'a{color:red}',
+        async () =>
+          (await site.read('public/css/site.css').catch(() => null)) ===
+          'a{color:red}',
       )
     } finally {
       process.chdir(cwd)

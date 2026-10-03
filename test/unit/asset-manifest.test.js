@@ -128,6 +128,35 @@ describe('createAssetManifest', () => {
     ).toEqual([])
   })
 
+  // A copy that stopped partway wrote files no reconcile ever saw. The next
+  // reconcile of that copy reports them stale unless it produced them again,
+  // or another copy did — and reports them once, not on every run after.
+  it('reports outputs a copy wrote but never recorded, once', () => {
+    const manifest = createAssetManifest()
+    expect(manifest.hasOwner('copy')).toBe(false)
+    manifest.unrecorded('copy', ['a.txt', 'b.txt', 'shared.txt'])
+    expect(manifest.hasOwner('copy')).toBe(true)
+    expect(manifest.lookup('a.txt')).toBeNull()
+    manifest.reconcile('other', new Map([['shared.txt', 'shared.txt']]))
+    expect(manifest.reconcile('copy', new Map([['b.txt', 'b.txt']]))).toEqual([
+      'a.txt',
+    ])
+    expect(manifest.reconcile('copy', new Map())).toEqual(['b.txt'])
+    expect(manifest.reconcile('copy', new Map())).toEqual([])
+  })
+
+  it("says whether an output is this copy's, recorded or not", () => {
+    const manifest = createAssetManifest()
+    manifest.reconcile('copy', new Map([['css/site.css', 'css/site.a.css']]))
+    manifest.reconcile('other', new Map([['x.txt', 'x.txt']]))
+    manifest.unrecorded('copy', ['half.txt'])
+    expect(manifest.owns('copy', 'css/site.a.css')).toBe(true)
+    expect(manifest.owns('copy', 'half.txt')).toBe(true)
+    // Keyed by output, not by name, and never another copy's.
+    expect(manifest.owns('copy', 'css/site.css')).toBe(false)
+    expect(manifest.owns('copy', 'x.txt')).toBe(false)
+  })
+
   it('is per instance — two manifests never see each other', () => {
     const a = createAssetManifest()
     const b = createAssetManifest()

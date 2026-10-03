@@ -10,6 +10,17 @@ export function createAssetManifest(): {
     reconcileSass(owner: string, current: Map<string, string>): Set<string>;
     readonly urlRevision: number;
     hasOwner(owner: any): boolean;
+    /** Whether this copy produced `output`, recorded or not.
+     * @param {string} owner
+     * @param {string} output build-relative
+     * @returns {boolean}
+     */
+    owns(owner: string, output: string): boolean;
+    /** Remember outputs a copy wrote but stopped before recording.
+     * @param {string} owner
+     * @param {Iterable<string>} outputs build-relative, as `reconcile` returns
+     */
+    unrecorded(owner: string, outputs: Iterable<string>): void;
     /** Last-good output from this copy only, never another copy's mapping.
      * @param {string} owner
      * @param {string} name
