@@ -1309,10 +1309,14 @@ describe('watch()', () => {
         async () => (await site.read('public/index.html')) === 'P2|M2|C2|v2',
       )
 
-      // ...and the assets watcher, whose folder is relative too.
+      // ...and the assets watcher, whose folder is relative too. A failed read
+      // is "not yet": fs-extra re-copies the existing file by unlinking it
+      // first, and `waitFor` does not catch (AIKB/testing.md, the re-copy gap).
       await site.touch('src/assets/css/site.css', 'a{color:red}')
       await waitFor(
-        async () => (await site.read('public/css/site.css')) === 'a{color:red}',
+        async () =>
+          (await site.read('public/css/site.css').catch(() => null)) ===
+          'a{color:red}',
       )
     } finally {
       process.chdir(cwd)
