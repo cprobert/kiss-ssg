@@ -1,7 +1,7 @@
 ---
 branch: refactor/split-kiss-orchestrator
 base: main
-status: open
+status: closed
 opened: 2026-10-02
 ---
 
@@ -141,3 +141,165 @@ out to leak state, check every seam for the same leak before the next commit.
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-03: `kiss.js` split into five modules; the Windows ENOENT flake explained
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges.
+The session's quality is set by how actively the human supervised it. This reflection reads that
+supervision, as CPD for both._
+
+**What we shipped:** `lib/kiss.js` from 3,773 lines to 1,774, its work moved into `lib/staging.js`
+(`4c30b33`), `lib/asset-copy.js` (`0f66c7c`), `lib/page-registry.js` (`6d68ae9`),
+`lib/build-finish.js` (`add4d86`) and `lib/rebuild.js` (`4a9d2a7`), each with a unit test and an
+AIKB doc; the flake's cause measured and the two tests fixed (`0bb7423`); 2.7.1 (`4d4f5f3`).
+
+## Reflect — what the session was
+
+**Planned, and the plan held.** The intent named the shape (functions over the instance), the
+impact surface (engine internals) and the evidence bar for the flake before any code was read. The
+operator then put the work through plan mode, three read-only explorers mapped the state each method
+touches and every test that reaches into the instance, and a contract
+(`planning/plans/2026-10-02-split-kiss-orchestrator.md`) was critiqued by a fresh-context agent
+before anything moved. That critique was the single best-value step of the branch: three blockers —
+three function names that would have collided with their own imports (a SyntaxError), an env reader
+stranded in `kiss.js` with its only caller moving away, and a delegator template `tsc --checkJs`
+would reject — were found from the document alone. The third came true exactly as predicted
+(TS8024, in `build-finish.js`) and cost a minute because it was expected.
+
+The route moved four times, each recorded as an Amendment: a fifth group (the line estimate had
+been wrong, because ≈460 lines of field declarations and public typedefs cannot move while state
+stays on `Kiss`); the flake fixed in the tests rather than the engine; the env readers into
+`lib/check.js`; and a defect found but not fixed. None was scope creep — each was the plan meeting a
+measurement.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering — strongest, and evidence-led.** The operator first chose an engine fix for
+the flake (copy in place, no unlink). Claude then measured three copy strategies against a racing
+reader on this machine: in-place copying produced **370 truncated reads**, temp-then-rename **4,020
+lost writes**. Put to the operator as a question with the numbers, the decision was reversed to tests
+plus an `AIKB/upstream.md` record. That is the healthy shape: the operator's choice was a
+reasonable default, the measurement contradicted it, and the operator changed it on evidence rather
+than on Claude's say-so. The same pattern repeated at the first pulse, where a measured signal —
+delegators costing ≈9 lines each, projecting ≈2,100 rather than ≈1,800 — produced the "slim
+delegators" decision; and when the flake harness exposed an unrelated engine defect (a partial copy
+never records what it wrote), the operator chose to record it and keep the branch a split.
+
+**Verification & ownership — the operator added the check that mattered most, unprompted.** Every
+extraction was verified by Claude per commit (suite, typecheck, lint, the examples byte-compared
+against a baseline with a comparer first shown to catch a change). But the two verifications with
+the most weight came from the operator: **"Do the existing kiss sites build correctly?"**, which
+ran five real sites on `main`'s engine and the branch's and found every page identical by hash; and
+the Codex review, run by the operator twice (the first stopped at a usage limit; the second found
+"no actionable regressions"). The fleet check is the one Claude should have proposed as a success
+criterion at `/branch-open`: Claude's own memory records that "the operator wants every engine branch
+checked against real sites before merge", and it was not read into the criteria. That is a Claude
+miss, carried below. The eyeball held at both ends — looked at the first pulse ("shape is right"),
+deferred at the second, and **looked at the close: "it reads well"**.
+
+**Iteration discipline — sound per commit, sparse at the human level.** Five extractions ran in one
+long autonomous stretch between the first pulse and the second, each one gated by the suite and the
+example comparison, so nothing large went unverified. The operator's checkpoints were the two pulses
+and the close. That was enough here because the per-commit evidence was mechanical and strong; on
+work with less mechanical evidence the same cadence would be thin.
+
+**Learning engagement — thin.** The operator asked for no explanations. Each pulse offered one (the
+`rebuildSettled()` placed _before_ the restore in `watch.test.js`, which changes what that test
+covers; the decision to move AIKB bullets word for word rather than rewrite them) and neither was
+taken up. Accepted silently is not the same as understood — but a refactor whose correctness is
+"nothing observable changed", proven by identical bytes, needs less explanation than most.
+
+**Harness leverage — high, on both sides.** Plan mode; three parallel explorers; one adversarial
+critic; scripts that generated each module from the exact source lines rather than retyping them;
+`/codex:review` and the fleet check from the operator. One harness miss was Claude's: editing
+`kiss.js` while a background full-suite load test was still running, which contaminated its later
+rounds — the run had to be stopped and its result read as two clean rounds, not four.
+
+**Intended versus actual supervision.** The operator approved the plan with "Lets do this" and the
+session then ran autonomously through every extraction to "ready to close". The places the operator
+meant to supervise — the flake decision, the line-count signal, the defect, the version — were all
+put to them as questions, and each answer changed the work. Nothing Claude closed on its own
+self-evaluation that the operator had meant to hold.
+
+Claude's own slips, for the record, all caught before they shipped: a git status that "passed" for
+the `codex` site because git refused to read the repository and printed nothing (dubious ownership)
+— caught only because a later command surfaced the error; `node` handed Git Bash `/c/…` paths,
+the exact gotcha in Claude's own memory; a unit-test stub for `asset-copy` whose config lacked a
+`sass` key, so "a stylesheet that will not compile is a failure" passed because every compile threw a
+`TypeError`; thirteen sibling AIKB docs whose "Depended on by" went stale across three commits and
+were corrected only in the fifth (the CLAUDE.md rule is _same commit_); and a changelog line that
+said "byte-for-byte" of examples that matched only with timestamps masked.
+
+**Competency level: Active supervisor.** Earned by evidence-led steering at every fork, by a
+verification (the fleet) the operator thought of and Claude did not, and by an independent non-Claude
+review the operator ran themselves. Not Agentic engineering lead: the workflow that made this branch
+safe — contract critique, pulses, gates — is the repository's existing system rather than one
+improved here, and learning engagement stayed passive.
+
+## Feedback — recommendations for next session
+
+- **Claude — read the memory into the criteria at `/branch-open`.** The fleet note says real sites
+  are checked before an engine branch merges; it was in context and not proposed. For any branch
+  touching `lib/`, the open should propose "the fleet under `C:\Code\kiss` builds identically on
+  `main` and on the branch" as a criterion, with the harness that did it this time (a `main`
+  worktree, junctions, the check command's own `diffReports`).
+- **Claude — a doc another module's change makes wrong is part of that change's commit.** Each
+  extraction updated its own module's doc and `kiss.md`, and left the "Depended on by" of the
+  modules whose importer moved; thirteen were caught only in commit five. The grep that found them
+  (`awk` over each sibling doc's "Depended on by" for `lib/kiss.js`) belongs in every extraction's
+  checklist, not the last one's.
+- **Claude — never start a background run that reads the working tree and then edit the tree.** The
+  load harness and the staging extraction overlapped; two of four rounds were contaminated. Either
+  wait for the run, or run it against a separate worktree.
+- **Claude — an empty answer from a failed command is not a clean answer.** `git status | wc -l`
+  printed `0` for a repository git refused to open. Check the exit code, or use
+  `git -c safe.directory=…` where ownership can differ.
+- **Operator — take one of the offered explanations at each pulse.** Two were offered and neither
+  was asked about. The `rebuildSettled()` placement is worth thirty seconds: it is the one place this
+  branch changed what a test covers.
+- **Both — the stale-asset defect needs its own branch.** A copy that fails partway never records
+  what it wrote, so a `git checkout` during `--dev` can leave a stale asset until restart
+  (`AIKB/assets.md`, Known issue; reproduced with a 20 ms injection in fs-extra). It has a
+  reproduction and a clear red-first test shape.
+- **Process — the secrets-scan path table missed new modules again.** Its enumerated list matched
+  none of the five modules, though `page-registry.js` now holds the code that calls the model and
+  controller resolvers and `staging.js` the renames outside the build folder. This is the second log
+  to say so (2026-10-01): the table's rule should be "any module that reaches those paths", or it
+  should re-list on every new `lib/` file.
+- **Process — `/memory-consolidate` is due.** "Fix the class, not the case" was in three logs at
+  this branch's open, and this branch shows it once more (one stale "Depended on by" was found,
+  and the other twelve were only found later); the corpse collector's `config.toml` false positive
+  and the secrets-scan table are each now in two.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** bring `lib/kiss.js` back under the one-job-per-module rule without changing anything a
+consuming site can observe; find, fix and prove the cause of the Windows `ENOENT` flake.
+
+**Met.**
+
+- [x] `kiss.js` keeps the public methods and the build lifecycle; staging, the asset copy, page
+      registration and identity, the settled build's report work, and the watch session each live in
+      their own module — `kiss.js` **1,774** lines, measured (estimate ≈1,800, amended from
+      1,200–1,600).
+- [x] Functions over the instance with same-named delegators — no stray `this` in any module; every
+      on-instance patch and replacement in the suite passes unchanged.
+- [x] A unit test, an AIKB doc and a `CLAUDE.md` row per module — `test/aikb.test.js` 199/199;
+      caveat: thirteen sibling docs stale across commits 2–4, corrected in `4a9d2a7`.
+- [x] No public behaviour moved — `types/kiss.d.ts` private-only; `llms.txt`, `README.md`, `GUIDE.md`
+      untouched; every example identical after each extraction (timestamps masked); five fleet sites
+      identical by page hash on `main` and on the branch.
+- [x] One group per commit, suite green between — five extraction commits, plus the delegator slim.
+- [x] The flake — mechanism measured (694 `ENOENT` per 5 s from fs-extra's unlink-then-copy);
+      load alone never reproduced the test failure; a delay injected into fs-extra made
+      `asset-hashing.test.js` fail 11/11 and pass 11/11 after the fix; the full suite green five runs
+      in a row. Caveat: the `watch.test.js` change was never seen red — the injection cannot force
+      its overlapping re-copy.
+- [x] `npm run gates` green (all five) and a non-Claude review — Codex, 2026-10-03: "no actionable
+      regressions"; it did not run the tests.
+
+**What is better now:** the engine's largest file is a readable orchestrator (the operator's own
+read at the close); each piece of the build has a doc a person can open on its own; and the flake is
+understood — the AIKB note no longer sends the next person looking for a wrong await. **What is
+open:** the stale-asset defect, recorded for its own branch; and 2.7.1 is unpublished until the PR
+merges.
