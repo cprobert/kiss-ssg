@@ -237,6 +237,49 @@ tarball and copying eleven folders into every site, which go stale on upgrade
 because `init` never overwrites a file. The per-user plugin keeps one copy that
 updates with the marketplace.
 
+### The npm package as a local plugin marketplace
+
+**Observed:** Claude Code 2.1.288 and Codex CLI 0.157.1 on Windows, 2026-10-03,
+each against a throwaway config (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`; the
+operator's own never touched), with a scratch site whose
+`node_modules/kiss-ssg` carried only the core plugin and a marketplace file.
+The question was whether shipping the core skills in the npm package, and
+installing them from there, would give each site the skills that match the
+engine it has. **Effect:**
+
+| Setup                                                                                                                  | Result                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude: `marketplace add ./node_modules/kiss-ssg --scope project`, then `install`                                      | Works; the session lists the six `kiss-ssg:*` skills once each, and the plugin's path is `node_modules` itself, not the plugin cache                           |
+| Claude: `node_modules` replaced by a newer version, no command run                                                     | The next session reports the new version: a local-folder marketplace is read live                                                                              |
+| Claude: `--scope project` declaration                                                                                  | Writes an **absolute** path into `.claude/settings.json`, which cannot be committed                                                                            |
+| Claude: that path edited to `./node_modules/kiss-ssg`, fresh config                                                    | `install` fails ("not found in marketplace"); `marketplace update` cannot find it                                                                              |
+| Claude: `--scope local` declaration, `install --scope project`                                                         | Works: the absolute path lands in `settings.local.json`, and the committed `settings.json` holds only `enabledPlugins`                                         |
+| Claude: settings written by hand, no commands, fresh config                                                            | Nothing loads, and `install` alone fails: only `marketplace add` registers a marketplace (in the **user's** `known_marketplaces.json`)                         |
+| Claude: two sites register one marketplace name                                                                        | The last one wins for **every** site: site A's session loaded site B's 2.9.0 from site B's folder                                                              |
+| Claude: a per-site marketplace in `.kiss-marketplace/`, plugin source `../node_modules/…`                              | Refused: a plugin source must start with `./`                                                                                                                  |
+| Claude: a per-site marketplace at the site root (`.claude-plugin/marketplace.json`, unique name), `marketplace add ./` | Works: two sites on one machine each load their own version, and an update to `node_modules` is read live. (`marketplace add .` is refused; `./` is accepted.) |
+| Codex: the same per-site marketplaces, `marketplace add ./` and `plugin add`                                           | Works, but the plugin is **copied into the cache by version**, and `plugin add` enables it for the user                                                        |
+| Codex: in site B's folder                                                                                              | Lists `kiss-ssg:kiss-build-check` **twice**, 2.7.4 from site A and 2.9.0 from site B                                                                           |
+| Codex: `node_modules` replaced by a newer version                                                                      | The session still reports the cached version                                                                                                                   |
+
+So the mechanism is sound for Claude Code with one marketplace per site, and
+unsound for Codex as it stands: its per-user install turns one-copy-per-site
+into every-copy-everywhere, and its cache means an `npm update` does not reach
+the agent. **Not used (operator, 2026-10-03):** Claude Code and Codex both
+keep installing the plugins from the GitHub marketplace. Splitting the two
+agents across two routes was weighed and declined. The package may still ship
+the core skills as plain files for agents with no kiss plugin, pointed at from
+`AGENTS.md`; that is a separate piece of work.
+**Re-check:** build the scratch site the same way (a copy of `plugins/kiss-ssg`
+under `node_modules/kiss-ssg/plugins/`, a site-root
+`.claude-plugin/marketplace.json` with a unique name and source
+`./node_modules/kiss-ssg/plugins/kiss-ssg`). For Claude, read the session's
+`system`/`init` line from `claude -p ok --output-format stream-json --verbose
+--max-turns 1`: its `plugins` entry carries the path and version, with no model
+call needed. For Codex, follow the auth-copy procedure in the entry above and
+ask `codex exec` which kiss-ssg versions it has. Revisit Codex if `codex plugin
+add` grows a project scope, or if a local marketplace stops being cached.
+
 ### parse5 for `lib/html-split.js`
 
 parse5 is the spec-exact HTML parser (jsdom's). It was considered beside

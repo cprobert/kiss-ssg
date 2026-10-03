@@ -677,14 +677,49 @@ pre code {
   }
 }
 
-// Set-up step 1: one box per agent, side by side, stacked on a narrow screen.
-// Each box is the whole setup for that agent, so its Copy button takes all six
-// lines at once.
+// Set-up step 1: one box per agent. Each box is the whole setup for that
+// agent, so its Copy button takes every line at once. With site.js the
+// selector shows one box, which auto-fit stretches to the full width; without
+// it every box shows, as many to a row as fit.
+.agent-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.25rem 0 0.75rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  label {
+    font-weight: 700;
+  }
+
+  select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 0.4rem;
+    padding: 0.35rem 0.6rem;
+  }
+
+  select:hover,
+  select:focus-visible {
+    border-color: var(--brand-blue);
+  }
+}
+
 .agent-boxes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   gap: 1rem;
   margin-top: 0.25rem;
+}
+
+.agent-box[hidden] {
+  display: none;
 }
 
 .agent-box {

@@ -37,7 +37,11 @@ describe('the home page carries the whole quick start', () => {
   it('gives one complete box per agent, Claude Code first', () => {
     // Each box is the whole setup for its agent, so it copies in one go.
     expect(steps[0].code).toBeUndefined()
-    expect(steps[0].boxes.map((b) => b.label)).toEqual(['Claude Code', 'Codex'])
+    expect(steps[0].boxes.map((b) => b.label)).toEqual([
+      'Claude Code',
+      'Codex',
+      'Other agent',
+    ])
     for (const b of steps[0].boxes) {
       const lines = b.code.split('\n')
       expect(lines.slice(0, 2)).toEqual([
@@ -46,6 +50,33 @@ describe('the home page carries the whole quick start', () => {
       ])
       expect(b.note).toBeTruthy()
     }
+  })
+
+  it('picks one box from a selector that defaults to Claude Code', () => {
+    // The selector is built from the boxes, so the first box is the default
+    // and each needs an id site.js can show it by. The page hides the selector
+    // until site.js runs, so without it every box still shows.
+    const ids = steps[0].boxes.map((b) => b.id)
+    expect(ids[0]).toBe('claude')
+    expect(new Set(ids).size).toBe(ids.length)
+    for (const id of ids) expect(id).toMatch(/^[a-z]+$/)
+    const view = read('src/pages/index.hbs')
+    expect(view).toMatch(/<div class="agent-picker" data-agent-picker hidden>/)
+    expect(view).toMatch(/data-agent="\{\{id\}\}"/)
+  })
+
+  it('gives any other agent init, the contract, and no skills', () => {
+    // kiss's skills arrive through Claude Code's and Codex's plugin systems,
+    // so any other agent's box stops at init and says how it reaches
+    // llms.txt instead. Not "has no skills": many agents load SKILL.md.
+    const other = box('Other agent')
+    expect(other.code.split('\n')).toEqual([
+      'mkdir my-site && cd my-site',
+      'npx kiss-ssg@latest init',
+    ])
+    expect(other.note).toMatch(/AGENTS\.md/)
+    expect(other.note).toMatch(/node_modules\/kiss-ssg\/llms\.txt/)
+    expect(other.note).toMatch(/Claude Code's and Codex's plugin systems/)
   })
 
   it.each(['Claude Code', 'Codex'])(

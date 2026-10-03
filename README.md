@@ -2,6 +2,8 @@
 
 A static site generator built to be driven by a coding agent. You describe the site; the agent writes it with kiss-ssg's skills, and every build hands back a verdict the agent can act on (`kiss-ssg check`) and a memory of what the site is (`kiss-ssg aikb`). Handlebars views, JSON or fetched models, small JS controllers — nothing to learn before the first page, and nothing hidden from the person who opens it later.
 
+**[See the website →](https://cprobert.github.io/kiss-ssg/)** Pick your coding agent for the set-up steps, see sites built with kiss-ssg, and read the guide.
+
 ## Quick start
 
 You need [Node 22.12+](https://nodejs.org) and a coding agent: [Claude Code](https://claude.com/claude-code) or [Codex](https://github.com/openai/codex), each with its own account. Pick the block for the one you use.

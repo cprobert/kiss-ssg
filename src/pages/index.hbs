@@ -62,10 +62,18 @@
         <p>{{text}}</p>
         {{#if code}}<pre><code class="language-bash">{{code}}</code></pre>{{/if}}
         {{#if boxes}}
-        {{!-- One box per agent, each complete on its own so it copies in one go. --}}
-        <div class="agent-boxes">
+        {{!-- One box per agent, each complete on its own so it copies in one go.
+              site.js unhides the selector and shows only the chosen box;
+              without it every box shows, so nothing is lost. --}}
+        <div class="agent-picker" data-agent-picker hidden>
+          <label for="agent-select">Your coding agent</label>
+          <select id="agent-select">
+            {{#each boxes}}<option value="{{id}}">{{label}}</option>{{/each}}
+          </select>
+        </div>
+        <div class="agent-boxes" data-agent-boxes>
           {{#each boxes}}
-          <div class="agent-box">
+          <div class="agent-box" data-agent="{{id}}">
             <div class="agent-box__head">
               <h4 class="agent-box__label">{{label}}</h4>
               <button type="button" class="agent-box__copy" data-copy="{{code}}" aria-label="Copy the {{label}} commands">Copy</button>
@@ -93,9 +101,7 @@
     <p class="band__note">
       kiss is the upgrade path for a site you made in Claude or ChatGPT: converting keeps it looking exactly
       the same and gives it a layout, partials and content a web developer could take over:
-      <a href="{{link "guide/converting" absolute=true}}">how converting works</a>. Using an agent other
-      than these two, such as Cursor or Copilot? Point it at <code>node_modules/kiss-ssg/llms.txt</code>
-      and have it run the check.
+      <a href="{{link "guide/converting" absolute=true}}">how converting works</a>.
     </p>
   </div>
 </section>
