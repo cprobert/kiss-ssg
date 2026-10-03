@@ -34,6 +34,8 @@ The intent below was agreed with the operator over a conversation rather than by
 
 **2026-10-03 — absorbed: a spike on shipping the core skills in the npm package.** The operator asked whether other agents use skills, then whether the npm package could act as a local plugin marketplace, so that Claude Code and Codex install the core skills from it while the memory skills stay a GitHub install. A measurement spike only, with no change to `init`, the package or the plugins. The findings are in `AIKB/upstream.md` ("The npm package as a local plugin marketplace"). The decision is the operator's, and any implementation goes on its own branch.
 
+**2026-10-03 — absorbed after the close: a link from the README to the website.** With PR #35 open, the operator asked for a link near the top of `README.md` to send readers from the README to the docs site. One line under the intro; no other change. Gates rerun before the push; the earlier close steps were not rerun for a one-line README edit.
+
 ## Pulse log
 
 **2026-10-03 — at the close (the branch was never pulsed).** Eyeball: looked. The operator checked the homepage's agent selector on the `node docs --dev` preview (Claude Code by default, switching boxes, remembered on reload, light and dark, phone width) and answered "Looked — fine". Asked at `/branch-close` Step 5a as the fallback, because no pulse ran.
