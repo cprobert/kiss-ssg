@@ -36,6 +36,8 @@ The intent below was agreed with the operator over a conversation rather than by
 
 ## Pulse log
 
+**2026-10-03 — at the close (the branch was never pulsed).** Eyeball: looked. The operator checked the homepage's agent selector on the `node docs --dev` preview (Claude Code by default, switching boxes, remembered on reload, light and dark, phone width) and answered "Looked — fine". Asked at `/branch-close` Step 5a as the fallback, because no pulse ran.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
