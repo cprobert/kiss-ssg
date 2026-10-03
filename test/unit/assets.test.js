@@ -610,6 +610,23 @@ describe('copyAssets that fails partway', () => {
     expect(await site.exists('out/one.txt')).toBe(false)
   })
 
+  // A source file aimed at an existing output directory fails the copy
+  // before anything is written. The directory is not an output: recording it
+  // for removal made every later reconcile try to unlink a directory, fail,
+  // and record it again, so the session never recovered after the source
+  // was fixed (found by the Codex review, 2026-10-03).
+  it('recovers once a file that collided with an output directory is removed', async () => {
+    const { copy } = await run()
+    expect((await copy()).error).toBeUndefined()
+    await site.touch('out/x/keep.txt', 'keep')
+    await site.touch('a/x', 'a file where a directory is')
+    expect((await copy()).error).toBeTruthy()
+    await fs.remove(`${site.root}/a/x`)
+    expect((await copy()).error).toBeUndefined()
+    expect((await copy()).error).toBeUndefined()
+    expect(await site.read('out/x/keep.txt')).toBe('keep')
+  })
+
   it('removes them when the very first copy was the one that failed', async () => {
     site = await makeSite({ 'a/one.txt': 'one', 'a/two.txt': 'two' })
     const opts = {
