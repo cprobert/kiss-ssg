@@ -574,6 +574,42 @@ describe('copyAssets that fails partway', () => {
     expect(await site.exists('out/old.txt')).toBe(false)
   })
 
+  // fs-extra copies a folder's entries concurrently, so `fs.copy` can reject
+  // while a sibling folder is still being walked. Anything that folder writes
+  // after the failure was recorded would be in no record at all.
+  it('starts no write after the failure has been recorded', async () => {
+    const { copy } = await run()
+    expect((await copy()).error).toBeUndefined()
+    await site.touch('a/one.txt', 'one')
+    await site.touch('a/late.txt', 'late')
+    let late
+    const spy = vi
+      .spyOn(fs, 'copy')
+      .mockImplementationOnce(async (src, dest, { filter }) => {
+        await filter(`${src}/one.txt`, `${dest}/one.txt`)
+        await fs.copy(`${src}/one.txt`, `${dest}/one.txt`)
+        // The sibling still in flight: it reaches its next entry only after
+        // the copy as a whole has rejected.
+        late = new Promise((resolve) => setTimeout(resolve, 20)).then(
+          async () => {
+            if (await filter(`${src}/late.txt`, `${dest}/late.txt`))
+              await fs.copy(`${src}/late.txt`, `${dest}/late.txt`)
+          },
+        )
+        throw enoent()
+      })
+    try {
+      expect((await copy()).error).toBeTruthy()
+      await late
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await site.exists('out/late.txt')).toBe(false)
+    await fs.remove(`${site.root}/a`)
+    expect((await copy()).error).toBeUndefined()
+    expect(await site.exists('out/one.txt')).toBe(false)
+  })
+
   it('removes them when the very first copy was the one that failed', async () => {
     site = await makeSite({ 'a/one.txt': 'one', 'a/two.txt': 'two' })
     const opts = {
