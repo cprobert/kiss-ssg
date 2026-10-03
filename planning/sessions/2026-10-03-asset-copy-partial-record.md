@@ -30,6 +30,8 @@ opened: 2026-10-03
 
 ### Amendments
 
+**2026-10-03 — absorbed at the close: a source that changes type during `--dev`.** The second-opinion review of `d36bedc` found a pre-existing member of the same family: when a source folder becomes a file of the same name, or a file becomes a folder, the copy fails on its own stale output from the previous shape (fs-extra refuses file-over-directory and directory-over-file), and that output is only removed after a copy succeeds, so every rebuild fails until restart. An empty folder kiss left behind (it never removes output directories) blocks a later file the same way. Operator chose to absorb it here rather than defer. Shape: before fs-extra's own check, the copy clears a conflicting path at a destination only when everything there is this copy's own output (or an empty folder), never a foreign file; red-first tests for both directions, with and without a registry. The close reruns from Step 1 afterwards.
+
 ## Pulse log
 
 ---

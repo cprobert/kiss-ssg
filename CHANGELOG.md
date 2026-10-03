@@ -13,6 +13,11 @@ restarted. It happened when files were removed while kiss was still copying them
 written were never recorded, and later runs did not know to remove them. kiss now records each
 asset before writing it, so the next copy cleans up whatever a failed one left behind.
 
+A second `--dev` case recovers now too. If you replaced an assets folder with a file of the same
+name, or a file with a folder, every rebuild failed until restart, because the copy refused to put
+one over the other's leftovers. kiss now clears its own old output out of the way first. It never
+removes anything it did not write, so a file of yours in the way still stops the copy, as before.
+
 A production build was never affected: every build there starts from an empty folder. Five real
 sites built exactly the same on 2.7.1 and on this version.
 

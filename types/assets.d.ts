@@ -22,6 +22,7 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
         reconcileSass(owner: string, current: Map<string, string>): Set<string>;
         readonly urlRevision: number;
         hasOwner(owner: any): boolean;
+        owns(owner: string, output: string): boolean;
         unrecorded(owner: string, outputs: Iterable<string>): void;
         previous(owner: string, name: string): string | null;
         reconcile(owner: any, current: any): any[];

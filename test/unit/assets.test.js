@@ -645,6 +645,46 @@ describe('copyAssets that fails partway', () => {
     expect(await site.read('out/x/keep.txt')).toBe('keep')
   })
 
+  // A source that changes type between copies meets its own output from the
+  // previous shape, and fs-extra refuses to put a file over a directory or a
+  // directory over a file. That output was only removed after a copy that
+  // succeeded, so every rebuild failed until restart. What is in the way is
+  // cleared only when it is all this copy's own output (or an empty folder,
+  // which kiss leaves behind because it never removes output directories);
+  // a foreign file still fails the copy, as the collision test above pins.
+  describe.each([
+    ['with a registry', () => new OutputRegistry(silentLogger)],
+    ['without a registry', () => undefined],
+  ])('a source that changes type, %s', (_label, registry) => {
+    it.each([false, true])(
+      'replaces a folder of its own outputs with a file (intermediate copy: %s)',
+      async (intermediate) => {
+        const { copy } = await run({ outputs: registry() })
+        await site.touch('a/x/inner.txt', 'inner')
+        expect((await copy()).error).toBeUndefined()
+        await fs.remove(`${site.root}/a/x`)
+        // The copy that sees the folder gone removes its file and leaves
+        // the empty folder behind.
+        if (intermediate) expect((await copy()).error).toBeUndefined()
+        await site.touch('a/x', 'now a file')
+        expect((await copy()).error).toBeUndefined()
+        expect(await site.read('out/x')).toBe('now a file')
+        expect((await copy()).error).toBeUndefined()
+      },
+    )
+
+    it('replaces its own output file with a folder', async () => {
+      const { copy } = await run({ outputs: registry() })
+      await site.touch('a/x', 'a file')
+      expect((await copy()).error).toBeUndefined()
+      await fs.remove(`${site.root}/a/x`)
+      await site.touch('a/x/inner.txt', 'inner')
+      expect((await copy()).error).toBeUndefined()
+      expect(await site.read('out/x/inner.txt')).toBe('inner')
+      expect((await copy()).error).toBeUndefined()
+    })
+  })
+
   it('removes them when the very first copy was the one that failed', async () => {
     site = await makeSite({ 'a/one.txt': 'one', 'a/two.txt': 'two' })
     const opts = {
