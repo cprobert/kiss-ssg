@@ -32,6 +32,8 @@ The intent below was agreed with the operator over a conversation rather than by
 
 ### Amendments
 
+**2026-10-03 — absorbed: a spike on shipping the core skills in the npm package.** The operator asked whether other agents use skills, then whether the npm package could act as a local plugin marketplace, so that Claude Code and Codex install the core skills from it while the memory skills stay a GitHub install. A measurement spike only, with no change to `init`, the package or the plugins. The findings are in `AIKB/upstream.md` ("The npm package as a local plugin marketplace"). The decision is the operator's, and any implementation goes on its own branch.
+
 ## Pulse log
 
 ---

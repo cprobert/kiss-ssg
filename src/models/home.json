@@ -115,7 +115,7 @@
             "id": "other",
             "label": "Other agent",
             "code": "mkdir my-site && cd my-site\nnpx kiss-ssg@latest init",
-            "note": "For Cursor, Copilot and any other agent: there are no kiss plugins to install, so the skill names in the prompts below mean nothing to it — leave them out. init writes AGENTS.md, which points your agent at node_modules/kiss-ssg/llms.txt; if yours does not read AGENTS.md, ask it to read that file first. Then open your agent in this folder, describe the site, and have it run npm run check."
+            "note": "For Cursor, Copilot and any other agent: kiss's skills install through Claude Code's and Codex's plugin systems, so yours will not have them — leave the skill names out of the prompts below. init writes AGENTS.md, which points your agent at node_modules/kiss-ssg/llms.txt; if yours does not read AGENTS.md, ask it to read that file first. Then open your agent in this folder, describe the site, and have it run npm run check."
           }
         ]
       },

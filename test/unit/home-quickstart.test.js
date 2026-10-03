@@ -66,8 +66,9 @@ describe('the home page carries the whole quick start', () => {
   })
 
   it('gives any other agent init, the contract, and no skills', () => {
-    // Cursor, Copilot and the rest have no kiss plugins, so the box stops at
-    // init and says how the agent reaches llms.txt instead.
+    // kiss's skills arrive through Claude Code's and Codex's plugin systems,
+    // so any other agent's box stops at init and says how it reaches
+    // llms.txt instead. Not "has no skills": many agents load SKILL.md.
     const other = box('Other agent')
     expect(other.code.split('\n')).toEqual([
       'mkdir my-site && cd my-site',
@@ -75,7 +76,7 @@ describe('the home page carries the whole quick start', () => {
     ])
     expect(other.note).toMatch(/AGENTS\.md/)
     expect(other.note).toMatch(/node_modules\/kiss-ssg\/llms\.txt/)
-    expect(other.note).toMatch(/no kiss plugins/)
+    expect(other.note).toMatch(/Claude Code's and Codex's plugin systems/)
   })
 
   it.each(['Claude Code', 'Codex'])(
