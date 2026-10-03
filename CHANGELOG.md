@@ -9,8 +9,8 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 
 The engine's main file was reorganised: the work it did is now split across five smaller modules,
 each with one job. Nothing a site can call, configure or observe has changed. Every page of five
-real sites built byte-for-byte the same on 2.7.0 and on this version, along with every example in
-the package.
+real sites built byte-for-byte the same on 2.7.0 and on this version, and every example in the
+package built the same output apart from the timestamps that differ between any two builds.
 
 If you or your agent read the engine's notes in `node_modules/kiss-ssg/AIKB/`, they now follow the
 new layout: `staging.md`, `asset-copy.md`, `page-registry.md`, `build-finish.md` and `rebuild.md`
