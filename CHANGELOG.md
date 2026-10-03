@@ -3,6 +3,22 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.3 — 2026-10-03
+
+### Nothing for a site to change
+
+No change to the engine. Three things around it:
+
+- **The `kiss-site-new` skill now advises on small interactivity.** For a menu, an accordion or a
+  dropdown it reaches for native HTML first (`<details>`, `popover`, `<dialog>`), then Alpine.js's
+  CSP build only when a component holds state the platform cannot, and never one-off scripts
+  scattered across pages. kiss itself knows nothing about Alpine.
+- **The docs site's homepage asks which coding agent you use** (Claude Code, Codex or another
+  one) and shows just that set-up box. It remembers the choice.
+- **`--dev` is documented as best-effort.** If the dev server ever shows something stale and
+  stopping it (Ctrl-C) and starting it again fixes it, that is a known limitation rather than a
+  broken site. `npm run build` and `npm run check` are what a deploy relies on.
+
 ## 2.7.2 — 2026-10-03
 
 ### Nothing for a site to change
