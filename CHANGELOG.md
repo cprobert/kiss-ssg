@@ -3,6 +3,19 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.2 — 2026-10-03
+
+### Nothing for a site to change
+
+Under `--dev`, an asset could stay in your build folder after you had deleted it, until you
+restarted. It happened when files were removed while kiss was still copying them, for example by a
+`git checkout` or deleting a folder of assets. The copy failed partway, the files it had already
+written were never recorded, and later runs did not know to remove them. kiss now records each
+asset before writing it, so the next copy cleans up whatever a failed one left behind.
+
+A production build was never affected: every build there starts from an empty folder. Five real
+sites built exactly the same on 2.7.1 and on this version.
+
 ## 2.7.1 — 2026-10-03
 
 ### Nothing for a site to change
