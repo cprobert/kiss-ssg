@@ -30,19 +30,19 @@ That import makes every later Claude Code session in the project read the API co
 
 ### 3. Read the contract
 
-Read `node_modules/kiss-ssg/llms.txt` — it is the API contract that ships in the tarball, and it is long (over 100 KB, with some paragraphs several KB each), so read it section by section rather than trusting one read to have got it all. Pay particular attention to:
+Read `node_modules/kiss-ssg/llms.txt` whole. It is the index of the API that ships in the tarball, short enough to read in one go (the site's `CLAUDE.md` usually imports it already). It names what exists and the traps nothing reports, and points at the `node_modules/kiss-ssg/GUIDE.md` section that holds each rule. Read those sections for the parts of the site you are building:
 
-| Section             | What you need from it                                                                                                             |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| The opening summary | The chainable pipeline: pages are _queued_ by `.page()`/`.pages()`/`.scan()`, rendered by `.generate()`, awaited by `.complete()` |
-| `## API`            | Which of `.page()` / `.pages()` / `.scan()` fits each part of the site, and what a controller may return                          |
-| `## Config`         | `folders`, `cleanBuild`, `siteUrl`, `fetch`, `assets` — set these deliberately, do not inherit defaults by accident               |
-| `## Helpers`        | `markdown`, `asset`, `canonical`, `absUrl`, `isActive`, `link`, `env` and friends — use the built-in before writing your own      |
+| `GUIDE.md` section                                                 | What you need from it                                                                                                       |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| § .page(), § .pages(), § Controller                                | Which of `.page()` / `.pages()` / `.scan()` fits each part of the site, and what a controller may return                    |
+| § Cleaning the build folder, § Remote models, § Assets             | `folders`, `cleanBuild`, `siteUrl`, `fetch`, `assets`: set these deliberately, do not inherit defaults by accident          |
+| § Helpers                                                          | `markdown`, `asset`, `canonical`, `absUrl`, `isActive`, `link`, `env` and friends: use the built-in before writing your own |
+| § .sitemap(), § .llms(), § .feed(), § .robots(), § Host URL policy | The site-level files, and the two settings that depend on the host                                                          |
 
 Per-module detail, if you need it, is in `node_modules/kiss-ssg/AIKB/`.
 
 Use a dedicated `folders.src`, normally `./src`, never the project root (`./`).
-Read the folder-safety rules in `## Config` before overriding paths: output must
+Read the folder-safety rules in `GUIDE.md` § Cleaning the build folder before overriding paths: output must
 be separate from every configured content folder, including helpers and AIKB.
 The constructor rejects overlap before touching files, even with `cleanBuild: false`.
 
@@ -81,7 +81,7 @@ Call it `router.js`, at the project root, and point `package.json`'s `main` and 
 
 Name it `router.js` from the first commit even while the whole site fits in that one file. A site at tier 0 is not a site that got it wrong — splitting a 120-line router makes it harder to read — but renaming the file later silently orphans whatever names it: a CSS toolchain's source globs, `package.json`, the host's build command, a `npx kiss-ssg check <script>` invocation. None of those fails loudly. The name costs nothing now and is a grep-the-repo job later.
 
-End the build with `await kiss.complete().catch(reportBuildFailure)` — written as its own statement after the chain, in dev as well as in a build, as every example and the `init` starter write it. `reportBuildFailure` prints every entry of `err.failures` and sets `process.exitCode = 1`; every example's `router.js` has this shape (`node_modules/kiss-ssg/examples/1-scan/router.js` is the shortest, and a starter from `npx kiss-ssg init` already has it). Do not wrap it in `if (!dev)`: awaited in dev it resolves after the first build and the server keeps serving, while behind the guard a dev server that cannot bind its port exits 0 instead of 1. The pattern is written up under `llms.txt` § Migrating from v1 (it began as a migration recipe, but it is how every site ends), and running code is `node_modules/kiss-ssg/examples/9-migrated-from-v1/src/pages/await-complete.hbs` (its README indexes the recipes by built page name).
+End the build with `await kiss.complete().catch(reportBuildFailure)` — written as its own statement after the chain, in dev as well as in a build, as every example and the `init` starter write it. `reportBuildFailure` prints every entry of `err.failures` and sets `process.exitCode = 1`; every example's `router.js` has this shape (`node_modules/kiss-ssg/examples/1-scan/router.js` is the shortest, and a starter from `npx kiss-ssg init` already has it). Do not wrap it in `if (!dev)`: awaited in dev it resolves after the first build and the server keeps serving, while behind the guard a dev server that cannot bind its port exits 0 instead of 1. The pattern is written up under `GUIDE.md` § Migrating from v1 (it began as a migration recipe, but it is how every site ends), and running code is `node_modules/kiss-ssg/examples/9-migrated-from-v1/src/pages/await-complete.hbs` (its README indexes the recipes by built page name).
 
 If the site will be handed on — to a colleague, or to you in two years — record its knowledge base once it builds green: `npx kiss-ssg aikb <site-script>` (documented in `node_modules/kiss-ssg/llms.txt`) runs the build staged and discarded, publishes nothing, and writes `AIKB/site-map.md`, `AIKB/site-map.json` and `AIKB/last-build.json` — the pages, models, controllers, partials and pipeline steps the build actually saw — into `config.folders.aikb` (default `./AIKB`). Commit that folder. It takes no change to the build script, a failed build is refused, and recording once is what opts the site in: from then on `kiss-ssg check` diffs against the record by default, and the sibling `kiss-memory` plugin's skills read it back as a briefing and as the baseline for a piece of work.
 

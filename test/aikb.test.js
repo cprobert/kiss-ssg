@@ -85,6 +85,20 @@ describe('AIKB stays in sync with lib/', () => {
   )
 })
 
+// `kiss-ssg init` writes `@node_modules/kiss-ssg/llms.txt` into a site's
+// CLAUDE.md, so every character here is loaded into every session of every
+// site. It grew from 5.7k to 130k in five weeks, one API passage at a time,
+// until a site's instruction files ran past Claude Code's 150k budget. It is
+// an index: the detail lives in GUIDE.md and the skills, and llms.txt links to
+// them. Raise this cap only by cutting something else.
+const LLMS_TXT_MAX_CHARS = 16_000
+
+describe('llms.txt stays an index', () => {
+  it(`is at most ${LLMS_TXT_MAX_CHARS} characters`, () => {
+    expect(llmsTxt.length).toBeLessThanOrEqual(LLMS_TXT_MAX_CHARS)
+  })
+})
+
 describe('llms.txt documents the public API', () => {
   it.each(publicMethods)('llms.txt names .%s()', (name) => {
     expect(llmsTxt).toContain(`\`.${name}(`)

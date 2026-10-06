@@ -21,7 +21,7 @@ Work from the shipped recipes and the CHANGELOG, not from memory.
 When the installed version enforces folder safety, migrate a project-root
 `folders.src` (`./`) to a dedicated directory such as `./src`. Separate output
 from every configured content folder, including helpers and AIKB; aliases count
-as the same location. Follow the installed `llms.txt` Config rules and the
+as the same location. Follow the installed `GUIDE.md` § Cleaning the build folder rules and the
 setting named in the error. `cleanBuild: false` does not bypass the guard.
 
 ## Execution instructions
@@ -151,7 +151,7 @@ They are advisory: `ok` and the exit code do not move.
 - **Turning a check off is a config line with a reason.** `audit: { ignore: ['og-image-missing'] }`,
   with a comment saying why; `audit: false` turns the pass off. An id that is not a check
   **throws at construction**, naming the valid ids — so a typo in `ignore` stops the build before
-  anything is written. The ids and what each one means are in `node_modules/kiss-ssg/llms.txt` § Checking a
+  anything is written. The ids and what each one means are in `node_modules/kiss-ssg/GUIDE.md` § Checking a
   build.
 - **The default title is the page's own slug.** A page that set no `title` (no option, no controller
   return) used to get the default title `"Index"` whatever it was called, so a layout rendering
@@ -183,7 +183,7 @@ the Codex section in `AGENTS.md`.
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.
 
-Then read `node_modules/kiss-ssg/llms.txt` § Migrating from v1 — every recipe, including the "unchanged in v2" list, which is there to stop you rewriting code that still works. The runnable version of the same recipes is `node_modules/kiss-ssg/examples/9-migrated-from-v1/`; its README maps one page to each v1 idiom it replaces.
+Then read `node_modules/kiss-ssg/GUIDE.md` § Migrating from v1 — every recipe, including the "unchanged in v2" list, which is there to stop you rewriting code that still works. The runnable version of the same recipes is `node_modules/kiss-ssg/examples/9-migrated-from-v1/`; its README maps one page to each v1 idiom it replaces.
 
 ### 2. Point every future session at the contract
 

@@ -55,7 +55,7 @@ Common staleness patterns in this repo:
 - An `AIKB/` doc's **Public interface** section listing a function signature that changed, or a **Depends on** / **Depended on by** list that a new import made wrong.
 - An `AIKB/` doc's **Non-obvious behavior** section describing a workaround that the change removed — the highest-value section and the easiest to leave stale.
 - `llms.txt` promising a method, option or default that no longer exists. This one matters most: `llms.txt` ships **inside the npm package**, so an agent reading it from `node_modules/kiss-ssg/` has no source to fall back on.
-- `README.md` and `llms.txt` disagreeing with each other — they duplicate the API by design, which means they drift by default.
+- `llms.txt` and `GUIDE.md` disagreeing — `llms.txt` is the index and `GUIDE.md` the rules, so a changed rule can leave its index line describing the old one. And `llms.txt` growing back into a reference: it is capped at 16,000 characters because `kiss-ssg init` imports it into every session of every site, so the detail belongs in `GUIDE.md`.
 - Count references ("6 runnable examples", "two classes", "four gates") that are now wrong.
 - `CLAUDE.md`'s **Pipeline in one paragraph** describing a build order the change reshuffled.
 
@@ -66,7 +66,7 @@ Make surgical edits. Touch only what the change warrants; don't rewrite surround
 Update order (so you don't read docs you are about to change):
 
 1. `AIKB/*.md` — the per-module detail
-2. `llms.txt` — the shipped consumer cheat-sheet
+2. `llms.txt` — the shipped index (one line per feature), then `GUIDE.md` — the shipped rules
 3. `README.md` — the front door
 4. `CLAUDE.md` — the lookup table, the one-paragraph pipeline, the rules
 5. `plugins/*/skills/*/SKILL.md` — the procedures an agent actually follows. Easiest of the five to forget, because nothing in `lib/` points at them and they do not ship in the tarball, so a stale one is invisible until an agent follows it. `test/unit/skill-coverage.test.js` pins which skill must name which feature, but it checks **presence, not correctness** — a skill can match its pattern while the prose around it describes a shape the engine now warns about. Read the prose.

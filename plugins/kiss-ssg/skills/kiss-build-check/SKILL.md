@@ -39,7 +39,7 @@ It prints a JSON array with one report per `Kiss` instance the script created �
 
 Exit code is 1 if any instance reports a failure, if the script itself exits non-zero, or if no report was written at all — a script that never awaits `complete()` reports nothing, which is itself the finding. Exit 0 and `ok: true` on every report is the only passing result.
 
-**If the installed version has no `check` bin yet**, fall back to `node <site-script>` with a `.catch` on `complete()` that prints `err.failures` (the recipe is in `node_modules/kiss-ssg/llms.txt` § Migrating from v1). Same information, no staging — so run it against a scratch `folders.build`, not over published output.
+**If the installed version has no `check` bin yet**, fall back to `node <site-script>` with a `.catch` on `complete()` that prints `err.failures` (the recipe is in `node_modules/kiss-ssg/GUIDE.md` § Migrating from v1). Same information, no staging — so run it against a scratch `folders.build`, not over published output.
 
 ## The diff against the last record, and the note findings
 

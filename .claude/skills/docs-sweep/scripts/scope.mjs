@@ -71,7 +71,8 @@ const RULES = [
     label: 'Public API surface (lib/kiss.js)',
     test: (f) => f === 'lib/kiss.js',
     docs: () => [
-      'llms.txt → ## API (the consumer cheat-sheet — it ships in the npm package)',
+      "GUIDE.md → the method's section (the rules; it ships in the npm package)",
+      'llms.txt → ## API (one index line per method — the 16k cap in test/aikb.test.js holds it to that)',
       'README.md → usage docs',
       'CLAUDE.md → ## Pipeline in one paragraph',
       'plugins/*/skills/*/SKILL.md → the skills an agent follows; test/unit/skill-coverage.test.js pins which skill must name which feature — add a row for a new one',
@@ -81,7 +82,8 @@ const RULES = [
     label: 'Config shape (lib/config.js)',
     test: (f) => f === 'lib/config.js',
     docs: () => [
-      'llms.txt → ## Config (defaults block)',
+      'llms.txt and GUIDE.md → the config defaults block (test/aikb.test.js checks both)',
+      "GUIDE.md → the options table and the key's own section",
       'README.md → config docs',
       // A new config key is a feature an agent should reach for, so the same
       // obligation applies as for a `lib/kiss.js` change. Added after
@@ -95,7 +97,8 @@ const RULES = [
     label: 'Built-in Handlebars helpers',
     test: (f) => f === 'lib/handlebars-helpers.js',
     docs: () => [
-      'llms.txt → the built-in helpers list',
+      'llms.txt → ## Helpers (one line per helper) and the `kiss.handlebars` roster',
+      'GUIDE.md → ### Helpers (the rules)',
       'README.md → helpers section',
     ],
   },
@@ -103,7 +106,7 @@ const RULES = [
     label: 'Sitemap behaviour',
     test: (f) => f === 'lib/sitemap.js',
     docs: () => [
-      'llms.txt → `.sitemap()` entry (per-page opt-out and override options)',
+      'GUIDE.md → ### .sitemap() (per-page opt-out and override options)',
       'README.md → sitemap section',
       'examples/6-sitemap.js — still representative?',
     ],
@@ -127,7 +130,7 @@ const RULES = [
     test: (f) => /^examples\/[\w-]+\.js$/.test(f),
     docs: () => [
       'package.json → the eg1…egN scripts',
-      'README.md and llms.txt → ## Docs (the examples list and its count)',
+      'README.md, llms.txt § Docs and GUIDE.md § Building more than one site → the examples list and its count',
       'CLAUDE.md → ## Commands',
     ],
   },

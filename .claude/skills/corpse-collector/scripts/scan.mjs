@@ -120,6 +120,19 @@ const URL_SIGNALS = [
   /<loc>/,
   /\bredirects?\b/i,
 ]
+// Check 5's sources: the docs whose `npm run x` names one of THIS repo's
+// scripts. llms.txt ships inside the consumer's node_modules and every
+// `npm run` in it is a script it tells that project to add. README.md is the
+// same since it became the consuming site's quick start: its `npm run build`
+// is the script `init` adds to the site. GUIDE.md joined them on 2026-10-06,
+// when llms.txt's detail moved into it with its `npm run check`.
+const CONSUMER_SITE_DOCS = new Set(['llms.txt', 'README.md', 'GUIDE.md'])
+
+/** @param {string[]} targets */
+export function npmScriptSources(targets) {
+  return targets.filter((t) => !CONSUMER_SITE_DOCS.has(t))
+}
+
 export function isUrlProse(line) {
   return URL_SIGNALS.some((re) => re.test(line))
 }
@@ -482,12 +495,8 @@ function main() {
   }
   // The trailing lookahead keeps `npm run eg<N>` out: a placeholder is not a
   // script name, and without it the match backtracks to a bogus `npm run e`.
-  // llms.txt ships inside the consumer's node_modules and every `npm run` in
-  // it is a script it tells THAT project to add — never one of this repo's.
-  // README.md is the same since it became the consuming site's quick start:
-  // its `npm run build` is the script `init` adds to the site.
   const scriptRefs = grepFiles(
-    DOC_TARGETS.filter((t) => t !== 'llms.txt' && t !== 'README.md'),
+    npmScriptSources(DOC_TARGETS),
     ['.md', '.txt'],
     'npm run ([a-z][a-z0-9:-]*)(?=[\\s`)]|$)',
   ).filter((h) => !(h.match in scripts))

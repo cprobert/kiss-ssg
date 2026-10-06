@@ -1,6 +1,6 @@
 # 9 · migrated from v1
 
-An exemplar site: every recipe in `llms.txt` § Migrating from v1, as one script that runs. It is
+An exemplar site: every recipe in `GUIDE.md` § Migrating from v1, as one script that runs. It is
 the _after_ — it builds clean and exits 0 — so where a recipe is about a v1 failure mode the
 page demonstrates the guarded v2 form rather than leaving a broken build behind.
 
