@@ -36,6 +36,8 @@ Prompted by a consuming site's warning: "3 instruction files add up to 251.2k ch
 
 ## Pulse log
 
+- **2026-10-06** — criteria 1, 3, 4, 5, 8 met (`llms.txt` 12,734 chars, cap test seen red at 129,371; gates green at `352fc28`); 2 partial (the audit's gaps moved into `GUIDE.md`, four minor items left unmoved pending the operator, and the moved text not yet re-checked); 6 (clean-room) and 7 (fleet) not yet. No drift: docs, tests and skills only, inside "shipped docs". **Eyeball: deferred** — reading the new `llms.txt`, especially "Traps nothing reports", is carried to `/branch-close` Step 5a. Explanation offered: "Building a site well" and the tiers sit as `####` under § The build script, after the config table, to avoid a new docs-site page. Decision: continue — clean-room run next, which doubles as the independent check on criterion 2.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
