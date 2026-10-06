@@ -10,7 +10,25 @@ import {
   isFileNameTail,
   isTemplateConfigRead,
   isUrlProse,
+  npmScriptSources,
 } from '../../.claude/skills/corpse-collector/scripts/scan.mjs'
+
+// Check 5 reads `npm run x` only from docs about THIS repo. The three shipped
+// docs describe a consuming site, so their `npm run check` is a script that
+// site adds. GUIDE.md joined them when llms.txt's detail moved into it
+// (2026-10-06) and three of its sentences became false positives.
+describe('npmScriptSources', () => {
+  it('reads CLAUDE.md and skips the docs about a consuming site', () => {
+    const sources = npmScriptSources([
+      'CLAUDE.md',
+      'llms.txt',
+      'README.md',
+      'GUIDE.md',
+      'AIKB',
+    ])
+    expect(sources).toEqual(['CLAUDE.md', 'AIKB'])
+  })
+})
 
 // The check reads real git history, and this repo's history changes under the
 // test every time someone commits — so each test builds its own throwaway
