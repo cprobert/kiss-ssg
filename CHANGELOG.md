@@ -3,6 +3,27 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.4 — 2026-10-06
+
+### Nothing for a site to change
+
+No change to the engine. **`llms.txt` is an index again: about 13,000 characters, down from
+130,000.** `npx kiss-ssg init` imports it into your site's `CLAUDE.md`, so all of it was loaded
+into every session of every site. On a site with a large `CLAUDE.md` of its own, that was enough
+to push Claude Code past its instruction-file budget. Your `CLAUDE.md` needs no edit: the same
+import line now loads the smaller file.
+
+- **`llms.txt`** names what exists, the build-script shape, and the traps nothing reports. For
+  each topic it names the section of `node_modules/kiss-ssg/GUIDE.md` that holds the full rules.
+- **`GUIDE.md`** now holds everything `llms.txt` used to say: the build-script tiers, "Building
+  a site well", the full `.report()` shape, the watch details, and the `isActive` and `asset`
+  details.
+- **Gaps an agent building a site from scratch had to guess at are now written down:**
+  - a page's default id keeps `index` (`menu/index.hbs` is `menu/index`, not `menu`);
+  - a helper reads config while the page renders, from `options.data.root.config`;
+  - a JSON-LD helper recipe that escapes `</script>`;
+  - a file kiss itself writes, such as `/feed.xml`, has no `{{link}}`, so you write its path.
+
 ## 2.7.3 — 2026-10-03
 
 ### Nothing for a site to change
