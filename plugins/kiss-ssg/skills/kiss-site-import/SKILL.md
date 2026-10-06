@@ -53,7 +53,7 @@ If the page is pasted into the chat instead, save exactly what was pasted. Eithe
 
 ### 3. Read the contract
 
-Read `node_modules/kiss-ssg/llms.txt` — the API contract that ships with the engine. It is long and some lines run to several kilobytes, so do not page through it: `grep -n '^## \|^### ' node_modules/kiss-ssg/llms.txt` lists its sections, then read the ones you need. For this job: the entry for `splitDocument` under `## API`, plus `## Config` (`folders`, `siteUrl`) and `## Helpers` (`asset`, `link`, `canonical`).
+Read `node_modules/kiss-ssg/llms.txt` whole. It is the short index of the API that ships with the engine, and it points at the `node_modules/kiss-ssg/GUIDE.md` section that holds each rule. For this job, read `GUIDE.md` § Converting an existing page (`splitDocument`, `findTag`), § Cleaning the build folder (`folders`) and § Helpers (`asset`, `link`, `canonical`).
 
 Per-module detail is in `node_modules/kiss-ssg/AIKB/html-split.md`. Read it before you run anything: it says what the module guarantees and, more usefully, what it deliberately refuses to do.
 

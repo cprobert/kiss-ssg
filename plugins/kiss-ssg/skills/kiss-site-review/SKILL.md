@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 
 The question is whether the site is **ready to launch** — whether a visitor, a search engine or a link preview meets a finished site. It is not about hiding how the site was built. Most of what makes a site read as "generated" is the same list as what makes it read as unfinished: no titles, one description on every page, a broken heading outline, no favicon, no 404 page, a debug file in the build.
 
-The skill carries no copy of the API. `node_modules/kiss-ssg/llms.txt` § Checking a build (**Launch-readiness audit**) is the contract for what each check means; read it rather than trusting the summary below.
+The skill carries no copy of the API. `node_modules/kiss-ssg/GUIDE.md` § Checking a build (**Launch-readiness audit**) is the contract for what each check means; read it rather than trusting the summary below.
 
 ## Execution instructions
 

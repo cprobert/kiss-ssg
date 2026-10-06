@@ -20,7 +20,7 @@ Read the build script — `router.js` on a site that follows the convention in `
 ### 2. Add the new page
 
 - **Scanned site**: create the `.hbs` view under `config.folders.pages`. If it needs data, add a same-named `.json` under `config.folders.models` (or a matching controller under `config.folders.controllers`) — `.scan()` matches by filename.
-- **Explicitly registered site**: add a `.page()` call with `view`, and `model`/`controller` if the page needs them. A page that belongs to an existing fan-out (a blog post, a product) is usually one new record in the model the `.pages()` call already reads, not a new call — see `node_modules/kiss-ssg/llms.txt` `## API` for the full option list (`title`, `path`, `slug`, `sitemapPriority`, etc.).
+- **Explicitly registered site**: add a `.page()` call with `view`, and `model`/`controller` if the page needs them. A page that belongs to an existing fan-out (a blog post, a product) is usually one new record in the model the `.pages()` call already reads, not a new call — see `node_modules/kiss-ssg/GUIDE.md` § .page() for the full option list (`title`, `path`, `slug`, `sitemapPriority`, etc.).
 - Copy the pattern of a page that already does something similar — its model shape, its controller, which partials/layout it extends — rather than inventing a new one.
 
 ### 3. Update an existing page
@@ -38,7 +38,7 @@ If the site runs a dev server (`dev: true`, started via `.watch()`), edit and wa
 
 - Two pages resolving to the same output path fail the whole build (`Page already processed`) — if the new page could share a slug with an existing one (two records with the same title, a fan-out and a hand-registered page landing on the same path), dedupe before registering rather than relying on last-registered-wins.
 - Removing a page cleanly means removing its `.page()` call (or setting `generate: false`), or — on a `.scan()`'d site — deleting its `.hbs` file; either way the next whole-site rebuild also deletes the stale output file. Leaving the call in place while emptying the view is not the same thing. **Before you remove one, grep the views for `{{link "<its id>"`**: a page linked by identity fails every page that links to it the moment it stops being generated, which is the point of linking by identity — fix the linking pages first, or give the old URL an `aliases` entry on the page that replaces it.
-- Every page has an **`id`**, defaulting from its view (`about.hbs` → `about`, a `.pages()` item → `<view route>/<slug>`, or `<registration id>/<slug>` when the registration sets `id`). Two pages with the same explicit `id` fail the build (`Page id already claimed`); one view rendered by two `.page()` calls gets no default id and a notice telling you to set one — set `id` on both. `node_modules/kiss-ssg/llms.txt` § API has the rules.
+- Every page has an **`id`**, defaulting from its view (`about.hbs` → `about`, a `.pages()` item → `<view route>/<slug>`, or `<registration id>/<slug>` when the registration sets `id`). Two pages with the same explicit `id` fail the build (`Page id already claimed`); one view rendered by two `.page()` calls gets no default id and a notice telling you to set one — set `id` on both. `node_modules/kiss-ssg/GUIDE.md` § .pages() (Identity) has the rules.
 
 ### 4a. Link to other pages by identity, not by path
 

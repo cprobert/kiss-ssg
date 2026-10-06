@@ -494,11 +494,19 @@ const CONTRADICTIONS = [
     patterns: [/Seven habits to build in/, /five of the seven habits/],
   },
   {
-    why: 'found by the 2026-09-27 clean-room run: llms.txt is over 100 KB, the build-script contract has yes/no triggers rather than thresholds, and the feature reference is examples 1–6 and 10',
+    why: 'found by the 2026-09-27 clean-room run: the build-script contract has yes/no triggers rather than thresholds, and the feature reference is examples 1–6 and 10',
     patterns: [
-      /short enough to read whole/,
       /carries the extraction thresholds/,
       /Examples 1–6, the feature reference/,
+    ],
+  },
+  {
+    why: 'llms.txt was cut to an index under 16,000 characters on 2026-10-06 (capped in test/aikb.test.js); a doc still calling it long, or sending an agent to a section it no longer has, sends them looking for rules that now live in GUIDE.md',
+    patterns: [
+      /over 100 KB/,
+      /some lines run to several kilobytes/,
+      /llms\.txt`? § Migrating from v1/,
+      /llms\.txt`? § trailing slashes/,
     ],
   },
   {
@@ -738,7 +746,8 @@ describe('no consumer-facing file contradicts the convention it documents', () =
 // llms.txt is how an agent in a consuming project learns which skills exist,
 // and its two lists named five after a sixth (kiss-site-import) had shipped —
 // the clean-room import run found the skill it was following missing from the
-// contract it was told to read. Every plugin skill must be named in both.
+// contract it was told to read. Every plugin skill must be named in every
+// list. Since the 2026-10-06 cut to an index there is one list, not two.
 describe('llms.txt names every skill the plugins ship', () => {
   const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8')
   const shipped = fs.readdirSync(path.join(root, 'plugins/kiss-ssg/skills'))
@@ -748,7 +757,7 @@ describe('llms.txt names every skill the plugins ship', () => {
       .filter(
         (line) => /kiss-site-new/.test(line) && /kiss-page-add/.test(line),
       )
-    expect(lists.length).toBeGreaterThanOrEqual(2)
+    expect(lists.length).toBeGreaterThanOrEqual(1)
     for (const line of lists) expect(line).toContain(`\`${name}\``)
   })
 })
