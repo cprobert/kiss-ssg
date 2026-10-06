@@ -20,7 +20,7 @@ Keep build-script modules out of `src`: a module in an unrecognised folder under
 
 ## Building a site well
 
-- **Never hand-write an internal URL.** `{{link "about"}}` for a page and `{{asset "css/site.css"}}` for a file both fail the build when wrong (in dev they warn and carry on). The exception is a build opened off the file system: `{{root}}` plus a relative path (`examples/11-blog`).
+- **Never hand-write an internal URL.** `{{link "about"}}` for a page and `{{asset "css/site.css"}}` for a file both fail the build when wrong (in dev they warn and carry on). The exceptions: a build opened off the file system (`{{root}}` plus a relative path, `examples/11-blog`), and a file another method writes (`/feed.xml`, `/sitemap.xml`), which has no `{{link}}` — write its path; the link scan still checks it.
 - **Content that repeats is data:** one JSON model and one partial, not N copies.
 - **`npx kiss-ssg check <script> --summary` is the bar, and the bar is zero broken links.**
 - **Record the knowledge base when work closes** (`npx kiss-ssg aikb <script>`), commit it, and write `AIKB/site.md`'s retired-feedback entries while you remember why.
@@ -30,7 +30,7 @@ Keep build-script modules out of `src`: a module in an unrecognised folder under
 
 GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Other methods.
 
-- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route, `blog/listing`), `aliases` (old paths → 301s), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod`, and `config` (per-page overrides, such as `extensionLess: false` for a literal `404.html`).
+- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route minus `.hbs`, so `menu/index.hbs` is `menu/index`, not `menu`), `aliases` (old paths → 301s), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod`, and `config` (per-page overrides, such as `extensionLess: false` for a literal `404.html`).
 - `.pages(options)`: the same, fanned out over an array model; one bad item fails only its own page. An item's id is the registration's route (or `id` as a prefix) plus its slug; a record may carry its own `id` and `aliases`.
 - `.scan()`: `.page()` for every unregistered `.hbs` under `folders.pages`.
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
@@ -106,9 +106,11 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id.
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
 
+Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
+
 ## Checking a build
 
-`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, publishing nothing. It prints one JSON report per `Kiss` instance and exits 1 on any failure. `--summary` gives one line per site plus each finding, and `--against <file>` names a baseline. Once a knowledge base is recorded, the diff is against `AIKB/last-build.json`. Broken links, redirect findings (`removed`, `moved`, `collisions`) and the launch-readiness audit are advisory and never change the exit code. `npx kiss-ssg aikb <script>` is the same run, and it records `AIKB/` when the build passes. `KISS_CHECK`, `KISS_REPORT` and `KISS_AIKB` drive both without the bin. GUIDE.md § Checking a build, § Recording the knowledge base, § Starting a site; the `kiss-build-check` skill reads the report.
+`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, publishing nothing. It prints one JSON report per `Kiss` instance and exits 1 on any failure. `--summary` gives one line per site plus each finding, and `--against <file>` names a baseline. Once a knowledge base is recorded, the diff is against `AIKB/last-build.json`. Broken links, redirect findings (`removed`, `moved`, `collisions`) and the launch-readiness audit are advisory and never change the exit code. The audit's checks (title, description, `og:image`, favicon, `404.html`, one `<h1>`, alt text and more) are tabled in GUIDE.md § Checking a build: build them in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and it records `AIKB/` when the build passes. `KISS_CHECK`, `KISS_REPORT` and `KISS_AIKB` drive both without the bin. GUIDE.md § Checking a build, § Recording the knowledge base, § Starting a site; the `kiss-build-check` skill reads the report.
 
 ## Docs
 

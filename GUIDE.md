@@ -24,7 +24,7 @@ The package's `exports` map has one `.` entry, resolving `types` → `./types/ki
 
 ### The build script
 
-Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()` chain, and the `complete()`/`catch()` pair. Custom helpers need no line here — kiss imports `config.folders.helpers` (`./helpers` by default) and calls its `registerHelpers` export itself. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
+Call it `router.js`, at the project root, and point `package.json`'s `main` and its `build`/`dev` scripts at it. It is a router: the config, the `.page()`/`.pages()`/`.scan()` table, the terminal `.generate()`/`.sitemap()`/`.llms()`/`.feed()`/`.robots()` chain, and the `complete()`/`catch()` pair. Custom helpers need no line here — kiss imports `config.folders.helpers` (`./helpers` by default) and calls its `registerHelpers` export itself. Helper bodies, the facts a site states in both its markup and its JSON-LD, and the completion callbacks once they outgrow a few lines all belong in modules beside it.
 
 How much is extracted follows what the site has earned, not the size of the file. **File length is never the trigger** — a long router is a symptom worth looking at, not a reason to split. `helpers/` is earned by the site's **first** custom helper (one, not three and not a proportion of the file: a helper inside `router.js` cannot be imported, so it cannot be unit-tested, and that is as true of the first as of the fourth); `config/` is earned the moment one fact appears in both the markup a visitor reads and the JSON-LD or feed a machine reads. Each trigger is a yes/no question on purpose, because a threshold you have to adjudicate is one two readers answer differently. The tiers in full, the reasons, and the three mistakes the shape invites are under **The tiers, in full** below — chief among them that renaming an existing build script to `router.js` silently orphans whatever names it, from `package.json` to a CSS toolchain's source globs.
 
@@ -109,7 +109,7 @@ The default config options are:
 }
 ```
 
-Partials: Cam be a .hbs, a .html file or a .md file, Note: .md files are automatically parsed
+Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compiled as templates, or `.txt`, which is shown as text and never compiled. See `.registerPartials()` under **Other methods**.
 
 | Option         |                                 Default                                  |                                                                                                                                                                                                                                                                                                                                                            Purpose                                                                                                                                                                                                                                                                                                                                                            |
 | -------------- | :----------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -173,9 +173,12 @@ each one is checkable, and all five came from watching an agent convert a real s
   The broken-internal-link scan stays the advisory net under the hand-written references beside
   them.
 
-  The one case for a hand-written internal URL is a build meant to be opened straight off the file system,
+  Two cases call for a hand-written internal URL. One is a build meant to be opened straight off the file system,
   where a leading slash cannot resolve: then it is `{{root}}` plus a relative path (see `asset` under
-  **Helpers**, and `examples/11-blog`), and the link scan still checks it.
+  **Helpers**, and `examples/11-blog`), and the link scan still checks it. The other is a file another
+  kiss method writes — `/feed.xml`, `/sitemap.xml`, `/llms.txt` — which is not a page, so no `{{link}}`
+  id names it, and not a copied asset, so `{{asset}}` does not either: write its path, as example 11's
+  RSS links do, and the link scan checks that too.
 
 - **Content that repeats is data, not markup.** The same block appearing N times with different words
   is a JSON model and one partial, not N copies. Do it while you are writing it; the second copy is
@@ -467,7 +470,7 @@ kiss
   .generate()
 ```
 
-**Identity.** Every page has an `id` — what `{{link "<id>"}}` resolves (see **Helpers**). It defaults to the view's route without its extension (`blog/listing.hbs` → `blog/listing`), so most pages need nothing; set `id` when you want a stable name (`id: 'blog'`), or when two `.page()` calls render one view (pagination), where **neither** page gets the default id and a notice says so. On a `.pages()` fan-out an item's default id is the registration's route — or the registration's own `id`, used as a **prefix** — plus the item's slug (`blog/post/the-cascara-experiment`), and a _record_ may carry its own `id`, which wins outright; the registration's `id` is never broadcast to the items, the same rule `aliases` follows. A controller may return one. Two pages claiming one explicit id fail the build (`Page id already claimed: <id>`), an explicit id beats a colliding default one, and a `generate: false` page claims no id at all.
+**Identity.** Every page has an `id` — what `{{link "<id>"}}` resolves (see **Helpers**). It defaults to the view's route without its extension (`blog/listing.hbs` → `blog/listing`). Only `.hbs` is removed: `menu/index.hbs` is `menu/index`, not `menu`, and the home page `index.hbs` is `index` — set `id` yourself when you want the shorter name, so most pages need nothing; set `id` when you want a stable name (`id: 'blog'`), or when two `.page()` calls render one view (pagination), where **neither** page gets the default id and a notice says so. On a `.pages()` fan-out an item's default id is the registration's route — or the registration's own `id`, used as a **prefix** — plus the item's slug (`blog/post/the-cascara-experiment`), and a _record_ may carry its own `id`, which wins outright; the registration's `id` is never broadcast to the items, the same rule `aliases` follows. A controller may return one. Two pages claiming one explicit id fail the build (`Page id already claimed: <id>`), an explicit id beats a colliding default one, and a `generate: false` page claims no id at all.
 
 Each item's slug gets `-N` appended unless the controller sets an explicit `slug`.
 
@@ -1257,6 +1260,37 @@ kiss.handlebars.registerHelper('stringify', function (obj) {
   return JSON.stringify(obj, null, 3)
 })
 ```
+
+A site's own helpers belong in `helpers/` (see **The tiers, in full** above): `helpers/index.js` exports `registerHelpers(kiss)`, and kiss calls it with the instance, so the registrar has `kiss.handlebars` (and `kiss.handlebars.SafeString`) and `kiss.config`. Read config **at render time**, not at registration, from the page context the helper is rendered in, `options.data.root.config`: that is the page's own copy, including any per-page `config` override, and it is never stale under `.watch()`.
+
+**JSON-LD** is the usual first such helper, because it states the facts the visible page states (a phone number, an address) for a machine. Keep the facts in one config key, build the object in a pure function, and escape `<` so a value containing `</script>` cannot end the script element early:
+
+```js
+// helpers/json-ld.js
+export function localBusiness(business, siteUrl) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Bakery',
+    name: business.name,
+    telephone: business.telephone,
+    url: siteUrl,
+  }
+}
+
+export function registerJsonLdHelpers(kiss) {
+  kiss.handlebars.registerHelper('jsonLd', function (options) {
+    const { config } = options.data.root
+    const json = JSON.stringify(
+      localBusiness(config.business, config.siteUrl),
+    ).replace(/</g, '\\u003c')
+    return new kiss.handlebars.SafeString(
+      `<script type="application/ld+json">${json}</script>`,
+    )
+  })
+}
+```
+
+`{{jsonLd}}` in the layout's `head` then renders it, and a page adds its own block with `{{#content "head" mode="append"}}`.
 
 **Link to a page by its identity**, so a template never guesses a URL:
 
