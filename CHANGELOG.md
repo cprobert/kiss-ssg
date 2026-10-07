@@ -3,6 +3,38 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.5 — 2026-10-07
+
+### Your build folder gains a `.md` copy of every page
+
+**Every HTML page your build writes now gets a Markdown copy beside it**: `about.md` next to
+`about.html`, and `courses/index.md` next to `courses/index.html`. It is the
+[llmstxt.org](https://llmstxt.org) convention, a clean version of each page for AI agents to read.
+It is on by default, so your next build publishes these files with the rest of the site.
+
+- **`llms.txt` now links the copies** (`https://your-site/about.md`) instead of the pages, as the
+  llmstxt.org spec asks.
+- **Each copy is the page's `<main>`**, or its `<body>` when there is no `<main>` (or the `<main>`
+  is empty). `<nav>`, `<script>`, `<style>` and `<template>` are dropped. Links are kept as the page
+  wrote them.
+- **Read one copy after upgrading.** If your layout has no `<main>` around the page's own content,
+  its header, footer and any menu not in a `<nav>` are in every copy, and nothing reports it. Wrap
+  the content in `<main>`, or set `markdownCopies: { selector: 'article' }` to convert a different
+  element.
+- **To turn copies off**, set `markdownCopies: false` for the whole site, or
+  `config: { markdownCopies: false }` on one page. With copies off, `llms.txt` links the pages as
+  before.
+- `kiss-ssg check` reports each copy as `pages[].markdown`. Its diff against a recorded knowledge
+  base compares the HTML, so no page reads as changed because of a copy. Re-record with
+  `npx kiss-ssg aikb router.js` so the record carries the new field.
+- If a page's copy cannot be made, the page fails the build, so `llms.txt` never links a missing
+  file. A `markdownCopies.selector` that is not valid CSS fails every page with an error naming it.
+- **Hosting:** the copies are ordinary files. A host that processes Markdown itself, such as classic
+  GitHub Pages publishing from a branch (Jekyll), may turn them back into pages unless the build
+  folder has a `.nojekyll` file. This has not been tested on a live site.
+
+Full details: `GUIDE.md` § Markdown copies for agents.
+
 ## 2.7.4 — 2026-10-06
 
 ### Nothing for a site to change
