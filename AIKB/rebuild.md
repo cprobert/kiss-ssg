@@ -39,7 +39,8 @@ Each is the body of the `Kiss` method named beside it:
 
 `fs-extra`, `node:path`, `./utils.js` (`posixPath`, `isInside`), `./partials.js`
 (`partialNameFor`), `./watcher.js` (`createWatcher`), `./site-helpers.js`
-(`isActiveHelpersEntry`), `./asset-copy.js` (`assetCopyKey`).
+(`isActiveHelpersEntry`), `./asset-copy.js` (`assetCopyKey`), `./markdown-copy.js`
+(`markdownCopyPath`).
 
 ## Depended on by
 

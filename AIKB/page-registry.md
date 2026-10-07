@@ -34,7 +34,8 @@ that patches one on the instance is seen.
 ## Depends on
 
 `fs-extra` (`existsSync`, `outputJson`), `node:path`, `./utils.js`, `./kiss-page.js`
-(`KissPage`), `./model-resolver.js`, `./controller-resolver.js`, `./aikb.js` (`pageOrigin`); the
+(`KissPage`), `./model-resolver.js`, `./controller-resolver.js`, `./aikb.js` (`pageOrigin`), `./config.js`
+(`resolveMarkdownCopies`); the
 `PageOptions` typedef from `./kiss.js`, as a type-only import.
 
 ## Depended on by
