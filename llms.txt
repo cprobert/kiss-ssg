@@ -36,7 +36,8 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
 - `.complete(callback)`: resolves when everything is written; rejects with an `AggregateError` (`err.failures`, `err.report`) on any failed page, controller, callback, Sass file, pipeline step or redirects write. A chain without it exits 0 on a broken build.
 - `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit` and more). GUIDE.md § Checking a build has the shape.
-- `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every URL is the page's `{{canonical}}`. They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
+- `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
+- Markdown copies (`config.markdownCopies`, on by default): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
 - `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Built-in helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `env`) are listed below. Partials are `.hbs`, `.md` (rendered, then compiled), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
@@ -61,6 +62,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   redirects: { format: null }, // 'netlify' | 'firebase' | 'vercel' | 'htaccess' | fn | an array
   audit: { check: true, ignore: [] },
+  markdownCopies: { write: true, selector: 'main' }, // false: no page.md copies
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -88,6 +90,7 @@ Each key's prose is in GUIDE.md: § Cleaning the build folder (`cleanBuild`), §
 - `{{asset}}` renders **no leading slash**: write `href="/{{asset "css/site.css"}}"`. `{{root}}` is a value your page supplies, not a helper.
 - `{{#isActive this href="/about"}}{{active}}{{/isActive}}`: the positional argument is the page context (`this`, or `..` in an `{{#each}}`), and the block **always** renders, so read the match from `{{active}}`.
 - Tailwind in `assets.pipeline`: keep `-i` (without it the CLI exits 0 and drops everything you authored), and use `@import 'tailwindcss' source(none)` plus explicit `@source` paths, or words in your docs change the hashed stylesheet name on every page. `examples/10-asset-pipeline`.
+- A layout with no `<main>` around the page's own content puts its header, footer and menus (any not in a `<nav>`) into every page's `.md` copy. Wrap the content in `<main>`, or set `markdownCopies.selector`.
 - The default `sitemapLastmod` changes on every build. Set it per page for a byte-stable `sitemap.xml`.
 
 ## Helpers

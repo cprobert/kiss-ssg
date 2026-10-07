@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { CHECKS } from '../../lib/audit.js'
+import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 
 // The agent-facing counterpart of test/aikb.test.js. That file proves the
 // shipped docs name every public method and helper; this one proves the
@@ -13,6 +14,24 @@ const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
+  // 2.7.5: every HTML page gets a Markdown copy converted from its <main>, so
+  // a layout without one ships its chrome into every copy and nothing reports
+  // it. The skills that write or inherit a layout have to say so.
+  {
+    feature: 'Markdown copies are converted from <main> — wrap the content',
+    pattern: /Markdown copy[\s\S]*<main>/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-import'),
+      skill('kiss-ssg', 'kiss-site-review'),
+    ],
+  },
+  {
+    feature: 'the 2.7.5 upgrade note: .md copies, and llms.txt links them',
+    pattern:
+      /2\.7\.5[\s\S]*`llms\.txt` now links the copies[\s\S]*markdownCopies: false/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
   // The 2026-09-27 clean-room agent: router.js uses import and top-level
   // await, and `npm init -y` writes "type": "commonjs", so a literal follower's
   // build script did not run until it guessed.
@@ -483,6 +502,14 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: "llms.txt links each page's Markdown copy (2.7.5, the llmstxt.org convention) and not the page, so it is no longer one of the URLs that equal the canonical or follow links.trailingSlash; a doc saying it still is sends an agent looking for a page URL that the file does not contain",
+    patterns: [
+      /so every URL is the page's `\{\{canonical\}\}`/,
+      /same registry, same titles, same URLs, a different reader/,
+      /the `llms\.txt` entry, the feed and every alias target move together/,
+    ],
+  },
+  {
     why: 'complete() is awaited in dev too: measured 2026-09-27, the if (!dev) guard made a dev server that could not bind exit 0, and awaiting in dev keeps serving',
     patterns: [
       /if \(!dev\) \{(?:\s*\/\/[^\n]*)*\s*await kiss/,
@@ -490,7 +517,7 @@ const CONTRADICTIONS = [
     ],
   },
   {
-    why: 'the skill\'s seven are decisions a site makes, not habits; "habits" is llms.txt\'s five working practices, and two lists under one name read as one stale list',
+    why: 'the skill\'s eight are decisions a site makes, not habits; "habits" is llms.txt\'s five working practices, and two lists under one name read as one stale list',
     patterns: [/Seven habits to build in/, /five of the seven habits/],
   },
   {
@@ -717,6 +744,12 @@ const consumerFacing = () => {
         withFileTypes: true,
       })) {
         const rel = `${d}/${e.name}`
+        // What ships, and nothing else: an example's build output never
+        // does, and since every built page has a Markdown copy beside it,
+        // walking `public/` read a page's rendered text as if it were a doc.
+        // The pack gate's own list, so the two cannot disagree about it.
+        if (FORBIDDEN_PACKED.some((pattern) => pattern.test(`${rel}/`)))
+          continue
         if (e.isDirectory()) walk(rel)
         else if (/\.(md|js)$/.test(e.name)) files.push(rel)
       }

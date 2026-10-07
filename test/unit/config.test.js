@@ -7,6 +7,8 @@ import {
   foldersToEnsure,
   DEFAULT_FOLDERS,
   DEFAULT_AUDIT,
+  DEFAULT_MARKDOWN_COPIES,
+  resolveMarkdownCopies,
 } from '../../lib/config.js'
 import { CHECKS } from '../../lib/audit.js'
 
@@ -437,6 +439,61 @@ describe('resolveConfig', () => {
 
   it('resolves no static folder', () => {
     expect(resolveConfig({}).folders).not.toHaveProperty('static')
+  })
+})
+
+describe('markdownCopies', () => {
+  it('is on by default, converting <main>', () => {
+    expect(DEFAULT_MARKDOWN_COPIES).toEqual({ write: true, selector: 'main' })
+    expect(Object.isFrozen(DEFAULT_MARKDOWN_COPIES)).toBe(true)
+    expect(resolveConfig({}).markdownCopies).toEqual({
+      write: true,
+      selector: 'main',
+    })
+  })
+
+  it('reads false as off and true as the defaults, like audit', () => {
+    expect(resolveConfig({ markdownCopies: false }).markdownCopies).toEqual({
+      write: false,
+      selector: 'main',
+    })
+    expect(resolveConfig({ markdownCopies: true }).markdownCopies).toEqual({
+      write: true,
+      selector: 'main',
+    })
+  })
+
+  it('merges an object one level deep', () => {
+    expect(
+      resolveConfig({ markdownCopies: { selector: 'article' } }).markdownCopies,
+    ).toEqual({ write: true, selector: 'article' })
+    expect(
+      resolveConfig({ markdownCopies: { write: undefined } }).markdownCopies,
+    ).toEqual({ write: true, selector: 'main' })
+  })
+
+  it('refuses anything else, naming the value', () => {
+    for (const markdownCopies of ['off', 0, null, ['main']])
+      expect(() => resolveConfig({ markdownCopies })).toThrow(
+        /config\.markdownCopies must be true, false or an object/,
+      )
+    expect(() => resolveConfig({ markdownCopies: { selector: '' } })).toThrow(
+      /config\.markdownCopies\.selector must be a non-empty string/,
+    )
+    expect(() => resolveConfig({ markdownCopies: { write: 'yes' } })).toThrow(
+      /config\.markdownCopies\.write must be a boolean/,
+    )
+  })
+
+  it('resolves an already-resolved block to itself, for a page override', () => {
+    // A page's `config` is the site's resolved config with the page's own keys
+    // merged over it, so the page registry resolves whichever it finds.
+    const resolved = resolveConfig({}).markdownCopies
+    expect(resolveMarkdownCopies(resolved)).toEqual(resolved)
+    expect(resolveMarkdownCopies(false)).toEqual({
+      write: false,
+      selector: 'main',
+    })
   })
 })
 

@@ -1,7 +1,7 @@
 # Upstream constraints
 
 Things kiss works around, or declines to work around, in code it does not own —
-Node, handlebars, chokidar, sass, eslint.
+Node, handlebars, chokidar, sass, eslint, turndown and its DOM.
 
 **Why this file exists.** A workaround explained only in the comment beside it
 is a workaround nobody ever revisits: the reason is legible where the code is,
@@ -184,6 +184,32 @@ does:** nothing — the floor is a promise to consumers and the linter is a
 development tool, so the split is stated in `CLAUDE.md` and `.nvmrc` pins the
 development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
 whether kiss's own floor has moved past it.
+
+### domino's type declaration names the wrong module
+
+**Observed:** `@mixmark-io/domino` 2.2.0 (turndown 7.2.4's DOM, imported directly
+by `lib/markdown-copy.js`, 2026-10-07). **Effect:** its type declaration
+(`node_modules/@mixmark-io/domino/lib/index.d.ts`) is
+`declare module 'domino' { … }` — an ambient declaration under the package's old
+name, not a module — so `tsc --checkJs` fails the import with TS2306 ("is not a
+module") and `npm run typecheck`, a gate, goes red. The runtime is unaffected.
+**What kiss does:** names the specifier through a variable
+(`const DOMINO = '@mixmark-io/domino'`; `import(DOMINO)`), which `tsc` does not
+resolve, so the module is typed `any`. A local guard at one call site; no
+shim `.d.ts`. **Re-check:** `head node_modules/@mixmark-io/domino/lib/index.d.ts`
+after an upgrade — if it exports rather than declares, import the string
+literal again and run `npm run typecheck`.
+
+### turndown-plugin-gfm is unmaintained
+
+**Observed:** `turndown-plugin-gfm` 1.0.2, last published 2022 (npm
+`time.modified`, checked 2026-10-07). **Effect:** none yet — it adds GFM
+tables, strikethrough and task lists to turndown, and those rules do not move.
+**What kiss does:** uses it, as an accepted risk chosen on the branch that
+added Markdown copies. The measured fallback is `node-html-markdown` 2.0.0,
+which converts tables itself but pads every cell to its column's width, costing
+tokens on a wide config table. **Re-check:** `npm view turndown-plugin-gfm
+time.modified`, and whether a turndown major has broken its plugin API.
 
 ### Codex enables plugins per project, installs them per user
 

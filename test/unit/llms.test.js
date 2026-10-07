@@ -111,6 +111,33 @@ describe('buildLlmsEntries', () => {
     expect(entries[0].description).toBe('One line now')
     expect(entries[1].description).toBe('')
   })
+
+  it('links a page with a Markdown copy to the copy, the llmstxt.org way', () => {
+    const withCopy = (buildTo, markdownTo, options) => ({
+      ...entry(buildTo, options),
+      page: { ...entry(buildTo, options).page, markdownTo },
+    })
+    const entries = buildLlmsEntries(
+      [
+        withCopy('out/index.html', 'out/index.md'),
+        withCopy('out/courses/index.html', 'out/courses/index.md', {
+          path: 'courses',
+        }),
+        withCopy('out/about.html', 'out/about.md', { slug: 'about' }),
+        // No copy (copies off, or not HTML): the page's own URL, as before.
+        withCopy('out/team.html', null, { slug: 'team' }),
+      ],
+      // The policy never touches a file's URL: `index.md` is a file, not a
+      // directory index, and dropping it would link the HTML page again.
+      { ...context, trailingSlash: false },
+    )
+    expect(entries.map((e) => e.url)).toEqual([
+      'https://e.com/index.md',
+      'https://e.com/courses/index.md',
+      'https://e.com/about.md',
+      'https://e.com/team',
+    ])
+  })
 })
 
 describe('sectionNameFor', () => {

@@ -4,6 +4,14 @@
  */
 export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
 /**
+ * @param {*} markdownCopies the `markdownCopies` key as supplied, or an
+ * already-resolved block; `undefined` when absent
+ * @returns {KissMarkdownCopies}
+ * @throws if it is neither a boolean nor a plain object, if `write` is not a
+ * boolean, or if `selector` is not a non-empty string
+ */
+export function resolveMarkdownCopies(markdownCopies: any): KissMarkdownCopies;
+/**
  * @param {KissConfigInput} [userConfig]
  * @returns {KissConfig} the defaults with `userConfig` merged over them
  * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if
@@ -100,6 +108,17 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {import('./audit.js').CheckId[]} ignore checks not to run, by id — each must be one of `CHECKS` in `lib/audit.js`
  */
 /**
+ * The Markdown-copy block (`config.markdownCopies`): every HTML page the build
+ * writes gets a `.md` copy beside it, converted from the written HTML, and
+ * `llms.txt` links to the copy. Merged exactly one level deep;
+ * `markdownCopies: false` is shorthand for `{ write: false }`. A page's own
+ * `config` overrides it for that page.
+ *
+ * @typedef {Object} KissMarkdownCopies
+ * @property {boolean} write write the copies at all
+ * @property {string} selector the CSS selector for the element converted; `<body>` when it matches nothing
+ */
+/**
  * The redirect block (`config.redirects`): how page `aliases` are encoded. The
  * host-neutral `redirects.json` is written whatever this says. Merged exactly
  * one level deep.
@@ -139,6 +158,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissLinks} links gates the broken-internal-link scan on a settled non-dev build
  * @property {KissRedirects} redirects how page `aliases` are encoded on a settled build
  * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
+ * @property {KissMarkdownCopies} markdownCopies the `.md` copy written beside every HTML page, for agents
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
  * @property {string} devHost interface the dev and live reload servers bind to
@@ -155,11 +175,11 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown`, `links`, `redirects` and `audit` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
- * `audit` also takes a bare boolean: `false` turns the whole audit off.
+ * `audit` and `markdownCopies` also take a bare boolean: `false` turns the whole block off.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'|'markdownCopies'>> & {
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
@@ -167,6 +187,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  *   links?: Partial<KissLinks>,
  *   redirects?: Partial<KissRedirects>,
  *   audit?: boolean|Partial<KissAudit>,
+ *   markdownCopies?: boolean|Partial<KissMarkdownCopies>,
  *   folders?: KissFoldersInput,
  * } & Record<string, any>} KissConfigInput
  */
@@ -208,6 +229,10 @@ export const DEFAULT_AUDIT: Readonly<{
     check: true;
     ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
 }>;
+export const DEFAULT_MARKDOWN_COPIES: Readonly<{
+    write: true;
+    selector: "main";
+}>;
 export const DEFAULT_REDIRECTS: Readonly<{
     format: any;
 }>;
@@ -248,6 +273,10 @@ export const DEFAULT_CONFIG: Readonly<{
     audit: Readonly<{
         check: true;
         ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
+    }>;
+    markdownCopies: Readonly<{
+        write: true;
+        selector: "main";
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -411,6 +440,23 @@ export type KissAudit = {
     ignore: import("./audit.js").CheckId[];
 };
 /**
+ * The Markdown-copy block (`config.markdownCopies`): every HTML page the build
+ * writes gets a `.md` copy beside it, converted from the written HTML, and
+ * `llms.txt` links to the copy. Merged exactly one level deep;
+ * `markdownCopies: false` is shorthand for `{ write: false }`. A page's own
+ * `config` overrides it for that page.
+ */
+export type KissMarkdownCopies = {
+    /**
+     * write the copies at all
+     */
+    write: boolean;
+    /**
+     * the CSS selector for the element converted; `<body>` when it matches nothing
+     */
+    selector: string;
+};
+/**
  * The redirect block (`config.redirects`): how page `aliases` are encoded. The
  * host-neutral `redirects.json` is written whatever this says. Merged exactly
  * one level deep.
@@ -496,6 +542,10 @@ export type KissSettings = {
      */
     audit: KissAudit;
     /**
+     * the `.md` copy written beside every HTML page, for agents
+     */
+    markdownCopies: KissMarkdownCopies;
+    /**
      * dev server port
      */
     port: number;
@@ -521,11 +571,11 @@ export type KissConfig = KissSettings & {
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown`, `links`, `redirects` and `audit` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
- * `audit` also takes a bare boolean: `false` turns the whole audit off.
+ * `audit` and `markdownCopies` also take a bare boolean: `false` turns the whole block off.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit" | "markdownCopies">> & {
     sass?: {
         includePaths?: string[];
     };
@@ -535,5 +585,6 @@ export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "ass
     links?: Partial<KissLinks>;
     redirects?: Partial<KissRedirects>;
     audit?: boolean | Partial<KissAudit>;
+    markdownCopies?: boolean | Partial<KissMarkdownCopies>;
     folders?: KissFoldersInput;
 } & Record<string, any>;

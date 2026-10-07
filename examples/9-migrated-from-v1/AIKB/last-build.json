@@ -9,7 +9,8 @@
       "ok": true,
       "hash": "5327e69b3bda7971d193403813cd3b4dcd7828fc",
       "id": "index",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/index.md"
     },
     {
       "view": "await-complete.hbs",
@@ -17,7 +18,8 @@
       "ok": true,
       "hash": "42549180722069377efe95d72540fec8e2a658d2",
       "id": "await-complete",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/await-complete.md"
     },
     {
       "view": "folders.hbs",
@@ -25,7 +27,8 @@
       "ok": true,
       "hash": "bdeb5df536ff072eca8c3f3914967fe0891e7204",
       "id": "folders",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/folders.md"
     },
     {
       "view": "handlebars-instance.hbs",
@@ -33,7 +36,8 @@
       "ok": true,
       "hash": "1c7be0076acf2776ea452f749e312a88039fe476",
       "id": "handlebars-instance",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/handlebars-instance.md"
     },
     {
       "view": "dynamic-partials.hbs",
@@ -41,7 +45,8 @@
       "ok": true,
       "hash": "ca0571a97d6baae769e68e47112a8ceda1ce3063",
       "id": "dynamic-partials",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/dynamic-partials.md"
     },
     {
       "view": "duplicate-paths.hbs",
@@ -49,7 +54,8 @@
       "ok": true,
       "hash": "11d426e8fcc70a14415bf1daf0582f2a04b48fbe",
       "id": "duplicate-paths",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/duplicate-paths.md"
     },
     {
       "view": "pure-controllers.hbs",
@@ -57,7 +63,8 @@
       "ok": true,
       "hash": "6b345c0aebdecbc6409de5c12a898c34349a38a4",
       "id": "pure-controllers",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/pure-controllers.md"
     },
     {
       "view": "smaller-changes.hbs",
@@ -65,7 +72,8 @@
       "ok": true,
       "hash": "fef8cf4870e1e40fe8aeabbb2d0deeed90a0c137",
       "id": "smaller-changes",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/smaller-changes.md"
     },
     {
       "view": "404.hbs",
@@ -73,7 +81,8 @@
       "ok": true,
       "hash": "7c04e3e7f897397965f121c7d48638bf2c243ade",
       "id": "404",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/404.md"
     },
     {
       "view": "shelf/item.hbs",
@@ -81,7 +90,8 @@
       "ok": true,
       "hash": "2f9b49585c8638a510045f2ef5a0717232ed6e2a",
       "id": "shelf/item/arch-blend",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/shelf/arch-blend.md"
     },
     {
       "view": "shelf/item.hbs",
@@ -89,7 +99,8 @@
       "ok": true,
       "hash": "7a96181fdfe752989ec68fcc10f64faf083ef796",
       "id": "shelf/item/oak-cascara",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/shelf/oak-cascara.md"
     },
     {
       "view": "shelf/item.hbs",
@@ -97,7 +108,8 @@
       "ok": true,
       "hash": "738b806c2ec47a684ef380abbc426e11cd63bb4b",
       "id": "shelf/item/guji-uraga",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/shelf/guji-uraga.md"
     }
   ],
   "failures": [],

@@ -18,7 +18,7 @@ const SUMMARY = 'Dog training and behaviour work in South Wales.'
 // One small site with every rule in it: a root page, a section index, a page
 // inside that section, a page kept out by `ignoreLlms` and one kept out by
 // `generate: false`.
-const buildSite = async (extensionLess) => {
+const buildSite = async (extensionLess, markdownCopies) => {
   site = await makeSite({
     'src/pages/index.hbs': '{{canonical}}',
     'src/pages/about.hbs': '{{canonical}}',
@@ -32,6 +32,7 @@ const buildSite = async (extensionLess) => {
     folders: site.folders,
     siteUrl: 'https://e.com/',
     extensionLess,
+    markdownCopies,
     logger: silentLogger,
   })
     .page({ view: 'index.hbs', title: 'Home', description: 'The front page' })
@@ -72,13 +73,15 @@ describe('.llms()', () => {
         '',
         '## Pages',
         '',
-        '- [Home](https://e.com/): The front page',
-        '- [About](https://e.com/about): Who we are',
+        // Each page's Markdown copy, on by default — the llmstxt.org spec's
+        // "should point to LLM-friendly content".
+        '- [Home](https://e.com/index.md): The front page',
+        '- [About](https://e.com/about.md): Who we are',
         '',
         '## Courses',
         '',
-        '- [Courses](https://e.com/courses/)',
-        '- [Bronze obedience](https://e.com/courses/bronze): Six weeks, group class',
+        '- [Courses](https://e.com/courses/index.md)',
+        '- [Bronze obedience](https://e.com/courses/bronze.md): Six weeks, group class',
         '',
         '## Notes',
         '',
@@ -89,9 +92,32 @@ describe('.llms()', () => {
   })
 
   it.each([false, true])(
-    'names the same URLs as sitemap.xml and {{canonical}} with extensionLess=%s',
+    'links a Markdown copy that is on disk for every page it lists, extensionLess=%s',
     async (extensionLess) => {
       await buildSite(extensionLess)
+      const llms = urlsOf(await site.read('public/llms.txt'))
+      expect(llms).toHaveLength(4)
+      for (const url of llms) {
+        expect(url).toMatch(/\.md$/)
+        expect(
+          await site.exists(`public/${url.slice('https://e.com/'.length)}`),
+        ).toBe(true)
+      }
+      // A page left out of llms.txt still has its copy: copies are for every
+      // HTML page, the index is the curated list.
+      expect(
+        await site.exists(
+          extensionLess ? 'public/rota/index.md' : 'public/rota.md',
+        ),
+      ).toBe(true)
+      expect(await site.exists('public/draft.md')).toBe(false)
+    },
+  )
+
+  it.each([false, true])(
+    'names the same URLs as sitemap.xml and {{canonical}} with extensionLess=%s and copies off',
+    async (extensionLess) => {
+      await buildSite(extensionLess, false)
       const canonicals = utils
         .globFiles(site.build, '**/*.html')
         .map((file) => fs.readFileSync(file, 'utf8').trim())

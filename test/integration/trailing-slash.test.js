@@ -19,7 +19,9 @@ import { makeSite } from '../helpers/site.js'
 // The thing this file exists to guard is not the flag but the *agreement*. Six
 // derivations emit a page's URL — `{{canonical}}`, `{{link}}`, `<loc>`,
 // `llms.txt`, the feed, and an alias's target — and a site is only correct when
-// all six say the same string. Splitting any one of them off is the defect:
+// all six say the same string. `llms.txt` is one of the six only on a site that
+// turns Markdown copies off: with them on (the default) it links each page's
+// `.md` copy, a file, which no directory-index policy applies to. Splitting any one of them off is the defect:
 // a site would link `/courses/` while canonicalising `/courses`, taking the
 // redirect the setting exists to avoid on every internal click.
 
@@ -46,13 +48,14 @@ const FILES = {
     '{{#isActive this href="/courses"}}on{{/isActive}}{{#isActive this href="/courses/"}}on-slashed{{/isActive}}',
 }
 
-const buildSite = async ({ trailingSlash } = {}) => {
+const buildSite = async ({ trailingSlash, markdownCopies } = {}) => {
   site = await makeSite(FILES)
   const kiss = new Kiss({
     folders: site.folders,
     siteUrl: 'https://e.com',
     logger: silentLogger,
     redirects: { format: 'netlify' },
+    markdownCopies,
     ...(trailingSlash === undefined ? {} : { links: { trailingSlash } }),
   })
   instances.push(kiss)
@@ -100,8 +103,18 @@ describe('links.trailingSlash: the host decides, not the engine', () => {
     ])
   })
 
+  it('links llms.txt to the Markdown copy, a file the policy never touches', async () => {
+    await buildSite({ trailingSlash: false })
+    const llms = await site.read('public/llms.txt')
+    expect(llms).toContain('(https://e.com/courses/index.md)')
+    expect(await site.exists('public/courses/index.md')).toBe(true)
+  })
+
   it('drops it under trailingSlash:false, in all six at once', async () => {
-    const kiss = await buildSite({ trailingSlash: false })
+    const kiss = await buildSite({
+      trailingSlash: false,
+      markdownCopies: false,
+    })
     const page = await site.read('public/courses/index.html')
 
     // The canonical, and both `{{link}}` forms, on the page itself.

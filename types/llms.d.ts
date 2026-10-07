@@ -39,7 +39,12 @@ export function topSegment(pagePath: unknown): string;
  * subset of the same site the sitemap describes, never a superset), or by
  * `generate: false` (there is nothing at that URL).
  *
- * @param {{ buildTo: string, page: { options: Record<string, any> } }[]} stack
+ * A page with a Markdown copy (`config.markdownCopies`) is linked to the copy,
+ * which is what the llmstxt.org spec asks of the file's links ("should point
+ * to LLM-friendly content, such as the markdown versions of pages"); one
+ * without is linked to its own URL, as the sitemap names it.
+ *
+ * @param {{ buildTo: string, page: { options: Record<string, any>, markdownTo?: string|null } }[]} stack
  * @param {Object} context
  * @param {string} context.siteUrl
  * @param {string} context.buildDir
@@ -51,6 +56,7 @@ export function buildLlmsEntries(stack: {
     buildTo: string;
     page: {
         options: Record<string, any>;
+        markdownTo?: string | null;
     };
 }[], { siteUrl, buildDir, sections, trailingSlash }: {
     siteUrl: string;
