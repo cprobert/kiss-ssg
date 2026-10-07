@@ -1,7 +1,7 @@
 ---
 branch: feat/llms-md-pages
 base: main
-status: open
+status: closed
 opened: 2026-10-07
 ---
 
@@ -75,3 +75,97 @@ Written at the first pulse, at the operator's request (on mobile, eyeball deferr
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-07: A Markdown copy of every page, for agents
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** `config.markdownCopies` (on by default): every HTML page gets a `.md` copy beside it, converted with turndown from the written `<main>`, and `llms.txt` links the copies. New `lib/markdown-copy.js` with `AIKB/markdown-copy.md`; version 2.7.5. Commits `d6e68f5` … `0406f41` on `feat/llms-md-pages`.
+
+## Reflect — what the session was
+
+It began as research, not a branch. The operator asked what kiss could learn from Webstudio. Of the four ideas Claude offered, the operator chose one (the `.md` copy) and named one Claude had not offered: the project's website pitch. Asked to pick one, Claude chose the `.md` copy and said why. Then came **the decisive steer of the session**: the operator asked whether an HTML-to-Markdown library could process kiss's _output_ rather than its compile inputs, and pointed out that link checking would come for free. That move dissolved the hardest design question Claude had raised, how to convert an `.hbs` page, and it set up the architecture the rest of the branch built. The operator also settled the defaults: on by default, and `llms.txt` linking the copies, flagged "worth checking". Claude checked: the llmstxt.org spec says so in so many words.
+
+`/branch-open` then ran with the design already shaped by that conversation. The shape was **planned**, and it held: two slices (engine, then docs), one pulse at each boundary, and the close. Every scope change was adjacent and recorded as an Amendment: the contradiction-scan walk, four fixes from the adversarial read, and one from the clean-room run.
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing — strong, and the operator's.** The output-not-inputs question is the clearest case in these logs of the sum beating the parts. Claude had framed the job as "what source does each page type have?" The operator reframed it as "convert what was written", which removed a lossy dependency choice from `.hbs` pages and made the link guarantee structural. The operator also ran `/branch-open` at the point the conversation became a branch, which is exactly the 2026-10-03 feedback ("run `/branch-open` even mid-stream") applied.
+
+**Harness leverage — strong, and shared.** The operator invoked `/branch-pulse` twice at the boundaries Claude offered, and `/branch-close` when asked. Claude used three different fresh-context checks, and each found something the others did not:
+
+- **An adversarial read before the first feature commit** found four real defects:
+  - an empty `<main>` gave an empty copy;
+  - an invalid selector failed with no hint of where it was set;
+  - the sweep deleted a copy the replacing `.htm` page had just written;
+  - the sweep never removed the copy of a page that stopped writing one.
+- **The clean-room run from the packed tarball** found the per-page config merge bug: a page's `{ write: true }` dropped the site's `selector`.
+- **Codex at close** found nothing.
+
+The first two checks share Claude's model family, and this log says so where it records them. Codex is the only independent reviewer this branch had, and it read the code without running the tests.
+
+**Verification & ownership — the gap.** The operator spent most of the session on a phone and deferred both pulse-time looks: a converted blog post, then the docs-site page with the new section. Both deferrals were written down (items 1–2 of the PR checklist), so they are honest deferrals with a destination. But it means **no human has yet read a single generated `.md` file**. Everything known about their quality comes from tests, greps, and two Claude-family agents. The operator intended to supervise at the artefact ("I'll jump on my laptop") and then could not. The checklist is where that intention now lives.
+
+**Learning engagement — offered, not taken up.** Twice Claude named the one decision the operator was least likely to have seen and offered to explain or overturn it: a failed conversion fails the whole page, and an empty `<main>` falls back to the whole `<body>`. Neither got a reply. Both are defensible defaults. But a site owner will meet the second one, and nobody but Claude has weighed it.
+
+**Pushback & steering.** The operator overrode Claude twice and knowingly: a patch, not a minor (2.7.5, asked at the open and again at the close); and Codex instead of `/security-review`. Those are an owner's calls, made with the reasoning in front of them. It is not the "absorbed the first answer" pattern.
+
+**Competency level: Assisted operator**, with active-supervisor framing. The framing and the steer at the decisive moment were strong. The verification was done entirely by agents, and the explanation offers went unanswered. The level is earned by what a human checked, and here that was the design, not the output.
+
+## Feedback — recommendations for next session
+
+- **Operator — do checklist items 1–3 before merging, at a desk; it takes ten minutes.** Read `examples/11-blog/public/blog/pour-over-at-home/index.md` and `docs/guide/discovery/index.md`, and click two links in `docs/llms.txt`. No person has read a generated copy yet, and every `^2` site publishes them on its next install.
+- **Operator — when you will be on a phone, say so at the open.** A branch run from mobile can still put its looks at the points where you will be at a desk, rather than meeting them at pulses you then have to defer.
+- **Operator — answer the "one decision" offer in a word, even "fine".** An unanswered offer leaves the default carried by Claude's reasoning alone, which `CLAUDE.md` asks to be said out loud. The empty-`<main>` fallback is the one to read now.
+- **Claude — when a feature adds files to every build folder, list everything that reads a build folder before writing the first test.** The default-on `.md` files broke these, one by one, found by running the suite:
+  - `atomic-build.test.js`'s exact `readdir` lists;
+  - `check.test.js`'s page shape;
+  - example 9's file count;
+  - `trailing-slash.test.js`'s "six derivations";
+  - most expensively, `skill-coverage.test.js`'s contradiction scan, which read built pages as docs and tripped 60+ bans.
+
+  The question "what reads `public/`?" (the link scan, the audit's stray-file walk, the contradiction walk, the examples' counts, the aikb record) would have found them as a class before the suite did.
+
+- **Claude — the shipped-doc claim check worked; keep doing it at the moment of writing.** The `kiss-site-migrate` note first said a `check` diff would show every page as changed. Reading `diffReports` before committing showed it compares HTML hashes only, and the sentence was rewritten. That is the `CLAUDE.md` rule ("a doc is a claim about the code") paying off at the point of writing.
+- **Process — `docs/` was three versions stale on `main`.** Its version stamp still said 2.7.2 at 2.7.4, so earlier closes bumped the version without rebuilding the committed docs site. `/branch-close` Step 4a should end with `node docs` and a commit of `docs/` when the stamp moved. This branch did it by hand (`0406f41`).
+- **Process — the clean-room run found four doc frictions outside this branch.** Examples 3, 4 and 6 hand-write nav hrefs against GUIDE's own rule. A `.json` array as a `.pages()` model is not stated to fan out. `check` prints one JSON array where "one report per site" reads as JSON Lines. `check` logs "Copied assets: … to ./public" while writing to staging. Each is a small branch if the operator wants it.
+- **Both — the Write-tool rule held for the whole session.** Every file, scratch spikes included, went through Write or Edit; heredocs carried only commit messages. That is the lesson `/branch-open` flagged as recurring three times. One clean branch is not a trend, but it is worth `/memory-consolidate` knowing.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** every HTML page gets a clean Markdown copy beside it, converted from the built HTML with turndown, and `llms.txt` links the copies. **Met.** The objective did not move; the amendments were defects found and fixed inside the remit.
+
+- [x] **Criterion 1 — on by default, llmstxt.org paths, a site and per-page switch.**
+  - `test/integration/markdown-copies.test.js` and `llms.test.js`; the clean-room run (7 pages, 7 copies, `404.md` included).
+- [x] **Criterion 2 — `<main>` else `<body>`, `nav`/`script`/`style` dropped, selector override.**
+  - Unit tests.
+  - `docs/guide/checking/index.md` has no table of contents (grep). Seen by Claude, not yet by the operator.
+- [x] **Criterion 3 — `llms.txt` links the copies, falling back to the page URL.**
+  - All 11 `docs/llms.txt` links end `.md`.
+  - The clean-room run's 6 links all resolve.
+  - The per-page-off fallback is tested.
+- [x] **Criterion 4 — links unchanged; the GUIDE states they are right by construction, not checked.**
+  - GUIDE § Markdown copies for agents.
+  - Parentheses come out escaped, which is documented.
+- [x] **Criterion 5 — the report and `check` show the copies; the failure stance is documented.**
+  - `pages[].markdown` is in `check`'s JSON.
+  - A conversion failure fails its page.
+  - A failed `.md` write leaves the HTML on disk, as GUIDE says.
+- [x] **Criterion 6 — module, unit test, AIKB doc, table row, integration coverage; regression tests seen red.**
+  - The sweep, merge, empty-`<main>`, selector and ban tests were each seen failing first.
+- [x] **Criterion 7 — the public-API obligations.**
+  - GUIDE section and page, `llms.txt` index and trap lines, README, `types/`.
+  - The CHANGELOG 2.7.5 entry.
+  - Four skills with two coverage rows.
+  - A `CONTRADICTIONS` ban on three old sentences, seen failing against the old `llms.txt`.
+- [ ] **Criterion 8 — `node docs` builds with copies, and one built `.md` looked at by the operator.**
+  - Built and committed.
+  - **The operator's look is deferred** to PR checklist items 1–2.
+- [x] **Criterion 9 — clean-room run from the packed tarball.**
+  - Every check passed.
+  - Its guesses are recorded in the third Amendment.
+- [x] **Criterion 10 — `npm run gates` green; Codex review at close.**
+  - All five gates passed (76 changed files, 312 in the tarball).
+  - Codex: no actionable regressions (read-only, tests not run).
+
+**What is concretely better:** any kiss site can now be read by an agent without its markup, with no configuration, and its `llms.txt` follows the spec it claims. **Still open:** the operator's own read of a generated copy; the empty-`<main>` default, which no human has weighed; the unmeasured Jekyll caution; and the four out-of-scope frictions from the clean-room run.
