@@ -83,6 +83,7 @@ describe('buildReport', () => {
       'hash',
       'id',
       'canonical',
+      'markdown',
     ])
     expect(report.ok).toBe(true)
     expect(report.mode).toBe('build')
@@ -95,6 +96,7 @@ describe('buildReport', () => {
         hash: null,
         id: null,
         canonical: null,
+        markdown: null,
       },
     ])
     expect(report.failures).toEqual([])
@@ -120,6 +122,27 @@ describe('buildReport', () => {
     expect(report.pages.map((p) => p.id)).toEqual(['about', null])
   })
 
+  it("carries each page's Markdown copy, named against the real build folder", () => {
+    const report = buildReport({
+      stack: [
+        {
+          ...page('about.hbs', './staging/about.html', 'h1'),
+          page: { hash: 'h1', markdown: './staging/about.md' },
+        },
+        page('feed.hbs', './staging/feed.xml', 'h2'),
+      ],
+      failures: [],
+      buildDir: './public',
+      stagingDir: './staging',
+      startedAt: Date.now(),
+    })
+
+    expect(report.pages.map((p) => p.markdown)).toEqual([
+      './public/about.md',
+      null,
+    ])
+  })
+
   it('marks the failed page — and only that page — as not ok', () => {
     const report = buildReport({
       stack: [
@@ -142,6 +165,7 @@ describe('buildReport', () => {
         hash: null,
         id: null,
         canonical: null,
+        markdown: null,
       },
       {
         view: 'about.hbs',
@@ -150,6 +174,7 @@ describe('buildReport', () => {
         hash: null,
         id: null,
         canonical: null,
+        markdown: null,
       },
     ])
     expect(report.failures).toEqual([

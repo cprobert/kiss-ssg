@@ -34,6 +34,12 @@ export class KissPage {
     links: string[] | null;
     /** @type {import('./audit.js').PageFacts|null} */
     audit: import("./audit.js").PageFacts | null;
+    /** @type {{ selector: string }|null} */
+    markdownCopy: {
+        selector: string;
+    } | null;
+    /** @type {string|null} */
+    markdown: string | null;
     set buildDir(value: string);
     get buildDir(): string;
     pagesDir: string;
@@ -49,6 +55,8 @@ export class KissPage {
     set ext(extension: any);
     set extLess(val: any);
     get buildTo(): string;
+    /** @returns {string|null} */
+    get markdownTo(): string | null;
     get outputPath(): string;
     get outputOwner(): string;
     pageURL(): string;

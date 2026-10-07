@@ -42,6 +42,7 @@ Context: prompted by Webstudio's docs, which serve every page at `<url>.md`. A t
      it is not silent scope creep. -->
 
 - **2026-10-07** — `test/unit/skill-coverage.test.js`'s contradiction scan walked all of `examples/`, including each example's gitignored `public/`. With copies on, the built pages' `.md` text was read as docs and tripped 60+ bans. The walk now skips what `scripts/gates.mjs`'s `FORBIDDEN_PACKED` says never ships (seen red without the fix, green with it). Adjacent test tooling, made necessary by this branch; impact surface unchanged.
+- **2026-10-07** — Adversarial read of the uncommitted diff (fresh-context general-purpose agent, same model family — not an independent review). Six findings; four acted on, each pinned by a test seen red first: an empty `<main>` gave an empty copy (now falls back to `<body>`); an invalid selector failed every page with domino's bare `Invalid selector.` (now names `config.markdownCopies.selector`); the watch sweep deleted a copy the replacing page had just written (`x.html` → `x.htm`, both `x.md`) and never removed the copy of a page that stopped writing one (copies now swept as their own set); GUIDE overclaimed "neither file is written" for a failed `.md` write. Not acted on: two pages producing one `.md` (`ext: 'md'` beside an HTML page) — contrived, and already in `report().outputs.collisions`. Added a Jekyll caution to GUIDE, inferred rather than measured.
 
 ## Operator checklist for the PR
 

@@ -179,6 +179,24 @@ the Codex section in `AGENTS.md`.
 - Commit the new and changed files with the upgrade, so the site records which skills it uses for
   both agents.
 
+### 0d. 2.7.5: a Markdown copy of every page
+
+Nothing fails. What changes is the build folder and `llms.txt`:
+
+- **Every HTML page now has a `.md` copy beside it** (`about.md`, `courses/index.md`), converted
+  from the page's `<main>`, or from `<body>` when it has none. They are published with the rest of
+  the build folder. `kiss-ssg check` reports each one as `pages[].markdown`. Its diff against a
+  record compares each page's HTML hash, which the copies do not change, so no page reads as
+  changed because of them.
+- **`llms.txt` now links the copies** (`https://site/about.md`) rather than the pages. It is the
+  llmstxt.org convention. A site that wants the old links sets `markdownCopies: false`.
+- **Read one copy.** Open one built `.md`. If the site's layout has no `<main>`, its header, footer
+  and any menu not in a `<nav>` are in every copy. Wrap the page content in `<main>` in the layout,
+  or set `markdownCopies: { selector: '…' }`.
+- **A page that should have no copy** sets `config: { markdownCopies: false }`.
+- Re-record the knowledge base (`npx kiss-ssg aikb router.js`) once the upgrade builds green, so
+  the next `check` diffs against a record that has the new field.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.

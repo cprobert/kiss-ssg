@@ -37,8 +37,14 @@
   {
     "slug": "discovery",
     "title": "Sitemap, llms.txt and feeds",
-    "description": "The files search engines and answer engines read, derived from the same page registry: sitemap.xml, llms.txt, an RSS feed and robots.txt.",
-    "sections": [".sitemap()", ".llms()", ".feed()", ".robots()"]
+    "description": "The files search engines and answer engines read, derived from the same page registry: sitemap.xml, llms.txt and a Markdown copy of every page, an RSS feed and robots.txt.",
+    "sections": [
+      ".sitemap()",
+      ".llms()",
+      "Markdown copies for agents",
+      ".feed()",
+      ".robots()"
+    ]
   },
   {
     "slug": "urls",

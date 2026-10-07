@@ -91,6 +91,10 @@ The default config options are:
     check: true,
     ignore: []
   },
+  markdownCopies: {
+    write: true,
+    selector: 'main'
+  },
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -123,6 +127,7 @@ Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compi
 | links          | `{ check: true, canonical: false, trailingSlash: true, hostServed: [] }` | The broken-internal-link scan, and what `{{link}}` emits. `check: true` scans every written page for internal references that resolve to nothing and reports them as `report().links` — advisory, never changing `ok` or the exit code. `canonical: true` makes a bare `{{link}}` emit the extension-less form (`/about` rather than `/about.html`) for a host that serves it, with the per-call `canonical=` hash still overriding. `trailingSlash: false` drops the slash from a directory index (`/courses`) in every URL kiss emits, for a host that serves the bare form; `hostServed` lists paths the host serves that no build writes. See **Host URL policy**, **Broken internal links** and the `link` helper below. |
 | redirects      |                            `{ format: null }`                            |                                                                                                                                                                                                               How page `aliases` are emitted. `redirects.json` is always written when a page has an alias; `format` names the host files beside it (`'netlify'`, `'firebase'`, `'vercel'`, `'htaccess'`, `'none'`, a writer function, or a list of those). Unset writes no host file. See **Redirects** below.                                                                                                                                                                                                                |
 | audit          |                      `{ check: true, ignore: [] }`                       |                                                                                                                                                                                                         The launch-readiness audit: whether the built site looks finished (titles, descriptions, `og:image`, alt text, headings, a favicon, a 404 page, stray files). Advisory, reported as `report().audit`. `ignore` lists check ids not to run; `audit: false` turns it off. See **Launch-readiness audit** below.                                                                                                                                                                                                         |
+| markdownCopies |                   `{ write: true, selector: 'main' }`                    |                                                                                                                                                                                            A Markdown copy of every HTML page, beside it (`about.md`, `courses/index.md`), converted from the page's `<main>` (or `<body>` when it has none), and the page `llms.txt` links to. `selector` names a different element; `markdownCopies: false` turns them off, site-wide or for one page. See **Markdown copies for agents** below.                                                                                                                                                                                            |
 | port           |                                   3001                                   |                                                                                                                                                                                                                                                     The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                                                                                                                                                                                                                                                     |
 | livereloadPort |                                  35729                                   |                                                                                                                                                                                                                              The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.                                                                                                                                                                                                                               |
 | devHost        |                               '127.0.0.1'                                |                                                                                                                                                                                                                                     The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                                                                                                                                                                                                                                      |
@@ -541,7 +546,7 @@ kiss.sitemap({ overwrite: false })
 
 ### .llms()
 
-Writes an [`llms.txt`](https://llmstxt.org) into the root of the build folder: the curated, AI-facing index of your site, the file an answer engine reads before it crawls. It is `.sitemap()`'s sibling — same registry, same titles, same URLs, a different reader — so the two can never drift apart. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
+Writes an [`llms.txt`](https://llmstxt.org) into the root of the build folder: the curated, AI-facing index of your site, the file an answer engine reads before it crawls. It is `.sitemap()`'s sibling — same registry, same titles, a different reader — so the two can never drift apart. Where the sitemap lists each page, `llms.txt` links each page's Markdown copy (see **Markdown copies for agents** below), which is what the llmstxt.org spec asks its links to point at. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
 
 ```js
 kiss
@@ -571,18 +576,38 @@ writes:
 
 ## Pages
 
-- [A1K9 Training](https://a1k9training.co.uk/): Dog training and behaviour work in South Wales
+- [A1K9 Training](https://a1k9training.co.uk/index.md): Dog training and behaviour work in South Wales
 
 ## Courses
 
-- [Bronze obedience](https://a1k9training.co.uk/courses/bronze-obedience): Six weeks, group class
+- [Bronze obedience](https://a1k9training.co.uk/courses/bronze-obedience.md): Six weeks, group class
 ```
 
 **The options**: `title` is the `# ` heading and `summary` the `> ` blockquote — and `summary` (like the optional `notes`, which becomes a trailing `## Notes` section) is either the text itself or a path, relative to your working directory, to a `.md`/`.txt` file holding it, so a long summary can live beside the rest of your content. `sections` maps a top-level path segment to a heading (`{ courses: 'Courses' }`); the key `root` names the section holding pages with no path (default `Pages`), and any segment you do not map is title-cased (`behavioural-consultations` → `Behavioural Consultations`). `overwrite` (default `true`) behaves exactly as the sitemap's.
 
-**Which pages are listed**: every registered page, grouped by the first segment of its `path` with the root group first, in registration order. A page opts out with `ignoreLlms: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of `llms.txt` too — the index is a subset of the site the sitemap describes, never a superset. `llmsSection: 'Name'` puts one page under a heading of your choosing regardless of its path. Each entry is `- [title](url): description`, with the description omitted when the page has none and the title falling back to the page's slug, title-cased; each URL is the same string that page's own `{{canonical}}` renders.
+**Which pages are listed**: every registered page, grouped by the first segment of its `path` with the root group first, in registration order. A page opts out with `ignoreLlms: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of `llms.txt` too — the index is a subset of the site the sitemap describes, never a superset. `llmsSection: 'Name'` puts one page under a heading of your choosing regardless of its path. Each entry is `- [title](url): description`, with the description omitted when the page has none and the title falling back to the page's slug, title-cased. Each URL is the page's Markdown copy (`…/courses/bronze-obedience.md`, `…/index.md` for the home page); on a site with `markdownCopies: false`, and for a page that turns its copy off, it is instead the same string that page's own `{{canonical}}` renders.
 
 It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
+
+### Markdown copies for agents
+
+Every HTML page the build writes gets a Markdown copy beside it: `about.html` → `about.md`, and a directory index `courses/index.html` → `courses/index.md`. That is the [llmstxt.org](https://llmstxt.org) convention — a clean Markdown version of a page at the same URL with `.md` on the end — and it is on by default, so an agent reading your site gets each page's content without its markup, and `llms.txt` links straight to it.
+
+The copy is converted from the HTML the build **wrote**, not from your templates or models: what a reader is shown is what the agent reads. kiss takes the page's `<main>` element — or `<body>` when the page has no `<main>` — removes every `<nav>`, `<script>`, `<style>` and `<template>` inside it, and converts what is left with [turndown](https://github.com/mixmark-io/turndown): `#` headings, fenced code blocks that keep their `language-` class, and GitHub-style tables. A layout with a `<main>` around the page's own content therefore gets copies without its header, footer and menus; a `<nav>` inside `<main>` (a docs table of contents) is dropped too. `<noscript>` is kept: an agent runs no script, so its fallback is what that reader gets.
+
+```js
+new Kiss({ markdownCopies: { selector: 'article' } }) // convert <article> instead
+new Kiss({ markdownCopies: false }) // no copies at all
+kiss.page({ view: 'thanks.hbs', config: { markdownCopies: false } }) // none for this page
+```
+
+**What gets one:** every page written as HTML, including your `404` page and a page with `ignoreSitemap` or `ignoreLlms` — the copies are for every page, `llms.txt` is the curated list of them. A page written with another `ext` (`json`, `xml`) and a `generate: false` page get none. A selector that matches nothing on a page, or matches an element with nothing in it (a script-rendered `<main id="app">`), falls back to `<body>` for that page rather than writing an empty copy. A selector that is not valid CSS fails every page, with an error naming `config.markdownCopies.selector`.
+
+**Links:** every link in a copy is the `href` its page wrote, and because the copy sits in the same folder, a relative link resolves from `about.md` exactly as from `about.html` — the broken-link check has already checked them against the page. A parenthesis in a URL comes out escaped (`a\(b\)`), which is the Markdown spelling of the same address. The check does **not** read the copies themselves or `llms.txt`'s links to them; those are generated from the same output path the page is written to, so they are right by construction rather than by a check.
+
+**When a copy cannot be made**, its page fails and `.complete()` rejects, as for any page that cannot be written. A conversion that throws stops the page before either file is written; a copy whose own write fails leaves the HTML already written on disk, under a page the report marks as failed. That is deliberate — `llms.txt` links the copy, and a build that passed while linking a copy that is not there would be the silent failure kiss exists to prevent. The build report names each copy as `pages[].markdown` (`null` for a page that wrote none), so `npx kiss-ssg check` shows them. A `--dev` build writes copies too, and a whole-site rebuild removes a copy no page writes any more.
+
+**Hosting:** the copies are ordinary files in the build folder and are published with it. A host that processes Markdown itself would turn them back into pages — classic GitHub Pages publishing from a branch runs Jekyll, which does that unless the build folder has a `.nojekyll` file. This has not been measured against a live deployment; a site deployed with `actions/upload-pages-artifact`, as this guide's own site is, publishes the folder as it is.
 
 ### .feed()
 

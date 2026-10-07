@@ -9,7 +9,8 @@
       "ok": true,
       "hash": "08f307bc82b74258ac70aee4d312abbd69cba473",
       "id": "index",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/index.md"
     },
     {
       "view": "blog/listing.hbs",
@@ -17,7 +18,8 @@
       "ok": true,
       "hash": "f874faebd84e36bc1e5922982b3a558d05a75d0f",
       "id": "blog",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/index.md"
     },
     {
       "view": "blog/listing.hbs",
@@ -25,7 +27,8 @@
       "ok": true,
       "hash": "bf33d64bd5792927e09c0248df669d8a4fa80d45",
       "id": "blog/page/2",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/page/2/index.md"
     },
     {
       "view": "blog/tags.hbs",
@@ -33,7 +36,8 @@
       "ok": true,
       "hash": "732518ccc4d0628ee283913afb58e0f33f6b038c",
       "id": "blog/tags",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/tags/index.md"
     },
     {
       "view": "404.hbs",
@@ -41,7 +45,8 @@
       "ok": true,
       "hash": "9ca08c63ace547c4bf1b61f13a98cc5da2fcd5df",
       "id": "404",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/404.md"
     },
     {
       "view": "blog/post.hbs",
@@ -49,7 +54,8 @@
       "ok": true,
       "hash": "65a5693b2097a7b0b65f304b696af5d0f4c3c3fe",
       "id": "blog/post/a-year-of-bench-lots",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/a-year-of-bench-lots/index.md"
     },
     {
       "view": "blog/tag.hbs",
@@ -57,7 +63,8 @@
       "ok": true,
       "hash": "1eb49e2d5e0dec4b3b22c95ea035deb271449620",
       "id": "blog/tags/brewing",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/tags/brewing/index.md"
     },
     {
       "view": "blog/post.hbs",
@@ -65,7 +72,8 @@
       "ok": true,
       "hash": "1f7ed55a0a2677953848568f7437cf2aabcfe87a",
       "id": "blog/post/grind-size-is-the-dial",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/grind-size-is-the-dial/index.md"
     },
     {
       "view": "blog/tag.hbs",
@@ -73,7 +81,8 @@
       "ok": true,
       "hash": "12b49572909b22e0dc5fc81eddd4962b653b6dc0",
       "id": "blog/tags/experiments",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/tags/experiments/index.md"
     },
     {
       "view": "blog/post.hbs",
@@ -81,7 +90,8 @@
       "ok": true,
       "hash": "77f6402a5de75822843fd66e04a891567bbe643f",
       "id": "blog/post/why-we-roast-on-wednesdays",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/why-we-roast-on-wednesdays/index.md"
     },
     {
       "view": "blog/tag.hbs",
@@ -89,7 +99,8 @@
       "ok": true,
       "hash": "37d3408f0a6dc63870622b4dcb7c896d8ab0e2b2",
       "id": "blog/tags/roastery",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/tags/roastery/index.md"
     },
     {
       "view": "blog/post.hbs",
@@ -97,7 +108,8 @@
       "ok": true,
       "hash": "cb7236890c64e63c7ef2993cc1483bc5862f76e4",
       "id": "blog/post/guji-uraga-has-landed",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/guji-uraga-has-landed/index.md"
     },
     {
       "view": "blog/tag.hbs",
@@ -105,7 +117,8 @@
       "ok": true,
       "hash": "da43b2e97b330c66c4210d36261e86599498b63d",
       "id": "blog/tags/sourcing",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/tags/sourcing/index.md"
     },
     {
       "view": "blog/post.hbs",
@@ -113,7 +126,8 @@
       "ok": true,
       "hash": "4a98d6b84a777eeb3d34158e56b8958a72ce073b",
       "id": "blog/post/cascara",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/the-cascara-experiment/index.md"
     },
     {
       "view": "blog/post.hbs",
@@ -121,7 +135,8 @@
       "ok": true,
       "hash": "b867d54dbbc743d24faebed0f6e4a0efefe541c2",
       "id": "blog/post/pour-over-at-home",
-      "canonical": null
+      "canonical": null,
+      "markdown": "./public/blog/pour-over-at-home/index.md"
     }
   ],
   "failures": [],

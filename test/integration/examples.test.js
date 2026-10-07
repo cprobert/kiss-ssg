@@ -239,10 +239,11 @@ describe.skipIf(!hasExamples)('example builds', () => {
 
       // The duplicate-paths recipe: two sources both offer "Guji Uraga", and
       // the dedupe keeps only the catalogue's — never a second shelf page.
+      // Pages only: each one also has its Markdown copy beside it.
       expect(
         countMatching(
           path.join(outputDir('9-migrated-from-v1'), 'shelf'),
-          /guji-uraga/,
+          /guji-uraga.*\.html$/,
         ),
       ).toBe(1)
 

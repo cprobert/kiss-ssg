@@ -89,6 +89,8 @@ Then, on every distinct page template (not every page):
 - **Things that look clickable and are not** — underlined text, cards with hover styles, icons with no link.
 - **The 404 page** — open `/404.html` itself. What a URL that does not exist shows depends on the server: a host serves `404.html`, but the `--dev` preview answers with a bare `Cannot GET`, so judge the page, not the preview. Does it help someone who is lost: the nav, a way home, a search or the main sections? And is it kept out of `sitemap.xml` (`ignoreSitemap: true`)? — the audit does not check that.
 
+- **One page's Markdown copy** — the `.md` beside the HTML (`about.md`, `courses/index.md`), which agents read and `llms.txt` links. This one needs no browser. Is it the page's content alone? A header, footer or menu in it means the layout has no `<main>` around the content, or a menu that is not a `<nav>`. The audit does not check it.
+
 **Without a browser, say that this pass did not run.** Do not infer the result from the templates: a layout that looks right in the source is exactly what this pass exists to check.
 
 When Anthropic's `frontend-design` skill is available and the look itself needs work, it sets the **visual direction** — type, colour, spacing tokens, layout character — and kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Never collapse a page into a single-file page to restyle it.

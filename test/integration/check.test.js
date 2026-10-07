@@ -182,6 +182,8 @@ describe('kiss-ssg check', () => {
         // The page's identity, defaulted from the view's route.
         id: 'index',
         canonical: null,
+        // Its Markdown copy, named against the real build folder too.
+        markdown: './public/index.md',
       },
     ])
     expect(await temp.exists('public')).toBe(false)
@@ -212,9 +214,13 @@ describe('kiss-ssg check', () => {
       hash: expect.stringMatching(/^[0-9a-f]{40}$/),
       id: 'index',
       canonical: null,
+      markdown: './public/index.md',
     })
     // The page that failed wrote nothing, so it names no bytes.
     expect(report.pages.find((p) => p.view === 'missing.hbs')?.hash).toBeNull()
+    expect(
+      report.pages.find((p) => p.view === 'missing.hbs')?.markdown,
+    ).toBeNull()
     expect(await temp.exists('public')).toBe(false)
     expect(siblings(temp.root)).toEqual([])
   }, 60000)
@@ -772,6 +778,7 @@ describe('kiss.report()', () => {
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
         id: 'index',
         canonical: null,
+        markdown: `${temp.build}/index.md`,
       },
     ])
     expect(report.assets).toEqual([

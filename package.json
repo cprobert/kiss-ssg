@@ -72,6 +72,7 @@
   },
   "homepage": "https://cprobert.github.io/kiss-ssg/",
   "dependencies": {
+    "@mixmark-io/domino": "^2.2.0",
     "chokidar": "^5.0.0",
     "colors": "^1.4.0",
     "connect": "^3.7.0",
@@ -84,7 +85,9 @@
     "livereload": "^0.10.3",
     "remarkable": "^2.0.1",
     "sass": "^1.104.0",
-    "serve-static": "^2.2.1"
+    "serve-static": "^2.2.1",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

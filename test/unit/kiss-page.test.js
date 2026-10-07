@@ -296,6 +296,94 @@ describe('generate', () => {
 // The template cache is the reason `_getTemplate` no longer reads and compiles
 // on every render. These pin the three properties that make it safe rather
 // than the fact that it is fast.
+describe('markdown copy', () => {
+  let site
+  afterEach(async () => {
+    if (site) await site.cleanup()
+  })
+
+  const withCopy = (view, opts) => {
+    const p = make(view, opts)
+    p.markdownCopy = { selector: 'main' }
+    return p
+  }
+
+  it('writes a .md copy of the written page beside it', async () => {
+    site = await makeSite({})
+    const p = withCopy(
+      '<html><body><header>Site</header><main><h1>{{model.t}}</h1><p><a href="../x/">x</a></p></main></body></html>',
+      { buildDir: site.build, slug: 'about', options: { model: { t: 'Hi' } } },
+    )
+    expect(p.markdownTo).toBe(`${site.build}/about.md`)
+    expect(p.markdown).toBeNull()
+    await p.generate()
+    expect(await site.read('public/about.md')).toBe('# Hi\n\n[x](../x/)\n')
+    expect(p.markdown).toBe(`${site.build}/about.md`)
+  })
+
+  it('names a directory index index.md, the llmstxt.org spelling', async () => {
+    site = await makeSite({})
+    const p = withCopy('<main><p>t</p></main>', {
+      buildDir: site.build,
+      slug: 'team',
+      extLess: true,
+    })
+    await p.generate()
+    expect(p.markdown).toBe(`${site.build}/team/index.md`)
+    expect(await site.read('public/team/index.md')).toBe('t\n')
+  })
+
+  it('writes no copy when copies are off', async () => {
+    site = await makeSite({})
+    const p = make('<main><p>t</p></main>', { buildDir: site.build, slug: 's' })
+    expect(p.markdownTo).toBeNull()
+    await p.generate()
+    expect(p.markdown).toBeNull()
+    expect(await fs.pathExists(`${site.build}/s.md`)).toBe(false)
+  })
+
+  it('writes no copy of a page that is not HTML, or not written', async () => {
+    site = await makeSite({})
+    const xml = withCopy('<x/>', {
+      buildDir: site.build,
+      slug: 'feed',
+      ext: 'xml',
+    })
+    const skipped = withCopy('<main>t</main>', {
+      buildDir: site.build,
+      slug: 'gone',
+      options: { generate: false },
+    })
+    expect(xml.markdownTo).toBeNull()
+    expect(skipped.markdownTo).toBeNull()
+    await xml.generate()
+    await skipped.generate()
+    expect(xml.markdown).toBeNull()
+    expect(await fs.pathExists(`${site.build}/feed.md`)).toBe(false)
+  })
+
+  it('converts the dev output without its live reload script', async () => {
+    site = await makeSite({})
+    const p = withCopy('<html><body><p>t</p></body></html>', {
+      buildDir: site.build,
+      slug: 'd',
+      dev: true,
+    })
+    await p.generate()
+    expect(await site.read('public/d.md')).toBe('t\n')
+  })
+
+  it('clears the copy path when a re-render fails after an earlier write', async () => {
+    site = await makeSite({})
+    const p = withCopy('<main>x</main>', { buildDir: site.build, slug: 's' })
+    await p.generate()
+    expect(p.markdown).not.toBeNull()
+    p._path = '../../escaped'
+    await expect(p.generate()).rejects.toThrow(/build folder/)
+    expect(p.markdown).toBeNull()
+  })
+})
+
 describe('template caching', () => {
   let site
   afterEach(async () => {
