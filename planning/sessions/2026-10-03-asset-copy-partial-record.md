@@ -3,6 +3,7 @@ branch: fix/asset-copy-partial-record
 base: main
 status: closed
 opened: 2026-10-03
+consolidated: 2026-10-07
 ---
 
 # Session — 2026-10-03: An asset copy that fails partway records what it wrote

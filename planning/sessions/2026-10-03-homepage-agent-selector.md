@@ -3,6 +3,7 @@ branch: feat/homepage-agent-selector
 base: main
 status: closed
 opened: 2026-10-03
+consolidated: 2026-10-07
 ---
 
 # Session — 2026-10-03: Homepage agent selector, a best-effort watcher, and a light interactivity recommendation

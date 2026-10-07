@@ -195,6 +195,8 @@ Pass `--wait` so the review runs **synchronously** and the close blocks until th
 
 It runs **after** the gates on purpose. Codex is the _semantic_ complement to the gates' _mechanical_ checks — it reads the diff for logic and design issues that test/lint/format/pack structurally can't see — so reviewing **known-green** code means an expensive review is never spent on code a cheap gate would have rejected.
 
+**A review covers the diff it saw, not the branch.** If one already ran — the operator typed `/codex:review` mid-ritual, or an earlier close round reviewed — compare its commit with `HEAD`: if commits followed, run it again here, over the branch or at least from the reviewed commit to `HEAD`. Four commits after a mid-ritual review went unreviewed by anything but the author (2026-10-06), and a fix landed after a rate-limited review with only its tests behind it (2026-10-03). If the reviewer is unavailable, name the unreviewed range in the close's report and the PR (`<reviewed>..HEAD — no independent review`); a fresh Claude agent may add findings, but it does not close that gap.
+
 Surface the findings and triage them **with the operator**: Codex output ranges from real bugs to nits and false positives, so this is a human call, not an auto-fail. **Fix-now** (commit the fix, then re-run the gates and this step) or **proceed** — the operator decides; a finding neither silently blocks nor silently passes.
 
 ### Step 8 — Run /session-reflect

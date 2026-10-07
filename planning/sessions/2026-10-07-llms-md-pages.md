@@ -3,6 +3,7 @@ branch: feat/llms-md-pages
 base: main
 status: closed
 opened: 2026-10-07
+consolidated: 2026-10-07
 ---
 
 # Session — 2026-10-07: A Markdown copy of every page, for agents

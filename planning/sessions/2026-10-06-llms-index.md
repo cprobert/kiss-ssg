@@ -3,6 +3,7 @@ branch: chore/llms-index
 base: main
 status: closed
 opened: 2026-10-06
+consolidated: 2026-10-07
 ---
 
 # Session — 2026-10-06: llms.txt back to an index
