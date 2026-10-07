@@ -81,6 +81,22 @@ describe('markdownCopies', () => {
     expect(llms).toContain('(https://e.com/private)')
   })
 
+  it("merges a page's own block over the site's, not over the defaults", async () => {
+    // A page that says only `{ write: true }` keeps the site's selector: the
+    // page overrides the keys it names, as every per-page config key does.
+    site = await makeSite({
+      'src/pages/index.hbs':
+        '<body><main><p>Chrome</p><article><h2>Post</h2></article></main></body>',
+    })
+    await build({ markdownCopies: { selector: 'article' } }, (k) =>
+      k.page({
+        view: 'index.hbs',
+        config: { markdownCopies: { write: true } },
+      }),
+    )
+    expect(await site.read('public/index.md')).toBe('## Post\n')
+  })
+
   it('converts the element a selector names instead', async () => {
     site = await makeSite({
       'src/pages/index.hbs':

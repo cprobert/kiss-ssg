@@ -96,6 +96,8 @@ new Kiss({ markdownCopies: false }) // no copies at all
 kiss.page({ view: 'thanks.hbs', config: { markdownCopies: false } }) // none for this page
 ```
 
+`markdownCopies: false` is shorthand for `{ write: false }`, and both spellings work site-wide and per page. A page's own block is merged over the site's, so a page that sets only `{ write: true }` keeps the site's `selector`.
+
 **What gets one:** every page written as HTML, including your `404` page and a page with `ignoreSitemap` or `ignoreLlms` — the copies are for every page, `llms.txt` is the curated list of them. A page written with another `ext` (`json`, `xml`) and a `generate: false` page get none. A selector that matches nothing on a page, or matches an element with nothing in it (a script-rendered `<main id="app">`), falls back to `<body>` for that page rather than writing an empty copy. A selector that is not valid CSS fails every page, with an error naming `config.markdownCopies.selector`.
 
 **Links:** every link in a copy is the `href` its page wrote, and because the copy sits in the same folder, a relative link resolves from `about.md` exactly as from `about.html` — the broken-link check has already checked them against the page. A parenthesis in a URL comes out escaped (`a\(b\)`), which is the Markdown spelling of the same address. The check does **not** read the copies themselves or `llms.txt`'s links to them; those are generated from the same output path the page is written to, so they are right by construction rather than by a check.
