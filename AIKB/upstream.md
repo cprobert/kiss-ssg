@@ -188,7 +188,8 @@ whether kiss's own floor has moved past it.
 ### domino's type declaration names the wrong module
 
 **Observed:** `@mixmark-io/domino` 2.2.0 (turndown 7.2.4's DOM, imported directly
-by `lib/markdown-copy.js`, 2026-10-07). **Effect:** its `lib/index.d.ts` is
+by `lib/markdown-copy.js`, 2026-10-07). **Effect:** its type declaration
+(`node_modules/@mixmark-io/domino/lib/index.d.ts`) is
 `declare module 'domino' { … }` — an ambient declaration under the package's old
 name, not a module — so `tsc --checkJs` fails the import with TS2306 ("is not a
 module") and `npm run typecheck`, a gate, goes red. The runtime is unaffected.
