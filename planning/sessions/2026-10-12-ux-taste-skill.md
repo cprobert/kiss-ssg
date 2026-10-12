@@ -170,6 +170,22 @@ Ran `redesign-existing-projects` against `C:/Code/kiss/pro-plumbing` on its own 
 
 On a site that was designed, the skill found two small real defects (P1, P2), one important non-design omission (P3), three taste questions (P4–P6) and two trivia. Seven of its rules fired against decisions already on record. It found nothing in colour, contrast, spacing or tokens: the site's own `review` and `BRAND.md` had already done that work, measured. Its most valuable line here, the missing privacy notice, is a checklist item ("No legal links") that a design-only skill would not have raised.
 
+### Outcome (pro-plumbing `ux/taste-skill`, `a0d874b`, not pushed)
+
+**Operator decision:** apply P1, P2, P7 and P8; leave P4–P6 alone; draft P3 for Greg to check.
+
+- **P1 confirmed by eye.** Heading crops at 375px, live site against the branch build served over HTTP, both in Archivo Narrow:
+  - home, before: "A small job you've been putting / off";
+  - home, after: "A small job you've / been putting off";
+  - the FAQ and small-jobs headings balance the same way.
+- **P2 (reduced motion): checked by reading only**, not in a browser.
+- **P3 is drafted under the form in Greg's voice, and marked do-not-merge.** A comment above it lists the three statements Greg must confirm: use, not passed on, and deletion from both his email and the Netlify forms dashboard.
+- **Results after the change:**
+  - `npm run check` passes, 7 pages.
+  - `npm run review` is unchanged: 0 must, 0 should, 14 could, and 0 off-token literals.
+- **`AIKB/` is not re-recorded**, because the work there is not closed.
+- **A measurement error, caught.** The first "after" heading measurement loaded the build over `file://`. The site's root-relative `/css/` and `/fonts/` URLs resolved against the drive root, so the page rendered unstyled in a serif. Two rounds of numbers were wrong before the fallback font gave it away in a crop. Re-measured over HTTP. A text heuristic ("last line under 25% of the box") was also dropped, because balancing defeats it. The judgement was made from crops instead.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
