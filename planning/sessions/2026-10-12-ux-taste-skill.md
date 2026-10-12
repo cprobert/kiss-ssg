@@ -117,6 +117,31 @@ opened: 2026-10-12
 
   - **Test.** A `skill-coverage.test.js` row was seen red (1 of 172) before the text and green (172) after. No clean-room run has covered these three yet.
 
+- **2026-10-12 — the aesthetic question, and a bake-off on this branch, at the operator's request.** The operator reframed the goal: "default sites can sometimes be a little uninspired … I wondered if skills could improve the quality of the template and page design aesthetic". They asked about `design-taste-frontend` and `high-end-visual-design` "either as an optional or adopted". Claude read both, and `frontend-design`, in full.
+  - **`high-end-visual-design`: neither optional nor adopted.** It is one house style applied to every brief:
+    - double-bezel cards, a floating pill nav, scroll entrances on every element, `py-24` minimum;
+    - written in Tailwind syntax, with "React/Tailwind/HTML" as its output (line 84);
+    - paid fonts assumed to be loaded (line 15).
+
+    It contradicts `frontend-design` on that skill's own list of AI giveaways:
+    - it mandates uppercase eyebrow pills (line 52);
+    - its "Editorial Luxury" archetype is warm cream with a serif (line 26), `frontend-design`'s first listed default;
+    - its scroll entrances on every element (line 69) are what `frontend-design` says "read as AI-generated".
+
+  - **`design-taste-frontend`: not as an optional.** Its defaults are React, Next.js and Tailwind (lines 127–131), or npm design systems (section 2.A). Two ideas add to `frontend-design`:
+    - a one-line **design read**, built from the description, existing brand assets and the constraints that override taste (section 0);
+    - **boldness matched to the audience** (the dials table, where trust-first is low).
+  - **A finding about kiss itself.**
+    - **Measured:** the starter has no stylesheet, so a new site's look comes entirely from the agent and `frontend-design`.
+    - **Seen:** the eleven examples' shared look, cream `#f7f4ef`, clay `#9a5b34` and uppercase pill eyebrows, is `frontend-design`'s first AI-default trait.
+    - **Not measured:** whether agents carry that look into new sites.
+  - **The operator chose:** "Bake-off first, then adopt", run here, by three fresh agents in parallel. The brief is the README's bakery prompt, verbatim. kiss comes from a fresh `npm pack` (2.7.5, this branch). Each agent works in its own empty folder and is told not to use the Skill tool or other skills:
+    - **A:** `kiss-site-new` only;
+    - **B:** A plus `frontend-design`;
+    - **C:** B plus the proposed design-read text, kept as `scratchpad/bakeoff/design-read.md` until it is adopted or dropped.
+
+    Adoption waits for the screenshots.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
