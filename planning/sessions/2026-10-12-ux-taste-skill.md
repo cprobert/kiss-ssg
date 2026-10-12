@@ -75,6 +75,17 @@ Ran `redesign-existing-projects` (user-level install, tasteskill) against `src/`
 | 11  | **Paragraphs can end on one word.** Headings have `text-wrap: balance`; body paragraphs, ledes and card text have no `text-wrap: pretty`.                                                                                                                                                                                                                     | `site.scss:116`, `:132-138`, `:205-210`                                  | Skill: "Orphaned words"                                                          |
 | 12  | **All-caps badges.** The "Required / Recommended / To go live" labels are uppercase with tracking, the one all-caps element on the site.                                                                                                                                                                                                                      | `site.scss:540-549`                                                      | Skill: "All-caps subheaders", "Pill-shaped badges"                               |
 
+**#8 and #9 confirmed, after the audit.** Before-screenshots of the live site were taken with Playwright, through a scratch script that borrows the copy installed in `C:/Code/kiss/a1k9training`. Nothing was installed here. The set covers the home and guide pages, light and dark, at 1280×900 and 390×844, and is kept in the session scratchpad. The Chrome extension connected long enough for one homepage shot, then stopped responding to screenshots.
+
+- **#8 is worse than suspected.** On a 390px phone the header wraps to **three rows**: the brand, the nav, then the theme toggle alone. It is 182px tall, 22% of an 844px screen, and stays fixed while scrolling. `scroll-padding-top` is 80px, so an anchor jump lands about 100px under the header. On desktop the header is 67px.
+- **#9 is seen at 1280px.** The hero copy sits vertically centred against the toolkit panel, leaving a band of empty page above the heading.
+- **Dark mode on desktop reads well.** No new finding there.
+
+**Operator decision:** apply all twelve, in one slice. The colours are chosen by measurement:
+
+- `--control` borders: `#7f86ad` light, `#626aa8` dark, at least 3.07:1 on every background a control sits on.
+- The "Required" badge in brand blue on a blue wash: 5.59:1 light, 5.00:1 dark.
+
 ### Skill rules that fired and should be rejected
 
 These checklist items match the site, but following them would undo a deliberate choice that is recorded in the code:

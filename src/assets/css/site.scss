@@ -9,6 +9,9 @@
   --ink: #0d1333;
   --muted: #50577a;
   --rule: #d9dcee;
+  // A control's edge (select, copy buttons, link chips): 3:1 or more against
+  // paper, surface and wash, which --rule is not — it only divides.
+  --control: #7f86ad;
   --wash: #eceef9;
   --brand-navy: #1f2672;
   --brand-blue: #3a48da;
@@ -52,6 +55,7 @@
   --ink: #e9ebf9;
   --muted: #a4a9cc;
   --rule: #272c58;
+  --control: #626aa8;
   --wash: #181d46;
   --brand-navy: #aeb6ff;
   --brand-blue: #8f9bff;
@@ -92,7 +96,33 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  // Clears the sticky header (67px) when a guide link jumps to a heading. On a
+  // phone the header scrolls away, so the narrow-screen rule lowers this.
   scroll-padding-top: 5rem;
+}
+
+// Motion only for visitors who have not asked for less: short colour and
+// border fades, a smooth jump to an anchor, and a press that gives a pixel.
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  a,
+  button,
+  select {
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease,
+      text-decoration-color 150ms ease,
+      transform 100ms ease;
+  }
+
+  button:active,
+  .tool__options a:active {
+    transform: translateY(1px);
+  }
 }
 
 body {
@@ -135,6 +165,12 @@ ol,
 pre,
 table {
   margin: 0 0 1.1em;
+}
+
+// No paragraph ends on a word by itself.
+p,
+li {
+  text-wrap: pretty;
 }
 
 a {
@@ -330,7 +366,7 @@ pre code {
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--control);
   border-radius: 50%;
   background: var(--surface);
   color: var(--ink);
@@ -406,7 +442,9 @@ pre code {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: clamp(2rem, 5vw, 4.5rem);
-  align-items: center;
+  // Top, not centre: the toolkit panel is far taller than the copy, and
+  // centring floated the heading halfway down it.
+  align-items: start;
 }
 
 .hero__title {
@@ -537,24 +575,20 @@ pre code {
   font-weight: 700;
 }
 
+// The label beside each tool. "Required" takes the brand blue, the other two
+// stay quiet; green is kept for "passed" (see the top of this file).
 .tool__need {
-  font-size: 0.75rem;
+  font-size: var(--step--1);
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   border-radius: var(--radius-small);
-  padding: 0.05em 0.45em;
+  padding: 0 0.45em;
   color: var(--muted);
   background: var(--wash);
 }
 
 .tool__need--required {
-  color: var(--pass);
-  background: var(--pass-wash);
-}
-
-.tool__need--live {
   color: var(--brand-blue);
+  background: color-mix(in srgb, var(--brand-blue) 12%, var(--surface));
 }
 
 // The concrete choices under an entry — GitHub under Git, the hosts under
@@ -574,7 +608,7 @@ pre code {
     font-size: var(--step--1);
     font-weight: 600;
     text-decoration: none;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--control);
     border-radius: var(--radius-small);
     padding: 0.3rem 0.6rem;
   }
@@ -617,20 +651,25 @@ pre code {
   margin-top: 1.5rem;
 }
 
+// The setup band runs top to bottom: its first step is six commands, the
+// longest 63 characters, which a third of the page cannot hold. It takes the
+// full width so that step's agent boxes can sit side by side; the prose keeps
+// to a readable measure.
 .steps {
   list-style: none;
   counter-reset: step;
   margin: 1.5rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2rem;
 }
 
 .steps__item {
   counter-increment: step;
-  display: flex;
-  flex-direction: column;
+
+  > p {
+    max-width: var(--measure);
+  }
 
   h3::before {
     content: counter(step);
@@ -651,30 +690,13 @@ pre code {
   }
 
   pre {
-    margin-top: auto;
-    margin-bottom: 0;
+    margin: 0.25rem 0 0;
   }
 }
 
 .band__lede {
   max-width: var(--measure);
   margin-top: 0.5rem;
-}
-
-// The setup band runs top to bottom: its first step is six commands, the
-// longest 63 characters, which a third of the page cannot hold. It takes the
-// full width so that step's two agent boxes can sit side by side; the prose
-// keeps to a readable measure.
-.steps--stacked {
-  grid-template-columns: minmax(0, 1fr);
-
-  > .steps__item > p {
-    max-width: var(--measure);
-  }
-
-  pre {
-    margin-top: 0.25rem;
-  }
 }
 
 // Set-up step 1: one box per agent. Each box is the whole setup for that
@@ -700,8 +722,8 @@ pre code {
     font: inherit;
     color: var(--ink);
     background: var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: 0.4rem;
+    border: 1px solid var(--control);
+    border-radius: var(--radius-small);
     padding: 0.35rem 0.6rem;
   }
 
@@ -759,7 +781,7 @@ pre code {
   font-weight: 700;
   color: var(--ink);
   background: none;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--control);
   border-radius: var(--radius-small);
   padding: 0.2rem 0.75rem;
   cursor: pointer;
@@ -786,9 +808,11 @@ pre code {
   gap: 1rem;
 }
 
+// The same card as an agent box above it: one look for one role.
 .prompts__item {
+  background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-panel);
   padding: 1rem 1.1rem;
   display: flex;
   flex-direction: column;
@@ -1158,7 +1182,6 @@ pre code {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .steps,
   .reasons,
   .prompts,
   .agent-boxes {
@@ -1191,5 +1214,50 @@ pre code {
 
   h1 {
     font-size: var(--step-3);
+  }
+}
+
+// Phones: the brand and the theme toggle share the first row and the nav takes
+// the second, where the header used to wrap to three rows and 182px. It also
+// stops being sticky — even two rows would hold a ninth of the screen for the
+// whole read — so an anchor needs only a little room above it.
+@media (max-width: 40rem) {
+  html {
+    scroll-padding-top: 1rem;
+  }
+
+  .site-header {
+    position: static;
+  }
+
+  .site-header__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand toggle'
+      'nav nav';
+    gap: 0 1rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .brand {
+    grid-area: brand;
+  }
+
+  .brand__mark {
+    height: 2.6rem;
+  }
+
+  .site-header__inner > nav {
+    grid-area: nav;
+    margin-left: 0;
+  }
+
+  .theme-toggle {
+    grid-area: toggle;
+  }
+
+  .site-nav {
+    gap: 0.25rem 1.1rem;
   }
 }

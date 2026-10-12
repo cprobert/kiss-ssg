@@ -2,15 +2,25 @@
 // that starts closed on a narrow screen. The page reads fine with none of it.
 if (window.hljs) window.hljs.highlightAll()
 
+// The button's text shows the result; the live region in the layout says it,
+// because a screen reader does not announce a button whose text changed.
+const copyStatus = document.querySelector('[data-copy-status]')
 for (const button of document.querySelectorAll('[data-copy]')) {
   button.addEventListener('click', async () => {
+    let said
     try {
       await navigator.clipboard.writeText(button.dataset.copy)
       button.textContent = 'Copied'
+      said = 'Copied to the clipboard.'
     } catch {
       button.textContent = 'Select and copy'
+      said = 'Could not copy. Select the text and copy it.'
     }
-    setTimeout(() => (button.textContent = 'Copy'), 2000)
+    if (copyStatus) copyStatus.textContent = said
+    setTimeout(() => {
+      button.textContent = 'Copy'
+      if (copyStatus) copyStatus.textContent = ''
+    }, 2000)
   })
 }
 
