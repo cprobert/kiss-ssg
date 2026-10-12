@@ -44,6 +44,13 @@ opened: 2026-10-12
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-12 — the verdict is no; criteria 7 and 8 lapse.** The operator chose "No recommendation" when the evidence from both sites was put to them, and that was Claude's recommendation too. So no homepage passage is written, and no clean-room install runs. Both criteria were conditional on a yes ("If the verdict is yes…", "if the passage ships"). They are closed as not applicable, not as missed. See § Verdict.
+- **2026-10-12 — Pro Plumbing scope, at the operator's direction:**
+  - `npm ci` and `npm i --no-save playwright-core` there, to bring a stale `node_modules` (kiss-ssg 2.6.2 against a 2.7.0 lockfile) to the lockfile and run the site's own review;
+  - a draft privacy note for Greg to confirm (P3), which is content, not design.
+
+  Both land in the Pro Plumbing repo, not this one.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
@@ -185,6 +192,24 @@ On a site that was designed, the skill found two small real defects (P1, P2), on
   - `npm run review` is unchanged: 0 must, 0 should, 14 could, and 0 off-token literals.
 - **`AIKB/` is not re-recorded**, because the work there is not closed.
 - **A measurement error, caught.** The first "after" heading measurement loaded the build over `file://`. The site's root-relative `/css/` and `/fonts/` URLs resolved against the drive root, so the page rendered unstyled in a serif. Two rounds of numbers were wrong before the fallback font gave it away in a crop. Re-measured over HTTP. A text heuristic ("last line under 25% of the box") was also dropped, because balancing defeats it. The judgement was made from crops instead.
+
+## Verdict on the skill (2026-10-12)
+
+**No recommendation.** The docs site will not name the taste skill beside `frontend-design`. The operator decided, on Claude's recommendation.
+
+**What it found that we would not otherwise have reached:**
+
+- **The docs site:** ten small, real polish and consistency fixes (#2, #4–#12). The two that mattered most, control contrast (#1) and the unannounced copy (#3), came from reading the code with accessibility in mind, and no checklist line asks for either.
+- **Pro Plumbing:** one strategic omission, the missing privacy note (P3), which a design-only skill would not raise, plus two small fixes. Nothing in colour, contrast, spacing or tokens, where the site's own `review` and `BRAND.md` had already measured everything.
+
+**What it cost:**
+
+- **Rules aimed at deliberate choices.** Twelve of its rules fired against decisions the sites had made on purpose: five on the docs site, seven on Pro Plumbing. An agent in a consuming project that follows the skill without that judgement undoes design work.
+- **It is not one skill.** "tasteskill" installs four. The flagship, `design-taste-frontend`, defaults to React/Next.js and Tailwind v4, which pull against kiss's Handlebars and Sass structure. A recommendation would point there, not at the audit-first skill that was tested.
+
+**"Am I adding this for the sake of it?"** Yes, on this evidence. It is a reasonable checklist for tidying an existing site, not design direction. kiss already defers direction to `frontend-design`.
+
+**Not done, and worth a later look.** Pulling the useful slice of the checklist into kiss's own `kiss-site-review` skill: the strategic omissions (legal links for a form that collects personal data, a custom 404, a skip link), `text-wrap`, and the reduced-motion guard. Not done because it would change a shipped skill, which is a non-goal of this branch. The parked idea `planning/ideas/2026-09-29-ux-control-quality-skill.md` already proposes a smaller version of the same thing.
 
 ---
 
