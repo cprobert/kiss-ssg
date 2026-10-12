@@ -291,6 +291,18 @@ const COVERAGE = [
       /target="_blank"[\s\S]*noopener noreferrer[\s\S]*opens in a new tab/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
+  // 2026-10-12, the taste-skill trial on the docs site and Pro Plumbing: the
+  // checks that held up on both, measured rather than argued from taste, and
+  // the rule that stopped twelve of the trialled skill's findings from undoing
+  // decisions the sites had already recorded. No audit check covers any of
+  // them, so this row is what keeps them in the skill.
+  {
+    feature:
+      'the craft pass: recorded decisions first, then the measured checks',
+    pattern:
+      /^(?=[\s\S]*look for the decision)(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
   {
     feature: 'the audit is advisory and hands off to kiss-site-review',
     pattern: /`audit`[\s\S]*advisory[\s\S]*kiss-site-review/,

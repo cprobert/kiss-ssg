@@ -51,6 +51,26 @@ opened: 2026-10-12
 
   Both land in the Pro Plumbing repo, not this one.
 
+- **2026-10-12 — the shipped `kiss-site-review` skill gains "The craft pass", at the operator's request.** The request was: "What can we adopt from their skills that did work into our review skill? … add them so that we don't lose this value". This reverses the non-goal "no change to the shipped kiss skills" for this one skill, and only for what the trial showed working:
+  - the rule to look for a recorded decision before calling anything a finding (twelve of the trialled skill's findings would have undone recorded decisions);
+  - nine measured checks:
+    - control-edge contrast 3:1 (#1);
+    - announced results (#3);
+    - weights loaded (#2);
+    - a colour that means one thing (#4);
+    - motion behind `prefers-reduced-motion` (#5, P2);
+    - `text-wrap` (#11, P1);
+    - the sticky header on a phone (#8);
+    - `100dvh` (P8);
+    - a privacy line on a form that collects personal details (P3).
+
+  Nothing the trial rejected is carried over, and the taste skill is not named. #1 and #3 came from Claude's accessibility reading during the trial, not from the taste checklist, and are included because they were the trial's most valuable fixes.
+
+  **What this adds to the branch:**
+  - **Impact surface:** still tooling & docs. A shipped skill changes, but no API does, so the bump is a patch, and it now needs a `CHANGELOG.md` entry.
+  - **New criterion:** a fresh sub-agent given only the packed skill reviews a built example and reports where it had to guess (the clean-room rule for anything a consuming project follows).
+  - **Test:** a `skill-coverage.test.js` row pins the section. It was seen red (1 failed of 171) before the text existed and green (171 passed) after.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

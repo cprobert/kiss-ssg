@@ -91,6 +91,33 @@ Then, on every distinct page template (not every page):
 
 - **One page's Markdown copy** — the `.md` beside the HTML (`about.md`, `courses/index.md`), which agents read and `llms.txt` links. This one needs no browser. Is it the page's content alone? A header, footer or menu in it means the layout has no `<main>` around the content, or a menu that is not a `<nav>`. The audit does not check it.
 
+#### The craft pass
+
+These are the finishing details a site reads as unfinished without. Each one is measured or seen, not argued from taste, and the audit checks none of them.
+
+**First, look for the decision.** Before calling anything a finding, check whether the site records it as a choice:
+
+- a `BRAND.md` or design notes;
+- a comment in the stylesheet or the template;
+- an `audit.ignore` entry.
+
+A dark band, a system font, an unusual colour role or a modest heading size that the site explains is a decision. Name the record and leave it, or ask the operator. Never "fix" a recorded decision as if it were a mistake. Every one of the checks below can be overruled this way.
+
+1. **A control's edge is 3:1 or better against what it sits on.** This covers a select, an outlined button, or a link styled as a chip. Text has a 4.5:1 floor that most sites meet. A control's boundary has a 3:1 floor (WCAG 1.4.11) that a pale border colour usually misses. Measure it from the stylesheet's colour values, in every theme the site has.
+2. **A result that changes on screen is also said.** A Copy button that turns into "Copied" is silent to a screen reader unless the words also land in an `aria-live="polite"` region. An `aria-label` on the button hides its changed text as well.
+3. **Every weight the CSS asks for is a weight the font loads.** A `font-weight` of 600 against a font loaded at 400 and 700 renders as 700, and nothing reports it. Compare the weights in the font link or `@font-face` with the `font-weight` values in use.
+4. **A colour that means something means only that.** If green is "passed" or red is "error", a badge or button that borrows it for anything else teaches the reader the wrong thing.
+5. **Motion respects the visitor.**
+   - Hover and press acknowledge themselves: a colour change, or a pixel of travel. Give `:active` the same rule, so a tap on a phone gets it too.
+   - Every `transition`, `animation` and `scroll-behavior: smooth` sits behind a `prefers-reduced-motion` media query.
+   - Grep the stylesheet: a `transition` with no `prefers-reduced-motion` anywhere in it is the finding.
+6. **No heading or paragraph ends on a single word.** Look at phone width, where "putting / off" is the usual sight. `text-wrap: balance` on headings and `text-wrap: pretty` on paragraphs fix it site-wide, one rule each.
+7. **A sticky header is measured on a phone, not assumed.** At 375px wide, how tall is it, as a share of the screen? Does a jump to an `#anchor` land under it, because `scroll-padding-top` is smaller than the header? A header that wraps to two or three rows and stays stuck costs every page its reading space.
+8. **`100vh` on a phone includes the space behind the browser's address bar.** `100dvh` is the screen the visitor actually sees. Keep the `vh` line first as the fallback.
+9. **A form that collects personal details says what happens to them.** For a name, a phone number, an email or a photo, put a line by the form, in the site's own voice. It says who receives the details and that the visitor can ask for them to be deleted. The facts belong to the site's owner, so draft the line and mark every claim for them to confirm. Do not publish a promise they have not made.
+
+Checks 1, 3, 4, 5 and 8 can be read from the stylesheet, and 2 and 9 from the templates and scripts. Checks 6 and 7 need the browser.
+
 **Without a browser, say that this pass did not run.** Do not infer the result from the templates: a layout that looks right in the source is exactly what this pass exists to check.
 
 When Anthropic's `frontend-design` skill is available and the look itself needs work, it sets the **visual direction** — type, colour, spacing tokens, layout character — and kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Never collapse a page into a single-file page to restyle it.
