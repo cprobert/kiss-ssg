@@ -98,6 +98,17 @@ Eight decisions to make while the views are still being written — things each 
 
 When Anthropic's `frontend-design` skill is available, let it set the **visual direction** — type, colour, spacing tokens, layout character — while kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Its look goes into those files; the site never becomes a single-file page.
 
+Whatever the look, keep these:
+
+- **Never invent a fact about the business.** That means a figure, a price, a testimonial, a client's name or logo, an award, or a phone number. Where the description gives none:
+  - leave that section out, or put a clearly marked placeholder in the model;
+  - list every placeholder for the owner when you hand the site over.
+
+  A design skill that asks for "realistic" or "organic" sample data is the trap here. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it.
+
+- **Every form field has a visible `<label>`**, tied to it by `for` and `id`. A placeholder is an example of the answer, never the label. An error message sits below the field it is about.
+- **Every `<img>` has its `width` and `height`**, from the model beside its `src` and `alt`, so the page does not jump as images arrive. Add `loading="lazy"` to images below the first screen, never to the first image a visitor sees.
+
 When a page needs a little interactivity, reach for it in this order, and keep the content in the rendered HTML either way — that is what keeps it crawlable:
 
 1. **The platform first, with no script at all.** An accordion is `<details>`/`<summary>` (a shared `name` makes a group exclusive); a dropdown or a mobile menu is the `popover` attribute with a `popovertarget` button, which brings light-dismiss and Escape with it; a modal is `<dialog>`.

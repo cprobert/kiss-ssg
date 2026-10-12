@@ -101,6 +101,22 @@ opened: 2026-10-12
 
   **Results:** `npm test` passes (85 files, 2255 tests). Examples 9 and 11 still `check` as unchanged against their recorded builds, so neither `AIKB/` needed re-recording.
 
+- **2026-10-12 — `kiss-site-new` gains three floors that hold "whatever the look", at the operator's request.** The operator asked: "There's also other skills in the plugin that could be useful for new sites. Have you reviewed those?"
+  - **The review.** A read-only sub-agent went through `design-taste-frontend`, `high-end-visual-design` and `minimalist-ui` against `kiss-site-new`, `kiss-site-review` and `frontend-design`. It proposed five floors and listed seven traps. Its key quotes were re-derived before use:
+    - `frontend-design` line 34: "it's up to you to come up with copy and placeholder content";
+    - `design-taste-frontend` line 640: "organic, messy data (`47.2%`, `+1 (312) 847-1928`)";
+    - `kiss-site-new` line 55: copy an example's structure, "never its content".
+  - **The choice.** The operator chose:
+    1. never invent a fact about the business, with marked placeholders listed for the owner, and the "realistic sample data" advice named as the trap;
+    2. visible `<label>`s on every field;
+    3. `width` and `height` on every image, lazy loading only below the first screen.
+
+    Declined:
+    - **design tokens in one place;**
+    - **self-hosted web fonts.** This conflicts with this repo's own docs site, which links Google Fonts.
+
+  - **Test.** A `skill-coverage.test.js` row was seen red (1 of 172) before the text and green (172) after. No clean-room run has covered these three yet.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

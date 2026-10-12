@@ -303,6 +303,18 @@ const COVERAGE = [
       /^(?=[\s\S]*look for the decision)(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
+  // 2026-10-12, from the same trial: the floors a new site keeps whatever
+  // look frontend-design chooses. The first exists because frontend-design
+  // tells an agent to "come up with copy and placeholder content", and the
+  // trialled skills prescribe invented data ("organic, messy data",
+  // "+1 (312) 847-1928"): on a real business's site that is a false claim.
+  {
+    feature:
+      'whatever the look: no invented facts, labelled fields, sized images',
+    pattern:
+      /^(?=[\s\S]*Never invent a fact)(?=[\s\S]*placeholder)(?=[\s\S]*<label>)(?=[\s\S]*`width` and `height`)(?=[\s\S]*loading="lazy")/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
   {
     feature: 'the audit is advisory and hands off to kiss-site-review',
     pattern: /`audit`[\s\S]*advisory[\s\S]*kiss-site-review/,
