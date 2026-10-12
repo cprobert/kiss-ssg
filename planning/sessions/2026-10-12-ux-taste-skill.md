@@ -123,9 +123,52 @@ The skill is written for landing pages and redesigns of generic AI output, and t
 
 - Most passed.
 - Five fired and should be rejected.
-- About nine produced a real finding (#2, #4–#12).
+- Ten produced a real finding (#2, #4–#12; the first draft of this line said "about nine").
 
 Those real findings are small: craft and consistency, not direction. The two most valuable findings (#1 control contrast, #3 unannounced copy) came from reading the code with accessibility in mind, not from the checklist, which has no line for either. The skill was useful as a prompt to look systematically. Whether it beats `frontend-design`, or no skill at all, is not settled until the restyle is seen.
+
+## Audit — Pro Plumbing (2026-10-12)
+
+Ran `redesign-existing-projects` against `C:/Code/kiss/pro-plumbing` on its own branch, `ux/taste-skill`. Audit only.
+
+**Setup, with the operator's approval.** `npm ci` brought `node_modules` to the lockfile. The installed kiss-ssg was 2.6.2, but the lockfile and the last commit say 2.7.0. Then `npm i -D --no-save playwright-core`, as the site's `CLAUDE.md` prescribes. `package.json` is unchanged.
+
+**Baseline.**
+
+- `npm run check`: 7 pages, 0 failed, 131 links with none broken, and no audit findings.
+- `npm run review --shots`, run with `CHROME_PATH` set to the cached Playwright Chromium:
+  - design system: 0 literals bypassing a token;
+  - layout: 7 pages × 3 viewports, 0 must-fix, 0 should-fix, 14 could-improve, all tap targets under the 44px convention and above WCAG's 24px.
+- The 21 before-screenshots are copied to the session scratchpad's `pp-before/`.
+
+**Context the docs site did not have.** This site was designed on purpose, and the decisions are written down. `BRAND.md` holds a palette sampled from the logo with every working colour measured, a spacing and type token scale, the eyebrow and favicon decisions, and the WhatsApp green. `VOICE.md` governs every word. The templates explain their choices in comments. So the question here is whether the skill finds what that work missed.
+
+### Findings
+
+| #   | Finding                                                                                                                                                                                                                                                                                                                                    | Where                                               | Raised by                                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | -------------------------------------------------------------- |
+| P1  | **Headings leave a word alone on a phone.** No `text-wrap` anywhere in the stylesheet. Seen at 375px: "A small job you've been putting / off" and "A bathroom, or something / bigger".                                                                                                                                                     | `site.css:567-576`; `pp-before/home-mobile-375.png` | Skill: "Orphaned words"                                        |
+| P2  | **Motion is not guarded.** Four transitions, one of them the outline button's arrow sliding on hover, and no `prefers-reduced-motion` rule in the file.                                                                                                                                                                                    | `site.css:668`, `:718`, `:819-823`, `:1942`         | Skill: transitions line. The guard itself is beyond it         |
+| P3  | **A privacy notice is missing.** The contact form collects a name, phone number, email, postcode and a photo, and no page or note says what happens to them. This is not design, and the words and the facts (Netlify forms, how long Greg keeps them) are Greg's, so this branch does not write it.                                       | `src/pages/contact.hbs:45-135`; no page matches     | Skill: "No legal links"                                        |
+| P4  | _Taste._ **The hero copy floats.** `.hero-inner` centres the copy against the taller photo, leaving an empty band above the eyebrow at 1280px. It is milder than on the docs site.                                                                                                                                                         | `site.css` `.hero-inner { align-items: center }`    | Skill: "Everything centered"                                   |
+| P5  | _Taste._ **The `h1` is quiet beside the photo.** `--text-h1` tops out at 2.2rem, so "Local plumber in Aberdare" is a modest line next to a 515px image.                                                                                                                                                                                    | `site.css:130`                                      | Skill: "Headlines lack presence"                               |
+| P6  | _Taste._ **The contact page has two competing filled buttons:** a blue "Call Greg" and a flame "Ask Greg to ring me". Between them sits a row of three unlabelled facts after the call button. `BRAND.md` names flame as the accent button, so the colours are deliberate. Whether two filled buttons on one page compete is the question. | `pp-before/contact-desktop-1280.png`                | Skill: "One filled + one ghost", "More than one accent colour" |
+| P7  | Trivial: two consecutive `h1 {}` blocks.                                                                                                                                                                                                                                                                                                   | `site.css:578-584`                                  | Beyond the skill                                               |
+| P8  | Trivial: `min-height: calc(100vh - 12rem)` on the 404 page. On mobile, `dvh` measures the screen as you see it.                                                                                                                                                                                                                            | `site.css:1461`                                     | Skill: "`100vh`"                                               |
+
+### Rejected: each is a decision this site already recorded
+
+- **Swap the body font:** a system stack for body text, and a webfont only for headings (`BRAND.md` § Spacing and type).
+- **A different header colour:** slate rather than near-black was the operator's option A, 2026-09-18 (`site.css:610-620`).
+- **"Random dark section":** the doors band is dark so the page closes on white before a dark footer (`index.hbs:78-80`).
+- **One accent, not three door colours:** the blue, white and flame rules are deliberate, one per door (`site.css:456-475`).
+- **"Three equal card columns"**, for the jobs gallery: it is photographs, not feature cards.
+- **Grain, imagery, motion upgrades:** wrong for a sole trader's confirmation page.
+- **Copy rules:** no clichés found, and `VOICE.md` is stricter than the skill.
+
+### Interim read
+
+On a site that was designed, the skill found two small real defects (P1, P2), one important non-design omission (P3), three taste questions (P4–P6) and two trivia. Seven of its rules fired against decisions already on record. It found nothing in colour, contrast, spacing or tokens: the site's own `review` and `BRAND.md` had already done that work, measured. Its most valuable line here, the missing privacy notice, is a checklist item ("No legal links") that a design-only skill would not have raised.
 
 ---
 
