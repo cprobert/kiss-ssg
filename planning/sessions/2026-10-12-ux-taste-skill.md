@@ -50,6 +50,17 @@ opened: 2026-10-12
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-12** — Criteria 1–3 met:
+  - **1:** the audit (`59c3bc6`) came before the edits (`dd31eb8`).
+  - **2:** only `src/` layout, page, Sass and `site.js` changed, with no dependency added. `node docs` exits 0 (157 links, none broken) and `npm run gates` is green.
+  - **3:** text contrast is 5.1:1 or above. Control edges are 3.07:1 or above. The Required badge is 5.59 light and 5.61 dark. The dark figure is re-measured at the shipped 12% wash: the audit section's 5.00 was measured at 18%, a wash the CSS does not use. Playwright, live site against preview: the copy announcement, sentence-case badges and the phone anchor jump were red before and are green after. The theme toggle, agent selector, focus outline and reduced motion are green on both.
+
+  Criterion 6 is partial (interim read only). Criteria 4, 5, 7 and 8 are not yet started. No drift: still tooling & docs, and `docs/` is deliberately not rebuilt yet.
+
+  **Eyeball: deferred.** The destination is the open item below, to be cleared before `/branch-close`. Decision: **continue**, to Pro Plumbing.
+
+  **Open eyeball item (deferred 2026-10-12):** compare `scratchpad/before/home-phone-dark-top.png` with `scratchpad/after/home-phone-dark-top.png` (session scratchpad), or run `node docs --dev` at http://127.0.0.1:3001. Then keep or revert each change. The one to rule on is the phone header no longer being sticky.
+
 ## Audit — docs site (2026-10-12)
 
 Ran `redesign-existing-projects` (user-level install, tasteskill) against `src/`, audit only. No style edits yet.
