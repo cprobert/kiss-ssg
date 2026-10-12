@@ -50,6 +50,61 @@ opened: 2026-10-12
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+## Audit — docs site (2026-10-12)
+
+Ran `redesign-existing-projects` (user-level install, tasteskill) against `src/`, audit only. No style edits yet.
+
+**How it was run, and what it could not see.** The browser extension was not connected, so this audit reads source and measures. Nothing here was looked at in a browser. Findings marked _unverified_ need an eye on the rendered page. Contrast was measured by a scratch script (WCAG 2.x formula) over the `site.scss` tokens in both themes.
+
+**Attribution.** Each finding names the skill checklist line that raised it. "Beyond the skill" marks one found while reading the code that no checklist line asks about. The verdict depends on this split.
+
+### Findings worth acting on
+
+| #   | Finding                                                                                                                                                                                                                                                                                                                                                       | Where                                                                    | Raised by                                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| 1   | **Control borders are 1.27–1.36:1.** The agent `<select>`, the agent-box Copy button and the host option chips are identified only by a `--rule` border. That is below the 3:1 non-text contrast a control's boundary needs (WCAG 1.4.11), in both themes. Measured: light 1.36, dark 1.31 on `--surface`.                                                    | `site.scss:699-706`, `:756-767`, `:570-580`; `--rule` at `:11` and `:54` | Beyond the skill — its audit has no non-text-contrast line                       |
+| 2   | **Two `font-weight: 600` rules render as 700.** Atkinson Hyperlegible Next is loaded at 400/700/800 only, so the "Required" badges and the host chips fall back to bold, and the lighter hierarchy they were written for never shows. (The `600` on code keywords is fine: the mono font loads 600.)                                                          | `layout.hbs:26`; `site.scss:542`, `:575`                                 | Skill: "Only Regular and Bold weights used"                                      |
+| 3   | **A copy that worked is not announced.** The Copy buttons change their text to "Copied", but nothing is live, so a screen reader hears nothing. The agent-box buttons also carry an `aria-label` ("Copy the Claude Code commands") that overrides the changed text, so even re-reading the button says "Copy".                                                | `site.js:5-15`; `index.hbs:79`                                           | Beyond the skill (it asks for loading/error states, not announced ones)          |
+| 4   | **Green breaks the site's own rule.** `site.scss:1-4` says `--pass` green appears "only where something passed". The "Required" badge is green.                                                                                                                                                                                                               | `site.scss:551-554`                                                      | Skill, loosely: "More than one accent colour". The rule broken is the site's own |
+| 5   | **No motion and no pressed state anywhere.** There is not one `transition` in the stylesheet. Hover changes snap, and no control responds to being pressed. Any motion added needs a `prefers-reduced-motion` guard (the stylesheet has none today).                                                                                                          | `site.scss` (0 matches for `transition`)                                 | Skill: "Instant transitions", "No active/pressed feedback"                       |
+| 6   | **Radii off the scale.** The tokens are `--radius-small` (4px) and `--radius-panel` (10px), but the select uses `0.4rem` and the prompt cards `0.5rem`. Four radii look accidental.                                                                                                                                                                           | `site.scss:704`, `:791`                                                  | Skill: "Uniform border-radius", inverted: here it is ununiform by accident       |
+| 7   | **Sibling cards disagree.** `.agent-box` has a `--surface` fill and a `--radius-panel` corner. `.prompts__item`, directly below it in the same step, has no fill and a third radius. Same component role, two looks.                                                                                                                                          | `site.scss:725-732` vs `:789-799`                                        | Skill: "Inconsistent vertical rhythm in side-by-side elements" (nearest line)    |
+| 8   | _Unverified._ **The sticky header may be two rows tall on a phone.** The mark is 3.4rem tall, and with four nav items and the toggle in a wrapping flex row, a 375px viewport probably wraps to two rows. A sticky header then takes a large share of the screen, and `scroll-padding-top: 5rem` may be less than its height, hiding anchor targets under it. | `site.scss:95`, `:241-275`; `header.hbs`                                 | Skill: "Missing whitespace" / layout. Needs a look                               |
+| 9   | _Unverified._ **The hero copy floats.** `.hero__inner` centres both columns vertically. The toolkit panel is much taller than the copy, so the heading probably sits halfway down the panel rather than at the top of the page.                                                                                                                               | `site.scss:405-410`                                                      | Skill: "Everything centered" (vertical variant). Needs a look                    |
+| 10  | **Dead CSS.** `.steps` is only ever used as `.steps--stacked`, which overrides its three-column grid. The `repeat(3, …)` rule and the `margin-top: auto` on `pre` never apply.                                                                                                                                                                                | `site.scss:626`, `:653-656`                                              | Skill: "Three equal card columns"; it points at the rule, the rule is dead       |
+| 11  | **Paragraphs can end on one word.** Headings have `text-wrap: balance`; body paragraphs, ledes and card text have no `text-wrap: pretty`.                                                                                                                                                                                                                     | `site.scss:116`, `:132-138`, `:205-210`                                  | Skill: "Orphaned words"                                                          |
+| 12  | **All-caps badges.** The "Required / Recommended / To go live" labels are uppercase with tracking, the one all-caps element on the site.                                                                                                                                                                                                                      | `site.scss:540-549`                                                      | Skill: "All-caps subheaders", "Pill-shaped badges"                               |
+
+### Skill rules that fired and should be rejected
+
+These checklist items match the site, but following them would undo a deliberate choice that is recorded in the code:
+
+- **"Replace the font"**: the skill suggests Geist, Outfit or Satoshi. Atkinson Hyperlegible was chosen for legibility (`layout.hbs:26`), and a docs site is read, not glanced at.
+- **"Flat design with zero texture", "Empty sections"**: the skill suggests grain, noise overlays, background imagery and picsum placeholders. Being flat is a decision: `site.scss:838-839` records that there is no shadow token. Placeholder imagery on a docs site is noise.
+- **"Light/dark toggle is always a sun/moon switch"**: the skill suggests a dropdown or system detection. System detection already exists (`site.js:25`), and the icon is the convention people recognise.
+- **"Generic card look (border + background)"**: border-not-shadow is the stated framing for screenshots that are light in either theme (`site.scss:837-839`).
+- **The upgrade techniques** (spring physics, scroll-driven reveals, parallax stacks, broken grid, glassmorphism): these are for landing pages and fight a reference site's job.
+
+### What already passes
+
+Most of the checklist passes:
+
+- **Colour:** no pure black. One accent (the brand blue), with the rose kept for selection. Text contrast measured 5.1:1 or above for every text pair, in both themes; body text is 16.1–17.0:1.
+- **Accessibility and structure:** a visible global `:focus-visible`, a skip link, `aria-current` on the nav and the guide menu, and semantic landmarks throughout.
+- **Assets and pages:** alt text on every meaningful image, a favicon and Open Graph tags, and a custom 404.
+- **Copy:** no AI clichés and sentence-case headings.
+- **Layout:** a max-width container, and grids rather than flex percentage maths.
+
+### Interim read on the skill (not the verdict)
+
+The skill is written for landing pages and redesigns of generic AI output, and this site is neither. Of its roughly 70 checks:
+
+- Most passed.
+- Five fired and should be rejected.
+- About nine produced a real finding (#2, #4–#12).
+
+Those real findings are small: craft and consistency, not direction. The two most valuable findings (#1 control contrast, #3 unannounced copy) came from reading the code with accessibility in mind, not from the checklist, which has no line for either. The skill was useful as a prompt to look systematically. Whether it beats `frontend-design`, or no skill at all, is not settled until the restyle is seen.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
