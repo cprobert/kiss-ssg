@@ -229,7 +229,57 @@ On a site that was designed, the skill found two small real defects (P1, P2), on
 
 **"Am I adding this for the sake of it?"** Yes, on this evidence. It is a reasonable checklist for tidying an existing site, not design direction. kiss already defers direction to `frontend-design`.
 
-**Not done, and worth a later look.** Pulling the useful slice of the checklist into kiss's own `kiss-site-review` skill: the strategic omissions (legal links for a form that collects personal data, a custom 404, a skip link), `text-wrap`, and the reduced-motion guard. Not done because it would change a shipped skill, which is a non-goal of this branch. The parked idea `planning/ideas/2026-09-29-ux-control-quality-skill.md` already proposes a smaller version of the same thing.
+**Not done, and worth a later look.** Pulling the useful slice of the checklist into kiss's own `kiss-site-review` skill: the strategic omissions (legal links for a form that collects personal data, a custom 404, a skip link), `text-wrap`, and the reduced-motion guard. Not done because it would change a shipped skill, which is a non-goal of this branch. The parked idea `planning/ideas/2026-09-29-ux-control-quality-skill.md` already proposes a smaller version of the same thing. _Superseded the same day:_ the operator asked for exactly this, and it landed as the craft pass (see Amendments, and below).
+
+## The craft pass in `kiss-site-review`, and its clean-room run (2026-10-12)
+
+**The run.** A fresh general-purpose sub-agent had no conversation context. It was given only two things:
+
+- the branch's `kiss-site-review/SKILL.md`, the copy the plugin marketplace installs (skills do not ship in the npm tarball);
+- example 11, copied out of `npm pack`'s tarball into an empty folder, with kiss-ssg installed from that tarball. `check` passed there: 15 pages, 0 failed.
+
+It followed the skill to the report, stopped there, fixed nothing, and listed every place it had to guess. It took about 7 minutes.
+
+**What it showed.** All nine craft checks were carried out:
+
+- **Real findings in example 11**, which ships as an exemplar:
+  - tag-chip edges at 1.23–1.35:1;
+  - weights 500 and 650 on a system stack, rendering as 600 and 700;
+  - no `:active` anywhere, and one hover rule;
+  - paragraphs ending on one word;
+  - a 110px sticky header that hides 70px of the skip link's target;
+  - long unbroken text pushing a 320px page to 997px;
+  - demo copy shown to visitors.
+- **Eighteen numbered places where it guessed.** Each one that bore on the skill was re-derived locally before anything was edited:
+  - the `{ reports, diff }` output shape is real (`lib/check.js:75-80`, `:304`);
+  - `GUIDE.md:1066` and `:1068` hold exceptions the skill's table had dropped;
+  - example 11's stylesheet uses 500 and 650 on `$font-sans`.
+
+**Fixed in the skill.** The class is "a sentence a literal follower cannot carry out, or that is wrong when checked".
+
+- **Check 1 (control edges):** now scoped to an edge that identifies the control. WCAG 1.4.11 applies only then; a chip whose text is an underlined link is advisory. It also says to measure against every surface, and to name the colour used for a translucent background.
+- **Check 3 (font weights):** a system-font stack cannot be answered from the stylesheet. Weights are rendered in the browser instead, or kept to 400 and 700. A first draft said "400, 600 and 700, which the common system faces all ship". That was caught before the commit: Android's Roboto has no 600.
+- **Check 5 (motion):** now covers every link and control, with a method for hover and press.
+- **Check 6 (single words):** the widths are 320 and 375. It says `balance` cannot fix a short heading that must wrap. The shipped draft claimed `balance` would fix this "site-wide", and the run measured that as false.
+- **Check 7 (sticky header):** the screen is now 375×667.
+- **What-can-be-read-from-what:** the closing line is now a three-way list, because check 3 needs the browser on a system-font stack.
+- **"Look for the decision":** it now says where design notes live, and that an unexplained choice is not automatically a finding.
+- **Step 4:** the report table names the craft pass and the Markdown copy, with a measurement for each craft finding.
+- **Elsewhere in the skill, the same class:**
+  - step 1 reads `{ reports, diff }`;
+  - the audit table carries GUIDE's `.example is fine` and the `stray-file` exemptions;
+  - step 2 says that no output with exit 1 is the passing result;
+  - the long-text check says to inject a test string in the browser;
+  - a new bullet covers placeholder, demo and scaffold copy (lorem ipsum appeared in the taste checklist too).
+
+`skill-coverage.test.js` is still green after the fixes (171 passed). The fixes were not re-run through a second clean-room agent.
+
+**Left as found:**
+
+- `allowed-tools` lists no browser tool. The agent drove Playwright through Bash, and the skill neither sanctions nor forbids that.
+- The `--dev` "Cannot GET" claim was not tested by the run.
+- The canonical link and `.md` copy on a 404 page are outside this branch.
+- Example 11's own findings are recorded here, not fixed. They are for the operator to decide on: they are real, and example 11 ships as something to copy.
 
 ---
 
