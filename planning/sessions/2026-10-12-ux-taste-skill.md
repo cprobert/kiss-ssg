@@ -71,6 +71,36 @@ opened: 2026-10-12
   - **New criterion:** a fresh sub-agent given only the packed skill reviews a built example and reports where it had to guess (the clean-room rule for anything a consuming project follows).
   - **Test:** a `skill-coverage.test.js` row pins the section. It was seen red (1 failed of 171) before the text existed and green (171 passed) after.
 
+- **2026-10-12 — the shared example stylesheet gets the craft fixes, at the operator's request.** The request was "Fix them on this branch", about the craft findings the clean-room run made on example 11. That stylesheet is byte-identical in 11 of the 12 examples: its header said "six", and it now says eleven of twelve. So the fix went into all eleven copies, which still hash identically.
+
+  **Fixed:**
+  - a `--control` edge for tag chips: `#948678` light, at least 3.22:1, and `#75685a` dark, at least 3.23:1;
+  - nav weights 400 and 700, not 500 and 650;
+  - `:hover` and `:active` on every link, nav link and tag;
+  - `text-wrap: pretty` on paragraphs, and `balance` on the eyebrow;
+  - `overflow-wrap: anywhere` on text;
+  - `scroll-padding-top`, and a header that is static below 34rem;
+  - `flex-shrink: 0` on the brand mark, and a dark `--on-accent` (8.52:1 where white was 2.19:1);
+  - the status tones re-declared for dark (`#6cc792`, `#e0b45a`);
+  - a build badge that no longer looks like a chip.
+
+  **Kept:** the demo copy, because the example records itself as an exemplar.
+
+  **Measured on example 11's build, served over HTTP:**
+
+  | What                                  | Result                                                                          |
+  | ------------------------------------- | ------------------------------------------------------------------------------- |
+  | Header at 375×667                     | 110px and static, so the skip link lands with content at 56px, nothing under it |
+  | Header on desktop                     | 65px, with `scroll-padding-top` at 88px                                         |
+  | Nav weights                           | rendered 400 and 700                                                            |
+  | Tag border                            | `#948678` at rest, the accent on hover                                          |
+  | Brand mark in dark                    | `#15120f`                                                                       |
+  | 320px page with long strings injected | 320px wide                                                                      |
+
+  **A mistake caught by measuring.** `overflow-wrap: break-word` left that page 724px wide, because the eyebrow is an inline-block and `break-word` does not lower its min-content. `anywhere` does. The skill's own long-text line, written earlier this session, had said `break-word`, and it is corrected in the same commit.
+
+  **Results:** `npm test` passes (85 files, 2255 tests). Examples 9 and 11 still `check` as unchanged against their recorded builds, so neither `AIKB/` needed re-recording.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
