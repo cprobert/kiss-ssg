@@ -106,6 +106,24 @@
   </div>
 </section>
 
+<section class="band" aria-labelledby="companions">
+  <div class="wrap">
+    <h2 id="companions">{{model.companions.heading}}</h2>
+    <p class="band__lede">{{model.companions.intro}}</p>
+    <pre><code class="language-bash">{{model.companions.code}}</code></pre>
+    <ul class="reasons companions">
+      {{#each model.companions.skills}}
+      <li>
+        <h3>{{name}}</h3>
+        <p>{{text}}</p>
+        {{#if code}}<pre><code class="language-bash">{{code}}</code></pre>{{/if}}
+      </li>
+      {{/each}}
+    </ul>
+    <p class="band__note">{{model.companions.note}}</p>
+  </div>
+</section>
+
 <section class="band band--split" aria-labelledby="why">
   <div class="wrap band__grid">
     <h2 id="why">Why kiss-ssg suits AI coding agents</h2>

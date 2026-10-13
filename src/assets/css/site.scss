@@ -837,6 +837,10 @@ pre code {
   font-size: var(--step--1);
   line-height: 1.5;
   user-select: all;
+  // The import prompt carries an artifact URL with no break opportunity, and
+  // it pushed a 320px page 42px sideways. `anywhere`, not `break-word`, so
+  // the box can shrink to the screen too.
+  overflow-wrap: anywhere;
 }
 
 .reasons {
@@ -855,6 +859,16 @@ pre code {
   p {
     margin: 0;
     color: var(--muted);
+  }
+}
+
+// The optional companion skills: the reasons' two-column list, set off from
+// the install commands above it.
+.companions {
+  margin-top: 1.5rem;
+
+  pre {
+    margin: 0.6rem 0 0;
   }
 }
 

@@ -142,6 +142,23 @@
       }
     ]
   },
+  "companions": {
+    "heading": "Optional: Anthropic's skills for the look and a browser",
+    "intro": "kiss decides how a site is built, not what it looks like or how it renders on a phone. For Claude Code, one plugin from Anthropic adds both, from the site's folder:",
+    "code": "claude plugin marketplace add anthropics/skills --scope project\nclaude plugin install example-skills@anthropic-agent-skills --scope project",
+    "skills": [
+      {
+        "name": "frontend-design, for the look",
+        "text": "It sets the visual direction: type, colour, spacing and layout character. kiss keeps the structure, which means layouts, partials, the Sass folder and one view per page."
+      },
+      {
+        "name": "webapp-testing, for a browser",
+        "text": "With it, your agent can open what it built at phone and desktop widths and in dark mode. kiss's skills serve the build folder over HTTP, never from file://. It is Python Playwright, so it also needs:",
+        "code": "pip install playwright\npython -m playwright install chromium"
+      }
+    ],
+    "note": "The plugin carries ten other example skills as well. init does not declare it, so installing it is your choice."
+  },
   "reasons": [
     {
       "title": "Conventions, not questions",

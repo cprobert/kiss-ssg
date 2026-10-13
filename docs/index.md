@@ -119,6 +119,31 @@ With Node.js and Claude Code or Codex installed, these do the rest.
 
 kiss is the upgrade path for a site you made in Claude or ChatGPT: converting keeps it looking exactly the same and gives it a layout, partials and content a web developer could take over: [how converting works](https://cprobert.github.io/kiss-ssg/guide/converting/).
 
+## Optional: Anthropic's skills for the look and a browser
+
+kiss decides how a site is built, not what it looks like or how it renders on a phone. For Claude Code, one plugin from Anthropic adds both, from the site's folder:
+
+```bash
+claude plugin marketplace add anthropics/skills --scope project
+claude plugin install example-skills@anthropic-agent-skills --scope project
+```
+
+-   ### frontend-design, for the look
+    
+    It sets the visual direction: type, colour, spacing and layout character. kiss keeps the structure, which means layouts, partials, the Sass folder and one view per page.
+    
+-   ### webapp-testing, for a browser
+    
+    With it, your agent can open what it built at phone and desktop widths and in dark mode. kiss's skills serve the build folder over HTTP, never from file://. It is Python Playwright, so it also needs:
+    
+    ```bash
+    pip install playwright
+    python -m playwright install chromium
+    ```
+    
+
+The plugin carries ten other example skills as well. init does not declare it, so installing it is your choice.
+
 ## Why kiss-ssg suits AI coding agents
 
 -   ### Conventions, not questions
