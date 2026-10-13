@@ -18,7 +18,7 @@ The skill carries no copy of the API. `node_modules/kiss-ssg/GUIDE.md` § Checki
 npx kiss-ssg check <site-script> --summary
 ```
 
-If the summary's first line does not start `ok` (the JSON's `ok` is not `true`), stop and use the `kiss-build-check` skill: a build with any failure reports `audit: null`, because the site-wide findings would be false. Then read the JSON report (`npx kiss-ssg check <site-script>` without `--summary`) and take two keys:
+If the summary's first line does not start `ok` (the JSON's `ok` is not `true`), stop and use the `kiss-build-check` skill: a build with any failure reports `audit: null`, because the site-wide findings would be false. Then read the JSON report (`npx kiss-ssg check <site-script>` without `--summary`) and take two keys from each report in it. What it prints is an array of reports, or, when the site has a recorded `AIKB/last-build.json` to diff against, an object `{ "reports": [...], "diff": [...] }`. Read the reports from `reports` when it is there and from the array when it is not:
 
 - `audit` — `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. The summary prints one `audit <check>: …` line per check that fired, naming up to three pages; a duplicate check gets one line per shared value, `audit title-duplicate: "<the title>" on 6 pages (…)`, because a duplicate is only fixable once you know what is duplicated.
 - `links` — the `broken link:` findings. Fix those in the template or model that wrote them.
@@ -44,9 +44,9 @@ Group the findings by check. The fix for each, in kiss terms — nearly all of t
 | `heading-skip`          | Re-level the heading named in the detail (`h2 -> h4`): headings are an outline, not a font size. Style with a class instead                                                                                                                                                                                                                                                                                                                                                            |
 | `favicon-missing`       | `<link rel="icon" href="{{asset …}}">` in the layout, or a `favicon.ico` copied to the build root                                                                                                                                                                                                                                                                                                                                                                                      |
 | `not-found-missing`     | A `404` view, excluded from the sitemap with `ignoreSitemap: true`. **The `extensionLess` trap:** on an `extensionLess` site that view builds to `404/index.html`, which hosts do not serve, and the detail says so — register it with `config: { extensionLess: false }` and `slug: '404'` so it lands at `404.html`. A site that finds its pages with `.scan()` does this with a `.page({ view: '404.hbs', … })` earlier in the chain than `.scan()` — the earlier registration wins |
-| `site-url-local`        | `siteUrl` is a `localhost`, loopback, `.local`/`.test`/`.invalid` or preview-deploy address. Set the production address — the sitemap, the feed and every canonical are built from it                                                                                                                                                                                                                                                                                                  |
+| `site-url-local`        | `siteUrl` is a `localhost`, loopback, `.local`/`.test`/`.invalid` or preview-deploy address (`.example` is fine). Set the production address — the sitemap, the feed and every canonical are built from it                                                                                                                                                                                                                                                                             |
 | `debug-dump`            | `viewStats()` under `verbose: true` wrote `debug.json` — every page's options and models — into the build. Call `viewStats()` only under `--dev`                                                                                                                                                                                                                                                                                                                                       |
-| `stray-file`            | A `.map`, `.log`, `.bak`, dotfile or OS file in the build, almost always from an asset folder copied whole. Remove it from the asset folder, or stop the pipeline step emitting source maps for production                                                                                                                                                                                                                                                                             |
+| `stray-file`            | A `.map`, `.log`, `.bak`, `.swp` or `~` file, a dotfile (but not `.nojekyll`, `.htaccess` or `.well-known/`) or an OS file in the build, almost always from an asset folder copied whole. Remove it from the asset folder, or stop the pipeline step emitting source maps for production                                                                                                                                                                                               |
 | `console-log`           | `console.log(` left in a script you wrote. Remove it; a third-party file belongs under `vendor/` or as `*.min.js`, which the check skips                                                                                                                                                                                                                                                                                                                                               |
 
 ### 2. External links open in a new tab
@@ -57,7 +57,7 @@ A link to another site opens in a new tab, so a visitor keeps their place on thi
 grep -rhoE "<a [^>]*href=[\"']https?://[^>]*>" public | grep -vE "target=[\"']_blank" | grep -v 'https://your-site.example'
 ```
 
-Replace `public` with the build folder and `https://your-site.example` with the site's `siteUrl`. Either quote style matches, so a link written as in the example below is not reported. An absolute URL on the site's own address is internal: `{{link … absolute=true}}`, `{{absUrl}}` and `{{canonical}}` all produce one, and none of them opens a new tab. Neither do `mailto:` and `tel:` links, or a `#` anchor.
+Replace `public` with the build folder and `https://your-site.example` with the site's `siteUrl`. No output and exit code 1 is the passing result: `grep` found no offender. Either quote style matches, so a link written as in the example below is not reported. An absolute URL on the site's own address is internal: `{{link … absolute=true}}`, `{{absUrl}}` and `{{canonical}}` all produce one, and none of them opens a new tab. Neither do `mailto:` and `tel:` links, or a `#` anchor.
 
 The fix is in the template or the partial that writes the link, never per page:
 
@@ -84,12 +84,50 @@ The audit reads markup. Whether the site looks finished needs eyes. `check` publ
 Then, on every distinct page template (not every page):
 
 - **Widths** 320, 768 and 1440, and one odd width (say 1023) where breakpoints meet.
-- **Long text and unbroken strings** — a long title, a long URL or email, a big number. Does anything overflow its box or push the page sideways?
+- **Long text and unbroken strings** — a long title, a long URL or email, a big number. Does anything overflow its box or push the page sideways? A site whose content has none yet will get one from a model later, so put one into the page in the browser (not into the source) and look, including in a label or badge, a nav link and the site name, not only a paragraph. Use a string with no spaces and no hyphens: either one is a break opportunity, and a string with one passes where a URL would not. The usual fix is `overflow-wrap: anywhere` on headings and text. Not `break-word`: only `anywhere` lowers the width an inline-block, a flex item or a grid item shrinks to. Measured on example 11, `break-word` left a 320px page 724px wide.
 - **Consistency across templates** — spacing, type scale, border radius, button styles. One page with its own idea of a button is the most common tell of a site assembled page by page.
-- **Things that look clickable and are not** — underlined text, cards with hover styles, icons with no link.
+- **Things that look clickable and are not** — underlined text, cards with hover styles, icons with no link, a label styled exactly like the site's buttons or chips.
+- **Placeholder, demo and scaffold copy** — lorem ipsum, "Example", "TODO", "fictional", a "how this works" panel, a build badge, a sentence addressed to the developer rather than the visitor. It is the plainest sign of a site that is not finished, and it lands in the Markdown copies too. A site that says it is an example or a demo has recorded that as a decision (see the craft pass below). Ask before calling it a finding.
 - **The 404 page** — open `/404.html` itself. What a URL that does not exist shows depends on the server: a host serves `404.html`, but the `--dev` preview answers with a bare `Cannot GET`, so judge the page, not the preview. Does it help someone who is lost: the nav, a way home, a search or the main sections? And is it kept out of `sitemap.xml` (`ignoreSitemap: true`)? — the audit does not check that.
 
 - **One page's Markdown copy** — the `.md` beside the HTML (`about.md`, `courses/index.md`), which agents read and `llms.txt` links. This one needs no browser. Is it the page's content alone? A header, footer or menu in it means the layout has no `<main>` around the content, or a menu that is not a `<nav>`. The audit does not check it.
+
+#### The craft pass
+
+These are the finishing details a site reads as unfinished without. Each one is measured or seen, not argued from taste, and the audit checks none of them.
+
+**First, look for the decision.** Before calling anything a finding, check whether the site records it as a choice:
+
+- a `BRAND.md`, or design notes in the `README.md`, the site's `AIKB/` or a planning folder;
+- a comment in the stylesheet or the template;
+- an `audit.ignore` entry.
+
+A dark band, a system font, an unusual colour role or a modest heading size that the site explains is a decision. One it does not explain is not automatically a finding: only the checks below are. Name the record and leave it, or ask the operator. Never "fix" a recorded decision as if it were a mistake. Every one of the checks below can be overruled this way.
+
+1. **A control's edge is 3:1 or better against what it sits on, when the edge is what tells the reader it is a control.** That means a select, a text field, an outlined button, or a chip whose text is not otherwise styled as a link. Text has a 4.5:1 floor that most sites meet. A boundary that identifies a control has a 3:1 floor (WCAG 1.4.11) that a pale border colour usually misses. A chip whose text is already an underlined link is identified by its text, so its border is advisory. Measure from the stylesheet's colour values in every theme the site has, against every surface the control sits on. Where a background is translucent or blurred, name the colour you measured against.
+2. **A result that changes on screen is also said.** A Copy button that turns into "Copied" is silent to a screen reader unless the words also land in an `aria-live="polite"` region. An `aria-label` on the button hides its changed text as well.
+3. **Every weight the CSS asks for is a weight that renders.** A `font-weight` of 600 against a font loaded at 400 and 700 renders as 700, and nothing reports it.
+   - **A web font:** compare the weights in the font link or `@font-face` with the `font-weight` values in use.
+   - **A system-font stack:** the stylesheet cannot answer, because the platform's own faces decide. Measured in Chromium on Windows, Segoe UI renders 500 as 600, and 650 as 700. Android's Roboto has a 500 but no 600. Render each weight in use in the browser and compare, or keep to 400 and 700, the only two every common system face ships.
+4. **A colour that means something means only that.** If green is "passed" or red is "error", a badge or button that borrows it for anything else teaches the reader the wrong thing.
+5. **Motion respects the visitor.**
+   - Every link and control acknowledges hover and press: a colour change, a thicker underline, or a pixel of travel. Give `:active` the same rule, so a tap on a phone gets it too. In the browser, compare a link's computed style at rest, on hover and while the mouse is held down. The finding is no _visible_ change. A changed `text-decoration-thickness` on a link with no underline, for example, changes nothing anyone sees. Include the brand link and the current page's nav link.
+   - Every `transition`, `animation` and `scroll-behavior: smooth` sits behind a `prefers-reduced-motion` media query.
+   - Grep the stylesheet: a `transition` with no `prefers-reduced-motion` anywhere in it is the finding.
+6. **No heading or paragraph ends on a single word.** Look at 320px and 375px wide, where "putting / off" is the usual sight. This one depends on the words, so scan every page, not one per template. One rule each, site-wide:
+   - `text-wrap: pretty` on paragraphs fixes most of them. It is a browser's best effort, not a guarantee: example 11 still had a seven-line paragraph and a two-line footer ending on one word with it applied. For the ones left, put `&nbsp;` between the last two words, or change the words.
+   - `text-wrap: balance` on headings evens the lines. That fixes most cases, but not a heading of three or four words that has to wrap: "The cascara / experiment" is already balanced. Accept that one, or change the size.
+7. **A sticky header is measured on a phone, not assumed.** At 375×667, how tall is it, as a share of the screen? Does a jump to an `#anchor` land under it, because `scroll-padding-top` is smaller than the header? A header that wraps to two or three rows and stays stuck costs every page its reading space.
+8. **`100vh` on a phone includes the space behind the browser's address bar.** `100dvh` is the screen the visitor actually sees. Keep the `vh` line first as the fallback.
+9. **A form that collects personal details says what happens to them.** For a name, a phone number, an email or a photo, put a line by the form, in the site's own voice. It says who receives the details and that the visitor can ask for them to be deleted. The facts belong to the site's owner, so draft the line and mark every claim for them to confirm. Do not publish a promise they have not made.
+
+What each check can be read from:
+
+- **The stylesheet:** checks 1, 4 and 8, the grep half of 5, and 3 for a web font.
+- **The templates and scripts:** checks 2 and 9.
+- **The browser:** checks 6 and 7, the hover-and-press half of 5, and 3 on a system-font stack.
+
+A browser does not have to be a tool of the agent's own. A Playwright or Puppeteer install driven from a script through the shell does the job: serve the build folder over HTTP, never `file://`, for the reason given at the start of this step.
 
 **Without a browser, say that this pass did not run.** Do not infer the result from the templates: a layout that looks right in the source is exactly what this pass exists to check.
 
@@ -97,7 +135,7 @@ When Anthropic's `frontend-design` skill is available and the look itself needs 
 
 ### 4. Report first, then fix what the operator picks
 
-**Report first.** Before editing anything, put every finding — the audit's, the external-link pass's and the browser pass's — in one table:
+**Report first.** Before editing anything, put every finding in one table: the audit's, the external-link pass's, the browser pass's, the Markdown copy's and the craft pass's. Give each craft-pass finding its measurement (a contrast ratio, a grep result, a height in pixels):
 
 | Where | What | Why it matters | Proposed fix |
 | ----- | ---- | -------------- | ------------ |

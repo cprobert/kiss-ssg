@@ -291,6 +291,55 @@ const COVERAGE = [
       /target="_blank"[\s\S]*noopener noreferrer[\s\S]*opens in a new tab/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
+  // 2026-10-12, the taste-skill trial on the docs site and Pro Plumbing: the
+  // checks that held up on both, measured rather than argued from taste, and
+  // the rule that stopped twelve of the trialled skill's findings from undoing
+  // decisions the sites had already recorded. No audit check covers any of
+  // them, so this row is what keeps them in the skill.
+  {
+    feature:
+      'the craft pass: recorded decisions first, then the measured checks',
+    pattern:
+      /^(?=[\s\S]*look for the decision)(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  // 2026-10-12, from the same trial: the floors a new site keeps whatever
+  // look frontend-design chooses. The first exists because frontend-design
+  // tells an agent to "come up with copy and placeholder content", and the
+  // trialled skills prescribe invented data ("organic, messy data",
+  // "+1 (312) 847-1928"): on a real business's site that is a false claim.
+  {
+    feature:
+      'whatever the look: no invented facts, labelled fields, sized images',
+    pattern:
+      /^(?=[\s\S]*Never invent a fact)(?=[\s\S]*placeholder)(?=[\s\S]*<label>)(?=[\s\S]*`width` and `height`)(?=[\s\S]*loading="lazy")/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  // 2026-10-12 bake-off: the same brief built three ways. kiss-site-new alone
+  // produced frontend-design's own list of AI defaults (cream, serif,
+  // terracotta, dotted caps labels, identical cards); with frontend-design,
+  // both builds looked designed. So the skill says so when it is missing.
+  // Both frontend-design builds then made up example menu items and sample
+  // news, and every build hit step 6's skill-only instruction and the init
+  // marker left in a grown site.
+  {
+    feature: 'no frontend-design: say so, and point at the install lines',
+    pattern:
+      /^(?=[\s\S]*When it is not installed, say so before you set the look)(?=[\s\S]*Optional: Anthropic's `frontend-design` skill for the look)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'never invent: empty marked slots, never example items',
+    pattern:
+      /^(?=[\s\S]*Never fill it with example items or sample posts)(?=[\s\S]*visible on the page)(?=[\s\S]*read off the domain)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'step 6 has a command fallback, and the init marker goes',
+    pattern:
+      /^(?=[\s\S]*npx kiss-ssg check <site-script> --summary)(?=[\s\S]*delete that first line)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
   {
     feature: 'the audit is advisory and hands off to kiss-site-review',
     pattern: /`audit`[\s\S]*advisory[\s\S]*kiss-site-review/,

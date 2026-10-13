@@ -1,4 +1,6 @@
-// Aster & Oak — the one stylesheet behind all six kiss-ssg examples.
+// Aster & Oak — the one stylesheet behind eleven of the twelve kiss-ssg
+// examples (12 converts a page of its own). The copies are identical: change
+// one, copy it to the rest.
 // kiss compiles every .scss under the assets folder on its way into the build,
 // so this file lands as <build>/css/site.css with no extra tooling.
 
@@ -23,6 +25,9 @@ $ink-soft: #6c6259;
 $paper: #f7f4ef;
 $card: #ffffff;
 $line: #e5ddd2;
+// A control's own edge (a tag chip): 3:1 or more on the card and the page,
+// which $line is not — that only divides.
+$control: #948678;
 $accent: #9a5b34;
 $accent-ink: #7d4526;
 $accent-wash: #f2e7dd;
@@ -33,9 +38,14 @@ $accent-wash: #f2e7dd;
   --ink: #{$ink};
   --ink-soft: #{$ink-soft};
   --line: #{$line};
+  --control: #{$control};
   --accent: #{$accent};
   --accent-ink: #{$accent-ink};
   --accent-wash: #{$accent-wash};
+  // Text set on the accent, like the brand mark.
+  --on-accent: #ffffff;
+  --tone-good: #2f7d51;
+  --tone-warn: #9a6b12;
   --shadow: 0 1px 2px rgba(35, 32, 28, 0.06), 0 8px 24px rgba(35, 32, 28, 0.05);
   color-scheme: light;
 }
@@ -47,9 +57,14 @@ $accent-wash: #f2e7dd;
     --ink: #f1ece4;
     --ink-soft: #a99e91;
     --line: #322b23;
+    --control: #75685a;
     --accent: #e0a274;
     --accent-ink: #f0c9a8;
     --accent-wash: #2a2019;
+    // White on the light accent is 2.19:1; the page colour is 8.52:1.
+    --on-accent: #15120f;
+    --tone-good: #6cc792;
+    --tone-warn: #e0b45a;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
     color-scheme: dark;
   }
@@ -59,6 +74,12 @@ $accent-wash: #f2e7dd;
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+// A jump to an anchor (the skip link's #main) clears the sticky header.
+// Below 34rem the header stops being sticky, and this drops with it.
+html {
+  scroll-padding-top: 5.5rem;
 }
 
 body {
@@ -80,6 +101,25 @@ h3 {
   text-wrap: balance;
 }
 
+// A long word or URL from a model breaks rather than pushing a phone's page
+// sideways, and no paragraph ends on a word by itself. `anywhere`, not
+// `break-word`: only `anywhere` lowers the width a box will shrink to, which
+// is what an inline-block (the eyebrow), a flex or a grid item sizes from.
+h1,
+h2,
+h3,
+p,
+li,
+.nav__link,
+.brand__text {
+  overflow-wrap: anywhere;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
 h1 {
   font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
 }
@@ -99,6 +139,13 @@ ol {
 a {
   color: var(--accent-ink);
   text-underline-offset: 3px;
+}
+
+// Every link answers a hover and a tap alike: a phone has no hover, so
+// :active carries the same rule.
+a:hover,
+a:active {
+  text-decoration-thickness: 2px;
 }
 
 code {
@@ -160,14 +207,22 @@ code {
   text-decoration: none;
   color: inherit;
 
+  // The way home answers a hover and a tap: the mark takes the deeper
+  // accent.
+  &:hover &__mark,
+  &:active &__mark {
+    background: var(--accent-ink);
+  }
+
   &__mark {
     display: grid;
     place-items: center;
+    flex-shrink: 0;
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 9px;
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -199,10 +254,14 @@ code {
     border-radius: 999px;
     color: var(--ink-soft);
     font-size: 0.92rem;
-    font-weight: 500;
+    // 400 and 700 only: on a system-font stack those are the two weights
+    // every platform ships, so the active link is bolder everywhere rather
+    // than wherever the platform happens to have a 500 and a 650.
+    font-weight: 400;
     text-decoration: none;
 
-    &:hover {
+    &:hover,
+    &:active {
       background: var(--accent-wash);
       color: var(--accent-ink);
     }
@@ -210,7 +269,7 @@ code {
     &.is-active {
       background: var(--accent-wash);
       color: var(--accent-ink);
-      font-weight: 650;
+      font-weight: 700;
     }
   }
 }
@@ -243,6 +302,8 @@ main {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  // "The journal · page 1 of 2" splits evenly on a phone, not "…of / 2".
+  text-wrap: balance;
 }
 
 @mixin panel {
@@ -286,9 +347,15 @@ main {
   display: inline-block;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control);
   color: var(--ink-soft);
   font-size: 0.75rem;
+
+  &:hover,
+  &:active {
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
 }
 
 .price {
@@ -314,10 +381,11 @@ main {
 
 // Each demo page labels the feature it is showing; the tones keep those
 // labels apart at a glance.
+// The colours are custom properties, so the dark palette re-declares them.
 $tones: (
   note: var(--ink-soft),
-  good: #2f7d51,
-  warn: #9a6b12,
+  good: var(--tone-good),
+  warn: var(--tone-warn),
 );
 
 @each $name, $colour in $tones {
@@ -396,16 +464,24 @@ table {
   }
 }
 
+// Plain text, not a chip: with a tag's border it looked like a link.
 .build-badge {
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
   font-size: 0.75rem;
 }
 
 @media (max-width: 34rem) {
   body {
     font-size: 16px;
+  }
+
+  // On a phone the header wraps to two rows; stuck to the top it would hold
+  // a sixth of the screen for the whole read, so here it scrolls away.
+  html {
+    scroll-padding-top: 1rem;
+  }
+
+  .site-header {
+    position: static;
   }
 
   .site-header__inner {

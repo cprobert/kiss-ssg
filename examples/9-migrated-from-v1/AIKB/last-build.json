@@ -7,7 +7,7 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "5327e69b3bda7971d193403813cd3b4dcd7828fc",
+      "hash": "5d25482d10ec84f91a60556d477b4cf9bafea341",
       "id": "index",
       "canonical": null,
       "markdown": "./public/index.md"
@@ -16,7 +16,7 @@
       "view": "await-complete.hbs",
       "buildTo": "./public/await-complete.html",
       "ok": true,
-      "hash": "42549180722069377efe95d72540fec8e2a658d2",
+      "hash": "298fc62fa13f33c6b8a09de02ee1e3bd9dd074b2",
       "id": "await-complete",
       "canonical": null,
       "markdown": "./public/await-complete.md"
@@ -25,7 +25,7 @@
       "view": "folders.hbs",
       "buildTo": "./public/folders.html",
       "ok": true,
-      "hash": "bdeb5df536ff072eca8c3f3914967fe0891e7204",
+      "hash": "1166e3525b992412da7af91ad739dfb1d8e6aa82",
       "id": "folders",
       "canonical": null,
       "markdown": "./public/folders.md"
@@ -34,7 +34,7 @@
       "view": "handlebars-instance.hbs",
       "buildTo": "./public/handlebars-instance.html",
       "ok": true,
-      "hash": "1c7be0076acf2776ea452f749e312a88039fe476",
+      "hash": "d02eec4143070655e963e8acc8e4e0a3b5b9daf5",
       "id": "handlebars-instance",
       "canonical": null,
       "markdown": "./public/handlebars-instance.md"
@@ -43,7 +43,7 @@
       "view": "dynamic-partials.hbs",
       "buildTo": "./public/dynamic-partials.html",
       "ok": true,
-      "hash": "ca0571a97d6baae769e68e47112a8ceda1ce3063",
+      "hash": "408553872f2a714533d0e44b8ce95ce65d3d8c4b",
       "id": "dynamic-partials",
       "canonical": null,
       "markdown": "./public/dynamic-partials.md"
@@ -52,7 +52,7 @@
       "view": "duplicate-paths.hbs",
       "buildTo": "./public/duplicate-paths.html",
       "ok": true,
-      "hash": "11d426e8fcc70a14415bf1daf0582f2a04b48fbe",
+      "hash": "458bcbe08f8be402e67b77cad2a422f1d96813c2",
       "id": "duplicate-paths",
       "canonical": null,
       "markdown": "./public/duplicate-paths.md"
@@ -61,7 +61,7 @@
       "view": "pure-controllers.hbs",
       "buildTo": "./public/pure-controllers.html",
       "ok": true,
-      "hash": "6b345c0aebdecbc6409de5c12a898c34349a38a4",
+      "hash": "54c3707f0202dc248069658e14c22a9ec588e1d4",
       "id": "pure-controllers",
       "canonical": null,
       "markdown": "./public/pure-controllers.md"
@@ -70,7 +70,7 @@
       "view": "smaller-changes.hbs",
       "buildTo": "./public/smaller-changes.html",
       "ok": true,
-      "hash": "fef8cf4870e1e40fe8aeabbb2d0deeed90a0c137",
+      "hash": "bc2bca6445e7f44b8a24cd03175ced431f9f2014",
       "id": "smaller-changes",
       "canonical": null,
       "markdown": "./public/smaller-changes.md"
@@ -79,7 +79,7 @@
       "view": "404.hbs",
       "buildTo": "./public/404.html",
       "ok": true,
-      "hash": "7c04e3e7f897397965f121c7d48638bf2c243ade",
+      "hash": "d38ff43758801fbf29b5140915ee6b5ae6a713cb",
       "id": "404",
       "canonical": null,
       "markdown": "./public/404.md"
@@ -88,7 +88,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/arch-blend.html",
       "ok": true,
-      "hash": "2f9b49585c8638a510045f2ef5a0717232ed6e2a",
+      "hash": "0f71af1de77b81c4a8ee5970a3fe851da5f7068f",
       "id": "shelf/item/arch-blend",
       "canonical": null,
       "markdown": "./public/shelf/arch-blend.md"
@@ -97,7 +97,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/oak-cascara.html",
       "ok": true,
-      "hash": "7a96181fdfe752989ec68fcc10f64faf083ef796",
+      "hash": "fd6bfbe75c6b7ebee0eb476398286c43747f2035",
       "id": "shelf/item/oak-cascara",
       "canonical": null,
       "markdown": "./public/shelf/oak-cascara.md"
@@ -106,7 +106,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/guji-uraga.html",
       "ok": true,
-      "hash": "738b806c2ec47a684ef380abbc426e11cd63bb4b",
+      "hash": "089570211171d8639a20c5887fbbb23c37b6cf81",
       "id": "shelf/item/guji-uraga",
       "canonical": null,
       "markdown": "./public/shelf/guji-uraga.md"

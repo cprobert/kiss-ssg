@@ -47,10 +47,13 @@ const kiss = new Kiss({
   site,
   // Pages by id, like every other link on this site: the layout asks `{{link}}`
   // for each one's path, so the nav cannot name a page the build does not have.
+  // `folderMatch` sits on Tags, not on All posts. Matching every page below
+  // /blog/ would also match /blog/tags/, so two links would be marked as
+  // the current page; `isActive` has no "but not that folder".
   nav: [
     { id: 'index', label: 'The journal' },
-    { id: 'blog', label: 'All posts', folderMatch: true },
-    { id: 'blog/tags', label: 'Tags' },
+    { id: 'blog', label: 'All posts' },
+    { id: 'blog/tags', label: 'Tags', folderMatch: true },
   ],
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
