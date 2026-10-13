@@ -1,7 +1,7 @@
 ---
 branch: chore/webapp-testing-trial
 base: main
-status: open
+status: closed
 opened: 2026-10-13
 ---
 
@@ -111,3 +111,125 @@ opened: 2026-10-13
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-13: Trialling `webapp-testing`, and what the trial found instead
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.7.7, 17 commits on `chore/webapp-testing-trial`.
+
+- `476b553` — a tested browser harness, `scripts/screenshot.mjs`.
+- `81bd5a7` — three fixes to the shipped examples.
+- `b24a660` and `fc5f67d` — `webapp-testing` recommended, with handoff lines in three skills and its two defects recorded in `AIKB/upstream.md`.
+- `3402927` — the docs home page's 320px overflow fixed.
+- `a3a6c6b` — `npm run dev` for the docs preview.
+- `55c8689` — the version bump.
+
+## Reflect — what the session was
+
+**The framing.** The operator came in with a claim and a question: "we should also recommend the webapp testing skill … Do you agree". Claude's first answer, from reading the repo and the skill, corrected two of its premises before any work started:
+
+- the docs site did not recommend `frontend-design` at all; only the README did;
+- `webapp-testing` already ships in the `example-skills` plugin that the README tells people to install.
+
+That turned "add a line" into "find out whether it helps", which is what `/branch-open` then captured. The criteria named a measurable trial, and the operator chose its shape: a planted site with known answers, Playwright installed on the machine, and the screenshot harness pulled into scope.
+
+**The shape:** between planned and emergent, as declared, and the shape served the work. The trial was planned and ran as planned. Everything after it was emergent, and it was more valuable than the question that started it:
+
+- the trial's own agents found three real defects in the examples;
+- measuring the new docs band found a fourth, on the live docs home;
+- measuring `with_server.py` found an upstream defect on Windows.
+
+Each was recorded as an Amendment before it was built.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering** was the operator's strongest dimension, and twice it went _against_ Claude's recommendation.
+
+- **"Recommend it anyway."** The trial measured no gain: 4/4 in both arms, and the skill was never invoked. Claude recommended no recommendation. The operator overruled, with a reason Claude had to infer: the case for the skill is _building_, and the trial measured _reviewing_. That was a legitimate call, and the session then made the most of it.
+- **The docs placement.** At the pulse look the operator said "optional should be under 1b … in the Claude Code white box, but collapsible". A separate band Claude had built and screenshotted became a collapsed `<details>` in setup step 1. Then the heading wording was corrected.
+
+Both are the human steering from judgement Claude did not have. The first is also a decision whose evidence Claude kept in front of the operator rather than burying:
+
+- Arm C's result ("I wrote my own Playwright script") was raised as an `AskUserQuestion` before the close;
+- the operator's answer, "say what was measured", changed the README, the docs copy and two skills to stop claiming the skill "gives the agent a browser".
+
+**Verification & ownership** was strong, and mostly carried by evidence rather than by Claude's say-so:
+
+- Every planted defect was measured in Chromium against a clean control before any agent ran (`verify-d2-d3.mjs`: 2.45:1 against 7.10:1).
+- Every coverage row and the new home test were seen red before green.
+- The traversal test was seen red against a naive server, which showed that the first draft, using `fetch`, could never have failed.
+- The operator looked twice at pulses: the 320px shot, then the live preview.
+
+The weak spot was Claude's own. It wrote "kiss's dev server binds 127.0.0.1:3001" into its first `with_server.py` probe without checking example 11's port, which is 3011. The run "failed", and only a follow-up probe caught the orphan the run had left. The same pattern appeared twice more, each caught by measurement rather than by care:
+
+- the default output folder would have shipped inside `examples/`;
+- `docs/` was being measured against the live site's CSS.
+
+**Iteration discipline:** good. There were two pulses, the first at the slice boundary promised at the open, with the operator's look and an explanation offer. Each scope expansion became an Amendment at the moment it happened, which answers the 2026-10-12 feedback ("an Amendment that adds work also adds a pulse"). The second pulse came only after four Amendments, though: the docs band, the upstream finding, the docs overflow and the wording change all landed between the two.
+
+**Harness leverage:** the session's distinctive feature. Headless `claude -p` runs in isolated copies made the trial real:
+
+- `--setting-sources local`, `--plugin-dir`, `--no-chrome` and `--strict-mcp-config`, so the only variable was the skill;
+- stream-json transcripts, summarised by a script.
+
+This was the 2026-09-27 lesson applied: name the machine-wide effects (`--plugin-dir` is session-only) before asking. One miss, which Claude found itself and reported: the Bash allow-list leaked through `cd … &&`. It did no harm, but the sandbox was weaker than Claude had told the operator.
+
+**Learning engagement** was light, which is normal for a branch this operational. The operator took one offered explanation (the D1 plant) and engaged with the decision, not with the code.
+
+**Intended against actual supervision:** they matched. The operator meant to decide the verdict, the placement and the version, and did all three, each through a question. The one checkpoint Claude's momentum could have carried past was the recommendation wording after Arm C, and it was raised instead.
+
+**Competency level: Active supervisor**, edging toward agentic engineering lead on the workflow side. The trial design (planted defects, a control, isolated arms) and the screenshot script are reusable system improvements, but they were Claude's proposals that the operator approved, not designs the operator drove.
+
+## Feedback — recommendations for next session
+
+- **Operator — when you overrule a measured result, say the reason in a sentence.** "Recommend it anyway" was right, but Claude had to infer _why_ (building, not reviewing) and wrote that inference into the log and the changelog. Had the reason been different, three files would carry the wrong rationale.
+- **Claude — read a port, a path or a stylesheet's source before measuring through it, not after the measurement looks wrong.** Three times this branch a measurement first answered a different question:
+  - `with_server.py` on 3001 against a site on 3011;
+  - `docs/` loading the live CSS;
+  - the element-rect scan missing text overflow.
+
+  Each was caught, but by a second probe. The rule "a conclusion needs its exit code and stderr" has a sibling: a measurement needs its target confirmed.
+
+- **Claude — check a scratch allow-list before vouching for it.** The trial's `--allowedTools` patterns were described as a sandbox, and `cd … &&` walked through them. Next time, run one disallowed command through the pattern first, or describe it as best-effort.
+- **Process — `kiss-ssg init` leaves an existing `"type": "commonjs"` alone,** so a folder set up with `npm init -y` builds nothing until someone edits it. That was found setting up the trial site (2026-09-27 found the same from the skill side). It is worth a branch: `init` could warn, or set it when it owns the build script.
+- **Process — the trial harness is reusable.** That is `run-arm.sh`, `summarise-arm.mjs`, the planted-site recipe and the probe prompt, all in this session's scratchpad. Any skill trial ("does skill X change what an agent does?") could start from it rather than rebuild it. If a third trial happens, promote it to `scripts/`.
+- **Both — three runs, zero invocations is a finding about skills in general, not only this one.** A named third-party skill was ignored when the kiss skill already said enough. Before recommending another companion skill, ask whether its value is the skill text or what it installs.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** find out whether `webapp-testing` makes `kiss-site-review`'s browser pass and `kiss-site-import`'s side-by-side check run and find more. If it does, recommend it beside `frontend-design`. Also give the repo a tested screenshot script.
+
+**Verdict: met, with the objective moved by the operator, and that was good drift.** The trial's answer was "it does not find more, and it is not invoked". The operator recommended it anyway, for building. Every recommendation now says what was measured, and the trial's by-products (four real defects, one upstream defect) are worth more than the recommendation.
+
+- [x] **The trial is measured on a site with known answers.**
+  - 4 planted defects, each measured in Chromium against a clean control.
+  - Arms A and B: 4/4 each. B never invoked or read `webapp-testing`.
+- [x] **A verdict is recorded with that evidence, and the operator decides.** Claude recommended "no recommendation", and the operator chose "recommend it anyway" (Amendments).
+- [x] **If yes: the handoff lines, coverage rows, README and docs site.**
+  - `kiss-site-review`, `kiss-site-import` and `kiss-site-new` (the last added by the operator) have their lines, with 3 coverage rows seen red.
+  - The README has a paragraph with the pip lines.
+  - The docs home has a collapsed section in the Claude Code box, with a test that ties its commands to the README.
+  - The install lines were run in a scratch folder and uninstalled.
+- [x] **Clean-room check:** arm C used only what ships plus `example-skills`.
+  - It found 4/4, served `public/` over HTTP and never used `file://`.
+  - It stopped its server and confirmed it was stopped, and its checksum showed the site unchanged.
+  - (It also did not invoke the skill.)
+- [x] **A repo screenshot script:** `scripts/screenshot.mjs`, with 19 tests. It replaced the scratch copies for status and overflow. Hover and contrast still took scratch scripts, so it does not cover everything a review needs.
+- [x] **`npm run gates`** passed: test, lint, typecheck, format (54 files), pack (312 files).
+
+**What is concretely better:**
+
+- Every example's eyebrow renders as designed. The 2026-10-12 log claimed a fix that was never in the code.
+- No example lands an anchor jump under a two-row header.
+- The docs home no longer scrolls sideways on a phone.
+- Agents on consuming sites are told the three ways `webapp-testing`'s defaults break a kiss site.
+- This repo has one tested browser harness.
+
+**Still open:**
+
+- the `init` / `"type": "commonjs"` gap;
+- a screenshot-script mode for computed styles (hover, contrast), so the next review needs no scratch script;
+- the 2026-10-12 log's false "fixed" claim stays as written. It is a dated record, corrected here, not edited.
+
+**Independent review:** none. No `lib/` or `bin/` changed, so the Codex review was skipped by the ritual's rule. The checks were the gates and three clean-room agent runs, which are evidence about behaviour, not a review of the diff.
