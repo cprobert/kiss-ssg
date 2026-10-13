@@ -129,7 +129,7 @@ What each check can be read from:
 
 A browser does not have to be a tool of the agent's own. A Playwright or Puppeteer install driven from a script through the shell does the job: serve the build folder over HTTP, never `file://`, for the reason given at the start of this step.
 
-**When Anthropic's `webapp-testing` skill is available, it is that script, ready-made** — Python Playwright, so it needs `pip install playwright` and `python -m playwright install chromium` first. Three of its defaults are wrong for a kiss site:
+**When Anthropic's `webapp-testing` skill is available, it is a recipe for that script** in Python Playwright, which needs `pip install playwright` and `python -m playwright install chromium` first. Use it or write your own script; the browser is what matters. Either way, three of the skill's defaults are wrong for a kiss site:
 
 - **Not `file://`.** Its decision tree sends static HTML to the file itself, and its example opens a `file://` URL. A kiss build is static HTML whose links are root-relative, so this pass is still served over HTTP with the build folder as the root.
 - **Not `with_server.py` on Windows.** It stops the shell it started, not the server under it: measured twice, `npm run dev` was still listening after it printed "Server 1 stopped", and the next run failed to bind. Start the server yourself in the background, or any static server in the build folder, and stop that process when the pass is done.

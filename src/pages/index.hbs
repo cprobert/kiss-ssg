@@ -80,6 +80,20 @@
             </div>
             <pre><code class="language-bash">{{code}}</code></pre>
             <p class="agent-box__note">{{note}}</p>
+            {{#with optional}}
+            {{!-- Closed by default: optional, and not part of what Copy copies. --}}
+            <details class="agent-box__optional">
+              <summary>{{summary}}</summary>
+              <p>{{intro}}</p>
+              <pre><code class="language-bash">{{code}}</code></pre>
+              {{#each skills}}
+              <h5>{{name}}</h5>
+              <p>{{text}}</p>
+              {{#if code}}<pre><code class="language-bash">{{code}}</code></pre>{{/if}}
+              {{/each}}
+              <p>{{note}}</p>
+            </details>
+            {{/with}}
           </div>
           {{/each}}
         </div>
@@ -103,24 +117,6 @@
       the same and gives it a layout, partials and content a web developer could take over:
       <a href="{{link "guide/converting" absolute=true}}">how converting works</a>.
     </p>
-  </div>
-</section>
-
-<section class="band" aria-labelledby="companions">
-  <div class="wrap">
-    <h2 id="companions">{{model.companions.heading}}</h2>
-    <p class="band__lede">{{model.companions.intro}}</p>
-    <pre><code class="language-bash">{{model.companions.code}}</code></pre>
-    <ul class="reasons companions">
-      {{#each model.companions.skills}}
-      <li>
-        <h3>{{name}}</h3>
-        <p>{{text}}</p>
-        {{#if code}}<pre><code class="language-bash">{{code}}</code></pre>{{/if}}
-      </li>
-      {{/each}}
-    </ul>
-    <p class="band__note">{{model.companions.note}}</p>
   </div>
 </section>
 

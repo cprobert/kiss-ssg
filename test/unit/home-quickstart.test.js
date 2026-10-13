@@ -138,25 +138,36 @@ describe('the home page carries the whole quick start', () => {
       )
   })
 
-  it('gives the companion skills the same install lines as the README', () => {
+  it('folds the optional Anthropic skills into the Claude Code box, with the README lines', () => {
     // The optional Anthropic plugin: README.md's "Optional: … frontend-design"
-    // block and the home page's companions band must not drift apart, and the
-    // band must name both skills it is there for (2026-10-13).
+    // block and the home page's copy must not drift apart, and must name both
+    // skills it is there for (2026-10-13). It sits inside the Claude Code box,
+    // collapsed (operator's call: part of setup, not a band of its own), and
+    // only there: it is a Claude Code plugin.
+    const optional = box('Claude Code').optional
+    expect(optional).toBeDefined()
+    expect(box('Codex').optional).toBeUndefined()
+    expect(box('Other agent').optional).toBeUndefined()
     const readme = read('README.md').replace(/\r\n/g, '\n')
     const section = readme.slice(
       readme.indexOf("**Optional: Anthropic's `frontend-design`"),
     )
     const block = /```sh\n([\s\S]*?)\n```/.exec(section)
     expect(block).not.toBeNull()
-    expect(home.companions.code).toBe(block[1])
-    const names = home.companions.skills.map((s) => s.name).join(' ')
+    expect(optional.code).toBe(block[1])
+    const names = optional.skills.map((s) => s.name).join(' ')
     expect(names).toMatch(/frontend-design/)
     expect(names).toMatch(/webapp-testing/)
-    expect(home.companions.skills[1].text).toMatch(/never from file:\/\//)
+    expect(optional.skills[1].text).toMatch(/never from file:\/\//)
     // webapp-testing's own requirements, the README's second block, verbatim.
     const pip = /```sh\n(pip install playwright[\s\S]*?)\n```/.exec(section)
     expect(pip).not.toBeNull()
-    expect(home.companions.skills[1].code).toBe(pip[1])
+    expect(optional.skills[1].code).toBe(pip[1])
+    // The box's Copy button copies its setup lines only, never these.
+    expect(box('Claude Code').code).not.toMatch(/anthropics\/skills|pip/)
+    expect(read('src/pages/index.hbs')).toMatch(
+      /<details class="agent-box__optional">/,
+    )
   })
 
   it('names the Node floor package.json declares', () => {
