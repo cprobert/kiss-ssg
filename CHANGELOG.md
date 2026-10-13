@@ -3,6 +3,57 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.6 — 2026-10-13
+
+Nothing in the engine changed, and nothing in your site has to change. This release is about how
+good a kiss site looks and how carefully it is checked.
+
+### `kiss-site-review` gains a craft pass
+
+A launch review now measures the finishing details the build's audit cannot see. It starts by
+looking for decisions your site has recorded (a `BRAND.md`, a comment in the stylesheet, an
+`audit.ignore` entry), so it never "fixes" a choice you made on purpose. Then it checks nine
+things:
+
+1. a control's edge is at least 3:1 against what it sits on;
+2. a result that changes on screen is announced to screen readers;
+3. every font weight the CSS asks for is one that renders;
+4. a colour that means something means only that;
+5. hover and press give a visible response, and motion respects reduced-motion settings;
+6. no heading or paragraph ends on a single word;
+7. a sticky header is measured on a phone;
+8. phone heights use `100dvh`;
+9. a form that collects personal details says what happens to them.
+
+The review also now:
+
+- reads `check`'s `{ reports, diff }` output;
+- has a placeholder-copy check;
+- tests long text with a string that has no break opportunities.
+
+### `kiss-site-new` keeps a few things whatever the look
+
+- **It never invents a fact about your business.** No made-up figures, prices, testimonials or
+  sample posts. Gaps become visible placeholders, listed for you at hand-over.
+- **Form fields have visible labels, and images carry their `width` and `height`.**
+- **It tells you when `frontend-design` is missing.** When Anthropic's skill is not installed, it
+  says so before choosing a look and points you to the install lines in the README. Built from
+  the same brief, a site made without it came out in the generic AI look, and two made with it
+  did not.
+
+### The examples look like a roastery, not a template
+
+The eleven Aster & Oak examples have a new shared stylesheet:
+
+- grey-green paper, roasted-bean ink and one coffee-cherry red;
+- serif headings, with no web fonts;
+- cards drawn as ink-bordered bag labels;
+- labels in sentence case, with no uppercase pills and no `·` joins;
+- the measured contrast, focus, phone-header and long-text fixes.
+
+If you copied an example's stylesheet into your own site, nothing changes there. Example 11's nav
+now marks one current page on its tag pages, not two.
+
 ## 2.7.5 — 2026-10-07
 
 ### Your build folder gains a `.md` copy of every page
