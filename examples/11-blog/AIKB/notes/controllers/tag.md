@@ -1,5 +1,5 @@
 ---
-subject-hash: 667710f347aed56474de568bc11cfe1c02d278d7
+subject-hash: e45878f4123a5be97eeaf70004764ddf47cf6712
 ---
 
 # tag.js
@@ -7,7 +7,9 @@ subject-hash: 667710f347aed56474de568bc11cfe1c02d278d7
 ## What it does
 
 Owns everything about a tag. `tagSlug` derives the slug a tag's page is written at; `tagRecords`
-folds the posts into one record per tag — `{ tag, slug, count, posts }`, sorted by slug — which
+folds the posts into one record per tag — `{ tag, slug, count, postCount, posts }`, sorted by
+slug, where `postCount` is the count in words ("1 post", "2 posts") because Handlebars has no
+comparison helper and `{{count}} posts` would read "1 posts" — which
 is the array the second `.pages()` fan-out is registered over; and the default export turns one
 of those records into a page, deriving nothing except the title and description that the layout
 and llms.txt read.
