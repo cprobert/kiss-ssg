@@ -45,6 +45,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "docs": "node docs",
+    "dev": "node docs --dev",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.check.json",
     "format": "prettier --write .",
