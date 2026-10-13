@@ -41,6 +41,7 @@
     "version": "node scripts/sync-plugin-versions.mjs && git add .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json",
     "gates": "node scripts/gates.mjs",
     "bench": "node scripts/bench.mjs",
+    "screenshot": "node scripts/screenshot.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "docs": "node docs",
@@ -96,6 +97,7 @@
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
+    "playwright-core": "^1.64.0",
     "prettier": "^3.9.6",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"

@@ -120,6 +120,13 @@ node scripts/tag-release.mjs   # tag the current commit `v<package.json version>
 npm run bench            # benchmark harness: 6 scenarios over a generated fixture, or a REAL
                          # site with --site/--dev. Scenarios, flags, baseline discipline and the
                          # watch-reading protocol: the `/bench` skill (.claude/skills/bench/SKILL.md)
+npm run screenshot -- <build-folder> [--page=/,/blog/] [--width=320,768,1440] [--scheme=light,dark]
+                         # serve a build folder as the site root over HTTP (port 0, the dev
+                         # server's rules) and shoot each page/width/scheme with Playwright;
+                         # reports status and horizontal overflow, exits 1 on either. PNGs go
+                         # to <os temp>/kiss-screenshots unless --out. Needs the playwright-core
+                         # devDependency's Chromium (`npx playwright-core install chromium`).
+                         # The one browser harness: use it rather than a scratch script.
 node docs                # regenerate docs/, minified, and exit; --dev is the live preview, built into the ignored .preview/ so it never touches docs/ (does not exit, Ctrl-C to stop)
 npm run eg1 … eg12       # run an example (examples/<n>-<name>/router.js, run from its own
                          # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11, 12); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding; 12 also carries `tools/convert.mjs` (the one-off conversion, writes to the ignored .converted/) and `tools/compare.mjs` (did the conversion change the page)
