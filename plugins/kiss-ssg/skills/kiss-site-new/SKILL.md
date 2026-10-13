@@ -16,7 +16,7 @@ Build the site from the package's own shipped docs. They are the contract; this 
 
 `node_modules/kiss-ssg/package.json` must exist; read its `version` so you know which API you are coding against. If it is missing, `npm install kiss-ssg --save-dev` before writing a line of build script.
 
-If the folder was set up with `npx kiss-ssg init`, step 2's import is already in `CLAUDE.md` and the engine is usually installed — but not after `--no-install`, a failed npm run, or when `package.json` already asked for a version, so the check above still decides. Say which you found and move on. `init` also drops a one-page starter: a `router.js` whose first line reads `` // Started by `npx kiss-ssg init` ``. That file is a starter to grow, not a site to preserve — edit its config and add to `src/` in place rather than writing a second build script beside it. A `router.js` **without** that line is somebody's site: build around it.
+If the folder was set up with `npx kiss-ssg init`, step 2's import is already in `CLAUDE.md` and the engine is usually installed — but not after `--no-install`, a failed npm run, or when `package.json` already asked for a version, so the check above still decides. Say which you found and move on. `init` also drops a one-page starter: a `router.js` whose first line reads `` // Started by `npx kiss-ssg init` ``. That file is a starter to grow, not a site to preserve — edit its config and add to `src/` in place rather than writing a second build script beside it. Once it has grown into the site, delete that first line: left in place, it tells the next agent the file is a starter to throw away. A `router.js` **without** that line is somebody's site: build around it.
 
 ### 2. Point every future session at the contract
 
@@ -98,13 +98,19 @@ Eight decisions to make while the views are still being written — things each 
 
 When Anthropic's `frontend-design` skill is available, let it set the **visual direction** — type, colour, spacing tokens, layout character — while kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Its look goes into those files; the site never becomes a single-file page.
 
+**When it is not installed, say so before you set the look.** Without a design skill, a site lands on the generic defaults. Built from the same brief with this skill alone, a trial site came out in cream, with a serif and a terracotta accent, dotted capital labels and three identical cards. With `frontend-design`, two builds of that brief each had a look of their own. Tell the owner what it adds, and point them at `node_modules/kiss-ssg/README.md` § "Optional: Anthropic's `frontend-design` skill for the look" for the install lines. Then go on as they answer: install it and continue, or build without it.
+
 Whatever the look, keep these:
 
 - **Never invent a fact about the business.** That means a figure, a price, a testimonial, a client's name or logo, an award, or a phone number. Where the description gives none:
   - leave that section out, or put a clearly marked placeholder in the model;
   - list every placeholder for the owner when you hand the site over.
 
-  A design skill that asks for "realistic" or "organic" sample data is the trap here. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it.
+  A design skill that asks for "realistic" or "organic" sample data, or tells you to "come up with copy and placeholder content", is the trap here. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it.
+
+  - **A menu, a price list, a team or a news section with no items given** gets empty, marked slots (`[Item name]`, "Price to be confirmed"). Never fill it with example items or sample posts: a believable white loaf at a believable price is an invented fact the day the site goes live with it.
+  - **Keep every placeholder visible on the page**, so a launch with one still in it is obvious to whoever looks.
+  - **A business name read off the domain is a guess.** Use it, and say in the hand-over that it needs confirming.
 
 - **Every form field has a visible `<label>`**, tied to it by `for` and `id`. A placeholder is an example of the answer, never the label. An error message sits below the field it is about.
 - **Every `<img>` has its `width` and `height`**, from the model beside its `src` and `alt`, so the page does not jump as images arrive. Add `loading="lazy"` to images below the first screen, never to the first image a visitor sees.
@@ -125,8 +131,8 @@ Three mistakes real consumer sites made, all of which passed review before they 
 
 ### 6. Build, then verify
 
-Build it, then run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`) and do not declare the site done until it reports `ok: true`. A build you have not verified is a build you have not finished.
+Build it, then run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`), or where skills are not available, `npx kiss-ssg check <site-script> --summary` directly. Do not declare the site done until it reports `ok`. A build you have not verified is a build you have not finished.
 
 Read that check's `broken link:` lines too: they are how you confirm the scaffolding's internal references actually resolve. A `{{link}}` cannot be wrong without failing the build, so anything listed there is a path something typed by hand — fix it in the template or the model that wrote it. It is a finding, not a failure, so it never shows up in the exit code.
 
-Before calling a new site ready to launch, run the `kiss-site-review` skill: the check's `audit` findings (titles, descriptions, `og:image`, favicon, a 404 page) are cheapest to fix while the layout is still being written.
+Before calling a new site ready to launch, run the `kiss-site-review` skill, or where it is not available, at least fix the `audit` lines the same check prints: the check's `audit` findings (titles, descriptions, `og:image`, favicon, a 404 page) are cheapest to fix while the layout is still being written.

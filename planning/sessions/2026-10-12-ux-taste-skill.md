@@ -142,6 +142,24 @@ opened: 2026-10-12
 
     Adoption waits for the screenshots.
 
+- **2026-10-12/13 — bake-off results, and what was adopted (operator's choice).**
+  - **Method.** One `shoot.mjs` pass served each build over HTTP and screenshotted home and menu, at 1280×900 and 390×844, top and full page. That is 24 shots, in `scratchpad/bakeoff/shots/`. All three builds `check` `ok`: A 6 pages, B 7, C 7.
+  - **A (kiss alone):** cream `#f4ebdd`, a serif, a terracotta accent, "BAKERY · LEEDS" in tracked capitals with dots (twice), pill buttons, three identical rounded cards with `→`. That is four or five of `frontend-design`'s listed AI defaults. Its menu is `[Item name] … £ tbc` slots.
+  - **B (+ `frontend-design`):** a Victorian signwritten board (green, a gilt double border, Ultra in capitals). The plan rejected the cream/serif/terracotta instinct and the invented "every morning". The menu has example items marked "example", with "price to follow".
+  - **C (+ `frontend-design` + design read):** read itself as "trust-first local-business". It uses Besley in one blue ink, with the name huge like a shop sign, and puts **opening hours, address and contact on the first screen**. B has them below the fold. Its menu is example items with a "Price tbc" highlight and a draft banner. It also wrote two "sample" news posts that make claims (parkin trays to order).
+  - **Read.**
+    - `frontend-design` made the difference: A is the generic look, and B and C each look designed.
+    - The design read's visible effect (practical facts first) is one build against one, so it is not attributable. It is not adopted.
+    - B and C both invented menu items, under `frontend-design`'s "come up with copy and placeholder content".
+    - C noticed that example 11 uses dotted meta lines and capital eyebrows, both on `frontend-design`'s list.
+  - **Adopted in `kiss-site-new`.** The operator chose: the `frontend-design` nudge, the sharper "never invent" rule, and the skill gaps.
+    - **The nudge:** when `frontend-design` is not installed, say so before setting the look, and point at the README's install section. The README's `example-skills@anthropic-agent-skills` does contain `frontend-design` (its `marketplace.json` lists it). The bake-off's copy came from `claude-plugins-official` and differs in text, so the version skew is noted and not chased.
+    - **"Never invent":** empty marked slots, never example items or sample posts; placeholders stay visible; a name read off the domain is a guess.
+    - **Step 6** has a `npx kiss-ssg check … --summary` fallback, and the review step falls back to the audit lines.
+    - **The init marker:** step 1 says to delete it once the starter has grown. `STARTER_MARKER` is only written by `lib/init.js`, never read, so deleting it changes no behaviour.
+    - **Tests:** three `skill-coverage.test.js` rows, seen red (3 of 175) and then green. One pattern was aligned with the wording ("Never fill it with…") after the text landed: the text was present, and the phrase in the row differed.
+  - **Operator decision: "Restyle them here".** The eleven examples' shared look (cream, clay, capital pill eyebrows, dotted meta lines) is to be redone on this branch, with `frontend-design`.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

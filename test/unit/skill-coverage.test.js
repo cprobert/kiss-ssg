@@ -315,6 +315,31 @@ const COVERAGE = [
       /^(?=[\s\S]*Never invent a fact)(?=[\s\S]*placeholder)(?=[\s\S]*<label>)(?=[\s\S]*`width` and `height`)(?=[\s\S]*loading="lazy")/,
     skills: [skill('kiss-ssg', 'kiss-site-new')],
   },
+  // 2026-10-12 bake-off: the same brief built three ways. kiss-site-new alone
+  // produced frontend-design's own list of AI defaults (cream, serif,
+  // terracotta, dotted caps labels, identical cards); with frontend-design,
+  // both builds looked designed. So the skill says so when it is missing.
+  // Both frontend-design builds then made up example menu items and sample
+  // news, and every build hit step 6's skill-only instruction and the init
+  // marker left in a grown site.
+  {
+    feature: 'no frontend-design: say so, and point at the install lines',
+    pattern:
+      /^(?=[\s\S]*When it is not installed, say so before you set the look)(?=[\s\S]*Optional: Anthropic's `frontend-design` skill for the look)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'never invent: empty marked slots, never example items',
+    pattern:
+      /^(?=[\s\S]*Never fill it with example items or sample posts)(?=[\s\S]*visible on the page)(?=[\s\S]*read off the domain)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'step 6 has a command fallback, and the init marker goes',
+    pattern:
+      /^(?=[\s\S]*npx kiss-ssg check <site-script> --summary)(?=[\s\S]*delete that first line)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
   {
     feature: 'the audit is advisory and hands off to kiss-site-review',
     pattern: /`audit`[\s\S]*advisory[\s\S]*kiss-site-review/,
