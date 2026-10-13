@@ -57,7 +57,24 @@ opened: 2026-10-13
 
 ### Amendments
 
+- **2026-10-13 — the trial arms are headless `claude -p` sessions, not sub-agents** (operator's decision at the first pulse). Arm B has to _discover_ `webapp-testing` as an installed skill, and in this session it is not installed. Both arms run in the trial site with `--setting-sources project`, so the operator's user-scope plugins stay out of the run and only the site's own kiss plugins load. Arm B adds the cached `example-skills` plugin with `--plugin-dir`, which loads it for that session only. Nothing is installed and no settings are written, so the 2026-09-27 cache overwrite cannot repeat. A `playwright-core` devDependency for the screenshot script was also the operator's decision.
+
 ## Pulse log
+
+- **2026-10-13** — Criterion 1 is **partial**.
+  - The planted site (`scratchpad/trial-site`, example 11 from the packed 2.7.6 tarball, plus `init`) has four defects, each measured in Chromium:
+    - D1: the post page overflows by 352px at 320px wide, from an unbreakable URL;
+    - D2: nav hover changes only `text-decoration-thickness` on a link that has no underline;
+    - D3: dark-mode meta text is 2.45:1 (it was 7.10:1);
+    - D4: `/blog/tags/` overflows by 36px at 320px wide.
+  - Shipped example 11 is clean on all four. `check` and the audit catch none of them.
+  - The agent runs are not yet done.
+- Criterion 5 is **partial**. `scripts/screenshot.mjs` passes its 19 tests, the traversal test was seen red, and the script was used for real on two sites. Hover and contrast still needed a scratch script.
+- Criteria 2–4 depend on the verdict. Criterion 6 (gates) is left to the close.
+- No drift.
+- **Eyeball: looked** — "overflow visible" on `trial-shots/blog_grind-size-is-the-dial--320-light.png`.
+- **Explained:** D1 is findable only in a browser, because the stylesheet comment still says URLs break. The operator chose "Keep it", so D1 is scored as "did a browser run" and D2–D4 as judgement.
+- Decision: **record amendment, then continue** to the two trial arms.
 
 ---
 
