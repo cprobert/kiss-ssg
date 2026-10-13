@@ -1,7 +1,7 @@
 ---
 branch: chore/ux-taste-skill
 base: main
-status: open
+status: closed
 opened: 2026-10-12
 ---
 
@@ -425,3 +425,122 @@ It followed the skill to the report, stopped there, fixed nothing, and listed ev
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-12/13: trialling the taste skill, and what it turned into
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.7.6, on `chore/ux-taste-skill`, from `114c437` to `a751412`. The docs site gets the taste audit's twelve fixes (`dd31eb8`). `kiss-site-review` gains a craft pass (`754fe3d`), fixed twice after clean-room runs (`918480f`, `e98c739`). `kiss-site-new` gains the "never invent a fact" floor, labels and image sizes, and a `frontend-design` nudge (`cb632da`, `9fabd71`). The eleven examples get the craft fixes and then a restyle (`9ce1093`, `213ec81`). Pro Plumbing gets four fixes and a draft privacy note on its own unpushed branch (`a0d874b` in that repo).
+
+## Reflect — what the session was
+
+The open was well framed: an objective, eight checkable criteria, non-goals, and a stated **emergent** shape for an experiment. The experiment itself was settled in its first half. The skill was audited and applied on two sites, and the verdict was written: no recommendation (`4c24b1e`).
+
+Everything after that was the operator turning a negative verdict into value. That took **six dated Amendments**, each asked for in the operator's own words:
+
+- adopt what worked into `kiss-site-review`;
+- review the other taste skills for new sites;
+- reframe around aesthetic quality;
+- run a bake-off;
+- adopt the bake-off's lessons;
+- restyle the examples.
+
+The emergent shape served the work: no plan written at the open would have predicted that the useful result was `frontend-design`, not the taste skill. But the branch closed far wider than it opened. A PR titled for a skill trial now carries a restyle of every shipped exemplar, and a reviewer meets that cold.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering, and learning engagement, were the strongest dimensions, and they produced the branch's best result.** The operator twice refused to let a finished answer stand:
+
+- **"What can we adopt from their skills that did work?"** After the verdict, this turned "no recommendation" into the craft pass.
+- **The reframing:** "I was initially thinking about building or including high-end templates … I wondered if skills could improve the … design aesthetic". This pushed past Claude's floor-focused review to the real question.
+
+Claude then proposed a bake-off rather than a further opinion, and the operator chose evidence before adoption. Three agents built the same brief.
+
+- **The result.** `kiss-site-new` alone produced `frontend-design`'s own list of AI defaults, almost point for point. Both builds with `frontend-design` looked designed.
+- **Why it is the sum, not either half.** It is the clearest case on this branch of the sum beating the parts. The operator's question supplied the right target, Claude's method supplied the evidence, and neither held the answer alone.
+- **The operator's restraint.** Declining to adopt the design read, because the evidence was one build against one, was the evidence-respecting call.
+
+The operator also unblocked the work when Claude's tooling failed. When the Chrome extension froze, the question "Can you use playwright…?" led to the borrowed-Playwright approach that every later measurement used.
+
+**Verification & ownership is where intent and practice parted.** Criterion 4, "the operator judges by eye", was the one human check written into the brief. It was deferred at the only pulse and never taken. The branch then grew to restyle eleven exemplars, and they ship to every site as something to copy. The operator approved the restyle from a written plan and a palette table, and saw no screenshot of the result in the session.
+
+Claude's own verification was heavy:
+
+- contrast scripts for every palette;
+- Playwright before-and-after behaviour checks;
+- two clean-room `kiss-site-review` runs;
+- re-derivation of every relayed claim;
+- `&&`-chained guards that twice stopped a commit.
+
+But it is Claude evaluating Claude's work, which is exactly the loop the rubric names. The clean-room runs are fresh-context and still same-family. Codex was skipped by the rule, because no `lib/` or `bin/` changed, so the skill text has had no different-family review.
+
+**Iteration discipline was uneven.**
+
+- **Held up:** the fix, clean-room run, fix, re-run loop on `kiss-site-review`. The first run raised eighteen guesses and the second about ten, half of them new, and each run was answered with a commit.
+- **Missed:** **one pulse** for a branch that took six Amendments. The bake-off, the `kiss-site-new` changes and the restyle all landed between that pulse and the close. `CLAUDE.md` asks Claude to offer a pulse at each slice boundary, and Claude did not.
+
+**Claude's errors, named.**
+
+- **Three sentences Claude wrote into a shipped skill were disproved by measurement:**
+  - "`text-wrap: balance` … fix it site-wide";
+  - "`text-wrap: pretty` … fixes it";
+  - "`overflow-wrap: break-word` … the usual fix".
+
+  A fourth, "400, 600 and 700, which the common system faces all ship", was caught before the commit (Roboto has no 600).
+
+- **Measurement mistakes:**
+  - a `file://` load that rendered Pro Plumbing unstyled, so two rounds of its numbers were wrong;
+  - a colon-split argument bug that produced empty screenshots;
+  - a `.hero p` specificity bug that turned the new eyebrow grey.
+
+  The critique pass caught each one, but each cost a round.
+
+**Harness leverage was strong.**
+
+- **Sub-agents in parallel:** the bake-off, plus a read-only reviewer.
+- **Fresh-context runs:** the clean-room agents, each told to stop at the report.
+- **Skills:** `frontend-design` invoked for the restyle.
+- **Tooling found on the machine:** an existing `playwright-core` and cached Chromium, borrowed rather than installed.
+
+**Competency level: Active supervisor**, edging towards Agentic engineering lead on the method. The operator chose evidence-first designs (the clean room, the bake-off) and improved the system after repeated failures (the skills now carry what the trials found). It falls short on the one thing the brief reserved for a human: looking at the artefact.
+
+## Feedback — recommendations for next session
+
+- **Operator — look at the restyled examples before merging this PR; it takes five minutes.** The before and after shots are `scratchpad/restyle-before/` and `scratchpad/restyle/` (`11-blog-home-light-desktop.png`, then `3-pages-roasts_-light-desktop.png`), or run `npm run eg11 -- --dev`. Every `^2` site's agent copies these. The branch's one human-eye criterion is still open, and now covers far more than the docs site it was written for.
+- **Operator — answer the one-decision offer, even in a word.** The pulse offered the "Required" badge colour change for explanation or reversal, and it went unanswered. That is the same recommendation as 2026-10-07: two logs now.
+- **Claude — measure a rendering claim before writing it into a skill, not after a clean-room agent disproves it.** Three sentences in `kiss-site-review` fell this way. The `CLAUDE.md` rule "run every snippet you write against the real engine" covers code. A sentence like "X fixes it" is the same kind of claim, about the browser. Before shipping one, build the case it describes and look.
+- **Claude — offer a pulse at every slice boundary, especially when an Amendment lands.** One pulse for six Amendments meant the bake-off and the restyle were never checked against the criteria mid-flight. The trigger is simple: an Amendment that adds work also adds a pulse.
+- **Both — when the work changes kind, put the branch question at that moment, with the PR's size in it.** Claude did ask "here or next branch" for the bake-off, and recommended next. The operator chose here, which was their call. The restyle followed on the same branch without the question being asked again. A restyle of eleven exemplars deserved its own PR and its own look.
+- **Process — make the screenshot harness a repo script.** This session wrote one served-over-HTTP Playwright screenshot script six times, and two of those copies had bugs (`file://`, splitting on `:`). A `scripts/` tool that serves any build folder on port 0 and shoots set pages, widths and schemes, with a test, would make the operator's look and Claude's checks cheaper and identical.
+- **Process — run a third clean-room pass on `kiss-site-review` and a first on `kiss-site-new`'s new floors before the next skill branch.** The loop converged but had not finished, and `kiss-site-new`'s changes have only been exercised by the three bake-off builds. Those builds were written before its final wording.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** find out whether tasteskill's `redesign-existing-projects` improves a real kiss site (the docs site, then Pro Plumbing), and recommend it beside `frontend-design` if so.
+
+**Verdict:** the objective was met, then moved, operator-led, in the direction of good drift. The question was answered with evidence, the answer was "no recommendation", and the useful part of the trial was folded into kiss's own skills and examples.
+
+- [x] **The audit came before the change:** `59c3bc6` before `dd31eb8`, and the Pro Plumbing audit `4ff73cb` before `a0d874b`.
+- [x] **kiss keeps the structure:** only layouts, partials, Sass and views changed, with no framework. `node docs` exits 0 (157 links, none broken), and the gates are green.
+- [x] **No accessibility regression:** text contrast at least 5.1:1, control edges at least 3.07:1, and Playwright confirming focus, the toggle, the agent selector and reduced motion. The examples were remeasured after the restyle (every text pair at least 6.4:1).
+- [ ] **The operator judges by eye: not met.** It was deferred at the pulse with a recorded destination, and is carried to the PR as an open item.
+- [x] **Pro Plumbing gets the same trial on its own branch:** `ux/taste-skill`, `a0d874b`, with `check` passing and the review unchanged. The work there is not pushed. Greg must confirm the privacy draft.
+- [x] **The verdict is written with its evidence:** § Verdict on the skill, `4c24b1e`.
+- [ ] **A homepage recommendation: lapsed.** It was conditional on a yes; recorded as an Amendment.
+- [ ] **The clean room for the passage: lapsed.** That clean-room criterion fell with the passage. Two clean-room runs did happen, on `kiss-site-review` instead.
+
+**What is concretely better:**
+
+- A kiss site's launch review now measures nine craft details the audit cannot see. It starts by respecting decisions the site has recorded.
+- A new kiss site will not invent facts about a real business, and will say when it is building without a design skill. The bake-off showed what that costs.
+- The exemplars no longer teach the generic AI look.
+- The docs site fixed real accessibility defects: a silent copy, 1.3:1 control edges, and a phone header that hid anchor targets.
+
+**Still open:**
+
+- the operator's look, at the docs site and now at the examples;
+- Pro Plumbing's branch, and Greg's confirmation of the privacy note;
+- no different-family review of the skill text, and no clean-room run of `kiss-site-new`'s final wording;
+- example 11's "ask" items: whether the scaffold copy and the "How this example works" panel belong in an exemplar, the canonical link on the 404 page, and two nav labels named "The journal";
+- the version skew between the two `frontend-design` sources;
+- the design read, not adopted, which needs more than one build of evidence.
