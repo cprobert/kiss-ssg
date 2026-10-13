@@ -180,7 +180,7 @@ in the layout included:
 {{/each}}
 ```
 
-The nav is data — `{ id: 'blog', label: 'All posts', folderMatch: true }` in `router.js` — and
+The nav is data — `{ id: 'blog/tags', label: 'Tags', folderMatch: true }` in `router.js` — and
 `isActive` is handed the path `{{link}}` resolved, so the link and the active state are decided
 from one string. A file the build wrote rather than a page it registered is `/` plus `{{asset}}`:
 `href="/{{asset 'css/site.css'}}"`.

@@ -84,7 +84,7 @@ The audit reads markup. Whether the site looks finished needs eyes. `check` publ
 Then, on every distinct page template (not every page):
 
 - **Widths** 320, 768 and 1440, and one odd width (say 1023) where breakpoints meet.
-- **Long text and unbroken strings** — a long title, a long URL or email, a big number. Does anything overflow its box or push the page sideways? A site whose content has none yet will get one from a model later, so put one into the page in the browser (not into the source) and look, including in a label or badge, not only a paragraph. The usual fix is `overflow-wrap: anywhere` on headings and text. Not `break-word`: only `anywhere` lowers the width an inline-block, a flex item or a grid item shrinks to. Measured on example 11, `break-word` left a 320px page 724px wide.
+- **Long text and unbroken strings** — a long title, a long URL or email, a big number. Does anything overflow its box or push the page sideways? A site whose content has none yet will get one from a model later, so put one into the page in the browser (not into the source) and look, including in a label or badge, a nav link and the site name, not only a paragraph. Use a string with no spaces and no hyphens: either one is a break opportunity, and a string with one passes where a URL would not. The usual fix is `overflow-wrap: anywhere` on headings and text. Not `break-word`: only `anywhere` lowers the width an inline-block, a flex item or a grid item shrinks to. Measured on example 11, `break-word` left a 320px page 724px wide.
 - **Consistency across templates** — spacing, type scale, border radius, button styles. One page with its own idea of a button is the most common tell of a site assembled page by page.
 - **Things that look clickable and are not** — underlined text, cards with hover styles, icons with no link, a label styled exactly like the site's buttons or chips.
 - **Placeholder, demo and scaffold copy** — lorem ipsum, "Example", "TODO", "fictional", a "how this works" panel, a build badge, a sentence addressed to the developer rather than the visitor. It is the plainest sign of a site that is not finished, and it lands in the Markdown copies too. A site that says it is an example or a demo has recorded that as a decision (see the craft pass below). Ask before calling it a finding.
@@ -111,11 +111,11 @@ A dark band, a system font, an unusual colour role or a modest heading size that
    - **A system-font stack:** the stylesheet cannot answer, because the platform's own faces decide. Measured in Chromium on Windows, Segoe UI renders 500 as 600, and 650 as 700. Android's Roboto has a 500 but no 600. Render each weight in use in the browser and compare, or keep to 400 and 700, the only two every common system face ships.
 4. **A colour that means something means only that.** If green is "passed" or red is "error", a badge or button that borrows it for anything else teaches the reader the wrong thing.
 5. **Motion respects the visitor.**
-   - Every link and control acknowledges hover and press: a colour change, a thicker underline, or a pixel of travel. Give `:active` the same rule, so a tap on a phone gets it too. In the browser, compare a link's computed style at rest, on hover and while the mouse is held down. All three the same is the finding.
+   - Every link and control acknowledges hover and press: a colour change, a thicker underline, or a pixel of travel. Give `:active` the same rule, so a tap on a phone gets it too. In the browser, compare a link's computed style at rest, on hover and while the mouse is held down. The finding is no _visible_ change. A changed `text-decoration-thickness` on a link with no underline, for example, changes nothing anyone sees. Include the brand link and the current page's nav link.
    - Every `transition`, `animation` and `scroll-behavior: smooth` sits behind a `prefers-reduced-motion` media query.
    - Grep the stylesheet: a `transition` with no `prefers-reduced-motion` anywhere in it is the finding.
-6. **No heading or paragraph ends on a single word.** Look at 320px and 375px wide, where "putting / off" is the usual sight. One rule each, site-wide:
-   - `text-wrap: pretty` on paragraphs fixes it.
+6. **No heading or paragraph ends on a single word.** Look at 320px and 375px wide, where "putting / off" is the usual sight. This one depends on the words, so scan every page, not one per template. One rule each, site-wide:
+   - `text-wrap: pretty` on paragraphs fixes most of them. It is a browser's best effort, not a guarantee: example 11 still had a seven-line paragraph and a two-line footer ending on one word with it applied. For the ones left, put `&nbsp;` between the last two words, or change the words.
    - `text-wrap: balance` on headings evens the lines. That fixes most cases, but not a heading of three or four words that has to wrap: "The cascara / experiment" is already balanced. Accept that one, or change the size.
 7. **A sticky header is measured on a phone, not assumed.** At 375×667, how tall is it, as a share of the screen? Does a jump to an `#anchor` land under it, because `scroll-padding-top` is smaller than the header? A header that wraps to two or three rows and stays stuck costs every page its reading space.
 8. **`100vh` on a phone includes the space behind the browser's address bar.** `100dvh` is the screen the visitor actually sees. Keep the `vh` line first as the fallback.
@@ -126,6 +126,8 @@ What each check can be read from:
 - **The stylesheet:** checks 1, 4 and 8, the grep half of 5, and 3 for a web font.
 - **The templates and scripts:** checks 2 and 9.
 - **The browser:** checks 6 and 7, the hover-and-press half of 5, and 3 on a system-font stack.
+
+A browser does not have to be a tool of the agent's own. A Playwright or Puppeteer install driven from a script through the shell does the job: serve the build folder over HTTP, never `file://`, for the reason given at the start of this step.
 
 **Without a browser, say that this pass did not run.** Do not infer the result from the templates: a layout that looks right in the source is exactly what this pass exists to check.
 

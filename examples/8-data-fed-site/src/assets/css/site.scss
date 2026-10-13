@@ -110,7 +110,9 @@ h1,
 h2,
 h3,
 p,
-li {
+li,
+.nav__link,
+.brand__text {
   overflow-wrap: anywhere;
 }
 
@@ -207,6 +209,13 @@ code {
   margin-right: auto;
   text-decoration: none;
   color: inherit;
+
+  // The way home answers a hover and a tap: the stamp fills with its ink.
+  &:hover &__mark,
+  &:active &__mark {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
 
   // The roaster's stamp: initials in an inked ring, the mark that would be
   // pressed onto the bag.

@@ -195,6 +195,23 @@ opened: 2026-10-12
     - examples 9 and 11's `AIKB/last-build.json` were re-recorded through `bin/kiss-ssg.js aikb`, with page hashes only;
     - `npm run gates` is green (85 files).
 
+- **2026-10-13 — the second clean-room run of `kiss-site-review`, mid-`/branch-close`, and its fixes.** The operator chose "Fix both, then restart the close".
+  - **The run.** A fresh agent had only the fixed skill and the restyled example 11 from a fresh `npm pack`. It found no guesses in step 1's JSON shapes, the step 2 grep, the 404 or Markdown-copy checks, or craft checks 1, 2, 4, 8 and 9.
+  - **A claim I wrote was measured false.** "`text-wrap: pretty` on paragraphs fixes it" failed twice with `pretty` applied: a 7-line post paragraph ("So: / Wednesdays.") at 320px, and the 2-line footer ("kiss-ssg.") at 375px. It is the second time on this branch that a sentence written into this skill was disproved by measurement. The first was `balance` "site-wide".
+  - **Skill fixes:**
+    - `pretty` is "a browser's best effort, not a guarantee", with `&nbsp;` or a reword as the fallback;
+    - check 6 scans every page, because the words decide it;
+    - check 5's finding is no _visible_ change, and it now includes the brand link and the current nav link;
+    - the long-text probe must be a string with no spaces or hyphens: the agent's first hyphenated string passed falsely;
+    - a Playwright or Puppeteer driven through the shell counts as a browser.
+  - **Example fixes:**
+    - **Two links marked current on `/blog/tags/`.** `aria-current="page"` was on both "All posts" and "Tags". This predates the branch: it comes from `folderMatch: true` on All posts in `router.js`. `folderMatch` moved to Tags, so each tags page now has one current link and `/blog/` has All posts. A post or listing page 2 now marks no item. The README line quoting the nav item is updated to match.
+    - **The brand stamp fills with cherry** on hover and press (measured `rgba(0,0,0,0)` → `rgb(163,38,58)`).
+    - **`overflow-wrap: anywhere` now covers `.nav__link` and `.brand__text`.** A 60-character unbroken label keeps a 320px page at 320px.
+    - **The footer:** "Aster & Oak, a fictional roastery, built with&nbsp;kiss-ssg" in ten layouts, a comma replacing the spaced em dash.
+    - **The post:** "So:&nbsp;Wednesdays", which renders as U+00A0 (bytes `302 240`).
+  - **Results.** Examples 9 and 11 re-recorded their `AIKB/last-build.json`, and `npm run gates` is green. The fixes have not been through a third clean-room run.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
