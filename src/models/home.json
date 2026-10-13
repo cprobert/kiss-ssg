@@ -103,7 +103,24 @@
             "id": "claude",
             "label": "Claude Code",
             "code": "mkdir my-site && cd my-site\nnpx kiss-ssg@latest init\nclaude plugin marketplace add cprobert/kiss-ssg --scope project\nclaude plugin install kiss-ssg@kiss-ssg --scope project\nclaude plugin install kiss-memory@kiss-ssg --scope project\nclaude",
-            "note": "The plugins install for this folder. init declares them in the site's settings, but a declared plugin is not installed until these lines run."
+            "note": "The plugins install for this folder. init declares them in the site's settings, but a declared plugin is not installed until these lines run.",
+            "optional": {
+              "summary": "Optional Anthropic skills for design and testing",
+              "intro": "kiss decides how a site is built, not what it looks like or how it renders on a phone. One plugin from Anthropic adds both, from the site's folder:",
+              "code": "claude plugin marketplace add anthropics/skills --scope project\nclaude plugin install example-skills@anthropic-agent-skills --scope project",
+              "skills": [
+                {
+                  "name": "frontend-design, for the look",
+                  "text": "It sets the visual direction: type, colour, spacing and layout character. kiss keeps the structure, which means layouts, partials, the Sass folder and one view per page."
+                },
+                {
+                  "name": "webapp-testing, for a browser",
+                  "text": "A Playwright recipe for Python. With Playwright installed, your agent can open what it built at phone and desktop widths and in dark mode, and kiss's skills serve it the build folder over HTTP, never from file://. Install Playwright with:",
+                  "code": "pip install playwright\npython -m playwright install chromium"
+                }
+              ],
+              "note": "The plugin carries ten other example skills as well. init does not declare it, so installing it is your choice."
+            }
           },
           {
             "id": "codex",

@@ -61,7 +61,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/brewing/index.html",
       "ok": true,
-      "hash": "b087616570c05dc0da037953bb72e919379975af",
+      "hash": "5d4d0af7d049ca10257a0b84b6e691ea8ac246a8",
       "id": "blog/tags/brewing",
       "canonical": null,
       "markdown": "./public/blog/tags/brewing/index.md"
@@ -79,7 +79,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/experiments/index.html",
       "ok": true,
-      "hash": "e5cdc49b1a246adfa6c210dc0af7cecab405f151",
+      "hash": "28a3a2d8384fba78908e75e04ec4f1f4daeb4607",
       "id": "blog/tags/experiments",
       "canonical": null,
       "markdown": "./public/blog/tags/experiments/index.md"
@@ -97,7 +97,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/roastery/index.html",
       "ok": true,
-      "hash": "b81a2cb1fdafef8bc449a9cbf66b3099ff625499",
+      "hash": "506b9b1a17e9f02b4c42647f1edf69e5dfe7cff2",
       "id": "blog/tags/roastery",
       "canonical": null,
       "markdown": "./public/blog/tags/roastery/index.md"
@@ -115,7 +115,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/sourcing/index.html",
       "ok": true,
-      "hash": "81d21a14947a1bb8743c0e697baf03e30f88eed2",
+      "hash": "154098d5aac07afbb6aef469a2803bca8dfab695",
       "id": "blog/tags/sourcing",
       "canonical": null,
       "markdown": "./public/blog/tags/sourcing/index.md"
@@ -177,7 +177,7 @@
         "kind": "controllers",
         "id": "tag.js",
         "note": "notes/controllers/tag.md",
-        "hash": "667710f347aed56474de568bc11cfe1c02d278d7"
+        "hash": "e45878f4123a5be97eeaf70004764ddf47cf6712"
       }
     ]
   },

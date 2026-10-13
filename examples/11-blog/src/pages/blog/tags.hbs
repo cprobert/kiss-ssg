@@ -17,7 +17,7 @@
     {{#each model.tags}}
     <article class="card">
       <h2><a href="{{link 'blog/tags' slug=slug}}">{{tag}}</a></h2>
-      <p class="meta">{{count}} posts</p>
+      <p class="meta">{{postCount}}</p>
       <p>{{#each posts}}<a href="{{link id}}">{{title}}</a>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
     </article>
     {{/each}}

@@ -65,6 +65,30 @@ With Node.js and Claude Code or Codex installed, these do the rest.
     
     The plugins install for this folder. init declares them in the site's settings, but a declared plugin is not installed until these lines run.
     
+    Optional Anthropic skills for design and testing
+    
+    kiss decides how a site is built, not what it looks like or how it renders on a phone. One plugin from Anthropic adds both, from the site's folder:
+    
+    ```bash
+    claude plugin marketplace add anthropics/skills --scope project
+    claude plugin install example-skills@anthropic-agent-skills --scope project
+    ```
+    
+    ##### frontend-design, for the look
+    
+    It sets the visual direction: type, colour, spacing and layout character. kiss keeps the structure, which means layouts, partials, the Sass folder and one view per page.
+    
+    ##### webapp-testing, for a browser
+    
+    A Playwright recipe for Python. With Playwright installed, your agent can open what it built at phone and desktop widths and in dark mode, and kiss's skills serve it the build folder over HTTP, never from file://. Install Playwright with:
+    
+    ```bash
+    pip install playwright
+    python -m playwright install chromium
+    ```
+    
+    The plugin carries ten other example skills as well. init does not declare it, so installing it is your choice.
+    
     #### Codex
     
     Copy

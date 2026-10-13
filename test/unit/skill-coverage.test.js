@@ -375,6 +375,31 @@ const COVERAGE = [
       skill('kiss-ssg', 'kiss-site-review'),
     ],
   },
+  // Operator decision 2026-10-13: Anthropic's webapp-testing skill is an
+  // optional companion too, recommended against a trial that measured no gain
+  // for reviewing (both arms found all four planted defects; the arm with it
+  // installed never invoked it) because the case for it is building. Three of
+  // its defaults are wrong for a kiss site, all measured: its static-HTML
+  // route and example use file://, which breaks root-relative links; its
+  // with_server.py left `npm run dev` listening on Windows after "Server 1
+  // stopped", twice; and its examples assume a port kiss does not use.
+  {
+    feature:
+      'webapp-testing for the browser pass: HTTP not file://, own server, own port',
+    pattern:
+      /^(?=[\s\S]*`webapp-testing`)(?=[\s\S]*Not `file:\/\/`)(?=[\s\S]*Not `with_server\.py` on Windows)(?=[\s\S]*Not port 3001 by assumption)(?=[\s\S]*pip install playwright)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  {
+    feature:
+      'webapp-testing for a look at what was built, served over HTTP not file://',
+    pattern:
+      /`webapp-testing`[\s\S]*over HTTP[\s\S]*not from `file:\/\/`|`webapp-testing`[\s\S]*over HTTP[\s\S]*Never use `file:\/\/`/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-import'),
+      skill('kiss-ssg', 'kiss-site-new'),
+    ],
+  },
   {
     feature: "the site map's Id column as the link targets",
     pattern: /\bId\b.*column|`Id`|\*\*Id\*\*/,

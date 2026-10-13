@@ -16,8 +16,12 @@ export const tagSlug = (tag) => utils.toSlug(String(tag))
  * first), so two builds of the same folder register the same pages in the same
  * order and the sitemap, the feed and `llms.txt` do not churn.
  *
+ * `postCount` is the count as words ("1 post", "2 posts"): Handlebars has no
+ * comparison helper, and a template that prints `{{count}} posts` reads "1
+ * posts" the day a tag has one post.
+ *
  * @param {{ title: string, id: string, date: string, dateLabel: string, summary: string, tags: string[] }[]} cards
- * @returns {{ tag: string, slug: string, count: number, posts: any[] }[]}
+ * @returns {{ tag: string, slug: string, count: number, postCount: string, posts: any[] }[]}
  */
 export function tagRecords(cards) {
   /** @type {Map<string, any[]>} */
@@ -33,6 +37,7 @@ export function tagRecords(cards) {
       tag,
       slug: tagSlug(tag),
       count: posts.length,
+      postCount: `${posts.length} ${posts.length === 1 ? 'post' : 'posts'}`,
       posts,
     }))
     .sort((a, b) => a.slug.localeCompare(b.slug))

@@ -76,10 +76,12 @@ $accent-wash: #f2e7dd;
   box-sizing: border-box;
 }
 
-// A jump to an anchor (the skip link's #main) clears the sticky header.
-// Below 34rem the header stops being sticky, and this drops with it.
+// A jump to an anchor (the skip link's #main) clears the sticky header —
+// at two rows, not one: just above 34rem a longer nav wraps it to 114px
+// while it is still sticky. Below 34rem it stops being sticky, and this
+// drops with it.
 html {
-  scroll-padding-top: 5.5rem;
+  scroll-padding-top: 7.5rem;
 }
 
 body {
@@ -283,8 +285,10 @@ main {
   gap: 2rem;
 }
 
+// Not the eyebrow: it is a `p` too, and `.hero p` (0,1,1) outranks
+// `.eyebrow` (0,1,0), which turned the label grey and body-sized.
 .hero {
-  p {
+  p:not(.eyebrow) {
     max-width: 44rem;
     color: var(--ink-soft);
     font-size: 1.1rem;

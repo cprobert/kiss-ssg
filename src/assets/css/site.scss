@@ -799,6 +799,31 @@ pre code {
   margin: 0.75rem 0 0;
 }
 
+// The optional Anthropic plugin, folded inside the Claude Code box: closed by
+// default, its own commands kept out of the box's Copy.
+.agent-box__optional {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+  font-size: var(--step--1);
+  line-height: 1.5;
+
+  summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  h5 {
+    margin: 0.9rem 0 0.2rem;
+    font-size: 1em;
+  }
+
+  p {
+    margin: 0.5rem 0 0;
+  }
+}
+
 .prompts {
   list-style: none;
   margin: 0.5rem 0 0;
@@ -837,6 +862,10 @@ pre code {
   font-size: var(--step--1);
   line-height: 1.5;
   user-select: all;
+  // The import prompt carries an artifact URL with no break opportunity, and
+  // it pushed a 320px page 42px sideways. `anywhere`, not `break-word`, so
+  // the box can shrink to the screen too.
+  overflow-wrap: anywhere;
 }
 
 .reasons {
