@@ -58,6 +58,17 @@ opened: 2026-10-13
 ### Amendments
 
 - **2026-10-13 — the trial arms are headless `claude -p` sessions, not sub-agents** (operator's decision at the first pulse). Arm B has to _discover_ `webapp-testing` as an installed skill, and in this session it is not installed. Both arms run in the trial site with `--setting-sources project`, so the operator's user-scope plugins stay out of the run and only the site's own kiss plugins load. Arm B adds the cached `example-skills` plugin with `--plugin-dir`, which loads it for that session only. Nothing is installed and no settings are written, so the 2026-09-27 cache overwrite cannot repeat. A `playwright-core` devDependency for the screenshot script was also the operator's decision.
+  - **Correction, as the arms actually ran:** both used `--setting-sources local`, not `project`, and loaded kiss-ssg itself with `--plugin-dir` from this working tree. The working-tree copy is byte-identical to the 2.7.6 cache. So neither the site's declaration nor the user's settings decided what loaded. Both arms also ran with `--no-chrome` and `--strict-mcp-config`.
+  - The Bash allow-list leaked: a command beginning `cd … &&` ran whatever followed it (`npm init`, `rm -rf public`, a `cat >` heredoc). Every effect stayed inside the arm's own site copy.
+- **2026-10-13 — trial result, and the operator's verdict: recommend it anyway.**
+  - **Arm A** (kiss-ssg only) found all four planted defects. It installed `playwright-core` into `review-scratch/` by itself, drove the system Chrome, served `public/` over HTTP and never used `file://`. 25 turns, $1.26.
+  - **Arm B** (plus `example-skills`) also found all four. It **never invoked or read `webapp-testing`**: the skill's only appearance in the transcript is the start-up list of skills. It used the Python Playwright installed for this trial, served with `python -m http.server`, and never used `file://`. 31 turns, $1.22.
+  - Claude recommended no recommendation, because there was no measured gain. The operator chose to recommend it anyway, which is their call. The trial measured _reviewing_, while the original case for the skill was Playwright helping an agent _build_ sites, and that was not measured.
+  - So criteria 3 and 4 are live. The clean-room run becomes an arm C: arm B's setup plus the new handoff lines, checking that a browser pass runs over HTTP with the build folder as root.
+- **2026-10-13 — fix the shipped examples' defects the trial found** (operator's decision: "Fix on this branch").
+  - **The `.hero p` / `.eyebrow` specificity bug, in all 11 copies of the shared stylesheet.** The 2026-10-12 log says it was fixed with `p:not(.eyebrow)`. A grep finds that selector nowhere in `examples/` or `src/`, so the log's claim was wrong. Arm A measured the bug in Chrome on the trial copy, whose rules for those selectors are unchanged from the shipped file.
+  - **The "1 posts" plural** in the tag templates.
+  - **The sticky-header band at 548–560px:** the header wraps to 114px against 88px of `scroll-padding-top`.
 
 ## Pulse log
 
