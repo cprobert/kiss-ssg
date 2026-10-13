@@ -116,7 +116,7 @@ export function parseArgs(argv) {
   const rewritten = (pages ?? []).find((p) => /^\/?[A-Za-z]:[\\/]/.test(p))
   if (rewritten)
     throw new Error(
-      `--page "${rewritten}" is a Windows path, not a page: Git Bash rewrote it. Run with MSYS_NO_PATHCONV=1, or from PowerShell`,
+      `--page "${rewritten}" is a Windows path, not a page: Git Bash rewrote it. Run from PowerShell, or with MSYS_NO_PATHCONV=1 and the build folder as a Windows path (C:\\…), which that setting stops Git Bash converting too`,
     )
   pages = (pages ?? DEFAULTS.pages).map((p) =>
     p.startsWith('/') ? p : `/${p}`,
