@@ -77,6 +77,8 @@ opened: 2026-10-13
 - **2026-10-13 — the docs home page overflowed at 320px, on `main` too.** Found while measuring the new band.
   - The cause was the import prompt's unbroken artifact URL in `.prompts__text`, pinned by hiding sections one at a time. It is fixed with `overflow-wrap: anywhere`.
   - **Also found:** a shot of `docs/` is styled by the _live_ site's CSS, because the production build links its assets absolutely. So the fix measured "still 42px" until `.preview/` was shot under `node docs --dev`. The screenshot script's header and `CLAUDE.md` now say so.
+- **2026-10-13 — the wording says what was measured** (operator's decision, after arm C). In three runs `webapp-testing` was never invoked, even with `kiss-site-review` naming it; the browser came from Playwright itself. So the README, the docs copy and the `kiss-site-review`/`kiss-site-import` lines call it a Playwright recipe and say the installed browser is what matters. They no longer say the skill "gives the agent a browser".
+- **2026-10-13 — the docs copy moved into setup** (operator's eyeball). It is no longer a band of its own. It is a collapsed `<details>` inside the Claude Code box in step 1, headed "Optional Anthropic skills for design and testing", and only in that box, because it is a Claude Code plugin. The box's Copy still copies only its six setup lines, and the test pins that.
 
 ## Pulse log
 
@@ -94,6 +96,17 @@ opened: 2026-10-13
 - **Eyeball: looked** — "overflow visible" on `trial-shots/blog_grind-size-is-the-dial--320-light.png`.
 - **Explained:** D1 is findable only in a browser, because the stylesheet comment still says URLs break. The operator chose "Keep it", so D1 is scored as "did a browser run" and D2–D4 as judgement.
 - Decision: **record amendment, then continue** to the two trial arms.
+- **2026-10-13 (second pulse)** — Criteria 1–5 are **met**. Criterion 6 is left to the close.
+  - Arms A and B: 4/4 each.
+  - Arm C, the clean-room run with the handoff lines plus `example-skills`, found 4/4.
+    - It served `public/` over HTTP with `python -m http.server`, never used `file://`, stopped its server and confirmed nothing was listening, and checksummed the site's 34 files as unchanged. 27 turns, $1.31.
+    - It did **not** invoke `webapp-testing`: "I wrote my own Playwright script, following the review skill's guidance". So the wording was changed; see the Amendments.
+    - It independently found the three example bugs already fixed on this branch (its copy predates the fixes).
+  - Both documented install lines were run in a scratch folder: a session listed `example-skills:webapp-testing`, and `uninstall --scope project` removed the registry entry. The marketplace step said "already on disk", because the operator had added it at user level, so nothing was cloned.
+  - `npm test`: 2282 passed. Lint is clean.
+  - **Drift:** the docs move and the wording change were both the operator's calls, recorded as Amendments. The impact surface is unchanged (tooling & docs; skills, README and examples ship, with no API change): **patch**.
+  - **Eyeball: looked** at the band on the live preview: "optional should be under 1b … in the Claude Code white box, but collapsible". After the move: "much better, but the text should say 'optional anthropic skills for design and testing'". Done.
+  - Decision: **ready to close**.
 
 ---
 
