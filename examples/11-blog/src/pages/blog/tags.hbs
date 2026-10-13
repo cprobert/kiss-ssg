@@ -18,13 +18,13 @@
     <article class="card">
       <h2><a href="{{link 'blog/tags' slug=slug}}">{{tag}}</a></h2>
       <p class="meta">{{count}} posts</p>
-      <p>{{#each posts}}<a href="{{link id}}">{{title}}</a>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
+      <p>{{#each posts}}<a href="{{link id}}">{{title}}</a>{{#unless @last}}, {{/unless}}{{/each}}</p>
     </article>
     {{/each}}
   </div>
 
   <div class="callout">
-    <p><a href="{{link 'blog'}}">The whole journal</a> &middot; <a href="/feed.xml">RSS feed</a></p>
+    <p class="links"><a href="{{link 'blog'}}">The whole journal</a> <a href="/feed.xml">RSS feed</a></p>
   </div>
   {{/content}}
 

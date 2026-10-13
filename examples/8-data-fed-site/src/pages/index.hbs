@@ -2,7 +2,7 @@
 
   {{#content "main"}}
   <section class="hero">
-    <p class="eyebrow">Example 8 &middot; a data-fed site</p>
+    <p class="eyebrow">Example 8, a data-fed site</p>
     <h1>Where to buy Aster &amp; Oak</h1>
     <p>
       Every shop below is one JSON file in <code>models/stockists</code>, exported from the
@@ -15,7 +15,7 @@
     {{#each model.stocked}}
     <article class="card">
       <h3><a href="stockists/{{slug}}.html">{{name}}</a></h3>
-      <p class="meta">{{town}} &middot; stocking us since {{since}}</p>
+      <p class="meta">{{town}}, stocking us since {{since}}</p>
       <p>{{note}}</p>
       <p>{{#each sells}}<span class="tag">{{this}}</span> {{/each}}</p>
     </article>

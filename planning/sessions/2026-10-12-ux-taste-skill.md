@@ -160,6 +160,41 @@ opened: 2026-10-12
     - **Tests:** three `skill-coverage.test.js` rows, seen red (3 of 175) and then green. One pattern was aligned with the wording ("Never fill it with…") after the text landed: the text was present, and the phrase in the row differed.
   - **Operator decision: "Restyle them here".** The eleven examples' shared look (cream, clay, capital pill eyebrows, dotted meta lines) is to be redone on this branch, with `frontend-design`.
 
+- **2026-10-13 — the examples restyled, following `frontend-design`'s plan, review, build and critique process.** The plan was put to the operator and approved ("Yes, build it").
+  - **Palette, measured.** The colours come from the coffee:
+    - green-bean paper `#eef1ea`;
+    - roasted-bean ink `#2a1d17`, 14.3:1;
+    - one coffee-cherry accent `#a3263a`, 6.4:1;
+    - control edges `#7f8a76`, 3.2:1;
+    - the dark set `#141a16`, `#e8ece3` and `#f08a98`, with every text pair at 6.8:1 or more;
+    - status tones re-chosen for the new paper, at 5.19:1 or more.
+  - **Type.** System serif headings (Charter, Iowan, Sitka, Cambria, Georgia) over the system sans, on a 1.25 scale, weights 400 and 700 only. No web fonts.
+  - **The one bold element** is the card as an ink-bordered coffee-bag label: a 1.5px ink border, 3px corners, no shadow, a rule under the title.
+  - **Removed:**
+    - the cream, the clay, the 12px radius and the shadows;
+    - pill nav, which is now an underline;
+    - uppercase table headers.
+
+    The eyebrow is sentence case and stays: it carries which example a page is.
+
+  - **Templates.** A script file (`scratchpad/undot.mjs`) rewrote every `·` join in examples 1–11:
+    - "Example 3, pages", "Recipe: config";
+    - meta lines with commas;
+    - footer badges.
+
+    Example 11's link rows became `<p class="links">` with no separators, its pagination a "Page N of M" span, and its 404 links a sentence. In all, 35 `.hbs` files changed, 44 lines. Page titles keep `·` as the title separator. Example 12, with its own look, is untouched.
+
+  - **The critique pass found two faults, both fixed.**
+    - **A specificity bug of exactly the kind `frontend-design` warns about.** `.hero p` outranked `.eyebrow` and turned it grey and body-sized; it is now `p:not(.eyebrow)`.
+    - **Too much accent.** Every card title was a cherry link, so titles are now ink with a `--control` underline.
+
+    Screenshots of examples 11, 3 and 8, light and dark, desktop and phone, are in `scratchpad/restyle/`. Writing the screenshot script also turned up an argument bug: splitting on `:` cut `C:`, and the first run's shots were discarded.
+
+  - **Results:**
+    - the eleven stylesheets are byte-identical;
+    - examples 9 and 11's `AIKB/last-build.json` were re-recorded through `bin/kiss-ssg.js aikb`, with page hashes only;
+    - `npm run gates` is green (85 files).
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
