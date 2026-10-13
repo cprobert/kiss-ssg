@@ -1,7 +1,8 @@
 # Upstream constraints
 
 Things kiss works around, or declines to work around, in code it does not own —
-Node, handlebars, chokidar, sass, eslint, turndown and its DOM.
+Node, handlebars, chokidar, sass, eslint, turndown and its DOM, and the
+third-party skills kiss recommends.
 
 **Why this file exists.** A workaround explained only in the comment beside it
 is a workaround nobody ever revisits: the reason is legible where the code is,
@@ -251,6 +252,44 @@ Remove the user-level `enabled` lines and list again in the project and in an
 unrelated folder. Revisit if `codex plugin add --help` grows a project flag, or
 if a git-sourced project marketplace starts resolving without a user install.
 Delete the copied `auth.json` afterwards.
+
+### Anthropic's `webapp-testing` skill: `file://`, and a server it cannot stop on Windows
+
+**Observed:** `anthropics/skills`, `example-skills` plugin at commit
+`8a1541c4a3ff`, on Windows 11 with Python 3.14.6 and Playwright 1.63.0,
+2026-10-13. kiss recommends the skill as an optional companion (README, the docs
+home page) and has three of its skills hand off to it. Two of its defaults are
+wrong for a kiss site:
+
+- **`file://` for static HTML.** Its `SKILL.md` decision tree sends static HTML
+  to "Read HTML file directly", and `examples/static_html_automation.py` opens a
+  `file://` URL. A kiss build is static HTML with root-relative links and
+  assets, so from `file://` every one of them resolves against the drive.
+- **`scripts/with_server.py` orphans the server on Windows.** It starts the
+  command with `subprocess.Popen(..., shell=True)` and stops the shell. With
+  `--server "npm run dev" --port 3011` on example 11's copy it printed "Server 1
+  stopped", and `node router.js --dev` was still listening on 3011 and 35741.
+  The next run failed to bind. This happened on two runs out of two. It also
+  pipes the server's output without reading it, and checks readiness with a TCP
+  connect to `localhost`. A first run aimed at port 3001 timed out because the
+  site listens on 3011, not because of either of those.
+
+**What kiss does:** documents, does not engineer around. The handoff lines in
+`kiss-site-review` (step 3), `kiss-site-import` and `kiss-site-new` say to serve
+the build folder over HTTP, start and stop the server themselves, and read the
+site's own port. `test/unit/skill-coverage.test.js` pins those three rules.
+Nothing in kiss wraps or patches the skill.
+**Re-check:** fetch the skill's current `SKILL.md` and
+`examples/static_html_automation.py` and look for `file://`. Then, on Windows,
+in a built kiss site:
+
+```
+python <skill>/scripts/with_server.py --server "npm run dev" --port <the site's port> -- python -c "print(1)"
+Get-NetTCPConnection -LocalPort <port> -State Listen
+```
+
+A listener after the script exits means it still orphans. Stop that `node`
+yourself, and revisit the handoff line if it no longer happens.
 
 ## Supported alternatives not used
 

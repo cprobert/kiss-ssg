@@ -100,6 +100,14 @@ When Anthropic's `frontend-design` skill is available, let it set the **visual d
 
 **When it is not installed, say so before you set the look.** Without a design skill, a site lands on the generic defaults. Built from the same brief with this skill alone, a trial site came out in cream, with a serif and a terracotta accent, dotted capital labels and three identical cards. With `frontend-design`, two builds of that brief each had a look of their own. Tell the owner what it adds, and point them at `node_modules/kiss-ssg/README.md` § "Optional: Anthropic's `frontend-design` skill for the look" for the install lines. Then go on as they answer: install it and continue, or build without it.
 
+**When Anthropic's `webapp-testing` skill is available, look at what you built before you call it done.** A clean build check says the pages exist. It cannot say whether a page runs off the side of a phone. So:
+
+- Build, then serve the build folder over HTTP as the site root. Never use `file://`, and start and stop the server yourself. The `kiss-site-review` skill's browser pass explains why that skill's own defaults for both are wrong for a kiss site.
+- Screenshot each distinct page template at 320, 768 and 1440 wide, in both colour schemes if the site has a dark one.
+- Fix anything that overflows or breaks before the hand-over.
+
+The full judgement pass belongs to `kiss-site-review`.
+
 Whatever the look, keep these:
 
 - **Never invent a fact about the business.** That means a figure, a price, a testimonial, a client's name or logo, an award, or a phone number. Where the description gives none:

@@ -69,6 +69,14 @@ opened: 2026-10-13
   - **The `.hero p` / `.eyebrow` specificity bug, in all 11 copies of the shared stylesheet.** The 2026-10-12 log says it was fixed with `p:not(.eyebrow)`. A grep finds that selector nowhere in `examples/` or `src/`, so the log's claim was wrong. Arm A measured the bug in Chrome on the trial copy, whose rules for those selectors are unchanged from the shipped file.
   - **The "1 posts" plural** in the tag templates.
   - **The sticky-header band at 548–560px:** the header wraps to 114px against 88px of `scroll-padding-top`.
+- **2026-10-13 — `kiss-site-new` gets a handoff line too** (operator's decision). The case for the skill is building, and `kiss-site-new` had no browser step. It now looks at each template at 320, 768 and 1440 before the hand-over, when the skill is available.
+- **2026-10-13 — two measured upstream defects shape the handoff lines** (recorded in `AIKB/upstream.md`).
+  - `webapp-testing`'s static-HTML route uses `file://`.
+  - Its `with_server.py` left `npm run dev` listening on Windows after "Server 1 stopped", two runs out of two. Claude stopped both orphans; they were its own processes.
+  - The lines therefore say: serve over HTTP, start and stop the server yourself, and read the site's own port.
+- **2026-10-13 — the docs home page overflowed at 320px, on `main` too.** Found while measuring the new band.
+  - The cause was the import prompt's unbroken artifact URL in `.prompts__text`, pinned by hiding sections one at a time. It is fixed with `overflow-wrap: anywhere`.
+  - **Also found:** a shot of `docs/` is styled by the _live_ site's CSS, because the production build links its assets absolutely. So the fix measured "still 42px" until `.preview/` was shot under `node docs --dev`. The screenshot script's header and `CLAUDE.md` now say so.
 
 ## Pulse log
 

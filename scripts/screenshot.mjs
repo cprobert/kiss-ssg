@@ -21,6 +21,13 @@
 // site's `404.html` when it has one, which is what a host does and `--dev` does
 // not.
 //
+// **A page is only as local as its links.** A build whose assets are linked
+// absolutely loads them from that address, not from the folder: this repo's
+// own `docs/` links `https://cprobert.github.io/kiss-ssg/css/site.css`, so a
+// shot of it is styled by the live site. Shoot `.preview/` while `node docs
+// --dev` serves it instead (2026-10-13: a CSS fix measured "still broken"
+// until this was seen).
+//
 // **Each shot reports horizontal overflow** — the document's scroll width
 // beyond the viewport — because "the page is wider than the phone" is the
 // browser-only defect a screenshot shows least clearly and a number shows best.

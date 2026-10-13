@@ -47,6 +47,21 @@ claude plugin install example-skills@anthropic-agent-skills --scope project
 
 It arrives inside the `example-skills` plugin, alongside eleven other example skills. `kiss-site-new` and `kiss-site-review` let it set the visual direction while kiss keeps the structure — layouts, partials, the Sass folder, one view per page — so the site never collapses into a single-file page. `init` does not declare it; it is your choice.
 
+**Optional: Anthropic's `webapp-testing` skill for a browser.** The same plugin carries `webapp-testing`, so those two lines install it too. It gives the agent a scriptable browser (Playwright), so it can look at the pages it builds at phone and desktop widths and in dark mode. That is what `kiss-site-review`'s browser pass and `kiss-site-import`'s side-by-side check need, and `kiss-site-new` uses it for a look before it hands over. It runs Python, so it needs Python plus Playwright and its browser:
+
+```sh
+pip install playwright
+python -m playwright install chromium
+```
+
+kiss's skills keep three of its defaults off a kiss site, because each one breaks it:
+
+- They serve the build folder over HTTP, never from `file://`.
+- They start and stop the dev server themselves: its helper left the server running on Windows.
+- They read the site's own port.
+
+An agent without it can still install Playwright for the review, and in a trial one did.
+
 ## Prompts to copy
 
 You don't have to name the skills — each one's description is written so the agent reaches for it on its own — but naming one makes the first run predictable.
