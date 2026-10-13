@@ -3,6 +3,51 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.7 — 2026-10-13
+
+Nothing in the engine changed, and nothing in your site has to change.
+
+### Optional: Anthropic's `webapp-testing` skill, for a browser
+
+The README and the docs site now recommend it alongside `frontend-design`. It is in the same
+`example-skills` plugin, so the same two install lines add it. It is a Playwright recipe for
+Python. The browser itself comes from Playwright:
+
+```sh
+pip install playwright
+python -m playwright install chromium
+```
+
+With a browser available:
+
+- `kiss-site-review` uses it for its browser pass;
+- `kiss-site-import` uses it for its side-by-side comparison;
+- `kiss-site-new` now looks at what it built at 320, 768 and 1440 wide before it hands over.
+
+The three skills overrule three of `webapp-testing`'s defaults, because each one breaks a kiss
+site:
+
+- serve the build folder over HTTP, never from `file://`, or every root-relative link resolves
+  against the drive;
+- start and stop the server yourself, because its helper left the dev server running on Windows;
+- read your site's own port rather than assuming 3001.
+
+What was measured: in three review runs, agents wrote their own Playwright scripts rather than
+invoking the skill. The installed browser is what mattered.
+
+### The examples: three fixes you may want in your own site
+
+If your site copied the examples' stylesheet or templates, check for these:
+
+- **The hero eyebrow rendered grey and body-sized.** `.hero p` (0,1,1) outranks `.eyebrow`
+  (0,1,0), and the eyebrow is a `<p>`. The examples now use `.hero p:not(.eyebrow)`.
+- **An anchor jump landed under a two-row sticky header.** Just above the 34rem breakpoint, a
+  longer nav wraps the still-sticky header to 114px, against 88px of `scroll-padding-top`.
+  `scroll-padding-top: 7.5rem` now covers two rows.
+- **"1 posts".** Example 11's tag pages printed `{{count}} posts`. Its tag records now carry
+  `postCount` ("1 post", "2 posts"), because Handlebars has no comparison helper to choose the
+  word in a template.
+
 ## 2.7.6 — 2026-10-13
 
 Nothing in the engine changed, and nothing in your site has to change. This release is about how
