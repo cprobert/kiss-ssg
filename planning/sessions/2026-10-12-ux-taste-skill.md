@@ -544,3 +544,21 @@ But it is Claude evaluating Claude's work, which is exactly the loop the rubric 
 - example 11's "ask" items: whether the scaffold copy and the "How this example works" panel belong in an exemplar, the canonical link on the 404 page, and two nav labels named "The journal";
 - the version skew between the two `frontend-design` sources;
 - the design read, not adopted, which needs more than one build of evidence.
+
+## Addendum, after the close (2026-10-13): the operator looked, and chose the original
+
+**Eyeball: looked.** After PR #38 opened, the operator compared `scratchpad/restyle-before/` with `scratchpad/restyle/` and said: "I prefer (…restyle-before)". Asked what should go back, they chose "Original look, keep the fixes".
+
+- **The restyle is undone.** Every example `.hbs` and `.scss` the restyle touched was restored from `9ce1093`, the craft fixes on the original look. That brings back the cream and clay, the uppercase pill eyebrows, the `·` joins, the em dash in the footer and the original link rows.
+- **The later fixes are re-applied in the original style:**
+  - `overflow-wrap: anywhere` on `.nav__link` and `.brand__text`;
+  - the brand mark takes `--accent-ink` on hover and press (measured `rgb(154,91,52)` → `rgb(125,69,38)`);
+  - a no-break space before "kiss-ssg" in ten footers;
+  - `folderMatch` on Tags (one current link, measured), and "So:&nbsp;Wednesdays" (both untouched by the restore).
+- **Checked by comparison.** A screenshot of the restored example 11 matches the operator's preferred "before", except for the fixes: darker tag edges, and a build note without a chip border. Examples 9 and 11 re-recorded their AIKB, `npm run gates` is green, and `CHANGELOG.md`'s examples section now says the look is kept.
+
+**What this changes in the reflection above:**
+
+- **Criterion 4, the operator judging by eye: met, for the examples.** The docs site's look is still deferred.
+- **"The exemplars no longer teach the generic AI look" is no longer true.** The operator preferred the original look to the `frontend-design` restyle. The examples' look is now a decision the operator recorded, not a default. This is exactly the case the review's craft pass "look for the decision" rule exists for. The bake-off finding about new sites stands: a new site built without a design skill still landed on the generic look. What did not land is a `frontend-design` restyle of these examples.
+- **The look was the right thing to hold back for a human.** Claude planned, built, critiqued and measured the restyle. The operator overturned it in one look at two folders. That is the plainest evidence on this branch for the reflection's first Feedback item, and it came after the PR opened rather than before it.

@@ -3,18 +3,7 @@
 // one, copy it to the rest.
 // kiss compiles every .scss under the assets folder on its way into the build,
 // so this file lands as <build>/css/site.css with no extra tooling.
-//
-// The look comes from the coffee, not from a template: paper the grey-green
-// of an unroasted bean, ink the brown of a roasted one, and one accent, the
-// red of the coffee cherry. The memorable thing is the card, drawn as the
-// ink-bordered label on a bag of beans. Everything else stays quiet.
 
-// Headings in a serif and text in a sans, both from the visitor's own
-// machine: no web font, so nothing to download and nothing to self-host in
-// eleven copies.
-$font-serif:
-  Charter, 'Bitstream Charter', 'Iowan Old Style', 'Sitka Text', Cambria,
-  Georgia, serif;
 $font-sans:
   system-ui,
   -apple-system,
@@ -27,45 +16,56 @@ $font-mono:
   ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 
 $measure: 64rem;
-// Small corners: a printed label, not a soft app card.
-$radius: 3px;
+$radius: 12px;
 
-// Light palette, measured: ink is 14.3:1 on the paper, the cherry 6.4:1, and
-// --control 3.2:1. The dark palette below only re-declares the same custom
+// Light palette. The dark one below only re-declares the same custom
 // properties, so every rule in the sheet is written once.
+$ink: #23201c;
+$ink-soft: #6c6259;
+$paper: #f7f4ef;
+$card: #ffffff;
+$line: #e5ddd2;
+// A control's own edge (a tag chip): 3:1 or more on the card and the page,
+// which $line is not — that only divides.
+$control: #948678;
+$accent: #9a5b34;
+$accent-ink: #7d4526;
+$accent-wash: #f2e7dd;
+
 :root {
-  --bg: #eef1ea;
-  --surface: #f8faf6;
-  --ink: #2a1d17;
-  --ink-soft: #5a5148;
-  --line: #cdd5c6;
-  // A control's own edge (a tag chip): 3:1 or more on the card and the page,
-  // which --line is not — that only divides.
-  --control: #7f8a76;
-  --accent: #a3263a;
-  --accent-ink: #a3263a;
-  --accent-wash: #e3e8dd;
+  --bg: #{$paper};
+  --surface: #{$card};
+  --ink: #{$ink};
+  --ink-soft: #{$ink-soft};
+  --line: #{$line};
+  --control: #{$control};
+  --accent: #{$accent};
+  --accent-ink: #{$accent-ink};
+  --accent-wash: #{$accent-wash};
   // Text set on the accent, like the brand mark.
   --on-accent: #ffffff;
-  --tone-good: #2c6b45;
-  --tone-warn: #8a5a0c;
+  --tone-good: #2f7d51;
+  --tone-warn: #9a6b12;
+  --shadow: 0 1px 2px rgba(35, 32, 28, 0.06), 0 8px 24px rgba(35, 32, 28, 0.05);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141a16;
-    --surface: #1b221d;
-    --ink: #e8ece3;
-    --ink-soft: #aab3a3;
-    --line: #2c362e;
-    --control: #6b7766;
-    --accent: #f08a98;
-    --accent-ink: #f08a98;
-    --accent-wash: #222b24;
-    --on-accent: #141a16;
+    --bg: #15120f;
+    --surface: #1d1915;
+    --ink: #f1ece4;
+    --ink-soft: #a99e91;
+    --line: #322b23;
+    --control: #75685a;
+    --accent: #e0a274;
+    --accent-ink: #f0c9a8;
+    --accent-wash: #2a2019;
+    // White on the light accent is 2.19:1; the page colour is 8.52:1.
+    --on-accent: #15120f;
     --tone-good: #6cc792;
     --tone-warn: #e0b45a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
     color-scheme: dark;
   }
 }
@@ -95,9 +95,8 @@ body {
 h1,
 h2,
 h3 {
-  font-family: $font-serif;
-  font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
   margin: 0 0 0.5em;
   text-wrap: balance;
 }
@@ -105,7 +104,7 @@ h3 {
 // A long word or URL from a model breaks rather than pushing a phone's page
 // sideways, and no paragraph ends on a word by itself. `anywhere`, not
 // `break-word`: only `anywhere` lowers the width a box will shrink to, which
-// is what an inline-block, a flex or a grid item sizes from.
+// is what an inline-block (the eyebrow), a flex or a grid item sizes from.
 h1,
 h2,
 h3,
@@ -121,17 +120,14 @@ li {
   text-wrap: pretty;
 }
 
-// A 1.25 scale on the 17px body: 21, 27, then a page title that grows from
-// 34px on a phone to 53px on a wide screen.
 h1 {
-  font-size: clamp(2rem, 1.3rem + 2.8vw, 3.1rem);
-  letter-spacing: -0.01em;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
 }
 h2 {
-  font-size: 1.56rem;
+  font-size: 1.45rem;
 }
 h3 {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 p,
@@ -160,7 +156,7 @@ code {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
 .wrap {
@@ -180,7 +176,7 @@ code {
     z-index: 10;
     background: var(--surface);
     padding: 0.5rem 0.9rem;
-    border: 1.5px solid var(--ink);
+    border-radius: 6px;
   }
 }
 
@@ -190,8 +186,9 @@ code {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: var(--bg);
-  border-bottom: 1.5px solid var(--ink);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
 
   &__inner {
     display: flex;
@@ -205,32 +202,30 @@ code {
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.7rem;
   margin-right: auto;
   text-decoration: none;
   color: inherit;
 
-  // The way home answers a hover and a tap: the stamp fills with its ink.
+  // The way home answers a hover and a tap: the mark takes the deeper
+  // accent.
   &:hover &__mark,
   &:active &__mark {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--accent-ink);
   }
 
-  // The roaster's stamp: initials in an inked ring, the mark that would be
-  // pressed onto the bag.
   &__mark {
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    width: 2.6rem;
-    height: 2.6rem;
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    color: var(--accent);
-    font-family: $font-serif;
-    font-size: 0.85rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.78rem;
     font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   &__text {
@@ -239,13 +234,12 @@ code {
     line-height: 1.25;
 
     strong {
-      font-family: $font-serif;
-      font-size: 1.2rem;
+      font-size: 1.02rem;
     }
 
     small {
       color: var(--ink-soft);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
     }
   }
 }
@@ -253,13 +247,13 @@ code {
 .nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
+  gap: 0.25rem;
 
   &__link {
-    padding-block: 0.35rem;
-    border-bottom: 2px solid transparent;
-    color: var(--ink);
-    font-size: 0.95rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
     // 400 and 700 only: on a system-font stack those are the two weights
     // every platform ships, so the active link is bolder everywhere rather
     // than wherever the platform happens to have a 500 and a 650.
@@ -268,11 +262,13 @@ code {
 
     &:hover,
     &:active {
-      border-bottom-color: var(--control);
+      background: var(--accent-wash);
+      color: var(--accent-ink);
     }
 
     &.is-active {
-      border-bottom-color: var(--accent);
+      background: var(--accent-wash);
+      color: var(--accent-ink);
       font-weight: 700;
     }
   }
@@ -288,37 +284,38 @@ main {
 }
 
 .hero {
-  // Not the eyebrow: `.hero p` outranks `.eyebrow`, and would turn it grey.
-  p:not(.eyebrow) {
-    max-width: 68ch;
+  p {
+    max-width: 44rem;
     color: var(--ink-soft);
-    font-size: 1.15rem;
+    font-size: 1.1rem;
   }
 }
 
-// The line above a page title that says what this page is ("Example 11, a
-// blog"): written in sentence case and left that way, in the cherry, the
-// size of the text it introduces.
 .eyebrow {
-  margin-bottom: 0.4rem;
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--accent-wash);
   color: var(--accent-ink);
-  font-size: 0.95rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  // "The journal · page 1 of 2" splits evenly on a phone, not "…of / 2".
   text-wrap: balance;
 }
 
 @mixin panel {
   background: var(--surface);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: $radius;
+  box-shadow: var(--shadow);
 }
 
-// The bag label: an inked border round the card, a rule under the title, and
-// no shadow. It is the one bold thing on the page, so nothing else is boxed
-// the same way.
 .card {
   @include panel;
-  padding: 1.1rem 1.25rem 1.25rem;
+  padding: 1.25rem 1.35rem;
 
   > :last-child {
     margin-bottom: 0;
@@ -329,55 +326,30 @@ main {
   // the size, so both read the same.
   h2,
   h3 {
-    font-size: 1.25rem;
-    margin: 0 -1.25rem 0.6rem;
-    padding: 0 1.25rem 0.5rem;
-    border-bottom: 1px solid var(--line);
-  }
-
-  // A title that links is set in ink, still underlined: the cherry is kept
-  // for the few things that need to stand out, and a page of cards would
-  // otherwise be a page of red.
-  h2 a,
-  h3 a {
-    color: var(--ink);
-    text-decoration-color: var(--control);
-
-    &:hover,
-    &:active {
-      text-decoration-color: var(--accent);
-    }
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
   }
 }
 
 .grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
 }
 
 .meta {
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin: 0;
-}
-
-// A row of links (every tag, the feed): spaced apart, not joined by dots.
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1.5rem;
 }
 
 .tag {
   display: inline-block;
-  margin: 0 0.3rem 0.3rem 0;
-  padding: 0.05rem 0.5rem;
-  border-radius: $radius;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
   border: 1px solid var(--control);
   color: var(--ink-soft);
-  font-size: 0.8rem;
-  text-decoration: none;
+  font-size: 0.75rem;
 
   &:hover,
   &:active {
@@ -398,9 +370,9 @@ main {
 }
 
 .callout {
-  background: var(--surface);
+  @include panel;
   padding: 1rem 1.25rem;
-  border-left: 3px solid var(--accent);
+  border-left: 4px solid var(--accent);
 
   > :last-child {
     margin-bottom: 0;
@@ -435,18 +407,18 @@ table {
   }
 
   th {
-    color: var(--ink);
-    border-bottom: 1.5px solid var(--ink);
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 }
 
 // ---------- the "how this works" panel ----------
 
-// The developer's notes, set apart from the shop: a ruled box with no inked
-// label border, so it never reads as part of the roastery's page.
 .source-panel {
-  border-top: 1.5px solid var(--ink);
-  padding: 1.25rem 0 0;
+  @include panel;
+  padding: 1.35rem 1.5rem;
 
   h2 {
     margin-top: 0;
@@ -455,7 +427,7 @@ table {
   summary {
     cursor: pointer;
     color: var(--ink-soft);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     padding-block: 0.35rem;
   }
 
@@ -463,9 +435,9 @@ table {
     margin: 0.5rem 0 0;
     padding: 1rem 1.1rem;
     overflow-x: auto;
-    border-radius: $radius;
+    border-radius: 8px;
     border: 1px solid var(--line);
-    background: var(--surface);
+    background: var(--accent-wash);
     font-size: 0.82rem;
     line-height: 1.55;
     tab-size: 2;
@@ -475,7 +447,7 @@ table {
 // ---------- footer ----------
 
 .site-footer {
-  border-top: 1.5px solid var(--ink);
+  border-top: 1px solid var(--line);
   color: var(--ink-soft);
   font-size: 0.85rem;
 
@@ -494,7 +466,7 @@ table {
 
 // Plain text, not a chip: with a tag's border it looked like a link.
 .build-badge {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 @media (max-width: 34rem) {

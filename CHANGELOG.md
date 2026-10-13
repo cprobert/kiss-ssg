@@ -41,18 +41,21 @@ The review also now:
   the same brief, a site made without it came out in the generic AI look, and two made with it
   did not.
 
-### The examples look like a roastery, not a template
+### The examples keep their look, with craft fixes
 
-The eleven Aster & Oak examples have a new shared stylesheet:
+The eleven Aster & Oak examples look as they did. The shared stylesheet gains the fixes the
+review's craft pass found:
 
-- grey-green paper, roasted-bean ink and one coffee-cherry red;
-- serif headings, with no web fonts;
-- cards drawn as ink-bordered bag labels;
-- labels in sentence case, with no uppercase pills and no `·` joins;
-- the measured contrast, focus, phone-header and long-text fixes.
+- tag chips with edges at 3:1 or more;
+- nav weights of 400 and 700, which every system font ships;
+- hover and press states on every link;
+- headings and paragraphs that avoid a single word on the last line;
+- long words and URLs that wrap rather than widening a phone's page;
+- a header that stops being sticky on a phone;
+- dark-mode colours for the brand mark and the status labels.
 
-If you copied an example's stylesheet into your own site, nothing changes there. Example 11's nav
-now marks one current page on its tag pages, not two.
+Example 11's nav now marks one current page on its tag pages, not two. If you copied an example's
+stylesheet into your own site, nothing changes there.
 
 ## 2.7.5 — 2026-10-07
 
