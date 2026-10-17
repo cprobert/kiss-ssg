@@ -177,6 +177,43 @@ yet") before reading.
 against a loop of `fs.readFile(destFile)` with no wait, and count error codes; the three-way
 harness above was a scratch script of about sixty lines and is described here rather than kept.
 
+### chokidar does not re-arm a deleted root
+
+chokidar 5.0.0, Node 22.23.3, Linux (WSL2 kernel 6.6; the GitHub `ubuntu-24.04`
+runner shows the same). Watch a folder, delete it, re-create it with a file: the
+watcher emits `unlinkDir` for the root and then nothing — the file's `add` never
+arrives, 40 of 40 rounds, whether the folder comes back 0ms or 300ms later.
+`_remove` re-adds a vanished path only when it is a **file** and the sole watched
+path (`if (!isDirectory && this._watched.size === 1) this.add(…)`); a root
+**directory** is closed (`_closePath`) and forgotten. And the `unlinkDir` for
+the root itself is not a reliable signal either: it is reached through
+`DirEntry.remove`, whose `readdir` of the emptied folder is asynchronous, so
+whether the folder is seen gone depends on the order of the last file's unlink
+and the `rmdir` — 1 of 40 rounds emitted no `unlinkDir` at all, and the GitHub
+runner missed it on the first run of a guard keyed on it (green once, red the
+next run). `add()` on a path that does not exist does watch the parent for it
+(`add()` re-calls itself with the parent and the basename as target when
+`_addToNodeFs` fails) — 0 of 20 missed, `add` ~84ms — but only when something
+calls it, and the only trigger chokidar offers is that unreliable `unlinkDir`.
+So `lib/watcher.js` does not watch the assets root at all: it watches the
+folder's **parent**, which persists, with an `ignored` predicate that admits
+only the parent itself and the assets subtree. The folder's deletion and return
+are then child events of a live root, which chokidar handles correctly, and
+the restored file's `add` arrives in ~0.3s.
+
+Found because `test/integration/watch.test.js`'s "copies new assets, removes
+renamed/deleted outputs" waited 5 seconds for a restored asset on the Ubuntu
+runner and timed out (2026-10-03 once, 2026-10-17 twice on the runner image of
+2026-10-12), while passing on Windows and in every local Linux run. kiss was
+covering the gap by accident: the `src` watcher sees the folder return as an
+`addDir` and replays the site, which re-copies assets. That route is slower and
+depends on a second watcher's read of the parent; the runner lost it, and this
+machine never did (~77ms). **Re-check:** a bare chokidar script — `watch(dir)`,
+await `ready`, `fs.remove(dir)`, `fs.outputFile(dir/restored.txt)`, wait up to
+5s for an `add` ending in `restored.txt` — on Linux, 20 rounds; the constraint
+is current while it misses. The session scratchpad's `probe.mjs` was that
+script, run from the repo so its chokidar is the one under test.
+
 ### `@eslint/js` requires a higher Node than kiss does
 
 **Observed:** `engines.node` is 22.12; `@eslint/js` needs 22.13. **Effect:** on

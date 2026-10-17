@@ -3,6 +3,27 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.8 — 2026-10-17
+
+Nothing in your site has to change.
+
+### Dev mode: an assets folder that is deleted and re-created is watched again
+
+In `npm run dev`, deleting `src/assets` and then writing a file into a new `src/assets` was
+seen only by a slower route (a whole-site rebuild), and on Linux that route could arrive too
+late. The assets watcher now watches from the folder's parent, with everything else there
+ignored, so the folder's removal and return are ordinary events and the restored file is copied
+the way any other asset edit is. One-shot builds were never affected.
+
+### The README sells the site before it sets one up
+
+`README.md` now opens with what kiss-ssg is for and what you get — four short sections on
+describing a site, keeping it readable, checking every build and remembering what it is — before
+the setup commands, which are unchanged. The long explanation of how the plugins install, and the
+optional Anthropic skills, are collapsed under the quick start rather than in its way. A
+documentation table keyed by what you want to do replaces the paragraph that pointed at
+`GUIDE.md`. The header carries the logo, the CI, npm, stars and Node badges, and a link bar.
+
 ## 2.7.7 — 2026-10-13
 
 Nothing in the engine changed, and nothing in your site has to change.
