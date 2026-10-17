@@ -78,6 +78,19 @@ Where the sum beat the parts: the operator supplied the model to copy and the tw
 - **Process — the npm badge now says what npm has, in public.** `npm view` says latest is 2.7.0 and the only 2.7.x tag is v2.7.0; `package.json` is at 2.7.8 after this branch. The README's header will show 2.7.0 until something is published. Decide whether that gap is intended.
 - **Process — `playwright-core` was declared and not installed.** `npm install` fixed it and churned only `peer` flags in the lockfile, which were reverted. Worth knowing before the next browser check, because the screenshot script in `scripts/` depends on it.
 
+## Addendum — the CI gate, after the close
+
+The close pushed and opened PR #40, and the Ubuntu gate failed. What followed is the branch's real engineering, and it happened after the reflection above was written, so it is recorded here rather than rewritten into it.
+
+**What happened.** The Ubuntu job failed one watcher integration test (a restored asset not copied within 5s) twice on the runner image of 2026-10-12, and had failed the same way once on `main` on 2026-10-03. The operator was asked and chose to reproduce in WSL rather than rerun or merge over it. The failure never reproduced locally on Linux, pinned to 4 cores or 1, but the mechanism did: bare chokidar never re-arms a deleted root folder (40/40 misses), and kiss had been covered by a slower route through the `src` watcher and a whole-site replay. The fix is a one-line guard (`99f57a6`), with a regression test seen red on Linux first with CI's exact signature, an upstream entry, and a watcher note. Codex reviewed the branch: no actionable regressions. The next CI run turned Ubuntu green and Windows red on an unrelated pipeline test whose default one-second wait on a spawned process was not enough on the loaded runner; it passed on rerun, and both of that file's default waits were widened so the class is fixed rather than the case.
+
+**Supervision.** This is where the branch earned its level. The operator held the checkpoint the watcher rule in `CLAUDE.md` reserves for them — whether a watch-fringe failure is investigated at all — and chose the expensive answer with the evidence in front of them. Claude's part was to bring that evidence before asking (three runs, two platforms, the runner image dates, the Node version) rather than after. **Operator — the same question will come back:** the register of accepted watch fringe does not yet say which of its entries fail a CI gate, and a flake that blocks a merge is not fringe by the rule's own test.
+
+**Feedback.**
+
+- **Claude — a reproduction that will not reproduce still has a mechanism to find.** Pinning cores and rerunning the suite found nothing; the bare chokidar probe found the constraint in one run. Go to the smallest program that exercises the upstream behaviour before stressing the whole suite.
+- **Process — two of three CI failures on this branch were timing waits on process or watcher events.** The pipeline test's one-second default and the watch test's five seconds are both numbers chosen on a developer machine. A rule for test waits on spawned processes and watchers belongs in `AIKB/testing.md`.
+
 ## Verdict — did we achieve the objective?
 
 The brief: make the README work the way multica's does, benefits before setup, with its header and badges. **Met.** Every criterion in the intent above is ticked with its evidence; the last, `npm run gates`, passed at the close (test, lint, typecheck, format over 9 changed files, pack at 312 files). What is concretely better: a reader meets what kiss-ssg is for before they meet six commands, and the long plugin-scope prose no longer sits between the commands and the prompt. Open: the three blocks of Claude's copy await a human read, and the published version lags the badge.

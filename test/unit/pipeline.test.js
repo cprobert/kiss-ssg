@@ -9,6 +9,12 @@ import { createPipeline, stepName } from '../../lib/pipeline.js'
 // quoted because a real Node install can sit under "Program Files".
 const node = `"${process.execPath}"`
 const run = (source) => `${node} -e "${source.replace(/"/g, '\\"')}"`
+// How long a test waits on a spawned process to start or end. vitest's
+// default is 1s, which a shell plus a Node child exceeded on a loaded Windows
+// runner (CI, 2026-10-17: the pid file was not there yet; passed on rerun).
+// close() itself allows KILL_GRACE (2s) before SIGKILL, so an end wait has to
+// outlast that too.
+const SPAWN_WAIT = { timeout: 10000 }
 
 let logger
 let dir
@@ -255,7 +261,9 @@ describe('createPipeline() watch processes', () => {
     })
 
     await pipeline.run()
-    await vi.waitFor(() => expect(fs.existsSync(file)).toBe(true))
+    // A shell and a Node child have to start before the file exists; vitest's
+    // default 1s was not enough on a loaded Windows runner (CI, 2026-10-17).
+    await vi.waitFor(() => expect(fs.existsSync(file)).toBe(true), SPAWN_WAIT)
     const pid = Number(await fs.readFile(file, 'utf8'))
     expect(pid).toBeGreaterThan(0)
     // Not this process's own child: the shell it started is.
@@ -332,7 +340,7 @@ describe('createPipeline() watch processes', () => {
 
     const results = await pipeline.run()
     // The exit is asynchronous — run() does not wait for a watch process.
-    await vi.waitFor(() => expect(pipeline.watching()).toEqual([]))
+    await vi.waitFor(() => expect(pipeline.watching()).toEqual([]), SPAWN_WAIT)
 
     expect(results[0].ok).toBe(true)
     expect(logger.error).toHaveBeenCalledWith(
