@@ -37,6 +37,8 @@ This branch was not opened with `/branch-open`. The operator pointed at a README
 
 - **2026-10-17 — the branch exists because the operator said "close this branch".** The work was done on `main` uncommitted. A branch was created at the close and the intent written then, which `/branch-close` Step 1 would otherwise refuse. The operator's request is the authorisation.
 
+- **2026-10-17 — the Ubuntu CI gate, and a watcher guard (operator's decision: "Reproduce in WSL, fix the test").** The PR's Ubuntu gate failed twice on `test/integration/watch.test.js:633` (a restored asset not copied within 5s), as it had once on `main` on 2026-10-03; Windows and every local run passed. Reproduced the mechanism, not the failure, in WSL with CI's Node 22.23.3: bare chokidar never re-arms a deleted root folder (40/40 misses), and kiss had been relying on the `src` watcher's `addDir` and a whole-site replay to cover it. The fix is a one-line guard in `lib/watcher.js` (hand the assets root back to chokidar's `add()` on its own `unlinkDir`), a regression test in `test/unit/watcher.test.js` seen red on Linux first, an upstream entry in `AIKB/upstream.md`, and a note in `AIKB/watcher.md`. Impact surface widens from docs to engine internals; still a patch, and the 2.7.8 changelog entry says so.
+
 ## Pulse log
 
 - **2026-10-17 (at the close, not a pulse)** — Evidence: `npm test` 86 files / 2282 passed; prettier clean; every cited path and GUIDE.md heading checked on disk; GitHub's renderer produced the `remember-what-it-is` anchor GUIDE.md now links. **Eyeball: looked** — the operator was shown the GitHub-rendered page in dark and light (`header-dark.png`, `header-light.png`, `full-dark.png` in the session scratchpad) and said "Looks great". Decision: ready to close.

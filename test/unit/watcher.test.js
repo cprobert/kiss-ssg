@@ -61,6 +61,35 @@ describe('createWatcher', () => {
     expect(messages[1]).toMatch(/^Asset unlink:/)
   })
 
+  // chokidar does not re-arm a watched root that is deleted: on Linux a file
+  // written into the re-created folder is never seen (AIKB/upstream.md,
+  // measured 40/40 misses). The whole-site replay the `src` watcher's addDir
+  // triggers used to cover it, until the Ubuntu runner stopped delivering
+  // that in time (CI, 2026-10-03 and twice on 2026-10-17). The assets watcher
+  // now hands its root back to chokidar's add(), which watches the parent for
+  // the path to reappear — so the restored file arrives on the assets route.
+  it('re-arms the assets watcher when its root folder is removed and comes back', async () => {
+    site = await makeSite({ 'src/assets/old.txt': 'old' })
+    const events = []
+    handle = createWatcher({
+      config: folders(site),
+      entry: null,
+      rebuildSite: () => {},
+      onChange: () => {},
+      assetsChanged: (p, event) => events.push([event, p]),
+      logger: silentLogger,
+    })
+    await handle.ready
+    await fs.remove(`${site.src}/assets`)
+    await waitFor(() => events.some(([event]) => event === 'unlinkDir'))
+    await site.touch('src/assets/restored.txt', 'restored')
+    await waitFor(() =>
+      events.some(
+        ([event, p]) => event === 'add' && p.endsWith('/assets/restored.txt'),
+      ),
+    )
+  })
+
   it('forwards a src change to onChange, an entry change to rebuildSite, and an asset change to assetsChanged', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'a',

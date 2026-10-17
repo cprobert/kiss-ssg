@@ -5,7 +5,14 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 
 ## 2.7.8 — 2026-10-17
 
-Nothing in the engine changed, and nothing in your site has to change.
+Nothing in your site has to change.
+
+### Dev mode: an assets folder that is deleted and re-created is watched again
+
+In `npm run dev`, deleting `src/assets` and then writing a file into a new `src/assets` was
+seen only by a slower route (a whole-site rebuild), and on Linux that route could arrive too
+late. The assets watcher now re-arms itself when its folder is removed, so the restored file is
+copied the way any other asset edit is. One-shot builds were never affected.
 
 ### The README sells the site before it sets one up
 
