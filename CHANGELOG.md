@@ -11,8 +11,9 @@ Nothing in your site has to change.
 
 In `npm run dev`, deleting `src/assets` and then writing a file into a new `src/assets` was
 seen only by a slower route (a whole-site rebuild), and on Linux that route could arrive too
-late. The assets watcher now re-arms itself when its folder is removed, so the restored file is
-copied the way any other asset edit is. One-shot builds were never affected.
+late. The assets watcher now watches from the folder's parent, with everything else there
+ignored, so the folder's removal and return are ordinary events and the restored file is copied
+the way any other asset edit is. One-shot builds were never affected.
 
 ### The README sells the site before it sets one up
 

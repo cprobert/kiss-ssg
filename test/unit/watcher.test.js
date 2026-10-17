@@ -63,12 +63,14 @@ describe('createWatcher', () => {
 
   // chokidar does not re-arm a watched root that is deleted: on Linux a file
   // written into the re-created folder is never seen (AIKB/upstream.md,
-  // measured 40/40 misses). The whole-site replay the `src` watcher's addDir
-  // triggers used to cover it, until the Ubuntu runner stopped delivering
-  // that in time (CI, 2026-10-03 and twice on 2026-10-17). The assets watcher
-  // now hands its root back to chokidar's add(), which watches the parent for
-  // the path to reappear — so the restored file arrives on the assets route.
-  it('re-arms the assets watcher when its root folder is removed and comes back', async () => {
+  // measured 40/40 misses), and the `unlinkDir` for the root itself arrives
+  // only by timing (1 miss in 40 locally; the Ubuntu runner missed it on its
+  // first try). The whole-site replay the `src` watcher's addDir triggers used
+  // to cover the file, until the runner stopped delivering that in time (CI,
+  // 2026-10-03 and twice on 2026-10-17). The assets watcher now roots at the
+  // folder's parent, so the folder's return is an ordinary child event. The
+  // test therefore waits on the file's events, never on the folder's.
+  it('sees a file written into the assets folder after the folder was removed and re-created', async () => {
     site = await makeSite({ 'src/assets/old.txt': 'old' })
     const events = []
     handle = createWatcher({
@@ -81,13 +83,21 @@ describe('createWatcher', () => {
     })
     await handle.ready
     await fs.remove(`${site.src}/assets`)
-    await waitFor(() => events.some(([event]) => event === 'unlinkDir'))
+    await waitFor(() =>
+      events.some(
+        ([event, p]) => event === 'unlink' && p.endsWith('/assets/old.txt'),
+      ),
+    )
     await site.touch('src/assets/restored.txt', 'restored')
     await waitFor(() =>
       events.some(
         ([event, p]) => event === 'add' && p.endsWith('/assets/restored.txt'),
       ),
     )
+    // A sibling of the assets folder is not an asset event.
+    await site.touch('src/pages/other.hbs', 'x')
+    await new Promise((r) => setTimeout(r, 150))
+    expect(events.some(([, p]) => p.includes('/pages/'))).toBe(false)
   })
 
   it('forwards a src change to onChange, an entry change to rebuildSite, and an asset change to assetsChanged', async () => {

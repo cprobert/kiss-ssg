@@ -185,12 +185,21 @@ watcher emits `unlinkDir` for the root and then nothing — the file's `add` nev
 arrives, 40 of 40 rounds, whether the folder comes back 0ms or 300ms later.
 `_remove` re-adds a vanished path only when it is a **file** and the sole watched
 path (`if (!isDirectory && this._watched.size === 1) this.add(…)`); a root
-**directory** is closed (`_closePath`) and forgotten. `add()` on a path that does
-not exist does watch the parent for it (`add()` re-calls itself with the parent
-and the basename as target when `_addToNodeFs` fails), so the guard in
-`lib/watcher.js` is one line: on an `unlinkDir` whose path is the assets root,
-hand the root back to `add()`. Measured with the guard: 0 of 20 missed, the
-`add` ~84ms after the file is written.
+**directory** is closed (`_closePath`) and forgotten. And the `unlinkDir` for
+the root itself is not a reliable signal either: it is reached through
+`DirEntry.remove`, whose `readdir` of the emptied folder is asynchronous, so
+whether the folder is seen gone depends on the order of the last file's unlink
+and the `rmdir` — 1 of 40 rounds emitted no `unlinkDir` at all, and the GitHub
+runner missed it on the first run of a guard keyed on it (green once, red the
+next run). `add()` on a path that does not exist does watch the parent for it
+(`add()` re-calls itself with the parent and the basename as target when
+`_addToNodeFs` fails) — 0 of 20 missed, `add` ~84ms — but only when something
+calls it, and the only trigger chokidar offers is that unreliable `unlinkDir`.
+So `lib/watcher.js` does not watch the assets root at all: it watches the
+folder's **parent**, which persists, with an `ignored` predicate that admits
+only the parent itself and the assets subtree. The folder's deletion and return
+are then child events of a live root, which chokidar handles correctly, and
+the restored file's `add` arrives in ~0.3s.
 
 Found because `test/integration/watch.test.js`'s "copies new assets, removes
 renamed/deleted outputs" waited 5 seconds for a restored asset on the Ubuntu
