@@ -3,6 +3,19 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.7.8 — 2026-10-17
+
+Nothing in the engine changed, and nothing in your site has to change.
+
+### The README sells the site before it sets one up
+
+`README.md` now opens with what kiss-ssg is for and what you get — four short sections on
+describing a site, keeping it readable, checking every build and remembering what it is — before
+the setup commands, which are unchanged. The long explanation of how the plugins install, and the
+optional Anthropic skills, are collapsed under the quick start rather than in its way. A
+documentation table keyed by what you want to do replaces the paragraph that pointed at
+`GUIDE.md`. The header carries the logo, the CI, npm, stars and Node badges, and a link bar.
+
 ## 2.7.7 — 2026-10-13
 
 Nothing in the engine changed, and nothing in your site has to change.
