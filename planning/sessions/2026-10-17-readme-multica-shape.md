@@ -1,7 +1,7 @@
 ---
 branch: readme-multica-shape
 base: main
-status: open
+status: closed
 opened: 2026-10-17
 ---
 
@@ -40,3 +40,42 @@ This branch was not opened with `/branch-open`. The operator pointed at a README
 ## Pulse log
 
 - **2026-10-17 (at the close, not a pulse)** — Evidence: `npm test` 86 files / 2282 passed; prettier clean; every cited path and GUIDE.md heading checked on disk; GitHub's renderer produced the `remember-what-it-is` anchor GUIDE.md now links. **Eyeball: looked** — the operator was shown the GitHub-rendered page in dark and light (`header-dark.png`, `header-light.png`, `full-dark.png` in the session scratchpad) and said "Looks great". Decision: ready to close.
+
+# Session Reflection — 2026-10-17: The README in the multica shape
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** `18182cb` (README restructured, GUIDE.md link repointed), `3973dc7` (this log), `a99679e` (2.7.8 and the changelog entry). Docs only; no engine change.
+
+## Reflect — what the session was
+
+The session opened with a comment, not a brief: "I like the way the readme on this repo works", with a link. Claude read both READMEs and answered with an assessment rather than an edit — what multica's page does mechanically, how this repo's compared, what a kiss version would look like, and which tests pin the README. The operator then steered in three short messages: recreate the header and badges; the chart can go and the benefits go before the setup; close the branch. **Emergent**, and the shape served the work: each step was small enough to look at before the next, and the first turn's assessment became the plan the second and third turns executed.
+
+What it was not was a branch. The work ran on `main`, uncommitted, until the operator said "close this branch", at which point there was no branch to close. The close ritual's first step would have refused; the branch and this intent file were made then, and the log says so.
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing** was by example rather than specification, and that worked better than a specification would have: "I like the way this works" with a concrete artefact let Claude derive the mechanics (the map-not-manual bullets, the imperative sections, the collapsed heavy path, the intent-keyed table) and check them against the repo's constraints before writing. The operator's two steers were precise and cheap: a screenshot of the badges they liked, then one sentence that cut the chart and fixed the order.
+
+**Verification & ownership** is where the session is weakest, and the gap is specific. The operator looked at the GitHub-rendered page in both schemes and said "Looks great". That is an eyeball on the _shape_. Claude had flagged in the same message that three pieces of copy were its own — the problem paragraph under "What is kiss-ssg?", the four section headings with their promise lines, and "Why kiss?", which was drawn from CLAUDE.md's design philosophy because Claude does not know the name's origin — and the next message was "Looks great. Lets close this branch". The copy that a stranger will read first on the repo was accepted on a full-page screenshot in which that paragraph is six pixels high. Intended supervision: approve the layout. Actual: approve the layout and, by momentum, the prose.
+
+**Harness leverage** was strong on Claude's side and had one failure. The GitHub markdown API rendered the page exactly as the repo page will, and Playwright shot it; that is what made the operator's eyeball possible without a push. But the first render used the API's `gfm` mode, which renders newlines as hard breaks the way an issue comment does, so the badges stacked and the paragraph wrapped wrongly. Claude noticed before showing it, and re-rendered in `markdown` mode. The Chrome extension was not connected, which is why Playwright was reached for; `playwright-core` was declared and not installed, and the newer headless shell it wanted was not on disk, so the Chromium build already there was pointed at directly rather than downloading another.
+
+**Iteration discipline** was good by construction: header, screenshot, operator; restructure, full suite, screenshot, operator. Every artefact was looked at before the next ask.
+
+Where the sum beat the parts: the operator supplied the model to copy and the two cuts; Claude supplied the constraints the copy had to survive — the home-quickstart test that parses the command blocks, the contradiction table over the README, the one inbound anchor from GUIDE.md — and the shape survived all three on the first full run.
+
+**Competency level: Active supervisor.** The operator framed by example, steered twice with precision, and looked at the rendered artefact before accepting it. Not Agentic engineering lead: the branch was not opened, the new prose was not read, and the close was asked for on `main`.
+
+## Feedback — recommendations for next session
+
+- **Operator — read the three blocks of new copy before this merges.** The problem paragraph, the four promise lines, and "Why kiss?". They are the first words a stranger reads on the repo and they are Claude's. If the name has an origin, "Why kiss?" is where it belongs and it currently has none.
+- **Operator — open the branch before the first edit.** "Close this branch" arrived with no branch open. `/branch-open` on the second message ("recreate them") would have cost one interview and given the close a real intent artefact rather than one reconstructed from the conversation.
+- **Claude — when a comment turns into a change, propose the branch at that moment.** The first turn was right to assess rather than edit. The second turn edited `README.md` on `main` without saying "this is now a branch's worth of work". The ritual's refusal to close on the base branch is the symptom; the fix is to say it at the point the work starts.
+- **Claude — render a README preview with the API's `markdown` mode, never `gfm`.** `gfm` is comment rendering: newlines become `<br>`. The first preview was wrong in a way the operator would have corrected the markdown for, had it been shown. From Git Bash, `gh api` also needs `MSYS_NO_PATHCONV=1` or the endpoint path is rewritten to a Windows path.
+- **Process — the npm badge now says what npm has, in public.** `npm view` says latest is 2.7.0 and the only 2.7.x tag is v2.7.0; `package.json` is at 2.7.8 after this branch. The README's header will show 2.7.0 until something is published. Decide whether that gap is intended.
+- **Process — `playwright-core` was declared and not installed.** `npm install` fixed it and churned only `peer` flags in the lockfile, which were reverted. Worth knowing before the next browser check, because the screenshot script in `scripts/` depends on it.
+
+## Verdict — did we achieve the objective?
+
+The brief: make the README work the way multica's does, benefits before setup, with its header and badges. **Met.** Every criterion in the intent above is ticked with its evidence; the last, `npm run gates`, passed at the close (test, lint, typecheck, format over 9 changed files, pack at 312 files). What is concretely better: a reader meets what kiss-ssg is for before they meet six commands, and the long plugin-scope prose no longer sits between the commands and the prompt. Open: the three blocks of Claude's copy await a human read, and the published version lags the badge.
