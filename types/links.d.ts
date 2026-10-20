@@ -52,13 +52,43 @@ export function classifyReference(ref: string, { siteUrl }?: {
  * produced, whether or not they are on disk yet
  * @returns {boolean}
  */
-export function resolveReference(ref: string, { pageBuildTo, buildDir, extensionLess, exists, known, }?: {
+export function resolveReference(ref: string, options?: {
     pageBuildTo: string;
     buildDir: string;
     extensionLess?: boolean;
     exists?: (file: string) => boolean;
     known?: Set<string>;
 }): boolean;
+/**
+ * Which file an internal reference resolves to — `resolveReference`'s answer
+ * with its working shown, for a caller that needs to know the page a link
+ * lands on (`lib/audit.js`, to look up its ids).
+ *
+ * `known` is tried across **every** candidate before the filesystem is asked
+ * about any. Asked candidate by candidate, `/about` would resolve to `about`
+ * itself on a real disk — `existsSync` is true for the folder that holds
+ * `about/index.html` — and the page would never be named. For
+ * `resolveReference` the order changes nothing: it only asks whether any
+ * candidate exists.
+ *
+ * @param {string} ref the `path` `classifyReference` returned
+ * @param {Object} options the same as `resolveReference`'s
+ * @param {string} options.pageBuildTo
+ * @param {string} options.buildDir
+ * @param {boolean} [options.extensionLess]
+ * @param {(file: string) => boolean} [options.exists]
+ * @param {Set<string>} [options.known]
+ * @returns {string|null} the matched candidate, relative to the build folder
+ * with forward slashes; `null` when nothing matched or the reference climbs
+ * out of the build folder
+ */
+export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLess, exists, known, }?: {
+    pageBuildTo: string;
+    buildDir: string;
+    extensionLess?: boolean;
+    exists?: (file: string) => boolean;
+    known?: Set<string>;
+}): string | null;
 /**
  * One page's output as the scan needs it: where it was written, and what it
  * referenced. `links` is `KissPage.links`, extracted at write time.

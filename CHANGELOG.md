@@ -3,6 +3,32 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## Unreleased
+
+<!-- The version is set at /branch-close; 2.8.0 is proposed (a minor: new audit check ids). -->
+
+Nothing fails a build that used to pass. The audit has three more checks, so your first build after
+upgrading may report findings it never did. The `kiss-site-migrate` skill's § 0e says what to
+expect.
+
+### The audit checks zoom and in-page links
+
+- **`viewport-zoom-lock`.** A page whose `<meta name="viewport">` turns off zoom. That means
+  `user-scalable=no`, or a `maximum-scale` below 2, short of the 200% people with low vision rely
+  on.
+- **`href-hash`.** A link to `#`, which goes nowhere. It is usually a control that should be a
+  `<button>`.
+- **`fragment-missing`.** A `#fragment` that names no `id` on the page it lands on. That covers a
+  skip link to an `id`-less `<main>`, a table of contents after a heading was renamed, and a
+  `{{link "about"}}#team` to a section that moved. It checks this page and every other page the
+  build wrote. It leaves alone what it cannot see: `#top`, text fragments, other sites, assets, and
+  ids a script adds at runtime. For those last ones, the trade-off of ignoring the check is in
+  `GUIDE.md`.
+
+Each is advisory, like every audit check, and each can be turned off with a reason in
+`audit.ignore`. Under `--summary`, `viewport-zoom-lock` and `fragment-missing` print one line per
+value, so you see which href to fix.
+
 ## 2.7.8 — 2026-10-17
 
 Nothing in your site has to change.

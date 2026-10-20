@@ -227,7 +227,7 @@ export const DEFAULT_LINKS: Readonly<{
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
-    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
     write: true;
@@ -272,7 +272,7 @@ export const DEFAULT_CONFIG: Readonly<{
     }>;
     audit: Readonly<{
         check: true;
-        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
     }>;
     markdownCopies: Readonly<{
         write: true;

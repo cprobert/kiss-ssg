@@ -1042,11 +1042,12 @@ An absolute URL on your own `siteUrl` counts as **internal** — that is what ca
 
 The finding is advisory: it never changes `ok` and never changes the exit code. Set `links: { check: false }` to turn the scan off. Paths your **host** serves that no build folder holds — a rewrite to a function, a bundle a post-build step writes, a file another script writes after kiss settles — go in `links: { hostServed: ['/v1/**', '/llms.txt'] }`: a reference the build cannot resolve that matches one is counted in `links.hostServed` rather than listed as broken. A pattern is the whole root-relative path; `*` matches within one segment, `**` across them, and every other character is literal. It is matched against the path the browser requests: `..` is resolved and stops at the origin root (`/v1/../gone.html` is a request for `/gone.html`), and a site whose `siteUrl` carries a path prefix writes its patterns with the prefix (`https://example.com/docs` → `/docs/api/**`). `{{link}}` and the checker are two halves of one thing: the helper renders a path the resolver accepts by construction, so a site whose internal hrefs are all `{{link}}` reports no broken links and the scan stays the net for the hand-written references beside them — with one qualifier, that the scan only knows the pages which wrote bytes, so a `{{link}}` to a page that failed to render _is_ reported broken on every page that linked it. A dev build or a watch rebuild always reports `links: null` — a scoped re-render has not rewritten every page, so there is nothing honest to scan.
 
-**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on — except the two duplicate checks, which get one line per shared value, so you can see what to change:
+**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on. Four checks get one line per value instead, because the value is what you change: the two duplicate checks, `viewport-zoom-lock` and `fragment-missing`.
 
 ```
   audit description-missing: 12 pages (./public/about.html, ./public/contact.html, ./public/index.html, …)
   audit title-duplicate: "Aster & Oak" on 2 pages (./public/about.html, ./public/contact.html)
+  audit fragment-missing: "/about.html#team" on 3 pages (./public/blog/index.html, ./public/contact.html, ./public/index.html)
   audit favicon-missing
   audit stray-file: 2 files (./public/css/site.css.map, ./public/.DS_Store)
 ```
@@ -1061,6 +1062,9 @@ The checks, by the id `check` carries:
 | `canonical-missing`                        | `siteUrl` is set and the page has no `<link rel="canonical">` — `{{canonical}}` writes it                                             |
 | `img-alt-missing`                          | an `<img>` with no `alt` attribute at all (`alt=""` is right for a decorative image)                                                  |
 | `h1-count`, `heading-skip`                 | a page without exactly one `<h1>`, or one whose headings jump a level (`h2 -> h4`)                                                    |
+| `viewport-zoom-lock`                       | a `<meta name="viewport">` with `user-scalable=no` (or `0`), or a `maximum-scale` below 2, stops the 200% zoom WCAG 1.4.4 asks for    |
+| `href-hash`                                | an `<a>` or `<area>` with `href="#"`: a link to nowhere, usually a control that should be a `<button>`, or a link not yet filled in   |
+| `fragment-missing`                         | a link's `#fragment` names no `id` (or `<a name>`) on the page it lands on, whether that page is this one or another the build wrote  |
 | `favicon-missing`                          | no page links an icon and there is no `favicon.ico` at the build root                                                                 |
 | `not-found-missing`                        | no `404.html` at the build root — under `extensionLess` a `404` view lands at `404/index.html`, which hosts do not serve              |
 | `site-url-local`                           | `siteUrl` is `localhost`, `127.*`, a `.local`/`.test`/`.invalid` name or a preview deploy (`.example` is fine)                        |
@@ -1069,6 +1073,22 @@ The checks, by the id `check` carries:
 | `console-log`                              | a `.js` file you wrote contains `console.log(` — `*.min.js`, `vendor/` and `node_modules/` are skipped                                |
 
 Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the three checks that walk it — `not-found-missing`, `stray-file`, `console-log` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
+
+**What `fragment-missing` can and cannot see.** It reads the ids in the HTML the build wrote, so it checks a skip link (`<a href="#main">` against `<main id="main">`), an in-page table of contents, and a cross-page `{{link "about"}}#team`, resolved to the page exactly as the link scan resolves its path. It leaves alone what it cannot judge:
+
+- `#top`, which a browser scrolls to the top of the page when no element claims it;
+- a text fragment (`#:~:text=…`), though a fragment before one is still checked;
+- a fragment on anything that is not a page this build wrote: a PDF, an asset, another site, or a page written by another instance or an earlier build;
+- every bare fragment on a page with a `<base href>`, since that moves what the fragment resolves against.
+
+Two cases come up often:
+
+- **An `id` your script adds at runtime** is not in the written HTML, so the link to it is reported. `audit.ignore` turns off a whole check, so ignoring `fragment-missing` for that reason turns off its coverage of your skip link too. `href-hash` is a separate id so that the commonest deliberate case, a `href="#"` toggle, can be ignored on its own.
+- **A heading in Markdown has no `id`:** Remarkable writes `# Team` as `<h1>Team</h1>`. So a Markdown link to `#team` is reported until the target carries one. Write that heading as HTML (`<h2 id="team">Team</h2>`), which Markdown allows.
+
+The `.md` copies beside each page are not audited. Only `.html` output is.
+
+Every `detail` is the value as the page was written, after minification, so `viewport-zoom-lock`'s is the content with the minifier's spacing (`width=device-width,maximum-scale=1`).
 
 **Redirects and renames.** The same report carries `redirects` — the redirect files this build wrote from your pages' `aliases`, the resolved `rules` as data, and three more advisory findings: a page the last record had that this build no longer writes and no alias covers (`  removed without redirect: <path>`), a page the record and this build share an `id` with that is now written somewhere else with nothing answering its old URL (`  moved without redirect: <from> -> <to> (<id>)`), and an alias a live page already answers, which the host will silently ignore (`  alias collides with a page: <path>`). See [Redirects](#redirects).
 

@@ -68,7 +68,7 @@ _A verdict, not a log. Mistakes can't ship quietly._
 - **[`kiss-ssg check`](GUIDE.md#checking-a-build) →** A dry run of your build script: one JSON report per site, exit 1 on any failure, and the published output untouched.
 - **[Links by identity](GUIDE.md#helpers) →** `{{link "about"}}` turns a page's id into its served path, and a link to a page nobody made fails the build instead of emitting a URL nobody checked.
 - **[Broken links and missing assets](GUIDE.md#checking-a-build) →** Every `href` and `src` the build wrote is resolved against the files it wrote, and an `{{asset}}` on a path no copy emitted fails the build.
-- **[Launch-readiness audit](GUIDE.md#checking-a-build) →** Pages with no title, description or `og:image`, images with no alt text, a missing favicon or 404 page, a source map shipped by accident. Advisory, and never the exit code.
+- **[Launch-readiness audit](GUIDE.md#checking-a-build) →** Pages with no title, description or `og:image`, images with no alt text, a viewport that blocks zoom, a skip link or `#anchor` that lands nowhere, a missing favicon or 404 page, a source map shipped by accident. Advisory, and never the exit code.
 - **[Sitemap, feed, robots and redirects](GUIDE.md#sitemap) →** Written from the same registry as the pages and from the address you gave, so none of them can disagree with the site — and a host decides whether a folder's URL keeps its trailing slash.
 - **[kiss-site-review](plugins/kiss-ssg/skills/kiss-site-review/SKILL.md) →** Is it ready to launch: the audit's findings, a look in a browser at phone and desktop widths, and a report before any fix.
 

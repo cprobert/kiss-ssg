@@ -3,9 +3,13 @@ import {
   extractReferences,
   classifyReference,
   resolveReference,
+  resolveTarget,
   checkLinks,
   hostServedMatcher,
 } from '../../lib/links.js'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 // A realistic production page: minified (one line, no comments), a layout's
 // canonical and stylesheet, a nav, a responsive image, a form, an inline
@@ -271,6 +275,54 @@ describe('resolveReference', () => {
         exists: (file) => file === '/tmp/site/public/about.html',
       }),
     ).toBe(true)
+  })
+})
+
+describe('resolveTarget', () => {
+  it('names the page a reference lands on, preferring a known page to a folder on disk', () => {
+    // On a real disk `about/` is a directory and `existsSync` says yes to it,
+    // so a loop that asked the filesystem candidate by candidate would answer
+    // `about` for `/about` — never the page, whose ids the audit needs.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-target-'))
+    try {
+      fs.mkdirSync(path.join(dir, 'about'))
+      fs.writeFileSync(path.join(dir, 'about', 'index.html'), '<html></html>')
+      fs.writeFileSync(path.join(dir, 'guide.pdf'), '')
+      const buildDir = dir.replace(/\\/g, '/')
+      const known = new Set(['about/index.html'])
+      const target = (ref, extensionLess = false) =>
+        resolveTarget(ref, {
+          pageBuildTo: `${buildDir}/index.html`,
+          buildDir,
+          extensionLess,
+          known,
+        })
+      expect(target('/about')).toBe('about/index.html')
+      expect(target('/about', true)).toBe('about/index.html')
+      expect(target('/about/')).toBe('about/index.html')
+      expect(target('about')).toBe('about/index.html')
+      // Not known, but on disk: the file itself.
+      expect(target('/guide.pdf')).toBe('guide.pdf')
+      expect(target('/gone')).toBe(null)
+      expect(target('/../x.html')).toBe(null)
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('agrees with resolveReference on every answer', () => {
+    const exists = (file) =>
+      ['public/a.html', 'public/b/index.html'].includes(file)
+    for (const ref of ['/a', '/a.html', '/b', '/b/', '/c', 'a', '../a.html']) {
+      const options = {
+        pageBuildTo: 'public/index.html',
+        buildDir: 'public',
+        exists,
+      }
+      expect(resolveTarget(ref, options) !== null).toBe(
+        resolveReference(ref, options),
+      )
+    }
   })
 })
 
