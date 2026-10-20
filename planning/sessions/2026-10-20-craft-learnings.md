@@ -122,6 +122,20 @@ Agents never commit. The operator's look at the pilot is the checkpoint for the 
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-20, pulse 1 (after the engine).**
+  - **Met:**
+    - **The plan and its critique:** `afa2f96`, 15 items answered.
+    - **The audit checks:** `d1f927b`. Tests were seen red first (23 unit, 1 integration), then green. `npm test`: 2,305 passed; the 1 failure is the baseline watch test. Lint, typecheck and format pass. `llms.txt` is 14,027 characters.
+  - **Partial:**
+    - **The examples.** Every example and `check docs.js` report no new findings; example 8 exits 1 by design. On the docs build, removing `#host-url-policy` from its page produced 3 findings, two of them relative `../urls/#…` links under the `/kiss-ssg/` prefix and `extensionLess`. The examples' craft fixes are not done yet.
+    - **2.8.0.** Only the draft entry and migrate § 0e exist.
+  - **Not yet:** skills, pins, pilot, clean rooms.
+  - **Drift:** none beyond the two Amendments.
+  - **Eyeball: deferred to the pilot.** The operator works from the cloud session and can see only links or screenshots, so Claude gave GitHub links to `GUIDE.md` L1045–1091 and the fix table at `d1f927b`. The operator chose to judge the wording at the pilot, with screenshots. That is where it is tracked.
+  - **Offered explanation:** the fragment check names only pages this build wrote (`exists: () => false`). If that is wrong, a fragment on a page from an earlier build or a sibling instance goes unchecked: a missed finding, never a false one. Not taken up.
+  - **Lesson for this branch:** anything the operator is asked to look at comes with a link or a screenshot.
+  - **Decision:** continue.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
