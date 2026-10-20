@@ -107,6 +107,15 @@ Agents never commit. The operator's look at the pilot is the checkpoint for the 
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-20 — three audit ids, not two.** The fragment check is split into `href-hash` (a bare `href="#"`) and `fragment-missing` (a `#fragment` with no matching id). That lets a site that uses `href="#"` on purpose ignore that one shape with a reason and keep the skip-link coverage. With `viewport-zoom-lock`, that makes three ids. Wherever the criteria say "two new audit checks" or "two new audit findings", read three. The critique also raised that `audit.ignore` works per check only. The operator chose **accept and document** over a new per-fragment key.
+- **2026-10-20 — craft fixes to the shipped examples, at the operator's choice ("Fix them here").** The new checks, measured, found:
+  - no skip link in examples 4 and 12, and no `id` on example 12's `<main>`;
+  - blog post body text at 115 characters per line at 1440px wide. The shared stylesheet's `$measure` is the page width (64rem), not a line length, and that file is byte-identical in 11 of the 12 examples.
+
+  The fixes are a skip link with a `<main id>` in 4 and 12, and a `max-width` in `ch` on the post body text in all 11 stylesheet copies, which stay identical. This reverses the non-goal "no restyle of the examples" only for these craft fixes. The cream-and-clay look is untouched.
+
+- **2026-10-20 — baseline, before any change.** `npm test` on the untouched branch: 1 failed of 2,285. The failure is `test/integration/watch.test.js` › "preserves all registered auxiliary outputs when static copies disappear". The same test passed 3 runs out of 3 on its own. That makes it a watch-only failure under the full suite's parallel load, on `main`, and outside this branch's surface. It is recorded for the Known knowns register (`AIKB/rebuild.md`) and not chased, per the dev-watcher rule.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
