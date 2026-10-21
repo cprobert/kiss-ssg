@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import path from 'node:path'
 
@@ -45,13 +45,37 @@ const recordingLogger = () => {
   return { logger, afterClose }
 }
 
+// Every kiss log line of the current test, timestamped from the test's start
+// and printed only when the test fails. A watcher that misses an event fails
+// as `waitFor: timed out`, which says nothing about which events arrived, in
+// what order, or whether chokidar reported an error the silent logger
+// swallowed. The Ubuntu runner has failed this file that way at three
+// different steps (2026-10-03, 2026-10-17, 2026-10-18) without reproducing
+// on any other machine, so the failure has to explain itself.
+const trace = []
+let traceStart = Date.now()
+const tracing = { ...silentLogger }
+for (const [name, fn] of Object.entries(silentLogger)) {
+  if (typeof fn !== 'function') continue
+  tracing[name] = (...args) => {
+    trace.push(
+      `${Date.now() - traceStart}ms ${name}: ${args.map(String).join(' ').trim()}`,
+    )
+    fn(...args)
+  }
+}
+beforeEach(() => {
+  trace.length = 0
+  traceStart = Date.now()
+})
+
 let site, kiss
 
 describe('review regressions', () => {
   const start = async (files, config = {}, setup = (k) => k) => {
     site = await makeSite({ 'src/pages/index.hbs': 'PAGE', ...files })
     kiss = setup(
-      new Kiss({ folders: site.folders, logger: silentLogger, ...config })
+      new Kiss({ folders: site.folders, logger: tracing, ...config })
         .scan()
         .generate(),
     )
@@ -165,7 +189,7 @@ describe('review regressions', () => {
       process.chdir(site.root)
       kiss = new Kiss({
         folders: { src: './src', build: './public' },
-        logger: silentLogger,
+        logger: tracing,
       })
         .scan()
         .generate()
@@ -265,7 +289,7 @@ describe('review regressions', () => {
       process.chdir(site.root)
       kiss = new Kiss({
         folders: { ...site.folders, build: './public', assets: null },
-        logger: silentLogger,
+        logger: tracing,
       }).scan()
       await fs.ensureDir(`${site.root}/other`)
       process.chdir(`${site.root}/other`)
@@ -287,7 +311,7 @@ describe('review regressions', () => {
     kiss = new Kiss({
       folders: site.folders,
       cleanBuild: 'atomic',
-      logger: silentLogger,
+      logger: tracing,
     })
     await kiss._assetQueue
     const staging = kiss._stagingDir
@@ -338,7 +362,7 @@ describe('review regressions', () => {
         kiss = new Kiss({
           folders: { ...site.folders, build },
           cleanBuild: mode === 'atomic' ? 'atomic' : true,
-          logger: silentLogger,
+          logger: tracing,
         })
           .scan()
           .generate()
@@ -403,7 +427,7 @@ describe('review regressions', () => {
     kiss = new Kiss({
       folders: site.folders,
       cleanBuild: 'atomic',
-      logger: silentLogger,
+      logger: tracing,
     })
       .scan()
       .generate()
@@ -589,7 +613,7 @@ describe('review regressions', () => {
 
 describe('watch filesystem reconciliation', () => {
   const start = async (config = {}) => {
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger, ...config })
+    kiss = new Kiss({ folders: site.folders, logger: tracing, ...config })
       .scan()
       .generate()
     await kiss.complete()
@@ -747,7 +771,9 @@ describe('watch filesystem reconciliation', () => {
     expect(await site.read('public/index.html')).toContain('main.css')
   })
 })
-afterEach(async () => {
+afterEach(async (context) => {
+  if (context.task.result?.state === 'fail' && trace.length)
+    console.log(`kiss log for "${context.task.name}":\n  ${trace.join('\n  ')}`)
   if (kiss) await kiss.close()
   if (site) await site.cleanup()
   vi.unstubAllGlobals()
@@ -770,7 +796,7 @@ describe('watch()', () => {
     try {
       kiss = new Kiss({
         folders: { src: './src', pages: `${site.root}/src/pages` },
-        logger: silentLogger,
+        logger: tracing,
       })
         .scan()
         .generate()
@@ -795,7 +821,7 @@ describe('watch()', () => {
 
   it('rebuilds a changed page and can be closed', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -810,7 +836,7 @@ describe('watch()', () => {
       'src/pages/index.hbs': '{{title}}',
       'src/controllers/index.js': "module.exports = () => ({ title: 'one' })",
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -829,7 +855,7 @@ describe('watch()', () => {
       'src/pages/about.hbs': '{{title}}',
       'src/controllers/about.mjs': "export default () => ({ title: 'a1' })",
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .page({ view: 'about.hbs', controller: 'about.mjs' })
       .generate()
     await kiss.complete()
@@ -848,7 +874,7 @@ describe('watch()', () => {
       'src/pages/index.hbs': '{{title}}',
       'src/models/index.json': '{ "title": "m1" }',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -957,7 +983,7 @@ describe('watch()', () => {
     })
     kiss = new Kiss({
       folders: { ...site.folders, helpers: `${site.root}/helpers` },
-      logger: silentLogger,
+      logger: tracing,
     })
       .scan()
       .generate()
@@ -982,7 +1008,7 @@ describe('watch()', () => {
     site = await makeSite({ 'src/pages/index.hbs': '{{#if shout}}x{{/if}}ok' })
     kiss = new Kiss({
       folders: { ...site.folders, helpers: `${site.root}/helpers` },
-      logger: silentLogger,
+      logger: tracing,
     })
       .scan()
       .generate()
@@ -1009,7 +1035,7 @@ describe('watch()', () => {
     })
     kiss = new Kiss({
       folders: { ...site.folders, helpers: `${site.root}/helpers` },
-      logger: silentLogger,
+      logger: tracing,
     })
       .scan()
       .generate()
@@ -1066,7 +1092,7 @@ describe('watch()', () => {
     })
     kiss = new Kiss({
       folders: { ...site.folders, helpers: `${site.root}/helpers` },
-      logger: silentLogger,
+      logger: tracing,
     })
       .scan()
       .generate()
@@ -1098,7 +1124,7 @@ describe('watch()', () => {
     })
     kiss = new Kiss({
       folders: { ...site.folders, helpers: `${site.root}/helpers` },
-      logger: silentLogger,
+      logger: tracing,
     })
       .scan()
       .generate()
@@ -1215,7 +1241,7 @@ describe('watch()', () => {
     })
     kiss = new Kiss({
       folders: { ...site.folders, helpers: `${site.root}/helpers` },
-      logger: silentLogger,
+      logger: tracing,
     })
       .scan()
       .generate()
@@ -1508,7 +1534,7 @@ describe('watch()', () => {
       'src/models/team/a.json': '{ "n": "a" }',
       'src/models/team/b.json': '{ "n": "b" }',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .pages({ view: 'item.hbs', model: 'team' })
       .generate()
     await kiss.complete()
@@ -1533,7 +1559,7 @@ describe('watch()', () => {
       'src/models/team/a.json': '{ "n": "a" }',
       'src/models/team/b.json': '{ "n": "b" }',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .pages({ view: 'item.hbs', model: 'team' })
       .page({ view: 'x.hbs', slug: 'item-2', ext: 'json' })
       .generate()
@@ -1560,7 +1586,7 @@ describe('watch()', () => {
     kiss = new Kiss({
       folders: site.folders,
       siteUrl: 'https://e.com',
-      logger: silentLogger,
+      logger: tracing,
     })
       .page({ view: 'about.hbs', controller: 'about.mjs' })
       .generate()
@@ -1590,7 +1616,7 @@ describe('watch()', () => {
 
   it('dev mode starts the (mocked) server and watcher; close() stops both', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'x' })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -1606,7 +1632,7 @@ describe('watch()', () => {
       'src/pages/index.hbs': '[{{> foo}}]',
       'src/partials/foo.hbs': 'V1',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -1622,7 +1648,7 @@ describe('watch()', () => {
       'src/pages/index.hbs': '[{{> foo}}]',
       'src/partials/foo.md': 'V1',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -1641,7 +1667,7 @@ describe('watch()', () => {
         '{{#extend "base"}}{{#content "c"}}X{{/content}}{{/extend}}',
       'src/layouts/base.hbs': 'L1{{#block "c"}}{{/block}}',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -1686,7 +1712,7 @@ describe('watch()', () => {
     // it failed to render, leaving that page frozen at its previous content.
     // The `add` now triggers a rebuild, which re-registers the partial.
     site = await makeSite({ 'src/pages/index.hbs': 'home' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -1837,7 +1863,7 @@ describe('watch()', () => {
     // watching was in no registration and never built. `.scan()` is now
     // remembered and re-run at the start of every replay.
     site = await makeSite({ 'src/pages/index.hbs': 'home' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -1883,7 +1909,7 @@ describe('watch()', () => {
     // registered regardless of the watcher's `add`-event handling. This
     // documents that half of the behaviour as correct, unlike the previous test.
     site = await makeSite({ 'src/pages/index.hbs': 'home' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .page({ view: 'index.hbs' })
       .generate()
     await kiss.complete()
@@ -1902,7 +1928,7 @@ describe('watch()', () => {
     // deleted-view fallback. Recorded here so a future change to that
     // coalescing (or to how renames are detected) is caught.
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .page({ view: 'index.hbs' })
       .generate()
     await kiss.complete()
@@ -1958,7 +1984,7 @@ describe('rebuild queue', () => {
       return { ok: true, json: async () => ({ title: 'remote' }) }
     })
     site = await makeSite({ 'src/pages/index.hbs': '{{title}}' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
       .generate()
     await kiss.complete()
@@ -2056,7 +2082,7 @@ describe('partial and layout fast path', () => {
       'src/pages/index.hbs': '[{{> foo}}]{{title}}',
       'src/partials/foo.hbs': 'V1',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
       .generate()
     await kiss.complete()
@@ -2086,7 +2112,7 @@ describe('partial and layout fast path', () => {
       'src/pages/index.hbs': '[{{> foo}}]{{title}}',
       'src/partials/foo.hbs': 'V1',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .page({ view: 'index.hbs', model: 'http://models.test/index.json' })
       .generate()
     await kiss.complete()
@@ -2111,7 +2137,7 @@ describe('partial and layout fast path', () => {
       'src/pages/other.hbs': 'other',
       'src/partials/foo.hbs': 'V1',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -2161,7 +2187,7 @@ describe('partial and layout fast path', () => {
       'src/pages/p.hbs': '[{{> foo}}]',
       'src/partials/foo.hbs': 'V1',
     })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -2181,7 +2207,7 @@ describe('partial and layout fast path', () => {
 
   it('skips a queued rebuild target the stack no longer holds', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
-    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, logger: tracing })
       .page({ view: 'index.hbs' })
       .generate()
     await kiss.complete()
@@ -2213,7 +2239,7 @@ describe('live reload', () => {
 
   it('reloads once when the first build settles', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -2230,7 +2256,7 @@ describe('live reload', () => {
       ),
       'src/partials/foo.hbs': 'V1',
     })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -2256,7 +2282,7 @@ describe('live reload', () => {
 
   it('reloads once for a page-template edit', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'v1' })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -2274,7 +2300,7 @@ describe('live reload', () => {
       'src/pages/index.hbs': '{{title}}',
       'src/models/index.json': '{ "title": "m1" }',
     })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -2292,7 +2318,7 @@ describe('live reload', () => {
       'src/pages/index.hbs': 'v1',
       'src/assets/css/main.css': 'body { color: red }',
     })
-    kiss = new Kiss({ folders: site.folders, dev: true, logger: silentLogger })
+    kiss = new Kiss({ folders: site.folders, dev: true, logger: tracing })
       .scan()
       .generate()
     await kiss.complete()
@@ -2322,7 +2348,7 @@ describe('dependency graph dump', () => {
     })
     kiss = new Kiss({
       folders: site.folders,
-      logger: silentLogger,
+      logger: tracing,
       dev: true,
       verbose: true,
       port: 0,
