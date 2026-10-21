@@ -3,9 +3,7 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
-## Unreleased
-
-<!-- The version is set at /branch-close; 2.8.0 is proposed (a minor: new audit check ids). -->
+## 2.8.0 — 2026-10-21
 
 Nothing fails a build that used to pass. The audit has three more checks, so your first build after
 upgrading may report findings it never did. The `kiss-site-migrate` skill's § 0e says what to
