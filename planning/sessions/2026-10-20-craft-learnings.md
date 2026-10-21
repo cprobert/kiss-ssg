@@ -176,6 +176,14 @@ Agents never commit. The operator's look at the pilot is the checkpoint for the 
   - **Clean room (a), example 11 from the tarball.** It found this branch's formatting defect: checks 11–20 had been folded into one 5,800-character line, which every gate passed. Fixed in `117dda8`, with a row requiring each check to start a line.
     - **It also re-measured the line length:** 69–79, not the 60–71 recorded. Claude measured all six posts at 60–79 (median 70) and corrected the record.
     - **Still to decide, in example 11 itself:** no empty states (check 20), hand-typed counts ("Four tags"), the alias paragraph at 155 characters a line, the hero paragraph at 74–84, and no hover change on the current nav link. Put to the operator.
+    - **Decided: the operator chose "Fix them here".**
+      - **Empty states and counts:** measured at 0 and at 1 post in scratch copies.
+      - **Counts:** they come from `countOf`.
+      - **Line length:** the cap is widened to all running text in `<main>`; post pages now top out at 79.
+      - **Current nav link:** it gains an underline on hover and press.
+      - **Example 11:** re-recorded.
+      - **The suite:** 2,319 passed.
+  - **Where the branch stands.** Every criterion has evidence except the close itself: the gates, an independent review of `lib/`, and the version number. The operator will ask for `/branch-close`.
 
 ---
 
