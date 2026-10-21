@@ -128,7 +128,7 @@ Whatever the look, keep these:
 The usability floors, built in from the first layout. Each is a check in `kiss-site-review`'s craft pass, which says how it is measured and why. Building to them now means the review finds nothing to fix:
 
 - **A skip link comes first** when a header or nav comes before `<main>`: `<a class="skip-link" href="#main">Skip to content</a>`, visible on focus, to `<main id="main">` (check 12).
-- **A visible focus style:** a `:focus-visible` ring, never a bare `outline: none` (check 10). Give a sticky header `scroll-padding-top` at least its own height (check 7).
+- **A visible focus style:** a `:focus-visible` ring, never a bare `outline: none` (check 10). Give a sticky header `scroll-padding-top` at least its own height, and a sticky bottom bar (a call or cookie bar) `scroll-padding-bottom` at least its own (checks 7 and 10).
 - **The current nav link carries `aria-current="page"`**, set inside `{{#isActive}}`, and is marked by more than colour (check 13).
 - **The viewport meta is `width=device-width, initial-scale=1`**, never with `user-scalable=no` or a `maximum-scale`. The audit reports a zoom lock as `viewport-zoom-lock`.
 - **Form inputs are 16px or larger**, each with its `autocomplete` token (`name`, `email`, `tel`), and no positive `tabindex` anywhere. iOS Safari zooms the page into a smaller input and does not zoom back out; that is reported, not measured here, because Chromium does not do it.

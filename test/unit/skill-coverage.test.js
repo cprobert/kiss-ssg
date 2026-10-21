@@ -307,6 +307,18 @@ const COVERAGE = [
   // the skills. The review runs as two passes, and each new craft check is one
   // that was measured in Chromium before its wording shipped
   // (planning/plans/2026-10-20-craft-learnings.md § Critique and answers).
+  // 2026-10-21, the Pro Plumbing pilot: its sticky bar is a call bar at the
+  // bottom of the phone screen, forward Tab hid two controls under it, and the
+  // top-header-only wording would have passed the site.
+  {
+    feature:
+      'a sticky bar at the bottom hides forward Tab: scroll-padding-bottom',
+    pattern: /^(?=[\s\S]*`scroll-padding-bottom`)(?=[\s\S]*bottom bar)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-review'),
+      skill('kiss-ssg', 'kiss-site-new'),
+    ],
+  },
   {
     feature: 'the review is two passes: a usability audit, then a design lift',
     pattern:
@@ -623,6 +635,12 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-10-21 pilot: "a forward Tab … never hid one" was measured under a top header only; under a bottom call bar a forward Tab is exactly the direction that hides controls, and the sentence read as a general pass',
+    patterns: [
+      /forward Tab brings each link in from the bottom of the screen and never hid one/,
+    ],
+  },
   {
     why: '2026-10-21 clean room: a news section whose items are their own pages gets no placeholder item, because a placeholder post is published as a real URL in the sitemap and the feed; it builds empty and shows its empty state. The old rule put news beside the menu, under marked slots, and the agent had to choose between the two',
     patterns: [/a team or a news section with no items given/],
