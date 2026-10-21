@@ -20,7 +20,8 @@ $measure: 64rem;
 // About 70 characters, the long end of what reads comfortably. A post body at
 // 1440px ran to 115 characters a line before this cap existed. Measured, not
 // assumed: `ch` is the width of "0", wider than this font's average letter,
-// so 70ch came out at 97 characters a line and 54ch at 60–71.
+// so 70ch came out at 97 characters a line, and 54ch at 60–79 across the six
+// posts (median 70).
 $line-length: 54ch;
 $radius: 12px;
 

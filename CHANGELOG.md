@@ -70,7 +70,7 @@ The examples ship as models of good practice, so they now pass the new review ch
   else.
 - **Text in a card stops at a readable line.** The shared stylesheet's `$measure` is the page's
   width, so a blog post ran to 115 characters a line at desktop width. A new `$line-length: 54ch`
-  caps paragraphs, list items and quotes in a card at about 60–70 characters. The look is
+  caps paragraphs, list items and quotes in a card at 60–79 characters a line, median 70, across the six posts. The look is
   otherwise unchanged.
 
   `54ch`, not `70ch`, and that was measured, not assumed: `ch` is the width of "0", so `70ch` came

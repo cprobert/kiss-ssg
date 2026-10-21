@@ -307,6 +307,18 @@ const COVERAGE = [
   // the skills. The review runs as two passes, and each new craft check is one
   // that was measured in Chromium before its wording shipped
   // (planning/plans/2026-10-20-craft-learnings.md § Critique and answers).
+  // 2026-10-21 clean room: an unindented paragraph inside check 10 ended the
+  // list, and prettier folded checks 11–20 into one 5,800-character line, so an
+  // agent could not find them by number. Every gate passed it. Each check
+  // starting its own line is what this row holds.
+  {
+    feature: 'the twenty craft checks are each their own list item',
+    pattern: new RegExp(
+      `^${Array.from({ length: 20 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
+      'm',
+    ),
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
   // 2026-10-21, the Pro Plumbing pilot: its sticky bar is a call bar at the
   // bottom of the phone screen, forward Tab hid two controls under it, and the
   // top-header-only wording would have passed the site.
