@@ -158,6 +158,25 @@ Agents never commit. The operator's look at the pilot is the checkpoint for the 
   - **Eyeball:** the line-length screenshots, looked at. The operator chose to keep the cap.
   - **Decision:** continue to the pilot.
 
+- **2026-10-21, the pilot and the clean rooms.**
+  - **Pilot (`Probert-Family/pro-plumbing`, `pilot/craft-review`).** A fresh agent ran the new review from the skill text alone, on a scratch copy, with kiss packed from this branch.
+    - **Audit:** clean, including the three new checks.
+    - **Findings:** 17 (P0 0, P1 4, P2 8, P3 5).
+    - **Recorded decisions:** 13 candidates were dropped as recorded, each record named, and two came back marked "ask". So **no finding would have undone a recorded decision**, which meets that part of the pilot criterion.
+    - **Re-derived by Claude:** the headline contrasts (2.78, 2.75, 1.38).
+    - **The agent's wording guesses became fixes in `6487748`:**
+      - **the big one:** checks 7 and 10 assumed a top header, while the site's sticky bar is at the bottom, where a forward Tab hides controls. Read literally, the old wording would have passed the site;
+      - **check 20 at 0:** the agent reported that an empty model fails the build. Re-derived locally, an empty model folder builds; what fails is a page that `{{link}}`s a removed item.
+    - **The fixes.** The operator saw the report and the screenshots, then picked 1–14 and 16 plus both lifts. The pilot agent applied them; Claude reviewed the diff and re-measured.
+      - **Corrected by that measurement:** the Google card edge. `slate-400` passes on white but is 2.95:1 on the `slate-50` card it sits on on three pages, so it is `slate-500`.
+      - **Added by Claude:** a README line, because the unconfirmed privacy line now blocks launch.
+      - Pushed to the pilot branch only, in Pro Plumbing's `5f0635e`. Nothing on `main` changes.
+  - **Clean room (b), the bakery brief.** `check` ok, exit 0, and every applicable floor met. Two guesses on this branch's wording were fixed in `3389920`: news versus placeholder slots (old sentence banned), and "a singular".
+    - **Reported, not chased:** an empty fan-out folder logs a red `Invalid model` while the build passes. That is misleading output; it is recorded for a later branch.
+  - **Clean room (a), example 11 from the tarball.** It found this branch's formatting defect: checks 11–20 had been folded into one 5,800-character line, which every gate passed. Fixed in `117dda8`, with a row requiring each check to start a line.
+    - **It also re-measured the line length:** 69–79, not the 60–71 recorded. Claude measured all six posts at 60–79 (median 70) and corrected the record.
+    - **Still to decide, in example 11 itself:** no empty states (check 20), hand-typed counts ("Four tags"), the alias paragraph at 155 characters a line, the hero paragraph at 74–84, and no hover change on the current nav link. Put to the operator.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
