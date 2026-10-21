@@ -522,9 +522,21 @@ describe('review regressions', () => {
           .feed({ title: 'News', filename: 'news.xml' }),
     )
     kiss.viewStats()
-    await waitFor(
-      async () => (await site.read('public/debug.json')) !== 'STATIC',
-    )
+    // `viewStats()` does not await its write, and `fs.outputJson` truncates
+    // the file before filling it: a poll that only asks "no longer STATIC"
+    // can read the dump half-written and snapshot a truncated file, which
+    // the comparison below then fails against the finished one (the Ubuntu
+    // runner, one run in four, 2026-10-21). The dump is done when it parses.
+    await waitFor(async () => {
+      const body = await site.read('public/debug.json').catch(() => null)
+      if (!body || body === 'STATIC') return false
+      try {
+        JSON.parse(body)
+        return true
+      } catch {
+        return false
+      }
+    })
     const before = await Promise.all(
       outputs.map((file) => site.read(`public/${file}`)),
     )
