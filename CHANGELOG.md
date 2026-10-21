@@ -64,6 +64,12 @@ the measurable lessons, not the skills, and recommends no new companion skill.
 
 The examples ship as models of good practice, so they now pass the new review checks:
 
+- **Example 11, the blog, works at no posts and at one.** The home page, the listing and the
+  tags page show a line saying the journal or the tags are empty, instead of a heading with
+  nothing under it. The counts its copy states ("6 posts… 4 tags") come from the posts through
+  one `countOf`, singular at one, instead of being typed into the templates. The current page's
+  nav link now shows an underline on hover and press.
+
 - **Examples 4 and 12 have a skip link** to `<main id="main">`, as the other examples already
   did. In example 12, the conversion, it is declared in `tools/compare.mjs` as the one element the
   built page has that the original artifact did not. The comparison stays exact about everything
@@ -72,6 +78,9 @@ The examples ship as models of good practice, so they now pass the new review ch
   width, so a blog post ran to 115 characters a line at desktop width. A new `$line-length: 54ch`
   caps paragraphs, list items and quotes in a card at 60–79 characters a line, median 70, across the six posts. The look is
   otherwise unchanged.
+
+  The cap covers all running text in `<main>`, not only cards. A note under a post had run to
+  155 characters a line.
 
   `54ch`, not `70ch`, and that was measured, not assumed: `ch` is the width of "0", so `70ch` came
   out at 97 characters a line.

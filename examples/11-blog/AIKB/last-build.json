@@ -7,7 +7,7 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "9c1550dfe22a2a2c2a211c785162f162a6abf7a7",
+      "hash": "30c19b8876bcc9415e34c7c6ed1b57a9e77486db",
       "id": "index",
       "canonical": null,
       "markdown": "./public/index.md"
@@ -34,7 +34,7 @@
       "view": "blog/tags.hbs",
       "buildTo": "./public/blog/tags/index.html",
       "ok": true,
-      "hash": "00c1db9071b9557507c07766b2b1eb78c2f8cab5",
+      "hash": "b04922e6dedd5b6ec26a4b3b56e6d27ec1c10957",
       "id": "blog/tags",
       "canonical": null,
       "markdown": "./public/blog/tags/index.md"
@@ -177,7 +177,7 @@
         "kind": "controllers",
         "id": "tag.js",
         "note": "notes/controllers/tag.md",
-        "hash": "e45878f4123a5be97eeaf70004764ddf47cf6712"
+        "hash": "3dca8092688e745c2d9467c1772c36df933c004f"
       }
     ]
   },

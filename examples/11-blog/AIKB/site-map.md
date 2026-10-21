@@ -68,4 +68,4 @@ _None._
 | Kind        | Subject   | Note                        | Hash           |
 | ----------- | --------- | --------------------------- | -------------- |
 | controllers | `post.js` | `notes/controllers/post.md` | `35ead9dc0ca2` |
-| controllers | `tag.js`  | `notes/controllers/tag.md`  | `e45878f4123a` |
+| controllers | `tag.js`  | `notes/controllers/tag.md`  | `3dca8092688e` |

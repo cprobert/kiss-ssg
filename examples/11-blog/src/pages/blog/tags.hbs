@@ -7,9 +7,9 @@
     <p class="eyebrow">The journal</p>
     <h1>Every tag</h1>
     <p>
-      Four tags, none of them written down anywhere: each one exists because some post
-      mentions it, and <code>controllers/tag.js</code> folds the posts into one record per tag
-      for the fan-out to build.
+      {{model.tally.tags}}, none of them written down anywhere: each one exists because some
+      post mentions it, and <code>controllers/tag.js</code> folds the posts into one record per
+      tag for the fan-out to build.
     </p>
   </section>
 
@@ -20,6 +20,8 @@
       <p class="meta">{{postCount}}</p>
       <p>{{#each posts}}<a href="{{link id}}">{{title}}</a>{{#unless @last}} &middot; {{/unless}}{{/each}}</p>
     </article>
+    {{else}}
+    <p class="meta">No tags yet: a tag appears when a post is filed under it.</p>
     {{/each}}
   </div>
 

@@ -1,18 +1,21 @@
 ---
-subject-hash: e45878f4123a5be97eeaf70004764ddf47cf6712
+subject-hash: 3dca8092688e745c2d9467c1772c36df933c004f
 ---
 
 # tag.js
 
 ## What it does
 
-Owns everything about a tag. `tagSlug` derives the slug a tag's page is written at; `tagRecords`
-folds the posts into one record per tag — `{ tag, slug, count, postCount, posts }`, sorted by
-slug, where `postCount` is the count in words ("1 post", "2 posts") because Handlebars has no
-comparison helper and `{{count}} posts` would read "1 posts" — which
-is the array the second `.pages()` fan-out is registered over; and the default export turns one
-of those records into a page, deriving nothing except the title and description that the layout
-and llms.txt read.
+Owns everything about a tag, and the site's one way of writing a count. `tagSlug` derives the
+slug a tag's page is written at. `countOf(n, noun)` writes a count in words, singular at one
+("1 post", "4 tags"). It is the one place the site's counts come from, because Handlebars has no
+comparison helper, so `{{count}} posts` would read "1 posts", and a count typed into a template
+("six posts, four tags") is wrong the day the seventh post is written. `router.js` uses it for the
+home page's and the tags page's copy. `tagRecords` folds the posts into one record per tag —
+`{ tag, slug, count, postCount, posts }`, sorted by slug, `postCount` coming from `countOf` —
+which is the array the second `.pages()` fan-out is registered over; and the default export
+turns one of those records into a page, deriving nothing except the title and description that
+the layout and llms.txt read.
 
 ## Why it is this way
 

@@ -280,6 +280,14 @@ code {
       color: var(--accent-ink);
       font-weight: 700;
     }
+
+    // The current page's link already wears the hover colours, so a hover or
+    // a tap on it has to show something else, or it answers with nothing.
+    &.is-active:hover,
+    &.is-active:active {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
   }
 }
 
@@ -292,8 +300,10 @@ main {
   gap: 2rem;
 }
 
-// Running text in a card stops at a readable line, whatever width the card is.
-.card :is(p, li, blockquote) {
+// Running text stops at a readable line, wherever it sits: in a card, a
+// callout, a note under a post or the hero. Capping cards alone left a note
+// at 155 characters a line and the hero at 84.
+main :is(p, li, blockquote) {
   max-width: $line-length;
 }
 
@@ -301,7 +311,7 @@ main {
 // `.eyebrow` (0,1,0), which turned the label grey and body-sized.
 .hero {
   p:not(.eyebrow) {
-    max-width: 44rem;
+    max-width: $line-length;
     color: var(--ink-soft);
     font-size: 1.1rem;
   }

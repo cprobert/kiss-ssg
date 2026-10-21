@@ -7,7 +7,7 @@
 // `helpers/` folder, which is the convention working rather than a gap.
 import Kiss from 'kiss-ssg'
 import { loadPosts, summaryCard } from './src/controllers/post.js'
-import { tagRecords } from './src/controllers/tag.js'
+import { countOf, tagRecords } from './src/controllers/tag.js'
 import { journal } from './config/site.js'
 
 // Facts the site states more than once. Any extra key on the config reaches
@@ -88,6 +88,12 @@ const kiss = new Kiss({
 const posts = loadPosts('./src/models/posts')
 const cards = posts.map(summaryCard)
 const tags = tagRecords(cards)
+// The counts the copy states, from the records rather than typed into a
+// template: "six posts, four tags" is true until the seventh post is written.
+const tally = {
+  posts: countOf(cards.length, 'post'),
+  tags: countOf(tags.length, 'tag'),
+}
 
 // Pagination is arithmetic over the whole collection, so it lives here rather
 // than in a controller: a controller only ever sees one record and can never
@@ -107,7 +113,7 @@ kiss.page({
   title: 'The Aster & Oak journal',
   description:
     'Brewing notes, sourcing news and bench lots from a small-batch roastery in Bristol.',
-  model: { latest: cards.slice(0, 3) },
+  model: { latest: cards.slice(0, 3), tally },
 })
 
 for (let number = 1; number <= pageCount; number++) {
@@ -173,9 +179,8 @@ kiss
     path: 'blog/tags',
     slug: 'index',
     title: 'Every tag',
-    description:
-      'The four tags the Aster & Oak journal uses, and the posts filed under each.',
-    model: { tags },
+    description: `The ${tally.tags} the Aster & Oak journal uses, and the posts filed under each.`,
+    model: { tags, tally },
   })
   // What the host serves for a URL the site does not have. On this
   // `extensionLess` site a `404` view would land at 404/index.html, which no
