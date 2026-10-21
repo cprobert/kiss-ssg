@@ -183,6 +183,11 @@ Agents never commit. The operator's look at the pilot is the checkpoint for the 
       - **Current nav link:** it gains an underline on hover and press.
       - **Example 11:** re-recorded.
       - **The suite:** 2,319 passed.
+  - **Pro Plumbing merged to `main` (operator's decision, "merge everything as is", markers and all).**
+    - **Verified first:** with the site's lockfile kiss (2.7.0, which Netlify installs), `check` was ok with no findings.
+    - **Merged:** fast-forward to `5f0635e`.
+    - **Re-recorded:** `AIKB/` re-recorded and committed as `49c4fca`, per the site's own `CLAUDE.md`.
+    - **Deploy:** Netlify deploys `main` on push, so the fixes, both lifts and the marked privacy line are live once that build finishes. The deploy itself was not observed from here.
   - **Where the branch stands.** Every criterion has evidence except the close itself: the gates, an independent review of `lib/`, and the version number. The operator will ask for `/branch-close`.
 
 ---
