@@ -1,7 +1,7 @@
 ---
 branch: ccr-d677d579-ay3if6
 base: main
-status: open
+status: closed
 opened: 2026-10-20
 ---
 
@@ -193,3 +193,140 @@ Agents never commit. The operator's look at the pilot is the checkpoint for the 
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-21: design and usability learnings, brought into kiss
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** kiss-ssg 2.8.0 on `ccr-d677d579-ay3if6`. The branch is 19 commits, from `5fc254e` to `5adb6ed`:
+
+- three audit checks, `viewport-zoom-lock`, `href-hash` and `fragment-missing` (`d1f927b`, hardened in `5adb6ed`);
+- `kiss-site-review` as two passes: a usability and best-practice audit with 20 measured craft checks and P0–P3, then a design lift (`ee31dee`, `6487748`, `117dda8`);
+- `kiss-site-new` floors (`3389920`);
+- craft fixes to the examples (`aa02959`, `4a11ced`).
+
+Separately, Pro Plumbing's `main` gained the operator's picked fixes and both lifts (`5f0635e`, `49c4fca` in that repo).
+
+## Reflect — what the session was
+
+It began as a question: "evaluate these six skill repos". It turned into a build two turns later, when the operator asked how the learnings would come into kiss. The branch was opened at that moment, before any edit. That is the "open the branch when the work changes kind" lesson, which had recurred in three earlier logs, finally applied at the right point.
+
+The shape was **planned**:
+
+- a plan, then a fresh-context critique;
+- the engine;
+- the skills;
+- a pilot on a real site;
+- clean rooms;
+- the close.
+
+Each stage amended the plan's _wording_, as the intent predicted, and never its direction. The planned shape served the work. Every Amendment came from evidence:
+
+- the critique split one check into two ids;
+- measurement caught the examples' gaps;
+- the pilot and the clean rooms found wording defects.
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing, strong.** The operator supplied the scope decisions that shaped everything, each one in a word:
+
+- take the learnings, not the skills;
+- the two hook points (the operator remembered "new or review", and Claude added the audit as a third);
+- skills and engine together;
+- no companion skill;
+- Pro Plumbing as the pilot.
+
+It took three structured questions at the open, and each answer removed a branch of work.
+
+**Verification & ownership: the operator verified what was shown, and that shaped the rule this session leaves behind.** The first pulse asked the operator to look at GUIDE wording. Their answer, "It's in a cloud environment so you can have to provide a link or screenshot", was the session's most useful correction. From then on every look came with a link or a screenshot:
+
+- **line length:** before and after;
+- **the Pro Plumbing report:** the findings table plus the lift shots;
+- **the final home page:** before the merge.
+
+Each was answered in a sentence and changed what shipped. The operator kept the cap, picked all 14 fixes and both lifts, and chose to merge with the privacy markers visible. The GUIDE wording was deferred to the pilot and then called "Settled" without a look, because Pro Plumbing triggered none of the new checks. That is honest, but it means the three new GUIDE rows were never read by a human.
+
+**Pushback & steering: Claude's own claims were corrected by measurement more often than by the operator.** The operator's steering was by choice, not by challenge: every `AskUserQuestion` was answered, usually with the recommended option. Corrections came from the evidence loop the branch was built around:
+
+- The critique found five blockers, including the `resolveTarget` directory bug, before any code existed.
+- Measurement overturned three drafted claims:
+  - forward Tab "never hides" focus, which is true only for top bars;
+  - `min-width: 0` as a fix;
+  - `70ch` as about 70 characters (it measured 97).
+- The pilot found the top-header-only wording, which would have passed Pro Plumbing. The clean room found checks 11–20 folded into one line, which every gate passed.
+- Re-measuring found that the recorded "60–71" was one paragraph; the true range is 60–79.
+
+Twice Claude verified a peer's relayed claim and found it **wrong**: the "empty model fails the build" claim and the cream-and-clay addendum. That is the CLAUDE.md rule on peer claims working as written.
+
+**Harness leverage, high.** Parallel read-only agents evaluated the six repos. Fresh agents did:
+
+- the plan critique;
+- the pilot (and then applied the picked fixes in the real repo);
+- two clean rooms;
+- the close's review.
+
+`AskUserQuestion` was used at every fork. The cost was real: three worker restarts mid-session, survived through the committed session log and an early commit habit.
+
+**Where the human intended to supervise, versus where they did.** The operator intended to supervise the look and the scope, and did, through screenshots. The **independent review** is the checkpoint nobody held. Codex is not installed in this container, so the branch's only `lib/` review was a same-family agent. It found four real false positives. The fix for them (`5adb6ed`) was then reviewed by no one but its author.
+
+**Competency level: Active supervisor.** The operator framed scope precisely, decided every fork, verified every artefact they were shown, and steered by evidence. They stopped short of agentic engineering lead because they did not challenge Claude's reasoning directly or ask for an explanation, and the independent review gap was accepted rather than closed.
+
+## Feedback — recommendations for next session
+
+- **Operator — read the three new GUIDE rows before publishing 2.8.0.** They are what every site meets when the audit fires, and no human has read them. GUIDE.md § Checking a build, "What `fragment-missing` can and cannot see".
+- **Operator — get an independent review of `lib/audit.js` before the publish**, from Codex on your machine (`/codex:review` against `main`). The unreviewed range is `5adb6ed`, plus everything a same-family agent reviewed. Four false positives in a reviewed diff is a signal that a second reader finds things.
+- **Claude — in the cloud harness, every "look at this" is a link or a screenshot, from the first ask.** A request to "look at GUIDE.md" cost a round trip. Send a GitHub permalink at a commit with line anchors, or a `SendUserFile` screenshot.
+- **Claude — measure across every page of a template, not one sample.** "54ch gives 60–71" was written from one paragraph and was wrong at 79. Check 19 now says so. Apply the same rule to any range written into a doc or a comment.
+- **Process — `scripts/screenshot.mjs` cannot run in the cloud container.** It wants `playwright-core` 1.64's Chromium; the container has `/opt/pw-browsers/chromium-1194`. This branch wrote five scratch measurement scripts as a result, the duplication that script exists to end. Honour `CHROME_PATH` (as Pro Plumbing's `design-review.mjs` does) or add `--chromium=<path>`, with a test.
+- **Process — run `/memory-consolidate` before the next branch.** Two triggers are at or near firing:
+  - "open the branch when the work changes kind" recurred in three logs (2026-09-30, 10-12, 10-17);
+  - four logs now lack `consolidated:`.
+- **Process — an empty model folder logs a red `Invalid model` while the build passes.** Both a clean room and the pilot read it as a failure. Make the message say the fan-out built zero pages, on a later branch.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** fold the checkable lessons from six design-skill repos into kiss, in three places (the audit, `kiss-site-review` and `kiss-site-new`), with no new companion skill, piloted on Pro Plumbing. **Met.** The objective moved twice, both times on the operator's call and recorded as Amendments: three ids instead of two, and the examples' craft fixes. Both were good drift.
+
+- [x] **A plan, critiqued before code.**
+  - `afa2f96`: 15 items, the blockers re-derived and answered.
+- [x] **The audit checks.**
+  - Three ids, each seen red before green.
+  - Docs, `llms.txt` (14,027 / 16,000) and `types/` in the same commit, `d1f927b`. Hardened in `5adb6ed`.
+- [x] **Every example still builds, and new findings are accounted for.**
+  - No new audit findings on any example or the docs site.
+  - The craft gaps found by measuring were fixed on the operator's choice.
+  - Example 11 was re-recorded; example 9 is unchanged.
+- [x] **`kiss-site-review` in two passes.**
+  - 20 checks, each rendering claim measured, or stated as not measurable here.
+  - P0–P3 and one row per cause.
+  - The lift: decisions first, the read, preserve mode, a scratch copy, the protected contract.
+- [x] **`kiss-site-new` floors**, pointing at the review.
+- [x] **Tests pin the new text.**
+  - Rows seen red: 7 for the skill text, 3 for the pilot's fixes, 1 each for the folded list and the news rule.
+  - Three `CONTRADICTIONS` bans.
+- [x] **The pilot on Pro Plumbing.**
+  - 17 findings, none that would have undone a recorded decision.
+  - The operator saw the report and the screenshots and picked the fixes, which were applied and re-measured.
+  - Merged to its `main` at the operator's request.
+- [x] **Clean room, twice.**
+  - (a) Example 11 from the tarball found the folded list and the line-length record.
+  - (b) The bakery brief passed `check` and every floor that applies.
+  - Their guesses were fixed.
+- [x] **2.8.0 with an upgrade note.** `60e7734`; CHANGELOG and `kiss-site-migrate` § 0e.
+- [ ] **An independent review of `lib/`.**
+  - `npm run gates` is green.
+  - No independent review: Codex is not installed here. A same-family agent reviewed `lib/` and its four findings are fixed in `5adb6ed`, which no one else has reviewed.
+
+**What is concretely better.**
+
+- **For every kiss site on `^2`,** after upgrading:
+  - a zoom lock, a dead `#` link or a broken skip link is reported on every build;
+  - a review now measures 20 usability checks and offers a lift that cannot rewrite the owner's content.
+- **For Pro Plumbing, live:** its focus ring, control edges and call-bar focus pass WCAG, and it has the two lifts.
+
+**Still open:**
+
+- the independent review;
+- Greg's privacy-line answer;
+- the screenshot-script gap;
+- `/memory-consolidate`.
