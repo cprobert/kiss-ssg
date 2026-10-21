@@ -29,6 +29,37 @@ Each is advisory, like every audit check, and each can be turned off with a reas
 `audit.ignore`. Under `--summary`, `viewport-zoom-lock` and `fragment-missing` print one line per
 value, so you see which href to fix.
 
+### `kiss-site-review` runs as two passes: a usability audit, then a design lift
+
+Ask your agent to review a site and it now works in two passes:
+
+- **A usability and best-practice audit.** The build's findings, external links, a browser pass,
+  and the craft pass, which has grown from nine checks to twenty:
+  - visible focus, including under a sticky header on Shift+Tab;
+  - targets of 24px by WCAG 2.5.8's own rule, with its spacing exception;
+  - a skip link;
+  - `aria-current` on the current nav link;
+  - transitions that name their properties;
+  - hover kept off touch screens;
+  - content that shows with JavaScript off, and reduced motion that shows the end state;
+  - no `100vw`;
+  - text at 200%;
+  - a readable line length;
+  - lists that work at 0 and at 1.
+
+  Each was measured in a browser before its wording was written. A full-screen hero is now `100svh`
+  (`100dvh` is for an app shell). The report has a P0–P3 priority and one row per cause.
+
+- **A design lift**, offered after the fixes you pick. It reads the site's recorded decisions,
+  writes a one-line read of the audience, and stays at most one step bolder than the site is now.
+  It shows two or three proposals as before-and-after screenshots made in a scratch copy, and keeps
+  the content, URLs, anchor ids and form fields as they are. Without Anthropic's `frontend-design`
+  skill it says so and leaves the look alone.
+
+`kiss-site-new` builds a new site to the same floors from the first layout, so the review finds
+nothing to fix. These rules came from evaluating six third-party design-skill collections; kiss took
+the measurable lessons, not the skills, and recommends no new companion skill.
+
 ### The examples: skip links, and a line length for running text
 
 The examples ship as models of good practice, so they now pass the new review checks:

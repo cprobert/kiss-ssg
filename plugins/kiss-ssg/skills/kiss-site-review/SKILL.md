@@ -1,12 +1,17 @@
 ---
 name: kiss-site-review
-description: Review a kiss-ssg site for launch readiness — read the build's launch-readiness audit, then look at the built pages in a browser — and report what is unfinished before fixing anything. Use when asked to "review the site", "is this site ready to launch", "is it ready to go live", "does this look finished", "run a launch checklist", "do a polish pass", "why does this look AI-generated", "why does this look templated", or when a kiss build passes but the site still looks rough. For a build that fails, use kiss-build-check first.
+description: Review a kiss-ssg site in two passes — a usability and best-practice audit (the build's launch-readiness audit, then the built pages in a browser), then an optional design lift — and report before fixing anything. Use when asked to "review the site", "is this site ready to launch", "is it ready to go live", "does this look finished", "run a launch checklist", "do a polish pass", "usability audit", "accessibility check", "give the site a lift", "freshen up the design", "why does this look AI-generated", "why does this look templated", or when a kiss build passes but the site still looks rough. For a build that fails, use kiss-build-check first.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # Review a kiss-ssg site for launch
 
 The question is whether the site is **ready to launch** — whether a visitor, a search engine or a link preview meets a finished site. It is not about hiding how the site was built. Most of what makes a site read as "generated" is the same list as what makes it read as unfinished: no titles, one description on every page, a broken heading outline, no favicon, no 404 page, a debug file in the build.
+
+It runs as **two passes**, in this order:
+
+1. **The usability and best-practice audit** (steps 1–4): what is missing, broken or hard to use, each finding measured, reported before anything is fixed.
+2. **The design lift** (step 5): optional and offered after the audit's fixes, never folded into them. A lift on a page that still overflows or hides its focus measures the wrong thing.
 
 The skill carries no copy of the API. `node_modules/kiss-ssg/GUIDE.md` § Checking a build (**Launch-readiness audit**) is the contract for what each check means; read it rather than trusting the summary below.
 
@@ -80,7 +85,7 @@ The fix is in the template or the partial that writes the link, never per page:
 
 List every offender in the report (step 4), grouped by the template that writes it.
 
-### 3. The judgement pass, in a browser
+### 3. The usability and best-practice audit, in a browser
 
 The audit reads markup. Whether the site looks finished needs eyes. `check` publishes nothing, so there is nothing on disk to look at yet: build the site for real first (`npm run build` on a site set up by `init`, or `node <site-script>`). That writes the build folder — including anything the audit flagged, such as a `debug.json` — so say in the report that you did, and remove it afterwards if it was not there when you started. With a browser tool available, look at the built site **served with the build folder as the site root**: the site's own `--dev` preview (`npm run dev`), or any static server started in the build folder (`public/` by default). Never a server rooted above it — VS Code Live Server opened on the repo is the usual one — because every root-relative `{{link}}` then resolves outside the site and reads as broken when it is not.
 
@@ -121,14 +126,27 @@ A dark band, a system font, an unusual colour role or a modest heading size that
    - `text-wrap: pretty` on paragraphs fixes most of them. It is a browser's best effort, not a guarantee: example 11 still had a seven-line paragraph and a two-line footer ending on one word with it applied. For the ones left, put `&nbsp;` between the last two words, or change the words.
    - `text-wrap: balance` on headings evens the lines. That fixes most cases, but not a heading of three or four words that has to wrap: "The cascara / experiment" is already balanced. Accept that one, or change the size.
 7. **A sticky header is measured on a phone, not assumed.** At 375×667, how tall is it, as a share of the screen? Does a jump to an `#anchor` land under it, because `scroll-padding-top` is smaller than the header? A header that wraps to two or three rows and stays stuck costs every page its reading space.
-8. **`100vh` on a phone includes the space behind the browser's address bar.** `100dvh` is the screen the visitor actually sees. Keep the `vh` line first as the fallback.
+8. **`100vh` on a phone includes the space behind the browser's address bar.** A full-screen hero uses `100svh`, the screen with the address bar showing, which does not change as the visitor scrolls. `100dvh` follows the bar as it collapses, which is right for an app shell or a bar pinned to the bottom, and shifts the layout under the reader on a marketing page. Keep the `vh` line first as the fallback. This follows from the units' definitions (CSS Values 4); headless Chromium has no address bar to collapse, so it was not measured here.
 9. **A form that collects personal details says what happens to them.** For a name, a phone number, an email or a photo, put a line by the form, in the site's own voice. It says who receives the details and that the visitor can ask for them to be deleted. The facts belong to the site's owner, so draft the line and mark every claim for them to confirm. Do not publish a promise they have not made.
+10. **Focus is visible, and never hidden.** Grep the stylesheet: `outline: none` or `outline: 0` with no `:focus-visible` rule giving the focus a replacement is the finding. Measured: with `outline: none` and nothing else, a link focused from the keyboard shows no change at all. A replacement ring is 3:1 against what it sits on, like check 1. Then, in the browser, scroll to the bottom of a long page and **Tab backwards** (Shift+Tab) up through it. Measured: a forward Tab brings each link in from the bottom of the screen and never hid one, but Shift+Tab left links under a 120px sticky header with `scroll-padding-top` at 0 and at 40px, and not at 136px. A focused element hidden by the header fails WCAG 2.4.11. The fix is check 7's: `scroll-padding-top` at least the header's height.
+11. **Targets are big enough to hit.** WCAG 2.5.8 asks for 24×24 CSS pixels, with exceptions: a smaller target passes when a 24px circle centred on it does not overlap another target, a link inside running text is exempt, and so is a control the browser draws unstyled. So the finding is a control **under 24px in either direction that is also closer than 24px to another one**, measured with `getBoundingClientRect` at 375px wide. On example 11, two card-title links measured 21px tall and pass because they are spaced. 44×44 is advice for a primary control on touch, not a finding.
+12. **A skip link comes first** when a header or nav comes before `<main>`. It is the first thing a keyboard reaches, "Skip to content", visible when it has focus, and it targets the `id` on `<main>` (`<a class="skip-link" href="#main">` and `<main id="main">`). In the browser: the first Tab lands on it, and Enter lands `<main>` clear of any sticky header. The audit's `fragment-missing` already catches a skip link whose target has no `id`.
+13. **The current page is marked for everyone.** The current nav link carries `aria-current="page"`, and it differs by more than colour alone (WCAG 1.4.1): a weight, an underline, a background. `{{isActive}}` is a block helper that knows which page is current. Its first argument is the page's own context, `this` at the top of a template or `..` inside an `{{#each}}`, and the attribute goes inside it: `{{#isActive this href=(link "about")}}<a href="{{href}}"{{#if active}} aria-current="page"{{/if}}>About</a>{{/isActive}}`. Example 11's layout does the same for a whole nav from a model. Read the built HTML for the attribute, and compare the current link's computed style with another link's.
+14. **Transitions name what they animate.** Grep the stylesheet. `transition: all` animates every property that changes, including ones nobody meant to move, so name them (`transition: color 150ms, background-color 150ms`). A transition on `width`, `height`, `margin` or `padding` makes the browser lay the page out again on every frame, so animate `transform` and `opacity` instead.
+15. **A hover that changes the box is kept off touch screens.** On a phone, `:hover` sticks after a tap. Measured: in a touch context, a card with an ungated `:hover { transform: translateY(-4px) }` was still lifted after the tap, while the same rule behind `@media (hover: hover) and (pointer: fine)` left it at rest. Gate a hover that transforms, lifts or changes a background that way. A colour or underline change can stay ungated. Check 5's `:active` stays as it is, because a press is what a tap should show.
+16. **Content shows without script, and reduced motion shows the end state.**
+    - Load each template with JavaScript off (`javaScriptEnabled: false` in Playwright). Measured: a section that starts at `opacity: 0` until a script adds a class stays invisible. Hide it only under a class the script itself sets on `<html>` (`.js .reveal { opacity: 0 }`), and it shows when the script never runs.
+    - Under `prefers-reduced-motion: reduce` (`page.emulateMedia({ reducedMotion: 'reduce' })`), animated content is already in its final place, not running a shorter animation. That is kiss's own rule, stricter than WCAG 2.3.3, which is AAA. Only that the emulation reaches the page was measured.
+17. **Nothing is `width: 100vw`.** `100vw` includes the vertical scrollbar, so on a desktop with classic scrollbars the page scrolls sideways by the bar's width. Measured: 15px of overflow at 1280px. Headless Chromium hides scrollbars by default (Playwright launches it with `--hide-scrollbars`), so this one only shows with that flag removed (`ignoreDefaultArgs: ['--hide-scrollbars']`). Use `width: 100%`. Overflow from a long string has its own fix, `overflow-wrap: anywhere` (above): measured, it fixed a flex child and a `1fr` grid track on its own, where `min-width: 0` alone did not.
+18. **Text at 200% still fits.** Double the root font size at 1280px wide (`document.documentElement.style.fontSize = '200%'`) and look for text that is clipped or overlaps (WCAG 1.4.4). Measured: a box with `height: 48px` clipped its text, and the same box with `min-height: 3rem` grew with it. Clipping is the finding. Text in `px` that does not grow with the root is not, because full-page zoom also satisfies 1.4.4.
+19. **Running text stops at a readable line.** Count the characters a line in the longest paragraph of each template at 1440px, about 45 to 75 being comfortable. `max-width` in `ch` sets it, but measure rather than trust the number: `ch` is the width of "0", wider than an average letter, so measured on example 11, `70ch` came out at 97 characters a line and `54ch` at 60 to 71. Before its cap, that page's posts ran to 115.
+20. **A list fed by a model works at 0 and at 1.** A tag, post, news or menu list renders a line saying it is empty when it has nothing, and a correct singular at one ("1 post", not "1 posts"). Check by building a scratch copy of the site with that model cut down, never by editing the site's own models. This is not the same as `kiss-site-new`'s marked placeholder slots: those are for an owner who has not given the items yet. This check is for a list that is genuinely empty when the site builds, such as a new tag with no posts.
 
 What each check can be read from:
 
-- **The stylesheet:** checks 1, 4 and 8, the grep half of 5, and 3 for a web font.
-- **The templates and scripts:** checks 2 and 9.
-- **The browser:** checks 6 and 7, the hover-and-press half of 5, and 3 on a system-font stack.
+- **The stylesheet:** checks 1, 4, 8, 14, 15 and 17, the grep halves of 5 and 10, and 3 for a web font.
+- **The templates and scripts:** checks 2, 9, 12, 13 and 20.
+- **The browser:** checks 6, 7, 11, 16, 18 and 19, the hover-and-press half of 5, the keyboard half of 10, and 3 on a system-font stack.
 
 A browser does not have to be a tool of the agent's own. A Playwright or Puppeteer install driven from a script through the shell does the job: serve the build folder over HTTP, never `file://`, for the reason given at the start of this step.
 
@@ -140,18 +158,55 @@ A browser does not have to be a tool of the agent's own. A Playwright or Puppete
 
 **Without a browser, say that this pass did not run.** Do not infer the result from the templates: a layout that looks right in the source is exactly what this pass exists to check.
 
-When Anthropic's `frontend-design` skill is available and the look itself needs work, it sets the **visual direction** — type, colour, spacing tokens, layout character — and kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Never collapse a page into a single-file page to restyle it.
-
 ### 4. Report first, then fix what the operator picks
 
-**Report first.** Before editing anything, put every finding in one table: the audit's, the external-link pass's, the browser pass's, the Markdown copy's and the craft pass's. Give each craft-pass finding its measurement (a contrast ratio, a grep result, a height in pixels):
+**Report first.** Before editing anything, put every finding in one table: the audit's, the external-link pass's, the browser pass's, the Markdown copy's and the craft pass's. Give each craft-pass finding its measurement: a contrast ratio, a grep result, a height in pixels.
 
-| Where | What | Why it matters | Proposed fix |
-| ----- | ---- | -------------- | ------------ |
+| Priority | Where | What | Measured | Why it matters | Proposed fix |
+| -------- | ----- | ---- | -------- | -------------- | ------------ |
 
-Then ask the operator which to fix. Fix those, and **re-run `npx kiss-ssg check` after each fix** — a layout edit changes every page, and the next run says whether it cleared the finding or made new ones.
+- **P0:** a visitor is blocked. Content is invisible or unreachable, there is a keyboard trap, or a form cannot be sent.
+- **P1:** it fails a WCAG 2.2 AA criterion, or it is broken on a common device: overflow at 320px, focus hidden under the header, `viewport-zoom-lock`, a skip link with no target.
+- **P2:** a visible flaw that reads as unfinished. For example a word alone on a line, a hover stuck after a tap, a weight that does not render, `href-hash`, or the audit's page checks.
+- **P3:** polish.
 
-### 5. A check the site does not want goes in `ignore`, with the reason
+**One row per cause, not per instance.** "`transition: all` in 7 rules of `site.scss`" is one row with the count in it, because it is one fix. Sort by priority.
+
+Then ask the operator which to fix. Fix those, and **re-run `npx kiss-ssg check` after each fix**. A layout edit changes every page, and the next run says whether it cleared the finding or made new ones.
+
+### 5. The design lift
+
+Offer it once the fixes the operator picked are in, and only then. It is the operator's choice whether to run it at all.
+
+**When Anthropic's `frontend-design` skill is not installed, say so and do not attempt the lift.** Point the operator at `node_modules/kiss-ssg/README.md` § "Optional: Anthropic's `frontend-design` skill for the look" for the install lines. The audit's fixes are the whole of this review without it.
+
+With it installed, `frontend-design` sets the **visual direction** (type, colour, spacing tokens, layout character) inside the frame below, and kiss keeps the **structure**: layouts, partials, the Sass/asset folder, one view per page. Never collapse a page into a single-file page to restyle it.
+
+1. **Decisions first.** The craft pass's rule, applied to the look. Read `BRAND.md`, any design notes in the README, comments in the stylesheet and the site's `AIKB/`. A recorded decision is off the table unless the operator puts it back on.
+2. **A one-line design read:** who the site is for, and how bold the lift should be. An existing site is in **preserve** mode unless the operator asks for more: at most one step bolder than it is now, keeping its identity, its navigation labels and its content. A trust-first audience (a trade, a clinic, a public service) sits low; a creative studio or a campaign can go higher.
+3. **Preserve, improve, remove.** Sort what is there into three lists:
+   - strengths to keep;
+   - weak hierarchy, spacing, contrast or craft to improve;
+   - clutter or dead patterns to remove.
+4. **Two or three proposals.** Each one says:
+   - what changes;
+   - which files it touches;
+   - why it suits the read;
+   - before-and-after screenshots at 375 and 1440, from the site served over HTTP.
+
+   Make the "after" in a **scratch copy** of the site and throw the copy away, so the site's own source changes only once the operator has picked.
+
+5. **The protected contract.** A lift does not change:
+   - URLs, page ids or anchor ids;
+   - form field names or their order;
+   - navigation labels, the logo, or legal and pricing copy;
+   - the content itself.
+
+   A URL that has to move gets `aliases`. A proposal adds no copy, figure, testimonial or section the owner did not give. The rule against invented facts is `kiss-site-new`'s, and it holds here.
+
+6. **After the pick:** make the change in the site, run `npx kiss-ssg check` again, and re-run the craft checks the change touched.
+
+### 6. A check the site does not want goes in `ignore`, with the reason
 
 Some findings are decisions, not mistakes — a site with no social sharing may not want `og:image`. Put the check id in `config.audit.ignore`, with a comment saying why:
 
