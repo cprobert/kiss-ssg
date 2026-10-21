@@ -148,6 +148,7 @@ Like the link scan, the findings are advisory: they never change `ok` and never 
 
 -   `#top`, which a browser scrolls to the top of the page when no element claims it;
 -   a text fragment (`#:~:text=…`), though a fragment before one is still checked;
+-   a client-side route or script hook: a fragment starting `/` or `!` (`#/settings`, `#!`);
 -   a fragment on anything that is not a page this build wrote: a PDF, an asset, another site, or a page written by another instance or an earlier build;
 -   every bare fragment on a page with a `<base href>`, since that moves what the fragment resolves against.
 

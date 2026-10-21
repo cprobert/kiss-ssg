@@ -142,6 +142,40 @@ describe('extractPageFacts', () => {
     ])
   })
 
+  // The 2026-10-21 review: three readings of a tag that turned a missed id or
+  // a misread element into a finding. A `>` inside a quoted value used to end
+  // the tag early, which is a false negative for the link scan and a false
+  // POSITIVE here, where a missed id is a reported link.
+  it('reads an id after a quoted value that holds a ">"', () => {
+    const facts = extractPageFacts(
+      '<html><body><div x-show="count > 0" id="panel"></div>' +
+        '<section onclick=\'if(a>b)c()\' id="faq"></section>' +
+        '<a title="x > y" href="#panel">go</a></body></html>',
+      'a.html',
+    )
+    expect(facts.ids).toEqual(['faq', 'panel'])
+    expect(facts.fragmentLinks).toEqual(['#panel'])
+  })
+
+  it('reads an id on a <script>, <style> or <template> tag, but not inside one', () => {
+    const facts = extractPageFacts(
+      '<html><body><script id="data" type="application/json">{"x":"<p id=\\"no\\">"}</script>' +
+        '<style id="theme">p{}</style><template id="tpl"><p id="later"></p></template>' +
+        '</body></html>',
+      'a.html',
+    )
+    expect(facts.ids).toEqual(['data', 'theme', 'tpl'])
+  })
+
+  it('takes links from <a> and <area> only, never from a custom element named a-…', () => {
+    const facts = extractPageFacts(
+      '<html><body><a-entity href="#"></a-entity><a-scene href="#x"></a-scene>' +
+        '<A HREF="#y">y</A><a\nhref="#z">z</a></body></html>',
+      'a.html',
+    )
+    expect(facts.fragmentLinks).toEqual(['#y', '#z'])
+  })
+
   it('notes a <base href>, which changes what a bare #fragment resolves against', () => {
     const page = (head) =>
       extractPageFacts(
@@ -630,6 +664,18 @@ describe('auditBuild — href-hash and fragment-missing', () => {
       'index.html': { base: true, ids: [], fragmentLinks: ['#gone'] },
     })
     expect(only(result, 'fragment-missing')).toEqual([])
+  })
+
+  it('leaves hash-router and hashbang links alone: they are routes, not scroll targets', () => {
+    const result = site({
+      'index.html': {
+        ids: [],
+        fragmentLinks: ['#/settings', '#!/inbox', '#!', '#gone'],
+      },
+    })
+    expect(findings(result, 'fragment-missing')).toEqual([
+      ['index.html', '#gone'],
+    ])
   })
 
   it('is ignored per check: href-hash and fragment-missing independently', () => {
