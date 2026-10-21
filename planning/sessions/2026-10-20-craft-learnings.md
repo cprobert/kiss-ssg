@@ -136,6 +136,28 @@ Agents never commit. The operator's look at the pilot is the checkpoint for the 
   - **Lesson for this branch:** anything the operator is asked to look at comes with a link or a screenshot.
   - **Decision:** continue.
 
+- **2026-10-21, pulse 2 (after the examples and the skills).**
+  - **Met:**
+    - **The examples.** Commit `aa02959`:
+      - **Skip links in examples 4 and 12, measured.** The first Tab focuses a visible "Skip to content" at 375 and 1440, and the jump lands `<main>` clear of the sticky header.
+      - **Example 12's `compare.mjs`** declares the skip link in a new `ADDED` list. It was seen to fail without the declaration.
+      - **Line length, measured.** 70ch gave 97 characters a line, so the cap is 54ch, which gives 60–71. The operator saw before-and-after screenshots and chose "keep the cap as shown".
+      - Examples 9 and 11 are unchanged against their records.
+    - **The two-pass review and the floors.** Commit `ee31dee`:
+      - **Coverage rows:** red 7 of 186, then green. The 2.8.0 migrate row's text is absent at `afa2f96`, so it would have been red there.
+      - **`{{isActive}}` snippet:** run against the engine, after the drafted `page` argument proved wrong (it is `this`, or `..`).
+      - **Dropped by measurement:** `min-width: 0` and `minmax(0, 1fr)`.
+    - **The docs.** Regenerated in `ba6ed9e`.
+    - **The suite.** `npm test` 2,314 passed. Lint and format are clean.
+  - **In flight:**
+    - the pilot: a fresh agent runs the new review on a scratch copy of Pro Plumbing's `pilot/craft-review` branch;
+    - clean room (b): a fresh agent builds the README bakery brief.
+  - **Found on the way: the repo's screenshot harness does not run in the cloud container.** `scripts/screenshot.mjs` launches `playwright-core` 1.64's own Chromium, and the container has only `/opt/pw-browsers/chromium-1194`. Every browser measurement on this branch therefore ran through scratch scripts with `executablePath`. A `--chromium=<path>` option, or honouring `CHROME_PATH` the way Pro Plumbing's `design-review.mjs` does, would close it. That is not done here; it is recorded for the reflection.
+  - **Pro Plumbing's check:** it passes with no findings from the three new checks. Its pages read as changed against its record, but that is the stylesheet hash, because the record dates from kiss 2.7.0.
+  - **Drift:** none beyond the Amendments.
+  - **Eyeball:** the line-length screenshots, looked at. The operator chose to keep the cap.
+  - **Decision:** continue to the pilot.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
