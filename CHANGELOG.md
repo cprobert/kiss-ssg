@@ -29,6 +29,22 @@ Each is advisory, like every audit check, and each can be turned off with a reas
 `audit.ignore`. Under `--summary`, `viewport-zoom-lock` and `fragment-missing` print one line per
 value, so you see which href to fix.
 
+### The examples: skip links, and a line length for running text
+
+The examples ship as models of good practice, so they now pass the new review checks:
+
+- **Examples 4 and 12 have a skip link** to `<main id="main">`, as the other examples already
+  did. In example 12, the conversion, it is declared in `tools/compare.mjs` as the one element the
+  built page has that the original artifact did not. The comparison stays exact about everything
+  else.
+- **Text in a card stops at a readable line.** The shared stylesheet's `$measure` is the page's
+  width, so a blog post ran to 115 characters a line at desktop width. A new `$line-length: 54ch`
+  caps paragraphs, list items and quotes in a card at about 60–70 characters. The look is
+  otherwise unchanged.
+
+  `54ch`, not `70ch`, and that was measured, not assumed: `ch` is the width of "0", so `70ch` came
+  out at 97 characters a line.
+
 ## 2.7.8 — 2026-10-17
 
 Nothing in your site has to change.

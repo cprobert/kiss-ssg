@@ -80,6 +80,24 @@ const ACCEPTED = [
   },
 ]
 
+// The elements the built page has that the artifact did not, declared the
+// same way. Each is matched exactly and removed from the BUILT side only, so
+// an element the conversion lost or added by accident still shows up.
+const ADDED = [
+  {
+    why: 'a skip link, added after the conversion: the first thing a keyboard reaches, so it can pass the header by. The artifact had none.',
+    matches: (n) =>
+      n.type === 'element' &&
+      n.tag === 'a' &&
+      n.attribs?.class === 'skip-link' &&
+      n.attribs?.href === '#main',
+  },
+]
+const withoutAdded = (nodes) =>
+  nodes
+    .filter((n) => !ADDED.some(({ matches }) => matches(n)))
+    .map((n) => (n.children ? { ...n, children: withoutAdded(n.children) } : n))
+
 const flatten = (nodes) => {
   let out = decode(text(nodes).join(' ')).replace(/\s+/g, ' ')
   for (const { apply } of ACCEPTED) out = apply(out)
@@ -87,7 +105,7 @@ const flatten = (nodes) => {
 }
 
 const before = bodyOf(original)
-const after = bodyOf(built)
+const after = withoutAdded(bodyOf(built))
 const [tagsBefore, tagsAfter] = [tags(before).join(','), tags(after).join(',')]
 const [textBefore, textAfter] = [flatten(before), flatten(after)]
 
@@ -109,7 +127,7 @@ const structureOk = report('Element sequence', tagsBefore, tagsAfter, 'element')
 const textOk = report('Visible text', textBefore, textAfter, 'char')
 
 console.log('\nAccepted differences, applied before comparing:')
-for (const { why } of ACCEPTED) console.log(`  - ${why}`)
+for (const { why } of [...ACCEPTED, ...ADDED]) console.log(`  - ${why}`)
 
 // Both must hold. A text difference is a failure like any other now that the
 // expected one is declared above — which is the point of declaring it.
