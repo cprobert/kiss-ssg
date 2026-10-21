@@ -624,6 +624,10 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: '2026-10-21 clean room: a news section whose items are their own pages gets no placeholder item, because a placeholder post is published as a real URL in the sitemap and the feed; it builds empty and shows its empty state. The old rule put news beside the menu, under marked slots, and the agent had to choose between the two',
+    patterns: [/a team or a news section with no items given/],
+  },
+  {
     why: '2026-10-20: `100dvh` resizes as the address bar collapses, so on a marketing hero it shifts the layout mid-scroll; the craft pass now says `100svh` for a hero and `100dvh` for an app shell, and a sentence calling dvh simply "the screen the visitor sees" reads as advice for every case',
     patterns: [/`100dvh` is the screen the visitor actually sees/],
   },
