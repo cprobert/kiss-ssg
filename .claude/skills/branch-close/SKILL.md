@@ -176,7 +176,7 @@ Either way the ritual continues: this is a stop for an answer, not a gate that b
 npm run gates
 ```
 
-`scripts/gates.mjs` runs five gates — **test** (`vitest run`, which includes `test/aikb.test.js`'s docs-sync check), **lint** (`eslint .`), **typecheck** (`tsc -p tsconfig.check.json` — checks `lib/`, `scripts/` and `bin/` against their JSDoc, never emits), **format** (`prettier --check` on the files this branch changed), and **pack** (`npm pack --dry-run`, proving `lib/`, `llms.txt` and `AIKB/` are all still in the published tarball) — printing a compact pass/fail line per gate with the salient tail on failure, and exiting non-zero if any fail.
+`scripts/gates.mjs` runs five gates — **test** (`vitest run`, which includes `test/aikb.test.js`'s docs-sync check), **lint** (`eslint .`), **typecheck** (`tsc -p tsconfig.check.json` — checks `lib/`, `scripts/` and `bin/` against their JSDoc, never emits), **format** (`prettier --check` on the files this branch changed), and **pack** (`npm pack --dry-run`, proving `lib/`, `llms.txt` and `AIKB/` are all still in the published tarball) — printing a compact pass/fail line per gate with its whole output on failure, and exiting non-zero if any fail.
 
 CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so green here is green there — running it now just means you find out in seconds rather than after the push. Treat a red gate as a hard stop: fix, commit, and re-run `/branch-close` (docs-sweep is idempotent and corpse-collector is read-only, so re-running the earlier steps is cheap). Do not run the retrospective or push until green.
 

@@ -6,11 +6,14 @@
 
 **Sites an agent builds, and a person can still read.**
 
-A static site generator built to be driven by a coding agent. You describe the site; the agent
-writes it with kiss-ssg's skills, and every build hands back a verdict the agent can act on
-(`kiss-ssg check`) and a memory of what the site is (`kiss-ssg aikb`). Handlebars views, JSON or
-fetched models, small JS controllers — nothing to learn before the first page, and nothing hidden
-from the person who opens it later.
+A small static site generator for brochure sites and documentation sites. If you need a static HTML
+site that goes up quickly, is easy to maintain and has best practice built in, this is the
+zero-to-sixty tool: nothing to learn before the first page, and it is fun to use.
+
+It is built to be driven by a coding agent. You describe the site; the agent writes it with
+kiss-ssg's skills, and every build hands back a verdict the agent can act on (`kiss-ssg check`) and
+a memory of what the site is (`kiss-ssg aikb`). Handlebars views, JSON or fetched models, small JS
+controllers — nothing hidden from the person who opens it later.
 
 [![CI](https://github.com/cprobert/kiss-ssg/actions/workflows/ci.yml/badge.svg)](https://github.com/cprobert/kiss-ssg/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/kiss-ssg?style=flat&logo=npm&logoColor=white&label=npm)](https://www.npmjs.com/package/kiss-ssg)
