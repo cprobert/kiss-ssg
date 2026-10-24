@@ -41,6 +41,7 @@ opened: 2026-10-24
      it is not silent scope creep. -->
 
 - 2026-10-24: After the adversarial read of the contract (its amendment holds the detail), the operator decided: packaging is a convention, not a method (a page's `package` option, with `config.packages` for the settings and `false` to turn it off); zips are stored, not deflated, with a content hash per package and a packages diff in `kiss-ssg check`; a link between member pages of a SCORM package is a finding; and each page's item and resource identifier comes from its `id`, a promise that a member page without a usable id fails the build to keep. The branch also gains `examples/13-course-packages`, because what ships is an example. Agreed by the operator.
+- 2026-10-24: Sequence changed: W's IMS CP path is built first (membership, the closure, the zip and the IMS CP manifest, the report), so the operator uploads the consumer's M2 lesson 1 to Moodle sooner and the rest acts on what Moodle shows; then SCORM 1.2, the bridge, the packages diff in `check` and the example. Agreed by the operator.
 
 ## Pulse log
 

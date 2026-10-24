@@ -1,5 +1,5 @@
 /**
- * @typedef {'asset'|'generated'|'page'} OutputKind
+ * @typedef {'asset'|'generated'|'page'|'package'} OutputKind
  * @typedef {{owner: string, kind: OutputKind}} OutputClaim
  * @typedef {{file: string, producers: OutputClaim[], winner: OutputClaim|null, refused: string[]}} OutputCollision
  */
@@ -61,7 +61,7 @@ export class OutputRegistry {
     /** @returns {OutputCollision[]} detached collisions between active producers */
     snapshot(): OutputCollision[];
 }
-export type OutputKind = "asset" | "generated" | "page";
+export type OutputKind = "asset" | "generated" | "page" | "package";
 export type OutputClaim = {
     owner: string;
     kind: OutputKind;

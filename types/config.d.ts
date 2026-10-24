@@ -17,8 +17,9 @@ export function resolveMarkdownCopies(markdownCopies: any): KissMarkdownCopies;
  * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if
  * `assets.pipeline` is not an array of `{ run: string }` steps, if
  * `links.hostServed` is not an array of `/`-rooted patterns, if `audit` is
- * malformed or ignores a check that does not exist, or if source
- * and output folders violate the root/overlap safety rules
+ * malformed or ignores a check that does not exist, if `packages` is
+ * malformed, or if source and output folders violate the root/overlap
+ * safety rules
  */
 export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
 /**
@@ -159,6 +160,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissRedirects} redirects how page `aliases` are encoded on a settled build
  * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
  * @property {KissMarkdownCopies} markdownCopies the `.md` copy written beside every HTML page, for agents
+ * @property {import('./packages.js').KissPackages|false} packages the learning packages written for the pages that name one (`package`); `false` writes none
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
  * @property {string} devHost interface the dev and live reload servers bind to
@@ -237,6 +239,12 @@ export const DEFAULT_REDIRECTS: Readonly<{
     format: any;
 }>;
 export const REDIRECT_FORMATS: readonly string[];
+export const DEFAULT_PACKAGES: Readonly<{
+    format: "imscp";
+    dir: "packages";
+    title: any;
+    only: any;
+}>;
 export const DEFAULT_CONFIG: Readonly<{
     dev: false;
     verbose: false;
@@ -277,6 +285,12 @@ export const DEFAULT_CONFIG: Readonly<{
     markdownCopies: Readonly<{
         write: true;
         selector: "main";
+    }>;
+    packages: Readonly<{
+        format: "imscp";
+        dir: "packages";
+        title: any;
+        only: any;
     }>;
     port: 3001;
     livereloadPort: 35729;
@@ -545,6 +559,10 @@ export type KissSettings = {
      * the `.md` copy written beside every HTML page, for agents
      */
     markdownCopies: KissMarkdownCopies;
+    /**
+     * the learning packages written for the pages that name one (`package`); `false` writes none
+     */
+    packages: import("./packages.js").KissPackages | false;
     /**
      * dev server port
      */

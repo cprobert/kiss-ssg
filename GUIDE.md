@@ -95,6 +95,12 @@ The default config options are:
     write: true,
     selector: 'main'
   },
+  packages: {
+    format: 'imscp',
+    dir: 'packages',
+    title: null,
+    only: null
+  },
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',

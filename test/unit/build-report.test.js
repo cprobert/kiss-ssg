@@ -75,6 +75,7 @@ describe('buildReport', () => {
       'robots',
       'outputs',
       'audit',
+      'packages',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -288,6 +289,7 @@ describe('buildReport', () => {
       robots: null,
       outputs: { collisions: [] },
       audit: null,
+      packages: null,
     })
   })
 
@@ -538,12 +540,12 @@ describe('the audit key', () => {
     ...extra,
   })
 
-  it('is appended last, after outputs', () => {
+  it('is appended after outputs, with only packages after it', () => {
     const keys = Object.keys(
       buildReport({ buildDir: './public', startedAt: Date.now() }),
     )
-    expect(keys.at(-1)).toBe('audit')
     expect(keys.indexOf('audit')).toBe(keys.indexOf('outputs') + 1)
+    expect(keys.slice(keys.indexOf('audit') + 1)).toEqual(['packages'])
   })
 
   it('is null when no audit ran, and an object when one ran and found nothing', () => {

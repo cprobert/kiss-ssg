@@ -63,6 +63,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   redirects: { format: null }, // 'netlify' | 'firebase' | 'vercel' | 'htaccess' | fn | an array
   audit: { check: true, ignore: [] },
   markdownCopies: { write: true, selector: 'main' }, // false: no page.md copies
+  packages: { format: 'imscp', dir: 'packages', title: null, only: null }, // zips for pages with `package`; false: none
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',

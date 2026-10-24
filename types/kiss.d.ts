@@ -575,6 +575,14 @@ declare class Kiss {
     /** @private */
     private _redirectsRun;
     /** @private */
+    private _packagesRun;
+    /** @private @type {import('./packages.js').PackageResult[]|null} */
+    private _packagesResult;
+    /** @private */
+    private _packagesDevNoticed;
+    /** @private */
+    private _registrationSeq;
+    /** @private */
     private _promotedFrom;
     /** @private */
     private _checkMode;
@@ -708,6 +716,8 @@ declare class Kiss {
     private _runAudit;
     /** @private */
     private _writeRedirects;
+    /** @private */
+    private _writePackages;
     /** @private */
     private _lastBuildRecord;
     /** @private */

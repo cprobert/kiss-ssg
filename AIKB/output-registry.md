@@ -28,6 +28,7 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 
 ## Non-obvious behavior
 
+- A learning package claims its zip as kind `'package'` (`lib/packages.js`), after it renames the temporary file into place. The package writer also **reads** the registry: a file is packed only when this build claimed it, so the claims double as "what this build wrote".
 - Writers register at the write site, using the actual filename, including custom feed and redirect paths. A skipped or failed write claims nothing. There is no auxiliary-filename whitelist.
 - Generated outputs take precedence over subsequent asset copies. A warning names the path and both producers; it does not replace ownership protection. Between generated writers, the last successful write owns the file.
 - The asset manifest records URL mappings and copy inventories; this registry records actual file ownership. Asset cleanup needs both: a stale inventory entry is removable only while that asset copy still owns the file.

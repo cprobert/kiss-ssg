@@ -38,6 +38,7 @@ Nothing in `lib/` — it is the entry point (`package.json`'s `main`). `bin/kiss
 
 ## Non-obvious behavior
 
+- **`complete()`'s settle path writes the learning packages straight after `_redirects`** (`_writePackages()` → `writeLearningPackages()` in `lib/build-finish.js`), above the link scan, the audit and the three-way branch, for the redirects' reasons. Three fields hold its state: `_packagesRun` (the latched promise), `_packagesResult` (the report's `packages`) and `_packagesDevNoticed`; `_registrationSeq` numbers page registrations for `order` (`AIKB/page-registry.md`).
 - **The watch session — the event dispatch, the serial rebuild queue, the replay and its orphan sweep, scoped re-renders and live reload — is `lib/rebuild.js`** (`AIKB/rebuild.md`, where the notes on all of those, including the dispatch and live-reload tables, now live). This file keeps `watch()` as the entry point and `close()`, which drains the queue.
 - **Registration, page preparation and page identity — `_page`, `_prepareMultiplePages`, `_preparePage`, the id index, `_stackForRecord`, and the bodies of `scan()` and `viewStats()` — are `lib/page-registry.js`** (`AIKB/page-registry.md`, where the notes on output-path and id collisions, the fan-out, the per-page config and `scan()`'s dedupe now live). This file keeps the public methods and the order things run in.
 
