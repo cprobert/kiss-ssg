@@ -132,6 +132,56 @@ describe('learning packages', () => {
     ])
   })
 
+  it('roots a package above every folder a reference passes through, so its URLs still work', async () => {
+    // From course/l2/, `../l2/a.png` climbs to course/ and comes back: the zip must hold course/ too.
+    const files = {
+      ...FILES,
+      'src/pages/l2/tab-1.hbs':
+        '<html><body><img src="../l2/a.png"></body></html>',
+      'src/assets/course/l2/a.png': 'a',
+    }
+    await build({}, { files })
+    expect(names(zipAt('packages/l2.imscp.zip'))).toEqual([
+      'imsmanifest.xml',
+      'l2/a.png',
+      'l2/tab-1.html',
+      'l2/tab-2.html',
+    ])
+  })
+
+  it('groups the members under their packageSection in the table of contents', async () => {
+    const register = (k) =>
+      k
+        .page({
+          view: 'l2/tab-1.hbs',
+          path: 'c',
+          slug: 'one',
+          id: 'one',
+          title: 'One',
+          package: 'p',
+          packageSection: 'Part A',
+        })
+        .page({
+          view: 'l2/tab-2.hbs',
+          path: 'c',
+          slug: 'two',
+          id: 'two',
+          title: 'Two',
+          package: 'p',
+          packageSection: 'Part B',
+        })
+    await build({}, { register })
+    const manifest = zipAt('packages/p.imscp.zip')
+      .get('imsmanifest.xml')
+      .toString()
+    expect(
+      [...manifest.matchAll(/<title>([^<]+)<\/title>/g)].map((m) => m[1]),
+    ).toEqual(['One', 'Part A', 'One', 'Part B', 'Two'])
+    expect(manifest).toMatch(
+      /<item identifier="ITEM-SECTION-[^"]*">\s*<title>Part A<\/title>/,
+    )
+  })
+
   it('lists the members in registration order, each with the files it reached first', async () => {
     await build()
     const manifest = zipAt('packages/l1.imscp.zip')
