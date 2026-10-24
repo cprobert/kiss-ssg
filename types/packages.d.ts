@@ -25,6 +25,18 @@ export function extractReferences(html: string): {
     base: string | null;
 };
 /**
+ * The build-relative file a page's references resolve from, given its
+ * `<base href>`: a file in the folder the base names, resolved as a URL
+ * resolves it (`../assets/` and `../assets/start.html` name `assets/`; `..`
+ * and `.` name a folder too, with no slash). `from` itself for an empty base;
+ * null for an absolute or root-relative base, which names nothing in the build.
+ *
+ * @param {string} base the `<base href>`
+ * @param {string} from the page, build-relative
+ * @returns {string | null}
+ */
+export function documentBase(base: string, from: string): string | null;
+/**
  * Where a reference made by the build-relative file `from` points.
  *
  * - `{ kind: 'skip' }`: nothing to follow or report (an empty value, a

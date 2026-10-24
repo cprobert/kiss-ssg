@@ -5,6 +5,7 @@ import {
   resolveReference,
   commonRoot,
   packageMembers,
+  documentBase,
 } from '../../lib/packages.js'
 
 describe('extractReferences', () => {
@@ -88,6 +89,14 @@ describe('extractCssReferences', () => {
     ])
   })
 
+  it('reads @import and url() in any case, as CSS does', () => {
+    expect(
+      extractCssReferences(
+        '@IMPORT "theme.css"; .a { background: URL(icon.png) } .b { background: Url("c.png") }',
+      ),
+    ).toEqual(['theme.css', 'icon.png', 'c.png'])
+  })
+
   it('keeps the spaces inside a quoted @import or url()', () => {
     const css = `@import "theme light.css"; @import 'print sheet.css' print; @import url("x y.css");
       .q { background: url('a b.png') }`
@@ -97,6 +106,32 @@ describe('extractCssReferences', () => {
       'x y.css',
       'a b.png',
     ])
+  })
+})
+
+describe('documentBase', () => {
+  const at = 'course/lesson/page.html'
+  // The folder a reference resolves from is the folder of the path returned.
+  const folder = (base) => {
+    const from = documentBase(base, at)
+    return from === null ? null : from.slice(0, from.lastIndexOf('/') + 1)
+  }
+  it('resolves a relative base as a URL does: a folder, a file, or a dot segment', () => {
+    expect(folder('../assets/')).toBe('course/assets/')
+    expect(folder('../assets/start.html')).toBe('course/assets/')
+    expect(folder('..')).toBe('course/')
+    expect(folder('.')).toBe('course/lesson/')
+    expect(folder('sub?x=1#y')).toBe('course/lesson/')
+    expect(documentBase('', at)).toBe(at)
+  })
+
+  it('gives null for an absolute or root-relative base', () => {
+    for (const base of [
+      'https://cdn.example.org/x/',
+      '/assets/',
+      '//cdn.example.org/',
+    ])
+      expect(documentBase(base, at), base).toBeNull()
   })
 })
 
