@@ -91,8 +91,9 @@ function lms({
 }
 
 // A window: its `parent` (itself at the top), an optional `API` and `opener`,
-// and the listeners the bridge registers, which `fire` calls.
-function frame({ parent, API, opener } = {}) {
+// and the listeners the bridge registers, which `fire` calls. With `loading`,
+// its document is still being parsed until `ready()` fires DOMContentLoaded.
+function frame({ parent, API, opener, loading = false } = {}) {
   const listeners = {}
   const win = {
     addEventListener: (type, fn) => (listeners[type] ??= []).push(fn),
@@ -103,6 +104,18 @@ function frame({ parent, API, opener } = {}) {
   win.parent = parent ?? win
   if (API) win.API = API
   if (opener) win.opener = opener
+  if (loading) {
+    const waiting = []
+    win.document = {
+      readyState: 'loading',
+      addEventListener: (type, fn) =>
+        type === 'DOMContentLoaded' && waiting.push(fn),
+    }
+    win.ready = () => {
+      win.document.readyState = 'interactive'
+      waiting.splice(0).forEach((fn) => fn({}))
+    }
+  }
   return win
 }
 
@@ -330,6 +343,50 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     win.kissScorm.interaction({ id: 'q1', response: 0 })
     win.fire('pagehide', { persisted: false })
     expect(one.calls.length).toBe(before)
+  })
+
+  it('waits for a parent still loading, so the parent owns the session whichever bridge runs first', () => {
+    const one = lms()
+    const outer = frame({ parent: frame({ API: one.api }), loading: true })
+    const inner = load(frame({ parent: outer }))
+    inner.kissScorm.interaction({ id: 'early', response: 0, result: true })
+    expect(one.calls).toEqual([])
+    // The parent's bridge runs after its iframe's (placed late in its body), then it finishes loading.
+    load(outer)
+    outer.ready()
+    expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(1)
+    expect(outer.kissScorm.available).toBe(true)
+    expect(inner.kissScorm.available).toBe(true)
+    expect(one.data.get('cmi.interactions.0.id')).toBe('early')
+    inner.fire('pagehide', { persisted: false })
+    expect(one.names()).not.toContain('LMSFinish')
+    outer.fire('pagehide', { persisted: false })
+    expect(one.names().filter((n) => n === 'LMSFinish')).toHaveLength(1)
+  })
+
+  it('a page embedded in a page that is still waiting reaches the session once its owner decides', () => {
+    const one = lms()
+    // outer is still loading; middle runs first and waits; inner then proxies to middle.
+    const outer = frame({ parent: frame({ API: one.api }), loading: true })
+    const middle = load(frame({ parent: outer }))
+    const inner = load(frame({ parent: middle }))
+    load(outer)
+    outer.ready()
+    inner.kissScorm.interaction({ id: 'late', response: 1, result: true })
+    expect(inner.kissScorm.available).toBe(true)
+    expect(one.data.get('cmi.interactions.0.id')).toBe('late')
+    expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(1)
+  })
+
+  it('owns the session itself once a parent with no bridge has loaded', () => {
+    const one = lms()
+    const outer = frame({ parent: frame({ API: one.api }), loading: true })
+    const inner = load(frame({ parent: outer }))
+    inner.kissScorm.score(0.5)
+    expect(inner.kissScorm.available).toBe(false)
+    outer.ready()
+    expect(inner.kissScorm.available).toBe(true)
+    expect(one.data.get('cmi.core.score.raw')).toBe('50')
   })
 
   it('an embedded kiss page uses the session of the page that embeds it', () => {

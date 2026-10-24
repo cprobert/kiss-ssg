@@ -18,10 +18,11 @@ It is one inline `<script>`, not a file: the `{{scormBridge}}` helper renders it
 ## What it does
 
 1. **Once per window.** If `window.kissScorm` exists, it returns: including the helper twice is harmless.
-2. **Embedded pages proxy.** It walks up `parent` (at most 10 frames, in `try`/`catch`). If a same-origin ancestor has `kissScorm`, this copy forwards every call to it and never touches the LMS: only the outermost kiss page of a SCO owns the session.
-3. **Finds the API** up `parent`, then up `opener`, at most 10 frames each; a frame of another origin is skipped, never thrown on.
-4. **Starts the session** with `LMSInitialize('')`. Unless `manual`, it reads `cmi.core.lesson_status` and sets `completed` only from `not attempted`, `browsed` or `incomplete` (never downgrading `passed` or `failed`), then commits at once.
-5. **On `pagehide`**: sets `cmi.core.session_time` (CMITimespan, since load) and commits; it calls `LMSFinish` only when `event.persisted` is false. A page frozen in the back/forward cache keeps its session, because Moodle's API refuses every call after `LMSFinish`. It registers no `unload` or `beforeunload`, which would keep a page out of that cache.
+2. **It waits for a parent still loading.** It walks up `parent` (at most 10 frames, in `try`/`catch`). A same-origin parent whose document is still loading may yet run its own bridge (placed after an iframe in its `<body>`), so the bridge waits for each such parent's `DOMContentLoaded` before it decides, with a placeholder `kissScorm` that queues the page's calls (`available` is false meanwhile). Then it runs again, and sends the queued calls. Without the wait, whichever bridge ran first owned the session: a child that ran before its parent started it, the parent's `LMSInitialize` failed and turned the parent off, and the child's unload finished the session (found by a Codex adversarial review, 2026-10-24). A bridge in `<head>` runs before the page's iframes are parsed, so the usual case waits for nothing.
+3. **Embedded pages proxy.** If a same-origin ancestor has `kissScorm`, this copy forwards every call to it and never touches the LMS: only the outermost kiss page of a SCO owns the session. It looks the ancestor's `kissScorm` up at each call, because an ancestor still waiting replaces its placeholder when it decides.
+4. **Finds the API** up `parent`, then up `opener`, at most 10 frames each; a frame of another origin is skipped, never thrown on.
+5. **Starts the session** with `LMSInitialize('')`. Unless `manual`, it reads `cmi.core.lesson_status` and sets `completed` only from `not attempted`, `browsed` or `incomplete` (never downgrading `passed` or `failed`), then commits at once.
+6. **On `pagehide`**: sets `cmi.core.session_time` (CMITimespan, since load) and commits; it calls `LMSFinish` only when `event.persisted` is false. A page frozen in the back/forward cache keeps its session, because Moodle's API refuses every call after `LMSFinish`. It registers no `unload` or `beforeunload`, which would keep a page out of that cache.
 
 ## Depends on
 
