@@ -48,6 +48,8 @@ opened: 2026-10-24
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-24** — contract met (written, read adversarially by a fresh agent, then by Codex; two amendments, the acceptance checks rewritten as one list of 31). Z `lib/zip.js` (`64cb1c3`) and X `lib/package-manifest.js` (`dcc76b8`) built test-first, each test seen to fail against a deliberately broken module, measured: byte-identical zips across input order and a second process, read back by Python's `zipfile` and `unzip -t`; manifests well-formed under Python's strict `xml.etree`. `npm run gates` green at each. Not yet: M and W (membership and the writer), B (the bridge), docs, the example, the clean room, the consumer's Moodle upload, the roadmap. No drift beyond the recorded amendment. Decision: continue to M and W.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
