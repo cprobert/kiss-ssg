@@ -208,7 +208,7 @@ Each check is a test unless it says otherwise. A regression test counts only onc
 - [ ] Under `cleanBuild: 'atomic'` the zips are promoted; in check mode they are discarded; when a page fails, no package is written and the build reports one failure, not two; a dev build skips packaging with one notice.
 - [ ] The report has `packages` last, with `hash`, through `reportInputs()` as well; `formatReport` prints them and caps the outside lines; `kiss-ssg check --against` reports packages added, changed and removed, and a change to one page changes only its package's hash.
 
-**B — the bridge (against a scripted SCORM 1.2 `API` stub in jsdom)**
+**B — the bridge (against a scripted SCORM 1.2 `API` stub, the script run in Node's `vm` with stub `window` objects for the frame chain and the `pagehide`/`pageshow` events: the bridge touches no DOM, so no new dependency)**
 
 - [ ] With no `API`, every call is a no-op and nothing throws; the page's bytes are the same with and without an LMS.
 - [ ] On load it initialises, and sets `completed` only from `not attempted`, `browsed` or `incomplete`, then commits; a `passed` or `failed` status is never changed; `complete="manual"` sets nothing on load.
