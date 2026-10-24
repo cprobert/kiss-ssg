@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // The gate battery /branch-close runs before opening a PR.
 //
-// Four gates, cheapest first, each printing one pass/fail line plus the salient
-// tail on failure. Exits non-zero if any fail. The same script runs locally from
+// Five gates, cheapest first, each printing one pass/fail line plus its whole
+// output on failure. Exits non-zero if any fail. The same script runs locally from
 // /branch-close and in CI (.github/workflows/ci.yml), so green here is green
 // there.
 import { execFileSync, spawnSync } from 'node:child_process'
@@ -90,8 +90,6 @@ const run = (cmd, args) =>
       shell: process.platform === 'win32',
     }),
   )
-
-const tail = (output, lines = 12) => output.split('\n').slice(-lines).join('\n')
 
 function changedFiles(base) {
   try {
@@ -224,7 +222,11 @@ if (import.meta.filename === process.argv[1]) {
     } else {
       failed++
       console.log(`✗ ${gate.name}${note ? ` — ${note}` : ''}`)
-      console.log(tail(output).replace(/^/gm, '    '))
+      // The whole output, not a tail: a failed gate's output is read once, in
+      // a CI log, and the last twelve lines of a vitest run are its summary
+      // and a code frame — the assertion's diff and anything the failing test
+      // printed sat above the cut (2026-10-21).
+      console.log(output.replace(/^/gm, '    '))
       console.log(`    fix: ${gate.fix}`)
     }
   }

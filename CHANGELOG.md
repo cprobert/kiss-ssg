@@ -83,6 +83,16 @@ The examples ship as models of good practice, so they now pass the new review ch
   `54ch`, not `70ch`, and that was measured, not assumed: `ch` is the width of "0", so `70ch` came
   out at 97 characters a line.
 
+## 2.7.9 — 2026-10-21
+
+Nothing in your site has to change.
+
+### The README opens with what kiss is for
+
+The first paragraph now says who kiss is for before it says how an agent drives it: a small
+generator for brochure and documentation sites, a static HTML site that goes up quickly, is easy
+to maintain and has best practice built in. The agent-driven paragraph follows it.
+
 ## 2.7.8 — 2026-10-17
 
 Nothing in your site has to change.
