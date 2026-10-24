@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.7.9",
+  "version": "2.8.0",
   "description": "Simple Static Website Generator",
   "main": "lib/kiss.js",
   "types": "./types/kiss.d.ts",

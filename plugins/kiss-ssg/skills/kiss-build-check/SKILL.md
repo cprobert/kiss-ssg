@@ -76,7 +76,7 @@ Inspect `outputs.collisions` even when `ok` is true. Each entry names the file, 
 
 ## The launch-readiness audit
 
-A build whose pages all succeeded also carries `audit` — the last key of each report, `{ checked, ignored, skipped, findings: [{ check, page, detail }] }` — and one `audit <check>: …` summary line per check that fired: a page with no title or description, no `og:image`, an image with no `alt`, a skipped heading level, no favicon or 404 page, a `debug.json` or `.map` in the build. It is **advisory**, like the link scan: it never changes `ok`, `failures` or the exit code, and it is `null` on a dev build and on any build with a failure — fix the failures first. Whether the site is ready to launch is a separate question from whether it builds; for that, hand off to the `kiss-site-review` skill, which works through the findings and looks at the site in a browser.
+A build whose pages all succeeded also carries `audit` — the last key of each report, `{ checked, ignored, skipped, findings: [{ check, page, detail }] }` — and one `audit <check>: …` summary line per check that fired: a page with no title or description, no `og:image`, an image with no `alt`, a skipped heading level, a viewport that locks zoom, a `href="#"` or a `#fragment` no element carries, no favicon or 404 page, a `debug.json` or `.map` in the build. It is **advisory**, like the link scan: it never changes `ok`, `failures` or the exit code, and it is `null` on a dev build and on any build with a failure — fix the failures first. Whether the site is ready to launch is a separate question from whether it builds; for that, hand off to the `kiss-site-review` skill, which works through the findings and looks at the site in a browser.
 
 ## Reading a failure
 

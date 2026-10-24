@@ -286,6 +286,64 @@ describe('the launch-readiness audit', () => {
     expect(err.report.audit).toBeNull()
   })
 
+  it('reads zoom locks and fragments from the pages the build wrote, under KISS_CHECK too', async () => {
+    const files = {
+      ...CLEAN,
+      'src/layouts/layout.hbs': FINISHED.replace(
+        '<head>',
+        '<head><meta name="viewport" content="width=device-width, maximum-scale=1">',
+      ),
+      'src/pages/index.hbs': page(
+        '<h1>Home</h1><a href="#">Menu</a><a href="#news">News</a>' +
+          '<a href="{{link "about"}}#team">Team</a><a href="/about#board">Board</a>' +
+          '<h2 id="news">News</h2>',
+        'Home',
+      ),
+      'src/pages/about.hbs': page('<h1 id="team">About</h1>', 'About'),
+    }
+    // The detail is the content as the page was written, which is after the
+    // minifier: it drops the space after the comma.
+    const locked = 'width=device-width,maximum-scale=1'
+    const expected = (root) => [
+      { check: 'viewport-zoom-lock', page: `${root}/404.html`, detail: locked },
+      {
+        check: 'viewport-zoom-lock',
+        page: `${root}/about.html`,
+        detail: locked,
+      },
+      {
+        check: 'viewport-zoom-lock',
+        page: `${root}/index.html`,
+        detail: locked,
+      },
+      { check: 'href-hash', page: `${root}/index.html`, detail: '#' },
+      {
+        check: 'fragment-missing',
+        page: `${root}/index.html`,
+        detail: '/about#board',
+      },
+    ]
+
+    site = await makeSite(files)
+    expect((await build(siteConfig(site))).audit.findings).toEqual(
+      expected(site.build),
+    )
+    await kiss.close()
+    kiss = null
+
+    // Under check the pages are written to staging and the folder is gone
+    // before anyone could read them back: the facts must come from write time.
+    process.env.KISS_CHECK = '1'
+    let report
+    try {
+      report = await build(siteConfig(site))
+    } finally {
+      delete process.env.KISS_CHECK
+    }
+    expect(report.mode).toBe('check')
+    expect(report.audit.findings).toEqual(expected(site.build))
+  })
+
   it('names only ids the config can ignore', async () => {
     site = await makeSite(UNFINISHED)
     const report = await build(siteConfig(site))

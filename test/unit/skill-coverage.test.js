@@ -303,6 +303,78 @@ const COVERAGE = [
       /^(?=[\s\S]*look for the decision)(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
+  // 2026-10-20, the six-repo design-skill evaluation: the lessons taken in, not
+  // the skills. The review runs as two passes, and each new craft check is one
+  // that was measured in Chromium before its wording shipped
+  // (planning/plans/2026-10-20-craft-learnings.md § Critique and answers).
+  // 2026-10-21 clean room: an unindented paragraph inside check 10 ended the
+  // list, and prettier folded checks 11–20 into one 5,800-character line, so an
+  // agent could not find them by number. Every gate passed it. Each check
+  // starting its own line is what this row holds.
+  {
+    feature: 'the twenty craft checks are each their own list item',
+    pattern: new RegExp(
+      `^${Array.from({ length: 20 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
+      'm',
+    ),
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  // 2026-10-21, the Pro Plumbing pilot: its sticky bar is a call bar at the
+  // bottom of the phone screen, forward Tab hid two controls under it, and the
+  // top-header-only wording would have passed the site.
+  {
+    feature:
+      'a sticky bar at the bottom hides forward Tab: scroll-padding-bottom',
+    pattern: /^(?=[\s\S]*`scroll-padding-bottom`)(?=[\s\S]*bottom bar)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-review'),
+      skill('kiss-ssg', 'kiss-site-new'),
+    ],
+  },
+  {
+    feature: 'the review is two passes: a usability audit, then a design lift',
+    pattern:
+      /^(?=[\s\S]*### 3\. The usability and best-practice audit)(?=[\s\S]*### 5\. The design lift)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  {
+    feature:
+      'the 2026-10-20 craft checks: focus, targets, skip link, current page, transitions, touch hover, no-JS, 100vw, 200%, line length, 0 and 1',
+    pattern:
+      /^(?=[\s\S]*`:focus-visible`)(?=[\s\S]*Shift\+Tab)(?=[\s\S]*2\.5\.8)(?=[\s\S]*Skip to content)(?=[\s\S]*aria-current="page")(?=[\s\S]*`transition: all`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*JavaScript off)(?=[\s\S]*`100vw`)(?=[\s\S]*--hide-scrollbars)(?=[\s\S]*200%)(?=[\s\S]*characters a line)(?=[\s\S]*at 0 and at 1)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  {
+    feature: 'a hero is 100svh; 100dvh is for an app shell',
+    pattern: /`100svh`[\s\S]*app shell/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  {
+    feature: 'the report: a P0–P3 priority, one row per cause',
+    pattern:
+      /^(?=[\s\S]*\| Priority \|)(?=[\s\S]*\*\*P0:\*\*)(?=[\s\S]*\*\*P3:\*\*)(?=[\s\S]*One row per cause)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  {
+    feature:
+      'the design lift: decisions, a read, preserve mode, proposals in a scratch copy, the protected contract',
+    pattern:
+      /^(?=[\s\S]*design read)(?=[\s\S]*one step bolder)(?=[\s\S]*[Pp]reserve, improve, remove)(?=[\s\S]*scratch copy)(?=[\s\S]*protected contract)(?=[\s\S]*gets `aliases`)(?=[\s\S]*do not attempt the lift)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  {
+    feature:
+      'the build-time floors from the 2026-10-20 craft checks, pointing at the review',
+    pattern:
+      /^(?=[\s\S]*skip link)(?=[\s\S]*`:focus-visible`)(?=[\s\S]*aria-current)(?=[\s\S]*`user-scalable=no`)(?=[\s\S]*16px)(?=[\s\S]*`autocomplete`)(?=[\s\S]*`tabindex`)(?=[\s\S]*`100svh`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*empty state)(?=[\s\S]*craft pass)/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'the 2.8.0 upgrade note: three audit checks, advisory',
+    pattern:
+      /2\.8\.0: three more audit checks[\s\S]*`viewport-zoom-lock`[\s\S]*`href-hash`[\s\S]*`fragment-missing`/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
   // 2026-10-12, from the same trial: the floors a new site keeps whatever
   // look frontend-design chooses. The first exists because frontend-design
   // tells an agent to "come up with copy and placeholder content", and the
@@ -575,6 +647,20 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-10-21 pilot: "a forward Tab … never hid one" was measured under a top header only; under a bottom call bar a forward Tab is exactly the direction that hides controls, and the sentence read as a general pass',
+    patterns: [
+      /forward Tab brings each link in from the bottom of the screen and never hid one/,
+    ],
+  },
+  {
+    why: '2026-10-21 clean room: a news section whose items are their own pages gets no placeholder item, because a placeholder post is published as a real URL in the sitemap and the feed; it builds empty and shows its empty state. The old rule put news beside the menu, under marked slots, and the agent had to choose between the two',
+    patterns: [/a team or a news section with no items given/],
+  },
+  {
+    why: '2026-10-20: `100dvh` resizes as the address bar collapses, so on a marketing hero it shifts the layout mid-scroll; the craft pass now says `100svh` for a hero and `100dvh` for an app shell, and a sentence calling dvh simply "the screen the visitor sees" reads as advice for every case',
+    patterns: [/`100dvh` is the screen the visitor actually sees/],
+  },
   {
     why: "llms.txt links each page's Markdown copy (2.7.5, the llmstxt.org convention) and not the page, so it is no longer one of the URLs that equal the canonical or follow links.trailingSlash; a doc saying it still is sends an agent looking for a page URL that the file does not contain",
     patterns: [

@@ -104,6 +104,7 @@ When Anthropic's `frontend-design` skill is available, let it set the **visual d
 
 - Build, then serve the build folder over HTTP as the site root. Never use `file://`, and start and stop the server yourself. The `kiss-site-review` skill's browser pass explains why that skill's own defaults for both are wrong for a kiss site.
 - Screenshot each distinct page template at 320, 768 and 1440 wide, in both colour schemes if the site has a dark one.
+- Press Tab once from the top of each template: the skip link should be what it lands on, and visible.
 - Fix anything that overflows or breaks before the hand-over.
 
 The full judgement pass belongs to `kiss-site-review`.
@@ -116,12 +117,25 @@ Whatever the look, keep these:
 
   A design skill that asks for "realistic" or "organic" sample data, or tells you to "come up with copy and placeholder content", is the trap here. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it.
 
-  - **A menu, a price list, a team or a news section with no items given** gets empty, marked slots (`[Item name]`, "Price to be confirmed"). Never fill it with example items or sample posts: a believable white loaf at a believable price is an invented fact the day the site goes live with it.
+  - **A menu, a price list or a team with no items given** gets empty, marked slots (`[Item name]`, "Price to be confirmed"). Never fill it with example items or sample posts: a believable white loaf at a believable price is an invented fact the day the site goes live with it.
+  - **A news section, a blog or anything else whose items become their own pages or feed entries** gets no placeholder item at all. It builds with zero items and shows its empty state (below). A placeholder post would be published as a real URL, in the sitemap and in the feed.
   - **Keep every placeholder visible on the page**, so a launch with one still in it is obvious to whoever looks.
   - **A business name read off the domain is a guess.** Use it, and say in the hand-over that it needs confirming.
 
 - **Every form field has a visible `<label>`**, tied to it by `for` and `id`. A placeholder is an example of the answer, never the label. An error message sits below the field it is about.
 - **Every `<img>` has its `width` and `height`**, from the model beside its `src` and `alt`, so the page does not jump as images arrive. Add `loading="lazy"` to images below the first screen, never to the first image a visitor sees.
+
+The usability floors, built in from the first layout. Each is a check in `kiss-site-review`'s craft pass, which says how it is measured and why. Building to them now means the review finds nothing to fix:
+
+- **A skip link comes first** when a header or nav comes before `<main>`: `<a class="skip-link" href="#main">Skip to content</a>`, visible on focus, to `<main id="main">` (check 12).
+- **A visible focus style:** a `:focus-visible` ring, never a bare `outline: none` (check 10). Give a sticky header `scroll-padding-top` at least its own height, and a sticky bottom bar (a call or cookie bar) `scroll-padding-bottom` at least its own (checks 7 and 10).
+- **The current nav link carries `aria-current="page"`**, set inside `{{#isActive}}`, and is marked by more than colour (check 13).
+- **The viewport meta is `width=device-width, initial-scale=1`**, never with `user-scalable=no` or a `maximum-scale`. The audit reports a zoom lock as `viewport-zoom-lock`.
+- **Form inputs are 16px or larger**, each with its `autocomplete` token (`name`, `email`, `tel`), and no positive `tabindex` anywhere. iOS Safari zooms the page into a smaller input and does not zoom back out; that is reported, not measured here, because Chromium does not do it.
+- **A full-screen hero is `100svh`**, not `100dvh`, with a `100vh` line first as the fallback (check 8).
+- **Transitions name their properties**, and never `transition: all` (check 14). A hover that moves or lifts something goes behind `@media (hover: hover) and (pointer: fine)` (check 15).
+- **Content is visible without script.** Hide something for an entrance only under a class the script itself sets (check 16).
+- **A list fed by a model has an empty state**, and where it shows a count, a correct singular ("1 post") (check 20). The marked slots above are for a menu, price list or team on the page whose items the owner has not given. The empty state is for a list with nothing in it when the site builds, including a news section that has no posts yet.
 
 When a page needs a little interactivity, reach for it in this order, and keep the content in the rendered HTML either way — that is what keeps it crawlable:
 

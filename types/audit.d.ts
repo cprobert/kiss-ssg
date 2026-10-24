@@ -20,22 +20,25 @@ export function extractPageFacts(html: string, outputPath: string): PageFacts;
  * @param {boolean} [options.ownsFolder] `config.cleanBuild !== false`; when
  * false the three folder-walk checks are skipped and listed in `skipped`
  * @param {boolean} [options.debugWritten] `viewStats()` wrote `debug.json`
+ * @param {boolean} [options.extensionLess] `config.extensionLess`, for
+ * resolving a cross-page fragment the way the link scan resolves its path
  * @returns {AuditResult}
  */
-export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, }: {
+export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, }: {
     pages: AuditPage[];
     buildDir: string;
     siteUrl?: string | null;
     ignore?: readonly string[];
     ownsFolder?: boolean;
     debugWritten?: boolean;
+    extensionLess?: boolean;
 }): AuditResult;
 /**
  * Every check the audit can run, in the order findings are reported. These ids
  * are public vocabulary: `config.audit.ignore`, the report's `check` field and
  * the summary lines all use them, so renaming one is a breaking change.
  */
-export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log"];
+export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log"];
 export type CheckId = (typeof CHECKS)[number];
 /**
  * What one written page says about itself, extracted at write time from the
@@ -77,6 +80,27 @@ export type PageFacts = {
      * heading levels 1–6, in document order
      */
     headings: number[];
+    /**
+     * the content of every `<meta name="viewport">`,
+     * in document order
+     */
+    viewports: string[];
+    /**
+     * the page carries a `<base href>`, so a bare
+     * `#fragment` on it resolves against that URL rather than the page
+     */
+    base: boolean;
+    /**
+     * every `id`, and every `<a name>`, a fragment could
+     * land on — inline `<svg>` included, `<template>` content not — decoded,
+     * sorted and deduplicated
+     */
+    ids: string[];
+    /**
+     * every `<a>`/`<area>` `href` that carries a
+     * `#`, decoded, sorted and deduplicated
+     */
+    fragmentLinks: string[];
 };
 export type AuditFinding = {
     check: CheckId;

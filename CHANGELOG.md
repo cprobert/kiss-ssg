@@ -3,6 +3,86 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.0 — 2026-10-21
+
+Nothing fails a build that used to pass. The audit has three more checks, so your first build after
+upgrading may report findings it never did. The `kiss-site-migrate` skill's § 0e says what to
+expect.
+
+### The audit checks zoom and in-page links
+
+- **`viewport-zoom-lock`.** A page whose `<meta name="viewport">` turns off zoom. That means
+  `user-scalable=no`, or a `maximum-scale` below 2, short of the 200% people with low vision rely
+  on.
+- **`href-hash`.** A link to `#`, which goes nowhere. It is usually a control that should be a
+  `<button>`.
+- **`fragment-missing`.** A `#fragment` that names no `id` on the page it lands on. That covers a
+  skip link to an `id`-less `<main>`, a table of contents after a heading was renamed, and a
+  `{{link "about"}}#team` to a section that moved. It checks this page and every other page the
+  build wrote. It leaves alone what it cannot see: `#top`, text fragments, other sites, assets, and
+  ids a script adds at runtime. For those last ones, the trade-off of ignoring the check is in
+  `GUIDE.md`.
+
+Each is advisory, like every audit check, and each can be turned off with a reason in
+`audit.ignore`. Under `--summary`, `viewport-zoom-lock` and `fragment-missing` print one line per
+value, so you see which href to fix.
+
+### `kiss-site-review` runs as two passes: a usability audit, then a design lift
+
+Ask your agent to review a site and it now works in two passes:
+
+- **A usability and best-practice audit.** The build's findings, external links, a browser pass,
+  and the craft pass, which has grown from nine checks to twenty:
+  - visible focus, including under a sticky header on Shift+Tab;
+  - targets of 24px by WCAG 2.5.8's own rule, with its spacing exception;
+  - a skip link;
+  - `aria-current` on the current nav link;
+  - transitions that name their properties;
+  - hover kept off touch screens;
+  - content that shows with JavaScript off, and reduced motion that shows the end state;
+  - no `100vw`;
+  - text at 200%;
+  - a readable line length;
+  - lists that work at 0 and at 1.
+
+  Each was measured in a browser before its wording was written. A full-screen hero is now `100svh`
+  (`100dvh` is for an app shell). The report has a P0–P3 priority and one row per cause.
+
+- **A design lift**, offered after the fixes you pick. It reads the site's recorded decisions,
+  writes a one-line read of the audience, and stays at most one step bolder than the site is now.
+  It shows two or three proposals as before-and-after screenshots made in a scratch copy, and keeps
+  the content, URLs, anchor ids and form fields as they are. Without Anthropic's `frontend-design`
+  skill it says so and leaves the look alone.
+
+`kiss-site-new` builds a new site to the same floors from the first layout, so the review finds
+nothing to fix. These rules came from evaluating six third-party design-skill collections; kiss took
+the measurable lessons, not the skills, and recommends no new companion skill.
+
+### The examples: skip links, and a line length for running text
+
+The examples ship as models of good practice, so they now pass the new review checks:
+
+- **Example 11, the blog, works at no posts and at one.** The home page, the listing and the
+  tags page show a line saying the journal or the tags are empty, instead of a heading with
+  nothing under it. The counts its copy states ("6 posts… 4 tags") come from the posts through
+  one `countOf`, singular at one, instead of being typed into the templates. The current page's
+  nav link now shows an underline on hover and press.
+
+- **Examples 4 and 12 have a skip link** to `<main id="main">`, as the other examples already
+  did. In example 12, the conversion, it is declared in `tools/compare.mjs` as the one element the
+  built page has that the original artifact did not. The comparison stays exact about everything
+  else.
+- **Text in a card stops at a readable line.** The shared stylesheet's `$measure` is the page's
+  width, so a blog post ran to 115 characters a line at desktop width. A new `$line-length: 54ch`
+  caps paragraphs, list items and quotes in a card at 60–79 characters a line, median 70, across the six posts. The look is
+  otherwise unchanged.
+
+  The cap covers all running text in `<main>`, not only cards. A note under a post had run to
+  155 characters a line.
+
+  `54ch`, not `70ch`, and that was measured, not assumed: `ch` is the width of "0", so `70ch` came
+  out at 97 characters a line.
+
 ## 2.7.9 — 2026-10-21
 
 Nothing in your site has to change.

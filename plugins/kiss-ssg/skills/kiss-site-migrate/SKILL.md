@@ -197,6 +197,31 @@ Nothing fails. What changes is the build folder and `llms.txt`:
 - Re-record the knowledge base (`npx kiss-ssg aikb router.js`) once the upgrade builds green, so
   the next `check` diffs against a record that has the new field.
 
+### 0e. 2.8.0: three more audit checks
+
+Nothing fails, and `ok` and the exit code do not move. The audit asks three more questions of
+every page, so the first build after upgrading can print findings the site never had:
+
+- **`viewport-zoom-lock`**: the layout's viewport meta has `user-scalable=no` or a `maximum-scale`
+  below 2. One edit to the layout fixes every page.
+- **`href-hash`**: a link with `href="#"`.
+- **`fragment-missing`**: a link's `#fragment` names no `id` on the page it lands on. A skip link to
+  a `<main>` with no `id` is the usual one. So is a `[link](#heading)` in Markdown content, because
+  Markdown headings get no `id`.
+
+What changes besides the log:
+
+- **The record.** `AIKB/last-build.json` carries the report's `audit.findings`, so the first
+  `npx kiss-ssg aikb` after upgrading records any new findings. That is the record catching up, not
+  a change to the site.
+- **Turning one off** is the same as for every audit check: `audit: { ignore: ['href-hash'] }`, with
+  a comment saying why. A site whose script adds an `id` at runtime can only ignore all of
+  `fragment-missing`, which also stops it checking the skip link. Say that in the comment.
+
+As with the first audit release, the upgrade is done when the site builds the way it did. Offer
+the findings as their own piece of work with the `kiss-site-review` skill, whose usability pass
+now covers them.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.

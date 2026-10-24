@@ -13,7 +13,7 @@
   </section>
 
   <div class="stack">
-    {{#each model.posts}}{{> "post-card"}}{{/each}}
+    {{#each model.posts}}{{> "post-card"}}{{else}}<p class="meta">Nothing in the journal yet. The first post will be here.</p>{{/each}}
   </div>
 
   <nav class="callout" aria-label="Pagination">
@@ -26,7 +26,7 @@
 
   <div class="card">
     <h2>Browse by tag</h2>
-    <p>{{#each model.tags}}<a class="tag" href="{{link 'blog/tags' slug=slug}}">{{tag}} ({{count}})</a> {{/each}}</p>
+    <p>{{#each model.tags}}<a class="tag" href="{{link 'blog/tags' slug=slug}}">{{tag}} ({{count}})</a> {{else}}No tags yet: a tag appears when a post is filed under it.{{/each}}</p>
     <p class="meta"><a href="{{link 'blog/tags'}}">Every tag</a> &middot; <a href="/feed.xml">RSS feed</a></p>
   </div>
   {{/content}}

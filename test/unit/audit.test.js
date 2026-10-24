@@ -34,6 +34,9 @@ describe('CHECKS', () => {
       'img-alt-missing',
       'h1-count',
       'heading-skip',
+      'viewport-zoom-lock',
+      'href-hash',
+      'fragment-missing',
       'favicon-missing',
       'not-found-missing',
       'site-url-local',
@@ -56,6 +59,10 @@ describe('extractPageFacts', () => {
       icon: true,
       imgMissingAlt: ['/b.jpg', '/d.jpg'],
       headings: [1, 2, 3, 2],
+      viewports: [],
+      base: false,
+      ids: [],
+      fragmentLinks: [],
     })
   })
 
@@ -79,7 +86,105 @@ describe('extractPageFacts', () => {
       icon: false,
       imgMissingAlt: [],
       headings: [],
+      viewports: [],
+      base: false,
+      ids: [],
+      fragmentLinks: [],
     })
+  })
+
+  it('collects every viewport meta, in document order', () => {
+    const facts = extractPageFacts(
+      '<html><head><meta name="viewport" content="width=device-width">' +
+        '<meta name="Viewport" content="user-scalable=no"></head></html>',
+      'a.html',
+    )
+    expect(facts.viewports).toEqual(['width=device-width', 'user-scalable=no'])
+  })
+
+  it('reads ids from every element, inline svg included, and <a name>', () => {
+    const facts = extractPageFacts(
+      '<html><body><main id="main"><h2 id="team">Team</h2>' +
+        '<a name="legacy"></a><div data-id="not-an-id"></div>' +
+        '<svg><symbol id="icon-x"></symbol></svg>' +
+        '<template><p id="later"></p></template>' +
+        '<script>const s = \'<p id="in-script">\'</script>' +
+        '<!-- <p id="in-comment"> --><p id="caf&eacute;">' +
+        '<p id="a&amp;b"></p></main></body></html>',
+      'a.html',
+    )
+    expect(facts.ids).toEqual([
+      'a&b',
+      'caf&eacute;',
+      'icon-x',
+      'legacy',
+      'main',
+      'team',
+    ])
+  })
+
+  it('takes fragment links from <a> and <area> only', () => {
+    const facts = extractPageFacts(
+      '<html><body><a href="#main">Skip</a><a href="/about.html#team">T</a>' +
+        '<a href="/about.html">no fragment</a><area href="#map">' +
+        '<link rel="stylesheet" href="/x.css#v"><a href="#">Menu</a>' +
+        '<a href="#main">Again</a><a href="/a?x=1&amp;y=2#q">Q</a>' +
+        '<svg><use href="#icon-x"></use><a href="#in-svg"></a></svg>' +
+        '</body></html>',
+      'a.html',
+    )
+    expect(facts.fragmentLinks).toEqual([
+      '#',
+      '#main',
+      '#map',
+      '/a?x=1&y=2#q',
+      '/about.html#team',
+    ])
+  })
+
+  // The 2026-10-21 review: three readings of a tag that turned a missed id or
+  // a misread element into a finding. A `>` inside a quoted value used to end
+  // the tag early, which is a false negative for the link scan and a false
+  // POSITIVE here, where a missed id is a reported link.
+  it('reads an id after a quoted value that holds a ">"', () => {
+    const facts = extractPageFacts(
+      '<html><body><div x-show="count > 0" id="panel"></div>' +
+        '<section onclick=\'if(a>b)c()\' id="faq"></section>' +
+        '<a title="x > y" href="#panel">go</a></body></html>',
+      'a.html',
+    )
+    expect(facts.ids).toEqual(['faq', 'panel'])
+    expect(facts.fragmentLinks).toEqual(['#panel'])
+  })
+
+  it('reads an id on a <script>, <style> or <template> tag, but not inside one', () => {
+    const facts = extractPageFacts(
+      '<html><body><script id="data" type="application/json">{"x":"<p id=\\"no\\">"}</script>' +
+        '<style id="theme">p{}</style><template id="tpl"><p id="later"></p></template>' +
+        '</body></html>',
+      'a.html',
+    )
+    expect(facts.ids).toEqual(['data', 'theme', 'tpl'])
+  })
+
+  it('takes links from <a> and <area> only, never from a custom element named a-…', () => {
+    const facts = extractPageFacts(
+      '<html><body><a-entity href="#"></a-entity><a-scene href="#x"></a-scene>' +
+        '<A HREF="#y">y</A><a\nhref="#z">z</a></body></html>',
+      'a.html',
+    )
+    expect(facts.fragmentLinks).toEqual(['#y', '#z'])
+  })
+
+  it('notes a <base href>, which changes what a bare #fragment resolves against', () => {
+    const page = (head) =>
+      extractPageFacts(
+        `<html><head>${head}</head><body></body></html>`,
+        'a.html',
+      )
+    expect(page('<base href="/docs/">').base).toBe(true)
+    expect(page('<base target="_blank">').base).toBe(false)
+    expect(page('').base).toBe(false)
   })
 
   it("keeps an empty title as '' so it is told apart from a missing one", () => {
@@ -167,6 +272,10 @@ function facts(overrides = {}) {
     icon: true,
     imgMissingAlt: [],
     headings: [1, 2],
+    viewports: ['width=device-width, initial-scale=1'],
+    base: false,
+    ids: [],
+    fragmentLinks: [],
     ...overrides,
   }
 }
@@ -355,6 +464,243 @@ describe('auditBuild — per-page checks', () => {
     expect(only(result, 'heading-skip')).toEqual([
       { check: 'heading-skip', page: skip.buildTo, detail: 'h2 -> h4' },
     ])
+  })
+})
+
+describe('auditBuild — viewport-zoom-lock', () => {
+  const locked = (...viewports) =>
+    only(audit({ pages: [page({ viewports })] }), 'viewport-zoom-lock')
+
+  it('fires on user-scalable=no or 0, detail the content as written', () => {
+    expect(locked('width=device-width, user-scalable=no')).toMatchObject([
+      { detail: 'width=device-width, user-scalable=no' },
+    ])
+    expect(locked('user-scalable=0')).toHaveLength(1)
+    expect(locked('USER-SCALABLE = NO')).toHaveLength(1)
+  })
+
+  it('fires on maximum-scale below 2, the 200% WCAG 1.4.4 asks for', () => {
+    expect(locked('width=device-width, maximum-scale=1')).toHaveLength(1)
+    expect(locked('maximum-scale=1.5')).toHaveLength(1)
+    expect(locked('maximum-scale=2')).toEqual([])
+    expect(locked('maximum-scale=5')).toEqual([])
+  })
+
+  it('accepts commas, semicolons and whitespace as separators', () => {
+    expect(locked('width=device-width;user-scalable=no')).toHaveLength(1)
+    expect(locked('width=device-width user-scalable=no')).toHaveLength(1)
+  })
+
+  it('is silent on an ordinary viewport, on yes, and with no viewport at all', () => {
+    expect(locked('width=device-width, initial-scale=1')).toEqual([])
+    expect(locked('width=device-width, user-scalable=yes')).toEqual([])
+    expect(locked('maximum-scale=abc')).toEqual([])
+    expect(locked()).toEqual([])
+  })
+
+  it('fires when any one of several viewport metas locks zoom', () => {
+    expect(
+      locked('width=device-width', 'width=device-width, maximum-scale=1'),
+    ).toMatchObject([{ detail: 'width=device-width, maximum-scale=1' }])
+  })
+})
+
+describe('auditBuild — href-hash and fragment-missing', () => {
+  // Pages written inside a real build folder, so a cross-page fragment can be
+  // resolved to the page it names.
+  function site(pages, options = {}) {
+    const buildDir = buildFolder()
+    return audit({
+      buildDir,
+      pages: Object.entries(pages).map(([rel, overrides]) => ({
+        buildTo: `${buildDir}/${rel}`,
+        facts: facts({ title: rel, description: rel, ...overrides }),
+        canonicalElsewhere: false,
+        siteUrl: null,
+      })),
+      ...options,
+    })
+  }
+  const findings = (result, check) =>
+    only(result, check).map(({ page, detail }) => [
+      page.slice(page.lastIndexOf('/') + 1),
+      detail,
+    ])
+
+  it('href-hash fires on a bare # and on nothing else', () => {
+    const result = site({
+      'index.html': { ids: ['main'], fragmentLinks: ['#', '#main'] },
+    })
+    expect(findings(result, 'href-hash')).toEqual([['index.html', '#']])
+    expect(only(result, 'fragment-missing')).toEqual([])
+  })
+
+  it('fragment-missing fires on an in-page fragment with no matching id', () => {
+    const result = site({
+      'index.html': { ids: ['main'], fragmentLinks: ['#main', '#mian'] },
+    })
+    expect(findings(result, 'fragment-missing')).toEqual([
+      ['index.html', '#mian'],
+    ])
+  })
+
+  it('matches ids case-sensitively, raw first and then percent-decoded', () => {
+    const result = site({
+      'index.html': {
+        ids: ['Team', 'café', '50%off'],
+        fragmentLinks: ['#team', '#caf%C3%A9', '#50%off'],
+      },
+    })
+    expect(findings(result, 'fragment-missing')).toEqual([
+      ['index.html', '#team'],
+    ])
+  })
+
+  it('exempts #top in any case, and a text fragment, but not what precedes one', () => {
+    const result = site({
+      'index.html': {
+        ids: ['main'],
+        fragmentLinks: [
+          '#top',
+          '#TOP',
+          '#:~:text=hello',
+          '#main:~:text=x',
+          '#gone:~:text=x',
+        ],
+      },
+    })
+    expect(findings(result, 'fragment-missing')).toEqual([
+      ['index.html', '#gone:~:text=x'],
+    ])
+  })
+
+  it('treats a query-only reference as this page', () => {
+    const result = site({
+      'index.html': {
+        ids: ['main'],
+        fragmentLinks: ['?q=1#main', '?q=1#nope'],
+      },
+    })
+    expect(findings(result, 'fragment-missing')).toEqual([
+      ['index.html', '?q=1#nope'],
+    ])
+  })
+
+  it('resolves a cross-page fragment to the page it names', () => {
+    const result = site({
+      'index.html': {
+        fragmentLinks: [
+          '/about.html#team',
+          '/about.html#board',
+          'about.html#team',
+          '/blog/#latest',
+          '/blog#latest',
+        ],
+      },
+      'about.html': { ids: ['team'] },
+      'blog/index.html': { ids: [] },
+    })
+    expect(findings(result, 'fragment-missing')).toEqual([
+      // Sorted by `localeCompare`, the audit's order, which puts `/` before `#`.
+      ['index.html', '/about.html#board'],
+      ['index.html', '/blog/#latest'],
+      ['index.html', '/blog#latest'],
+    ])
+  })
+
+  it('resolves extension-less links to the page, not to its folder, under either setting', () => {
+    for (const extensionLess of [false, true]) {
+      const result = site(
+        {
+          'index.html': {
+            fragmentLinks: ['/about#team', '/about#gone', '/about/#gone'],
+          },
+          'about/index.html': { ids: ['team'] },
+        },
+        { extensionLess },
+      )
+      expect(findings(result, 'fragment-missing')).toEqual([
+        ['index.html', '/about/#gone'],
+        ['index.html', '/about#gone'],
+      ])
+    }
+  })
+
+  it('checks a same-origin absolute URL, under a siteUrl path prefix too', () => {
+    const result = site(
+      {
+        'index.html': {
+          fragmentLinks: [
+            'https://site.example/docs/about.html#gone',
+            'https://site.example/docs/about.html#team',
+            'https://other.example/about.html#gone',
+          ],
+        },
+        'about.html': { ids: ['team'] },
+      },
+      { siteUrl: 'https://site.example/docs/' },
+    )
+    expect(findings(result, 'fragment-missing')).toEqual([
+      ['index.html', 'https://site.example/docs/about.html#gone'],
+    ])
+  })
+
+  it('skips a fragment on anything the build has no ids for', () => {
+    const result = site({
+      'index.html': {
+        fragmentLinks: [
+          '/guide.pdf#page=2',
+          '/elsewhere.html#x',
+          '/../outside.html#x',
+          'mailto:a@b.example#x',
+        ],
+      },
+    })
+    expect(only(result, 'fragment-missing')).toEqual([])
+  })
+
+  it('does not check a page that carries a <base href>', () => {
+    const result = site({
+      'index.html': { base: true, ids: [], fragmentLinks: ['#gone'] },
+    })
+    expect(only(result, 'fragment-missing')).toEqual([])
+  })
+
+  it('leaves hash-router and hashbang links alone: they are routes, not scroll targets', () => {
+    const result = site({
+      'index.html': {
+        ids: [],
+        fragmentLinks: ['#/settings', '#!/inbox', '#!', '#gone'],
+      },
+    })
+    expect(findings(result, 'fragment-missing')).toEqual([
+      ['index.html', '#gone'],
+    ])
+  })
+
+  it('is ignored per check: href-hash and fragment-missing independently', () => {
+    const pages = {
+      'index.html': { ids: [], fragmentLinks: ['#', '#gone'] },
+    }
+    expect(
+      site(pages, { ignore: ['href-hash'] }).findings.map((f) => f.check),
+    ).toEqual(['fragment-missing'])
+    expect(
+      site(pages, { ignore: ['fragment-missing'] }).findings.map(
+        (f) => f.check,
+      ),
+    ).toEqual(['href-hash'])
+  })
+
+  it('reads facts from before this check existed as having no links to check', () => {
+    const result = site({
+      'index.html': {
+        ids: undefined,
+        fragmentLinks: undefined,
+        viewports: undefined,
+      },
+    })
+    expect(result.findings).toEqual([])
   })
 })
 

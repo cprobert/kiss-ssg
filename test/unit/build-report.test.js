@@ -706,6 +706,35 @@ describe('formatReport — audit lines', () => {
     ])
   })
 
+  it('names the value for viewport-zoom-lock and fragment-missing, and only pages for href-hash', () => {
+    expect(
+      format([
+        {
+          check: 'viewport-zoom-lock',
+          page: './public/a.html',
+          detail: 'width=device-width,user-scalable=no',
+        },
+        {
+          check: 'viewport-zoom-lock',
+          page: './public/b.html',
+          detail: 'width=device-width,user-scalable=no',
+        },
+        { check: 'href-hash', page: './public/a.html', detail: '#' },
+        { check: 'fragment-missing', page: './public/a.html', detail: '#mian' },
+        {
+          check: 'fragment-missing',
+          page: './public/b.html',
+          detail: '/about.html#board',
+        },
+      ]),
+    ).toEqual([
+      '  audit viewport-zoom-lock: "width=device-width,user-scalable=no" on 2 pages (./public/a.html, ./public/b.html)',
+      '  audit href-hash: 1 page (./public/a.html)',
+      '  audit fragment-missing: "#mian" on 1 page (./public/a.html)',
+      '  audit fragment-missing: "/about.html#board" on 1 page (./public/b.html)',
+    ])
+  })
+
   it('says which checks were skipped because the build does not own its folder', () => {
     expect(
       format([], {

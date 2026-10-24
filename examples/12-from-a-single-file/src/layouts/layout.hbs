@@ -24,8 +24,12 @@
   {{#block "head"}}{{/block}}
 </head>
 <body>
+  {{!-- Also added after the conversion: the first thing a keyboard reaches,
+        so it can pass the header by. tools/compare.mjs declares it as the one
+        element the built page has that the artifact did not. --}}
+  <a class="skip-link" href="#main">Skip to content</a>
   {{> "site/header"}}
-  <main>
+  <main id="main">
     {{#block "main"}}{{/block}}
   </main>
   {{> "site/footer"}}

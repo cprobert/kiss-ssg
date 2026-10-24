@@ -10,15 +10,25 @@ import { utils } from 'kiss-ssg'
 export const tagSlug = (tag) => utils.toSlug(String(tag))
 
 /**
+ * A count as words, singular at one: `countOf(1, 'post')` is "1 post". Every
+ * count the site prints comes from here, because a number typed into a
+ * template ("six posts, four tags") is wrong the day the seventh post lands,
+ * and a template that prints `{{count}} posts` reads "1 posts".
+ *
+ * @param {number} n
+ * @param {string} noun the singular
+ * @returns {string}
+ */
+export const countOf = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`
+
+/**
  * Every tag the posts mention, each with the posts that mention it — the array
  * the second `.pages()` fan-out is registered over. Sorted by tag, and the
  * posts inside each one left in the order they were handed over (newest
  * first), so two builds of the same folder register the same pages in the same
  * order and the sitemap, the feed and `llms.txt` do not churn.
  *
- * `postCount` is the count as words ("1 post", "2 posts"): Handlebars has no
- * comparison helper, and a template that prints `{{count}} posts` reads "1
- * posts" the day a tag has one post.
+ * `postCount` is the count as words ("1 post", "2 posts"), from `countOf`.
  *
  * @param {{ title: string, id: string, date: string, dateLabel: string, summary: string, tags: string[] }[]} cards
  * @returns {{ tag: string, slug: string, count: number, postCount: string, posts: any[] }[]}
@@ -37,7 +47,7 @@ export function tagRecords(cards) {
       tag,
       slug: tagSlug(tag),
       count: posts.length,
-      postCount: `${posts.length} ${posts.length === 1 ? 'post' : 'posts'}`,
+      postCount: countOf(posts.length, 'post'),
       posts,
     }))
     .sort((a, b) => a.slug.localeCompare(b.slug))
