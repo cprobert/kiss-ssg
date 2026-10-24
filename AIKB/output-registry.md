@@ -28,6 +28,7 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 
 ## Non-obvious behavior
 
+- A pipeline step's declared `outputs` are claimed as kind `'pipeline'`, owner `<pipeline: name>`, after the step succeeds (`lib/kiss.js`); a copy of the same file is refused, as a copy over any non-asset producer is.
 - A learning package claims its zip as kind `'package'` (`lib/packages.js`), after it renames the temporary file into place. The package writer also **reads** the registry: a file is packed only when this build claimed it, so the claims double as "what this build wrote".
 - Writers register at the write site, using the actual filename, including custom feed and redirect paths. A skipped or failed write claims nothing. There is no auxiliary-filename whitelist.
 - Generated outputs take precedence over subsequent asset copies. A warning names the path and both producers; it does not replace ownership protection. Between generated writers, the last successful write owns the file.
@@ -35,7 +36,7 @@ Tracks the last successful writer of each output file for one Kiss instance. Pre
 - Page orphan cleanup releases page claims and does not delete a path taken over by another producer. Atomic promotion relocates claims; asset-copy identities use the requested destination, so staging does not change their identity.
 - Paths are resolved with Windows case normalization. This is an in-process ownership ledger, not a filesystem lock or a defence against external processes changing files during a build.
 
-- `OutputKind` is the closed union `asset | generated | page`; claims, parameters and collision records have JSDoc types checked by consumers.
+- `OutputKind` is the closed union `asset | generated | page | package | pipeline`; claims, parameters and collision records have JSDoc types checked by consumers.
 - Collisions are advisory records with at least two active producers. Asset and generated producers survive replay; old page producers retire before replacement pages write. Asset reconciliation releases removed sources even if a generated writer now owns their output. Producers include refused asset attempts; `winner` follows successful writes and explicit releases, and is preserved as the last build outcome on discard. `refused` lists owners whose attempts were blocked until a successful claim clears that refusal. The warning is deduplicated independently of the report. Between asset copies the later copy wins; only mixed asset/generated collisions use the generated-precedence wording.
 
 - Registration sites pass absolute filesystem paths; relative display paths belong to the report. Releasing a producer removes it from collision records even when another producer owns the bytes. Warnings involving a released producer may fire again if that conflict returns. Staging disposal preserves the final observations for its report.

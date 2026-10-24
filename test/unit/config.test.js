@@ -398,6 +398,36 @@ describe('resolveConfig', () => {
     ).toThrow(/config\.assets\.pipeline\[0\]\.cwd must be a string/)
   })
 
+  it("takes a step's outputs as build-relative file paths, and refuses any other", () => {
+    const step = { run: 'a', outputs: ['css/site.css', 'icons.svg'] }
+    expect(
+      resolveConfig({ assets: { pipeline: [step] } }).assets.pipeline,
+    ).toEqual([step])
+    for (const bad of [
+      '/css/site.css',
+      'css\\site.css',
+      'C:/site.css',
+      '../site.css',
+      'css/./site.css',
+      'css//site.css',
+      'css/',
+      '',
+      3,
+    ])
+      expect(
+        () =>
+          resolveConfig({
+            assets: { pipeline: [{ run: 'a', outputs: [bad] }] },
+          }),
+        JSON.stringify(bad),
+      ).toThrow(/config\.assets\.pipeline\[0\]\.outputs\[0\]/)
+    expect(() =>
+      resolveConfig({
+        assets: { pipeline: [{ run: 'a', outputs: 'css/site.css' }] },
+      }),
+    ).toThrow(/config\.assets\.pipeline\[0\]\.outputs must be an array/)
+  })
+
   it('takes the default for a key passed explicitly as undefined', () => {
     expect(resolveConfig({ port: undefined }).port).toBe(3001)
     expect(resolveConfig({ cleanBuild: undefined }).cleanBuild).toBe(true)
