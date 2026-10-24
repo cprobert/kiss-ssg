@@ -5,21 +5,21 @@ import { renderManifest, xmlId } from '../../lib/package-manifest.js'
 
 const members = () => [
   {
-    id: 'lessons/one/clinical-science',
-    title: 'Tab 1 — Clinical science',
+    id: 'course/one/basics',
+    title: 'Lesson 1: Basics',
     href: 'tab-1/index.html',
     files: ['tab-1/index.html', 'css/site.css'],
   },
   {
-    id: 'lessons/one/clinical-reasoning',
-    title: 'Tab 2 — Clinical reasoning',
+    id: 'course/one/practice',
+    title: 'Lesson 1: Practice',
     href: 'tab-2/index.html',
     files: ['tab-2/index.html'],
   },
 ]
 const pkg = (over = {}) => ({
-  id: 'm2-acute',
-  title: 'M2 L1 · Acute care',
+  id: 'lesson-1',
+  title: 'Course · Lesson 1',
   format: 'imscp',
   members: members(),
   ...over,
@@ -53,7 +53,7 @@ describe('renderManifest', () => {
         expect(attr(all(xml, 'organizations')[0], 'default')).toBe(
           attr(orgs[0], 'identifier'),
         )
-        expect(text(children(orgs[0], 'title')[0])).toBe('M2 L1 · Acute care')
+        expect(text(children(orgs[0], 'title')[0])).toBe('Course · Lesson 1')
       })
 
       it('lists the members in the order given, each item pointing at its own resource with its files', () => {
@@ -61,8 +61,8 @@ describe('renderManifest', () => {
         const items = all(xml, 'item')
         const resources = all(xml, 'resource')
         expect(items.map((i) => text(children(i, 'title')[0]))).toEqual([
-          'Tab 1 — Clinical science',
-          'Tab 2 — Clinical reasoning',
+          'Lesson 1: Basics',
+          'Lesson 1: Practice',
         ])
         expect(items.map((i) => attr(i, 'identifierref'))).toEqual(
           resources.map((r) => attr(r, 'identifier')),
@@ -194,13 +194,13 @@ describe('renderManifest', () => {
 
 describe('xmlId', () => {
   it('keeps a raw id that is already a valid XML ID, after its prefix', () => {
-    expect(xmlId('ITEM-', 'clinical-science')).toBe('ITEM-clinical-science')
+    expect(xmlId('ITEM-', 'basics')).toBe('ITEM-basics')
     expect(xmlId('RES-', 'l1_tab.2')).toBe('RES-l1_tab.2')
   })
 
   it('cleans any other raw id, and adds a hash of the raw id', () => {
-    expect(xmlId('ITEM-', 'lessons/one/clinical-science')).toMatch(
-      /^ITEM-lessons-one-clinical-science-[0-9a-f]{8}$/,
+    expect(xmlId('ITEM-', 'course/one/basics')).toMatch(
+      /^ITEM-course-one-basics-[0-9a-f]{8}$/,
     )
     for (const raw of ['café crème', '-edge-', '/', ''])
       expect(xmlId('RES-', raw)).toMatch(NCNAME)

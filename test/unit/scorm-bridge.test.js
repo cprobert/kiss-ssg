@@ -255,8 +255,8 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
   it('cleans an interaction id to a CMIIdentifier, and two long ids stay distinct', () => {
     const one = lms()
     const win = load(frame({ API: one.api }))
-    const long = 'm2/acute-cardiovascular-emergencies/'.repeat(8)
-    for (const id of ['m2/acs mcqs/question 1', `${long}a`, `${long}b`])
+    const long = 'course/an-introduction-to-the-subject/'.repeat(8)
+    for (const id of ['course/lesson one/question 1', `${long}a`, `${long}b`])
       win.kissScorm.interaction({ id, response: 0 })
     const ids = [0, 1, 2].map((n) => one.data.get(`cmi.interactions.${n}.id`))
     for (const id of ids) {
@@ -264,7 +264,7 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(id.length).toBeLessThanOrEqual(255)
     }
     expect(new Set(ids).size).toBe(3)
-    expect(ids[0]).not.toBe('m2_acs_mcqs_question_1')
+    expect(ids[0]).not.toBe('course_lesson_one_question_1')
   })
 
   it('switches interactions off quietly when the LMS does not support them', () => {

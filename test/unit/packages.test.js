@@ -193,9 +193,9 @@ describe('resolveReference', () => {
 describe('commonRoot', () => {
   it('is the deepest folder holding every path', () => {
     expect(
-      commonRoot(['m2/l1/tab-1/index.html', 'm2/l1/tab-2/index.html']),
-    ).toBe('m2/l1')
-    expect(commonRoot(['m2/l1/tab-1/index.html', 'img/a.png'])).toBe('')
+      commonRoot(['course/l1/tab-1/index.html', 'course/l1/tab-2/index.html']),
+    ).toBe('course/l1')
+    expect(commonRoot(['course/l1/tab-1/index.html', 'img/a.png'])).toBe('')
     expect(commonRoot(['index.html'])).toBe('')
     expect(commonRoot(['a/b/c.html'])).toBe('a/b')
     expect(commonRoot(['ab/x.html', 'a/y.html'])).toBe('')

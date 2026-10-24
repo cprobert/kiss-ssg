@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Learning packages: a zip a learning management system such as Moodle imports, one per group of pages, many in one build (`planning/plans/2026-10-24-learning-packages.md`). A page joins a package by naming it (`package: 'm2-l1'`); each package is written as an IMS content package (`imscp`, the default) or a SCORM 1.2 package (`scorm12`), into `config.packages.dir` (default `packages/`), as `<id>.<format>.zip`.
+Learning packages: a zip a learning management system such as Moodle imports, one per group of pages, many in one build (`planning/plans/2026-10-24-learning-packages.md`). A page joins a package by naming it (`package: 'lesson-1'`); each package is written as an IMS content package (`imscp`, the default) or a SCORM 1.2 package (`scorm12`), into `config.packages.dir` (default `packages/`), as `<id>.<format>.zip`.
 
 The module decides **what goes into a package** and writes it. A package holds its member pages, the files they need to display (found by its own extraction, which keeps what each reference is), and `imsmanifest.xml` (`lib/package-manifest.js`), zipped by `lib/zip.js`. What it cannot carry is reported, never packed: a root-relative reference, a folder or extension-less link, an `<a>` to a page outside the package, an absolute URL to this site, and anything this build did not write.
 
