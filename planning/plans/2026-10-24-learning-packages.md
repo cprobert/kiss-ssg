@@ -1,6 +1,6 @@
 # Plan — 2026-10-24: Learning packages — IMS content packages and SCORM 1.2, one per group of pages
 
-Status: contract, amended after the adversarial read (see the amendment at the end, which overrides the sections above where they differ). Session file: `planning/sessions/2026-10-24-learning-packages.md`. Consumer: the MSc Internal Medicine programme, `C:\Code\programmes\internal-medicine`, branch `spike/moodle-packaging` (its session file `docs/sessions/courtenay-probert/2026-10-24-moodle-packaging.md`).
+Status: contract, amended twice: after the adversarial read, and after the Codex adversarial review. The amendments at the end override the sections above where they differ, and amendment (2)'s acceptance checks replace the "Success criteria" list. Session file: `planning/sessions/2026-10-24-learning-packages.md`. Consumer: the MSc Internal Medicine programme, `C:\Code\programmes\internal-medicine`, branch `spike/moodle-packaging` (its session file `docs/sessions/courtenay-probert/2026-10-24-moodle-packaging.md`).
 
 ## The problem this solves
 
@@ -149,3 +149,80 @@ A fresh-context agent read this contract against `lib/` and the IMS CP and SCORM
 - Its tab pages do not link to each other, so its SCORM packages raise no member-link finding; with the "All modules" link left out of the packaging build, the closure is the three pages alone (measured: its templates use no `src`, `url(` or asset helper).
 - Interaction ids are built from the topic, tab and question, and cleaned by the bridge.
 - Moodle settings to choose when uploading: require every SCO to be complete (`completionstatusallscos`), no grade or a grade method for the formative scores, and the course structure shown in the player.
+
+## Amendment (2) — 2026-10-24: after the Codex adversarial review
+
+A second, independent review (Codex, a different model family) read the amended contract and found two gaps, both accepted. Reviewing the first led to a third. This amendment overrides the sections above where they differ, and its acceptance checks replace the "Success criteria" list above.
+
+### Embedded HTML is followed like a member page
+
+The first amendment follows an `<iframe src>`, `object[data]` or `embed[src]` into the package, but looks for further files only inside CSS, so an embedded page's own stylesheet, image or script would be left out of the zip with no finding.
+
+- A followed `.html` file is read with the **same extraction as a member page**: what it needs (`src`, `link[href]`, `srcset`, `poster`, `object[data]`, `embed[src]`, `track[src]`, SVG `use`/`image` `href`, CSS `url()` and `@import`) is followed, recursively; its `<a href>` and `form[action]` are not followed, and an `<a>` to a file that is not a member page is an outside reference, as for a member page.
+- The walk keeps a set of visited build-relative paths, so a cycle (two pages that embed each other, a stylesheet that imports itself) ends.
+- A followed `.html` is a file of the package, not a member: it gets no item, no resource and no SCO; it is listed among the files of the resource of the page that reached it first in the walk.
+
+### The bridge acts once in each SCO
+
+An embedded page that also includes `{{scormBridge}}` would find the same LMS `API` up the frame chain, call `LMSInitialize` a second time and, when it unloads, `LMSFinish` the session of the page that embeds it, ending that page's tracking.
+
+- Before it looks for the `API`, the bridge walks up its `parent` frames (inside `try`/`catch`). If a same-origin ancestor already has `window.kissScorm`, this copy becomes a **proxy**: each of its calls goes to the ancestor's `kissScorm`, and it never calls `LMSInitialize`, `LMSCommit` or `LMSFinish` itself, nor sets completion on load.
+- Only the outermost kiss page of a SCO owns the session.
+
+### The session survives the back/forward cache
+
+The browser may keep a page frozen in memory when it is left (`pagehide` with `event.persisted` true) and restore it without reloading (`pageshow` with `event.persisted` true), so load-time code does not run again. Moodle's API clears its initialised state on `LMSFinish`, so a page that finished its session on `pagehide` and is then restored would lose every later answer silently.
+
+- On `pagehide` with `persisted` true: set `cmi.core.session_time` and `LMSCommit`, but do **not** `LMSFinish`, because the page may be restored with its session still in use. The LMS keeps what each commit stored.
+- On `pagehide` with `persisted` false: set `cmi.core.session_time`, `LMSCommit`, then `LMSFinish`.
+- On `pageshow` with `persisted` true: nothing to redo when the session is still open; the guard below covers a session the LMS ended meanwhile.
+- **Every call is guarded.** After a write or commit fails, the bridge reads `LMSGetLastError()`; on 301 (not initialised) it calls `LMSInitialize('')` once and retries the call once. Any other error, or a second failure, switches the bridge to no-op for the rest of the page's life. No call ever throws into the page.
+- The bridge never registers `unload` or `beforeunload`, which would keep the page out of the back/forward cache in some browsers.
+
+### Acceptance checks (replacing the "Success criteria" list above)
+
+Each check is a test unless it says otherwise. A regression test counts only once it has been seen to fail without its fix (`CLAUDE.md` § Rules).
+
+**Z — the zip (`lib/zip.js`)**
+
+- [ ] The same entries give byte-identical output, called twice and in a second process.
+- [ ] Every entry is stored (method 0), with DOS date `0x0021`, time 0, flags bit 11 only, version needed 10, "version made by" host 0, external attributes 0, and no extra fields, comment, data descriptors or directory entries; entries in name order; each CRC-32 is right.
+- [ ] The zip lists and extracts with an independent reader (`unzip -t` where present, and the .NET or Python zip reader in the test run); the operator opens one in Windows Explorer (by hand).
+
+**X — the manifests**
+
+- [ ] Both formats parse as XML (`htmlparser2`, XML mode), start with the UTF-8 declaration, and escape `& < > " '` in a title that holds them.
+- [ ] Every identifier is a valid XML ID with its prefix, unique in the document, and the same for the same page `id` across two builds that move the page to another path.
+- [ ] IMS CP 1.1 and SCORM 1.2 use their namespaces; SCORM 1.2 has `<metadata>` first, `schemaversion` 1.2 and `adlcp:scormtype="sco"` on each page's resource.
+- [ ] The organization lists the members in registration order, including a `.pages()` fan-out whose models resolve out of order and a page registered after one with a slow URL model; `packageSection` groups items under section items that have no `identifierref`.
+- [ ] Each manifest lists exactly the files in its zip, no more and no fewer.
+
+**M, W — membership and the writer**
+
+- [ ] With `config.packages` unset, a build whose pages carry `package` writes `packages/<id>.imscp.zip` for each package; `config.packages = false` writes none; `only` writes the named ids; an unknown id in `only` is a notice naming it.
+- [ ] A member page with no usable `id` fails the build and names the page; `generate: false` pages are never members; a package id that is not a slug fails at prepare.
+- [ ] The closure: a page's image, stylesheet, the stylesheet's `url()` and `@import`, inline `style=` and `<style>` `url()`, `srcset`, `poster`, SVG `use`, and an iframe's HTML with **its own** stylesheet and image are all in the zip; two pages that embed each other end the walk.
+- [ ] Outside references are reported and not included: root-relative, above the package root, a directory or extension-less link, an `<a>` to a non-member page, a same-origin absolute URL; a scheme (`https:`, `mailto:`, `data:`) is left alone. In a SCORM package, an `<a>` between member pages is a finding.
+- [ ] A stale file under `cleanBuild: false` and an earlier zip in `packages/` are never packed, even when a page links to them.
+- [ ] A shared `assets/` folder above the pages puts the package root above it; a single page at the build root packages from the build root.
+- [ ] Under `cleanBuild: 'atomic'` the zips are promoted; in check mode they are discarded; when a page fails, no package is written and the build reports one failure, not two; a dev build skips packaging with one notice.
+- [ ] The report has `packages` last, with `hash`, through `reportInputs()` as well; `formatReport` prints them and caps the outside lines; `kiss-ssg check --against` reports packages added, changed and removed, and a change to one page changes only its package's hash.
+
+**B — the bridge (against a scripted SCORM 1.2 `API` stub in jsdom)**
+
+- [ ] With no `API`, every call is a no-op and nothing throws; the page's bytes are the same with and without an LMS.
+- [ ] On load it initialises, and sets `completed` only from `not attempted`, `browsed` or `incomplete`, then commits; a `passed` or `failed` status is never changed; `complete="manual"` sets nothing on load.
+- [ ] `interaction()` writes at index `cmi.interactions._count`, with a `choice` answer as a letter, CMITime, `correct`/`wrong`, and a CMIIdentifier id cleaned with a hash suffix (two long ids that share a prefix stay distinct); a 401 on `_count` switches interactions off quietly.
+- [ ] `score(fraction)` writes `raw` as a whole percentage, `min` 0 and `max` 100; a value outside 0–1 is clamped.
+- [ ] Bfcache: load, `pagehide` (persisted), `pageshow` (persisted), then an answer, against a stub that refuses writes after `LMSFinish`: the answer is recorded, and `LMSFinish` was not called at the persisted `pagehide`.
+- [ ] A session the stub ends underneath the page (error 301 on the next write) is re-initialised once and the write retried; a second failure turns the bridge off without throwing.
+- [ ] Embedded: a kiss page in an iframe of a kiss page proxies to its parent's `kissScorm`; the stub sees one `LMSInitialize` and one `LMSFinish` for the pair, and the embedded page's answers reach it.
+- [ ] Including the helper twice in a page is harmless; a cross-origin parent does not throw; terser's minified bridge passes the same tests; the bridge registers no `unload` or `beforeunload`.
+
+**The rest**
+
+- [ ] Docs, as `CLAUDE.md` § Rules and amendment (1) list them: `AIKB/` docs (new modules, and `build-finish`, `build-report`, `output-registry`, `kiss`, `handlebars-helpers`), `GUIDE.md`, `llms.txt` (one line, and `scormBridge` in the helpers roster), `README.md`, `types/` with `package` and `packageSection` in `PageOptionsKnown`, the `kiss-page-add` skill and its row in `test/unit/skill-coverage.test.js`, `src/models/guide.json`, `CHANGELOG.md` with the upgrade note on `package`.
+- [ ] `examples/13-course-packages`: a two-lesson course with one interactive question, building two packages, in the examples integration test.
+- [ ] Clean room: a fresh agent given only the packed tarball and the docs a user reads builds a two-lesson course of packages that passes `kiss-ssg check`, and reports every place it had to guess.
+- [ ] The consumer's M2 lesson 1 packages, IMS CP and SCORM 1.2, upload to a Moodle test course; the operator records what Moodle kept and tracked (by hand).
+- [ ] `npm run gates` is green.
