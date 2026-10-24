@@ -279,10 +279,34 @@ Learning packages are a kiss capability, not a feature of one course. Anyone who
 - [ ] GUIDE has the two shapes as recipes: one SCO per page, and one SCO with many views. Each is runnable from `examples/13-course-packages`.
 - [ ] The clean-room run (amendment (2)) builds both shapes from the tarball and the public docs alone.
 
+### After the Codex adversarial review of this amendment
+
+A Codex adversarial review of amendment (3), reading `lib/`, found three gaps (verdict: needs attention). All three are accepted. They override the sections above where they differ.
+
+**The bridge's owner does not depend on which script runs first (high, a defect in `08268df`).** An embedded kiss page looks for an ancestor's `window.kissScorm` only when its own script runs. If an iframe's bridge runs before its parent's (the parent's `{{scormBridge}}` placed after the iframe in `<body>`), the child starts the LMS session, the parent's `LMSInitialize` then fails and turns the parent's bridge off, and the child's unload can finish the session.
+
+- Before it decides, the bridge walks up its same-origin parents. If one of them is a document still loading (`document.readyState === 'loading'`), the bridge waits for that document's `DOMContentLoaded`, then decides: it proxies to an ancestor's `kissScorm` if there is one by then, and owns the session if not. Calls made while it waits are queued and sent once it has decided.
+- A parent whose bridge is in `<head>` has run it before its body (and so its iframes) is parsed: the usual case is unchanged. GUIDE says to put `{{scormBridge}}` in `<head>`; the wait makes the other placements safe.
+
+**A declared output must be this run's (medium).** Under `cleanBuild: false`, a step that succeeds without writing its output would have last build's file claimed and packed. Kiss deletes each declared output in the write root before it runs the step. A declared output that exists after a successful run was therefore written by it. Under `'atomic'` the write root is a fresh staging folder, so the deletion finds nothing.
+
+**A declared output is an asset (medium).** `{{asset}}` looks a path up in the asset manifest, which only the asset copy fills, so a page could not name a pipeline output through it. And the asset copy, which `assets.hash` works through, cannot write over a file another producer owns.
+
+- Each step with `outputs` is an owner in the asset manifest: after it succeeds, `reconcile('<pipeline: name>', map)`, with each declared output mapped to itself. `{{asset "css/site.css"}}` then gives `css/site.css`.
+- A declared output is **not hashed**, whatever `assets.hash` says: the file is the tool's, written where the tool put it. A site that wants hashing writes into the assets folder, the first recommendation, and the copy hashes it as any asset. GUIDE says so in the pipeline section and the cache-busting section.
+- The output registry stays the authority on who wrote what: the claim is `'pipeline'`, and a copy that would write the same file is refused and reported, as any collision.
+
+**Checks added:**
+
+- [ ] Child first: an embedded page whose bridge runs while its parent is still loading, then the parent's: one `LMSInitialize`, the parent owns the session, the child's answers made while it waited reach the LMS, and the child's unload does not finish the session. Parent first still passes as before.
+- [ ] A step that succeeds without writing its declared output fails the build, under `cleanBuild: false`, when an old copy of the file was in the build folder before the step ran.
+- [ ] `{{asset}}` names a declared output, with `assets.hash` off and on; with it on, the output keeps its name. A matching file in the assets folder is a collision, reported.
+
 ### Order from here
 
-1. Pipeline outputs, with the checks above.
-2. Neutral fixtures, with the grep check.
-3. The public docs, `examples/13-course-packages` with both shapes, CHANGELOG with the upgrade note on `package`.
-4. The packages diff in `kiss-ssg check` (amendment (1)).
-5. The clean-room run, then a roadmap spec, `planning/specs/2026-10-24-learning-resources-roadmap.md`, without LTI: H5P, cmi5 and xAPI, SCORM 2004, and a SCO of several pages (one session across page loads).
+1. The bridge's owner, whatever the order (a defect in shipped code), with its test.
+2. Pipeline outputs, with the checks above.
+3. Neutral fixtures, with the grep check.
+4. The public docs, `examples/13-course-packages` with both shapes, CHANGELOG with the upgrade note on `package`.
+5. The packages diff in `kiss-ssg check` (amendment (1)).
+6. The clean-room run, then a roadmap spec, `planning/specs/2026-10-24-learning-resources-roadmap.md`, without LTI: H5P, cmi5 and xAPI, SCORM 2004, and a SCO of several pages (one session across page loads).
