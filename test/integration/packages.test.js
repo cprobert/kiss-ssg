@@ -149,6 +149,22 @@ describe('learning packages', () => {
     ])
   })
 
+  it('roots a package above a climb written with percent-escapes', async () => {
+    const files = {
+      ...FILES,
+      'src/pages/l2/tab-1.hbs':
+        '<html><body><img src="%2e%2e/l2/a.png"></body></html>',
+      'src/assets/course/l2/a.png': 'a',
+    }
+    await build({}, { files })
+    expect(names(zipAt('packages/l2.imscp.zip'))).toEqual([
+      'imsmanifest.xml',
+      'l2/a.png',
+      'l2/tab-1.html',
+      'l2/tab-2.html',
+    ])
+  })
+
   it('groups the members under their packageSection in the table of contents', async () => {
     const register = (k) =>
       k

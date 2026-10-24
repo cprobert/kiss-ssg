@@ -122,6 +122,9 @@ describe('documentBase', () => {
     expect(folder('..')).toBe('course/')
     expect(folder('.')).toBe('course/lesson/')
     expect(folder('sub?x=1#y')).toBe('course/lesson/')
+    // Percent-escapes decoded, as in any reference: %20 a space, %2e%2e a climb.
+    expect(folder('../shared%20assets/')).toBe('course/shared assets/')
+    expect(folder('%2e%2e/')).toBe('course/')
     expect(documentBase('', at)).toBe(at)
   })
 
