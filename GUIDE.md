@@ -134,6 +134,7 @@ Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compi
 | redirects      |                            `{ format: null }`                            |                                                                                                                                                                                                               How page `aliases` are emitted. `redirects.json` is always written when a page has an alias; `format` names the host files beside it (`'netlify'`, `'firebase'`, `'vercel'`, `'htaccess'`, `'none'`, a writer function, or a list of those). Unset writes no host file. See **Redirects** below.                                                                                                                                                                                                                |
 | audit          |                      `{ check: true, ignore: [] }`                       |                                                                                                                                                                                                         The launch-readiness audit: whether the built site looks finished (titles, descriptions, `og:image`, alt text, headings, a favicon, a 404 page, stray files). Advisory, reported as `report().audit`. `ignore` lists check ids not to run; `audit: false` turns it off. See **Launch-readiness audit** below.                                                                                                                                                                                                         |
 | markdownCopies |                   `{ write: true, selector: 'main' }`                    |                                                                                                                                                                                            A Markdown copy of every HTML page, beside it (`about.md`, `courses/index.md`), converted from the page's `<main>` (or `<body>` when it has none), and the page `llms.txt` links to. `selector` names a different element; `markdownCopies: false` turns them off, site-wide or for one page. See **Markdown copies for agents** below.                                                                                                                                                                                            |
+| packages       |     `{ format: 'imscp', dir: 'packages', title: null, only: null }`      |                                                                                                                                                                                                                                                                            Learning packages for an LMS, from the pages that name a `package`: IMS content packages, SCORM 1.2, or both. `false` turns them off. See **Learning packages** below.                                                                                                                                                                                                                                                                             |
 | port           |                                   3001                                   |                                                                                                                                                                                                                                                     The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash.                                                                                                                                                                                                                                                     |
 | livereloadPort |                                  35729                                   |                                                                                                                                                                                                                              The port the live-reload server listens on, and the one the injected reload script talks to (`dev: true` only). Give a second site its own value to run both at once — a clash is now logged and live reload simply switched off, rather than killing the process.                                                                                                                                                                                                                               |
 | devHost        |                               '127.0.0.1'                                |                                                                                                                                                                                                                                     The interface the dev and live-reload servers bind to. Loopback only by default; set `'0.0.0.0'` to reach the preview from another device on your network — live reload follows the host the page was loaded from, so the preview reloads there too.                                                                                                                                                                                                                                      |
@@ -850,6 +851,75 @@ A site with no aliases writes **no file at all**, not an empty one and not an em
 
 Under `--summary` they print as `  removed without redirect: <path>`, `  moved without redirect: <from> -> <to> (<id>)` and `  alias collides with a page: <path>`; the build log's `notice` for a move carries the fix with it (`add "<from>" to that page's aliases`). None of them changes `ok`, and none changes the exit code.
 
+### Learning packages
+
+A page that names a `package` is zipped into a learning package that a learning management system (Moodle, or any LMS that reads IMS content packages or SCORM 1.2) imports. kiss owns the format: which pages are in a package, the files they need, the manifest, the zip and, for SCORM, the connection to the LMS. Your site owns the course: its lessons, how a learner moves through them, and what it records. `examples/13-course-packages` (`npm run eg13`) builds both shapes below.
+
+```js
+const kiss = new Kiss({
+  packages: {
+    format: ['imscp', 'scorm12'],
+    title: (id, pages) => pages[0].model.lesson,
+  },
+})
+kiss.page({
+  view: 'espresso/grind.hbs',
+  id: 'espresso-grind',
+  package: 'espresso-basics',
+  model: { lesson: 'Espresso basics' },
+})
+```
+
+**A page joins a package by naming it**, `package: '<id>'`, a lowercase slug (`espresso-basics`). Every page that names the same id is in that package, in the order the pages were registered. `packageSection: 'Part 1'` groups a page under a heading in the LMS's table of contents. Each zip is written to `<dir>/<id>.<format>.zip`, at the end of `complete()`, beside the pages; a dev build writes none, with one notice.
+
+**A member page needs an `id`, and the id is a promise.** The LMS keeps a learner's record against the identifier kiss makes from the page's `id`, and matches the pages of a new upload to the old by it: change the id and the learner's progress on that page is gone. So the identifier depends on the id alone, never on the page's path or position, and a member page with no usable id fails the build. An id that is already a valid XML name (`espresso-grind`) is used as it is; any other (`espresso/grind`) is cleaned and given a short hash of itself, so two ids never share an identifier.
+
+**`config.packages`** (`false` turns packaging off):
+
+| Key      | Default      | What it does                                                                                                                          |
+| -------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `format` | `'imscp'`    | `'imscp'`, `'scorm12'`, or both as an array: each package is written once per format, from the same pages                             |
+| `dir`    | `'packages'` | The folder in the build the zips go in                                                                                                |
+| `title`  | `null`       | `(id, pages) => string`, the package's title in the LMS; `pages` are `{ id, title, options, model }`. Default: the first page's title |
+| `only`   | `null`       | A list of package ids to write; the rest are skipped, and an id that names no package is a notice                                     |
+
+**A package carries what its pages need, and nothing else.** kiss follows each page's stylesheets (and their `url()` and `@import`), images (`src`, `srcset`, `poster`, SVG `use`), icons, inline `style` and `<style>`, and embedded pages (`iframe`, `object`, `embed`, read like a page), and roots the zip at the deepest folder that holds all of it, so a shared `assets/` folder above the lessons is inside. It packs only files this build wrote, so a stale file in the build folder can never get in. A link (`<a>`) to another member page is kept; it is not followed. What a package cannot carry is reported in `report().packages[].outside`, each with its reason, and left out:
+
+- a root-relative URL (`/css/site.css`): an LMS serves a package from wherever it unpacks it, not from a site root;
+- a link to a page that is not in the package, or a folder or extension-less link, which an LMS does not resolve to an `index.html`;
+- an absolute URL to your own site, or an absolute `<base href>`;
+- a file this build did not write. A pipeline step that writes into the build folder declares the file in its `outputs` (§ An asset pipeline).
+
+Write a member page's links and asset URLs relative to the page (`{{root}}{{asset 'css/site.css'}}`, as `root` is used in the examples), and its package is complete.
+
+**The same pages give the same bytes.** Every entry is stored, not compressed, with fixed dates, in a fixed order, so a rebuild of an unchanged lesson writes an identical zip, and `report().packages[].hash` tells you which packages changed and need uploading again. The report and the build summary list each package with its file, title, pages and files.
+
+#### Two ways to build a lesson
+
+**One SCO per page.** Each member page is a SCO: the LMS tracks each one, and its table of contents is the navigation. Do not link the pages to each other: a link from one SCO to another opens the second inside the first, so the report lists any such link for a SCORM package. This suits a lesson of a few pages a learner reads in order.
+
+**One SCO, many views.** The lesson is one page, whose own navigation shows one view at a time, each with its own address (`#steaming`), so the browser's back button works: a lesson overview, a topic, a tab of a topic. It is one SCO, so one session and one attempt in the LMS, and every answer the page records lands in it. Hide the LMS's own table of contents (it has one item) and the lesson has the whole window. This suits a lesson with its own structure, such as topic cards that open tabbed topics.
+
+#### SCORM: `{{scormBridge}}` and `window.kissScorm`
+
+Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS, starts the session, and marks the page complete when it is seen; `{{scormBridge complete="manual"}}` leaves completion to the page. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
+
+The page's own script records through `window.kissScorm`:
+
+```js
+kissScorm.interaction({
+  id: 'milk.pouring.1',
+  response: 2,
+  correct: 1,
+  result: false,
+}) // one answer: options by index (0 is a)
+kissScorm.score(0.5) // a fraction, recorded as 50 out of 100
+kissScorm.status('completed') // or 'passed', 'failed', 'incomplete', 'browsed'
+kissScorm.available // true while a session with an LMS is open
+```
+
+None of it throws, and a value is cleaned to what SCORM 1.2 accepts (an interaction id to a valid identifier). An embedded kiss page in an iframe uses the session of the page that embeds it. How a score counts, if at all, is the LMS's setting: in Moodle, choose the grading method, and whether every SCO must be completed, on the SCORM activity.
+
 ### Waiting for the build
 
 `.generate()` is chainable and returns immediately; its callback fires once every page has been attempted — including any that failed to render or write. Failures don't surface through this callback; they surface via `.complete()` (below). The callback's `data` argument (and `.complete()`'s resolved value) is `[{ id, data }]`, **one entry per queued promise in registration order** — the assets copy that runs automatically at construction is queued before any page you register, so `data[0]` is that copy's result, not your first page. Use `.getModelByID(id, data)` (see "Other methods" below) to pull out a specific page's model rather than indexing by position. To wait for the whole build (including a `.sitemap()` call and anything queued from a callback):
@@ -1315,6 +1385,17 @@ It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` dep
 `is` must be a string containing `"dev"` or `"prod"` (case-insensitive) — checked against the Kiss instance's `dev` config option.
 
 A missing or non-string `is` logs an error and renders neither branch. `markdown` given `undefined` logs a warning and renders nothing; a `null`, plain object or array also renders nothing, with a warning, rather than throwing.
+`scormBridge` inlines the SCORM 1.2 bridge, one `<script>`, for a page in a learning package (see **Learning packages** above). Put it in `<head>`:
+
+```handlebars
+{{scormBridge}}
+{{! complete when the page is seen }}
+{{scormBridge complete='manual'}}
+{{! the page calls kissScorm.status('completed') itself }}
+```
+
+In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. A `complete` other than `"seen"` or `"manual"` logs an error and renders nothing.
+
 Kiss exposes the handlebars object so you can register your own helpers, e.g.
 
 ```js

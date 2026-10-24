@@ -1,0 +1,79 @@
+/* One stylesheet, shared by both lessons: it sits above the lesson folders, so
+   each package is rooted above it and carries it. */
+:root {
+  --ink: #2b211c;
+  --paper: #fbf7f2;
+  --accent: #8a4b2a;
+  --line: #e6dccf;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font:
+    17px/1.6 system-ui,
+    sans-serif;
+}
+.lesson {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+.lesson__eyebrow {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.lesson__next {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  color: #6b5d55;
+}
+a {
+  color: var(--accent);
+}
+[hidden] {
+  display: none !important;
+}
+.cards {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+.card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+}
+.card span {
+  color: #6b5d55;
+}
+.question {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.question button {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--paper);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.question__result {
+  font-weight: 600;
+  min-height: 1.6em;
+}

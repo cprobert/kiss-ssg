@@ -97,7 +97,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
   // `public/`, so two builds racing would corrupt each other's page counts.
   // Vitest runs a plain `describe`'s tests in declaration order by default,
   // which is all sequencing this needs.
-  describe('the twelve examples, built in place', () => {
+  describe('the thirteen examples, built in place', () => {
     it('1 · scan builds 2 pages', () => {
       cleanOutput('1-scan')
       const r = runExample('1-scan')
@@ -466,6 +466,36 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // exactly like a clean one.
       expect(output(compared)).toMatch(/Visible text: identical/)
       expect(output(compared)).toMatch(/spelled its own address two ways/)
+    }, 60000)
+
+    it('13 · course packages builds two lessons, each an IMS content package and a SCORM 1.2 package', () => {
+      cleanOutput('13-course-packages')
+      const r = runExample('13-course-packages')
+      expect(r.status, output(r)).toBe(0)
+      expect(countHtmlFiles(outputDir('13-course-packages'))).toBe(3)
+      const packages = path.join(outputDir('13-course-packages'), 'packages')
+      expect(readdirSync(packages).sort()).toEqual([
+        'espresso-basics.imscp.zip',
+        'espresso-basics.scorm12.zip',
+        'milk-texture.imscp.zip',
+        'milk-texture.scorm12.zip',
+      ])
+      // Nothing a package needs is left outside it, and the router says so.
+      expect(output(r)).toContain('espresso-basics.scorm12.zip')
+      expect(output(r)).not.toContain('outside')
+      // A stored zip carries its names and manifest as plain bytes.
+      const zip = (name) =>
+        readFileSync(path.join(packages, name)).toString('latin1')
+      // One SCO per page: two pages, two SCOs, and the stylesheet they share.
+      const espresso = zip('espresso-basics.scorm12.zip')
+      expect(espresso.match(/adlcp:scormtype="sco"/g)).toHaveLength(2)
+      expect(espresso).toContain('css/course.css')
+      // One SCO, many views: one page, one SCO, and an answer recorded through
+      // the page API, with completion left to the page.
+      const milk = zip('milk-texture.scorm12.zip')
+      expect(milk.match(/adlcp:scormtype="sco"/g)).toHaveLength(1)
+      expect(milk).toContain('kissScorm.interaction(')
+      expect(milk).toMatch(/kissScorm\.status\(["']completed["']\)/)
     }, 60000)
 
     it('11 · gives every page an id, explicitly where the default withdraws', () => {

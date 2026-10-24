@@ -61,7 +61,8 @@
     "eg9": "cd examples/9-migrated-from-v1 && node router",
     "eg10": "cd examples/10-asset-pipeline && node router",
     "eg11": "cd examples/11-blog && node router",
-    "eg12": "cd examples/12-from-a-single-file && node router"
+    "eg12": "cd examples/12-from-a-single-file && node router",
+    "eg13": "cd examples/13-course-packages && node router"
   },
   "repository": {
     "type": "git",

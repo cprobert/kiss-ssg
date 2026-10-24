@@ -51,7 +51,7 @@ _Three sentences and a host name. The agent takes it from there._
 - **[kiss-site-new](plugins/kiss-ssg/skills/kiss-site-new/SKILL.md) →** A site, or a whole section of one, from a description: the pages, the nav, a blog with a paginated index and an RSS feed.
 - **[kiss-site-import](plugins/kiss-ssg/skills/kiss-site-import/SKILL.md) →** A page you already have — a Claude or ChatGPT artifact, an exported page — made into a structured site that still looks the same.
 - **[kiss-page-add](plugins/kiss-ssg/skills/kiss-page-add/SKILL.md) →** One page on a site that already builds, linked from the nav.
-- **[Twelve examples](examples/) →** Runnable sites the agent copies by shape, from one folder of views to a blog, a data-fed site and a converted single-file page. They ship in the package.
+- **[Thirteen examples](examples/) →** Runnable sites the agent copies by shape, from one folder of views to a blog, a data-fed site, a converted single-file page and a course packaged for an LMS. They ship in the package.
 - **[Anthropic's `frontend-design` skill](#quick-start) →** kiss decides how a site is built, not what it looks like. Install this beside kiss's skills and it sets the visual direction while kiss keeps the structure.
 
 ## Keep it readable.
@@ -62,6 +62,7 @@ _Whoever opens the site in two years can follow what the agent wrote._
 - **[Conventions, not questions](GUIDE.md#usage) →** Folders, routes, helpers and asset names all have defaults, so an agent has fewer choices to get wrong. Every default is a config key, never a fork.
 - **[A file's name says what happens to it](GUIDE.md#usage) →** `.hbs` is a template, `.md` is rendered Markdown, `.html` is HTML, and all three are compiled; `.txt` is the one kiss leaves alone.
 - **[Markdown copies for agents](GUIDE.md#markdown-copies-for-agents) →** Every page gets a `.md` beside it, converted from its `<main>`, and `llms.txt` links them, so the next agent reads the site rather than parsing it.
+- **[Learning packages for an LMS](GUIDE.md#learning-packages) →** A page that names a `package` is zipped as an IMS content package or SCORM 1.2 for Moodle or any LMS, with every file it needs and nothing it does not. `{{scormBridge}}` lets a page record answers and completion, and does nothing off the LMS.
 - **[Sass, assets and cache busting](GUIDE.md#assets) →** Styles compile from `src/assets`, an asset is keyed by the name a template asks for, and a content hash or version string is one config key away.
 
 ## Check every build.
