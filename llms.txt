@@ -40,7 +40,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - Markdown copies (`config.markdownCopies`, on by default): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
-- `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Built-in helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `env`) are listed below. Partials are `.hbs`, `.md` (rendered, then compiled), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
+- `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Built-in helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `env`, `scormBridge`) are listed below. Partials are `.hbs`, `.md` (rendered, then compiled), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
 - Named exports: `utils`, the redirect encoders (`renderRedirects`, `renderFirebaseRedirects`, …) and `splitDocument`/`parseHtml`/`findTag` for converting a single-file page (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
 - Types ship in `types/`: `// @ts-check` plus `/** @type {import('kiss-ssg').KissConfigInput} */` gives a plain-JS site full checking.
 
@@ -109,6 +109,7 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `asset`: the emitted path under `config.assets` (hash or `?v=`); fails the build on a file not emitted.
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id.
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
+- `scormBridge`: `{{scormBridge}}` in a page's `<head>` inlines the SCORM 1.2 bridge: in an LMS the page is complete when seen (`complete="manual"` leaves it to the page), and `window.kissScorm` records `interaction({ id, response, correct, result })`, `score(fraction)` and `status(value)`. With no LMS every call does nothing.
 
 Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
 

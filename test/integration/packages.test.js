@@ -167,6 +167,26 @@ describe('learning packages', () => {
     ).toBe(true)
   })
 
+  it('reports a link between member pages in a SCORM package only, and still packs both', async () => {
+    await build({ packages: { format: ['imscp', 'scorm12'] } })
+    const l1 = (format) =>
+      kiss.report().packages.find((p) => p.id === 'l1' && p.format === format)
+    const between = (p) =>
+      p.outside.filter((o) => o.reason.startsWith('a link between SCOs'))
+    expect(between(l1('imscp'))).toEqual([])
+    expect(between(l1('scorm12'))).toEqual([
+      {
+        page: `${site.build}/course/l1/tab-1.html`,
+        href: 'tab-2.html',
+        reason: expect.stringMatching(/table of contents/),
+      },
+    ])
+    expect(l1('scorm12').outside).toHaveLength(l1('imscp').outside.length + 1)
+    expect(names(zipAt('packages/l1.scorm12.zip'))).toContain(
+      'course/l1/tab-2.html',
+    )
+  })
+
   it('reports each package with its hash, last in the report, and says so in the summary', async () => {
     await build()
     const report = kiss.report()

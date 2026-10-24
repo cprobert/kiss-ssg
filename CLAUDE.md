@@ -72,6 +72,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Deterministic zip (learning packages)      | `lib/zip.js`                 | `AIKB/zip.md`                 |
 | Learning package manifest (IMS CP, SCORM)  | `lib/package-manifest.js`    | `AIKB/package-manifest.md`    |
 | Learning packages (`package`, the writer)  | `lib/packages.js`            | `AIKB/packages.md`            |
+| SCORM 1.2 bridge (`{{scormBridge}}`)       | `lib/scorm-bridge.js`        | `AIKB/scorm-bridge.md`        |
 | Dev server                                 | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
 | File watcher                               | `lib/watcher.js`             | `AIKB/watcher.md`             |
 | Watch session (dispatch, rebuild queue)    | `lib/rebuild.js`             | `AIKB/rebuild.md`             |

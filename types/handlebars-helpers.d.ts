@@ -1,7 +1,7 @@
 /**
  * Registers kiss's built-in helpers on one Handlebars environment: `markdown`,
  * `sass`, `offset`, `stringify`, `lookup`, `canonical`, `absUrl`, `asset`,
- * `link`, `isActive` and `env`. Each is Handlebars runtime — see `AIKB` and
+ * `link`, `isActive`, `env` and `scormBridge`. Each is Handlebars runtime — see `AIKB` and
  * llms.txt for what each one renders.
  *
  * @param {typeof import('handlebars')} hbs the environment to register on
