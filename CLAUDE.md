@@ -70,6 +70,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Launch-readiness audit                     | `lib/audit.js`               | `AIKB/audit.md`               |
 | Redirects (`aliases` → `_redirects`)       | `lib/redirects.js`           | `AIKB/redirects.md`           |
 | Deterministic zip (learning packages)      | `lib/zip.js`                 | `AIKB/zip.md`                 |
+| Learning package manifest (IMS CP, SCORM)  | `lib/package-manifest.js`    | `AIKB/package-manifest.md`    |
 | Dev server                                 | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
 | File watcher                               | `lib/watcher.js`             | `AIKB/watcher.md`             |
 | Watch session (dispatch, rebuild queue)    | `lib/rebuild.js`             | `AIKB/rebuild.md`             |
