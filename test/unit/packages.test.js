@@ -58,7 +58,19 @@ describe('extractReferences', () => {
     ).toEqual({
       needs: ['a.png'],
       anchors: ['b.html'],
+      base: null,
     })
+  })
+
+  it('reads the document base URL, the first <base href> only', () => {
+    expect(
+      extractReferences(
+        '<head><base href="../assets/"><base href="other/"></head><img src="a.png">',
+      ).base,
+    ).toBe('../assets/')
+    expect(
+      extractReferences('<base target="_blank"><img src="a.png">').base,
+    ).toBe(null)
   })
 })
 

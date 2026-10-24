@@ -15,7 +15,7 @@ The module is pure: it takes a package's description and returns a string. It kn
   - One `<resource type="webcontent">` per member, its `href` the member's page and one `<file>` per entry of `files`.
   - `scorm12` adds `<metadata>` (`ADL SCORM`, `1.2`) as the manifest's first child and `adlcp:scormtype="sco"` on every resource.
   - Throws for a format other than `imscp` and `scorm12`.
-- `xmlId(prefix, raw, used?)` → a valid XML ID (NCName): `prefix` and `raw` with every run of characters outside `[A-Za-z0-9_.-]` turned into one `-`. With a `used` set, a value that cleans to an ID already given gets `-2`, then `-3`, in the order asked.
+- `xmlId(prefix, raw, used?)` → a valid XML ID (NCName), the same for the same `raw` whatever else the manifest holds and in whatever order. A `raw` that is already `[A-Za-z0-9_.-]+` is kept after `prefix`. Any other is cleaned (every run of other characters becomes one `-`, and `-` at either end goes) and given `-` and the first 8 hex digits of its sha1, so `a/b`, `a-b` and `a b` stay apart. An identifier must never move to another page: an LMS keeps learners' records by it, and a tie broken by order (as it first was: `-2`, `-3` in the order asked) moved one when pages were reordered or one was removed (found by the Codex review, 2026-10-24). With a `used` set, `-2`, `-3` is now only the last resort for two hashes that collide.
 - The `ManifestMember` and `ManifestPackage` typedefs.
 
 ## Depends on

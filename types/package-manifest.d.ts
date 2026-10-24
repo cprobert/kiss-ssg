@@ -1,8 +1,13 @@
 /**
- * A valid XML ID (an NCName) for `raw` after `prefix`: every run of characters
- * outside `[A-Za-z0-9_.-]` becomes one `-`. The prefix starts with a letter,
- * so the ID does too. With `used`, a second raw value that cleans to an ID
- * already given gets `-2`, a third `-3`, in the order they are asked for.
+ * A valid XML ID (an NCName) for `raw` after `prefix`, the same for the same
+ * `raw` whatever other ids a manifest holds and in whatever order. A raw id
+ * that is already `[A-Za-z0-9_.-]+` is kept. Any other is cleaned (every run
+ * of other characters becomes one `-`, and `-` at either end goes) and given
+ * `-` and the first 8 hex digits of the raw id's sha1, so two ids that clean
+ * alike (`a/b`, `a-b`, `a b`) stay apart: an LMS keeps learners' records by
+ * these identifiers, so one must never move to another page. The prefix
+ * starts with a letter, so the ID does too. With `used`, an ID already given
+ * (two raw ids whose hashes collide) gets `-2`, `-3`, …: a last resort.
  *
  * @param {string} prefix
  * @param {string} raw

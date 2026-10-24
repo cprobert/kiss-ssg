@@ -36,4 +36,5 @@ It knows nothing about `Kiss`: `build-finish.js` hands it the projected stack an
 - **The root is the deepest folder holding the whole closure**, the files as well as the pages, so a shared `assets/` folder above the lessons puts the root above it, and every relative reference still works inside the zip.
 - **Folder and extension-less links are reported.** A host maps `lesson/` to `lesson/index.html`; an LMS serves a package's files as they are and does not.
 - **The hash is of the zip.** The zip is stored and byte-stable (`AIKB/zip.md`), so its sha1 changes exactly when a file in it does.
-- **Each zip is written to a temporary file and renamed**, so a reader never sees half a package.
+- **All or nothing.** Every package's zip is made in memory first; none is written until all of them are made, so a failure in a later package leaves no earlier zip behind, even in a build that is not atomic. Then each zip is written to a temporary file and renamed, so a reader never sees half a package.
+- **A `<base href>` is followed as a browser follows it.** A relative base is the folder a page's references resolve from (`<base href="../assets/"><img src="a.png">` needs `assets/a.png`). An absolute or root-relative base is a finding (`an absolute base URL`), and none of that page's relative references is followed: no file of the build could be named for them.

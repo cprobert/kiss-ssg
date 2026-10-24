@@ -142,7 +142,10 @@ describe('learning packages', () => {
     ).toEqual(['l1 tab 1', 'l1 tab 1', 'l1 tab 2'])
     expect(
       [...manifest.matchAll(/identifierref="([^"]+)"/g)].map((m) => m[1]),
-    ).toEqual(['RES-l1-tab-1', 'RES-l1-tab-2'])
+    ).toEqual([
+      expect.stringMatching(/^RES-l1-tab-1-[0-9a-f]{8}$/),
+      expect.stringMatching(/^RES-l1-tab-2-[0-9a-f]{8}$/),
+    ])
     const res = manifest.split('<resource ').slice(1)
     expect(res[0]).toContain('<file href="course/l1/tab-1.html"/>')
     expect(res[0]).toContain('<file href="embed/f.png"/>')
@@ -290,6 +293,28 @@ describe('learning packages', () => {
     )
   })
 
+  it("resolves a page's references against its relative <base href>, and reports an absolute one", async () => {
+    const files = {
+      ...FILES,
+      // Lesson two's first page: its image is in img/, through its base; its second page's base is absolute.
+      'src/pages/l2/tab-1.hbs':
+        '<html><head><base href="../../img/"></head><body><img src="a.png"><a href="../course/l2/tab-2.html">next</a></body></html>',
+      'src/pages/l2/tab-2.hbs':
+        '<html><head><base href="https://cdn.example.org/x/"></head><body><img src="b.png"></body></html>',
+    }
+    await build({}, { files })
+    const l2 = kiss.report().packages.find((p) => p.id === 'l2')
+    expect(names(zipAt('packages/l2.imscp.zip'))).toEqual([
+      'course/l2/tab-1.html',
+      'course/l2/tab-2.html',
+      'img/a.png',
+      'imsmanifest.xml',
+    ])
+    expect(
+      l2.outside.map(({ href, reason }) => [href, reason.split(':')[0]]),
+    ).toEqual([['https://cdn.example.org/x/', 'an absolute base URL']])
+  })
+
   it('fails the build for a member page with no usable id, and names it', async () => {
     const register = (k) =>
       k
@@ -303,6 +328,24 @@ describe('learning packages', () => {
         .join('\n'),
     ).toMatch(/a\/tab-1\.html.*no usable id/s)
     expect(fs.existsSync(`${site.build}/packages`)).toBe(false)
+  })
+
+  it('writes no package at all when a later package fails, under a build that is not atomic', async () => {
+    // Lesson two's first page needs a file named imsmanifest.xml at its package's root.
+    const files = {
+      ...FILES,
+      'src/pages/l2/tab-1.hbs':
+        '<html><body><img src="imsmanifest.xml"></body></html>',
+      'src/assets/course/l2/imsmanifest.xml': '<x/>',
+    }
+    await expect(build({}, { files })).rejects.toThrow(/<packages>/)
+    expect(
+      kiss
+        .report()
+        .failures.map((f) => f.message)
+        .join('\n'),
+    ).toMatch(/package 'l2'.*imsmanifest\.xml/s)
+    expect(fs.existsSync(`${site.build}/packages/l1.imscp.zip`)).toBe(false)
   })
 
   it('fails the build for a package id that is not a slug', async () => {

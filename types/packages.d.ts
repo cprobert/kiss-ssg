@@ -16,11 +16,13 @@ export function extractCssReferences(css: string): string[];
  * is in document order, once each.
  *
  * @param {string} html
- * @returns {{ needs: string[], anchors: string[] }}
+ * @returns {{ needs: string[], anchors: string[], base: string | null }} `base`
+ * is the first `<base href>`, against which a browser resolves every relative reference
  */
 export function extractReferences(html: string): {
     needs: string[];
     anchors: string[];
+    base: string | null;
 };
 /**
  * Where a reference made by the build-relative file `from` points.

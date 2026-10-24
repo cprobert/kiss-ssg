@@ -193,20 +193,31 @@ describe('renderManifest', () => {
 })
 
 describe('xmlId', () => {
-  it('cleans a raw id to a valid XML ID after its prefix', () => {
-    expect(xmlId('ITEM-', 'lessons/one/clinical-science')).toBe(
-      'ITEM-lessons-one-clinical-science',
-    )
-    expect(xmlId('RES-', 'café crème')).toMatch(NCNAME)
+  it('keeps a raw id that is already a valid XML ID, after its prefix', () => {
+    expect(xmlId('ITEM-', 'clinical-science')).toBe('ITEM-clinical-science')
+    expect(xmlId('RES-', 'l1_tab.2')).toBe('RES-l1_tab.2')
   })
 
-  it('breaks a collision deterministically', () => {
+  it('cleans any other raw id, and adds a hash of the raw id', () => {
+    expect(xmlId('ITEM-', 'lessons/one/clinical-science')).toMatch(
+      /^ITEM-lessons-one-clinical-science-[0-9a-f]{8}$/,
+    )
+    for (const raw of ['café crème', '-edge-', '/', ''])
+      expect(xmlId('RES-', raw)).toMatch(NCNAME)
+  })
+
+  it('gives each raw id one identifier, whatever other ids there are and in whatever order', () => {
+    const raws = ['a/b', 'a-b', 'a b', 'a_b', 'a//b']
+    const alone = raws.map((r) => xmlId('ITEM-', r))
+    expect(new Set(alone).size).toBe(raws.length)
     const used = new Set()
-    expect([
-      xmlId('ITEM-', 'a/b', used),
-      xmlId('ITEM-', 'a-b', used),
-      xmlId('ITEM-', 'a b', used),
-    ]).toEqual(['ITEM-a-b', 'ITEM-a-b-2', 'ITEM-a-b-3'])
+    const reversed = [...raws].reverse().map((r) => xmlId('ITEM-', r, used))
+    expect(reversed.reverse()).toEqual(alone)
+    // Removing one leaves the others as they were.
+    const fewer = new Set()
+    expect(raws.slice(1).map((r) => xmlId('ITEM-', r, fewer))).toEqual(
+      alone.slice(1),
+    )
   })
 })
 
