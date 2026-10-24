@@ -87,6 +87,17 @@ describe('extractCssReferences', () => {
       'font.woff2',
     ])
   })
+
+  it('keeps the spaces inside a quoted @import or url()', () => {
+    const css = `@import "theme light.css"; @import 'print sheet.css' print; @import url("x y.css");
+      .q { background: url('a b.png') }`
+    expect(extractCssReferences(css)).toEqual([
+      'theme light.css',
+      'print sheet.css',
+      'x y.css',
+      'a b.png',
+    ])
+  })
 })
 
 describe('resolveReference', () => {

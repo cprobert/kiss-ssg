@@ -213,6 +213,10 @@ describe('xmlId', () => {
     const used = new Set()
     const reversed = [...raws].reverse().map((r) => xmlId('ITEM-', r, used))
     expect(reversed.reverse()).toEqual(alone)
+    // A literal id that looks like a cleaned one is cleaned too, so the two never meet.
+    const cleaned = xmlId('ITEM-', 'a/b').slice('ITEM-'.length)
+    expect(xmlId('ITEM-', cleaned)).not.toBe(xmlId('ITEM-', 'a/b'))
+    expect(xmlId('ITEM-', cleaned)).toMatch(NCNAME)
     // Removing one leaves the others as they were.
     const fewer = new Set()
     expect(raws.slice(1).map((r) => xmlId('ITEM-', r, fewer))).toEqual(

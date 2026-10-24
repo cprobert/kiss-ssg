@@ -4,7 +4,9 @@
  * that is already `[A-Za-z0-9_.-]+` is kept. Any other is cleaned (every run
  * of other characters becomes one `-`, and `-` at either end goes) and given
  * `-` and the first 8 hex digits of the raw id's sha1, so two ids that clean
- * alike (`a/b`, `a-b`, `a b`) stay apart: an LMS keeps learners' records by
+ * alike (`a/b`, `a-b`, `a b`) stay apart. A raw id that already ends in `-`
+ * and 8 hex digits is treated the same, so a kept id never looks like a
+ * cleaned one: an LMS keeps learners' records by
  * these identifiers, so one must never move to another page. The prefix
  * starts with a letter, so the ID does too. With `used`, an ID already given
  * (two raw ids whose hashes collide) gets `-2`, `-3`, …: a last resort.
