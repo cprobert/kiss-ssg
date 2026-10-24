@@ -226,3 +226,63 @@ Each check is a test unless it says otherwise. A regression test counts only onc
 - [ ] Clean room: a fresh agent given only the packed tarball and the docs a user reads builds a two-lesson course of packages that passes `kiss-ssg check`, and reports every place it had to guess.
 - [ ] The consumer's M2 lesson 1 packages, IMS CP and SCORM 1.2, upload to a Moodle test course; the operator records what Moodle kept and tracked (by hand).
 - [ ] `npm run gates` is green.
+
+## Amendment (3) — 2026-10-24: kiss's packages for anyone, and the pipeline's outputs
+
+Six rounds of Codex review of the branch (`1f653cc` to `0ce4631`) found eleven defects, all fixed with a test seen to fail first. The sixth round found a gap that is not the writer's: files a pipeline step writes into the build folder are never claimed. The operator then set the principle this amendment writes down. It overrides the sections above where they differ, and its checks join the acceptance checks of amendment (2).
+
+### The principle: kiss's packages are for anyone (operator)
+
+Learning packages are a kiss capability, not a feature of one course. Anyone who wants SCORM 1.2 or an IMS content package from a static site uses the same seams as the first consumer, and nothing in kiss knows about that consumer. LTI is not pursued (operator, 2026-10-24): it leaves the non-goals and the roadmap.
+
+- **kiss owns the format, and only the format:** which pages form a package (`package`, `packageSection`, `id`), the closure of the files they need, the manifests, the zip, the SCORM 1.2 bridge and its page API (`window.kissScorm`), the report, and `config.packages`.
+- **The consumer owns the course:** its lessons, tabs, topics and questions, how a learner moves through them, the markup of its questions, and what it sends through `window.kissScorm`. One page per SCO with links the LMS's table of contents replaces, or one page per lesson with its own views (the first consumer's choice): both are the consumer's, and kiss serves both.
+- **The proof is a reader who has never seen the first consumer.** `examples/13-course-packages` is a neutral course (not medical), and the clean-room agent builds from the packed tarball and the public docs alone, reporting every place it had to guess.
+- **No file of kiss names the first consumer.** Today the code does not, but test fixtures borrow its words (`Tab 1 — Clinical science`, `m2/acute-cardiovascular-emergencies`, `lessons/one/clinical-science`). They are renamed to neutral ones (`Lesson 1: Basics`, `course/one/basics`), and a check keeps it so.
+- **What the first consumer learned goes into GUIDE as a recipe, in general words:** "one SCO, many views": a lesson as one page whose own navigation shows one view at a time, from the address, so the back button works. It keeps a lesson to one SCO and one session, which the LMS tracks as one attempt. The other shape, one SCO per page, gets the same treatment, with the member-link finding explained.
+
+### The pipeline's outputs
+
+**Finding (Codex, round 6).** A pipeline step may write into the build folder directly (`KISS_BUILD`). Those files get no claim in the output registry, so the package writer reports them as `not written by this build` and leaves them out. A step that writes into the assets folder, the pattern GUIDE documents, is not affected: `copyAssets` copies the file and claims it.
+
+**Options weighed:**
+
+| Option                                                  | For                                                           | Against                                                                                                                                                                             |
+| ------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (a) Document only: write into the assets folder         | No code                                                       | A tool that can only write into the build folder has no way in                                                                                                                      |
+| (b) A step declares its `outputs`                       | Explicit, opt-in; nothing scanned; a missing output is caught | One more key on a step                                                                                                                                                              |
+| (c) Compare the build folder before and after each step | Nothing to declare                                            | Under `cleanBuild: false`, a file a step left unchanged goes unclaimed and a stale one it touched is claimed; a walk of the build folder per step; it claims a tool's scratch files |
+
+**Decision: (b), with (a) still the first recommendation in the docs.**
+
+- `PipelineStep` gains `outputs?: string[]`: the files the step writes into the build folder, as build-relative POSIX paths. No globs: a glob would claim stale files under `cleanBuild: false`. `resolveConfig` refuses an absolute path, a backslash, an empty segment, `.` or `..`.
+- `lib/pipeline.js` stays as it is: it never touches the filesystem. `Kiss._queuePipeline()`, which already turns a failed step into a build failure, does the rest. For each step that succeeded, each declared output that exists in the write root is claimed: `outputs.claim(file, '<pipeline: name>', 'pipeline')`. One that does not exist fails the build as `<pipeline: name>`, with `declared output not written: <path>`.
+- The claims are made in the asset queue, before the copy. A copy that writes the same file is then a collision, which the registry already reports.
+- `OutputKind` gains `'pipeline'`. A whole-site replay re-runs the steps and makes the claims again on the new registry. A `watch` process that rewrites an output later changes nothing: the file keeps its claim.
+- The package writer's `missing` reason names the way out: `not written by this build: only files this build wrote are packed; a pipeline step that writes into the build folder declares the file in its outputs`.
+- Docs: `AIKB/pipeline.md`, `AIKB/kiss.md`, `AIKB/output-registry.md`, GUIDE § An asset pipeline (with the `outputs` key, and the assets folder as the first choice), the config table row, `llms.txt`, and `examples/10-asset-pipeline` if a step there writes into the build folder.
+
+### Acceptance checks (added to amendment (2)'s)
+
+**Pipeline outputs**
+
+- [ ] A step that writes `css/site.css` into `KISS_BUILD` and declares it: the file is claimed as `'pipeline'`, a page that links it packs it, and the package report has no finding for it.
+- [ ] The same step without `outputs`: the file is reported `not written by this build`, and the reason names `outputs`.
+- [ ] A declared output the step did not write fails the build as `<pipeline: name>` and names the path. A failed step's outputs are not checked or claimed.
+- [ ] An output that the asset copy also writes is a collision the registry reports.
+- [ ] `resolveConfig` refuses an absolute path, a backslash, `.`, `..` and an empty segment in `outputs`, and names the step.
+- [ ] Under `cleanBuild: false`, a file left in the build folder by an earlier build, which no step declares, is still never packed.
+
+**For anyone**
+
+- [ ] No file of kiss names the first consumer: a test greps `lib/`, `test/`, `types/`, `examples/`, `AIKB/`, `GUIDE.md`, `README.md` and `llms.txt` for its words (internal medicine, clinical, the module codes), and fails on any.
+- [ ] GUIDE has the two shapes as recipes: one SCO per page, and one SCO with many views. Each is runnable from `examples/13-course-packages`.
+- [ ] The clean-room run (amendment (2)) builds both shapes from the tarball and the public docs alone.
+
+### Order from here
+
+1. Pipeline outputs, with the checks above.
+2. Neutral fixtures, with the grep check.
+3. The public docs, `examples/13-course-packages` with both shapes, CHANGELOG with the upgrade note on `package`.
+4. The packages diff in `kiss-ssg check` (amendment (1)).
+5. The clean-room run, then a roadmap spec, `planning/specs/2026-10-24-learning-resources-roadmap.md`, without LTI: H5P, cmi5 and xAPI, SCORM 2004, and a SCO of several pages (one session across page loads).
