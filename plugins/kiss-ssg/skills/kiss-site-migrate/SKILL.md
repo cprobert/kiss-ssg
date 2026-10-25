@@ -222,6 +222,25 @@ As with the first audit release, the upgrade is done when the site builds the wa
 the findings as their own piece of work with the `kiss-site-review` skill, whose usability pass
 now covers them.
 
+### 0f. 2.9.0: `package` is a page option
+
+A page's `package` option now puts it in a learning package (an IMS content package or SCORM 1.2
+zip). Packaging is on by default. A site that never sets `package` gets no zips and no change. A
+site that already had a `package` key on its pages, for its own purposes, now has its pages
+packaged instead:
+
+- **Find the key before the first build.** Grep the build script and `controllers/` for `package`:
+  a `.page({ package: … })`, a fan-out record with a `package` field, or a controller that spreads
+  model fields into the page's options (`{ ...options, ...model }`) where a record carries one.
+- **A value that is not a slug fails the build** (`package must be a slug …`). One that is a slug
+  is quietly packaged into `packages/<value>.imscp.zip`, and fails as `<packages>` if one of its
+  pages has no usable `id`.
+- **The fix is to rename the site's key** (`packageName`, say) wherever the site reads it. If the
+  site never makes learning packages, `packages: false` in the config turns them off as well, but
+  the rename is still the honest fix: the key means something to kiss now.
+- After the rename, `kiss-ssg check` lists no `package:` lines, and the build folder has no
+  `packages/` folder.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.

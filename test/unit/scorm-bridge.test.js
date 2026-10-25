@@ -341,6 +341,18 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.data.get('cmi.core.score.raw')).toBe('0')
   })
 
+  it('still records the score, and stays on, where the LMS has no score.min or score.max', () => {
+    const one = lms({
+      refuse: { 'cmi.core.score.min': '401', 'cmi.core.score.max': '401' },
+    })
+    const win = load(frame({ API: one.api }))
+    win.kissScorm.score(0.8)
+    expect(one.data.get('cmi.core.score.raw')).toBe('80')
+    expect(win.kissScorm.available).toBe(true)
+    win.kissScorm.status('passed')
+    expect(one.data.get('cmi.core.lesson_status')).toBe('passed')
+  })
+
   it('sets a status the page asks for, and ignores one SCORM 1.2 does not know', () => {
     const one = lms()
     const win = load(frame({ API: one.api }), { manual: true })
@@ -480,6 +492,21 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.sets().filter(([k]) => k === 'cmi.core.exit')).toEqual([
       ['cmi.core.exit', 'suspend'],
     ])
+  })
+
+  it('keeps a resumed learner resumable when this session saves nothing new', () => {
+    const one = lms({ entry: 'resume', location: 'topic-2', state: 'v1|a1' })
+    const win = load(frame({ API: one.api }))
+    win.kissScorm.bookmark('topic-3')
+    expect(one.sets().filter(([k]) => k === 'cmi.core.exit')).toEqual([
+      ['cmi.core.exit', 'suspend'],
+    ])
+    const idle = lms({ entry: 'resume', location: 'topic-2' })
+    load(frame({ API: idle.api }))
+    expect(idle.data.get('cmi.core.exit')).toBe('suspend')
+    const review = lms({ entry: 'resume', location: 'topic-2', mode: 'review' })
+    load(frame({ API: review.api }))
+    expect(review.data.get('cmi.core.exit')).toBeUndefined()
   })
 
   it('refuses, without writing, a bookmark or state SCORM 1.2 cannot hold: never truncated', () => {
