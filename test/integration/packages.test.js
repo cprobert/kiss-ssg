@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
+import fsx from 'fs-extra'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { formatReport, packageSize } from '../../lib/build-report.js'
@@ -605,7 +606,48 @@ describe('learning packages', () => {
         .failures.map((f) => f.message)
         .join('\n'),
     ).toMatch(/package 'l2'.*imsmanifest\.xml/s)
-    expect(fs.existsSync(`${site.build}/packages/l1.imscp.zip`)).toBe(false)
+    expect(fs.existsSync(`${site.build}/packages`)).toBe(false)
+  })
+
+  it('leaves no zip and no temporary file behind when writing one fails midway', async () => {
+    const rename = fsx.rename.bind(fsx)
+    let calls = 0
+    vi.spyOn(fsx, 'rename').mockImplementation(async (from, to) => {
+      if (String(to).endsWith('.zip') && ++calls === 2)
+        throw new Error('EBUSY: locked')
+      return rename(from, to)
+    })
+    await expect(
+      build({ packages: { format: ['imscp', 'scorm12'] } }),
+    ).rejects.toThrow(/<packages>/)
+    vi.restoreAllMocks()
+    expect(calls).toBe(2)
+    expect(fs.existsSync(`${site.build}/packages`)).toBe(false)
+  })
+
+  it('reads and parses a file two member pages share once', async () => {
+    const readFile = fsx.readFile.bind(fsx)
+    const reads = []
+    vi.spyOn(fsx, 'readFile').mockImplementation((file, ...rest) => {
+      if (rest[0] === 'utf8') reads.push(String(file).replace(/\\/g, '/'))
+      return readFile(file, ...rest)
+    })
+    await build(
+      {},
+      {
+        files: {
+          ...FILES,
+          'src/pages/l2/tab-1.hbs':
+            '<html><head><link rel="stylesheet" href="../../css/site.css"></head><body></body></html>',
+          'src/pages/l2/tab-2.hbs':
+            '<html><head><link rel="stylesheet" href="../../css/site.css"></head><body></body></html>',
+        },
+      },
+    )
+    vi.restoreAllMocks()
+    // Lesson one's first page needs it too: one read across every package.
+    expect(reads.filter((f) => f.endsWith('/css/site.css'))).toHaveLength(1)
+    expect(names(zipAt('packages/l2.imscp.zip'))).toContain('css/site.css')
   })
 
   it('fails the build for a package id that is not a slug', async () => {
