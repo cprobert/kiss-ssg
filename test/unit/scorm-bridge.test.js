@@ -968,6 +968,21 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(lmsA.data.get('cmi.core.score.raw')).toBe(undefined)
     })
 
+    // Two kiss pages side by side under a wrapper with no bridge of its own:
+    // one session, started once, which both use.
+    it('starts one session for sibling pages, and keeps what each of them saved', () => {
+      const one = lms()
+      const wrapper = frame({ parent: frame({ API: one.api }), loading: true })
+      const first = load(frame({ parent: wrapper }))
+      const second = load(frame({ parent: wrapper }))
+      expect(first.kissScorm.save('first')).toBe(true)
+      expect(second.kissScorm.save('second')).toBe(true)
+      wrapper.ready()
+      expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(1)
+      expect(one.data.get('cmi.suspend_data')).toBe('second')
+      expect(second.kissScorm.available).toBe(true)
+    })
+
     it('runs no ready callback of an embedded page that has left', () => {
       const one = lms()
       const top = frame({ parent: frame({ API: one.api }), loading: true })
