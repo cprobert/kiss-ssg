@@ -895,6 +895,45 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(one.data.get('cmi.suspend_data')).toBe('v2')
     })
 
+    // The page embedding it never had to wait (nothing above it loading), so
+    // its bridge decides at once, with the embedded page's calls still queued.
+    it('holds an owner that never waited behind the calls its embedded page queued', () => {
+      const one = lms()
+      const middle = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: middle }))
+      inner.kissScorm.score(0.2)
+      inner.kissScorm.save('older')
+      load(middle)
+      middle.kissScorm.score(0.9)
+      middle.kissScorm.save('newer')
+      middle.ready()
+      expect(one.data.get('cmi.core.score.raw')).toBe('90')
+      expect(one.data.get('cmi.suspend_data')).toBe('newer')
+      expect(middle.kissScorm.available).toBe(true)
+    })
+
+    // A page that has left writes nothing more into the session it shared,
+    // through the object it published or one it kept.
+    it('takes no call from an embedded page after it has left, published or not', () => {
+      const one = lms()
+      const outer = load(frame({ parent: frame({ API: one.api }) }))
+      const direct = load(frame({ parent: outer }))
+      const keptDirect = direct.kissScorm
+      const top = frame({ parent: frame({ API: lms().api }), loading: true })
+      const waited = load(frame({ parent: top }))
+      const keptWaited = waited.kissScorm
+      top.ready()
+      direct.fire('pagehide', { persisted: false })
+      outer.kissScorm.save('owner-new')
+      expect(keptDirect.save('stale')).toBe(false)
+      keptDirect.score(0.1)
+      expect(one.data.get('cmi.suspend_data')).toBe('owner-new')
+      expect(one.data.get('cmi.core.score.raw')).toBe(undefined)
+      waited.fire('pagehide', { persisted: false })
+      expect(keptWaited.save('stale')).toBe(false)
+      expect(waited.kissScorm.save('stale')).toBe(false)
+    })
+
     // Only a resumed field with something in it is protected.
     it('sends a queued bookmark or state when the resumed one is empty', () => {
       const one = lms({ entry: 'resume', location: '', state: 'v1' })
