@@ -817,6 +817,30 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(one.durable.get('cmi.core.exit')).toBe('suspend')
     })
 
+    // A page may reuse one answer object: what is queued is the answer as
+    // given, not whatever the object holds when the queue drains.
+    it('records each deferred answer as it was given, though the page reuses the object', () => {
+      const one = lms({ resets: true })
+      const win = load(frame({ API: one.api }))
+      one.failCommits(1)
+      win.kissScorm.interaction({ id: 'a', response: 0 })
+      one.end()
+      one.refuseNext('cmi.interactions.0.id', '101')
+      const reused = { id: 'b', response: [1], correct: { anyOf: [[1]] } }
+      win.kissScorm.interaction(reused)
+      reused.id = 'c'
+      reused.response.push(2)
+      reused.correct.anyOf[0].push(3)
+      win.kissScorm.interaction(reused)
+      for (let i = 0; i < 3; i++) win.advance(3000)
+      const at = (n, f) => one.durable.get(`cmi.interactions.${n}.${f}`)
+      expect([0, 1, 2].map((n) => at(n, 'id'))).toEqual(['a', 'b', 'c'])
+      expect(at(1, 'student_response')).toBe('b')
+      expect(at(1, 'correct_responses.0.pattern')).toBe('{b}')
+      expect(at(2, 'student_response')).toBe('b,c')
+      expect(at(2, 'correct_responses.0.pattern')).toBe('{b,d}')
+    })
+
     it('leaves no retry behind when the last commit before finishing failed', () => {
       const one = lms()
       const win = load(frame({ API: one.api }))
