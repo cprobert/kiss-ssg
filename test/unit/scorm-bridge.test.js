@@ -969,6 +969,51 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(owner.kissScorm.available).toBe(true)
     })
 
+    // An embedded page that is still waiting can queue at any moment, so its
+    // owner stays held while it waits, even with nothing queued yet.
+    it('holds an owner while an embedded page still waits, though nothing is queued yet', () => {
+      const one = lms()
+      const middle = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: middle }))
+      load(middle)
+      inner.kissScorm.save('older')
+      middle.kissScorm.save('newer')
+      middle.ready()
+      expect(one.data.get('cmi.suspend_data')).toBe('newer')
+    })
+
+    it('publishes no owner that decided while an embedded page still waits', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      load(middle)
+      top.ready()
+      inner.kissScorm.score(0.2)
+      middle.kissScorm.score(0.9)
+      middle.ready()
+      const scores = one
+        .sets()
+        .filter(([k]) => k === 'cmi.core.score.raw')
+        .map(([, v]) => v)
+      expect(scores).toEqual(['20', '90'])
+    })
+
+    it('runs no ready callback of a held owner that has left', () => {
+      const one = lms()
+      const middle = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: middle }))
+      inner.kissScorm.score(0.2)
+      load(middle)
+      const calls = []
+      middle.kissScorm.ready(() => calls.push('before'))
+      middle.fire('pagehide', { persisted: false })
+      inner.fire('pagehide', { persisted: false })
+      expect(calls).toEqual([])
+      expect(middle.kissScorm.ready(() => calls.push('after'))).toBe(undefined)
+      expect(calls).toEqual([])
+    })
+
     // Only a resumed field with something in it is protected.
     it('sends a queued bookmark or state when the resumed one is empty', () => {
       const one = lms({ entry: 'resume', location: '', state: 'v1' })
