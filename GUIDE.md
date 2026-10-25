@@ -603,7 +603,7 @@ writes:
 
 **Which pages are listed**: every registered page, grouped by the first segment of its `path` with the root group first, in registration order. A page opts out with `ignoreLlms: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of `llms.txt` too — the index is a subset of the site the sitemap describes, never a superset. `llmsSection: 'Name'` puts one page under a heading of your choosing regardless of its path. Each entry is `- [title](url): description`, with the description omitted when the page has none and the title falling back to the page's slug, title-cased. Each URL is the page's Markdown copy (`…/courses/bronze-obedience.md`, `…/index.md` for the home page); on a site with `markdownCopies: false`, and for a page that turns its copy off, it is instead the same string that page's own `{{canonical}}` renders.
 
-It is chainable, can be called before or after `.generate()`, and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
+It is chainable, can be called before or after `.generate()` (or from its callback, when the pages have already rendered: their Markdown copies are written then, before `llms.txt`), and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
 
 ### Markdown copies for agents
 

@@ -399,6 +399,28 @@ describe('learning packages', () => {
     expect(res[1]).toContain('<file href="docs/handout.pdf"/>')
   })
 
+  // A reference that climbs with backslashes climbs in a browser too, so the
+  // zip's root must hold the folder it climbs to.
+  it('roots the zip above a folder a backslash reference climbs to', async () => {
+    await build(
+      {},
+      {
+        files: {
+          ...FILES,
+          'src/pages/l2/tab-1.hbs':
+            '<html><body><img src="..\\l2\\pic.png"></body></html>',
+          'src/assets/course/l2/pic.png': 'p',
+        },
+      },
+    )
+    expect(names(zipAt('packages/l2.imscp.zip'))).toEqual([
+      'imsmanifest.xml',
+      'l2/pic.png',
+      'l2/tab-1.html',
+      'l2/tab-2.html',
+    ])
+  })
+
   it("links a member page's {{link}} to the file, relative to it, on any site shape", async () => {
     await build(
       { extensionLess: true, links: { canonical: true, trailingSlash: false } },

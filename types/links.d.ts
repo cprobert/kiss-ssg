@@ -31,6 +31,17 @@ export function srcsetUrls(srcset: string): string[];
  */
 export function extractReferences(html: string): string[];
 /**
+ * A reference as a browser's URL parser reads it on an http(s) page, before it
+ * resolves anything: leading and trailing C0 controls and spaces are dropped,
+ * every ASCII tab and newline is dropped, and a backslash is a slash, so
+ * `assets\x.png` names `assets/x.png` and `\\cdn\x.png` is another host. The
+ * one reading: the link check and `lib/packages.js` both start from it.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function browserReference(value: unknown): string;
+/**
  * Whether a reference names something this build was supposed to write.
  *
  * An absolute URL on the site's own origin is **internal**: `{{canonical}}` and

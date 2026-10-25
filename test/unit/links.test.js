@@ -121,6 +121,20 @@ describe('classifyReference', () => {
   const siteUrl = 'https://site.example'
   const of = (ref, url = siteUrl) => classifyReference(ref, { siteUrl: url })
 
+  // A browser reads a backslash as a slash on an http(s) page, and drops tabs
+  // and newlines: `assets\x.png` works, and `\\cdn\x.png` is another host.
+  it('reads a reference as a browser does before classifying it', () => {
+    expect(of('assets\\x.png')).toEqual({
+      kind: 'internal',
+      path: 'assets/x.png',
+    })
+    expect(of('\\\\cdn.example\\x.png')).toEqual({
+      kind: 'external',
+      path: null,
+    })
+    expect(of('as\tsets/x\n.png').path).toBe('assets/x.png')
+  })
+
   // Every shape in this block is one the engine's own helpers emit — the
   // fixture list the amended contract names.
   it('treats an absolute URL on the site origin as internal ({{canonical}})', () => {

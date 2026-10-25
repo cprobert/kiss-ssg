@@ -66,6 +66,17 @@ export class KissPage {
     set isDev(dev: any);
     set debug(dev: any);
     prepare(): this;
+    /**
+     * Writes the Markdown copy of a page that has already been written but has
+     * none, from the HTML on disk: the page rendered before the build called
+     * `.llms()` (from a `generate()` callback, say), and `markdownTo` now names
+     * a copy that `llms.txt` will link. The conversion and the claim are a
+     * render's own. Does nothing for a page that is not written, has its copy
+     * already, or should have none.
+     *
+     * @returns {Promise<void>}
+     */
+    writeMarkdownCopy(): Promise<void>;
     generate(): Promise<string>;
     _getTemplate(view: any): any;
 }

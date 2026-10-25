@@ -90,6 +90,41 @@ describe('extractReferences', () => {
       extractReferences('<base target="_blank"><img src="a.png">').base,
     ).toBe(null)
   })
+
+  // The first <base> with an href is the document's base, even an empty one,
+  // which a browser resolves to the document's own URL.
+  it('takes an empty first <base href> as the base, ignoring a later one', () => {
+    const refs = extractReferences(
+      '<base href=""><base href="https://other.example/"><img src="a.png">',
+    )
+    expect(refs.base).toBe('')
+    expect(refs.needs).toEqual(['a.png'])
+  })
+})
+
+// A browser's URL parser, on an http(s) page, drops tabs and newlines and reads
+// a backslash as a slash, before it resolves anything.
+describe('references read as a browser reads them', () => {
+  it('resolves a backslash as a slash, and drops tabs and newlines', () => {
+    expect(resolveReference('img\\a.png', 'course/l1/tab-1.html')).toEqual({
+      kind: 'path',
+      rel: 'course/l1/img/a.png',
+    })
+    expect(resolveReference('im\tg/a\n.png', 'tab.html')).toEqual({
+      kind: 'path',
+      rel: 'img/a.png',
+    })
+    expect(resolveReference('\\\\cdn.example\\x.png', 'tab.html')).toEqual({
+      kind: 'skip',
+    })
+    expect(resolveReference('\\img\\a.png', 'tab.html').kind).toBe('outside')
+  })
+
+  it('reads a base with a backslash the same way', () => {
+    expect(documentBase('..\\assets\\', 'course/l1/tab-1.html')).toBe(
+      'course/assets/x',
+    )
+  })
 })
 
 describe('extractCssReferences', () => {

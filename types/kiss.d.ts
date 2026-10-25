@@ -848,6 +848,15 @@ declare class Kiss {
      */
     sitemap(options?: SitemapOptions | null, callback?: (urls: SitemapUrl[]) => void | Promise<void>): this;
     /**
+     * Writes the Markdown copy of every written page that should have one and
+     * has none: pages that rendered before the build called `.llms()`. A copy
+     * that cannot be made fails its page, as it would have at render.
+     *
+     * @private
+     * @returns {Promise<void>}
+     */
+    private _writeMissingCopies;
+    /**
      * Writes `llms.txt` into the build folder — the llmstxt.org index an answer
      * engine reads first — from the same registry, titles and URLs the sitemap is
      * built from, so the two can never disagree. Requires `config.siteUrl`, and
