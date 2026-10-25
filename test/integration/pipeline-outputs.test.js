@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'fs-extra'
+import os from 'node:os'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -123,6 +124,31 @@ describe('config.assets.pipeline outputs', () => {
     expect(failures()).toMatch(
       /<pipeline: css>.*declared output not written: css\/site\.css/s,
     )
+  })
+
+  // A replay deletes each declared output before its step runs. A step that
+  // then fails must take its asset name and its claim with it, or {{asset}}
+  // resolves, and a package packs, a file that is no longer there.
+  it('forgets the outputs of a step that fails on a replay', async () => {
+    const once = `${os.tmpdir()}/kiss-once-${process.pid}-${Date.now()}`
+    await build([
+      {
+        name: 'css',
+        run: run(
+          `const fs = require('fs'); if (fs.existsSync('${once.replace(/\\/g, '/')}')) process.exit(3); fs.writeFileSync('${once.replace(/\\/g, '/')}', ''); const p = require('path'); const f = p.join(process.env.KISS_BUILD, 'css/site.css'); fs.mkdirSync(p.dirname(f), { recursive: true }); fs.writeFileSync(f, 'a{}')`,
+        ),
+        outputs: ['css/site.css'],
+      },
+    ])
+    const css = `${site.build}/css/site.css`
+    expect(kiss._outputs.owner(css)).toBe('<pipeline: css>')
+    await kiss._replay().catch(() => {})
+    await fs.remove(once)
+    expect(fs.existsSync(css)).toBe(false)
+    expect(kiss._outputs.owner(css)).toBeNull()
+    expect(
+      kiss._assetManifest.previous('<pipeline: css>#0', 'css/site.css'),
+    ).toBeNull()
   })
 
   it('checks no outputs of a step that failed: the step is the one failure', async () => {
