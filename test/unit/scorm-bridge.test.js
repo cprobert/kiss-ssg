@@ -784,6 +784,46 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(one.durable.get('cmi.suspend_data')).toBe('v1')
     })
 
+    // Whether the learner is resuming is itself a read: unknown is not "no".
+    it('protects the saved place when the LMS fails to say whether the learner is resuming', () => {
+      const one = lms({
+        entry: 'resume',
+        location: 'topic-2',
+        state: 'answers-v1',
+      })
+      const outer = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: outer }))
+      inner.kissScorm.bookmark('')
+      inner.kissScorm.save('answers-v0')
+      one.refuseNextRead('cmi.core.entry', '101')
+      let seen
+      inner.kissScorm.ready((s) => (seen = s.resumed))
+      outer.ready()
+      inner.advance(3000)
+      inner.fire('pagehide', { persisted: false })
+      expect(seen).toEqual({ location: null, state: null })
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
+      expect(one.durable.get('cmi.suspend_data')).toBe('answers-v1')
+    })
+
+    // The page was told `true` when it queued them: a refusal at replay is
+    // the bridge's to keep and write again, as for any write the page never
+    // saw refused.
+    it('writes a queued bookmark and state again when the LMS refuses them at replay', () => {
+      const one = lms()
+      const outer = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: outer }))
+      expect(inner.kissScorm.bookmark('topic-1')).toBe(true)
+      expect(inner.kissScorm.save('v1')).toBe(true)
+      one.refuseNext('cmi.core.lesson_location', '101')
+      one.refuseNext('cmi.suspend_data', '101')
+      outer.ready()
+      inner.advance(3000)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-1')
+      expect(one.durable.get('cmi.suspend_data')).toBe('v1')
+      expect(one.durable.get('cmi.core.exit')).toBe('suspend')
+    })
+
     it('sends a queued bookmark when the learner is not resuming', () => {
       const one = lms()
       const outer = frame({ parent: frame({ API: one.api }), loading: true })
