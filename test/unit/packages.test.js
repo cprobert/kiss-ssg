@@ -289,6 +289,25 @@ describe('resolveReference', () => {
     ).toEqual({ kind: 'skip' })
   })
 
+  // The origin a browser computes, not a string prefix: case, a default port
+  // and a query straight after the host are all the same site.
+  it('calls every spelling of the site origin outside', () => {
+    for (const ref of [
+      'https://EXAMPLE.com/lesson.html',
+      'https://example.com:443/lesson.html',
+      'https://example.com?course=1',
+      'HTTPS://example.com/lesson.html',
+    ])
+      expect(
+        resolveReference(ref, at, { siteOrigin: 'https://example.com' }).reason,
+      ).toMatch(/absolute URL to this site/)
+    expect(
+      resolveReference('https://example.com.evil.org/a.png', at, {
+        siteOrigin: 'https://example.com',
+      }),
+    ).toEqual({ kind: 'skip' })
+  })
+
   it('calls a folder reference outside: an LMS serves files as they are', () => {
     expect(resolveReference('../l2/', at).reason).toMatch(/folder/)
   })
