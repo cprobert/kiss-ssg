@@ -244,6 +244,7 @@ export const DEFAULT_PACKAGES: Readonly<{
     dir: "packages";
     title: any;
     only: any;
+    schemas: false;
 }>;
 export const DEFAULT_CONFIG: Readonly<{
     dev: false;
@@ -291,6 +292,7 @@ export const DEFAULT_CONFIG: Readonly<{
         dir: "packages";
         title: any;
         only: any;
+        schemas: false;
     }>;
     port: 3001;
     livereloadPort: 35729;

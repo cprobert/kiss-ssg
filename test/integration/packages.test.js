@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
-import { formatReport } from '../../lib/build-report.js'
+import { formatReport, packageSize } from '../../lib/build-report.js'
 import { makeSite } from '../helpers/site.js'
 import { readZipEntries } from '../helpers/zip.js'
 
@@ -214,7 +214,88 @@ describe('learning packages', () => {
     )
   })
 
-  it('lists the members in registration order, each with the files it reached first', async () => {
+  it('puts the SCORM 1.2 schema files in a SCORM package when config.packages.schemas is on', async () => {
+    await build({ packages: { format: ['imscp', 'scorm12'], schemas: true } })
+    const scorm = zipAt('packages/l2.scorm12.zip')
+    for (const name of [
+      'adlcp_rootv1p2.xsd',
+      'imscp_rootv1p1p2.xsd',
+      'ims_xml.xsd',
+    ])
+      expect(scorm.get(name).toString()).toBe(
+        fs.readFileSync(
+          new URL(`../../lib/schemas/scorm12/${name}`, import.meta.url),
+          'utf8',
+        ),
+      )
+    expect(scorm.get('imsmanifest.xml').toString()).toContain(
+      'xsi:schemaLocation=',
+    )
+    // An IMS content package has another schema, and gets none of these.
+    expect(
+      names(zipAt('packages/l2.imscp.zip')).some((n) => n.endsWith('.xsd')),
+    ).toBe(false)
+    const l2 = (format) =>
+      kiss.report().packages.find((p) => p.id === 'l2' && p.format === format)
+    expect(l2('scorm12').files).toBe(l2('imscp').files + 3)
+  })
+
+  it("lists a file every member needs on each member's resource", async () => {
+    const page =
+      '<html><head><link rel="stylesheet" href="../../css/more.css"></head><body></body></html>'
+    const files = {
+      ...FILES,
+      'src/pages/l2/tab-1.hbs': page,
+      'src/pages/l2/tab-2.hbs': page,
+    }
+    await build({}, { files })
+    const manifest = zipAt('packages/l2.imscp.zip')
+      .get('imsmanifest.xml')
+      .toString()
+    const res = manifest.split('<resource ').slice(1)
+    expect(res).toHaveLength(2)
+    for (const r of res) expect(r).toContain('<file href="css/more.css"/>')
+    // The zip still holds it once.
+    expect(
+      names(zipAt('packages/l2.imscp.zip')).filter((n) => n === 'css/more.css'),
+    ).toHaveLength(1)
+  })
+
+  it('reports a reference in the wrong case, and does not pack it', async () => {
+    const files = {
+      ...FILES,
+      'src/pages/l2/tab-1.hbs':
+        '<html><body><img src="../../img/A.png"></body></html>',
+    }
+    await build({}, { files })
+    const l2 = kiss.report().packages.find((p) => p.id === 'l2')
+    const [finding] = l2.outside
+    expect(finding.href).toBe('../../img/A.png')
+    // A case-insensitive file system finds the file, so the case is the finding;
+    // elsewhere the file is simply not there.
+    const caseBlind =
+      process.platform === 'win32' || process.platform === 'darwin'
+    expect(finding.reason).toMatch(
+      caseBlind
+        ? /^a reference in the wrong case: /
+        : /^not written by this build: /,
+    )
+    expect(
+      names(zipAt('packages/l2.imscp.zip')).some((n) => /a\.png$/i.test(n)),
+    ).toBe(false)
+  })
+
+  it("reports each package's size in bytes, and shows it in the summary", async () => {
+    await build()
+    const report = kiss.report()
+    for (const p of report.packages)
+      expect(p.bytes).toBe(fs.statSync(p.file).size)
+    expect(formatReport(report)).toMatch(
+      /package: .*l2\.imscp\.zip \(2 pages, 3 files, \d+(\.\d)? (B|KB)\)/,
+    )
+  })
+
+  it('lists the members in registration order, each with the files it needs', async () => {
     await build()
     const manifest = zipAt('packages/l1.imscp.zip')
       .get('imsmanifest.xml')
@@ -246,9 +327,10 @@ describe('learning packages', () => {
       },
     })
     const lines = info.filter((l) => l.startsWith('Package: '))
+    const [l1, l2] = kiss.report().packages
     expect(lines).toEqual([
-      `Package: ${site.build}/packages/l1.imscp.zip  l1 tab 1  (2 pages, ${kiss.report().packages[0].files} files)`,
-      `Package: ${site.build}/packages/l2.imscp.zip  l2 tab 1  (2 pages, 3 files)`,
+      `Package: ${site.build}/packages/l1.imscp.zip  l1 tab 1  (2 pages, ${l1.files} files, ${packageSize(l1.bytes)})`,
+      `Package: ${site.build}/packages/l2.imscp.zip  l2 tab 1  (2 pages, 3 files, ${packageSize(l2.bytes)})`,
     ])
     // Named by the build folder, never by the staging folder an atomic build wrote it in.
     expect(lines.join('\n')).not.toMatch(/staging/)
@@ -317,7 +399,7 @@ describe('learning packages', () => {
       createHash('sha1').update(fs.readFileSync(l2.file)).digest('hex'),
     )
     expect(formatReport(report)).toContain(
-      `package: ${site.build}/packages/l2.imscp.zip (2 pages, 3 files)`,
+      `package: ${site.build}/packages/l2.imscp.zip (2 pages, 3 files, ${packageSize(report.packages.find((p) => p.id === 'l2').bytes)})`,
     )
   })
 

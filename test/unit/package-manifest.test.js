@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { parseDocument, DomUtils } from 'htmlparser2'
 import { renderManifest, xmlId } from '../../lib/package-manifest.js'
 
@@ -187,6 +188,24 @@ describe('renderManifest', () => {
     )
   })
 
+  it('points a SCORM 1.2 manifest at its schema files when asked, and only then', () => {
+    const LOCATION =
+      'http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd'
+    const manifest = all(
+      renderManifest(pkg({ format: 'scorm12', schemas: true })),
+      'manifest',
+    )[0]
+    expect(attr(manifest, 'xmlns:xsi')).toBe(
+      'http://www.w3.org/2001/XMLSchema-instance',
+    )
+    expect(attr(manifest, 'xsi:schemaLocation')).toBe(LOCATION)
+    for (const xml of [
+      renderManifest(pkg({ format: 'scorm12' })),
+      renderManifest(pkg({ format: 'imscp', schemas: true })),
+    ])
+      expect(xml).not.toContain('schemaLocation')
+  })
+
   it('refuses a format it does not know', () => {
     expect(() => renderManifest(pkg({ format: 'scorm2004' }))).toThrow(/format/)
   })
@@ -228,6 +247,67 @@ describe('xmlId', () => {
 // A strict parser: Python's xml.etree refuses malformed XML and resolves the namespaces.
 const python = ['python3', 'python'].find(
   (cmd) => spawnSync(cmd, ['--version']).status === 0,
+)
+
+// The schemas kiss ships for SCORM 1.2 (lib/schemas/scorm12), and lxml to validate against them.
+const schemaDir = fileURLToPath(
+  new URL('../../lib/schemas/scorm12/', import.meta.url),
+)
+const lxml =
+  python && spawnSync(python, ['-c', 'import lxml.etree']).status === 0
+
+describe.skipIf(!lxml)(
+  'renderManifest, validated against the SCORM 1.2 schemas',
+  () => {
+    // A wrapper schema that imports both, since a SCORM 1.2 manifest uses both namespaces.
+    const validate = (xml) =>
+      spawnSync(
+        python,
+        [
+          '-c',
+          [
+            'import sys, os',
+            'from lxml import etree',
+            'd = sys.argv[1]',
+            'wrapper = \'<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:kiss:wrapper">\' + \\',
+            '  \'<xsd:import namespace="http://www.imsproject.org/xsd/imscp_rootv1p1p2" schemaLocation="imscp_rootv1p1p2.xsd"/>\' + \\',
+            '  \'<xsd:import namespace="http://www.adlnet.org/xsd/adlcp_rootv1p2" schemaLocation="adlcp_rootv1p2.xsd"/></xsd:schema>\'',
+            "schema = etree.XMLSchema(etree.fromstring(wrapper.encode(), base_url=os.path.join(d, 'wrapper.xsd')))",
+            'doc = etree.fromstring(sys.stdin.buffer.read())',
+            'ok = schema.validate(doc)',
+            "print('valid' if ok else '\\n'.join(str(e) for e in schema.error_log))",
+          ].join('\n'),
+          schemaDir,
+        ],
+        { input: xml, encoding: 'utf8' },
+      )
+
+    it('is valid SCORM 1.2, with and without schema locations, sections, titles to escape and odd ids', () => {
+      const sectioned = members().map((m, i) => ({
+        ...m,
+        section: i ? 'Part & 2' : 'Part 1',
+      }))
+      for (const over of [
+        {},
+        { schemas: true },
+        { members: sectioned, title: `A & B <C> "D"` },
+      ]) {
+        const result = validate(
+          renderManifest(pkg({ format: 'scorm12', ...over })),
+        )
+        expect(result.status, result.stderr).toBe(0)
+        expect(result.stdout.trim(), JSON.stringify(over)).toBe('valid')
+      }
+    })
+
+    it('is not valid when the manifest is wrong, so the check can fail', () => {
+      const broken = renderManifest(pkg({ format: 'scorm12' })).replace(
+        'adlcp:scormtype="sco"',
+        'adlcp:scormtype="page"',
+      )
+      expect(validate(broken).stdout.trim()).not.toBe('valid')
+    })
+  },
 )
 
 describe.skipIf(!python)('renderManifest, read by a strict XML parser', () => {

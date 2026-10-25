@@ -72,6 +72,10 @@ export type ManifestPackage = {
     title: string;
     format: "imscp" | "scorm12";
     /**
+     * SCORM 1.2 only: name the schema files the package carries in `xsi:schemaLocation`
+     */
+    schemas?: boolean;
+    /**
      * the pages, in the order the table of contents lists them
      */
     members: ManifestMember[];

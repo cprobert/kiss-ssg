@@ -120,6 +120,7 @@ export function writePackages(stack: any[], { packages: settings, siteUrl, write
  * @property {string} dir the build-relative folder the zips are written to
  * @property {((id: string, pages: PackagePageInfo[]) => string) | null} title a package's title; the first page's `title` when `null`
  * @property {string[] | null} only the package ids to write; every package when `null`
+ * @property {boolean} schemas put the SCORM 1.2 schema files (`lib/schemas/scorm12`) in each SCORM 1.2 package, named in its manifest
  */
 /**
  * What `config.packages.title` is given about each page of a package.
@@ -149,6 +150,7 @@ export function writePackages(stack: any[], { packages: settings, siteUrl, write
  * @property {string} hash sha1 of the zip's bytes, which depend only on its files (`lib/zip.js`)
  * @property {string[]} pages the member pages, in the order the table of contents lists them, as written
  * @property {number} files the entries in the zip, `imsmanifest.xml` included
+ * @property {number} bytes the zip's size, for an LMS's upload limit
  * @property {PackageOutside[]} outside sorted by page, then href
  */
 /** A package id: lower-case letters, digits and single hyphens. */
@@ -173,6 +175,10 @@ export type KissPackages = {
      * the package ids to write; every package when `null`
      */
     only: string[] | null;
+    /**
+     * put the SCORM 1.2 schema files (`lib/schemas/scorm12`) in each SCORM 1.2 package, named in its manifest
+     */
+    schemas: boolean;
 };
 /**
  * What `config.packages.title` is given about each page of a package.
@@ -229,6 +235,10 @@ export type PackageResult = {
      * the entries in the zip, `imsmanifest.xml` included
      */
     files: number;
+    /**
+     * the zip's size, for an LMS's upload limit
+     */
+    bytes: number;
     /**
      * sorted by page, then href
      */

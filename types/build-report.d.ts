@@ -151,6 +151,7 @@
  * @property {string} hash sha1 of the zip, which depends only on the files in it: two builds give one hash exactly when the package is the same
  * @property {string[]} pages the member pages, in table-of-contents order, against the real build folder
  * @property {number} files the entries in the zip, `imsmanifest.xml` included
+ * @property {number} bytes the zip's size, for an LMS's upload limit
  * @property {{page: string, href: string, reason: string}[]} outside the references the package cannot carry, sorted by page then href; `page` against the real build folder
  */
 /**
@@ -248,6 +249,15 @@ export function auditLines(audit: BuildAudit | null | undefined): string[];
  * @returns {string}
  */
 export function formatReport(report: BuildReport): string;
+/**
+ * A package's size as a person reads it, for the summary and the build log:
+ * `812 B`, `3.2 KB`, `14.7 MB` (1 KB is 1,024 bytes). A report from before
+ * sizes were recorded has none, and shows `size unknown`.
+ *
+ * @param {number} [bytes]
+ * @returns {string}
+ */
+export function packageSize(bytes?: number): string;
 /**
  * One page the build queued.
  */
@@ -606,6 +616,10 @@ export type BuildPackage = {
      * the entries in the zip, `imsmanifest.xml` included
      */
     files: number;
+    /**
+     * the zip's size, for an LMS's upload limit
+     */
+    bytes: number;
     /**
      * the references the package cannot carry, sorted by page then href; `page` against the real build folder
      */

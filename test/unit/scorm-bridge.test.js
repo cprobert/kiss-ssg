@@ -11,15 +11,27 @@ import { silentLogger } from '../../lib/logger.js'
 // keeps the values set, raises the errors Moodle raises (301 when not
 // initialised, 101 on a second LMSInitialize, 401 where interactions are not
 // supported), and records every call. `end()` ends the session underneath the
-// page; with `reinit: false` it then refuses to start another.
+// page; with `reinit: false` it then refuses to start another. `entry`,
+// `location`, `state` and `mode` are what it launches the SCO with, and
+// `refuse` maps an element to the error code a write to it raises.
 function lms({
   status = 'not attempted',
   interactions = true,
   reinit = true,
+  entry = '',
+  location = '',
+  state = '',
+  mode = 'normal',
+  refuse = {},
 } = {}) {
   const data = new Map([
     ['cmi.core.lesson_status', status],
     ['cmi.interactions._count', '0'],
+    ['cmi.core.entry', entry],
+    ['cmi.core.lesson_location', location],
+    ['cmi.suspend_data', state],
+    ['cmi.core.lesson_mode', mode],
+    ['cmi.core.student_name', 'Doe, Jane'],
   ])
   const calls = []
   let initialised = false
@@ -53,6 +65,7 @@ function lms({
       if (!initialised) return fail('301')
       if (key.startsWith('cmi.interactions') && !interactions)
         return fail('401')
+      if (refuse[key]) return fail(refuse[key])
       data.set(key, value)
       const n = key.match(/^cmi\.interactions\.(\d+)\.id$/)?.[1]
       if (n !== undefined)
@@ -73,8 +86,8 @@ function lms({
       return ok()
     },
     LMSGetLastError: () => last,
-    LMSGetErrorString: () => '',
-    LMSGetDiagnostic: () => '',
+    LMSGetErrorString: (code) => `error ${code}`,
+    LMSGetDiagnostic: (code) => `diagnostic ${code}`,
   }
   return {
     api,
@@ -93,7 +106,8 @@ function lms({
 // A window: its `parent` (itself at the top), an optional `API` and `opener`,
 // and the listeners the bridge registers, which `fire` calls. With `loading`,
 // its document is still being parsed until `ready()` fires DOMContentLoaded.
-function frame({ parent, API, opener, loading = false } = {}) {
+// With `visible`, it has a document whose visibility `hide()` changes.
+function frame({ parent, API, opener, loading = false, visible = false } = {}) {
   const listeners = {}
   const win = {
     addEventListener: (type, fn) => (listeners[type] ??= []).push(fn),
@@ -114,6 +128,19 @@ function frame({ parent, API, opener, loading = false } = {}) {
     win.ready = () => {
       win.document.readyState = 'interactive'
       waiting.splice(0).forEach((fn) => fn({}))
+    }
+  }
+  if (visible) {
+    const watching = []
+    win.document = {
+      readyState: 'complete',
+      visibilityState: 'visible',
+      addEventListener: (type, fn) =>
+        type === 'visibilitychange' && watching.push(fn),
+    }
+    win.hide = () => {
+      win.document.visibilityState = 'hidden'
+      watching.forEach((fn) => fn({}))
     }
   }
   return win
@@ -401,6 +428,126 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     outer.fire('pagehide', { persisted: false })
     expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(1)
     expect(one.names().filter((n) => n === 'LMSFinish')).toHaveLength(1)
+  })
+
+  it('hands back the bookmark and state when the learner resumes, and nothing otherwise', () => {
+    const one = lms({
+      entry: 'resume',
+      location: 'topic-2/quiz',
+      state: 'v1|a1b0',
+    })
+    const win = load(frame({ API: one.api }))
+    expect(win.kissScorm.resumed).toEqual({
+      location: 'topic-2/quiz',
+      state: 'v1|a1b0',
+    })
+    for (const entry of ['ab-initio', '']) {
+      const other = lms({ entry, location: 'topic-2/quiz' })
+      expect(load(frame({ API: other.api })).kissScorm.resumed).toBeNull()
+    }
+    expect(load(frame()).kissScorm.resumed).toBeNull()
+  })
+
+  it('bookmarks and saves state, and asks the LMS to resume next time, once', () => {
+    const one = lms()
+    const win = load(frame({ API: one.api }))
+    expect(win.kissScorm.bookmark('topic-3/basics')).toBe(true)
+    expect(win.kissScorm.save('v1|q3=b')).toBe(true)
+    expect(win.kissScorm.bookmark('topic-4')).toBe(true)
+    expect(one.data.get('cmi.core.lesson_location')).toBe('topic-4')
+    expect(one.data.get('cmi.suspend_data')).toBe('v1|q3=b')
+    expect(one.sets().filter(([k]) => k === 'cmi.core.exit')).toEqual([
+      ['cmi.core.exit', 'suspend'],
+    ])
+  })
+
+  it('refuses, without writing, a bookmark or state SCORM 1.2 cannot hold: never truncated', () => {
+    const one = lms()
+    const win = load(frame({ API: one.api }))
+    const before = one.sets().length
+    expect(win.kissScorm.bookmark('x'.repeat(256))).toBe(false)
+    expect(win.kissScorm.save('x'.repeat(4097))).toBe(false)
+    expect(win.kissScorm.save('café')).toBe(false)
+    expect(win.kissScorm.save('line\nbreak')).toBe(false)
+    expect(one.sets().length).toBe(before)
+    expect(win.kissScorm.bookmark('x'.repeat(255))).toBe(true)
+    expect(win.kissScorm.save('x'.repeat(4096))).toBe(true)
+    expect(load(frame()).kissScorm.bookmark('topic-1')).toBe(false)
+  })
+
+  it('records nothing in review mode, and says why', () => {
+    const one = lms({ mode: 'review' })
+    const win = load(frame({ API: one.api }))
+    win.kissScorm.interaction({ id: 'q1', response: 0, result: true })
+    win.kissScorm.score(1)
+    win.kissScorm.status('passed')
+    win.kissScorm.bookmark('topic-1')
+    win.kissScorm.save('v1')
+    expect(one.sets()).toEqual([])
+    expect(win.kissScorm.mode).toBe('review')
+    expect(win.kissScorm.available).toBe(true)
+  })
+
+  it('does not complete a page on load in browse mode, but records answers', () => {
+    const one = lms({ mode: 'browse' })
+    const win = load(frame({ API: one.api }))
+    expect(one.data.get('cmi.core.lesson_status')).toBe('not attempted')
+    win.kissScorm.interaction({ id: 'q1', response: 0, result: true })
+    expect(one.data.get('cmi.interactions.0.id')).toBe('q1')
+  })
+
+  it('commits, without finishing, when the page is hidden', () => {
+    const one = lms()
+    const win = load(frame({ API: one.api, visible: true }))
+    win.hide()
+    expect(one.data.get('cmi.core.session_time')).toMatch(/^\d{2,4}:\d\d:\d\d$/)
+    expect(one.names().slice(-2)).toEqual(['LMSSetValue', 'LMSCommit'])
+    expect(one.names()).not.toContain('LMSFinish')
+  })
+
+  it('logs a failed call with its error, and never a value', () => {
+    const one = lms({ refuse: { 'cmi.core.score.raw': '405' } })
+    const win = load(frame({ API: one.api }))
+    win.kissScorm.bookmark('topic-secret')
+    win.kissScorm.save('v1|answer-secret')
+    win.kissScorm.score(0.5)
+    expect(win.kissScorm.log).toContainEqual(
+      expect.objectContaining({
+        call: 'LMSSetValue',
+        element: 'cmi.core.score.raw',
+        ok: false,
+        code: '405',
+        message: 'error 405',
+        diagnostic: 'diagnostic 405',
+      }),
+    )
+    const text = JSON.stringify(win.kissScorm.log)
+    for (const value of ['topic-secret', 'answer-secret', 'Doe', '50'])
+      expect(text).not.toContain(value)
+    expect(load(frame()).kissScorm.log).toContainEqual(
+      expect.objectContaining({ event: 'no LMS found' }),
+    )
+  })
+
+  it('finds an API eleven frames up', () => {
+    const one = lms()
+    let w = frame({ API: one.api })
+    for (let i = 0; i < 11; i++) w = frame({ parent: w })
+    expect(load(w).kissScorm.available).toBe(true)
+  })
+
+  it('an embedded page bookmarks, saves and reads the resume through its owner', () => {
+    const one = lms({ entry: 'resume', location: 'topic-1', state: 'v1' })
+    const outer = load(frame({ parent: frame({ API: one.api }) }))
+    const inner = load(frame({ parent: outer }))
+    expect(inner.kissScorm.resumed).toEqual({
+      location: 'topic-1',
+      state: 'v1',
+    })
+    expect(inner.kissScorm.bookmark('topic-2')).toBe(true)
+    expect(inner.kissScorm.save('v2')).toBe(true)
+    expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
+    expect(one.data.get('cmi.suspend_data')).toBe('v2')
   })
 
   it('is harmless included twice, and registers no unload or beforeunload', () => {

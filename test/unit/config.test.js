@@ -398,6 +398,16 @@ describe('resolveConfig', () => {
     ).toThrow(/config\.assets\.pipeline\[0\]\.cwd must be a string/)
   })
 
+  it('leaves the SCORM schema files out by default, and takes only true or false', () => {
+    expect(resolveConfig({ packages: {} }).packages.schemas).toBe(false)
+    expect(
+      resolveConfig({ packages: { schemas: true } }).packages.schemas,
+    ).toBe(true)
+    expect(() => resolveConfig({ packages: { schemas: 'yes' } })).toThrow(
+      /config\.packages\.schemas must be true or false/,
+    )
+  })
+
   it("takes a step's outputs as build-relative file paths, and refuses any other", () => {
     const step = { run: 'a', outputs: ['css/site.css', 'icons.svg'] }
     expect(
