@@ -719,6 +719,32 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
     })
 
+    // A script that runs between the embedded page's handover and its owner's
+    // (another DOMContentLoaded listener) reaches window.kissScorm: its calls
+    // must land after the ones queued before, not overtake them.
+    it('keeps calls in order when a script calls in between two handovers', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      inner.kissScorm.bookmark('earlier')
+      inner.kissScorm.score(0.2)
+      top.document.addEventListener('DOMContentLoaded', () => {
+        inner.kissScorm.bookmark('later')
+        inner.kissScorm.score(0.9)
+      })
+      load(middle)
+      middle.ready()
+      top.ready()
+      const writes = (key) =>
+        one
+          .sets()
+          .filter(([k]) => k === key)
+          .map(([, v]) => v)
+      expect(writes('cmi.core.lesson_location')).toEqual(['earlier', 'later'])
+      expect(writes('cmi.core.score.raw')).toEqual(['20', '90'])
+    })
+
     // Only a resumed field with something in it is protected.
     it('sends a queued bookmark or state when the resumed one is empty', () => {
       const one = lms({ entry: 'resume', location: '', state: 'v1' })
