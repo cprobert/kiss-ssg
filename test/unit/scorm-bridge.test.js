@@ -230,16 +230,37 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     }
   })
 
-  it('never downgrades passed or failed, and complete="manual" sets nothing on load', () => {
+  it('never downgrades passed or failed', () => {
     for (const from of ['passed', 'failed']) {
       const one = lms({ status: from })
       load(frame({ API: one.api }))
       expect(one.data.get('cmi.core.lesson_status')).toBe(from)
     }
+  })
+
+  it('with complete="manual", starts a new attempt as incomplete, so leaving early is not completion', () => {
+    // An LMS may set a status the SCO never set to completed when it finishes.
     const one = lms()
     load(frame({ API: one.api }), { manual: true })
-    expect(one.data.get('cmi.core.lesson_status')).toBe('not attempted')
-    expect(one.sets()).toEqual([])
+    expect(one.data.get('cmi.core.lesson_status')).toBe('incomplete')
+    // A status the learner already has is kept.
+    for (const from of [
+      'incomplete',
+      'completed',
+      'passed',
+      'failed',
+      'browsed',
+    ]) {
+      const other = lms({ status: from })
+      load(frame({ API: other.api }), { manual: true })
+      expect(other.data.get('cmi.core.lesson_status')).toBe(from)
+    }
+    // Not in review or browse mode.
+    for (const mode of ['review', 'browse']) {
+      const other = lms({ mode })
+      load(frame({ API: other.api }), { manual: true })
+      expect(other.data.get('cmi.core.lesson_status')).toBe('not attempted')
+    }
   })
 
   it('writes each interaction at cmi.interactions._count, a choice as a letter', () => {

@@ -214,6 +214,21 @@ describe('learning packages', () => {
     )
   })
 
+  it("lists a member page another member embeds on the embedding page's resource", async () => {
+    const files = {
+      ...FILES,
+      'src/pages/l2/tab-1.hbs':
+        '<html><body><iframe src="tab-2.html"></iframe></body></html>',
+    }
+    await build({}, { files })
+    const manifest = zipAt('packages/l2.imscp.zip')
+      .get('imsmanifest.xml')
+      .toString()
+    const [first] = manifest.split('<resource ').slice(1)
+    expect(first).toContain('<file href="tab-1.html"/>')
+    expect(first).toContain('<file href="tab-2.html"/>')
+  })
+
   it('puts the SCORM 1.2 schema files in a SCORM package when config.packages.schemas is on', async () => {
     await build({ packages: { format: ['imscp', 'scorm12'], schemas: true } })
     const scorm = zipAt('packages/l2.scorm12.zip')

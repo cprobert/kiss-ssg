@@ -135,6 +135,7 @@ describe('extractCssReferences', () => {
       .e { background: url(paren\).png) }
       .f { background: url("caf\e9.png") }
       .g { background: url("\31 23.png") }
+      .h { background: url(images/\31 23.png) }
       @import "theme\ light.css";`
     expect(extractCssReferences(css)).toEqual([
       'images/my image.png',
@@ -144,6 +145,7 @@ describe('extractCssReferences', () => {
       'paren).png',
       'café.png',
       '123.png',
+      'images/123.png',
       'theme light.css',
     ])
   })

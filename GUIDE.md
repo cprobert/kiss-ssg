@@ -936,7 +936,7 @@ The views, the navigation between them and any question are your page's own mark
 
 #### SCORM: `{{scormBridge}}` and `window.kissScorm`
 
-Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS, starts the session, and marks the page complete when it is seen; `{{scormBridge complete="manual"}}` leaves completion to the page. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
+Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS, starts the session, and marks the page complete when it is seen; `{{scormBridge complete="manual"}}` leaves completion to the page, and starts a new attempt as `incomplete`, because an LMS may record a status the page never set as completed when the session ends: a learner who leaves before the page calls `kissScorm.status('completed')` is not counted as done. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
 
 The page's own script records through `window.kissScorm`:
 
