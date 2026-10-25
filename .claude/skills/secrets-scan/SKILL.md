@@ -76,16 +76,17 @@ git diff --name-only "$BASE...HEAD" | grep -E '(lib/(model-resolver|controller-r
 
 Why each one:
 
-| Path                                                | The concern                                                                                                                 |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `lib/model-resolver.js`                             | Fetches models over `http(s)` and reads arbitrary JSON off disk — remote input reaching the render path                     |
-| `lib/controller-resolver.js`                        | Imports and executes a JS file resolved from page options — arbitrary code execution by path                                |
-| `lib/dev-server.js`                                 | Binds a port and serves the build directory                                                                                 |
-| `lib/watcher.js`                                    | Watches and re-reads files, and re-imports controllers on change                                                            |
-| `lib/assets.js`, `lib/kiss-page.js`, `lib/utils.js` | Compute output paths from user-supplied `slug` / `path` and write files there — the path-traversal surface (`sanitizePath`) |
-| `lib/page-registry.js`                              | Calls the model and controller resolvers for every registered page, and computes each page's output path from its options   |
-| `lib/staging.js`, `lib/asset-copy.js`               | Rename, copy and remove folders beside the build folder (`cleanBuild: 'atomic'`) and copy asset trees into it               |
-| `package.json`                                      | A new or bumped dependency, or a changed `files` whitelist that could publish something unintended                          |
+| Path                                                | The concern                                                                                                                                                       |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/model-resolver.js`                             | Fetches models over `http(s)` and reads arbitrary JSON off disk — remote input reaching the render path                                                           |
+| `lib/controller-resolver.js`                        | Imports and executes a JS file resolved from page options — arbitrary code execution by path                                                                      |
+| `lib/dev-server.js`                                 | Binds a port and serves the build directory                                                                                                                       |
+| `lib/watcher.js`                                    | Watches and re-reads files, and re-imports controllers on change                                                                                                  |
+| `lib/assets.js`, `lib/kiss-page.js`, `lib/utils.js` | Compute output paths from user-supplied `slug` / `path` and write files there — the path-traversal surface (`sanitizePath`)                                       |
+| `lib/page-registry.js`                              | Calls the model and controller resolvers for every registered page, and computes each page's output path from its options                                         |
+| `lib/staging.js`, `lib/asset-copy.js`               | Rename, copy and remove folders beside the build folder (`cleanBuild: 'atomic'`) and copy asset trees into it                                                     |
+| `lib/packages.js`, `lib/zip.js`                     | Resolve page references to files and read them, write zips with `.tmp`/`.bak` renames, and name the entries of an archive an LMS unpacks — traversal and zip-slip |
+| `package.json`                                      | A new or bumped dependency, or a changed `files` whitelist that could publish something unintended                                                                |
 
 **The table names files, so it cannot see a new one.** Code that reaches this surface can move into a module the table has never heard of — twice now: two new parsers of untrusted input (2026-10-01), then `lib/page-registry.js` and `lib/staging.js`, which took over the calls into the model and controller resolvers and the renames beside the build folder (2026-10-03). Neither matched, and the review happened only because Claude read past the grep. So also list every `lib/` module the branch **adds**, and every changed one that **imports** a module in the table:
 
