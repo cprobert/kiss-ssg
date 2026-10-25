@@ -3,8 +3,9 @@ import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
 
-// `config.markdownCopies`: every HTML page the build writes gets a `.md` copy
-// beside it, converted from the written HTML, and `llms.txt` links the copies.
+// `config.markdownCopies`: when the build calls `.llms()` (by default), every
+// HTML page it writes gets a `.md` copy beside it, converted from the written
+// HTML, and `llms.txt` links the copies. `build` below calls `.llms()`.
 
 let site
 let kiss
@@ -47,6 +48,49 @@ describe('markdownCopies', () => {
     ])
     // The copy's links are the page's own, and the page's were checked.
     expect(report.links.broken).toEqual([])
+    expect(await site.read('public/llms.txt')).toContain(
+      '[Index](https://e.com/index.md)',
+    )
+  })
+
+  // A copy nothing links to is a dead leg: by default they follow `.llms()`.
+  it('writes none when the build does not call .llms()', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': LAYOUT })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss.scan().generate()
+    await kiss.complete()
+
+    expect(await site.exists('public/index.html')).toBe(true)
+    expect(await site.exists('public/index.md')).toBe(false)
+    expect(kiss.report().pages[0].markdown).toBeNull()
+  })
+
+  it('writes them without .llms() under markdownCopies: true', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': LAYOUT })
+    kiss = new Kiss({
+      folders: site.folders,
+      logger: silentLogger,
+      markdownCopies: true,
+    })
+    kiss.scan().generate()
+    await kiss.complete()
+
+    expect(await site.read('public/index.md')).toBe(
+      '# Index\n\nSee [about](about.html).\n',
+    )
+  })
+
+  it('writes them when .llms() comes before .generate() in the chain', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': LAYOUT })
+    kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://e.com',
+      logger: silentLogger,
+    })
+    kiss.scan().llms({ title: 'T', summary: 'S' }).generate()
+    await kiss.complete()
+
+    expect(await site.exists('public/index.md')).toBe(true)
     expect(await site.read('public/llms.txt')).toContain(
       '[Index](https://e.com/index.md)',
     )

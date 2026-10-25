@@ -38,7 +38,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit` and more). GUIDE.md § Checking a build has the shape.
 - `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
 - Learning packages: a page with `package: '<slug>'` (and an `id`, which the LMS keeps learners' records by) is zipped with its fellow members as an IMS content package or SCORM 1.2 (`config.packages`: `format`, `dir`, `title`, `only`; `false` turns it off), carrying every file the pages need; what it cannot carry is listed in `report().packages[].outside`. `{{scormBridge}}` in `<head>` gives a page `window.kissScorm` to record answers in an LMS. One SCO per page (pages do not link to each other) or one SCO with many views (one page, its own navigation). GUIDE.md § Learning packages; `examples/13-course-packages`.
-- Markdown copies (`config.markdownCopies`, on by default): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
+- Markdown copies (`config.markdownCopies`, written when the build calls `.llms()`): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
 - `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Built-in helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `env`, `scormBridge`) are listed below. Partials are `.hbs`, `.md` (rendered, then compiled), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
@@ -63,7 +63,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   redirects: { format: null }, // 'netlify' | 'firebase' | 'vercel' | 'htaccess' | fn | an array
   audit: { check: true, ignore: [] },
-  markdownCopies: { write: true, selector: 'main' }, // false: no page.md copies
+  markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
   port: 3001,
   livereloadPort: 35729,

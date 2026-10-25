@@ -181,6 +181,9 @@ the Codex section in `AGENTS.md`.
 
 ### 0d. 2.7.5: a Markdown copy of every page
 
+From 2.9.0 the copies are written only when the build calls `.llms()` (§ 0g). Read this section
+for what a copy is; read § 0g for when one is written.
+
 Nothing fails. What changes is the build folder and `llms.txt`:
 
 - **Every HTML page now has a `.md` copy beside it** (`about.md`, `courses/index.md`), converted
@@ -240,6 +243,23 @@ packaged instead:
   the rename is still the honest fix: the key means something to kiss now.
 - After the rename, `kiss-ssg check` lists no `package:` lines, and the build folder has no
   `packages/` folder.
+
+### 0g. 2.9.0: Markdown copies only with `.llms()`
+
+Nothing fails. Since 2.7.5 every HTML page had a `.md` copy beside it. Now a copy is written only
+when the build script calls `.llms()`, whose `llms.txt` is the one thing that links them
+(`markdownCopies.write` defaults to `'llms'`).
+
+- **A site that calls `.llms()`** sees no change.
+- **A site that does not** stops publishing the `.md` files. They were linked from nowhere, so
+  nothing should break. Grep the site for a hand-written link to a `.md` page before you assume
+  that; if it has one, or wants the copies for another reason, set `markdownCopies: true`, which now
+  means always.
+- `markdownCopies: false` still means never, even with `.llms()`.
+- `kiss-ssg check` against a record made before the upgrade shows each page's `markdown` going from
+  a path to `null`. Re-record the knowledge base (`npx kiss-ssg aikb router.js`) once it builds.
+- A host or deploy step that uploads the build folder may keep the old `.md` files on the server;
+  remove them there if it does not delete files the build no longer writes.
 
 ### 1. Check the floor, then read the recipes
 

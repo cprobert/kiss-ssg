@@ -657,6 +657,14 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: '2.9.0: Markdown copies are written only when the build calls .llms() (markdownCopies.write defaults to "llms"); from 2.7.5 every page had one, and a doc saying every page gets one tells an agent to expect a .md that a build without .llms() never writes',
+    patterns: [
+      /Every HTML page gets a Markdown copy/,
+      /it is on by default, so an agent reading your site/,
+      /`config\.markdownCopies`, on by default/,
+    ],
+  },
+  {
     why: '2026-10-21 pilot: "a forward Tab … never hid one" was measured under a top header only; under a bottom call bar a forward Tab is exactly the direction that hides controls, and the sentence read as a general pass',
     patterns: [
       /forward Tab brings each link in from the bottom of the screen and never hid one/,

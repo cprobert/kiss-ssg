@@ -34,10 +34,13 @@ export class KissPage {
     links: string[] | null;
     /** @type {import('./audit.js').PageFacts|null} */
     audit: import("./audit.js").PageFacts | null;
-    /** @type {{ selector: string }|null} */
+    /** @type {{ selector: string, withLlms?: boolean }|null} */
     markdownCopy: {
         selector: string;
+        withLlms?: boolean;
     } | null;
+    /** @type {() => boolean} */
+    llmsRequested: () => boolean;
     /** @type {string|null} */
     markdown: string | null;
     set buildDir(value: string);

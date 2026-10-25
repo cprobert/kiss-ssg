@@ -54,10 +54,7 @@ describe("cleanBuild: 'atomic'", () => {
     await kiss.complete()
 
     expect(duringBuild).toEqual(['gone.html', 'published.html'])
-    expect(fs.readdirSync(site.build).sort()).toEqual([
-      'index.html',
-      'index.md',
-    ])
+    expect(fs.readdirSync(site.build).sort()).toEqual(['index.html'])
     expect(await site.read('public/index.html')).toContain('new')
     expect(staging(site.root)).toEqual([])
   })
@@ -242,10 +239,7 @@ describe("cleanBuild: 'atomic'", () => {
     kiss.scan().generate()
     await kiss.complete()
 
-    expect(fs.readdirSync(site.build).sort()).toEqual([
-      'index.html',
-      'index.md',
-    ])
+    expect(fs.readdirSync(site.build).sort()).toEqual(['index.html'])
     expect(staging(site.root)).toEqual([])
   })
 
@@ -443,10 +437,7 @@ describe("cleanBuild: 'atomic'", () => {
     expect(await site.read('public/published.html')).toBe('old')
     kiss.scan().generate()
     await kiss.complete()
-    expect(fs.readdirSync(site.build).sort()).toEqual([
-      'index.html',
-      'index.md',
-    ])
+    expect(fs.readdirSync(site.build).sort()).toEqual(['index.html'])
   })
 })
 

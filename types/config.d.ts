@@ -7,8 +7,8 @@ export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
  * @param {*} markdownCopies the `markdownCopies` key as supplied, or an
  * already-resolved block; `undefined` when absent
  * @returns {KissMarkdownCopies}
- * @throws if it is neither a boolean nor a plain object, if `write` is not a
- * boolean, or if `selector` is not a non-empty string
+ * @throws if it is neither a boolean nor a plain object, if `write` is not
+ * `true`, `false` or `'llms'`, or if `selector` is not a non-empty string
  */
 export function resolveMarkdownCopies(markdownCopies: any): KissMarkdownCopies;
 /**
@@ -116,7 +116,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * `config` overrides it for that page.
  *
  * @typedef {Object} KissMarkdownCopies
- * @property {boolean} write write the copies at all
+ * @property {boolean | 'llms'} write `'llms'` (the default) writes them when the build calls `.llms()`; `true` always; `false` never
  * @property {string} selector the CSS selector for the element converted; `<body>` when it matches nothing
  */
 /**
@@ -233,7 +233,8 @@ export const DEFAULT_AUDIT: Readonly<{
     ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
-    write: true;
+    /** @type {boolean | 'llms'} */
+    write: boolean | "llms";
     selector: "main";
 }>;
 export const DEFAULT_REDIRECTS: Readonly<{
@@ -285,7 +286,8 @@ export const DEFAULT_CONFIG: Readonly<{
         ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
     }>;
     markdownCopies: Readonly<{
-        write: true;
+        /** @type {boolean | 'llms'} */
+        write: boolean | "llms";
         selector: "main";
     }>;
     packages: Readonly<{
@@ -465,9 +467,9 @@ export type KissAudit = {
  */
 export type KissMarkdownCopies = {
     /**
-     * write the copies at all
+     * `'llms'` (the default) writes them when the build calls `.llms()`; `true` always; `false` never
      */
-    write: boolean;
+    write: boolean | "llms";
     /**
      * the CSS selector for the element converted; `<body>` when it matches nothing
      */

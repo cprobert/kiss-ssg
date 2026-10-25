@@ -495,16 +495,20 @@ describe('resolveConfig', () => {
 })
 
 describe('markdownCopies', () => {
-  it('is on by default, converting <main>', () => {
-    expect(DEFAULT_MARKDOWN_COPIES).toEqual({ write: true, selector: 'main' })
+  it("follows .llms() by default ('llms'), converting <main>", () => {
+    expect(DEFAULT_MARKDOWN_COPIES).toEqual({
+      write: 'llms',
+      selector: 'main',
+    })
     expect(Object.isFrozen(DEFAULT_MARKDOWN_COPIES)).toBe(true)
     expect(resolveConfig({}).markdownCopies).toEqual({
-      write: true,
+      write: 'llms',
       selector: 'main',
     })
   })
 
-  it('reads false as off and true as the defaults, like audit', () => {
+  // `true` is a statement: copies whether or not the build calls .llms().
+  it('reads false as never and true as always', () => {
     expect(resolveConfig({ markdownCopies: false }).markdownCopies).toEqual({
       write: false,
       selector: 'main',
@@ -518,10 +522,13 @@ describe('markdownCopies', () => {
   it('merges an object one level deep', () => {
     expect(
       resolveConfig({ markdownCopies: { selector: 'article' } }).markdownCopies,
-    ).toEqual({ write: true, selector: 'article' })
+    ).toEqual({ write: 'llms', selector: 'article' })
     expect(
       resolveConfig({ markdownCopies: { write: undefined } }).markdownCopies,
-    ).toEqual({ write: true, selector: 'main' })
+    ).toEqual({ write: 'llms', selector: 'main' })
+    expect(
+      resolveConfig({ markdownCopies: { write: 'llms' } }).markdownCopies,
+    ).toEqual({ write: 'llms', selector: 'main' })
   })
 
   it('refuses anything else, naming the value', () => {
@@ -533,7 +540,7 @@ describe('markdownCopies', () => {
       /config\.markdownCopies\.selector must be a non-empty string/,
     )
     expect(() => resolveConfig({ markdownCopies: { write: 'yes' } })).toThrow(
-      /config\.markdownCopies\.write must be a boolean/,
+      /config\.markdownCopies\.write must be true, false or 'llms'/,
     )
   })
 

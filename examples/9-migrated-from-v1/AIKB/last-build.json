@@ -10,7 +10,7 @@
       "hash": "5d25482d10ec84f91a60556d477b4cf9bafea341",
       "id": "index",
       "canonical": null,
-      "markdown": "./public/index.md"
+      "markdown": null
     },
     {
       "view": "await-complete.hbs",
@@ -19,7 +19,7 @@
       "hash": "298fc62fa13f33c6b8a09de02ee1e3bd9dd074b2",
       "id": "await-complete",
       "canonical": null,
-      "markdown": "./public/await-complete.md"
+      "markdown": null
     },
     {
       "view": "folders.hbs",
@@ -28,7 +28,7 @@
       "hash": "1166e3525b992412da7af91ad739dfb1d8e6aa82",
       "id": "folders",
       "canonical": null,
-      "markdown": "./public/folders.md"
+      "markdown": null
     },
     {
       "view": "handlebars-instance.hbs",
@@ -37,7 +37,7 @@
       "hash": "d02eec4143070655e963e8acc8e4e0a3b5b9daf5",
       "id": "handlebars-instance",
       "canonical": null,
-      "markdown": "./public/handlebars-instance.md"
+      "markdown": null
     },
     {
       "view": "dynamic-partials.hbs",
@@ -46,7 +46,7 @@
       "hash": "408553872f2a714533d0e44b8ce95ce65d3d8c4b",
       "id": "dynamic-partials",
       "canonical": null,
-      "markdown": "./public/dynamic-partials.md"
+      "markdown": null
     },
     {
       "view": "duplicate-paths.hbs",
@@ -55,7 +55,7 @@
       "hash": "458bcbe08f8be402e67b77cad2a422f1d96813c2",
       "id": "duplicate-paths",
       "canonical": null,
-      "markdown": "./public/duplicate-paths.md"
+      "markdown": null
     },
     {
       "view": "pure-controllers.hbs",
@@ -64,7 +64,7 @@
       "hash": "54c3707f0202dc248069658e14c22a9ec588e1d4",
       "id": "pure-controllers",
       "canonical": null,
-      "markdown": "./public/pure-controllers.md"
+      "markdown": null
     },
     {
       "view": "smaller-changes.hbs",
@@ -73,7 +73,7 @@
       "hash": "bc2bca6445e7f44b8a24cd03175ced431f9f2014",
       "id": "smaller-changes",
       "canonical": null,
-      "markdown": "./public/smaller-changes.md"
+      "markdown": null
     },
     {
       "view": "404.hbs",
@@ -82,7 +82,7 @@
       "hash": "d38ff43758801fbf29b5140915ee6b5ae6a713cb",
       "id": "404",
       "canonical": null,
-      "markdown": "./public/404.md"
+      "markdown": null
     },
     {
       "view": "shelf/item.hbs",
@@ -91,7 +91,7 @@
       "hash": "0f71af1de77b81c4a8ee5970a3fe851da5f7068f",
       "id": "shelf/item/arch-blend",
       "canonical": null,
-      "markdown": "./public/shelf/arch-blend.md"
+      "markdown": null
     },
     {
       "view": "shelf/item.hbs",
@@ -100,7 +100,7 @@
       "hash": "fd6bfbe75c6b7ebee0eb476398286c43747f2035",
       "id": "shelf/item/oak-cascara",
       "canonical": null,
-      "markdown": "./public/shelf/oak-cascara.md"
+      "markdown": null
     },
     {
       "view": "shelf/item.hbs",
@@ -109,7 +109,7 @@
       "hash": "089570211171d8639a20c5887fbbb23c37b6cf81",
       "id": "shelf/item/guji-uraga",
       "canonical": null,
-      "markdown": "./public/shelf/guji-uraga.md"
+      "markdown": null
     }
   ],
   "failures": [],
