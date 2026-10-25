@@ -181,7 +181,7 @@ the Codex section in `AGENTS.md`.
 
 ### 0d. 2.7.5: a Markdown copy of every page
 
-From 2.9.0 the copies are written only when the build calls `.llms()` (§ 0g). Read this section
+From 2.8.0 the copies are written only when the build calls `.llms()` (§ 0g). Read this section
 for what a copy is; read § 0g for when one is written.
 
 Nothing fails. What changes is the build folder and `llms.txt`:
@@ -225,7 +225,7 @@ As with the first audit release, the upgrade is done when the site builds the wa
 the findings as their own piece of work with the `kiss-site-review` skill, whose usability pass
 now covers them.
 
-### 0f. 2.9.0: `package` is a page option
+### 0f. 2.8.0: `package` is a page option
 
 A page's `package` option now puts it in a learning package (an IMS content package or SCORM 1.2
 zip). Packaging is on by default. A site that never sets `package` gets no zips and no change. A
@@ -244,7 +244,7 @@ packaged instead:
 - After the rename, `kiss-ssg check` lists no `package:` lines, and the build folder has no
   `packages/` folder.
 
-### 0g. 2.9.0: Markdown copies only with `.llms()`
+### 0g. 2.8.0: Markdown copies only with `.llms()`
 
 Nothing fails. Since 2.7.5 every HTML page had a `.md` copy beside it. Now a copy is written only
 when the build script calls `.llms()`, whose `llms.txt` is the one thing that links them

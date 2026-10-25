@@ -781,7 +781,7 @@ describe('kiss.report()', () => {
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
         id: 'index',
         canonical: null,
-        // No `.llms()` in this build, so no copy (2.9.0).
+        // No `.llms()` in this build, so no copy (2.8.0).
         markdown: null,
       },
     ])

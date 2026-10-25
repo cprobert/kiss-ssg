@@ -657,7 +657,7 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
-    why: '2.9.0: Markdown copies are written only when the build calls .llms() (markdownCopies.write defaults to "llms"); from 2.7.5 every page had one, and a doc saying every page gets one tells an agent to expect a .md that a build without .llms() never writes',
+    why: '2.8.0: Markdown copies are written only when the build calls .llms() (markdownCopies.write defaults to "llms"); from 2.7.5 every page had one, and a doc saying every page gets one tells an agent to expect a .md that a build without .llms() never writes',
     patterns: [
       /Every HTML page gets a Markdown copy/,
       /it is on by default, so an agent reading your site/,
