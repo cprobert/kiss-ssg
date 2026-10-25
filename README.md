@@ -61,7 +61,7 @@ _Whoever opens the site in two years can follow what the agent wrote._
 - **[Views, models, controllers](GUIDE.md#the-build-script) →** One Handlebars view per page, the site's facts in JSON or fetched models, and a small controller only where a page needs logic. No bundler, no build step, nothing hidden.
 - **[Conventions, not questions](GUIDE.md#usage) →** Folders, routes, helpers and asset names all have defaults, so an agent has fewer choices to get wrong. Every default is a config key, never a fork.
 - **[A file's name says what happens to it](GUIDE.md#usage) →** `.hbs` is a template, `.md` is rendered Markdown, `.html` is HTML, and all three are compiled; `.txt` is the one kiss leaves alone.
-- **[Markdown copies for agents](GUIDE.md#markdown-copies-for-agents) →** Every page gets a `.md` beside it, converted from its `<main>`, and `llms.txt` links them, so the next agent reads the site rather than parsing it.
+- **[Markdown copies for agents](GUIDE.md#markdown-copies-for-agents) →** A build that calls `.llms()` gives every page a `.md` beside it, converted from its `<main>`, and `llms.txt` links them, so the next agent reads the site rather than parsing it.
 - **[Learning packages for an LMS](GUIDE.md#learning-packages) →** A page that names a `package` is zipped as an IMS content package or SCORM 1.2 for Moodle or any LMS, with every file it needs and nothing it does not. `{{scormBridge}}` lets a page record answers and completion, and does nothing off the LMS.
 - **[Sass, assets and cache busting](GUIDE.md#assets) →** Styles compile from `src/assets`, an asset is keyed by the name a template asks for, and a content hash or version string is one config key away.
 
