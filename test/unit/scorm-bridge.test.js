@@ -983,6 +983,37 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(second.kissScorm.available).toBe(true)
     })
 
+    // The owner of a shared session navigates away and finishes it: the
+    // sibling page left behind decides again on its next call, and a page
+    // that arrives after uses it.
+    it('lets a sibling page carry on when the page that owned the session leaves', () => {
+      const one = lms()
+      const wrapper = frame({ parent: frame({ API: one.api }) })
+      const owner = load(frame({ parent: wrapper }))
+      const sibling = load(frame({ parent: wrapper }))
+      sibling.kissScorm.score(0.2)
+      owner.fire('pagehide', { persisted: false })
+      sibling.kissScorm.score(0.9)
+      expect(one.data.get('cmi.core.score.raw')).toBe('90')
+      expect(sibling.kissScorm.available).toBe(true)
+      const later = load(frame({ parent: wrapper }))
+      later.kissScorm.score(0.5)
+      expect(one.data.get('cmi.core.score.raw')).toBe('50')
+      expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(2)
+    })
+
+    // Pages that reach the API through `opener` share its session too.
+    it('starts one session for pages that reach the API through opener', () => {
+      const one = lms()
+      const host = frame({ API: one.api })
+      const first = load(frame({ opener: host }))
+      const second = load(frame({ opener: host }))
+      second.kissScorm.score(0.7)
+      expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(1)
+      expect(one.data.get('cmi.core.score.raw')).toBe('70')
+      expect(first.kissScorm.available).toBe(true)
+    })
+
     it('runs no ready callback of an embedded page that has left', () => {
       const one = lms()
       const top = frame({ parent: frame({ API: one.api }), loading: true })
