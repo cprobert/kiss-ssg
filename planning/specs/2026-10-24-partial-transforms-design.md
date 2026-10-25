@@ -50,7 +50,9 @@ after hbs: Parse error on line 1
 
 `{{title}}` survives; any helper or partial call with a quoted argument does
 not, and a Markdown link whose URL is a `{{ }}` expression is not parsed as a
-link. Nothing in `GUIDE.md` or `AIKB/partials.md` warns about it. The shipped
+link. Since 2026-10-25 `GUIDE.md` (beside the list of partial types) and
+`llms.txt` name it as a trap, with the `.hbs` + `{{#markdown}}` workaround;
+single-quoted arguments survive, `{{>` never does. The shipped
 `.md` partials (`examples/*/src/partials/newsletter.md`,
 `examples/9-migrated-from-v1/src/partials/sourcing-note.md`) are plain prose,
 which is why nothing has tripped on it.

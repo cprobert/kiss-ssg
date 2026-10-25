@@ -116,6 +116,8 @@ The default config options are:
 
 Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compiled as templates, or `.txt`, which is shown as text and never compiled. See `.registerPartials()` under **Other methods**.
 
+**Because a `.md` partial is Markdown before it is a template, Markdown escapes `"` and `>` before Handlebars reads them.** A double-quoted argument (`{{link "courses/intro"}}`) or any partial call (`{{> "nav"}}`, `{{> nav}}`) fails the build with a parse error. `{{title}}` and single-quoted arguments (`{{link 'courses/intro'}}`) survive, but a Markdown link whose URL is an expression (`[the course]({{link 'courses/intro'}})`) is left as literal text, not a link. When a `.md` partial needs helpers or partials, make it a `.hbs` partial and wrap the prose in `{{#markdown}}…{{/markdown}}`.
+
 | Option | Default | Purpose |
 | --- | --- | --- |
 | dev | false | Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk. |
