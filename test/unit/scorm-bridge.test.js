@@ -115,11 +115,26 @@ function lms({
 // With `visible`, it has a document whose visibility `hide()` changes.
 function frame({ parent, API, opener, loading = false, visible = false } = {}) {
   const listeners = {}
+  // The window's own timers, on a clock only `advance(ms)` moves.
+  const timers = new Map()
+  let now = 0
+  let next = 1
   const win = {
     addEventListener: (type, fn) => (listeners[type] ??= []).push(fn),
     fire: (type, event = {}) =>
       (listeners[type] ?? []).forEach((fn) => fn(event)),
     listeners,
+    setTimeout: (fn, ms) => {
+      timers.set(next, { fn, at: now + ms })
+      return next++
+    },
+    clearTimeout: (id) => timers.delete(id),
+    pending: () => timers.size,
+    advance: (ms) => {
+      now += ms
+      for (const [id, t] of [...timers].sort((a, b) => a[1].at - b[1].at))
+        if (t.at <= now && timers.delete(id)) t.fn()
+    },
   }
   win.parent = parent ?? win
   if (API) win.API = API
@@ -592,6 +607,77 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.sets().filter(([k]) => k === 'cmi.core.exit')).toEqual([
       ['cmi.core.exit', 'suspend'],
     ])
+  })
+
+  // A real LMS commits with synchronous XHR, which a browser may block while
+  // the page is dismissed: the learner's place is committed soon after it is
+  // written, not left to the exit.
+  describe('the checkpoint after a bookmark or state', () => {
+    const commits = (one) => one.names().filter((n) => n === 'LMSCommit')
+
+    it('commits a bookmark a moment later, once', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      const before = commits(one).length
+      win.kissScorm.bookmark('topic-2')
+      expect(commits(one)).toHaveLength(before)
+      win.advance(3000)
+      expect(commits(one)).toHaveLength(before + 1)
+      win.advance(10_000)
+      expect(commits(one)).toHaveLength(before + 1)
+    })
+
+    it('commits a burst of bookmarks once', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      const before = commits(one).length
+      win.kissScorm.bookmark('topic-2')
+      win.advance(500)
+      win.kissScorm.bookmark('topic-3')
+      win.advance(3000)
+      expect(commits(one)).toHaveLength(before + 1)
+      expect(one.data.get('cmi.core.lesson_location')).toBe('topic-3')
+    })
+
+    it('commits saved state on its own as well', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      const before = commits(one).length
+      win.kissScorm.save('v1|q1=a')
+      win.advance(3000)
+      expect(commits(one)).toHaveLength(before + 1)
+    })
+
+    it('is cancelled by any other commit, which carried the bookmark already', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      expect(win.pending()).toBe(1)
+      win.kissScorm.score(0.5)
+      expect(win.pending()).toBe(0)
+      const before = commits(one).length
+      win.advance(3000)
+      expect(commits(one)).toHaveLength(before)
+    })
+
+    it('commits nothing once the session has finished', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      win.fire('pagehide', { persisted: false })
+      expect(win.pending()).toBe(0)
+      const after = one.calls.length
+      win.advance(3000)
+      expect(one.calls.length).toBe(after)
+    })
+
+    it('schedules nothing in review mode', () => {
+      const one = lms({ mode: 'review' })
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      win.kissScorm.save('v1')
+      expect(win.pending()).toBe(0)
+    })
   })
 
   it('keeps a resumed learner resumable when this session saves nothing new', () => {
