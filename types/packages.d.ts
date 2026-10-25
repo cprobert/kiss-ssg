@@ -1,6 +1,9 @@
 /**
  * The references in a stylesheet: each `@import` and each `url()`, in
- * document order, once each.
+ * document order, once each. A comment (`/* … *\/`) is not read, so a
+ * reference in one is neither packed nor reported. A `url(` inside a quoted
+ * string (`content: "url(x)"`) is still read: rare, and harmless, since it
+ * packs a file the build wrote or reports one it did not.
  *
  * @param {string} css
  * @returns {string[]}

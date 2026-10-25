@@ -163,6 +163,8 @@ process.stdout.write(createHash('sha1').update(b).digest('hex'))`
       'a/../b.html',
       'a//b.html',
       'dir/',
+      'C:/outside.txt',
+      'c:outside.txt',
     ])
       expect(() => zip([{ name, bytes: 'x' }]), name).toThrow(/name/)
     expect(() =>

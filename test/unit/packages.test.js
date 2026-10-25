@@ -125,6 +125,13 @@ describe('extractCssReferences', () => {
     ])
   })
 
+  it('skips a reference inside a CSS comment', () => {
+    const css = `/* url(unused.png) and @import "old.css"; */ .a { background: url(used.png) }
+      /* a comment
+         over lines: url(gone.png) */ @import "kept.css";`
+    expect(extractCssReferences(css)).toEqual(['used.png', 'kept.css'])
+  })
+
   it('decodes CSS escapes, as a browser reads the value', () => {
     // String.raw: each backslash below is one backslash in the stylesheet.
     const css = String.raw`

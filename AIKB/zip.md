@@ -14,7 +14,7 @@ The module is pure: it takes entries and returns a `Buffer`. It reads no files, 
   - Entries are written in the **byte order of their UTF-8 names**, whatever order they were given in.
   - Every entry has the same fixed fields: method 0 (stored), DOS date `0x0021` (1980-01-01) and time 0, general-purpose flags bit 11 alone (UTF-8 names), version needed 10, "version made by" 20 with host 0 (MS-DOS) in the high byte, internal and external attributes 0, no extra field, no comment, no data descriptor. The archive has no comment.
   - There are **no directory entries**: a reader makes the folders a file's path names.
-  - It **throws** for a name that is not a relative file path (empty, absolute, a backslash, an empty, `.` or `..` segment, or a trailing `/`), for a name given twice, and for an archive that would need Zip64 (more than 65,535 entries, or a size or offset of 4 GiB or more). A learning package is far below every limit.
+  - It **throws** for a name that is not a relative file path (empty, absolute, a drive such as `C:`, a backslash, an empty, `.` or `..` segment, or a trailing `/`), for a name given twice, and for an archive that would need Zip64 (more than 65,535 entries, or a size or offset of 4 GiB or more). A learning package is far below every limit.
 - The `ZipEntry` typedef.
 
 ## Depends on
