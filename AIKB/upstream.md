@@ -329,6 +329,36 @@ Get-NetTCPConnection -LocalPort <port> -State Listen
 A listener after the script exits means it still orphans. Stop that `node`
 yourself, and revisit the handoff line if it no longer happens.
 
+### Moodle's SCORM 1.2 API forgets a commit that failed in transit
+
+**Observed:** Moodle 5.0 (`MOODLE_500_STABLE`,
+`mod/scorm/datamodels/scorm_12.js`), read in source on 2026-10-25 after a Codex
+adversarial review reproduced it. **Effect:** `LMSCommit` and `LMSFinish` send
+only the elements whose value differs from a per-element baseline
+(`datamodel[scoid][element].defaultvalue`). `CollectData` moves that baseline to
+the current value _while it builds the request_, before `StoreData`'s
+`DoRequest` sends it, and nothing rolls it back when the request fails. So
+after a commit lost in transit (`'false'`, error 101), the next commit sends
+nothing for those values, the server accepts the empty request, and it
+returns `'true'`: a learner's bookmark or state the bridge wrote and committed
+is not on the server, and every later commit says all is well. Writing the same
+value again does not help: `LMSSetValue` keeps no changed flag, and the
+comparison is made against the moved baseline. **What kiss does:** nothing
+Moodle-specific (the operator's decision, 2026-10-25). The bridge's retry of a
+failed commit (`AIKB/scorm-bridge.md`) is kept: it is right for an LMS that
+sends its whole buffer, and costs one empty request on Moodle. The commit soon
+after each bookmark or state still stands: it is what keeps a place from
+depending on the request a browser may block at dismissal, which is a
+different failure. The workaround weighed and not built: after a failed commit,
+set each unsaved value to a placeholder, commit, set it back and commit again,
+so Moodle sees a change; two requests a retry, a wrong value briefly persisted,
+and a mechanism to keep in step with every Moodle release. **Re-check:** in
+`CollectData`, see whether `defaultvalue` is still assigned before
+`DoRequest` runs, and whether `StoreData` restores it when the request
+returns `false`; or, in a Moodle course, block the `datamodel.php` request once
+(the browser's request blocking), bookmark, let the commit fail, unblock, and
+see whether the next commit's request carries `cmi.core.lesson_location`.
+
 ## Supported alternatives not used
 
 ### Codex project skills in `.agents/skills/`

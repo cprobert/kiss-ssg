@@ -39,6 +39,7 @@ function lms({
     ['cmi.core.lesson_mode', mode],
     ['cmi.core.student_name', 'Doe, Jane'],
   ])
+  const refuseOnce = new Map()
   const durable = new Map(data)
   const persist = () => {
     durable.clear()
@@ -82,6 +83,11 @@ function lms({
       if (key.startsWith('cmi.interactions') && !interactions)
         return fail('401')
       if (refuse[key]) return fail(refuse[key])
+      if (refuseOnce.has(key)) {
+        const code = refuseOnce.get(key)
+        refuseOnce.delete(key)
+        return fail(code)
+      }
       data.set(key, value)
       const n = key.match(/^cmi\.interactions\.(\d+)\.id$/)?.[1]
       if (n !== undefined)
@@ -118,6 +124,7 @@ function lms({
     sets: () =>
       calls.filter((c) => c[0] === 'LMSSetValue').map((c) => [c[1], c[2]]),
     durable,
+    refuseNext: (key, code) => refuseOnce.set(key, code),
     failCommits: (n) => {
       commitFails += n
     },
@@ -739,6 +746,23 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
       expect(one.durable.get('cmi.suspend_data')).toBe('v1|q1=a')
       expect(one.durable.get('cmi.core.exit')).toBe('suspend')
+    })
+
+    // A value the restarted session refused is still unsaved, however well
+    // the commit after it goes: it is written again and committed later.
+    it('keeps a value the restarted session refused, and writes it again', () => {
+      const one = lms({ resets: true })
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      win.kissScorm.save('v1|q1=a')
+      one.refuseNext('cmi.core.lesson_location', '101')
+      one.end()
+      win.advance(3000)
+      expect(one.durable.get('cmi.suspend_data')).toBe('v1|q1=a')
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('')
+      win.advance(3000)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
+      expect(win.pending()).toBe(0)
     })
 
     it('leaves no retry behind when the last commit before finishing failed', () => {
