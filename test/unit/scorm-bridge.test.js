@@ -685,7 +685,10 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       outer.ready()
       expect(seen).toEqual([{ location: 'topic-2', state: 'v1' }])
       expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
-      expect(await promised).toBe(inner.kissScorm)
+      // The page's own placeholder, which forwards to the decided bridge.
+      const handed = await promised
+      expect(handed.available).toBe(true)
+      expect(handed.resumed).toEqual({ location: 'topic-2', state: 'v1' })
     })
 
     // A bookmark or state queued before the bridge knew the learner was
@@ -852,6 +855,44 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(seen).toBe(true)
       expect(one.data.get('cmi.core.score.raw')).toBe('70')
       expect(one.data.get('cmi.suspend_data')).toBe('')
+    })
+
+    // What a ready() callback writes is written now, so after every call
+    // queued before it, whoever queued that.
+    it('orders a ready callback’s writes after the calls queued before them', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      load(middle)
+      middle.kissScorm.ready((s) => s.score(0.9))
+      inner.kissScorm.score(0.2)
+      middle.ready()
+      top.ready()
+      const scores = one
+        .sets()
+        .filter(([k]) => k === 'cmi.core.score.raw')
+        .map(([, v]) => v)
+      expect(scores).toEqual(['20', '90'])
+    })
+
+    // A callback has read `resumed`: what it keeps is informed, not blind.
+    it('sends what a ready callback keeps over what was resumed', () => {
+      const one = lms({ entry: 'resume', location: 'old', state: 'v1' })
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      load(middle)
+      let kept = null
+      inner.kissScorm.ready((s) => {
+        kept = s.bookmark('new')
+        s.save('v2')
+      })
+      middle.ready()
+      top.ready()
+      expect(kept).toBe(true)
+      expect(one.data.get('cmi.core.lesson_location')).toBe('new')
+      expect(one.data.get('cmi.suspend_data')).toBe('v2')
     })
 
     // Only a resumed field with something in it is protected.
