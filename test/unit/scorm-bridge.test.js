@@ -752,6 +752,49 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(writes('cmi.core.score.raw')).toEqual(['20', '90'])
     })
 
+    // Two pages of one SCO, each queueing while a page above loads: their
+    // writes share one session, so they replay in the order they were made,
+    // whichever page hands over first.
+    it('replays writes queued by two pages of one session in the order they were made', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      inner.kissScorm.bookmark('earlier-child')
+      inner.kissScorm.save('older-answers')
+      inner.kissScorm.score(0.2)
+      load(middle)
+      middle.kissScorm.bookmark('later-owner')
+      middle.kissScorm.save('newer-answers')
+      middle.kissScorm.score(0.9)
+      middle.ready()
+      top.ready()
+      expect(one.data.get('cmi.core.lesson_location')).toBe('later-owner')
+      expect(one.data.get('cmi.suspend_data')).toBe('newer-answers')
+      expect(one.data.get('cmi.core.score.raw')).toBe('90')
+    })
+
+    // The queue outlives a page (it is kept on the window above): a page that
+    // leaves before its bridge decides takes its calls with it, and holds up
+    // no other page's.
+    it('drops the calls of a page that left before its bridge decided, and replays the rest', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      inner.kissScorm.bookmark('from-a-page-that-left')
+      load(middle)
+      middle.kissScorm.bookmark('owner')
+      inner.fire('pagehide', { persisted: false })
+      middle.ready()
+      top.ready()
+      const locations = one
+        .sets()
+        .filter(([k]) => k === 'cmi.core.lesson_location')
+        .map(([, v]) => v)
+      expect(locations).toEqual(['owner'])
+    })
+
     // Only a resumed field with something in it is protected.
     it('sends a queued bookmark or state when the resumed one is empty', () => {
       const one = lms({ entry: 'resume', location: '', state: 'v1' })
