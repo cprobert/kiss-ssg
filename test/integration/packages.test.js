@@ -374,6 +374,30 @@ describe('learning packages', () => {
     ).toBe(true)
   })
 
+  it('packs a file a page links to for download, and lists it on the page', async () => {
+    await build(
+      {},
+      {
+        files: {
+          ...FILES,
+          'src/pages/l1/tab-2.hbs':
+            '<html><body><a href="../../docs/handout.pdf">handout</a></body></html>',
+          'src/assets/docs/handout.pdf': 'pdf',
+        },
+      },
+    )
+    expect(names(zipAt('packages/l1.imscp.zip'))).toContain('docs/handout.pdf')
+    const l1 = kiss.report().packages.find((p) => p.id === 'l1')
+    expect(l1.outside.map((o) => o.href)).not.toContain(
+      '../../docs/handout.pdf',
+    )
+    const manifest = zipAt('packages/l1.imscp.zip')
+      .get('imsmanifest.xml')
+      .toString()
+    const res = manifest.split('<resource ').slice(1)
+    expect(res[1]).toContain('<file href="docs/handout.pdf"/>')
+  })
+
   it('reports a link between member pages in a SCORM package only, and still packs both', async () => {
     await build({ packages: { format: ['imscp', 'scorm12'] } })
     const l1 = (format) =>
