@@ -310,3 +310,39 @@ A Codex adversarial review of amendment (3), reading `lib/`, found three gaps (v
 4. The public docs, `examples/13-course-packages` with both shapes, CHANGELOG with the upgrade note on `package`.
 5. The packages diff in `kiss-ssg check` (amendment (1)).
 6. The clean-room run, then a roadmap spec, `planning/specs/2026-10-24-learning-resources-roadmap.md`, without LTI: H5P, cmi5 and xAPI, SCORM 2004, and a SCO of several pages (one session across page loads).
+
+## Amendment (4) — 2026-10-25: after a review against SCORM 1.2 best practice
+
+The operator supplied a report on building a static-site generator for SCORM 1.2: its packaging contract, the run-time API, its gotchas and a testing plan. Read against it, the packaging held: a single-SCO default (the consumer's "one SCO, many views" lesson), deterministic zips with the manifest at the root, stable identifiers, every `href` resolved, `"true"` compared as a string, `LMSFinish` once, `pagehide` and no `unload`, score 0–100, no mastery score by default. The gaps were in the bridge's run-time behaviour, plus four smaller packaging items. The operator's separate kiss branch has closed, so all are taken on here. This amendment overrides the sections above where they differ.
+
+### The bridge
+
+1. **Bookmark and resume.** At launch the owning bridge reads `cmi.core.entry`, `cmi.core.lesson_location` and `cmi.suspend_data`. `window.kissScorm` gains:
+   - `resumed`: `{ location, state }` when the LMS says the learner is resuming (`entry === 'resume'`), else `null`;
+   - `bookmark(location)`: writes `cmi.core.lesson_location`; a string of at most 255 characters, refused (returns `false`) otherwise;
+   - `save(state)`: writes `cmi.suspend_data`; printable ASCII of at most 4,096 bytes, refused otherwise. **Never truncated**: a cut value is corrupt state.
+   - The first successful `bookmark` or `save` also sets `cmi.core.exit` to `suspend`, so the LMS hands both back on the next launch. Neither commits on its own; the checkpoints below do.
+2. **Review and browse modes.** The bridge reads `cmi.core.lesson_mode`. In `review` it records nothing (every call is a no-op, `available` stays true, `mode` says why). In `review` and `browse` it does not mark the page complete on load.
+3. **A checkpoint when the page is hidden.** On `visibilitychange` to `hidden` (a phone switching apps, a tab sent to the background): `session_time`, then `LMSCommit`, and no `LMSFinish`. `pagehide` stays as it is.
+4. **Diagnostics without personal data.** `kissScorm.log` holds the bridge's last 50 events: each LMS call with its element and result, and on a failure the error code with `LMSGetErrorString` and `LMSGetDiagnostic`, read at once; and the bridge's own decisions (no LMS found, review mode, turned off). **No value is ever logged**: no learner name or id, no answer, no bookmark, no state.
+5. **Discovery** walks up to 20 frames, as the report's reference does (was 10). A wait for an API that appears after launch is not added: in the LMSs in view the API is there before the SCO loads, and a wait would delay every page off an LMS. Revisit if an LMS shows otherwise.
+6. **Kept, against the report's advice:** one `LMSInitialize` retry after error 301 (amendment (2), for a page the back/forward cache restored with its session ended). It is one retry for one error, never a retry loop, and `LMSFinish` is still never retried.
+
+### The packages
+
+7. **Every resource lists every file it needs.** A file several member pages need was listed only on the resource of the member that reached it first; a strict LMS or conformance checker may expect each SCO's resource to name all its files. Each member's closure is now walked on its own.
+8. **A reference in the wrong case is a finding.** kiss's output registry ignores case on Windows (and the disk does on macOS), so `img/App.png` for a file written as `img/app.png` resolved and was packed, though an LMS server, case-sensitive, would not serve it. The writer compares the reference with the written file's exact name and reports a mismatch (`a reference in the wrong case`) rather than packing it.
+9. **The package's size.** Each package in the report gains `bytes`, and the build log and `formatReport` show it, for LMS upload limits.
+10. **Schema files (operator's choice).** `config.packages.schemas`: the SCORM 1.2 and IMS CP `.xsd` files in each package, with `xsi:schemaLocation` in the manifest, for an LMS or checker that wants them. The files come from ADL and IMS; the default and their source are decided when they are fetched, with the operator.
+
+### Acceptance checks (added)
+
+- [ ] Resume: a stub LMS with `entry = 'resume'` gives `resumed` its location and state; with `ab-initio` or empty, `null`. `bookmark` and `save` write, set `exit = 'suspend'` once, and refuse (without writing) a location over 255 characters, state over 4,096 bytes, and non-ASCII state.
+- [ ] Review mode records nothing and does not complete; browse mode does not complete on load but records answers.
+- [ ] `visibilitychange` to hidden commits with a session time and does not finish.
+- [ ] A failed call logs its element, code, error string and diagnostic; no logged event carries a value written or read.
+- [ ] An API eleven frames up is found.
+- [ ] Two member pages that share a stylesheet both list it on their resources.
+- [ ] A reference in the wrong case is reported and not packed (on a case-insensitive file system; elsewhere it is reported as not written).
+- [ ] `report().packages[].bytes` is the zip's length; the log and summary show the size.
+- [ ] Each change in rendered and minified form, where it is the bridge's; the docs (GUIDE, AIKB, llms.txt) follow.
