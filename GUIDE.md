@@ -936,7 +936,7 @@ The views, the navigation between them and any question are your page's own mark
 
 #### SCORM: `{{scormBridge}}` and `window.kissScorm`
 
-Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS, starts the session, and marks the page complete when it is seen; `{{scormBridge complete="manual"}}` leaves completion to the page, and starts a new attempt as `incomplete`, because an LMS may record a status the page never set as completed when the session ends: a learner who leaves before the page calls `kissScorm.status('completed')` is not counted as done. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
+Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS, starts the session, and marks the page complete when it is seen; `{{scormBridge complete="manual"}}` leaves completion to the page, and starts a new attempt as `incomplete`, because an LMS may record a status the page never set as completed when the session ends: a learner who leaves before the page calls `kissScorm.status('completed')` is not counted as done. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button; the time the page spends there is not counted as session time. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
 
 The page's own script records through `window.kissScorm`:
 
@@ -952,6 +952,8 @@ kissScorm.status('completed') // or 'passed', 'failed', 'incomplete', 'browsed'
 kissScorm.available // true while a session with an LMS is open
 ```
 
+**A question with more than one right option.** `correct: [0, 2]` means the learner must pick _all_ of them, in any order: SCORM 1.2 records it as the set `{a,c}`. Where any one of several answers is right, list the alternatives: `correct: { anyOf: [1, 3] }` records `b` and `d` as two correct patterns, and an alternative can itself be a set (`{ anyOf: [1, [0, 2]] }`). The learner's own `response: [2, 0]` is what they picked, as `c,a`.
+
 **Bookmark and resume.** A learner who leaves can come back where they were. `kissScorm.bookmark(place)` records where the learner is (at most 255 characters, such as the view's address); `kissScorm.save(state)` records what the page needs to rebuild their progress (printable ASCII, at most 4,096 bytes: SCORM 1.2's one `suspend_data` field). The first of either also tells the LMS to resume the learner next time, and a resumed learner stays resumable even when they leave without saving again. On that next launch, `kissScorm.resumed` is `{ location, state }`; on a first launch, or off an LMS, it is `null`. A value too long, or state that is not printable ASCII, is refused (`false`), never cut short: half a state is a corrupt one. Keep state small: what cannot be rebuilt from the page (which questions were answered, how), not titles or text the page already has.
 
 ```js
@@ -963,7 +965,7 @@ addEventListener('hashchange', () => kissScorm.bookmark(location.hash.slice(1)))
 
 **Modes.** `kissScorm.mode` is the LMS's launch mode: `'normal'`, `'browse'` (a preview: the page is not marked complete when seen) or `'review'` (a learner looking back at a finished attempt: nothing is recorded, though `available` is true), and `null` off an LMS. The bridge also commits, without finishing, whenever the page is hidden (a phone switching apps, a tab sent to the background), so a learner who never comes back still has their answers saved.
 
-**When tracking does not work.** `kissScorm.log` holds the bridge's last 50 events: each call to the LMS with its element and whether it worked, and for a failure the LMS's own error code, message and diagnostic; and the bridge's decisions (no LMS found, review mode, turned off). It never holds a value: no learner name, answer, bookmark or state. Read it from the browser's console in the LMS (`kissScorm.log`).
+**When tracking does not work.** `kissScorm.log` holds the bridge's last 50 events: each call to the LMS with its element and whether it worked, and for a failure the LMS's own error code, message and diagnostic; and the bridge's decisions (no LMS found, review mode, turned off). An LMS that refuses one call (a commit, say) fails that call alone, and the next checkpoint tries again; the bridge turns off only when the LMS has ended the session and will not start it again. It never holds a value: no learner name, answer, bookmark or state. Read it from the browser's console in the LMS (`kissScorm.log`).
 
 None of it throws, and a value is cleaned to what SCORM 1.2 accepts (an interaction id to a valid identifier). An embedded kiss page in an iframe uses the session of the page that embeds it. How a score counts, if at all, is the LMS's setting, not the package's: in Moodle, for example, the grading method, and whether every SCO must be completed, are settings of the SCORM activity.
 

@@ -12,8 +12,9 @@ import { silentLogger } from '../../lib/logger.js'
 // initialised, 101 on a second LMSInitialize, 401 where interactions are not
 // supported), and records every call. `end()` ends the session underneath the
 // page; with `reinit: false` it then refuses to start another. `entry`,
-// `location`, `state` and `mode` are what it launches the SCO with, and
-// `refuse` maps an element to the error code a write to it raises.
+// `location`, `state` and `mode` are what it launches the SCO with,
+// `refuse` maps an element to the error code a write to it raises, and the
+// first `commitFails` commits fail with 101, the session still open.
 function lms({
   status = 'not attempted',
   interactions = true,
@@ -23,6 +24,7 @@ function lms({
   state = '',
   mode = 'normal',
   refuse = {},
+  commitFails = 0,
 } = {}) {
   const data = new Map([
     ['cmi.core.lesson_status', status],
@@ -83,6 +85,10 @@ function lms({
     LMSCommit() {
       calls.push(['LMSCommit'])
       if (!initialised) return fail('301')
+      if (commitFails > 0) {
+        commitFails--
+        return fail('101')
+      }
       return ok()
     },
     LMSGetLastError: () => last,
@@ -176,9 +182,17 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       ).code
   })
 
-  // Runs the bridge in its own context with `win` as its window, as a page's script runs.
-  const load = (win, { manual = false } = {}) => {
-    vm.runInNewContext(source(manual), { window: win })
+  // Runs the bridge in its own context with `win` as its window, as a page's
+  // script runs. With `clock`, its `Date.now()` is `clock.now`, set by the test.
+  const load = (win, { manual = false, clock } = {}) => {
+    const context = { window: win }
+    if (clock)
+      context.Date = class extends Date {
+        static now() {
+          return clock.now
+        }
+      }
+    vm.runInNewContext(source(manual), context)
     return win
   }
 
@@ -300,6 +314,41 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.names().slice(-1)).toEqual(['LMSCommit'])
   })
 
+  // SCORM 1.2's choice pattern: `{a,b}` is a set, every choice in it required,
+  // in any order; each alternative correct answer is its own correct_responses.n.
+  it('writes a multi-select key as a set, and alternatives as separate patterns', () => {
+    const one = lms()
+    const win = load(frame({ API: one.api }))
+    win.kissScorm.interaction({ id: 'all', response: [1, 0], correct: [0, 1] })
+    win.kissScorm.interaction({
+      id: 'either',
+      response: 'c',
+      correct: { anyOf: [2, [0, 3]] },
+    })
+    const d = one.data
+    expect(d.get('cmi.interactions.0.student_response')).toBe('b,a')
+    expect(d.get('cmi.interactions.0.correct_responses.0.pattern')).toBe(
+      '{a,b}',
+    )
+    expect(d.get('cmi.interactions.1.correct_responses.0.pattern')).toBe('c')
+    expect(d.get('cmi.interactions.1.correct_responses.1.pattern')).toBe(
+      '{a,d}',
+    )
+    expect(d.get('cmi.interactions.1.correct_responses.2.pattern')).toBe(
+      undefined,
+    )
+  })
+
+  // Only 401, not implemented, means the LMS has no interactions.
+  it('records later answers after the LMS refuses one field of an answer', () => {
+    const one = lms({ refuse: { 'cmi.interactions.0.result': '405' } })
+    const win = load(frame({ API: one.api }))
+    win.kissScorm.interaction({ id: 'q1', response: 0, result: true })
+    win.kissScorm.interaction({ id: 'q2', response: 1, result: true })
+    expect(one.data.get('cmi.interactions.0.time')).toMatch(/^\d\d:/)
+    expect(one.data.get('cmi.interactions.1.result')).toBe('correct')
+  })
+
   it('cleans an interaction id to a CMIIdentifier, and two long ids stay distinct', () => {
     const one = lms()
     const win = load(frame({ API: one.api }))
@@ -382,6 +431,38 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     win.kissScorm.interaction({ id: 'q1', response: 0, result: true })
     expect(one.names()).not.toContain('LMSFinish')
     expect(one.data.get('cmi.interactions.0.result')).toBe('correct')
+  })
+
+  // A paused page is not a learner learning: an hour in the cache is not an
+  // hour of session time.
+  it('counts no time the page spent in the back/forward cache', () => {
+    const one = lms()
+    const clock = { now: 0 }
+    const win = load(frame({ API: one.api }), { clock })
+    clock.now = 10_000
+    win.fire('pagehide', { persisted: true })
+    clock.now += 3_600_000
+    win.fire('pageshow', { persisted: true })
+    clock.now += 10_000
+    win.fire('pagehide', { persisted: false })
+    expect(one.data.get('cmi.core.session_time')).toBe('00:00:20')
+  })
+
+  // An error that leaves the session open fails that one call. Turning the
+  // bridge off for it lost every later score, status and the finish.
+  it('keeps tracking after a commit the LMS refuses once, and still finishes', () => {
+    const one = lms({ commitFails: 1 })
+    const win = load(frame({ API: one.api }), { manual: true })
+    expect(win.kissScorm.available).toBe(true)
+    win.kissScorm.score(0.9)
+    win.kissScorm.status('passed')
+    win.fire('pagehide', { persisted: false })
+    expect(one.data.get('cmi.core.score.raw')).toBe('90')
+    expect(one.data.get('cmi.core.lesson_status')).toBe('passed')
+    expect(one.names().slice(-1)).toEqual(['LMSFinish'])
+    expect(win.kissScorm.log).toContainEqual(
+      expect.objectContaining({ call: 'LMSCommit', ok: false, code: '101' }),
+    )
   })
 
   it('starts a session the LMS ended again, once, and retries the write', () => {
@@ -606,7 +687,8 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(1)
     win.fire('pagehide', { persisted: false })
     expect(one.names().filter((n) => n === 'LMSFinish')).toHaveLength(1)
-    expect(Object.keys(win.listeners).sort()).toEqual(['pagehide'])
+    expect(Object.keys(win.listeners).sort()).toEqual(['pagehide', 'pageshow'])
+    expect(win.listeners.pageshow).toHaveLength(1)
   })
 })
 
