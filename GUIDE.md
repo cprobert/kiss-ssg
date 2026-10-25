@@ -1453,7 +1453,7 @@ A missing or non-string `is` logs an error and renders neither branch. `markdown
 {{! the page calls kissScorm.status('completed') itself }}
 ```
 
-In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. A `complete` other than `"seen"` or `"manual"` logs an error and renders nothing.
+In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. A `complete` other than `"seen"` or `"manual"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
 
 Kiss exposes the handlebars object so you can register your own helpers, e.g.
 

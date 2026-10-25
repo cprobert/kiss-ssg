@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import vm from 'node:vm'
 
 // This suite only ever runs against this repo's own examples/ — a consuming
 // project never gets this test file (it is under test/, outside package.json's
@@ -496,6 +497,21 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(milk.match(/adlcp:scormtype="sco"/g)).toHaveLength(1)
       expect(milk).toContain('kissScorm.interaction(')
       expect(milk).toMatch(/kissScorm\.status\(["']completed["']\)/)
+      // The page's scripts are whole: the bridge once in <head>, the page's own
+      // once, and each compiles. A helper call written inside a JavaScript
+      // comment is still expanded by Handlebars, and its `</script>` cut the
+      // page's script in two (found by a Codex review).
+      const page = readFileSync(
+        path.join(outputDir('13-course-packages'), 'milk/index.html'),
+        'utf8',
+      )
+      const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
+        (m) => m[1],
+      )
+      expect(scripts).toHaveLength(2)
+      expect(page.match(/if\(\w+\.kissScorm\)return/g)).toHaveLength(1)
+      for (const code of scripts)
+        expect(() => new vm.Script(code)).not.toThrow()
     }, 60000)
 
     it('11 · gives every page an id, explicitly where the default withdraws', () => {

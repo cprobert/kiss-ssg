@@ -51,6 +51,23 @@ describe('extractReferences', () => {
     expect(anchors).toEqual(['tab-2.html', 'map.html'])
   })
 
+  it('reads a srcset as a browser does: a URL runs to whitespace, commas and all', () => {
+    const needs = (srcset) =>
+      extractReferences(`<img srcset="${srcset}">`).needs
+    expect(needs('images/crop,large.png 2x, b.png 1x')).toEqual([
+      'images/crop,large.png',
+      'b.png',
+    ])
+    expect(needs('data:image/png;base64,AAAA 1x, c.png 2x')).toEqual([
+      'data:image/png;base64,AAAA',
+      'c.png',
+    ])
+    // No descriptor, a URL ending in a comma, extra spaces and commas.
+    expect(needs('a.png,b.png 2x')).toEqual(['a.png,b.png'])
+    expect(needs('a.png, b.png')).toEqual(['a.png', 'b.png'])
+    expect(needs(' ,a.png 100w,,  b.png 200w, ')).toEqual(['a.png', 'b.png'])
+  })
+
   it('reads each reference once, in document order', () => {
     expect(
       extractReferences(

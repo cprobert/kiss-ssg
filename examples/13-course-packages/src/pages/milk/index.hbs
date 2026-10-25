@@ -47,7 +47,7 @@
   })()
 
   // The question: say whether the choice is right, then record it. In an LMS,
-  // window.kissScorm (from {{scormBridge}}) sends the answer as an interaction,
+  // window.kissScorm (from the scormBridge helper in the layout) sends the answer as an interaction,
   // the score as a fraction, and the lesson's completion; on the web it does nothing.
   ;(function () {
     var question = document.querySelector('.question')
