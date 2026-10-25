@@ -244,6 +244,9 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     const context = { window: win }
     if (clock)
       context.Date = class extends Date {
+        constructor(...args) {
+          super(...(args.length ? args : [clock.now]))
+        }
         static now() {
           return clock.now
         }
@@ -581,6 +584,20 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(at(1, 'correct_responses.0.pattern')).toBe('{a,c}')
   })
 
+  // The time an answer was given survives every queue and every hop: the
+  // placeholder's, and the forward from an embedded page to its owner.
+  it('records an embedded answer at the time it was given, not when its parent loaded', () => {
+    const one = lms()
+    const clock = { now: new Date(2026, 0, 1, 1, 0, 0).getTime() }
+    const outer = frame({ parent: frame({ API: one.api }), loading: true })
+    const inner = load(frame({ parent: outer }), { clock })
+    inner.kissScorm.interaction({ id: 'a', response: 0 })
+    clock.now = new Date(2026, 0, 1, 2, 0, 0).getTime()
+    load(outer, { clock })
+    outer.ready()
+    expect(one.data.get('cmi.interactions.0.time')).toBe('01:00:00')
+  })
+
   it('waits for a parent still loading, so the parent owns the session whichever bridge runs first', () => {
     const one = lms()
     const outer = frame({ parent: frame({ API: one.api }), loading: true })
@@ -885,6 +902,52 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(one.durable.get('cmi.interactions.0.id')).toBe('q')
       expect(one.durable.get('cmi.interactions.0.result')).toBe('correct')
       expect(win.pending()).toBe(0)
+    })
+
+    // A bookmark without suspend is a place the LMS will not offer back.
+    it('writes the suspend again when the LMS refuses it once', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      one.refuseNext('cmi.core.exit', '101')
+      expect(win.kissScorm.bookmark('topic-2')).toBe(true)
+      win.advance(3000)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
+      expect(one.durable.get('cmi.core.exit')).toBe('suspend')
+    })
+
+    it('writes the suspend of a resumed learner again when the LMS refuses it at the start', () => {
+      const one = lms({ entry: 'resume', location: 'topic-2' })
+      one.refuseNext('cmi.core.exit', '101')
+      const win = load(frame({ API: one.api }))
+      win.fire('pagehide', { persisted: false })
+      expect(one.durable.get('cmi.core.exit')).toBe('suspend')
+    })
+
+    // Every write the page cannot see refused is the bridge's to keep: a
+    // completion, a status, a score.
+    it('writes a completion, a status and a score again when the LMS refuses them once', () => {
+      const one = lms()
+      one.refuseNext('cmi.core.lesson_status', '101')
+      const win = load(frame({ API: one.api }))
+      expect(one.durable.get('cmi.core.lesson_status')).toBe('completed')
+      one.refuseNext('cmi.core.score.raw', '101')
+      win.kissScorm.score(0.5)
+      expect(one.durable.get('cmi.core.score.raw')).toBe('50')
+      one.refuseNext('cmi.core.lesson_status', '101')
+      win.kissScorm.status('passed')
+      expect(one.durable.get('cmi.core.lesson_status')).toBe('passed')
+    })
+
+    // A bookmark or state the LMS refuses is the page's to know: `false`,
+    // and never written behind its back.
+    it('does not write a refused bookmark later: the page was told it failed', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      one.refuseNext('cmi.core.lesson_location', '101')
+      expect(win.kissScorm.bookmark('topic-2')).toBe(false)
+      win.kissScorm.score(0.5)
+      win.advance(3000)
+      expect(one.data.get('cmi.core.lesson_location')).toBe('')
     })
 
     it('leaves no retry behind when the last commit before finishing failed', () => {
