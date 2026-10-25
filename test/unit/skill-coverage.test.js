@@ -23,6 +23,13 @@ const COVERAGE = [
     pattern: /`package`[\s\S]*`id`[\s\S]*scormBridge/,
     skills: [skill('kiss-ssg', 'kiss-page-add')],
   },
+  // 2.8.0: under an LMS page still loading, `resumed` is null until the
+  // bridge decides, so a page that restores a place does it in ready().
+  {
+    feature: 'a page that restores a place waits on kissScorm.ready()',
+    pattern: /`resumed`[\s\S]*kissScorm\.ready\(/,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
+  },
   // 2.7.5: every HTML page gets a Markdown copy converted from its <main>, so
   // a layout without one ships its chrome into every copy and nothing reports
   // it. The skills that write or inherit a layout have to say so.

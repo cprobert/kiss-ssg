@@ -957,11 +957,15 @@ kissScorm.available // true while a session with an LMS is open
 
 **Bookmark and resume.** A learner who leaves can come back where they were. `kissScorm.bookmark(place)` records where the learner is (at most 255 characters, such as the view's address); `kissScorm.save(state)` records what the page needs to rebuild their progress (printable ASCII, at most 4,096 bytes: SCORM 1.2's one `suspend_data` field). The first of either also tells the LMS to resume the learner next time, and a resumed learner stays resumable even when they leave without saving again. On that next launch, `kissScorm.resumed` is `{ location, state }`; on a first launch, or off an LMS, it is `null`. A value too long, or state that is not printable ASCII, is refused (`false`), never cut short: half a state is a corrupt one. Both are committed to the LMS a couple of seconds after they are written (a burst of them once), not left to the moment the learner leaves, when a browser may block the LMS's last request. A commit the LMS refuses is tried again a few times, and if the LMS ends the session underneath the page, the bridge starts it again and writes back everything not yet committed. One case it cannot recover: in Moodle, a commit whose request fails in transit is forgotten, because Moodle's next commit sends only what has changed since the failed one (`AIKB/upstream.md` in the package has the detail). The learner's next bookmark or save sends their new place. Keep state small: what cannot be rebuilt from the page (which questions were answered, how), not titles or text the page already has.
 
+**Wait for the bridge before you read `resumed` or keep a place.** When the LMS opens the page inside a page of its own that is still loading, the bridge waits for that page before it decides, and until then `resumed` is `null`. `kissScorm.ready(fn)` calls `fn(kissScorm)` once the bridge has decided: at once, usually, and also with no LMS (`available` is then `false`), so one code path serves the web and the LMS. It also returns a promise of the same object (`await kissScorm.ready()`). A bookmark or state a page sends before then, while the learner turns out to be resuming, is dropped rather than overwriting the place they left.
+
 ```js
-const back = kissScorm.resumed
-if (back && back.location && !location.hash)
-  location.replace(`#${back.location}`)
-addEventListener('hashchange', () => kissScorm.bookmark(location.hash.slice(1)))
+kissScorm.ready((scorm) => {
+  const back = scorm.resumed
+  if (back && back.location && !location.hash)
+    location.replace(`#${back.location}`)
+  addEventListener('hashchange', () => scorm.bookmark(location.hash.slice(1)))
+})
 ```
 
 **Modes.** `kissScorm.mode` is the LMS's launch mode: `'normal'`, `'browse'` (a preview: the page is not marked complete when seen) or `'review'` (a learner looking back at a finished attempt: nothing is recorded, though `available` is true), and `null` off an LMS. The bridge also commits, without finishing, whenever the page is hidden (a phone switching apps, a tab sent to the background), so a learner who never comes back still has their answers saved.

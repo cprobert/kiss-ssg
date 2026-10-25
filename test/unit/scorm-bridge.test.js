@@ -642,6 +642,84 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.data.get('cmi.core.score.raw')).toBe('50')
   })
 
+  // `ready(fn)`: one code path for a page, whichever way its bridge decides.
+  describe('ready()', () => {
+    it('calls back at once on a live bridge, and with no LMS, and resolves a promise', async () => {
+      const one = lms({ entry: 'resume', location: 'topic-2' })
+      const win = load(frame({ API: one.api }))
+      const seen = []
+      const promised = win.kissScorm.ready((s) =>
+        seen.push([s.available, s.resumed?.location]),
+      )
+      expect(seen).toEqual([[true, 'topic-2']])
+      expect(await promised).toBe(win.kissScorm)
+      const offline = load(frame())
+      const off = []
+      offline.kissScorm.ready((s) => off.push([s.available, s.resumed]))
+      expect(off).toEqual([[false, null]])
+    })
+
+    // The case it exists for: a parent still loading, so the page's bridge
+    // waits, and `resumed` is null until it decides.
+    it('waits for a still-loading parent, then hands the page what it resumes', async () => {
+      const one = lms({ entry: 'resume', location: 'topic-2', state: 'v1' })
+      const outer = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: outer }))
+      const seen = []
+      const promised = inner.kissScorm.ready((s) => {
+        seen.push(s.resumed)
+        s.bookmark(s.resumed.location)
+      })
+      expect(inner.kissScorm.resumed).toBeNull()
+      expect(seen).toEqual([])
+      expect(one.sets().map(([k]) => k)).not.toContain(
+        'cmi.core.lesson_location',
+      )
+      outer.ready()
+      expect(seen).toEqual([{ location: 'topic-2', state: 'v1' }])
+      expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
+      expect(await promised).toBe(inner.kissScorm)
+    })
+
+    // A bookmark or state queued before the bridge knew the learner was
+    // resuming was written blind: it must not overwrite what they left.
+    it('drops a bookmark and state queued before a resume was known, and keeps the rest', () => {
+      const one = lms({ entry: 'resume', location: 'topic-2', state: 'v1' })
+      const outer = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: outer }))
+      inner.kissScorm.bookmark('')
+      inner.kissScorm.save('v0')
+      inner.kissScorm.score(0.5)
+      outer.ready()
+      expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
+      expect(one.data.get('cmi.suspend_data')).toBe('v1')
+      expect(one.data.get('cmi.core.score.raw')).toBe('50')
+      expect(inner.kissScorm.log).toContainEqual(
+        expect.objectContaining({ event: expect.stringMatching(/dropped/) }),
+      )
+    })
+
+    it('sends a queued bookmark when the learner is not resuming', () => {
+      const one = lms()
+      const outer = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: outer }))
+      inner.kissScorm.bookmark('topic-1')
+      outer.ready()
+      expect(one.data.get('cmi.core.lesson_location')).toBe('topic-1')
+    })
+
+    it("on an embedded page, calls back with the page's own kissScorm", async () => {
+      const one = lms()
+      const outer = load(frame({ parent: frame({ API: one.api }) }))
+      const inner = load(frame({ parent: outer }))
+      let got = null
+      const promised = inner.kissScorm.ready((s) => (got = s))
+      expect(got).toBe(inner.kissScorm)
+      expect(got.available).toBe(true)
+      expect(await promised).toBe(inner.kissScorm)
+    })
+  })
+
   it('an embedded kiss page uses the session of the page that embeds it', () => {
     const one = lms()
     const outer = load(frame({ parent: frame({ API: one.api }) }))
