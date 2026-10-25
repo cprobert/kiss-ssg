@@ -135,6 +135,23 @@ describe('config.assets.pipeline outputs', () => {
     expect(failures()).not.toMatch(/declared output not written/)
   })
 
+  it('keeps the outputs of two unnamed steps apart, though both are named after `node`', async () => {
+    const files = {
+      'src/pages/one.hbs': `<html><head><link rel="stylesheet" href="../{{asset 'css/a.css'}}"><link rel="stylesheet" href="../{{asset 'css/b.css'}}"></head><body></body></html>`,
+    }
+    await build(
+      [
+        { run: writeIntoBuild('css/a.css', 'a{}'), outputs: ['css/a.css'] },
+        { run: writeIntoBuild('css/b.css', 'b{}'), outputs: ['css/b.css'] },
+      ],
+      { files },
+    )
+    expect(kiss.report().ok).toBe(true)
+    const html = await site.read('public/course/one.html')
+    expect(html).toContain('href="../css/a.css"')
+    expect(html).toContain('href="../css/b.css"')
+  })
+
   it('reports a collision when the asset copy writes a declared output too', async () => {
     const files = { 'src/assets/css/site.css': 'copied{}' }
     await build(
