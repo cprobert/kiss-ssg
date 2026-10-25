@@ -9,6 +9,19 @@
  */
 export function decodeEntities(value: string): string;
 /**
+ * The URLs of a `srcset`, read as the HTML standard's algorithm reads them:
+ * skip whitespace and commas, take the URL up to the next whitespace (commas
+ * inside it are part of it: `images/crop,large.png`, a `data:` URL), and if it
+ * ends in commas they end the candidate; otherwise skip its descriptors up to
+ * the next comma outside brackets. The one reading: the broken-link check and
+ * `lib/packages.js` both take it from here, so a page is never packed by one
+ * reading and checked by another.
+ *
+ * @param {string} srcset
+ * @returns {string[]}
+ */
+export function srcsetUrls(srcset: string): string[];
+/**
  * Every reference the rendered HTML asks a browser to fetch, as written.
  *
  * @param {string} html one page's output, exactly as it was written to disk

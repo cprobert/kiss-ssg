@@ -22,7 +22,7 @@ It knows nothing about `Kiss`: `build-finish.js` hands it the projected stack an
 
 ## Depends on
 
-`fs-extra`, `htmlparser2` (`Parser`, the same streaming parser `html-split.js` uses), `node:crypto` (the hash), `./package-manifest.js` and `./zip.js`.
+`fs-extra`, `htmlparser2` (`Parser`, the same streaming parser `html-split.js` uses), `node:crypto` (the hash), `./links.js` (`srcsetUrls`, the one reading of a `srcset`), `./package-manifest.js` and `./zip.js`.
 
 ## Depended on by
 
