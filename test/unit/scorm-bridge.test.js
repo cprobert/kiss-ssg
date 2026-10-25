@@ -934,6 +934,41 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(waited.kissScorm.save('stale')).toBe(false)
     })
 
+    // Two SCOs, each with its own LMS API, under one same-origin shell: the
+    // queue belongs to a SCO's session, so one SCO still waiting holds up
+    // nothing of the other's.
+    it('keeps the queue to one SCO, so an independent SCO is not held up', () => {
+      const shell = frame()
+      const lmsA = lms()
+      const lmsB = lms()
+      const apiA = frame({ parent: shell, API: lmsA.api })
+      const scoA = frame({ parent: apiA, loading: true })
+      const childA = load(frame({ parent: scoA }))
+      childA.kissScorm.score(0.3)
+      const apiB = frame({ parent: shell, API: lmsB.api })
+      const scoB = load(frame({ parent: apiB }))
+      let seen = false
+      scoB.kissScorm.ready(() => (seen = true))
+      scoB.kissScorm.score(0.6)
+      expect(seen).toBe(true)
+      expect(lmsB.data.get('cmi.core.score.raw')).toBe('60')
+      expect(lmsA.data.get('cmi.core.score.raw')).toBe(undefined)
+    })
+
+    it('runs no ready callback of an embedded page that has left', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const owner = load(frame({ parent: top }))
+      const inner = load(frame({ parent: owner }))
+      const calls = []
+      inner.kissScorm.ready(() => calls.push('before'))
+      inner.fire('pagehide', { persisted: false })
+      expect(inner.kissScorm.ready(() => calls.push('after'))).toBe(undefined)
+      top.ready()
+      expect(calls).toEqual([])
+      expect(owner.kissScorm.available).toBe(true)
+    })
+
     // Only a resumed field with something in it is protected.
     it('sends a queued bookmark or state when the resumed one is empty', () => {
       const one = lms({ entry: 'resume', location: '', state: 'v1' })
