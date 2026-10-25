@@ -795,6 +795,65 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(locations).toEqual(['owner'])
     })
 
+    // The page above loads first, so the owner decides while the embedded
+    // page's older call still waits: the owner's newer call must wait too.
+    it('keeps the order when the owner decides before the page it embeds', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      inner.kissScorm.score(0.2)
+      load(middle)
+      top.ready()
+      middle.kissScorm.score(0.9)
+      middle.ready()
+      const scores = one
+        .sets()
+        .filter(([k]) => k === 'cmi.core.score.raw')
+        .map(([, v]) => v)
+      expect(scores).toEqual(['20', '90'])
+    })
+
+    it('finishes every waiting page when one page’s ready callback throws', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const owner = frame({ parent: top, loading: true })
+      const first = load(frame({ parent: owner }))
+      const second = load(frame({ parent: owner }))
+      first.kissScorm.ready(() => {
+        throw new Error('page bug')
+      })
+      second.kissScorm.score(0.5)
+      let seen = false
+      second.kissScorm.ready(() => (seen = true))
+      load(owner)
+      owner.ready()
+      expect(() => top.ready()).toThrow('page bug')
+      expect(seen).toBe(true)
+      expect(second.kissScorm.available).toBe(true)
+      expect(one.data.get('cmi.core.score.raw')).toBe('50')
+    })
+
+    // A page's own pagehide listener, after the bridge's, may still call it.
+    it('takes no call from a page that has left, so the next launch is not held up', () => {
+      const one = lms()
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const gone = load(frame({ parent: top }))
+      gone.addEventListener('pagehide', () => {
+        expect(gone.kissScorm.save('late')).toBe(false)
+        gone.kissScorm.score(0.1)
+      })
+      gone.fire('pagehide', { persisted: false })
+      const next = load(frame({ parent: top }))
+      next.kissScorm.score(0.7)
+      let seen = false
+      next.kissScorm.ready(() => (seen = true))
+      top.ready()
+      expect(seen).toBe(true)
+      expect(one.data.get('cmi.core.score.raw')).toBe('70')
+      expect(one.data.get('cmi.suspend_data')).toBe('')
+    })
+
     // Only a resumed field with something in it is protected.
     it('sends a queued bookmark or state when the resumed one is empty', () => {
       const one = lms({ entry: 'resume', location: '', state: 'v1' })
