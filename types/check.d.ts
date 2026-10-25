@@ -227,6 +227,35 @@ export type CheckDiff = {
      * emitted assets that changed filename
      */
     assets: CheckDiffAsset[];
+    /**
+     * the learning packages, present only
+     * when this build wrote them: a build with packaging off, or one that failed
+     * and wrote none, says nothing about them, rather than calling every package
+     * removed
+     */
+    packages?: CheckDiffPackages;
+};
+/**
+ * The learning packages of a site against the baseline's, by zip file and the
+ * hash of its bytes, so a course knows which packages to upload again.
+ */
+export type CheckDiffPackages = {
+    /**
+     * zips only the new build wrote
+     */
+    added: string[];
+    /**
+     * zips only the baseline wrote
+     */
+    removed: string[];
+    /**
+     * zips whose bytes differ
+     */
+    changed: string[];
+    /**
+     * how many zips are byte-identical
+     */
+    unchanged: number;
 };
 /**
  * One asset whose emitted file changed name between the two builds. Under

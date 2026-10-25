@@ -50,6 +50,16 @@ const withAssets = (report, assets) => ({
   })),
 })
 
+// The learning packages as `diffReports` reads them: each zip and the hash of
+// its bytes (`report().packages`, AIKB/packages.md).
+const withPackages = (report, packages) => ({
+  ...report,
+  packages:
+    packages === null
+      ? null
+      : Object.entries(packages).map(([file, hash]) => ({ file, hash })),
+})
+
 describe('checkModeRequested and aikbRecordRequested', () => {
   it('count anything but empty, 0 or false as on, case-insensitively', () => {
     for (const value of ['1', 'true', 'TRUE', 'yes', 'on'])
@@ -331,6 +341,53 @@ describe('readReportsFile', () => {
   })
 })
 
+describe('diffReports: learning packages', () => {
+  const site = built('./public', { './public/a.html': 'aaa' })
+
+  it('sorts every package into added, removed, changed or unchanged, by its hash', () => {
+    const before = withPackages(site, {
+      './public/packages/one.scorm12.zip': 'h1',
+      './public/packages/two.scorm12.zip': 'h2',
+      './public/packages/gone.scorm12.zip': 'h3',
+    })
+    const after = withPackages(site, {
+      './public/packages/one.scorm12.zip': 'h1',
+      './public/packages/two.scorm12.zip': 'H2',
+      './public/packages/new.scorm12.zip': 'h4',
+    })
+    const [diff] = diffReports([before], [after])
+    expect(diff.packages).toEqual({
+      added: ['./public/packages/new.scorm12.zip'],
+      removed: ['./public/packages/gone.scorm12.zip'],
+      changed: ['./public/packages/two.scorm12.zip'],
+      unchanged: 1,
+    })
+    // The pages are diffed as before, beside them.
+    expect(diff.unchanged).toBe(1)
+  })
+
+  it('diffs every package as added against a report that has none', () => {
+    const after = withPackages(site, {
+      './public/packages/one.imscp.zip': 'h1',
+    })
+    for (const before of [site, withPackages(site, null)])
+      expect(diffReports([before], [after])[0].packages).toEqual({
+        added: ['./public/packages/one.imscp.zip'],
+        removed: [],
+        changed: [],
+        unchanged: 0,
+      })
+  })
+
+  it('says nothing about packages when this build wrote none, so a failed build is not every package removed', () => {
+    const before = withPackages(site, {
+      './public/packages/one.imscp.zip': 'h1',
+    })
+    for (const after of [site, withPackages(site, null)])
+      expect(diffReports([before], [after])[0]).not.toHaveProperty('packages')
+  })
+})
+
 describe('diffReports', () => {
   it('sorts every page into added, removed, changed or unchanged', () => {
     const before = built('./public', {
@@ -506,6 +563,40 @@ describe('diffReports', () => {
       'js/new.js': 'js/new.bbbbbbbb.js',
     })
     expect(diffReports([before], [after])[0].assets).toEqual([])
+  })
+})
+
+describe('formatDiff: learning packages', () => {
+  const pages = {
+    buildDir: './public',
+    added: [],
+    removed: [],
+    changed: ['./public/a.html'],
+    unchanged: 2,
+  }
+
+  it('prints a line per package that moved, then how many did not, after the pages', () => {
+    const lines = formatDiff({
+      ...pages,
+      packages: {
+        added: ['./public/packages/new.scorm12.zip'],
+        removed: ['./public/packages/gone.scorm12.zip'],
+        changed: ['./public/packages/one.scorm12.zip'],
+        unchanged: 3,
+      },
+    }).split('\n')
+    expect(lines).toEqual([
+      '  ~ ./public/a.html',
+      '  = 2 unchanged',
+      '  + package ./public/packages/new.scorm12.zip',
+      '  - package ./public/packages/gone.scorm12.zip',
+      '  ~ package ./public/packages/one.scorm12.zip',
+      '  = 3 packages unchanged',
+    ])
+  })
+
+  it('prints no package line for a build without packages', () => {
+    expect(formatDiff(pages)).not.toMatch(/package/)
   })
 })
 
