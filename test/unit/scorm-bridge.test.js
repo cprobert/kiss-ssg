@@ -41,6 +41,7 @@ function lms({
     ['cmi.core.student_name', 'Doe, Jane'],
   ])
   const refuseOnce = new Map()
+  const refuseReadOnce = new Map()
   const durable = new Map(data)
   // Sends the buffer to the server. With `delta`, as Moodle's API does, only
   // what changed since the last send goes, and that baseline moves before the
@@ -88,6 +89,11 @@ function lms({
       if (!initialised) return fail('301', '')
       if (key.startsWith('cmi.interactions') && !interactions)
         return fail('401', '')
+      if (refuseReadOnce.has(key)) {
+        const code = refuseReadOnce.get(key)
+        refuseReadOnce.delete(key)
+        return fail(code, '')
+      }
       return ok(data.get(key) ?? '')
     },
     LMSSetValue(key, value) {
@@ -137,6 +143,7 @@ function lms({
       calls.filter((c) => c[0] === 'LMSSetValue').map((c) => [c[1], c[2]]),
     durable,
     refuseNext: (key, code) => refuseOnce.set(key, code),
+    refuseNextRead: (key, code) => refuseReadOnce.set(key, code),
     block: () => {
       blocked = true
     },
@@ -755,6 +762,25 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       outer.ready()
       inner.advance(3000)
       expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-1')
+      expect(one.durable.get('cmi.suspend_data')).toBe('v1')
+    })
+
+    // A field the LMS did not return is unknown, not empty: what it may
+    // hold is protected, and the page is told it is unknown (null).
+    it('protects a resumed field the LMS failed to return, and says it is unknown', () => {
+      const one = lms({ entry: 'resume', location: 'topic-2', state: 'v1' })
+      const outer = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: outer }))
+      inner.kissScorm.bookmark('')
+      inner.kissScorm.save('')
+      one.refuseNextRead('cmi.core.lesson_location', '101')
+      one.refuseNextRead('cmi.suspend_data', '101')
+      let seen = null
+      inner.kissScorm.ready((s) => (seen = s.resumed))
+      outer.ready()
+      inner.advance(3000)
+      expect(seen).toEqual({ location: null, state: null })
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
       expect(one.durable.get('cmi.suspend_data')).toBe('v1')
     })
 
