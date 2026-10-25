@@ -109,7 +109,7 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `canonical`: the page's absolute URL, the same string as its `<loc>`.
 - `absUrl`: `siteUrl` joined to a path, extension kept.
 - `asset`: the emitted path under `config.assets` (hash or `?v=`); fails the build on a file not emitted.
-- `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id.
+- `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
 - `scormBridge`: `{{scormBridge}}` in a page's `<head>` inlines the SCORM 1.2 bridge: in an LMS the page is complete when seen (`complete="manual"` leaves it to the page), and `window.kissScorm` records `interaction({ id, response, correct, result })`, `score(fraction)` and `status(value)`, keeps the learner's place with `bookmark(place)` and `save(state)` (refused past SCORM 1.2's 255 characters and 4,096 ASCII bytes, never cut), and hands them back as `resumed` on their next launch; `mode` is `'review'` when nothing is recorded, and `log` says why tracking failed. With no LMS every call does nothing.
 

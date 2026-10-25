@@ -783,6 +783,63 @@ describe('link', () => {
     expect(renderIn('{{link "about" canonical=false}}')).toBe('/about.html')
   })
 
+  // An LMS serves a package's files as they are, from wherever it unpacks it:
+  // a root-relative, folder or extension-less link from a member page points
+  // out of the package. So a member page links the file, relative to itself.
+  describe('from a page in a learning package', () => {
+    const member = {
+      view: 'l1/tab-1.hbs',
+      pageURL: 'course/l1/tab-1.html',
+      package: 'l1',
+    }
+    const pages = {
+      next: 'course/l1/tab-2.html',
+      other: 'course/l2/tab-1.html',
+      folder: 'course/l2/index.html',
+      home: 'index.html',
+    }
+
+    it('links the file, relative to the page, whatever the site-wide shape', () => {
+      linkHbs(pages, {
+        links: { canonical: true, trailingSlash: false },
+      })
+      expect(renderIn('{{link "next"}}', member)).toBe('tab-2.html')
+      expect(renderIn('{{link "other"}}', member)).toBe('../l2/tab-1.html')
+      expect(renderIn('{{link "folder"}}', member)).toBe('../l2/index.html')
+      expect(renderIn('{{link "home"}}', member)).toBe('../../index.html')
+    })
+
+    it('links itself by its own file name', () => {
+      linkHbs({ self: 'course/l1/tab-1.html' })
+      expect(renderIn('{{link "self"}}', member)).toBe('tab-1.html')
+    })
+
+    it('keeps absolute=true absolute, and relative=false the served path', () => {
+      linkHbs(pages, { siteUrl: 'https://e.com' })
+      expect(renderIn('{{link "next" absolute=true}}', member)).toBe(
+        'https://e.com/course/l1/tab-2.html',
+      )
+      expect(renderIn('{{link "folder" relative=false}}', member)).toBe(
+        '/course/l2/',
+      )
+    })
+
+    it('is the served path again when packaging is off', () => {
+      linkHbs(pages, { packages: false })
+      expect(renderIn('{{link "next"}}', member)).toBe('/course/l1/tab-2.html')
+    })
+
+    it('is available to any page with relative=true', () => {
+      linkHbs(pages)
+      expect(
+        renderIn('{{link "folder" relative=true}}', {
+          view: 'l1/tab-2.hbs',
+          pageURL: 'course/l1/tab-2.html',
+        }),
+      ).toBe('../l2/index.html')
+    })
+  })
+
   it('leaves the extension on when config.links.canonical is off', () => {
     linkHbs({ about: 'about.html' }, { links: { canonical: false } })
     expect(renderIn('{{link "about"}}')).toBe('/about.html')

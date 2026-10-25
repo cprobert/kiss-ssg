@@ -398,6 +398,38 @@ describe('learning packages', () => {
     expect(res[1]).toContain('<file href="docs/handout.pdf"/>')
   })
 
+  it("links a member page's {{link}} to the file, relative to it, on any site shape", async () => {
+    await build(
+      { extensionLess: true, links: { canonical: true, trailingSlash: false } },
+      {
+        files: {
+          ...FILES,
+          'src/pages/l1/tab-2.hbs':
+            '<html><body><a href="{{link "l1/tab-1"}}">back</a><a href="{{link "l2/tab-1"}}">on</a></body></html>',
+        },
+      },
+    )
+    const page = fs.readFileSync(
+      `${site.build}/course/l1/tab-2/index.html`,
+      'utf8',
+    )
+    expect(page).toContain('href="../tab-1/index.html"')
+    expect(page).toContain('href="../../l2/tab-1/index.html"')
+    const outside = kiss
+      .report()
+      .packages.find((p) => p.id === 'l1')
+      .outside.filter((o) => o.page.endsWith('tab-2/index.html'))
+    // The member link is followed and kept; the other lesson is a page outside.
+    expect(
+      outside.map(({ href, reason }) => [href, reason.split(':')[0]]),
+    ).toEqual([
+      ['../../l2/tab-1/index.html', 'a link to a page outside the package'],
+    ])
+    expect(
+      kiss.report().links.broken.filter((b) => b.page.includes('tab-2')),
+    ).toEqual([])
+  })
+
   it('reports a link between member pages in a SCORM package only, and still packs both', async () => {
     await build({ packages: { format: ['imscp', 'scorm12'] } })
     const l1 = (format) =>

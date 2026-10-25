@@ -81,6 +81,13 @@ export function servedPathFor(pageURL: unknown, { trailingSlash }?: {
     trailingSlash?: boolean;
 }): string;
 /**
+ * @param {string} fromPageURL the linking page's build-relative URL
+ * @param {string} toPageURL the linked page's build-relative URL
+ * @returns {string} e.g. `tab-2.html`, `../l2/index.html`; a page linking
+ * itself gets its own file name
+ */
+export function relativePathFor(fromPageURL: string, toPageURL: string): string;
+/**
  * @param {unknown} input
  * @returns {string} MD5 hex digest of the string, or of its JSON if it is not one
  */
@@ -100,4 +107,5 @@ declare namespace utils {
     export { toAbsoluteUrl };
     export { toCanonicalPath };
     export { servedPathFor };
+    export { relativePathFor };
 }
