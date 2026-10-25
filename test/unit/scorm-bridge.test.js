@@ -486,6 +486,25 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.calls.length).toBe(before)
   })
 
+  // A page may keep `const scorm = window.kissScorm` while the bridge still
+  // waits: the object it kept must reach the session once there is one.
+  it('a reference kept while the bridge waited still records once it is ready', () => {
+    const one = lms()
+    const outer = frame({ parent: frame({ API: one.api }), loading: true })
+    const inner = load(frame({ parent: outer }), { manual: true })
+    const scorm = inner.kissScorm
+    load(outer, { manual: true })
+    outer.ready()
+    expect(scorm.available).toBe(true)
+    expect(scorm.mode).toBe('normal')
+    scorm.score(0.75)
+    scorm.status('passed')
+    expect(scorm.bookmark('topic-2')).toBe(true)
+    expect(one.data.get('cmi.core.score.raw')).toBe('75')
+    expect(one.data.get('cmi.core.lesson_status')).toBe('passed')
+    expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
+  })
+
   it('waits for a parent still loading, so the parent owns the session whichever bridge runs first', () => {
     const one = lms()
     const outer = frame({ parent: frame({ API: one.api }), loading: true })

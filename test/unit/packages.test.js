@@ -132,6 +132,15 @@ describe('extractCssReferences', () => {
     expect(extractCssReferences(css)).toEqual(['used.png', 'kept.css'])
   })
 
+  // A comment starts only where the CSS tokenizer would start one: never
+  // inside a quoted string, and never inside an unquoted url(), where `/*` is
+  // part of the address.
+  it('does not read a /* inside a string or a url() as a comment', () => {
+    const css = String.raw`.m::before { content: "/*"; } .h { background: url(hero.png) } /* end */
+      .q::after { content: '\'/*' } .i { background: url(a/*b.png) } .j { background: url(j.png) } /* x */`
+    expect(extractCssReferences(css)).toEqual(['hero.png', 'a/*b.png', 'j.png'])
+  })
+
   it('decodes CSS escapes, as a browser reads the value', () => {
     // String.raw: each backslash below is one backslash in the stylesheet.
     const css = String.raw`
