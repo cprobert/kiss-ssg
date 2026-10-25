@@ -149,6 +149,22 @@ describe('learning packages', () => {
     ])
   })
 
+  it('packs a file a stylesheet names with a CSS escape', async () => {
+    const files = {
+      ...FILES,
+      'src/pages/l2/tab-1.hbs':
+        '<html><head><link rel="stylesheet" href="../../css/escaped.css"></head><body></body></html>',
+      // One backslash before the space in the stylesheet: url("../img/my\ pic.png").
+      'src/assets/css/escaped.css':
+        '.x { background: url("../img/my\\ pic.png") }',
+      'src/assets/img/my pic.png': 'p',
+    }
+    await build({}, { files })
+    const l2 = kiss.report().packages.find((p) => p.id === 'l2')
+    expect(l2.outside).toEqual([])
+    expect(names(zipAt('packages/l2.imscp.zip'))).toContain('img/my pic.png')
+  })
+
   it('roots a package above a climb written with percent-escapes', async () => {
     const files = {
       ...FILES,

@@ -107,6 +107,29 @@ describe('extractCssReferences', () => {
       'a b.png',
     ])
   })
+
+  it('decodes CSS escapes, as a browser reads the value', () => {
+    // String.raw: each backslash below is one backslash in the stylesheet.
+    const css = String.raw`
+      .a { background: url("images/my\ image.png") }
+      .b { background: url(images/my\ other.png) }
+      .c { background: url("say \"hi\".png") }
+      .d { background: url('it\'s.png') }
+      .e { background: url(paren\).png) }
+      .f { background: url("caf\e9.png") }
+      .g { background: url("\31 23.png") }
+      @import "theme\ light.css";`
+    expect(extractCssReferences(css)).toEqual([
+      'images/my image.png',
+      'images/my other.png',
+      'say "hi".png',
+      "it's.png",
+      'paren).png',
+      'café.png',
+      '123.png',
+      'theme light.css',
+    ])
+  })
 })
 
 describe('documentBase', () => {
