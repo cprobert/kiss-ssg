@@ -699,6 +699,39 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       )
     })
 
+    // An embedded page and the page that embeds it, both waiting for a page
+    // above still loading, and the embedded one decides first: it becomes a
+    // proxy to a placeholder, so it is ready only when that one is.
+    it('calls back once, with what is resumed, when the page above decides after it', () => {
+      const one = lms({ entry: 'resume', location: 'topic-2' })
+      const top = frame({ parent: frame({ API: one.api }), loading: true })
+      const middle = frame({ parent: top, loading: true })
+      const inner = load(frame({ parent: middle }))
+      load(middle)
+      const seen = []
+      inner.kissScorm.ready((s) =>
+        seen.push([s.available, s.resumed?.location]),
+      )
+      inner.kissScorm.bookmark('')
+      middle.ready()
+      top.ready()
+      expect(seen).toEqual([[true, 'topic-2']])
+      expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
+    })
+
+    // Only a resumed field with something in it is protected.
+    it('sends a queued bookmark or state when the resumed one is empty', () => {
+      const one = lms({ entry: 'resume', location: '', state: 'v1' })
+      const outer = frame({ parent: frame({ API: one.api }), loading: true })
+      const inner = load(frame({ parent: outer }))
+      inner.kissScorm.bookmark('topic-1')
+      inner.kissScorm.save('v0')
+      outer.ready()
+      inner.advance(3000)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-1')
+      expect(one.durable.get('cmi.suspend_data')).toBe('v1')
+    })
+
     it('sends a queued bookmark when the learner is not resuming', () => {
       const one = lms()
       const outer = frame({ parent: frame({ API: one.api }), loading: true })
