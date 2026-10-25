@@ -19,6 +19,7 @@ import { silentLogger } from '../../lib/logger.js'
 // (`durable`) only by a commit or a finish; with `resets`, starting a session
 // again rebuilds the buffer from what was persisted, as Moodle's API does.
 function lms({
+  delta = false,
   resets = false,
   status = 'not attempted',
   interactions = true,
@@ -41,9 +42,21 @@ function lms({
   ])
   const refuseOnce = new Map()
   const durable = new Map(data)
-  const persist = () => {
-    durable.clear()
-    for (const [k, v] of data) durable.set(k, v)
+  // Sends the buffer to the server. With `delta`, as Moodle's API does, only
+  // what changed since the last send goes, and that baseline moves before the
+  // request is made; `block()` makes every request fail in transit, as a
+  // browser blocking synchronous requests while the page is dismissed.
+  const baseline = new Map(data)
+  let blocked = false
+  const send = () => {
+    const changed = delta
+      ? [...data].filter(([k, v]) => baseline.get(k) !== v)
+      : [...data]
+    if (delta) for (const [k, v] of changed) baseline.set(k, v)
+    if (blocked) return false
+    if (!delta) durable.clear()
+    for (const [k, v] of changed) durable.set(k, v)
+    return true
   }
   const calls = []
   let initialised = false
@@ -66,9 +79,9 @@ function lms({
     LMSFinish() {
       calls.push(['LMSFinish'])
       if (!initialised) return fail('301')
-      persist()
+      const sent = send()
       initialised = false
-      return ok()
+      return sent ? ok() : fail('101')
     },
     LMSGetValue(key) {
       calls.push(['LMSGetValue', key])
@@ -109,8 +122,7 @@ function lms({
         commitFails--
         return fail('101')
       }
-      persist()
-      return ok()
+      return send() ? ok() : fail('101')
     },
     LMSGetLastError: () => last,
     LMSGetErrorString: (code) => `error ${code}`,
@@ -125,6 +137,9 @@ function lms({
       calls.filter((c) => c[0] === 'LMSSetValue').map((c) => [c[1], c[2]]),
     durable,
     refuseNext: (key, code) => refuseOnce.set(key, code),
+    block: () => {
+      blocked = true
+    },
     failCommits: (n) => {
       commitFails += n
     },
@@ -763,6 +778,43 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       win.advance(3000)
       expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
       expect(win.pending()).toBe(0)
+    })
+
+    // A refused interaction id leaves the LMS's count short: the next answer
+    // must not take the unrestored answer's index.
+    it('does not let a new answer overwrite one a restarted session has not taken back', () => {
+      const one = lms({ resets: true })
+      const win = load(frame({ API: one.api }))
+      one.failCommits(1)
+      win.kissScorm.interaction({ id: 'a', response: 0, correct: 0 })
+      one.end()
+      one.refuseNext('cmi.interactions.0.id', '101')
+      win.kissScorm.interaction({ id: 'b', response: 1 })
+      for (let i = 0; i < 3; i++) win.advance(3000)
+      const ids = [0, 1].map((n) => one.durable.get(`cmi.interactions.${n}.id`))
+      expect(ids).toEqual(['a', 'b'])
+      expect(
+        one.durable.get('cmi.interactions.1.correct_responses.0.pattern'),
+      ).toBe(undefined)
+      expect(win.pending()).toBe(0)
+    })
+
+    // The case the checkpoint exists for, on Moodle's commit model: every
+    // request made while the page is dismissed is blocked. The learner comes
+    // back where the last timed commit left them, not at the start.
+    it('keeps the place committed before a dismissal whose requests are all blocked', () => {
+      const one = lms({ delta: true })
+      const win = load(frame({ API: one.api, visible: true }))
+      win.kissScorm.bookmark('topic-3')
+      win.kissScorm.save('v1|q3=b')
+      win.advance(3000)
+      win.kissScorm.bookmark('topic-4')
+      one.block()
+      win.hide()
+      win.fire('pagehide', { persisted: false })
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-3')
+      expect(one.durable.get('cmi.suspend_data')).toBe('v1|q3=b')
+      expect(one.durable.get('cmi.core.exit')).toBe('suspend')
     })
 
     it('leaves no retry behind when the last commit before finishing failed', () => {
