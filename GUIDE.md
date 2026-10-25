@@ -900,7 +900,7 @@ kiss.page({
 
 **A member page needs an `id`, and the id is a promise.** The LMS keeps a learner's record against the identifier kiss makes from the page's `id`, and matches the pages of a new upload to the old by it: change the id and the learner's progress on that page is gone. So the identifier depends on the id alone, never on the page's path or position, and a member page with no usable id fails the build. An id that is already a valid XML name (`espresso-grind`) is used as it is; any other (`espresso/grind`) is cleaned and given a short hash of itself, so two ids never share an identifier.
 
-**`config.packages`** (`false` turns packaging off):
+**`config.packages`** (`false` turns packaging off; any value but settings, `true` or `false` fails, so `packages: 'scorm12'` is not a shorthand — write `packages: { format: 'scorm12' }`):
 
 | Key       | Default      | What it does                                                                                                                                                                                                                                                                                                                |
 | --------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -408,6 +408,18 @@ describe('resolveConfig', () => {
     )
   })
 
+  // `packages: 'scorm12'` was read as a string's character indices: the
+  // build passed, and shipped IMS content packages to an author who asked for SCORM.
+  it('takes packages as settings, true or false, and refuses a shorthand it would misread', () => {
+    expect(resolveConfig({ packages: false }).packages).toBe(false)
+    expect(resolveConfig({ packages: true }).packages.format).toBe('imscp')
+    expect(resolveConfig({}).packages.format).toBe('imscp')
+    for (const packages of ['scorm12', ['scorm12'], 1])
+      expect(() => resolveConfig({ packages })).toThrow(
+        /config\.packages must be an object of settings[\s\S]*format: 'scorm12'/,
+      )
+  })
+
   it("takes a step's outputs as build-relative file paths, and refuses any other", () => {
     const step = { run: 'a', outputs: ['css/site.css', 'icons.svg'] }
     expect(

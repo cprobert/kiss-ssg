@@ -179,9 +179,9 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
  * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
- * `audit` and `markdownCopies` also take a bare boolean: `false` turns the whole block off.
+ * `audit`, `markdownCopies` and `packages` also take a bare boolean: `false` turns the whole block off.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'|'markdownCopies'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'|'markdownCopies'|'packages'>> & {
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
@@ -190,6 +190,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  *   redirects?: Partial<KissRedirects>,
  *   audit?: boolean|Partial<KissAudit>,
  *   markdownCopies?: boolean|Partial<KissMarkdownCopies>,
+ *   packages?: boolean|Partial<import('./packages.js').KissPackages>,
  *   folders?: KissFoldersInput,
  * } & Record<string, any>} KissConfigInput
  */
@@ -593,9 +594,9 @@ export type KissConfig = KissSettings & {
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
  * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
- * `audit` and `markdownCopies` also take a bare boolean: `false` turns the whole block off.
+ * `audit`, `markdownCopies` and `packages` also take a bare boolean: `false` turns the whole block off.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit" | "markdownCopies">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit" | "markdownCopies" | "packages">> & {
     sass?: {
         includePaths?: string[];
     };
@@ -606,5 +607,6 @@ export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "ass
     redirects?: Partial<KissRedirects>;
     audit?: boolean | Partial<KissAudit>;
     markdownCopies?: boolean | Partial<KissMarkdownCopies>;
+    packages?: boolean | Partial<import("./packages.js").KissPackages>;
     folders?: KissFoldersInput;
 } & Record<string, any>;
