@@ -561,6 +561,26 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(one.data.get('cmi.core.lesson_location')).toBe('topic-2')
   })
 
+  it('queues an answer as given while the bridge waits, though the page reuses the object', () => {
+    const one = lms()
+    const outer = frame({ parent: frame({ API: one.api }), loading: true })
+    const inner = load(frame({ parent: outer }))
+    const answer = { id: 'a', response: [0], correct: [0] }
+    inner.kissScorm.interaction(answer)
+    answer.id = 'b'
+    answer.response.push(1)
+    answer.correct.push(2)
+    inner.kissScorm.interaction(answer)
+    load(outer)
+    outer.ready()
+    const at = (n, f) => one.data.get(`cmi.interactions.${n}.${f}`)
+    expect([0, 1].map((n) => at(n, 'id'))).toEqual(['a', 'b'])
+    expect(at(0, 'student_response')).toBe('a')
+    expect(at(0, 'correct_responses.0.pattern')).toBe('{a}')
+    expect(at(1, 'student_response')).toBe('a,b')
+    expect(at(1, 'correct_responses.0.pattern')).toBe('{a,c}')
+  })
+
   it('waits for a parent still loading, so the parent owns the session whichever bridge runs first', () => {
     const one = lms()
     const outer = frame({ parent: frame({ API: one.api }), loading: true })
@@ -839,6 +859,32 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(at(1, 'correct_responses.0.pattern')).toBe('{b}')
       expect(at(2, 'student_response')).toBe('b,c')
       expect(at(2, 'correct_responses.0.pattern')).toBe('{b,d}')
+    })
+
+    it('keeps a deferred answer whose id the LMS refuses once, and records it later', () => {
+      const one = lms({ resets: true })
+      const win = load(frame({ API: one.api }))
+      one.failCommits(1)
+      win.kissScorm.interaction({ id: 'a', response: 0 })
+      one.end()
+      one.refuseNext('cmi.interactions.0.id', '101')
+      win.kissScorm.interaction({ id: 'b', response: 1 })
+      one.refuseNext('cmi.interactions.1.id', '101')
+      for (let i = 0; i < 4; i++) win.advance(3000)
+      const ids = [0, 1].map((n) => one.durable.get(`cmi.interactions.${n}.id`))
+      expect(ids).toEqual(['a', 'b'])
+      expect(win.pending()).toBe(0)
+    })
+
+    // Written back, at its index, before the commit that follows the answer.
+    it('keeps a field of an answer the LMS refuses once, at its index, and writes it again', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      one.refuseNext('cmi.interactions.0.result', '101')
+      win.kissScorm.interaction({ id: 'q', response: 0, result: true })
+      expect(one.durable.get('cmi.interactions.0.id')).toBe('q')
+      expect(one.durable.get('cmi.interactions.0.result')).toBe('correct')
+      expect(win.pending()).toBe(0)
     })
 
     it('leaves no retry behind when the last commit before finishing failed', () => {
