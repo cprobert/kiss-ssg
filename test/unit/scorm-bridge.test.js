@@ -14,8 +14,12 @@ import { silentLogger } from '../../lib/logger.js'
 // page; with `reinit: false` it then refuses to start another. `entry`,
 // `location`, `state` and `mode` are what it launches the SCO with,
 // `refuse` maps an element to the error code a write to it raises, and the
-// first `commitFails` commits fail with 101, the session still open.
+// first `commitFails` commits fail with 101, the session still open
+// (`failCommits(n)` fails the next n). What it buffers (`data`) is persisted
+// (`durable`) only by a commit or a finish; with `resets`, starting a session
+// again rebuilds the buffer from what was persisted, as Moodle's API does.
 function lms({
+  resets = false,
   status = 'not attempted',
   interactions = true,
   reinit = true,
@@ -35,6 +39,11 @@ function lms({
     ['cmi.core.lesson_mode', mode],
     ['cmi.core.student_name', 'Doe, Jane'],
   ])
+  const durable = new Map(data)
+  const persist = () => {
+    durable.clear()
+    for (const [k, v] of data) durable.set(k, v)
+  }
   const calls = []
   let initialised = false
   let ended = false
@@ -46,12 +55,17 @@ function lms({
       calls.push(['LMSInitialize'])
       if (initialised) return fail('101')
       if (ended && !reinit) return fail('101')
+      if (ended && resets) {
+        data.clear()
+        for (const [k, v] of durable) data.set(k, v)
+      }
       initialised = true
       return ok()
     },
     LMSFinish() {
       calls.push(['LMSFinish'])
       if (!initialised) return fail('301')
+      persist()
       initialised = false
       return ok()
     },
@@ -89,6 +103,7 @@ function lms({
         commitFails--
         return fail('101')
       }
+      persist()
       return ok()
     },
     LMSGetLastError: () => last,
@@ -102,6 +117,10 @@ function lms({
     names: () => calls.map((c) => c[0]),
     sets: () =>
       calls.filter((c) => c[0] === 'LMSSetValue').map((c) => [c[1], c[2]]),
+    durable,
+    failCommits: (n) => {
+      commitFails += n
+    },
     end: () => {
       initialised = false
       ended = true
@@ -669,6 +688,68 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       const after = one.calls.length
       win.advance(3000)
       expect(one.calls.length).toBe(after)
+    })
+
+    // What the LMS persisted, not how often it was asked to.
+    it('retries a timed commit that failed, with no further action from the learner', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      one.failCommits(1)
+      win.advance(3000)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('')
+      win.advance(3000)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
+    })
+
+    it('retries when another commit carrying the bookmark fails', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      one.failCommits(1)
+      win.kissScorm.score(0.5)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('')
+      win.advance(3000)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
+      expect(one.durable.get('cmi.core.score.raw')).toBe('50')
+    })
+
+    it('gives up retrying after a few attempts, and leaves no timer behind', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      const before = commits(one).length
+      one.failCommits(100)
+      win.kissScorm.bookmark('topic-2')
+      for (let i = 0; i < 20; i++) win.advance(3000)
+      expect(commits(one).length - before).toBeLessThanOrEqual(6)
+      expect(win.pending()).toBe(0)
+      expect(win.kissScorm.available).toBe(true)
+    })
+
+    // Moodle's LMSInitialize rebuilds the data model from what was persisted:
+    // a session restarted under a pending commit must get its writes back.
+    it('restores what it wrote since the last commit into a session the LMS restarted', () => {
+      const one = lms({ resets: true })
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      win.kissScorm.save('v1|q1=a')
+      one.end()
+      win.advance(3000)
+      expect(one.names().filter((n) => n === 'LMSInitialize')).toHaveLength(2)
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
+      expect(one.durable.get('cmi.suspend_data')).toBe('v1|q1=a')
+      expect(one.durable.get('cmi.core.exit')).toBe('suspend')
+    })
+
+    it('leaves no retry behind when the last commit before finishing failed', () => {
+      const one = lms()
+      const win = load(frame({ API: one.api }))
+      win.kissScorm.bookmark('topic-2')
+      one.failCommits(1)
+      win.fire('pagehide', { persisted: false })
+      expect(win.pending()).toBe(0)
+      // LMSFinish persisted what the failed commit did not.
+      expect(one.durable.get('cmi.core.lesson_location')).toBe('topic-2')
     })
 
     it('schedules nothing in review mode', () => {
