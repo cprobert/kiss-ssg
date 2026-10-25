@@ -625,6 +625,48 @@ describe('learning packages', () => {
     expect(fs.existsSync(`${site.build}/packages`)).toBe(false)
   })
 
+  // Under cleanBuild: false the zips being replaced are the last good ones: a
+  // run that fails must leave them as they were, not delete the ones it reached.
+  it('restores the zips an earlier build wrote when replacing them fails midway', async () => {
+    const config = {
+      cleanBuild: false,
+      packages: { format: ['imscp', 'scorm12'] },
+    }
+    await build(config)
+    const zips = ['l1.imscp.zip', 'l1.scorm12.zip', 'l2.imscp.zip']
+    const before = zips.map((z) =>
+      fs.readFileSync(`${site.build}/packages/${z}`),
+    )
+    await kiss.close()
+    fs.writeFileSync(
+      `${site.root}/src/pages/l1/tab-2.hbs`,
+      '<html><body><p>Two, revised</p></body></html>',
+    )
+    const rename = fsx.rename.bind(fsx)
+    let calls = 0
+    vi.spyOn(fsx, 'rename').mockImplementation(async (from, to) => {
+      if (String(from).endsWith('.tmp') && ++calls === 2)
+        throw new Error('EBUSY: locked')
+      return rename(from, to)
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://e.com/',
+      logger: silentLogger,
+      ...config,
+    })
+    lesson(lesson(kiss, 'l1'), 'l2').generate()
+    await expect(kiss.complete()).rejects.toThrow(/<packages>/)
+    vi.restoreAllMocks()
+    expect(calls).toBe(2)
+    expect(
+      zips.map((z) => fs.readFileSync(`${site.build}/packages/${z}`)),
+    ).toEqual(before)
+    expect(fs.readdirSync(`${site.build}/packages`).sort()).toEqual(
+      [...zips, 'l2.scorm12.zip'].sort(),
+    )
+  })
+
   it('reads and parses a file two member pages share once', async () => {
     const readFile = fsx.readFile.bind(fsx)
     const reads = []
