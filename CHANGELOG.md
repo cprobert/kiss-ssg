@@ -40,6 +40,10 @@ SCORM 1.2 package for Moodle or any LMS. One build can make many packages.
   `kissScorm.resumed` on their next launch. A place or state is committed a couple of seconds after
   it is written, not left to the moment the learner leaves. With no LMS every call does nothing, so
   the same page works on the web too.
+- **Read `resumed` inside `kissScorm.ready((scorm) => …)`.** It calls back once the bridge has
+  decided, which in an LMS that opens the page inside a page of its own still loading is after
+  that page loads; until then `resumed` is `null`. One kiss page records for a SCO, and kiss pages
+  it embeds record through it.
 - **A multi-select answer key:** `correct: [0, 2]` means every listed choice is required (`{a,c}`).
   For alternatives, use `correct: { anyOf: [1, 3] }`.
 - **A pipeline step that writes into the build folder declares the files in `outputs`**, so
