@@ -30,17 +30,18 @@ Keep build-script modules out of `src`: a module in an unrecognised folder under
 
 GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Other methods.
 
-- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route minus `.hbs`, so `menu/index.hbs` is `menu/index`, not `menu`), `aliases` (old paths → 301s), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod`, and `config` (per-page overrides, such as `extensionLess: false` for a literal `404.html`).
+- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route minus `.hbs`, so `menu/index.hbs` is `menu/index`, not `menu`), `aliases` (old paths → 301s), `package`/`packageSection` (a learning package), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod`, and `config` (per-page overrides, such as `extensionLess: false` for a literal `404.html`).
 - `.pages(options)`: the same, fanned out over an array model; one bad item fails only its own page. An item's id is the registration's route (or `id` as a prefix) plus its slug; a record may carry its own `id` and `aliases`.
 - `.scan()`: `.page()` for every unregistered `.hbs` under `folders.pages`.
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
 - `.complete(callback)`: resolves when everything is written; rejects with an `AggregateError` (`err.failures`, `err.report`) on any failed page, controller, callback, Sass file, pipeline step or redirects write. A chain without it exits 0 on a broken build.
 - `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit` and more). GUIDE.md § Checking a build has the shape.
 - `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
-- Markdown copies (`config.markdownCopies`, on by default): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
+- Learning packages: a page with `package: '<slug>'` (and an `id`, which the LMS keeps learners' records by) is zipped with its fellow members as an IMS content package or SCORM 1.2 (`config.packages`: `format`, `dir`, `title`, `only`; `false` turns it off), carrying every file the pages need; what it cannot carry is listed in `report().packages[].outside`. `{{scormBridge}}` in `<head>` gives a page `window.kissScorm` to record answers in an LMS. One SCO per page (pages do not link to each other) or one SCO with many views (one page, its own navigation). GUIDE.md § Learning packages; `examples/13-course-packages`.
+- Markdown copies (`config.markdownCopies`, written when the build calls `.llms()`): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
-- `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Built-in helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `env`) are listed below. Partials are `.hbs`, `.md` (rendered, then compiled), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
+- `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Built-in helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `env`, `scormBridge`) are listed below. Partials are `.hbs`, `.md` (rendered, then compiled), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
 - Named exports: `utils`, the redirect encoders (`renderRedirects`, `renderFirebaseRedirects`, …) and `splitDocument`/`parseHtml`/`findTag` for converting a single-file page (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
 - Types ship in `types/`: `// @ts-check` plus `/** @type {import('kiss-ssg').KissConfigInput} */` gives a plain-JS site full checking.
 
@@ -62,7 +63,8 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   redirects: { format: null }, // 'netlify' | 'firebase' | 'vercel' | 'htaccess' | fn | an array
   audit: { check: true, ignore: [] },
-  markdownCopies: { write: true, selector: 'main' }, // false: no page.md copies
+  markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
+  packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -89,6 +91,7 @@ Each key's prose is in GUIDE.md: § Cleaning the build folder (`cleanBuild`), §
 - `links.trailingSlash` and `redirects.format` are statements about your host, not defaults kiss can get right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `format` names one.
 - `{{asset}}` renders **no leading slash**: write `href="/{{asset "css/site.css"}}"`. `{{root}}` is a value your page supplies, not a helper.
 - `{{#isActive this href="/about"}}{{active}}{{/isActive}}`: the positional argument is the page context (`this`, or `..` in an `{{#each}}`), and the block **always** renders, so read the match from `{{active}}`.
+- A pipeline step writes into your assets folder, so the copy claims and hashes it. One that can only write into the build folder lists those files in its `outputs` (`['img/icons.svg']`): kiss deletes them first, checks them after, claims them for `{{asset}}` and packages, and never hashes them.
 - Tailwind in `assets.pipeline`: keep `-i` (without it the CLI exits 0 and drops everything you authored), and use `@import 'tailwindcss' source(none)` plus explicit `@source` paths, or words in your docs change the hashed stylesheet name on every page. `examples/10-asset-pipeline`.
 - A layout with no `<main>` around the page's own content puts its header, footer and menus (any not in a `<nav>`) into every page's `.md` copy. Wrap the content in `<main>`, or set `markdownCopies.selector`.
 - The default `sitemapLastmod` changes on every build. Set it per page for a byte-stable `sitemap.xml`.
@@ -106,8 +109,9 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `canonical`: the page's absolute URL, the same string as its `<loc>`.
 - `absUrl`: `siteUrl` joined to a path, extension kept.
 - `asset`: the emitted path under `config.assets` (hash or `?v=`); fails the build on a file not emitted.
-- `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id.
+- `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
+- `scormBridge`: `{{scormBridge}}` in a page's `<head>` inlines the SCORM 1.2 bridge: in an LMS the page is complete when seen (`complete="manual"` leaves it to the page), and `window.kissScorm` records `interaction({ id, response, correct, result })` (a `correct` array: all required; `{ anyOf }`: alternatives), `score(fraction)` and `status(value)`, keeps the learner's place with `bookmark(place)` and `save(state)` (refused past SCORM 1.2's 255 characters and 4,096 ASCII bytes, never cut), and hands them back as `resumed` on their next launch (read it in `ready(fn)`); `mode` is `'review'` when nothing is recorded, and `log` says why tracking failed. With no LMS every call does nothing.
 
 Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
 
@@ -119,7 +123,7 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 - [README.md](README.md): the agent quick start: `init`, the plugin install, prompts to copy.
 - [GUIDE.md](GUIDE.md): the full reference, including § Migrating from v1.
-- [examples/](examples/): runnable sites, each a folder run from inside itself (`node router.js`, `--dev` for a preview). Examples 1–6 and 10 each show one feature; 7–9, 11 and 12 are whole sites to copy by shape (versioned outputs, a data-fed site, a v1 migration with a recorded `AIKB/`, a blog with feed and aliases, a converted single-file page). `examples/README.md` has the table.
+- [examples/](examples/): runnable sites, each a folder run from inside itself (`node router.js`, `--dev` for a preview). Examples 1–6, 10 and 13 each show one feature (13: learning packages for an LMS); 7–9, 11 and 12 are whole sites to copy by shape (versioned outputs, a data-fed site, a v1 migration with a recorded `AIKB/`, a blog with feed and aliases, a converted single-file page). `examples/README.md` has the table.
 - [types/](types/): TypeScript declarations generated from the JSDoc in `lib/`.
 - [CHANGELOG.md](CHANGELOG.md): what changed between the version a site was written against and this one.
 - [AIKB/](AIKB/): per-module engine notes.

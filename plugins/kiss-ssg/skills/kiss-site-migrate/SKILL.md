@@ -181,6 +181,9 @@ the Codex section in `AGENTS.md`.
 
 ### 0d. 2.7.5: a Markdown copy of every page
 
+From 2.8.0 the copies are written only when the build calls `.llms()` (§ 0g). Read this section
+for what a copy is; read § 0g for when one is written.
+
 Nothing fails. What changes is the build folder and `llms.txt`:
 
 - **Every HTML page now has a `.md` copy beside it** (`about.md`, `courses/index.md`), converted
@@ -221,6 +224,42 @@ What changes besides the log:
 As with the first audit release, the upgrade is done when the site builds the way it did. Offer
 the findings as their own piece of work with the `kiss-site-review` skill, whose usability pass
 now covers them.
+
+### 0f. 2.8.0: `package` is a page option
+
+A page's `package` option now puts it in a learning package (an IMS content package or SCORM 1.2
+zip). Packaging is on by default. A site that never sets `package` gets no zips and no change. A
+site that already had a `package` key on its pages, for its own purposes, now has its pages
+packaged instead:
+
+- **Find the key before the first build.** Grep the build script and `controllers/` for `package`:
+  a `.page({ package: … })`, a fan-out record with a `package` field, or a controller that spreads
+  model fields into the page's options (`{ ...options, ...model }`) where a record carries one.
+- **A value that is not a slug fails the build** (`package must be a slug …`). One that is a slug
+  is quietly packaged into `packages/<value>.imscp.zip`, and fails as `<packages>` if one of its
+  pages has no usable `id`.
+- **The fix is to rename the site's key** (`packageName`, say) wherever the site reads it. If the
+  site never makes learning packages, `packages: false` in the config turns them off as well, but
+  the rename is still the honest fix: the key means something to kiss now.
+- After the rename, `kiss-ssg check` lists no `package:` lines, and the build folder has no
+  `packages/` folder.
+
+### 0g. 2.8.0: Markdown copies only with `.llms()`
+
+Nothing fails. Since 2.7.5 every HTML page had a `.md` copy beside it. Now a copy is written only
+when the build script calls `.llms()`, whose `llms.txt` is the one thing that links them
+(`markdownCopies.write` defaults to `'llms'`).
+
+- **A site that calls `.llms()`** sees no change.
+- **A site that does not** stops publishing the `.md` files. They were linked from nowhere, so
+  nothing should break. Grep the site for a hand-written link to a `.md` page before you assume
+  that; if it has one, or wants the copies for another reason, set `markdownCopies: true`, which now
+  means always.
+- `markdownCopies: false` still means never, even with `.llms()`.
+- `kiss-ssg check` against a record made before the upgrade shows each page's `markdown` going from
+  a path to `null`. Re-record the knowledge base (`npx kiss-ssg aikb router.js`) once it builds.
+- A host or deploy step that uploads the build folder may keep the old `.md` files on the server;
+  remove them there if it does not delete files the build no longer writes.
 
 ### 1. Check the floor, then read the recipes
 

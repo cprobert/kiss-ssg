@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}} · {{model.lesson}}</title>
+  <meta name="description" content="{{description}}">
+  {{!-- `root` is the climb back to the build root, set by each page in its
+        {{#extend}} hash. Relative, so the page works inside a package: an LMS
+        serves the package's files from wherever it unpacks them. --}}
+  <link rel="stylesheet" href="{{root}}{{asset 'css/course.css'}}">
+  {{!-- The SCORM 1.2 bridge, in <head> so it runs before anything the page
+        embeds. In an LMS it starts the session; with `complete` unset the page
+        is complete when it is seen, and `complete="manual"` leaves that to the
+        page's own script. On the web, or in an IMS content package, it finds
+        no LMS and does nothing. --}}
+  {{scormBridge complete=complete}}
+</head>
+<body>
+  <main class="lesson">
+    <p class="lesson__eyebrow">{{config.site.name}} · {{model.lesson}}</p>
+    {{#block "body"}}{{/block}}
+  </main>
+</body>
+</html>

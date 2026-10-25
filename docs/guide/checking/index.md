@@ -102,7 +102,19 @@ ok ./public (check) — 6 pages, 0 failed, 2 assets, 153ms
   = 3 unchanged
 ```
 
-Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array whenever there is a diff to print — under `--against`, or under `check` when the site has a recorded baseline — and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged, assets }` entry each, every list sorted. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
+A site that builds learning packages also gets a row for each zip that moved, after its pages, so you know which to upload to the LMS again:
+
+```
+  ~ ./public/espresso/extraction.html
+  = 2 unchanged
+  ~ package ./public/packages/espresso-basics.imscp.zip
+  ~ package ./public/packages/espresso-basics.scorm12.zip
+  = 2 packages unchanged
+```
+
+A zip is compared by the hash of its bytes, which depends on nothing but the files in it. A build that wrote no packages (packaging off, or a failed build) prints no package rows, rather than calling every package removed.
+
+Without `--summary`, stdout becomes `{ "reports": [...], "diff": [...] }` instead of the bare array whenever there is a diff to print — under `--against`, or under `check` when the site has a recorded baseline — and `diff` runs in the same order as `reports`, one `{ buildDir, added, removed, changed, unchanged, assets }` entry each, every list sorted, with `packages: { added, removed, changed, unchanged }` when that build wrote learning packages. A missing or unreadable file is a usage error (exit 1, nothing built). The diff never changes the exit code: it describes the build, it does not judge it.
 
 **Assets that moved are named under the pages.** Whenever a diff has pages in it, `formatDiff` **opens** with one `~ asset <source> -> <target> (was <target>)` row per emitted asset whose filename changed — above the page rows, capped at ten with `… and N more assets changed` — and `diff[].assets` carries the same rows as `{ source, from, to }`. This exists because of `assets.hash`: a hashed stylesheet's filename **is** its content hash, so one changed asset rewrites the `<link href>` of every page that references it and the diff reads `~ <every page>, = 0 unchanged` with nothing in any page source to explain it. The row names the cause, and it goes first because that is where the reader already is: after a two-hundred-page list it would be a footnote reached by scrolling past everything it explains. Only assets both builds emitted are rows — one the baseline never saw has no previous name to have moved from — and nothing is printed when no page moved, since the rows are there to explain a diff rather than to be one.
 

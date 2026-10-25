@@ -398,6 +398,58 @@ describe('resolveConfig', () => {
     ).toThrow(/config\.assets\.pipeline\[0\]\.cwd must be a string/)
   })
 
+  it('leaves the SCORM schema files out by default, and takes only true or false', () => {
+    expect(resolveConfig({ packages: {} }).packages.schemas).toBe(false)
+    expect(
+      resolveConfig({ packages: { schemas: true } }).packages.schemas,
+    ).toBe(true)
+    expect(() => resolveConfig({ packages: { schemas: 'yes' } })).toThrow(
+      /config\.packages\.schemas must be true or false/,
+    )
+  })
+
+  // `packages: 'scorm12'` was read as a string's character indices: the
+  // build passed, and shipped IMS content packages to an author who asked for SCORM.
+  it('takes packages as settings, true or false, and refuses a shorthand it would misread', () => {
+    expect(resolveConfig({ packages: false }).packages).toBe(false)
+    expect(resolveConfig({ packages: true }).packages.format).toBe('imscp')
+    expect(resolveConfig({}).packages.format).toBe('imscp')
+    for (const packages of ['scorm12', ['scorm12'], 1])
+      expect(() => resolveConfig({ packages })).toThrow(
+        /config\.packages must be an object of settings[\s\S]*format: 'scorm12'/,
+      )
+  })
+
+  it("takes a step's outputs as build-relative file paths, and refuses any other", () => {
+    const step = { run: 'a', outputs: ['css/site.css', 'icons.svg'] }
+    expect(
+      resolveConfig({ assets: { pipeline: [step] } }).assets.pipeline,
+    ).toEqual([step])
+    for (const bad of [
+      '/css/site.css',
+      'css\\site.css',
+      'C:/site.css',
+      '../site.css',
+      'css/./site.css',
+      'css//site.css',
+      'css/',
+      '',
+      3,
+    ])
+      expect(
+        () =>
+          resolveConfig({
+            assets: { pipeline: [{ run: 'a', outputs: [bad] }] },
+          }),
+        JSON.stringify(bad),
+      ).toThrow(/config\.assets\.pipeline\[0\]\.outputs\[0\]/)
+    expect(() =>
+      resolveConfig({
+        assets: { pipeline: [{ run: 'a', outputs: 'css/site.css' }] },
+      }),
+    ).toThrow(/config\.assets\.pipeline\[0\]\.outputs must be an array/)
+  })
+
   it('takes the default for a key passed explicitly as undefined', () => {
     expect(resolveConfig({ port: undefined }).port).toBe(3001)
     expect(resolveConfig({ cleanBuild: undefined }).cleanBuild).toBe(true)
@@ -443,16 +495,20 @@ describe('resolveConfig', () => {
 })
 
 describe('markdownCopies', () => {
-  it('is on by default, converting <main>', () => {
-    expect(DEFAULT_MARKDOWN_COPIES).toEqual({ write: true, selector: 'main' })
+  it("follows .llms() by default ('llms'), converting <main>", () => {
+    expect(DEFAULT_MARKDOWN_COPIES).toEqual({
+      write: 'llms',
+      selector: 'main',
+    })
     expect(Object.isFrozen(DEFAULT_MARKDOWN_COPIES)).toBe(true)
     expect(resolveConfig({}).markdownCopies).toEqual({
-      write: true,
+      write: 'llms',
       selector: 'main',
     })
   })
 
-  it('reads false as off and true as the defaults, like audit', () => {
+  // `true` is a statement: copies whether or not the build calls .llms().
+  it('reads false as never and true as always', () => {
     expect(resolveConfig({ markdownCopies: false }).markdownCopies).toEqual({
       write: false,
       selector: 'main',
@@ -466,10 +522,13 @@ describe('markdownCopies', () => {
   it('merges an object one level deep', () => {
     expect(
       resolveConfig({ markdownCopies: { selector: 'article' } }).markdownCopies,
-    ).toEqual({ write: true, selector: 'article' })
+    ).toEqual({ write: 'llms', selector: 'article' })
     expect(
       resolveConfig({ markdownCopies: { write: undefined } }).markdownCopies,
-    ).toEqual({ write: true, selector: 'main' })
+    ).toEqual({ write: 'llms', selector: 'main' })
+    expect(
+      resolveConfig({ markdownCopies: { write: 'llms' } }).markdownCopies,
+    ).toEqual({ write: 'llms', selector: 'main' })
   })
 
   it('refuses anything else, naming the value', () => {
@@ -481,7 +540,7 @@ describe('markdownCopies', () => {
       /config\.markdownCopies\.selector must be a non-empty string/,
     )
     expect(() => resolveConfig({ markdownCopies: { write: 'yes' } })).toThrow(
-      /config\.markdownCopies\.write must be a boolean/,
+      /config\.markdownCopies\.write must be true, false or 'llms'/,
     )
   })
 

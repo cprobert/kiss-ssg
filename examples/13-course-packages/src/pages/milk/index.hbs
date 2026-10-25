@@ -1,0 +1,75 @@
+{{!-- One SCO with many views: the lesson, two topics and a question on one page.
+      Each view has its own address (#lesson, #steaming, #pouring), so the back button works;
+      the script at the end shows one at a time. Without it, every view shows. --}}
+{{#extend "lesson" root="../" complete="manual"}}
+{{#content "body"}}
+<section data-view="lesson" id="lesson">
+  <h1>Milk texture</h1>
+  <p>Two topics, then one question. The lesson is complete when you have answered it.</p>
+  <ul class="cards">
+    <li><a class="card" href="#steaming"><strong>Steaming</strong><span>Stretch, then spin</span></a></li>
+    <li><a class="card" href="#pouring"><strong>Pouring</strong><span>And a question</span></a></li>
+  </ul>
+</section>
+
+<section data-view="steaming" id="steaming">
+  <p><a href="#lesson">← All topics</a></p>
+  <h2>Steaming</h2>
+  <p>Start with cold milk. Keep the steam tip just under the surface for a few seconds to let air in, then sink it a little so the milk spins and the bubbles break up. Stop before the jug is too hot to hold.</p>
+</section>
+
+<section data-view="pouring" id="pouring">
+  <p><a href="#lesson">← All topics</a></p>
+  <h2>Pouring</h2>
+  <p>Swirl the jug until the milk shines, then pour from a height to sink it under the crema, and lower the jug to draw on the surface.</p>
+  <div class="question" data-answer="1">
+    <p><strong>Question.</strong> The milk has big bubbles on top after steaming. What went wrong?</p>
+    <button type="button" data-option="0">The milk was too cold</button>
+    <button type="button" data-option="1">Too much air went in, too late</button>
+    <button type="button" data-option="2">The jug was too small</button>
+    <p class="question__result" aria-live="polite"></p>
+  </div>
+</section>
+
+<script>
+  // One view at a time, from the address. No address, or one that names no view, shows the lesson.
+  ;(function () {
+    var views = document.querySelectorAll('[data-view]')
+    function show() {
+      var name = location.hash.slice(1)
+      var found = false
+      views.forEach(function (v) { if (v.getAttribute('data-view') === name) found = true })
+      views.forEach(function (v) { v.hidden = v.getAttribute('data-view') !== (found ? name : 'lesson') })
+      window.scrollTo(0, 0)
+    }
+    window.addEventListener('hashchange', show)
+    show()
+  })()
+
+  // The question: say whether the choice is right, then record it. In an LMS,
+  // window.kissScorm (from the scormBridge helper in the layout) sends the answer as an interaction,
+  // the score as a fraction, and the lesson's completion; on the web it does nothing.
+  ;(function () {
+    var question = document.querySelector('.question')
+    var answer = Number(question.getAttribute('data-answer'))
+    question.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-option]')
+      if (!button) return
+      var choice = Number(button.getAttribute('data-option'))
+      var right = choice === answer
+      question.querySelector('.question__result').textContent = right
+        ? 'Right: air goes in early, while the milk is cold.'
+        : 'Not quite: too much air went in, too late.'
+      window.kissScorm.interaction({
+        id: 'milk-texture.pouring.1',
+        response: choice,
+        correct: answer,
+        result: right,
+      })
+      window.kissScorm.score(right ? 1 : 0)
+      window.kissScorm.status('completed')
+    })
+  })()
+</script>
+{{/content}}
+{{/extend}}

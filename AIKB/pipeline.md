@@ -11,7 +11,7 @@ Runs the external commands of `config.assets.pipeline` — a CSS toolchain, an i
   - `run(env)` → `Promise<PipelineResult[]>`, one `{ name, ok, duration, error? }` per step, in order. Each step's `run` is spawned with `shell: true` in `step.cwd` (default `process.cwd()`) with `{ ...process.env, ...env }`, and awaited before the next starts. **Never rejects**; a failed step is a result carrying its `error`. In `dev` mode a step that has a `watch` command and whose `run` succeeded also gets that watch process started, once.
   - `close()` → `Promise<void>`: SIGTERM to every watch process's process group, SIGKILL after `KILL_GRACE` (2s), resolving once they have all gone. On Windows, where there are no process groups, both phases are a `taskkill /T /F` of the child's tree instead. A closed pipeline stays closed — a later `run()` runs its steps but starts no watch process.
   - `watching()` → the names of the watch processes currently running.
-- `PipelineStep` (`{ name?, run, watch?, cwd? }`) and `PipelineResult` (`{ name, ok, duration, error? }`) typedefs; `lib/config.js` and `lib/build-report.js` both refer to them rather than restating the shape.
+- `PipelineStep` (`{ name?, run, watch?, cwd?, outputs? }`; `outputs` is read by `lib/kiss.js`, never here: this module still touches no file) and `PipelineResult` (`{ name, ok, duration, error? }`) typedefs; `lib/config.js` and `lib/build-report.js` both refer to them rather than restating the shape.
 
 ## Depends on
 

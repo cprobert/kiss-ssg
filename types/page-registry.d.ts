@@ -7,8 +7,12 @@ export function explicitIdOf(options: any): string;
  * @param {string|null} [idPrefix] given only by `_prepareMultiplePages`: what
  * this fan-out's items prefix their default ids with, in place of the view
  * route. Its presence is also what tells a fan-out item from a `.page()` page.
+ * @param {string} [directory]
+ * @param {number[]} [order] `[registration, item]`: the order the page was
+ * registered in, which the stack does not keep (it fills in the order models
+ * resolve). A learning package lists its pages by it (`lib/packages.js`).
  */
-export function preparePage(kiss: any, options: any, origin?: any, idPrefix?: string | null, directory?: string): {
+export function preparePage(kiss: any, options: any, origin?: any, idPrefix?: string | null, directory?: string, order?: number[]): {
     view: any;
     buildTo: string;
     page: KissPage;
@@ -16,6 +20,7 @@ export function preparePage(kiss: any, options: any, origin?: any, idPrefix?: st
     id: string;
     explicit: boolean;
     origin: any;
+    order: number[];
 };
 export function idIndexFor(kiss: any): any;
 /**
@@ -30,7 +35,7 @@ export function lookupPage(kiss: any, id: string): {
     views: string[];
 } | null;
 export function stackForRecord(kiss: any): any;
-export function prepareMultiplePages(kiss: any, options: any, data: any, fresh: boolean, origin: any, directory?: string): Promise<void>;
+export function prepareMultiplePages(kiss: any, options: any, data: any, fresh: boolean, origin: any, directory?: string, registration?: number): Promise<void>;
 /**
  * @param {any} kiss
  * @param {PageOptions} options

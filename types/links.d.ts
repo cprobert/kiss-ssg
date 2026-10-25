@@ -9,6 +9,19 @@
  */
 export function decodeEntities(value: string): string;
 /**
+ * The URLs of a `srcset`, read as the HTML standard's algorithm reads them:
+ * skip whitespace and commas, take the URL up to the next whitespace (commas
+ * inside it are part of it: `images/crop,large.png`, a `data:` URL), and if it
+ * ends in commas they end the candidate; otherwise skip its descriptors up to
+ * the next comma outside brackets. The one reading: the broken-link check and
+ * `lib/packages.js` both take it from here, so a page is never packed by one
+ * reading and checked by another.
+ *
+ * @param {string} srcset
+ * @returns {string[]}
+ */
+export function srcsetUrls(srcset: string): string[];
+/**
  * Every reference the rendered HTML asks a browser to fetch, as written.
  *
  * @param {string} html one page's output, exactly as it was written to disk
@@ -17,6 +30,17 @@ export function decodeEntities(value: string): string;
  * dropped here, because none of them can name a file this build wrote
  */
 export function extractReferences(html: string): string[];
+/**
+ * A reference as a browser's URL parser reads it on an http(s) page, before it
+ * resolves anything: leading and trailing C0 controls and spaces are dropped,
+ * every ASCII tab and newline is dropped, and a backslash is a slash, so
+ * `assets\x.png` names `assets/x.png` and `\\cdn\x.png` is another host. The
+ * one reading: the link check and `lib/packages.js` both start from it.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function browserReference(value: unknown): string;
 /**
  * Whether a reference names something this build was supposed to write.
  *

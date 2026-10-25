@@ -79,6 +79,17 @@ describe('extractReferences', () => {
     ).toEqual(['a.jpg', 'b.jpg', 'c.jpg'])
   })
 
+  // The HTML standard's reading, the one `lib/packages.js` packs by: a URL runs
+  // to whitespace, commas and all, so splitting on every comma reported two
+  // broken links for one image that is there.
+  it('reads a srcset as a browser does: a comma inside a URL is part of it', () => {
+    expect(
+      extractReferences(
+        '<img srcset="images/crop,large.png 2x,small.png 1x, tiny.png,">',
+      ),
+    ).toEqual(['images/crop,large.png', 'small.png', 'tiny.png'])
+  })
+
   it('does not mistake data-src for src', () => {
     expect(extractReferences('<img data-src="/lazy.png" alt="">')).toEqual([])
   })
@@ -109,6 +120,20 @@ describe('extractReferences', () => {
 describe('classifyReference', () => {
   const siteUrl = 'https://site.example'
   const of = (ref, url = siteUrl) => classifyReference(ref, { siteUrl: url })
+
+  // A browser reads a backslash as a slash on an http(s) page, and drops tabs
+  // and newlines: `assets\x.png` works, and `\\cdn\x.png` is another host.
+  it('reads a reference as a browser does before classifying it', () => {
+    expect(of('assets\\x.png')).toEqual({
+      kind: 'internal',
+      path: 'assets/x.png',
+    })
+    expect(of('\\\\cdn.example\\x.png')).toEqual({
+      kind: 'external',
+      path: null,
+    })
+    expect(of('as\tsets/x\n.png').path).toBe('assets/x.png')
+  })
 
   // Every shape in this block is one the engine's own helpers emit — the
   // fixture list the amended contract names.

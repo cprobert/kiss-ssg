@@ -126,7 +126,18 @@ It renders `css/site.css`, `css/site.a1b2c3d4.css` or `css/site.css?v=1.4.5` dep
 
 `is` must be a string containing `"dev"` or `"prod"` (case-insensitive) — checked against the Kiss instance's `dev` config option.
 
-A missing or non-string `is` logs an error and renders neither branch. `markdown` given `undefined` logs a warning and renders nothing; a `null`, plain object or array also renders nothing, with a warning, rather than throwing. Kiss exposes the handlebars object so you can register your own helpers, e.g.
+A missing or non-string `is` logs an error and renders neither branch. `markdown` given `undefined` logs a warning and renders nothing; a `null`, plain object or array also renders nothing, with a warning, rather than throwing. `scormBridge` inlines the SCORM 1.2 bridge, one `<script>`, for a page in a learning package (see **Learning packages** above). Put it in `<head>`:
+
+```handlebars
+{{scormBridge}}
+{{! complete when the page is seen }}
+{{scormBridge complete='manual'}}
+{{! the page calls kissScorm.status('completed') itself }}
+```
+
+In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. A `complete` other than `"seen"` or `"manual"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
+
+Kiss exposes the handlebars object so you can register your own helpers, e.g.
 
 ```js
 kiss.handlebars.registerHelper('stringify', function (obj) {
@@ -174,3 +185,5 @@ export function registerJsonLdHelpers(kiss) {
 ```
 
 `{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/blog/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (add `absolute=true` for `https://example.com/about`). A site whose host serves the pretty form on every page sets `links: { canonical: true }` once instead of writing `canonical=true` at every call site; the per-call hash still wins either way, `canonical=false` included, and `canonical` and `absolute` compose — with both, the link is the absolute URL of the pretty path. **It fails the build** — as `{{asset}}` now does, on a path no copy emitted: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
+
+**On a page in a learning package, `{{link}}` is relative to the page**, and names the file: `{{link "l1/tab-2"}}` from `course/l1/tab-1.html` renders `tab-2.html`, and a link to an extension-less page renders `../tab-2/index.html`, never `/course/l1/tab-2/`. An LMS serves a package's files as they are, from wherever it unpacks them, so neither a root-relative path nor a folder would reach the page there; the relative file works there and on the web alike. `canonical` and `links.trailingSlash` do not apply to it. `relative=false` on the call gives the served path back, `relative=true` asks for the relative form on any page, and `absolute=true` is always absolute. With `packages: false`, a page's `package` option no longer changes its links.

@@ -14,6 +14,22 @@ const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 
 const COVERAGE = [
+  // Learning packages: a page added to a course's lesson joins its package by
+  // naming it, needs an id (the LMS keeps learners' records by it), and in a
+  // SCORM package does not link to its fellow members. The skill that adds a
+  // page is where an agent meets that.
+  {
+    feature: 'a page in a learning package: package, a stable id, scormBridge',
+    pattern: /`package`[\s\S]*`id`[\s\S]*scormBridge/,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
+  },
+  // 2.8.0: under an LMS page still loading, `resumed` is null until the
+  // bridge decides, so a page that restores a place does it in ready().
+  {
+    feature: 'a page that restores a place waits on kissScorm.ready()',
+    pattern: /`resumed`[\s\S]*kissScorm\.ready\(/,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
+  },
   // 2.7.5: every HTML page gets a Markdown copy converted from its <main>, so
   // a layout without one ships its chrome into every copy and nothing reports
   // it. The skills that write or inherit a layout have to say so.
@@ -647,6 +663,15 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2.8.0: Markdown copies are written only when the build calls .llms() (markdownCopies.write defaults to "llms"); from 2.7.5 every page had one, and a doc saying every page gets one tells an agent to expect a .md that a build without .llms() never writes',
+    patterns: [
+      /Every HTML page gets a Markdown copy/,
+      /Every page gets a `\.md` beside it/,
+      /it is on by default, so an agent reading your site/,
+      /`config\.markdownCopies`, on by default/,
+    ],
+  },
   {
     why: '2026-10-21 pilot: "a forward Tab … never hid one" was measured under a top header only; under a bottom call bar a forward Tab is exactly the direction that hides controls, and the sentence read as a general pass',
     patterns: [

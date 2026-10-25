@@ -50,6 +50,10 @@ export type PipelineStep = {
      * the folder both commands run in; defaults to `process.cwd()`
      */
     cwd?: string;
+    /**
+     * the files `run` writes into the build folder, build-relative; kiss deletes each before the step and claims it after (`AIKB/kiss.md`)
+     */
+    outputs?: string[];
 };
 /**
  * What one step did. `error` is present exactly when `ok` is `false`.

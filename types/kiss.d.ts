@@ -94,6 +94,14 @@ export type PageOptionsKnown = {
      */
     date?: Date | number | string;
     /**
+     * the learning package this page is a member of, a lowercase slug (`espresso-basics`); the page then needs an `id`, which its package identifiers are made from (GUIDE.md § Learning packages)
+     */
+    package?: string;
+    /**
+     * the heading this page is grouped under in its package's table of contents
+     */
+    packageSection?: string;
+    /**
      * old URL paths this page now answers (`['/old-slug']`); each becomes one `301` line in `<build>/_redirects`. On a `.pages()` fan-out it belongs to the *record*, not to the registration
      */
     aliases?: string[];
@@ -284,6 +292,8 @@ export type WatchOptions = {
  * @property {string} [llmsSection] the `llms.txt` section this page is listed under, overriding its path
  * @property {boolean} [ignoreFeed] keep this page out of the `.feed()` document
  * @property {Date|number|string} [date] the page's date; `.feed()` orders by it and leaves out a page without one (the field name is `.feed()`'s `dateField`)
+ * @property {string} [package] the learning package this page is a member of, a lowercase slug (`espresso-basics`); the page then needs an `id`, which its package identifiers are made from (GUIDE.md § Learning packages)
+ * @property {string} [packageSection] the heading this page is grouped under in its package's table of contents
  * @property {string[]} [aliases] old URL paths this page now answers (`['/old-slug']`); each becomes one `301` line in `<build>/_redirects`. On a `.pages()` fan-out it belongs to the *record*, not to the registration
  */
 /**
@@ -575,6 +585,14 @@ declare class Kiss {
     /** @private */
     private _redirectsRun;
     /** @private */
+    private _packagesRun;
+    /** @private @type {import('./packages.js').PackageResult[]|null} */
+    private _packagesResult;
+    /** @private */
+    private _packagesDevNoticed;
+    /** @private */
+    private _registrationSeq;
+    /** @private */
     private _promotedFrom;
     /** @private */
     private _checkMode;
@@ -709,6 +727,8 @@ declare class Kiss {
     /** @private */
     private _writeRedirects;
     /** @private */
+    private _writePackages;
+    /** @private */
     private _lastBuildRecord;
     /** @private */
     private _redirectFindings;
@@ -827,6 +847,15 @@ declare class Kiss {
      * @returns {this}
      */
     sitemap(options?: SitemapOptions | null, callback?: (urls: SitemapUrl[]) => void | Promise<void>): this;
+    /**
+     * Writes the Markdown copy of every written page that should have one and
+     * has none: pages that rendered before the build called `.llms()`. A copy
+     * that cannot be made fails its page, as it would have at render.
+     *
+     * @private
+     * @returns {Promise<void>}
+     */
+    private _writeMissingCopies;
     /**
      * Writes `llms.txt` into the build folder — the llmstxt.org index an answer
      * engine reads first — from the same registry, titles and URLs the sitemap is

@@ -17,8 +17,9 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 - `toCanonicalPath(pageURL)` → the same path with the last segment's file extension removed and nothing else touched (`courses/index.html` → `courses/index`, `courses/bronze.html` → `courses/bronze`). What `canonical` and `sitemap.js` hand `toAbsoluteUrl`.
 - `toAbsoluteUrl(siteUrl, urlPath)` → `siteUrl` (trailing slashes trimmed) joined to `urlPath` (leading slashes stripped, repeated slashes collapsed, a trailing `index` segment — with or without an extension — replaced by a trailing `/`) by exactly one `/`. An explicit trailing `/` is **preserved**; a bare path stays bare; a file extension is kept. An empty path gives `siteUrl` with a single trailing slash.
 - `servedPathFor(pageURL)` → the root-relative path a static host serves that page at: `/` + the page's build-relative URL, with a trailing `index.html` collapsed to a trailing `/` (`index.html` → `/`, `about.html` → `/about.html`, `about/index.html` → `/about/`, `courses/index.html` → `/courses/`, `data/index.json` → `/data/index.json`). The one derivation behind `{{link}}`.
+- `relativePathFor(fromPageURL, toPageURL)` → one page's file as a reference from another's (`tab-2.html`, `../l2/index.html`; a page linking itself gets its own file name). No policy and no collapse: it names the file, because it is `{{link}}`'s href on a learning-package page, which an LMS serves file by file from wherever it unpacks it, and a folder link is exactly what an LMS does not resolve. Not a fifth URL policy beside the four below: it carries no host and no site-wide shape at all.
 - `hashId(input)` → MD5 hex digest of `input` if it's a string, else of `JSON.stringify(input)`.
-- `export default { trimLines, toSlug, toTitleCase, trimPath, sanitizePath, posixPath, globFiles, hashId, toURLKey, toAbsoluteUrl, toCanonicalPath, servedPathFor }` (also each function is a named export).
+- `export default { trimLines, toSlug, toTitleCase, trimPath, sanitizePath, posixPath, globFiles, hashId, toURLKey, toAbsoluteUrl, toCanonicalPath, servedPathFor, relativePathFor }` (also each function is a named export).
 
 ## Depends on
 

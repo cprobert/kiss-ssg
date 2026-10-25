@@ -53,6 +53,12 @@
     "sections": ["Host URL policy", "Redirects"]
   },
   {
+    "slug": "packages",
+    "title": "Learning packages",
+    "description": "Zipping pages into IMS content packages and SCORM 1.2 packages for Moodle or any LMS: membership, what a package carries, two ways to build a lesson, and recording answers through the SCORM bridge.",
+    "sections": ["Learning packages"]
+  },
+  {
     "slug": "checking",
     "title": "Checking a build",
     "description": "Waiting for a build, dry-running it with kiss-ssg check, reading the report, and recording a site's knowledge base with kiss-ssg aikb.",

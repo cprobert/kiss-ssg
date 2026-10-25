@@ -17,8 +17,11 @@ const engine = pathToFileURL(path.join(repoRoot, 'lib', 'kiss.js')).href
 
 const site = (body) => `import Kiss from '${engine}'\n${body}\n`
 
+// `markdownCopies: true`: these builds call no `.llms()`, and the report's
+// `markdown` path, mapped from the staging folder to the real one, is part of
+// what the tests below check.
 const ONE_PAGE = site(`
-const kiss = new Kiss({ folders: { src: './src', build: './public' } })
+const kiss = new Kiss({ folders: { src: './src', build: './public' }, markdownCopies: true })
 kiss.scan().generate()
 await kiss.complete().catch((err) => {
   console.error(err.message)
@@ -26,7 +29,7 @@ await kiss.complete().catch((err) => {
 })`)
 
 const ONE_BROKEN_PAGE = site(`
-const kiss = new Kiss({ folders: { src: './src', build: './public' } })
+const kiss = new Kiss({ folders: { src: './src', build: './public' }, markdownCopies: true })
 kiss.scan().page({ view: 'missing.hbs' }).generate()
 await kiss.complete().catch((err) => {
   console.error(err.message)
@@ -778,7 +781,8 @@ describe('kiss.report()', () => {
         hash: expect.stringMatching(/^[0-9a-f]{40}$/),
         id: 'index',
         canonical: null,
-        markdown: `${temp.build}/index.md`,
+        // No `.llms()` in this build, so no copy (2.8.0).
+        markdown: null,
       },
     ])
     expect(report.assets).toEqual([

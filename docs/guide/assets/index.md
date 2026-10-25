@@ -33,7 +33,7 @@ The other two forms, for a layout that climbs back to the build root and for an 
 
 ### An asset pipeline
 
-`config.assets.pipeline` runs an external tool as part of the build — a CSS toolchain, an icon sprite, anything with a command line. Each step is `{ name?, run, watch?, cwd? }`, and kiss knows nothing about the tool itself:
+`config.assets.pipeline` runs an external tool as part of the build — a CSS toolchain, an icon sprite, anything with a command line. Each step is `{ name?, run, watch?, cwd?, outputs? }`, and kiss knows nothing about the tool itself:
 
 ```js
 const kiss = new Kiss({
@@ -54,6 +54,14 @@ const kiss = new Kiss({
 Every `run` is executed through a shell, in order, awaited, **before the asset copy** — so a tool that writes into your assets folder has its output copied into the build like any other asset — and again before the copy on every whole-site `watch` rebuild. A step that exits non-zero (or cannot be spawned) fails the build like a failed page: `complete()` rejects and the failure is named `<pipeline: tailwind>`, while the pages and the asset copy still run so the whole build is still reported. `report().pipeline` carries `{ name, ok, duration }` per step.
 
 `name` defaults to the first word of `run`, `cwd` to `process.cwd()`, and each command inherits `process.env` plus `KISS_BUILD`, `KISS_ASSETS` and `KISS_DEV` (`'1'` or `'0'`). `watch` is the dev-mode half: in `dev: true` only, it is started once — after that step's `run` has succeeded — kept for the session with its output going through kiss's logger, and ended by `close()`. A watch process that dies on its own is logged, not a build failure, and a rebuild never starts a second one. Editing a page, a partial or a layout does **not** re-run the steps; a tool that must see those edits is what `watch` is for.
+
+**Write into your assets folder if you can.** The copy then picks the file up, claims it, and hashes it under `assets.hash` like any other asset. A tool that can only write into the build folder (`$KISS_BUILD`) declares each file it writes there in `outputs`, as build-relative paths:
+
+```js
+{ name: 'sprite', run: 'node tools/sprite.js', outputs: ['img/icons.svg'] }
+```
+
+kiss deletes each declared file before the step runs and checks it exists after, so a step that succeeds without writing it fails the build (`declared output not written: img/icons.svg`) rather than shipping the file an earlier build left. A declared file is claimed as this build's, so `{{asset 'img/icons.svg'}}` names it, a learning package carries it, and a copy of the same name is reported as a collision. It is never hashed: it keeps the name the tool gave it. A file written into the build folder and not declared is not this build's as far as kiss knows: a learning package reports it as not written and leaves it out.
 
 A watch command gets no stdin from kiss, so a tool that stops when stdin closes needs its keep-alive flag — Tailwind's is `--watch=always`; plain `--watch` exits at once and the log says `pipeline watch "tailwind" exited (code 0)`. Scoped re-renders — a page view, a partial or a layout edit under `watch` — deliberately do **not** re-run the steps; a tool that must see those edits is what `watch` is for. `kiss-ssg check` runs the pipeline exactly as a build does, so a check is not read-only over your working tree: it regenerates whatever the steps generate. `examples/10-asset-pipeline/` (`npm run eg10`) is a runnable version that needs nothing installed.
 

@@ -138,6 +138,21 @@
  * @property {BuildRobots|null} robots what `.robots()` wrote, or `null` when it was never called
  * @property {{collisions: import('./output-registry.js').OutputCollision[]}} outputs advisory output collisions between active producers
  * @property {BuildAudit|null} audit the launch-readiness audit, or `null` when this build ran none
+ * @property {BuildPackage[]|null} packages the learning packages written, one per package and format, sorted by id then format; `null` when no page is in a package, packaging is off, the build failed, and in a dev build
+ */
+/**
+ * One learning package written in one format (`lib/packages.js`).
+ *
+ * @typedef {Object} BuildPackage
+ * @property {string} id the package's id
+ * @property {'imscp'|'scorm12'} format
+ * @property {string} file the zip, against the real build folder
+ * @property {string} title its title in the table of contents
+ * @property {string} hash sha1 of the zip, which depends only on the files in it: two builds give one hash exactly when the package is the same
+ * @property {string[]} pages the member pages, in table-of-contents order, against the real build folder
+ * @property {number} files the entries in the zip, `imsmanifest.xml` included
+ * @property {number} bytes the zip's size, for an LMS's upload limit
+ * @property {{page: string, href: string, reason: string}[]} outside the references the package cannot carry, sorted by page then href; `page` against the real build folder
  */
 /**
  * @param {string|null|undefined} target
@@ -179,9 +194,10 @@ export function reportedView(view: string): string;
  * @param {string|null} [input.feed] the feed file written by this build
  * @param {{collisions: import('./output-registry.js').OutputCollision[]}} [input.outputs]
  * @param {BuildAudit|null} [input.audit] what the launch-readiness audit found, `null` when none ran
+ * @param {import('./packages.js').PackageResult[]|null} [input.packages] the learning packages written, as written
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -213,6 +229,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
         collisions: import("./output-registry.js").OutputCollision[];
     };
     audit?: BuildAudit | null;
+    packages?: import("./packages.js").PackageResult[] | null;
 }): BuildReport;
 /**
  * The audit's summary lines, unindented: one per check that fired, naming up
@@ -232,6 +249,15 @@ export function auditLines(audit: BuildAudit | null | undefined): string[];
  * @returns {string}
  */
 export function formatReport(report: BuildReport): string;
+/**
+ * A package's size as a person reads it, for the summary and the build log:
+ * `812 B`, `3.2 KB`, `14.7 MB` (1 KB is 1,024 bytes). A report from before
+ * sizes were recorded has none, and shows `size unknown`.
+ *
+ * @param {number} [bytes]
+ * @returns {string}
+ */
+export function packageSize(bytes?: number): string;
 /**
  * One page the build queued.
  */
@@ -556,4 +582,50 @@ export type BuildReport = {
      * the launch-readiness audit, or `null` when this build ran none
      */
     audit: BuildAudit | null;
+    /**
+     * the learning packages written, one per package and format, sorted by id then format; `null` when no page is in a package, packaging is off, the build failed, and in a dev build
+     */
+    packages: BuildPackage[] | null;
+};
+/**
+ * One learning package written in one format (`lib/packages.js`).
+ */
+export type BuildPackage = {
+    /**
+     * the package's id
+     */
+    id: string;
+    format: "imscp" | "scorm12";
+    /**
+     * the zip, against the real build folder
+     */
+    file: string;
+    /**
+     * its title in the table of contents
+     */
+    title: string;
+    /**
+     * sha1 of the zip, which depends only on the files in it: two builds give one hash exactly when the package is the same
+     */
+    hash: string;
+    /**
+     * the member pages, in table-of-contents order, against the real build folder
+     */
+    pages: string[];
+    /**
+     * the entries in the zip, `imsmanifest.xml` included
+     */
+    files: number;
+    /**
+     * the zip's size, for an LMS's upload limit
+     */
+    bytes: number;
+    /**
+     * the references the package cannot carry, sorted by page then href; `page` against the real build folder
+     */
+    outside: {
+        page: string;
+        href: string;
+        reason: string;
+    }[];
 };

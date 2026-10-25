@@ -3,8 +3,9 @@ import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
 
-// `config.markdownCopies`: every HTML page the build writes gets a `.md` copy
-// beside it, converted from the written HTML, and `llms.txt` links the copies.
+// `config.markdownCopies`: when the build calls `.llms()` (by default), every
+// HTML page it writes gets a `.md` copy beside it, converted from the written
+// HTML, and `llms.txt` links the copies. `build` below calls `.llms()`.
 
 let site
 let kiss
@@ -50,6 +51,81 @@ describe('markdownCopies', () => {
     expect(await site.read('public/llms.txt')).toContain(
       '[Index](https://e.com/index.md)',
     )
+  })
+
+  // A copy nothing links to is a dead leg: by default they follow `.llms()`.
+  it('writes none when the build does not call .llms()', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': LAYOUT })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss.scan().generate()
+    await kiss.complete()
+
+    expect(await site.exists('public/index.html')).toBe(true)
+    expect(await site.exists('public/index.md')).toBe(false)
+    expect(kiss.report().pages[0].markdown).toBeNull()
+  })
+
+  it('writes them without .llms() under markdownCopies: true', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': LAYOUT })
+    kiss = new Kiss({
+      folders: site.folders,
+      logger: silentLogger,
+      markdownCopies: true,
+    })
+    kiss.scan().generate()
+    await kiss.complete()
+
+    expect(await site.read('public/index.md')).toBe(
+      '# Index\n\nSee [about](about.html).\n',
+    )
+  })
+
+  it('writes them when .llms() comes before .generate() in the chain', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': LAYOUT })
+    kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://e.com',
+      logger: silentLogger,
+    })
+    kiss.scan().llms({ title: 'T', summary: 'S' }).generate()
+    await kiss.complete()
+
+    expect(await site.exists('public/index.md')).toBe(true)
+    expect(await site.read('public/llms.txt')).toContain(
+      '[Index](https://e.com/index.md)',
+    )
+  })
+
+  // Called from a generate() callback, .llms() comes after every page has
+  // rendered: the copies it links are written then, never only promised.
+  it('writes the copies when .llms() is called after the pages rendered', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': LAYOUT,
+      'src/pages/private.hbs': LAYOUT,
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      siteUrl: 'https://e.com',
+      logger: silentLogger,
+    })
+    kiss
+      .page({ view: 'index.hbs' })
+      .page({ view: 'private.hbs', config: { markdownCopies: false } })
+      .generate(() => {
+        kiss.llms({ title: 'T', summary: 'S' })
+      })
+    await kiss.complete()
+
+    expect(await site.read('public/index.md')).toBe(
+      '# Index\n\nSee [about](about.html).\n',
+    )
+    expect(await site.exists('public/private.md')).toBe(false)
+    const llms = await site.read('public/llms.txt')
+    expect(llms).toContain('[Index](https://e.com/index.md)')
+    expect(llms).not.toContain('private.md')
+    expect(
+      kiss.report().pages.find((p) => p.view === 'index.hbs').markdown,
+    ).toBe(`${site.build}/index.md`)
   })
 
   it('writes none under markdownCopies: false, and llms.txt links the pages', async () => {

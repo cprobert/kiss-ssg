@@ -137,6 +137,19 @@ describe('utils.toCanonicalPath', () => {
   })
 })
 
+describe('utils.relativePathFor', () => {
+  it.each([
+    ['course/l1/tab-1.html', 'course/l1/tab-2.html', 'tab-2.html'],
+    ['course/l1/tab-1.html', 'course/l2/index.html', '../l2/index.html'],
+    ['course/l1/tab-1.html', 'index.html', '../../index.html'],
+    ['index.html', 'about/index.html', 'about/index.html'],
+    ['course/l1/tab-1.html', 'course/l1/tab-1.html', 'tab-1.html'],
+    ['/about.html', '/contact.html', 'contact.html'],
+  ])('links %s to %s as %s, the file and never a folder', (from, to, rel) => {
+    expect(utils.relativePathFor(from, to)).toBe(rel)
+  })
+})
+
 describe('utils.servedPathFor', () => {
   // The seven page shapes a build can produce, measured off `KissPage.pageURL()`
   // — this is the table the `{{link}}` contract is written against.
