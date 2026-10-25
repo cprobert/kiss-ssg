@@ -218,6 +218,31 @@ describe('learning packages', () => {
     expect(res[1].match(/<file /g)).toHaveLength(1)
   })
 
+  it('logs each package it wrote, and each reference it left outside, in the build log', async () => {
+    const info = []
+    const notices = []
+    await build({
+      cleanBuild: 'atomic',
+      logger: {
+        ...silentLogger,
+        info: (msg) => info.push(String(msg)),
+        notice: (msg) => notices.push(String(msg)),
+      },
+    })
+    const lines = info.filter((l) => l.startsWith('Package: '))
+    expect(lines).toEqual([
+      `Package: ${site.build}/packages/l1.imscp.zip  l1 tab 1  (2 pages, ${kiss.report().packages[0].files} files)`,
+      `Package: ${site.build}/packages/l2.imscp.zip  l2 tab 1  (2 pages, 3 files)`,
+    ])
+    // Named by the build folder, never by the staging folder an atomic build wrote it in.
+    expect(lines.join('\n')).not.toMatch(/staging/)
+    const outside = notices.filter((l) => l.startsWith('package outside: '))
+    expect(outside).toHaveLength(kiss.report().packages[0].outside.length)
+    expect(outside).toContain(
+      'package outside: course/l1/tab-1.html -> /img/a.png (root-relative)',
+    )
+  })
+
   it('reports what a package cannot carry, and packs none of it', async () => {
     await build()
     const report = kiss.report()

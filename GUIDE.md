@@ -870,6 +870,31 @@ kiss.page({
 })
 ```
 
+**A member page, and its layout.** Nothing in a member page is special but its links: they are relative, so the page works wherever the LMS unpacks the zip.
+
+```hbs
+{{! src/layouts/lesson.hbs }}
+
+<html lang='en'>
+  <head>
+    <meta charset='utf-8' />
+    <title>{{title}}</title>
+    <link rel='stylesheet' href='{{root}}{{asset "css/course.css"}}' />
+    {{scormBridge complete=complete}}
+  </head>
+  <body><main>{{#block 'body'}}{{/block}}</main></body>
+</html>
+```
+
+```hbs
+{{! src/pages/espresso/grind.hbs: one folder down, so root climbs one level }}
+{{#extend 'lesson' root='../'}}
+  {{#content 'body'}}<h1>The grind</h1><p>…</p>{{/content}}
+{{/extend}}
+```
+
+`root` and `complete` are values the page passes in its `{{#extend}}` hash, and the layout reads as `{{root}}` and `complete=complete`. kiss does not set `root`: a page that leaves it out gets an empty string, and its stylesheet link is then right only at the build root. Give every member page its climb back to the build root (`""`, `"../"`, `"../../"`). A page that records its own completion passes `complete="manual"` the same way.
+
 **A page joins a package by naming it**, `package: '<id>'`, a lowercase slug (`espresso-basics`). Every page that names the same id is in that package, in the order the pages were registered. `packageSection: 'Part 1'` groups a page under a heading in the LMS's table of contents. Each zip is written to `<dir>/<id>.<format>.zip`, at the end of `complete()`, beside the pages; a dev build writes none, with one notice.
 
 **A member page needs an `id`, and the id is a promise.** The LMS keeps a learner's record against the identifier kiss makes from the page's `id`, and matches the pages of a new upload to the old by it: change the id and the learner's progress on that page is gone. So the identifier depends on the id alone, never on the page's path or position, and a member page with no usable id fails the build. An id that is already a valid XML name (`espresso-grind`) is used as it is; any other (`espresso/grind`) is cleaned and given a short hash of itself, so two ids never share an identifier.
@@ -883,6 +908,8 @@ kiss.page({
 | `title`  | `null`       | `(id, pages) => string`, the package's title in the LMS; `pages` are `{ id, title, options, model }`. Default: the first page's title |
 | `only`   | `null`       | A list of package ids to write; the rest are skipped, and an id that names no package is a notice                                     |
 
+**A site of packages only gets three audit findings that do not apply to it**: `og-image-missing`, `favicon-missing` and `not-found-missing`. An LMS opens the pages; nobody shares them, sees them in a browser tab or types their URL wrong. Turn the three off, with the reason in a comment: `audit: { ignore: ['og-image-missing', 'favicon-missing', 'not-found-missing'] }` (§ Checking a build). `examples/13-course-packages` does.
+
 **A package carries what its pages need, and nothing else.** kiss follows each page's stylesheets (and their `url()` and `@import`), images (`src`, `srcset`, `poster`, SVG `use`), icons, inline `style` and `<style>`, and embedded pages (`iframe`, `object`, `embed`, read like a page), and roots the zip at the deepest folder that holds all of it, so a shared `assets/` folder above the lessons is inside. It packs only files this build wrote, so a stale file in the build folder can never get in. A link (`<a>`) to another member page is kept; it is not followed. What a package cannot carry is reported in `report().packages[].outside`, each with its reason, and left out:
 
 - a root-relative URL (`/css/site.css`): an LMS serves a package from wherever it unpacks it, not from a site root;
@@ -892,13 +919,17 @@ kiss.page({
 
 Write a member page's links and asset URLs relative to the page (`{{root}}{{asset 'css/site.css'}}`, as `root` is used in the examples), and its package is complete.
 
-**The same pages give the same bytes.** Every entry is stored, not compressed, with fixed dates, in a fixed order, so a rebuild of an unchanged lesson writes an identical zip, and `report().packages[].hash` tells you which packages changed and need uploading again. `kiss-ssg check` lists them for you, against the last recorded build or `--against` a report you kept (§ Checking a build). The report and the build summary list each package with its file, title, pages and files.
+**The same pages give the same bytes.** Every entry is stored, not compressed, with fixed dates, in a fixed order, so a rebuild of an unchanged lesson writes an identical zip, and `report().packages[].hash` tells you which packages changed and need uploading again. `kiss-ssg check` lists them for you, against the last recorded build or `--against` a report you kept (§ Checking a build).
+
+**What the build tells you.** The build log prints a `Package:` line for each zip it wrote, with its title, pages and files, and a `package outside:` notice for each reference a package left out. `report().packages` is a list of `{ id, format, file, title, hash, pages, files, outside }`: `file` the zip, `pages` the member pages' output paths in table-of-contents order, `files` the number of entries in the zip (its manifest included), and `outside` a list of `{ page, href, reason }`. It is `null` when the build wrote no package: packaging is off, no page names a package, or the build failed.
 
 #### Two ways to build a lesson
 
 **One SCO per page.** Each member page is a SCO: the LMS tracks each one, and its table of contents is the navigation. Do not link the pages to each other: a link from one SCO to another opens the second inside the first, so the report lists any such link for a SCORM package. This suits a lesson of a few pages a learner reads in order.
 
 **One SCO, many views.** The lesson is one page, whose own navigation shows one view at a time, each with its own address (`#steaming`), so the browser's back button works: a lesson overview, a topic, a tab of a topic. It is one SCO, so one session and one attempt in the LMS, and every answer the page records lands in it. Hide the LMS's own table of contents (it has one item) and the lesson has the whole window. This suits a lesson with its own structure, such as topic cards that open tabbed topics.
+
+The views, the navigation between them and any question are your page's own markup and script: kiss gives you the bridge, not the course. `examples/13-course-packages/src/pages/milk/index.hbs` is a short working version to start from: sections marked `data-view`, a `hashchange` handler that shows one of them, links between them by `#name`, and a question that records its answer, a score and completion through `window.kissScorm`.
 
 #### SCORM: `{{scormBridge}}` and `window.kissScorm`
 
@@ -918,7 +949,7 @@ kissScorm.status('completed') // or 'passed', 'failed', 'incomplete', 'browsed'
 kissScorm.available // true while a session with an LMS is open
 ```
 
-None of it throws, and a value is cleaned to what SCORM 1.2 accepts (an interaction id to a valid identifier). An embedded kiss page in an iframe uses the session of the page that embeds it. How a score counts, if at all, is the LMS's setting: in Moodle, choose the grading method, and whether every SCO must be completed, on the SCORM activity.
+None of it throws, and a value is cleaned to what SCORM 1.2 accepts (an interaction id to a valid identifier). An embedded kiss page in an iframe uses the session of the page that embeds it. How a score counts, if at all, is the LMS's setting, not the package's: in Moodle, for example, the grading method, and whether every SCO must be completed, are settings of the SCORM activity.
 
 ### Waiting for the build
 

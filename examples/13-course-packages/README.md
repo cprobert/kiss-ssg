@@ -16,13 +16,14 @@ npm run eg13        # from the repo root
 node router.js      # from examples/13-course-packages/
 ```
 
-It writes the three pages into `public/`, and four zips into `public/packages/`:
+It writes the three pages into `public/`, and four zips into `public/packages/`, which the build
+log lists:
 
 ```
-./public/packages/espresso-basics.imscp.zip  Espresso basics  (2 pages)
-./public/packages/espresso-basics.scorm12.zip  Espresso basics  (2 pages)
-./public/packages/milk-texture.imscp.zip  Milk texture  (1 page)
-./public/packages/milk-texture.scorm12.zip  Milk texture  (1 page)
+Package: ./public/packages/espresso-basics.imscp.zip  Espresso basics  (2 pages, 4 files)
+Package: ./public/packages/espresso-basics.scorm12.zip  Espresso basics  (2 pages, 4 files)
+Package: ./public/packages/milk-texture.imscp.zip  Milk texture  (1 page, 3 files)
+Package: ./public/packages/milk-texture.scorm12.zip  Milk texture  (1 page, 3 files)
 ```
 
 Upload a `.scorm12.zip` to Moodle as a SCORM package activity, or an `.imscp.zip` as an IMS content

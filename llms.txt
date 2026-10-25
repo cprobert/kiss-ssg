@@ -123,7 +123,7 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 - [README.md](README.md): the agent quick start: `init`, the plugin install, prompts to copy.
 - [GUIDE.md](GUIDE.md): the full reference, including § Migrating from v1.
-- [examples/](examples/): runnable sites, each a folder run from inside itself (`node router.js`, `--dev` for a preview). Examples 1–6 and 10 each show one feature; 7–9, 11 and 12 are whole sites to copy by shape (versioned outputs, a data-fed site, a v1 migration with a recorded `AIKB/`, a blog with feed and aliases, a converted single-file page). `examples/README.md` has the table.
+- [examples/](examples/): runnable sites, each a folder run from inside itself (`node router.js`, `--dev` for a preview). Examples 1–6, 10 and 13 each show one feature (13: learning packages for an LMS); 7–9, 11 and 12 are whole sites to copy by shape (versioned outputs, a data-fed site, a v1 migration with a recorded `AIKB/`, a blog with feed and aliases, a converted single-file page). `examples/README.md` has the table.
 - [types/](types/): TypeScript declarations generated from the JSDoc in `lib/`.
 - [CHANGELOG.md](CHANGELOG.md): what changed between the version a site was written against and this one.
 - [AIKB/](AIKB/): per-module engine notes.

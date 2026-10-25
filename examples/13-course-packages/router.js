@@ -70,13 +70,6 @@ kiss.page({
 
 kiss.generate()
 
-try {
-  await kiss.complete()
-  for (const p of kiss.report().packages ?? []) {
-    const n = p.pages.length
-    console.log(`${p.file}  ${p.title}  (${n} page${n === 1 ? '' : 's'})`)
-    for (const o of p.outside) console.log(`  outside: ${o.href} (${o.reason})`)
-  }
-} catch (err) {
-  reportBuildFailure(err)
-}
+// The build log lists each package (`Package: …`) and anything a package had to
+// leave out (`package outside: …`); `report().packages` has the same as data.
+await kiss.complete().catch(reportBuildFailure)
