@@ -955,6 +955,19 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
       expect(lmsA.data.get('cmi.core.score.raw')).toBe(undefined)
     })
 
+    // A page under its own SCO's API belongs to that session, not to a kiss
+    // page further up that owns another.
+    it('never proxies past the nearest LMS API to another SCO’s bridge', () => {
+      const lmsA = lms()
+      const lmsB = lms()
+      const ownerA = load(frame({ parent: frame({ API: lmsA.api }) }))
+      const apiB = frame({ parent: ownerA, API: lmsB.api })
+      const page = load(frame({ parent: apiB }))
+      page.kissScorm.score(0.8)
+      expect(lmsB.data.get('cmi.core.score.raw')).toBe('80')
+      expect(lmsA.data.get('cmi.core.score.raw')).toBe(undefined)
+    })
+
     it('runs no ready callback of an embedded page that has left', () => {
       const one = lms()
       const top = frame({ parent: frame({ API: one.api }), loading: true })
