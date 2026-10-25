@@ -1,7 +1,7 @@
 ---
 branch: feat/learning-packages
 base: main
-status: open
+status: closed
 opened: 2026-10-24
 ---
 
@@ -47,6 +47,7 @@ opened: 2026-10-24
 - 2026-10-25: Absorbed on this branch at the operator's request: Markdown copies are written only when the build calls `.llms()` (`markdownCopies.write` defaults to `'llms'`; `true` always, `false` never). Since 2.7.5 every HTML page had a `.md` copy by default, which a SCORM or IMS package does not want and which, on every site that never calls `.llms()`, nothing links to: the operator, who runs every consuming site, called those dead legs. Related to the learning packages because that is where it surfaced. A behaviour change for every site on `^2`: the migrate skill's § 0g carries it, and the 2.8.0 `CHANGELOG.md` entry must too, at `/branch-close`. Agreed by the operator.
 - 2026-10-25: The version stays 2.8.0 rather than the 2.9.0 the Intent proposes: 2.8.0 was never published (npm's latest is 2.7.0), so this branch's work joins the existing unpublished 2.8.0 `CHANGELOG.md` entry and npm sees no jump. Its upgrade notes (`package` a page option; Markdown copies only with `.llms()`) go into that entry at `/branch-close`, beside the audit checks it already carries; the migrate skill's §§ 0f and 0g are headed 2.8.0. The operator's decision.
 - 2026-10-25, during `/branch-close`: absorbed at internal-medicine's request, approved by the operator: `kissScorm.ready(fn)`, so a page waits for the decided bridge before reading `resumed` or keeping a place. Under an LMS page still loading, `resumed` was `null` until the parent loaded and a page's first `bookmark('')` was replayed over the saved place. Decided with it: a `bookmark()` or `save()` queued before a resume was known is dropped at handover, not replayed. The close restarts from Step 1 after these commits, per its resume rule.
+- 2026-10-25, during `/branch-close`: the roadmap criterion (`planning/specs/2026-10-24-learning-resources-roadmap.md`) was not met, and is deferred rather than written at the close: `planning/ROADMAP.md` (from `main`) has nothing on learning packages yet. Candidates for it: what the Moodle retests teach, H5P, SCORM 2004 or cmi5, LTI, and the parked multi-page session controller (`AIKB/scorm-bridge.md`). Flagged by internal-medicine at its own close.
 - 2026-10-25, during `/branch-close`: the multi-page coordination built in Codex adversarial rounds 6–15 on `ready()` (`d7825b7..95c4b10`, plus round 15's uncommitted work) is parked at the operator's decision (option 1): every round found a new cross-frame ordering it got wrong, the findings did not shrink, and no consumer needs several recording pages per SCO. `lib/scorm-bridge.js`, its tests, its AIKB note and GUIDE were restored to `a55267e` (`ready()` with rounds 1–5 fixed), and the supported shape is documented: one recording page per SCO, embedded pages through it. A proper design (one session controller per SCO on the API window, a state machine, tests across orderings) is a candidate for its own branch.
 
 ## Pulse log
@@ -60,3 +61,5 @@ opened: 2026-10-24
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+_No reflection was written at this close: Claude's attempt was stopped by a safety classifier, and the operator may add one here. The close's checks are recorded in the Amendments above and in the PR: secrets scan clean, `/security-review` with no findings, docs swept, coverage passing, the operator's eyeball (a package uploaded to Moodle, before `ready()` and the parking), `npm run gates` green, and a clean whole-branch Codex review._
