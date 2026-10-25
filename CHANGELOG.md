@@ -3,11 +3,50 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
-## 2.8.0 — 2026-10-21
+## 2.8.0 — 2026-10-25
 
-Nothing fails a build that used to pass. The audit has three more checks, so your first build after
-upgrading may report findings it never did. The `kiss-site-migrate` skill's § 0e says what to
-expect.
+kiss can now package pages for a learning management system. Two changes need a look when you
+upgrade, and the `kiss-site-migrate` skill's §§ 0e–0g walk through all three:
+
+- **`package` is now a page option.** If your pages, fan-out records or controllers already set a
+  `package` key for their own use, rename it (`packageName`, say). A value that is not a slug fails
+  the build, and one that is gets your pages zipped into `packages/`. Sites without the key see no
+  change.
+- **Markdown copies are written only when the build calls `.llms()`.** Since 2.7.5 every page had a
+  `.md` beside it, linked from nowhere unless the site wrote an `llms.txt`. A site that calls
+  `.llms()` sees no change. One that does not stops publishing the `.md` files; set
+  `markdownCopies: true` to keep them. `true` now means always, and `false` still means never.
+- **The audit has three more checks**, so your first build may report findings it never did
+  (below). They are advisory: `ok` and the exit code do not move.
+
+### Learning packages: IMS content packages and SCORM 1.2
+
+A page that names a `package` is zipped with the other pages that name it, into
+`packages/<id>.imscp.zip`, and `config.packages: { format: 'scorm12' }` (or both formats) makes a
+SCORM 1.2 package for Moodle or any LMS. One build can make many packages.
+
+- **A package carries what its pages need, and nothing else.** Stylesheets and what they import,
+  images and `srcset`s, icons, embedded pages, and files a page links to for download, such as a PDF
+  handout. Only files this build wrote go in. A reference a package cannot carry (root-relative, a
+  folder, another page, the wrong case) is reported, with its reason, in `report().packages`.
+- **Link a member page's pages with `{{link}}`.** On a page in a package it renders the file,
+  relative to the page (`tab-2.html`, `../tab-2/index.html`), because an LMS serves a package's
+  files from wherever it unpacks them. Use `{{root}}{{asset …}}` for assets. `relative=` on the call
+  overrides it either way.
+- **The same pages give the same bytes**, and `kiss-ssg check` lists which packages changed since
+  the last record, so you know which to upload again.
+- **`{{scormBridge}}`** in a page's `<head>` records completion, answers (`kissScorm.interaction`),
+  a score and a status, and keeps the learner's place (`bookmark`, `save`), handed back as
+  `kissScorm.resumed` on their next launch. A place or state is committed a couple of seconds after
+  it is written, not left to the moment the learner leaves. With no LMS every call does nothing, so
+  the same page works on the web too.
+- **A multi-select answer key:** `correct: [0, 2]` means every listed choice is required (`{a,c}`).
+  For alternatives, use `correct: { anyOf: [1, 3] }`.
+- **A pipeline step that writes into the build folder declares the files in `outputs`**, so
+  `{{asset}}` names them and a package can carry them.
+
+`examples/13-course-packages` packages a two-lesson course in both formats: one lesson of two pages,
+and one lesson on a single page.
 
 ### The audit checks zoom and in-page links
 
