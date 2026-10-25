@@ -160,6 +160,17 @@ describe('extractCssReferences', () => {
     ])
   })
 
+  // Compressed CSS (Sass's `style: 'compressed'`) writes `@import"x.css"`: a
+  // quoted value needs no space after the keyword. An unquoted one does, or
+  // `@importx` is another at-rule.
+  it('reads a quoted @import with no space before its value, as compressed CSS writes it', () => {
+    expect(
+      extractCssReferences(
+        `@import"theme.css";@import'more.css';@import url("last.css");@importx.css;`,
+      ),
+    ).toEqual(['theme.css', 'more.css', 'last.css'])
+  })
+
   it('skips a reference inside a CSS comment', () => {
     const css = `/* url(unused.png) and @import "old.css"; */ .a { background: url(used.png) }
       /* a comment
