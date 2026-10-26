@@ -897,7 +897,7 @@ kiss.page({
 {{/extend}}
 ```
 
-`root` and `complete` are values the page passes in its `{{#extend}}` hash, and the layout reads as `{{root}}` and `complete=complete`. kiss does not set `root`: a page that leaves it out gets an empty string, and its stylesheet link is then right only at the build root. Give every member page its climb back to the build root (`""`, `"../"`, `"../../"`). A page that records its own completion passes `complete="manual"` the same way.
+`root` and `complete` are values the page passes in its `{{#extend}}` hash, and the layout reads as `{{root}}` and `complete=complete`. kiss does not set `root`: a page that leaves it out gets an empty string, and its stylesheet link is then right only at the build root. Give every member page its climb back to the build root (`""`, `"../"`, `"../../"`). A page that should count as complete as soon as it is seen passes `complete="seen"` the same way. Leaving it out is `complete="manual"`, where the page's own script says when it is done.
 
 **A page joins a package by naming it**, `package: '<id>'`, a lowercase slug (`espresso-basics`). Every page that names the same id is in that package, in the order the pages were registered. `packageSection: 'Part 1'` groups a page under a heading in the LMS's table of contents. Each zip is written to `<dir>/<id>.<format>.zip`, at the end of `complete()`, beside the pages; a dev build writes none, with one notice.
 
@@ -935,11 +935,11 @@ Write a member page's asset URLs relative to the page (`{{root}}{{asset 'css/sit
 
 **One SCO, many views.** The lesson is one page, whose own navigation shows one view at a time, each with its own address (`#steaming`), so the browser's back button works: a lesson overview, a topic, a tab of a topic. It is one SCO, so one session and one attempt in the LMS, and every answer the page records lands in it. Hide the LMS's own table of contents (it has one item) and the lesson has the whole window. This suits a lesson with its own structure, such as topic cards that open tabbed topics.
 
-The views, the navigation between them and any question are your page's own markup and script: kiss gives you the bridge, not the course. `examples/13-course-packages/src/pages/milk/index.hbs` is a short working version to start from: sections marked `data-view`, a `hashchange` handler that shows one of them, links between them by `#name`, and a question that records its answer, a score and completion through `window.kissScorm`.
+The views, the navigation between them and any question are your page's own markup and script: kiss gives you the bridge, not the course. `examples/13-course-packages/src/pages/milk/index.hbs` is a short working version to start from: sections marked `data-view`, a `hashchange` handler that shows one of them, links between them by `#name`, a bookmark of the view the learner is on so they resume there, a quiz whose answers come back on the learner's next launch and are each reported as an interaction, and a panel where the learner marks the lesson complete. Its README lists what to copy from the quiz.
 
 #### SCORM: `{{scormBridge}}` and `window.kissScorm`
 
-Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS, starts the session, and marks the page complete when it is seen; `{{scormBridge complete="manual"}}` leaves completion to the page, and starts a new attempt as `incomplete`, because an LMS may record a status the page never set as completed when the session ends: a learner who leaves before the page calls `kissScorm.status('completed')` is not counted as done. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button; the time the page spends there is not counted as session time. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
+Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS and starts the session. Completion is the page's to report: a new attempt starts as `incomplete`, and the page calls `kissScorm.status('completed')` (or `'passed'`/`'failed'`) when the learner is done. A new attempt has to start as `incomplete` because an LMS may record a status the page never set as completed when the session ends, and a learner who left early would count as done. `{{scormBridge complete="seen"}}` instead marks the page complete as soon as it loads. Use it only on a page that keeps no place or state: **a page marked complete cannot be resumed in Moodle.** From then on, Moodle opens every launch in review mode, where nothing is recorded, while it still hands back the first launch's place. The learner reopens where they first left, every time, and nothing they do afterwards is saved ("Force new attempt" set otherwise starts afresh, with no place at all). So a page that calls `bookmark()` or `save()` keeps the default and reports its own completion. Its own report ends resume too, by design: once the page says `completed`, `passed` or `failed`, Moodle opens later launches in review mode. So report it when the learner has finished the lesson, not at a milestone along the way. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button; the time the page spends there is not counted as session time. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
 
 The page's own script records through `window.kissScorm`:
 
@@ -959,20 +959,22 @@ kissScorm.available // true while a session with an LMS is open
 
 **Bookmark and resume.** A learner who leaves can come back where they were. `kissScorm.bookmark(place)` records where the learner is (at most 255 characters, such as the view's address); `kissScorm.save(state)` records what the page needs to rebuild their progress (printable ASCII, at most 4,096 bytes: SCORM 1.2's one `suspend_data` field). The first of either also tells the LMS to resume the learner next time, and a resumed learner stays resumable even when they leave without saving again. On that next launch, `kissScorm.resumed` is `{ location, state }`; on a first launch, or off an LMS, it is `null`. A field the LMS failed to return is `null` too (unknown, as distinct from `''`, saved empty), and both are when it fails to say whether the learner is resuming at all, and the bridge does not let a bookmark or state the page queued before it was ready overwrite it. A value too long, or state that is not printable ASCII, is refused (`false`), never cut short: half a state is a corrupt one. Both are committed to the LMS a couple of seconds after they are written (a burst of them once), not left to the moment the learner leaves, when a browser may block the LMS's last request. A commit the LMS refuses is tried again a few times, and if the LMS ends the session underneath the page, the bridge starts it again and writes back everything not yet committed. One case it cannot recover: in Moodle, a commit whose request fails in transit is forgotten, because Moodle's next commit sends only what has changed since the failed one (`AIKB/upstream.md` in the package has the detail). The learner's next bookmark or save sends their new place. Keep state small: what cannot be rebuilt from the page (which questions were answered, how), not titles or text the page already has.
 
-**Wait for the bridge before you read `resumed` or keep a place.** When the LMS opens the page inside a page of its own that is still loading, the bridge waits for that page before it decides, and until then `resumed` is `null`. `kissScorm.ready(fn)` calls `fn(kissScorm)` once the bridge has decided: at once, usually, and also with no LMS (`available` is then `false`), so one code path serves the web and the LMS. It also returns a promise of the same object (`await kissScorm.ready()`). A bookmark or state a page sends before then, while the learner turns out to be resuming, is dropped rather than overwriting the place they left.
+**Wait for the bridge before you read `resumed` or keep a place.** When the LMS opens the page inside a page of its own that is still loading, the bridge waits for that page before it decides, and until then `resumed` is `null`. `kissScorm.ready(fn)` calls `fn(kissScorm)` once the bridge has decided: at once, usually, and also with no LMS (`available` is then `false`), so one code path serves the web and the LMS. It also returns a promise of the same object (`await kissScorm.ready()`). A bookmark or state a page sends before then, while the learner turns out to be resuming, is dropped rather than overwriting the place they left. Answers, a score and a status sent before then are queued and sent once it has, so a question's click handler need not wait.
 
 **One page records for a SCO.** The bridge is built for one kiss page per SCO doing the recording, with any kiss page it embeds (an `<iframe>` of another member page) recording through it, from inside `kissScorm.ready(…)`. Two kiss pages that each record into one SCO's session from separate frames (siblings under a wrapper page, or a page and a pop-up it opens) are not supported: which page's writes land last is not guaranteed, and a second page may fail to start the session at all. If a lesson needs several pages, make each its own SCO, which is what a package's member pages already are.
 
 ```js
 kissScorm.ready((scorm) => {
   const back = scorm.resumed
-  if (back && back.location && !location.hash)
-    location.replace(`#${back.location}`)
-  addEventListener('hashchange', () => scorm.bookmark(location.hash.slice(1)))
+  const keep = () => scorm.bookmark(location.hash.slice(1))
+  addEventListener('hashchange', keep)
+  // Already on a view (opened on one, or moved while the LMS loaded): keep it.
+  if (location.hash) keep()
+  else if (back && back.location) location.replace(`#${back.location}`)
 })
 ```
 
-**Modes.** `kissScorm.mode` is the LMS's launch mode: `'normal'`, `'browse'` (a preview: the page is not marked complete when seen) or `'review'` (a learner looking back at a finished attempt: nothing is recorded, though `available` is true), and `null` off an LMS. The bridge also commits, without finishing, whenever the page is hidden (a phone switching apps, a tab sent to the background), so a learner who never comes back still has their answers saved.
+**Modes.** `kissScorm.mode` is the LMS's launch mode: `'normal'`, `'browse'` (a preview: the bridge sets no status on load, even with `complete="seen"`) or `'review'` (a learner looking back at a finished attempt: nothing is recorded, though `available` is true), and `null` off an LMS. The bridge also commits, without finishing, whenever the page is hidden (a phone switching apps, a tab sent to the background), so a learner who never comes back still has their answers saved.
 
 **When tracking does not work.** `kissScorm.log` holds the bridge's last 50 events: each call to the LMS with its element and whether it worked, and for a failure the LMS's own error code, message and diagnostic; and the bridge's decisions (no LMS found, review mode, turned off). An LMS that refuses one call (a commit, say) fails that call alone, and the next checkpoint tries again; the bridge turns off only when the LMS has ended the session and will not start it again. It never holds a value: no learner name, answer, bookmark or state. Read it from the browser's console in the LMS (`kissScorm.log`).
 
@@ -1459,12 +1461,12 @@ A missing or non-string `is` logs an error and renders neither branch. `markdown
 
 ```handlebars
 {{scormBridge}}
-{{! complete when the page is seen }}
-{{scormBridge complete='manual'}}
 {{! the page calls kissScorm.status('completed') itself }}
+{{scormBridge complete='seen'}}
+{{! complete when the page is seen: only for a page that keeps no place }}
 ```
 
-In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. A `complete` other than `"seen"` or `"manual"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
+In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. `complete` is `"manual"` unless given; anything other than `"manual"` or `"seen"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
 
 Kiss exposes the handlebars object so you can register your own helpers, e.g.
 

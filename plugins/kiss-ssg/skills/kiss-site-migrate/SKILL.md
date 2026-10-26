@@ -261,6 +261,29 @@ when the build script calls `.llms()`, whose `llms.txt` is the one thing that li
 - A host or deploy step that uploads the build folder may keep the old `.md` files on the server;
   remove them there if it does not delete files the build no longer writes.
 
+### 0h. 2.8.2: a SCORM page reports its own completion
+
+Nothing fails, and only a site that puts `{{scormBridge}}` on its pages is affected. Until now a
+page with no `complete` was marked complete as soon as it loaded in an LMS. Now it starts each new
+attempt as `incomplete` and is complete only when its own script calls
+`kissScorm.status('completed')` (or `'passed'`/`'failed'`). Completing on load broke resume in
+Moodle: from then on Moodle opens every launch in review mode, where nothing is saved, and hands
+back the first launch's place, so the learner reopened there every time.
+
+- **Grep the site for `scormBridge`** and for the layouts that carry it. For each page that uses
+  it with no `complete` (and no `complete` passed through its `{{#extend}}` hash):
+  - **It calls `bookmark()` or `save()`, or has a point the learner finishes at**: give it a
+    `kissScorm.status('completed')` call there. This is the case the change exists for.
+  - **It keeps no place and nothing marks the end** (a page to read, with no question): pass
+    `complete="seen"`, which keeps the old behaviour.
+- **A `complete="manual"` is now the default.** It still works, so leave it or remove it.
+- **Learners' records already in an LMS are not changed.** A page completed under the old default
+  stays completed, and in Moodle it still opens in review mode for those learners. Only a new
+  attempt, or a learner who had not opened it yet, gets the new behaviour.
+- After the change, `kiss-ssg check` reports nothing new: completion happens in the browser, not
+  in the build. Check it in the LMS: launch a page that bookmarks three times, moving somewhere
+  else each time, and the third launch opens on the second launch's place.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.

@@ -57,15 +57,17 @@ kiss
 
 // Shape 2, one SCO with many views. The whole lesson is one page, whose own
 // navigation shows one view at a time from the address: one SCO, one session,
-// one attempt in the LMS. Its question records the answer through
-// `window.kissScorm`, and the page marks itself complete when it is answered.
+// one attempt in the LMS. It keeps the learner's place and quiz answers for
+// their next launch, reports each answer through `window.kissScorm`, and is
+// complete when the learner says so, at the end of the quiz. The questions are
+// data, in src/models/milk.json.
 kiss.page({
   view: 'milk/index.hbs',
   id: 'milk-texture',
   title: 'Milk texture',
-  description: 'Steaming and pouring milk, with one question.',
+  description: 'Steaming and pouring milk, with a short quiz.',
   package: 'milk-texture',
-  model: { lesson: 'Milk texture' },
+  model: 'milk.json',
 })
 
 kiss.generate()

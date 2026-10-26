@@ -3,6 +3,35 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.2 — 2026-10-26
+
+SCORM pages report their own completion, so resume keeps working in Moodle. Example 13 now shows
+how to build a quiz in a SCORM lesson. **A site that uses `{{scormBridge}}` should check its pages
+on upgrade**: the `kiss-site-migrate` skill's § 0h has the steps.
+
+- **`{{scormBridge}}` no longer marks a page complete when it loads.** A new attempt now starts as
+  `incomplete`, and the page is complete when its own script calls `kissScorm.status('completed')`
+  (or `'passed'`/`'failed'`). Completing on load broke resume in Moodle: once an attempt is
+  complete, Moodle opens every later launch in review mode, where nothing is saved, while still
+  handing back the first launch's place. So a learner reopened where they first left, every time,
+  and nothing after that was kept. `{{scormBridge complete="seen"}}` keeps the old behaviour, for a
+  page that keeps no place or state. `complete="manual"` is now the default and still works.
+- **What to do:** a page that calls `bookmark()` or `save()`, or has a point the learner finishes
+  at, needs a `kissScorm.status('completed')` call there. A page with neither, such as one to read
+  with no question, can pass `complete="seen"`. Records already in an LMS are not changed.
+- **Example 13's milk lesson is the pattern for a quiz in a SCORM lesson**
+  (`node_modules/kiss-ssg/examples/13-course-packages`):
+  - The questions are model data, drawn by a `question` partial and run by a `quiz-script` partial.
+  - The learner tries before being told, and every choice is reported to the LMS as an interaction.
+  - Answers come back on the learner's next launch, and never onto a quiz that has since changed.
+  - The learner marks the lesson complete in a panel that warns them first.
+  - The lesson also resumes on the view the learner was on.
+- **GUIDE now says three things it left unsaid:**
+  - A page's own `status('completed')` also ends resume in Moodle, so report it when the learner
+    has finished.
+  - Answers, a score and a status sent before `kissScorm.ready()` are queued, not lost.
+  - The resume snippet bookmarks the view the learner is already on when the bridge becomes ready.
+
 ## 2.8.1 — 2026-10-26
 
 A fix to `kiss-ssg init` and a documentation trap, with nothing to change on upgrade.

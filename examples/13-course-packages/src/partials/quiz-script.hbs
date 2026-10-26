@@ -1,0 +1,155 @@
+{{!-- The questions' script (partials/question.hbs). Formative: each choice is reported to the LMS, so a
+      tutor can see how learners answer, but nothing is scored and the answers do not decide completion.
+      The learner says when they are done (the finish panel in pages/milk/index.hbs).
+
+      In an LMS, the learner's answers come back on their next launch. They are kept in SCORM's one
+      `suspend_data` field as a short token per question (the letters tried, "!" if they asked for the
+      answer), behind a version and a fingerprint of the questions, so answers are never put back onto a
+      quiz that has since changed. This script owns that field; a page with a second script that keeps
+      state shares the field as named parts rather than letting each overwrite the other. --}}
+<script>
+  ;(function () {
+    var questions = [].slice.call(document.querySelectorAll('[data-question]'))
+    if (!questions.length) return
+    var tries = questions.map(function () { return { tried: [], shown: false } })
+    // Which questions the learner has changed in this launch, a "Start again" included: a reset
+    // question has no tries, but its saved answer must not come back.
+    var touched = questions.map(function () { return false })
+    var scorm = null
+
+    // FNV-1a, as eight hex digits. The fingerprint is read from the questions as written, before the
+    // script moves anything: their ids, keys and every word.
+    function hash(text) {
+      var h = 0x811c9dc5
+      for (var i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0
+      return ('0000000' + h.toString(16)).slice(-8)
+    }
+    var prefix = 'q1:' + hash(questions.map(function (q) {
+      return q.getAttribute('data-question') + q.getAttribute('data-key') + q.textContent.replace(/\s+/g, ' ')
+    }).join('#')) + '|'
+
+    function stateOf(i) {
+      var t = tries[i]
+      var last = t.tried[t.tried.length - 1]
+      if (!t.tried.length && !t.shown) return 'open'
+      if (last === questions[i].getAttribute('data-key')) return 'right'
+      if (t.shown) return 'shown'
+      return t.tried.length >= 2 ? 'wrong' : 'trying'
+    }
+    var VERDICT = {
+      open: function () { return ['', ''] },
+      right: function (key) { return ['✓', 'Correct: ' + key + ' is the answer.'] },
+      trying: function () { return ['✗', 'Not quite. Try another answer.'] },
+      wrong: function (key) { return ['✗', 'Not quite. The answer is ' + key + '.'] },
+      shown: function (key) { return ['i', 'The answer is ' + key + '.'] },
+    }
+    // Each state is told in words as well as colour, for a learner who cannot tell red from green.
+    var TAG = { 'chosen-right': 'Your answer', 'chosen-wrong': 'Your answer', tried: 'Not this one', answer: 'Correct answer' }
+
+    function render(i) {
+      var q = questions[i]
+      var t = tries[i]
+      var key = q.getAttribute('data-key')
+      var state = stateOf(i)
+      var last = t.tried[t.tried.length - 1]
+      var done = state === 'right' || state === 'wrong' || state === 'shown'
+      q.setAttribute('data-state', state)
+      q.querySelectorAll('[data-option]').forEach(function (b) {
+        var letter = b.getAttribute('data-option')
+        var mark =
+          state === 'open' ? null
+          : letter === last && state === 'right' ? 'chosen-right'
+          : letter === last && state === 'wrong' ? 'chosen-wrong'
+          : t.tried.indexOf(letter) >= 0 ? 'tried'
+          : letter === key && (state === 'wrong' || state === 'shown') ? 'answer'
+          : done ? 'dim'
+          : null
+        if (mark) b.setAttribute('data-mark', mark)
+        else b.removeAttribute('data-mark')
+        b.querySelector('[data-tag]').textContent = TAG[mark] || ''
+        b.disabled = done || mark === 'tried'
+        b.setAttribute('aria-pressed', String(state !== 'open' && letter === last))
+      })
+      var verdict = VERDICT[state](key)
+      q.querySelector('[data-verdict]').hidden = state === 'open'
+      q.querySelector('[data-icon]').textContent = verdict[0]
+      q.querySelector('[data-verdict-line]').textContent = verdict[1]
+      q.querySelector('[data-explain]').hidden = !done
+      q.querySelector('[data-show]').hidden = state !== 'trying'
+      q.querySelector('[data-again]').hidden = !done
+    }
+
+    function save() {
+      if (!scorm) return
+      scorm.save(prefix + tries.map(function (t) { return t.tried.join('') + (t.shown ? '!' : '') }).join('.'))
+    }
+
+    // The explanation moves into the verdict panel, without the "The answer is" line the verdict states.
+    questions.forEach(function (q, i) {
+      var explanation = q.querySelector('[data-explanation]')
+      q.querySelector('[data-explain]').appendChild(explanation)
+      explanation.querySelector('[data-answer-line]').hidden = true
+      q.querySelector('details').hidden = true
+      render(i)
+    })
+
+    // The learner's answers from last time, once the bridge has decided (`ready`): before then the
+    // bridge does not know whether this is a resume, and state saved early would be dropped. A question
+    // the learner already changed in this launch (answered, or started again) keeps what they did; every
+    // other one gets its saved answer back. Then the whole is saved, so an early answer never erases the
+    // others' answers. Off an LMS, `save` and `interaction` do nothing.
+    window.kissScorm.ready(function (live) {
+      scorm = live
+      var back = live.resumed && live.resumed.state
+      var tokens = typeof back === 'string' && back.indexOf(prefix) === 0 ? back.slice(prefix.length).split('.') : []
+      if (tokens.length === questions.length)
+        tokens.forEach(function (token, i) {
+          if (touched[i] || !/^[A-Z]*!?$/.test(token)) return
+          tries[i] = { tried: token.replace('!', '').split('').filter(Boolean), shown: token.slice(-1) === '!' }
+          render(i)
+        })
+      if (touched.indexOf(true) >= 0) save()
+    })
+
+    function act(i, change) {
+      change(tries[i])
+      touched[i] = true
+      render(i)
+      save()
+      var q = questions[i]
+      var state = stateOf(i)
+      q.querySelector('[data-announce]').textContent = q.querySelector('[data-verdict-line]').textContent
+      // Keep the learner where they can act next: on the options while trying or after "Start again"
+      // (which hides the button that had focus), on the verdict when done.
+      if (state === 'trying' || state === 'open') {
+        var next = [].slice.call(q.querySelectorAll('[data-option]')).filter(function (b) { return !b.disabled })[0]
+        if (next) next.focus()
+      } else q.querySelector('[data-verdict]').focus()
+    }
+
+    document.addEventListener('click', function (event) {
+      var target = event.target
+      var q = target && target.closest && target.closest('[data-question]')
+      var i = questions.indexOf(q)
+      if (i < 0) return
+      var option = target.closest('[data-option]')
+      if (option && !option.disabled) {
+        var letter = option.getAttribute('data-option')
+        var key = q.getAttribute('data-key')
+        // Every choice, a wrong first try included, is one interaction: the LMS's reports show how
+        // learners answer. Its id is the quiz's and the question's ("milk-texture.big-bubbles"). The
+        // bridge queues it if it has not decided yet.
+        var quiz = q.closest('[data-quiz]')
+        window.kissScorm.interaction({
+          id: (quiz ? quiz.getAttribute('data-quiz') + '.' : '') + q.getAttribute('data-question'),
+          response: letter,
+          correct: key,
+          result: letter === key,
+        })
+        return act(i, function (t) { t.tried.push(letter) })
+      }
+      if (target.closest('[data-show]')) return act(i, function (t) { t.shown = true })
+      if (target.closest('[data-again]')) act(i, function (t) { t.tried = []; t.shown = false })
+    })
+  })()
+</script>
