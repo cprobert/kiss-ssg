@@ -3,6 +3,7 @@ branch: readme-multica-shape
 base: main
 status: closed
 opened: 2026-10-17
+consolidated: 2026-10-26
 ---
 
 # Session — 2026-10-17: The README in the multica shape

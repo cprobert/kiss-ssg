@@ -3,6 +3,7 @@ branch: chore/ux-taste-skill
 base: main
 status: closed
 opened: 2026-10-12
+consolidated: 2026-10-26
 ---
 
 # Session — 2026-10-12: UX improvements — trialling the taste skill

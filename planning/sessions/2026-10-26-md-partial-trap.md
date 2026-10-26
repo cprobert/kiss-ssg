@@ -1,6 +1,7 @@
 ---
 branch: docs/md-partial-trap
 status: closed
+consolidated: 2026-10-26
 ---
 
 # Session Log — 2026-10-26: The .md partial trap, and a repo tidy-up

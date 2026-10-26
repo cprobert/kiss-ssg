@@ -3,6 +3,7 @@ branch: ccr-d677d579-ay3if6
 base: main
 status: closed
 opened: 2026-10-20
+consolidated: 2026-10-26
 ---
 
 # Session — 2026-10-20: Design and usability learnings from six skill repos, brought into kiss

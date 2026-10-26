@@ -3,6 +3,7 @@ branch: chore/webapp-testing-trial
 base: main
 status: closed
 opened: 2026-10-13
+consolidated: 2026-10-26
 ---
 
 # Session — 2026-10-13: Trialling Anthropic's `webapp-testing` skill

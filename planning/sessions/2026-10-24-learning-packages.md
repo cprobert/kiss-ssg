@@ -3,6 +3,7 @@ branch: feat/learning-packages
 base: main
 status: closed
 opened: 2026-10-24
+consolidated: 2026-10-26
 ---
 
 # Session — 2026-10-24: Learning packages — IMS content packages and SCORM 1.2, one per lesson
