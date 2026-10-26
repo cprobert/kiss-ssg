@@ -261,7 +261,7 @@ when the build script calls `.llms()`, whose `llms.txt` is the one thing that li
 - A host or deploy step that uploads the build folder may keep the old `.md` files on the server;
   remove them there if it does not delete files the build no longer writes.
 
-### 0h. 2.9.0: a SCORM page reports its own completion
+### 0h. 2.8.2: a SCORM page reports its own completion
 
 Nothing fails, and only a site that puts `{{scormBridge}}` on its pages is affected. Until now a
 page with no `complete` was marked complete as soon as it loaded in an LMS. Now it starts each new
