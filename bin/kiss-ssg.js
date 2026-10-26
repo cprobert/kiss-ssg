@@ -80,6 +80,7 @@ if (process.argv[2] === 'init') {
     hasEngine: fs.existsSync(here('node_modules/kiss-ssg/package.json')),
     hasRouter: router !== null,
     routerIsModule: router !== null && isModuleSyntax(router, parses),
+    hasServer: fs.existsSync(here('server.js')),
     hasSrc: fs.existsSync(here('src')),
     hasMain: (() => {
       try {

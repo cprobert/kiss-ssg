@@ -116,6 +116,10 @@ export type InitState = {
      */
     routerIsModule: boolean;
     /**
+     * `server.js` exists, which `npm start` runs when no start script is declared
+     */
+    hasServer: boolean;
+    /**
      * `src/` exists
      */
     hasSrc: boolean;

@@ -14,7 +14,8 @@ A fix to `kiss-ssg init` and a documentation trap, with nothing to change on upg
   router too, when `router.js` is the only thing the package runs, and prints that it did. Any
   other `.js` file in the folder is then read as an ES module as well. If your `package.json` runs
   anything else (a `main` naming another file, a script that is not one of kiss's or npm's
-  placeholder `test`, a `bin`, `exports` or `workspaces`), `init` keeps `"commonjs"` and tells you
+  placeholder `test`, a `bin`, `exports` or `workspaces`, or a `server.js` that `npm start` runs
+  by default), `init` keeps `"commonjs"` and tells you
   to set `"type": "module"` yourself or rename the router to `router.mjs`. The same check now
   guards the starter: a folder whose scripts already run its own CommonJS files is not switched to
   `"module"` when `init` adds the starter. A

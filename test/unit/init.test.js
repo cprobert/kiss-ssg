@@ -37,6 +37,7 @@ const state = (over = {}) => ({
   hasEngine: false,
   hasRouter: false,
   routerIsModule: false,
+  hasServer: false,
   hasSrc: false,
   hasMain: false,
   starter: STARTER,
@@ -249,18 +250,26 @@ describe('planInit never destroys anything', () => {
   // and a package-wide "module" would break that file. Both values are kept,
   // with a note, rather than changed or added.
   it.each([
-    ['"commonjs"', { type: 'commonjs' }, 'commonjs'],
-    ['no "type"', {}, undefined],
+    ['"commonjs"', { type: 'commonjs' }, 'commonjs', {}],
+    ['no "type"', {}, undefined, {}],
+    // Round three: no start script, but npm start runs server.js anyway.
+    [
+      '"commonjs", beside a server.js,',
+      { type: 'commonjs' },
+      'commonjs',
+      { hasServer: true },
+    ],
+    ['no "type", beside a server.js,', {}, undefined, { hasServer: true }],
   ])(
     'leaves %s alone when it writes the starter into a package that runs another file',
-    (_, fields, kept) => {
+    (_, fields, kept, facts) => {
       const existing = JSON.stringify({
         name: 'x',
         ...fields,
-        scripts: { start: 'node server.js' },
+        ...(facts.hasServer ? {} : { scripts: { start: 'node server.js' } }),
       })
       const action = byPath(
-        planInit(state({ files: { 'package.json': existing } })),
+        planInit(state({ ...facts, files: { 'package.json': existing } })),
         'package.json',
       )
       expect(json(action).type).toBe(kept)
@@ -399,6 +408,8 @@ describe('planInit never destroys anything', () => {
     ['the package has a bin', { bin: { tool: 'cli.js' } }, {}],
     ['the package has exports', { exports: './lib.js' }, {}],
     ['the package has workspaces', { workspaces: ['packages/*'] }, {}],
+    // Round three: npm start runs server.js when no start script is declared.
+    ['npm start would run server.js', {}, { hasServer: true }],
   ])(
     'keeps "commonjs" beside an ES-module router.js when %s, and says how to fix it',
     (_, fields, facts) => {

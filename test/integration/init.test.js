@@ -221,6 +221,8 @@ describe('kiss-ssg init', () => {
       'whose start script runs another file',
       { scripts: { start: 'node server.js' } },
     ],
+    // Round three: with no start script at all, `npm start` runs server.js.
+    ['whose server.js npm start runs by default', {}],
   ])(
     'keeps "commonjs" for a project %s, which still runs after two inits',
     (_, fields) => {
@@ -251,6 +253,30 @@ describe('kiss-ssg init', () => {
       expect(server.status, server.stderr).toBe(0)
     },
   )
+
+  // The starter path, round three: no router.js yet, so init writes the
+  // starter, but npm start already runs this folder's CommonJS server.js. A
+  // package-wide "module" added beside it would break it.
+  it('adds no "type" when it writes the starter beside a server.js, which still runs', () => {
+    const dir = emptySite()
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'x' }),
+    )
+    fs.writeFileSync(
+      path.join(dir, 'server.js'),
+      "module.exports = 1\nconsole.log('server ran')\n",
+    )
+    const init = run(dir, 'init', '--no-install')
+    expect(init.status, init.stderr).toBe(0)
+    expect(init.stdout).toMatch(/create\s+router\.js/)
+    expect(typeOf(dir)).toBeUndefined()
+    const server = spawnSync(process.execPath, ['server.js'], {
+      cwd: dir,
+      encoding: 'utf8',
+    })
+    expect(server.status, server.stderr).toBe(0)
+  })
 
   // An engine folder that holds no package is not an installed engine.
   it('does not take an empty node_modules/kiss-ssg for an installed engine', () => {
