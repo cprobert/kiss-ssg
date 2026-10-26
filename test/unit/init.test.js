@@ -24,12 +24,15 @@ const STARTER = {
   'src/pages/index.hbs': '<h1>hi</h1>\n',
 }
 
+// A site's own router.js, in each module system.
+const ESM_ROUTER = "import Kiss from 'kiss-ssg'\nawait new Kiss().complete()\n"
+const CJS_ROUTER = "const { default: Kiss } = require('kiss-ssg')\n"
+
 const state = (over = {}) => ({
   folderName: 'my-site',
   version: '2.7.0',
   install: true,
   hasEngine: false,
-  hasRouter: false,
   hasSrc: false,
   hasMain: false,
   starter: STARTER,
@@ -41,6 +44,7 @@ const state = (over = {}) => ({
     '.claude/settings.json': null,
     '.codex/config.toml': null,
     '.gitignore': null,
+    'router.js': null,
     ...(over.files ?? {}),
   },
 })
@@ -146,7 +150,7 @@ describe('planInit never destroys anything', () => {
   })
 
   it('leaves an existing site alone: no starter file when router.js exists', () => {
-    const actions = planInit(state({ hasRouter: true }))
+    const actions = planInit(state({ files: { 'router.js': ESM_ROUTER } }))
     expect(starterWrites(actions)).toEqual([])
     expect(byPath(actions, 'router.js')).toMatchObject({ kind: 'skip' })
   })
@@ -166,7 +170,11 @@ describe('planInit never destroys anything', () => {
       dependencies: { x: '1' },
     })
     const action = byPath(
-      planInit(state({ hasRouter: true, files: { 'package.json': existing } })),
+      planInit(
+        state({
+          files: { 'package.json': existing, 'router.js': ESM_ROUTER },
+        }),
+      ),
       'package.json',
     )
     expect(action.verb).toBe('merge')
@@ -215,17 +223,94 @@ describe('planInit never destroys anything', () => {
     expect(action.detail).toMatch(/index\.js/)
   })
 
-  it('keeps "type": "commonjs" in a project that already has code', () => {
+  // A starter whose scripts are already ours (a folder init ran in once, then
+  // lost its router.js) has nothing to add, but the type change still has to
+  // be written: it was planned, reported, and then dropped with a `skip`.
+  it('writes the starter\'s "type" change even when every script is already there', () => {
+    const existing = JSON.stringify({
+      name: 'x',
+      type: 'commonjs',
+      main: 'router.js',
+      scripts: {
+        build: 'node router.js',
+        dev: 'node router.js --dev',
+        check: 'kiss-ssg check router.js',
+        aikb: 'kiss-ssg aikb router.js',
+      },
+    })
+    const action = byPath(
+      planInit(state({ files: { 'package.json': existing } })),
+      'package.json',
+    )
+    expect(action.kind).toBe('write')
+    expect(json(action).type).toBe('module')
+  })
+
+  it.each([
+    ['a CommonJS router.js', CJS_ROUTER],
+    ['a router.js with only a dynamic import()', "import('kiss-ssg')\n"],
+    ['a router.js that does not parse at all', 'const = ;\n'],
+  ])('keeps "type": "commonjs" beside %s', (_, router) => {
     const existing = JSON.stringify({
       name: 'x',
       type: 'commonjs',
       scripts: { build: 'node router.js' },
     })
     const action = byPath(
-      planInit(state({ hasRouter: true, files: { 'package.json': existing } })),
+      planInit(
+        state({ files: { 'package.json': existing, 'router.js': router } }),
+      ),
       'package.json',
     )
     expect(json(action).type).toBe('commonjs')
+  })
+
+  // A router.js written as an ES module cannot run under an explicit
+  // "commonjs": Node refuses its first `import`, exit 1 (measured on Node
+  // 24.22). So the site has never built, and nothing that works depends on the
+  // value — it is npm 11's `npm init -y` default, which the webapp-testing
+  // trial hit with a router.js of its own (2026-10-13).
+  it.each([
+    ['import', ESM_ROUTER],
+    ['export', 'export default {}\n'],
+    ['import.meta', 'console.log(import.meta.url)\n'],
+  ])(
+    'switches "type": "commonjs" to "module" when the site\'s router.js uses %s, and says so',
+    (_, router) => {
+      const existing = JSON.stringify({ name: 'x', type: 'commonjs' })
+      const action = byPath(
+        planInit(
+          state({ files: { 'package.json': existing, 'router.js': router } }),
+        ),
+        'package.json',
+      )
+      expect(json(action).type).toBe('module')
+      expect(action.detail).toMatch(/"commonjs" to "module"/)
+    },
+  )
+
+  // The second run is the common one: the first init added the scripts and
+  // kept "commonjs", so this run has no script to add — and must still write.
+  it('switches the site\'s "commonjs" even when every script is already there, then plans nothing', () => {
+    const existing = JSON.stringify({
+      name: 'x',
+      type: 'commonjs',
+      scripts: {
+        build: 'node router.js',
+        dev: 'node router.js --dev',
+        check: 'kiss-ssg check router.js',
+        aikb: 'kiss-ssg aikb router.js',
+      },
+    })
+    const files = { 'package.json': existing, 'router.js': ESM_ROUTER }
+    const action = byPath(planInit(state({ files })), 'package.json')
+    expect(action.kind).toBe('write')
+    expect(json(action).type).toBe('module')
+    const again = byPath(
+      planInit(state({ files: { ...files, 'package.json': action.content } })),
+      'package.json',
+    )
+    expect(again.kind).toBe('skip')
   })
 
   it.each(['package.json', '.claude/settings.json'])(
@@ -279,9 +364,9 @@ describe('planInit never destroys anything', () => {
     const again = planInit(
       state({
         hasEngine: true,
-        hasRouter: true,
         hasSrc: true,
         files: {
+          'router.js': written['router.js'],
           'package.json': written['package.json'],
           'CLAUDE.md': written['CLAUDE.md'],
           'AGENTS.md': written['AGENTS.md'],
@@ -319,8 +404,8 @@ describe('planInit on a folder that already has things in it', () => {
     (field) => {
       const actions = planInit(
         state({
-          hasRouter: true,
           files: {
+            'router.js': ESM_ROUTER,
             'package.json': JSON.stringify({
               [field]: { 'kiss-ssg': '^1.4.0' },
             }),
@@ -384,10 +469,14 @@ describe('planInit on a folder that already has things in it', () => {
     expect(settings.extraKnownMarketplaces['kiss-ssg']).toBeNull()
   })
 
+  // With no "type" at all, Node reads an ES-module router.js anyway (it
+  // detects the syntax and warns), so there is no broken build to repair.
   it('does not change the module type or main of a site whose router.js it did not write', () => {
     const pkg = json(
       byPath(
-        planInit(state({ hasRouter: true, files: { 'package.json': '{}' } })),
+        planInit(
+          state({ files: { 'package.json': '{}', 'router.js': ESM_ROUTER } }),
+        ),
         'package.json',
       ),
     )

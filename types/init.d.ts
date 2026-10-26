@@ -107,10 +107,6 @@ export type InitState = {
      */
     hasEngine: boolean;
     /**
-     * `router.js` exists
-     */
-    hasRouter: boolean;
-    /**
      * `src/` exists
      */
     hasSrc: boolean;
@@ -128,6 +124,7 @@ export type InitState = {
         ".claude/settings.json": string | null;
         ".codex/config.toml": string | null;
         ".gitignore": string | null;
+        "router.js": string | null;
     };
     /**
      * the shipped `starter/` folder: path relative to it → text

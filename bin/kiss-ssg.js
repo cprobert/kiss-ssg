@@ -70,7 +70,6 @@ if (process.argv[2] === 'init') {
     install: init.install,
     // Its package.json, not the folder: an empty folder is not an engine.
     hasEngine: fs.existsSync(here('node_modules/kiss-ssg/package.json')),
-    hasRouter: fs.existsSync(here('router.js')),
     hasSrc: fs.existsSync(here('src')),
     hasMain: (() => {
       try {
@@ -87,6 +86,7 @@ if (process.argv[2] === 'init') {
       '.claude/settings.json': read('.claude/settings.json'),
       '.codex/config.toml': read('.codex/config.toml'),
       '.gitignore': read('.gitignore'),
+      'router.js': read('router.js'),
     },
     starter,
   })

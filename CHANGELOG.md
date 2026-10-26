@@ -5,8 +5,16 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 
 ## 2.8.1 — 2026-10-26
 
-Documentation only, with nothing to change on upgrade.
+A fix to `kiss-ssg init` and a documentation trap, with nothing to change on upgrade.
 
+- **`npx kiss-ssg init` now repairs the `"type": "commonjs"` that `npm init -y` writes, when your
+  own `router.js` uses `import`.** Node refuses an `import` under an explicit `"commonjs"`, so a
+  folder set up with `npm init -y` before its `router.js` built nothing until someone edited
+  `package.json`. `init` changed it only when it wrote the starter; it now changes it for your own
+  router too, and prints that it did. Any other `.js` file in the folder is then read as an ES
+  module as well. A `router.js` written in CommonJS (`require`), or a `package.json` with no
+  `"type"`, is left alone. Running `init` again on a folder it already set up now writes this
+  change too, where before it reported "already set up" and kept the broken value.
 - **A `.md` partial is Markdown before it is a template, and the docs now say what that breaks.**
   Markdown escapes `"` and `>` before Handlebars reads them, so a double-quoted argument
   (`{{link "courses/intro"}}`) or any partial call (`{{> nav}}`) in a `.md` partial fails the build
