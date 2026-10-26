@@ -15,3 +15,6 @@ link the session log from its spec.
   2026-10-24. Feasible, but every helper, doc snippet and skill instruction
   would multiply per engine. The reasoning is in the partial-transforms spec's
   Background.
+- **H5P in kiss**, 2026-10-25. A site that wants an H5P package builds it
+  itself; kiss packages pages as IMS CP and SCORM 1.2.
+- **SCORM 2004**, 2026-10-25, until Moodle supports it. Revisit then.

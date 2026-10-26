@@ -3,6 +3,18 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.1 — 2026-10-26
+
+Documentation only, with nothing to change on upgrade.
+
+- **A `.md` partial is Markdown before it is a template, and the docs now say what that breaks.**
+  Markdown escapes `"` and `>` before Handlebars reads them, so a double-quoted argument
+  (`{{link "courses/intro"}}`) or any partial call (`{{> nav}}`) in a `.md` partial fails the build
+  with a parse error. `{{title}}` and single-quoted arguments still work, but a Markdown link whose
+  URL is an expression ships as literal text. If a `.md` partial needs helpers or partials, make it
+  a `.hbs` partial and wrap the prose in `{{#markdown}}…{{/markdown}}`. See GUIDE.md, beside the
+  list of partial types.
+
 ## 2.8.0 — 2026-10-25
 
 kiss can now package pages for a learning management system. Two changes need a look when you
