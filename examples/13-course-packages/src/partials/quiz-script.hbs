@@ -12,6 +12,9 @@
     var questions = [].slice.call(document.querySelectorAll('[data-question]'))
     if (!questions.length) return
     var tries = questions.map(function () { return { tried: [], shown: false } })
+    // Which questions the learner has changed in this launch, a "Start again" included: a reset
+    // question has no tries, but its saved answer must not come back.
+    var touched = questions.map(function () { return false })
     var scorm = null
 
     // FNV-1a, as eight hex digits. The fingerprint is read from the questions as written, before the
@@ -92,12 +95,11 @@
 
     // The learner's answers from last time, once the bridge has decided (`ready`): before then the
     // bridge does not know whether this is a resume, and state saved early would be dropped. A question
-    // the learner already answered in this launch keeps what they did; every other one gets its saved
-    // answer back. Then the whole is saved, so an early answer never erases the others' answers. Off an
-    // LMS, `save` and `interaction` do nothing.
+    // the learner already changed in this launch (answered, or started again) keeps what they did; every
+    // other one gets its saved answer back. Then the whole is saved, so an early answer never erases the
+    // others' answers. Off an LMS, `save` and `interaction` do nothing.
     window.kissScorm.ready(function (live) {
       scorm = live
-      var touched = tries.map(function (t) { return t.tried.length > 0 || t.shown })
       var back = live.resumed && live.resumed.state
       var tokens = typeof back === 'string' && back.indexOf(prefix) === 0 ? back.slice(prefix.length).split('.') : []
       if (tokens.length === questions.length)
@@ -111,6 +113,7 @@
 
     function act(i, change) {
       change(tries[i])
+      touched[i] = true
       render(i)
       save()
       var q = questions[i]
