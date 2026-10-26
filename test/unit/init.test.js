@@ -244,6 +244,30 @@ describe('planInit never destroys anything', () => {
   // "main": "index.js", a file nobody writes. The starter was given no main,
   // so `main` still named a file that did not exist (Claude clean room,
   // 2026-10-02) although llms.txt says the starter sets it to router.js.
+  // The same allow-list guards the starter's type: a folder with no router.js
+  // but a start script running its own CommonJS file is given the starter,
+  // and a package-wide "module" would break that file. Both values are kept,
+  // with a note, rather than changed or added.
+  it.each([
+    ['"commonjs"', { type: 'commonjs' }, 'commonjs'],
+    ['no "type"', {}, undefined],
+  ])(
+    'leaves %s alone when it writes the starter into a package that runs another file',
+    (_, fields, kept) => {
+      const existing = JSON.stringify({
+        name: 'x',
+        ...fields,
+        scripts: { start: 'node server.js' },
+      })
+      const action = byPath(
+        planInit(state({ files: { 'package.json': existing } })),
+        'package.json',
+      )
+      expect(json(action).type).toBe(kept)
+      expect(action.detail).toMatch(/router\.mjs/)
+    },
+  )
+
   it('points "main" at router.js when it writes the starter and main names no file', () => {
     const existing = JSON.stringify({ name: 'x', main: 'index.js' })
     const action = byPath(
@@ -355,6 +379,26 @@ describe('planInit never destroys anything', () => {
       { scripts: { build: 'node build.js' } },
       {},
     ],
+    // Codex adversarial review, round two: a deny-list of main and build let
+    // every other way of running code through. Each of these runs something.
+    [
+      'a start script runs another file',
+      { scripts: { start: 'node server.js' } },
+      {},
+    ],
+    [
+      'a lifecycle script runs another file',
+      { scripts: { prepare: 'node setup.js' } },
+      {},
+    ],
+    [
+      'a script of ours carries another command',
+      { scripts: { dev: 'nodemon server.js' } },
+      {},
+    ],
+    ['the package has a bin', { bin: { tool: 'cli.js' } }, {}],
+    ['the package has exports', { exports: './lib.js' }, {}],
+    ['the package has workspaces', { workspaces: ['packages/*'] }, {}],
   ])(
     'keeps "commonjs" beside an ES-module router.js when %s, and says how to fix it',
     (_, fields, facts) => {

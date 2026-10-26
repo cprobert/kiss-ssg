@@ -211,35 +211,46 @@ describe('kiss-ssg init', () => {
   // Codex adversarial review, 2026-10-26, reproduced through the bin: a
   // working CommonJS project that builds with server.js keeps its type, and
   // server.js still runs, whatever router.js beside it is written in.
-  it('keeps "commonjs" for a project whose build runs another file, which still runs', () => {
-    const dir = emptySite()
-    fs.writeFileSync(
-      path.join(dir, 'package.json'),
-      JSON.stringify({
-        name: 'x',
-        type: 'commonjs',
-        main: 'server.js',
-        scripts: { build: 'node server.js' },
-      }),
-    )
-    fs.writeFileSync(
-      path.join(dir, 'server.js'),
-      "module.exports = 1\nconsole.log('server ran')\n",
-    )
-    fs.writeFileSync(
-      path.join(dir, 'router.js'),
-      "import Kiss from 'kiss-ssg'\n",
-    )
-    const init = run(dir, 'init', '--no-install')
-    expect(init.status, init.stderr).toBe(0)
-    expect(typeOf(dir)).toBe('commonjs')
-    expect(init.stdout).toMatch(/router\.mjs/)
-    const server = spawnSync(process.execPath, ['server.js'], {
-      cwd: dir,
-      encoding: 'utf8',
-    })
-    expect(server.status, server.stderr).toBe(0)
-  })
+  it.each([
+    [
+      'whose main and build run another file',
+      { main: 'server.js', scripts: { build: 'node server.js' } },
+    ],
+    // Round two: a start script was enough to get past a main/build check.
+    [
+      'whose start script runs another file',
+      { scripts: { start: 'node server.js' } },
+    ],
+  ])(
+    'keeps "commonjs" for a project %s, which still runs after two inits',
+    (_, fields) => {
+      const dir = emptySite()
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({ name: 'x', type: 'commonjs', ...fields }),
+      )
+      fs.writeFileSync(
+        path.join(dir, 'server.js'),
+        "module.exports = 1\nconsole.log('server ran')\n",
+      )
+      fs.writeFileSync(
+        path.join(dir, 'router.js'),
+        "import Kiss from 'kiss-ssg'\n",
+      )
+      const init = run(dir, 'init', '--no-install')
+      expect(init.status, init.stderr).toBe(0)
+      expect(typeOf(dir)).toBe('commonjs')
+      expect(init.stdout).toMatch(/router\.mjs/)
+      const again = run(dir, 'init', '--no-install')
+      expect(again.status, again.stderr).toBe(0)
+      expect(typeOf(dir)).toBe('commonjs')
+      const server = spawnSync(process.execPath, ['server.js'], {
+        cwd: dir,
+        encoding: 'utf8',
+      })
+      expect(server.status, server.stderr).toBe(0)
+    },
+  )
 
   // An engine folder that holds no package is not an installed engine.
   it('does not take an empty node_modules/kiss-ssg for an installed engine', () => {
