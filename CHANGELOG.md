@@ -16,9 +16,10 @@ A fix to `kiss-ssg init` and a documentation trap, with nothing to change on upg
   anything else (an entry Node would load, such as a `main` or an `index.js`, other than
   `router.js`; a script that is not one of kiss's or npm's placeholder `test`; a `bin`,
   `directories`, `exports` or `workspaces`; or a `server.js` that `npm start` runs by default),
-  or any other `.js` file in the folder could be CommonJS (a test that `node --test` finds, a
-  script you run by hand; files written only as ES modules, such as kiss helpers using `export`,
-  do not count), `init` keeps `"commonjs"` and tells you
+  or any other file Node would read by the package's type could be CommonJS (a test that
+  `node --test` finds, a script you run by hand, an extensionless script, any `.ts` file; files
+  written only as ES modules, such as kiss helpers using `export`, do not count), `init` keeps
+  `"commonjs"` and tells you
   to set `"type": "module"` yourself or rename the router to `router.mjs`. The same check now
   guards the starter: a folder whose scripts already run its own CommonJS files is not switched to
   `"module"` when `init` adds the starter. A

@@ -120,7 +120,7 @@ export type InitState = {
      */
     hasServer: boolean;
     /**
-     * the first `.js` file besides `router.js` (outside `node_modules` and `.git`) that parses as CommonJS, so may be working under `"commonjs"`, or the first link or unreadable path the walk cannot vouch for; null when every other `.js` file can only be an ES module, or the package already says `"module"`
+     * the first file besides `router.js` (outside `node_modules` and `.git`) whose module system follows `"type"` and that may be working CommonJS — a `.js` or script-like extensionless file that parses as CommonJS, or any `.ts` — or the first link or unreadable path the walk cannot vouch for; null when there is none, or the package already says `"module"`
      */
     otherScript: string | null;
     /**

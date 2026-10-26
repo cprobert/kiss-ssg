@@ -373,6 +373,44 @@ describe('kiss-ssg init', () => {
     },
   )
 
+  // Round seven: Node applies the package's type to an extensionless entry
+  // (`node tools/smoke`) as it does to .js, and on Node 24 to .ts too.
+  it('keeps "commonjs" beside an extensionless CommonJS script, which still runs', () => {
+    const dir = emptySite()
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'x', type: 'commonjs' }),
+    )
+    fs.writeFileSync(path.join(dir, 'router.js'), 'export {}\n')
+    fs.mkdirSync(path.join(dir, 'tools'))
+    fs.writeFileSync(
+      path.join(dir, 'tools', 'smoke'),
+      "require('node:assert').ok(true)\n",
+    )
+    const smoke = () =>
+      spawnSync(process.execPath, ['tools/smoke'], {
+        cwd: dir,
+        encoding: 'utf8',
+      })
+    expect(smoke().status).toBe(0)
+    expect(run(dir, 'init', '--no-install').status).toBe(0)
+    expect(typeOf(dir)).toBe('commonjs')
+    const after = smoke()
+    expect(after.status, after.stderr).toBe(0)
+  })
+
+  it('keeps "commonjs" beside a .ts file, whose module system follows the type', () => {
+    const dir = emptySite()
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'x', type: 'commonjs' }),
+    )
+    fs.writeFileSync(path.join(dir, 'router.js'), 'export {}\n')
+    fs.writeFileSync(path.join(dir, 'tool.ts'), 'const n: number = 1\n')
+    expect(run(dir, 'init', '--no-install').status).toBe(0)
+    expect(typeOf(dir)).toBe('commonjs')
+  })
+
   // The file check must not block the case it exists for: a folder whose
   // other .js files are kiss helpers written as ES modules, which could never
   // have run under "commonjs" either.
@@ -391,6 +429,10 @@ describe('kiss-ssg init', () => {
       path.join(dir, 'src', 'helpers', 'shout.js'),
       'export default (s) => s.toUpperCase()\n',
     )
+    // Extensionless files that happen to parse as JavaScript, and that every
+    // GitHub Pages site and this repo carry: neither is a script.
+    fs.writeFileSync(path.join(dir, 'CNAME'), 'www.example.com\n')
+    fs.writeFileSync(path.join(dir, '.nvmrc'), '22\n')
     expect(run(dir, 'init', '--no-install').status).toBe(0)
     expect(typeOf(dir)).toBe('module')
   })

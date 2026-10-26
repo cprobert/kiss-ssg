@@ -111,10 +111,27 @@ if (process.argv[2] === 'init') {
           if (e.isDirectory()) {
             const found = walk(p)
             if (found) return found
-          } else if (e.isFile() && p.endsWith('.js') && p !== 'router.js') {
+          } else if (e.isFile() && p !== 'router.js') {
+            // The files whose module system follows "type": .js, .ts (Node
+            // 24 strips types and runs them; no cheap parse, so any blocks)
+            // and an extensionless entry (`node tools/smoke`). One could be
+            // working CommonJS when it parses as CommonJS. An extensionless
+            // file is only read as a script when it says so — a #! line, or
+            // require/module.exports — so CNAME's `www.example.com`, which
+            // parses, is not one; dotfiles (.nvmrc's `22`) never are.
+            const ext = path.extname(e.name)
+            if (ext === '.ts') return p
+            const script =
+              ext === '.js' || (ext === '' && !e.name.startsWith('.'))
+            if (!script) continue
             try {
               const text = fs.readFileSync(here(p), 'utf8')
-              if (!isModuleSyntax(text, parses)) return p
+              if (
+                ext === '' &&
+                !/^#!|\brequire\s*\(|\bmodule\.exports\b/.test(text)
+              )
+                continue
+              if (parses(text, 'commonjs')) return p
             } catch {
               return p
             }
