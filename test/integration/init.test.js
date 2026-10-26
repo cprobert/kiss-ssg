@@ -254,6 +254,56 @@ describe('kiss-ssg init', () => {
     },
   )
 
+  // Round four: what Node resolves the package to, and what npm exposes as an
+  // executable, beyond the literal fields — each a working CommonJS file that
+  // must still load after two inits beside an ES-module router.js.
+  const CJS = "module.exports = 1\nconsole.log('ran')\n"
+  it.each([
+    [
+      'whose index.js Node loads by default',
+      {},
+      'index.js',
+      ['-e', "require('./')"],
+    ],
+    [
+      'whose main "lib" resolves to lib/index.js',
+      { main: 'lib' },
+      'lib/index.js',
+      ['-e', "require('./')"],
+    ],
+    [
+      'with a directories.bin executable',
+      { directories: { bin: 'cli' } },
+      'cli/tool.js',
+      ['cli/tool.js'],
+    ],
+  ])(
+    'keeps "commonjs" for a package %s, which still runs after two inits',
+    (_, fields, file, args) => {
+      const dir = emptySite()
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({ name: 'x', type: 'commonjs', ...fields }),
+      )
+      fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+      fs.writeFileSync(path.join(dir, file), CJS)
+      fs.writeFileSync(
+        path.join(dir, 'router.js'),
+        "import Kiss from 'kiss-ssg'\n",
+      )
+      for (let i = 0; i < 2; i++) {
+        const init = run(dir, 'init', '--no-install')
+        expect(init.status, init.stderr).toBe(0)
+      }
+      expect(typeOf(dir)).toBe('commonjs')
+      const res = spawnSync(process.execPath, args, {
+        cwd: dir,
+        encoding: 'utf8',
+      })
+      expect(res.status, res.stderr).toBe(0)
+    },
+  )
+
   // The starter path, round three: no router.js yet, so init writes the
   // starter, but npm start already runs this folder's CommonJS server.js. A
   // package-wide "module" added beside it would break it.

@@ -120,6 +120,10 @@ export type InitState = {
      */
     hasServer: boolean;
     /**
+     * the file Node loads for the folder as a package (`main` with its extensions and index files, or the default `index.js`), relative to it and with `/` separators; null when there is none
+     */
+    entry: string | null;
+    /**
      * `src/` exists
      */
     hasSrc: boolean;

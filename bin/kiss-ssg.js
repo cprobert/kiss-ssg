@@ -10,6 +10,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import {
   HELP,
   defaultBaseline,
@@ -81,6 +82,17 @@ if (process.argv[2] === 'init') {
     hasRouter: router !== null,
     routerIsModule: router !== null && isModuleSyntax(router, parses),
     hasServer: fs.existsSync(here('server.js')),
+    // What `require('<this folder>')` loads: Node resolves main with its
+    // extensions and index files, or falls back to index.js. Resolved, not
+    // loaded, so nothing in the folder runs.
+    entry: (() => {
+      try {
+        const file = createRequire(here('package.json')).resolve(cwd)
+        return path.relative(cwd, file).split(path.sep).join('/')
+      } catch {
+        return null
+      }
+    })(),
     hasSrc: fs.existsSync(here('src')),
     hasMain: (() => {
       try {

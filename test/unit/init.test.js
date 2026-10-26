@@ -38,6 +38,7 @@ const state = (over = {}) => ({
   hasRouter: false,
   routerIsModule: false,
   hasServer: false,
+  entry: null,
   hasSrc: false,
   hasMain: false,
   starter: STARTER,
@@ -365,6 +366,7 @@ describe('planInit never destroys anything', () => {
         state({
           ...ESM_SITE,
           hasMain: true,
+          entry: 'router.js',
           files: { 'package.json': existing },
         }),
       ),
@@ -381,7 +383,7 @@ describe('planInit never destroys anything', () => {
     [
       'main names another real file',
       { main: 'server.js', scripts: { build: 'node server.js' } },
-      { hasMain: true },
+      { hasMain: true, entry: 'server.js' },
     ],
     [
       'the build script is not ours',
@@ -410,6 +412,16 @@ describe('planInit never destroys anything', () => {
     ['the package has workspaces', { workspaces: ['packages/*'] }, {}],
     // Round three: npm start runs server.js when no start script is declared.
     ['npm start would run server.js', {}, { hasServer: true }],
+    // Round four: Node's resolution, not the literal main. No main at all
+    // still loads index.js, and "lib" loads lib/index.js.
+    ['Node would load index.js for the package', {}, { entry: 'index.js' }],
+    [
+      'main resolves to a folder index',
+      { main: 'lib' },
+      { entry: 'lib/index.js' },
+    ],
+    // Round four: every file in directories.bin is an npm executable.
+    ['the package has directories.bin', { directories: { bin: 'cli' } }, {}],
   ])(
     'keeps "commonjs" beside an ES-module router.js when %s, and says how to fix it',
     (_, fields, facts) => {
