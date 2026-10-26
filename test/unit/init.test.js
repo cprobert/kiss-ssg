@@ -1,11 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { describe, it, expect } from 'vitest'
 import {
   LLMS_IMPORT,
   PLUGINS,
   STARTER_MARKER,
   STARTER_RENAMES,
+  isModuleSyntax,
   packageName,
   parseInitArgs,
   planInit,
@@ -24,15 +26,17 @@ const STARTER = {
   'src/pages/index.hbs': '<h1>hi</h1>\n',
 }
 
-// A site's own router.js, in each module system.
-const ESM_ROUTER = "import Kiss from 'kiss-ssg'\nawait new Kiss().complete()\n"
-const CJS_ROUTER = "const { default: Kiss } = require('kiss-ssg')\n"
+// A folder with a router.js of its own, written as an ES module or not.
+const ESM_SITE = { hasRouter: true, routerIsModule: true }
+const OTHER_SITE = { hasRouter: true, routerIsModule: false }
 
 const state = (over = {}) => ({
   folderName: 'my-site',
   version: '2.7.0',
   install: true,
   hasEngine: false,
+  hasRouter: false,
+  routerIsModule: false,
   hasSrc: false,
   hasMain: false,
   starter: STARTER,
@@ -44,13 +48,44 @@ const state = (over = {}) => ({
     '.claude/settings.json': null,
     '.codex/config.toml': null,
     '.gitignore': null,
-    'router.js': null,
     ...(over.files ?? {}),
   },
 })
 
 const byPath = (actions, p) => actions.find((a) => a.path === p)
 const json = (action) => JSON.parse(action.content)
+
+// The parser the bin passes in: Node's own, over stdin, never running the file.
+const nodeParses = (text, inputType) =>
+  spawnSync(process.execPath, [`--input-type=${inputType}`, '--check'], {
+    input: text,
+  }).status === 0
+
+describe('isModuleSyntax', () => {
+  it.each([
+    ['import', "import Kiss from 'kiss-ssg'\n"],
+    ['export', 'export default {}\n'],
+    ['import.meta', 'console.log(import.meta.url)\n'],
+    ['top-level await', 'await Promise.resolve()\n'],
+  ])('is true for a file that uses %s', (_, text) => {
+    expect(isModuleSyntax(text, nodeParses)).toBe(true)
+  })
+
+  it.each([
+    ['CommonJS', "const { default: Kiss } = require('kiss-ssg')\n"],
+    ['a dynamic import(), which CommonJS allows', "import('kiss-ssg')\n"],
+    ['a file that does not parse at all', 'const = ;\n'],
+    // Codex, 2026-10-26: compiled as CommonJS, the first error is the
+    // import's, so the first detector called this a module and changed the
+    // folder's type for a router that cannot run either way.
+    [
+      'an import followed by a syntax error',
+      "import Kiss from 'kiss-ssg'\nconst = ;\n",
+    ],
+  ])('is false for %s', (_, text) => {
+    expect(isModuleSyntax(text, nodeParses)).toBe(false)
+  })
+})
 
 describe('parseInitArgs', () => {
   it('installs by default', () => {
@@ -150,7 +185,7 @@ describe('planInit never destroys anything', () => {
   })
 
   it('leaves an existing site alone: no starter file when router.js exists', () => {
-    const actions = planInit(state({ files: { 'router.js': ESM_ROUTER } }))
+    const actions = planInit(state(ESM_SITE))
     expect(starterWrites(actions)).toEqual([])
     expect(byPath(actions, 'router.js')).toMatchObject({ kind: 'skip' })
   })
@@ -170,11 +205,7 @@ describe('planInit never destroys anything', () => {
       dependencies: { x: '1' },
     })
     const action = byPath(
-      planInit(
-        state({
-          files: { 'package.json': existing, 'router.js': ESM_ROUTER },
-        }),
-      ),
+      planInit(state({ ...ESM_SITE, files: { 'package.json': existing } })),
       'package.json',
     )
     expect(action.verb).toBe('merge')
@@ -246,20 +277,14 @@ describe('planInit never destroys anything', () => {
     expect(json(action).type).toBe('module')
   })
 
-  it.each([
-    ['a CommonJS router.js', CJS_ROUTER],
-    ['a router.js with only a dynamic import()', "import('kiss-ssg')\n"],
-    ['a router.js that does not parse at all', 'const = ;\n'],
-  ])('keeps "type": "commonjs" beside %s', (_, router) => {
+  it('keeps "type": "commonjs" beside a router.js that is not an ES module', () => {
     const existing = JSON.stringify({
       name: 'x',
       type: 'commonjs',
       scripts: { build: 'node router.js' },
     })
     const action = byPath(
-      planInit(
-        state({ files: { 'package.json': existing, 'router.js': router } }),
-      ),
+      planInit(state({ ...OTHER_SITE, files: { 'package.json': existing } })),
       'package.json',
     )
     expect(json(action).type).toBe('commonjs')
@@ -270,24 +295,15 @@ describe('planInit never destroys anything', () => {
   // 24.22). So the site has never built, and nothing that works depends on the
   // value — it is npm 11's `npm init -y` default, which the webapp-testing
   // trial hit with a router.js of its own (2026-10-13).
-  it.each([
-    ['import', ESM_ROUTER],
-    ['export', 'export default {}\n'],
-    ['import.meta', 'console.log(import.meta.url)\n'],
-  ])(
-    'switches "type": "commonjs" to "module" when the site\'s router.js uses %s, and says so',
-    (_, router) => {
-      const existing = JSON.stringify({ name: 'x', type: 'commonjs' })
-      const action = byPath(
-        planInit(
-          state({ files: { 'package.json': existing, 'router.js': router } }),
-        ),
-        'package.json',
-      )
-      expect(json(action).type).toBe('module')
-      expect(action.detail).toMatch(/"commonjs" to "module"/)
-    },
-  )
+  it('switches "type": "commonjs" to "module" when the site\'s router.js is an ES module, and says so', () => {
+    const existing = JSON.stringify({ name: 'x', type: 'commonjs' })
+    const action = byPath(
+      planInit(state({ ...ESM_SITE, files: { 'package.json': existing } })),
+      'package.json',
+    )
+    expect(json(action).type).toBe('module')
+    expect(action.detail).toMatch(/"commonjs" to "module"/)
+  })
 
   // The second run is the common one: the first init added the scripts and
   // kept "commonjs", so this run has no script to add — and must still write.
@@ -302,12 +318,16 @@ describe('planInit never destroys anything', () => {
         aikb: 'kiss-ssg aikb router.js',
       },
     })
-    const files = { 'package.json': existing, 'router.js': ESM_ROUTER }
-    const action = byPath(planInit(state({ files })), 'package.json')
+    const action = byPath(
+      planInit(state({ ...ESM_SITE, files: { 'package.json': existing } })),
+      'package.json',
+    )
     expect(action.kind).toBe('write')
     expect(json(action).type).toBe('module')
     const again = byPath(
-      planInit(state({ files: { ...files, 'package.json': action.content } })),
+      planInit(
+        state({ ...ESM_SITE, files: { 'package.json': action.content } }),
+      ),
       'package.json',
     )
     expect(again.kind).toBe('skip')
@@ -363,10 +383,10 @@ describe('planInit never destroys anything', () => {
     )
     const again = planInit(
       state({
+        ...ESM_SITE,
         hasEngine: true,
         hasSrc: true,
         files: {
-          'router.js': written['router.js'],
           'package.json': written['package.json'],
           'CLAUDE.md': written['CLAUDE.md'],
           'AGENTS.md': written['AGENTS.md'],
@@ -404,8 +424,8 @@ describe('planInit on a folder that already has things in it', () => {
     (field) => {
       const actions = planInit(
         state({
+          ...ESM_SITE,
           files: {
-            'router.js': ESM_ROUTER,
             'package.json': JSON.stringify({
               [field]: { 'kiss-ssg': '^1.4.0' },
             }),
@@ -474,9 +494,7 @@ describe('planInit on a folder that already has things in it', () => {
   it('does not change the module type or main of a site whose router.js it did not write', () => {
     const pkg = json(
       byPath(
-        planInit(
-          state({ files: { 'package.json': '{}', 'router.js': ESM_ROUTER } }),
-        ),
+        planInit(state({ ...ESM_SITE, files: { 'package.json': '{}' } })),
         'package.json',
       ),
     )

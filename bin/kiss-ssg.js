@@ -27,6 +27,7 @@ import { formatReport } from '../lib/build-report.js'
 import {
   INIT_HELP,
   describeAction,
+  isModuleSyntax,
   nextSteps,
   parseInitArgs,
   planInit,
@@ -58,6 +59,13 @@ if (process.argv[2] === 'init') {
     }
   }
   walk('')
+  const router = read('router.js')
+  // Node's own parser, never running the file: `--check` over stdin, so the
+  // folder's package.json "type" cannot decide the answer for it.
+  const parses = (text, inputType) =>
+    spawnSync(process.execPath, [`--input-type=${inputType}`, '--check'], {
+      input: text,
+    }).status === 0
   const { version } = JSON.parse(
     fs.readFileSync(
       path.join(import.meta.dirname, '..', 'package.json'),
@@ -70,6 +78,8 @@ if (process.argv[2] === 'init') {
     install: init.install,
     // Its package.json, not the folder: an empty folder is not an engine.
     hasEngine: fs.existsSync(here('node_modules/kiss-ssg/package.json')),
+    hasRouter: router !== null,
+    routerIsModule: router !== null && isModuleSyntax(router, parses),
     hasSrc: fs.existsSync(here('src')),
     hasMain: (() => {
       try {
@@ -86,7 +96,6 @@ if (process.argv[2] === 'init') {
       '.claude/settings.json': read('.claude/settings.json'),
       '.codex/config.toml': read('.codex/config.toml'),
       '.gitignore': read('.gitignore'),
-      'router.js': read('router.js'),
     },
     starter,
   })

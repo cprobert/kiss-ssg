@@ -171,6 +171,43 @@ describe('kiss-ssg init', () => {
     expect(snapshot(dir)).toEqual(before)
   })
 
+  // npm init -y's "commonjs" beside a router.js of the site's own: init reads
+  // the router with Node's parser, and only a real ES module changes the type.
+  const commonjsSite = (router) => {
+    const dir = emptySite()
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'x', type: 'commonjs' }),
+    )
+    fs.writeFileSync(path.join(dir, 'router.js'), router)
+    return dir
+  }
+  const typeOf = (dir) =>
+    JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).type
+
+  it('switches "commonjs" to "module" for a router.js written as an ES module, which then runs', () => {
+    const dir = commonjsSite(
+      "import Kiss from 'kiss-ssg'\nconsole.log(typeof Kiss)\n",
+    )
+    expect(run(dir, 'init', '--no-install').status).toBe(0)
+    expect(typeOf(dir)).toBe('module')
+    const router = spawnSync(process.execPath, ['router.js'], {
+      cwd: dir,
+      encoding: 'utf8',
+    })
+    expect(router.status, router.stderr).toBe(0)
+    expect(router.stdout.trim()).toBe('function')
+  })
+
+  // Codex, 2026-10-26: the first detector read CommonJS's first parse error,
+  // which for this file is the import's, and changed the folder's type for a
+  // router that cannot run either way.
+  it('keeps "commonjs" for a router.js that does not parse as a module either', () => {
+    const dir = commonjsSite("import Kiss from 'kiss-ssg'\nconst = ;\n")
+    expect(run(dir, 'init', '--no-install').status).toBe(0)
+    expect(typeOf(dir)).toBe('commonjs')
+  })
+
   // An engine folder that holds no package is not an installed engine.
   it('does not take an empty node_modules/kiss-ssg for an installed engine', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-init-'))

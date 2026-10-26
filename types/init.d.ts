@@ -75,6 +75,7 @@ export const STARTER_RENAMES: Record<string, string>;
 export const FIRST_PROMPT: "Use the kiss-site-new skill to build me a site for <who it is for and what it should say>, with <the pages it needs>. It will be served by <the host, e.g. Netlify> at <https://its-address>. Run the build check when you are done.";
 export const IMPORT_PROMPT: "Use the kiss-site-import skill to turn <the link to your Claude artifact, ChatGPT share or live page> into a real site, keeping exactly how it looks. Run the build check when you are done.";
 export const INIT_HELP: "kiss-ssg init [--no-install]\n\n  Set this folder up for a coding agent, and start a site if there is none:\n\n    package.json           created, or merged: the build, dev, check and aikb\n                           scripts, and \u2014 only with the starter \u2014 \"type\":\n                           \"module\" and \"main\": \"router.js\"\n    CLAUDE.md, AGENTS.md   point the agent at node_modules/kiss-ssg/llms.txt;\n                           AGENTS.md also names the kiss skills and the\n                           codex plugin commands \u2014 added at the end of an\n                           AGENTS.md that lacks them, such as one an\n                           earlier init wrote\n    .claude/settings.json  the kiss-ssg marketplace and its two plugins, the\n                           entries claude plugin install --scope project\n                           writes, so the site records which skills it uses\n    .codex/config.toml     the same marketplace and plugins for Codex, which\n                           a trusted project's config enables for that folder;\n                           an existing file gains only the tables it lacks\n    router.js, src/        a starter site \u2014 only when no project is here yet\n                           (no router.js, no src/, no package.json main file\n                           or build script) \u2014 and its node_modules/ and\n                           public/ ignore rules,\n                           added to any .gitignore already here\n    node_modules/kiss-ssg  npm install --save-dev kiss-ssg@<this version>,\n                           unless it is installed, package.json already asks\n                           for a version, or --no-install is given\n\n  Claude Code does not install plugins a settings file declares, so init ends\n  by printing the three --scope project install commands to run before claude.\n  Codex enables plugins per project, from .codex/config.toml once it trusts\n  the folder, but installs them per user, and codex plugin add also switches\n  them on for every folder: init prints its three codex plugin commands too,\n  to run once per user before codex.\n\n  An existing file is never overwritten. Running it twice changes nothing.";
+export function isModuleSyntax(text: string, parses: (text: string, inputType: "module" | "commonjs") => boolean): boolean;
 export type InitArgs = {
     /**
      * run npm when the engine is missing
@@ -107,6 +108,14 @@ export type InitState = {
      */
     hasEngine: boolean;
     /**
+     * `router.js` exists
+     */
+    hasRouter: boolean;
+    /**
+     * `router.js` is written as an ES module, by `isModuleSyntax`
+     */
+    routerIsModule: boolean;
+    /**
      * `src/` exists
      */
     hasSrc: boolean;
@@ -124,7 +133,6 @@ export type InitState = {
         ".claude/settings.json": string | null;
         ".codex/config.toml": string | null;
         ".gitignore": string | null;
-        "router.js": string | null;
     };
     /**
      * the shipped `starter/` folder: path relative to it → text
