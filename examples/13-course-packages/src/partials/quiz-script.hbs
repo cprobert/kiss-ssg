@@ -116,11 +116,12 @@
       var q = questions[i]
       var state = stateOf(i)
       q.querySelector('[data-announce]').textContent = q.querySelector('[data-verdict-line]').textContent
-      // Keep the learner where they can act next: on the options while trying, on the verdict when done.
-      if (state === 'trying') {
+      // Keep the learner where they can act next: on the options while trying or after "Start again"
+      // (which hides the button that had focus), on the verdict when done.
+      if (state === 'trying' || state === 'open') {
         var next = [].slice.call(q.querySelectorAll('[data-option]')).filter(function (b) { return !b.disabled })[0]
         if (next) next.focus()
-      } else if (state !== 'open') q.querySelector('[data-verdict]').focus()
+      } else q.querySelector('[data-verdict]').focus()
     }
 
     document.addEventListener('click', function (event) {
