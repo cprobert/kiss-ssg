@@ -327,6 +327,52 @@ describe('kiss-ssg init', () => {
     expect(after.status, after.stdout).toBe(0)
   })
 
+  // Round six: the walk's own exclusions. A dot-folder was skipped whole, and
+  // a link is neither a file nor a folder to readdir, so it was skipped too.
+  // Each case is a CommonJS tool.js that must still run after init. The link
+  // is a junction (no admin needed on Windows) into a folder the walk never
+  // enters, with no package.json of its own, so the root's type governs it.
+  it.each([
+    [
+      'in a dot-folder',
+      '.github/scripts',
+      'node .github/scripts/tool.js',
+      null,
+    ],
+    [
+      'reached through a link',
+      'node_modules/.hidden',
+      'node linked/tool.js',
+      'linked',
+    ],
+  ])(
+    'keeps "commonjs" beside a CommonJS script %s, which still runs',
+    (_, folder, command, link) => {
+      const dir = emptySite()
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({ name: 'x', type: 'commonjs' }),
+      )
+      fs.writeFileSync(path.join(dir, 'router.js'), 'export {}\n')
+      fs.mkdirSync(path.join(dir, folder), { recursive: true })
+      fs.writeFileSync(
+        path.join(dir, folder, 'tool.js'),
+        "require('node:assert').ok(true)\n",
+      )
+      if (link)
+        fs.symlinkSync(path.join(dir, folder), path.join(dir, link), 'junction')
+      const args = command.split(' ').slice(1)
+      expect(spawnSync(process.execPath, args, { cwd: dir }).status).toBe(0)
+      expect(run(dir, 'init', '--no-install').status).toBe(0)
+      expect(typeOf(dir)).toBe('commonjs')
+      const after = spawnSync(process.execPath, args, {
+        cwd: dir,
+        encoding: 'utf8',
+      })
+      expect(after.status, after.stderr).toBe(0)
+    },
+  )
+
   // The file check must not block the case it exists for: a folder whose
   // other .js files are kiss helpers written as ES modules, which could never
   // have run under "commonjs" either.

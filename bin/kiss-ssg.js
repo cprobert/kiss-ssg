@@ -83,9 +83,12 @@ if (process.argv[2] === 'init') {
     routerIsModule: router !== null && isModuleSyntax(router, parses),
     hasServer: fs.existsSync(here('server.js')),
     // The first .js file besides router.js that parses as CommonJS, and so
-    // may be working under "commonjs" whatever runs it. node_modules and
-    // dot-folders belong to other packages and tools. Not walked at all when
-    // the package already says "module": there is no type to change.
+    // may be working under "commonjs" whatever runs it — or the first thing
+    // the walk cannot vouch for: a link (its target is not walked) or a
+    // folder or file it cannot read. Only node_modules (other packages) and
+    // .git are skipped; a dot-folder can hold scripts as well as any other
+    // (Codex, round six). Not walked at all when the package already says
+    // "module": there is no type to change.
     otherScript: (() => {
       try {
         if (JSON.parse(read('package.json') ?? '{}').type === 'module')
@@ -93,20 +96,29 @@ if (process.argv[2] === 'init') {
       } catch {
         return null
       }
+      const skip = new Set(['node_modules', '.git'])
       const walk = (rel) => {
-        for (const e of fs.readdirSync(here(rel), { withFileTypes: true })) {
+        let entries
+        try {
+          entries = fs.readdirSync(here(rel), { withFileTypes: true })
+        } catch {
+          return rel || '.'
+        }
+        for (const e of entries) {
+          if (skip.has(e.name)) continue
           const p = rel ? `${rel}/${e.name}` : e.name
+          if (e.isSymbolicLink()) return p
           if (e.isDirectory()) {
-            if (e.name === 'node_modules' || e.name.startsWith('.')) continue
             const found = walk(p)
             if (found) return found
-          } else if (
-            e.isFile() &&
-            p.endsWith('.js') &&
-            p !== 'router.js' &&
-            !isModuleSyntax(fs.readFileSync(here(p), 'utf8'), parses)
-          )
-            return p
+          } else if (e.isFile() && p.endsWith('.js') && p !== 'router.js') {
+            try {
+              const text = fs.readFileSync(here(p), 'utf8')
+              if (!isModuleSyntax(text, parses)) return p
+            } catch {
+              return p
+            }
+          }
         }
         return null
       }
