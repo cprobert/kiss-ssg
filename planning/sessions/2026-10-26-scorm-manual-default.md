@@ -1,7 +1,7 @@
 ---
 branch: feat/scorm-manual-default
 base: main
-status: open
+status: closed
 opened: 2026-10-26
 ---
 
@@ -49,3 +49,102 @@ Origin: a finding relayed by the internal-medicine session (branch `spike/scorm-
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-26: SCORM bridge completes manually by default, and a quiz pattern for SCORM lessons
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** kiss-ssg 2.8.2 on `feat/scorm-manual-default`, 14 commits from `faad840` to the bump.
+
+- **The default** (`a0d230e`): `{{scormBridge}}` leaves completion to the page, and `complete="seen"` opts back in. The Moodle trap is written into GUIDE, `llms.txt`, AIKB and both skills.
+- **Resume in example 13** (`c0238ba`, `66ad4d2`): the milk lesson restores the learner's view, including one reached before the bridge is ready.
+- **The quiz** (`5782f1a`): example 13's milk lesson is now the pattern for MCQs in a SCORM lesson.
+- **Three quiz fixes** (`db5f515`, `fd0d09f`, `a9bcea2`).
+
+## Reflect — what the session was
+
+It started **planned** and became **emergent**, and both shapes served the work.
+
+**The planned part** came from a peer session (internal-medicine). It relayed a precise, source-cited finding: Moodle's `scorm_check_mode` opens a completed attempt in review mode, so completion on load froze resume after the first launch. It proposed options A–D. The operator picked (ii), a manual default, and D, the XSDs, in two answers, and `/branch-open` wrote that down.
+
+**Then the branch grew in four ways**, each recorded as an Amendment:
+
+- **D was already built.** It had shipped in 2.8.0 (`config.packages.schemas`), so nothing was needed.
+- **A clean-room agent found three doc and example gaps.** The example GUIDE points to had no resume at all.
+- **The operator added a feature.** Mid-branch they asked for an MCQ example, drawn from internal-medicine's generator.
+- **Independent reviewers found three bugs** in the new code. All three were the same class: state handled before `kissScorm.ready()`. The resume snippet, the quiz's early-answer merge and the quiz's reset-before-ready merge each lost data written before the bridge decided. A fourth finding, from the Codex review, was keyboard focus after "Start again".
+
+The emergent part was good drift: the MCQ example is on the same theme (a resumable SCORM lesson that reports its own completion) and in the same example.
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing was strong, and done through the harness.** The operator routed a peer session's finding into this one, and named it before any work started. Every fork was settled in one `AskUserQuestion` answer: the default, D, the clean-room fixes, the MCQ scope and branch, and the version. Nothing was left for Claude to guess.
+
+**Learning engagement had one real moment.** On D the operator stopped the options and asked "why are imsmd_rootv1p2p1.xsd unused". They said their instinct was to include it, but not if it did nothing. Claude checked rather than repeating `NOTICE.md`, reading the XSDs' `xsd:import`s and the manifest's `<metadata>`. The answer then decided the outcome. That is the rubric's "ask the AI to explain before accepting", and it changed what shipped.
+
+**Pushback and steering included one override with no reason given.** The operator chose 2.8.2, a patch, against the proposed 2.9.0. The repo's rule makes a changed default that sites must adapt to a minor. The operator may be right, but the reason was not said, so the Amendment records only that it was their call. The 2026-10-13 log asked for exactly this, "when you overrule a measured result, say the reason in a sentence", and this is its second appearance.
+
+**Verification and ownership: the human did none of it at first hand, and the system did a lot.** The eyeball was deferred twice: at the pulse to `/branch-close`, and at the close to the PR. Nobody but Claude read the GUIDE paragraph every consuming site's agent will follow, or looked at the quiz.
+
+Against that, the verification that did happen was independent of the author, and it worked:
+
+- **The Codex stop-time hook** caught two real bugs: navigation before `ready()` was never bookmarked, and an early answer erased saved ones.
+- **The operator-typed `/codex:review`** caught the focus loss.
+- **The peer session's own Codex review** found the reset-before-ready case and relayed it.
+- **The clean-room agent** found the three doc and example gaps.
+- **Claude saw each fix fail, then pass,** against the built page under a Moodle-like harness (and Chromium for focus) before committing it.
+
+That was verification by design rather than by eye: real, but only machine-checked.
+
+**Where the human intended to supervise, versus where they did:** the pulse's eyeball was the checkpoint meant to hold, and it was deferred to the close, then to the PR.
+
+**Claude's own misses:**
+
+- **It did not sweep the class.** Codex's first stop-hook finding was a `ready()` timing bug in the resume snippet (`66ad4d2`). Claude fixed both copies of that snippet, then wrote a quiz an hour later with the same class of bug in its own `ready()` callback. CLAUDE.md's "after the first finding, fix the class" rule asked for every `ready()` callback to be audited for "what happens to work done before this fires?" That audit would have found `db5f515`'s and `a9bcea2`'s bugs before any reviewer did.
+- **It used `{{page.id}}` before checking it existed,** and caught that itself before building.
+- **It told the peer session the example credits their generator.** It does not, and Claude corrected that in a follow-up message.
+
+**Harness leverage was the session's strength:**
+
+- cross-session messaging, both ways, including bug reports sent back to internal-medicine;
+- a clean-room sub-agent given only the packed tarball;
+- the Codex stop hook and `/codex:review`;
+- Playwright through `npm run screenshot`, and a direct script when domino could not track focus;
+- scratch harnesses that modelled Moodle's mode and entry rules.
+
+The gap: none of those harnesses is committed. The quiz's behaviour (resume across launches, interactions, the merge, focus) is covered by no test in the suite. `examples.test.js` checks only that the page builds and holds the right calls.
+
+**Competency level: Active supervisor.** The operator framed every fork, asked one conceptual question that changed the outcome, ran an independent review unprompted, and wired the peer session into the loop. It is not Agentic engineering lead, because the human's own verification was absent: two deferred eyeballs and an unexplained override. It is not Assisted operator, because the decisions were the operator's and they were informed ones.
+
+## Feedback — recommendations for next session
+
+- **Operator — the eyeball has now been deferred to the PR. Do it there, on two artefacts:** the SCORM paragraph at `GUIDE.md:942`, and the quiz screenshot `milk--1440-light.png`. Better still, the three-launch Moodle test the upgrade note describes. Every behaviour on this branch was proven against a model of Moodle, not Moodle.
+- **Operator — when you choose against a proposal, give the reason in one sentence.** The patch-versus-minor call is recorded with no rationale, the second time running (after 2026-10-13). A reader of the CHANGELOG cannot tell whether 2.8.2 means "small" or "we don't treat default changes as minor".
+- **Claude — after the first bug of a class, audit every sibling before writing new code of the same shape.** The class here was "work done before `kissScorm.ready()` fires". It surfaced three times (`66ad4d2`, `db5f515`, `a9bcea2`), each found by a reviewer rather than by Claude. The next `ready()` callback written should come with the question asked of it explicitly: what was done before this, and does this callback keep it?
+- **Process — commit the Moodle-like harness as a test.** The scratch `milk-resume.mjs` and `milk-quiz.mjs` (scratchpad) model what matters: data kept across launches, `entry` resume after a suspend, review mode once complete, and an LMS page still loading. Folded into `test/integration/` against the built example 13 page, they would make the four quiz behaviours and the resume regression gate-checked rather than session-checked. Focus needs a real browser: either a Playwright test or a recorded note in `AIKB/testing.md`.
+- **Both — the peer-session loop worked; keep it two-way.** Internal-medicine sent a precise finding, kiss sent back two bugs and fixes, and internal-medicine sent back a third that kiss's review had missed. That is review by a second codebase with the same code, and it found what neither author did.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** make the SCORM bridge leave completion to the page by default, document the Moodle trap, and ship the SCORM 1.2 schema files.
+
+**Verdict: met, and the objective grew in a good direction** (the quiz pattern), with one decision taken against the proposal (patch, not minor).
+
+- [x] With no options, `scormBridgeScript()` never sets `completed` on load: a new attempt starts `incomplete` and completes only on `status('completed')`. Evidence: `test/unit/scorm-bridge.test.js`, both rendered and minified.
+- [x] Completion on load is still available through a named option: `complete="seen"`, tested, and used by example 13's espresso pages.
+- [x] The regression test was seen to fail, then pass: 7 failures against the unfixed bridge before `a0d230e`.
+- [x] `AIKB/upstream.md` has the Moodle entry, with the version, the source location and the re-check. It says plainly that this repo saw the source only through a fetch tool's summary.
+- [x] The trap is in `AIKB/scorm-bridge.md`, GUIDE and `llms.txt`, which is at 15,997 characters, under its cap. Old sentences are banned in `CONTRADICTIONS`, and each pattern matched the old text.
+- [x] The XSDs: already shipped in 2.8.0 (Amendment 1). `imsmd` is left out with evidence, and the operator agreed.
+- [x] The upgrade note is in `CHANGELOG.md` and `kiss-site-migrate` §0h, with the bump at **2.8.2, a patch, not the minor the criterion named** (Amendment 4, the operator's decision).
+- [x] The clean room passed `kiss-ssg check` and reported its guesses. Its three gaps were fixed. It was not re-run on the fixed tarball.
+- [x] `npm run gates` is green: test, lint, typecheck, format and pack, with 338 files in the tarball. The Codex review over `main...HEAD` at the close found no actionable regressions.
+
+**What is concretely better:** a kiss SCORM page that bookmarks now resumes on every launch in Moodle, not just the first, and every agent-facing doc says why. Kiss users also get a worked, accessible MCQ pattern for SCORM lessons, with answers that survive a relaunch, choices reported as interactions, and learner-marked completion.
+
+**Still open:**
+
+- the operator's eyeball, deferred to the PR;
+- a test in a real Moodle;
+- the quiz and resume behaviours, which have no committed test (Feedback, Process);
+- internal-medicine's own copy of the fixes, which waits there for a branch.
