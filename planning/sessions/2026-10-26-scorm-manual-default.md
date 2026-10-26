@@ -3,6 +3,7 @@ branch: feat/scorm-manual-default
 base: main
 status: closed
 opened: 2026-10-26
+consolidated: 2026-10-26
 ---
 
 # Session — 2026-10-26: SCORM bridge completes manually by default

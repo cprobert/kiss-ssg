@@ -121,7 +121,7 @@ Read the branch's **Impact surface** from its intent artefact (captured at `/bra
 
 **While the version carries a prerelease tag** (`2.0.0-alpha.0` today), the line is not yet published as stable and the bump is `npm version prerelease --preid alpha` regardless of surface — unless the operator is deliberately cutting the release, which is their call to make explicitly, never yours to infer.
 
-State the proposed bump type and the reason, then confirm with the operator before proceeding. Then run:
+State the proposed bump type and the reason, then confirm with the operator before proceeding. **If the operator picks a different bump, stop and ask for their reason in one sentence**: it goes into the Amendment and shapes the `CHANGELOG.md` entry. If none is given, the Amendment says "no reason given", never a reason Claude inferred (2026-10-26: 2.8.2 was chosen over a proposed 2.9.0 and recorded without one). Then run:
 
 ```bash
 npm version patch|minor|major|prerelease --preid alpha --no-git-tag-version
