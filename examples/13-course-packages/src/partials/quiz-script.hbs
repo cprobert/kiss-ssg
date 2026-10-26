@@ -91,21 +91,22 @@
     })
 
     // The learner's answers from last time, once the bridge has decided (`ready`): before then the
-    // bridge does not know whether this is a resume, and state saved early would be dropped. A learner
-    // who answered before then keeps what they did, and it is saved instead. Off an LMS, `save` and
-    // `interaction` do nothing.
+    // bridge does not know whether this is a resume, and state saved early would be dropped. A question
+    // the learner already answered in this launch keeps what they did; every other one gets its saved
+    // answer back. Then the whole is saved, so an early answer never erases the others' answers. Off an
+    // LMS, `save` and `interaction` do nothing.
     window.kissScorm.ready(function (live) {
       scorm = live
-      if (tries.some(function (t) { return t.tried.length || t.shown })) return save()
+      var touched = tries.map(function (t) { return t.tried.length > 0 || t.shown })
       var back = live.resumed && live.resumed.state
-      if (typeof back !== 'string' || back.indexOf(prefix) !== 0) return
-      var tokens = back.slice(prefix.length).split('.')
-      if (tokens.length !== questions.length) return
-      tokens.forEach(function (token, i) {
-        if (!/^[A-Z]*!?$/.test(token)) return
-        tries[i] = { tried: token.replace('!', '').split('').filter(Boolean), shown: token.slice(-1) === '!' }
-        render(i)
-      })
+      var tokens = typeof back === 'string' && back.indexOf(prefix) === 0 ? back.slice(prefix.length).split('.') : []
+      if (tokens.length === questions.length)
+        tokens.forEach(function (token, i) {
+          if (touched[i] || !/^[A-Z]*!?$/.test(token)) return
+          tries[i] = { tried: token.replace('!', '').split('').filter(Boolean), shown: token.slice(-1) === '!' }
+          render(i)
+        })
+      if (touched.indexOf(true) >= 0) save()
     })
 
     function act(i, change) {
