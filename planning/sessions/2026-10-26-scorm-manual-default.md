@@ -35,6 +35,8 @@ Origin: a finding relayed by the internal-medicine session (branch `spike/scorm-
 
 ### Amendments
 
+- **2026-10-26: item D was already built, and nothing changes.** `config.packages.schemas: true` (2.8.0, `cc34ddf`) already puts the SCORM 1.2 XSDs at each SCORM package's root and names them in `xsi:schemaLocation`, and tests validate every manifest against them. The fourth file, `imsmd_rootv1p2p1.xsd`, stays out, as `lib/schemas/scorm12/NOTICE.md` decided. Checked locally: the manifest's `<metadata>` holds only `<schema>`/`<schemaversion>` and no `imsmd:lom`, and the shipped XSDs `xsd:import` only `ims_xml.xsd` and `imscp_rootv1p1p2.xsd`, despite a comment in the latter saying "Imports IMS meta-data xsd". It becomes necessary only if kiss ever writes IMS metadata. The operator agreed, so criterion 6 is met by existing code.
+
 ## Pulse log
 
 ---
