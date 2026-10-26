@@ -11,8 +11,11 @@ A fix to `kiss-ssg init` and a documentation trap, with nothing to change on upg
   own `router.js` uses `import`.** Node refuses an `import` under an explicit `"commonjs"`, so a
   folder set up with `npm init -y` before its `router.js` built nothing until someone edited
   `package.json`. `init` changed it only when it wrote the starter; it now changes it for your own
-  router too, and prints that it did. Any other `.js` file in the folder is then read as an ES
-  module as well. A `router.js` written in CommonJS (`require`), or a `package.json` with no
+  router too, when `router.js` is what the package runs, and prints that it did. Any other `.js`
+  file in the folder is then read as an ES module as well. If your `package.json` runs something
+  else (a `main` naming another file, or a `build` script of your own), `init` keeps `"commonjs"`
+  and tells you to set `"type": "module"` yourself or rename the router to `router.mjs`. A
+  `router.js` written in CommonJS (`require`), one that does not parse, or a `package.json` with no
   `"type"`, is left alone. Running `init` again on a folder it already set up now writes this
   change too, where before it reported "already set up" and kept the broken value.
 - **A `.md` partial is Markdown before it is a template, and the docs now say what that breaks.**

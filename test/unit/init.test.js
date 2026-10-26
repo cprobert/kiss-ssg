@@ -305,6 +305,79 @@ describe('planInit never destroys anything', () => {
     expect(action.detail).toMatch(/"commonjs" to "module"/)
   })
 
+  // npm init -y's whole shape: a main naming an index.js it never writes, and
+  // a test script. Neither says the package runs anything but router.js.
+  it('switches "commonjs" in the folder npm init -y leaves, beside an ES-module router.js', () => {
+    const existing = JSON.stringify({
+      name: 'x',
+      main: 'index.js',
+      type: 'commonjs',
+      scripts: { test: 'echo "Error: no test specified" && exit 1' },
+    })
+    const action = byPath(
+      planInit(state({ ...ESM_SITE, files: { 'package.json': existing } })),
+      'package.json',
+    )
+    expect(json(action).type).toBe('module')
+  })
+
+  it('switches "commonjs" when main names router.js itself', () => {
+    const existing = JSON.stringify({
+      name: 'x',
+      main: './router.js',
+      type: 'commonjs',
+    })
+    const action = byPath(
+      planInit(
+        state({
+          ...ESM_SITE,
+          hasMain: true,
+          files: { 'package.json': existing },
+        }),
+      ),
+      'package.json',
+    )
+    expect(json(action).type).toBe('module')
+  })
+
+  // Codex adversarial review, 2026-10-26: a working CommonJS project whose
+  // build runs server.js, with an ES-module router.js beside it, was switched
+  // to "module" — and server.js's `module.exports` then failed. The type is
+  // the package's, so it changes only when router.js is what the package runs.
+  it.each([
+    [
+      'main names another real file',
+      { main: 'server.js', scripts: { build: 'node server.js' } },
+      { hasMain: true },
+    ],
+    [
+      'the build script is not ours',
+      { scripts: { build: 'node build.js' } },
+      {},
+    ],
+  ])(
+    'keeps "commonjs" beside an ES-module router.js when %s, and says how to fix it',
+    (_, fields, facts) => {
+      const existing = JSON.stringify({
+        name: 'x',
+        type: 'commonjs',
+        ...fields,
+      })
+      const action = byPath(
+        planInit(
+          state({
+            ...ESM_SITE,
+            ...facts,
+            files: { 'package.json': existing },
+          }),
+        ),
+        'package.json',
+      )
+      expect(json(action).type).toBe('commonjs')
+      expect(action.detail).toMatch(/router\.mjs/)
+    },
+  )
+
   // The second run is the common one: the first init added the scripts and
   // kept "commonjs", so this run has no script to add — and must still write.
   it('switches the site\'s "commonjs" even when every script is already there, then plans nothing', () => {
