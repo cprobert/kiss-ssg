@@ -289,6 +289,25 @@ describe('planInit never destroys anything', () => {
     },
   )
 
+  // Codex, final round: with no package.json at all, the create path wrote
+  // "type": "module" before either layer was asked. It holds back main too:
+  // with an index.js already there, "main": "router.js" would change what
+  // require('./') loads.
+  it.each([
+    ['a server.js', { hasServer: true }],
+    ['a CommonJS script', { otherScript: 'tools/build.js' }],
+    ['an index.js entry', { entry: 'index.js' }],
+  ])(
+    'creates package.json without "type" or "main" when the folder already runs %s',
+    (_, facts) => {
+      const action = byPath(planInit(state(facts)), 'package.json')
+      expect(action.verb).toBe('create')
+      expect(json(action).type).toBeUndefined()
+      expect(json(action).main).toBeUndefined()
+      expect(action.detail).toMatch(/router\.mjs/)
+    },
+  )
+
   it('points "main" at router.js when it writes the starter and main names no file', () => {
     const existing = JSON.stringify({ name: 'x', main: 'index.js' })
     const action = byPath(
