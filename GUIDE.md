@@ -966,9 +966,11 @@ kissScorm.available // true while a session with an LMS is open
 ```js
 kissScorm.ready((scorm) => {
   const back = scorm.resumed
-  if (back && back.location && !location.hash)
-    location.replace(`#${back.location}`)
-  addEventListener('hashchange', () => scorm.bookmark(location.hash.slice(1)))
+  const keep = () => scorm.bookmark(location.hash.slice(1))
+  addEventListener('hashchange', keep)
+  // Already on a view (opened on one, or moved while the LMS loaded): keep it.
+  if (location.hash) keep()
+  else if (back && back.location) location.replace(`#${back.location}`)
 })
 ```
 

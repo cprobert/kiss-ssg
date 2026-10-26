@@ -49,15 +49,17 @@
   // Resume: a learner who leaves comes back to the view they were on. Wait for
   // the bridge before reading `resumed` or bookmarking: in an LMS still loading
   // the page, `resumed` is null until it has decided. Bookmarking every view
-  // change keeps the place committed; off an LMS it does nothing. Once the
+  // change keeps the place committed; off an LMS it does nothing. A learner
+  // already on a view when the bridge decides (opened on #pouring, or moved
+  // while the LMS was loading) has that view bookmarked at once. Once the
   // question completes the lesson, Moodle reopens it in review mode, which is
   // why completion waits for the learner to finish.
   window.kissScorm.ready(function (scorm) {
     var back = scorm.resumed
-    if (back && back.location && !location.hash) location.replace('#' + back.location)
-    window.addEventListener('hashchange', function () {
-      scorm.bookmark(location.hash.slice(1))
-    })
+    function keep() { scorm.bookmark(location.hash.slice(1)) }
+    window.addEventListener('hashchange', keep)
+    if (location.hash) keep()
+    else if (back && back.location) location.replace('#' + back.location)
   })
 
   // The question: say whether the choice is right, then record it. In an LMS,
