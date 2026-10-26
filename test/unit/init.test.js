@@ -39,6 +39,7 @@ const state = (over = {}) => ({
   routerIsModule: false,
   hasServer: false,
   entry: null,
+  otherScript: null,
   hasSrc: false,
   hasMain: false,
   starter: STARTER,
@@ -261,13 +262,23 @@ describe('planInit never destroys anything', () => {
       { hasServer: true },
     ],
     ['no "type", beside a server.js,', {}, undefined, { hasServer: true }],
+    // Round five: a CommonJS file nothing in package.json names (node --test
+    // finds test files by itself).
+    [
+      '"commonjs", beside a CommonJS test file,',
+      { type: 'commonjs' },
+      'commonjs',
+      { otherScript: 'test/smoke.js' },
+    ],
   ])(
     'leaves %s alone when it writes the starter into a package that runs another file',
     (_, fields, kept, facts) => {
       const existing = JSON.stringify({
         name: 'x',
         ...fields,
-        ...(facts.hasServer ? {} : { scripts: { start: 'node server.js' } }),
+        ...(Object.keys(facts).length > 0
+          ? {}
+          : { scripts: { start: 'node server.js' } }),
       })
       const action = byPath(
         planInit(state({ ...facts, files: { 'package.json': existing } })),
@@ -422,6 +433,13 @@ describe('planInit never destroys anything', () => {
     ],
     // Round four: every file in directories.bin is an npm executable.
     ['the package has directories.bin', { directories: { bin: 'cli' } }, {}],
+    // Round five: any .js file that parses as CommonJS may be working, run
+    // by a tool package.json never names.
+    [
+      'another .js file could be CommonJS',
+      {},
+      { otherScript: 'test/smoke.js' },
+    ],
   ])(
     'keeps "commonjs" beside an ES-module router.js when %s, and says how to fix it',
     (_, fields, facts) => {

@@ -304,6 +304,51 @@ describe('kiss-ssg init', () => {
     },
   )
 
+  // Round five, Codex's reproduction: `node --test` finds test/smoke.js with
+  // nothing in package.json naming it. It passes before init and after.
+  it('keeps "commonjs" beside a CommonJS test that node --test runs, which still passes', () => {
+    const dir = emptySite()
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'x', type: 'commonjs' }),
+    )
+    fs.writeFileSync(path.join(dir, 'router.js'), 'export {}\n')
+    fs.mkdirSync(path.join(dir, 'test'))
+    fs.writeFileSync(
+      path.join(dir, 'test', 'smoke.js'),
+      "require('node:test')('ok', () => {})\n",
+    )
+    const nodeTest = () =>
+      spawnSync(process.execPath, ['--test'], { cwd: dir, encoding: 'utf8' })
+    expect(nodeTest().status).toBe(0)
+    expect(run(dir, 'init', '--no-install').status).toBe(0)
+    expect(typeOf(dir)).toBe('commonjs')
+    const after = nodeTest()
+    expect(after.status, after.stdout).toBe(0)
+  })
+
+  // The file check must not block the case it exists for: a folder whose
+  // other .js files are kiss helpers written as ES modules, which could never
+  // have run under "commonjs" either.
+  it('still switches "commonjs" when every other .js file is an ES module', () => {
+    const dir = emptySite()
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'x', type: 'commonjs' }),
+    )
+    fs.writeFileSync(
+      path.join(dir, 'router.js'),
+      "import Kiss from 'kiss-ssg'\n",
+    )
+    fs.mkdirSync(path.join(dir, 'src', 'helpers'), { recursive: true })
+    fs.writeFileSync(
+      path.join(dir, 'src', 'helpers', 'shout.js'),
+      'export default (s) => s.toUpperCase()\n',
+    )
+    expect(run(dir, 'init', '--no-install').status).toBe(0)
+    expect(typeOf(dir)).toBe('module')
+  })
+
   // The starter path, round three: no router.js yet, so init writes the
   // starter, but npm start already runs this folder's CommonJS server.js. A
   // package-wide "module" added beside it would break it.

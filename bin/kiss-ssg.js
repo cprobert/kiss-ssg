@@ -82,6 +82,36 @@ if (process.argv[2] === 'init') {
     hasRouter: router !== null,
     routerIsModule: router !== null && isModuleSyntax(router, parses),
     hasServer: fs.existsSync(here('server.js')),
+    // The first .js file besides router.js that parses as CommonJS, and so
+    // may be working under "commonjs" whatever runs it. node_modules and
+    // dot-folders belong to other packages and tools. Not walked at all when
+    // the package already says "module": there is no type to change.
+    otherScript: (() => {
+      try {
+        if (JSON.parse(read('package.json') ?? '{}').type === 'module')
+          return null
+      } catch {
+        return null
+      }
+      const walk = (rel) => {
+        for (const e of fs.readdirSync(here(rel), { withFileTypes: true })) {
+          const p = rel ? `${rel}/${e.name}` : e.name
+          if (e.isDirectory()) {
+            if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+            const found = walk(p)
+            if (found) return found
+          } else if (
+            e.isFile() &&
+            p.endsWith('.js') &&
+            p !== 'router.js' &&
+            !isModuleSyntax(fs.readFileSync(here(p), 'utf8'), parses)
+          )
+            return p
+        }
+        return null
+      }
+      return walk('')
+    })(),
     // What `require('<this folder>')` loads: Node resolves main with its
     // extensions and index files, or falls back to index.js. Resolved, not
     // loaded, so nothing in the folder runs.

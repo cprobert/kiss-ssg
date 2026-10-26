@@ -120,6 +120,10 @@ export type InitState = {
      */
     hasServer: boolean;
     /**
+     * the first `.js` file besides `router.js` (outside `node_modules` and dot-folders) that parses as CommonJS, so may be working under `"commonjs"`; null when every other `.js` file can only be an ES module, or the package already says `"module"`
+     */
+    otherScript: string | null;
+    /**
      * the file Node loads for the folder as a package (`main` with its extensions and index files, or the default `index.js`), relative to it and with `/` separators; null when there is none
      */
     entry: string | null;
