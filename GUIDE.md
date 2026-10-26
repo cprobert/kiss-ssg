@@ -897,7 +897,7 @@ kiss.page({
 {{/extend}}
 ```
 
-`root` and `complete` are values the page passes in its `{{#extend}}` hash, and the layout reads as `{{root}}` and `complete=complete`. kiss does not set `root`: a page that leaves it out gets an empty string, and its stylesheet link is then right only at the build root. Give every member page its climb back to the build root (`""`, `"../"`, `"../../"`). A page that records its own completion passes `complete="manual"` the same way.
+`root` and `complete` are values the page passes in its `{{#extend}}` hash, and the layout reads as `{{root}}` and `complete=complete`. kiss does not set `root`: a page that leaves it out gets an empty string, and its stylesheet link is then right only at the build root. Give every member page its climb back to the build root (`""`, `"../"`, `"../../"`). A page that should count as complete as soon as it is seen passes `complete="seen"` the same way. Leaving it out is `complete="manual"`, where the page's own script says when it is done.
 
 **A page joins a package by naming it**, `package: '<id>'`, a lowercase slug (`espresso-basics`). Every page that names the same id is in that package, in the order the pages were registered. `packageSection: 'Part 1'` groups a page under a heading in the LMS's table of contents. Each zip is written to `<dir>/<id>.<format>.zip`, at the end of `complete()`, beside the pages; a dev build writes none, with one notice.
 
@@ -939,7 +939,7 @@ The views, the navigation between them and any question are your page's own mark
 
 #### SCORM: `{{scormBridge}}` and `window.kissScorm`
 
-Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS, starts the session, and marks the page complete when it is seen; `{{scormBridge complete="manual"}}` leaves completion to the page, and starts a new attempt as `incomplete`, because an LMS may record a status the page never set as completed when the session ends: a learner who leaves before the page calls `kissScorm.status('completed')` is not counted as done. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button; the time the page spends there is not counted as session time. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
+Put `{{scormBridge}}` in each member page's `<head>`. It inlines one small script (see § Helpers) that finds the LMS and starts the session. Completion is the page's to report: a new attempt starts as `incomplete`, and the page calls `kissScorm.status('completed')` (or `'passed'`/`'failed'`) when the learner is done. A new attempt has to start as `incomplete` because an LMS may record a status the page never set as completed when the session ends, and a learner who left early would count as done. `{{scormBridge complete="seen"}}` instead marks the page complete as soon as it loads. Use it only on a page that keeps no place or state: **a page marked complete cannot be resumed in Moodle.** From then on, Moodle opens every launch in review mode, where nothing is recorded, while it still hands back the first launch's place. The learner reopens where they first left, every time, and nothing they do afterwards is saved ("Force new attempt" set otherwise starts afresh, with no place at all). So a page that calls `bookmark()` or `save()` keeps the default and reports its own completion. It finishes the session when the learner leaves, and keeps it open if the browser keeps the page for its back button; the time the page spends there is not counted as session time. With no LMS (on the web, in an IMS content package) every call does nothing, so the same page works everywhere, byte for byte.
 
 The page's own script records through `window.kissScorm`:
 
@@ -1459,12 +1459,12 @@ A missing or non-string `is` logs an error and renders neither branch. `markdown
 
 ```handlebars
 {{scormBridge}}
-{{! complete when the page is seen }}
-{{scormBridge complete='manual'}}
 {{! the page calls kissScorm.status('completed') itself }}
+{{scormBridge complete='seen'}}
+{{! complete when the page is seen: only for a page that keeps no place }}
 ```
 
-In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. A `complete` other than `"seen"` or `"manual"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
+In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. `complete` is `"manual"` unless given; anything other than `"manual"` or `"seen"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
 
 Kiss exposes the handlebars object so you can register your own helpers, e.g.
 

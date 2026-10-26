@@ -359,6 +359,33 @@ returns `false`; or, in a Moodle course, block the `datamodel.php` request once
 (the browser's request blocking), bookmark, let the commit fail, unblock, and
 see whether the next commit's request carries `cmi.core.lesson_location`.
 
+### Moodle opens a completed attempt in review mode, where nothing is saved
+
+**Observed:** Moodle 4.5 (`MOODLE_405_STABLE`, `mod/scorm/lib.php`,
+`scorm_check_mode()`). A consumer's session read it in source and found it in a
+Moodle test ("resume does not work", 2026-10-26). This repo confirmed it the same
+day only through a fetch tool's summary of that function, not by reading the
+raw source. **Effect:** at launch, Moodle checks every SCO of the attempt. If all
+are `completed`, `passed` or `failed` and "Force new attempt" is No, the mode is
+`review` (`if ($incomplete === true) { $mode = 'normal'; } else { $mode =
+'review'; }`), and the player shows a "Review mode" heading. In review mode it
+still delivers `cmi.core.entry` `resume`, `cmi.core.lesson_location` and
+`cmi.suspend_data` (`mod/scorm/datamodels/scorm_12lib.php`), so a page restores
+the first launch's place, while a SCO in review records nothing. A page marked
+complete on its first launch therefore reopens on launch 1's place forever. The
+other "Force new attempt" settings start a new attempt with no saved place, so
+no setting makes completion on load work for a page that bookmarks or saves.
+**What kiss does:** the bridge leaves completion to the page by default
+(`complete="manual"`, `AIKB/scorm-bridge.md`). `complete="seen"` is kept for
+pages with no place to keep. Rustici's SCORM Driver, behind Articulate
+Storyline, does the same: it holds the attempt `incomplete` until the course's
+own completion rule is met. **Re-check:** read `scorm_check_mode` in
+`https://raw.githubusercontent.com/moodle/moodle/MOODLE_405_STABLE/mod/scorm/lib.php`
+(or the current stable branch). Or, as an enrolled student, launch a package whose
+page uses `complete="seen"` and bookmarks three times, moving somewhere
+different each time: the third launch shows "Review mode" and opens on the
+first launch's place.
+
 ## Supported alternatives not used
 
 ### Codex project skills in `.agents/skills/`

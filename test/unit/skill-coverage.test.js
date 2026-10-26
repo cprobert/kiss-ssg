@@ -913,6 +913,15 @@ const CONTRADICTIONS = [
     why: 'examples 4 and 11 hand-type two hrefs on purpose (a build opened off the file system cannot use a root-relative {{link}}); claiming otherwise is falsified by the example itself',
     patterns: [/Not one view in this site writes a URL/i],
   },
+  {
+    why: "2026-10-26: the SCORM bridge leaves completion to the page by default; complete-on-load made Moodle reopen every later launch in review mode, so a page that bookmarks saved nothing after its first launch. A doc calling `seen` the default tells an agent its resumable page needs no status('completed')",
+    patterns: [
+      /`complete="seen"` \(the default\)/,
+      /page is complete when (it is )?seen \(`complete="manual"`/,
+      /With no `complete`, a page is complete/,
+      /complete when it is seen; `\{\{scormBridge complete="manual"\}\}`/,
+    ],
+  },
 ]
 
 const consumerFacing = () => {

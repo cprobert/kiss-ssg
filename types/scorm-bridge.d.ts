@@ -3,10 +3,11 @@
  * to copy, so a page that carries it works on the web and in either package.
  *
  * @param {Object} [options]
- * @param {boolean} [options.manual] leave completion to `kissScorm.status()`;
- * by default a page is complete when it is seen
+ * @param {'manual' | 'seen'} [options.complete] `'manual'` (the default) leaves
+ * completion to `kissScorm.status()`; `'seen'` completes a page on load, which
+ * in Moodle opens every later launch in review mode, where nothing is saved
  * @returns {string}
  */
-export function scormBridgeScript({ manual }?: {
-    manual?: boolean;
+export function scormBridgeScript({ complete }?: {
+    complete?: "manual" | "seen";
 }): string;

@@ -230,24 +230,28 @@ const foreign = () => {
 const scriptOf = (html) =>
   html.replace(/^<script>/, '').replace(/<\/script>$/, '')
 
-// Each test runs twice: the script as the helper renders it, and as terser minifies it.
+// Each test runs twice: the script as the helper renders it, and as terser
+// minifies it. `complete` is the option the script is rendered with; undefined
+// is the default.
+const rendered = (complete) =>
+  scriptOf(scormBridgeScript(complete ? { complete } : {}))
 const forms = [
-  ['as rendered', (manual) => scriptOf(scormBridgeScript({ manual }))],
-  ['minified', (manual) => minified[manual ? 'manual' : 'seen']],
+  ['as rendered', rendered],
+  ['minified', (complete) => minified[complete ?? 'default']],
 ]
 const minified = {}
 
 describe.each(forms)('the SCORM bridge, %s', (_, source) => {
   beforeEach(async () => {
-    for (const manual of [false, true])
-      minified[manual ? 'manual' : 'seen'] ??= (
-        await minify(scriptOf(scormBridgeScript({ manual })))
+    for (const complete of [undefined, 'seen', 'manual'])
+      minified[complete ?? 'default'] ??= (
+        await minify(rendered(complete))
       ).code
   })
 
   // Runs the bridge in its own context with `win` as its window, as a page's
   // script runs. With `clock`, its `Date.now()` is `clock.now`, set by the test.
-  const load = (win, { manual = false, clock } = {}) => {
+  const load = (win, { complete, clock } = {}) => {
     const context = { window: win }
     if (clock)
       context.Date = class extends Date {
@@ -258,7 +262,7 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
           return clock.now
         }
       }
-    vm.runInNewContext(source(manual), context)
+    vm.runInNewContext(source(complete), context)
     return win
   }
 
@@ -280,7 +284,10 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
 
   it('renders the same script whether or not an LMS is there', () => {
     expect(scormBridgeScript()).toBe(scormBridgeScript())
-    expect(scormBridgeScript()).not.toBe(scormBridgeScript({ manual: true }))
+    expect(scormBridgeScript()).toBe(scormBridgeScript({ complete: 'manual' }))
+    expect(scormBridgeScript()).not.toBe(
+      scormBridgeScript({ complete: 'seen' }),
+    )
   })
 
   it('finds the API up the parent chain, or through the opener', () => {
@@ -301,47 +308,59 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
     expect(win.kissScorm.available).toBe(false)
   })
 
-  it('completes a page when it is seen, then commits', () => {
+  it('with complete="seen", completes a page when it is seen, then commits', () => {
     for (const from of ['not attempted', 'browsed', 'incomplete']) {
       const one = lms({ status: from })
-      load(frame({ API: one.api }))
+      load(frame({ API: one.api }), { complete: 'seen' })
       expect(one.data.get('cmi.core.lesson_status')).toBe('completed')
       expect(one.names().slice(-1)).toEqual(['LMSCommit'])
     }
   })
 
-  it('never downgrades passed or failed', () => {
+  it('with complete="seen", never downgrades passed or failed', () => {
     for (const from of ['passed', 'failed']) {
       const one = lms({ status: from })
-      load(frame({ API: one.api }))
+      load(frame({ API: one.api }), { complete: 'seen' })
       expect(one.data.get('cmi.core.lesson_status')).toBe(from)
     }
   })
 
-  it('with complete="manual", starts a new attempt as incomplete, so leaving early is not completion', () => {
-    // An LMS may set a status the SCO never set to completed when it finishes.
-    const one = lms()
-    load(frame({ API: one.api }), { manual: true })
-    expect(one.data.get('cmi.core.lesson_status')).toBe('incomplete')
-    // A status the learner already has is kept.
-    for (const from of [
-      'incomplete',
-      'completed',
-      'passed',
-      'failed',
-      'browsed',
-    ]) {
-      const other = lms({ status: from })
-      load(frame({ API: other.api }), { manual: true })
-      expect(other.data.get('cmi.core.lesson_status')).toBe(from)
-    }
-    // Not in review or browse mode.
-    for (const mode of ['review', 'browse']) {
-      const other = lms({ mode })
-      load(frame({ API: other.api }), { manual: true })
-      expect(other.data.get('cmi.core.lesson_status')).toBe('not attempted')
-    }
-  })
+  // Moodle opens a completed attempt in review mode on every later launch
+  // ("Force new attempt" = No), and review mode records nothing: a page
+  // completed on load stops saving its place after the first launch
+  // (AIKB/upstream.md). So by default the page itself says when it is done.
+  it.each([
+    ['by default', undefined],
+    ['with complete="manual"', 'manual'],
+  ])(
+    '%s, starts a new attempt as incomplete and leaves completion to the page',
+    (_, complete) => {
+      // An LMS may set a status the SCO never set to completed when it finishes.
+      const one = lms()
+      const win = load(frame({ API: one.api }), { complete })
+      expect(one.data.get('cmi.core.lesson_status')).toBe('incomplete')
+      win.kissScorm.status('completed')
+      expect(one.data.get('cmi.core.lesson_status')).toBe('completed')
+      // A status the learner already has is kept.
+      for (const from of [
+        'incomplete',
+        'completed',
+        'passed',
+        'failed',
+        'browsed',
+      ]) {
+        const other = lms({ status: from })
+        load(frame({ API: other.api }), { complete })
+        expect(other.data.get('cmi.core.lesson_status')).toBe(from)
+      }
+      // Not in review or browse mode.
+      for (const mode of ['review', 'browse']) {
+        const other = lms({ mode })
+        load(frame({ API: other.api }), { complete })
+        expect(other.data.get('cmi.core.lesson_status')).toBe('not attempted')
+      }
+    },
+  )
 
   it('writes each interaction at cmi.interactions._count, a choice as a letter', () => {
     const one = lms()
@@ -470,7 +489,7 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
 
   it('sets a status the page asks for, and ignores one SCORM 1.2 does not know', () => {
     const one = lms()
-    const win = load(frame({ API: one.api }), { manual: true })
+    const win = load(frame({ API: one.api }), { complete: 'manual' })
     win.kissScorm.status('passed')
     expect(one.data.get('cmi.core.lesson_status')).toBe('passed')
     win.kissScorm.status('done')
@@ -518,7 +537,7 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
   // bridge off for it lost every later score, status and the finish.
   it('keeps tracking after a commit the LMS refuses once, and still finishes', () => {
     const one = lms({ commitFails: 1 })
-    const win = load(frame({ API: one.api }), { manual: true })
+    const win = load(frame({ API: one.api }), { complete: 'manual' })
     expect(win.kissScorm.available).toBe(true)
     win.kissScorm.score(0.9)
     win.kissScorm.status('passed')
@@ -557,9 +576,9 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
   it('a reference kept while the bridge waited still records once it is ready', () => {
     const one = lms()
     const outer = frame({ parent: frame({ API: one.api }), loading: true })
-    const inner = load(frame({ parent: outer }), { manual: true })
+    const inner = load(frame({ parent: outer }), { complete: 'manual' })
     const scorm = inner.kissScorm
-    load(outer, { manual: true })
+    load(outer, { complete: 'manual' })
     outer.ready()
     expect(scorm.available).toBe(true)
     expect(scorm.mode).toBe('normal')
@@ -1128,18 +1147,24 @@ describe.each(forms)('the SCORM bridge, %s', (_, source) => {
 
     // Every write the page cannot see refused is the bridge's to keep: a
     // completion, a status, a score.
-    it('writes a completion, a status and a score again when the LMS refuses them once', () => {
-      const one = lms()
-      one.refuseNext('cmi.core.lesson_status', '101')
-      const win = load(frame({ API: one.api }))
-      expect(one.durable.get('cmi.core.lesson_status')).toBe('completed')
-      one.refuseNext('cmi.core.score.raw', '101')
-      win.kissScorm.score(0.5)
-      expect(one.durable.get('cmi.core.score.raw')).toBe('50')
-      one.refuseNext('cmi.core.lesson_status', '101')
-      win.kissScorm.status('passed')
-      expect(one.durable.get('cmi.core.lesson_status')).toBe('passed')
-    })
+    it.each([
+      ['incomplete', undefined],
+      ['completed', 'seen'],
+    ])(
+      'writes the load-time status (%s), a status and a score again when the LMS refuses them once',
+      (onLoad, complete) => {
+        const one = lms()
+        one.refuseNext('cmi.core.lesson_status', '101')
+        const win = load(frame({ API: one.api }), { complete })
+        expect(one.durable.get('cmi.core.lesson_status')).toBe(onLoad)
+        one.refuseNext('cmi.core.score.raw', '101')
+        win.kissScorm.score(0.5)
+        expect(one.durable.get('cmi.core.score.raw')).toBe('50')
+        one.refuseNext('cmi.core.lesson_status', '101')
+        win.kissScorm.status('passed')
+        expect(one.durable.get('cmi.core.lesson_status')).toBe('passed')
+      },
+    )
 
     // A bookmark or state the LMS refuses is the page's to know: `false`,
     // and never written behind its back.
@@ -1308,9 +1333,11 @@ describe('the scormBridge helper', () => {
 
   it('renders the bridge as one inline script, unescaped', () => {
     expect(render('{{scormBridge}}')).toBe(scormBridgeScript())
-    expect(render('{{scormBridge complete="seen"}}')).toBe(scormBridgeScript())
     expect(render('{{scormBridge complete="manual"}}')).toBe(
-      scormBridgeScript({ manual: true }),
+      scormBridgeScript(),
+    )
+    expect(render('{{scormBridge complete="seen"}}')).toBe(
+      scormBridgeScript({ complete: 'seen' }),
     )
     expect(errors).toEqual([])
   })

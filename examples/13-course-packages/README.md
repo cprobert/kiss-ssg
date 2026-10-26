@@ -42,8 +42,10 @@ uploading again.
   `css/course.css` is inside each package. Anything it cannot carry (a root-relative URL, a link to a
   page outside the package, a file this build did not write) is listed in the report's `packages`,
   with the reason, and left out.
-- **`{{scormBridge}}` in `<head>`** connects a page to the LMS. With no `complete`, a page is complete
-  when it is seen; `complete="manual"` leaves it to the page, as the milk lesson does. The page's own
+- **`{{scormBridge}}` in `<head>`** connects a page to the LMS. With no `complete`, the page reports
+  its own completion, as the milk lesson does. The espresso pages keep no place, so they pass
+  `complete="seen"` and count as complete when seen. A page that bookmarks must not do that: in
+  Moodle a completed page reopens in review mode and saves nothing more. The page's own
   script records through `window.kissScorm`: `interaction({ id, response, correct, result })`,
   `score(fraction)` and `status('completed')`. On the web, or in an IMS content package, every call
   does nothing, so the same page works everywhere.
