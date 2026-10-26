@@ -1,0 +1,44 @@
+{
+  "lesson": "Milk texture",
+  "quiz": [
+    {
+      "id": "big-bubbles",
+      "stem": "The milk has big bubbles on top after steaming. What went wrong?",
+      "options": [
+        { "letter": "A", "text": "The milk was too cold to start with" },
+        { "letter": "B", "text": "Too much air went in, too late" },
+        { "letter": "C", "text": "The jug was too small" },
+        { "letter": "D", "text": "The milk spun for too long" }
+      ],
+      "key": "B",
+      "explanation": "Air goes in early, while the milk is cold, so the spin has time to break it into fine bubbles. Air let in near the end stays as big bubbles on top."
+    },
+    {
+      "id": "stop-stretching",
+      "stem": "When do you stop letting air into the milk?",
+      "options": [
+        { "letter": "A", "text": "As soon as the steam is on" },
+        { "letter": "B", "text": "When the jug is too hot to hold" },
+        { "letter": "C", "text": "When the jug is about hand-warm" },
+        { "letter": "D", "text": "When the milk has doubled in volume" }
+      ],
+      "key": "C",
+      "explanation": "Stretch while the milk is cold, until the jug is about hand-warm, then sink the tip and let the spin polish it. Stop steaming before the jug is too hot to hold."
+    },
+    {
+      "id": "why-swirl",
+      "stem": "Why do you swirl the jug before pouring?",
+      "options": [
+        {
+          "letter": "A",
+          "text": "To keep the foam folded into the milk, so it pours glossy"
+        },
+        { "letter": "B", "text": "To cool the milk down" },
+        { "letter": "C", "text": "To check the temperature" },
+        { "letter": "D", "text": "To break up the crema" }
+      ],
+      "key": "A",
+      "explanation": "Foam rises and separates as milk stands. Swirling keeps it folded in, so the pour is one glossy texture rather than milk followed by a cap of foam."
+    }
+  ]
+}

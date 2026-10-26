@@ -1,35 +1,59 @@
-{{!-- One SCO with many views: the lesson, two topics and a question on one page.
-      Each view has its own address (#lesson, #steaming, #pouring), so the back button works;
+{{!-- One SCO with many views: the lesson, two topics and a quiz on one page.
+      Each view has its own address (#lesson, #steaming, #pouring, #quiz), so the back button works;
       the script at the end shows one at a time. Without it, every view shows. --}}
 {{#extend "lesson" root="../"}}
 {{#content "body"}}
 <section data-view="lesson" id="lesson">
   <h1>Milk texture</h1>
-  <p>Two topics, then one question. The lesson is complete when you have answered it.</p>
+  <p>Two topics and a short quiz. When you have worked through them, mark the lesson complete at the end of the quiz.</p>
   <ul class="cards">
     <li><a class="card" href="#steaming"><strong>Steaming</strong><span>Stretch, then spin</span></a></li>
-    <li><a class="card" href="#pouring"><strong>Pouring</strong><span>And a question</span></a></li>
+    <li><a class="card" href="#pouring"><strong>Pouring</strong><span>Swirl, then pour</span></a></li>
+    <li><a class="card" href="#quiz"><strong>Quiz</strong><span>{{model.quiz.length}} questions</span></a></li>
   </ul>
 </section>
 
 <section data-view="steaming" id="steaming">
   <p><a href="#lesson">← All topics</a></p>
   <h2>Steaming</h2>
-  <p>Start with cold milk. Keep the steam tip just under the surface for a few seconds to let air in, then sink it a little so the milk spins and the bubbles break up. Stop before the jug is too hot to hold.</p>
+  <p>Start with cold milk. Keep the steam tip just under the surface to let air in while the milk is cold, until the jug is about hand-warm. Then sink the tip a little so the milk spins and the bubbles break up. Stop before the jug is too hot to hold.</p>
+  <p class="lesson__next"><a href="#pouring">Next: pouring →</a></p>
 </section>
 
 <section data-view="pouring" id="pouring">
   <p><a href="#lesson">← All topics</a></p>
   <h2>Pouring</h2>
-  <p>Swirl the jug until the milk shines, then pour from a height to sink it under the crema, and lower the jug to draw on the surface.</p>
-  <div class="question" data-answer="1">
-    <p><strong>Question.</strong> The milk has big bubbles on top after steaming. What went wrong?</p>
-    <button type="button" data-option="0">The milk was too cold</button>
-    <button type="button" data-option="1">Too much air went in, too late</button>
-    <button type="button" data-option="2">The jug was too small</button>
-    <p class="question__result" aria-live="polite"></p>
+  <p>Swirl the jug until the milk shines, so the foam stays folded in. Then pour from a height to sink it under the crema, and lower the jug to draw on the surface.</p>
+  <p class="lesson__next"><a href="#quiz">Next: the quiz →</a></p>
+</section>
+
+<section data-view="quiz" id="quiz">
+  <p><a href="#lesson">← All topics</a></p>
+  <h2>Quiz</h2>
+  <p>Choose an answer. If it is not right, you can try again before you are told.</p>
+  {{!-- The questions are data (src/models/milk.json); partials/question.hbs draws each one, and
+        partials/quiz-script.hbs gives them their behaviour. `data-quiz` names the quiz in the LMS's
+        reports: the page's id, a promise like the questions' own ids. --}}
+  <div class="quiz" data-quiz="{{id}}">
+    {{#each model.quiz}}{{> question number=(offset @index)}}{{/each}}
+  </div>
+
+  {{!-- The learner marks the lesson complete. Shown only in an LMS, in normal mode (in review the
+        lesson is already complete; a preview records nothing). Completion is the learner's call, not
+        the quiz's: once a lesson is complete, Moodle opens every later launch in review mode, where
+        nothing is saved, so the panel says so before they press it. --}}
+  <div class="finish" data-finish hidden>
+    <div data-finish-state="open">
+      <h3>Finished this lesson?</h3>
+      <p>When you have worked through the lesson, mark it complete and your course records it. You can still read it afterwards, but your place and your answers are no longer saved.</p>
+      <button type="button" class="button" data-finish-button>Mark this lesson complete</button>
+    </div>
+    <p data-finish-state="done" tabindex="-1" hidden>✓ You have marked this lesson complete.</p>
+    <p data-finish-state="review" hidden>✓ You have completed this lesson. You can read it again, but your place and answers are no longer saved.</p>
   </div>
 </section>
+
+{{> quiz-script}}
 
 <script>
   // One view at a time, from the address. No address, or one that names no view, shows the lesson.
@@ -51,9 +75,7 @@
   // the page, `resumed` is null until it has decided. Bookmarking every view
   // change keeps the place committed; off an LMS it does nothing. A learner
   // already on a view when the bridge decides (opened on #pouring, or moved
-  // while the LMS was loading) has that view bookmarked at once. Once the
-  // question completes the lesson, Moodle reopens it in review mode, which is
-  // why completion waits for the learner to finish.
+  // while the LMS was loading) has that view bookmarked at once.
   window.kissScorm.ready(function (scorm) {
     var back = scorm.resumed
     function keep() { scorm.bookmark(location.hash.slice(1)) }
@@ -62,30 +84,23 @@
     else if (back && back.location) location.replace('#' + back.location)
   })
 
-  // The question: say whether the choice is right, then record it. In an LMS,
-  // window.kissScorm (from the scormBridge helper in the layout) sends the answer as an interaction,
-  // the score as a fraction, and the lesson's completion; on the web it does nothing.
-  ;(function () {
-    var question = document.querySelector('.question')
-    var answer = Number(question.getAttribute('data-answer'))
-    question.addEventListener('click', function (event) {
-      var button = event.target.closest('[data-option]')
-      if (!button) return
-      var choice = Number(button.getAttribute('data-option'))
-      var right = choice === answer
-      question.querySelector('.question__result').textContent = right
-        ? 'Right: air goes in early, while the milk is cold.'
-        : 'Not quite: too much air went in, too late.'
-      window.kissScorm.interaction({
-        id: 'milk-texture.pouring.1',
-        response: choice,
-        correct: answer,
-        result: right,
+  // The finish panel: the one place the lesson is marked complete.
+  window.kissScorm.ready(function (scorm) {
+    var finish = document.querySelector('[data-finish]')
+    if (!scorm.available || scorm.mode === 'browse') return
+    function state(name) {
+      finish.querySelectorAll('[data-finish-state]').forEach(function (el) {
+        el.hidden = el.getAttribute('data-finish-state') !== name
       })
-      window.kissScorm.score(right ? 1 : 0)
-      window.kissScorm.status('completed')
+    }
+    state(scorm.mode === 'review' ? 'review' : 'open')
+    finish.hidden = false
+    finish.querySelector('[data-finish-button]').addEventListener('click', function () {
+      scorm.status('completed')
+      state('done')
+      finish.querySelector('[data-finish-state="done"]').focus()
     })
-  })()
+  })
 </script>
 {{/content}}
 {{/extend}}

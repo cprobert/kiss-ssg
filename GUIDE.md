@@ -935,7 +935,7 @@ Write a member page's asset URLs relative to the page (`{{root}}{{asset 'css/sit
 
 **One SCO, many views.** The lesson is one page, whose own navigation shows one view at a time, each with its own address (`#steaming`), so the browser's back button works: a lesson overview, a topic, a tab of a topic. It is one SCO, so one session and one attempt in the LMS, and every answer the page records lands in it. Hide the LMS's own table of contents (it has one item) and the lesson has the whole window. This suits a lesson with its own structure, such as topic cards that open tabbed topics.
 
-The views, the navigation between them and any question are your page's own markup and script: kiss gives you the bridge, not the course. `examples/13-course-packages/src/pages/milk/index.hbs` is a short working version to start from: sections marked `data-view`, a `hashchange` handler that shows one of them, links between them by `#name`, a bookmark of the view the learner is on so they resume there, and a question that records its answer, a score and completion through `window.kissScorm`.
+The views, the navigation between them and any question are your page's own markup and script: kiss gives you the bridge, not the course. `examples/13-course-packages/src/pages/milk/index.hbs` is a short working version to start from: sections marked `data-view`, a `hashchange` handler that shows one of them, links between them by `#name`, a bookmark of the view the learner is on so they resume there, a quiz whose answers come back on the learner's next launch and are each reported as an interaction, and a panel where the learner marks the lesson complete. Its README lists what to copy from the quiz.
 
 #### SCORM: `{{scormBridge}}` and `window.kissScorm`
 

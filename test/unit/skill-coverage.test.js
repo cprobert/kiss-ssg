@@ -30,6 +30,14 @@ const COVERAGE = [
     pattern: /`resumed`[\s\S]*kissScorm\.ready\(/,
     skills: [skill('kiss-ssg', 'kiss-page-add')],
   },
+  // 2026-10-26: a SCORM lesson page reports its own completion (the bridge's
+  // default since then), and example 13's quiz is the pattern for questions in
+  // one. An agent adding a lesson page with questions should start from it.
+  {
+    feature: 'a SCORM lesson page: status(completed), and the quiz pattern',
+    pattern: /status\('completed'\)[\s\S]*quiz-script\.hbs/,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
+  },
   // 2.7.5: every HTML page gets a Markdown copy converted from its <main>, so
   // a layout without one ships its chrome into every copy and nothing reports
   // it. The skills that write or inherit a layout have to say so.

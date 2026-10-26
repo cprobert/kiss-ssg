@@ -1,0 +1,35 @@
+{{!-- One multiple-choice question, from an entry in the page's model (`id`, `stem`, `options`, `key`,
+      `explanation`). The `id` is a promise, like a page's: the LMS's reports group a question's answers
+      by it, so it names the question, never its position.
+
+      Without the script (partials/quiz-script.hbs) the options do nothing and the answer opens below, so
+      the question still teaches. With it, the learner tries before being told: a wrong choice is crossed
+      out and they try again; a right choice, a second wrong one, or "Show answer" ends the question, and
+      one verdict panel says how they did and holds the explanation. --}}
+<div class="question" data-question="{{id}}" data-key="{{key}}">
+  <p class="question__stem"><strong>Question {{number}}.</strong> {{stem}}</p>
+  <ol class="options">
+    {{#each options}}
+    <li>
+      <button type="button" class="option" data-option="{{letter}}" aria-pressed="false">
+        <span class="option__letter" aria-hidden="true">{{letter}}</span>
+        <span class="option__text"><span class="sr">{{letter}}. </span>{{text}}</span>
+        <span class="option__tag" data-tag></span>
+      </button>
+    </li>
+    {{/each}}
+  </ol>
+  <p class="sr" data-announce aria-live="polite"></p>
+  <div class="verdict" data-verdict tabindex="-1" hidden>
+    <p class="verdict__line"><span class="verdict__icon" data-icon aria-hidden="true"></span><span data-verdict-line></span></p>
+    <div class="verdict__explain" data-explain hidden></div>
+    <div class="verdict__actions">
+      <button type="button" class="action" data-show hidden>Show answer</button>
+      <button type="button" class="action" data-again hidden>Start again</button>
+    </div>
+  </div>
+  <details class="question__answer">
+    <summary>Show answer</summary>
+    <p data-explanation><strong data-answer-line>The answer is {{key}}.</strong> {{explanation}}</p>
+  </details>
+</div>

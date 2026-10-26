@@ -491,14 +491,15 @@ describe.skipIf(!hasExamples)('example builds', () => {
       const espresso = zip('espresso-basics.scorm12.zip')
       expect(espresso.match(/adlcp:scormtype="sco"/g)).toHaveLength(2)
       expect(espresso).toContain('css/course.css')
-      // One SCO, many views: one page, one SCO, and an answer recorded through
-      // the page API, with completion left to the page.
+      // One SCO, many views: one page, one SCO, and answers recorded through
+      // the page API, with completion left to the page (its finish panel calls
+      // status on the bridge `ready` hands it).
       const milk = zip('milk-texture.scorm12.zip')
       expect(milk.match(/adlcp:scormtype="sco"/g)).toHaveLength(1)
       expect(milk).toContain('kissScorm.interaction(')
-      expect(milk).toMatch(/kissScorm\.status\(["']completed["']\)/)
-      // The page's scripts are whole: the bridge once in <head>, the page's own
-      // once, and each compiles. A helper call written inside a JavaScript
+      expect(milk).toMatch(/\.status\(["']completed["']\)/)
+      // The page's scripts are whole: the bridge once in <head>, the quiz's
+      // and the page's own once each, and each compiles. A helper call written inside a JavaScript
       // comment is still expanded by Handlebars, and its `</script>` cut the
       // page's script in two (found by a Codex review).
       const page = readFileSync(
@@ -508,7 +509,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
         (m) => m[1],
       )
-      expect(scripts).toHaveLength(2)
+      expect(scripts).toHaveLength(3)
       expect(page.match(/if\(\w+\.kissScorm\)return/g)).toHaveLength(1)
       for (const code of scripts)
         expect(() => new vm.Script(code)).not.toThrow()

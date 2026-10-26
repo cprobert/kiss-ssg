@@ -56,24 +56,196 @@ a {
 .card span {
   color: #6b5d55;
 }
-.question {
+/* The quiz (partials/question.hbs). Every state is told by shape and words as
+   well as colour: a crossed-out try, a thick border on the learner's answer, a
+   plain dark outline on the correct one (never the colour of success when they
+   got it wrong), and one verdict panel with an icon and a sentence. Text meets
+   4.5:1 contrast on its background. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.quiz {
   display: grid;
-  gap: 0.5rem;
+  gap: 1.25rem;
+}
+.question {
   padding: 1rem 1.25rem;
   border: 1px solid var(--line);
   border-radius: 0.75rem;
   background: #fff;
 }
-.question button {
-  padding: 0.6rem 0.9rem;
+.question__stem {
+  margin-top: 0;
+}
+.options {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
   background: var(--paper);
+  color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.question__result {
+.option:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.option:disabled {
+  cursor: default;
+}
+.option:focus-visible,
+.action:focus-visible,
+.button:focus-visible,
+.verdict:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.option__letter {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.option__text {
+  flex: 1;
+}
+.option__tag {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.option__tag:empty {
+  display: none;
+}
+.option[data-mark='dim'] {
+  opacity: 0.6;
+}
+.option[data-mark='tried'] {
+  background: #fff;
+  color: #5c4c4a;
+}
+.option[data-mark='tried'] .option__text {
+  text-decoration: line-through 2px #a3261e;
+}
+.option[data-mark='tried'] .option__tag,
+.option[data-mark='chosen-wrong'] .option__tag {
+  color: #a3261e;
+}
+.option[data-mark='chosen-wrong'] {
+  border: 2px solid #a3261e;
+  background: #fdeceb;
+}
+.option[data-mark='chosen-right'] {
+  border: 2px solid #1e6e40;
+  background: #eaf6ee;
+}
+.option[data-mark='chosen-right'] .option__tag {
+  color: #1e6e40;
+}
+.option[data-mark='answer'] {
+  border: 2px solid var(--ink);
+  background: #fff;
+}
+.verdict {
+  margin-top: 0.9rem;
+  padding: 0.8rem 1rem;
+  border-left: 6px solid var(--ink);
+  border-radius: 0.5rem;
+  background: #f3eee8;
+}
+[data-state='right'] .verdict {
+  border-left-color: #1e6e40;
+  background: #eaf6ee;
+}
+[data-state='trying'] .verdict,
+[data-state='wrong'] .verdict {
+  border-left-color: #a3261e;
+  background: #fdeceb;
+}
+.verdict__line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-weight: 700;
+}
+.verdict__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.85rem;
+}
+[data-state='right'] .verdict__icon {
+  background: #1e6e40;
+}
+[data-state='trying'] .verdict__icon,
+[data-state='wrong'] .verdict__icon {
+  background: #a3261e;
+}
+.verdict__explain p {
+  margin: 0.6rem 0 0;
+}
+.verdict__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+.action,
+.button {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--accent);
+  font: inherit;
   font-weight: 600;
-  min-height: 1.6em;
+  cursor: pointer;
+}
+.button {
+  background: var(--accent);
+  color: #fff;
+}
+.question__answer {
+  margin-top: 0.75rem;
+}
+.finish {
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.finish h3 {
+  margin-top: 0;
 }
