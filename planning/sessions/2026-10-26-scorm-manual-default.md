@@ -40,6 +40,8 @@ Origin: a finding relayed by the internal-medicine session (branch `spike/scorm-
 
 ## Pulse log
 
+- **2026-10-26** — criteria 1–5 met (full suite 2678 green; regression test seen red with 7 failures before the fix; `llms.txt` at 15,997; each CONTRADICTIONS pattern matched the HEAD text). Criterion 6 met by existing code (Amendment 1). Criterion 7 partial: `kiss-site-migrate` §0h written, CHANGELOG and bump wait for close. Criterion 8 met: the clean room passed `check`, and its 3 gaps were fixed (Amendment 2). Codex's stop-time review then found the resume snippet never bookmarked a view reached before `ready()`; both copies were fixed, seen red then green in a Moodle-like harness. The clean room has not been re-run on the fixed tarball. Criterion 9 not yet. No drift beyond the amendments; the surface is still public API (minor). **Eyeball: deferred** to `/branch-close` Step 5a (GUIDE.md:942, the SCORM paragraph). **Offer:** the cut of the 255/4,096 limits from `llms.txt` — kept. Decision: continue to close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
