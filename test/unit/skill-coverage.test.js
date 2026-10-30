@@ -12,6 +12,10 @@ import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 // .feed() before this table existed. Add a row when a public feature lands.
 const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
+const WRITING = 'plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md'
+const BROWSER_PASS = 'plugins/kiss-ssg/skills/kiss-site-review/browser-pass.md'
+const REVIEW_PROTOCOL =
+  'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
 
 const COVERAGE = [
   // Learning packages: a page added to a course's lesson joins its package by
@@ -289,12 +293,12 @@ const COVERAGE = [
   // The launch-readiness audit. The review skill is where an agent turns a
   // finding into a fix, so it has to name every check id — built from CHECKS,
   // so a check added to lib/audit.js fails here until the skill says what to
-  // do about it — plus the ignore list and the report-before-fixing rule.
+  // do about it — plus the ignore list. The report-before-fixing rule moved to
+  // the shared review protocol on 2026-10-30 (its row is below).
   {
-    feature:
-      'the launch-readiness audit: every check id, audit.ignore, report first',
+    feature: 'the launch-readiness audit: every check id, audit.ignore',
     pattern: new RegExp(
-      [...CHECKS.map((id) => `\`${id}\``), 'audit\\.ignore', 'Report first']
+      [...CHECKS.map((id) => `\`${id}\``), 'audit\\.ignore']
         .map((needle) => `(?=[\\s\\S]*${needle})`)
         .join(''),
     ),
@@ -305,7 +309,7 @@ const COVERAGE = [
   {
     feature: 'the judgement pass serves the build folder as the site root',
     pattern: /build folder as the site root[\s\S]*Live Server/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [BROWSER_PASS],
   },
   // 2026-09-30: an operator rule, not an audit check — so the skill is the only
   // place it lives, and this row is what keeps it there.
@@ -313,19 +317,36 @@ const COVERAGE = [
     feature: 'external links open in a new tab, with noopener and a cue',
     pattern:
       /target="_blank"[\s\S]*noopener noreferrer[\s\S]*opens in a new tab/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
   // 2026-10-12, the taste-skill trial on the docs site and Pro Plumbing: the
   // checks that held up on both, measured rather than argued from taste, and
   // the rule that stopped twelve of the trialled skill's findings from undoing
   // decisions the sites had already recorded. No audit check covers any of
   // them, so this row is what keeps them in the skill.
+  // 2026-10-30: the craft pass moved into the domain skills that own each
+  // check; the needles are the same, split by owner.
   {
     feature:
-      'the craft pass: recorded decisions first, then the measured checks',
+      'the accessibility checks: 3:1 edges, said changes, reduced motion, sticky bars',
     pattern:
-      /^(?=[\s\S]*look for the decision)(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+      /^(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*scroll-padding-top)/,
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    feature: 'the design checks: weights that render, balanced headings',
+    pattern: /^(?=[\s\S]*`font-weight`)(?=[\s\S]*text-wrap: balance)/,
+    skills: [skill('kiss-ssg', 'kiss-design')],
+  },
+  {
+    feature: 'the front-end checks: 100dvh is for an app shell',
+    pattern: /100dvh/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature: "the personal-details line is the writing skill's",
+    pattern: /personal details/,
+    skills: [skill('kiss-ssg', 'kiss-writing-for-the-web')],
   },
   // 2026-10-20, the six-repo design-skill evaluation: the lessons taken in, not
   // the skills. The review runs as two passes, and each new craft check is one
@@ -336,12 +357,27 @@ const COVERAGE = [
   // agent could not find them by number. Every gate passed it. Each check
   // starting its own line is what this row holds.
   {
-    feature: 'the twenty craft checks are each their own list item',
+    feature: 'the ten accessibility checks are each their own list item',
     pattern: new RegExp(
-      `^${Array.from({ length: 20 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
+      `^${Array.from({ length: 10 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
       'm',
     ),
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    // Each check is matched by its number and its own opening words: the
+    // file's other numbered lists (the interactivity ladder, the design
+    // lift's steps) would satisfy a bare `1. **` to `5. **` on their own.
+    feature: 'the five front-end checks are each their own list item',
+    pattern:
+      /^(?=[\s\S]*^1\. \*\*`100vh`)(?=[\s\S]*^2\. \*\*Transitions name)(?=[\s\S]*^3\. \*\*A hover that changes the box)(?=[\s\S]*^4\. \*\*Nothing is `width: 100vw`)(?=[\s\S]*^5\. \*\*A list fed by a model)/m,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature: 'the five design checks are each their own list item',
+    pattern:
+      /^(?=[\s\S]*^1\. \*\*Every weight)(?=[\s\S]*^2\. \*\*A colour that means)(?=[\s\S]*^3\. \*\*Every link and control acknowledges)(?=[\s\S]*^4\. \*\*No heading or paragraph)(?=[\s\S]*^5\. \*\*Running text stops)/m,
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   // 2026-10-21, the Pro Plumbing pilot: its sticky bar is a call bar at the
   // bottom of the phone screen, forward Tab hid two controls under it, and the
@@ -350,33 +386,51 @@ const COVERAGE = [
     feature:
       'a sticky bar at the bottom hides forward Tab: scroll-padding-bottom',
     pattern: /^(?=[\s\S]*`scroll-padding-bottom`)(?=[\s\S]*bottom bar)/,
-    skills: [
-      skill('kiss-ssg', 'kiss-site-review'),
-      skill('kiss-ssg', 'kiss-site-new'),
-    ],
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
   },
   {
-    feature: 'the review is two passes: a usability audit, then a design lift',
+    feature: 'the review runs the domain reviews, then offers the design lift',
     pattern:
-      /^(?=[\s\S]*### 3\. The usability and best-practice audit)(?=[\s\S]*### 5\. The design lift)/,
+      /^(?=[\s\S]*### 2\. Run each domain skill's review mode)(?=[\s\S]*### 5\. The design lift)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
   {
     feature:
-      'the 2026-10-20 craft checks: focus, targets, skip link, current page, transitions, touch hover, no-JS, 100vw, 200%, line length, 0 and 1',
+      'the 2026-10-20 accessibility checks: focus, targets, skip link, current page, no-JS, 200%',
     pattern:
-      /^(?=[\s\S]*`:focus-visible`)(?=[\s\S]*Shift\+Tab)(?=[\s\S]*2\.5\.8)(?=[\s\S]*Skip to content)(?=[\s\S]*aria-current="page")(?=[\s\S]*`transition: all`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*JavaScript off)(?=[\s\S]*`100vw`)(?=[\s\S]*--hide-scrollbars)(?=[\s\S]*200%)(?=[\s\S]*characters a line)(?=[\s\S]*at 0 and at 1)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+      /^(?=[\s\S]*`:focus-visible`)(?=[\s\S]*Shift\+Tab)(?=[\s\S]*2\.5\.8)(?=[\s\S]*Skip to content)(?=[\s\S]*aria-current="page")(?=[\s\S]*JavaScript off)(?=[\s\S]*200%)/,
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    feature:
+      'the 2026-10-20 front-end checks: transitions, touch hover, 100vw, 0 and 1',
+    pattern:
+      /^(?=[\s\S]*`transition: all`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*`100vw`)(?=[\s\S]*--hide-scrollbars)(?=[\s\S]*at 0 and at 1)/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature: 'the 2026-10-20 design check: line length',
+    pattern: /characters a line/,
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   {
     feature: 'a hero is 100svh; 100dvh is for an app shell',
     pattern: /`100svh`[\s\S]*app shell/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  // 2026-10-30: the reporting rules moved out of kiss-site-review into one
+  // shared file, so a domain skill run on its own reports the same way
+  // (planning/plans/2026-10-30-domain-skills.md, rule 10). The review links it.
+  {
+    feature:
+      'the review protocol: report first, a P0–P3 priority, one row per cause, recorded decisions and the ask exception',
+    pattern:
+      /^(?=[\s\S]*Report first)(?=[\s\S]*\| Priority \|)(?=[\s\S]*\*\*P0:\*\*)(?=[\s\S]*\*\*P3:\*\*)(?=[\s\S]*One row per cause)(?=[\s\S]*look for the decision)(?=[\s\S]*\*\*ask\*\*)/,
+    skills: [REVIEW_PROTOCOL],
   },
   {
-    feature: 'the report: a P0–P3 priority, one row per cause',
-    pattern:
-      /^(?=[\s\S]*\| Priority \|)(?=[\s\S]*\*\*P0:\*\*)(?=[\s\S]*\*\*P3:\*\*)(?=[\s\S]*One row per cause)/,
+    feature: 'the review reports to the shared protocol',
+    pattern: /\]\(\.\/review-protocol\.md\)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
   {
@@ -384,14 +438,30 @@ const COVERAGE = [
       'the design lift: decisions, a read, preserve mode, proposals in a scratch copy, the protected contract',
     pattern:
       /^(?=[\s\S]*design read)(?=[\s\S]*one step bolder)(?=[\s\S]*[Pp]reserve, improve, remove)(?=[\s\S]*scratch copy)(?=[\s\S]*protected contract)(?=[\s\S]*gets `aliases`)(?=[\s\S]*do not attempt the lift)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   {
-    feature:
-      'the build-time floors from the 2026-10-20 craft checks, pointing at the review',
+    feature: 'the accessibility build floors, pointing at its review checks',
     pattern:
-      /^(?=[\s\S]*skip link)(?=[\s\S]*`:focus-visible`)(?=[\s\S]*aria-current)(?=[\s\S]*`user-scalable=no`)(?=[\s\S]*16px)(?=[\s\S]*`autocomplete`)(?=[\s\S]*`tabindex`)(?=[\s\S]*`100svh`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*empty state)(?=[\s\S]*craft pass)/,
-    skills: [skill('kiss-ssg', 'kiss-site-new')],
+      /^(?=[\s\S]*skip link)(?=[\s\S]*`:focus-visible`)(?=[\s\S]*aria-current)(?=[\s\S]*`user-scalable=no`)(?=[\s\S]*16px)(?=[\s\S]*`autocomplete`)(?=[\s\S]*`tabindex`)(?=[\s\S]*review check)/,
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    feature: 'the front-end build floors, pointing at its review checks',
+    pattern:
+      /^(?=[\s\S]*`100svh`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*empty state)(?=[\s\S]*review check)/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  // 2026-10-30: the task skills are thin handlers; each names every domain
+  // skill it hands the expertise to.
+  {
+    feature: 'the task skills hand each domain to its skill',
+    pattern:
+      /^(?=[\s\S]*`kiss-writing-for-the-web`)(?=[\s\S]*`kiss-accessibility`)(?=[\s\S]*`kiss-front-end`)(?=[\s\S]*`kiss-seo`)(?=[\s\S]*`kiss-design`)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-review'),
+    ],
   },
   {
     feature: 'the 2.8.0 upgrade note: three audit checks, advisory',
@@ -404,12 +474,37 @@ const COVERAGE = [
   // tells an agent to "come up with copy and placeholder content", and the
   // trialled skills prescribe invented data ("organic, messy data",
   // "+1 (312) 847-1928"): on a real business's site that is a false claim.
+  // 2026-10-30: the rule against invented facts moved to
+  // kiss-writing-for-the-web, which owns it; kiss-site-new keeps a one-line
+  // floor and calls the skill for the words.
   {
     feature:
-      'whatever the look: no invented facts, labelled fields, sized images',
+      'whatever the look: the no-invention floor and the writing skill, labelled fields, sized images',
     pattern:
-      /^(?=[\s\S]*Never invent a fact)(?=[\s\S]*placeholder)(?=[\s\S]*<label>)(?=[\s\S]*`width` and `height`)(?=[\s\S]*loading="lazy")/,
+      /^(?=[\s\S]*Never invent a fact)(?=[\s\S]*`kiss-writing-for-the-web`)(?=[\s\S]*placeholder)(?=[\s\S]*<label>)(?=[\s\S]*`width` and `height`)(?=[\s\S]*loading="lazy")/,
     skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature:
+      'a fan-out section gets no placeholder item: it would publish a URL',
+    pattern: /no placeholder item[\s\S]*sitemap/,
+    skills: [WRITING],
+  },
+  {
+    feature: 'the task skills call the writing skill for the words',
+    pattern: /`kiss-writing-for-the-web`/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-review'),
+      skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-import'),
+    ],
+  },
+  {
+    feature:
+      'the writing skill reviews demo copy and the personal-details line, to the shared protocol',
+    pattern:
+      /^(?=[\s\S]*Placeholder, demo and scaffold copy)(?=[\s\S]*personal details)(?=[\s\S]*\]\(\.\.\/kiss-site-review\/review-protocol\.md\))/,
+    skills: [skill('kiss-ssg', 'kiss-writing-for-the-web')],
   },
   // 2026-10-12 bake-off: the same brief built three ways. kiss-site-new alone
   // produced frontend-design's own list of AI defaults (cream, serif,
@@ -422,13 +517,13 @@ const COVERAGE = [
     feature: 'no frontend-design: say so, and point at the install lines',
     pattern:
       /^(?=[\s\S]*When it is not installed, say so before you set the look)(?=[\s\S]*Optional: Anthropic's `frontend-design` skill for the look)/,
-    skills: [skill('kiss-ssg', 'kiss-site-new')],
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   {
     feature: 'never invent: empty marked slots, never example items',
     pattern:
-      /^(?=[\s\S]*Never fill it with example items or sample posts)(?=[\s\S]*visible on the page)(?=[\s\S]*read off the domain)/,
-    skills: [skill('kiss-ssg', 'kiss-site-new')],
+      /^(?=[\s\S]*never example items)(?=[\s\S]*visible on the page)(?=[\s\S]*read off the domain)/,
+    skills: [skill('kiss-ssg', 'kiss-writing-for-the-web')],
   },
   {
     feature: 'step 6 has a command fallback, and the init marker goes',
@@ -466,10 +561,7 @@ const COVERAGE = [
       'frontend-design sets the visual direction, kiss keeps the structure',
     pattern:
       /^(?=[\s\S]*`frontend-design`)(?=[\s\S]*visual direction)(?=[\s\S]*structure)(?=[\s\S]*single-file page)/,
-    skills: [
-      skill('kiss-ssg', 'kiss-site-new'),
-      skill('kiss-ssg', 'kiss-site-review'),
-    ],
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   // Operator decision 2026-10-13: Anthropic's webapp-testing skill is an
   // optional companion too, recommended against a trial that measured no gain
@@ -484,17 +576,16 @@ const COVERAGE = [
       'webapp-testing for the browser pass: HTTP not file://, own server, own port',
     pattern:
       /^(?=[\s\S]*`webapp-testing`)(?=[\s\S]*Not `file:\/\/`)(?=[\s\S]*Not `with_server\.py` on Windows)(?=[\s\S]*Not port 3001 by assumption)(?=[\s\S]*pip install playwright)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [BROWSER_PASS],
   },
   {
     feature:
       'webapp-testing for a look at what was built, served over HTTP not file://',
     pattern:
       /`webapp-testing`[\s\S]*over HTTP[\s\S]*not from `file:\/\/`|`webapp-testing`[\s\S]*over HTTP[\s\S]*Never use `file:\/\/`/,
-    skills: [
-      skill('kiss-ssg', 'kiss-site-import'),
-      skill('kiss-ssg', 'kiss-site-new'),
-    ],
+    // kiss-site-new links the shared browser pass instead (2026-10-30), and
+    // plugin-manifests.test.js checks that link resolves.
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
     feature: "the site map's Id column as the link targets",
@@ -671,6 +762,28 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-10-30: the rule against invented facts and the copy checks live once, in kiss-writing-for-the-web; a second full copy in a task skill drifts from it, and the task skills keep a one-line floor that names the skill',
+    allowedIn: [WRITING],
+    patterns: [
+      /Never fill it with example items or sample posts/,
+      /A design skill or a template that asks for "realistic"/,
+      /A design skill that asks for "realistic" or "organic" sample data/,
+      // The rule, not one wording of it: the owner's copy uses a colon and
+      // "for the owner to confirm", and either form elsewhere is a copy.
+      /Placeholder, demo and scaffold copy/,
+      /mark every claim for (them|the owner) to confirm/i,
+      /would publish a placeholder post as a real URL/,
+    ],
+  },
+  {
+    why: '2026-10-30: the reporting rules live once, in the shared review protocol, so a domain skill run alone reports the same way; a second copy in kiss-site-review or a domain skill drifts from it',
+    allowedIn: [REVIEW_PROTOCOL],
+    patterns: [
+      /\*\*One row per cause, not per instance\.\*\*/,
+      /\*\*First, look for the decision\.\*\*/,
+    ],
+  },
   {
     why: '2.8.0: Markdown copies are written only when the build calls .llms() (markdownCopies.write defaults to "llms"); from 2.7.5 every page had one, and a doc saying every page gets one tells an agent to expect a .md that a build without .llms() never writes',
     patterns: [
@@ -961,6 +1074,38 @@ const consumerFacing = () => {
   return files
 }
 
+// A rule that moves to another file leaves its sentence banned where it was
+// and allowed where it went: an entry's `allowedIn` names the files that own
+// the sentence now, as paths from the repo root. Without it every ban ran on
+// every shipped file, so moving a rule from a task skill into a domain skill
+// and banning it in the task skill would have failed the domain skill too.
+const offenders = (entry, pattern, files, read) =>
+  files.filter(
+    (f) => !(entry.allowedIn ?? []).includes(f) && pattern.test(read(f)),
+  )
+
+describe('a CONTRADICTIONS entry can name the files that own its sentence', () => {
+  const text = { 'owner.md': 'the moved rule', 'left.md': 'the moved rule' }
+  const read = (f) => text[f]
+  const both = ['owner.md', 'left.md']
+
+  it('bans the sentence everywhere but the files that own it', () => {
+    const entry = { allowedIn: ['owner.md'] }
+    expect(offenders(entry, /moved rule/, both, read)).toEqual(['left.md'])
+  })
+
+  it('bans it everywhere when no owner is named', () => {
+    expect(offenders({}, /moved rule/, both, read)).toEqual(both)
+  })
+
+  it('names only owners that exist, so a renamed owner cannot drop its ban', () => {
+    const missing = CONTRADICTIONS.flatMap(
+      (entry) => entry.allowedIn ?? [],
+    ).filter((f) => !fs.existsSync(path.join(root, f)))
+    expect(missing).toEqual([])
+  })
+})
+
 describe('no consumer-facing file contradicts the convention it documents', () => {
   const files = consumerFacing()
 
@@ -968,12 +1113,10 @@ describe('no consumer-facing file contradicts the convention it documents', () =
     expect(files.length).toBeGreaterThan(20)
   })
 
-  for (const { why, patterns } of CONTRADICTIONS) {
-    it.each(patterns)(`${why} — %s`, (pattern) => {
-      const offenders = files.filter((f) =>
-        pattern.test(fs.readFileSync(path.join(root, f), 'utf8')),
-      )
-      expect(offenders).toEqual([])
+  const read = (f) => fs.readFileSync(path.join(root, f), 'utf8')
+  for (const entry of CONTRADICTIONS) {
+    it.each(entry.patterns)(`${entry.why} — %s`, (pattern) => {
+      expect(offenders(entry, pattern, files, read)).toEqual([])
     })
   }
 })

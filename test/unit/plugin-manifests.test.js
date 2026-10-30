@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
+import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const PACKAGE_PREFIX = 'node_modules/kiss-ssg/'
@@ -81,6 +82,92 @@ const everySkill = plugins.flatMap((plugin) =>
   })),
 )
 
+// Every Markdown file in a skill's folder, not only its SKILL.md: a domain
+// skill keeps its long material in `references/`, and a path cited there sends
+// an agent to a file just as surely as one cited in SKILL.md.
+function markdownIn(dir) {
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((e) =>
+      e.isDirectory()
+        ? markdownIn(path.join(dir, e.name))
+        : e.name.endsWith('.md')
+          ? [path.join(dir, e.name)]
+          : [],
+    )
+}
+
+const everyDoc = plugins.flatMap((plugin) =>
+  plugin.skills.flatMap((skill) =>
+    markdownIn(path.join(root, plugin.dir, 'skills', skill)).map((file) => ({
+      plugin: plugin.name,
+      skill,
+      file,
+      pluginDir: path.join(root, plugin.dir),
+      rel: path.relative(root, file).replace(/\\/g, '/'),
+    })),
+  ),
+)
+
+// What npm packs: a top-level entry of `files`, or a file npm always packs,
+// less what the `!` entries take out again. The pack gate's own list of those,
+// so the two cannot disagree; a top-level check alone passed a path under an
+// example's `public/`, which never ships.
+function isPacked(relative) {
+  const top = relative.split('/')[0]
+  if (![...pkg.value.files, ...ALWAYS_PACKED].includes(top)) return false
+  return !FORBIDDEN_PACKED.some((pattern) => pattern.test(`${relative}/`))
+}
+
+// The relative Markdown links in a skill's files, `[text](target)`. A plugin
+// installs as one folder, so a target must exist and stay inside that plugin's
+// folder. A skill that points at another plugin file (a domain skill at the
+// shared review protocol) writes a Markdown link, never an inline-code path:
+// an inline `./helpers` or `./AIKB` in these skills is a folder in the user's
+// site, not a file in the plugin. A URL and an in-page `#anchor` are not
+// checked here, and a `node_modules/kiss-ssg/…` path is checked above.
+function brokenLinks(text, docDir, pluginDir, exists = fs.existsSync) {
+  const inside = path.resolve(pluginDir) + path.sep
+  const targets = [...text.matchAll(/\]\(([^)\s]+)\)/g)]
+    .map((m) => m[1])
+    .filter((t) => !/^[a-z][a-z0-9+.-]*:/i.test(t) && !t.startsWith('#'))
+    .map((t) => t.split('#')[0])
+  return targets.filter((t) => {
+    const resolved = path.resolve(docDir, t)
+    return !resolved.startsWith(inside) || !exists(resolved)
+  })
+}
+
+describe('what a skill may point at', () => {
+  it('a path inside a folder the files list takes out again is not packed', () => {
+    expect(isPacked('examples/1-scan/public/index.html')).toBe(false)
+    expect(isPacked('examples/1-scan/router.js')).toBe(true)
+    expect(isPacked('test/unit/x.test.js')).toBe(false)
+  })
+
+  it('a link to a missing file, or out of its plugin, is broken', () => {
+    const exists = (p) => p.endsWith('there.md')
+    const text = [
+      '[a](../other/there.md)',
+      '[b](gone.md)',
+      '[c](../../../outside/there.md)',
+      '[d](https://example.com/gone.md)',
+      '[e](#an-anchor)',
+      '`./helpers`',
+    ].join(' ')
+    expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([
+      'gone.md',
+      '../../../outside/there.md',
+    ])
+  })
+
+  it('reads every Markdown file in a skill folder, not only SKILL.md', () => {
+    expect(everyDoc.map((d) => d.rel)).toContain(
+      'plugins/kiss-memory/skills/kiss-branch-close/rubric.md',
+    )
+  })
+})
+
 describe('marketplace', () => {
   it('parses as JSON', () => {
     expect(marketplace.error).toBeNull()
@@ -139,24 +226,22 @@ describe('skills', () => {
   // A skill that cites a path the tarball does not ship sends the agent to a
   // file that is not there — the whole point of pointing at llms.txt rather
   // than restating it.
-  it.each(everySkill)(
-    '$plugin/$skill: every cited package path exists',
-    ({ file }) => {
-      const missing = citedPackagePaths(file).filter(
-        (relative) => !fs.existsSync(path.join(root, relative)),
-      )
-      expect(missing).toEqual([])
-    },
-  )
+  it.each(everyDoc)('$rel: every cited package path exists', ({ file }) => {
+    const missing = citedPackagePaths(file).filter(
+      (relative) => !fs.existsSync(path.join(root, relative)),
+    )
+    expect(missing).toEqual([])
+  })
 
-  it.each(everySkill)(
-    '$plugin/$skill: every cited package path is packed',
-    ({ file }) => {
-      const packed = [...pkg.value.files, ...ALWAYS_PACKED]
-      const unpacked = citedPackagePaths(file).filter(
-        (relative) => !packed.includes(relative.split('/')[0]),
-      )
-      expect(unpacked).toEqual([])
+  it.each(everyDoc)('$rel: every cited package path is packed', ({ file }) => {
+    expect(citedPackagePaths(file).filter((r) => !isPacked(r))).toEqual([])
+  })
+
+  it.each(everyDoc)(
+    '$rel: every relative link lands inside its plugin',
+    ({ file, pluginDir }) => {
+      const text = fs.readFileSync(file, 'utf8')
+      expect(brokenLinks(text, path.dirname(file), pluginDir)).toEqual([])
     },
   )
 })

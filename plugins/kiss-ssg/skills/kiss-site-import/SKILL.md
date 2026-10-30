@@ -145,6 +145,8 @@ Then open each **stylesheet** you downloaded: its `url(…)`, `@import` and `@fo
 
 The partials now hold both structure and words. Move the words out, one model per page, named after the page view: `src/models/<pageName>.json`, read in the view as `model.*`.
 
+Move them **as they are**, under the `kiss-writing-for-the-web` skill's build mode: keep every fact, invent none, and leave the wording alone unless the owner asks for a rewrite. A conversion that also rewrites cannot be checked against its original.
+
 The test to apply, and it settles most cases: **a person should be able to change the copy without opening a `.hbs` file.**
 
 | Goes in the model                                    | Stays in the partial                   |
@@ -176,7 +178,7 @@ Hand each section partial its own slice at the call site, so a partial only sees
 Things a converted site needs that nothing else will remind you of:
 
 - **`package.json` needs `"type": "module"`** and the four scripts (`build`, `dev`, `check`, `aikb`). `router.js` uses `import` and top-level `await`; with no type at all every run prints a `MODULE_TYPELESS_PACKAGE_JSON` warning and works anyway, which is how it ships unnoticed, and with `"commonjs"` it does not run. Step 1 checked it; check again if you rewrote `package.json`.
-- **`title` and `description` go on `.page()`**, not in the model — and the layout reads them (step 5). A page with neither still builds, titled after its slug — a converted home page ships as `<title>Index</title>`, which nothing catches: the audit only flags an absent title, and a body comparison never looks at `<head>`.
+- **Every page gets a real `title` and `description`**, which the layout reads (step 5). Where each one comes from — the page option, the model, or the slug for an untitled page — is `node_modules/kiss-ssg/GUIDE.md` § .page(). A page with neither still builds, titled after its slug — a converted home page ships as `<title>Index</title>`, which nothing catches: the audit only flags an absent title, and a body comparison never looks at `<head>`.
 - **`siteUrl`**, which `{{canonical}}`, `.sitemap()` and `.robots()` need. A live page usually states it: its `<link rel="canonical">` and `og:url`. An artifact rarely does.
 - **Chain `.sitemap()`, `.robots()`** and — if the page has dated content — `.feed()`.
 - **Check the layout has a `<main>` around the page's own content.** When the build calls `.llms()`, every HTML page gets a Markdown copy beside it (`index.md`) for agents, converted from `<main>`, or from `<body>` when there is none. An artifact often has no `<main>`, and then its header and footer go into the copy, and nothing reports it. Add `<main>` in the layout as a change you list in step 10, since it is markup the original did not have. Then read the built `index.md` (GUIDE.md § Markdown copies for agents).

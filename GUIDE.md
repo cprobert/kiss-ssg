@@ -449,7 +449,8 @@ These options are both used internally by kiss and are available in view.
 - view = A handlebars view.
 - model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.
 - controller = A function that returns a page options object - used for manipulating data in the model.
-- title = The page title
+- title = The page title. Unset, it is the model's `title`; with neither, the page's slug, title-cased (`about-us` → `About Us`, and a home page → `Index`)
+- description = The page's description. kiss sets no fallback: the layout prints it from wherever the site keeps it, this option (`{{description}}`) or a model field (`{{model.description}}`)
 - config = Config overrides for this page only, merged over the global config
 - path = the folder path to the page
 - slug = the name of the file without the extension
@@ -1093,7 +1094,7 @@ The engine does not do this part and will not learn to. `hero: { kicker, heading
 Two more things belong in `router.js` rather than in the model, and the second is the quieter of the two:
 
 - **`siteUrl`**, which `{{canonical}}`, `.sitemap()` and `.robots()` all need. An artifact rarely carries its own domain; if you genuinely cannot establish it, say so rather than inventing one silently, because it is baked into every canonical link.
-- **`title` and `description` are page options**, set on `.page()`, not model fields. A page with neither still builds: `title` falls back to the slug, title-cased, so a converted home page ships as `<title>Index</title>`. That is plausible enough to survive review, and nothing catches it — the audit only flags an absent title, and a body-level comparison never looks at `<head>`.
+- **Give every page a real `title` and `description`.** A page's title is its `title` option, else its model's `title`, else its slug, title-cased; its description is whatever the layout prints (§ .page()). A page with neither still builds, so a converted home page ships as `<title>Index</title>`. That is plausible enough to survive review, and nothing catches it — the audit only flags an absent title, and a body-level comparison never looks at `<head>`.
 
 #### Verifying it
 
