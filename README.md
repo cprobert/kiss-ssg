@@ -51,6 +51,7 @@ _Three sentences and a host name. The agent takes it from there._
 - **[kiss-site-new](plugins/kiss-ssg/skills/kiss-site-new/SKILL.md) →** A site, or a whole section of one, from a description: the pages, the nav, a blog with a paginated index and an RSS feed.
 - **[kiss-site-import](plugins/kiss-ssg/skills/kiss-site-import/SKILL.md) →** A page you already have — a Claude or ChatGPT artifact, an exported page — made into a structured site that still looks the same.
 - **[kiss-page-add](plugins/kiss-ssg/skills/kiss-page-add/SKILL.md) →** One page on a site that already builds, linked from the nav.
+- **[kiss-writing-for-the-web](plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md) →** The words on every page, written to evidence-based web-writing practice: front-loaded, scannable, plain, with buttons and errors that say what happens. It never invents a fact about the business; a missing price is a visible placeholder.
 - **[Thirteen examples](examples/) →** Runnable sites the agent copies by shape, from one folder of views to a blog, a data-fed site, a converted single-file page and a course packaged for an LMS. They ship in the package.
 - **[Anthropic's `frontend-design` skill](#quick-start) →** kiss decides how a site is built, not what it looks like. Install this beside kiss's skills and it sets the visual direction while kiss keeps the structure.
 

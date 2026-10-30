@@ -9,7 +9,7 @@
     {
       "name": "kiss-ssg",
       "source": "./plugins/kiss-ssg",
-      "description": "Skills for building, migrating and verifying kiss-ssg static sites, pointing at the docs the package ships.",
+      "description": "Skills for building, migrating, verifying and reviewing kiss-ssg static sites, and the web expertise they call on, starting with writing for the web.",
       "version": "2.8.2"
     },
     {
