@@ -55,8 +55,11 @@ git status --short
 
 - **On the base branch** — the normal case; you will create a branch in step 5.
 - **Already on a feature branch** (a harness often creates one for you) — **adopt it in place**, do not branch off it. Confirm: "You're already on `<branch>` — I'll capture intent onto this branch." If it already carries unrelated work or an existing session file, stop and ask.
+- **This checkout is busy** — uncommitted changes that are not this work, a branch another session is working on, or a dev server holding the build folder. Do not `git checkout -b` here: it pulls the files out from under the other work. Use a worktree (step 5).
 
-Uncommitted changes: surface them and ask whether to commit or stash first.
+Uncommitted changes that belong to this work: ask whether to commit or stash first.
+
+**Here, or in a worktree?** If the person said `worktree` or `here`, take it; otherwise ask, recommending a worktree when the checkout is busy. A busy checkout always gets one. A worktree is a second folder on the same repository, beside this one, with its own branch: the other work carries on untouched.
 
 ### 3. Know the site's current shape
 
@@ -96,11 +99,21 @@ Match the interview to the work — a typo needs a one-line objective, a new sec
 
 ### 5. Create or adopt the branch
 
-Adopting (step 2)? Skip this. Otherwise propose a name from the objective (`content/…`, `feat/…`, `fix/…`) and confirm before:
+Adopting (step 2)? Skip this. Otherwise propose a name from the objective (`content/…`, `feat/…`, `fix/…`) and confirm, then:
 
-```bash
-git checkout -b <branch-name>
-```
+- **Here:**
+
+  ```bash
+  git checkout -b <branch-name>
+  ```
+
+- **In a worktree:** start it from the newest base. `git fetch origin`, then `git rev-list --left-right --count "$BASE...origin/$BASE"`: if the first number is 0, start from `origin/$BASE`; if it is more than 0, the local base has commits the remote lacks, so start from the local `$BASE`; if both are more than 0, they have diverged — stop and ask. With no remote, start from the local base.
+
+  ```bash
+  git worktree add --no-track -b <branch-name> "../$(basename "$PWD")-<slug>" <start point>
+  ```
+
+  If the folder exists, choose another slug; never reuse or delete one. Run `npm install` in the new folder: a worktree has no `node_modules`, and the build needs them. Every later step happens in the worktree. Tell the person its path, to open it in its own editor window, and that `kiss-branch-merged` removes it once the work has merged.
 
 ### 6. Make sure this branch has a baseline
 
@@ -129,7 +142,7 @@ git commit -m "Record: knowledge base at open"
 
 ### 7. Write and commit the session file
 
-Write `planning/sessions/<YYYY-MM-DD>-<slug>.md` from the template below (create the folder if it does not exist), then:
+Write `planning/sessions/<YYYY-MM-DD>-<slug>.md` from the template below (create the folder if it does not exist) — in the worktree, if step 5 made one, with its path in `worktree:`: that line is how `kiss-branch-merged` knows which worktree to remove, and it removes no other. Then:
 
 ```bash
 git add planning/sessions/<file>
@@ -146,6 +159,7 @@ branch: <branch-name>
 base: <base branch>
 status: open
 opened: <YYYY-MM-DD>
+worktree: <the worktree's path, only when step 5 made one; else omit the line>
 ---
 
 # Session — <YYYY-MM-DD>: <Descriptive Title>

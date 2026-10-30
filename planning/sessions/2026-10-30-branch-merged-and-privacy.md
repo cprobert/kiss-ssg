@@ -46,11 +46,16 @@ opened: 2026-10-30
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-30 — worktrees join the branch skills (operator's request).** "Sort out the branch skills. Including the worktree capability from internal medicine as well as the merged functionality." Both homes get it, as one design: `branch-open` and `kiss-branch-open` take `worktree` or `here`, a busy checkout always gets a worktree, the start point keeps a local base's unpushed commits, and the path goes in the session file's `worktree:`, which is the only worktree `branch-merged` / `kiss-branch-merged` will remove. It does not change **one open branch at a time** in `CLAUDE.md`: a worktree gives a branch its own folder, not a second open branch. Whether parallel branches should be allowed is the operator's, in his review of the repo's rules.
+- **2026-10-30 — `kiss-branch-merged` checks the knowledge base; it does not record it (Claude, from reading `kiss-branch-close`).** The intent said the site version would record `AIKB/` on the merged base. `kiss-branch-close` says recording at close is "the only moment the baseline moves", and recording on the base would mean committing straight to it. So the merged step runs `npx kiss-ssg check` on the updated base and reports any drift from the record the close committed (another branch merged in between, a hand-resolved conflict), and writes nothing.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+- **2026-10-30 — pulse 1, after the branch skills.** Criteria 1 and 2 drafted: `.claude/skills/branch-merged/SKILL.md` and `plugins/kiss-memory/skills/kiss-branch-merged/SKILL.md` written; `branch-open` and `kiss-branch-open` gain the worktree mode; `branch-close` and `kiss-branch-close` name the next step; `CLAUDE.md` and the kiss-memory README list them. Evidence: `plugin-manifests.test.js` and `skill-coverage.test.js` pass (340). Not yet tried on a real merge or a real worktree. Criterion 3, the research report: the deep-research run's searches and fetches worked, but all 75 verification agents failed on the organisation's monthly spend limit, so its 25 extracted claims are unverified; no rule is written from them until it is resumed and verified. Decision: **continue** — resume the research after the limit resets, then write the skill. — Claude.
 
 ---
 
