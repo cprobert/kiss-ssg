@@ -59,7 +59,7 @@ Each page type has its own job. Do not force a page into another type's shape:
 
 - **A group is a concept the reader recognises.** Groups do not have to be perfectly exclusive, but each one must be clearly different from its neighbours.
 - **Name each group in the reader's words.** The name should be specific enough to predict what is inside, with the key word first. Vague or branded names (More, Explore, Resources, Solutions, a team's internal name) give the reader nothing to go on. How a label is worded is `kiss-writing-for-the-web`'s concern.
-- **One concept, one name, everywhere.** The nav label, the page's `<h1>`, its breadcrumb and its URL say the same thing. "Prices" in the nav that opens a page headed "Our rates" at `/fees/` is three names for one page.
+- **One concept, one name, everywhere.** The nav label, the page's `<h1>`, its breadcrumb and its URL say the same thing. "Prices" in the nav that opens a page headed "Our rates" at `/fees/` is three names for one page. The home page is the one exception: its nav label and first breadcrumb are "Home", whatever its `<h1>` says.
 
 ### 4. Choose the depth
 
@@ -121,7 +121,7 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
 
 1. **Orphans.** A page with no links in is reachable only from a search engine. Name each one, and the page that should link to it.
 2. **The global nav's labels.** Quote each one. Flag a team's internal name, a brand name, a vague label (More, Explore, Resources, Solutions), and a utility action listed among the content sections.
-3. **One concept, one name.** For each global nav item, put its label beside its page's `<h1>` and its URL. Quote each mismatch.
+3. **One concept, one name.** For each global nav item, put its label beside its page's `<h1>` and its URL. Quote each mismatch. "Home" for the home page is not one.
 4. **Depth.** Take the deepest pages from the script's output. Does each have breadcrumbs, and does the section nav show it? Flag a level with one child, and a page that lists many similar links with nothing to tell them apart (give the count).
 5. **Where am I?** Open a page two levels down. Is its section marked current in the global nav? Does the `<h1>` name the page? Are breadcrumbs there, where § 7 calls for them?
 6. **Breadcrumbs.** Every crumb is a real page. The trail matches the URL's hierarchy. None appear in a form journey.

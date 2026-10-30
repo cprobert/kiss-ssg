@@ -52,6 +52,8 @@ const kiss = new Kiss({
   // the current page; `isActive` has no "but not that folder".
   // Each label is its page's own name, the same as the page's <h1> and
   // title, so a reader who follows "The journal" lands on "The journal".
+  // The home page is the one exception: its label is "Home", the name
+  // readers look for in a nav, whatever its <h1> says.
   nav: [
     { id: 'index', label: 'Home' },
     { id: 'blog', label: 'The journal' },

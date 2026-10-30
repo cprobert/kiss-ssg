@@ -16,7 +16,7 @@
       "view": "blog/listing.hbs",
       "buildTo": "./public/blog/index.html",
       "ok": true,
-      "hash": "d32093f88230c88525dc1d97ec36417099a78408",
+      "hash": "06ec126c7c8dd96630c15a4415a7db4181a1b4bd",
       "id": "blog",
       "canonical": null,
       "markdown": "./public/blog/index.md"
@@ -25,7 +25,7 @@
       "view": "blog/listing.hbs",
       "buildTo": "./public/blog/page/2/index.html",
       "ok": true,
-      "hash": "62183d255147c207ef0f21cef8b07fe3ab674bbb",
+      "hash": "c460e000e60344da78049b5af9859d64cf349880",
       "id": "blog/page/2",
       "canonical": null,
       "markdown": "./public/blog/page/2/index.md"
@@ -43,7 +43,7 @@
       "view": "404.hbs",
       "buildTo": "./public/404.html",
       "ok": true,
-      "hash": "827a6fd6d87aa22fee1d814a0b38ec13e3ee0e82",
+      "hash": "b2a7fe4c3e177d8f29ac32710a4a3ada8be3b626",
       "id": "404",
       "canonical": null,
       "markdown": "./public/404.md"

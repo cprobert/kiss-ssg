@@ -120,30 +120,37 @@ function isPacked(relative) {
 }
 
 // Markdown never makes a link inside code, so the link reader below drops it
-// first, by CommonMark's rules: a fenced block opens on a run of three or more
-// backticks or tildes (indented at most three spaces) and closes only on a run
-// of the same character at least as long, on a line of its own, or at the end
-// of the file; an inline code span is a backtick run closed by a run of exactly
-// the same length, and never crosses a blank line, so a stray backtick hides
-// nothing past its own paragraph.
+// first, following CommonMark where it decides what is code. A fenced block
+// opens on a run of three or more backticks or tildes, indented at most three
+// spaces, and a backtick fence's info string holds no backtick. It closes
+// only on a run of the same character at least as long, on a line of its own,
+// or at the end of the file, and leaves a blank line behind, because a fence
+// ends the paragraph around it. An inline code span is an unescaped backtick
+// run closed by a run of exactly the same length, never across a blank line,
+// so a stray backtick hides nothing past its own paragraph. It is not a full
+// parser: a fence indented four or more spaces inside a list item is not seen
+// as one.
 function withoutCode(text) {
   const kept = []
   let fence = null
   for (const line of text.split(/\r?\n/)) {
     if (fence) {
       if (fence.test(line)) fence = null
+      kept.push('')
       continue
     }
-    const open = /^ {0,3}(`{3,}|~{3,})/.exec(line)
+    const open = /^ {0,3}(?:(`{3,})(?!.*`)|(~{3,}))/.exec(line)
     if (open) {
-      fence = new RegExp(`^ {0,3}${open[1][0]}{${open[1].length},}\\s*$`)
+      const run = open[1] ?? open[2]
+      fence = new RegExp(`^ {0,3}${run[0]}{${run.length},}\\s*$`)
+      kept.push('')
       continue
     }
     kept.push(line)
   }
   return kept
     .join('\n')
-    .replace(/(?<!`)(`+)(?!`)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\1(?!`)/g, '')
+    .replace(/(?<![`\\])(`+)(?!`)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\1(?!`)/g, '')
 }
 
 // The relative Markdown links in a skill's files, `[text](target)`. A plugin
@@ -222,11 +229,31 @@ describe('what a skill may point at', () => {
       'A stray ` backtick.',
       '',
       'Next paragraph: [c](after-a-stray-backtick.md) and one more `.',
+      '',
+      // A fence ends the paragraph before it, so these two backticks are
+      // not one span across it.
+      'Use ` here',
+      '```',
+      'x',
+      '```',
+      'then [d](after-a-fence-between-backticks.md) and `',
+      '',
+      // A backtick fence's info string cannot hold a backtick, so this is
+      // inline code on an ordinary line, not a fence that never closes.
+      '```inline``` is code',
+      '',
+      'See [e](after-a-backtick-info-string.md).',
+      '',
+      // An escaped backtick is a literal one and opens no span.
+      'A \\` escaped then [f](after-an-escaped-backtick.md) and `x`',
     ].join('\n')
     expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([
       'after-a-fence.md',
       'after-a-span.md',
       'after-a-stray-backtick.md',
+      'after-a-fence-between-backticks.md',
+      'after-a-backtick-info-string.md',
+      'after-an-escaped-backtick.md',
     ])
   })
 
