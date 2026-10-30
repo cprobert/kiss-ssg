@@ -961,6 +961,38 @@ const consumerFacing = () => {
   return files
 }
 
+// A rule that moves to another file leaves its sentence banned where it was
+// and allowed where it went: an entry's `allowedIn` names the files that own
+// the sentence now, as paths from the repo root. Without it every ban ran on
+// every shipped file, so moving a rule from a task skill into a domain skill
+// and banning it in the task skill would have failed the domain skill too.
+const offenders = (entry, pattern, files, read) =>
+  files.filter(
+    (f) => !(entry.allowedIn ?? []).includes(f) && pattern.test(read(f)),
+  )
+
+describe('a CONTRADICTIONS entry can name the files that own its sentence', () => {
+  const text = { 'owner.md': 'the moved rule', 'left.md': 'the moved rule' }
+  const read = (f) => text[f]
+  const both = ['owner.md', 'left.md']
+
+  it('bans the sentence everywhere but the files that own it', () => {
+    const entry = { allowedIn: ['owner.md'] }
+    expect(offenders(entry, /moved rule/, both, read)).toEqual(['left.md'])
+  })
+
+  it('bans it everywhere when no owner is named', () => {
+    expect(offenders({}, /moved rule/, both, read)).toEqual(both)
+  })
+
+  it('names only owners that exist, so a renamed owner cannot drop its ban', () => {
+    const missing = CONTRADICTIONS.flatMap(
+      (entry) => entry.allowedIn ?? [],
+    ).filter((f) => !fs.existsSync(path.join(root, f)))
+    expect(missing).toEqual([])
+  })
+})
+
 describe('no consumer-facing file contradicts the convention it documents', () => {
   const files = consumerFacing()
 
@@ -968,12 +1000,10 @@ describe('no consumer-facing file contradicts the convention it documents', () =
     expect(files.length).toBeGreaterThan(20)
   })
 
-  for (const { why, patterns } of CONTRADICTIONS) {
-    it.each(patterns)(`${why} — %s`, (pattern) => {
-      const offenders = files.filter((f) =>
-        pattern.test(fs.readFileSync(path.join(root, f), 'utf8')),
-      )
-      expect(offenders).toEqual([])
+  const read = (f) => fs.readFileSync(path.join(root, f), 'utf8')
+  for (const entry of CONTRADICTIONS) {
+    it.each(entry.patterns)(`${entry.why} — %s`, (pattern) => {
+      expect(offenders(entry, pattern, files, read)).toEqual([])
     })
   }
 })
