@@ -121,7 +121,14 @@ Read `node_modules/kiss-ssg/llms.txt` for the shape of a site. Then:
 
 Read the build's `audit` findings first (`npx kiss-ssg check <site-script> --summary`): `title-missing`, `title-duplicate`, `description-missing`, `description-duplicate` and `img-alt-missing` are about words. The fix in the layout is `kiss-site-review`'s; what the title, description or alt text should say is this skill's.
 
-Then read every page template's built page, and one page's Markdown copy, for:
+Rate copy findings on the protocol's scale like this:
+
+- **P0:** the copy promises something the page cannot do, so the visitor is stuck: a form that sends nothing.
+- **P1:** a legal duty or a false claim: a form that collects personal details with no line about them, or an invented fact.
+- **P2:** copy that misleads or reads as unfinished: a fact the site states two ways, a step with no way to take it ("book ahead" with no way to book), placeholder and demo copy, vague headings and links, one thing called by several names.
+- **P3:** polish: wording, rhythm, Title Case.
+
+Then read every page template's built page, and one page's Markdown copy if the build calls `.llms()` (without it there are none), for:
 
 - **Placeholder, demo and scaffold copy**: lorem ipsum, "Example", "TODO", "fictional", a "how this works" panel, a build badge, a sentence addressed to the developer rather than the visitor. It is the plainest sign of a site that is not finished, and it lands in the Markdown copies too. A site that says it is an example or a demo has recorded that as a decision: ask before calling it a finding.
 - **Invented facts**: a figure, price, testimonial or claim the owner never gave. Ask where each one came from.
