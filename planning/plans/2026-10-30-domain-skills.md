@@ -133,4 +133,14 @@ The operator asked for the repo's rules to be traced to who decided them (`plann
 - rule 9's regex rows and CONTRADICTIONS bans are **not** required of later domain-skill branches; branch 1 keeps the ones it already added, and the rules review decides them, `allowedIn` included;
 - rule 9's agent trials, rule 2's triggering measurement and the clean room are optional, run when the operator asks;
 - the rest of the contract (one owner per rule, build and review modes, the shared review protocol, the kiss section, floors) stands, because it is about the shape of the skills, not about the repo's process.
-- **Does `kiss-site-review` call every domain's review mode every time, or only those the operator asks for?** One full review grows long. Decide on branch 2, when there are two domains to merge.
+
+## Amendment, 2026-10-30: all five on branch 1
+
+The operator asked for the whole split now, not over four more branches: "I would like the skills to encapsulate domain knowledge so that our front-end skills act like thin handlers. I don't want to do this again on a later branch." So branch 1 built all five domain skills, and the branch order above no longer applies.
+
+- **The HTML skill is `kiss-front-end`** (the operator's choice, over his earlier `kiss-best-practice`), which closes that open question.
+- **How the text moved:** a script cut each block out of `kiss-site-new` and `kiss-site-review` by its opening words and placed it in its owner word for word; it stopped if a block was missing. Every removed sentence was then searched for in the skills: the only ones not found were framing sentences rewritten on purpose and check-number references. The craft checks are renumbered inside each domain skill, and their cross-references follow.
+- **One deliberate exception to "move, don't rewrite":** `kiss-seo` is mostly new. The task skills held little SEO beyond kiss mechanics, so its build mode comes from Google Search Central's guidance in the research report behind `kiss-writing-for-the-web`, plus the `disallow`/`noindex` reasoning moved from `kiss-site-new` and what the audit's search checks already say.
+- **Check 7 is whole in `kiss-accessibility`**, with the padding that keeps focus clear of a bar; `kiss-design` points at it for a bar's share of the screen, instead of splitting one measurement across two skills.
+- **The coverage rows** that pinned the moved rules now point at their owners; a row whose needles spanned several owners was split by owner, with no needle dropped.
+- **Still open:** does `kiss-site-review` run every domain's review every time, or only those the operator asks for? Today it runs all five. The operator decides once a full review has been run on a real site.

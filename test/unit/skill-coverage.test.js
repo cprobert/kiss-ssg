@@ -317,18 +317,36 @@ const COVERAGE = [
     feature: 'external links open in a new tab, with noopener and a cue',
     pattern:
       /target="_blank"[\s\S]*noopener noreferrer[\s\S]*opens in a new tab/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
   // 2026-10-12, the taste-skill trial on the docs site and Pro Plumbing: the
   // checks that held up on both, measured rather than argued from taste, and
   // the rule that stopped twelve of the trialled skill's findings from undoing
   // decisions the sites had already recorded. No audit check covers any of
   // them, so this row is what keeps them in the skill.
+  // 2026-10-30: the craft pass moved into the domain skills that own each
+  // check; the needles are the same, split by owner.
   {
-    feature: 'the craft pass: the measured checks',
+    feature:
+      'the accessibility checks: 3:1 edges, said changes, reduced motion, sticky bars',
     pattern:
-      /^(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+      /^(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*scroll-padding-top)/,
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    feature: 'the design checks: weights that render, balanced headings',
+    pattern: /^(?=[\s\S]*`font-weight`)(?=[\s\S]*text-wrap: balance)/,
+    skills: [skill('kiss-ssg', 'kiss-design')],
+  },
+  {
+    feature: 'the front-end checks: 100dvh is for an app shell',
+    pattern: /100dvh/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature: "the personal-details line is the writing skill's",
+    pattern: /personal details/,
+    skills: [skill('kiss-ssg', 'kiss-writing-for-the-web')],
   },
   // 2026-10-20, the six-repo design-skill evaluation: the lessons taken in, not
   // the skills. The review runs as two passes, and each new craft check is one
@@ -339,12 +357,28 @@ const COVERAGE = [
   // agent could not find them by number. Every gate passed it. Each check
   // starting its own line is what this row holds.
   {
-    feature: 'the twenty craft checks are each their own list item',
+    feature: 'the ten accessibility checks are each their own list item',
     pattern: new RegExp(
-      `^${Array.from({ length: 20 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
+      `^${Array.from({ length: 10 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
       'm',
     ),
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    feature: 'the five front-end checks are each their own list item',
+    pattern: new RegExp(
+      `^${Array.from({ length: 5 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
+      'm',
+    ),
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature: 'the five design checks are each their own list item',
+    pattern: new RegExp(
+      `^${Array.from({ length: 5 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
+      'm',
+    ),
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   // 2026-10-21, the Pro Plumbing pilot: its sticky bar is a call bar at the
   // bottom of the phone screen, forward Tab hid two controls under it, and the
@@ -353,28 +387,37 @@ const COVERAGE = [
     feature:
       'a sticky bar at the bottom hides forward Tab: scroll-padding-bottom',
     pattern: /^(?=[\s\S]*`scroll-padding-bottom`)(?=[\s\S]*bottom bar)/,
-    skills: [
-      skill('kiss-ssg', 'kiss-site-review'),
-      skill('kiss-ssg', 'kiss-site-new'),
-    ],
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
   },
   {
-    feature: 'the review is two passes: a usability audit, then a design lift',
+    feature: 'the review runs the domain reviews, then offers the design lift',
     pattern:
-      /^(?=[\s\S]*### 3\. The usability and best-practice audit)(?=[\s\S]*### 5\. The design lift)/,
+      /^(?=[\s\S]*### 2\. Run each domain skill's review mode)(?=[\s\S]*### 5\. The design lift)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
   {
     feature:
-      'the 2026-10-20 craft checks: focus, targets, skip link, current page, transitions, touch hover, no-JS, 100vw, 200%, line length, 0 and 1',
+      'the 2026-10-20 accessibility checks: focus, targets, skip link, current page, no-JS, 200%',
     pattern:
-      /^(?=[\s\S]*`:focus-visible`)(?=[\s\S]*Shift\+Tab)(?=[\s\S]*2\.5\.8)(?=[\s\S]*Skip to content)(?=[\s\S]*aria-current="page")(?=[\s\S]*`transition: all`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*JavaScript off)(?=[\s\S]*`100vw`)(?=[\s\S]*--hide-scrollbars)(?=[\s\S]*200%)(?=[\s\S]*characters a line)(?=[\s\S]*at 0 and at 1)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+      /^(?=[\s\S]*`:focus-visible`)(?=[\s\S]*Shift\+Tab)(?=[\s\S]*2\.5\.8)(?=[\s\S]*Skip to content)(?=[\s\S]*aria-current="page")(?=[\s\S]*JavaScript off)(?=[\s\S]*200%)/,
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    feature:
+      'the 2026-10-20 front-end checks: transitions, touch hover, 100vw, 0 and 1',
+    pattern:
+      /^(?=[\s\S]*`transition: all`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*`100vw`)(?=[\s\S]*--hide-scrollbars)(?=[\s\S]*at 0 and at 1)/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature: 'the 2026-10-20 design check: line length',
+    pattern: /characters a line/,
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   {
     feature: 'a hero is 100svh; 100dvh is for an app shell',
     pattern: /`100svh`[\s\S]*app shell/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
   // 2026-10-30: the reporting rules moved out of kiss-site-review into one
   // shared file, so a domain skill run on its own reports the same way
@@ -396,14 +439,30 @@ const COVERAGE = [
       'the design lift: decisions, a read, preserve mode, proposals in a scratch copy, the protected contract',
     pattern:
       /^(?=[\s\S]*design read)(?=[\s\S]*one step bolder)(?=[\s\S]*[Pp]reserve, improve, remove)(?=[\s\S]*scratch copy)(?=[\s\S]*protected contract)(?=[\s\S]*gets `aliases`)(?=[\s\S]*do not attempt the lift)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   {
-    feature:
-      'the build-time floors from the 2026-10-20 craft checks, pointing at the review',
+    feature: 'the accessibility build floors, pointing at its review checks',
     pattern:
-      /^(?=[\s\S]*skip link)(?=[\s\S]*`:focus-visible`)(?=[\s\S]*aria-current)(?=[\s\S]*`user-scalable=no`)(?=[\s\S]*16px)(?=[\s\S]*`autocomplete`)(?=[\s\S]*`tabindex`)(?=[\s\S]*`100svh`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*empty state)(?=[\s\S]*craft pass)/,
-    skills: [skill('kiss-ssg', 'kiss-site-new')],
+      /^(?=[\s\S]*skip link)(?=[\s\S]*`:focus-visible`)(?=[\s\S]*aria-current)(?=[\s\S]*`user-scalable=no`)(?=[\s\S]*16px)(?=[\s\S]*`autocomplete`)(?=[\s\S]*`tabindex`)(?=[\s\S]*review check)/,
+    skills: [skill('kiss-ssg', 'kiss-accessibility')],
+  },
+  {
+    feature: 'the front-end build floors, pointing at its review checks',
+    pattern:
+      /^(?=[\s\S]*`100svh`)(?=[\s\S]*\(hover: hover\))(?=[\s\S]*empty state)(?=[\s\S]*review check)/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  // 2026-10-30: the task skills are thin handlers; each names every domain
+  // skill it hands the expertise to.
+  {
+    feature: 'the task skills hand each domain to its skill',
+    pattern:
+      /^(?=[\s\S]*`kiss-writing-for-the-web`)(?=[\s\S]*`kiss-accessibility`)(?=[\s\S]*`kiss-front-end`)(?=[\s\S]*`kiss-seo`)(?=[\s\S]*`kiss-design`)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-review'),
+    ],
   },
   {
     feature: 'the 2.8.0 upgrade note: three audit checks, advisory',
@@ -459,7 +518,7 @@ const COVERAGE = [
     feature: 'no frontend-design: say so, and point at the install lines',
     pattern:
       /^(?=[\s\S]*When it is not installed, say so before you set the look)(?=[\s\S]*Optional: Anthropic's `frontend-design` skill for the look)/,
-    skills: [skill('kiss-ssg', 'kiss-site-new')],
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   {
     feature: 'never invent: empty marked slots, never example items',
@@ -503,10 +562,7 @@ const COVERAGE = [
       'frontend-design sets the visual direction, kiss keeps the structure',
     pattern:
       /^(?=[\s\S]*`frontend-design`)(?=[\s\S]*visual direction)(?=[\s\S]*structure)(?=[\s\S]*single-file page)/,
-    skills: [
-      skill('kiss-ssg', 'kiss-site-new'),
-      skill('kiss-ssg', 'kiss-site-review'),
-    ],
+    skills: [skill('kiss-ssg', 'kiss-design')],
   },
   // Operator decision 2026-10-13: Anthropic's webapp-testing skill is an
   // optional companion too, recommended against a trial that measured no gain

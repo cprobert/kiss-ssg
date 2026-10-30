@@ -58,7 +58,7 @@ Ask "must the reader know this now?" before "how short can this be?".
 
 **Accessible words.** A link makes sense out of context ("Download the price list (PDF)", never "Click here"). An error is said in text, not colour alone. A control has a name a screen reader can say.
 
-**Search follows the reader.** Use the words people search with, naturally, in the title, the main heading, the link text and the alt text. One main purpose per page. No keyword stuffing, no padding to a word count.
+**Search follows the reader.** Write in the words people use for the thing; where those words go (the title, the description, the headings) is the `kiss-seo` skill's.
 
 **One term for one thing,** across the whole site.
 

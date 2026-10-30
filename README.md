@@ -52,6 +52,10 @@ _Three sentences and a host name. The agent takes it from there._
 - **[kiss-site-import](plugins/kiss-ssg/skills/kiss-site-import/SKILL.md) →** A page you already have — a Claude or ChatGPT artifact, an exported page — made into a structured site that still looks the same.
 - **[kiss-page-add](plugins/kiss-ssg/skills/kiss-page-add/SKILL.md) →** One page on a site that already builds, linked from the nav.
 - **[kiss-writing-for-the-web](plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md) →** The words on every page, written to evidence-based web-writing practice: front-loaded, scannable, plain, with buttons and errors that say what happens. It never invents a fact about the business; a missing price is a visible placeholder.
+- **[kiss-accessibility](plugins/kiss-ssg/skills/kiss-accessibility/SKILL.md) →** Built and reviewed to WCAG 2.2 AA: labels, a skip link, focus you can see and that no bar hides, targets big enough to hit, text that still fits at 200%.
+- **[kiss-front-end](plugins/kiss-ssg/skills/kiss-front-end/SKILL.md) →** Pages that do not jump or scroll sideways: sized images, the platform's own controls before any script, transitions that name what they move.
+- **[kiss-seo](plugins/kiss-ssg/skills/kiss-seo/SKILL.md) →** One purpose per page, a title and description for the person reading the search result, and the right way to keep a page out of search.
+- **[kiss-design](plugins/kiss-ssg/skills/kiss-design/SKILL.md) →** The craft under any look, and a design lift that keeps a site's content, URLs and recorded decisions.
 - **[Thirteen examples](examples/) →** Runnable sites the agent copies by shape, from one folder of views to a blog, a data-fed site, a converted single-file page and a course packaged for an LMS. They ship in the package.
 - **[Anthropic's `frontend-design` skill](#quick-start) →** kiss decides how a site is built, not what it looks like. Install this beside kiss's skills and it sets the visual direction while kiss keeps the structure.
 
