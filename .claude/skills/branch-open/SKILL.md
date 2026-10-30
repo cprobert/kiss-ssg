@@ -15,6 +15,13 @@ The captured intent lives in one `planning/sessions/<date>-<slug>.md` file per b
 
 Run `/branch-open` before you start a new piece of work — normally on the base branch, but also when the harness (mobile / web) has already dropped you on a fresh auto-created feature branch, in which case it **adopts** that branch rather than nesting a new one (Step 1). Do not run it once real work is already underway — use it at the clean starting line.
 
+**Where the branch lives.** The first word of the arguments can choose:
+
+- `/branch-open worktree` — a new worktree beside the repository (`../kiss-ssg-<slug>`), set up and ready (Step 4). Use it when this checkout is busy: another agent session is working in it, or a dev server or watcher holds its build folders.
+- `/branch-open here` — this checkout. A busy checkout refuses it and offers a worktree.
+
+With no mode, Step 1 asks. A worktree does not change **one open branch at a time** (`CLAUDE.md` § Git workflow): it gives the branch a folder of its own, not a licence for a second open branch.
+
 ---
 
 ## On invocation
@@ -51,6 +58,10 @@ Two starting cases:
 - **Already on a feature branch** — the harness (mobile / web) often auto-creates one before you ever reach `/branch-open`. Do **not** branch off it (no branch-of-a-branch). Instead **adopt the current branch in place**: capture intent onto it and skip Step 4's creation. Confirm first ("You're already on `<branch>` — I'll capture intent onto this branch rather than create a new one"). Exception: if the current branch already carries substantial unrelated work or an existing intent file, stop and ask — that is a genuine "not at a clean starting line" case, not an auto-created branch.
 
 If there are uncommitted changes: surface them and ask whether to stash/commit first.
+
+**Is this checkout busy?** It is when it has uncommitted changes that are not this work, when it is on a branch another session is working on, or when `git worktree list` and the conversation say another session is using it. Do not `git checkout -b` in a busy checkout: switching branches pulls the files out from under the other session. Plan a worktree instead (Step 4). Ask if you cannot tell.
+
+**Mode.** Take it from the arguments (`worktree` or `here`). With none, and no branch to adopt, ask: "Here, or in a new worktree?" — recommending the worktree when the checkout is busy. A busy checkout always gets a worktree: if the operator said `here`, say why not and offer one. An explicit `worktree` wins over adopting a fresh branch: a branch checked out here cannot also be checked out in a worktree, so leave it and make a new branch in the worktree.
 
 ### Step 2 — Weight the interview
 
@@ -120,13 +131,35 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
 
 **Starting from the base:** propose a branch name from the objective (`feat/…`, `fix/…`, `chore/…`, `refactor/…`) and a kebab-case slug. Confirm with the user, then:
 
-```bash
-git checkout -b <branch-name>
-```
+- **Here** (the checkout is free):
+
+  ```bash
+  git checkout -b <branch-name>
+  ```
+
+- **Worktree** (asked for, or the checkout is busy). First choose its start point: a worktree does not move the main checkout's branch, so the local base can be out of date, or ahead of `origin`.
+
+  ```bash
+  git fetch origin
+  git rev-list --left-right --count "$BASE...origin/$BASE"
+  ```
+
+  The two numbers are the commits only on the local base, then those only on `origin`:
+  - `origin/$BASE` does not exist (an unpushed base): start from the local base.
+  - The first number is 0: start from `origin/$BASE`, the same as the local base or newer.
+  - The first number is more than 0: the local base has commits `origin` lacks; start from the local base so they are kept. If the second number is also more than 0, the two have diverged: stop and ask.
+
+  ```bash
+  git worktree add --no-track -b <branch-name> ../kiss-ssg-<slug> <start point>
+  ```
+
+  `--no-track` keeps the start point from becoming the branch's upstream, so `/branch-close` pushes the branch to its own name. If the folder exists, choose another slug; never reuse or delete a folder.
+
+  A new worktree has no `node_modules`. Run `npm install` in it (in the background while you write the session file); the gates, the examples and `node docs` all need it. If it fails, report it and stop. Every later step, and the rest of the branch, happens in the worktree: tell the operator its path, to open it in its own editor window and agent session, and that `/branch-merged` removes it once the pull request has merged.
 
 ### Step 5 — Write the intent artefact
 
-Create `planning/sessions/<date>-<slug>.md` using the template below. `<date>` is today. The frontmatter binds the file to the branch — that is how `/branch-close` later finds _this_ session among many (match `branch:` to the current branch; `status: open`). Leave the Reflection half as a marked placeholder for the close.
+Create `planning/sessions/<date>-<slug>.md` using the template below — in the worktree, if Step 4 made one, with its path in `worktree:`: that line is how `/branch-merged` knows which worktree this session made, and it removes no other. `<date>` is today. The frontmatter binds the file to the branch — that is how `/branch-close` later finds _this_ session among many (match `branch:` to the current branch; `status: open`). Leave the Reflection half as a marked placeholder for the close.
 
 ### Step 6 — Commit the intent
 
@@ -149,6 +182,7 @@ branch: <branch-name>
 base: <base branch>
 status: open
 opened: <YYYY-MM-DD>
+worktree: <../kiss-ssg-<slug>, only when Step 4 made a worktree; else omit the line>
 ---
 
 # Session — <YYYY-MM-DD>: <Descriptive Title>

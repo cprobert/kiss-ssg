@@ -249,6 +249,8 @@ The PR body is the same in every case:
 
 Return the PR URL to the user. One line confirming: gates passed, docs swept, the operator eyeball answered (or unanswered), retrospective committed, PR open.
 
+Then name the next step: once the pull request has merged, `/branch-merged` deletes the local branch and prunes. **If the branch is in a worktree** (the session file's `worktree:`), say so with its path, and that it stays until the merge — review fixes go there — and `/branch-merged` removes it then. Never remove it now.
+
 Then check whether the logs themselves are due a sweep — the close keeps one branch's memory honest, and nothing in it keeps the whole set honest:
 
 ```bash
