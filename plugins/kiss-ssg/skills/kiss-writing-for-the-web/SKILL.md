@@ -23,7 +23,7 @@ This rule comes before every other, in build mode and in review mode. **Never in
 - **keep every placeholder visible on the page**, so a launch with one still in it is obvious to whoever looks;
 - list every placeholder for the owner when you hand the work over.
 
-A menu, a price list or a team with no items given gets empty, marked slots, never example items: a believable loaf at a believable price is an invented fact the day the site goes live with it. A section whose items become their own pages (news, a blog) gets no placeholder item at all; `kiss-site-new` says why, and how it builds empty instead.
+A menu, a price list or a team with no items given gets empty, marked slots, never example items: a believable loaf at a believable price is an invented fact the day the site goes live with it. A section whose items become their own pages or feed entries (news, a blog, events) gets **no placeholder item at all**: kiss would publish a placeholder post as a real URL, in the sitemap and in the feed. The section builds with zero items and shows its empty state (`kiss-front-end`).
 
 A design skill or a template that asks for "realistic" or "organic" sample data, or tells you to "come up with copy and placeholder content", is the trap. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it. A business name read off the domain is a guess: use it, and say in the hand-over that it needs confirming. A sum the owner did not state (a total of two yearly fees, a weekday worked out from a date) is a new fact too: leave it out or mark it.
 
@@ -97,7 +97,7 @@ Read `node_modules/kiss-ssg/llms.txt` for the shape of a site. Then:
 - **Page copy** is in the page's view (`src/pages/`), in a Markdown page, or in its model (a `.json` file in `src/models/`, or an object passed to `.page()`). Find where the site keeps a page's words before you write, and write them there. Content that repeats (a list of services, a team, a price list) is data: one model and one partial, never copies (`node_modules/kiss-ssg/llms.txt` § Building a site well; `node_modules/kiss-ssg/GUIDE.md` § .page()).
 - **Text on every page** (navigation labels, the footer, the skip link) is in a partial or the layout (`src/partials/`, `src/layouts/`). One edit there changes every page.
 - **A fact that appears twice** (a phone number in the markup and in the JSON-LD) lives once, in the `config/` seam that `llms.txt` § The build script describes. Change it there, never in one copy.
-- **Every page needs a real `title` and `description`.** Write them where the site keeps them; where kiss takes each from (the page option, the model, or the slug for an untitled page) is `node_modules/kiss-ssg/GUIDE.md` § .page(). An untitled home page ships as `<title>Index</title>`, and nothing catches it.
+- **Not this skill's:** a page's `title` and meta `description` are `kiss-seo`'s, because they exist for the search result and the link preview; an image's `alt` text is `kiss-accessibility`'s. Their words follow this skill's style, but their rules and their review findings live there, so a review reports each once.
 - **A link's words are yours; its address is kiss's.** Write the link text, and let `{{link "id"}}` write the `href`.
 - **Keep the machinery intact.** When you rewrite a model, a view or a Markdown page, keep every Handlebars expression (`{{title}}`, `{{link "about"}}`, `{{#each}}` blocks), every model key, every `id` and every `name` exactly as they are. Change only the words a visitor reads.
 - **Agents read the words too.** With `.llms()` in the build, each page gets a Markdown copy of its `<main>` beside the HTML, and `llms.txt` links it. Demo copy and placeholders land there as well.
@@ -108,7 +108,7 @@ Read `node_modules/kiss-ssg/llms.txt` for the shape of a site. Then:
 
 1. State the reader's task and audience in one line.
 2. Read the content type's section of [references/content-types.md](references/content-types.md).
-3. Draft the words where the site keeps them (§ Where the words live), front-loaded and chunked, with the patterns above. Give every page a real `title` and `description`.
+3. Draft the words where the site keeps them (§ Where the words live), front-loaded and chunked, with the patterns above.
 4. Put a visible placeholder wherever a fact is missing (§ Never invent a fact).
 5. Check the draft against the review checklist below, including the AI and marketing tells, and fix what fails.
 6. Hand over with the list of placeholders the owner must fill.
@@ -119,7 +119,7 @@ Read `node_modules/kiss-ssg/llms.txt` for the shape of a site. Then:
 
 `kiss-site-review` calls this mode; it also runs on its own ("check the copy on this site"). Report to the [review protocol](../kiss-site-review/review-protocol.md): every finding before anything is edited, with its priority and its evidence (a quoted sentence is the measurement for copy), one row per cause. A choice the site records (a house style, a brand voice) is not a finding.
 
-Read the build's `audit` findings first (`npx kiss-ssg check <site-script> --summary`): `title-missing`, `title-duplicate`, `description-missing`, `description-duplicate` and `img-alt-missing` are about words. The fix in the layout is `kiss-site-review`'s; what the title, description or alt text should say is this skill's.
+The audit's title and description findings are `kiss-seo`'s, and `img-alt-missing` is `kiss-accessibility`'s: leave them to those reviews, so no finding is reported twice.
 
 Rate copy findings on the protocol's scale like this:
 
@@ -151,7 +151,6 @@ Then read every page template's built page, and one page's Markdown copy if the 
 - [ ] Do errors name the item, the problem and the fix? Do empty states say why and give a next step?
 - [ ] Is anything essential hidden in a tooltip or a placeholder?
 - [ ] Is one term used for one thing throughout?
-- [ ] Does every page have its own `title` and `description`?
 - [ ] Is every fact one the owner gave, and is every gap a visible placeholder?
 - [ ] After a rewrite: are all the original facts still there, with nothing invented and every Handlebars expression intact?
 

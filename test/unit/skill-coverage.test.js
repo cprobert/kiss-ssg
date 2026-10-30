@@ -365,19 +365,18 @@ const COVERAGE = [
     skills: [skill('kiss-ssg', 'kiss-accessibility')],
   },
   {
+    // Each check is matched by its number and its own opening words: the
+    // file's other numbered lists (the interactivity ladder, the design
+    // lift's steps) would satisfy a bare `1. **` to `5. **` on their own.
     feature: 'the five front-end checks are each their own list item',
-    pattern: new RegExp(
-      `^${Array.from({ length: 5 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
-      'm',
-    ),
+    pattern:
+      /^(?=[\s\S]*^1\. \*\*`100vh`)(?=[\s\S]*^2\. \*\*Transitions name)(?=[\s\S]*^3\. \*\*A hover that changes the box)(?=[\s\S]*^4\. \*\*Nothing is `width: 100vw`)(?=[\s\S]*^5\. \*\*A list fed by a model)/m,
     skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
   {
     feature: 'the five design checks are each their own list item',
-    pattern: new RegExp(
-      `^${Array.from({ length: 5 }, (_, i) => `(?=[\\s\\S]*^${i + 1}\\. \\*\\*)`).join('')}`,
-      'm',
-    ),
+    pattern:
+      /^(?=[\s\S]*^1\. \*\*Every weight)(?=[\s\S]*^2\. \*\*A colour that means)(?=[\s\S]*^3\. \*\*Every link and control acknowledges)(?=[\s\S]*^4\. \*\*No heading or paragraph)(?=[\s\S]*^5\. \*\*Running text stops)/m,
     skills: [skill('kiss-ssg', 'kiss-design')],
   },
   // 2026-10-21, the Pro Plumbing pilot: its sticky bar is a call bar at the
@@ -489,7 +488,7 @@ const COVERAGE = [
     feature:
       'a fan-out section gets no placeholder item: it would publish a URL',
     pattern: /no placeholder item[\s\S]*sitemap/,
-    skills: [skill('kiss-ssg', 'kiss-site-new')],
+    skills: [WRITING],
   },
   {
     feature: 'the task skills call the writing skill for the words',
@@ -770,8 +769,11 @@ const CONTRADICTIONS = [
       /Never fill it with example items or sample posts/,
       /A design skill or a template that asks for "realistic"/,
       /A design skill that asks for "realistic" or "organic" sample data/,
-      /\*\*Placeholder, demo and scaffold copy\*\* —/,
-      /draft the line and mark every claim for them to confirm/i,
+      // The rule, not one wording of it: the owner's copy uses a colon and
+      // "for the owner to confirm", and either form elsewhere is a copy.
+      /Placeholder, demo and scaffold copy/,
+      /mark every claim for (them|the owner) to confirm/i,
+      /would publish a placeholder post as a real URL/,
     ],
   },
   {

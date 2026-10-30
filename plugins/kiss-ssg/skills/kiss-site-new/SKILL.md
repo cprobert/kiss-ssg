@@ -108,13 +108,12 @@ The full judgement pass belongs to `kiss-site-review`.
 
 Whatever the look, keep these:
 
-- **Never invent a fact about the business.** Write every page's words with the `kiss-writing-for-the-web` skill (build mode), which has the rule in full: a missing price, figure or testimonial is a visible placeholder in the model, never a believable guess, and every placeholder is listed for the owner at the hand-over. A design skill that asks for sample data does not change this.
-  - **A news section, a blog or anything else whose items become their own pages or feed entries** gets no placeholder item at all. It builds with zero items and shows its empty state (`kiss-front-end`). A placeholder post would be published as a real URL, in the sitemap and in the feed.
+- **Never invent a fact about the business.** Write every page's words with the `kiss-writing-for-the-web` skill (build mode), which has the rule in full: a missing price, figure or testimonial is a visible placeholder in the model, never a believable guess, and every placeholder is listed for the owner at the hand-over. A design skill that asks for sample data does not change this, and a news section or blog gets no placeholder post at all.
 
 Build every page to the domain skills, each in its build mode. They own the rules; this skill only names them, with the one-line floor each keeps:
 
 - **`kiss-writing-for-the-web`** — the words: front-loaded and plain, and never an invented fact.
-- **`kiss-accessibility`** — a visible `<label>` on every field, a skip link, visible focus, `aria-current` on the current nav link, a viewport that zooms, inputs of 16px or more, content that shows without script.
+- **`kiss-accessibility`** — `alt` text on every image, a visible `<label>` on every field, a skip link, visible focus, `aria-current` on the current nav link, a viewport that zooms, inputs of 16px or more, content that shows without script.
 - **`kiss-front-end`** — `width` and `height` on every image and `loading="lazy"` below the first screen, the platform's own controls before any script, the hero height, named transitions, lists that work at 0 and 1.
 - **`kiss-seo`** — every page's own title and description, one purpose per page, and when to keep a page out of search.
 - **`kiss-design`** — the look, and the craft checks under it.

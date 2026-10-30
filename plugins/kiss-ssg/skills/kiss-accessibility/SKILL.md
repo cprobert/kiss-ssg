@@ -21,6 +21,7 @@ Most of these rules are one edit in one shared file, never one per page:
 
 Build to these from the first layout. Most are a check in the review mode below, which says how it is measured and why; the build's audit reports the rest. Building to them now means the review finds nothing to fix:
 
+- **Every image has `alt` text** that says what the image shows when it matters to the page, in the page's own words, and `alt=""` when it is decoration. The text comes from the model beside the image's `src`. The audit reports a missing `alt` as `img-alt-missing`; whether an `alt` says the right thing is this skill's review, and search reads the same words.
 - **Every form field has a visible `<label>`**, tied to it by `for` and `id`. A placeholder is an example of the answer, never the label. An error message sits below the field it is about, and says what to fix in words (`kiss-writing-for-the-web`).
 - **A skip link comes first** when a header or nav comes before `<main>`: `<a class="skip-link" href="#main">Skip to content</a>`, visible on focus, to `<main id="main">` (review check 7).
 - **A visible focus style:** a `:focus-visible` ring, never a bare `outline: none` (review check 5). Give a sticky header `scroll-padding-top` at least its own height, and a sticky bottom bar (a call or cookie bar) `scroll-padding-bottom` at least its own (review checks 4 and 5).
@@ -32,6 +33,8 @@ Build to these from the first layout. Most are a check in the review mode below,
 ## Review mode
 
 Report to the [review protocol](../kiss-site-review/review-protocol.md): every finding before anything is edited, with its priority and its measurement, one row per cause. A choice the site records is not a finding, and a record whose own reason a measurement now contradicts is marked **ask**; the protocol has the rule. Look at the site in a browser as the [browser pass](../kiss-site-review/browser-pass.md) says; without a browser, the browser checks did not run, and the report says so.
+
+Read the build's audit first (`npx kiss-ssg check <site-script> --summary`): `img-alt-missing`, `h1-count`, `heading-skip`, `viewport-zoom-lock` and `fragment-missing` are this skill's findings; `kiss-site-review` says the fix in the layout for each. Then read every image's `alt` the audit passed: does it say what the image shows, in the page's words, or is it a file name, "image", or the same text as the caption beside it?
 
 1. **A control's edge is 3:1 or better against what it sits on, when the edge is what tells the reader it is a control.** That means a select, a text field, an outlined button, or a chip whose text is not otherwise styled as a link. Text has a 4.5:1 floor that most sites meet. A boundary that identifies a control has a 3:1 floor (WCAG 1.4.11) that a pale border colour usually misses. A chip whose text is already an underlined link is identified by its text, so its border is advisory. Measure from the stylesheet's colour values in every theme the site has, against every surface the control sits on. Where a background is translucent or blurred, name the colour you measured against.
 2. **A result that changes on screen is also said.** A Copy button that turns into "Copied" is silent to a screen reader unless the words also land in an `aria-live="polite"` region. An `aria-label` on the button hides its changed text as well.
@@ -56,6 +59,6 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
 
 What each check can be read from:
 
-- **The stylesheet:** checks 1 and 4, the grep halves of 3 and 5.
+- **The stylesheet:** check 1, and the grep halves of 3 and 5.
 - **The templates and scripts:** checks 2, 7 and 8.
 - **The browser:** checks 4, 6, 9 and 10, and the keyboard half of 5.
