@@ -457,7 +457,7 @@ const COVERAGE = [
   {
     feature: 'the task skills hand each domain to its skill',
     pattern:
-      /^(?=[\s\S]*`kiss-writing-for-the-web`)(?=[\s\S]*`kiss-accessibility`)(?=[\s\S]*`kiss-front-end`)(?=[\s\S]*`kiss-seo`)(?=[\s\S]*`kiss-design`)/,
+      /^(?=[\s\S]*`kiss-writing-for-the-web`)(?=[\s\S]*`kiss-accessibility`)(?=[\s\S]*`kiss-front-end`)(?=[\s\S]*`kiss-seo`)(?=[\s\S]*`kiss-design`)(?=[\s\S]*`kiss-information-architecture`)/,
     skills: [
       skill('kiss-ssg', 'kiss-site-new'),
       skill('kiss-ssg', 'kiss-site-review'),

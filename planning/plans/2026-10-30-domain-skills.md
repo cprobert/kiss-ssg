@@ -144,3 +144,16 @@ The operator asked for the whole split now, not over four more branches: "I woul
 - **Check 7 is whole in `kiss-accessibility`**, with the padding that keeps focus clear of a bar; `kiss-design` points at it for a bar's share of the screen, instead of splitting one measurement across two skills.
 - **The coverage rows** that pinned the moved rules now point at their owners; a row whose needles spanned several owners was split by owner, with no needle dropped.
 - **Still open:** does `kiss-site-review` run every domain's review every time, or only those the operator asks for? Today it runs all five. The operator decides once a full review has been run on a real site.
+
+## Amendment, 2026-10-30: a sixth domain skill, `kiss-information-architecture`
+
+The operator supplied a research report on information architecture and asked for a domain skill built from it (`planning/sessions/2026-10-30-kiss-information-architecture.md`). It follows the contract above and adds one row to the shape:
+
+| Domain skill                    | Owns                                                                                                                                                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kiss-information-architecture` | Which pages exist and their types, grouping and naming of sections, the navigation layers, showing where a reader is, breadcrumbs, the URL scheme, categories and tags, orphan pages, the 404 as a way back in |
+
+- **It owns the structure and points for the rest (the operator's decision).** A label's wording stays `kiss-writing-for-the-web`'s, `aria-current` and landmarks `kiss-accessibility`'s, and one purpose per page, canonical copies and moved URLs `kiss-seo`'s. No rule moved out of the other five, so no coverage row moved either.
+- **The report's research methods and governance are left out** (the operator's decision: agents can't act on them).
+- **The task skills call it:** `kiss-site-new` before the first view, `kiss-page-add` for where a new page sits, and `kiss-site-review` in its domain reviews. `kiss-site-review` now runs six.
+- **Its review measures something the build does not report:** pages no other page links to. The script is in the skill's `references/measure-structure.md`, run against examples 4, 6 and 11 and a build with a planted orphan before it shipped.

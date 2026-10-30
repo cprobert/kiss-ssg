@@ -65,6 +65,7 @@ The expertise lives in the domain skills; this skill runs them and merges what t
 - **`kiss-front-end`** — long strings and sideways scroll, the hero height, transitions, hover on touch, `100vw`, lists at 0 and 1, external links.
 - **`kiss-design`** — consistency, things that look clickable, weights, colour meaning, hover and press, lines ending on one word, line length.
 - **`kiss-seo`** — titles, descriptions, headings, robots.txt, competing and moved pages, structured data.
+- **`kiss-information-architecture`** — orphan pages, nav labels, one name per concept, depth, where-am-I, breadcrumbs, URLs, tag variants.
 - **`kiss-writing-for-the-web`** — the words: demo and placeholder copy, invented facts, links and buttons, the 404 page, empty states, the line about personal details.
 
 Each reports to the same [review protocol](./review-protocol.md) and looks at the site through the same [browser pass](./browser-pass.md), so their rows join one table.

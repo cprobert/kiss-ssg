@@ -52,6 +52,8 @@ This session ran in a cloud container on its designated branch, so the intent wa
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-30, after the first slice.** The skill (`SKILL.md`, 137 lines; `references/measure-structure.md`; `references/sources.md`) is written. `kiss-site-new`, `kiss-site-review` and `kiss-page-add` call it. The roster row in `skill-coverage.test.js` was red on both task skills before their edit (2 failed, 229 passed) and green after. `llms.txt` is 15,982 characters, net zero: 33 added for the name and 33 cut from the same paragraph. The structure script was run as extracted from the shipped Markdown against examples 4, 6 (relative links) and 11 (`extensionLess`), and against a copy of 11's build with a planted page nothing links to, which came first with `0`. The manifest test then caught the script's first regex being read as a Markdown link, so the regex now uses a backreference, and the output was the same on all three examples. `npm run gates`: all five passed. Not run: a trial of the skill on an example and a measurement of its triggering, both optional under the plan's lean amendment. Decision: continue to commit and push; no PR until asked.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->

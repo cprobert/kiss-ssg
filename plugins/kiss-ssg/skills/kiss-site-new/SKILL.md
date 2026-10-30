@@ -112,6 +112,7 @@ Whatever the look, keep these:
 
 Build every page to the domain skills, each in its build mode. They own the rules; this skill only names them, with the one-line floor each keeps:
 
+- **`kiss-information-architecture`** — before the first view: the reader's tasks, the pages and sections they need, named in the reader's words, the nav, and URLs that name lasting concepts.
 - **`kiss-writing-for-the-web`** — the words: front-loaded and plain, and never an invented fact.
 - **`kiss-accessibility`** — `alt` text on every image, a visible `<label>` on every field, a skip link, visible focus, `aria-current` on the current nav link, a viewport that zooms, inputs of 16px or more, content that shows without script.
 - **`kiss-front-end`** — `width` and `height` on every image and `loading="lazy"` below the first screen, the platform's own controls before any script, the hero height, named transitions, lists that work at 0 and 1.
