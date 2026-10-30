@@ -3,6 +3,33 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.3 — 2026-10-30
+
+The `kiss-ssg` plugin now has **domain skills**: five skills that each hold one area of web
+expertise, which the task skills call when they build or review a site. No engine change; update the
+plugin to get them (`claude plugin update kiss-ssg@kiss-ssg`, or `codex plugin add kiss-ssg@kiss-ssg`).
+
+- **Five domain skills**, each with a build mode and a review mode:
+  - `kiss-writing-for-the-web` — the words on every page, to evidence-based web-writing practice.
+    It never invents a fact about the business: a missing price or figure is a visible placeholder.
+  - `kiss-seo` — one purpose per page, the title and description a search result shows, `noindex`
+    rather than `disallow`, canonical copies, old URLs kept with `aliases`, link previews.
+  - `kiss-accessibility` — WCAG 2.2 AA: alt text, labels, the skip link, focus, contrast, targets,
+    200% text, motion, content without script.
+  - `kiss-front-end` — image sizing, the platform's own controls before any script, the hero height,
+    transitions, hover on touch screens, no sideways scroll, external links, lists at 0 and 1.
+  - `kiss-design` — the craft under any look, Anthropic's `frontend-design` for the visual
+    direction, and the design lift.
+- **`kiss-site-new`, `kiss-site-review` and `kiss-page-add` are shorter.** They keep the kiss
+  mechanics and name the domain skill for everything else; no rule was dropped, only moved.
+  `kiss-site-review` now runs every domain's review and reports them in one table.
+- **`llms.txt` names the domain skills**, and has one new habit for agents without plugin skills:
+  never invent a fact about the business.
+- **GUIDE.md § .page() now says where a page's title comes from:** its `title` option, else its
+  model's `title`, else its slug, title-cased. It used to say a title was not a model field, which
+  the engine never did. `description` has no fallback: the layout prints it from the page option or
+  the model.
+
 ## 2.8.2 — 2026-10-26
 
 SCORM pages report their own completion, so resume keeps working in Moodle. Example 13 now shows
