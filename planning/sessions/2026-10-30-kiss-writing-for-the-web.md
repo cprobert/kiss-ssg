@@ -1,7 +1,7 @@
 ---
 branch: feat/kiss-writing-for-the-web
 base: main
-status: open
+status: closed
 opened: 2026-10-30
 ---
 
@@ -70,3 +70,56 @@ opened: 2026-10-30
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-30: Five domain skills, and the task skills as thin handlers
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 19 commits, `90d1321`..`41d6437`, as 2.8.3. Five domain skills in the `kiss-ssg` plugin (`kiss-writing-for-the-web` `215be56`; `kiss-accessibility`, `kiss-front-end`, `kiss-design`, `kiss-seo` `7140f84`); `kiss-site-new`, `kiss-site-review` and `kiss-page-add` reduced to thin handlers; the shared `review-protocol.md` (`8a91d64`) and `browser-pass.md` (`d990506`); test groundwork (`e64f1a2`, `98eed07`); a `GUIDE.md` § .page() correction (`65b21d0`); the plan (`c78c5b0`) and the rule-provenance audit (`c16abc8`).
+
+## Reflect — what the session was
+
+Between, leaning emergent. The work began outside this repo: a user-level writing skill was built and tested in an internal-medicine session, then the operator asked to port it here. The intent named one skill. It grew by six recorded amendments, each agreed: the test groundwork, two more calls, a lean finish after the rules audit, a shared browser pass, all four remaining domain skills ("I want to do it here and now"), and the review's seven fixes. The destination moved from "add a writing skill" to "the task skills are thin handlers over five domains". The plan document (`planning/plans/2026-10-30-domain-skills.md`) carried the design throughout and was amended in place, so the shape held even as the scope grew. The shape served the work: the operator discovered what he wanted — DRY skills with one owner per rule — by seeing the first one built.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering** discriminated this session most, and it was strong. The operator rejected Claude's naming twice (thing-action, then the shared-suffix options) for plain English, on the grounds of discoverability; rejected `kiss-html` and then took `kiss-front-end` over his own `kiss-best-practice` once the competition with the other four skills was named; and stopped the branch mid-flight to ask whether the repo's own rules "haven't slipped in by AI". That question changed the branch: the provenance audit found most testing rituals were promoted by `/memory-consolidate` with no recorded operator decision, and the branch stopped adding that machinery. He also refused to defer the remaining domains to four later branches.
+
+**Harness leverage** was strong on both sides. The operator invoked `/codex:adversarial-review` with a focused question ("how D.R.Y. are our skills?"), which found a real contradiction that started in `GUIDE.md` itself (title is not a model field — `lib/controller-resolver.js:129` says otherwise) and an overreaching stale-facts rule. Claude used fresh-context agents for the plan critique (Codex, 1 blocker and 6 majors before any work depended on the plan), the provenance trace, the two trials on example 12 and a branch review (7 findings, none high). One miss was shared: `/code-review`, typed in this session, ran in the session's own repo (internal-medicine), not in kiss-ssg, because the session lived there. Claude did not warn that repo-scoped commands would target the wrong folder; it caught the result afterwards.
+
+**Verification & ownership** is where the supervision was thin, on the human side. Everything was verified — by tests (2,766), a sentence-by-sentence search for every moved line, a cross-reference grep, mutation checks of new test rows, three independent reviews — but by agents. No person read a domain skill end to end before the close; the operator deferred the look to the PR. The skill most in need of that look is `kiss-seo`, the one written mostly fresh rather than moved.
+
+**Iteration discipline** was mixed. The groundwork landed in small, red-first commits. But the largest change — about 3,500 words moved across seven files by one script (`7140f84`) — was verified mechanically, in one step, with one pulse on the whole branch. The checks that followed found what the move had broken: two coverage rows that could never fail, a renumbering slip, a lost 404 check, three owners for alt text.
+
+**Where the human intended to supervise, versus where he did:** he intended to steer the shape, and did, decisively. He did not intend to hand the final judgement of the skills' content to agents, but the deferred eyeball means that is what happened at the close.
+
+Claude's own errors, each caught: `llms.txt` measured in bytes (15,997) not characters (15,938), caught by the plan critique; overclaims ("every rule here was measured", "rankings"), caught on re-reading; doubled backslashes from a scripted row change; the writing skill's "copy belongs in the model", which contradicted `kiss-page-add`; and a prose file written through a shell heredoc.
+
+**Competency level: Active supervisor**, with the workflow habits of an agentic engineering lead — independent reviews by choice, a provenance audit of the repo's own rules, durable guidance changed rather than worked around. The human verification at the close is what keeps it from the higher level.
+
+## Feedback — recommendations for next session
+
+- **Operator — read `kiss-seo` end to end on the PR before merging.** It is the least evidenced of the five and the one no move protected; then one other domain skill, as its domain's expert would.
+- **Operator — run repo-scoped commands from a session opened in that repo.** `/code-review` here reviewed internal-medicine's last commit. Open a session in `C:\code\kiss-ssg` for its close-out work, or name the repo in the command.
+- **Claude — when the session's folder is not the repo being changed, say so before a repo-scoped command runs** (`/branch-open`, `/branch-close`, `/code-review`), and route it to the right repo's skill. This session did it for the rituals but not for `/code-review`.
+- **Claude — after a scripted move or row change, mutate one target and watch the test fail before trusting it.** Two "five checks" rows passed against the wrong lists until a reviewer found them; one changed heading would have shown it.
+- **Both — a branch whose scope grows by amendment needs a pulse after each growth, not one at the start.** Six amendments and one pulse left the big move verified only at the close.
+- **Process — review the repo's rules (`planning/specs/2026-10-30-rule-provenance.md`) before the next domain branch**, and start each new domain (performance, privacy and security, information architecture were named as gaps) from a research report, as the writing skill was.
+
+## Verdict — did we achieve the objective?
+
+The brief was one domain skill, called by the task skills instead of restated. **The objective moved, and it was good drift:** every amendment was the operator's, recorded with his reason, and the result is the structure he described — five domain skills with one owner per rule, and task skills that hold only kiss mechanics.
+
+- [x] `kiss-writing-for-the-web` with a kiss section, credits (Humanizer's MIT licence reproduced) and no Learna content — `215be56`.
+- [x] The copy rules live once; the task skills call the skill; the rows were seen red first — `89f0b48`, `e64f1a2`.
+- [x] `llms.txt` names the skills within the cap (15,982 of 16,000); the READMEs and the plugin description list them — `bf4b9d3`, `7140f84`.
+- [x] `CLAUDE.md` records the two kinds of skill — `bf4b9d3`, `7140f84`.
+- [ ] Trials kept in `test/skills/` — dropped by the operator's lean-finish decision; two recorded trials on example 12 stood in.
+- [ ] Triggering measured — dropped by the same decision.
+- [ ] Clean-room build — dropped by the same decision.
+- [x] The plan, critiqued before work depended on it — `c78c5b0`.
+- [x] Gates green (test, lint, typecheck, format, pack) and an independent review — Codex up to `f0fa3be`, a fresh review up to `65b21d0`. `e170790..41d6437` (the review's fixes, the version bump and the CHANGELOG) was reviewed by the author only.
+
+**Measurably better:** `kiss-site-review` went from 5,295 to 1,769 words and `kiss-site-new` from 4,105 to 3,425, with no rule dropped; each area of expertise is one file an expert can review; `GUIDE.md` now states the title order the engine has always used.
+
+**Still open:** the operator's eyeball on the PR; the rules review; the domains not yet covered; whether `kiss-site-review` should run all five reviews every time; and the unchecked report that `npx kiss-ssg check` writes a staging folder inside the site while it runs.
