@@ -119,6 +119,33 @@ function isPacked(relative) {
   return !FORBIDDEN_PACKED.some((pattern) => pattern.test(`${relative}/`))
 }
 
+// Markdown never makes a link inside code, so the link reader below drops it
+// first, by CommonMark's rules: a fenced block opens on a run of three or more
+// backticks or tildes (indented at most three spaces) and closes only on a run
+// of the same character at least as long, on a line of its own, or at the end
+// of the file; an inline code span is a backtick run closed by a run of exactly
+// the same length, and never crosses a blank line, so a stray backtick hides
+// nothing past its own paragraph.
+function withoutCode(text) {
+  const kept = []
+  let fence = null
+  for (const line of text.split(/\r?\n/)) {
+    if (fence) {
+      if (fence.test(line)) fence = null
+      continue
+    }
+    const open = /^ {0,3}(`{3,}|~{3,})/.exec(line)
+    if (open) {
+      fence = new RegExp(`^ {0,3}${open[1][0]}{${open[1].length},}\\s*$`)
+      continue
+    }
+    kept.push(line)
+  }
+  return kept
+    .join('\n')
+    .replace(/(?<!`)(`+)(?!`)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\1(?!`)/g, '')
+}
+
 // The relative Markdown links in a skill's files, `[text](target)`. A plugin
 // installs as one folder, so a target must exist and stay inside that plugin's
 // folder. A skill that points at another plugin file (a domain skill at the
@@ -128,7 +155,7 @@ function isPacked(relative) {
 // checked here, and a `node_modules/kiss-ssg/…` path is checked above.
 function brokenLinks(text, docDir, pluginDir, exists = fs.existsSync) {
   const inside = path.resolve(pluginDir) + path.sep
-  const targets = [...text.matchAll(/\]\(([^)\s]+)\)/g)]
+  const targets = [...withoutCode(text).matchAll(/\]\(([^)\s]+)\)/g)]
     .map((m) => m[1])
     .filter((t) => !/^[a-z][a-z0-9+.-]*:/i.test(t) && !t.startsWith('#'))
     .map((t) => t.split('#')[0])
@@ -158,6 +185,48 @@ describe('what a skill may point at', () => {
     expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([
       'gone.md',
       '../../../outside/there.md',
+    ])
+  })
+
+  // Markdown never makes a link inside code. Before this, a script in a
+  // fenced block whose regex held `](` failed the check as a broken link
+  // (kiss-information-architecture's references/measure-structure.md,
+  // 2026-10-30).
+  it('reads no link inside code, fenced or inline', () => {
+    const exists = () => false
+    const text = [
+      '```js',
+      `const m = html.matchAll(/href=["']([^"']*)["']/g)`,
+      '[a](in-a-backtick-fence.md)',
+      '```',
+      '~~~',
+      '[b](in-a-tilde-fence.md)',
+      '~~~',
+      '````md',
+      '```',
+      '[c](a-shorter-fence-does-not-close-it.md)',
+      '````',
+      'Inline: `[d](in-a-span.md)` and ``a ` then [e](in-a-double-span.md)``.',
+    ].join('\n')
+    expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([])
+  })
+
+  it('still reads a link outside code, after a fence or a stray backtick', () => {
+    const exists = () => false
+    const text = [
+      '```',
+      'code',
+      '```',
+      '[a](after-a-fence.md) and `code` then [b](after-a-span.md)',
+      '',
+      'A stray ` backtick.',
+      '',
+      'Next paragraph: [c](after-a-stray-backtick.md) and one more `.',
+    ].join('\n')
+    expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([
+      'after-a-fence.md',
+      'after-a-span.md',
+      'after-a-stray-backtick.md',
     ])
   })
 
