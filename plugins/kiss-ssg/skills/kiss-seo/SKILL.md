@@ -12,7 +12,7 @@ Search follows the reader. Google's own guidance (Search Central) is to write fo
 
 kiss writes most of the machinery from one registry, so it cannot disagree with the site; this skill says what to put in it and why:
 
-- **`title` and `description` are page options** on `.page()`, and the layout prints them (`node_modules/kiss-ssg/GUIDE.md` § .page()). The audit reports a missing or duplicate one; `kiss-site-review` says the layout fix.
+- **A page's `title` and `description`** are printed by the layout; where kiss takes each from (the page option, the model, or the slug for an untitled page) is `node_modules/kiss-ssg/GUIDE.md` § .page(). The audit reports a missing or duplicate one; `kiss-site-review` says the layout fix.
 - **The sitemap, robots.txt, the feed and `llms.txt`** come from `.sitemap()`, `.robots()`, `.feed()` and `.llms()` (`node_modules/kiss-ssg/GUIDE.md` § .sitemap(), § .robots(), § .feed(), § .llms()).
 - **`{{canonical}}`, `siteUrl`, `links.canonical` and `links.trailingSlash`** decide every URL kiss prints (`node_modules/kiss-ssg/GUIDE.md` § Host URL policy). A setting that does not match the host costs a redirect on every link and a sitemap of redirecting URLs; `kiss-site-new` says how to choose.
 - **A page that moves keeps its old URL** through `aliases` (`node_modules/kiss-ssg/GUIDE.md` § Redirects), so links and bookmarks that point at it still arrive.
