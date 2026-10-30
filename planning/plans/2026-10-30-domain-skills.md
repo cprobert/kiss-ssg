@@ -123,6 +123,14 @@ A fresh Codex session read this contract and the repo, before any work was built
 
 ## Open questions
 
-- **`kiss-html` or `kiss-html-and-performance`?** The operator has not chosen. Decide by branch 3.
-- **Does a domain skill speak to non-kiss sites?** The contract says it works alone; whether its general rules are written so they would serve any site is open. Decide on branch 1, from the clean-room trial.
+- **The HTML skill's name.** `kiss-html` is the working name in this plan. The operator finds it too generic and proposed `kiss-best-practice` (2026-10-30). Claude's concern: every domain skill is best practice, so that name says how good the advice is rather than what it covers, and would compete with the other four; Claude suggested `kiss-front-end` (or `kiss-web-performance`, `kiss-web-standards`). Decide on branch 3.
+- **Does a domain skill speak to non-kiss sites?** The contract says it works alone; whether its general rules are written so they would serve any site is open. Decide on branch 1, from the trial on a kiss example.
+
+## Amendment, 2026-10-30: a lean finish, and the rules are the operator's
+
+The operator asked for the repo's rules to be traced to who decided them (`planning/specs/2026-10-30-rule-provenance.md`). Most of the testing machinery this contract leans on (the prose regex rows, CONTRADICTIONS, seen-red first, the trial and triggering rituals) was promoted into `CLAUDE.md` by `/memory-consolidate` with no recorded operator decision. Until the operator reviews those rules on their own branch:
+
+- rule 9's regex rows and CONTRADICTIONS bans are **not** required of later domain-skill branches; branch 1 keeps the ones it already added, and the rules review decides them, `allowedIn` included;
+- rule 9's agent trials, rule 2's triggering measurement and the clean room are optional, run when the operator asks;
+- the rest of the contract (one owner per rule, build and review modes, the shared review protocol, the kiss section, floors) stands, because it is about the shape of the skills, not about the repo's process.
 - **Does `kiss-site-review` call every domain's review mode every time, or only those the operator asks for?** One full review grows long. Decide on branch 2, when there are two domains to merge.
