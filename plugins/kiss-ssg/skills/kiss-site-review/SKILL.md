@@ -104,15 +104,7 @@ Then, on every distinct page template (not every page):
 
 These are the finishing details a site reads as unfinished without. Each one is measured or seen, not argued from taste, and the audit checks none of them.
 
-**First, look for the decision.** Before calling anything a finding, check whether the site records it as a choice:
-
-- a `BRAND.md`, or design notes in the `README.md`, the site's `AIKB/` or a planning folder;
-- a comment in the stylesheet or the template;
-- an `audit.ignore` entry.
-
-A dark band, a system font, an unusual colour role or a modest heading size that the site explains is a decision. One it does not explain is not automatically a finding: only the checks below are. Name the record and leave it, or ask the operator. Never "fix" a recorded decision as if it were a mistake. Every one of the checks below can be overruled this way.
-
-**A record whose own reason a measurement now contradicts** goes in the report, marked **ask**, naming the record. Two examples: a ring recorded as "clears 3:1 against the header" after the header changed colour, or a line length recorded "for readability" that measures 90 characters. The record is still the operator's to change, so propose; never apply it as a fix.
+Before calling anything a finding, look for the decision: a choice the site records is not a finding, and a record whose own reason a measurement now contradicts is reported and marked **ask**. The [review protocol](./review-protocol.md) has the rule in full, and every check below can be overruled by it.
 
 1. **A control's edge is 3:1 or better against what it sits on, when the edge is what tells the reader it is a control.** That means a select, a text field, an outlined button, or a chip whose text is not otherwise styled as a link. Text has a 4.5:1 floor that most sites meet. A boundary that identifies a control has a 3:1 floor (WCAG 1.4.11) that a pale border colour usually misses. A chip whose text is already an underlined link is identified by its text, so its border is advisory. Measure from the stylesheet's colour values in every theme the site has, against every surface the control sits on. Where a background is translucent or blurred, name the colour you measured against.
 2. **A result that changes on screen is also said.** A Copy button that turns into "Copied" is silent to a screen reader unless the words also land in an `aria-live="polite"` region. An `aria-label` on the button hides its changed text as well.
@@ -168,19 +160,7 @@ A browser does not have to be a tool of the agent's own. A Playwright or Puppete
 
 ### 4. Report first, then fix what the operator picks
 
-**Report first.** Before editing anything, put every finding in one table: the audit's, the external-link pass's, the browser pass's, the Markdown copy's and the craft pass's. Give each craft-pass finding its measurement: a contrast ratio, a grep result, a height in pixels.
-
-| Priority | Where | What | Measured | Why it matters | Proposed fix |
-| -------- | ----- | ---- | -------- | -------------- | ------------ |
-
-- **P0:** a visitor is blocked. Content is invisible or unreachable, there is a keyboard trap, or a form cannot be sent.
-- **P1:** it fails a WCAG 2.2 AA criterion or a legal duty, or it is broken on a common device. For example: overflow at 320px with the site's real content, focus hidden under a bar, `viewport-zoom-lock`, a skip link with no target, or a form that collects personal details with no line about them (check 9).
-- **P2:** a visible flaw that reads as unfinished. For example a word alone on a line, a hover stuck after a tap, a weight that does not render, overflow that only an injected long string causes, `href-hash`, or the audit's page checks.
-- **P3:** polish.
-
-**One row per cause, not per instance.** "`transition: all` in 7 rules of `site.scss`" is one row with the count in it, because it is one fix. Sort by priority.
-
-Then ask the operator which to fix. Fix those, and **re-run `npx kiss-ssg check` after each fix**. A layout edit changes every page, and the next run says whether it cleared the finding or made new ones.
+Report to the [review protocol](./review-protocol.md): every finding in one table before anything is edited, with its P0–P3 priority and its measurement, one row per cause; then the operator picks what to fix, and `npx kiss-ssg check` runs again after each fix. The table holds the audit's findings, the external-link pass's, the browser pass's, the Markdown copy's and the craft pass's.
 
 ### 5. The design lift
 

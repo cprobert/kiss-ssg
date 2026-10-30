@@ -12,6 +12,8 @@ import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 // .feed() before this table existed. Add a row when a public feature lands.
 const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
+const REVIEW_PROTOCOL =
+  'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
 
 const COVERAGE = [
   // Learning packages: a page added to a course's lesson joins its package by
@@ -289,12 +291,12 @@ const COVERAGE = [
   // The launch-readiness audit. The review skill is where an agent turns a
   // finding into a fix, so it has to name every check id — built from CHECKS,
   // so a check added to lib/audit.js fails here until the skill says what to
-  // do about it — plus the ignore list and the report-before-fixing rule.
+  // do about it — plus the ignore list. The report-before-fixing rule moved to
+  // the shared review protocol on 2026-10-30 (its row is below).
   {
-    feature:
-      'the launch-readiness audit: every check id, audit.ignore, report first',
+    feature: 'the launch-readiness audit: every check id, audit.ignore',
     pattern: new RegExp(
-      [...CHECKS.map((id) => `\`${id}\``), 'audit\\.ignore', 'Report first']
+      [...CHECKS.map((id) => `\`${id}\``), 'audit\\.ignore']
         .map((needle) => `(?=[\\s\\S]*${needle})`)
         .join(''),
     ),
@@ -321,10 +323,9 @@ const COVERAGE = [
   // decisions the sites had already recorded. No audit check covers any of
   // them, so this row is what keeps them in the skill.
   {
-    feature:
-      'the craft pass: recorded decisions first, then the measured checks',
+    feature: 'the craft pass: the measured checks',
     pattern:
-      /^(?=[\s\S]*look for the decision)(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
+      /^(?=[\s\S]*3:1)(?=[\s\S]*aria-live)(?=[\s\S]*`font-weight`)(?=[\s\S]*prefers-reduced-motion)(?=[\s\S]*text-wrap: balance)(?=[\s\S]*scroll-padding-top)(?=[\s\S]*100dvh)(?=[\s\S]*personal details)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
   // 2026-10-20, the six-repo design-skill evaluation: the lessons taken in, not
@@ -373,10 +374,19 @@ const COVERAGE = [
     pattern: /`100svh`[\s\S]*app shell/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
+  // 2026-10-30: the reporting rules moved out of kiss-site-review into one
+  // shared file, so a domain skill run on its own reports the same way
+  // (planning/plans/2026-10-30-domain-skills.md, rule 10). The review links it.
   {
-    feature: 'the report: a P0–P3 priority, one row per cause',
+    feature:
+      'the review protocol: report first, a P0–P3 priority, one row per cause, recorded decisions and the ask exception',
     pattern:
-      /^(?=[\s\S]*\| Priority \|)(?=[\s\S]*\*\*P0:\*\*)(?=[\s\S]*\*\*P3:\*\*)(?=[\s\S]*One row per cause)/,
+      /^(?=[\s\S]*Report first)(?=[\s\S]*\| Priority \|)(?=[\s\S]*\*\*P0:\*\*)(?=[\s\S]*\*\*P3:\*\*)(?=[\s\S]*One row per cause)(?=[\s\S]*look for the decision)(?=[\s\S]*\*\*ask\*\*)/,
+    skills: [REVIEW_PROTOCOL],
+  },
+  {
+    feature: 'the review reports to the shared protocol',
+    pattern: /\]\(\.\/review-protocol\.md\)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
   {
@@ -671,6 +681,14 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-10-30: the reporting rules live once, in the shared review protocol, so a domain skill run alone reports the same way; a second copy in kiss-site-review or a domain skill drifts from it',
+    allowedIn: [REVIEW_PROTOCOL],
+    patterns: [
+      /\*\*One row per cause, not per instance\.\*\*/,
+      /\*\*First, look for the decision\.\*\*/,
+    ],
+  },
   {
     why: '2.8.0: Markdown copies are written only when the build calls .llms() (markdownCopies.write defaults to "llms"); from 2.7.5 every page had one, and a doc saying every page gets one tells an agent to expect a .md that a build without .llms() never writes',
     patterns: [
