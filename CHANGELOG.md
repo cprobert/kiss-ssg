@@ -7,7 +7,8 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 
 The `kiss-ssg` plugin now has **domain skills**: five skills that each hold one area of web
 expertise, which the task skills call when they build or review a site. No engine change; update the
-plugin to get them (`claude plugin update kiss-ssg@kiss-ssg`, or `codex plugin add kiss-ssg@kiss-ssg`).
+plugin to get them (`claude plugin update kiss-ssg@kiss-ssg`; in Codex,
+`codex plugin marketplace upgrade` and a new session).
 
 - **Five domain skills**, each with a build mode and a review mode:
   - `kiss-writing-for-the-web` — the words on every page, to evidence-based web-writing practice.
