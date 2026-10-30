@@ -12,6 +12,7 @@ import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 // .feed() before this table existed. Add a row when a public feature lands.
 const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
+const WRITING = 'plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md'
 const REVIEW_PROTOCOL =
   'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
 
@@ -414,12 +415,37 @@ const COVERAGE = [
   // tells an agent to "come up with copy and placeholder content", and the
   // trialled skills prescribe invented data ("organic, messy data",
   // "+1 (312) 847-1928"): on a real business's site that is a false claim.
+  // 2026-10-30: the rule against invented facts moved to
+  // kiss-writing-for-the-web, which owns it; kiss-site-new keeps a one-line
+  // floor and calls the skill for the words.
   {
     feature:
-      'whatever the look: no invented facts, labelled fields, sized images',
+      'whatever the look: the no-invention floor and the writing skill, labelled fields, sized images',
     pattern:
-      /^(?=[\s\S]*Never invent a fact)(?=[\s\S]*placeholder)(?=[\s\S]*<label>)(?=[\s\S]*`width` and `height`)(?=[\s\S]*loading="lazy")/,
+      /^(?=[\s\S]*Never invent a fact)(?=[\s\S]*`kiss-writing-for-the-web`)(?=[\s\S]*placeholder)(?=[\s\S]*<label>)(?=[\s\S]*`width` and `height`)(?=[\s\S]*loading="lazy")/,
     skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature:
+      'a fan-out section gets no placeholder item: it would publish a URL',
+    pattern: /no placeholder item[\s\S]*sitemap/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature: 'the task skills call the writing skill for the words',
+    pattern: /`kiss-writing-for-the-web`/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-review'),
+      skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-import'),
+    ],
+  },
+  {
+    feature:
+      'the writing skill reviews demo copy and the personal-details line, to the shared protocol',
+    pattern:
+      /^(?=[\s\S]*Placeholder, demo and scaffold copy)(?=[\s\S]*personal details)(?=[\s\S]*\]\(\.\.\/kiss-site-review\/review-protocol\.md\))/,
+    skills: [skill('kiss-ssg', 'kiss-writing-for-the-web')],
   },
   // 2026-10-12 bake-off: the same brief built three ways. kiss-site-new alone
   // produced frontend-design's own list of AI defaults (cream, serif,
@@ -437,8 +463,8 @@ const COVERAGE = [
   {
     feature: 'never invent: empty marked slots, never example items',
     pattern:
-      /^(?=[\s\S]*Never fill it with example items or sample posts)(?=[\s\S]*visible on the page)(?=[\s\S]*read off the domain)/,
-    skills: [skill('kiss-ssg', 'kiss-site-new')],
+      /^(?=[\s\S]*never example items)(?=[\s\S]*visible on the page)(?=[\s\S]*read off the domain)/,
+    skills: [skill('kiss-ssg', 'kiss-writing-for-the-web')],
   },
   {
     feature: 'step 6 has a command fallback, and the init marker goes',
@@ -681,6 +707,17 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-10-30: the rule against invented facts and the copy checks live once, in kiss-writing-for-the-web; a second full copy in a task skill drifts from it, and the task skills keep a one-line floor that names the skill',
+    allowedIn: [WRITING],
+    patterns: [
+      /Never fill it with example items or sample posts/,
+      /A design skill or a template that asks for "realistic"/,
+      /A design skill that asks for "realistic" or "organic" sample data/,
+      /\*\*Placeholder, demo and scaffold copy\*\* —/,
+      /draft the line and mark every claim for them to confirm/i,
+    ],
+  },
   {
     why: '2026-10-30: the reporting rules live once, in the shared review protocol, so a domain skill run alone reports the same way; a second copy in kiss-site-review or a domain skill drifts from it',
     allowedIn: [REVIEW_PROTOCOL],

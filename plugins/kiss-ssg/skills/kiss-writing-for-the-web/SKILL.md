@@ -94,7 +94,7 @@ More pairs are in [references/microcopy-patterns.md](references/microcopy-patter
 
 Read `node_modules/kiss-ssg/llms.txt` for the shape of a site. Then:
 
-- **Page copy** is in the page's model (a `.json` file in `src/models/`, or an object passed to `.page()`) or in a Markdown page, and the view (`src/pages/`) places it. Write the words in the model, not in the view, so the view stays a layout of data (`node_modules/kiss-ssg/GUIDE.md` § .page()).
+- **Page copy** is in the page's view (`src/pages/`), in a Markdown page, or in its model (a `.json` file in `src/models/`, or an object passed to `.page()`). Find where the site keeps a page's words before you write, and write them there. Content that repeats (a list of services, a team, a price list) is data: one model and one partial, never copies (`node_modules/kiss-ssg/llms.txt` § Building a site well; `node_modules/kiss-ssg/GUIDE.md` § .page()).
 - **Text on every page** (navigation labels, the footer, the skip link) is in a partial or the layout (`src/partials/`, `src/layouts/`). One edit there changes every page.
 - **A fact that appears twice** (a phone number in the markup and in the JSON-LD) lives once, in the `config/` seam that `llms.txt` § The build script describes. Change it there, never in one copy.
 - **`title` and `description` are page options** set on `.page()`, not model fields. With no `title`, a page gets its slug, title-cased: a home page ships as `<title>Index</title>` and nothing catches it. Write a real one for every page (`node_modules/kiss-ssg/GUIDE.md` § Converting an existing page).
@@ -108,7 +108,7 @@ Read `node_modules/kiss-ssg/llms.txt` for the shape of a site. Then:
 
 1. State the reader's task and audience in one line.
 2. Read the content type's section of [references/content-types.md](references/content-types.md).
-3. Draft the words into the model, front-loaded and chunked, with the patterns above. Give every page a real `title` and `description`.
+3. Draft the words where the site keeps them (§ Where the words live), front-loaded and chunked, with the patterns above. Give every page a real `title` and `description`.
 4. Put a visible placeholder wherever a fact is missing (§ Never invent a fact).
 5. Check the draft against the review checklist below, including the AI and marketing tells, and fix what fails.
 6. Hand over with the list of placeholders the owner must fill.

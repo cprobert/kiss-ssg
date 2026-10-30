@@ -145,6 +145,8 @@ Then open each **stylesheet** you downloaded: its `url(…)`, `@import` and `@fo
 
 The partials now hold both structure and words. Move the words out, one model per page, named after the page view: `src/models/<pageName>.json`, read in the view as `model.*`.
 
+Move them **as they are**, under the `kiss-writing-for-the-web` skill's build mode: keep every fact, invent none, and leave the wording alone unless the owner asks for a rewrite. A conversion that also rewrites cannot be checked against its original.
+
 The test to apply, and it settles most cases: **a person should be able to change the copy without opening a `.hbs` file.**
 
 | Goes in the model                                    | Stays in the partial                   |

@@ -111,16 +111,8 @@ The full judgement pass belongs to `kiss-site-review`.
 
 Whatever the look, keep these:
 
-- **Never invent a fact about the business.** That means a figure, a price, a testimonial, a client's name or logo, an award, or a phone number. Where the description gives none:
-  - leave that section out, or put a clearly marked placeholder in the model;
-  - list every placeholder for the owner when you hand the site over.
-
-  A design skill that asks for "realistic" or "organic" sample data, or tells you to "come up with copy and placeholder content", is the trap here. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it.
-
-  - **A menu, a price list or a team with no items given** gets empty, marked slots (`[Item name]`, "Price to be confirmed"). Never fill it with example items or sample posts: a believable white loaf at a believable price is an invented fact the day the site goes live with it.
+- **Never invent a fact about the business.** Write every page's words with the `kiss-writing-for-the-web` skill (build mode), which has the rule in full: a missing price, figure or testimonial is a visible placeholder in the model, never a believable guess, and every placeholder is listed for the owner at the hand-over. A design skill that asks for sample data does not change this.
   - **A news section, a blog or anything else whose items become their own pages or feed entries** gets no placeholder item at all. It builds with zero items and shows its empty state (below). A placeholder post would be published as a real URL, in the sitemap and in the feed.
-  - **Keep every placeholder visible on the page**, so a launch with one still in it is obvious to whoever looks.
-  - **A business name read off the domain is a guess.** Use it, and say in the hand-over that it needs confirming.
 
 - **Every form field has a visible `<label>`**, tied to it by `for` and `id`. A placeholder is an example of the answer, never the label. An error message sits below the field it is about.
 - **Every `<img>` has its `width` and `height`**, from the model beside its `src` and `alt`, so the page does not jump as images arrive. Add `loading="lazy"` to images below the first screen, never to the first image a visitor sees.
@@ -135,7 +127,7 @@ The usability floors, built in from the first layout. Each is a check in `kiss-s
 - **A full-screen hero is `100svh`**, not `100dvh`, with a `100vh` line first as the fallback (check 8).
 - **Transitions name their properties**, and never `transition: all` (check 14). A hover that moves or lifts something goes behind `@media (hover: hover) and (pointer: fine)` (check 15).
 - **Content is visible without script.** Hide something for an entrance only under a class the script itself sets (check 16).
-- **A list fed by a model has an empty state**, and where it shows a count, a correct singular ("1 post") (check 20). The marked slots above are for a menu, price list or team on the page whose items the owner has not given. The empty state is for a list with nothing in it when the site builds, including a news section that has no posts yet.
+- **A list fed by a model has an empty state**, and where it shows a count, a correct singular ("1 post") (check 20). The marked slots in `kiss-writing-for-the-web` are for a menu, price list or team on the page whose items the owner has not given. The empty state is for a list with nothing in it when the site builds, including a news section that has no posts yet.
 
 When a page needs a little interactivity, reach for it in this order, and keep the content in the rendered HTML either way — that is what keeps it crawlable:
 
