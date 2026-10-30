@@ -5,7 +5,7 @@
   {{#content "main"}}
   <section class="hero">
     <p class="eyebrow">The journal</p>
-    <h1>Every tag</h1>
+    <h1>Tags</h1>
     <p>
       {{model.tally.tags}}, none of them written down anywhere: each one exists because some
       post mentions it, and <code>controllers/tag.js</code> folds the posts into one record per
@@ -26,7 +26,7 @@
   </div>
 
   <div class="callout">
-    <p><a href="{{link 'blog'}}">The whole journal</a> &middot; <a href="/feed.xml">RSS feed</a></p>
+    <p><a href="{{link 'blog'}}">The journal</a> &middot; <a href="/feed.xml">RSS feed</a></p>
   </div>
   {{/content}}
 

@@ -7,7 +7,7 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "30c19b8876bcc9415e34c7c6ed1b57a9e77486db",
+      "hash": "4ab2769acd1077de25ec90b0138603bce8ab1c12",
       "id": "index",
       "canonical": null,
       "markdown": "./public/index.md"
@@ -16,7 +16,7 @@
       "view": "blog/listing.hbs",
       "buildTo": "./public/blog/index.html",
       "ok": true,
-      "hash": "1d078ec6665371b1dbe12674a285feb6027f5f7e",
+      "hash": "d32093f88230c88525dc1d97ec36417099a78408",
       "id": "blog",
       "canonical": null,
       "markdown": "./public/blog/index.md"
@@ -25,7 +25,7 @@
       "view": "blog/listing.hbs",
       "buildTo": "./public/blog/page/2/index.html",
       "ok": true,
-      "hash": "ed799d889ffff01ec38cc04a1f7b478a000fa1a9",
+      "hash": "62183d255147c207ef0f21cef8b07fe3ab674bbb",
       "id": "blog/page/2",
       "canonical": null,
       "markdown": "./public/blog/page/2/index.md"
@@ -34,7 +34,7 @@
       "view": "blog/tags.hbs",
       "buildTo": "./public/blog/tags/index.html",
       "ok": true,
-      "hash": "b04922e6dedd5b6ec26a4b3b56e6d27ec1c10957",
+      "hash": "ba089c807d8529b38066c0be1dfb12a6f74f23c6",
       "id": "blog/tags",
       "canonical": null,
       "markdown": "./public/blog/tags/index.md"
@@ -43,7 +43,7 @@
       "view": "404.hbs",
       "buildTo": "./public/404.html",
       "ok": true,
-      "hash": "8aac3eb3ab4c3f36cdd44c3cae87dce8eb718015",
+      "hash": "827a6fd6d87aa22fee1d814a0b38ec13e3ee0e82",
       "id": "404",
       "canonical": null,
       "markdown": "./public/404.md"
@@ -52,7 +52,7 @@
       "view": "blog/post.hbs",
       "buildTo": "./public/blog/a-year-of-bench-lots/index.html",
       "ok": true,
-      "hash": "9b73039cf7963b7b9281777e6cad7b90899d62fd",
+      "hash": "3b7e8b9edd1cdb8cfc3b2ab42a440212005d0f58",
       "id": "blog/post/a-year-of-bench-lots",
       "canonical": null,
       "markdown": "./public/blog/a-year-of-bench-lots/index.md"
@@ -61,7 +61,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/brewing/index.html",
       "ok": true,
-      "hash": "5d4d0af7d049ca10257a0b84b6e691ea8ac246a8",
+      "hash": "a4618e097409bbad75b3a6cab391b241c83ece2c",
       "id": "blog/tags/brewing",
       "canonical": null,
       "markdown": "./public/blog/tags/brewing/index.md"
@@ -70,7 +70,7 @@
       "view": "blog/post.hbs",
       "buildTo": "./public/blog/grind-size-is-the-dial/index.html",
       "ok": true,
-      "hash": "2960843842aba766778dac9b1b21d2f2570ae151",
+      "hash": "c0cc92efbe27a870b3f77deaafc629c1bbed28fc",
       "id": "blog/post/grind-size-is-the-dial",
       "canonical": null,
       "markdown": "./public/blog/grind-size-is-the-dial/index.md"
@@ -79,7 +79,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/experiments/index.html",
       "ok": true,
-      "hash": "28a3a2d8384fba78908e75e04ec4f1f4daeb4607",
+      "hash": "959e205592535eca6c0076c9ec3fc9e22e64555e",
       "id": "blog/tags/experiments",
       "canonical": null,
       "markdown": "./public/blog/tags/experiments/index.md"
@@ -88,7 +88,7 @@
       "view": "blog/post.hbs",
       "buildTo": "./public/blog/why-we-roast-on-wednesdays/index.html",
       "ok": true,
-      "hash": "22771c38a4297309ccb678b8b72a3f06b089f793",
+      "hash": "b260a3e38b754da1fdf55e03afd07cee01ca59c8",
       "id": "blog/post/why-we-roast-on-wednesdays",
       "canonical": null,
       "markdown": "./public/blog/why-we-roast-on-wednesdays/index.md"
@@ -97,7 +97,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/roastery/index.html",
       "ok": true,
-      "hash": "506b9b1a17e9f02b4c42647f1edf69e5dfe7cff2",
+      "hash": "dc3c1a3f2d3b1207d29fb4597b9eedcc5e36159c",
       "id": "blog/tags/roastery",
       "canonical": null,
       "markdown": "./public/blog/tags/roastery/index.md"
@@ -106,7 +106,7 @@
       "view": "blog/post.hbs",
       "buildTo": "./public/blog/guji-uraga-has-landed/index.html",
       "ok": true,
-      "hash": "be2dce1d7bf8732b4262309978f1001420124984",
+      "hash": "489debc08414ec50e918b7dd55d047a7a11591f4",
       "id": "blog/post/guji-uraga-has-landed",
       "canonical": null,
       "markdown": "./public/blog/guji-uraga-has-landed/index.md"
@@ -115,7 +115,7 @@
       "view": "blog/tag.hbs",
       "buildTo": "./public/blog/tags/sourcing/index.html",
       "ok": true,
-      "hash": "154098d5aac07afbb6aef469a2803bca8dfab695",
+      "hash": "b24575edf172add0efad27f784f5484503134129",
       "id": "blog/tags/sourcing",
       "canonical": null,
       "markdown": "./public/blog/tags/sourcing/index.md"
@@ -124,7 +124,7 @@
       "view": "blog/post.hbs",
       "buildTo": "./public/blog/the-cascara-experiment/index.html",
       "ok": true,
-      "hash": "8c6e14261432303bd23bc0ea9ba0bc1a698452c7",
+      "hash": "2ba6e5cad1310556c35ac7d39e495916258c8ae9",
       "id": "blog/post/cascara",
       "canonical": null,
       "markdown": "./public/blog/the-cascara-experiment/index.md"
@@ -133,7 +133,7 @@
       "view": "blog/post.hbs",
       "buildTo": "./public/blog/pour-over-at-home/index.html",
       "ok": true,
-      "hash": "165f0a9867980f9bb7cb707005e4c6e72d850b6b",
+      "hash": "b0f8a255bd494466c625a0bd4d6f7d1d2c0a0819",
       "id": "blog/post/pour-over-at-home",
       "canonical": null,
       "markdown": "./public/blog/pour-over-at-home/index.md"
