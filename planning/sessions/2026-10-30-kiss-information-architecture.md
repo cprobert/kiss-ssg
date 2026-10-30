@@ -46,6 +46,8 @@ This session ran in a cloud container on its designated branch, so the intent wa
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-30 — `feat/branch-merged-and-privacy` merged into this branch (operator's request: "I've got related code on there").** It brings the `branch-merged` step in both homes, `branch-open`'s worktree option, and the privacy and security research (`planning/specs/2026-10-30-privacy-and-security-research.md`). The merge was clean (`CLAUDE.md` auto-merged), and all five gates pass on the result. That branch's intent also calls its planned `kiss-privacy-and-security` "a sixth domain skill" and lists information architecture as a later branch. That skill is not written yet, so nothing conflicts today, but whichever lands second adds itself to the roster lines this branch edited (`llms.txt`, the READMEs, `CLAUDE.md`, the plugin descriptions, the coverage row) and to the plan's count.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
