@@ -87,11 +87,9 @@ List every offender in the report (step 4), grouped by the template that writes 
 
 ### 3. The usability and best-practice audit, in a browser
 
-The audit reads markup. Whether the site looks finished needs eyes. `check` publishes nothing, so there is nothing on disk to look at yet: build the site for real first (`npm run build` on a site set up by `init`, or `node <site-script>`). That writes the build folder — including anything the audit flagged, such as a `debug.json` — so say in the report that you did, and remove it afterwards if it was not there when you started. With a browser tool available, look at the built site **served with the build folder as the site root**: the site's own `--dev` preview (`npm run dev`), or any static server started in the build folder (`public/` by default). Never a server rooted above it — VS Code Live Server opened on the repo is the usual one — because every root-relative `{{link}}` then resolves outside the site and reads as broken when it is not.
+Build the site and serve it as the [browser pass](./browser-pass.md) says: the build folder as the site root, over HTTP, at its widths, and say so if no browser was available. Then, on every distinct page template (not every page):
 
-Then, on every distinct page template (not every page):
-
-- **Widths** 320, 768 and 1440, and one odd width (say 1023) where breakpoints meet.
+- **Widths** — every width the browser pass names.
 - **Long text and unbroken strings** — a long title, a long URL or email, a big number. Does anything overflow its box or push the page sideways? A site whose content has none yet will get one from a model later, so put one into the page in the browser (not into the source) and look, including in a label or badge, a nav link and the site name, not only a paragraph. Use a string with no spaces and no hyphens: either one is a break opportunity, and a string with one passes where a URL would not. The usual fix is `overflow-wrap: anywhere` on headings and text. Not `break-word`: only `anywhere` lowers the width an inline-block, a flex item or a grid item shrinks to. Measured on example 11, `break-word` left a 320px page 724px wide.
 - **Consistency across templates** — spacing, type scale, border radius, button styles. One page with its own idea of a button is the most common tell of a site assembled page by page.
 - **Things that look clickable and are not** — underlined text, cards with hover styles, icons with no link, a label styled exactly like the site's buttons or chips.
@@ -148,15 +146,7 @@ What each check can be read from:
 - **The templates and scripts:** checks 2, 9, 12, 13 and 20.
 - **The browser:** checks 6, 7, 11, 16, 18 and 19, the hover-and-press half of 5, the keyboard half of 10, and 3 on a system-font stack.
 
-A browser does not have to be a tool of the agent's own. A Playwright or Puppeteer install driven from a script through the shell does the job: serve the build folder over HTTP, never `file://`, for the reason given at the start of this step.
-
-**When Anthropic's `webapp-testing` skill is available, it is a recipe for that script** in Python Playwright, which needs `pip install playwright` and `python -m playwright install chromium` first. Use it or write your own script; the browser is what matters. Either way, three of the skill's defaults are wrong for a kiss site:
-
-- **Not `file://`.** Its decision tree sends static HTML to the file itself, and its example opens a `file://` URL. A kiss build is static HTML whose links are root-relative, so this pass is still served over HTTP with the build folder as the root.
-- **Not `with_server.py` on Windows.** It stops the shell it started, not the server under it: measured twice, `npm run dev` was still listening after it printed "Server 1 stopped", and the next run failed to bind. Start the server yourself in the background, or any static server in the build folder, and stop that process when the pass is done.
-- **Not port 3001 by assumption.** `--dev` listens where the site's `router.js` says, and prints the address when it binds; read it there. Example 11 uses 3011.
-
-**Without a browser, say that this pass did not run.** Do not infer the result from the templates: a layout that looks right in the source is exactly what this pass exists to check.
+The browser checks run as the [browser pass](./browser-pass.md) describes, with a browser tool of your own or a Playwright script; without a browser, they did not run, and the report says so.
 
 ### 4. Report first, then fix what the operator picks
 

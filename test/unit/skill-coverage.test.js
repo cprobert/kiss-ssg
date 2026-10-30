@@ -13,6 +13,7 @@ import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
 const WRITING = 'plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md'
+const BROWSER_PASS = 'plugins/kiss-ssg/skills/kiss-site-review/browser-pass.md'
 const REVIEW_PROTOCOL =
   'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
 
@@ -308,7 +309,7 @@ const COVERAGE = [
   {
     feature: 'the judgement pass serves the build folder as the site root',
     pattern: /build folder as the site root[\s\S]*Live Server/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [BROWSER_PASS],
   },
   // 2026-09-30: an operator rule, not an audit check — so the skill is the only
   // place it lives, and this row is what keeps it there.
@@ -520,17 +521,16 @@ const COVERAGE = [
       'webapp-testing for the browser pass: HTTP not file://, own server, own port',
     pattern:
       /^(?=[\s\S]*`webapp-testing`)(?=[\s\S]*Not `file:\/\/`)(?=[\s\S]*Not `with_server\.py` on Windows)(?=[\s\S]*Not port 3001 by assumption)(?=[\s\S]*pip install playwright)/,
-    skills: [skill('kiss-ssg', 'kiss-site-review')],
+    skills: [BROWSER_PASS],
   },
   {
     feature:
       'webapp-testing for a look at what was built, served over HTTP not file://',
     pattern:
       /`webapp-testing`[\s\S]*over HTTP[\s\S]*not from `file:\/\/`|`webapp-testing`[\s\S]*over HTTP[\s\S]*Never use `file:\/\/`/,
-    skills: [
-      skill('kiss-ssg', 'kiss-site-import'),
-      skill('kiss-ssg', 'kiss-site-new'),
-    ],
+    // kiss-site-new links the shared browser pass instead (2026-10-30), and
+    // plugin-manifests.test.js checks that link resolves.
+    skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
   {
     feature: "the site map's Id column as the link targets",
