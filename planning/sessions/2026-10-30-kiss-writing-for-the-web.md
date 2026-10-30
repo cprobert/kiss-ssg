@@ -48,11 +48,17 @@ opened: 2026-10-30
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-30 — the groundwork joins this branch (operator agreed).** The plan's critique showed criterion 2 cannot be met with the tests as they are: a CONTRADICTIONS ban runs on every shipped file, so it would ban a moved sentence in its new owner too. So this branch also builds, each seen red first: file-scoped CONTRADICTIONS entries; `plugin-manifests.test.js` checking every `.md` in a skill folder, relative links and the real packing rules; the shared `plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md`, cut out of `kiss-site-review`; and a check of the trial case folders. Details: the plan's rules 4, 9 and 10.
+- **2026-10-30 — `kiss-page-add` and `kiss-site-import` call the skill too (operator agreed).** One call each: `kiss-page-add` when writing a page's model and view, `kiss-site-import` when lifting copy into models (keep every fact, invent none).
+- **2026-10-30 — one floor line for agents without skills.** Measured: `llms.txt` § Building a site well carries none of `kiss-site-new`'s floors, so agents without plugin skills never see the rule against invented facts. This branch proposes one habit line for it, within the `llms.txt` budget (plan rule 7).
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+- **2026-10-30 — pulse 1, after the plan.** Criterion 8 (the plan, critiqued): written and committed (`c78c5b0`); a fresh Codex session reported 1 blocker, 6 major and 1 minor finding, Claude re-checked the four measured ones against the files (all held) and answered all eight in the plan. Criteria 1–7 and 9: not started. One of Claude's own numbers was wrong and the critique caught it: `llms.txt` is 15,938 characters by the test's measure, not 15,997 (bytes). Decision: **adjust** — the groundwork and the two extra calls are recorded as amendments above; next is the groundwork, starting with file-scoped CONTRADICTIONS. — Claude, with the operator's two answers.
 
 ---
 
