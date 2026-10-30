@@ -89,3 +89,18 @@ OWASP recommends the CSP `frame-ancestors` directive, and gives `X-Frame-Options
 - How does each static host set a baseline of HSTS, CSP, X-Content-Type-Options, Referrer-Policy and Permissions-Policy, and what values do OWASP and MDN recommend now?
 - Do privacy-friendly spam defences (honeypots, time-based checks, Cloudflare Turnstile, hCaptcha) fall within a PECR exception, or does a CAPTCHA that reads device data need consent?
 - What must a UK site say and do (adequacy, the UK-US data bridge, an IDTA) when a form sends data to a US-based processor?
+
+## Second pass, 2026-10-30: the security half (partial)
+
+A second deep-research run on the security half only. **9 claims verified (8 by 3-0, 1 by 2-0), none refuted.** About 15 more, on how each host sets headers (Netlify, Cloudflare Pages, Firebase, Vercel), Subresource Integrity, click-to-load embeds and meta-CSP limits, were extracted but **not verified**: their verifiers, and the synthesis, failed on the organisation's spend limit. Resume run `wf_1fea7226-ca6` from its script to verify them; until then, no rule rests on them.
+
+All from OWASP's HTTP Headers Cheat Sheet (<https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet>), MDN's CSP guide (<https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/CSP>) or web.dev (<https://web.dev/articles/strict-csp>):
+
+- **X-XSS-Protection:** do not set it, or set it to `0`; a CSP that disables inline JavaScript does the job instead (OWASP, 3-0).
+- **HSTS:** OWASP's value is `max-age=63072000; includeSubDomains; preload`, and it says to check the preload requirements before asking for preload (OWASP, 3-0).
+- **X-Content-Type-Options: nosniff** and **Referrer-Policy: strict-origin-when-cross-origin**, set explicitly rather than relying on browser defaults (OWASP, 3-0).
+- **Framing and isolation:** CSP `frame-ancestors` obsoletes X-Frame-Options in supporting browsers, and OWASP still recommends `X-Frame-Options: DENY`; **Cross-Origin-Opener-Policy: same-origin**; **Permissions-Policy** turning off every feature the site does not use, e.g. `geolocation=(), camera=(), microphone=()` (OWASP, 3-0).
+- **Hashes, not nonces, for a static site:** "use nonces if you can dynamically generate content or hashes if you need to serve static content" (MDN, 3-0); web.dev agrees, "use a hash-based CSP for HTML pages served statically" (2-0).
+- **A strict CSP is preferred** over an allowlist, which often admits unsafe domains; but an allowlist CSP, or even `default-src https:`, is better than none (MDN, 3-0).
+- **Roll out with Content-Security-Policy-Report-Only first**, and send both `report-to` and the deprecated `report-uri`, since `report-to` is not yet supported everywhere (MDN, 3-0).
+- **Where the header cannot be set** (GitHub Pages), MDN accepts `<meta http-equiv="Content-Security-Policy" content="…">` as the **first** `<meta>` in `<head>`. Which directives a meta CSP cannot carry was not verified (MDN, 3-0).
