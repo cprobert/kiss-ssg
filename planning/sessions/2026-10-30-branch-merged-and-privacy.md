@@ -332,6 +332,20 @@ opened: 2026-10-30
     It would also add a line to **Design philosophy**: _Domain skills are judged by the sites they produce, not by code review: measure one by building the same brief with and without it._
 
   - **What this branch carries forward.** The work is pushed and the gates pass (`c4c62c6`). Open for the operator: whether to land it as one minor release through `/branch-close` or split it (skills and examples; engine and tooling); and whether to adopt the rule above, which a separate branch would then apply by moving the `kiss-memory` lookups, the base and merge logic, and the orphan count into `kiss-ssg` commands and the engine's link check.
+- **2026-10-31 — Scope: the mechanism moves into the engine and CLI on this branch (the operator's decision).** The operator asked whether we were kicking the problem down the road. We were: landing the branch and fixing the architecture later would have shipped the flaw to every site that updates the plugin. Measured: the lines of inline logic in the `kiss-memory` skills grew from 4 on `main` to 27 on this branch, and the 94-line structure script in the IA skill is new here. I recommended taking those parts out and rebuilding them on a new branch. The operator chose to build the mechanism on this branch, and gave the reason "ship nothing half-done". **The impact surface now includes the public API (new `kiss-ssg` commands, an orphans field in the build report), so `/branch-close` proposes a minor version.**
+  - **Scope, approved as proposed:**
+    1. `kiss-ssg session` (find a branch's session file, from this checkout or from the branch's commits; read a frontmatter key; list the logs) and `kiss-ssg base` (the base branch's name, and the ref to diff against). The decisions live in tested `lib/` modules, behind thin `bin/` wrappers.
+    2. `kiss-ssg check --subjects`, replacing the `node -e` that pulls subject hashes out of the check's JSON.
+    3. The engine's link check reports orphan pages, which nothing links to. The IA skill reads that report in place of its 94-line script.
+    4. Every `kiss-memory` skill calls these commands. `scripts/session-file.mjs` calls the same `lib/` module, so each rule exists once, and `test/unit/plugin-session-lookups.test.js`, which existed only to keep copies identical, goes.
+    5. The draft rule goes into CLAUDE.md, enforced by a test that allows only listed command shapes in skill code blocks: an allow-list, not a deny-list.
+    6. Skills check that the installed kiss-ssg has the commands, and say to upgrade if not.
+  - **Acceptance criteria:**
+    - The gates pass.
+    - Every new `lib/` module has unit tests, and the commands have integration tests through `bin/`.
+    - No skill code block decides anything.
+    - GUIDE.md, `llms.txt` (15,997 of 16,000, so adding index lines means cutting), `types/`, README and AIKB are updated as CLAUDE.md requires for a public API change.
+  - **Stop condition, agreed before the work starts:** one independent review at `/branch-close`. Only wrong output or crashes in this work count; everything else is recorded for the operator; there is no loop.
 
 ## Pulse log
 
