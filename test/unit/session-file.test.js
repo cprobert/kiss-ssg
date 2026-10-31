@@ -94,6 +94,67 @@ describe('the command line', () => {
   })
 
   it('prints nothing for a branch with no session file', () => {
-    expect(run(repo, 'nobody', '--from-branch').stdout).toBe('')
+    git('branch', 'other', 'main')
+    const result = run(repo, 'other', '--from-branch')
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
+  })
+
+  // 2026-10-31, round 5: a branch opened on another machine, or one already
+  // deleted locally, is only on origin; the script crashed with a stack trace.
+  it("reads a branch that is only on origin from origin's copy", () => {
+    const remote = path.join(root, 'remote.git')
+    execFileSync('git', ['init', '-q', '--bare', remote], {
+      env,
+      stdio: 'ignore',
+    })
+    git('remote', 'add', 'origin', remote)
+    git('push', '-q', 'origin', 'fix/v2.8:refs/heads/elsewhere')
+    git('fetch', '-q', 'origin')
+    git('branch', '-D', 'fix/v2.8')
+    const result = run(repo, 'fix/v2.8', '--from-branch')
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('no branch fix/v2.8 here or on origin')
+    git(
+      'push',
+      '-q',
+      'origin',
+      'refs/remotes/origin/elsewhere:refs/heads/fix/v2.8',
+    )
+    git('fetch', '-q', 'origin')
+    expect(run(repo, 'fix/v2.8', '--from-branch').stdout).toBe(
+      'planning/sessions/a.md\n',
+    )
+  })
+
+  it('says so, rather than printing nothing, on a detached HEAD', () => {
+    git('checkout', '-q', '--detach', 'main')
+    const result = run(repo)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('not on a branch')
+    git('checkout', '-q', 'main')
+  })
+
+  it('reads a session folder the same way in both modes, subfolders included', () => {
+    fs.mkdirSync(path.join(repo, 'planning/sessions/archive'))
+    fs.writeFileSync(
+      path.join(repo, 'planning/sessions/archive/old.md'),
+      '---\nbranch: main\n---\n',
+    )
+    git('add', '.')
+    git(
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      'archive',
+    )
+    expect(run(repo).stdout).toBe('planning/sessions/archive/old.md\n')
+    expect(run(repo, 'main', '--from-branch').stdout).toBe(
+      'planning/sessions/archive/old.md\n',
+    )
   })
 })

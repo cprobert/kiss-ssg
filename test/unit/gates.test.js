@@ -1,12 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import {
   REQUIRED_PACKED,
   FORBIDDEN_PACKED,
+  changedFiles,
   forbiddenPackedFiles,
   formatGate,
   missingPackedFiles,
   parsePackedFiles,
-  presentFiles,
   spawnResult,
 } from '../../scripts/gates.mjs'
 
@@ -179,20 +183,56 @@ describe('spawnResult', () => {
   })
 })
 
-// The diff lists what the branch's commits changed, but prettier reads the
-// working tree. A file a commit added and the working tree has since moved or
-// deleted is listed and missing, and prettier fails the gate on it with "No
-// files matching the pattern" (twice on 2026-10-31, each time on a rename not
-// yet committed). A file that is not there has nothing to format.
-describe('presentFiles', () => {
-  it('keeps the changed files that exist and drops the rest', () => {
-    const exists = (file) => file !== 'src/pages/blog/tags.hbs'
-    expect(
-      presentFiles(
-        ['lib/kiss.js', 'src/pages/blog/tags.hbs', 'README.md'],
-        exists,
-      ),
-    ).toEqual(['lib/kiss.js', 'README.md'])
+// Prettier reads the working tree, so the gate lists what the branch changed
+// as the working tree has it. Listed from the commits alone, a file renamed or
+// deleted and not yet committed failed the gate with "No files matching the
+// pattern", and a renamed file's new name was never checked (twice on
+// 2026-10-31).
+describe('changedFiles', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-gates-'))
+  const emptyConfig = path.join(root, 'empty.gitconfig')
+  fs.writeFileSync(emptyConfig, '')
+  const env = {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+    ),
+    GIT_CONFIG_GLOBAL: emptyConfig,
+    GIT_CONFIG_NOSYSTEM: '1',
+  }
+  const repo = path.join(root, 'repo')
+  fs.mkdirSync(repo)
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: repo, env, stdio: 'ignore' })
+  const commit = (message) =>
+    git(
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      message,
+    )
+  afterAll(() => fs.rmSync(root, { recursive: true, force: true }))
+
+  it('lists the working tree: a staged rename by its new name, a deletion not at all', () => {
+    git('init', '-q', '-b', 'main')
+    fs.writeFileSync(path.join(repo, 'base.js'), 'x\n')
+    git('add', '.')
+    commit('base')
+    git('checkout', '-q', '-b', 'feat')
+    fs.writeFileSync(path.join(repo, 'old.js'), 'x\n')
+    fs.writeFileSync(path.join(repo, 'gone.js'), 'x\n')
+    git('add', '.')
+    commit('work')
+    git('mv', 'old.js', 'new.js')
+    git('rm', '-q', 'gone.js')
+    expect(changedFiles('main', repo, env)).toEqual({ files: ['new.js'] })
+  })
+
+  it('reports git refusing the base as an error, not as no changes', () => {
+    expect(changedFiles('no-such-base', repo, env).error).toBeTruthy()
   })
 })
 

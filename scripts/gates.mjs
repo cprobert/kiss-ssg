@@ -6,7 +6,6 @@
 // /branch-close and in CI (.github/workflows/ci.yml), so green here is green
 // there.
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
 import { resolveBaseBranch } from './base-branch.mjs'
 
 // package.json's `files` whitelist is load-bearing: llms.txt and AIKB/ ship on
@@ -92,29 +91,32 @@ const run = (cmd, args) =>
     }),
   )
 
-// The diff lists what the branch's commits changed; prettier reads the working
-// tree. A file a commit added and the working tree has since moved or deleted
-// is listed and missing, and prettier fails on it with "No files matching the
-// pattern". A file that is not there has nothing to format.
-export const presentFiles = (files, exists = existsSync) => files.filter(exists)
-
-function changedFiles(base) {
+// What the format gate checks: every file the branch changed, as it is in the
+// working tree now. Prettier reads the working tree, so the list comes from
+// the merge base against the working tree, not from the commits alone: a file
+// renamed with `git mv` and not yet committed is checked under its new name,
+// and a deleted one is not listed at all. A list taken from the commits named
+// files the working tree no longer had, and failed the gate on them twice on
+// 2026-10-31.
+export function changedFiles(base, cwd = process.cwd(), env = process.env) {
+  const run = (args) =>
+    execFileSync('git', args, {
+      cwd,
+      env,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
   try {
-    const out = execFileSync(
-      'git',
-      ['diff', '--name-only', '--diff-filter=ACMR', `${base}...HEAD`],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-    )
+    const mergeBase = run(['merge-base', base, 'HEAD']).trim()
+    const out = run(['diff', '--name-only', '--diff-filter=ACMR', mergeBase])
     return {
-      files: presentFiles(
-        out
-          .split('\n')
-          .map((f) => f.trim())
-          // No extension filter: `.prettierignore` decides what is out of
-          // scope and `--ignore-unknown` (below) drops anything prettier cannot
-          // parse, so the two live in one place instead of drifting apart here.
-          .filter(Boolean),
-      ),
+      files: out
+        .split('\n')
+        .map((f) => f.trim())
+        // No extension filter: `.prettierignore` decides what is out of scope
+        // and `--ignore-unknown` (below) drops anything prettier cannot parse,
+        // so the two live in one place instead of drifting apart here.
+        .filter(Boolean),
     }
   } catch (e) {
     return { error: `${e.stderr ?? ''}`.trim() || e.message }

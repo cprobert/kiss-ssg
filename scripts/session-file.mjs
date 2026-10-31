@@ -9,7 +9,9 @@
 //   node scripts/session-file.mjs <branch>         # a named branch, this checkout
 //   node scripts/session-file.mjs <branch> --from-branch
 //                                                  # read the files from the branch's
-//                                                  # own commits, wherever this runs
+//                                                  # own commits, wherever this runs:
+//                                                  # the local branch, or origin's copy
+//                                                  # when there is no local one
 //
 // Prints each matching path, one per line, and nothing when none matches.
 // More than one means the name was used before: the caller asks which.
@@ -36,43 +38,76 @@ const git = (args) =>
     stdio: ['ignore', 'pipe', 'ignore'],
   })
 
+// Whether git can resolve a ref, without throwing.
+const resolves = (ref) => {
+  try {
+    git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`])
+    return true
+  } catch {
+    return false
+  }
+}
+
+// The branch's own commits: the local branch, or origin's copy when there is
+// no local one (a branch opened on another machine, or already deleted here).
+export function branchCommits(branch, exists = resolves) {
+  if (exists(`refs/heads/${branch}`)) return `refs/heads/${branch}`
+  if (exists(`refs/remotes/origin/${branch}`))
+    return `refs/remotes/origin/${branch}`
+  return null
+}
+
 // This repository's session files live at its root, so both ways of reading
-// them start there, wherever in the repository this runs, and print paths
-// from the root.
-function sessionFiles(branch, fromBranch) {
-  if (fromBranch) {
+// them start there, wherever in the repository this runs, print paths from
+// the root, and read subfolders (an archive) the same way.
+function sessionFiles(commits) {
+  if (commits) {
     // `:(top)` anchors the folder at the root; --full-name prints paths from
-    // it, which `git show <branch>:<path>` needs.
+    // it, which `git show <commits>:<path>` needs.
     const files = git([
       'ls-tree',
       '-r',
       '--full-name',
       '--name-only',
-      branch,
+      commits,
       '--',
       `:(top)${SESSIONS}`,
     ])
       .split('\n')
       .filter((f) => f.endsWith('.md'))
-    return { files, read: (f) => git(['show', `${branch}:${f}`]) }
+    return { files, read: (f) => git(['show', `${commits}:${f}`]) }
   }
   const top = git(['rev-parse', '--show-toplevel']).trim()
   const dir = path.join(top, SESSIONS)
   const files = fs.existsSync(dir)
     ? fs
-        .readdirSync(dir)
+        .readdirSync(dir, { recursive: true })
+        .map((f) => String(f).split(path.sep).join('/'))
         .filter((f) => f.endsWith('.md'))
+        .sort()
         .map((f) => path.posix.join(SESSIONS, f))
     : []
   return { files, read: (f) => fs.readFileSync(path.join(top, f), 'utf8') }
 }
 
+const fail = (message) => {
+  console.error(`session-file: ${message}`)
+  process.exitCode = 1
+}
+
 if (import.meta.filename === process.argv[1]) {
   const args = process.argv.slice(2)
   const fromBranch = args.includes('--from-branch')
-  const branch =
-    args.find((a) => !a.startsWith('--')) ??
-    git(['branch', '--show-current']).trim()
-  const { files, read } = sessionFiles(branch, fromBranch)
-  for (const file of matchingFiles(files, read, branch)) console.log(file)
+  const named = args.find((a) => !a.startsWith('--'))
+  const branch = named ?? git(['branch', '--show-current']).trim()
+  if (!branch)
+    fail('not on a branch (a detached HEAD), so there is no session to find')
+  else if (fromBranch && !branchCommits(branch))
+    fail(`there is no branch ${branch} here or on origin`)
+  else {
+    const { files, read } = sessionFiles(
+      fromBranch ? branchCommits(branch) : null,
+    )
+    for (const file of matchingFiles(files, read, branch)) console.log(file)
+  }
 }

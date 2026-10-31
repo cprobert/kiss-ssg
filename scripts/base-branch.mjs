@@ -54,25 +54,58 @@ const git = (args, cwd) => {
   }
 }
 
-// A base branch is often only present as a remote-tracking ref in a fresh clone,
-// so callers get back something `git diff` can actually resolve. When both the
-// local branch and its origin exist, the ref is the one this branch started
-// from: the one with the fewest commits between it and HEAD. `git fetch`
-// never moves a local branch, so a local base is often behind its origin, and
-// a branch cut from origin/<name> diffed against a stale local <name> would
-// carry everyone else's newer commits in its diff; a branch cut from a local
-// base with unpushed commits keeps that base. A tie keeps the local branch.
-const existingRef = (name, cwd) => {
-  const present = [name, `origin/${name}`].filter((ref) =>
-    git(['rev-parse', '--verify', '--quiet', ref], cwd),
-  )
-  if (present.length < 2) return present[0] ?? null
-  const behind = (ref) =>
-    Number(git(['rev-list', '--count', `${ref}..HEAD`], cwd) ?? Infinity)
-  return behind(present[1]) < behind(present[0]) ? present[1] : present[0]
+// One resolution asks git the same questions more than once (each candidate's
+// refs and distance, then the winner's again), and on Windows a git process
+// costs tens of milliseconds. Answers are kept for the length of one call.
+const remembered = (run) => {
+  const answers = new Map()
+  return (args, cwd) => {
+    const key = `${cwd}\0${args.join('\0')}`
+    if (!answers.has(key)) answers.set(key, run(args, cwd))
+    return answers.get(key)
+  }
 }
 
-const toRef = (name, cwd) => existingRef(name, cwd) ?? `origin/${name}`
+// The base branch as a ref git can diff against. A base is often only on
+// origin in a fresh clone, and when the local branch and its origin both
+// exist, the ref is the one this branch started from: the one with the fewest
+// commits between it and HEAD. `git fetch` never moves a local branch, so a
+// local base is often behind its origin, and a branch cut from origin/<name>
+// diffed against a stale local <name> would carry everyone else's newer
+// commits in its diff; a branch cut from a local base with unpushed commits
+// keeps that base. A tie keeps the local branch.
+//
+// Both are looked up by full ref name. A short name resolves a tag before a
+// branch, and this repository has tags `v1` and `v2` named like its
+// integration branches, so the ref is printed in full when a tag shares its
+// short name, and every later git command then reads the branch.
+function branchRef(name, cwd, run = git) {
+  const found = [
+    { full: `refs/heads/${name}`, short: name },
+    { full: `refs/remotes/origin/${name}`, short: `origin/${name}` },
+  ].filter((ref) => run(['rev-parse', '--verify', '--quiet', ref.full], cwd))
+  if (found.length === 0) return null
+  const behind = (ref) =>
+    Number(run(['rev-list', '--count', `${ref.full}..HEAD`], cwd) ?? Infinity)
+  const chosen =
+    found.length === 2 && behind(found[1]) < behind(found[0])
+      ? found[1]
+      : found[0]
+  const shadowed = run(
+    ['rev-parse', '--verify', '--quiet', `refs/tags/${chosen.short}`],
+    cwd,
+  )
+  return { ...chosen, print: shadowed ? chosen.full : chosen.short }
+}
+
+// An override names a branch, or any other ref git can resolve (`HEAD`, a
+// commit): a branch goes through the same lookup as the algorithm's choice,
+// and anything else is taken as written.
+function overrideRef(name, cwd, run = git) {
+  const branch = branchRef(name, cwd, run)
+  if (branch) return branch.print
+  return run(['rev-parse', '--verify', '--quiet', name], cwd) ? name : null
+}
 
 // An override that silently loses is worse than no override: a stale one (a
 // deleted `v2`) feeds an unresolvable ref to every gate. So say where it came
@@ -95,20 +128,21 @@ const rank = (name) => (name === 'main' ? 0 : name === 'master' ? 1 : 2)
 // `warn` is where provenance goes: stdout stays the bare ref, because callers
 // (gates.mjs, the branch skills) substitute it straight into a git command.
 export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
+  const run = remembered(git)
   const override = resolveOverride(
     process.env.KISS_BASE_BRANCH,
-    git(['config', 'kiss.baseBranch'], cwd),
-    (name) => existingRef(name, cwd),
+    run(['config', 'kiss.baseBranch'], cwd),
+    (name) => overrideRef(name, cwd, run),
   )
   if (override) {
     warn(override.notice)
     if (override.ref) return override.ref
   }
 
-  const current = git(['branch', '--show-current'], cwd) ?? ''
+  const current = run(['branch', '--show-current'], cwd) ?? ''
   const names = new Set()
   for (const line of (
-    git(['branch', '-a', '--format=%(refname:short)'], cwd) ?? ''
+    run(['branch', '-a', '--format=%(refname:short)'], cwd) ?? ''
   ).split('\n')) {
     const name = line.trim().replace(/^origin\//, '')
     if (name && isIntegrationBranch(name)) names.add(name)
@@ -119,22 +153,32 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
     (a, b) => rank(a) - rank(b) || a.localeCompare(b),
   )
   const distanceTo = (name) => {
-    const count = git(['rev-list', '--count', `${toRef(name, cwd)}..HEAD`], cwd)
+    const ref = branchRef(name, cwd, run)
+    if (!ref) return null
+    const count = run(['rev-list', '--count', `${ref.full}..HEAD`], cwd)
     return count === null ? null : Number(count)
   }
   const base = pickBaseBranch(current, candidates, distanceTo)
-  return base === null ? 'main' : toRef(base, cwd)
+  if (base === null) return 'main'
+  return branchRef(base, cwd, run)?.print ?? `origin/${base}`
 }
 
 // The ref is `origin/<name>` when the base has no local branch. A diff wants
 // the ref; `git checkout`, `git pull` and `origin/<name>` want the branch's
 // own name, which `--name` prints. The name comes from what the ref is, not
-// how it is spelled: a local branch is its own name, a remote-tracking ref
-// (`origin/v2`, `upstream/v3`) is the name after its remote, and anything
-// else (a tag, a commit) is no branch, so there is no name to print.
+// how it is spelled: a local branch is its own name, and a branch on origin is
+// the name after `origin/`. Anything else has no name the branch skills can
+// use: a tag or a commit is no branch, and every skill pairs the name with
+// `origin/`, so a branch on another remote would be compared with origin's.
 export function branchName(ref, refExists) {
-  if (refExists(`refs/heads/${ref}`)) return ref
-  if (refExists(`refs/remotes/${ref}`)) return ref.slice(ref.indexOf('/') + 1)
+  const short = ref.replace(/^refs\/(heads|remotes)\//, '')
+  if (
+    ref.startsWith('refs/heads/') ||
+    (!ref.startsWith('refs/') && refExists(`refs/heads/${short}`))
+  )
+    return short
+  if (short.startsWith('origin/') && refExists(`refs/remotes/${short}`))
+    return short.slice('origin/'.length)
   return null
 }
 
@@ -147,7 +191,9 @@ if (import.meta.filename === process.argv[1]) {
     )
     if (name) console.log(name)
     else {
-      console.error(`base-branch: ${ref} is not a branch, so it has no name`)
+      console.error(
+        `base-branch: ${ref} is not a branch here or on origin, so it has no name the branch skills can use`,
+      )
       process.exitCode = 1
     }
   }

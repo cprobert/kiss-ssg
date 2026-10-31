@@ -108,13 +108,23 @@ describe('branchName', () => {
   it.each([
     ['main', 'main'],
     ['origin/v2', 'v2'],
-    ['upstream/v3', 'v3'],
     ['origin/feat/x', 'feat/x'],
+    ['refs/heads/main', 'main'],
+    ['refs/remotes/origin/v2', 'v2'],
   ])('%s is the branch %s', (ref, name) => {
     expect(branchName(ref, exists)).toBe(name)
   })
 
-  it.each(['v1.0', '4a8054f', 'HEAD'])('%s is no branch', (ref) => {
+  // Every branch skill pairs the name with `origin/`, so a branch on another
+  // remote would be compared with origin's branch of the same name
+  // (2026-10-31, round 5): no name is safer than that one.
+  it.each([
+    'v1.0',
+    '4a8054f',
+    'HEAD',
+    'upstream/v3',
+    'refs/remotes/upstream/v3',
+  ])('%s has no name the branch skills can use', (ref) => {
     expect(branchName(ref, exists)).toBeNull()
   })
 })
@@ -187,8 +197,10 @@ describe('the command line', () => {
     expect(run('v2', '--name').stdout.trim()).toBe('v2')
   })
 
-  it("names another remote's branch by its own name", () => {
-    expect(run('upstream/v3', '--name').stdout.trim()).toBe('v3')
+  it("refuses --name for another remote's branch, which the skills would read as origin's", () => {
+    const result = run('upstream/v3', '--name')
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('not a branch here or on origin')
   })
 
   it('refuses --name for a base that is no branch, and says why', () => {
@@ -246,5 +258,15 @@ describe('the command line', () => {
     git(clone, 'checkout', '-q', '-b', 'feat/z', 'v3')
     commit(clone, 'work')
     expect(run('v3').stdout.trim()).toBe('v3')
+  })
+
+  // A short name resolves a tag before a branch, and this repository has tags
+  // `v1` and `v2` named like its integration branches (2026-10-31, round 5).
+  it('reads the branch, not a tag that shares its name', () => {
+    git(clone, 'tag', 'v3', 'origin/v2')
+    const printed = run('v3').stdout.trim()
+    expect(printed).toBe('refs/heads/v3')
+    expect(run('v3', '--name').stdout.trim()).toBe('v3')
+    git(clone, 'tag', '-d', 'v3')
   })
 })
