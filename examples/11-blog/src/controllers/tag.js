@@ -4,7 +4,7 @@ import { utils } from 'kiss-ssg'
 // A tag is not a record anyone writes down: it exists only because some posts
 // mention it. This is the slug the fan-out writes the page at — and the only
 // derivation left in this file, because nothing here builds a URL any more: a
-// template asks for a tag page by identity, `{{link 'blog/tags' slug=name}}`,
+// template asks for a tag page by identity, `{{link 'journal/tags' slug=name}}`,
 // and the `slug=` sugar runs the same `toSlug` over the tag's own name. One
 // function on both sides, so the link and the page cannot drift apart.
 export const tagSlug = (tag) => utils.toSlug(String(tag))

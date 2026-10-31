@@ -2,6 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
+import { Remarkable } from 'remarkable'
+import { linkTokens, targetPath } from '../../scripts/markdown-links.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const PACKAGE_PREFIX = 'node_modules/kiss-ssg/'
@@ -119,17 +121,28 @@ function isPacked(relative) {
   return !FORBIDDEN_PACKED.some((pattern) => pattern.test(`${relative}/`))
 }
 
-// The relative Markdown links in a skill's files, `[text](target)`. A plugin
-// installs as one folder, so a target must exist and stay inside that plugin's
-// folder. A skill that points at another plugin file (a domain skill at the
-// shared review protocol) writes a Markdown link, never an inline-code path:
-// an inline `./helpers` or `./AIKB` in these skills is a folder in the user's
-// site, not a file in the plugin. A URL and an in-page `#anchor` are not
-// checked here, and a `node_modules/kiss-ssg/…` path is checked above.
+// The links and images in a Markdown file, as a Markdown parser reads them.
+// Two hand-written readers each guessed where code ends and guessed wrong
+// (2026-10-30, 2026-10-31): Markdown makes no link inside code, and a code
+// span never crosses into a heading, a list item or a table row. So this asks
+// Remarkable, which the docs site already renders with, and gets those rules
+// with it.
+// `scripts/markdown-links.mjs` holds the walk, shared with the docs site's
+// guide pages, and decodes each target to the file name it points at.
+const markdown = new Remarkable({ html: true })
+const markdownLinks = (text) =>
+  linkTokens(markdown.parse(text, {})).map(targetPath)
+
+// The relative links in a skill's files. A plugin installs as one folder, so
+// a target must exist and stay inside that plugin's folder. A skill that
+// points at another plugin file (a domain skill at the shared review
+// protocol) writes a Markdown link, never an inline-code path: an inline
+// `./helpers` or `./AIKB` in these skills is a folder in the user's site, not
+// a file in the plugin. A URL and an in-page `#anchor` are not checked here,
+// and a `node_modules/kiss-ssg/…` path is checked above.
 function brokenLinks(text, docDir, pluginDir, exists = fs.existsSync) {
   const inside = path.resolve(pluginDir) + path.sep
-  const targets = [...text.matchAll(/\]\(([^)\s]+)\)/g)]
-    .map((m) => m[1])
+  const targets = markdownLinks(text)
     .filter((t) => !/^[a-z][a-z0-9+.-]*:/i.test(t) && !t.startsWith('#'))
     .map((t) => t.split('#')[0])
   return targets.filter((t) => {
@@ -158,6 +171,104 @@ describe('what a skill may point at', () => {
     expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([
       'gone.md',
       '../../../outside/there.md',
+    ])
+  })
+
+  // A Markdown parser percent-encodes a link's target (`<two words.md>` is
+  // href `two%20words.md`); the file on disk has the space (2026-10-31).
+  it('finds a linked file whose name has a space in it', () => {
+    const exists = (p) => p.endsWith('two words.md')
+    expect(
+      brokenLinks('[a](<two words.md>)', '/p/skills/one', '/p', exists),
+    ).toEqual([])
+  })
+
+  // Markdown never makes a link inside code. Before this, a script in a
+  // fenced block whose regex held `](` failed the check as a broken link
+  // (kiss-information-architecture's references/measure-structure.md,
+  // 2026-10-30).
+  it('reads no link inside code, fenced or inline', () => {
+    const exists = () => false
+    const text = [
+      '```js',
+      `const m = html.matchAll(/href=["']([^"']*)["']/g)`,
+      '[a](in-a-backtick-fence.md)',
+      '```',
+      '~~~',
+      '[b](in-a-tilde-fence.md)',
+      '~~~',
+      '````md',
+      '```',
+      '[c](a-shorter-fence-does-not-close-it.md)',
+      '````',
+      'Inline: `[d](in-a-span.md)` and ``a ` then [e](in-a-double-span.md)``.',
+      '',
+      // A code span between `]` and `(` breaks the link, so there is none.
+      '[text]`x`(not-a-link.md)',
+    ].join('\n')
+    expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([])
+  })
+
+  it('still reads a link outside code, after a fence or a stray backtick', () => {
+    const exists = () => false
+    const text = [
+      '```',
+      'code',
+      '```',
+      '[a](after-a-fence.md) and `code` then [b](after-a-span.md)',
+      '',
+      'A stray ` backtick.',
+      '',
+      'Next paragraph: [c](after-a-stray-backtick.md) and one more `.',
+      '',
+      // A fence ends the paragraph before it, so these two backticks are
+      // not one span across it.
+      'Use ` here',
+      '```',
+      'x',
+      '```',
+      'then [d](after-a-fence-between-backticks.md) and `',
+      '',
+      // A backtick fence's info string cannot hold a backtick, so this is
+      // inline code on an ordinary line, not a fence that never closes.
+      '```inline``` is code',
+      '',
+      'See [e](after-a-backtick-info-string.md).',
+      '',
+      // An escaped backtick is a literal one and opens no span.
+      'A \\` escaped then [f](after-an-escaped-backtick.md) and `x`',
+      '',
+      // A span never crosses into the next block: a heading, a list item, a
+      // table row, an HTML comment (2026-10-31, /code-review).
+      '# Use ` for code',
+      '[g](after-a-heading.md) then `',
+      '',
+      '- a ` b',
+      '- [h](in-the-next-list-item.md) `',
+      '',
+      '| a | ` |',
+      '| - | - |',
+      '| [i](in-the-next-table-row.md) | ` |',
+      '',
+      '<!-- ` -->',
+      '',
+      '[j](after-an-html-comment.md) `',
+      '',
+      // An escaped backslash leaves the backtick after it free to open a span.
+      'Path \\\\`code` then [k](after-an-escaped-backslash.md) and `x`',
+    ].join('\n')
+    expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([
+      'after-a-fence.md',
+      'after-a-span.md',
+      'after-a-stray-backtick.md',
+      'after-a-fence-between-backticks.md',
+      'after-a-backtick-info-string.md',
+      'after-an-escaped-backtick.md',
+      'after-a-heading.md',
+      'in-the-next-list-item.md',
+      'in-the-next-table-row.md',
+      'after-an-html-comment.md',
+      'after-an-escaped-backslash.md',
     ])
   })
 

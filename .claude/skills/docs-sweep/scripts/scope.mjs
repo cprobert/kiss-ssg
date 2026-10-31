@@ -7,11 +7,16 @@
 // stays in SKILL.md. "Which docs does this diff endanger" is mechanical and easy
 // to do incompletely by hand; "is this prose still true" is not scriptable.
 //
-// This script is the single source of truth for the trigger map. Always exits 0.
+// This script is the single source of truth for the trigger map. Exits 0 with
+// its checklist, or 2 when it cannot run: not at the repo root, or a base with
+// nothing to diff against.
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
-import { resolveBaseBranch } from '../../../../scripts/base-branch.mjs'
+import {
+  BaseBranchError,
+  resolveBaseBranch,
+} from '../../../../scripts/base-branch.mjs'
 
 const ROOT = process.cwd()
 if (!existsSync(join(ROOT, 'CLAUDE.md')) || !existsSync(join(ROOT, 'lib'))) {
@@ -33,18 +38,31 @@ const git = (args) => {
   }
 }
 
-const BASE = resolveBaseBranch(ROOT)
+// A base with nothing to diff against (a branch with no commit yet) is one
+// line, as in gates.mjs, never a stack trace (round 12).
+let BASE
+try {
+  BASE = resolveBaseBranch(ROOT)
+} catch (error) {
+  if (!(error instanceof BaseBranchError)) throw error
+  console.error(`docs-sweep: ${error.message}`)
+  process.exit(2)
+}
 const commits = git(['log', `${BASE}..HEAD`, '--oneline'])
-const changed = git(['diff', `${BASE}...HEAD`, '--name-status'])
-  .split('\n')
-  .filter(Boolean)
-  .map((line) => {
-    const [status, ...rest] = line.split('\t')
-    return {
-      status: status[0],
-      file: rest[rest.length - 1].replace(/\\/g, '/'),
-    }
-  })
+// -z: git quotes a non-ASCII path otherwise, and a quoted name matched no rule
+// (round 21). Fields are NUL-separated: a status, then one path, or two for a
+// rename or a copy (`R100`, `C75`), of which the second is the new name.
+const changed = []
+{
+  const fields = git(['diff', `${BASE}...HEAD`, '--name-status', '-z'])
+    .split('\0')
+    .filter(Boolean)
+  for (let i = 0; i < fields.length;) {
+    const status = fields[i++]
+    if (/^[RC]/.test(status)) i++
+    changed.push({ status: status[0], file: fields[i++].replace(/\\/g, '/') })
+  }
+}
 
 const libModule = (f) => (/^lib\/([\w-]+)\.js$/.exec(f) ?? [])[1]
 

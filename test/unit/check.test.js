@@ -83,10 +83,15 @@ describe('parseArgs', () => {
         script: 'site.js',
         args: ['2026-spring', '--verbose'],
         summary: false,
+        subjects: false,
         against: null,
         error: null,
       },
     )
+  })
+
+  it('takes --subjects before the script', () => {
+    expect(parseArgs(['check', '--subjects', 'site.js']).subjects).toBe(true)
   })
 
   it('takes --summary before the script', () => {
@@ -188,6 +193,7 @@ describe('parseArgs', () => {
       script: 'site.js',
       args: ['2026-spring'],
       summary: false,
+      subjects: false,
       against: null,
       error: null,
     })

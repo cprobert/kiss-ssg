@@ -3,7 +3,9 @@
 // rendered here rather than by `{{markdown}}`, because that helper trims every
 // line and so flattens the indentation inside fenced code blocks.
 import fs from 'node:fs'
+import path from 'node:path'
 import { Remarkable } from 'remarkable'
+import { linkTokens } from '../../scripts/markdown-links.mjs'
 
 const REPO = 'https://github.com/cprobert/kiss-ssg/blob/main/'
 const GUIDE = new URL('../../GUIDE.md', import.meta.url)
@@ -25,11 +27,23 @@ const anchorFor = (text) =>
 const escapeHtml = (text) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-// A method name reads as code; any other heading as prose.
-const headingHtml = (text) =>
+// A method name reads as code; any other heading as escaped text with its
+// inline code rendered. Escaped whole, `#### SCORM: \`{{scormBridge}}\``
+// showed its backticks in the page's contents (round 15); rendered as full
+// inline Markdown, a heading's raw HTML became a tag and its link skipped the
+// anchor rewrite and nested inside the contents' own link (round 16); a
+// hand-rolled backtick match misread ``a`b`` and an escaped \` (round 17). So
+// Remarkable reads it, with raw HTML off and every inline rule off but text,
+// escapes and code spans.
+const headingMarkdown = new Remarkable({ html: false })
+headingMarkdown.inline.ruler.enable(
+  ['text', 'newline', 'escape', 'backticks'],
+  true,
+)
+export const headingHtml = (text) =>
   /^\.[a-zA-Z]+\(\)$/.test(text)
     ? `<code>${escapeHtml(text)}</code>`
-    : escapeHtml(text)
+    : headingMarkdown.renderInline(text)
 
 // Every absolute link left in a guide page leaves the site, because
 // `rewriteLink` below turns GUIDE.md's links to itself into relative ones. The
@@ -41,23 +55,170 @@ const openExternalInNewTab = (html) =>
     '<a href="$1"$2 target="_blank" rel="noopener noreferrer">$3<span class="visually-hidden"> (opens in a new tab)</span></a>',
   )
 
-// Splits GUIDE.md into its `##`/`###` sections, ignoring anything inside a code
-// fence. `## Usage` is only a container for the `###` sections under it.
+const markdown = new Remarkable({ html: true, xhtmlOut: true, breaks: false })
+
+// Splits GUIDE.md into its `##`/`###` sections, each with its `####`–`######`
+// sub-headings. `## Usage` is only a container for the `###` sections under
+// it. The headings come from Remarkable's own parse, the same one that renders
+// the page, so a `#` line inside a code block is never taken for one: two
+// hand-written guesses at where code ends both got it wrong (2026-10-31).
+// Only a top-level heading counts (`level` 0): one inside a blockquote or a
+// list item belongs to that block. A heading runs from `lines[0]` up to
+// `lines[1]`, two lines for a setext heading's text and underline.
+// Parsed once per version of the file, not once per guide page.
+// The cache is keyed on the text itself, not the file's modification time:
+// an edit can keep the time (a checkout, a tool that preserves it, two saves
+// in one tick), and `node docs --dev` lives across rebuilds. Reading the file
+// is cheap next to parsing it.
+let parsed = null
 function readSections() {
-  const sections = []
-  let fenced = false
-  let current = null
-  for (const line of fs.readFileSync(GUIDE, 'utf8').split(/\r?\n/)) {
-    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
-    const heading = !fenced && /^(#{2,4}) (.+)$/.exec(line)
-    if (heading && heading[1].length <= 3) {
-      current = heading[2] === 'Usage' ? null : { title: heading[2], lines: [] }
-      if (current) sections.push(current)
+  const text = fs.readFileSync(GUIDE, 'utf8')
+  if (parsed?.text !== text) parsed = { text, sections: splitSections(text) }
+  return parsed.sections
+}
+
+// Remarkable's own set of line breaks (`NEWLINES_RE` in remarkable 2): its
+// `token.lines` count these, so the lines here are split on the same set, or
+// one U+2028 in GUIDE.md would put every later heading a line off.
+const LINE_BREAKS = /\r[\n\u0085]|[\u2424\u2028\u0085]/g
+
+export function splitSections(source) {
+  const text = source.replace(LINE_BREAKS, '\n')
+  const lines = text.split('\n')
+  const tokens = markdown.parse(text, {})
+  const headings = tokens.flatMap((token, i) =>
+    token.type === 'heading_open' && token.level === 0
+      ? [
+          {
+            level: token.hLevel,
+            // An empty heading has no inline token after it.
+            title: tokens[i + 1].type === 'inline' ? tokens[i + 1].content : '',
+            start: token.lines[0],
+            end: token.lines[1],
+          },
+        ]
+      : [],
+  )
+  // A heading with no text has no title for a page or an anchor, and a title
+  // two sections share would let the second replace the first in the page
+  // map. Both are mistakes in GUIDE.md, so `node docs` fails on them.
+  const seen = new Map()
+  let inSection = false
+  for (const heading of headings) {
+    if (!heading.title.trim())
+      throw new Error(
+        `GUIDE.md line ${heading.start + 1}: a heading with no text`,
+      )
+    // A `#` heading is the document's title, before any section, and no
+    // section itself. After the first section it would land in that page as
+    // a stray <h1>, with no id or contents entry (round 18).
+    if (heading.level === 1) {
+      if (inSection)
+        throw new Error(
+          `GUIDE.md line ${heading.start + 1}: a level-1 heading after the first section`,
+        )
       continue
     }
-    if (current) current.lines.push(line)
+    if (heading.level <= 3) inSection = true
+    if (heading.level > 3 || heading.title === 'Usage') continue
+    if (seen.has(heading.title))
+      throw new Error(
+        `GUIDE.md has two sections titled "${heading.title}" (lines ${seen.get(heading.title) + 1} and ${heading.start + 1})`,
+      )
+    seen.set(heading.title, heading.start)
   }
+  const sections = []
+  let current = null
+  let from = lines.length
+  const close = (to) => {
+    if (current) current.lines = lines.slice(from, to)
+  }
+  // Every heading the site shows claims its anchor; the page map is keyed
+  // by anchor, so a second claim sent every link to whichever came last
+  // (round 20).
+  const anchors = new Map()
+  const claim = (heading) => {
+    const anchor = anchorFor(heading.title)
+    if (anchors.has(anchor))
+      throw new Error(
+        `GUIDE.md lines ${anchors.get(anchor) + 1} and ${heading.start + 1} would share the anchor #${anchor}`,
+      )
+    anchors.set(anchor, heading.start)
+  }
+  for (const heading of headings) {
+    if (heading.level === 2 || heading.level === 3) {
+      close(heading.start)
+      current =
+        heading.title === 'Usage'
+          ? null
+          : { title: heading.title, lines: [], subs: new Map() }
+      if (current) {
+        claim(heading)
+        sections.push(current)
+      }
+      from = heading.end
+    } else if (current && heading.level >= 4) {
+      claim(heading)
+      current.subs.set(heading.start - from, {
+        ...heading,
+        span: heading.end - heading.start,
+      })
+    }
+  }
+  close(lines.length)
   return sections
+}
+
+// The lines a sub-heading becomes on its page: a raw <hN> with its anchor,
+// with a blank line before it. An ATX heading may follow a paragraph, a list
+// item or a quote with none, and the raw line then joined that block, so the
+// heading rendered inside the <p> or <li> (round 21).
+export const subHeadingLines = (anchor, level, title) => [
+  '',
+  `<h${level} id="${anchor}">${headingHtml(title)}</h${level}>`,
+  '',
+]
+
+// Renders a page's Markdown with every link and image target passed through
+// `rewrite`. It changes the tokens Remarkable parsed, not the text, so a link
+// shown inside code (`- [title](url): description`) or written as raw HTML is
+// left exactly as GUIDE.md has it.
+export function renderWithTargets(source, rewrite) {
+  const env = {}
+  const tokens = markdown.parse(source, env)
+  // The targets stay as the parser encoded them: they are URLs, not files.
+  for (const token of linkTokens(tokens))
+    if (token.type === 'image') token.src = rewrite(token.src, 'image')
+    else token.href = rewrite(token.href, 'link')
+  // Remarkable 2.0.1 never starts an HTML block with <h1>–<h6>: its opening
+  // tag pattern, /^<([a-zA-Z]{1,15})[\s\/>]/, allows no digit, though h1–h6
+  // are on its block list (AIKB/upstream.md). So a heading put in as raw HTML
+  // comes back as a paragraph; this unwraps exactly that shape (round 21).
+  return markdown.renderer
+    .render(tokens, markdown.options, env)
+    .replace(/<p>(<(h[1-6])\b[^>]*>[\s\S]*?<\/\2>)<\/p>/g, '$1')
+}
+
+// Where a target that is not one of GUIDE.md's own anchors points: a URL
+// with a scheme as it is, and a path in this repository on GitHub, a link
+// to the file's page and an image to the file itself, which `?raw=true`
+// serves. An empty target (`[TODO]()`) stays empty rather than becoming the
+// repository's front page (round 14). A protocol-relative `//host/…` is a URL
+// too, and `raw=true` joins a query and goes before a fragment, where GitHub
+// reads it (round 15).
+export function repoTarget(target, kind) {
+  // A scheme as RFC 3986 spells it (`git+https:`, `web+cal:`), round 19.
+  if (!target || /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(target)) return target
+  const [, written, query = '', fragment = ''] =
+    /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(target)
+  // GUIDE.md is at the root, so a path is read from there: `/x`, `./x` and
+  // `a/../x` all name x. One that climbs out of the repository is a mistake
+  // (round 21).
+  const file = path.posix.normalize(written.replace(/^\/+/, ''))
+  if (file === '..' || file.startsWith('../'))
+    throw new Error(`GUIDE.md links to ${target}, outside the repository`)
+  if (kind !== 'image') return `${REPO}${file}${query}${fragment}`
+  return `${REPO}${file}${query ? `${query}&` : '?'}raw=true${fragment}`
 }
 
 /** @type {import('kiss-ssg').KissController} */
@@ -82,10 +243,8 @@ export default function guide({ model }) {
   for (const page of pages)
     for (const title of page.sections) {
       pageOfAnchor.set(anchorFor(title), page.slug)
-      for (const line of byTitle.get(title).lines) {
-        const sub = /^#{4,6} (.+)$/.exec(line)
-        if (sub) pageOfAnchor.set(anchorFor(sub[1]), page.slug)
-      }
+      for (const sub of byTitle.get(title).subs.values())
+        pageOfAnchor.set(anchorFor(sub.title), page.slug)
     }
 
   const here = model.slug
@@ -95,7 +254,7 @@ export default function guide({ model }) {
     const into = slug === 'index' ? '' : `${slug}/`
     return `${up}${into}#${anchor}`
   }
-  const rewriteLink = (target) => {
+  const rewriteLink = (target, kind) => {
     if (target.startsWith('#')) {
       const anchor = target.slice(1)
       const slug = pageOfAnchor.get(anchor)
@@ -103,60 +262,44 @@ export default function guide({ model }) {
         throw new Error(`GUIDE.md links to #${anchor}, which no guide page has`)
       return hrefTo(slug, anchor)
     }
-    if (/^[a-z]+:/i.test(target)) return target
-    return `${REPO}${target}`
+    return repoTarget(target, kind)
   }
 
   // A one-section page lets its <h1> carry the section's anchor instead of
   // repeating the title as an <h2> straight underneath it.
   const single = model.sections.length === 1
   const toc = []
-  const markdown = model.sections
+  const source = model.sections
     .map((title) => {
       const anchor = anchorFor(title)
       const body = []
-      let fenced = false
-      for (const line of byTitle.get(title).lines) {
-        if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
+      const section = byTitle.get(title)
+      for (let i = 0; i < section.lines.length; i++) {
         // `####` sits under the section's own heading, so it becomes an <h3>
         // (or an <h2> when the page's <h1> is the section), and deeper levels
-        // follow it down.
-        const sub = !fenced && /^(#{4,6}) (.+)$/.exec(line)
-        if (sub) {
-          const level = sub[1].length - (single ? 2 : 1)
-          const anchor = anchorFor(sub[2])
-          body.push(
-            `<h${level} id="${anchor}">${headingHtml(sub[2])}</h${level}>`,
-            '',
-          )
-          if (single && level === 2)
-            toc.push({ anchor, html: headingHtml(sub[2]) })
+        // follow it down. A setext heading's underline goes with it.
+        const sub = section.subs.get(i)
+        if (!sub) {
+          body.push(section.lines[i])
           continue
         }
-        body.push(
-          fenced
-            ? line
-            : line.replace(
-                /\]\(([^)\s]+)\)/g,
-                (_, t) => `](${rewriteLink(t)})`,
-              ),
-        )
+        const level = sub.level - (single ? 2 : 1)
+        const anchor = anchorFor(sub.title)
+        body.push(...subHeadingLines(anchor, level, sub.title))
+        if (single && level === 2)
+          toc.push({ anchor, html: headingHtml(sub.title) })
+        i += sub.span - 1
       }
-      if (single) return body.join('\n')
+      const text = body.join('\n')
+      if (single) return text
       toc.push({ anchor, html: headingHtml(title) })
-      return [
-        `<h2 id="${anchor}">${headingHtml(title)}</h2>`,
-        '',
-        ...body,
-      ].join('\n')
+      return [`<h2 id="${anchor}">${headingHtml(title)}</h2>`, '', text].join(
+        '\n',
+      )
     })
     .join('\n\n')
 
-  const html = openExternalInNewTab(
-    new Remarkable({ html: true, xhtmlOut: true, breaks: false }).render(
-      markdown,
-    ),
-  )
+  const html = openExternalInNewTab(renderWithTargets(source, rewriteLink))
   const position = pages.findIndex((page) => page.slug === here)
   const neighbour = (page) => page && { slug: page.slug, title: page.title }
 

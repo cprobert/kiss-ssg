@@ -12,7 +12,7 @@ The **docs** rot mechanically: a `lib/` module moves and its `AIKB/` note does n
 
 The **session logs** rot by accumulation. `/branch-open` reads the Feedback back at the start of every branch, but a log is only read a handful at a time, so a lesson written eleven branches ago is write-only — and the same recommendation comes back branch after branch because nothing ever promoted it out of the log into a place that acts. This repo's own history is the proof: "look at one built page yourself" appears in four reflections across five days, and the 2026-09-09 log says so in as many words. Being told a fifth time is not going to work. Something has to change in `CLAUDE.md` or in the ritual.
 
-That promotion is this skill. It is not part of the three-beat loop — **Frame** (`/branch-open`) → **Steer** (`/branch-pulse`) → **Verify & close** (`/branch-close`) — it runs **between** pieces of work, on nobody's branch in particular, when one of those beats or a human says the logs have outrun the read-back.
+That promotion is this skill. It is not part of the four-beat loop — **Frame** (`/branch-open`) → **Steer** (`/branch-pulse`) → **Verify & close** (`/branch-close`) → **Tidy** (`/branch-merged`) — it runs **between** pieces of work, on nobody's branch in particular, when one of those beats or a human says the logs have outrun the read-back.
 
 > **This skill edits `CLAUDE.md` and the ritual skills under `.claude/skills/`.** It is not a note-tidying pass — a retirement lands as a rule Claude is instructed to follow, or as a step the ritual will stop for. Show the human `git diff` before the commit and let them read it. Those files govern every future session in this repo; a line added to them carelessly is worse than a lesson left in a log.
 
@@ -58,7 +58,7 @@ The rest of the scan's findings are `/corpse-collector`'s business, not this ski
 A session log carries `consolidated: <YYYY-MM-DD>` in its frontmatter once it has been read by this skill. Everything without that line is unread:
 
 ```bash
-grep -L "^consolidated:" planning/sessions/*.md
+grep -rL --include='*.md' "^consolidated:" planning/sessions
 ```
 
 A log still `status: open` will be in that list on **every** sweep until its branch closes and `/session-reflect` writes its Feedback — there is nothing to fold in yet, and Step 7 leaves it unstamped. That is expected, not an oversight, and it is not a reason to stamp it early.
@@ -204,4 +204,4 @@ End with the count from the commit message and one sentence on what a returning 
 
 ## Where this sits
 
-`/branch-open` (Frame) → `/branch-pulse` (Steer) → `/branch-close` (Verify & close) run one piece of work. This runs **between** pieces of work. It is recommended to you by `/branch-open`'s read-back or `/branch-close`'s closing report when a Feedback item has recurred in **three or more** logs, or **five or more** logs lack `consolidated:` — and you can run it by hand whenever the reflections start repeating themselves.
+`/branch-open` (Frame) → `/branch-pulse` (Steer) → `/branch-close` (Verify & close) → `/branch-merged` (Tidy) run one piece of work. This runs **between** pieces of work. It is recommended to you by `/branch-open`'s read-back or `/branch-close`'s closing report when a Feedback item has recurred in **three or more** logs, or **five or more** logs lack `consolidated:` — and you can run it by hand whenever the reflections start repeating themselves.

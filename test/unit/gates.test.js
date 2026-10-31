@@ -1,11 +1,18 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import {
   REQUIRED_PACKED,
   FORBIDDEN_PACKED,
+  changedFiles,
   forbiddenPackedFiles,
   formatGate,
   missingPackedFiles,
+  needsShell,
   parsePackedFiles,
+  prettierBin,
   spawnResult,
 } from '../../scripts/gates.mjs'
 
@@ -178,6 +185,131 @@ describe('spawnResult', () => {
   })
 })
 
+// Prettier reads the working tree, so the gate lists what the branch changed
+// as the working tree has it. Listed from the commits alone, a file renamed or
+// deleted and not yet committed failed the gate with "No files matching the
+// pattern", and a renamed file's new name was never checked (twice on
+// 2026-10-31).
+describe('changedFiles', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-gates-'))
+  const emptyConfig = path.join(root, 'empty.gitconfig')
+  fs.writeFileSync(emptyConfig, '')
+  const env = {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+    ),
+    GIT_CONFIG_GLOBAL: emptyConfig,
+    GIT_CONFIG_NOSYSTEM: '1',
+  }
+  const repo = path.join(root, 'repo')
+  fs.mkdirSync(repo)
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: repo, env, stdio: 'ignore' })
+  const commit = (message) =>
+    git(
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      message,
+    )
+  afterAll(() => fs.rmSync(root, { recursive: true, force: true }))
+
+  it('lists the working tree: a staged rename by its new name, a deletion not at all', () => {
+    git('init', '-q', '-b', 'main')
+    fs.writeFileSync(path.join(repo, 'base.js'), 'x\n')
+    git('add', '.')
+    commit('base')
+    git('checkout', '-q', '-b', 'feat')
+    fs.writeFileSync(path.join(repo, 'old.js'), 'x\n')
+    fs.writeFileSync(path.join(repo, 'gone.js'), 'x\n')
+    git('add', '.')
+    commit('work')
+    git('mv', 'old.js', 'new.js')
+    git('rm', '-q', 'gone.js')
+    // A file made on the branch and not yet added is about to be committed
+    // too (round 6); an ignored one is not, and stays out.
+    fs.writeFileSync(path.join(repo, '.gitignore'), 'scratch/\n')
+    fs.mkdirSync(path.join(repo, 'scratch'))
+    fs.writeFileSync(path.join(repo, 'scratch/tmp.js'), 'x\n')
+    fs.writeFileSync(path.join(repo, 'brand-new.js'), 'x\n')
+    expect(changedFiles('main', repo, env)).toEqual({
+      files: ['.gitignore', 'brand-new.js', 'new.js'],
+    })
+  })
+
+  // Round 8: a worktree nested inside the checkout (Claude Code puts them in
+  // .claude/worktrees/) is another repository, and git lists it as one
+  // directory, so prettier checked every file of the other worktree. And
+  // run from a subfolder, untracked paths came out relative to it while the
+  // diff's are from the root.
+  it('leaves out a nested repository, and lists every path from the root', () => {
+    const nested = path.join(repo, 'nested')
+    fs.mkdirSync(nested)
+    execFileSync('git', ['init', '-q'], { cwd: nested, env, stdio: 'ignore' })
+    fs.writeFileSync(path.join(nested, 'theirs.js'), 'x\n')
+    fs.mkdirSync(path.join(repo, 'sub'))
+    fs.writeFileSync(path.join(repo, 'sub/inner.js'), 'x\n')
+    expect(changedFiles('main', path.join(repo, 'sub'), env)).toEqual({
+      files: ['.gitignore', 'brand-new.js', 'new.js', 'sub/inner.js'],
+    })
+    fs.rmSync(nested, { recursive: true, force: true })
+    fs.rmSync(path.join(repo, 'sub'), { recursive: true, force: true })
+  })
+
+  // Round 11: git quotes a non-ASCII name (core.quotePath), and prettier was
+  // handed `"caf\303\251.json"`, a file that does not exist.
+  it('lists a non-ASCII name as the file it is, committed or untracked', () => {
+    fs.writeFileSync(path.join(repo, 'café.json'), '{}\n')
+    git('add', 'café.json')
+    commit('accented')
+    fs.writeFileSync(path.join(repo, 'naïve.json'), '{}\n')
+    const { files } = changedFiles('main', repo, env)
+    expect(files).toContain('café.json')
+    expect(files).toContain('naïve.json')
+    fs.rmSync(path.join(repo, 'naïve.json'))
+  })
+
+  // On the base branch itself the branch has no changes of its own, and the
+  // gate checks the whole repository: a dirty tree or a stray untracked file
+  // there must not shrink that to the stray file (round 7, a regression of
+  // round 5's working-tree list).
+  it('lists nothing on the base branch, dirty or not, so the gate checks everything', () => {
+    git('checkout', '-q', '-f', 'main')
+    fs.writeFileSync(path.join(repo, 'stray.js'), 'x\n')
+    fs.writeFileSync(path.join(repo, 'base.js'), 'edited\n')
+    expect(changedFiles('main', repo, env)).toEqual({ files: [] })
+  })
+
+  it('reports git refusing the base as an error, not as no changes', () => {
+    expect(changedFiles('no-such-base', repo, env).error).toBeTruthy()
+  })
+})
+
+// Round 10: on Windows `run` used a shell for every command, so a file name
+// with a space or an `&` in the format gate's list was split or run by
+// cmd.exe. Only npm's `.cmd` shims need a shell (Node cannot spawn one
+// without it); node itself, which the format gate now runs prettier with,
+// takes its arguments as they are.
+describe('needsShell', () => {
+  it('gives a shell to npm and npx on Windows only', () => {
+    expect(needsShell('npx', 'win32')).toBe(true)
+    expect(needsShell('npm', 'win32')).toBe(true)
+    expect(needsShell('npx', 'linux')).toBe(false)
+  })
+
+  it('never gives one to node, whose arguments are file names', () => {
+    expect(needsShell(process.execPath, 'win32')).toBe(false)
+  })
+
+  it('names a prettier bin that exists', () => {
+    expect(fs.existsSync(prettierBin())).toBe(true)
+  })
+})
+
 describe('formatGate', () => {
   const spy = () => {
     const calls = []
@@ -199,11 +331,12 @@ describe('formatGate', () => {
     )
     expect(calls).toEqual([
       {
-        cmd: 'npx',
+        cmd: process.execPath,
         args: [
-          'prettier',
+          prettierBin(),
           '--check',
           '--ignore-unknown',
+          '--',
           'lib/kiss.js',
           'README.md',
         ],
@@ -217,7 +350,10 @@ describe('formatGate', () => {
     const { calls, run } = spy()
     const result = formatGate('origin/v2', { files: [] }, run)
     expect(calls).toEqual([
-      { cmd: 'npx', args: ['prettier', '--check', '--ignore-unknown', '.'] },
+      {
+        cmd: process.execPath,
+        args: [prettierBin(), '--check', '--ignore-unknown', '--', '.'],
+      },
     ])
     expect(result.ok).toBe(true)
     expect(result.note).toBe('whole repo (no diff against origin/v2)')
@@ -238,12 +374,64 @@ describe('formatGate', () => {
     )
     const result = formatGate('origin/v2', { files }, run)
     expect(calls).toEqual([
-      { cmd: 'npx', args: ['prettier', '--check', '--ignore-unknown', '.'] },
+      {
+        cmd: process.execPath,
+        args: [prettierBin(), '--check', '--ignore-unknown', '--', '.'],
+      },
     ])
     expect(result.ok).toBe(true)
     expect(result.note).toBe(
       'whole repo (200 changed files overflow one command line)',
     )
+  })
+
+  // Round 17: prettier was resolved when gates.mjs loaded, so a missing one
+  // (a fresh worktree before `npm ci`) crashed the script before any gate
+  // reported. It fails the format gate, with the fix, and nothing else.
+  it('fails, with the fix, when prettier is not installed', () => {
+    const { calls, run } = spy()
+    const result = formatGate('origin/v2', { files: ['a.js'] }, run, null)
+    expect(result.ok).toBe(false)
+    expect(result.output).toContain('prettier is not installed')
+    expect(calls).toEqual([])
+  })
+
+  // Round 18: npm allows `bin` as a string or as `{ name: path }`; the object
+  // form read as "not installed".
+  it('reads a bin field given as an object', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-prettier-'))
+    const manifest = path.join(dir, 'package.json')
+    fs.writeFileSync(
+      manifest,
+      JSON.stringify({ bin: { prettier: './bin/p.cjs' } }),
+    )
+    const bin = prettierBin(() => manifest)
+    fs.rmSync(dir, { recursive: true, force: true })
+    expect(bin).toBe(path.join(dir, 'bin/p.cjs'))
+  })
+
+  // Round 20: an installed prettier whose manifest names no prettier bin was
+  // reported as "not installed", sending the operator to `npm ci`.
+  it('says so when prettier is installed but names no bin', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-prettier-'))
+    const manifest = path.join(dir, 'package.json')
+    fs.writeFileSync(manifest, JSON.stringify({ bin: { other: './x.cjs' } }))
+    let error
+    try {
+      prettierBin(() => manifest)
+    } catch (e) {
+      error = e
+    }
+    fs.rmSync(dir, { recursive: true, force: true })
+    expect(error?.message).toContain('names no prettier bin')
+  })
+
+  it('finds no prettier bin where there is no prettier', () => {
+    expect(
+      prettierBin(() => {
+        throw new Error('Cannot find module')
+      }),
+    ).toBe(null)
   })
 
   it('fails with the git error when the diff could not be taken', () => {

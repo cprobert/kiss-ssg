@@ -128,6 +128,70 @@ describe('isActive', () => {
     expect(out).toBe('About:active Contact: ')
   })
 
+  // `@current` is the exact page, whatever `folderMatch` says. It was a
+  // context key, `current`, from round 9, which hid a site's own `current`
+  // and needed a warning, a mark and a shape check in turn, each of which
+  // failed in the next review (rounds 10-14). As private data, like
+  // `@index`, it collides with nothing, so the tests are about the answer.
+  it('gives the exact page as @current, and leaves a site key called current alone', () => {
+    const nav = [
+      { href: '/docs', current: 'yes' },
+      { href: '/docs/intro', current: 'no' },
+    ]
+    const out = render(
+      '{{#each nav}}{{#isActive ../page href=href folderMatch=true}}{{current}}:{{active}}:{{@current}} {{/isActive}}{{/each}}',
+      { page: { pageURL: 'docs/intro.html' }, nav },
+    )
+    expect(out).toBe('yes:active:false no:active:true ')
+    expect(warnings).toEqual([])
+  })
+
+  it('answers @current for each block, nested or through a partial', () => {
+    hbs.registerPartial(
+      'item',
+      '{{#isActive page href=h}}{{@current}}{{/isActive}}',
+    )
+    const out = render(
+      '{{#isActive page href="/"}}{{@current}}|{{#isActive ../page href="/about"}}{{@current}}{{/isActive}}|{{> item page=page h="/about"}}|{{@current}}{{/isActive}}',
+      { page: { pageURL: 'about.html' } },
+    )
+    expect(out).toBe('false|true|true|false')
+    expect(warnings).toEqual([])
+  })
+
+  // Round 19: a nav item with no href was coalesced to '', the home page's
+  // key, so on the home page it got aria-current="page" beside the real Home
+  // link. A missing href names no page; an explicit href="" still names home.
+  it('is never @current without an href, though an explicit "" is home', () => {
+    const t =
+      '{{#each nav}}{{#isActive ../page href=href}}{{label}}:{{@current}} {{/isActive}}{{/each}}'
+    const nav = [{ label: 'none' }, { label: 'home', href: '' }]
+    expect(render(t, { page: { pageURL: 'index.html' }, nav })).toBe(
+      'none:false home:true ',
+    )
+  })
+
+  // Round 20: round 19 required a string href, and a SafeString from a
+  // helper (as `link`, `asset`, `absUrl` or a site helper may return) set
+  // {{active}} but never {{@current}}. Missing means null or undefined.
+  it('gives @current for an href a helper returned as a SafeString', () => {
+    hbs.registerHelper('safe', (s) => new hbs.SafeString(s))
+    expect(
+      render(
+        '{{#isActive page href=(safe "/about")}}[{{active}}|{{@current}}]{{/isActive}}',
+        { page: { pageURL: 'about.html' } },
+      ),
+    ).toBe('[active|true]')
+  })
+
+  it('keeps @current inside the block', () => {
+    expect(
+      render('{{#isActive page href="/about"}}{{/isActive}}[{{@current}}]', {
+        page: { pageURL: 'about.html' },
+      }),
+    ).toBe('[]')
+  })
+
   it('lets the hash win over a same-named key in the surrounding context', () => {
     expect(
       render(
@@ -174,10 +238,21 @@ describe('isActive', () => {
 
     it('an empty href matches the root page only', () => {
       const empty =
-        '{{#isActive page folderMatch=true}}[{{active}}]{{/isActive}}'
+        '{{#isActive page href="" folderMatch=true}}[{{active}}]{{/isActive}}'
       expect(render(empty, { page: { pageURL: 'anything.html' } })).toBe('[]')
       expect(render(empty, { page: { pageURL: 'index.html' } })).toBe(
         '[active]',
+      )
+    })
+
+    // Round 21: a missing href was read as '' and marked the home page, so a
+    // nav item with no href (a label, a separator) got the class there, while
+    // @current (round 19) did not. A missing href names no page, for both.
+    it('a missing href matches no page, not even the root', () => {
+      const missing =
+        '{{#isActive page folderMatch=true}}[{{active}}|{{@current}}]{{/isActive}}'
+      expect(render(missing, { page: { pageURL: 'index.html' } })).toBe(
+        '[|false]',
       )
     })
   })

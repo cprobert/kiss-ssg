@@ -111,6 +111,12 @@ docs/*.json
 # `node docs --dev` builds the docs site's live preview here, never into docs/.
 .preview/
 
+# Claude Code's worktrees: each is another checkout of this repository, with
+# another session's work in it. Ignored here so git does not list it and the
+# format gate's whole-repo check (prettier reads .gitignore) does not walk it
+# (code review, round 15).
+.claude/worktrees/
+
 # superpowers SDD scratch workspace (ledgers, briefs, review packages)
 .superpowers/
 .bench/

@@ -1,5 +1,5 @@
-{{!-- One view, rendered at two depths: /blog/index.html and
-      /blog/page/2/index.html. Nothing here depends on which: every link is
+{{!-- One view, rendered at two depths: /journal/index.html and
+      /journal/page/2/index.html. Nothing here depends on which: every link is
       asked for by identity, and `{{link}}` answers with a root-relative path. --}}
 {{#extend "layout"}}
 
@@ -26,8 +26,8 @@
 
   <div class="card">
     <h2>Browse by tag</h2>
-    <p>{{#each model.tags}}<a class="tag" href="{{link 'blog/tags' slug=slug}}">{{tag}} ({{count}})</a> {{else}}No tags yet: a tag appears when a post is filed under it.{{/each}}</p>
-    <p class="meta"><a href="{{link 'blog/tags'}}">Every tag</a> &middot; <a href="/feed.xml">RSS feed</a></p>
+    <p>{{#each model.tags}}<a class="tag" href="{{link 'journal/tags' slug=slug}}">{{tag}} ({{count}})</a> {{else}}No tags yet: a tag appears when a post is filed under it.{{/each}}</p>
+    <p class="meta"><a href="{{link 'journal/tags'}}">Tags</a> &middot; <a href="/feed.xml">RSS feed</a></p>
   </div>
   {{/content}}
 

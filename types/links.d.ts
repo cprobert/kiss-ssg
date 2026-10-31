@@ -120,6 +120,8 @@ export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLes
  * @typedef {Object} LinkPage
  * @property {string} buildTo
  * @property {string[]} links
+ * @property {string} [package] the learning package it belongs to, if any:
+ * an LMS opens it from the package's manifest, so it is never an orphan
  */
 /**
  * Resolves every internal reference in a build's own output.
@@ -135,10 +137,11 @@ export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLes
  * @param {string[]} [options.hostServed] `config.links.hostServed` — patterns
  * for paths the host serves that no build folder holds
  * @param {(file: string) => boolean} [options.exists] injected for tests
- * @returns {{ checked: number, hostServed: number, broken: { page: string, href: string }[] }}
+ * @returns {{ checked: number, hostServed: number, broken: { page: string, href: string }[], orphans: string[] }}
  * `checked` counts every reference classified internal; `hostServed` the ones
  * among them that resolved to nothing in the build but match a `hostServed`
- * pattern; `broken` is sorted by page, then href
+ * pattern; `broken` is sorted by page, then href; `orphans` are the HTML
+ * pages no other page links to, never the home page or `404.html`, sorted
  */
 export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, hostServed: patterns, exists, }: {
     pages: LinkPage[];
@@ -155,6 +158,7 @@ export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTa
         page: string;
         href: string;
     }[];
+    orphans: string[];
 };
 /**
  * A predicate over root-relative paths for `config.links.hostServed`. A
@@ -174,4 +178,9 @@ export function attribute(name: string): RegExp;
 export type LinkPage = {
     buildTo: string;
     links: string[];
+    /**
+     * the learning package it belongs to, if any:
+     * an LMS opens it from the package's manifest, so it is never an orphan
+     */
+    package?: string;
 };

@@ -334,7 +334,8 @@ pre code {
     color: var(--ink);
   }
 
-  a[aria-current='page'] {
+  a[aria-current='page'],
+  a.is-section {
     color: var(--ink);
     border-bottom-color: var(--brand-blue);
   }

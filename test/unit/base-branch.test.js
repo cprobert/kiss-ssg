@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
+import { execFileSync, spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
+  branchName,
   isIntegrationBranch,
   pickBaseBranch,
-  resolveBaseBranch,
   resolveOverride,
 } from '../../scripts/base-branch.mjs'
 
@@ -85,12 +90,299 @@ describe('resolveOverride', () => {
   })
 })
 
-describe('resolveBaseBranch', () => {
-  it('returns the bare ref and reports the override provenance out of band', () => {
-    vi.stubEnv('KISS_BASE_BRANCH', 'HEAD')
-    const warn = vi.fn()
-    expect(resolveBaseBranch(process.cwd(), warn)).toBe('HEAD')
-    expect(warn).toHaveBeenCalledWith('HEAD (override: KISS_BASE_BRANCH)')
-    vi.unstubAllEnvs()
+// The ref is `origin/<name>` when the base has no local branch (a fresh or
+// cloud clone, or an override that resolves that way). That is right for a
+// diff and wrong for `git checkout`, `git pull` or `origin/$BASE`, which want
+// the branch's own name (2026-10-31, /code-review). The name is read from
+// what the ref is, never from its spelling: an override may name another
+// remote's branch, or a tag or a commit, which is no branch at all.
+describe('branchName', () => {
+  const refs = new Set([
+    'refs/heads/main',
+    'refs/remotes/origin/v2',
+    'refs/remotes/upstream/v3',
+    'refs/remotes/origin/feat/x',
+  ])
+  const exists = (ref) => refs.has(ref)
+
+  it.each([
+    ['main', 'main'],
+    ['origin/v2', 'v2'],
+    ['origin/feat/x', 'feat/x'],
+    ['refs/heads/main', 'main'],
+    ['refs/remotes/origin/v2', 'v2'],
+  ])('%s is the branch %s', (ref, name) => {
+    expect(branchName(ref, exists)).toBe(name)
+  })
+
+  // Every branch skill pairs the name with `origin/`, so a branch on another
+  // remote would be compared with origin's branch of the same name
+  // (2026-10-31, round 5): no name is safer than that one.
+  it.each([
+    'v1.0',
+    '4a8054f',
+    'HEAD',
+    'upstream/v3',
+    'refs/remotes/upstream/v3',
+  ])('%s has no name the branch skills can use', (ref) => {
+    expect(branchName(ref, exists)).toBeNull()
+  })
+})
+
+describe('the command line', () => {
+  const script = fileURLToPath(
+    new URL('../../scripts/base-branch.mjs', import.meta.url),
+  )
+
+  // Each test's git runs with none of the developer's own git: no global or
+  // system config (a commit.gpgsign or a hook there would fail the commit),
+  // and no GIT_* variable inherited from a hook or an editor, which could
+  // point these commands at the real repository.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-base-'))
+  const emptyConfig = path.join(root, 'empty.gitconfig')
+  fs.writeFileSync(emptyConfig, '')
+  const env = {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+    ),
+    GIT_CONFIG_GLOBAL: emptyConfig,
+    GIT_CONFIG_NOSYSTEM: '1',
+  }
+  const git = (cwd, ...args) =>
+    execFileSync('git', args, { cwd, env, stdio: 'ignore' })
+
+  // A clone whose base, v2, exists only as origin/v2, with a second remote,
+  // upstream, that has v3.
+  const remote = path.join(root, 'remote.git')
+  const seed = path.join(root, 'seed')
+  const clone = path.join(root, 'clone')
+  git(root, 'init', '-q', '--bare', remote)
+  git(root, 'init', '-q', seed)
+  git(
+    seed,
+    '-c',
+    'user.name=t',
+    '-c',
+    'user.email=t@example.com',
+    'commit',
+    '-q',
+    '--allow-empty',
+    '-m',
+    'base',
+  )
+  git(seed, 'push', '-q', remote, 'HEAD:refs/heads/v2', 'HEAD:refs/heads/v3')
+  git(root, 'clone', '-q', '--no-checkout', remote, clone)
+  git(clone, 'remote', 'add', 'upstream', remote)
+  git(clone, 'fetch', '-q', 'upstream')
+  git(clone, 'checkout', '-q', '-b', 'feat/x', 'origin/v2')
+  git(clone, 'tag', 'v1.0')
+
+  const run = (base, ...args) =>
+    spawnSync('node', [script, ...args], {
+      cwd: clone,
+      encoding: 'utf8',
+      env: { ...env, KISS_BASE_BRANCH: base },
+    })
+
+  afterAll(() => fs.rmSync(root, { recursive: true, force: true }))
+
+  it('prints the bare ref on stdout and the override provenance on stderr', () => {
+    const result = run('HEAD')
+    expect(result.stdout.trim()).toBe('HEAD')
+    expect(result.stderr).toContain('HEAD (override: KISS_BASE_BRANCH)')
+  })
+
+  it('prints the ref by default, and the branch name with --name', () => {
+    expect(run('v2').stdout.trim()).toBe('origin/v2')
+    expect(run('v2', '--name').stdout.trim()).toBe('v2')
+  })
+
+  it("refuses --name for another remote's branch, which the skills would read as origin's", () => {
+    const result = run('upstream/v3', '--name')
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('not a branch here or on origin')
+  })
+
+  // Round 17: --name checked the ref with a revision parse, so the override
+  // `origin/v2~0` was named `v2~0`, and a skill ran `git switch v2~0`.
+  it('refuses --name for a revision, even one rooted at a branch', () => {
+    const result = run('origin/v2~0', '--name')
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('origin/v2~0 is not a branch')
+  })
+
+  it('refuses --name for a base that is no branch, and says why', () => {
+    const result = run('refs/tags/v1.0', '--name')
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('refs/tags/v1.0 is not a branch')
+  })
+
+  // `git fetch` never moves a local branch, so a local base is often behind
+  // its origin, most of all once branches are opened in worktrees. Diffed
+  // against the stale local base, a branch cut from origin/<base> would carry
+  // everyone else's newer commits in its diff (2026-10-31, round 4). The ref
+  // is the one the branch started from: of the local base and its origin,
+  // the one with the fewest commits between it and HEAD.
+  it('prints the ref the branch started from, not a stale local base', () => {
+    const commit = (cwd, message) =>
+      git(
+        cwd,
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.com',
+        'commit',
+        '-q',
+        '--allow-empty',
+        '-m',
+        message,
+      )
+    git(clone, 'branch', 'v3', 'origin/v3')
+    commit(seed, 'newer on v3')
+    git(seed, 'push', '-q', remote, 'HEAD:refs/heads/v3')
+    git(clone, 'fetch', '-q', 'origin')
+    git(clone, 'checkout', '-q', '-b', 'feat/y', 'origin/v3')
+    commit(clone, 'work')
+    expect(run('v3').stdout.trim()).toBe('origin/v3')
+  })
+
+  it('prints the local base when the branch started from its unpushed commits', () => {
+    const commit = (cwd, message) =>
+      git(
+        cwd,
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.com',
+        'commit',
+        '-q',
+        '--allow-empty',
+        '-m',
+        message,
+      )
+    git(clone, 'checkout', '-q', '-B', 'v3', 'origin/v3')
+    commit(clone, 'local only')
+    git(clone, 'checkout', '-q', '-b', 'feat/z', 'v3')
+    commit(clone, 'work')
+    expect(run('v3').stdout.trim()).toBe('v3')
+  })
+
+  // A short name resolves a tag before a branch, and this repository has tags
+  // `v1` and `v2` named like its integration branches (2026-10-31, round 5).
+  it('reads the branch, not a tag that shares its name', () => {
+    git(clone, 'tag', 'v3', 'origin/v2')
+    const printed = run('v3').stdout.trim()
+    expect(printed).toBe('refs/heads/v3')
+    expect(run('v3', '--name').stdout.trim()).toBe('v3')
+    git(clone, 'tag', '-d', 'v3')
+  })
+
+  // This repository has tags `v1` and `v2`. Once the `v2` branch is deleted,
+  // a left-over `KISS_BASE_BRANCH=v2` resolved to the tag and was honoured,
+  // so every gate diffed against an old release (round 8). A bare name that
+  // is only a tag reads as a deleted branch; the tag itself is spelled out.
+  // Round 16: the tag check parsed a revision, so `refs/tags/v1.0~0` "was a
+  // tag" and an override rooted at a tag (`v1.0~0`) was thrown away. Only a
+  // name that is exactly a tag counts as one.
+  it('honours a revision rooted at a tag; only a bare tag name reads as stale', () => {
+    const result = run('v1.0~0')
+    expect(result.stdout.trim()).toBe('v1.0~0')
+    expect(result.stderr).toContain('v1.0~0 (override: KISS_BASE_BRANCH)')
+  })
+
+  it('treats an override that names only a tag as a deleted branch, and falls back', () => {
+    git(clone, 'tag', 'v9', 'origin/v2')
+    const algorithm = run('').stdout.trim()
+    const stale = run('v9')
+    expect(stale.stdout.trim()).toBe(algorithm)
+    expect(stale.stderr).toContain('falling back to the algorithm')
+    expect(run('refs/tags/v9').stdout.trim()).toBe('refs/tags/v9')
+    git(clone, 'tag', '-d', 'v9')
+  })
+
+  // A repository with no commit yet has a current branch and no ref for it.
+  // The script threw, and `npm run gates` crashed with a stack trace (round 8).
+  it('says plainly that a branch with no commit has no ref, without a stack trace', () => {
+    const repo = path.join(root, 'unborn')
+    fs.mkdirSync(repo)
+    git(repo, 'init', '-q', '-b', 'main')
+    const result = spawnSync('node', [script], {
+      cwd: repo,
+      encoding: 'utf8',
+      env,
+    })
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr.trim()).toBe(
+      'base-branch: main has no commit here or on origin yet, so there is nothing to diff against',
+    )
+  })
+
+  // Round 13: with no integration branch at all (only `develop`), the script
+  // printed `main`, a ref that does not exist, and docs-sweep read the empty
+  // diff git gave for it as "nothing to sweep". It says so instead.
+  it('says plainly when there is no integration branch to diff against', () => {
+    const repo = path.join(root, 'develop-only')
+    fs.mkdirSync(repo)
+    git(repo, 'init', '-q', '-b', 'develop')
+    git(
+      repo,
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '--allow-empty',
+      '-m',
+      'base',
+    )
+    git(repo, 'checkout', '-q', '-b', 'feat')
+    const result = spawnSync('node', [script], {
+      cwd: repo,
+      encoding: 'utf8',
+      env,
+    })
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr.trim()).toBe(
+      'base-branch: no integration branch (main, master or vN) here or on origin; name the base with KISS_BASE_BRANCH or git config kiss.baseBranch',
+    )
+  })
+
+  // The same tag, without an override: the algorithm's candidates were read
+  // as short names, which git spells `heads/v2` when a tag shares the name,
+  // so a local-only integration branch was never a candidate (round 6).
+  it('finds a local integration branch that a tag shares its name with', () => {
+    const repo = path.join(root, 'tagged')
+    fs.mkdirSync(repo)
+    const commit = (message) =>
+      git(
+        repo,
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.com',
+        'commit',
+        '-q',
+        '--allow-empty',
+        '-m',
+        message,
+      )
+    git(repo, 'init', '-q', '-b', 'main')
+    commit('base')
+    git(repo, 'tag', 'v2')
+    git(repo, 'checkout', '-q', '-b', 'v2')
+    commit('on v2')
+    git(repo, 'checkout', '-q', '-b', 'feat')
+    commit('work')
+    const result = spawnSync('node', [script], {
+      cwd: repo,
+      encoding: 'utf8',
+      env,
+    })
+    expect(result.stdout.trim()).toBe('refs/heads/v2')
   })
 })

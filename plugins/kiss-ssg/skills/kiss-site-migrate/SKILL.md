@@ -31,9 +31,12 @@ setting named in the error. `cleanBuild: false` does not bypass the guard.
 Compare what the project depends on with what is installed:
 
 ```bash
-node -p "require('./package.json').devDependencies?.['kiss-ssg'] ?? require('./package.json').dependencies?.['kiss-ssg']"
-node -p "require('./node_modules/kiss-ssg/package.json').version"
+npm pkg get devDependencies.kiss-ssg
+npm pkg get dependencies.kiss-ssg
+npm ls kiss-ssg
 ```
+
+The first two print the range `package.json` asks for: one of them prints it, and the other `{}`, for a key that is not there. Ask for the two separately: asked together, npm 10 prints nothing at all when either is missing. The third prints the version installed, and the path it links to when it is a link.
 
 **If the site was on a `file:` link, do not trust a plain `npm install` to move it.** Editing `package.json` from `file:../kiss-ssg` to `^2.5.0` and running `npm install` keeps the link: the lockfile's entry (`"link": true`) already satisfies the range, so `node_modules/kiss-ssg` stays a junction to the working tree while `package.json` says otherwise — six of six sites hit this on the 2.5.0 upgrade. Run `npm install kiss-ssg@^2.5.0 --save-dev` instead, which re-resolves it, then confirm: `node_modules/kiss-ssg` must be a real folder (from the registry it has `CHANGELOG.md`, `llms.txt`, `AIKB/`, `examples/`), and `package-lock.json` must resolve it to `https://registry.npmjs.org/kiss-ssg/-/kiss-ssg-<version>.tgz`. `npx kiss-ssg check <script>` now says which kiss-ssg the site resolves on stderr, and names a link as one.
 
@@ -283,6 +286,31 @@ back the first launch's place, so the learner reopened there every time.
 - After the change, `kiss-ssg check` reports nothing new: completion happens in the browser, not
   in the build. Check it in the LMS: launch a page that bookmarks three times, moving somewhere
   else each time, and the third launch opens on the second launch's place.
+
+### 0i. The release that adds `{{@current}}` to `isActive`
+
+Nothing fails. Inside `{{#isActive}}`, `{{@current}}` is now `true` only when the page is the
+link's own page, whatever `folderMatch` says, beside `{{active}}`, which stays true on every
+page inside a section. It is private data, like `@index`, so it hides no key of the site's.
+`aria-current="page"` names the page itself, and only `{{@current}}` says when that is.
+
+- **Grep the layouts for `aria-current`, and fix the shape that marks a whole section.** A nav
+  link that sets the attribute inside `{{#if active}}`, in an `{{#isActive}}` with
+  `folderMatch`, puts `aria-current="page"` on every page in that section. Until this release,
+  ten of kiss's example layouts (1, 2, 3 and 5 to 11) had that shape and passed each nav item's
+  `folderMatch` through, so a site that copied any of them has it, and it shows as soon as one
+  nav item sets `folderMatch: true` (examples 3 and 11 did). Set the
+  attribute inside `{{#if @current}}` instead, and keep the class on `{{#if active}}`, as
+  `node_modules/kiss-ssg/examples/11-blog/src/layouts/layout.hbs` does. This changes the built
+  HTML: on a page inside the section, the section link keeps its class and loses the attribute.
+- **A nav that calls `isActive` twice for one link**, once with `folderMatch` for the class and
+  once without it for the attribute, can fold the two into one the same way. Optional: the
+  same links are marked as before, though a link's attributes may come out in another order.
+- **A nav item with no `href`** (a label or a separator in a data-driven nav) is no longer
+  marked on the home page: a missing `href` names no page, for `{{active}}` as for
+  `{{@current}}`. A call that meant the home page writes `href=""`.
+- Check it the way the change promises: build before and after, and diff the pages. On any
+  page, at most one nav link carries `aria-current="page"`, and it points at that page.
 
 ### 1. Check the floor, then read the recipes
 

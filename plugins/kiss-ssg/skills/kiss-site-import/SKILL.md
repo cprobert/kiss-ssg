@@ -130,14 +130,14 @@ Lifting them into files is an **improvement**, not part of the conversion, becau
 
 ### 7. Collect the files the page links
 
-**The files a page links are not in its HTML** — a linked stylesheet, scripts, images, the favicon, fonts. Collect them into `src/assets/` **at the same path**, so the page's own root-relative references (`/css/site.css`, `/images/hero.webp`) still resolve after the build without a single tag changing. From a live page:
+**The files a page links are not in its HTML** — a linked stylesheet, scripts, images, the favicon, fonts. Collect them into `src/assets/` **at the same path**, so the page's own root-relative references (`/css/site.css`, `/images/hero.webp`) still resolve after the build without a single tag changing. From a live page, one command per file, with the path the page links written in twice:
 
 ```sh
-for p in /css/site.css /js/nav.js /images/hero.webp /favicon.svg; do
-  mkdir -p "src/assets$(dirname "$p")"
-  curl -sSf "<origin>$p" -o "src/assets$p"
-done
+curl -sSf --create-dirs "<origin>/css/site.css" -o "src/assets/css/site.css"
+curl -sSf --create-dirs "<origin>/images/hero.webp" -o "src/assets/images/hero.webp"
 ```
+
+`--create-dirs` makes the folders the path names, and `-f` fails on a missing file rather than saving the server's error page under its name.
 
 Then open each **stylesheet** you downloaded: its `url(…)`, `@import` and `@font-face` name more files, relative to the stylesheet. An absolute URL on another origin (an `og:image` on the production domain) is not yours to copy unless it is the same site; say which you fetched and from where. Say which files you could not find rather than leaving a dead reference. A `<script src>` or `<link rel="stylesheet" href>` the page already had stays where it is, in the layout, ahead of `{{#block "scripts"}}`.
 
@@ -182,7 +182,7 @@ Things a converted site needs that nothing else will remind you of:
 - **`siteUrl`**, which `{{canonical}}`, `.sitemap()` and `.robots()` need. A live page usually states it: its `<link rel="canonical">` and `og:url`. An artifact rarely does.
 - **Chain `.sitemap()`, `.robots()`** and — if the page has dated content — `.feed()`.
 - **Check the layout has a `<main>` around the page's own content.** When the build calls `.llms()`, every HTML page gets a Markdown copy beside it (`index.md`) for agents, converted from `<main>`, or from `<body>` when there is none. An artifact often has no `<main>`, and then its header and footer go into the copy, and nothing reports it. Add `<main>` in the layout as a change you list in step 10, since it is markup the original did not have. Then read the built `index.md` (GUIDE.md § Markdown copies for agents).
-- **If the page is replacing something already published, every old URL goes in `aliases`**, and `redirects: { format: … }` must name the host or kiss writes the host-neutral list and no host file.
+- **If the page is replacing something already published, every old URL goes in `aliases`**, and `redirects: { format: … }` must name the host or kiss writes the host-neutral list and no host file. List the published pages first, with `kiss-information-architecture`'s inventory of an existing site (build mode § 2), so that every old URL gets a decision and none is dropped without a redirect.
 - **Links to pages you have not imported yet stay hand-written** (`href="/puppy-training"`), not `{{link}}`, which fails the build for an id no page claims. `llms.txt` says never to hand-write an internal URL; that rule is for pages the site has. Note each one in `source/SOURCE.md` and swap it for `{{link}}` when its page arrives.
 
 Two decisions genuinely cannot be read off the code: **which host serves the site** (which sets `links: { trailingSlash: … }`) and **the site's domain** (`siteUrl`). The `Server:` header kept in step 2 and a canonical link are strong hints, not answers. Ask. **When there is nobody to ask — and in an agent run there usually is not — do not guess silently.** Take the most likely host (`trailingSlash: true` is the default, Netlify's) and domain, write a `TODO` comment on each naming it as unverified, and list both in what you report back. A guess you flagged is a question; a guess you did not is a defect with a green build on top of it.

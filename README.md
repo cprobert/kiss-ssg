@@ -52,6 +52,7 @@ _Three sentences and a host name. The agent takes it from there._
 - **[kiss-site-import](plugins/kiss-ssg/skills/kiss-site-import/SKILL.md) →** A page you already have — a Claude or ChatGPT artifact, an exported page — made into a structured site that still looks the same.
 - **[kiss-page-add](plugins/kiss-ssg/skills/kiss-page-add/SKILL.md) →** One page on a site that already builds, linked from the nav.
 - **[kiss-writing-for-the-web](plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md) →** The words on every page, written to evidence-based web-writing practice: front-loaded, scannable, plain, with buttons and errors that say what happens. It never invents a fact about the business; a missing price is a visible placeholder.
+- **[kiss-information-architecture](plugins/kiss-ssg/skills/kiss-information-architecture/SKILL.md) →** The pages a site needs, grouped and named in the reader's words, with navigation, breadcrumbs and URLs that show where every page sits, and no page that nothing links to.
 - **[kiss-accessibility](plugins/kiss-ssg/skills/kiss-accessibility/SKILL.md) →** Built and reviewed to WCAG 2.2 AA: labels, a skip link, focus you can see and that no bar hides, targets big enough to hit, text that still fits at 200%.
 - **[kiss-front-end](plugins/kiss-ssg/skills/kiss-front-end/SKILL.md) →** Pages that do not jump or scroll sideways: sized images, the platform's own controls before any script, transitions that name what they move.
 - **[kiss-seo](plugins/kiss-ssg/skills/kiss-seo/SKILL.md) →** One purpose per page, a title and description for the person reading the search result, and the right way to keep a page out of search.
@@ -75,7 +76,7 @@ _Whoever opens the site in two years can follow what the agent wrote._
 _A verdict, not a log. Mistakes can't ship quietly._
 
 - **[`kiss-ssg check`](GUIDE.md#checking-a-build) →** A dry run of your build script: one JSON report per site, exit 1 on any failure, and the published output untouched.
-- **[Links by identity](GUIDE.md#helpers) →** `{{link "about"}}` turns a page's id into its served path, and a link to a page nobody made fails the build instead of emitting a URL nobody checked.
+- **[Links by identity](GUIDE.md#helpers) →** `{{link "about"}}` turns a page's id into its served path, and a link to a page nobody made fails the build instead of emitting a URL nobody checked. In a nav, `{{#isActive}}` marks the section a page is in (`{{active}}`) and the page itself (`{{@current}}`, for `aria-current="page"`) from one call.
 - **[Broken links and missing assets](GUIDE.md#checking-a-build) →** Every `href` and `src` the build wrote is resolved against the files it wrote, and an `{{asset}}` on a path no copy emitted fails the build.
 - **[Launch-readiness audit](GUIDE.md#checking-a-build) →** Pages with no title, description or `og:image`, images with no alt text, a viewport that blocks zoom, a skip link or `#anchor` that lands nowhere, a missing favicon or 404 page, a source map shipped by accident. Advisory, and never the exit code.
 - **[Sitemap, feed, robots and redirects](GUIDE.md#sitemap) →** Written from the same registry as the pages and from the address you gave, so none of them can disagree with the site — and a host decides whether a folder's URL keeps its trailing slash.
@@ -86,8 +87,9 @@ _A verdict, not a log. Mistakes can't ship quietly._
 _The next session starts from facts, not guesses._
 
 - **[`kiss-ssg aikb`](GUIDE.md#recording-the-knowledge-base) →** Records what the site is into `AIKB/` from the same staged build, and is the only thing that writes that folder. Commit it with the work.
+- **[`kiss-ssg session` and `kiss-ssg base`](GUIDE.md#branches-and-session-logs) →** A branch's session log and the branch it merges into, answered by the engine, so the memory skills run a command instead of carrying shell of their own.
 - **[kiss-site-brief](plugins/kiss-memory/skills/kiss-site-brief/SKILL.md) →** Catch up on a site: what it is, how it's built and what bites, read back to a developer returning after two years.
-- **[kiss-branch-open, -pulse and -close](plugins/kiss-memory/) →** Frame a piece of work, steer it against the site's own build output, and close it, moving that baseline only when the close records it. `kiss-memory-consolidate` tidies what the loop accumulates.
+- **[kiss-branch-open, -pulse, -close and -merged](plugins/kiss-memory/) →** Frame a piece of work, steer it against the site's own build output, close it, moving that baseline only when the close records it, and tidy up once it has merged. `kiss-memory-consolidate` tidies what the loop accumulates.
 - **[kiss-site-migrate](plugins/kiss-ssg/skills/kiss-site-migrate/SKILL.md) →** Move a site across kiss-ssg versions, with the upgrade note each version a site on `^2` receives without asking.
 - **[Docs that ship with the engine](llms.txt) →** `llms.txt`, `GUIDE.md`, the examples and the per-module notes all install into `node_modules/kiss-ssg/`, and the skills carry no copy of the API: each reads the docs for the engine you have, so the guidance cannot drift from it.
 
@@ -171,17 +173,17 @@ What was measured (2026-10-13): in three review runs, agents wrote their own Pla
 
 You don't have to name the skills — each one's description is written so the agent reaches for it on its own — but naming one makes the first run predictable.
 
-| You want to…                                              | Paste                                                                                                | Skill it reaches                         |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Start a site                                              | Use the kiss-site-new skill to build me a site for …                                                 | `kiss-site-new`                          |
-| Turn a site you made in Claude or ChatGPT into a real one | Here's the link to a site I built in Claude: <link>. Turn it into a real site, keeping how it looks. | `kiss-site-import`                       |
-| Add a whole section                                       | Add a blog section to this site: posts from Markdown files, a paginated index and an RSS feed.       | `kiss-site-new`                          |
-| Add or change one page                                    | Add a Contact page with our address and opening hours, linked from the nav.                          | `kiss-page-add`                          |
-| Find out why a build fails                                | The kiss build is failing — run the check and fix what it reports.                                   | `kiss-build-check`                       |
-| Get a site ready to launch                                | Is this site ready to launch? Review it and show me what's unfinished before fixing anything.        | `kiss-site-review`                       |
-| Catch up on a site                                        | Catch me up on this site: what it is, how it's built and what bites.                                 | `kiss-site-brief`                        |
-| Upgrade kiss-ssg                                          | Upgrade this site to the latest kiss-ssg and tell me what changed.                                   | `kiss-site-migrate`                      |
-| Frame, steer, finish a change                             | Open a branch for … / Pulse this branch / We're done, close the branch.                              | `kiss-branch-open` / `-pulse` / `-close` |
+| You want to…                                              | Paste                                                                                                | Skill it reaches                                     |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Start a site                                              | Use the kiss-site-new skill to build me a site for …                                                 | `kiss-site-new`                                      |
+| Turn a site you made in Claude or ChatGPT into a real one | Here's the link to a site I built in Claude: <link>. Turn it into a real site, keeping how it looks. | `kiss-site-import`                                   |
+| Add a whole section                                       | Add a blog section to this site: posts from Markdown files, a paginated index and an RSS feed.       | `kiss-site-new`                                      |
+| Add or change one page                                    | Add a Contact page with our address and opening hours, linked from the nav.                          | `kiss-page-add`                                      |
+| Find out why a build fails                                | The kiss build is failing — run the check and fix what it reports.                                   | `kiss-build-check`                                   |
+| Get a site ready to launch                                | Is this site ready to launch? Review it and show me what's unfinished before fixing anything.        | `kiss-site-review`                                   |
+| Catch up on a site                                        | Catch me up on this site: what it is, how it's built and what bites.                                 | `kiss-site-brief`                                    |
+| Upgrade kiss-ssg                                          | Upgrade this site to the latest kiss-ssg and tell me what changed.                                   | `kiss-site-migrate`                                  |
+| Frame, steer, finish a change                             | Open a branch for … / Pulse this branch / We're done, close the branch. / It's merged, tidy up.      | `kiss-branch-open` / `-pulse` / `-close` / `-merged` |
 
 ### Setting up by hand
 

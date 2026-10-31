@@ -6,7 +6,10 @@
 // /branch-close and in CI (.github/workflows/ci.yml), so green here is green
 // there.
 import { execFileSync, spawnSync } from 'node:child_process'
-import { resolveBaseBranch } from './base-branch.mjs'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+import { BaseBranchError, resolveBaseBranch } from './base-branch.mjs'
+import { isMain } from './is-main.mjs'
 
 // package.json's `files` whitelist is load-bearing: llms.txt and AIKB/ ship on
 // purpose so an agent in a consuming project can read them from node_modules,
@@ -83,30 +86,99 @@ export function spawnResult(r) {
   return { ok: r.status === 0, stdout: (r.stdout ?? '').trim(), output }
 }
 
+// Node cannot spawn npm's `.cmd` shims on Windows without a shell, so `npx`
+// and `npm` get one there, and their arguments become one cmd.exe command
+// line. Nothing else does: the format gate runs prettier through node itself,
+// so a file name with a space or an `&` reaches it as it is (round 10).
+export const needsShell = (cmd, platform = process.platform) =>
+  platform === 'win32' && (cmd === 'npx' || cmd === 'npm')
+
 const run = (cmd, args) =>
   spawnResult(
-    spawnSync(cmd, args, {
-      encoding: 'utf8',
-      shell: process.platform === 'win32',
-    }),
+    spawnSync(cmd, args, { encoding: 'utf8', shell: needsShell(cmd) }),
   )
 
-function changedFiles(base) {
+// Prettier's own command line, run with `node` rather than through `npx`,
+// or null when prettier is not installed. Found when the format gate runs,
+// not when this module loads: resolved at load, a missing prettier (a fresh
+// worktree before `npm ci`) crashed the script before any gate reported
+// (round 17).
+const require = createRequire(import.meta.url)
+export function prettierBin(resolve = require.resolve) {
+  let manifest
   try {
-    const out = execFileSync(
-      'git',
-      ['diff', '--name-only', '--diff-filter=ACMR', `${base}...HEAD`],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    manifest = resolve('prettier/package.json')
+  } catch {
+    return null
+  }
+  // npm allows `bin` as a path or as `{ name: path }` (round 18). Installed
+  // but naming no prettier bin is its own failure, not "not installed",
+  // which would send the operator to reinstall it (round 20).
+  const { bin } = require(manifest)
+  const file = typeof bin === 'string' ? bin : bin?.prettier
+  if (!file)
+    throw new Error(
+      `prettier is installed, but ${manifest} names no prettier bin`,
     )
-    return {
-      files: out
-        .split('\n')
-        .map((f) => f.trim())
-        // No extension filter: `.prettierignore` decides what is out of scope
-        // and `--ignore-unknown` (below) drops anything prettier cannot parse,
-        // so the two live in one place instead of drifting apart here.
-        .filter(Boolean),
-    }
+  return path.join(path.dirname(manifest), file)
+}
+
+// What the format gate checks: every file the branch changed, as it is in the
+// working tree now. Prettier reads the working tree, so the list comes from
+// the merge base against the working tree, not from the commits alone: a file
+// renamed with `git mv` and not yet committed is checked under its new name,
+// a deleted one is not listed at all, and a new one not yet added is. A list taken from the commits named
+// files the working tree no longer had, and failed the gate on them twice on
+// 2026-10-31.
+export function changedFiles(base, cwd = process.cwd(), env = process.env) {
+  const gitOut = (args) =>
+    execFileSync('git', args, {
+      cwd,
+      env,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+  try {
+    const mergeBase = gitOut(['merge-base', base, 'HEAD']).trim()
+    // No commits of the branch's own (on the base itself, as in CI and
+    // `prepublishOnly`): list nothing, and the gate checks the whole
+    // repository. A dirty tree or a stray untracked file there must not
+    // shrink that check to the stray file.
+    if (gitOut(['rev-list', '--count', `${mergeBase}..HEAD`]).trim() === '0')
+      return { files: [] }
+    // -z on both lists: git quotes a non-ASCII name otherwise, and prettier
+    // was handed `"caf\303\251.json"`, a file that does not exist (round 11).
+    const changed = gitOut([
+      'diff',
+      '--name-only',
+      '-z',
+      '--diff-filter=ACMR',
+      mergeBase,
+    ])
+    // A file made on the branch and not yet added is about to be committed
+    // too; `git diff` never lists one. Ignored files stay out. A stray
+    // scratch file is checked on purpose (round 7): it is one `git add .`
+    // away from a commit, and scratch belongs in `.gitignore` or outside the
+    // repository. A nested repository (a worktree under .claude/worktrees/)
+    // is listed as a directory, `dir/`, and is not this branch's: it stays
+    // out. `:(top)` lists the whole repository and `--full-name` prints its
+    // paths from the root, as `git diff` does, wherever this runs.
+    const created = gitOut([
+      'ls-files',
+      '-z',
+      '--others',
+      '--exclude-standard',
+      '--full-name',
+      '--',
+      ':(top)',
+    ])
+    const files = `${changed}\0${created}`
+      .split('\0')
+      // No extension filter: `.prettierignore` decides what is out of scope
+      // and `--ignore-unknown` (below) drops anything prettier cannot parse,
+      // so the two live in one place instead of drifting apart here.
+      .filter((f) => f && !f.endsWith('/'))
+    return { files: [...new Set(files)].sort() }
   } catch (e) {
     return { error: `${e.stderr ?? ''}`.trim() || e.message }
   }
@@ -119,9 +191,10 @@ function changedFiles(base) {
 // a longer one with "The syntax of the command is incorrect" — no mention of
 // length, and nothing prettier said. That is what this branch's own diff did to
 // the `windows-latest` leg: 202 changed files, 8117 characters of paths, one
-// gate red while `ubuntu-latest` was green. `run` uses a shell on win32 because
-// Node cannot spawn `npx.cmd` without one, so the arguments become one command
-// line there and the limit is real.
+// gate red while `ubuntu-latest` was green. The gate then ran prettier through
+// `npx`, which needs a shell on win32. It runs it through node now (round 10),
+// and Windows still caps a process's command line, at 32767 characters, so the
+// budget stays, well inside both.
 //
 // The answer is the one the empty-diff case already gives: check the whole tree.
 // It asks a superset of the gate's question and the repo is prettier-clean by
@@ -135,7 +208,19 @@ export function commandLineLength(files) {
   return files.reduce((n, f) => n + f.length + 1, 0)
 }
 
-export function formatGate(base, diff, run) {
+export function formatGate(base, diff, run, bin) {
+  if (bin === undefined)
+    try {
+      bin = prettierBin()
+    } catch (error) {
+      return { ok: false, output: error.message }
+    }
+  if (!bin)
+    return {
+      ok: false,
+      output:
+        'prettier is not installed here, so nothing could be checked: run `npm ci` first',
+    }
   // Same rule as the pack gate: a gate that cannot see its subject fails.
   if (diff.error !== undefined)
     return {
@@ -153,8 +238,16 @@ export function formatGate(base, diff, run) {
   // `--ignore-unknown` drops anything prettier has no parser for, so the
   // gate can just hand it every changed file.
   const target = wholeRepo || overflows ? ['.'] : diff.files
+  // `--` before the files: a name that starts with `-` was read as an option,
+  // and prettier then checked nothing and exited 0 (measured, round 21).
   return {
-    ...run('npx', ['prettier', '--check', '--ignore-unknown', ...target]),
+    ...run(process.execPath, [
+      bin,
+      '--check',
+      '--ignore-unknown',
+      '--',
+      ...target,
+    ]),
     note,
   }
 }
@@ -211,8 +304,20 @@ const GATES = [
   },
 ]
 
-if (import.meta.filename === process.argv[1]) {
-  const base = resolveBaseBranch()
+if (isMain(import.meta.filename)) {
+  // Every gate reads the repository from its root (vitest's config, eslint's,
+  // tsc's project, prettier's root-relative file list, npm pack), so run from
+  // there whichever folder this was started in. From lib/, four of the five
+  // went red on a clean tree (round 12).
+  process.chdir(path.dirname(import.meta.dirname))
+  let base
+  try {
+    base = resolveBaseBranch()
+  } catch (error) {
+    if (!(error instanceof BaseBranchError)) throw error
+    console.log(`gates — ${error.message}`)
+    process.exit(1)
+  }
   console.log(`gates — diffing against ${base}\n`)
   let failed = 0
   for (const gate of GATES) {

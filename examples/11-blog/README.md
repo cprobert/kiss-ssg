@@ -1,7 +1,8 @@
 # 11 · a blog
 
 An exemplar site: six posts, three to a page, four tag pages, an RSS feed, a `_redirects`
-file for the one post that was renamed, and a `404.html` for everything else. It builds clean
+file that keeps every address the journal had before it moved from `/blog/` to `/journal/` and
+the one post that was renamed, and a `404.html` for everything else. It builds clean
 and exits 0.
 
 A blog is the shape most sites turn out to be underneath, and it is the shape an agent
@@ -43,10 +44,10 @@ above `public/`, resolves every one of them outside the site.
 
 ### 1 · Posts are a folder fan-out with a controller file
 
-One JSON file per post in `11-blog/models/posts/`, one page each from `blog/post.hbs`, and
+One JSON file per post in `11-blog/models/posts/`, one page each from `journal/post.hbs`, and
 `controllers/post.js` between them. The controller does the three jobs a data-fed fan-out always
 has — validate the record, derive the slug, shape the model — and one more that is specific to a
-blog:
+journal:
 
 ```js
 return {
@@ -71,16 +72,16 @@ it through the module that validates it is what keeps the two readings from drif
 
 ### 2 · Pagination
 
-Three posts to a page: `/blog/` and `/blog/page/2/`, with prev and next links. The whole recipe
+Three posts to a page: `/journal/` and `/journal/page/2/`, with prev and next links. The whole recipe
 is a loop in `router.js`:
 
 ```js
 const pageCount = Math.max(1, Math.ceil(cards.length / PER_PAGE))
 for (let number = 1; number <= pageCount; number++) {
   kiss.page({
-    view: 'blog/listing.hbs',
-    id: listingId(number), // 'blog', 'blog/page/2' — see "Linking by identity"
-    path: number === 1 ? 'blog' : 'blog/page',
+    view: 'journal/listing.hbs',
+    id: listingId(number), // 'journal', 'journal/page/2' — see "Linking by identity"
+    path: number === 1 ? 'journal' : 'journal/page',
     slug: number === 1 ? 'index' : String(number),
     model: { posts: cards.slice(...), number, of: pageCount, prev, next, tags },
   })
@@ -92,11 +93,11 @@ many pages there are is a property of all the posts at once. A controller only e
 record, so it can tell you a post's slug but never how many listing pages exist. Anything a
 controller cannot know belongs in the script that knows it.
 
-**Why page 1 is `/blog/` and not `/blog/page/1/`.** The section index is the URL people link to
+**Why page 1 is `/journal/` and not `/journal/page/1/`.** The section index is the URL people link to
 and the one the nav points at. Numbering it would move it the day a seventh post is written.
 
-**One view at two depths needs nothing extra.** The listing renders to `blog/index.html` and to
-`blog/page/2/index.html`, and not one line of it depends on which: every link it emits is
+**One view at two depths needs nothing extra.** The listing renders to `journal/index.html` and to
+`journal/page/2/index.html`, and not one line of it depends on which: every link it emits is
 root-relative (`{{link}}`, or `/` plus `{{asset}}`), so there is no climb back to the build root
 for the script to pass in.
 
@@ -108,11 +109,11 @@ one record per tag, and `.pages()` builds a page from each:
 
 ```js
 .pages({
-  view: 'blog/tag.hbs',
+  view: 'journal/tag.hbs',
   model: tags,
-  path: 'blog/tags',
+  path: 'journal/tags',
   controller: 'tag.js',
-  id: 'blog/tags', // the *prefix* each item's default id is built from
+  id: 'journal/tags', // the *prefix* each item's default id is built from
 })
 ```
 
@@ -129,12 +130,12 @@ somewhere to live. An inline controller has no file to attach a note to.
 
 ```js
 .sitemap()
-.feed({ title: 'Aster & Oak — the journal', description: '…', section: 'blog' })
-.llms({ title: '…', summary: '…', sections: { root: 'The site', blog: 'The journal' } })
+.feed({ title: 'Aster & Oak — the journal', description: '…', section: 'journal' })
+.llms({ title: '…', summary: '…', sections: { root: 'The site', journal: 'The journal' } })
 ```
 
 Three files, one registry. Every URL in all three is joined the same way as the page's own
-`{{canonical}}`, so none of them can name a URL this site does not serve. `section: 'blog'`
+`{{canonical}}`, so none of them can name a URL this site does not serve. `section: 'journal'`
 keeps the home page out of the feed; the listing and tag pages have no `date`, so they fall out
 on their own and the feed is exactly the six posts, newest first. `<lastBuildDate>` is the
 newest post's date rather than the wall clock, so the file is byte-identical between two builds.
@@ -149,19 +150,44 @@ registers, so it has no identity to be asked for. That distinction is the whole 
 different address, and its record says so:
 
 ```json
-"aliases": ["/blog/cascara-notes.html"]
+"aliases": ["/blog/cascara-notes.html", "/blog/the-cascara-experiment/"]
 ```
 
-which is the whole of the recipe. The build writes `../public/11-blog/_redirects`:
+which is the whole of the recipe. The build writes `public/_redirects`, one line per old address:
 
 ```
-/blog/cascara-notes.html /blog/the-cascara-experiment/ 301
+/blog/cascara-notes.html /journal/the-cascara-experiment/ 301
+/blog/the-cascara-experiment/ /journal/the-cascara-experiment/ 301
 ```
 
 The target is the page's canonical path, taken from the registry — the same string the sitemap
 and the feed use. `aliases` belongs to the **record**, never to the `.pages()` registration: one
 old path redirecting to six different posts is not a redirect. Being an ordinary page option it
 also reaches the template, which is how the post page prints "formerly published at".
+
+**The move.** The second alias is from a bigger change: the whole journal moved from `/blog/` to
+`/journal/`, so that its address says what its nav label and its `<h1>` say. The views moved
+from `src/pages/blog/` to `src/pages/journal/`, because the folder tree under `src/pages/` is the
+URL tree, and every page the journal had at `/blog/` keeps that address with an alias, in the one
+place kiss reads it from: each post in its own record, and the listing pages, the tags index and
+the tag pages in `router.js`. The tag pages that existed then are named there rather than
+computed, because a tag added after the move never lived at `/blog/`. The proof the list is
+complete is the check run before the new knowledge base was recorded, against the record of the
+site at `/blog/`: it reported no page `removed`, because every page that left `/blog/` has an
+alias covering its old address (a covered page is reported as neither `removed` nor `moved`).
+
+The cascara post's explicit `id` kept its old value, `blog/post/cascara`, through the move, and
+that is what it is for. Measured against the same record with that post's move alias taken out:
+with the id unchanged, the check pairs the two sides and reports
+`moved: /blog/the-cascara-experiment/ -> /journal/the-cascara-experiment/ (blog/post/cascara)`,
+naming the alias to add; with the id renamed to `journal/post/cascara`, it reports the old address
+as `removed`, a deletion. An id that changes when the page moves cannot follow it.
+
+**What an alias cannot keep: the feed.** A feed item's `<guid isPermaLink="true">` is the page's
+URL, the same string as its `<loc>` in the sitemap, so the move changed all six posts' guids to
+`/journal/` addresses. A feed reader that subscribed before the move lists the six posts as new,
+once. kiss has no way to keep an old guid, so this cost comes with moving a section that is in a
+feed, and it is one more reason to settle a section's URL before its first post is published.
 
 ## Linking by identity
 
@@ -170,20 +196,24 @@ in the layout included:
 
 ```hbs
 <h2><a href='{{link id}}'>{{title}}</a></h2>
-<a class='tag' href='{{link "blog/tags" slug=this}}'>{{this}}</a>
+<a class='tag' href='{{link "journal/tags" slug=this}}'>{{this}}</a>
 <a href='{{link model.prev}}'>&larr; Newer posts</a>
 <a class='brand' href='{{link "index"}}'>…</a>
 {{#each config.nav}}
-  {{#isActive .. href=(link id) folderMatch=folderMatch active='is-active'}}
-    <a class='nav__link {{active}}' href='{{href}}'>{{label}}</a>
+  {{#isActive .. href=(link id) folderMatch=folderMatch}}
+    <a href='{{href}}' class='nav__link{{#if active}} is-active{{/if}}'{{#if @current}} aria-current='page'{{/if}}>{{label}}</a>
   {{/isActive}}
 {{/each}}
 ```
 
-The nav is data — `{ id: 'blog/tags', label: 'Tags', folderMatch: true }` in `router.js` — and
-`isActive` is handed the path `{{link}}` resolved, so the link and the active state are decided
-from one string. A file the build wrote rather than a page it registered is `/` plus `{{asset}}`:
-`href="/{{asset 'css/site.css'}}"`.
+The nav is data — `{ id: 'journal', label: 'The journal', folderMatch: true }` in `router.js` — and
+`isActive` is handed the path `{{link}}` resolved and hands it back as `{{href}}`, so the link and
+the active state are decided from one string, resolved once. One call answers two questions: with `folderMatch`, `{{active}}` marks The journal
+on every page inside `/journal/`, so a reader on a post can see which section they are in, and
+`{{@current}}` is true only on the link to the page itself, which alone carries `aria-current="page"`. The nav holds the site's top-level sections only,
+so Tags, a page inside the journal, is linked from the listing, the posts and the home page
+rather than from the nav. A file the build wrote rather than a page it registered is `/` plus
+`{{asset}}`: `href="/{{asset 'css/site.css'}}"`.
 
 **One link style, and what it costs.** This site used to write its brand, nav and stylesheet
 links as `{{root}}index.html` — a climb back to the build root supplied by each page — so a build
@@ -203,7 +233,7 @@ right only because this site happens to be `extensionLess`; turn that off and ev
 site pointed at a 404 that nothing in the build would have noticed.
 
 What the controllers hand over now is _identity_, not address: `summaryCard` carries an `id`
-instead of a `url`, and a tag stays the plain name the record wrote, because `{{link 'blog/tags'
+instead of a `url`, and a tag stays the plain name the record wrote, because `{{link 'journal/tags'
 slug=name}}` slugs it with the same `toSlug` the tag page was built with.
 
 **Where the valid targets are written down.** The `Id` column of `AIKB/site-map.md` — the
@@ -211,35 +241,35 @@ recorded knowledge base, regenerated by `npx kiss-ssg aikb` — is the complete 
 `{{link}}` will answer to on this site (seven of the fifteen rows, output paths shown relative
 to the build folder):
 
-| Output                                   | Id                            |
-| ---------------------------------------- | ----------------------------- |
-| `index.html`                             | `index`                       |
-| `blog/index.html`                        | `blog`                        |
-| `blog/page/2/index.html`                 | `blog/page/2`                 |
-| `blog/the-cascara-experiment/index.html` | `blog/post/cascara`           |
-| `blog/pour-over-at-home/index.html`      | `blog/post/pour-over-at-home` |
-| `blog/tags/index.html`                   | `blog/tags`                   |
-| `blog/tags/brewing/index.html`           | `blog/tags/brewing`           |
+| Output                                      | Id                               |
+| ------------------------------------------- | -------------------------------- |
+| `index.html`                                | `index`                          |
+| `journal/index.html`                        | `journal`                        |
+| `journal/page/2/index.html`                 | `journal/page/2`                 |
+| `journal/the-cascara-experiment/index.html` | `blog/post/cascara`              |
+| `journal/pour-over-at-home/index.html`      | `journal/post/pour-over-at-home` |
+| `journal/tags/index.html`                   | `journal/tags`                   |
+| `journal/tags/brewing/index.html`           | `journal/tags/brewing`           |
 
 Most pages need nothing to get one: a `.page()` page's default id is its view's route without
-the extension (`blog/tags.hbs` → `blog/tags`), and a `.pages()` item's is the registration's
+the extension (`journal/tags.hbs` → `journal/tags`), and a `.pages()` item's is the registration's
 route plus the item's slug. This site sets an id in exactly three places, each for a reason:
 
-- **The two listing pages** (`id: 'blog'`, `id: 'blog/page/2'`) — **required**, because they are
+- **The two listing pages** (`id: 'journal'`, `id: 'journal/page/2'`) — **required**, because they are
   one view rendered twice. Two pages that arrive at the same _default_ id both withdraw from it,
-  and the build says so: `Two pages share the default id "blog/listing" … set an explicit id on
+  and the build says so: `Two pages share the default id "journal/listing" … set an explicit id on
 each`. Neither could be linked until they named themselves. `listingId(n)` in `router.js` is
   that name, and the same function supplies `model.prev`/`model.next`, so a page and the link to
   it cannot drift.
-- **The tag fan-out** (`id: 'blog/tags'`) — **optional**. A registration's `id` is not an id: it
+- **The tag fan-out** (`id: 'journal/tags'`) — **optional**. A registration's `id` is not an id: it
   is the **prefix** its items' default ids are built from, in place of the view's route. Without
-  it the tag pages would be `blog/tag/<slug>` (from `blog/tag.hbs`) while their paths were
-  `blog/tags/<slug>`. With it the ids read like the paths.
+  it the tag pages would be `journal/tag/<slug>` (from `journal/tag.hbs`) while their paths were
+  `journal/tags/<slug>`. With it the ids read like the paths.
 - **One post's record** (`id: 'blog/post/cascara'`) — the `moved` demonstration, below.
 
-**Three forms of one link.** `{{link 'blog'}}` is root-relative — `/blog/` — which is what a page
-on this site wants. `{{link 'blog' absolute=true}}` is `https://asterandoak.example/blog/`, for
-an Open Graph tag, a feed, or a site served from a path prefix. `{{link 'blog' canonical=true}}`
+**Three forms of one link.** `{{link 'journal'}}` is root-relative — `/journal/` — which is what a page
+on this site wants. `{{link 'journal' absolute=true}}` is `https://asterandoak.example/journal/`, for
+an Open Graph tag, a feed, or a site served from a path prefix. `{{link 'journal' canonical=true}}`
 is the pretty form `sitemap.xml` and `{{canonical}}` emit. The home page renders all three, so
 you can see them rather than take this paragraph's word for it.
 
@@ -256,27 +286,28 @@ about this build's registry, so it can be checked exactly where it is written.
 
 ### The rename, and why `moved` needs an explicit id
 
-`models/posts/2026-02-18-the-cascara-experiment.json` carries two things a normal post does not:
+`models/posts/2026-02-18-the-cascara-experiment.json` carries an `id`, which no other post does,
+beside the `aliases` every post now carries since the move:
 
 ```json
 "id": "blog/post/cascara",
-"aliases": ["/blog/cascara-notes.html"]
+"aliases": ["/blog/cascara-notes.html", "/blog/the-cascara-experiment/"]
 ```
 
-`aliases` is the recipe for the rename that already happened — it writes
-`/blog/cascara-notes.html /blog/the-cascara-experiment/ 301` into `_redirects`, and it is what
-makes the old address keep working.
+`aliases` is the recipe for the renames that already happened — the slug's, and the journal's
+move — and writes `/blog/cascara-notes.html /journal/the-cascara-experiment/ 301` and its
+sibling into `_redirects`. It is what makes the old addresses keep working.
 
 `id` is the recipe for the **next** one. `npx kiss-ssg check` compares this build against
 `AIKB/last-build.json` and pairs the two sides **by id**, so it can tell a page that moved from a
 page that was deleted:
 
 ```
-moved without redirect: /blog/the-cascara-experiment/ -> /blog/cascara/ (blog/post/cascara)
+moved without redirect: /journal/the-cascara-experiment/ -> /journal/cascara/ (blog/post/cascara)
 ```
 
 A default id cannot do that, and the reason is worth reading twice: a fan-out item's default id
-is `blog/post/<slug>`, so it **contains the slug**. Rename the slug and the id changes with it;
+is `journal/post/<slug>`, so it **contains the slug**. Rename the slug and the id changes with it;
 the old id is simply absent from the new build, the two sides never pair, and the commonest
 rename there is gets reported as `removed without redirect:` — a deletion — instead of a move
 with the alias to add named in the line. An id that does not contain the slug is stable across
@@ -288,17 +319,17 @@ written down in `AIKB/notes/controllers/tag.md` rather than left to be discovere
 
 ## What `--broken` shows
 
-The default run is clean — 177 internal references, none broken. It is clean the way a site with
+The default run is clean — 170 internal references, none broken. It is clean the way a site with
 `{{link}}` in it is clean: a helper link resolves by construction, so the scan can only ever find
 something a person wrote by hand. `--broken` is that hand-written href — one post renders a link
-to `/blog/the-kenya-microlot/`, a post that was never published, from a `staleLink` string in its
+to `/journal/the-kenya-microlot/`, a post that was never published, from a `staleLink` string in its
 record:
 
 ```
 $ npx kiss-ssg check router.js --summary -- --broken
 ok ./public (check) — 15 pages, 0 failed, 3 assets, 622ms
-  broken link: ./public/blog/the-cascara-experiment/index.html -> /blog/the-kenya-microlot/
-  ~ ./public/blog/the-cascara-experiment/index.html
+  broken link: ./public/journal/the-cascara-experiment/index.html -> /journal/the-kenya-microlot/
+  ~ ./public/journal/the-cascara-experiment/index.html
   = 14 unchanged
 ```
 
@@ -309,7 +340,7 @@ It had to be hand-written to be findable at all, and that is the point of keepin
 every other reference on the site is `{{link}}`, `{{asset}}` or `{{absUrl}}` output — the checker
 resolves those by construction, and a mistake in an id would have stopped the build long before
 the scan ran. The scan is the net for what is left, and this site keeps four of those too: the
-cross-links inside the posts' markdown bodies (`[grind size is the dial](/blog/grind-size-is-the-dial/)`
+cross-links inside the posts' markdown bodies (`[grind size is the dial](/journal/grind-size-is-the-dial/)`
 and three more). A helper cannot reach inside prose a writer types, so those are exactly as
 breakable as any link on a real site — which is why the scan is not made redundant by the helper,
 and why both are here.

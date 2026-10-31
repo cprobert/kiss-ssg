@@ -35,13 +35,13 @@ Then proceed.
 ### Step 1 — Scope the session, and find the intent
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 git log "$BASE..HEAD" --oneline
 git diff "$BASE...HEAD" --name-only
-grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
+node bin/kiss-ssg.js session
 ```
 
-The `grep` finds this branch's **intent artefact** — the session file `/branch-open` wrote (frontmatter `branch:` matches the current branch).
+`kiss-ssg session` finds this branch's **intent artefact** — the session file `/branch-open` wrote, whose frontmatter `branch:` is exactly the current branch (compared as text, so a dot in the name is only a dot, and a file with Windows line endings still matches). If it prints more than one file, the branch name was used before: ask which is this branch's.
 
 - **If found** (it'll be `status: open`): write the Reflection _into that file_, beneath its marker (the Reflection goes **below** the marker; the Intent, Amendments, and Pulse log above it stay untouched). Its captured **Intent** is the brief your **Reflect** and **Verdict** sections evaluate against — don't reconstruct it. Its **`## Pulse log`** (if any) is the running evidence trail the mid-branch pulses left — read it for the Verdict's criteria check and for where supervision actually held. Flip `status: closed` when done. Do not create a new file.
 - **If none** (the branch wasn't opened with `/branch-open`): reconstruct intent from the conversation and create a fresh file (Step 4). Still valuable — the brief is just self-reported rather than captured.
@@ -131,9 +131,11 @@ git commit -m "Close branch: reflection + status"
 
 ```bash
 git add planning/sessions/{filename}
-git commit -m "Add session reflection: {title}
+git commit -F - <<'EOF'
+Add session reflection: {title}
 
-Brief summary of what the session covered."
+Brief summary of what the session covered.
+EOF
 ```
 
 (Within `/branch-close`, the push happens at the push step — don't push here.)

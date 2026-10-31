@@ -26,12 +26,12 @@ export const slugFor = (record) => utils.toSlug(record.slug)
 // engine. What a card still has to carry is which page it means.
 //
 // This mirrors the precedence the fan-out applies: an item's default id is
-// `<view route>/<slug>` — `blog/post/<slug>` here — and a record's own `id`
+// `<view route>/<slug>` — `journal/post/<slug>` here — and a record's own `id`
 // wins outright. The cascara post carries one, which is what lets `moved`
 // follow it through a slug rename (see the README). Get this line wrong and the
 // build *fails*, naming the id and the page that asked: an identity is checked
 // at render, where a hand-written URL was only ever checked by a reader.
-export const idFor = (record) => record.id ?? `blog/post/${slugFor(record)}`
+export const idFor = (record) => record.id ?? `journal/post/${slugFor(record)}`
 
 const MONTHS = [
   'January',
@@ -76,7 +76,7 @@ export function loadPosts(dir) {
 // It carries an `id` and not a `url` — `post-card.hbs` renders `{{link id}}`
 // and the engine turns that into the address — and the tags stay the plain
 // names the record wrote, because the partial asks for a tag page by identity
-// too (`{{link 'blog/tags' slug=this}}`).
+// too (`{{link 'journal/tags' slug=this}}`).
 export const summaryCard = (record) => ({
   title: record.title,
   id: idFor(record),
@@ -108,7 +108,7 @@ export default function post({ model }) {
     description: model.summary,
     date: model.date,
     // No URLs in here: the post page renders its tag links with
-    // `{{link 'blog/tags' slug=this}}` straight off the record's own tag names,
+    // `{{link 'journal/tags' slug=this}}` straight off the record's own tag names,
     // so the only thing this adds is the printable date.
     model: {
       ...model,

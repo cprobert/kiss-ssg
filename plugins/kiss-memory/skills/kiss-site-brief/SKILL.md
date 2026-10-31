@@ -10,6 +10,8 @@ Two kinds of knowledge, and they are not equally trustworthy. The **map** is gen
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Find the build script
 
 Read `package.json`'s `scripts` — a kiss site's build is usually `build`, `generate` or `site`, and the entry is the `.js` it runs. If nothing obvious is there, `grep -rl "kiss-ssg" --include=*.js . --exclude-dir=node_modules` and pick the file that constructs `new Kiss(...)`. If more than one qualifies (a site that builds several editions), say which you chose and why, and ask if it matters.
@@ -33,19 +35,19 @@ No diff block at all means this site has never been recorded — that is step 4,
 
 ### 3. Read the sources, in this order
 
-| Source                                     | Gives you                                                                                                                                   | Label                  |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `AIKB/site.md`                             | what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already promoted to rules             | recollection (curated) |
-| `AIKB/site-map.md`                         | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps, subjects and hashes | generated              |
-| `AIKB/site-map.md`'s **Id** column         | the ids `{{link}}` answers to on this site — the list of valid link targets an agent adding a page can point at                             | generated              |
-| the `check` output above                   | whether it builds now, what differs from the last recorded build, and the four note findings                                                | generated              |
-| `AIKB/last-build.json`                     | the recorded build's page list, assets, sitemap, and `aikb.notes` — `missing`, `dead`, `stale`, `dangling`                                  | generated              |
-| `AIKB/notes/**/*.md`                       | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                               | recollection           |
-| the 3 most recent `planning/sessions/*.md` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open                | recollection           |
+| Source                                         | Gives you                                                                                                                                   | Label                  |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `AIKB/site.md`                                 | what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already promoted to rules             | recollection (curated) |
+| `AIKB/site-map.md`                             | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps, subjects and hashes | generated              |
+| `AIKB/site-map.md`'s **Id** column             | the ids `{{link}}` answers to on this site — the list of valid link targets an agent adding a page can point at                             | generated              |
+| the `check` output above                       | whether it builds now, what differs from the last recorded build, and the four note findings                                                | generated              |
+| `AIKB/last-build.json`                         | the recorded build's page list, assets, sitemap, and `aikb.notes` — `missing`, `dead`, `stale`, `dangling`                                  | generated              |
+| `AIKB/notes/**/*.md`                           | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                               | recollection           |
+| the 3 most recent logs in `planning/sessions/` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open                | recollection           |
 
 **Read `AIKB/site.md` first when it exists.** It is the one source somebody sat down and curated: authored, evergreen, never written by a build, and periodically fed by `kiss-memory-consolidate` from the session logs. It answers "what is this and who for" better than anything generated can, and its Standing gotchas are the distilled version of what you would otherwise reconstruct from a dozen notes. Label it **recollection (curated)** and keep that distinction in the briefing — it is recollection, so it can be out of date, but unlike a session log it is meant to be true today, and a place where it contradicts the map is a real finding worth reporting.
 
-Read the sessions newest first (`ls -t planning/sessions/*.md | head -3`) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
+Read the three newest sessions (`npx kiss-ssg session --list` lists every log newest first, by the date its name starts with) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
 
 ### 4. Say plainly when a source is absent
 

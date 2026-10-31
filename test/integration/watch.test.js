@@ -104,6 +104,7 @@ describe('review regressions', () => {
       checked: 1,
       hostServed: 0,
       broken: [],
+      orphans: [],
     })
   })
 

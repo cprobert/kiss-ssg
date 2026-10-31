@@ -7,7 +7,7 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "5d25482d10ec84f91a60556d477b4cf9bafea341",
+      "hash": "b9594d38096ab7e2d8d66894d42d548f79ed26ea",
       "id": "index",
       "canonical": null,
       "markdown": null
@@ -16,7 +16,7 @@
       "view": "await-complete.hbs",
       "buildTo": "./public/await-complete.html",
       "ok": true,
-      "hash": "298fc62fa13f33c6b8a09de02ee1e3bd9dd074b2",
+      "hash": "1cd0fa7029f296511767ec8e55553d085faf9203",
       "id": "await-complete",
       "canonical": null,
       "markdown": null
@@ -25,7 +25,7 @@
       "view": "folders.hbs",
       "buildTo": "./public/folders.html",
       "ok": true,
-      "hash": "1166e3525b992412da7af91ad739dfb1d8e6aa82",
+      "hash": "e7393cf834df289c3fcc7d3cb237d41f634921f2",
       "id": "folders",
       "canonical": null,
       "markdown": null
@@ -34,7 +34,7 @@
       "view": "handlebars-instance.hbs",
       "buildTo": "./public/handlebars-instance.html",
       "ok": true,
-      "hash": "d02eec4143070655e963e8acc8e4e0a3b5b9daf5",
+      "hash": "5621ec8810e81a09156fb66c5aaaa805385e1010",
       "id": "handlebars-instance",
       "canonical": null,
       "markdown": null
@@ -43,7 +43,7 @@
       "view": "dynamic-partials.hbs",
       "buildTo": "./public/dynamic-partials.html",
       "ok": true,
-      "hash": "408553872f2a714533d0e44b8ce95ce65d3d8c4b",
+      "hash": "0edab701ddbbc92dbb85c2cde85eaa941feedebd",
       "id": "dynamic-partials",
       "canonical": null,
       "markdown": null
@@ -52,7 +52,7 @@
       "view": "duplicate-paths.hbs",
       "buildTo": "./public/duplicate-paths.html",
       "ok": true,
-      "hash": "458bcbe08f8be402e67b77cad2a422f1d96813c2",
+      "hash": "a3318ac69b13ba4200209c4efc8f37903d7cfa9e",
       "id": "duplicate-paths",
       "canonical": null,
       "markdown": null
@@ -61,7 +61,7 @@
       "view": "pure-controllers.hbs",
       "buildTo": "./public/pure-controllers.html",
       "ok": true,
-      "hash": "54c3707f0202dc248069658e14c22a9ec588e1d4",
+      "hash": "02d00cd8f9fc01761cf466cc284ae49782409c50",
       "id": "pure-controllers",
       "canonical": null,
       "markdown": null
@@ -70,7 +70,7 @@
       "view": "smaller-changes.hbs",
       "buildTo": "./public/smaller-changes.html",
       "ok": true,
-      "hash": "bc2bca6445e7f44b8a24cd03175ced431f9f2014",
+      "hash": "d65d71eabd8ea35f42a150c9a422078dee4db47b",
       "id": "smaller-changes",
       "canonical": null,
       "markdown": null
@@ -79,7 +79,7 @@
       "view": "404.hbs",
       "buildTo": "./public/404.html",
       "ok": true,
-      "hash": "d38ff43758801fbf29b5140915ee6b5ae6a713cb",
+      "hash": "6ce3a60c6d10c2f2324d5373ed2e48abb5a5de76",
       "id": "404",
       "canonical": null,
       "markdown": null
@@ -88,7 +88,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/arch-blend.html",
       "ok": true,
-      "hash": "0f71af1de77b81c4a8ee5970a3fe851da5f7068f",
+      "hash": "0bba0b5b3205204f9bd0be8863ed884ec390f00c",
       "id": "shelf/item/arch-blend",
       "canonical": null,
       "markdown": null
@@ -97,7 +97,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/oak-cascara.html",
       "ok": true,
-      "hash": "fd6bfbe75c6b7ebee0eb476398286c43747f2035",
+      "hash": "adbc44440e39662fc162395668e50e7ea6de0ec0",
       "id": "shelf/item/oak-cascara",
       "canonical": null,
       "markdown": null
@@ -106,7 +106,7 @@
       "view": "shelf/item.hbs",
       "buildTo": "./public/shelf/guji-uraga.html",
       "ok": true,
-      "hash": "089570211171d8639a20c5887fbbb23c37b6cf81",
+      "hash": "cd89ac203930e86179c8e24d8204ea700edb28a6",
       "id": "shelf/item/guji-uraga",
       "canonical": null,
       "markdown": null
@@ -151,7 +151,8 @@
   "links": {
     "checked": 64,
     "hostServed": 0,
-    "broken": []
+    "broken": [],
+    "orphans": []
   },
   "redirects": null,
   "feed": null,

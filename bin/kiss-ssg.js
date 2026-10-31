@@ -23,8 +23,11 @@ import {
   readReports,
   readReportsFile,
   recordedLine,
+  subjectLines,
 } from '../lib/check.js'
 import { formatReport } from '../lib/build-report.js'
+import { runSession } from '../lib/sessions.js'
+import { runBase } from '../lib/base.js'
 import {
   INIT_HELP,
   describeAction,
@@ -33,6 +36,28 @@ import {
   parseInitArgs,
   planInit,
 } from '../lib/init.js'
+
+// `session` and `base` answer the kiss-memory skills' questions about a
+// site's git and its session logs. Every decision is in lib/; this prints.
+if (process.argv[2] === 'session' || process.argv[2] === 'base') {
+  const run = process.argv[2] === 'session' ? runSession : runBase
+  const result = run(process.argv.slice(3), { cwd: process.cwd() })
+  if (result.err) console.error(result.err)
+  if (result.out) console.log(result.out)
+  process.exit(result.code)
+}
+
+if (process.argv[2] === '--version' || process.argv[2] === '-v') {
+  console.log(
+    JSON.parse(
+      fs.readFileSync(
+        path.join(import.meta.dirname, '..', 'package.json'),
+        'utf8',
+      ),
+    ).version,
+  )
+  process.exit(0)
+}
 
 // `init` is its own command with its own arguments, so it is handled before
 // check's parse: it runs no build script and prints no report.
@@ -328,7 +353,10 @@ try {
     console.error(
       'kiss-ssg: no build report was written — the script never settled a build. Add `await kiss.complete()` to it.',
     )
-  else if (parsed.summary)
+  else if (parsed.subjects) {
+    const lines = subjectLines(reports)
+    if (lines) console.log(lines)
+  } else if (parsed.summary)
     reports.forEach((report, at) => {
       console.log(formatReport(report))
       if (parsed.command === 'aikb') console.log(recordedLine(report))

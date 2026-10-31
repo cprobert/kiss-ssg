@@ -10,12 +10,18 @@ The Steer beat between `kiss-branch-open` and `kiss-branch-close`. Work drifts i
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Find the intent
 
 ```bash
-git branch --show-current
-grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
+npx kiss-ssg session --help
+npx kiss-ssg session
 ```
+
+The first command prints its usage when the site's kiss-ssg has these commands. If it says `unknown command: session`, the site's kiss-ssg is older than this skill: stop, and upgrade it first (`kiss-site-migrate`).
+
+`kiss-ssg session` prints this branch's session log: the file whose frontmatter `branch:` is exactly the branch's name. On a detached HEAD it exits 1 and says so: there is no session to find. If it prints more than one file, the branch name was used before: ask which is this branch's.
 
 Read that file's **Success criteria**, **Non-goals** and **Impact surface**. They are the baseline: read them, never rewrite them.
 

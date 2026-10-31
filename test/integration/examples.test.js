@@ -345,7 +345,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(html).toContain('css/generated.css?v=2')
     }, 60000)
 
-    it('11 · blog builds 15 pages, one redirect and a feed of six posts newest first', () => {
+    it('11 · blog builds 15 pages, a redirect for every moved address and a feed of six posts newest first', () => {
       cleanOutput('11-blog')
       const r = runExample('11-blog')
       expect(r.status).toBe(0)
@@ -354,11 +354,29 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(countHtmlFiles(dir)).toBe(15)
       expect(existsSync(path.join(dir, '404.html'))).toBe(true)
 
-      // The rename recipe: one post's record carries `aliases`, so the build
-      // writes exactly one 301 — and its target is the page's canonical path,
-      // the same string the sitemap and the feed give that page.
+      // The rename recipe: a page's `aliases` become one 301 each, and each
+      // target is the page's canonical path, the same string the sitemap and
+      // the feed give that page. One post was renamed, and the whole journal
+      // moved from /blog/ to /journal/: every page it had there keeps its old
+      // address, so nothing that linked to it breaks.
       expect(readFileSync(path.join(dir, '_redirects'), 'utf8')).toBe(
-        '/blog/cascara-notes.html /blog/the-cascara-experiment/ 301\n',
+        [
+          '/blog/ /journal/ 301',
+          '/blog/a-year-of-bench-lots/ /journal/a-year-of-bench-lots/ 301',
+          '/blog/cascara-notes.html /journal/the-cascara-experiment/ 301',
+          '/blog/grind-size-is-the-dial/ /journal/grind-size-is-the-dial/ 301',
+          '/blog/guji-uraga-has-landed/ /journal/guji-uraga-has-landed/ 301',
+          '/blog/page/2/ /journal/page/2/ 301',
+          '/blog/pour-over-at-home/ /journal/pour-over-at-home/ 301',
+          '/blog/tags/ /journal/tags/ 301',
+          '/blog/tags/brewing/ /journal/tags/brewing/ 301',
+          '/blog/tags/experiments/ /journal/tags/experiments/ 301',
+          '/blog/tags/roastery/ /journal/tags/roastery/ 301',
+          '/blog/tags/sourcing/ /journal/tags/sourcing/ 301',
+          '/blog/the-cascara-experiment/ /journal/the-cascara-experiment/ 301',
+          '/blog/why-we-roast-on-wednesdays/ /journal/why-we-roast-on-wednesdays/ 301',
+          '',
+        ].join('\n'),
       )
 
       // The generated robots.txt, not a copied one: its `Sitemap:` line is
@@ -371,16 +389,16 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // pagination link on the listing page are all `{{link}}`, and what they
       // render is the served path — a directory, because the site is
       // `extensionLess` — with no view having written a URL.
-      const listing = readFileSync(path.join(dir, 'blog/index.html'), 'utf8')
-      expect(listing).toContain('href="/blog/the-cascara-experiment/"')
-      expect(listing).toContain('href="/blog/tags/brewing/"')
-      expect(listing).toContain('href="/blog/page/2/"')
+      const listing = readFileSync(path.join(dir, 'journal/index.html'), 'utf8')
+      expect(listing).toContain('href="/journal/the-cascara-experiment/"')
+      expect(listing).toContain('href="/journal/tags/brewing/"')
+      expect(listing).toContain('href="/journal/page/2/"')
       // And the feed autodiscovery link is `{{absUrl}}`, because feed.xml is a
       // file this build writes rather than a page it registers.
       expect(listing).toContain('href="https://asterandoak.example/feed.xml"')
 
       // Six items: the posts and only the posts. The listing and tag pages are
-      // inside `section: 'blog'` but carry no date, so they fall out on their
+      // inside `section: 'journal'` but carry no date, so they fall out on their
       // own — and the order is the feature, not the count.
       const feed = readFileSync(path.join(dir, 'feed.xml'), 'utf8')
       expect(feed.match(/<item>/g) ?? []).toHaveLength(6)
@@ -404,9 +422,11 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // per page, so it is a property of the site rather than a render count —
       // and a drop in it is the symptom of a link quietly stopping being
       // rendered, which is exactly what a pinned number catches and a
-      // `> 0` does not.
-      expect(clean.report.links.checked).toBe(177)
-      expect(clean.report.redirects.aliases).toBe(1)
+      // `> 0` does not. 177 until 2026-10-31, when Tags left the global nav
+      // (a page inside the journal, not a top-level section): 170, the seven
+      // pages whose only link to the tags page was that nav item.
+      expect(clean.report.links.checked).toBe(170)
+      expect(clean.report.redirects.aliases).toBe(14)
       expect(clean.report.redirects.removed).toEqual([])
       expect(clean.report.redirects.collisions).toEqual([])
       expect(clean.report.redirects.moved).toEqual([])
@@ -420,8 +440,8 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // id the registry does not hold fails the render instead.
       expect(broken.report.links.broken).toEqual([
         {
-          page: './public/blog/the-cascara-experiment/index.html',
-          href: '/blog/the-kenya-microlot/',
+          page: './public/journal/the-cascara-experiment/index.html',
+          href: '/journal/the-kenya-microlot/',
         },
       ])
     }, 60000)
@@ -524,24 +544,24 @@ describe.skipIf(!hasExamples)('example builds', () => {
         map.pages.find((page) => page.buildTo === buildTo)?.id
 
       // A fan-out item's default id is `<registration>/<slug>` …
-      expect(idOf('./public/blog/pour-over-at-home/index.html')).toBe(
-        'blog/post/pour-over-at-home',
+      expect(idOf('./public/journal/pour-over-at-home/index.html')).toBe(
+        'journal/post/pour-over-at-home',
       )
       // … and a record's own `id` wins outright. This is the one that makes
       // `moved` able to follow a slug rename: it does not contain the slug.
-      expect(idOf('./public/blog/the-cascara-experiment/index.html')).toBe(
+      expect(idOf('./public/journal/the-cascara-experiment/index.html')).toBe(
         'blog/post/cascara',
       )
       // The registration's `id` is the items' prefix, never an id of theirs.
-      expect(idOf('./public/blog/tags/brewing/index.html')).toBe(
-        'blog/tags/brewing',
+      expect(idOf('./public/journal/tags/brewing/index.html')).toBe(
+        'journal/tags/brewing',
       )
 
       // The two pagination pages are one view rendered twice, so neither gets
       // a default id at all — these are explicit, and without them the build
       // prints the withdrawn-id notice and `{{link model.prev}}` fails.
-      expect(idOf('./public/blog/index.html')).toBe('blog')
-      expect(idOf('./public/blog/page/2/index.html')).toBe('blog/page/2')
+      expect(idOf('./public/journal/index.html')).toBe('journal')
+      expect(idOf('./public/journal/page/2/index.html')).toBe('journal/page/2')
 
       // Nothing on this site is unlinkable.
       expect(map.pages.filter((page) => !page.id)).toEqual([])

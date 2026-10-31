@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 
 The knowledge base has three parts and they rot differently. The **map** is regenerated every record, so it cannot rot. The **notes** rot quietly in two mechanical ways — the subject changes and the note does not, or the note names a file that no longer exists — and the check now reports both. The **session logs** rot by accumulation: they are read back a handful at a time, so a lesson written eighteen sessions ago is write-only, and the same feedback comes back branch after branch because nothing ever promoted it to a rule.
 
-This skill is the housekeeping beat that answers all three. It is not part of the open → pulse → close loop; run it **between** pieces of work, when the loop or a human says the base needs a sweep.
+This skill is the housekeeping beat that answers all three. It is not part of the open → pulse → close → merged loop; run it **between** pieces of work, when the loop or a human says the base needs a sweep.
 
 **Three hard rules, no exceptions:**
 
@@ -17,6 +17,8 @@ This skill is the housekeeping beat that answers all three. It is not part of th
 - **Never delete a session log.** Consolidating means stamping it as read, not throwing it away. The log is the evidence behind the line you promoted into `site.md`.
 
 ## Execution instructions
+
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
 
 ### 1. Run a plain check and read the four note findings
 
@@ -44,10 +46,13 @@ If the site has never been recorded there is no `aikb` block at all and none of 
 A session log carries `consolidated: <YYYY-MM-DD>` in its frontmatter once it has been folded in. Everything without that line is unread:
 
 ```bash
-grep -L "^consolidated:" planning/sessions/*.md
+npx kiss-ssg session --help
+npx kiss-ssg session --list
 ```
 
-Read each one's **Feedback**, **Amendments** and **Verdict** sections, newest first — the rest is prose you do not need here. Keep a tally as you go: which Feedback item appeared in which session file, by date. That tally is what decides a retirement in step 6.
+The first command prints its usage when the site's kiss-ssg has these commands. If it says `unknown command: session`, the site's kiss-ssg is older than this skill: stop, and upgrade it first (`kiss-site-migrate`).
+
+The listing is every log, newest first, one per row: its path, `branch`, `status` and `consolidated`. The rows whose last column is `-` are the unread ones. Read each one's **Feedback**, **Amendments** and **Verdict** sections, newest first — the rest is prose you do not need here. Keep a tally as you go: which Feedback item appeared in which session file, by date. That tally is what decides a retirement in step 6.
 
 No unconsolidated sessions and no note findings: say so, change nothing, and stop. A clean sweep that commits nothing is a good outcome, not a failed run.
 
@@ -129,12 +134,13 @@ Both lines, always. The Conventions/Gotchas line is the rule; the Retired-feedba
 
 For each `note stale:` entry the subject moved under the note. Re-read the subject — the controller file, the pipeline step's `run` command, whatever the map names — and bring the note back into line: what it does now, why it is this way now, which gotchas still apply. Then restamp it from the map, so the next check reads clean.
 
-Take the hash from the **check's report** — every check carries the current hashes under `aikb.subjects`, entries of `{ kind, id, note, hash }` — and not from `AIKB/site-map.json`, which is the last record's and is exactly what a stale note is stale against. Find the entry whose `note` is this note's path and copy its `hash` verbatim:
+Take the hash from the **check's report** — every check carries the current hashes under `aikb.subjects`, entries of `{ kind, id, note, hash }` — and not from `AIKB/site-map.json`, which is the last record's and is exactly what a stale note is stale against. Find the line whose last column is this note's path and copy its hash verbatim:
 
 ```bash
-npx kiss-ssg check <build-script> 2>/dev/null \
-  | node -e "const j=JSON.parse(require('fs').readFileSync(0,'utf8')); for (const r of j.reports ?? j) for (const s of r.aikb?.subjects ?? []) console.log(s.hash, s.kind, s.id, s.note)"
+npx kiss-ssg check --subjects <build-script>
 ```
+
+It prints one line per subject, `<hash> <kind> <id> <note>`.
 
 The stamp is one frontmatter line at the very top of the note:
 
@@ -228,4 +234,4 @@ End with the count in the commit message and one sentence on the shape of the ba
 
 ## Where this sits
 
-`kiss-branch-open` (Frame) → `kiss-branch-pulse` (Steer) → `kiss-branch-close` (Verify) run a piece of work. This runs **between** pieces of work, on nobody's branch in particular, and it is recommended to you by `kiss-branch-open`'s read-back or `kiss-branch-close`'s final report when a Feedback item has recurred in three or more sessions, or five or more sessions lack `consolidated:`. Run it by hand whenever the base feels inconsistent. For what the check reports, what the record writes and what `subjects` carries, read `node_modules/kiss-ssg/llms.txt` — nothing here restates the engine's contract.
+`kiss-branch-open` (Frame) → `kiss-branch-pulse` (Steer) → `kiss-branch-close` (Verify) → `kiss-branch-merged` (Tidy) run a piece of work. This runs **between** pieces of work, on nobody's branch in particular, and it is recommended to you by `kiss-branch-open`'s read-back or `kiss-branch-close`'s final report when a Feedback item has recurred in three or more sessions, or five or more sessions lack `consolidated:`. Run it by hand whenever the base feels inconsistent. For what the check reports, what the record writes and what `subjects` carries, read `node_modules/kiss-ssg/llms.txt` — nothing here restates the engine's contract.

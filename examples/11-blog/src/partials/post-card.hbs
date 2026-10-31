@@ -5,11 +5,11 @@
       Both links are asked for by *identity*: `id` is the post's, carried on the
       card by `summaryCard`, and a tag page is named by the `slug=` sugar
       straight off the tag's own name. Neither line knows that this site is
-      `extensionLess`, or that posts live under /blog/ — that is the engine's to
+      `extensionLess`, or that posts live under /journal/ — that is the engine's to
       know, and this partial's not to guess. --}}
 <article class="card">
   <h2><a href="{{link id}}">{{title}}</a></h2>
   <p class="meta"><time datetime="{{date}}">{{dateLabel}}</time></p>
   <p>{{summary}}</p>
-  <p>{{#each tags}}<a class="tag" href="{{link 'blog/tags' slug=this}}">{{this}}</a> {{/each}}</p>
+  <p>{{#each tags}}<a class="tag" href="{{link 'journal/tags' slug=this}}">{{this}}</a> {{/each}}</p>
 </article>

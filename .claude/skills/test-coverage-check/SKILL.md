@@ -41,18 +41,19 @@ The gate scope is narrower deliberately: `CLAUDE.md`'s rule is "engine code goes
 ### Step 1 — Detect files in scope
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 ```
 
 **Gate mode** (`--gate`) — added files only:
 
 ```bash
-git diff --name-only --diff-filter=A "$BASE...HEAD" \
-  | grep -E '^(lib/[^/]+\.js|scripts/[^/]+\.mjs)$' \
-  | grep -v '^lib/kiss\.js$'
+BASE=$(node scripts/base-branch.mjs) || exit 1
+git diff --name-only --diff-filter=A "$BASE...HEAD" -- ':(glob)lib/*.js' ':(glob)scripts/*.mjs' ':(exclude)lib/kiss.js'
 ```
 
-**Advisory mode** (no flag) — added and modified, two separate lists: run the same pipeline twice, with `--diff-filter=A` (tier 1) and `--diff-filter=M` (tier 2).
+It lists exactly the files in scope: `:(glob)` keeps `*` inside one folder, so a file in a subfolder of `lib/` or `scripts/` is not listed, and `lib/kiss.js`, which `test/integration/` covers, is left out.
+
+**Advisory mode** (no flag) — added and modified, two separate lists: run the same command twice, with `--diff-filter=A` (tier 1) and `--diff-filter=M` (tier 2).
 
 If all lists are empty: report "No new or modified modules — pass." and exit.
 
@@ -61,8 +62,10 @@ If all lists are empty: report "No new or modified modules — pass." and exit.
 For each file in scope, check `test/unit/<basename>.test.js` — the basename with whichever extension it carries stripped, since a `.mjs` module's tests are still `.test.js`:
 
 ```bash
-test -f "test/unit/$(basename "<path>" | sed -E 's/\.(js|mjs)$//').test.js" && echo covered || echo uncovered
+ls test/unit/<basename>.test.js
 ```
+
+`ls` lists the file when it is there, and says it cannot access it when it is not.
 
 Files with a matching test are ✅ **Covered** — skip classification.
 

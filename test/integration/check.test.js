@@ -403,6 +403,7 @@ describe('kiss-ssg check', () => {
       checked: 3,
       hostServed: 2,
       broken: [{ page: './public/index.html', href: '/news/gone.html' }],
+      orphans: [],
     })
   }, 60000)
 
@@ -478,6 +479,7 @@ describe('kiss-ssg check', () => {
     const lines = run.stdout.trim().split('\n')
     expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 2 pages/)
     expect(lines.slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/contact.html',
       '  + ./public/contact.html',
       '  - ./public/about.html',
       '  = 1 unchanged',
@@ -510,6 +512,60 @@ describe('kiss-ssg check', () => {
     const wrong = check(repoRoot, ['build', 'site.js'])
     expect(wrong.status).toBe(1)
     expect(wrong.stderr).toContain('unknown command: build')
+  })
+})
+
+describe('kiss-ssg check --subjects', () => {
+  // The kiss-memory skills stamp a note with its subject's hash. They used to
+  // pull it out of check's JSON with an inline `node -e`, which crashed on
+  // the bare array a site with no baseline prints (round 20). One flag now.
+  it('prints one line per subject, <hash> <kind> <id> <note>', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>{{title}}</p>',
+      'src/controllers/index.js': 'export default () => ({ title: "Home" })\n',
+      'build.js': WITH_AIKB,
+    })
+    // A site reports subjects once it has recorded: before that, a check
+    // has no knowledge base to describe.
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    const run = check(temp.root, ['check', '--subjects', 'build.js'])
+    expect(run.status).toBe(0)
+    expect(run.stdout.trim()).toMatch(
+      /^[0-9a-f]{40} controllers index\.js notes\/controllers\/index\.md$/,
+    )
+  }, 60000)
+})
+
+describe('kiss-ssg session and base, through the bin', () => {
+  // The decisions are unit-tested in test/unit/sessions.test.js and
+  // base.test.js; this is the wrapper: the right stream, the exit code.
+  it('prints a log on stdout, provenance on stderr, and exits 1 on a refusal', async () => {
+    temp = await makeSite({
+      'planning/sessions/2026-01-01-x.md':
+        '---\nbranch: feat/x\nbase: trunk\n---\n',
+    })
+    const git = (...args) =>
+      spawnSync('git', args, { cwd: temp.root, encoding: 'utf8' })
+    git('init', '-q', '-b', 'feat/x')
+    const found = check(temp.root, ['session'])
+    expect(found.status).toBe(0)
+    expect(found.stdout).toBe('planning/sessions/2026-01-01-x.md\n')
+    const base = check(temp.root, ['base'])
+    expect(base.status).toBe(0)
+    expect(base.stdout).toBe('trunk\n')
+    expect(base.stderr).toContain('from the base: line of')
+    const refused = check(temp.root, ['session', '--bogus'])
+    expect(refused.status).toBe(1)
+    expect(refused.stderr).toBe('kiss-ssg session: unknown option: --bogus\n')
+  })
+
+  it('prints its own version for --version', () => {
+    const run = check(repoRoot, ['--version'])
+    expect(run.status).toBe(0)
+    expect(run.stdout.trim()).toBe(
+      JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'))
+        .version,
+    )
   })
 })
 
@@ -618,6 +674,7 @@ describe('kiss-ssg check, against the knowledge base', () => {
     const clean = check(temp.root, ['check', '--summary', 'build.js'])
     expect(clean.status).toBe(0)
     expect(clean.stdout.trim().split('\n').slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/about.html',
       '  = 2 unchanged',
     ])
 
@@ -627,6 +684,7 @@ describe('kiss-ssg check, against the knowledge base', () => {
     const dirty = check(temp.root, ['check', '--summary', 'build.js'])
     expect(dirty.status).toBe(0)
     expect(dirty.stdout.trim().split('\n').slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/about.html',
       '  ~ ./public/about.html',
       '  = 1 unchanged',
     ])
@@ -748,7 +806,10 @@ describe('kiss-ssg check, against the knowledge base', () => {
 
     expect(run.status).toBe(0)
     // Against the baseline it would be `+ ./public/about.html, = 1 unchanged`.
-    expect(run.stdout.trim().split('\n').slice(1)).toEqual(['  = 2 unchanged'])
+    expect(run.stdout.trim().split('\n').slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/about.html',
+      '  = 2 unchanged',
+    ])
   }, 60000)
 })
 

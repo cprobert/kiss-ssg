@@ -238,6 +238,23 @@ shim `.d.ts`. **Re-check:** `head node_modules/@mixmark-io/domino/lib/index.d.ts
 after an upgrade — if it exports rather than declares, import the string
 literal again and run `npm run typecheck`.
 
+### Remarkable never starts an HTML block with `<h1>`–`<h6>`
+
+**Observed:** `remarkable` 2.0.1 (2026-10-31). Its HTML-block rule matches an
+opening tag with `/^<([a-zA-Z]{1,15})[\s\/>]/`, which allows no digit, so
+`<h3 id="x">` never matches, although `h1`–`h6` are on its `html_blocks`
+list. The line is parsed as a paragraph, and renders as
+`<p><h3 id="x">…</h3></p>`. **Effect:** the docs site's guide pages, cut from
+GUIDE.md by `src/controllers/guide.js`, put each section and sub-heading in
+as a raw `<hN>` line, and every one came out inside a `<p>`; the minifier
+turned that into an empty `<p></p>` before each heading (code review,
+2026-10-31, round 21). The engine is not affected: it renders a page's own
+Markdown headings as Markdown. **What kiss does:** a cheap local guard in
+`renderWithTargets`, which unwraps exactly `<p><hN …>…</hN></p>` after
+rendering, pinned by `test/unit/guide-controller.test.js`. **Re-check:**
+`node -e "console.log(new (require('remarkable').Remarkable)({html:true}).render('<h3>x</h3>'))"`
+prints `<h3>x</h3>` without a `<p>` when it is fixed; then the guard can go.
+
 ### turndown-plugin-gfm is unmaintained
 
 **Observed:** `turndown-plugin-gfm` 1.0.2, last published 2022 (npm

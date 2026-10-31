@@ -7,6 +7,7 @@
 // the gate will later see.
 import { execFileSync } from 'node:child_process'
 import prettier from 'prettier'
+import { isMain } from './is-main.mjs'
 
 // Prettier has nothing to say about a file it cannot parse or has been told to
 // skip — .hbs and build output, here. Split out so the decision is testable
@@ -29,15 +30,18 @@ export function formatFailureMessage(failures) {
   ].join('\n')
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta.filename)) {
+  // -z: git quotes a non-ASCII name otherwise, the quoted name has no parser
+  // prettier knows, and an unformatted café.js was let through unchecked
+  // (measured, round 21).
   const staged = execFileSync(
     'git',
-    ['diff', '--cached', '--name-only', '--diff-filter=ACMR'],
+    ['diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR'],
     {
       encoding: 'utf8',
     },
   )
-    .split(/\r?\n/)
+    .split('\0')
     .filter(Boolean)
 
   const infos = new Map()

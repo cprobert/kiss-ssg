@@ -12,17 +12,31 @@ Run this only when the human asks to close. Never on your own initiative, and ne
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Find the intent and the base
 
 ```bash
-BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
-BASE=${BASE:-main}
+npx kiss-ssg session --help
+git fetch -q origin
+npx kiss-ssg base
+npx kiss-ssg base --ref
+npx kiss-ssg session
 git branch --show-current
-git log "$BASE..HEAD" --oneline
 git status --short
 ```
 
-Stop if you are on the base branch, or if there are no commits to close. Find the session file (`grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md`) and read its **Intent**, **Amendments** and **Pulse log**. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
+The first command prints its usage when the site's kiss-ssg has these commands. If it says `unknown command: session`, the site's kiss-ssg is older than this skill: stop, and upgrade it first (`kiss-site-migrate`).
+
+`kiss-ssg base` prints the branch this work merges into: the `base:` line of this branch's session log, or else the remote's default branch, and on stderr where it came from. It never assumes `main`: with no answer it exits 1 and says so, and then ask which branch this work merges into. `base --ref` prints the ref to diff against, in full: of the local base and origin's, the one this branch started from, so a stale local base never puts other people's commits in this branch's diff. Shell state does not carry from one command to the next, so later steps write the ref it printed where they say `<base-ref>`.
+
+`kiss-ssg session` prints this branch's session log. More than one means the branch name was used before: ask which is this branch's. None means the branch was not opened with `kiss-branch-open`: reconstruct the intent from the work, and say in the reflection that it is self-reported, not captured. On a detached HEAD it exits 1 and says so. Read the log's **Intent**, **Amendments** and **Pulse log**.
+
+Stop if the current branch is the base, or if there are no commits to close:
+
+```bash
+git log --oneline <base-ref>..HEAD
+```
 
 Commit or stash anything outstanding before verifying — the check runs the working tree, so uncommitted work would be verified and then not shipped.
 
@@ -60,14 +74,13 @@ The map is generated for you at step 4; the judgement in it never is. Two checks
 
 All four must be empty before step 4 records. Recording a build whose notes are stale or dangling bakes the rot into the baseline the next branch reads.
 
-**Stamp every note you write or update.** The stamp is the one frontmatter line `subject-hash: <sha1>`. Take the hash from the **check's report**, not from the map on disk: `AIKB/site-map.json` is the last record's and holds the old hash for any subject this branch changed, while every check reports the current hashes under `aikb.subjects` — entries of `{ kind, id, note, hash }`; take the `hash` of the entry whose `note` is this note's path:
+**Stamp every note you write or update.** The stamp is the one frontmatter line `subject-hash: <sha1>`. Take the hash from the **check's report**, not from the map on disk: `AIKB/site-map.json` is the last record's and holds the old hash for any subject this branch changed, while every check reports the current hashes under `aikb.subjects` — entries of `{ kind, id, note, hash }`; take the `hash` on the line whose last column is this note's path:
 
 ```bash
-npx kiss-ssg check <build-script> 2>/dev/null \
-  | node -e "for (const r of JSON.parse(require('fs').readFileSync(0,'utf8')).reports ?? JSON.parse(require('fs').readFileSync(0,'utf8'))) for (const s of r.aikb?.subjects ?? []) console.log(s.hash, s.kind, s.id, s.note)"
+npx kiss-ssg check --subjects <build-script>
 ```
 
-(The JSON is `{ reports, diff }` when the site has a baseline and a bare array when it has not.) The stamp goes at the very top of the note:
+It prints one line per subject, `<hash> <kind> <id> <note>`. The stamp goes at the very top of the note:
 
 ```markdown
 ---
@@ -86,7 +99,7 @@ The engine never writes that line; this skill does. It is what lets the next che
 **b. Every subject this change touched has a note that changed with it.**
 
 ```bash
-git diff --name-only "$BASE...HEAD"
+git diff --name-only "<base-ref>...HEAD"
 ```
 
 From that list, take the subjects the change actually touched — files under the controllers folder, URL models and pipeline steps added or edited in the build script — and confirm the matching note is in the same list:
@@ -149,8 +162,10 @@ git commit -m "Close: reflection + status"
 The close keeps one branch's memory honest. Nothing in it keeps the **whole** base honest, and two measurable symptoms say it has stopped being:
 
 ```bash
-grep -L "^consolidated:" planning/sessions/*.md | wc -l   # sessions never folded in
+npx kiss-ssg session --list
 ```
+
+Its last column is the date each log was consolidated, `-` for one never folded in.
 
 - **A Feedback item has recurred in three or more sessions.** Compare the Feedback you just wrote against every earlier session's — not only the three `kiss-branch-open` reads back. An item on its third outing is not a lesson anybody is going to learn by being told again; it needs promoting to a rule in `AIKB/site.md`.
 - **Five or more sessions lack `consolidated:`.** The logs have outrun the read-back, so everything older than the last three is effectively write-only.
@@ -165,4 +180,4 @@ git push -u origin HEAD
 
 **Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date and stamped, all four note lines clean, `AIKB/` recorded and committed, reflection written, branch pushed.
 
-Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-memory-consolidate`", with the trigger.
+Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-memory-consolidate`", with the trigger. Then, after those lines, name the next beat: once the work has merged, `kiss-branch-merged` tidies up. If the branch is in a worktree (`worktree:` in the session file), it stays until then, because review fixes go there.

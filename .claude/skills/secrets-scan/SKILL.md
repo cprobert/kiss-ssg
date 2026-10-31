@@ -37,7 +37,7 @@ Two operations, always in this order:
 Scan only committed diff lines (lines beginning with `+`) — not the working tree. Exclude known-safe paths:
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 git diff "$BASE...HEAD" \
   -- ':(exclude).env*' \
   -- ':(exclude)*.example' \
@@ -71,10 +71,11 @@ If hits are found: surface them and ask the operator to confirm each is not a re
 An SSG's attack surface is not authentication — it is what the engine reads, executes, and writes, on a developer's machine. Check whether the diff touches it:
 
 ```bash
-git diff --name-only "$BASE...HEAD" | grep -E '(lib/(model-resolver|controller-resolver|dev-server|watcher|assets|utils|kiss-page|page-registry|staging|asset-copy)\.js|package\.json)'
+BASE=$(node scripts/base-branch.mjs) || exit 1
+git diff --name-only "$BASE...HEAD" -- lib/model-resolver.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js package.json
 ```
 
-Why each one:
+It lists the files in the table below that the branch changed, and nothing else; no output means none. A row added to the table is added to this command in the same commit. Why each one:
 
 | Path                                                | The concern                                                                                                                                                       |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -91,12 +92,12 @@ Why each one:
 **The table names files, so it cannot see a new one.** Code that reaches this surface can move into a module the table has never heard of — twice now: two new parsers of untrusted input (2026-10-01), then `lib/page-registry.js` and `lib/staging.js`, which took over the calls into the model and controller resolvers and the renames beside the build folder (2026-10-03). Neither matched, and the review happened only because Claude read past the grep. So also list every `lib/` module the branch **adds**, and every changed one that **imports** a module in the table:
 
 ```bash
-git diff --name-only --diff-filter=A "$BASE...HEAD" -- 'lib/*.js'
-git diff --name-only "$BASE...HEAD" -- 'lib/*.js' \
-  | xargs -r grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'"
+BASE=$(node scripts/base-branch.mjs) || exit 1
+git diff --name-only --diff-filter=A "$BASE...HEAD" -- ':(glob)lib/*.js'
+grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'" lib/*.js
 ```
 
-`utils.js` is left out of the second grep on purpose: nearly every module imports it, so the grep would list everything and say nothing. Read each file these print and decide whether it now does one of the things in the table — parses external input, executes code by path, computes an output path, or writes outside the build folder. If it does, it is in scope exactly as if it were in the table, and the table gains a row for it in the same commit.
+The first lists the modules the branch adds. The second lists every module that imports one in the table; the ones of those the first command of this step listed are the changed ones in scope. `utils.js` is left out of the grep on purpose: nearly every module imports it, so the grep would list everything and say nothing. Read each file these print and decide whether it now does one of the things in the table — parses external input, executes code by path, computes an output path, or writes outside the build folder. If it does, it is in scope exactly as if it were in the table, and the table gains a row for it in the same commit.
 
 If any match: this branch is **security-relevant**. Proceed to Step 3.
 

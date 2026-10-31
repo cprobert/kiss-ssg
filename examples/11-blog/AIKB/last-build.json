@@ -7,136 +7,136 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "30c19b8876bcc9415e34c7c6ed1b57a9e77486db",
+      "hash": "bd1e1646eed6aab9496eb2fe3e5bb30f40d17211",
       "id": "index",
       "canonical": null,
       "markdown": "./public/index.md"
     },
     {
-      "view": "blog/listing.hbs",
-      "buildTo": "./public/blog/index.html",
+      "view": "journal/listing.hbs",
+      "buildTo": "./public/journal/index.html",
       "ok": true,
-      "hash": "1d078ec6665371b1dbe12674a285feb6027f5f7e",
-      "id": "blog",
+      "hash": "9367ce40a9fa50f73480df96a3c3d5de1637029f",
+      "id": "journal",
       "canonical": null,
-      "markdown": "./public/blog/index.md"
+      "markdown": "./public/journal/index.md"
     },
     {
-      "view": "blog/listing.hbs",
-      "buildTo": "./public/blog/page/2/index.html",
+      "view": "journal/listing.hbs",
+      "buildTo": "./public/journal/page/2/index.html",
       "ok": true,
-      "hash": "ed799d889ffff01ec38cc04a1f7b478a000fa1a9",
-      "id": "blog/page/2",
+      "hash": "3cd81247b93ca18f96e1bdefc1b6f8647f8c77c3",
+      "id": "journal/page/2",
       "canonical": null,
-      "markdown": "./public/blog/page/2/index.md"
+      "markdown": "./public/journal/page/2/index.md"
     },
     {
-      "view": "blog/tags.hbs",
-      "buildTo": "./public/blog/tags/index.html",
+      "view": "journal/tags.hbs",
+      "buildTo": "./public/journal/tags/index.html",
       "ok": true,
-      "hash": "b04922e6dedd5b6ec26a4b3b56e6d27ec1c10957",
-      "id": "blog/tags",
+      "hash": "865ec9bbd6ca7950e2cf9b59958977f0a6a45ba7",
+      "id": "journal/tags",
       "canonical": null,
-      "markdown": "./public/blog/tags/index.md"
+      "markdown": "./public/journal/tags/index.md"
     },
     {
       "view": "404.hbs",
       "buildTo": "./public/404.html",
       "ok": true,
-      "hash": "8aac3eb3ab4c3f36cdd44c3cae87dce8eb718015",
+      "hash": "0820be30af194eb1ea604abcfae0ffb718e135fb",
       "id": "404",
       "canonical": null,
       "markdown": "./public/404.md"
     },
     {
-      "view": "blog/post.hbs",
-      "buildTo": "./public/blog/a-year-of-bench-lots/index.html",
+      "view": "journal/post.hbs",
+      "buildTo": "./public/journal/a-year-of-bench-lots/index.html",
       "ok": true,
-      "hash": "9b73039cf7963b7b9281777e6cad7b90899d62fd",
-      "id": "blog/post/a-year-of-bench-lots",
+      "hash": "dd6e28e64dd2fe3a2cdf2523af66fb926fe06ea4",
+      "id": "journal/post/a-year-of-bench-lots",
       "canonical": null,
-      "markdown": "./public/blog/a-year-of-bench-lots/index.md"
+      "markdown": "./public/journal/a-year-of-bench-lots/index.md"
     },
     {
-      "view": "blog/tag.hbs",
-      "buildTo": "./public/blog/tags/brewing/index.html",
+      "view": "journal/tag.hbs",
+      "buildTo": "./public/journal/tags/brewing/index.html",
       "ok": true,
-      "hash": "5d4d0af7d049ca10257a0b84b6e691ea8ac246a8",
-      "id": "blog/tags/brewing",
+      "hash": "02dbaeaf58a24dd6c633c8d448584d3645c42c8e",
+      "id": "journal/tags/brewing",
       "canonical": null,
-      "markdown": "./public/blog/tags/brewing/index.md"
+      "markdown": "./public/journal/tags/brewing/index.md"
     },
     {
-      "view": "blog/post.hbs",
-      "buildTo": "./public/blog/grind-size-is-the-dial/index.html",
+      "view": "journal/post.hbs",
+      "buildTo": "./public/journal/grind-size-is-the-dial/index.html",
       "ok": true,
-      "hash": "2960843842aba766778dac9b1b21d2f2570ae151",
-      "id": "blog/post/grind-size-is-the-dial",
+      "hash": "fc3e54c01f550715b2dbf10de085627ffce9d296",
+      "id": "journal/post/grind-size-is-the-dial",
       "canonical": null,
-      "markdown": "./public/blog/grind-size-is-the-dial/index.md"
+      "markdown": "./public/journal/grind-size-is-the-dial/index.md"
     },
     {
-      "view": "blog/tag.hbs",
-      "buildTo": "./public/blog/tags/experiments/index.html",
+      "view": "journal/tag.hbs",
+      "buildTo": "./public/journal/tags/experiments/index.html",
       "ok": true,
-      "hash": "28a3a2d8384fba78908e75e04ec4f1f4daeb4607",
-      "id": "blog/tags/experiments",
+      "hash": "5e522578ce2b03609684cdcc3581be2c853c17b5",
+      "id": "journal/tags/experiments",
       "canonical": null,
-      "markdown": "./public/blog/tags/experiments/index.md"
+      "markdown": "./public/journal/tags/experiments/index.md"
     },
     {
-      "view": "blog/post.hbs",
-      "buildTo": "./public/blog/why-we-roast-on-wednesdays/index.html",
+      "view": "journal/post.hbs",
+      "buildTo": "./public/journal/why-we-roast-on-wednesdays/index.html",
       "ok": true,
-      "hash": "22771c38a4297309ccb678b8b72a3f06b089f793",
-      "id": "blog/post/why-we-roast-on-wednesdays",
+      "hash": "f77112dea06acde43d95d42d0e6a0d4161c71cde",
+      "id": "journal/post/why-we-roast-on-wednesdays",
       "canonical": null,
-      "markdown": "./public/blog/why-we-roast-on-wednesdays/index.md"
+      "markdown": "./public/journal/why-we-roast-on-wednesdays/index.md"
     },
     {
-      "view": "blog/tag.hbs",
-      "buildTo": "./public/blog/tags/roastery/index.html",
+      "view": "journal/tag.hbs",
+      "buildTo": "./public/journal/tags/roastery/index.html",
       "ok": true,
-      "hash": "506b9b1a17e9f02b4c42647f1edf69e5dfe7cff2",
-      "id": "blog/tags/roastery",
+      "hash": "7ad672be1625d0222765eb6da7a02d47b8e8f98e",
+      "id": "journal/tags/roastery",
       "canonical": null,
-      "markdown": "./public/blog/tags/roastery/index.md"
+      "markdown": "./public/journal/tags/roastery/index.md"
     },
     {
-      "view": "blog/post.hbs",
-      "buildTo": "./public/blog/guji-uraga-has-landed/index.html",
+      "view": "journal/post.hbs",
+      "buildTo": "./public/journal/guji-uraga-has-landed/index.html",
       "ok": true,
-      "hash": "be2dce1d7bf8732b4262309978f1001420124984",
-      "id": "blog/post/guji-uraga-has-landed",
+      "hash": "45a09eb6b4c61dd08d59087c456f08b1c87bec4e",
+      "id": "journal/post/guji-uraga-has-landed",
       "canonical": null,
-      "markdown": "./public/blog/guji-uraga-has-landed/index.md"
+      "markdown": "./public/journal/guji-uraga-has-landed/index.md"
     },
     {
-      "view": "blog/tag.hbs",
-      "buildTo": "./public/blog/tags/sourcing/index.html",
+      "view": "journal/tag.hbs",
+      "buildTo": "./public/journal/tags/sourcing/index.html",
       "ok": true,
-      "hash": "154098d5aac07afbb6aef469a2803bca8dfab695",
-      "id": "blog/tags/sourcing",
+      "hash": "917af38f3b952688551429ac06ce6702e35e00ea",
+      "id": "journal/tags/sourcing",
       "canonical": null,
-      "markdown": "./public/blog/tags/sourcing/index.md"
+      "markdown": "./public/journal/tags/sourcing/index.md"
     },
     {
-      "view": "blog/post.hbs",
-      "buildTo": "./public/blog/the-cascara-experiment/index.html",
+      "view": "journal/post.hbs",
+      "buildTo": "./public/journal/the-cascara-experiment/index.html",
       "ok": true,
-      "hash": "8c6e14261432303bd23bc0ea9ba0bc1a698452c7",
+      "hash": "d482d5a4e3665229c26b98fb1b45543b9c996fa9",
       "id": "blog/post/cascara",
       "canonical": null,
-      "markdown": "./public/blog/the-cascara-experiment/index.md"
+      "markdown": "./public/journal/the-cascara-experiment/index.md"
     },
     {
-      "view": "blog/post.hbs",
-      "buildTo": "./public/blog/pour-over-at-home/index.html",
+      "view": "journal/post.hbs",
+      "buildTo": "./public/journal/pour-over-at-home/index.html",
       "ok": true,
-      "hash": "165f0a9867980f9bb7cb707005e4c6e72d850b6b",
-      "id": "blog/post/pour-over-at-home",
+      "hash": "228cbe7cde9747f8e0862c163890e1e8a11dde6d",
+      "id": "journal/post/pour-over-at-home",
       "canonical": null,
-      "markdown": "./public/blog/pour-over-at-home/index.md"
+      "markdown": "./public/journal/pour-over-at-home/index.md"
     }
   ],
   "failures": [],
@@ -171,31 +171,84 @@
         "kind": "controllers",
         "id": "post.js",
         "note": "notes/controllers/post.md",
-        "hash": "35ead9dc0ca2e66b62e2be9bacbab2c5f631ec31"
+        "hash": "74a0bac3f075ca7ccfb4b54e4e49a1022a2fc143"
       },
       {
         "kind": "controllers",
         "id": "tag.js",
         "note": "notes/controllers/tag.md",
-        "hash": "3dca8092688e745c2d9467c1772c36df933c004f"
+        "hash": "773b92a8012b190f14c947b8b8ce089dcb3d3453"
       }
     ]
   },
   "links": {
-    "checked": 177,
+    "checked": 170,
     "hostServed": 0,
-    "broken": []
+    "broken": [],
+    "orphans": []
   },
   "redirects": {
     "file": "./public/_redirects",
-    "aliases": 1,
+    "aliases": 14,
     "removed": [],
     "collisions": [],
     "moved": [],
     "rules": [
       {
+        "from": "/blog/",
+        "to": "/journal/"
+      },
+      {
+        "from": "/blog/a-year-of-bench-lots/",
+        "to": "/journal/a-year-of-bench-lots/"
+      },
+      {
         "from": "/blog/cascara-notes.html",
-        "to": "/blog/the-cascara-experiment/"
+        "to": "/journal/the-cascara-experiment/"
+      },
+      {
+        "from": "/blog/grind-size-is-the-dial/",
+        "to": "/journal/grind-size-is-the-dial/"
+      },
+      {
+        "from": "/blog/guji-uraga-has-landed/",
+        "to": "/journal/guji-uraga-has-landed/"
+      },
+      {
+        "from": "/blog/page/2/",
+        "to": "/journal/page/2/"
+      },
+      {
+        "from": "/blog/pour-over-at-home/",
+        "to": "/journal/pour-over-at-home/"
+      },
+      {
+        "from": "/blog/tags/",
+        "to": "/journal/tags/"
+      },
+      {
+        "from": "/blog/tags/brewing/",
+        "to": "/journal/tags/brewing/"
+      },
+      {
+        "from": "/blog/tags/experiments/",
+        "to": "/journal/tags/experiments/"
+      },
+      {
+        "from": "/blog/tags/roastery/",
+        "to": "/journal/tags/roastery/"
+      },
+      {
+        "from": "/blog/tags/sourcing/",
+        "to": "/journal/tags/sourcing/"
+      },
+      {
+        "from": "/blog/the-cascara-experiment/",
+        "to": "/journal/the-cascara-experiment/"
+      },
+      {
+        "from": "/blog/why-we-roast-on-wednesdays/",
+        "to": "/journal/why-we-roast-on-wednesdays/"
       }
     ],
     "json": "./public/redirects.json",

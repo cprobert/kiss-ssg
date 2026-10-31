@@ -10,7 +10,7 @@
     <nav class="nav" aria-label="Site">
       {{#each config.nav}}
       {{#isActive .. href=href label=label root=../root active="is-active"}}
-      <a class="nav__link{{#if active}} {{active}}{{/if}}" href="{{root}}{{href}}"{{#if active}} aria-current="page"{{/if}}>{{label}}</a>
+      <a class="nav__link{{#if active}} {{active}}{{/if}}" href="{{root}}{{href}}"{{#if @current}} aria-current="page"{{/if}}>{{label}}</a>
       {{/isActive}}
       {{/each}}
     </nav>

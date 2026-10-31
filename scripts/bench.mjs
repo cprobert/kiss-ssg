@@ -36,6 +36,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn, spawnSync } from 'node:child_process'
+import { isMain } from './is-main.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
@@ -1236,7 +1237,7 @@ function print(results, baseline) {
 
 // ---------------------------------------------------------------------------
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta.filename)) {
   const argv = process.argv.slice(2)
   const childArg = argv.find((a) => a.startsWith('--child='))
   if (childArg) {

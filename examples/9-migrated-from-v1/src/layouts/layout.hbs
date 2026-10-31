@@ -37,9 +37,11 @@
       </a>
       <nav class="nav" aria-label="Site">
         {{#each config.nav}}
-        {{#isActive .. href=href label=label root=../root folderMatch=folderMatch active="is-active"}}
-        <a class="nav__link{{#if active}} {{active}}{{/if}}" href="{{root}}{{href}}"{{#if active}} aria-current="page"{{/if}}>{{label}}</a>
-        {{/isActive}}
+        {{!-- One isActive call per link. With the item's folderMatch,
+              {{active}} marks the section this page is in; {{@current}} is
+              true only on the link to this very page, which alone carries
+              aria-current="page". --}}
+        <a href="{{../root}}{{href}}"{{#isActive .. href=href folderMatch=folderMatch}} class="nav__link{{#if active}} is-active{{/if}}"{{#if @current}} aria-current="page"{{/if}}{{/isActive}}>{{label}}</a>
         {{/each}}
       </nav>
     </div>

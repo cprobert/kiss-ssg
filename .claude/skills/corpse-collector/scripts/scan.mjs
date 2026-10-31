@@ -17,6 +17,7 @@ import {
   resolveBaseBranch,
 } from '../../../../scripts/base-branch.mjs'
 import { DEFAULT_CONFIG, DEFAULT_FOLDERS } from '../../../../lib/config.js'
+import { isMain } from '../../../../scripts/is-main.mjs'
 
 // ── AIKB doc staleness, by git history ───────────────────────────────────────
 // CLAUDE.md's rule is "read the relevant AIKB doc before changing that module,
@@ -170,6 +171,10 @@ export function formerSkillNames(root) {
     out = execFileSync(
       'git',
       [
+        // Unquoted non-ASCII names, as in every other git file list here
+        // (round 21).
+        '-c',
+        'core.quotePath=false',
         'log',
         '--all',
         '--diff-filter=DR',
@@ -613,4 +618,4 @@ function main() {
   )
 }
 
-if (import.meta.filename === process.argv[1]) main()
+if (isMain(import.meta.filename)) main()

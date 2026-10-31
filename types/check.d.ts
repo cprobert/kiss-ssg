@@ -24,6 +24,7 @@ export function aikbRecordRequested(env?: Record<string, string | undefined>): b
  * @property {string|null} script the site's build script
  * @property {string[]} args everything after it, passed through to the script
  * @property {boolean} summary print `formatReport` lines instead of JSON
+ * @property {boolean} subjects print `subjectLines` instead of JSON
  * @property {string|null} against an earlier report to diff this build against
  * @property {string|null} error a usage error: print it with the help and exit 1
  */
@@ -61,6 +62,16 @@ export function describeEngine({ cwd, from }: {
  * @returns {string}
  */
 export function engineLine(engine: ReturnType<typeof describeEngine>): string;
+/**
+ * One line per subject that wants a note, across the reports: `<hash> <kind>
+ * <id> <note>`, the hash a note is stamped with (`subject-hash:`). From the
+ * check's reports, never the map on disk: that holds the last record's
+ * hashes, and a subject this work changed has a new one.
+ *
+ * @param {import('./build-report.js').BuildReport[]} reports
+ * @returns {string}
+ */
+export function subjectLines(reports: import("./build-report.js").BuildReport[]): string;
 /**
  * @param {string[]} [argv] `process.argv.slice(2)`
  * @returns {CheckArgs}
@@ -175,7 +186,7 @@ export function formatDiff(diff: CheckDiff): string;
  */
 export function exitCodeFor(reports: import("./build-report.js").BuildReport[], scriptStatus: number | null): 0 | 1;
 export const CHECK_MODE_OFF: Set<string>;
-export const HELP: "kiss-ssg <command> [args\u2026]\n\n  init             set this folder up for a coding agent and, if it has no\n                   site yet, drop a starter one (kiss-ssg init --help)\n  check <script>   run the site's own build script with the build staged and\n                   then discarded, and print one JSON report per Kiss instance\n                   it created. Nothing published is touched: the build folder is\n                   neither emptied nor written. Before the build it says on\n                   stderr which kiss-ssg the site resolves, and names a\n                   node_modules/kiss-ssg that is a link to a working tree\n                   rather than the registry package.\n  aikb <script>    record the site's knowledge base from a passing build. The\n                   same staged, discarded run as check \u2014 it publishes nothing \u2014\n                   but it rewrites config.folders.aikb: the site map, and the\n                   report snapshot the diff measures against. It refuses to\n                   record a failed build.\n\nOptions, for check and aikb:\n\n  --summary          one line per site instead of the JSON\n  --against <file>   diff this build against an earlier report, and say which\n                     pages were added, removed or changed\n  --help             this text\n\nEverything after the script is passed through to it, so a site that takes its own\narguments is checked the way it is run \u2014 --summary excepted, which is read\nwherever it appears. A site that needs that word itself takes it after a bare --:\nkiss-ssg check menu.js -- --summary\n\n--against takes a file this or another build wrote: a KISS_REPORT JSON Lines\nfile, the JSON array check itself prints, the { reports, diff } object it\nprints once it diffs, or a single report object. Pages are\nmatched by output path and compared by the hash of the bytes they wrote, per\nbuild folder. In --summary the diff prints under each site's line (+ added,\n- removed, ~ changed, = N unchanged); otherwise stdout becomes\n{ \"reports\": [...], \"diff\": [...] } instead of the bare array. It never changes\nthe exit code \u2014 a diff is a description of the build, not a verdict on it.\n\ncheck diffs without being asked: a site that has recorded its knowledge base is\ncompared against <folders.aikb>/last-build.json unless --against names another\nfile. aikb has just overwritten that file, so it diffs only when --against is\ngiven explicitly.\n\nExits 1 if any site failed to build, if the script itself exited non-zero, or if\nit never settled a build (a script with no awaited complete() reports nothing).";
+export const HELP: "kiss-ssg <command> [args\u2026]\n\n  init             set this folder up for a coding agent and, if it has no\n                   site yet, drop a starter one (kiss-ssg init --help)\n  check <script>   run the site's own build script with the build staged and\n                   then discarded, and print one JSON report per Kiss instance\n                   it created. Nothing published is touched: the build folder is\n                   neither emptied nor written. Before the build it says on\n                   stderr which kiss-ssg the site resolves, and names a\n                   node_modules/kiss-ssg that is a link to a working tree\n                   rather than the registry package.\n  aikb <script>    record the site's knowledge base from a passing build. The\n                   same staged, discarded run as check \u2014 it publishes nothing \u2014\n                   but it rewrites config.folders.aikb: the site map, and the\n                   report snapshot the diff measures against. It refuses to\n                   record a failed build.\n  session          find a branch's session log in planning/sessions/, read a\n                   key from it, or list the logs (kiss-ssg session --help)\n  base             the branch a piece of work merges into, and the ref to diff\n                   against or start from (kiss-ssg base --help)\n  --version        the installed kiss-ssg's version\n\nOptions, for check and aikb:\n\n  --summary          one line per site instead of the JSON\n  --subjects         one line per knowledge-base subject instead of the JSON:\n                     <hash> <kind> <id> <note>, the hash to stamp a note with\n  --against <file>   diff this build against an earlier report, and say which\n                     pages were added, removed or changed\n  --help             this text\n\nEverything after the script is passed through to it, so a site that takes its own\narguments is checked the way it is run \u2014 --summary excepted, which is read\nwherever it appears. A site that needs that word itself takes it after a bare --:\nkiss-ssg check menu.js -- --summary\n\n--against takes a file this or another build wrote: a KISS_REPORT JSON Lines\nfile, the JSON array check itself prints, the { reports, diff } object it\nprints once it diffs, or a single report object. Pages are\nmatched by output path and compared by the hash of the bytes they wrote, per\nbuild folder. In --summary the diff prints under each site's line (+ added,\n- removed, ~ changed, = N unchanged); otherwise stdout becomes\n{ \"reports\": [...], \"diff\": [...] } instead of the bare array. It never changes\nthe exit code \u2014 a diff is a description of the build, not a verdict on it.\n\ncheck diffs without being asked: a site that has recorded its knowledge base is\ncompared against <folders.aikb>/last-build.json unless --against names another\nfile. aikb has just overwritten that file, so it diffs only when --against is\ngiven explicitly.\n\nExits 1 if any site failed to build, if the script itself exited non-zero, or if\nit never settled a build (a script with no awaited complete() reports nothing).";
 export type CheckArgs = {
     command: "check" | "aikb" | "help";
     /**
@@ -190,6 +201,10 @@ export type CheckArgs = {
      * print `formatReport` lines instead of JSON
      */
     summary: boolean;
+    /**
+     * print `subjectLines` instead of JSON
+     */
+    subjects: boolean;
     /**
      * an earlier report to diff this build against
      */

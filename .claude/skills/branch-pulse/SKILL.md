@@ -36,18 +36,21 @@ Keep this terse and fast — if a pulse starts to feel like a mini-close, it has
 ### Step 1 — Find the intent
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+node scripts/base-branch.mjs --name
 git branch --show-current
-grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
+node bin/kiss-ssg.js session
 ```
 
-If on the base branch: stop — the pulse is a mid-branch beat. If the `grep` finds the branch's intent artefact (the file `/branch-open` wrote, `status: open`): read its **Intent** — Objective, Success criteria, Non-goals, Impact surface, Expected shape. These are the baseline; **read them, never rewrite them** (the Intent block is immutable).
+`kiss-ssg session` prints the session file whose frontmatter `branch:` is exactly the current branch, compared as text, so a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's.
+
+The second prints the current branch: nothing means a detached HEAD, and the base's name means this checkout is on the base. The comparison is between names, from `--name`: the plain script prints a ref, which is `refs/heads/v2` in this repository, where `v2` is a tag as well as a branch, and would never equal a branch name. On the base: stop — the pulse is a mid-branch beat. On a detached HEAD, ask which branch is being pulsed. If `kiss-ssg session` prints the branch's intent artefact (the file `/branch-open` wrote, `status: open`): read its **Intent** — Objective, Success criteria, Non-goals, Impact surface, Expected shape. These are the baseline; **read them, never rewrite them** (the Intent block is immutable).
 
 If no intent file (the harness auto-created the branch, or it wasn't opened with `/branch-open`): offer to **capture intent retrospectively**. Infer the Objective, Success criteria, Non-goals, Impact surface, and (almost always) an _emergent_ shape from the conversation so far, and write them to a `planning/sessions/<date>-<slug>.md` bound to the current branch by `branch:` frontmatter — the same artefact `/branch-open` writes, with its Intent heading marked _inferred retrospectively_ so the honesty is on the record. This rescues the session's intent from the ephemeral context window so the close, the reflection, and the next developer inherit it instead of losing it. If the user declines, proceed loosely against a checklist they give you.
 
 ### Step 2 — Read the trajectory
 
 ```bash
+BASE=$(node scripts/base-branch.mjs) || exit 1
 git diff "$BASE...HEAD" --stat
 git status --short
 ```
@@ -63,7 +66,8 @@ Go through the success criteria one at a time. For each, state **met / partial /
 - **Public API or generated output changed** → smoke-run the example that exercises it and look at what it wrote:
 
   ```bash
-  timeout 20 node examples/6-sitemap/router.js; ls -R examples/6-sitemap/public | head
+  timeout 20 node examples/6-sitemap/router.js
+  ls -R examples/6-sitemap/public
   ```
 
   **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Naming the artefact is this step's job; getting a human to look at it is **Step 4**, which is a stop rather than a bullet.
