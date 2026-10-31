@@ -41,11 +41,11 @@ describe('isActive, as a page actually renders it', () => {
 
   // `aria-current="page"` names the page itself, while a section's nav item
   // stays marked on every page inside it (`folderMatch`). Every nav asked
-  // isActive twice to tell the two apart (round 9). `current` is the exact
+  // isActive twice to tell the two apart (round 9). `@current` is the exact
   // match, whatever `folderMatch` says, so one call answers both.
-  it('exposes the exact page as {{current}} beside the section match', async () => {
+  it('exposes the exact page as {{@current}} beside the section match', async () => {
     const nav =
-      '[{{#isActive this href="/journal" folderMatch=true}}{{#if active}}section{{/if}}{{#if current}} page{{/if}}{{/isActive}}]'
+      '[{{#isActive this href="/journal" folderMatch=true}}{{#if active}}section{{/if}}{{#if @current}} page{{/if}}{{/isActive}}]'
     site = await makeSite({
       'src/pages/index.hbs': nav,
       'src/pages/journal/index.hbs': nav,

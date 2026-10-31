@@ -38,11 +38,11 @@
               path once, and `isActive` compares that same path with this
               page's and hands it back as {{href}}.
               One call per link: with the item's `folderMatch`, {{active}}
-              marks the section this page is in, and {{current}} is true
+              marks the section this page is in, and {{@current}} is true
               only on the link to this very page, which alone carries
               `aria-current="page"`. --}}
         {{#each config.nav}}
-        {{#isActive .. href=(link id) folderMatch=folderMatch}}<a href="{{href}}" class="nav__link{{#if active}} is-active{{/if}}"{{#if current}} aria-current="page"{{/if}}>{{label}}</a>{{/isActive}}
+        {{#isActive .. href=(link id) folderMatch=folderMatch}}<a href="{{href}}" class="nav__link{{#if active}} is-active{{/if}}"{{#if @current}} aria-current="page"{{/if}}>{{label}}</a>{{/isActive}}
         {{/each}}
       </nav>
     </div>

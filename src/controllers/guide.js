@@ -136,9 +136,19 @@ export function renderWithTargets(source, rewrite) {
   const tokens = markdown.parse(source, env)
   // The targets stay as the parser encoded them: they are URLs, not files.
   for (const token of linkTokens(tokens))
-    if (token.type === 'image') token.src = rewrite(token.src)
-    else token.href = rewrite(token.href)
+    if (token.type === 'image') token.src = rewrite(token.src, 'image')
+    else token.href = rewrite(token.href, 'link')
   return markdown.renderer.render(tokens, markdown.options, env)
+}
+
+// Where a target that is not one of GUIDE.md's own anchors points: a URL
+// with a scheme as it is, and a path in this repository on GitHub, a link
+// to the file's page and an image to the file itself, which `?raw=true`
+// serves. An empty target (`[TODO]()`) stays empty rather than becoming the
+// repository's front page (round 14).
+export function repoTarget(target, kind) {
+  if (!target || /^[a-z]+:/i.test(target)) return target
+  return kind === 'image' ? `${REPO}${target}?raw=true` : `${REPO}${target}`
 }
 
 /** @type {import('kiss-ssg').KissController} */
@@ -174,7 +184,7 @@ export default function guide({ model }) {
     const into = slug === 'index' ? '' : `${slug}/`
     return `${up}${into}#${anchor}`
   }
-  const rewriteLink = (target) => {
+  const rewriteLink = (target, kind) => {
     if (target.startsWith('#')) {
       const anchor = target.slice(1)
       const slug = pageOfAnchor.get(anchor)
@@ -182,8 +192,7 @@ export default function guide({ model }) {
         throw new Error(`GUIDE.md links to #${anchor}, which no guide page has`)
       return hrefTo(slug, anchor)
     }
-    if (/^[a-z]+:/i.test(target)) return target
-    return `${REPO}${target}`
+    return repoTarget(target, kind)
   }
 
   // A one-section page lets its <h1> carry the section's anchor instead of

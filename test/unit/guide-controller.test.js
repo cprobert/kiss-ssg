@@ -9,6 +9,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import guide, {
   renderWithTargets,
+  repoTarget,
   splitSections,
 } from '../../src/controllers/guide.js'
 
@@ -102,8 +103,44 @@ describe('splitSections', () => {
   })
 })
 
+// Round 14: an empty target (`[TODO]()`) became the repository's front page,
+// and an image went to GitHub's HTML page for the file rather than the file.
+describe('repoTarget', () => {
+  it('leaves an empty target empty', () => {
+    expect(repoTarget('', 'link')).toBe('')
+    expect(repoTarget('', 'image')).toBe('')
+  })
+
+  it("sends a link to the file's page and an image to the file itself", () => {
+    expect(repoTarget('lib/kiss.js', 'link')).toBe(
+      'https://github.com/cprobert/kiss-ssg/blob/main/lib/kiss.js',
+    )
+    expect(repoTarget('docs/pic.png', 'image')).toBe(
+      'https://github.com/cprobert/kiss-ssg/blob/main/docs/pic.png?raw=true',
+    )
+  })
+
+  it('leaves a URL with a scheme alone', () => {
+    expect(repoTarget('https://example.com/x', 'link')).toBe(
+      'https://example.com/x',
+    )
+  })
+})
+
 describe('renderWithTargets', () => {
   const rewrite = (target) => `rewritten/${target}`
+
+  it('tells the rewrite which kind of target it is', () => {
+    const kinds = []
+    renderWithTargets('[a](one.md) ![i](pic.png)', (target, kind) => {
+      kinds.push([target, kind])
+      return target
+    })
+    expect(kinds).toEqual([
+      ['one.md', 'link'],
+      ['pic.png', 'image'],
+    ])
+  })
 
   it('rewrites a Markdown link and image, and nothing in code or raw HTML', () => {
     const html = renderWithTargets(

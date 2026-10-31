@@ -62,6 +62,12 @@ describe('the structure script, as the reference ships it', () => {
   // Round 13: a folder whose name ends in .html is no file to read.
   fs.mkdirSync(path.join(site, 'embed.html'))
   fs.writeFileSync(path.join(site, 'embed.html/frame.js'), '//\n')
+  // Round 14: nor a symlink to nothing, which statSync throws on.
+  if (process.platform !== 'win32')
+    fs.symlinkSync(
+      path.join(root, 'gone.html'),
+      path.join(site, 'dangling.html'),
+    )
 
   const result = spawnSync('node', [script, site], { encoding: 'utf8' })
   const rows = result.stdout.trim().split('\n')

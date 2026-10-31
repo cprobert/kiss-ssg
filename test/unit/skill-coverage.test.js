@@ -389,12 +389,12 @@ const COVERAGE = [
     skills: [skill('kiss-ssg', 'kiss-accessibility')],
   },
   // 2026-10-31, code review round 9: every nav asked isActive twice per link
-  // to tell the section's mark from aria-current="page"; `{{current}}` is the
+  // to tell the section's mark from aria-current="page"; `{{@current}}` is the
   // exact page, so one call answers both. The two skills that teach the nav.
   {
     feature:
-      'one isActive call per nav link: {{active}} marks the section, {{current}} carries aria-current',
-    pattern: /^(?=[\s\S]*`\{\{current\}\}`)(?=[\s\S]*aria-current="page")/,
+      'one isActive call per nav link: {{active}} marks the section, {{@current}} carries aria-current',
+    pattern: /^(?=[\s\S]*`\{\{@current\}\}`)(?=[\s\S]*aria-current="page")/,
     skills: [
       skill('kiss-ssg', 'kiss-accessibility'),
       skill('kiss-ssg', 'kiss-information-architecture'),
@@ -785,7 +785,7 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
-    why: '2026-10-31: isActive exposes {{current}}, the exact page, beside {{active}}, so a nav link asks it once; a doc that says to ask it twice teaches the shape that replaced',
+    why: '2026-10-31: isActive exposes {{@current}}, the exact page, beside {{active}}, so a nav link asks it once; a doc that says to ask it twice teaches the shape that replaced',
     patterns: [
       /asks? `?isActive`? twice/i,
       /isActive`? is asked twice/i,
@@ -795,6 +795,9 @@ const CONTRADICTIONS = [
       // aria-current="page" on every page in a section. The walk reads .md and
       // .js only; a grep of every .hbs found none when this was added.
       /\{\{#if active\}\}\s*aria-current/,
+      // Round 14: the exact page is private data, `@current`; a context key
+      // `current` inside the block is the site's own, or nothing.
+      /\{\{#if current\}\}\s*aria-current/,
     ],
   },
   {

@@ -8,7 +8,7 @@
       <ul class="site-nav">
         {{!-- Guide is marked on every guide page, by a class; aria-current
               goes only on the link to the page itself, /guide/. --}}
-        <li><a href="{{link "guide/index" absolute=true}}"{{#isActive this href="/guide" folderMatch=true}}{{#if active}} class="is-section"{{/if}}{{#if current}} aria-current="page"{{/if}}{{/isActive}}>Guide</a></li>
+        <li><a href="{{link "guide/index" absolute=true}}"{{#isActive this href="/guide" folderMatch=true}}{{#if active}} class="is-section"{{/if}}{{#if @current}} aria-current="page"{{/if}}{{/isActive}}>Guide</a></li>
         <li><a href="{{link "examples" absolute=true}}" {{#isActive this href="/examples" active='aria-current="page"'}}{{{active}}}{{/isActive}}>Examples</a></li>
         <li>{{> "external-link" href="https://github.com/cprobert/kiss-ssg" text="GitHub" icon="icons/github"}}</li>
         <li>{{> "external-link" href="https://www.npmjs.com/package/kiss-ssg" text="npm" icon="icons/npm"}}</li>

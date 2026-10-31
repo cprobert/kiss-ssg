@@ -15,7 +15,7 @@ Run `/branch-close` when you are ready to open a pull request. This replaces man
 
 Do not run if:
 
-- You are on the base branch — check first (`node scripts/base-branch.mjs`), stop if true
+- You are on the base branch — Step 1 checks, and stops if so
 - There are no commits since the base — nothing to PR
 - A PR is already open for this branch — use `/docs-sweep` + `/session-reflect` alone to update it
 
@@ -72,14 +72,14 @@ The sequence follows two principles: **cheapest and most critical checks run fir
 
 ```bash
 BASE=$(node scripts/base-branch.mjs)
-git branch --show-current
+[ "$(git branch --show-current)" = "$(node scripts/base-branch.mjs --name)" ] && echo "on the base branch"
 git log "$BASE..HEAD" --oneline
 git status
 ```
 
 `scripts/base-branch.mjs` resolves the integration branch this work merges back into — `main`, or the major line currently in development (`v2` today). Every step below that says "the base" means whatever it printed.
 
-If on the base branch: stop, tell the user. If there are uncommitted changes: tell the user and ask whether to commit first before continuing.
+If it prints `on the base branch`: stop, tell the user. The comparison is between names, from `--name`: the plain script prints a ref, which is `refs/heads/v2` in this repository, where `v2` is a tag as well as a branch, and would never equal the branch name `git branch --show-current` prints. If there are uncommitted changes: tell the user and ask whether to commit first before continuing.
 
 Then check whether the branch is behind the base:
 

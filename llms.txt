@@ -106,7 +106,7 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `offset`: `index + 1`.
 - `stringify`: `{{{stringify this}}}` to inspect scope.
 - `lookup`: the built-in, plus a warning naming an undefined key.
-- `isActive`: see the trap above. `folderMatch=true` matches descendants; `{{current}}`: the page itself.
+- `isActive`: see the trap above. `folderMatch=true` matches descendants; `{{@current}}`: the page itself.
 - `canonical`: the page's absolute URL, the same string as its `<loc>`.
 - `absUrl`: `siteUrl` joined to a path, extension kept.
 - `asset`: the emitted path under `config.assets` (hash or `?v=`); fails the build on a file not emitted.

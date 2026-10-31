@@ -28,8 +28,15 @@ const html = new Map(
     .readdirSync(root, { recursive: true })
     .map((f) => f.split(path.sep).join('/'))
     .filter((f) => f.endsWith('.html') && !/(^|\/)404\.html$/.test(f))
-    // A file: a folder may be named embed.html too.
-    .filter((f) => fs.statSync(path.join(root, f)).isFile())
+    // A file: a folder may be named embed.html too, and a symlink may point
+    // at nothing.
+    .filter((f) => {
+      try {
+        return fs.statSync(path.join(root, f)).isFile()
+      } catch {
+        return false
+      }
+    })
     .map((f) => [f, fs.readFileSync(path.join(root, f), 'utf8')])
     .filter(([, source]) => /<(html|body)[\s>]/i.test(source)),
 )
@@ -92,7 +99,7 @@ node structure.mjs public https://your-site.example/
 
 Replace `public` with the site's build folder and `https://your-site.example/` with its `siteUrl`, path and all when the site is served under one (`https://example.github.io/docs/`). The address matters when the layout writes absolute links to the site's own pages (`{{link … absolute=true}}`, `{{absUrl}}`): without it, those links cannot be followed, and nearly every page reads as an orphan. Leave it off only for a site whose links are all relative or root-relative.
 
-The script counts the links a reader can follow, an `<a>` element's `href`, and not a `<link>` in the head or a `data-href`. It resolves each one the way a browser does, counts each linking page once, and treats `/about.html`, `/about` and `/about/` as one page, so the count holds whether or not the site is `extensionLess`. It does not count a page's link to itself, a link outside the site's address, or the 404 page, either as a page or as a source of links. On `node_modules/kiss-ssg/examples/11-blog/`, the first line is `1	3	/journal/page/2`: page two of the post listing has one link in (from page one) and sits three levels deep.
+The script counts the links a reader can follow, the `href` of an `<a>` or of an image map's `<area>`, and not a `<link>` in the head, a `data-href`, or a link inside a comment, a `<script>`, a `<template>` or a `<style>`. It reads pages only: an `.html` file with an `<html>` or `<body>` in it, so a verification file such as `google1234.html` is not counted as an orphan. It resolves each one the way a browser does, counts each linking page once, and treats `/about.html`, `/about` and `/about/` as one page, so the count holds whether or not the site is `extensionLess`. It does not count a page's link to itself, a link outside the site's address, or the 404 page, either as a page or as a source of links. On `node_modules/kiss-ssg/examples/11-blog/`, the first line is `1	3	/journal/page/2`: page two of the post listing has one link in (from page one) and sits three levels deep.
 
 How to read the output:
 

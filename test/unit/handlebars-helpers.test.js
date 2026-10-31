@@ -128,61 +128,43 @@ describe('isActive', () => {
     expect(out).toBe('About:active Contact: ')
   })
 
-  // Round 10: `current` became one of the helper's own keys, and a site on ^2
-  // whose nav item or hash already carried a `current` reads the helper's
-  // boolean instead, on a green build. It is shadowed as `active` always was,
-  // and the helper says so, once per build, naming the key to rename.
-  it('says once that its own {{current}} hides a site key of that name', () => {
+  // `@current` is the exact page, whatever `folderMatch` says. It was a
+  // context key, `current`, from round 9, which hid a site's own `current`
+  // and needed a warning, a mark and a shape check in turn, each of which
+  // failed in the next review (rounds 10-14). As private data, like
+  // `@index`, it collides with nothing, so the tests are about the answer.
+  it('gives the exact page as @current, and leaves a site key called current alone', () => {
     const nav = [
-      { href: '/about', current: 'yes' },
-      { href: '/contact', current: 'no' },
+      { href: '/docs', current: 'yes' },
+      { href: '/docs/intro', current: 'no' },
     ]
     const out = render(
-      '{{#each nav}}{{#isActive ../page href=href}}{{current}} {{/isActive}}{{/each}}',
-      { page: { pageURL: 'about.html' }, nav },
+      '{{#each nav}}{{#isActive ../page href=href folderMatch=true}}{{current}}:{{active}}:{{@current}} {{/isActive}}{{/each}}',
+      { page: { pageURL: 'docs/intro.html' }, nav },
     )
-    expect(out).toBe('true false ')
-    expect(warnings).toHaveLength(1)
-    expect(warnings[0].join(' ')).toContain(
-      'isActive: its own {{current}} hides a "current" key',
-    )
-  })
-
-  // Round 11: every isActive block carries `current`, so an isActive inside
-  // another (a nav partial inside a marked region) saw the outer block's own
-  // key and warned about a key no author wrote.
-  it('does not warn about the current an outer isActive put there', () => {
-    const out = render(
-      '{{#isActive page href="/"}}{{#isActive ../page href="/about"}}{{current}}{{/isActive}}{{/isActive}}',
-      { page: { pageURL: 'about.html' } },
-    )
-    expect(out).toBe('true')
+    expect(out).toBe('yes:active:false no:active:true ')
     expect(warnings).toEqual([])
   })
 
-  // Round 12: a partial called with hash parameters gets a copy of the
-  // context (Handlebars' Utils.extend), and the copy dropped the helper's
-  // non-enumerable mark, so the outer block's `current` warned again.
-  it('does not warn through a partial called with hash parameters', () => {
+  it('answers @current for each block, nested or through a partial', () => {
     hbs.registerPartial(
       'item',
-      '{{#isActive page href=h}}{{current}}{{/isActive}}',
+      '{{#isActive page href=h}}{{@current}}{{/isActive}}',
     )
     const out = render(
-      '{{#isActive page href="/about"}}{{> item page=page h="/about"}}{{/isActive}}',
+      '{{#isActive page href="/"}}{{@current}}|{{#isActive ../page href="/about"}}{{@current}}{{/isActive}}|{{> item page=page h="/about"}}|{{@current}}{{/isActive}}',
       { page: { pageURL: 'about.html' } },
     )
-    expect(out).toBe('true')
+    expect(out).toBe('false|true|true|false')
     expect(warnings).toEqual([])
   })
 
-  it('says the same of a current= in the hash', () => {
-    const out = render(
-      '{{#isActive page href="/about" current="mine"}}{{current}}{{/isActive}}',
-      { page: { pageURL: 'about.html' } },
-    )
-    expect(out).toBe('true')
-    expect(warnings).toHaveLength(1)
+  it('keeps @current inside the block', () => {
+    expect(
+      render('{{#isActive page href="/about"}}{{/isActive}}[{{@current}}]', {
+        page: { pageURL: 'about.html' },
+      }),
+    ).toBe('[]')
   })
 
   it('lets the hash win over a same-named key in the surrounding context', () => {

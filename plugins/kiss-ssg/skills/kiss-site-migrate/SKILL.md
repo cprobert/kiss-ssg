@@ -284,23 +284,23 @@ back the first launch's place, so the learner reopened there every time.
   in the build. Check it in the LMS: launch a page that bookmarks three times, moving somewhere
   else each time, and the third launch opens on the second launch's place.
 
-### 0i. The release that adds `{{current}}` to `isActive`
+### 0i. The release that adds `{{@current}}` to `isActive`
 
-Nothing fails. One kind of site has to change: one that already passes its own `current` key into the block (below), which the build now warns about. Inside `{{#isActive}}`, `{{current}}` is now `true`
-only when the page is the link's own page, whatever `folderMatch` says, beside `{{active}}`,
-which stays true on every page inside a section. `aria-current="page"` names the page itself, so
-a nav whose section items use `folderMatch` used to need a second `isActive` call, without
-`folderMatch`, for the attribute alone.
+Nothing fails. Inside `{{#isActive}}`, `{{@current}}` is now `true` only when the page is the
+link's own page, whatever `folderMatch` says, beside `{{active}}`, which stays true on every
+page inside a section. It is private data, like `@index`, so it hides no key of the site's.
+`aria-current="page"` names the page itself, and only `{{@current}}` says when that is.
 
-- **Grep the layouts for `aria-current`.** Where a nav link reaches it through a second
-  `{{#isActive}}` without `folderMatch`, fold the two calls into one: the class from
-  `{{active}}`, the attribute from `{{current}}`, as
-  `node_modules/kiss-ssg/examples/11-blog/src/layouts/layout.hbs` does. Optional: the same
-  links are marked as before, though a link's attributes may come out in another order.
-- **A site that passes its own `current` key into the block** (a nav item with a `current`
-  field, or `current=` in the hash) now reads the helper's, as it already did for `active`, and
-  the build warns the first time (once per run, so a `--dev` session warns once): `isActive: its own {{current}} hides a "current" key`. Rename the
-  site's key, and the warning goes.
+- **Grep the layouts for `aria-current`, and fix the shape that marks a whole section.** A nav
+  link that sets the attribute inside `{{#if active}}`, in an `{{#isActive}}` with
+  `folderMatch`, puts `aria-current="page"` on every page in that section. kiss's own examples
+  1, 3 and 11 shipped that shape until this release, so a site that copied one has it. Set the
+  attribute inside `{{#if @current}}` instead, and keep the class on `{{#if active}}`, as
+  `node_modules/kiss-ssg/examples/11-blog/src/layouts/layout.hbs` does. This changes the built
+  HTML: on a page inside the section, the section link keeps its class and loses the attribute.
+- **A nav that calls `isActive` twice for one link**, once with `folderMatch` for the class and
+  once without it for the attribute, can fold the two into one the same way. Optional: the
+  same links are marked as before, though a link's attributes may come out in another order.
 - Check it the way the change promises: build before and after, and diff the pages. On any
   page, at most one nav link carries `aria-current="page"`, and it points at that page.
 
