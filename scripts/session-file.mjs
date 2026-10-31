@@ -19,7 +19,7 @@
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { branchRefs } from './base-branch.mjs'
+import { branchRefs, refExists } from './base-branch.mjs'
 import { isMain } from './is-main.mjs'
 
 const SESSIONS = 'planning/sessions'
@@ -64,17 +64,6 @@ const git = (args) => {
   }
 }
 
-// Whether a ref exists, by its exact name, without throwing: not a revision
-// parse, which would read `refs/heads/x~1` as the branch x (round 16).
-const resolves = (ref) => {
-  try {
-    git(['show-ref', '--verify', ref])
-    return true
-  } catch {
-    return false
-  }
-}
-
 // The branch's own commits: the local branch, or origin's copy when there is
 // no local one (a branch opened on another machine, or already deleted here).
 // Which refs the name has is base-branch.mjs's `branchRefs`, shared. The
@@ -84,7 +73,7 @@ const resolves = (ref) => {
 // session file is the one that describes it. The frontmatter is written once,
 // at open, so a local copy behind origin's reads the same `branch:`, `base:`
 // and `worktree:` (rounds 9 and 10).
-export function branchCommits(branch, exists = resolves) {
+export function branchCommits(branch, exists = (ref) => refExists(ref)) {
   return branchRefs(branch, exists)[0]?.full ?? null
 }
 

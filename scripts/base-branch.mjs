@@ -102,8 +102,9 @@ function branchRef(name, cwd, run = git) {
 
 // Whether a ref exists, by its exact name. Not `rev-parse`, which resolves a
 // revision: `refs/tags/v2~1` would read as the tag v2, and an override
-// rooted at a tag (`v2~1`) as a stale one (round 16).
-const refExists = (full, cwd, run) =>
+// rooted at a tag (`v2~1`) as a stale one (round 16). Shared with
+// session-file.mjs, so the rule lives once.
+export const refExists = (full, cwd = process.cwd(), run = git) =>
   Boolean(run(['show-ref', '--verify', full], cwd))
 
 const isTag = (name, cwd, run) => refExists(`refs/tags/${name}`, cwd, run)

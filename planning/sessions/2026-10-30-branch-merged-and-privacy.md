@@ -255,6 +255,9 @@ opened: 2026-10-30
   - **Recorded, not counted:**
     - Finding 8: export `refExists` for `session-file.mjs`. Same as round 16's finding 8.
     - Finding 9: README and `@current`. Raised in rounds 17 and 18, and once before as part of round 10's version finding. The reasoning in round 17 stands, but the operator may prefer a README line to an argument that keeps recurring.
+- **2026-10-31 — Two recurring "recorded" findings, settled before round 19.** Each had come back in two or three rounds, and settling each was cheaper than recording it again.
+  - **One exact-ref check.** `base-branch.mjs` exports `refExists` (`show-ref --verify`, with defaults), and `session-file.mjs` uses it in place of its own copy. The script tests pass, and the CLI answers as before, both for a branch and for one that is nowhere.
+  - **README names `@current`,** in one sentence beside "Links by identity", which is where README describes helpers. It does not become a second helper reference: the sentence says what one `isActive` call gives a nav, and GUIDE.md § Helpers stays the reference.
 
 ## Pulse log
 
