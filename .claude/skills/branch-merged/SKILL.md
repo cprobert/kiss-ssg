@@ -35,7 +35,7 @@ node scripts/session-file.mjs "$B" --from-branch
 gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,mergedAt,url
 ```
 
-**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares each file's first `branch:` value, the frontmatter's, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. Read the file it prints with `git show "$B:<file>"`.
+**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. Read the file it prints with `git show "$B:<file>"`.
 
 - **One file:** that is this session's file.
 - **None:** the branch has no session file, so it made no worktree.
@@ -72,11 +72,11 @@ Look before you switch a checkout: another session may be using it.
 
 ```bash
 BASE_NAME=$(node scripts/base-branch.mjs --name)
-git checkout "$BASE_NAME"
+git switch "$BASE_NAME"
 git pull --ff-only
 ```
 
-`--name` prints the base branch's own name (`main`), where the plain script prints a ref that is `origin/main` in a clone with no local `main`. `git checkout main` creates the local branch from `origin/main` when there is none. If `--name` prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to update.
+`--name` prints the base branch's own name (`main`), where the plain script prints a ref that is `origin/main` in a clone with no local `main`. `git switch main` creates the local branch from `origin/main` when there is none, and, unlike `git checkout`, only ever switches to a branch, never to a tag that shares its name. If `--name` prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to update.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 
@@ -84,7 +84,7 @@ A failed `--ff-only` means the local base has commits GitHub does not have. Stop
 
 ```bash
 BASE_NAME=$(node scripts/base-branch.mjs --name)
-git log --oneline "origin/$BASE_NAME..$BASE_NAME"
+git log --oneline "refs/remotes/origin/$BASE_NAME..refs/heads/$BASE_NAME"
 ```
 
 ### 4. Remove this session's worktree, then the branch

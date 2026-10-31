@@ -116,14 +116,14 @@ Adopting (step 2)? Skip this. Otherwise propose a name from the objective (`cont
   git fetch origin
   git rev-parse --verify --quiet "refs/heads/<base>" >/dev/null && echo "local: yes" || echo "local: no"
   git rev-parse --verify --quiet "refs/remotes/origin/<base>" >/dev/null && echo "origin: yes" || echo "origin: no"
-  git rev-list --left-right --count "<base>...origin/<base>" 2>/dev/null
+  git rev-list --left-right --count "refs/heads/<base>...refs/remotes/origin/<base>" 2>/dev/null
   ```
 
   The two numbers are the commits only on the local base, then those only on the remote:
-  - `local: no` (a fresh clone): start from `origin/<base>`.
-  - `origin: no` (no remote, or an unpushed base): start from the local `<base>`.
-  - Both, and the first number is 0: start from `origin/<base>`, the same as the local base or newer.
-  - Both, and the first number is more than 0: the local base has commits the remote lacks, so start from the local `<base>`. If the second number is also more than 0, they have diverged: stop and ask.
+  - `local: no` (a fresh clone): start from `refs/remotes/origin/<base>`.
+  - `origin: no` (no remote, or an unpushed base): start from the local `refs/heads/<base>`.
+  - Both, and the first number is 0: start from `refs/remotes/origin/<base>`, the same as the local base or newer.
+  - Both, and the first number is more than 0: the local base has commits the remote lacks, so start from the local `refs/heads/<base>`. If the second number is also more than 0, they have diverged: stop and ask.
 
   The new folder goes beside the repository, named after it, wherever in the repository you are: a site often sits in a subfolder of its repository, and a path relative to that subfolder would put the worktree inside the repository it belongs to.
 

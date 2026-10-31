@@ -53,14 +53,14 @@ const markdown = new Remarkable({ html: true, xhtmlOut: true, breaks: false })
 // list item belongs to that block. A heading runs from `lines[0]` up to
 // `lines[1]`, two lines for a setext heading's text and underline.
 // Parsed once per version of the file, not once per guide page.
+// The cache is keyed on the text itself, not the file's modification time:
+// an edit can keep the time (a checkout, a tool that preserves it, two saves
+// in one tick), and `node docs --dev` lives across rebuilds. Reading the file
+// is cheap next to parsing it.
 let parsed = null
 function readSections() {
-  const { mtimeMs } = fs.statSync(GUIDE)
-  if (parsed?.mtimeMs !== mtimeMs)
-    parsed = {
-      mtimeMs,
-      sections: splitSections(fs.readFileSync(GUIDE, 'utf8')),
-    }
+  const text = fs.readFileSync(GUIDE, 'utf8')
+  if (parsed?.text !== text) parsed = { text, sections: splitSections(text) }
   return parsed.sections
 }
 

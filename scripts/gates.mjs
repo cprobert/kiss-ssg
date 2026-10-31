@@ -95,7 +95,7 @@ const run = (cmd, args) =>
 // working tree now. Prettier reads the working tree, so the list comes from
 // the merge base against the working tree, not from the commits alone: a file
 // renamed with `git mv` and not yet committed is checked under its new name,
-// and a deleted one is not listed at all. A list taken from the commits named
+// a deleted one is not listed at all, and a new one not yet added is. A list taken from the commits named
 // files the working tree no longer had, and failed the gate on them twice on
 // 2026-10-31.
 export function changedFiles(base, cwd = process.cwd(), env = process.env) {
@@ -108,16 +108,23 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
     })
   try {
     const mergeBase = run(['merge-base', base, 'HEAD']).trim()
-    const out = run(['diff', '--name-only', '--diff-filter=ACMR', mergeBase])
-    return {
-      files: out
-        .split('\n')
-        .map((f) => f.trim())
-        // No extension filter: `.prettierignore` decides what is out of scope
-        // and `--ignore-unknown` (below) drops anything prettier cannot parse,
-        // so the two live in one place instead of drifting apart here.
-        .filter(Boolean),
-    }
+    const changed = run([
+      'diff',
+      '--name-only',
+      '--diff-filter=ACMR',
+      mergeBase,
+    ])
+    // A file made on the branch and not yet added is about to be committed
+    // too; `git diff` never lists one. Ignored files stay out.
+    const created = run(['ls-files', '--others', '--exclude-standard'])
+    const files = `${changed}\n${created}`
+      .split('\n')
+      .map((f) => f.trim())
+      // No extension filter: `.prettierignore` decides what is out of scope
+      // and `--ignore-unknown` (below) drops anything prettier cannot parse,
+      // so the two live in one place instead of drifting apart here.
+      .filter(Boolean)
+    return { files: [...new Set(files)].sort() }
   } catch (e) {
     return { error: `${e.stderr ?? ''}`.trim() || e.message }
   }

@@ -21,10 +21,15 @@ import path from 'node:path'
 
 const SESSIONS = 'planning/sessions'
 
-// The first `branch:` line is the frontmatter's; a log's body may quote
-// another branch's. Line endings are normalised, so a CRLF file reads the same.
+// The branch is read from the frontmatter and nowhere else: a log's body may
+// quote another session's frontmatter, and a file with no frontmatter has no
+// branch. Line endings are normalised, so a CRLF file reads the same.
 export function branchOf(text) {
-  const match = /^branch:[ \t]*(.*?)[ \t]*$/m.exec(text.replace(/\r\n?/g, '\n'))
+  const frontmatter = /^---\n([\s\S]*?)\n---(\n|$)/.exec(
+    text.replace(/\r\n?/g, '\n'),
+  )
+  if (!frontmatter) return null
+  const match = /^branch:[ \t]*(.*?)[ \t]*$/m.exec(frontmatter[1])
   return match ? match[1] : null
 }
 

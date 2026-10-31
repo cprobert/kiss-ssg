@@ -15,6 +15,9 @@ describe('branchOf', () => {
     ['---\nbranch:   feat/x  \n---\n', 'feat/x'],
     ['---\nbranch: a\n---\nbranch: b\n', 'a'],
     ['---\ntitle: none\n---\n', null],
+    // A `branch:` line in the body is a quotation, not this file's branch.
+    ['---\ntitle: none\n---\nbranch: feat/x\n', null],
+    ['no frontmatter\nbranch: feat/x\n', null],
   ])('%j has the branch %j', (text, branch) => {
     expect(branchOf(text)).toBe(branch)
   })

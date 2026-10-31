@@ -145,14 +145,14 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
   echo "base: $BASE_NAME"
   git rev-parse --verify --quiet "refs/heads/$BASE_NAME" >/dev/null && echo "local: yes" || echo "local: no"
   git rev-parse --verify --quiet "refs/remotes/origin/$BASE_NAME" >/dev/null && echo "origin: yes" || echo "origin: no"
-  git rev-list --left-right --count "$BASE_NAME...origin/$BASE_NAME" 2>/dev/null
+  git rev-list --left-right --count "refs/heads/$BASE_NAME...refs/remotes/origin/$BASE_NAME" 2>/dev/null
   ```
 
   Shell state does not carry from one Bash call to the next, so this block sets the base itself. `--name` prints the base branch's own name (`main`), not a ref, so `origin/<name>` below is a real ref even in a clone with no local base. If it prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to start from. The two numbers are the commits only on the local base, then those only on `origin`:
-  - `local: no` (a fresh or cloud clone): start from `origin/<name>`.
-  - `origin: no` (an unpushed base): start from the local base, `<name>`.
-  - Both, and the first number is 0: start from `origin/<name>`, the same as the local base or newer.
-  - Both, and the first number is more than 0: the local base has commits `origin` lacks; start from the local base so they are kept. If the second number is also more than 0, the two have diverged: stop and ask.
+  - `local: no` (a fresh or cloud clone): start from `refs/remotes/origin/<name>`.
+  - `origin: no` (an unpushed base): start from the local base, `refs/heads/<name>`.
+  - Both, and the first number is 0: start from `refs/remotes/origin/<name>`, the same as the local base or newer.
+  - Both, and the first number is more than 0: the local base has commits `origin` lacks; start from `refs/heads/<name>` so they are kept. If the second number is also more than 0, the two have diverged: stop and ask.
 
   ```bash
   TOP=$(git rev-parse --show-toplevel)

@@ -85,7 +85,7 @@ Then check whether the branch is behind the base:
 
 ```bash
 BASE_NAME=$(node scripts/base-branch.mjs --name)
-git fetch origin 2>/dev/null; git rev-list --count "HEAD..origin/$BASE_NAME"
+git fetch origin 2>/dev/null; git rev-list --count "HEAD..refs/remotes/origin/$BASE_NAME"
 ```
 
 The count is against `origin/<base>`, not the local base: `git fetch` never moves a local branch, so a local base that was never pulled would count 0 while GitHub's base has moved on.

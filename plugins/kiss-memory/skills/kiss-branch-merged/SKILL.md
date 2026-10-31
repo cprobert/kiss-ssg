@@ -24,18 +24,18 @@ git fetch --prune origin
 git worktree list --porcelain
 B=<branch>
 git ls-tree -r --full-name --name-only "$B" -- planning/sessions | while read -r f; do
-  if [ "$(git show "$B:$f" | sed -n 's/^branch:[[:space:]]*//p' | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+  if [ "$(git show "$B:$f" | awk '{ sub(/\r$/, "") } NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } /^branch:/ { sub(/^branch:[ \t]*/, ""); sub(/[ \t]*$/, ""); print; exit }')" = "$B" ]; then echo "$f"; fi
 done
 ```
 
 - **The base is the one the session file names.** `kiss-branch-open` writes the branch the work merges into on its `base:` line, and that is the base for every step below: work aimed at `release` merged into `release`, whatever the remote's default is. Read it from the file the loop finds (`git show "$B:<file>" | sed -n 's/^base:[[:space:]]*//p' | head -1 | tr -d '\r'`). Only with no session file, or no `base:` line, use what the first lines printed: the local record of the remote's default branch, or the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base then means neither answered: ask which branch the work merges into. Never assume `main`.
-- **The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares each file's first `branch:` value, the frontmatter's, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. `--full-name` prints each path from the repository's root, which is what `git show "$B:<file>"` needs to read it, so the lookup also works for a site that lives in a subfolder of its repository. One file is this session's. None means the branch has no session file and made no worktree. More than one means the name was used before: stop and ask which is this session's, because a `worktree:` line read from the wrong file would remove another session's worktree.
+- **The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. `--full-name` prints each path from the repository's root, which is what `git show "$B:<file>"` needs to read it, so the lookup also works for a site that lives in a subfolder of its repository. One file is this session's. None means the branch has no session file and made no worktree. More than one means the name was used before: stop and ask which is this session's, because a `worktree:` line read from the wrong file would remove another session's worktree.
 - **The worktree this session made** is the path in the session file's `worktree:` line, and only that one is this skill's to remove. A file without the line made no worktree. If `git worktree list --porcelain` shows another worktree with the branch checked out (`branch refs/heads/<branch>`), stop and ask: someone may be working in it, and `git branch -D` refuses a branch a worktree has checked out anyway.
 
 **Confirm the merge before deleting anything.** A squash merge, the usual choice on GitHub, puts one new commit on the base and none of the branch's own, so git alone cannot tell a squashed branch from an unmerged one; `git branch -D` would delete either.
 
 - **GitHub, with `gh`:** `gh pr list --head <branch> --state all --json number,state,isCrossRepository,headRefOid,mergedAt,url`. It matches by name, so it can return more than one. Ignore any with `isCrossRepository: true` (a fork's branch with the same name). If one is `OPEN`, stop: the name is in use for unmerged work. If none is `MERGED`, stop. Otherwise step 2 checks a `MERGED` one.
-- **A plain merge, any host:** `git merge-base --is-ancestor <branch> origin/<base>` succeeds when every commit on the branch is in the base. That is proof enough, and step 2 is already done.
+- **A plain merge, any host:** `git merge-base --is-ancestor <branch> refs/remotes/origin/<base>` succeeds when every commit on the branch is in the base. That is proof enough, and step 2 is already done.
 - **Neither can tell** (a squash on GitLab or Bitbucket, or no `gh`): ask the person to confirm the merge, with AskUserQuestion, and say that you could not check it yourself. A "not sure" stops here.
 
 ### 2. Check that the merge holds every local commit
@@ -63,7 +63,7 @@ Before anything changes. A merged pull request only proves that what was pushed 
 - **Where the person confirmed the merge, and the branch is gone from the remote** (the host deleted it on merge): nothing left on this machine says which commits the squash took. Show the person every commit the branch has that the base does not:
 
   ```bash
-  git log --oneline origin/<base>..<branch>
+  git log --oneline refs/remotes/origin/<base>..<branch>
   ```
 
   After a squash this lists all of the branch's commits, which is expected: the squash replaced them with one new commit. Ask, with AskUserQuestion, whether the merge included every commit listed, naming the newest. A yes lets the deletion go ahead. A no, or a "not sure", stops here, and nothing is deleted.
@@ -73,11 +73,11 @@ Before anything changes. A merged pull request only proves that what was pushed 
 Look before you switch a checkout: another session may be using it.
 
 - **The branch is in its own worktree:** leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
-- **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work. Then `git checkout <base>` and `git pull --ff-only`.
+- **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work. Then `git switch <base>`, which only ever switches to a branch, never to a tag that shares its name, and `git pull --ff-only`.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 
-A failed `--ff-only` means the local base has commits the remote does not. Stop and show them (`git log --oneline origin/<base>..<base>`); never reset the base.
+A failed `--ff-only` means the local base has commits the remote does not. Stop and show them (`git log --oneline refs/remotes/origin/<base>..refs/heads/<base>`); never reset the base.
 
 ### 4. Check the merged site against its record
 
@@ -87,7 +87,7 @@ A failed `--ff-only` means the local base has commits the remote does not. Stop 
 - **The branch was in its own worktree:** run it in that worktree, which has its own `node_modules`, after moving it onto the merged base. It must be clean first (`git -C <worktree> status --short` prints nothing; if not, stop and ask). Step 5 removes it afterwards.
 
   ```bash
-  git -C <worktree> checkout --detach origin/<base>
+  git -C <worktree> checkout --detach refs/remotes/origin/<base>
   ```
 
 - **No checkout is on the merged base** (no worktree, and a main checkout left on another branch): skip the check, and say why in the report. A check run anywhere else describes that other branch, not the merge.

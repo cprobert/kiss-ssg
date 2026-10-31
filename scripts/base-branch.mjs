@@ -140,12 +140,16 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
   }
 
   const current = run(['branch', '--show-current'], cwd) ?? ''
+  // Full ref names: a short name is spelled `heads/v2` when a tag is called
+  // `v2`, and would no longer read as an integration branch. Only local
+  // branches and origin's count, as everywhere else in the branch skills.
   const names = new Set()
   for (const line of (
-    run(['branch', '-a', '--format=%(refname:short)'], cwd) ?? ''
+    run(['branch', '-a', '--format=%(refname)'], cwd) ?? ''
   ).split('\n')) {
-    const name = line.trim().replace(/^origin\//, '')
-    if (name && isIntegrationBranch(name)) names.add(name)
+    const name = line.trim().replace(/^refs\/(heads|remotes\/origin)\//, '')
+    if (name && !name.startsWith('refs/') && isIntegrationBranch(name))
+      names.add(name)
   }
 
   // main first so a tie (identical history) resolves to the default branch.
@@ -160,7 +164,11 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
   }
   const base = pickBaseBranch(current, candidates, distanceTo)
   if (base === null) return 'main'
-  return branchRef(base, cwd, run)?.print ?? `origin/${base}`
+  // `pickBaseBranch` returns the current branch, or a candidate `distanceTo`
+  // found a ref for; either way the lookup below has a branch to find.
+  const winner = branchRef(base, cwd, run)
+  if (!winner) throw new Error(`base-branch: no ref for ${base}`)
+  return winner.print
 }
 
 // The ref is `origin/<name>` when the base has no local branch. A diff wants
@@ -170,6 +178,10 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
 // the name after `origin/`. Anything else has no name the branch skills can
 // use: a tag or a commit is no branch, and every skill pairs the name with
 // `origin/`, so a branch on another remote would be compared with origin's.
+// A name is not a revision: a tag may share it. So the skills give it to
+// commands that take a branch (`git switch`, `gh pr create --base`), and
+// write `refs/heads/<name>` or `refs/remotes/origin/<name>` wherever git
+// wants a revision.
 export function branchName(ref, refExists) {
   const short = ref.replace(/^refs\/(heads|remotes)\//, '')
   if (

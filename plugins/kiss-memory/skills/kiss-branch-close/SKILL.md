@@ -19,9 +19,9 @@ BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^o
 [ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
 echo "base: ${BASE:-unknown}"
 git fetch -q origin
-for r in "$BASE" "origin/$BASE"; do
-  git rev-parse -q --verify "$r^{commit}" >/dev/null && echo "$r $(git rev-list --count "$r..HEAD")"
-done | sort -k2 -n | head -1
+for r in "refs/heads/$BASE" "refs/remotes/origin/$BASE"; do
+  git rev-parse -q --verify "$r^{commit}" >/dev/null && echo "$(git rev-list --count "$r..HEAD") $r"
+done | awk 'NR == 1 || $1 < best { best = $1; ref = $2 } END { print ref }'
 git branch --show-current
 git status --short
 ```
@@ -39,11 +39,11 @@ Stop if you are on the base branch, or if there are no commits to close. Find th
 ```bash
 B=$(git branch --show-current)
 for f in planning/sessions/*.md; do
-  if [ "$(sed -n 's/^branch:[[:space:]]*//p' "$f" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+  if [ "$(awk '{ sub(/\r$/, "") } NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } /^branch:/ { sub(/^branch:[ \t]*/, ""); sub(/[ \t]*$/, ""); print; exit }' "$f")" = "$B" ]; then echo "$f"; fi
 done
 ```
 
-The loop compares each session file's first `branch:` value, the frontmatter's, with the branch name exactly: a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
+The loop compares the `branch:` value in each session file's frontmatter, and nowhere else, with the branch name exactly: a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
 
 Commit or stash anything outstanding before verifying — the check runs the working tree, so uncommitted work would be verified and then not shipped.
 

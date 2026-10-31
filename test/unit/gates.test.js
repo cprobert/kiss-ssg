@@ -228,7 +228,15 @@ describe('changedFiles', () => {
     commit('work')
     git('mv', 'old.js', 'new.js')
     git('rm', '-q', 'gone.js')
-    expect(changedFiles('main', repo, env)).toEqual({ files: ['new.js'] })
+    // A file made on the branch and not yet added is about to be committed
+    // too (round 6); an ignored one is not, and stays out.
+    fs.writeFileSync(path.join(repo, '.gitignore'), 'scratch/\n')
+    fs.mkdirSync(path.join(repo, 'scratch'))
+    fs.writeFileSync(path.join(repo, 'scratch/tmp.js'), 'x\n')
+    fs.writeFileSync(path.join(repo, 'brand-new.js'), 'x\n')
+    expect(changedFiles('main', repo, env)).toEqual({
+      files: ['.gitignore', 'brand-new.js', 'new.js'],
+    })
   })
 
   it('reports git refusing the base as an error, not as no changes', () => {

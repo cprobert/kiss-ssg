@@ -1008,16 +1008,24 @@ describe('AGENTS.md carries the Codex install', () => {
     expect(action).toMatchObject({ kind: 'write', verb: 'create' })
     expect(action.content).toContain('node_modules/kiss-ssg/llms.txt')
     expect(action.content).toContain('npx kiss-ssg check router.js')
-    for (const skill of [
-      'kiss-site-new',
-      'kiss-site-import',
-      'kiss-page-add',
-      'kiss-build-check',
-      'kiss-site-review',
-      'kiss-site-migrate',
-      'kiss-site-brief',
-    ])
-      expect(action.content).toContain(skill)
+    // Every skill the two plugins ship, read from their folders: a list typed
+    // here missed the six domain skills and kiss-branch-merged for a release
+    // (2026-10-31, /code-review round 6), so a Codex agent in a site `init`
+    // set up never heard of them.
+    const shipped = ['kiss-ssg', 'kiss-memory'].flatMap((plugin) =>
+      fs
+        .readdirSync(
+          new URL(`../../plugins/${plugin}/skills/`, import.meta.url),
+          {
+            withFileTypes: true,
+          },
+        )
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name),
+    )
+    expect(shipped.length).toBeGreaterThan(10)
+    for (const skill of shipped)
+      expect(action.content).toContain(`\`${skill}\``)
     for (const line of CODEX_STEPS) expect(action.content).toContain(line)
     expect(action.content).toMatch(/once per user/)
   })
