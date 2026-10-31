@@ -132,6 +132,18 @@ export function splitSections(source) {
   const close = (to) => {
     if (current) current.lines = lines.slice(from, to)
   }
+  // Every heading the site shows claims its anchor; the page map is keyed
+  // by anchor, so a second claim sent every link to whichever came last
+  // (round 20).
+  const anchors = new Map()
+  const claim = (heading) => {
+    const anchor = anchorFor(heading.title)
+    if (anchors.has(anchor))
+      throw new Error(
+        `GUIDE.md lines ${anchors.get(anchor) + 1} and ${heading.start + 1} would share the anchor #${anchor}`,
+      )
+    anchors.set(anchor, heading.start)
+  }
   for (const heading of headings) {
     if (heading.level === 2 || heading.level === 3) {
       close(heading.start)
@@ -139,13 +151,18 @@ export function splitSections(source) {
         heading.title === 'Usage'
           ? null
           : { title: heading.title, lines: [], subs: new Map() }
-      if (current) sections.push(current)
+      if (current) {
+        claim(heading)
+        sections.push(current)
+      }
       from = heading.end
-    } else if (current && heading.level >= 4)
+    } else if (current && heading.level >= 4) {
+      claim(heading)
       current.subs.set(heading.start - from, {
         ...heading,
         span: heading.end - heading.start,
       })
+    }
   }
   close(lines.length)
   return sections

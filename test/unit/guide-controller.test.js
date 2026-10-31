@@ -127,6 +127,19 @@ describe('splitSections', () => {
     )
   })
 
+  // Round 20: two sub-headings with one title (or one with a section's)
+  // share an anchor; the page map kept the last, so every link to it went to
+  // one page, and both pages emitted the same id.
+  it('fails on two headings that would share an anchor', () => {
+    expect(() =>
+      splitSections(
+        ['## One', '#### Options', 'a', '## Two', '#### Options', 'b'].join(
+          '\n',
+        ),
+      ),
+    ).toThrow('GUIDE.md lines 2 and 5 would share the anchor #options')
+  })
+
   it('fails on two sections with one title, setext included', () => {
     expect(() =>
       splitSections(['## One', 'a', '', 'One', '---', 'b'].join('\n')),

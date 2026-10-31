@@ -97,6 +97,15 @@ describe('the command line', () => {
     git('checkout', '-q', 'main')
   })
 
+  // Round 20: from a subfolder, the local path was printed from the root, and
+  // a caller reading it there found no such file. It is printed from here.
+  it('prints a path the caller can open from where it runs', () => {
+    git('checkout', '-q', 'fix/v2.8')
+    const result = run(path.join(repo, 'docs'))
+    git('checkout', '-q', 'main')
+    expect(result.stdout).toBe('../planning/sessions/a.md\n')
+  })
+
   it("reads a named branch's own commits, from anywhere in the repository", () => {
     fs.rmSync(path.join(repo, 'planning'), { recursive: true })
     const result = run(path.join(repo, 'docs'), 'fix/v2.8', '--from-branch')

@@ -105,17 +105,22 @@ const run = (cmd, args) =>
 // (round 17).
 const require = createRequire(import.meta.url)
 export function prettierBin(resolve = require.resolve) {
+  let manifest
   try {
-    const manifest = resolve('prettier/package.json')
-    // npm allows `bin` as a path or as `{ name: path }` (round 18).
-    const { bin } = require(manifest)
-    return path.join(
-      path.dirname(manifest),
-      typeof bin === 'string' ? bin : bin.prettier,
-    )
+    manifest = resolve('prettier/package.json')
   } catch {
     return null
   }
+  // npm allows `bin` as a path or as `{ name: path }` (round 18). Installed
+  // but naming no prettier bin is its own failure, not "not installed",
+  // which would send the operator to reinstall it (round 20).
+  const { bin } = require(manifest)
+  const file = typeof bin === 'string' ? bin : bin?.prettier
+  if (!file)
+    throw new Error(
+      `prettier is installed, but ${manifest} names no prettier bin`,
+    )
+  return path.join(path.dirname(manifest), file)
 }
 
 // What the format gate checks: every file the branch changed, as it is in the
@@ -203,7 +208,13 @@ export function commandLineLength(files) {
   return files.reduce((n, f) => n + f.length + 1, 0)
 }
 
-export function formatGate(base, diff, run, bin = prettierBin()) {
+export function formatGate(base, diff, run, bin) {
+  if (bin === undefined)
+    try {
+      bin = prettierBin()
+    } catch (error) {
+      return { ok: false, output: error.message }
+    }
   if (!bin)
     return {
       ok: false,

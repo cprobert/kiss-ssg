@@ -273,6 +273,15 @@ opened: 2026-10-30
   - **Recorded, not counted:**
     - Finding 7: count orphans in the engine's link check rather than in a script the IA skill ships. That would be an engine feature, a good one, and it belongs on its own branch.
     - Finding 8: the plugin's inline `awk` copies, a sixth time.
+- **2026-10-31 — `/code-review` round 20: eight findings, seven counted.** All seven counted were fixed; finding 5 is recorded. Finding 1 was a fault in my round 19 fix.
+  - **`@current` and an `href` returned as a `SafeString` (finding 1, counted; my round 19 fault).** Round 19 required a string `href`, so an `href` a helper returned as a `SafeString` set `{{active}}` but never `{{@current}}`. Missing now means `null` or `undefined` (red first, on the reviewer's case).
+  - **`kiss-branch-close`'s hash-stamping line crashed on a bare array (finding 2, counted; older than this branch).** It read stdin twice, and the second read was empty. Reproduced on both JSON shapes: the old line crashed on the bare array, and the new one, which parses once as `kiss-memory-consolidate` does, reads both. A sweep found no other copy.
+  - **`session-file.mjs` printed root-relative paths in a subfolder (finding 3, counted).** In this checkout it now prints each path from the folder it runs in (red first). From the root, the output is unchanged; from `lib/` it is `../planning/sessions/…`. The `--from-branch` form stays `<ref>:<path>`, which `git show` reads from the root.
+  - **The PR body passed through `--body "$(cat <<…)"` (finding 4, counted).** CLAUDE.md asks for `--body-file -` with a quoted heredoc. `/branch-close` step 9 now does that; it is the only `gh pr create` in the skills.
+  - **Sub-headings sharing an anchor (finding 6, counted).** Every heading the site shows now claims its anchor, and a second claim fails `node docs` with both lines (red first). Today's GUIDE.md has no such pair, measured before adding the check, and `node docs` builds.
+  - **Prettier installed but naming no bin (finding 7, counted).** That read as "not installed" and sent the operator to `npm ci`. Only a failed resolution means not installed now; a manifest with no prettier bin fails the format gate with its own message (red first).
+  - **`AIKB/aikb.md`'s readers of the generated files (finding 8, counted).** It named three `kiss-memory` skills. A grep for `last-build.json` and `kiss-ssg check` across the plugin finds all six, `kiss-branch-merged` among them, and the doc now names all six.
+  - **Recorded, not counted:** finding 5, the plugin's inline `awk` copies, a seventh time.
 
 ## Pulse log
 

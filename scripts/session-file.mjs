@@ -13,7 +13,8 @@
 //                                                  # the local branch, or origin's copy
 //                                                  # when there is no local one
 //
-// Prints each matching path, one per line, and nothing when none matches;
+// Prints each matching path, one per line, from the folder it runs in, and
+// nothing when none matches;
 // with --from-branch, each as `<ref>:<path>`, for `git show` to read.
 // More than one means the name was used before: the caller asks which.
 import { execFileSync } from 'node:child_process'
@@ -126,7 +127,11 @@ function sessionFiles(commits) {
       .map(([, oid, file]) => ({ oid, file }))
     const texts = readBlobs(entries.map((e) => e.oid))
     const byFile = new Map(entries.map((e, i) => [e.file, texts[i]]))
-    return { files: [...byFile.keys()], read: (f) => byFile.get(f) }
+    return {
+      files: [...byFile.keys()],
+      read: (f) => byFile.get(f),
+      show: (f) => `${commits}:${f}`,
+    }
   }
   const top = git(['rev-parse', '--show-toplevel']).trim()
   const dir = path.join(top, SESSIONS)
@@ -147,7 +152,14 @@ function sessionFiles(commits) {
         .sort()
         .map((f) => path.posix.join(SESSIONS, f))
     : []
-  return { files, read: (f) => fs.readFileSync(path.join(top, f), 'utf8') }
+  return {
+    files,
+    read: (f) => fs.readFileSync(path.join(top, f), 'utf8'),
+    // From where this runs: printed from the root, a path read in a
+    // subfolder named no file (round 20).
+    show: (f) =>
+      path.relative(process.cwd(), path.join(top, f)).split(path.sep).join('/'),
+  }
 }
 
 const fail = (message) => {
@@ -168,9 +180,9 @@ function main(args) {
     // From the branch, each match is printed as `<ref>:<path>`, which
     // `git show` reads as it stands: a later command needs no shell state to
     // know which ref the file came from (the local branch or origin's).
-    const { files, read } = sessionFiles(commits)
+    const { files, read, show } = sessionFiles(commits)
     for (const file of matchingFiles(files, read, branch))
-      console.log(commits ? `${commits}:${file}` : file)
+      console.log(show(file))
   }
 }
 

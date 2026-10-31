@@ -244,11 +244,12 @@ The PR body is the same in every case:
 
    ```bash
    BASE_NAME=$(node scripts/base-branch.mjs --name) &&
-   gh pr create --base "$BASE_NAME" --title "<concise title, under 70 chars>" --body "$(cat <<'EOF'
+   gh pr create --base "$BASE_NAME" --title "<concise title, under 70 chars>" --body-file - <<'EOF'
    <the body above>
    EOF
-   )"
    ```
+
+   The body goes in on stdin through `--body-file -`, as CLAUDE.md asks of every PR body: a quoted heredoc, never a double-quoted argument.
 
    `--name` prints the base branch's own name, which `--base` needs. If it says the base is not a branch (an override naming a tag or a commit), the `&&` stops before `gh` runs: ask which branch the PR goes to.
 

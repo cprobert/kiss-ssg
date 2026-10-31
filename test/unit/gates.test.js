@@ -409,6 +409,22 @@ describe('formatGate', () => {
     expect(bin).toBe(path.join(dir, 'bin/p.cjs'))
   })
 
+  // Round 20: an installed prettier whose manifest names no prettier bin was
+  // reported as "not installed", sending the operator to `npm ci`.
+  it('says so when prettier is installed but names no bin', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-prettier-'))
+    const manifest = path.join(dir, 'package.json')
+    fs.writeFileSync(manifest, JSON.stringify({ bin: { other: './x.cjs' } }))
+    let error
+    try {
+      prettierBin(() => manifest)
+    } catch (e) {
+      error = e
+    }
+    fs.rmSync(dir, { recursive: true, force: true })
+    expect(error?.message).toContain('names no prettier bin')
+  })
+
   it('finds no prettier bin where there is no prettier', () => {
     expect(
       prettierBin(() => {

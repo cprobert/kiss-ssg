@@ -171,6 +171,19 @@ describe('isActive', () => {
     )
   })
 
+  // Round 20: round 19 required a string href, and a SafeString from a
+  // helper (as `link`, `asset`, `absUrl` or a site helper may return) set
+  // {{active}} but never {{@current}}. Missing means null or undefined.
+  it('gives @current for an href a helper returned as a SafeString', () => {
+    hbs.registerHelper('safe', (s) => new hbs.SafeString(s))
+    expect(
+      render(
+        '{{#isActive page href=(safe "/about")}}[{{active}}|{{@current}}]{{/isActive}}',
+        { page: { pageURL: 'about.html' } },
+      ),
+    ).toBe('[active|true]')
+  })
+
   it('keeps @current inside the block', () => {
     expect(
       render('{{#isActive page href="/about"}}{{/isActive}}[{{@current}}]', {

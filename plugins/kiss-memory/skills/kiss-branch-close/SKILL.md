@@ -88,7 +88,7 @@ All four must be empty before step 4 records. Recording a build whose notes are 
 
 ```bash
 npx kiss-ssg check <build-script> 2>/dev/null \
-  | node -e "for (const r of JSON.parse(require('fs').readFileSync(0,'utf8')).reports ?? JSON.parse(require('fs').readFileSync(0,'utf8'))) for (const s of r.aikb?.subjects ?? []) console.log(s.hash, s.kind, s.id, s.note)"
+  | node -e "const j = JSON.parse(require('fs').readFileSync(0,'utf8')); for (const r of j.reports ?? j) for (const s of r.aikb?.subjects ?? []) console.log(s.hash, s.kind, s.id, s.note)"
 ```
 
 (The JSON is `{ reports, diff }` when the site has a baseline and a bare array when it has not.) The stamp goes at the very top of the note:
