@@ -18,6 +18,14 @@ describe('branchOf', () => {
     // A `branch:` line in the body is a quotation, not this file's branch.
     ['---\ntitle: none\n---\nbranch: feat/x\n', null],
     ['no frontmatter\nbranch: feat/x\n', null],
+    // Round 8: what a Windows editor or a YAML habit writes still matches.
+    ['\uFEFF---\nbranch: feat/x\n---\n', 'feat/x'],
+    ['---  \nbranch: feat/x\n---\t\n', 'feat/x'],
+    ['---\nbranch: "feat/x"\n---\n', 'feat/x'],
+    ["---\nbranch: 'feat/x'\n---\n", 'feat/x'],
+    ['---\nbranch: feat/x # the IA work\n---\n', 'feat/x'],
+    // YAML starts a comment only after a space: `#` is part of a name.
+    ['---\nbranch: feat/x#2\n---\n', 'feat/x#2'],
   ])('%j has the branch %j', (text, branch) => {
     expect(branchOf(text)).toBe(branch)
   })
@@ -92,7 +100,7 @@ describe('the command line', () => {
   it("reads a named branch's own commits, from anywhere in the repository", () => {
     fs.rmSync(path.join(repo, 'planning'), { recursive: true })
     const result = run(path.join(repo, 'docs'), 'fix/v2.8', '--from-branch')
-    expect(result.stdout).toBe('planning/sessions/a.md\n')
+    expect(result.stdout).toBe('refs/heads/fix/v2.8:planning/sessions/a.md\n')
     git('checkout', '-q', '--', 'planning')
   })
 
@@ -126,7 +134,7 @@ describe('the command line', () => {
     )
     git('fetch', '-q', 'origin')
     expect(run(repo, 'fix/v2.8', '--from-branch').stdout).toBe(
-      'planning/sessions/a.md\n',
+      'refs/remotes/origin/fix/v2.8:planning/sessions/a.md\n',
     )
   })
 
@@ -157,7 +165,7 @@ describe('the command line', () => {
     )
     expect(run(repo).stdout).toBe('planning/sessions/archive/old.md\n')
     expect(run(repo, 'main', '--from-branch').stdout).toBe(
-      'planning/sessions/archive/old.md\n',
+      'refs/heads/main:planning/sessions/archive/old.md\n',
     )
   })
 })

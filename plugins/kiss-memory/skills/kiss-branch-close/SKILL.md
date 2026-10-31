@@ -40,11 +40,11 @@ Stop if you are on the base branch, or if there are no commits to close. Find th
 B=$(git branch --show-current)
 [ -n "$B" ] || echo "not on a branch (a detached HEAD): there is no session to find"
 find planning/sessions -type f -name '*.md' 2>/dev/null | sort | while read -r f; do
-  if [ "$(awk '{ sub(/\r$/, "") } NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } /^branch:/ { sub(/^branch:[ \t]*/, ""); sub(/[ \t]*$/, ""); print; exit }' "$f")" = "$B" ]; then echo "$f"; fi
+  if [ "$(awk '{ sub(/\r$/, "") } NR == 1 { sub(/^[^-]*/, "") } NR == 1 && $0 !~ /^---[ \t]*$/ { exit } NR > 1 && $0 ~ /^---[ \t]*$/ { exit } /^branch:/ { sub(/^branch:/, ""); sub(/[ \t]#.*$/, ""); gsub(/^[ \t]+|[ \t]+$/, ""); q = substr($0, 1, 1); if (length($0) > 1 && (q == "\"" || q == "\047") && substr($0, length($0)) == q) $0 = substr($0, 2, length($0) - 2); print; exit }' "$f")" = "$B" ]; then echo "$f"; fi
 done
 ```
 
-The loop compares the `branch:` value in each session file's frontmatter, and nowhere else, with the branch name exactly: a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
+The loop compares the `branch:` value in each session file's frontmatter, and nowhere else, with the branch name exactly: a dot in the name is only a dot, and what an editor or a YAML habit adds still matches (Windows line endings, a byte-order mark, a quoted value, a trailing `# comment`). `kiss-branch-close`, `kiss-branch-pulse` and `kiss-branch-merged` carry the same `awk`, and a test in kiss-ssg fails if they stop being one text. If it prints more than one file, the branch name was used before: ask which is this branch's. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
 
 Commit or stash anything outstanding before verifying — the check runs the working tree, so uncommitted work would be verified and then not shipped.
 

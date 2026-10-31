@@ -204,10 +204,10 @@ describe('the command line', () => {
   })
 
   it('refuses --name for a base that is no branch, and says why', () => {
-    const result = run('v1.0', '--name')
+    const result = run('refs/tags/v1.0', '--name')
     expect(result.status).toBe(1)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain('v1.0 is not a branch')
+    expect(result.stderr).toContain('refs/tags/v1.0 is not a branch')
   })
 
   // `git fetch` never moves a local branch, so a local base is often behind
@@ -268,6 +268,38 @@ describe('the command line', () => {
     expect(printed).toBe('refs/heads/v3')
     expect(run('v3', '--name').stdout.trim()).toBe('v3')
     git(clone, 'tag', '-d', 'v3')
+  })
+
+  // This repository has tags `v1` and `v2`. Once the `v2` branch is deleted,
+  // a left-over `KISS_BASE_BRANCH=v2` resolved to the tag and was honoured,
+  // so every gate diffed against an old release (round 8). A bare name that
+  // is only a tag reads as a deleted branch; the tag itself is spelled out.
+  it('treats an override that names only a tag as a deleted branch, and falls back', () => {
+    git(clone, 'tag', 'v9', 'origin/v2')
+    const algorithm = run('').stdout.trim()
+    const stale = run('v9')
+    expect(stale.stdout.trim()).toBe(algorithm)
+    expect(stale.stderr).toContain('falling back to the algorithm')
+    expect(run('refs/tags/v9').stdout.trim()).toBe('refs/tags/v9')
+    git(clone, 'tag', '-d', 'v9')
+  })
+
+  // A repository with no commit yet has a current branch and no ref for it.
+  // The script threw, and `npm run gates` crashed with a stack trace (round 8).
+  it('says plainly that a branch with no commit has no ref, without a stack trace', () => {
+    const repo = path.join(root, 'unborn')
+    fs.mkdirSync(repo)
+    git(repo, 'init', '-q', '-b', 'main')
+    const result = spawnSync('node', [script], {
+      cwd: repo,
+      encoding: 'utf8',
+      env,
+    })
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr.trim()).toBe(
+      'base-branch: main has no commit here or on origin yet, so there is nothing to diff against',
+    )
   })
 
   // The same tag, without an override: the algorithm's candidates were read

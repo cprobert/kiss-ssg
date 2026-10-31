@@ -239,6 +239,25 @@ describe('changedFiles', () => {
     })
   })
 
+  // Round 8: a worktree nested inside the checkout (Claude Code puts them in
+  // .claude/worktrees/) is another repository, and git lists it as one
+  // directory, so prettier checked every file of the other worktree. And
+  // run from a subfolder, untracked paths came out relative to it while the
+  // diff's are from the root.
+  it('leaves out a nested repository, and lists every path from the root', () => {
+    const nested = path.join(repo, 'nested')
+    fs.mkdirSync(nested)
+    execFileSync('git', ['init', '-q'], { cwd: nested, env, stdio: 'ignore' })
+    fs.writeFileSync(path.join(nested, 'theirs.js'), 'x\n')
+    fs.mkdirSync(path.join(repo, 'sub'))
+    fs.writeFileSync(path.join(repo, 'sub/inner.js'), 'x\n')
+    expect(changedFiles('main', path.join(repo, 'sub'), env)).toEqual({
+      files: ['.gitignore', 'brand-new.js', 'new.js', 'sub/inner.js'],
+    })
+    fs.rmSync(nested, { recursive: true, force: true })
+    fs.rmSync(path.join(repo, 'sub'), { recursive: true, force: true })
+  })
+
   // On the base branch itself the branch has no changes of its own, and the
   // gate checks the whole repository: a dirty tree or a stray untracked file
   // there must not shrink that to the stray file (round 7, a regression of

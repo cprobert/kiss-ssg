@@ -87,25 +87,36 @@ function branchRef(name, cwd, run = git) {
   if (found.length === 0) return null
   const behind = (ref) =>
     Number(run(['rev-list', '--count', `${ref.full}..HEAD`], cwd) ?? Infinity)
-  const chosen =
-    found.length === 2 && behind(found[1]) < behind(found[0])
-      ? found[1]
-      : found[0]
-  const shadowed = run(
-    ['rev-parse', '--verify', '--quiet', `refs/tags/${chosen.short}`],
-    cwd,
-  )
-  return { ...chosen, print: shadowed ? chosen.full : chosen.short }
+  return found.length === 2 && behind(found[1]) < behind(found[0])
+    ? found[1]
+    : found[0]
 }
 
+const isTag = (name, cwd, run) =>
+  Boolean(run(['rev-parse', '--verify', '--quiet', `refs/tags/${name}`], cwd))
+
+// How the chosen branch is printed: short, unless a tag shares that spelling.
+// Asked of the winner only, not of every candidate the algorithm weighs.
+const printed = (ref, cwd, run) =>
+  isTag(ref.short, cwd, run) ? ref.full : ref.short
+
 // An override names a branch, or any other ref git can resolve (`HEAD`, a
-// commit): a branch goes through the same lookup as the algorithm's choice,
-// and anything else is taken as written.
+// commit, `refs/tags/v2`): a branch goes through the same lookup as the
+// algorithm's choice, and anything else is taken as written. Except a bare
+// name that is only a tag: this repository's tags `v1` and `v2` share the
+// integration branches' names, so a left-over `v2` once that branch is
+// deleted is a stale override, not a request to diff against a release.
+// The tag itself is spelled out in full.
 function overrideRef(name, cwd, run = git) {
   const branch = branchRef(name, cwd, run)
-  if (branch) return branch.print
+  if (branch) return printed(branch, cwd, run)
+  if (!name.startsWith('refs/') && isTag(name, cwd, run)) return null
   return run(['rev-parse', '--verify', '--quiet', name], cwd) ? name : null
 }
+
+// What a caller reports as one line, rather than as a crash: the repository
+// has no ref to diff against yet.
+export class BaseBranchError extends Error {}
 
 // An override that silently loses is worse than no override: a stale one (a
 // deleted `v2`) feeds an unresolvable ref to every gate. So say where it came
@@ -164,11 +175,14 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
   }
   const base = pickBaseBranch(current, candidates, distanceTo)
   if (base === null) return 'main'
-  // `pickBaseBranch` returns the current branch, or a candidate `distanceTo`
-  // found a ref for; either way the lookup below has a branch to find.
+  // `pickBaseBranch` returns a candidate `distanceTo` found a ref for, or the
+  // current branch, which has none before its first commit.
   const winner = branchRef(base, cwd, run)
-  if (!winner) throw new Error(`base-branch: no ref for ${base}`)
-  return winner.print
+  if (!winner)
+    throw new BaseBranchError(
+      `base-branch: ${base} has no commit here or on origin yet, so there is nothing to diff against`,
+    )
+  return printed(winner, cwd, run)
 }
 
 // The ref is `origin/<name>` when the base has no local branch. A diff wants
@@ -194,19 +208,33 @@ export function branchName(ref, refExists) {
   return null
 }
 
-if (import.meta.filename === process.argv[1]) {
-  const ref = resolveBaseBranch()
-  if (!process.argv.includes('--name')) console.log(ref)
-  else {
-    const name = branchName(ref, (full) =>
-      Boolean(git(['rev-parse', '--verify', '--quiet', full], process.cwd())),
-    )
-    if (name) console.log(name)
-    else {
-      console.error(
-        `base-branch: ${ref} is not a branch here or on origin, so it has no name the branch skills can use`,
-      )
-      process.exitCode = 1
-    }
+// Prints the ref (or, with --name, the branch's name) and returns the exit
+// code. Anything it cannot answer is one line on stderr, never a stack trace.
+function main(args) {
+  let ref
+  try {
+    ref = resolveBaseBranch()
+  } catch (error) {
+    if (!(error instanceof BaseBranchError)) throw error
+    console.error(error.message)
+    return 1
   }
+  if (!args.includes('--name')) {
+    console.log(ref)
+    return 0
+  }
+  const name = branchName(ref, (full) =>
+    Boolean(git(['rev-parse', '--verify', '--quiet', full], process.cwd())),
+  )
+  if (name) {
+    console.log(name)
+    return 0
+  }
+  console.error(
+    `base-branch: ${ref} is not a branch here or on origin, so it has no name the branch skills can use`,
+  )
+  return 1
 }
+
+if (import.meta.filename === process.argv[1])
+  process.exitCode = main(process.argv.slice(2))

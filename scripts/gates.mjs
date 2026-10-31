@@ -6,7 +6,7 @@
 // /branch-close and in CI (.github/workflows/ci.yml), so green here is green
 // there.
 import { execFileSync, spawnSync } from 'node:child_process'
-import { resolveBaseBranch } from './base-branch.mjs'
+import { BaseBranchError, resolveBaseBranch } from './base-branch.mjs'
 
 // package.json's `files` whitelist is load-bearing: llms.txt and AIKB/ ship on
 // purpose so an agent in a consuming project can read them from node_modules,
@@ -121,15 +121,28 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
       mergeBase,
     ])
     // A file made on the branch and not yet added is about to be committed
-    // too; `git diff` never lists one. Ignored files stay out.
-    const created = run(['ls-files', '--others', '--exclude-standard'])
+    // too; `git diff` never lists one. Ignored files stay out. A stray
+    // scratch file is checked on purpose (round 7): it is one `git add .`
+    // away from a commit, and scratch belongs in `.gitignore` or outside the
+    // repository. A nested repository (a worktree under .claude/worktrees/)
+    // is listed as a directory, `dir/`, and is not this branch's: it stays
+    // out. `:(top)` lists the whole repository and `--full-name` prints its
+    // paths from the root, as `git diff` does, wherever this runs.
+    const created = run([
+      'ls-files',
+      '--others',
+      '--exclude-standard',
+      '--full-name',
+      '--',
+      ':(top)',
+    ])
     const files = `${changed}\n${created}`
       .split('\n')
       .map((f) => f.trim())
       // No extension filter: `.prettierignore` decides what is out of scope
       // and `--ignore-unknown` (below) drops anything prettier cannot parse,
       // so the two live in one place instead of drifting apart here.
-      .filter(Boolean)
+      .filter((f) => f && !f.endsWith('/'))
     return { files: [...new Set(files)].sort() }
   } catch (e) {
     return { error: `${e.stderr ?? ''}`.trim() || e.message }
@@ -236,7 +249,14 @@ const GATES = [
 ]
 
 if (import.meta.filename === process.argv[1]) {
-  const base = resolveBaseBranch()
+  let base
+  try {
+    base = resolveBaseBranch()
+  } catch (error) {
+    if (!(error instanceof BaseBranchError)) throw error
+    console.log(`gates — ${error.message}`)
+    process.exit(1)
+  }
   console.log(`gates — diffing against ${base}\n`)
   let failed = 0
   for (const gate of GATES) {
