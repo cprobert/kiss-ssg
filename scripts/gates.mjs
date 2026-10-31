@@ -108,6 +108,12 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
     })
   try {
     const mergeBase = run(['merge-base', base, 'HEAD']).trim()
+    // No commits of the branch's own (on the base itself, as in CI and
+    // `prepublishOnly`): list nothing, and the gate checks the whole
+    // repository. A dirty tree or a stray untracked file there must not
+    // shrink that check to the stray file.
+    if (run(['rev-list', '--count', `${mergeBase}..HEAD`]).trim() === '0')
+      return { files: [] }
     const changed = run([
       'diff',
       '--name-only',

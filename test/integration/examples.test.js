@@ -550,7 +550,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // … and a record's own `id` wins outright. This is the one that makes
       // `moved` able to follow a slug rename: it does not contain the slug.
       expect(idOf('./public/journal/the-cascara-experiment/index.html')).toBe(
-        'journal/post/cascara',
+        'blog/post/cascara',
       )
       // The registration's `id` is the items' prefix, never an id of theirs.
       expect(idOf('./public/journal/tags/brewing/index.html')).toBe(

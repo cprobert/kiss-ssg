@@ -38,7 +38,8 @@ Stop if you are on the base branch, or if there are no commits to close. Find th
 
 ```bash
 B=$(git branch --show-current)
-for f in planning/sessions/*.md; do
+[ -n "$B" ] || echo "not on a branch (a detached HEAD): there is no session to find"
+find planning/sessions -type f -name '*.md' 2>/dev/null | sort | while read -r f; do
   if [ "$(awk '{ sub(/\r$/, "") } NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } /^branch:/ { sub(/^branch:[ \t]*/, ""); sub(/[ \t]*$/, ""); print; exit }' "$f")" = "$B" ]; then echo "$f"; fi
 done
 ```

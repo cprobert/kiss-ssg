@@ -60,7 +60,7 @@ Example 8 is the exemplar for what that failure looks like when it is left in.
   without one is a silent 404 for every inbound link. `npx kiss-ssg check` reports it as
   `removed without redirect:` — but only once the site has been recorded, so the baseline exists
   to compare against.
-- **That same post carries an explicit `id: 'journal/post/cascara'`, and that is deliberate.** A
+- **That same post carries an explicit `id: 'blog/post/cascara'`, and that is deliberate.** A
   default id embeds the slug, so a slug rename changes the identity as well as the path, the two
   builds do not pair, and the check reports a deletion rather than a move. An id that does not
   contain the slug survives the rename, which is what lets the finding be `moved without

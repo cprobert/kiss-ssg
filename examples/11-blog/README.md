@@ -172,8 +172,16 @@ URL tree, and every page the journal had at `/blog/` keeps that address with an 
 place kiss reads it from: each post in its own record, and the listing pages, the tags index and
 the tag pages in `router.js`. The tag pages that existed then are named there rather than
 computed, because a tag added after the move never lived at `/blog/`. The proof the list is
-complete is the check run before the new knowledge base was recorded: it reported every old page
-as moved and covered by an alias, and none as removed.
+complete is the check run before the new knowledge base was recorded, against the record of the
+site at `/blog/`: it reported no page `removed`, because every page that left `/blog/` has an
+alias covering its old address (a covered page is reported as neither `removed` nor `moved`).
+
+The cascara post's explicit `id` kept its old value, `blog/post/cascara`, through the move, and
+that is what it is for. Measured against the same record with that post's move alias taken out:
+with the id unchanged, the check pairs the two sides and reports
+`moved: /blog/the-cascara-experiment/ -> /journal/the-cascara-experiment/ (blog/post/cascara)`,
+naming the alias to add; with the id renamed to `journal/post/cascara`, it reports the old address
+as `removed`, a deletion. An id that changes when the page moves cannot follow it.
 
 ## Linking by identity
 
@@ -231,7 +239,7 @@ to the build folder):
 | `index.html`                                | `index`                          |
 | `journal/index.html`                        | `journal`                        |
 | `journal/page/2/index.html`                 | `journal/page/2`                 |
-| `journal/the-cascara-experiment/index.html` | `journal/post/cascara`           |
+| `journal/the-cascara-experiment/index.html` | `blog/post/cascara`              |
 | `journal/pour-over-at-home/index.html`      | `journal/post/pour-over-at-home` |
 | `journal/tags/index.html`                   | `journal/tags`                   |
 | `journal/tags/brewing/index.html`           | `journal/tags/brewing`           |
@@ -250,7 +258,7 @@ each`. Neither could be linked until they named themselves. `listingId(n)` in `r
   is the **prefix** its items' default ids are built from, in place of the view's route. Without
   it the tag pages would be `journal/tag/<slug>` (from `journal/tag.hbs`) while their paths were
   `journal/tags/<slug>`. With it the ids read like the paths.
-- **One post's record** (`id: 'journal/post/cascara'`) — the `moved` demonstration, below.
+- **One post's record** (`id: 'blog/post/cascara'`) — the `moved` demonstration, below.
 
 **Three forms of one link.** `{{link 'journal'}}` is root-relative — `/journal/` — which is what a page
 on this site wants. `{{link 'journal' absolute=true}}` is `https://asterandoak.example/journal/`, for
@@ -275,7 +283,7 @@ about this build's registry, so it can be checked exactly where it is written.
 beside the `aliases` every post now carries since the move:
 
 ```json
-"id": "journal/post/cascara",
+"id": "blog/post/cascara",
 "aliases": ["/blog/cascara-notes.html", "/blog/the-cascara-experiment/"]
 ```
 
@@ -288,7 +296,7 @@ sibling into `_redirects`. It is what makes the old addresses keep working.
 page that was deleted:
 
 ```
-moved without redirect: /journal/the-cascara-experiment/ -> /journal/cascara/ (journal/post/cascara)
+moved without redirect: /journal/the-cascara-experiment/ -> /journal/cascara/ (blog/post/cascara)
 ```
 
 A default id cannot do that, and the reason is worth reading twice: a fan-out item's default id

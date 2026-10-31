@@ -122,6 +122,19 @@ opened: 2026-10-30
   - **`guide.js`'s parse cache (finding 7)** is keyed on GUIDE.md's text, not its modification time.
   - **The session file's branch, from the frontmatter only (finding 8).** A `branch:` line in a log's body counted when the frontmatter had none. `session-file.mjs` reads the frontmatter alone (red first), and the plugin's three inline loops now use a POSIX `awk` that does the same, tested on five files and run as shipped.
   - **An unreachable fallback (finding 9)** in `base-branch.mjs` became an explicit error.
+- **2026-10-31 — `/code-review` round 7: eight findings. Seven fixed, one fixed in part, one part declined.** Each was re-derived first.
+  - **The format gate on the base branch (finding 1).** Round 6 added the working tree to the gate's list, so on the base branch a dirty tree shrank "check the whole repository" to the stray files. On the base branch the list is now empty again, dirty or not, and the gate checks everything (a test was red first). **Kept on purpose:** on a feature branch an untracked, non-ignored file is still checked. It is one `git add .` away from a commit, and scratch files belong in `.gitignore` or outside the repository.
+  - **Example 11's stable id (findings 2, 3).** Round 3's move renamed the cascara post's explicit id along with its URLs, which undid the reason the id is there. It is `blog/post/cascara` again. The README's claim about what `check` reported was not measured, and it was wrong. This was measured against the pre-move `AIKB/last-build.json`:
+    - as shipped, `moved` and `removed` are both empty, because an alias covers every old address;
+    - with the stable id and no move alias, `check` reports the page as moved from `/blog/the-cascara-experiment/` to `/journal/the-cascara-experiment/`;
+    - with a renamed id and no alias, it reports `/blog/the-cascara-experiment/` as removed.
+
+    The README now says exactly that. Redirect findings read the site's own `AIKB/last-build.json`; `--against` does not change them.
+
+  - **The plugin's lookups (findings 4, 6).** `kiss-branch-merged` now reads the branch by full ref name, falls back to origin's copy, and says so when the branch is nowhere. Both merged skills name `refs/heads/<branch>` in `merge-base` and `log`. The close and pulse loops now read subfolders and say so on a detached HEAD. All four cases ran as shipped in a scratch clone that had a same-named tag and an origin-only branch. **Declined again: one shared script in place of the three inline loops.** The round 5 reason still holds: a plugin's install path differs between Claude Code and Codex. The drift the finding named is fixed.
+  - **Install before the merged check (finding 5).** `kiss-branch-merged` step 4 now runs `npm ci` (or `npm install` with no lockfile) before `kiss-ssg check`. The merge may have moved kiss-ssg itself, and `npm ci` leaves the lockfile alone.
+  - **The freshness count (finding 7)** is chained after `--name`. The skill now says what to do when `--name` refuses, and when origin has no base. It was run with a commit override, and the count did not run.
+  - **`session-file.mjs` (finding 8)** resolves the branch's commits once.
 
 ## Pulse log
 

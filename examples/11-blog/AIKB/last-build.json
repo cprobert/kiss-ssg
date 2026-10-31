@@ -124,8 +124,8 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/the-cascara-experiment/index.html",
       "ok": true,
-      "hash": "aed1f13d3dadc942c090a054a0b8cb108aa8d9d9",
-      "id": "journal/post/cascara",
+      "hash": "8cf142b7af51e6afa63b0fc75f532d31fb00204d",
+      "id": "blog/post/cascara",
       "canonical": null,
       "markdown": "./public/journal/the-cascara-experiment/index.md"
     },

@@ -56,8 +56,8 @@ Before anything changes. A pull request that says `MERGED` only proves that what
 
 ```bash
 git fetch origin "pull/<number>/head"
-git merge-base --is-ancestor <branch> FETCH_HEAD && echo "every local commit is in #<number>"
-git log --oneline FETCH_HEAD..<branch>
+git merge-base --is-ancestor refs/heads/<branch> FETCH_HEAD && echo "every local commit is in #<number>"
+git log --oneline FETCH_HEAD..refs/heads/<branch>
 ```
 
 - **It prints the line, and the log is empty:** the merge holds every local commit, and `<number>` is the pull request to report. With several `MERGED` pull requests, use the one that passes. If none does, stop.

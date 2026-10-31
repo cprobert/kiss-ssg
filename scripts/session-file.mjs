@@ -105,14 +105,13 @@ if (import.meta.filename === process.argv[1]) {
   const fromBranch = args.includes('--from-branch')
   const named = args.find((a) => !a.startsWith('--'))
   const branch = named ?? git(['branch', '--show-current']).trim()
+  const commits = branch && fromBranch ? branchCommits(branch) : null
   if (!branch)
     fail('not on a branch (a detached HEAD), so there is no session to find')
-  else if (fromBranch && !branchCommits(branch))
+  else if (fromBranch && !commits)
     fail(`there is no branch ${branch} here or on origin`)
   else {
-    const { files, read } = sessionFiles(
-      fromBranch ? branchCommits(branch) : null,
-    )
+    const { files, read } = sessionFiles(commits)
     for (const file of matchingFiles(files, read, branch)) console.log(file)
   }
 }

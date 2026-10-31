@@ -167,7 +167,7 @@
     },
     {
       "buildTo": "./public/journal/the-cascara-experiment/index.html",
-      "id": "journal/post/cascara",
+      "id": "blog/post/cascara",
       "view": "journal/post.hbs",
       "model": "folder:posts",
       "controller": "file:post.js",

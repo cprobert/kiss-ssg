@@ -239,6 +239,17 @@ describe('changedFiles', () => {
     })
   })
 
+  // On the base branch itself the branch has no changes of its own, and the
+  // gate checks the whole repository: a dirty tree or a stray untracked file
+  // there must not shrink that to the stray file (round 7, a regression of
+  // round 5's working-tree list).
+  it('lists nothing on the base branch, dirty or not, so the gate checks everything', () => {
+    git('checkout', '-q', '-f', 'main')
+    fs.writeFileSync(path.join(repo, 'stray.js'), 'x\n')
+    fs.writeFileSync(path.join(repo, 'base.js'), 'edited\n')
+    expect(changedFiles('main', repo, env)).toEqual({ files: [] })
+  })
+
   it('reports git refusing the base as an error, not as no changes', () => {
     expect(changedFiles('no-such-base', repo, env).error).toBeTruthy()
   })
