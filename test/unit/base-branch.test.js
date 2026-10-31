@@ -203,6 +203,15 @@ describe('the command line', () => {
     expect(result.stderr).toContain('not a branch here or on origin')
   })
 
+  // Round 17: --name checked the ref with a revision parse, so the override
+  // `origin/v2~0` was named `v2~0`, and a skill ran `git switch v2~0`.
+  it('refuses --name for a revision, even one rooted at a branch', () => {
+    const result = run('origin/v2~0', '--name')
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('origin/v2~0 is not a branch')
+  })
+
   it('refuses --name for a base that is no branch, and says why', () => {
     const result = run('refs/tags/v1.0', '--name')
     expect(result.status).toBe(1)

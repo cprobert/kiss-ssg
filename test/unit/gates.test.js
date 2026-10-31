@@ -8,11 +8,11 @@ import {
   FORBIDDEN_PACKED,
   changedFiles,
   forbiddenPackedFiles,
-  PRETTIER_BIN,
   formatGate,
   missingPackedFiles,
   needsShell,
   parsePackedFiles,
+  prettierBin,
   spawnResult,
 } from '../../scripts/gates.mjs'
 
@@ -306,7 +306,7 @@ describe('needsShell', () => {
   })
 
   it('names a prettier bin that exists', () => {
-    expect(fs.existsSync(PRETTIER_BIN)).toBe(true)
+    expect(fs.existsSync(prettierBin())).toBe(true)
   })
 })
 
@@ -333,7 +333,7 @@ describe('formatGate', () => {
       {
         cmd: process.execPath,
         args: [
-          PRETTIER_BIN,
+          prettierBin(),
           '--check',
           '--ignore-unknown',
           'lib/kiss.js',
@@ -351,7 +351,7 @@ describe('formatGate', () => {
     expect(calls).toEqual([
       {
         cmd: process.execPath,
-        args: [PRETTIER_BIN, '--check', '--ignore-unknown', '.'],
+        args: [prettierBin(), '--check', '--ignore-unknown', '.'],
       },
     ])
     expect(result.ok).toBe(true)
@@ -375,13 +375,32 @@ describe('formatGate', () => {
     expect(calls).toEqual([
       {
         cmd: process.execPath,
-        args: [PRETTIER_BIN, '--check', '--ignore-unknown', '.'],
+        args: [prettierBin(), '--check', '--ignore-unknown', '.'],
       },
     ])
     expect(result.ok).toBe(true)
     expect(result.note).toBe(
       'whole repo (200 changed files overflow one command line)',
     )
+  })
+
+  // Round 17: prettier was resolved when gates.mjs loaded, so a missing one
+  // (a fresh worktree before `npm ci`) crashed the script before any gate
+  // reported. It fails the format gate, with the fix, and nothing else.
+  it('fails, with the fix, when prettier is not installed', () => {
+    const { calls, run } = spy()
+    const result = formatGate('origin/v2', { files: ['a.js'] }, run, null)
+    expect(result.ok).toBe(false)
+    expect(result.output).toContain('prettier is not installed')
+    expect(calls).toEqual([])
+  })
+
+  it('finds no prettier bin where there is no prettier', () => {
+    expect(
+      prettierBin(() => {
+        throw new Error('Cannot find module')
+      }),
+    ).toBe(null)
   })
 
   it('fails with the git error when the diff could not be taken', () => {

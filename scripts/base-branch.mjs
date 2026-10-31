@@ -242,9 +242,9 @@ function main(args) {
     console.log(ref)
     return 0
   }
-  const name = branchName(ref, (full) =>
-    Boolean(git(['rev-parse', '--verify', '--quiet', full], process.cwd())),
-  )
+  // Exact refs, as everywhere else here: a revision parse named the override
+  // `origin/v2~0` as the branch `v2~0` (round 17).
+  const name = branchName(ref, (full) => refExists(full, process.cwd(), git))
   if (name) {
     console.log(name)
     return 0

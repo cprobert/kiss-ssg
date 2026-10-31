@@ -130,6 +130,12 @@ describe('headingHtml', () => {
     )
   })
 
+  // Round 17: a hand-rolled single-backtick match got these wrong.
+  it('reads code spans as Markdown does: double backticks and escapes', () => {
+    expect(headingHtml('``a`b`` helper')).toBe('<code>a`b</code> helper')
+    expect(headingHtml('Escaped \\`tick\\`')).toBe('Escaped `tick`')
+  })
+
   it('escapes raw HTML, and renders no link', () => {
     expect(headingHtml('The <head> element & co')).toBe(
       'The &lt;head&gt; element &amp; co',

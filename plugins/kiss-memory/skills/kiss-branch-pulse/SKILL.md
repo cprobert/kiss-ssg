@@ -10,6 +10,8 @@ The Steer beat between `kiss-branch-open` and `kiss-branch-close`. Work drifts i
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Find the intent
 
 ```bash

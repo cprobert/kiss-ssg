@@ -30,12 +30,19 @@ const escapeHtml = (text) =>
 // inline code rendered. Escaped whole, `#### SCORM: \`{{scormBridge}}\``
 // showed its backticks in the page's contents (round 15); rendered as full
 // inline Markdown, a heading's raw HTML became a tag and its link skipped the
-// anchor rewrite and nested inside the contents' own link (round 16). A
-// heading needs code and nothing else.
+// anchor rewrite and nested inside the contents' own link (round 16); a
+// hand-rolled backtick match misread ``a`b`` and an escaped \` (round 17). So
+// Remarkable reads it, with raw HTML off and every inline rule off but text,
+// escapes and code spans.
+const headingMarkdown = new Remarkable({ html: false })
+headingMarkdown.inline.ruler.enable(
+  ['text', 'newline', 'escape', 'backticks'],
+  true,
+)
 export const headingHtml = (text) =>
   /^\.[a-zA-Z]+\(\)$/.test(text)
     ? `<code>${escapeHtml(text)}</code>`
-    : escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>')
+    : headingMarkdown.renderInline(text)
 
 // Every absolute link left in a guide page leaves the site, because
 // `rewriteLink` below turns GUIDE.md's links to itself into relative ones. The

@@ -73,19 +73,19 @@ git log --oneline FETCH_HEAD..refs/heads/<branch>
 
 Look before you switch a checkout: another session may be using it.
 
-- **The branch is in its own worktree** (`worktree:`): leave the main checkout on whatever branch it is on. Pull it only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
+- **The branch is in its own worktree** (`worktree:`): leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only origin <base>`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
 - **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work in progress. Then:
 
 ```bash
 git switch <base>
-git pull --ff-only
+git pull --ff-only origin <base>
 ```
 
-`git switch <base>` creates the local branch from `origin/<base>` when there is none, and, unlike `git checkout`, only ever switches to a branch, never to a tag that shares its name.
+`git switch <base>` creates the local branch from `origin/<base>` when there is none, and, unlike `git checkout`, only ever switches to a branch, never to a tag that shares its name. The pull names what it pulls, so a local base with no upstream set pulls too.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 
-A failed `--ff-only` means the local base has commits GitHub does not have. Stop and show them, and never reset the base:
+If the pull fails, read what it says before deciding why. Anything but "Not possible to fast-forward" (no network, a pull already in progress) is not about the base's commits: report it as git said it, and skip the update. "Not possible to fast-forward" means the local base has commits GitHub does not have. Stop and show them, and never reset the base:
 
 ```bash
 git log --oneline refs/remotes/origin/<base>..refs/heads/<base>

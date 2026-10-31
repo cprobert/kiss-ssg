@@ -98,12 +98,20 @@ const run = (cmd, args) =>
     spawnSync(cmd, args, { encoding: 'utf8', shell: needsShell(cmd) }),
   )
 
-// Prettier's own command line, run with `node` rather than through `npx`.
+// Prettier's own command line, run with `node` rather than through `npx`,
+// or null when prettier is not installed. Found when the format gate runs,
+// not when this module loads: resolved at load, a missing prettier (a fresh
+// worktree before `npm ci`) crashed the script before any gate reported
+// (round 17).
 const require = createRequire(import.meta.url)
-export const PRETTIER_BIN = path.join(
-  path.dirname(require.resolve('prettier/package.json')),
-  require('prettier/package.json').bin,
-)
+export function prettierBin(resolve = require.resolve) {
+  try {
+    const manifest = resolve('prettier/package.json')
+    return path.join(path.dirname(manifest), require(manifest).bin)
+  } catch {
+    return null
+  }
+}
 
 // What the format gate checks: every file the branch changed, as it is in the
 // working tree now. Prettier reads the working tree, so the list comes from
@@ -190,7 +198,13 @@ export function commandLineLength(files) {
   return files.reduce((n, f) => n + f.length + 1, 0)
 }
 
-export function formatGate(base, diff, run) {
+export function formatGate(base, diff, run, bin = prettierBin()) {
+  if (!bin)
+    return {
+      ok: false,
+      output:
+        'prettier is not installed here, so nothing could be checked: run `npm ci` first',
+    }
   // Same rule as the pack gate: a gate that cannot see its subject fails.
   if (diff.error !== undefined)
     return {
@@ -209,12 +223,7 @@ export function formatGate(base, diff, run) {
   // gate can just hand it every changed file.
   const target = wholeRepo || overflows ? ['.'] : diff.files
   return {
-    ...run(process.execPath, [
-      PRETTIER_BIN,
-      '--check',
-      '--ignore-unknown',
-      ...target,
-    ]),
+    ...run(process.execPath, [bin, '--check', '--ignore-unknown', ...target]),
     note,
   }
 }

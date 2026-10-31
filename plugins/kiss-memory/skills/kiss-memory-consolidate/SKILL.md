@@ -18,6 +18,8 @@ This skill is the housekeeping beat that answers all three. It is not part of th
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Run a plain check and read the four note findings
 
 ```bash

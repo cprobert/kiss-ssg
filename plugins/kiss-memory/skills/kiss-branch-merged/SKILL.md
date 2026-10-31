@@ -12,6 +12,8 @@ Shell state does not carry from one command to the next, so step 1 prints the ba
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Find the base, the branch, the merge and the worktree
 
 **Which branch:** the current one, or the one the conversation names. If neither says, ask. Do not guess.
@@ -31,7 +33,7 @@ git -c core.quotePath=false ls-tree -r --full-name --name-only "$C" -- planning/
 done
 ```
 
-- **The base is the one the session file names.** `kiss-branch-open` writes the branch the work merges into on its `base:` line, and that is the base for every step below: work aimed at `release` merged into `release`, whatever the remote's default is. Read it from the line the loop printed, which is the file as `<ref>:<path>`, the ref the loop read it from. Shell state does not carry between commands, so write the line in, rather than `$C`:
+- **The base is the one the work merged into.** With `gh`, that is the merged pull request's `baseRefName` (below), which wins over everything else, because a pull request can be retargeted after it was opened. Without `gh`, it is the one the session file names: `kiss-branch-open` writes the branch the work merges into on its `base:` line, and that is the base for every step below: work aimed at `release` merged into `release`, whatever the remote's default is. Read it from the line the loop printed, which is the file as `<ref>:<path>`, the ref the loop read it from. Shell state does not carry between commands, so write the line in, rather than `$C`:
 
   ```bash
   git show '<the line the loop printed>' | awk -v k=base '{ sub(/\r$/, "") } NR == 1 { sub(/^\357\273\277/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } index($0, k ":") == 1 && !found { v = substr($0, length(k) + 2); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }'
@@ -44,7 +46,7 @@ done
 
 **Confirm the merge before deleting anything.** A squash merge, the usual choice on GitHub, puts one new commit on the base and none of the branch's own, so git alone cannot tell a squashed branch from an unmerged one; `git branch -D` would delete either.
 
-- **GitHub, with `gh`:** `gh pr list --head <branch> --state all --json number,state,isCrossRepository,headRefOid,mergedAt,url`. It matches by name, so it can return more than one. Ignore any with `isCrossRepository: true` (a fork's branch with the same name). If one is `OPEN`, stop: the name is in use for unmerged work. If none is `MERGED`, stop. Otherwise step 2 checks a `MERGED` one.
+- **GitHub, with `gh`:** `gh pr list --head <branch> --state all --json number,state,isCrossRepository,headRefOid,baseRefName,mergedAt,url`. It matches by name, so it can return more than one. Ignore any with `isCrossRepository: true` (a fork's branch with the same name). If one is `OPEN`, stop: the name is in use for unmerged work. If none is `MERGED`, stop. Otherwise step 2 checks a `MERGED` one.
 - **A plain merge, any host:** `git merge-base --is-ancestor refs/heads/<branch> refs/remotes/origin/<base>` succeeds when every commit on the branch is in the base. That is proof enough, and step 2 is already done.
 - **Neither can tell** (a squash on GitLab or Bitbucket, or no `gh`): ask the person to confirm the merge, with AskUserQuestion, and say that you could not check it yourself. A "not sure" stops here.
 
@@ -83,12 +85,12 @@ Before anything changes. A merged pull request only proves that what was pushed 
 
 Look before you switch a checkout: another session may be using it.
 
-- **The branch is in its own worktree:** leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
-- **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work. Then `git switch <base>`, which only ever switches to a branch, never to a tag that shares its name, and `git pull --ff-only`.
+- **The branch is in its own worktree:** leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only origin <base>`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
+- **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work. Then `git switch <base>`, which only ever switches to a branch, never to a tag that shares its name, and `git pull --ff-only origin <base>`, which names what to pull, so a local base with no upstream set pulls too.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 
-A failed `--ff-only` means the local base has commits the remote does not. Stop and show them (`git log --oneline refs/remotes/origin/<base>..refs/heads/<base>`); never reset the base.
+If the pull fails, read what it says before deciding why. "Not possible to fast-forward" means the local base has commits the remote does not: stop and show them (`git log --oneline refs/remotes/origin/<base>..refs/heads/<base>`), and never reset the base. Anything else (no network, a pull already in progress) is not about the base's commits: report it as git said it, and skip the update.
 
 ### 4. Check the merged site against its record
 

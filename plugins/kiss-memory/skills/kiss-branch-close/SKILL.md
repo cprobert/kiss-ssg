@@ -12,6 +12,8 @@ Run this only when the human asks to close. Never on your own initiative, and ne
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Find the intent and the base
 
 ```bash

@@ -10,6 +10,8 @@ Two kinds of knowledge, and they are not equally trustworthy. The **map** is gen
 
 ## Execution instructions
 
+**Run every command below from the site's folder**: the one with its `package.json`, `AIKB/` and `planning/sessions/`. When the site is in a subfolder of its repository, change into it first. From the repository's root, `planning/sessions` names a folder that does not exist, and a lookup finds nothing.
+
 ### 1. Find the build script
 
 Read `package.json`'s `scripts` — a kiss site's build is usually `build`, `generate` or `site`, and the entry is the `.js` it runs. If nothing obvious is there, `grep -rl "kiss-ssg" --include=*.js . --exclude-dir=node_modules` and pick the file that constructs `new Kiss(...)`. If more than one qualifies (a site that builds several editions), say which you chose and why, and ask if it matters.
