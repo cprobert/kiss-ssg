@@ -79,7 +79,7 @@
  * @property {number} checked internal references resolved
  * @property {number} hostServed of those, the ones no build file answers but a `config.links.hostServed` pattern does
  * @property {BuildBrokenLink[]} broken sorted by page, then href
- * @property {string[]} orphans HTML pages no other page links to (never the home page or `404.html`), sorted
+ * @property {string[]} orphans HTML pages no other page links to (never the home page, `404.html` or a page in a learning package), sorted
  */
 /**
  * What the build did about page `aliases`: the redirects file it wrote, and the
@@ -423,7 +423,7 @@ export type BuildLinks = {
      */
     broken: BuildBrokenLink[];
     /**
-     * HTML pages no other page links to (never the home page or `404.html`), sorted
+     * HTML pages no other page links to (never the home page, `404.html` or a page in a learning package), sorted
      */
     orphans: string[];
 };
