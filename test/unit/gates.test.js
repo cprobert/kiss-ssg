@@ -6,6 +6,7 @@ import {
   formatGate,
   missingPackedFiles,
   parsePackedFiles,
+  presentFiles,
   spawnResult,
 } from '../../scripts/gates.mjs'
 
@@ -175,6 +176,23 @@ describe('spawnResult', () => {
     })
     expect(result.ok).toBe(false)
     expect(result.output).toContain('ENOENT')
+  })
+})
+
+// The diff lists what the branch's commits changed, but prettier reads the
+// working tree. A file a commit added and the working tree has since moved or
+// deleted is listed and missing, and prettier fails the gate on it with "No
+// files matching the pattern" (twice on 2026-10-31, each time on a rename not
+// yet committed). A file that is not there has nothing to format.
+describe('presentFiles', () => {
+  it('keeps the changed files that exist and drops the rest', () => {
+    const exists = (file) => file !== 'src/pages/blog/tags.hbs'
+    expect(
+      presentFiles(
+        ['lib/kiss.js', 'src/pages/blog/tags.hbs', 'README.md'],
+        exists,
+      ),
+    ).toEqual(['lib/kiss.js', 'README.md'])
   })
 })
 

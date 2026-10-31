@@ -18,12 +18,21 @@ Run this only when the human asks to close. Never on your own initiative, and ne
 BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
 [ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
 echo "base: ${BASE:-unknown}"
+git fetch -q origin
+for r in "$BASE" "origin/$BASE"; do
+  git rev-parse -q --verify "$r^{commit}" >/dev/null && echo "$r $(git rev-list --count "$r..HEAD")"
+done | sort -k2 -n | head -1
 git branch --show-current
-git log "$BASE..HEAD" --oneline
 git status --short
 ```
 
-The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered: ask which branch this work merges into, rather than assume `main`, and run the `git log` with the answer. Shell state does not carry from one command to the next, so later steps write the name this printed where they say `<base>`.
+The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered: ask which branch this work merges into, rather than assume `main`, and run the block again with that name in place of `$BASE`.
+
+**The ref to diff against** is the one the loop prints: of the local base and `origin/<base>`, the one with the fewest commits between it and `HEAD`, which is the one this branch started from. `kiss-branch-open` starts a worktree from `origin/<base>` when the local base has nothing of its own, so a local base that is behind would put other people's commits in this branch's diff, and in a clone with no local base it would not resolve at all. Shell state does not carry from one command to the next, so later steps write the ref this printed where they say `<base-ref>`. List the branch's commits with it:
+
+```bash
+git log --oneline <base-ref>..HEAD
+```
 
 Stop if you are on the base branch, or if there are no commits to close. Find the session file and read its **Intent**, **Amendments** and **Pulse log**:
 
@@ -98,7 +107,7 @@ The engine never writes that line; this skill does. It is what lets the next che
 **b. Every subject this change touched has a note that changed with it.**
 
 ```bash
-git diff --name-only "<base>...HEAD"
+git diff --name-only "<base-ref>...HEAD"
 ```
 
 From that list, take the subjects the change actually touched — files under the controllers folder, URL models and pipeline steps added or edited in the build script — and confirm the matching note is in the same list:

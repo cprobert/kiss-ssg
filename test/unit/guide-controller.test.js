@@ -7,7 +7,10 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import guide from '../../src/controllers/guide.js'
+import guide, {
+  renderWithTargets,
+  splitSections,
+} from '../../src/controllers/guide.js'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const pages = JSON.parse(
@@ -34,5 +37,53 @@ describe('the guide pages', () => {
     const subs = [...html.matchAll(/<h3 id="([^"]+)">/g)].map((m) => m[1])
     expect(subs).toContain('the-tiers-in-full')
     expect(subs).toContain('building-a-site-well')
+  })
+})
+
+// The constructs GUIDE.md does not use today, so a change to it cannot break
+// the docs site quietly (2026-10-31, /code-review round 3).
+describe('splitSections', () => {
+  it('cuts a section at a top-level heading, setext included, underline and all', () => {
+    const sections = splitSections(
+      ['## One', 'a', '', 'Two', '---', 'b'].join('\n'),
+    )
+    expect(sections.map((s) => s.title)).toEqual(['One', 'Two'])
+    expect(sections[1].lines).toEqual(['b'])
+  })
+
+  it('leaves a heading inside a blockquote or a list item in its block', () => {
+    const sections = splitSections(
+      ['## One', '> ## Quoted', '', '- item', '', '  #### Listed', 'x'].join(
+        '\n',
+      ),
+    )
+    expect(sections.map((s) => s.title)).toEqual(['One'])
+    expect([...sections[0].subs.values()]).toEqual([])
+  })
+
+  it('records a sub-heading with the lines it spans', () => {
+    const [section] = splitSections(['## One', '', '#### Four', 'a'].join('\n'))
+    const [sub] = [...section.subs.values()]
+    expect(sub).toMatchObject({ title: 'Four', level: 4, span: 1 })
+  })
+})
+
+describe('renderWithTargets', () => {
+  const rewrite = (target) => `rewritten/${target}`
+
+  it('rewrites a Markdown link and image, and nothing in code or raw HTML', () => {
+    const html = renderWithTargets(
+      'See [a](one.md), `[b](two.md)`, <a href="#raw">raw</a> and ![i](pic.png).',
+      rewrite,
+    )
+    expect(html).toContain('<a href="rewritten/one.md">a</a>')
+    expect(html).toContain('<code>[b](two.md)</code>')
+    expect(html).toContain('<a href="#raw">raw</a>')
+    expect(html).toContain('src="rewritten/pic.png"')
+  })
+
+  it('escapes what the rewrite returns', () => {
+    const html = renderWithTargets('[a](x)', () => 'a"b&c')
+    expect(html).toContain('href="a&quot;b&amp;c"')
   })
 })

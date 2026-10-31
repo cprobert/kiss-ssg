@@ -119,10 +119,27 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
 
 // The ref is `origin/<name>` when the base has no local branch. A diff wants
 // the ref; `git checkout`, `git pull` and `origin/<name>` want the branch's
-// own name, which `--name` prints.
-export const branchName = (ref) => ref.replace(/^origin\//, '')
+// own name, which `--name` prints. The name comes from what the ref is, not
+// how it is spelled: a local branch is its own name, a remote-tracking ref
+// (`origin/v2`, `upstream/v3`) is the name after its remote, and anything
+// else (a tag, a commit) is no branch, so there is no name to print.
+export function branchName(ref, refExists) {
+  if (refExists(`refs/heads/${ref}`)) return ref
+  if (refExists(`refs/remotes/${ref}`)) return ref.slice(ref.indexOf('/') + 1)
+  return null
+}
 
 if (import.meta.filename === process.argv[1]) {
   const ref = resolveBaseBranch()
-  console.log(process.argv.includes('--name') ? branchName(ref) : ref)
+  if (!process.argv.includes('--name')) console.log(ref)
+  else {
+    const name = branchName(ref, (full) =>
+      Boolean(git(['rev-parse', '--verify', '--quiet', full], process.cwd())),
+    )
+    if (name) console.log(name)
+    else {
+      console.error(`base-branch: ${ref} is not a branch, so it has no name`)
+      process.exitCode = 1
+    }
+  }
 }

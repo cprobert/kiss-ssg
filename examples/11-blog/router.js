@@ -48,7 +48,7 @@ const kiss = new Kiss({
   // Pages by id, like every other link on this site: the layout asks `{{link}}`
   // for each one's path, so the nav cannot name a page the build does not have.
   // The nav holds the site's top-level sections and nothing else. `folderMatch`
-  // keeps The journal marked on every page inside /blog/: the posts, page 2
+  // keeps The journal marked on every page inside /journal/: the posts, page 2
   // of the listing, the tags. That is why Tags is not a nav item of its own:
   // it is a page inside the journal, linked from the listing, every post and
   // the home page, and as a second item it would be marked current on the
@@ -59,7 +59,7 @@ const kiss = new Kiss({
   // readers look for in a nav, whatever its <h1> says.
   nav: [
     { id: 'index', label: 'Home' },
-    { id: 'blog', label: 'The journal', folderMatch: true },
+    { id: 'journal', label: 'The journal', folderMatch: true },
   ],
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
@@ -70,7 +70,7 @@ const kiss = new Kiss({
   siteUrl: journal.siteUrl,
   // On `config` for every template and every helper: {{config.journal.name}}.
   journal,
-  // Posts build to blog/<slug>/index.html, so every URL in this site is a
+  // Posts build to journal/<slug>/index.html, so every URL in this site is a
   // folder and a post can be renamed without its extension going with it.
   extensionLess: true,
   // Where this site deploys, stated rather than assumed. `redirects.json` — the
@@ -103,7 +103,7 @@ const tally = {
 
 // Pagination is arithmetic over the whole collection, so it lives here rather
 // than in a controller: a controller only ever sees one record and can never
-// know how many pages there are. Page 1 is /blog/, page N is /blog/page/N/ —
+// know how many pages there are. Page 1 is /journal/, page N is /journal/page/N/ —
 // the shape every reader already recognises, and the one that leaves the
 // first page's URL alone when a seventh post is written.
 const pageCount = Math.max(1, Math.ceil(cards.length / PER_PAGE))
@@ -112,11 +112,29 @@ const pageCount = Math.max(1, Math.ceil(cards.length / PER_PAGE))
 // says so — so these two are the pages that have to name themselves. The same
 // function names the page and names it again as a prev/next target, which is
 // what stops the two from drifting; `{{link}}` turns either into an address.
-const listingId = (n) => (n === 1 ? 'blog' : `blog/page/${n}`)
+const listingId = (n) => (n === 1 ? 'journal' : `journal/page/${n}`)
+
+// The journal moved from /blog/ to /journal/, so its URL says what its nav
+// label and its <h1> say. Every page it had at /blog/ keeps that address with
+// an alias, and kiss writes the redirects: the posts carry theirs in their own
+// records, and the listing, the tags index and the tag pages carry theirs
+// here. A page made after the move never lived at /blog/, so it gets none:
+// that is why the tags are named rather than computed.
+const fromBlog = {
+  listing: ['/blog/', '/blog/page/2/'],
+  tags: ['brewing', 'experiments', 'roastery', 'sourcing'],
+}
+const tagPages = tags.map((tag) =>
+  fromBlog.tags.includes(tag.slug)
+    ? { ...tag, aliases: [`/blog/tags/${tag.slug}/`] }
+    : tag,
+)
 
 kiss.page({
   view: 'index.hbs',
-  title: 'The Aster & Oak journal',
+  // The home page's title and <h1> name the site, so the journal is the one
+  // page called "The journal".
+  title: site.tagline,
   description:
     'Brewing notes, sourcing news and bench lots from a small-batch roastery in Bristol.',
   model: { latest: cards.slice(0, 3), tally },
@@ -124,12 +142,13 @@ kiss.page({
 
 for (let number = 1; number <= pageCount; number++) {
   kiss.page({
-    view: 'blog/listing.hbs',
+    view: 'journal/listing.hbs',
     // Explicit, because one view rendered twice claims no default id at all.
     id: listingId(number),
     // Page 1 is the section index; the rest are numbered folders under it.
-    path: number === 1 ? 'blog' : 'blog/page',
+    path: number === 1 ? 'journal' : 'journal/page',
     slug: number === 1 ? 'index' : String(number),
+    aliases: fromBlog.listing[number - 1] ? [fromBlog.listing[number - 1]] : [],
     title:
       number === 1
         ? 'The journal'
@@ -153,10 +172,10 @@ kiss
   // The fan-out: one JSON file per post in models/posts, one page each from a
   // single view. Writing the seventh post means writing the seventh file.
   .pages({
-    view: 'blog/post.hbs',
+    view: 'journal/post.hbs',
     model: 'posts',
     // .pages() takes the output folder from `path`; it does not infer one.
-    path: 'blog',
+    path: 'journal',
     // A controller file, resolved by name from folders.controllers. It
     // validates the record and derives the slug, and it is a *subject* of the
     // site's knowledge base — see AIKB/notes/controllers/post.md.
@@ -169,21 +188,22 @@ kiss
   // folder it read. `.pages()` does not care which: the requirement is that
   // the model resolves to an array.
   .pages({
-    view: 'blog/tag.hbs',
-    model: tags,
-    path: 'blog/tags',
+    view: 'journal/tag.hbs',
+    model: tagPages,
+    path: 'journal/tags',
     controller: 'tag.js',
     // A registration's `id` is the *prefix* its items' default ids are built
     // from, in place of the view's route — so these pages are
-    // `blog/tags/<slug>` rather than `blog/tag/<slug>`, and every id in this
+    // `journal/tags/<slug>` rather than `journal/tag/<slug>`, and every id in this
     // site reads like the path it is served at. It is never broadcast to the
     // items as an id of their own; a record's own `id` still wins outright.
-    id: 'blog/tags',
+    id: 'journal/tags',
   })
   .page({
-    view: 'blog/tags.hbs',
-    path: 'blog/tags',
+    view: 'journal/tags.hbs',
+    path: 'journal/tags',
     slug: 'index',
+    aliases: ['/blog/tags/'],
     title: 'Tags',
     description: `The ${tally.tags} the Aster & Oak journal uses, and the posts filed under each.`,
     model: { tags, tally },
@@ -208,19 +228,19 @@ kiss
   })
   .sitemap()
   // The third file derived from the same registry, and the reason the posts
-  // carry a date at all. `section: 'blog'` keeps the home page out; the
+  // carry a date at all. `section: 'journal'` keeps the home page out; the
   // listing and tag pages have no date, so they fall out on their own.
   .feed({
     title: journal.name,
     description: journal.description,
-    section: 'blog',
+    section: 'journal',
   })
   // The registry's third reader: a crawler gets sitemap.xml, a feed client gets
   // feed.xml, an answer engine gets this.
   .llms({
     title: journal.name,
     summary: journal.summary,
-    sections: { root: 'The site', blog: 'The journal' },
+    sections: { root: 'The site', journal: 'The journal' },
   })
   // And the file that tells a crawler the sitemap above exists. This used to be
   // a static `robots.txt` copied from `src/assets/` — two lines that never

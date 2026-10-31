@@ -1,5 +1,5 @@
 ---
-subject-hash: 35ead9dc0ca2e66b62e2be9bacbab2c5f631ec31
+subject-hash: 74a0bac3f075ca7ccfb4b54e4e49a1022a2fc143
 ---
 
 # post.js
@@ -21,14 +21,14 @@ derivations and no URLs: `idFor` is the single derivation of a post's **identity
 
 **No URL is derived here at all.** This file used to export `urlFor`, `/blog/<slug>/`, and bake
 its result into every card and into the post's own model. It does not any more. A template asks
-for an address by identity — `{{link id}}` in `post-card.hbs`, `{{link 'blog/tags' slug=this}}`
+for an address by identity — `{{link id}}` in `post-card.hbs`, `{{link 'journal/tags' slug=this}}`
 for a tag — and the engine answers from the registry, so `extensionLess`, the fan-out's `path`
 and the normalised slug are read in exactly one place instead of being re-derived by hand in a
 second. The old line was correct, and it was correct by coincidence: change `extensionLess` to
 `false` and every one of those hrefs became a 404 that nothing in the build would have noticed.
 
 **`idFor` mirrors the rule the engine applies, and a mistake in it is loud.** A `.pages()` item's
-default id is `<view route>/<slug>` — `blog/post/<slug>` for this fan-out — and a record's own
+default id is `<view route>/<slug>` — `journal/post/<slug>` for this fan-out — and a record's own
 `id` wins outright; `idFor` is that precedence, written once so a card and the page it points at
 cannot disagree. It is still a second copy of a rule, which is the honest cost of carrying an id
 on a card. The difference from `urlFor` is what happens when the copy is wrong: an id no page
@@ -50,7 +50,7 @@ computed over a different set of records than the one the fan-out builds.
 listing sorts itself; a date in a URL is a decision that cannot be taken back.
 
 **A throw fails one item.** `.pages()` catches per record, so a malformed post costs its own
-page and the other five still build — and `complete()` names it `blog/post.hbs [item N: <slug>]`.
+page and the other five still build — and `complete()` names it `journal/post.hbs [item N: <slug>]`.
 Example 8 is the exemplar for what that failure looks like when it is left in.
 
 ## Gotchas
@@ -60,7 +60,7 @@ Example 8 is the exemplar for what that failure looks like when it is left in.
   without one is a silent 404 for every inbound link. `npx kiss-ssg check` reports it as
   `removed without redirect:` — but only once the site has been recorded, so the baseline exists
   to compare against.
-- **That same post carries an explicit `id: 'blog/post/cascara'`, and that is deliberate.** A
+- **That same post carries an explicit `id: 'journal/post/cascara'`, and that is deliberate.** A
   default id embeds the slug, so a slug rename changes the identity as well as the path, the two
   builds do not pair, and the check reports a deletion rather than a move. An id that does not
   contain the slug survives the rename, which is what lets the finding be `moved without
@@ -76,6 +76,6 @@ redirect: <from> -> <to> (<id>)` with the alias to add named in it.
   diffed against the recorded one.
 - **`summaryCard` hands the tags on as the record wrote them.** They used to be
   `{ name, url }` pairs built here; now they are the plain strings, and the partial turns one
-  into a link with `{{link 'blog/tags' slug=this}}`. The `slug=` sugar runs the same `toSlug`
+  into a link with `{{link 'journal/tags' slug=this}}`. The `slug=` sugar runs the same `toSlug`
   that `tag.js` slugs the tag page with, so the two cannot point at different addresses — and if
   they ever did, the build would stop rather than ship the mismatch.

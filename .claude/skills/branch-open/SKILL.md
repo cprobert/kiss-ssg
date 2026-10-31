@@ -148,7 +148,7 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
   git rev-list --left-right --count "$BASE_NAME...origin/$BASE_NAME" 2>/dev/null
   ```
 
-  Shell state does not carry from one Bash call to the next, so this block sets the base itself. `--name` prints the base branch's own name (`main`), not a ref, so `origin/<name>` below is a real ref even in a clone with no local base. The two numbers are the commits only on the local base, then those only on `origin`:
+  Shell state does not carry from one Bash call to the next, so this block sets the base itself. `--name` prints the base branch's own name (`main`), not a ref, so `origin/<name>` below is a real ref even in a clone with no local base. If it prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to start from. The two numbers are the commits only on the local base, then those only on `origin`:
   - `local: no` (a fresh or cloud clone): start from `origin/<name>`.
   - `origin: no` (an unpushed base): start from the local base, `<name>`.
   - Both, and the first number is 0: start from `origin/<name>`, the same as the local base or newer.

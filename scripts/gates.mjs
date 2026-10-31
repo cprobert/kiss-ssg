@@ -6,6 +6,7 @@
 // /branch-close and in CI (.github/workflows/ci.yml), so green here is green
 // there.
 import { execFileSync, spawnSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { resolveBaseBranch } from './base-branch.mjs'
 
 // package.json's `files` whitelist is load-bearing: llms.txt and AIKB/ ship on
@@ -91,6 +92,12 @@ const run = (cmd, args) =>
     }),
   )
 
+// The diff lists what the branch's commits changed; prettier reads the working
+// tree. A file a commit added and the working tree has since moved or deleted
+// is listed and missing, and prettier fails on it with "No files matching the
+// pattern". A file that is not there has nothing to format.
+export const presentFiles = (files, exists = existsSync) => files.filter(exists)
+
 function changedFiles(base) {
   try {
     const out = execFileSync(
@@ -99,13 +106,15 @@ function changedFiles(base) {
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     )
     return {
-      files: out
-        .split('\n')
-        .map((f) => f.trim())
-        // No extension filter: `.prettierignore` decides what is out of scope
-        // and `--ignore-unknown` (below) drops anything prettier cannot parse,
-        // so the two live in one place instead of drifting apart here.
-        .filter(Boolean),
+      files: presentFiles(
+        out
+          .split('\n')
+          .map((f) => f.trim())
+          // No extension filter: `.prettierignore` decides what is out of
+          // scope and `--ignore-unknown` (below) drops anything prettier cannot
+          // parse, so the two live in one place instead of drifting apart here.
+          .filter(Boolean),
+      ),
     }
   } catch (e) {
     return { error: `${e.stderr ?? ''}`.trim() || e.message }

@@ -237,12 +237,14 @@ The PR body is the same in every case:
 1. **`gh` CLI present** (`command -v gh`) — the normal desktop path:
 
    ```bash
-   BASE_NAME=$(node scripts/base-branch.mjs --name)
+   BASE_NAME=$(node scripts/base-branch.mjs --name) &&
    gh pr create --base "$BASE_NAME" --title "<concise title, under 70 chars>" --body "$(cat <<'EOF'
    <the body above>
    EOF
    )"
    ```
+
+   `--name` prints the base branch's own name, which `--base` needs. If it says the base is not a branch (an override naming a tag or a commit), the `&&` stops before `gh` runs: ask which branch the PR goes to.
 
 2. **No `gh`, but GitHub MCP tools are available** — the mobile / web harness case. Create the PR with the MCP `create_pull_request` tool, passing the same title and body, with this branch as head and the base branch as base. Do not try to shell out to `gh` first to "check" — its absence is the signal, and a failed command in the transcript is noise.
 

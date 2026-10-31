@@ -78,7 +78,7 @@ git checkout "$BASE_NAME"
 git pull --ff-only
 ```
 
-`--name` prints the base branch's own name (`main`), where the plain script prints a ref that is `origin/main` in a clone with no local `main`. `git checkout main` creates the local branch from `origin/main` when there is none.
+`--name` prints the base branch's own name (`main`), where the plain script prints a ref that is `origin/main` in a clone with no local `main`. `git checkout main` creates the local branch from `origin/main` when there is none. If `--name` prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to update.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 

@@ -25,9 +25,11 @@ const files = fs
   .readdirSync(root, { recursive: true })
   .map((f) => f.split(path.sep).join('/'))
   .filter((f) => f.endsWith('.html') && !/(^|\/)404\.html$/.test(f))
+// One key for /about.html, /about and /about/; index.html only as a whole
+// file name, so /blog/reindex.html stays a page of its own.
 const key = (p) =>
   p
-    .replace(/index\.html$/, '')
+    .replace(/(^|\/)index\.html$/, '$1')
     .replace(/\.html$/, '')
     .replace(/\/$/, '') || '/'
 
@@ -46,8 +48,18 @@ for (const file of files) {
     } catch {
       continue
     }
-    if (url.origin !== site.origin || !url.pathname.startsWith(base)) continue
-    const target = key('/' + url.pathname.slice(base.length))
+    if (url.origin !== site.origin) continue
+    // A URL's path arrives percent-encoded (/caf%C3%A9/) and a file name does
+    // not (café), and a link to the site's own address may drop its slash.
+    let target
+    try {
+      target = decodeURIComponent(url.pathname)
+    } catch {
+      continue
+    }
+    if (target + '/' === base) target = base
+    if (!target.startsWith(base)) continue
+    target = key('/' + target.slice(base.length))
     if (target !== page) linksIn.get(target)?.add(page)
   }
 }
@@ -66,7 +78,7 @@ node structure.mjs public https://your-site.example/
 
 Replace `public` with the site's build folder and `https://your-site.example/` with its `siteUrl`, path and all when the site is served under one (`https://example.github.io/docs/`). The address matters when the layout writes absolute links to the site's own pages (`{{link … absolute=true}}`, `{{absUrl}}`): without it, those links cannot be followed, and nearly every page reads as an orphan. Leave it off only for a site whose links are all relative or root-relative.
 
-The script counts the links a reader can follow, an `<a>` element's `href`, and not a `<link>` in the head or a `data-href`. It resolves each one the way a browser does, counts each linking page once, and treats `/about.html`, `/about` and `/about/` as one page, so the count holds whether or not the site is `extensionLess`. It does not count a page's link to itself, a link outside the site's address, or the 404 page, either as a page or as a source of links. On `node_modules/kiss-ssg/examples/11-blog/`, the first line is `1	3	/blog/page/2`: page two of the post listing has one link in (from page one) and sits three levels deep.
+The script counts the links a reader can follow, an `<a>` element's `href`, and not a `<link>` in the head or a `data-href`. It resolves each one the way a browser does, counts each linking page once, and treats `/about.html`, `/about` and `/about/` as one page, so the count holds whether or not the site is `extensionLess`. It does not count a page's link to itself, a link outside the site's address, or the 404 page, either as a page or as a source of links. On `node_modules/kiss-ssg/examples/11-blog/`, the first line is `1	3	/journal/page/2`: page two of the post listing has one link in (from page one) and sits three levels deep.
 
 How to read the output:
 

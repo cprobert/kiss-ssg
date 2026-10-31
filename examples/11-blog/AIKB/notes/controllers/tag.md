@@ -1,5 +1,5 @@
 ---
-subject-hash: 3dca8092688e745c2d9467c1772c36df933c004f
+subject-hash: 773b92a8012b190f14c947b8b8ce089dcb3d3453
 ---
 
 # tag.js
@@ -26,12 +26,12 @@ derivation, computed in the build script before anything is registered.
 
 **`tagUrl` is gone, and `tagSlug` is what is left.** This file used to export
 `/blog/tags/<slug>/` as a string and hand it to every card and every post. Now a template names a
-tag page by identity — `{{link 'blog/tags' slug=name}}` — and the helper's `slug=` sugar runs
+tag page by identity — `{{link 'journal/tags' slug=name}}` — and the helper's `slug=` sugar runs
 `toSlug` over the tag's own name, which is the same function `tagSlug` calls. So one derivation
 still stands on both sides of the link, but only the _slug_ half of it: the address around the
 slug belongs to the engine, which is the half this file kept getting to decide and should not
-have. The fan-out is registered with `id: 'blog/tags'`, so a registration's id is used as the
-**prefix** its items' default ids are built from and the tag pages are `blog/tags/<slug>` —
+have. The fan-out is registered with `id: 'journal/tags'`, so a registration's id is used as the
+**prefix** its items' default ids are built from and the tag pages are `journal/tags/<slug>` —
 the same shape as the path they are served at.
 
 **It is a controller file rather than an inline function**, unlike the pagination loop in
@@ -54,7 +54,7 @@ they arrived — newest first, because `loadPosts` in `post.js` sorted them that
 - **The slug is still derived twice and must still agree both times.** `tagSlug` decides the
   folder the fan-out writes; the `slug=` sugar in every template decides the id it is asked for.
   They are the same `toSlug` on purpose. Split them and the build now **stops** — `link: no page
-with id "blog/tags/<x>"`, naming the view that asked — where the old `tagUrl` would have
+with id "journal/tags/<x>"`, naming the view that asked — where the old `tagUrl` would have
   rendered a link to a page that was never built and left `npx kiss-ssg check` to find it.
 - **A tag with no Latin letters slugs to a hash** (`p-<8 hex>`), by way of the `toSlug` fallback
   in `utils`. It keeps two such tags apart, but it makes an unreadable URL — a tag like that

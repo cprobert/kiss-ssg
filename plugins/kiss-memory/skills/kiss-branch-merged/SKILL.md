@@ -50,11 +50,23 @@ Before anything changes. A merged pull request only proves that what was pushed 
   git log --oneline FETCH_HEAD..<branch>
   ```
 
-  With several `MERGED` pull requests, use the one that passes. If none does, stop.
+  With several `MERGED` pull requests, use the one that passes. If none does, stop. **Any commit the log lists** was never merged: stop and show it. It needs a new branch and pull request, or the person's word that it can go. Delete nothing.
 
-- **Where the person confirmed the merge:** show them what you cannot check. `git log --oneline origin/<branch>..<branch>` lists commits never pushed, while the remote branch still exists; once it is gone, `git log --oneline origin/<base>..<branch>` lists every commit not visibly in the base. Ask before going on.
+- **Where the person confirmed the merge, and the branch is still on the remote:** what was merged is what was pushed, so the commits never pushed are the ones at risk.
 
-**Any commit listed** was never merged. Stop and show it: it needs a new branch and pull request, or the person's word that it can go. Delete nothing.
+  ```bash
+  git log --oneline origin/<branch>..<branch>
+  ```
+
+  An empty list means every local commit was pushed, and so merged, on the person's word. Any commit it lists was never pushed: stop and show it, as above.
+
+- **Where the person confirmed the merge, and the branch is gone from the remote** (the host deleted it on merge): nothing left on this machine says which commits the squash took. Show the person every commit the branch has that the base does not:
+
+  ```bash
+  git log --oneline origin/<base>..<branch>
+  ```
+
+  After a squash this lists all of the branch's commits, which is expected: the squash replaced them with one new commit. Ask, with AskUserQuestion, whether the merge included every commit listed, naming the newest. A yes lets the deletion go ahead. A no, or a "not sure", stops here, and nothing is deleted.
 
 ### 3. Bring the base up to date
 
