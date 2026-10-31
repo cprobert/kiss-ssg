@@ -28,6 +28,7 @@ A site's session logs (`planning/sessions/<date>-<slug>.md`, one per piece of wo
 
 Every rule below was a defect in an inline copy before this module existed (code reviews, 2026-10-31):
 
+- **From the branch, the folder's place in the repository comes from git's `--show-prefix` for cwd, never from comparing the folder with `--show-toplevel`.** The two can spell one folder differently: a symlinked checkout, or Windows, where Node's temp folder is `C:/Users/RUNNER~1/…` and git's is `C:/Users/runneradmin/…`. Compared across spellings, the folder lay outside the repository and `--from-branch` found nothing, on `windows-latest` only (CI, PR #47). The test reaches the site through a symlink, which reproduces it on any platform.
 - **The branch is read from the frontmatter only, and compared as text.** A log's body may quote another log's frontmatter, and a grep matched `fix/v2.8` against `fix/v2x8`. A frontmatter that is never closed is none.
 - **What an editor or a YAML habit adds reads as the plain value:** CRLF endings, a byte-order mark, spaces after `---`, a quoted value, a trailing ` # comment`. A `#` with no space before it is part of the value, as in YAML.
 - **An empty branch matches nothing.** On a detached HEAD the current branch is `''`, and a shell copy matched every log that had no `branch:` line.

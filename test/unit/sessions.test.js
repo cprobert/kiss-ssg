@@ -192,6 +192,19 @@ describe('runSession, in a real repository', () => {
     expect(run(['main', '--from-branch', '--get', 'status']).out).toBe('closed')
   })
 
+  // CI, windows-latest (PR #47): the temp folder is C:/Users/RUNNER~1/… to
+  // Node and C:/Users/runneradmin/… to git, and the folder's place in the
+  // repository was worked out across the two spellings, so it named a path
+  // outside the repository and --from-branch found nothing. A symlink is the
+  // same two spellings on any platform.
+  it('reads the branch’s commits when the folder is reached by another spelling', () => {
+    const alias = path.join(root, 'alias')
+    fs.symlinkSync(repo, alias, 'junction')
+    expect(run(['feat/x', '--from-branch'], path.join(alias, 'site')).out).toBe(
+      'refs/heads/feat/x:site/planning/sessions/2026-01-01-x.md',
+    )
+  })
+
   it('finds a log whose name has an accent, from either source', () => {
     expect(run(['feat/cafe']).out).toBe('planning/sessions/2026-02-01-café.md')
     expect(run(['feat/cafe', '--from-branch']).out).toBe(
