@@ -1,14 +1,54 @@
-# The kiss-ssg skills on four real sites — 2026-10-31
+# The kiss-ssg skills on three real sites — 2026-10-31
 
-The shipped skills were tried on four of the operator's sites (a1k9training, pro-plumbing,
-k9-solutions, swan-love) by fresh headless agents that were given an ordinary owner's request and
-never told the skills existed. The question was the one `CLAUDE.md` now asks of a domain skill:
-does it change the site an agent produces? Session log:
-`planning/sessions/2026-10-31-skills-on-fleet-sites.md`.
+The shipped skills were tried on three of the operator's sites (a1k9training, pro-plumbing,
+k9-solutions) by fresh headless agents that were given an ordinary owner's request and never told
+the skills existed. swan-love was planned and dropped by the operator mid-run; its arms are not
+graded. The question was the one `CLAUDE.md` now asks of a domain skill: does it change the site
+an agent produces? Session log: `planning/sessions/2026-10-31-skills-on-fleet-sites.md`.
 
 ## Verdict
 
-<!-- filled when all four sites are in -->
+**The skills are found, and the domain skills help when they are opened. Until this branch, the
+task skills did not get them opened.** Each arm ran once, on one model, so every count below is a
+signal, not a rate.
+
+| Measure                                                     | Result                                                   |
+| ----------------------------------------------------------- | -------------------------------------------------------- |
+| Right top-level skill invoked, unprompted                   | 12 of 12 tasks across three sites                        |
+| Domain skills opened by a review, skills named only         | 0 of 6 (a1k9training)                                    |
+| Domain skills opened by a review, skills linked             | 6 of 6 on all three sites                                |
+| WCAG failures the linked review found that the other missed | 3, each verified in the source                           |
+| Review cost, named → linked                                 | $1.33, 4 min → $4.29 to $8.33, 6 to 12 min               |
+| `kiss-seo` with and without                                 | no measurable difference on three sites                  |
+| Page arms opening `kiss-writing-for-the-web`, before        | 0 of 3, with a wording slip or invented promise in each  |
+| Page arms opening it, after the firmer rule                 | 2 of 2; slips gone, one template promise left            |
+| Facts invented in the SEO arms                              | none: every new fact matched the site's models or config |
+
+What changed in the skills:
+
+- **Task skills link the domain skills they hand work to** (`a5c6484`), with a test that fails on
+  a name without a link. This is what moved the review from 0 of 6 to 6 of 6.
+- **`kiss-page-add` replicates and checks its words** (`2732d93`, `dea7270`). Adding a page makes
+  a faithful replica of the nearest existing one, flaws included, and leaves improvements to a
+  review. That is the operator's rule. It opens `kiss-writing-for-the-web` before any visible
+  words, also the operator's call ("Words are the product").
+- **`kiss-site-migrate`'s 2.7.5 note** says a site's own `llms.txt` readers change answer
+  (`7816771`).
+
+What this branch did not settle:
+
+- **`kiss-seo` has not shown it changes a site.** With or without it, the agent made the same
+  changes on all three sites, twice the same title word for word, and handled local search the
+  skill does not mention. Its one visible effect was titles and descriptions closer to its own
+  build-mode rules. By the `CLAUDE.md` test, it has not yet earned its place. The next question is
+  what it knows that the model does not.
+- **A replicated template still pulls in plausible promises.** After the firmer rule, k9-solutions'
+  page still titled a step "A plan for being alone" without marking it unconfirmed.
+- **For `lib/`, one gap and no defects:** a bracketed placeholder passes the build check. An audit
+  check would catch it; that is engine work for another branch.
+
+One error of this session's own is recorded under pro-plumbing: it compared two commits of a site
+as one, and committed and reverted a skill change on the strength of it.
 
 ## How the arms ran
 
@@ -134,6 +174,14 @@ garden-path sentence ("for a new one where the old one was usually takes me abou
 and a `_source` crediting the facts to "Greg, via Courtenay", a go-between the request never
 named.
 
+**The page, re-run after `dea7270`:** it opened `kiss-writing-for-the-web`, the first page arm to
+do so, and the sentence now reads cleanly: "I'll take your old electric shower off and fit a new
+one in its place, like for like." It replicated the sibling records' full shape, with
+`[To confirm with Greg]` in the two fields it had no facts for. It listed what a review might
+improve, such as the home page's small-jobs examples, without changing any of it. And it caught a
+real contradiction for Greg: the site says "I don't do electrics", and an electric shower is
+usually connected to the supply. The `_source` still names "Courtenay", likely read from the repo.
+
 **Keyboard (on `49c4fca`):** the arm loaded `kiss-accessibility`, walked every page in both
 directions at 375×667 and 1280×800 in Chrome, and found nothing hidden under the header or the
 call bar, which is right for that commit. It fixed one real flaw: the phone menu's focus ring
@@ -173,6 +221,13 @@ nobody gave: "You come away with a plan to follow", "Clear steps for leaving and
 everyone at home can follow", and what each call is for. That is the invented-facts case
 `kiss-writing-for-the-web` exists for, and the skill was not opened. A third sample behind the
 operator's decision to make the writing check firm; the arm is re-run against the new wording.
+
+**The page, re-run after `dea7270`:** it opened `kiss-writing-for-the-web`, said which parts were
+general knowledge rather than the owner's facts (the signs list, the vet-referral answer), and left
+the price out rather than guessing it. "You come away with a plan to follow" is gone. But one
+approach step is still titled "A plan for being alone", with "small, manageable steps", and it is
+not marked as unconfirmed. A replicated template's slots still pull in a plausible promise. One
+run, so this is recorded rather than written into the skill.
 
 **Keyboard:** found and fixed the missing skip link, the absent focus style and colour-only
 current page, all three of which the review also reported. The header is not sticky, so there was
