@@ -404,8 +404,10 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // per page, so it is a property of the site rather than a render count —
       // and a drop in it is the symptom of a link quietly stopping being
       // rendered, which is exactly what a pinned number catches and a
-      // `> 0` does not.
-      expect(clean.report.links.checked).toBe(177)
+      // `> 0` does not. 177 until 2026-10-31, when Tags left the global nav
+      // (a page inside the journal, not a top-level section): 170, the seven
+      // pages whose only link to /blog/tags/ was that nav item.
+      expect(clean.report.links.checked).toBe(170)
       expect(clean.report.redirects.aliases).toBe(1)
       expect(clean.report.redirects.removed).toEqual([])
       expect(clean.report.redirects.collisions).toEqual([])

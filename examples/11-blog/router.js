@@ -47,17 +47,19 @@ const kiss = new Kiss({
   site,
   // Pages by id, like every other link on this site: the layout asks `{{link}}`
   // for each one's path, so the nav cannot name a page the build does not have.
-  // `folderMatch` sits on Tags, not on The journal. Matching every page below
-  // /blog/ would also match /blog/tags/, so two links would be marked as
-  // the current page; `isActive` has no "but not that folder".
+  // The nav holds the site's top-level sections and nothing else. `folderMatch`
+  // keeps The journal marked on every page inside /blog/: the posts, page 2
+  // of the listing, the tags. That is why Tags is not a nav item of its own:
+  // it is a page inside the journal, linked from the listing, every post and
+  // the home page, and as a second item it would be marked current on the
+  // tags pages beside The journal.
   // Each label is its page's own name, the same as the page's <h1> and
   // title, so a reader who follows "The journal" lands on "The journal".
   // The home page is the one exception: its label is "Home", the name
   // readers look for in a nav, whatever its <h1> says.
   nav: [
     { id: 'index', label: 'Home' },
-    { id: 'blog', label: 'The journal' },
-    { id: 'blog/tags', label: 'Tags', folderMatch: true },
+    { id: 'blog', label: 'The journal', folderMatch: true },
   ],
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.

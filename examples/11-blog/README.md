@@ -174,16 +174,19 @@ in the layout included:
 <a href='{{link model.prev}}'>&larr; Newer posts</a>
 <a class='brand' href='{{link "index"}}'>…</a>
 {{#each config.nav}}
-  {{#isActive .. href=(link id) folderMatch=folderMatch active='is-active'}}
-    <a class='nav__link {{active}}' href='{{href}}'>{{label}}</a>
-  {{/isActive}}
+  <a class='nav__link{{#isActive .. href=(link id) folderMatch=folderMatch}}{{#if active}} is-active{{/if}}{{/isActive}}'
+    href='{{link id}}'{{#isActive .. href=(link id)}}{{#if active}} aria-current='page'{{/if}}{{/isActive}}>{{label}}</a>
 {{/each}}
 ```
 
-The nav is data — `{ id: 'blog/tags', label: 'Tags', folderMatch: true }` in `router.js` — and
+The nav is data — `{ id: 'blog', label: 'The journal', folderMatch: true }` in `router.js` — and
 `isActive` is handed the path `{{link}}` resolved, so the link and the active state are decided
-from one string. A file the build wrote rather than a page it registered is `/` plus `{{asset}}`:
-`href="/{{asset 'css/site.css'}}"`.
+from one string. It is asked twice: with `folderMatch`, The journal is marked on every page inside
+`/blog/`, so a reader on a post can see which section they are in; without it, only the link to
+the page itself carries `aria-current="page"`. The nav holds the site's top-level sections only,
+so Tags, a page inside the journal, is linked from the listing, the posts and the home page
+rather than from the nav. A file the build wrote rather than a page it registered is `/` plus
+`{{asset}}`: `href="/{{asset 'css/site.css'}}"`.
 
 **One link style, and what it costs.** This site used to write its brand, nav and stylesheet
 links as `{{root}}index.html` — a climb back to the build root supplied by each page — so a build

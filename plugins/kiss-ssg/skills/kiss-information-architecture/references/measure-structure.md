@@ -6,38 +6,49 @@ Two tools for `kiss-information-architecture`: a script that measures a built si
 
 The build reports broken links but not a page that nothing links to. This script reads every HTML page in a build folder and prints three columns: how many other pages link to the page, how deep it sits, and its path. The fewest links in come first, and the deepest of those before the rest.
 
-Save it outside the site's source folders (a scratch folder is fine), build the site, then run it on the build folder:
+Save it outside the site's source folders (a scratch folder is fine), build the site, then run it on the build folder, with the site's `siteUrl`:
 
 ```js
-// node structure.mjs <build-folder>
+// node structure.mjs <build-folder> [<site-url>]
 // Each page's links in, its depth and its path, fewest links first.
 import fs from 'node:fs'
 import path from 'node:path'
 
 const root = path.resolve(process.argv[2] ?? 'public')
-const pages = fs
+// Where the site is served: its links to its own pages may be absolute
+// (https://example.com/about/), and under a path (https://example.com/docs/)
+// every page's URL starts with that path. Without one, only relative and
+// root-relative links can be followed.
+const site = new URL(process.argv[3] ?? 'https://site.invalid/')
+const base = site.pathname.replace(/\/?$/, '/')
+const files = fs
   .readdirSync(root, { recursive: true })
-  .map((f) => '/' + f.split(path.sep).join('/'))
-  .filter((p) => p.endsWith('.html') && !p.endsWith('/404.html'))
+  .map((f) => f.split(path.sep).join('/'))
+  .filter((f) => f.endsWith('.html') && !/(^|\/)404\.html$/.test(f))
 const key = (p) =>
   p
     .replace(/index\.html$/, '')
     .replace(/\.html$/, '')
     .replace(/\/$/, '') || '/'
 
-const linksIn = new Map(pages.map((p) => [key(p), new Set()]))
-for (const page of pages) {
-  const html = fs.readFileSync(path.join(root, page), 'utf8')
-  for (const [, , href] of html.matchAll(/href\s*=\s*(["'])(.*?)\1/g)) {
+const linksIn = new Map(files.map((f) => [key('/' + f), new Set()]))
+for (const file of files) {
+  const page = key('/' + file)
+  const html = fs.readFileSync(path.join(root, file), 'utf8')
+  // A link a reader can follow: an <a> element's href, quoted or not. Not a
+  // <link> in the head, and not a data-href.
+  const anchor =
+    /<a\s(?:[^>]*?\s)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi
+  for (const match of html.matchAll(anchor)) {
     let url
     try {
-      url = new URL(href, 'http://site' + page)
+      url = new URL(match[1] ?? match[2] ?? match[3], site.origin + base + file)
     } catch {
       continue
     }
-    const target = key(url.pathname)
-    if (url.origin === 'http://site' && target !== key(page))
-      linksIn.get(target)?.add(key(page))
+    if (url.origin !== site.origin || !url.pathname.startsWith(base)) continue
+    const target = key('/' + url.pathname.slice(base.length))
+    if (target !== page) linksIn.get(target)?.add(page)
   }
 }
 const rows = [...linksIn].map(([p, from]) => ({
@@ -50,14 +61,16 @@ for (const r of rows) console.log(`${r.in}\t${r.depth}\t${r.page}`)
 ```
 
 ```bash
-node structure.mjs public
+node structure.mjs public https://your-site.example/
 ```
 
-Replace `public` with the site's build folder. The script follows relative and root-relative links alike, the way a browser resolves them, and counts each linking page once. It treats `/about.html`, `/about` and `/about/` as one page, so the count holds whether or not the site is `extensionLess`. It does not count a link written as an absolute URL to the site's own domain, a page's link to itself, or the 404 page, either as a page or as a source of links. On `node_modules/kiss-ssg/examples/11-blog/`, the first line is `1	3	/blog/page/2`: page two of the post listing has one link in (from page one) and sits three levels deep.
+Replace `public` with the site's build folder and `https://your-site.example/` with its `siteUrl`, path and all when the site is served under one (`https://example.github.io/docs/`). The address matters when the layout writes absolute links to the site's own pages (`{{link … absolute=true}}`, `{{absUrl}}`): without it, those links cannot be followed, and nearly every page reads as an orphan. Leave it off only for a site whose links are all relative or root-relative.
+
+The script counts the links a reader can follow, an `<a>` element's `href`, and not a `<link>` in the head or a `data-href`. It resolves each one the way a browser does, counts each linking page once, and treats `/about.html`, `/about` and `/about/` as one page, so the count holds whether or not the site is `extensionLess`. It does not count a page's link to itself, a link outside the site's address, or the 404 page, either as a page or as a source of links. On `node_modules/kiss-ssg/examples/11-blog/`, the first line is `1	3	/blog/page/2`: page two of the post listing has one link in (from page one) and sits three levels deep.
 
 How to read the output:
 
-- **A `0` in the first column is an orphan.** No other page links to it.
+- **A `0` in the first column is an orphan.** No other page links to it. Before reporting one, check that the address given was the site's own.
 - **A low count deep in the site** is a page that only one route reaches. Check that its section nav or a related link leads to it, and that breadcrumbs lead back.
 - **A count equal to nearly every page** means the page is in the global nav or the footer. That is right for a top-level section, and worth asking about for anything else.
 

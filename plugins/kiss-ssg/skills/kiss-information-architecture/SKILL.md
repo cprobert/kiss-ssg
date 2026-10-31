@@ -19,7 +19,7 @@ Four things are easily confused, and each needs its own decision:
 
 - **The folder tree under `folders.pages` is the URL tree.** A page's URL is `/{path}/{slug}`, inferred from where its view is filed unless the registration sets `path` and `slug`, and kiss slugifies both (`node_modules/kiss-ssg/GUIDE.md` § .page()). The hierarchy is decided where the views are filed, and moving a view moves its URL.
 - **A section of like items is one `.pages()` fan-out** over a model, one record per item (`node_modules/kiss-ssg/GUIDE.md` § .pages()). That model's shape is the content model for that type of page.
-- **The nav is data, kept once:** a list of page ids and labels in the config, rendered in the layout with `{{link}}` and `{{#isActive}}`. With `folderMatch`, a section's nav item stays current on every page inside the section (`node_modules/kiss-ssg/GUIDE.md` § Helpers). `node_modules/kiss-ssg/examples/11-blog/router.js` and its `src/layouts/layout.hbs` are the shape to copy.
+- **The nav is data, kept once:** a list of page ids and labels in the config, rendered in the layout with `{{link}}` and `{{#isActive}}`. With `folderMatch`, a section's nav item stays marked on every page inside the section (`node_modules/kiss-ssg/GUIDE.md` § Helpers). `isActive` has no "but not that folder", so a page inside a section is never a nav item of its own beside it: both would be marked at once. `node_modules/kiss-ssg/examples/11-blog/router.js` and its `src/layouts/layout.hbs` are the shape to copy: The journal carries `folderMatch`, and its tags page is linked from inside the section, not from the nav.
 - **Every internal link goes through `{{link "<id>"}}`** (`node_modules/kiss-ssg/llms.txt` § Building a site well). A link to a page that does not exist fails the build, and a page that moves takes its links with it. A page that moves also keeps its old URL with `aliases` (`node_modules/kiss-ssg/GUIDE.md` § Redirects).
 - **The build already reports** broken links (`links`) and a missing 404 page (`not-found-missing`); `kiss-site-review` says the fix for each. **Nothing reports a page that no other page links to.** The review below measures it.
 
@@ -76,14 +76,14 @@ Aim for an obvious choice at each step, not the fewest clicks; there is no three
 | Breadcrumb | The page's ancestors                                              | A partial (§ 7)                                        |
 | Footer     | Secondary and institutional pages: privacy, accessibility, policy | The layout's footer                                    |
 
-- **Global nav holds only what is global.** A utility action (Contact, Sign in) is not a content section.
+- **Global nav holds only what is global.** A utility action (Contact, Sign in) is not a content section, and a page inside a section (its tags, its archive) belongs in that section's own links, not beside it in the global nav.
 - **On a phone, the menu keeps the same sections in the same order,** and the section's own pages stay reachable. How the menu opens is `kiss-front-end`'s.
 - **Every page is linked from at least one other page.** A page that only `sitemap.xml` lists is an orphan.
 - **Once a site is more than a handful of pages, give it a second way in** besides the nav: related links, a section index, an HTML site-map page, or a search. WCAG 2.2 requires more than one way to find a page in a set (2.4.5 Multiple Ways, AA). A page that is a step in a process is exempt.
 
 ### 6. Show the reader where they are
 
-A reader who lands on a deep page from a search engine should be able to tell where they are without visiting the home page. The page's `<h1>` names the page. The global nav marks its section as current (`{{#isActive}}` with `folderMatch`). The section nav shows the page among its neighbours, and a deep page has breadcrumbs. Marking the current link for screen readers (`aria-current`) is `kiss-accessibility`'s.
+A reader who lands on a deep page from a search engine should be able to tell where they are without visiting the home page. The page's `<h1>` names the page. The global nav marks its section (`{{#isActive}}` with `folderMatch`) on every page inside it. The section nav shows the page among its neighbours, and a deep page has breadcrumbs. `aria-current="page"` goes only on a link to the page itself, so the layout asks `isActive` twice, with and without `folderMatch`, as example 11's does; that marking is `kiss-accessibility`'s to review.
 
 ### 7. Breadcrumbs
 
@@ -117,13 +117,13 @@ An item has one place in the hierarchy, but it can carry several terms, one for 
 
 Report to the [review protocol](../kiss-site-review/review-protocol.md): every finding before anything is edited, each with its priority and its measurement, one row per cause. A choice the site records is not a finding. A record whose own reason a measurement now contradicts is marked **ask**; the protocol has the rule. Look at the site in a browser as the [browser pass](../kiss-site-review/browser-pass.md) says. Without a browser, the browser checks did not run, and the report says so.
 
-**Measure first.** [references/measure-structure.md](references/measure-structure.md) has a script that reads the build folder and prints, for each page, how many other pages link to it and how deep it sits. Then check:
+**Measure first.** [references/measure-structure.md](references/measure-structure.md) has a script that reads the build folder and prints, for each page, how many other pages link to it and how deep it sits. Give it the site's `siteUrl`, or a layout's absolute links to its own pages read as no links at all. Then check:
 
 1. **Orphans.** A page with no links in is reachable only from a search engine. Name each one, and the page that should link to it.
 2. **The global nav's labels.** Quote each one. Flag a team's internal name, a brand name, a vague label (More, Explore, Resources, Solutions), and a utility action listed among the content sections.
 3. **One concept, one name.** For each global nav item, put its label beside its page's `<h1>` and its URL. Quote each mismatch. "Home" for the home page is not one.
 4. **Depth.** Take the deepest pages from the script's output. Does each have breadcrumbs, and does the section nav show it? Flag a level with one child, and a page that lists many similar links with nothing to tell them apart (give the count).
-5. **Where am I?** Open a page two levels down. Is its section marked current in the global nav? Does the `<h1>` name the page? Are breadcrumbs there, where § 7 calls for them?
+5. **Where am I?** Open a page two levels down. Is its section marked in the global nav, with `aria-current` on no link but one to the page itself? Does the `<h1>` name the page? Are breadcrumbs there, where § 7 calls for them?
 6. **Breadcrumbs.** Every crumb is a real page. The trail matches the URL's hierarchy. None appear in a form journey.
 7. **URLs.** Read every `<loc>` in `sitemap.xml`. Flag capitals, underscores, ids or query strings, campaign words, a date on content that is not dated, and an organisation name.
 8. **Terms.** List the distinct values of each term field across a fan-out's records. Flag two spellings of one idea, and a filter that repeats the navigation.
