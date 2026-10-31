@@ -9,6 +9,7 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { isMain } from './is-main.mjs'
 
 export const ROOT = path.resolve(import.meta.dirname, '..')
 export const TSCONFIG = path.join(ROOT, 'tsconfig.types.json')
@@ -59,7 +60,7 @@ export function emitTypes({ outDir } = {}) {
   return { outDir: target, files }
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta.filename)) {
   const { outDir, files } = emitTypes()
   console.log(`${files.length} declarations → ${path.relative(ROOT, outDir)}/`)
 }

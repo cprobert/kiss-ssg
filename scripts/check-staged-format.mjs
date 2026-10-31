@@ -7,6 +7,7 @@
 // the gate will later see.
 import { execFileSync } from 'node:child_process'
 import prettier from 'prettier'
+import { isMain } from './is-main.mjs'
 
 // Prettier has nothing to say about a file it cannot parse or has been told to
 // skip — .hbs and build output, here. Split out so the decision is testable
@@ -29,7 +30,7 @@ export function formatFailureMessage(failures) {
   ].join('\n')
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta.filename)) {
   const staged = execFileSync(
     'git',
     ['diff', '--cached', '--name-only', '--diff-filter=ACMR'],

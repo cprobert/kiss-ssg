@@ -47,13 +47,21 @@ describe('the structure script, as the reference ships it', () => {
       '<template><a href="/orphan.html">x</a></template>',
     ].join(''),
   )
-  page('about/index.html', '<a href="/">Home</a>')
+  // Round 13: an image map's <area href> is a link a reader follows.
+  page(
+    'about/index.html',
+    '<a href="/">Home</a><map name="m"><area href="/mapped.html" alt="Mapped"></map>',
+  )
+  page('mapped.html', '<p>Reached through the image map only.</p>')
   page('orphan.html', '<p>Nothing links here.</p>')
   // A search console verification file: copied as an asset, not a page.
   fs.writeFileSync(
     path.join(site, 'google1234.html'),
     'google-site-verification: google1234.html\n',
   )
+  // Round 13: a folder whose name ends in .html is no file to read.
+  fs.mkdirSync(path.join(site, 'embed.html'))
+  fs.writeFileSync(path.join(site, 'embed.html/frame.js'), '//\n')
 
   const result = spawnSync('node', [script, site], { encoding: 'utf8' })
   const rows = result.stdout.trim().split('\n')
@@ -71,7 +79,12 @@ describe('the structure script, as the reference ships it', () => {
     expect(rows.map((r) => r.split('\t')[2]).sort()).toEqual([
       '/',
       '/about',
+      '/mapped',
       '/orphan',
     ])
+  })
+
+  it('follows an image map’s <area href>', () => {
+    expect(rows).toContain('1\t1\t/mapped')
   })
 })

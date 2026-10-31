@@ -13,6 +13,7 @@
 // out, pull it, or name `origin/<name>`):
 //   BASE_NAME=$(node scripts/base-branch.mjs --name)
 import { execFileSync } from 'node:child_process'
+import { isMain } from './is-main.mjs'
 
 // A base is a long-lived integration branch: main/master, or a major line (v2).
 // Deliberately not "any branch" — a sibling feature branch can share HEAD's tip
@@ -183,7 +184,13 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
     return count === null ? null : Number(count)
   }
   const base = pickBaseBranch(current, candidates, distanceTo)
-  if (base === null) return 'main'
+  // No integration branch shares history with HEAD. `main` used to be printed
+  // anyway, a ref that may not exist, and a caller that read git's empty
+  // answer for it (docs-sweep) reported nothing to do (round 13).
+  if (base === null)
+    throw new BaseBranchError(
+      'base-branch: no integration branch (main, master or vN) here or on origin; name the base with KISS_BASE_BRANCH or git config kiss.baseBranch',
+    )
   // `pickBaseBranch` returns a candidate `distanceTo` found a ref for, or the
   // current branch, which has none before its first commit.
   const winner = branchRef(base, cwd, run)
@@ -245,5 +252,4 @@ function main(args) {
   return 1
 }
 
-if (import.meta.filename === process.argv[1])
-  process.exitCode = main(process.argv.slice(2))
+if (isMain(import.meta.filename)) process.exitCode = main(process.argv.slice(2))

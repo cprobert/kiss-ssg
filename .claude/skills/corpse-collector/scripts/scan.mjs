@@ -17,6 +17,7 @@ import {
   resolveBaseBranch,
 } from '../../../../scripts/base-branch.mjs'
 import { DEFAULT_CONFIG, DEFAULT_FOLDERS } from '../../../../lib/config.js'
+import { isMain } from '../../../../scripts/is-main.mjs'
 
 // ── AIKB doc staleness, by git history ───────────────────────────────────────
 // CLAUDE.md's rule is "read the relevant AIKB doc before changing that module,
@@ -613,4 +614,4 @@ function main() {
   )
 }
 
-if (import.meta.filename === process.argv[1]) main()
+if (isMain(import.meta.filename)) main()

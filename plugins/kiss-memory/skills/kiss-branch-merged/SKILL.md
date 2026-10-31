@@ -116,6 +116,8 @@ Run it from that checkout. The install comes first because the merge may have ch
 - **A diff:** something else reached the base too — another branch merged after this one was recorded, or a merge conflict was resolved by hand. Do not record here, and do not commit to the base: report the diff, and say that the next `kiss-branch-open` will treat it as inherited drift and the next `kiss-branch-close` will record over it.
 - **A failure:** the merged base does not build. That is the first thing to fix, on a new branch. Report it at the top.
 
+**Then look at that checkout again** (`git status --short` in it). It was clean before the check: step 3 made sure of the main checkout, and the worktree bullet above of the worktree. So anything it prints now, the install or the check wrote, usually a pipeline step (`assets.pipeline`) that writes into a tracked folder. Put back exactly what it lists, and nothing else: `git restore -- <file>` for each changed file, and `git clean -f -- <file>` for each new one, leaving `node_modules/` alone. Otherwise step 5 finds a worktree that is not clean and stops, and a main checkout is left with changes nobody made. Say in the report which files the build writes into the source: that is worth a look on its own, on a later branch, not here.
+
 ### 5. Remove this session's worktree, then the branch
 
 If the session file names a worktree, work from the main checkout, never from inside the worktree:

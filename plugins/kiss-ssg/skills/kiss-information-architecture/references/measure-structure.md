@@ -28,6 +28,8 @@ const html = new Map(
     .readdirSync(root, { recursive: true })
     .map((f) => f.split(path.sep).join('/'))
     .filter((f) => f.endsWith('.html') && !/(^|\/)404\.html$/.test(f))
+    // A file: a folder may be named embed.html too.
+    .filter((f) => fs.statSync(path.join(root, f)).isFile())
     .map((f) => [f, fs.readFileSync(path.join(root, f), 'utf8')])
     .filter(([, source]) => /<(html|body)[\s>]/i.test(source)),
 )
@@ -49,10 +51,10 @@ for (const file of files) {
     .get(file)
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<(script|template|style)\b[\s\S]*?<\/\1\s*>/gi, '')
-  // A link a reader can follow: an <a> element's href, quoted or not. Not a
-  // <link> in the head, and not a data-href.
+  // A link a reader can follow: the href of an <a>, or of an image map's
+  // <area>, quoted or not. Not a <link> in the head, and not a data-href.
   const anchor =
-    /<a\s(?:[^>]*?\s)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi
+    /<(?:a|area)\s(?:[^>]*?\s)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi
   for (const match of readable.matchAll(anchor)) {
     let url
     try {

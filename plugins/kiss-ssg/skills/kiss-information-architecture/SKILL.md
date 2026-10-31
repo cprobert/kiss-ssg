@@ -102,7 +102,7 @@ Readers and search engines both read a URL, so it is part of the structure.
 - **Name the lasting concept:** `/courses/bread-making/`. Not `/spring-offer/` (a campaign), not `/learning-division/programmes/` (an org chart that will change), not `/course.php?id=184` (a technology). A date belongs only where the date is the content, as on a news post.
 - **Follow the hierarchy where it is stable:** prefer `/courses/bread-making/` to `/bread-making/` when Courses is a real section.
 - **One page, one URL.** A deliberate copy names its original with `canonical` (`kiss-seo`).
-- **Settle a URL before it is published.** One that moves later keeps its old URL in `aliases` for good.
+- **Settle a URL before it is published.** One that moves later keeps its old URL in `aliases` for good. An alias keeps links working, but a dated page in the feed also gets a new `<guid>` (the feed identifies an item by its URL), so a feed reader lists it again as new, and nothing keeps the old guid (`node_modules/kiss-ssg/examples/11-blog/README.md`, the move).
 
 ### 9. Categories, tags and the 404 page
 

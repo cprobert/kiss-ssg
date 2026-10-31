@@ -9,6 +9,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { BaseBranchError, resolveBaseBranch } from './base-branch.mjs'
+import { isMain } from './is-main.mjs'
 
 // package.json's `files` whitelist is load-bearing: llms.txt and AIKB/ ship on
 // purpose so an agent in a consuming project can read them from node_modules,
@@ -270,7 +271,7 @@ const GATES = [
   },
 ]
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta.filename)) {
   // Every gate reads the repository from its root (vitest's config, eslint's,
   // tsc's project, prettier's root-relative file list, npm pack), so run from
   // there whichever folder this was started in. From lib/, four of the five

@@ -20,6 +20,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { branchRefs } from './base-branch.mjs'
+import { isMain } from './is-main.mjs'
 
 const SESSIONS = 'planning/sessions'
 
@@ -174,7 +175,7 @@ function main(args) {
   }
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta.filename)) {
   try {
     main(process.argv.slice(2))
   } catch (error) {

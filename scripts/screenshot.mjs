@@ -49,6 +49,7 @@ import path from 'node:path'
 import http from 'node:http'
 import os from 'node:os'
 import { createRequire } from 'node:module'
+import { isMain } from './is-main.mjs'
 
 const require = createRequire(import.meta.url)
 
@@ -258,7 +259,7 @@ export async function shoot(opts) {
   }
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta.filename)) {
   try {
     const opts = parseArgs(process.argv.slice(2))
     const results = await shoot(opts)

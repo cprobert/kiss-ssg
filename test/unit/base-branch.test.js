@@ -302,6 +302,38 @@ describe('the command line', () => {
     )
   })
 
+  // Round 13: with no integration branch at all (only `develop`), the script
+  // printed `main`, a ref that does not exist, and docs-sweep read the empty
+  // diff git gave for it as "nothing to sweep". It says so instead.
+  it('says plainly when there is no integration branch to diff against', () => {
+    const repo = path.join(root, 'develop-only')
+    fs.mkdirSync(repo)
+    git(repo, 'init', '-q', '-b', 'develop')
+    git(
+      repo,
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '--allow-empty',
+      '-m',
+      'base',
+    )
+    git(repo, 'checkout', '-q', '-b', 'feat')
+    const result = spawnSync('node', [script], {
+      cwd: repo,
+      encoding: 'utf8',
+      env,
+    })
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr.trim()).toBe(
+      'base-branch: no integration branch (main, master or vN) here or on origin; name the base with KISS_BASE_BRANCH or git config kiss.baseBranch',
+    )
+  })
+
   // The same tag, without an override: the algorithm's candidates were read
   // as short names, which git spells `heads/v2` when a tag shares the name,
   // so a local-only integration branch was never a candidate (round 6).

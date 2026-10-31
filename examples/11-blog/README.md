@@ -183,6 +183,12 @@ with the id unchanged, the check pairs the two sides and reports
 naming the alias to add; with the id renamed to `journal/post/cascara`, it reports the old address
 as `removed`, a deletion. An id that changes when the page moves cannot follow it.
 
+**What an alias cannot keep: the feed.** A feed item's `<guid isPermaLink="true">` is the page's
+URL, the same string as its `<loc>` in the sitemap, so the move changed all six posts' guids to
+`/journal/` addresses. A feed reader that subscribed before the move lists the six posts as new,
+once. kiss has no way to keep an old guid, so this cost comes with moving a section that is in a
+feed, and it is one more reason to settle a section's URL before its first post is published.
+
 ## Linking by identity
 
 Every internal href that names a page **by its id** is `{{link}}` — the brand link and the nav

@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 
 The knowledge base has three parts and they rot differently. The **map** is regenerated every record, so it cannot rot. The **notes** rot quietly in two mechanical ways — the subject changes and the note does not, or the note names a file that no longer exists — and the check now reports both. The **session logs** rot by accumulation: they are read back a handful at a time, so a lesson written eighteen sessions ago is write-only, and the same feedback comes back branch after branch because nothing ever promoted it to a rule.
 
-This skill is the housekeeping beat that answers all three. It is not part of the open → pulse → close loop; run it **between** pieces of work, when the loop or a human says the base needs a sweep.
+This skill is the housekeeping beat that answers all three. It is not part of the open → pulse → close → merged loop; run it **between** pieces of work, when the loop or a human says the base needs a sweep.
 
 **Three hard rules, no exceptions:**
 
