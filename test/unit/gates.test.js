@@ -395,6 +395,20 @@ describe('formatGate', () => {
     expect(calls).toEqual([])
   })
 
+  // Round 18: npm allows `bin` as a string or as `{ name: path }`; the object
+  // form read as "not installed".
+  it('reads a bin field given as an object', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-prettier-'))
+    const manifest = path.join(dir, 'package.json')
+    fs.writeFileSync(
+      manifest,
+      JSON.stringify({ bin: { prettier: './bin/p.cjs' } }),
+    )
+    const bin = prettierBin(() => manifest)
+    fs.rmSync(dir, { recursive: true, force: true })
+    expect(bin).toBe(path.join(dir, 'bin/p.cjs'))
+  })
+
   it('finds no prettier bin where there is no prettier', () => {
     expect(
       prettierBin(() => {

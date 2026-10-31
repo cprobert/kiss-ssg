@@ -107,7 +107,12 @@ const require = createRequire(import.meta.url)
 export function prettierBin(resolve = require.resolve) {
   try {
     const manifest = resolve('prettier/package.json')
-    return path.join(path.dirname(manifest), require(manifest).bin)
+    // npm allows `bin` as a path or as `{ name: path }` (round 18).
+    const { bin } = require(manifest)
+    return path.join(
+      path.dirname(manifest),
+      typeof bin === 'string' ? bin : bin.prettier,
+    )
   } catch {
     return null
   }

@@ -293,8 +293,10 @@ page inside a section. It is private data, like `@index`, so it hides no key of 
 
 - **Grep the layouts for `aria-current`, and fix the shape that marks a whole section.** A nav
   link that sets the attribute inside `{{#if active}}`, in an `{{#isActive}}` with
-  `folderMatch`, puts `aria-current="page"` on every page in that section. kiss's own examples
-  1, 3 and 11 shipped that shape until this release, so a site that copied one has it. Set the
+  `folderMatch`, puts `aria-current="page"` on every page in that section. Until this release,
+  ten of kiss's example layouts (1, 2, 3 and 5 to 11) had that shape and passed each nav item's
+  `folderMatch` through, so a site that copied any of them has it, and it shows as soon as one
+  nav item sets `folderMatch: true` (examples 3 and 11 did). Set the
   attribute inside `{{#if @current}}` instead, and keep the class on `{{#if active}}`, as
   `node_modules/kiss-ssg/examples/11-blog/src/layouts/layout.hbs` does. This changes the built
   HTML: on a page inside the section, the section link keeps its class and loses the attribute.

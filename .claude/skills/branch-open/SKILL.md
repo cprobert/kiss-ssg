@@ -45,16 +45,18 @@ Before the interview, pick **one of the quotes below at random** (vary it each t
 ### Step 1 — Confirm starting state
 
 ```bash
-node scripts/base-branch.mjs     # the branch this work will merge back into
-git branch --show-current
+BASE_NAME=$(node scripts/base-branch.mjs --name) || exit 1
+echo "base: $BASE_NAME"
+B=$(git branch --show-current); [ -n "$B" ] || echo "not on a branch (a detached HEAD)"
+[ -n "$B" ] && [ "$B" = "$BASE_NAME" ] && echo "on the base branch"
 git status
 ```
 
-`scripts/base-branch.mjs` resolves the integration branch — `main`, or the major line currently in development (`v2` today). Every step below that says "the base" means whatever it printed. Override it with `git config kiss.baseBranch <name>` if it guesses wrong.
+`scripts/base-branch.mjs` resolves the integration branch — `main`, or the major line currently in development (`v2` today) — and `--name` prints its name. Every step below that says "the base" means the name it printed on the `base:` line, which is also what the session file's `base:` holds: a name, never the ref the plain script prints, which is `refs/heads/v2` here, where `v2` is a tag as well, or `origin/main` in a clone with no local `main`. If it stops saying the base is not a branch, ask which branch the work merges into. Override it with `git config kiss.baseBranch <name>` if it guesses wrong.
 
 Two starting cases:
 
-- **On the base branch** — the normal case. You'll create a new branch in Step 4.
+- **On the base branch** (it printed `on the base branch`) — the normal case. You'll create a new branch in Step 4.
 - **Already on a feature branch** — the harness (mobile / web) often auto-creates one before you ever reach `/branch-open`. Do **not** branch off it (no branch-of-a-branch). Instead **adopt the current branch in place**: capture intent onto it and skip Step 4's creation. Confirm first ("You're already on `<branch>` — I'll capture intent onto this branch rather than create a new one"). Adopt it only when it is this work's: the harness made it for this session, or the operator says so. A branch with work or an intent file of its own, or one nobody here can account for, is another session's, and the checkout is busy (below), which means a worktree. If you cannot tell which it is, ask before writing anything.
 
 If there are uncommitted changes: surface them and ask whether to stash/commit first.
@@ -75,7 +77,7 @@ When unsure, ask one question: "quick chore, or something worth speccing?"
 ### Step 2a — Read back the Feedback, and count how often it has come back
 
 ```bash
-find planning/sessions -type f -name '*.md' -exec ls -t {} + | head -3
+find planning/sessions -type f -name '*.md' | awk -F/ '{ print $NF "\t" $0 }' | sort -r | cut -f2 | head -3
 ```
 
 Read each one's `## Feedback` section — the recommendations the last three branches left for next time. Anything that appears in **two or more** of them is a lesson that has not stuck, and this branch inherits it: surface those items to the user before the interview and keep them visible through it, so the criteria can be written to hold them. A reflection nobody reads at the next open is a diary, not institutional memory.
@@ -187,7 +189,7 @@ Then tell the user: branch created, intent captured — start the work, run `/br
 ```markdown
 ---
 branch: <branch-name>
-base: <base branch>
+base: <the base name Step 1 printed>
 status: open
 opened: <YYYY-MM-DD>
 worktree: <the worktree's absolute path, as `git worktree list` shows it, only when Step 4 made one; else omit the line>

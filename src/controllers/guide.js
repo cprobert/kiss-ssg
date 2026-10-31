@@ -102,11 +102,23 @@ export function splitSections(source) {
   // two sections share would let the second replace the first in the page
   // map. Both are mistakes in GUIDE.md, so `node docs` fails on them.
   const seen = new Map()
+  let inSection = false
   for (const heading of headings) {
     if (!heading.title.trim())
       throw new Error(
         `GUIDE.md line ${heading.start + 1}: a heading with no text`,
       )
+    // A `#` heading is the document's title, before any section, and no
+    // section itself. After the first section it would land in that page as
+    // a stray <h1>, with no id or contents entry (round 18).
+    if (heading.level === 1) {
+      if (inSection)
+        throw new Error(
+          `GUIDE.md line ${heading.start + 1}: a level-1 heading after the first section`,
+        )
+      continue
+    }
+    if (heading.level <= 3) inSection = true
     if (heading.level > 3 || heading.title === 'Usage') continue
     if (seen.has(heading.title))
       throw new Error(

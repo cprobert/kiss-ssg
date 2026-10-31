@@ -65,12 +65,19 @@ for (const file of files) {
     .replace(/<(script|template|style)\b[\s\S]*?<\/\1\s*>/gi, '')
   // A link a reader can follow: the href of an <a>, or of an image map's
   // <area>, quoted or not. Not a <link> in the head, and not a data-href.
-  const anchor =
-    /<(?:a|area)\s(?:[^>]*?\s)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi
-  for (const match of readable.matchAll(anchor)) {
+  // The whole tag first, a quoted value and all (`title="Next > step"`),
+  // then its href among its attributes.
+  const tag = /<(?:a|area)\s((?:[^>"']|"[^"]*"|'[^']*')*)>/gi
+  const attribute =
+    /([^\s="'>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g
+  for (const [, attributes] of readable.matchAll(tag)) {
+    const href = [...attributes.matchAll(attribute)].find(
+      (a) => a[1].toLowerCase() === 'href',
+    )
+    if (!href) continue
     let url
     try {
-      url = new URL(match[1] ?? match[2] ?? match[3], pageUrl)
+      url = new URL(href[2] ?? href[3] ?? href[4] ?? '', pageUrl)
     } catch {
       continue
     }

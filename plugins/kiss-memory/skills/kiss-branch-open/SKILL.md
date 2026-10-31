@@ -17,7 +17,7 @@ This is the site-shaped loop: no version bump, no package, no npm publish. What 
 ### 1. Read back the Feedback, and count how often it has come back
 
 ```bash
-find planning/sessions -type f -name '*.md' -exec ls -t {} + 2>/dev/null | head -3
+find planning/sessions -type f -name '*.md' 2>/dev/null | awk -F/ '{ print $NF "\t" $0 }' | sort -r | cut -f2 | head -3
 ```
 
 Read each one's `## Feedback` section. Anything that shows up in **two or more** of them is a recurring lesson that has not stuck — surface those to the user now, as this branch's standing checklist, and copy them into the session file under **Inherited feedback**. If there are no sessions yet, say so and skip; this is the first.

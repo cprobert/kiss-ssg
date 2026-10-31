@@ -106,6 +106,27 @@ describe('splitSections', () => {
   // A paragraph line followed by `---` renders as an <h2>, so it is a
   // section, as the renderer says. When its text matched an existing title,
   // the second section replaced the first in the page map with no error.
+  // Round 18: a `#` heading is the document's title, not a section, so it
+  // shares no title with one; but after the first section, a `#` heading
+  // (or a paragraph over `===`) landed in that section's page as a stray
+  // <h1>, with no id and no contents entry, and nothing said so.
+  it("does not count the document's title as a section", () => {
+    expect(
+      splitSections(['# kiss-ssg', '', '## kiss-ssg', 'a'].join('\n')).map(
+        (s) => s.title,
+      ),
+    ).toEqual(['kiss-ssg'])
+  })
+
+  it.each([
+    [['## One', 'a', '# Two', 'b']],
+    [['## One', 'a', '', 'Two', '===', 'b']],
+  ])('fails on a level-1 heading inside a section: %j', (lines) => {
+    expect(() => splitSections(lines.join('\n'))).toThrow(
+      'a level-1 heading after the first section',
+    )
+  })
+
   it('fails on two sections with one title, setext included', () => {
     expect(() =>
       splitSections(['## One', 'a', '', 'One', '---', 'b'].join('\n')),
