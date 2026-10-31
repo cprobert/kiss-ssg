@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
+import { withoutCode } from '../../scripts/markdown-code.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const PACKAGE_PREFIX = 'node_modules/kiss-ssg/'
@@ -119,43 +120,10 @@ function isPacked(relative) {
   return !FORBIDDEN_PACKED.some((pattern) => pattern.test(`${relative}/`))
 }
 
-// Markdown never makes a link inside code, so the link reader below drops it
-// first, following CommonMark where it decides what is code. A fenced block
-// opens on a run of three or more backticks or tildes, indented at most three
-// spaces, and a backtick fence's info string holds no backtick. It closes
-// only on a run of the same character at least as long, on a line of its own,
-// or at the end of the file, and leaves a blank line behind, because a fence
-// ends the paragraph around it. An inline code span is an unescaped backtick
-// run closed by a run of exactly the same length, never across a blank line,
-// so a stray backtick hides nothing past its own paragraph. It is not a full
-// parser: a fence indented four or more spaces inside a list item is not seen
-// as one.
-function withoutCode(text) {
-  const kept = []
-  let fence = null
-  for (const line of text.split(/\r?\n/)) {
-    if (fence) {
-      if (fence.test(line)) fence = null
-      kept.push('')
-      continue
-    }
-    const open = /^ {0,3}(?:(`{3,})(?!.*`)|(~{3,}))/.exec(line)
-    if (open) {
-      const run = open[1] ?? open[2]
-      fence = new RegExp(`^ {0,3}${run[0]}{${run.length},}\\s*$`)
-      kept.push('')
-      continue
-    }
-    kept.push(line)
-  }
-  return kept
-    .join('\n')
-    .replace(/(?<![`\\])(`+)(?!`)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\1(?!`)/g, '')
-}
-
-// The relative Markdown links in a skill's files, `[text](target)`. A plugin
-// installs as one folder, so a target must exist and stay inside that plugin's
-// folder. A skill that points at another plugin file (a domain skill at the
+// The relative Markdown links in a skill's files, `[text](target)`, read with
+// the code dropped first (`scripts/markdown-code.mjs`): Markdown never makes a
+// link inside code. A plugin installs as one folder, so a target must exist
+// and stay inside that plugin's folder. A skill that points at another plugin file (a domain skill at the
 // shared review protocol) writes a Markdown link, never an inline-code path:
 // an inline `./helpers` or `./AIKB` in these skills is a folder in the user's
 // site, not a file in the plugin. A URL and an in-page `#anchor` are not

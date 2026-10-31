@@ -65,6 +65,23 @@ opened: 2026-10-30
     - `CLAUDE.md` adds a fourth beat under "three beats".
 
     Also not acted on: `kiss-page-add`'s call to `kiss-information-architecture` has no coverage row, and `kiss-site-import` does not call it, although the skill names an import.
+- **2026-10-31 — every remaining review finding fixed (operator: "fix them all. It's important to me that these skills are spot on").** Each fix was measured before it was written, and each class was swept across all the skills, not only where the review found it.
+  - **The merged step, in both homes.** `branch-merged` and `kiss-branch-merged` now:
+    - read the session file from the branch with `git grep … <branch>`, so it is found from the main checkout and in a CRLF file;
+    - check every worktree against `git worktree list --porcelain`;
+    - ignore pull requests from forks, and stop on an open one with the same name;
+    - check that the merged head holds every local commit (`git fetch origin pull/<n>/head`, then `git merge-base --is-ancestor`), before anything changes;
+    - stop for uncommitted changes only in a checkout they switch, pull or remove.
+
+    The plugin's build check now runs on the merged base: in the main checkout when the branch was there, or in its own worktree moved to `origin/<base>`, and is skipped, with the reason, when no checkout is on the base. A throwaway repository showed the commit check refusing an unmerged local commit and passing without it, plain git failing to see the squash merge, and the worktree found and removed from the main checkout while that checkout's uncommitted file stayed. `gh` is not installed in this container, so the `gh pr list` call and its JSON fields are not tested.
+
+  - **The plugin's base branch.** `kiss-branch-open`, `-close` and `-merged` fell back to `main` when `origin/HEAD` is unset. This clone had no `origin/HEAD`, and the fallback was right only by chance. They now ask the remote (`git ls-remote --symref origin HEAD`), and when that fails too they ask the person; a test repository whose default branch is `trunk` came back `trunk`. Later steps write the printed name as `<base>`.
+  - **`$BASE` set where it is used.** A scratch checker over every fenced block in the three skill folders found nine blocks that use `$BASE` without setting it. Only `branch-open`'s was in the review; the others were in `branch-close` (three), `branch-pulse`, `secrets-scan` (two), `test-coverage-check` and `kiss-branch-close`. Each repo block now sets it, and the checker finds none.
+  - **CRLF-safe session greps.** Six greps across six skills anchored on `$`. Only two were in the review; the others were in `branch-pulse`, `session-reflect`, `branch-open`'s `status: open` read-back and `kiss-branch-open`'s. All six now allow trailing whitespace.
+  - **Worktrees.** Both `branch-open`s build the path from `git rev-parse --show-toplevel`, so a site in a subfolder gets its worktree beside the repository (tested), and record the absolute path that `git worktree list` shows. Both now wait for `npm install` before committing: the pre-commit hook imports `prettier` from the worktree's own `node_modules`.
+  - **Four beats.** `CLAUDE.md`, `branch-open`, `branch-close`, `memory-consolidate` (twice), `kiss-branch-open` and `kiss-memory-consolidate` named three. `kiss-branch-close`'s closing lines now count right.
+  - **`kiss-information-architecture`'s callers.** `kiss-site-import` calls it when an import replaces published pages, and the skill's own wording says so. A new coverage row pins both calls. It was red on `kiss-site-import` before the edit, and its pattern does not match `kiss-page-add` as it was before this branch.
+  - **Where code is in Markdown, in one place.** `scripts/markdown-code.mjs` now has a unit test (`test/unit/markdown-code.test.js`). The manifest test and `src/controllers/guide.js` both use it. The earlier note that `guide.js` had "no live case" was wrong: building the docs site before and after showed the published `.llms()` page rendering GUIDE.md's inline example `- [title](url): description` with the GitHub URL rewritten into it. The only other change was the sitemap's timestamps. `guide.js`'s anchor map also read `####` headings inside code; it no longer does. The deploy workflow runs `node docs` itself, so `docs/` was left as committed.
 
 ## Pulse log
 

@@ -4,6 +4,7 @@
 // line and so flattens the indentation inside fenced code blocks.
 import fs from 'node:fs'
 import { Remarkable } from 'remarkable'
+import { fencedLines, outsideCode } from '../../scripts/markdown-code.mjs'
 
 const REPO = 'https://github.com/cprobert/kiss-ssg/blob/main/'
 const GUIDE = new URL('../../GUIDE.md', import.meta.url)
@@ -43,20 +44,21 @@ const openExternalInNewTab = (html) =>
 
 // Splits GUIDE.md into its `##`/`###` sections, ignoring anything inside a code
 // fence. `## Usage` is only a container for the `###` sections under it.
+// Where code is, here and below, is `scripts/markdown-code.mjs`'s to say.
 function readSections() {
   const sections = []
-  let fenced = false
   let current = null
-  for (const line of fs.readFileSync(GUIDE, 'utf8').split(/\r?\n/)) {
-    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
-    const heading = !fenced && /^(#{2,4}) (.+)$/.exec(line)
+  const lines = fs.readFileSync(GUIDE, 'utf8').split(/\r?\n/)
+  const fenced = fencedLines(lines)
+  lines.forEach((line, i) => {
+    const heading = !fenced[i] && /^(#{2,4}) (.+)$/.exec(line)
     if (heading && heading[1].length <= 3) {
       current = heading[2] === 'Usage' ? null : { title: heading[2], lines: [] }
       if (current) sections.push(current)
-      continue
+      return
     }
     if (current) current.lines.push(line)
-  }
+  })
   return sections
 }
 
@@ -82,10 +84,12 @@ export default function guide({ model }) {
   for (const page of pages)
     for (const title of page.sections) {
       pageOfAnchor.set(anchorFor(title), page.slug)
-      for (const line of byTitle.get(title).lines) {
-        const sub = /^#{4,6} (.+)$/.exec(line)
+      const lines = byTitle.get(title).lines
+      const fenced = fencedLines(lines)
+      lines.forEach((line, i) => {
+        const sub = !fenced[i] && /^#{4,6} (.+)$/.exec(line)
         if (sub) pageOfAnchor.set(anchorFor(sub[1]), page.slug)
-      }
+      })
     }
 
   const here = model.slug
@@ -115,13 +119,13 @@ export default function guide({ model }) {
     .map((title) => {
       const anchor = anchorFor(title)
       const body = []
-      let fenced = false
-      for (const line of byTitle.get(title).lines) {
-        if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
+      const lines = byTitle.get(title).lines
+      const fenced = fencedLines(lines)
+      lines.forEach((line, i) => {
         // `####` sits under the section's own heading, so it becomes an <h3>
         // (or an <h2> when the page's <h1> is the section), and deeper levels
         // follow it down.
-        const sub = !fenced && /^(#{4,6}) (.+)$/.exec(line)
+        const sub = !fenced[i] && /^(#{4,6}) (.+)$/.exec(line)
         if (sub) {
           const level = sub[1].length - (single ? 2 : 1)
           const anchor = anchorFor(sub[2])
@@ -131,24 +135,19 @@ export default function guide({ model }) {
           )
           if (single && level === 2)
             toc.push({ anchor, html: headingHtml(sub[2]) })
-          continue
+          return
         }
-        body.push(
-          fenced
-            ? line
-            : line.replace(
-                /\]\(([^)\s]+)\)/g,
-                (_, t) => `](${rewriteLink(t)})`,
-              ),
-        )
-      }
-      if (single) return body.join('\n')
+        body.push(line)
+      })
+      // A link inside code, fenced or inline, is example text, not a link.
+      const text = outsideCode(body.join('\n'), (prose) =>
+        prose.replace(/\]\(([^)\s]+)\)/g, (_, t) => `](${rewriteLink(t)})`),
+      )
+      if (single) return text
       toc.push({ anchor, html: headingHtml(title) })
-      return [
-        `<h2 id="${anchor}">${headingHtml(title)}</h2>`,
-        '',
-        ...body,
-      ].join('\n')
+      return [`<h2 id="${anchor}">${headingHtml(title)}</h2>`, '', text].join(
+        '\n',
+      )
     })
     .join('\n\n')
 
