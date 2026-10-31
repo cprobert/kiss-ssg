@@ -52,6 +52,8 @@ opened: 2026-10-31
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-10-31** — slice 1 of 4 (a1k9training). Wiring: met for a1k9 (check `ok`, 20 pages; real tree `git status` exit 0, empty). Review pass: both runs graded, with three re-run claims verified in source (border `#d7cdb9` = 1.58:1, "a day or two" against the policies file's "a few days", the vet-doc link), the doc's content unverified (external), and the lockfile row a harness artefact (`--no-save` install). Trigger, from transcripts: 4/4 tasks invoked the right top-level skill; domain skills opened from inside a task skill, review 0→6 after the link fix, page 0→0 with no measured loss. With/without `kiss-seo`: no measurable difference on one brief, one run each; both arms' facts match the models. Fix `a5c6484` traced and re-run; its test red on HEAD (4 skills), green after. My own error, corrected by an arm: I put the five changed course pages down to site edits; they are build-time course dates (`anchorSunday`). **Eyeball: looked** — the operator opened `runs/a1k9-review-r2.report.md`: "it holds up". **Offer:** the review's cost rising from $1.33/4 min to $8.33/12 min with the six skills loaded — operator: keep. Decision: continue, pro-plumbing next.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
