@@ -26,7 +26,7 @@ git branch --show-current
 git status --short
 ```
 
-The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered: ask which branch this work merges into, rather than assume `main`, and run the block again with that name in place of `$BASE`.
+The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. That is only the default: the session file found below names the base on its `base:` line, and when that names a different branch (work aimed at `release` rather than the default), it is the base. Run this block again with that name in place of `$BASE` before going on. An `unknown` base means neither answered: ask which branch this work merges into, rather than assume `main`, and run the block again with that name in place of `$BASE`.
 
 **The ref to diff against** is the one the loop prints: of the local base and `origin/<base>`, the one with the fewest commits between it and `HEAD`, which is the one this branch started from. `kiss-branch-open` starts a worktree from `origin/<base>` when the local base has nothing of its own, so a local base that is behind would put other people's commits in this branch's diff, and in a clone with no local base it would not resolve at all. Shell state does not carry from one command to the next, so later steps write the ref this printed where they say `<base-ref>`. List the branch's commits with it:
 

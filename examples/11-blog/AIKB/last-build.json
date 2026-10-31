@@ -52,7 +52,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/a-year-of-bench-lots/index.html",
       "ok": true,
-      "hash": "ad7ac79b61ecdf2d91da0bedabe956ef8009ac95",
+      "hash": "15f48ebebf47cc6bd94c0d6671ecac88e43d204e",
       "id": "journal/post/a-year-of-bench-lots",
       "canonical": null,
       "markdown": "./public/journal/a-year-of-bench-lots/index.md"
@@ -70,7 +70,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/grind-size-is-the-dial/index.html",
       "ok": true,
-      "hash": "ee6ef777565929846194cb3ff007dff4d8a0b190",
+      "hash": "a451a967a0ca6e799fa55c1d61607f3c2b0b14cd",
       "id": "journal/post/grind-size-is-the-dial",
       "canonical": null,
       "markdown": "./public/journal/grind-size-is-the-dial/index.md"
@@ -88,7 +88,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/why-we-roast-on-wednesdays/index.html",
       "ok": true,
-      "hash": "662c74319cb22ee06d3eca80050003c730aef534",
+      "hash": "c850c2dab0bdd5a1297cfc2417cc42fe26683660",
       "id": "journal/post/why-we-roast-on-wednesdays",
       "canonical": null,
       "markdown": "./public/journal/why-we-roast-on-wednesdays/index.md"
@@ -106,7 +106,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/guji-uraga-has-landed/index.html",
       "ok": true,
-      "hash": "cc25f17f19a7c5c01baaf9659a679e6204a6455c",
+      "hash": "d26c4e731bcb22c47d6c8e24e9cd20c18024d061",
       "id": "journal/post/guji-uraga-has-landed",
       "canonical": null,
       "markdown": "./public/journal/guji-uraga-has-landed/index.md"
@@ -124,7 +124,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/the-cascara-experiment/index.html",
       "ok": true,
-      "hash": "e7f9d44d7a200c11ed1a26449c34bca01ef5c8d9",
+      "hash": "aed1f13d3dadc942c090a054a0b8cb108aa8d9d9",
       "id": "journal/post/cascara",
       "canonical": null,
       "markdown": "./public/journal/the-cascara-experiment/index.md"
@@ -133,7 +133,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/pour-over-at-home/index.html",
       "ok": true,
-      "hash": "b8dcddf80b08bedd82fa435e1154aedf89fc2d07",
+      "hash": "00f78514d50a406e1d72fe3500d8f469f4519fa1",
       "id": "journal/post/pour-over-at-home",
       "canonical": null,
       "markdown": "./public/journal/pour-over-at-home/index.md"

@@ -61,6 +61,19 @@ describe('splitSections', () => {
     expect([...sections[0].subs.values()]).toEqual([])
   })
 
+  // Remarkable counts U+2028, U+2424 and U+0085 as line breaks; a split on
+  // \n alone put every later heading one line off (2026-10-31, round 4).
+  it.each([
+    ['U+2028', '\u2028'],
+    ['U+0085', '\u0085'],
+    ['U+2424', '\u2424'],
+  ])('keeps heading lines aligned past a %s line break', (_, br) => {
+    const [section] = splitSections(`## One\na${br}b\n\n#### Four\nx`)
+    const [[at, sub]] = [...section.subs.entries()]
+    expect(sub.title).toBe('Four')
+    expect(section.lines[at]).toBe('#### Four')
+  })
+
   it('records a sub-heading with the lines it spans', () => {
     const [section] = splitSections(['## One', '', '#### Four', 'a'].join('\n'))
     const [sub] = [...section.subs.values()]

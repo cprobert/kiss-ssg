@@ -4,6 +4,7 @@
 // line and so flattens the indentation inside fenced code blocks.
 import fs from 'node:fs'
 import { Remarkable } from 'remarkable'
+import { linkTokens } from '../../scripts/markdown-links.mjs'
 
 const REPO = 'https://github.com/cprobert/kiss-ssg/blob/main/'
 const GUIDE = new URL('../../GUIDE.md', import.meta.url)
@@ -63,8 +64,14 @@ function readSections() {
   return parsed.sections
 }
 
-export function splitSections(text) {
-  const lines = text.split(/\r?\n/)
+// Remarkable's own set of line breaks (`NEWLINES_RE` in remarkable 2): its
+// `token.lines` count these, so the lines here are split on the same set, or
+// one U+2028 in GUIDE.md would put every later heading a line off.
+const LINE_BREAKS = /\r[\n\u0085]|[\u2424\u2028\u0085]/g
+
+export function splitSections(source) {
+  const text = source.replace(LINE_BREAKS, '\n')
+  const lines = text.split('\n')
   const tokens = markdown.parse(text, {})
   const headings = tokens.flatMap((token, i) =>
     token.type === 'heading_open' && token.level === 0
@@ -110,14 +117,10 @@ export function splitSections(text) {
 export function renderWithTargets(source, rewrite) {
   const env = {}
   const tokens = markdown.parse(source, env)
-  const walk = (list) => {
-    for (const token of list) {
-      if (token.type === 'link_open') token.href = rewrite(token.href)
-      if (token.type === 'image') token.src = rewrite(token.src)
-      if (token.children) walk(token.children)
-    }
-  }
-  walk(tokens)
+  // The targets stay as the parser encoded them: they are URLs, not files.
+  for (const token of linkTokens(tokens))
+    if (token.type === 'image') token.src = rewrite(token.src)
+    else token.href = rewrite(token.href)
   return markdown.renderer.render(tokens, markdown.options, env)
 }
 

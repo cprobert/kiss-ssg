@@ -271,7 +271,8 @@ about this build's registry, so it can be checked exactly where it is written.
 
 ### The rename, and why `moved` needs an explicit id
 
-`models/posts/2026-02-18-the-cascara-experiment.json` carries two things a normal post does not:
+`models/posts/2026-02-18-the-cascara-experiment.json` carries an `id`, which no other post does,
+beside the `aliases` every post now carries since the move:
 
 ```json
 "id": "journal/post/cascara",

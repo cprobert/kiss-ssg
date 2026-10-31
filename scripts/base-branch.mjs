@@ -55,13 +55,22 @@ const git = (args, cwd) => {
 }
 
 // A base branch is often only present as a remote-tracking ref in a fresh clone,
-// so callers get back something `git diff` can actually resolve.
-const existingRef = (name, cwd) =>
-  git(['rev-parse', '--verify', '--quiet', name], cwd)
-    ? name
-    : git(['rev-parse', '--verify', '--quiet', `origin/${name}`], cwd)
-      ? `origin/${name}`
-      : null
+// so callers get back something `git diff` can actually resolve. When both the
+// local branch and its origin exist, the ref is the one this branch started
+// from: the one with the fewest commits between it and HEAD. `git fetch`
+// never moves a local branch, so a local base is often behind its origin, and
+// a branch cut from origin/<name> diffed against a stale local <name> would
+// carry everyone else's newer commits in its diff; a branch cut from a local
+// base with unpushed commits keeps that base. A tie keeps the local branch.
+const existingRef = (name, cwd) => {
+  const present = [name, `origin/${name}`].filter((ref) =>
+    git(['rev-parse', '--verify', '--quiet', ref], cwd),
+  )
+  if (present.length < 2) return present[0] ?? null
+  const behind = (ref) =>
+    Number(git(['rev-list', '--count', `${ref}..HEAD`], cwd) ?? Infinity)
+  return behind(present[1]) < behind(present[0]) ? present[1] : present[0]
+}
 
 const toRef = (name, cwd) => existingRef(name, cwd) ?? `origin/${name}`
 

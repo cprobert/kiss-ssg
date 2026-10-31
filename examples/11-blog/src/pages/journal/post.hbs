@@ -19,13 +19,14 @@
 
   {{#if aliases}}
   <p class="meta">
-    Formerly published at {{#each aliases}}<code>{{this}}</code>{{/each}}. That address still
-    works: the build writes a <code>301</code> for it into <code>_redirects</code>, and
-    <code>aliases</code> reaches this template like any other page option, which is how this
-    sentence knows what to say. This record also carries its own
-    <code>id</code> — <code>journal/post/cascara</code>, which does not contain the slug — so the
-    page keeps one identity across a rename and <code>check</code> can report the
-    <em>next</em> move as <code>moved without redirect:</code> rather than as a deletion.
+    Formerly published at {{#each aliases}}<code>{{this}}</code>{{#unless @last}} and {{/unless}}{{/each}}.
+    The build writes a <code>301</code> for each old address into <code>_redirects</code>, so
+    links to them still arrive here, and <code>aliases</code> reaches this template like any
+    other page option, which is how this sentence knows what to say.
+    {{#if model.id}}This record also carries its own <code>id</code> —
+    <code>{{model.id}}</code>, which does not contain the slug — so the page keeps one identity
+    across a rename and <code>check</code> can report the <em>next</em> move as
+    <code>moved without redirect:</code> rather than as a deletion.{{/if}}
   </p>
   {{/if}}
 

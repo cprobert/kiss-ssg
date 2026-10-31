@@ -36,14 +36,11 @@ Keep this terse and fast — if a pulse starts to feel like a mini-close, it has
 ### Step 1 — Find the intent
 
 ```bash
-B=$(git branch --show-current)
-echo "branch: $B"
-for f in planning/sessions/*.md; do
-  if [ "$(sed -n 's/^branch:[[:space:]]*//p' "$f" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
-done
+git branch --show-current
+node scripts/session-file.mjs
 ```
 
-The loop compares each session file's first `branch:` value, the frontmatter's, with the branch name exactly: a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's.
+`scripts/session-file.mjs` prints the session file whose frontmatter `branch:` is exactly the current branch, compared as text, so a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's.
 
 If on the base branch: stop — the pulse is a mid-branch beat. If the loop finds the branch's intent artefact (the file `/branch-open` wrote, `status: open`): read its **Intent** — Objective, Success criteria, Non-goals, Impact surface, Expected shape. These are the baseline; **read them, never rewrite them** (the Intent block is immutable).
 

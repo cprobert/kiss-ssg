@@ -129,6 +129,17 @@ const tagPages = tags.map((tag) =>
     ? { ...tag, aliases: [`/blog/tags/${tag.slug}/`] }
     : tag,
 )
+// An old address whose page is gone now (fewer posts, so no page 2; a tag
+// whose last post went) still redirects, to the page above it: an old listing
+// page to the journal, an old tag page to the tags index. Otherwise it would
+// quietly stop working the day the page went.
+const listingAliases = (number) =>
+  fromBlog.listing.filter(
+    (_, i) => i + 1 === number || (number === 1 && i + 1 > pageCount),
+  )
+const goneTags = fromBlog.tags
+  .filter((slug) => !tags.some((tag) => tag.slug === slug))
+  .map((slug) => `/blog/tags/${slug}/`)
 
 kiss.page({
   view: 'index.hbs',
@@ -148,7 +159,7 @@ for (let number = 1; number <= pageCount; number++) {
     // Page 1 is the section index; the rest are numbered folders under it.
     path: number === 1 ? 'journal' : 'journal/page',
     slug: number === 1 ? 'index' : String(number),
-    aliases: fromBlog.listing[number - 1] ? [fromBlog.listing[number - 1]] : [],
+    aliases: listingAliases(number),
     title:
       number === 1
         ? 'The journal'
@@ -203,7 +214,7 @@ kiss
     view: 'journal/tags.hbs',
     path: 'journal/tags',
     slug: 'index',
-    aliases: ['/blog/tags/'],
+    aliases: ['/blog/tags/', ...goneTags],
     title: 'Tags',
     description: `The ${tally.tags} the Aster & Oak journal uses, and the posts filed under each.`,
     model: { tags, tally },

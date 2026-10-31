@@ -3,6 +3,7 @@ import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 import { Remarkable } from 'remarkable'
+import { linkTokens, targetPath } from '../../scripts/markdown-links.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const PACKAGE_PREFIX = 'node_modules/kiss-ssg/'
@@ -126,19 +127,11 @@ function isPacked(relative) {
 // span never crosses into a heading, a list item or a table row. So this asks
 // Remarkable, which the docs site already renders with, and gets those rules
 // with it.
+// `scripts/markdown-links.mjs` holds the walk, shared with the docs site's
+// guide pages, and decodes each target to the file name it points at.
 const markdown = new Remarkable({ html: true })
-function markdownLinks(text) {
-  const targets = []
-  const walk = (tokens) => {
-    for (const token of tokens) {
-      if (token.type === 'link_open') targets.push(token.href)
-      if (token.type === 'image') targets.push(token.src)
-      if (token.children) walk(token.children)
-    }
-  }
-  walk(markdown.parse(text, {}))
-  return targets
-}
+const markdownLinks = (text) =>
+  linkTokens(markdown.parse(text, {})).map(targetPath)
 
 // The relative links in a skill's files. A plugin installs as one folder, so
 // a target must exist and stay inside that plugin's folder. A skill that
@@ -179,6 +172,15 @@ describe('what a skill may point at', () => {
       'gone.md',
       '../../../outside/there.md',
     ])
+  })
+
+  // A Markdown parser percent-encodes a link's target (`<two words.md>` is
+  // href `two%20words.md`); the file on disk has the space (2026-10-31).
+  it('finds a linked file whose name has a space in it', () => {
+    const exists = (p) => p.endsWith('two words.md')
+    expect(
+      brokenLinks('[a](<two words.md>)', '/p/skills/one', '/p', exists),
+    ).toEqual([])
   })
 
   // Markdown never makes a link inside code. Before this, a script in a

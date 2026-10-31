@@ -84,13 +84,15 @@ If on the base branch: stop, tell the user. If there are uncommitted changes: te
 Then check whether the branch is behind the base:
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
-git fetch origin 2>/dev/null; git rev-list --count "HEAD..$BASE"
+BASE_NAME=$(node scripts/base-branch.mjs --name)
+git fetch origin 2>/dev/null; git rev-list --count "HEAD..origin/$BASE_NAME"
 ```
+
+The count is against `origin/<base>`, not the local base: `git fetch` never moves a local branch, so a local base that was never pulled would count 0 while GitHub's base has moved on.
 
 - If `git fetch` fails (offline or no network): note "could not reach origin — skipping freshness check" and continue. Never block on this.
 - If the count is 0: silent pass.
-- If the count is > 0: warn — "This branch is N commit(s) behind `$BASE`." Recommend merging (or rebasing onto) the base before continuing, so the rest of the ritual runs against an up-to-date base. This is the operator's call — never auto-merge.
+- If the count is > 0: warn — "This branch is N commit(s) behind `origin/$BASE_NAME`." Recommend merging (or rebasing onto) the base before continuing, so the rest of the ritual runs against an up-to-date base. This is the operator's call — never auto-merge.
 
 ### Step 2 — Secrets Scan
 

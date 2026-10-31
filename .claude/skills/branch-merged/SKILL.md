@@ -31,13 +31,11 @@ Then proceed.
 B=<branch>
 git fetch --prune origin
 git worktree list --porcelain
-git ls-tree -r --name-only "$B" -- planning/sessions | while read -r f; do
-  if [ "$(git show "$B:$f" | sed -n 's/^branch:[[:space:]]*//p' | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
-done
+node scripts/session-file.mjs "$B" --from-branch
 gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,mergedAt,url
 ```
 
-**The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares each file's first `branch:` value, the frontmatter's, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. Read the file it prints with `git show "$B:<file>"`.
+**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares each file's first `branch:` value, the frontmatter's, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. Read the file it prints with `git show "$B:<file>"`.
 
 - **One file:** that is this session's file.
 - **None:** the branch has no session file, so it made no worktree.

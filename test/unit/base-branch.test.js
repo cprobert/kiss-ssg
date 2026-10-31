@@ -197,4 +197,54 @@ describe('the command line', () => {
     expect(result.stdout).toBe('')
     expect(result.stderr).toContain('v1.0 is not a branch')
   })
+
+  // `git fetch` never moves a local branch, so a local base is often behind
+  // its origin, most of all once branches are opened in worktrees. Diffed
+  // against the stale local base, a branch cut from origin/<base> would carry
+  // everyone else's newer commits in its diff (2026-10-31, round 4). The ref
+  // is the one the branch started from: of the local base and its origin,
+  // the one with the fewest commits between it and HEAD.
+  it('prints the ref the branch started from, not a stale local base', () => {
+    const commit = (cwd, message) =>
+      git(
+        cwd,
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.com',
+        'commit',
+        '-q',
+        '--allow-empty',
+        '-m',
+        message,
+      )
+    git(clone, 'branch', 'v3', 'origin/v3')
+    commit(seed, 'newer on v3')
+    git(seed, 'push', '-q', remote, 'HEAD:refs/heads/v3')
+    git(clone, 'fetch', '-q', 'origin')
+    git(clone, 'checkout', '-q', '-b', 'feat/y', 'origin/v3')
+    commit(clone, 'work')
+    expect(run('v3').stdout.trim()).toBe('origin/v3')
+  })
+
+  it('prints the local base when the branch started from its unpushed commits', () => {
+    const commit = (cwd, message) =>
+      git(
+        cwd,
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.com',
+        'commit',
+        '-q',
+        '--allow-empty',
+        '-m',
+        message,
+      )
+    git(clone, 'checkout', '-q', '-B', 'v3', 'origin/v3')
+    commit(clone, 'local only')
+    git(clone, 'checkout', '-q', '-b', 'feat/z', 'v3')
+    commit(clone, 'work')
+    expect(run('v3').stdout.trim()).toBe('v3')
+  })
 })
