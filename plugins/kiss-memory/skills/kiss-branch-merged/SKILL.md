@@ -22,11 +22,14 @@ BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^o
 echo "base: ${BASE:-unknown}"
 git fetch --prune origin
 git worktree list --porcelain
-git grep -lE "^branch: <branch>[[:space:]]*$" <branch> -- planning/sessions
+B=<branch>
+git ls-tree -r --name-only "$B" -- planning/sessions | while read -r f; do
+  if [ "$(git show "$B:$f" | sed -n 's/^branch:[[:space:]]*//p' | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+done
 ```
 
 - **The base:** the first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered: ask which branch the work merges into. Never assume `main`.
-- **The session file is read from the branch, not from this folder.** `git grep … <branch>` searches the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It prints `<branch>:planning/sessions/<file>`; read it with `git show <branch>:planning/sessions/<file>`. The pattern allows trailing whitespace, so a file with Windows line endings matches too.
+- **The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares each file's first `branch:` value, the frontmatter's, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. Read the file it prints with `git show "$B:<file>"`. One file is this session's. None means the branch has no session file and made no worktree. More than one means the name was used before: stop and ask which is this session's, because a `worktree:` line read from the wrong file would remove another session's worktree.
 - **The worktree this session made** is the path in the session file's `worktree:` line, and only that one is this skill's to remove. A file without the line made no worktree. If `git worktree list --porcelain` shows another worktree with the branch checked out (`branch refs/heads/<branch>`), stop and ask: someone may be working in it, and `git branch -D` refuses a branch a worktree has checked out anyway.
 
 **Confirm the merge before deleting anything.** A squash merge, the usual choice on GitHub, puts one new commit on the base and none of the branch's own, so git alone cannot tell a squashed branch from an unmerged one; `git branch -D` would delete either.

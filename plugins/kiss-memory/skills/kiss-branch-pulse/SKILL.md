@@ -13,9 +13,14 @@ The Steer beat between `kiss-branch-open` and `kiss-branch-close`. Work drifts i
 ### 1. Find the intent
 
 ```bash
-git branch --show-current
-grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md
+B=$(git branch --show-current)
+echo "branch: $B"
+for f in planning/sessions/*.md; do
+  if [ "$(sed -n 's/^branch:[[:space:]]*//p' "$f" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+done
 ```
+
+The loop compares each session file's first `branch:` value, the frontmatter's, with the branch name exactly: a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's.
 
 Read that file's **Success criteria**, **Non-goals** and **Impact surface**. They are the baseline: read them, never rewrite them.
 

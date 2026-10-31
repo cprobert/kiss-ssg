@@ -140,17 +140,19 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
 - **Worktree** (asked for, or the checkout is busy). First choose its start point: a worktree does not move the main checkout's branch, so the local base can be out of date, or ahead of `origin`.
 
   ```bash
-  BASE=$(node scripts/base-branch.mjs)
+  BASE_NAME=$(node scripts/base-branch.mjs --name)
   git fetch origin
-  git rev-list --left-right --count "$BASE...origin/$BASE"
+  echo "base: $BASE_NAME"
+  git rev-parse --verify --quiet "refs/heads/$BASE_NAME" >/dev/null && echo "local: yes" || echo "local: no"
+  git rev-parse --verify --quiet "refs/remotes/origin/$BASE_NAME" >/dev/null && echo "origin: yes" || echo "origin: no"
+  git rev-list --left-right --count "$BASE_NAME...origin/$BASE_NAME" 2>/dev/null
   ```
 
-  Shell state does not carry from one Bash call to the next, so this block sets `BASE` itself; `$BASE` below means the name it resolves to.
-
-  The two numbers are the commits only on the local base, then those only on `origin`:
-  - `origin/$BASE` does not exist (an unpushed base): start from the local base.
-  - The first number is 0: start from `origin/$BASE`, the same as the local base or newer.
-  - The first number is more than 0: the local base has commits `origin` lacks; start from the local base so they are kept. If the second number is also more than 0, the two have diverged: stop and ask.
+  Shell state does not carry from one Bash call to the next, so this block sets the base itself. `--name` prints the base branch's own name (`main`), not a ref, so `origin/<name>` below is a real ref even in a clone with no local base. The two numbers are the commits only on the local base, then those only on `origin`:
+  - `local: no` (a fresh or cloud clone): start from `origin/<name>`.
+  - `origin: no` (an unpushed base): start from the local base, `<name>`.
+  - Both, and the first number is 0: start from `origin/<name>`, the same as the local base or newer.
+  - Both, and the first number is more than 0: the local base has commits `origin` lacks; start from the local base so they are kept. If the second number is also more than 0, the two have diverged: stop and ask.
 
   ```bash
   TOP=$(git rev-parse --show-toplevel)

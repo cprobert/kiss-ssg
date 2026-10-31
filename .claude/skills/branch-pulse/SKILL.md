@@ -36,12 +36,16 @@ Keep this terse and fast — if a pulse starts to feel like a mini-close, it has
 ### Step 1 — Find the intent
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
-git branch --show-current
-grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md
+B=$(git branch --show-current)
+echo "branch: $B"
+for f in planning/sessions/*.md; do
+  if [ "$(sed -n 's/^branch:[[:space:]]*//p' "$f" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+done
 ```
 
-If on the base branch: stop — the pulse is a mid-branch beat. If the `grep` finds the branch's intent artefact (the file `/branch-open` wrote, `status: open`): read its **Intent** — Objective, Success criteria, Non-goals, Impact surface, Expected shape. These are the baseline; **read them, never rewrite them** (the Intent block is immutable).
+The loop compares each session file's first `branch:` value, the frontmatter's, with the branch name exactly: a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's.
+
+If on the base branch: stop — the pulse is a mid-branch beat. If the loop finds the branch's intent artefact (the file `/branch-open` wrote, `status: open`): read its **Intent** — Objective, Success criteria, Non-goals, Impact surface, Expected shape. These are the baseline; **read them, never rewrite them** (the Intent block is immutable).
 
 If no intent file (the harness auto-created the branch, or it wasn't opened with `/branch-open`): offer to **capture intent retrospectively**. Infer the Objective, Success criteria, Non-goals, Impact surface, and (almost always) an _emergent_ shape from the conversation so far, and write them to a `planning/sessions/<date>-<slug>.md` bound to the current branch by `branch:` frontmatter — the same artefact `/branch-open` writes, with its Intent heading marked _inferred retrospectively_ so the honesty is on the record. This rescues the session's intent from the ephemeral context window so the close, the reflection, and the next developer inherit it instead of losing it. If the user declines, proceed loosely against a checklist they give you.
 

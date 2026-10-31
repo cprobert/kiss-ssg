@@ -9,6 +9,9 @@
 // Run as a CLI it prints a git-resolvable ref (`main`, `origin/v2`), so a skill
 // can do:
 //   BASE=$(node scripts/base-branch.mjs)
+// and, where it needs the branch's own name rather than a ref (to check it
+// out, pull it, or name `origin/<name>`):
+//   BASE_NAME=$(node scripts/base-branch.mjs --name)
 import { execFileSync } from 'node:child_process'
 
 // A base is a long-lived integration branch: main/master, or a major line (v2).
@@ -114,4 +117,12 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
   return base === null ? 'main' : toRef(base, cwd)
 }
 
-if (import.meta.filename === process.argv[1]) console.log(resolveBaseBranch())
+// The ref is `origin/<name>` when the base has no local branch. A diff wants
+// the ref; `git checkout`, `git pull` and `origin/<name>` want the branch's
+// own name, which `--name` prints.
+export const branchName = (ref) => ref.replace(/^origin\//, '')
+
+if (import.meta.filename === process.argv[1]) {
+  const ref = resolveBaseBranch()
+  console.log(process.argv.includes('--name') ? branchName(ref) : ref)
+}

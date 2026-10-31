@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
-import { withoutCode } from '../../scripts/markdown-code.mjs'
+import { Remarkable } from 'remarkable'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const PACKAGE_PREFIX = 'node_modules/kiss-ssg/'
@@ -120,18 +120,36 @@ function isPacked(relative) {
   return !FORBIDDEN_PACKED.some((pattern) => pattern.test(`${relative}/`))
 }
 
-// The relative Markdown links in a skill's files, `[text](target)`, read with
-// the code dropped first (`scripts/markdown-code.mjs`): Markdown never makes a
-// link inside code. A plugin installs as one folder, so a target must exist
-// and stay inside that plugin's folder. A skill that points at another plugin file (a domain skill at the
-// shared review protocol) writes a Markdown link, never an inline-code path:
-// an inline `./helpers` or `./AIKB` in these skills is a folder in the user's
-// site, not a file in the plugin. A URL and an in-page `#anchor` are not
-// checked here, and a `node_modules/kiss-ssg/…` path is checked above.
+// The links and images in a Markdown file, as a Markdown parser reads them.
+// Two hand-written readers each guessed where code ends and guessed wrong
+// (2026-10-30, 2026-10-31): Markdown makes no link inside code, and a code
+// span never crosses into a heading, a list item or a table row. So this asks
+// Remarkable, which the docs site already renders with, and gets those rules
+// with it.
+const markdown = new Remarkable({ html: true })
+function markdownLinks(text) {
+  const targets = []
+  const walk = (tokens) => {
+    for (const token of tokens) {
+      if (token.type === 'link_open') targets.push(token.href)
+      if (token.type === 'image') targets.push(token.src)
+      if (token.children) walk(token.children)
+    }
+  }
+  walk(markdown.parse(text, {}))
+  return targets
+}
+
+// The relative links in a skill's files. A plugin installs as one folder, so
+// a target must exist and stay inside that plugin's folder. A skill that
+// points at another plugin file (a domain skill at the shared review
+// protocol) writes a Markdown link, never an inline-code path: an inline
+// `./helpers` or `./AIKB` in these skills is a folder in the user's site, not
+// a file in the plugin. A URL and an in-page `#anchor` are not checked here,
+// and a `node_modules/kiss-ssg/…` path is checked above.
 function brokenLinks(text, docDir, pluginDir, exists = fs.existsSync) {
   const inside = path.resolve(pluginDir) + path.sep
-  const targets = [...withoutCode(text).matchAll(/\]\(([^)\s]+)\)/g)]
-    .map((m) => m[1])
+  const targets = markdownLinks(text)
     .filter((t) => !/^[a-z][a-z0-9+.-]*:/i.test(t) && !t.startsWith('#'))
     .map((t) => t.split('#')[0])
   return targets.filter((t) => {
@@ -182,6 +200,9 @@ describe('what a skill may point at', () => {
       '[c](a-shorter-fence-does-not-close-it.md)',
       '````',
       'Inline: `[d](in-a-span.md)` and ``a ` then [e](in-a-double-span.md)``.',
+      '',
+      // A code span between `]` and `(` breaks the link, so there is none.
+      '[text]`x`(not-a-link.md)',
     ].join('\n')
     expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([])
   })
@@ -214,6 +235,25 @@ describe('what a skill may point at', () => {
       '',
       // An escaped backtick is a literal one and opens no span.
       'A \\` escaped then [f](after-an-escaped-backtick.md) and `x`',
+      '',
+      // A span never crosses into the next block: a heading, a list item, a
+      // table row, an HTML comment (2026-10-31, /code-review).
+      '# Use ` for code',
+      '[g](after-a-heading.md) then `',
+      '',
+      '- a ` b',
+      '- [h](in-the-next-list-item.md) `',
+      '',
+      '| a | ` |',
+      '| - | - |',
+      '| [i](in-the-next-table-row.md) | ` |',
+      '',
+      '<!-- ` -->',
+      '',
+      '[j](after-an-html-comment.md) `',
+      '',
+      // An escaped backslash leaves the backtick after it free to open a span.
+      'Path \\\\`code` then [k](after-an-escaped-backslash.md) and `x`',
     ].join('\n')
     expect(brokenLinks(text, '/p/skills/one', '/p', exists)).toEqual([
       'after-a-fence.md',
@@ -222,6 +262,11 @@ describe('what a skill may point at', () => {
       'after-a-fence-between-backticks.md',
       'after-a-backtick-info-string.md',
       'after-an-escaped-backtick.md',
+      'after-a-heading.md',
+      'in-the-next-list-item.md',
+      'in-the-next-table-row.md',
+      'after-an-html-comment.md',
+      'after-an-escaped-backslash.md',
     ])
   })
 

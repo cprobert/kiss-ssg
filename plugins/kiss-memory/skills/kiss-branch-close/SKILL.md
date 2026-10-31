@@ -25,7 +25,16 @@ git status --short
 
 The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered: ask which branch this work merges into, rather than assume `main`, and run the `git log` with the answer. Shell state does not carry from one command to the next, so later steps write the name this printed where they say `<base>`.
 
-Stop if you are on the base branch, or if there are no commits to close. Find the session file (`grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md`) and read its **Intent**, **Amendments** and **Pulse log**. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
+Stop if you are on the base branch, or if there are no commits to close. Find the session file and read its **Intent**, **Amendments** and **Pulse log**:
+
+```bash
+B=$(git branch --show-current)
+for f in planning/sessions/*.md; do
+  if [ "$(sed -n 's/^branch:[[:space:]]*//p' "$f" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+done
+```
+
+The loop compares each session file's first `branch:` value, the frontmatter's, with the branch name exactly: a dot in the name is only a dot, and a file with Windows line endings still matches. If it prints more than one file, the branch name was used before: ask which is this branch's. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
 
 Commit or stash anything outstanding before verifying — the check runs the working tree, so uncommitted work would be verified and then not shipped.
 

@@ -237,8 +237,8 @@ The PR body is the same in every case:
 1. **`gh` CLI present** (`command -v gh`) — the normal desktop path:
 
    ```bash
-   BASE=$(node scripts/base-branch.mjs)
-   gh pr create --base "${BASE#origin/}" --title "<concise title, under 70 chars>" --body "$(cat <<'EOF'
+   BASE_NAME=$(node scripts/base-branch.mjs --name)
+   gh pr create --base "$BASE_NAME" --title "<concise title, under 70 chars>" --body "$(cat <<'EOF'
    <the body above>
    EOF
    )"

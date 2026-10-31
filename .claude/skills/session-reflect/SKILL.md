@@ -38,10 +38,13 @@ Then proceed.
 BASE=$(node scripts/base-branch.mjs)
 git log "$BASE..HEAD" --oneline
 git diff "$BASE...HEAD" --name-only
-grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md
+B=$(git branch --show-current)
+for f in planning/sessions/*.md; do
+  if [ "$(sed -n 's/^branch:[[:space:]]*//p' "$f" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+done
 ```
 
-The `grep` finds this branch's **intent artefact** — the session file `/branch-open` wrote (frontmatter `branch:` matches the current branch).
+The loop finds this branch's **intent artefact** — the session file `/branch-open` wrote, whose frontmatter `branch:` is exactly the current branch (compared as text, so a dot in the name is only a dot, and a file with Windows line endings still matches). If it prints more than one file, the branch name was used before: ask which is this branch's.
 
 - **If found** (it'll be `status: open`): write the Reflection _into that file_, beneath its marker (the Reflection goes **below** the marker; the Intent, Amendments, and Pulse log above it stay untouched). Its captured **Intent** is the brief your **Reflect** and **Verdict** sections evaluate against — don't reconstruct it. Its **`## Pulse log`** (if any) is the running evidence trail the mid-branch pulses left — read it for the Verdict's criteria check and for where supervision actually held. Flip `status: closed` when done. Do not create a new file.
 - **If none** (the branch wasn't opened with `/branch-open`): reconstruct intent from the conversation and create a fresh file (Step 4). Still valuable — the brief is just self-reported rather than captured.

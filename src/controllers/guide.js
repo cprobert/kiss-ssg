@@ -4,7 +4,6 @@
 // line and so flattens the indentation inside fenced code blocks.
 import fs from 'node:fs'
 import { Remarkable } from 'remarkable'
-import { fencedLines, outsideCode } from '../../scripts/markdown-code.mjs'
 
 const REPO = 'https://github.com/cprobert/kiss-ssg/blob/main/'
 const GUIDE = new URL('../../GUIDE.md', import.meta.url)
@@ -42,25 +41,71 @@ const openExternalInNewTab = (html) =>
     '<a href="$1"$2 target="_blank" rel="noopener noreferrer">$3<span class="visually-hidden"> (opens in a new tab)</span></a>',
   )
 
-// Splits GUIDE.md into its `##`/`###` sections, ignoring anything inside a code
-// fence. `## Usage` is only a container for the `###` sections under it.
-// Where code is, here and below, is `scripts/markdown-code.mjs`'s to say.
+const markdown = new Remarkable({ html: true, xhtmlOut: true, breaks: false })
+
+// Splits GUIDE.md into its `##`/`###` sections, each with its `####`–`######`
+// sub-headings. `## Usage` is only a container for the `###` sections under
+// it. The headings come from Remarkable's own parse, the same one that renders
+// the page, so a `#` line inside a code block is never taken for one: two
+// hand-written guesses at where code ends both got it wrong (2026-10-31).
+// Parsed once per version of the file, not once per guide page.
+let parsed = null
 function readSections() {
+  const { mtimeMs } = fs.statSync(GUIDE)
+  if (parsed?.mtimeMs === mtimeMs) return parsed.sections
+  const text = fs.readFileSync(GUIDE, 'utf8')
+  const lines = text.split(/\r?\n/)
+  const tokens = markdown.parse(text, {})
+  const headings = tokens.flatMap((token, i) =>
+    token.type === 'heading_open'
+      ? [
+          {
+            level: token.hLevel,
+            title: tokens[i + 1].content,
+            line: token.lines[0],
+          },
+        ]
+      : [],
+  )
   const sections = []
   let current = null
-  const lines = fs.readFileSync(GUIDE, 'utf8').split(/\r?\n/)
-  const fenced = fencedLines(lines)
-  lines.forEach((line, i) => {
-    const heading = !fenced[i] && /^(#{2,4}) (.+)$/.exec(line)
-    if (heading && heading[1].length <= 3) {
-      current = heading[2] === 'Usage' ? null : { title: heading[2], lines: [] }
+  let from = lines.length
+  const close = (to) => {
+    if (current) current.lines = lines.slice(from, to)
+  }
+  for (const heading of headings) {
+    if (heading.level === 2 || heading.level === 3) {
+      close(heading.line)
+      current =
+        heading.title === 'Usage'
+          ? null
+          : { title: heading.title, lines: [], subs: new Map() }
       if (current) sections.push(current)
-      return
-    }
-    if (current) current.lines.push(line)
-  })
+      from = heading.line + 1
+    } else if (current && heading.level >= 4)
+      current.subs.set(heading.line - from, heading)
+  }
+  close(lines.length)
+  parsed = { mtimeMs, sections }
   return sections
 }
+
+const unescapeHtml = (text) =>
+  text
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+
+// Rewrites the target of every link and image Remarkable rendered. Working on
+// the rendered page, not the Markdown, is what keeps a link shown inside code
+// (`- [title](url): description`) as the example it is.
+const rewriteTargets = (html, rewrite) =>
+  html.replace(
+    /(<a href="|<img src=")([^"]*)"/g,
+    (_, opening, target) =>
+      `${opening}${escapeHtml(rewrite(unescapeHtml(target))).replace(/"/g, '&quot;')}"`,
+  )
 
 /** @type {import('kiss-ssg').KissController} */
 export default function guide({ model }) {
@@ -84,12 +129,8 @@ export default function guide({ model }) {
   for (const page of pages)
     for (const title of page.sections) {
       pageOfAnchor.set(anchorFor(title), page.slug)
-      const lines = byTitle.get(title).lines
-      const fenced = fencedLines(lines)
-      lines.forEach((line, i) => {
-        const sub = !fenced[i] && /^#{4,6} (.+)$/.exec(line)
-        if (sub) pageOfAnchor.set(anchorFor(sub[1]), page.slug)
-      })
+      for (const sub of byTitle.get(title).subs.values())
+        pageOfAnchor.set(anchorFor(sub.title), page.slug)
     }
 
   const here = model.slug
@@ -115,34 +156,30 @@ export default function guide({ model }) {
   // repeating the title as an <h2> straight underneath it.
   const single = model.sections.length === 1
   const toc = []
-  const markdown = model.sections
+  const source = model.sections
     .map((title) => {
       const anchor = anchorFor(title)
       const body = []
-      const lines = byTitle.get(title).lines
-      const fenced = fencedLines(lines)
-      lines.forEach((line, i) => {
+      const section = byTitle.get(title)
+      section.lines.forEach((line, i) => {
         // `####` sits under the section's own heading, so it becomes an <h3>
         // (or an <h2> when the page's <h1> is the section), and deeper levels
         // follow it down.
-        const sub = !fenced[i] && /^(#{4,6}) (.+)$/.exec(line)
+        const sub = section.subs.get(i)
         if (sub) {
-          const level = sub[1].length - (single ? 2 : 1)
-          const anchor = anchorFor(sub[2])
+          const level = sub.level - (single ? 2 : 1)
+          const anchor = anchorFor(sub.title)
           body.push(
-            `<h${level} id="${anchor}">${headingHtml(sub[2])}</h${level}>`,
+            `<h${level} id="${anchor}">${headingHtml(sub.title)}</h${level}>`,
             '',
           )
           if (single && level === 2)
-            toc.push({ anchor, html: headingHtml(sub[2]) })
+            toc.push({ anchor, html: headingHtml(sub.title) })
           return
         }
         body.push(line)
       })
-      // A link inside code, fenced or inline, is example text, not a link.
-      const text = outsideCode(body.join('\n'), (prose) =>
-        prose.replace(/\]\(([^)\s]+)\)/g, (_, t) => `](${rewriteLink(t)})`),
-      )
+      const text = body.join('\n')
       if (single) return text
       toc.push({ anchor, html: headingHtml(title) })
       return [`<h2 id="${anchor}">${headingHtml(title)}</h2>`, '', text].join(
@@ -152,9 +189,7 @@ export default function guide({ model }) {
     .join('\n\n')
 
   const html = openExternalInNewTab(
-    new Remarkable({ html: true, xhtmlOut: true, breaks: false }).render(
-      markdown,
-    ),
+    rewriteTargets(markdown.render(source), rewriteLink),
   )
   const position = pages.findIndex((page) => page.slug === here)
   const neighbour = (page) => page && { slug: page.slug, title: page.title }

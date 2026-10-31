@@ -28,14 +28,20 @@ Then proceed.
 **Which branch:** the current one, or the one the conversation names (the pull request `/branch-close` opened). If neither says, ask. Do not guess.
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+B=<branch>
 git fetch --prune origin
 git worktree list --porcelain
-git grep -lE "^branch: <branch>[[:space:]]*$" <branch> -- planning/sessions
-gh pr list --head <branch> --state all --json number,state,isCrossRepository,headRefOid,mergedAt,url
+git ls-tree -r --name-only "$B" -- planning/sessions | while read -r f; do
+  if [ "$(git show "$B:$f" | sed -n 's/^branch:[[:space:]]*//p' | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')" = "$B" ]; then echo "$f"; fi
+done
+gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,mergedAt,url
 ```
 
-**The session file is read from the branch, not from this folder.** `git grep … <branch>` searches the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It prints `<branch>:planning/sessions/<file>`; read it with `git show <branch>:planning/sessions/<file>`. The pattern allows trailing whitespace, so a CRLF file matches too.
+**The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares each file's first `branch:` value, the frontmatter's, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. Read the file it prints with `git show "$B:<file>"`.
+
+- **One file:** that is this session's file.
+- **None:** the branch has no session file, so it made no worktree.
+- **More than one:** the branch name was used before. Stop and ask which is this session's: a `worktree:` line read from the wrong file would remove another session's worktree.
 
 **The worktree this session made** is the path in the session file's `worktree:` line, and only that one is this skill's to remove. A session file without the line made no worktree. Then compare it with `git worktree list --porcelain`: if a worktree has the branch checked out (`branch refs/heads/<branch>`) and it is not the one the file names, stop and ask. Never remove a worktree because its name looks right: another session or another person may be working in it. And `git branch -D` refuses a branch that a worktree has checked out, so a worktree nobody accounts for blocks the deletion anyway.
 
@@ -67,14 +73,21 @@ Look before you switch a checkout: another session may be using it.
 - **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work in progress. Then:
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
-git checkout "$BASE"
+BASE_NAME=$(node scripts/base-branch.mjs --name)
+git checkout "$BASE_NAME"
 git pull --ff-only
 ```
 
+`--name` prints the base branch's own name (`main`), where the plain script prints a ref that is `origin/main` in a clone with no local `main`. `git checkout main` creates the local branch from `origin/main` when there is none.
+
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 
-A failed `--ff-only` means the local base has commits GitHub does not have. Stop and show them (`git log "origin/$BASE..$BASE" --oneline`, with `BASE` set in the same block); never reset the base.
+A failed `--ff-only` means the local base has commits GitHub does not have. Stop and show them, and never reset the base:
+
+```bash
+BASE_NAME=$(node scripts/base-branch.mjs --name)
+git log --oneline "origin/$BASE_NAME..$BASE_NAME"
+```
 
 ### 4. Remove this session's worktree, then the branch
 
