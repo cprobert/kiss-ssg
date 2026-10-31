@@ -63,7 +63,7 @@ How to read the output:
 
 ## Before restructuring an existing site
 
-List what is there before moving anything: on an import, a design lift that touches structure, or a restructure. One row per current URL:
+List what is there before moving anything: on an import that replaces published pages, a design lift that touches structure, or a restructure. One row per current URL:
 
 | Field         | What goes in it                                             |
 | ------------- | ----------------------------------------------------------- |

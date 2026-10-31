@@ -38,7 +38,7 @@ Keep this terse and fast — if a pulse starts to feel like a mini-close, it has
 ```bash
 BASE=$(node scripts/base-branch.mjs)
 git branch --show-current
-grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
+grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md
 ```
 
 If on the base branch: stop — the pulse is a mid-branch beat. If the `grep` finds the branch's intent artefact (the file `/branch-open` wrote, `status: open`): read its **Intent** — Objective, Success criteria, Non-goals, Impact surface, Expected shape. These are the baseline; **read them, never rewrite them** (the Intent block is immutable).
@@ -48,6 +48,7 @@ If no intent file (the harness auto-created the branch, or it wasn't opened with
 ### Step 2 — Read the trajectory
 
 ```bash
+BASE=$(node scripts/base-branch.mjs)
 git diff "$BASE...HEAD" --stat
 git status --short
 ```

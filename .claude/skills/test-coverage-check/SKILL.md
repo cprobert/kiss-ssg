@@ -47,6 +47,7 @@ BASE=$(node scripts/base-branch.mjs)
 **Gate mode** (`--gate`) — added files only:
 
 ```bash
+BASE=$(node scripts/base-branch.mjs)
 git diff --name-only --diff-filter=A "$BASE...HEAD" \
   | grep -E '^(lib/[^/]+\.js|scripts/[^/]+\.mjs)$' \
   | grep -v '^lib/kiss\.js$'

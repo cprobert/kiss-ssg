@@ -71,6 +71,7 @@ If hits are found: surface them and ask the operator to confirm each is not a re
 An SSG's attack surface is not authentication — it is what the engine reads, executes, and writes, on a developer's machine. Check whether the diff touches it:
 
 ```bash
+BASE=$(node scripts/base-branch.mjs)
 git diff --name-only "$BASE...HEAD" | grep -E '(lib/(model-resolver|controller-resolver|dev-server|watcher|assets|utils|kiss-page|page-registry|staging|asset-copy)\.js|package\.json)'
 ```
 
@@ -91,6 +92,7 @@ Why each one:
 **The table names files, so it cannot see a new one.** Code that reaches this surface can move into a module the table has never heard of — twice now: two new parsers of untrusted input (2026-10-01), then `lib/page-registry.js` and `lib/staging.js`, which took over the calls into the model and controller resolvers and the renames beside the build folder (2026-10-03). Neither matched, and the review happened only because Claude read past the grep. So also list every `lib/` module the branch **adds**, and every changed one that **imports** a module in the table:
 
 ```bash
+BASE=$(node scripts/base-branch.mjs)
 git diff --name-only --diff-filter=A "$BASE...HEAD" -- 'lib/*.js'
 git diff --name-only "$BASE...HEAD" -- 'lib/*.js' \
   | xargs -r grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'"

@@ -14,7 +14,7 @@ The Steer beat between `kiss-branch-open` and `kiss-branch-close`. Work drifts i
 
 ```bash
 git branch --show-current
-grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
+grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md
 ```
 
 Read that file's **Success criteria**, **Non-goals** and **Impact surface**. They are the baseline: read them, never rewrite them.

@@ -38,7 +38,7 @@ Then proceed.
 BASE=$(node scripts/base-branch.mjs)
 git log "$BASE..HEAD" --oneline
 git diff "$BASE...HEAD" --name-only
-grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md
+grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md
 ```
 
 The `grep` finds this branch's **intent artefact** — the session file `/branch-open` wrote (frontmatter `branch:` matches the current branch).

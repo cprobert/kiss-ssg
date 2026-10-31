@@ -44,7 +44,7 @@ Name things by what the reader is doing, not by how the organisation is arranged
 
 ### 2. List the pages, and give each a type
 
-Give each task or thing one page. Two pages for one task compete with each other in search and confuse the reader: `kiss-seo` has the rule ("one main purpose per page"). For a site that already exists (an import, a lift, a restructure), list what is there before moving anything. [references/measure-structure.md](references/measure-structure.md) has the table.
+Give each task or thing one page. Two pages for one task compete with each other in search and confuse the reader: `kiss-seo` has the rule ("one main purpose per page"). For a site that already exists (an import that replaces published pages, a lift, a restructure), list what is there before moving anything. [references/measure-structure.md](references/measure-structure.md) has the table.
 
 Each page type has its own job. Do not force a page into another type's shape:
 

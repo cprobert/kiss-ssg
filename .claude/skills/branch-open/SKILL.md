@@ -101,7 +101,7 @@ It is a recommendation, not a gate: the user may open the branch anyway. **Do no
 **Also list possibly abandoned work.** A log still `status: open` on a branch that is not the one you are about to work on is a piece of work somebody walked away from:
 
 ```bash
-grep -l "^status: open$" planning/sessions/*.md | xargs grep -H "^branch:"
+grep -lE "^status: open[[:space:]]*$" planning/sessions/*.md | xargs grep -H "^branch:"
 ```
 
 Name each one with its branch and its opened date and ask the user what it is — finished but never closed, still genuinely in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one names the branch you are adopting in Step 4, that is not abandoned work — that is this piece of work.
@@ -140,9 +140,12 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
 - **Worktree** (asked for, or the checkout is busy). First choose its start point: a worktree does not move the main checkout's branch, so the local base can be out of date, or ahead of `origin`.
 
   ```bash
+  BASE=$(node scripts/base-branch.mjs)
   git fetch origin
   git rev-list --left-right --count "$BASE...origin/$BASE"
   ```
+
+  Shell state does not carry from one Bash call to the next, so this block sets `BASE` itself; `$BASE` below means the name it resolves to.
 
   The two numbers are the commits only on the local base, then those only on `origin`:
   - `origin/$BASE` does not exist (an unpushed base): start from the local base.
@@ -150,12 +153,14 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
   - The first number is more than 0: the local base has commits `origin` lacks; start from the local base so they are kept. If the second number is also more than 0, the two have diverged: stop and ask.
 
   ```bash
-  git worktree add --no-track -b <branch-name> ../kiss-ssg-<slug> <start point>
+  TOP=$(git rev-parse --show-toplevel)
+  git worktree add --no-track -b <branch-name> "$TOP/../kiss-ssg-<slug>" <start point>
+  git worktree list
   ```
 
-  `--no-track` keeps the start point from becoming the branch's upstream, so `/branch-close` pushes the branch to its own name. If the folder exists, choose another slug; never reuse or delete a folder.
+  The path starts from the repository's root, not the current folder, so the worktree lands beside the repository wherever this runs. `git worktree list` shows its absolute path: that is the path for the session file's `worktree:` line, so it means the same thing wherever `/branch-merged` runs. `--no-track` keeps the start point from becoming the branch's upstream, so `/branch-close` pushes the branch to its own name. If the folder exists, choose another slug; never reuse or delete a folder.
 
-  A new worktree has no `node_modules`. Run `npm install` in it (in the background while you write the session file); the gates, the examples and `node docs` all need it. If it fails, report it and stop. Every later step, and the rest of the branch, happens in the worktree: tell the operator its path, to open it in its own editor window and agent session, and that `/branch-merged` removes it once the pull request has merged.
+  A new worktree has no `node_modules`. Run `npm install` in it and **wait for it to finish** before Step 6: the pre-commit hook runs in the worktree too, and its format check imports `prettier` from the worktree's own `node_modules`, so a commit made before the install fails. The gates, the examples and `node docs` need it as well. If it fails, report it and stop; never commit past the hook with `--no-verify`. Every later step, and the rest of the branch, happens in the worktree: tell the operator its path, to open it in its own editor window and agent session, and that `/branch-merged` removes it once the pull request has merged.
 
 ### Step 5 — Write the intent artefact
 
@@ -182,7 +187,7 @@ branch: <branch-name>
 base: <base branch>
 status: open
 opened: <YYYY-MM-DD>
-worktree: <../kiss-ssg-<slug>, only when Step 4 made a worktree; else omit the line>
+worktree: <the worktree's absolute path, as `git worktree list` shows it, only when Step 4 made one; else omit the line>
 ---
 
 # Session — <YYYY-MM-DD>: <Descriptive Title>
@@ -228,9 +233,10 @@ worktree: <../kiss-ssg-<slug>, only when Step 4 made a worktree; else omit the l
 
 ## How it fits the dev loop
 
-The branch runs as three beats, all reading this one session file: **Frame** (`/branch-open`, here) → **Steer** (`/branch-pulse`, repeated mid-branch) → **Verify & close** (`/branch-close`).
+The branch runs as four beats, all reading this one session file: **Frame** (`/branch-open`, here) → **Steer** (`/branch-pulse`, repeated mid-branch) → **Verify & close** (`/branch-close`) → **Tidy** (`/branch-merged`, once the pull request has merged).
 
 - **`/branch-pulse`** reads this file's **Success criteria** mid-branch and checks progress against them with evidence, logging each checkpoint to the `## Pulse log` section — so drift is caught while the work is warm, not discovered cold at the close.
 - **`/branch-close` → `/session-reflect`** finds this file by its `branch:` frontmatter, writes the Reflection beneath the marker (reading **Intent** for the Reflect section, the **Pulse log** for accrued evidence, and checking **Success criteria** in the Verdict — "did we achieve the objective?"), and flips `status: closed`.
 - **`/branch-close` PR body** seeds its Summary and Test plan from the captured **Objective** and **Success criteria**, so the reviewer sees the original intent beside the diff. Its version bump reads the **Impact surface**.
+- **`/branch-merged`** reads this file from the branch, after the pull request has merged, for its `worktree:` line: the only worktree it will remove.
 - A branch not opened with `/branch-open` simply has no intent file — `/branch-pulse` falls back to asking what to check, and `/session-reflect` falls back to creating a fresh reflection, so this is additive, not required.

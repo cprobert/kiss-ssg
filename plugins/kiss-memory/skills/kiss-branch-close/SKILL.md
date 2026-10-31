@@ -16,13 +16,16 @@ Run this only when the human asks to close. Never on your own initiative, and ne
 
 ```bash
 BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
-BASE=${BASE:-main}
+[ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
+echo "base: ${BASE:-unknown}"
 git branch --show-current
 git log "$BASE..HEAD" --oneline
 git status --short
 ```
 
-Stop if you are on the base branch, or if there are no commits to close. Find the session file (`grep -rl "branch: $(git branch --show-current)$" planning/sessions/*.md`) and read its **Intent**, **Amendments** and **Pulse log**. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
+The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered: ask which branch this work merges into, rather than assume `main`, and run the `git log` with the answer. Shell state does not carry from one command to the next, so later steps write the name this printed where they say `<base>`.
+
+Stop if you are on the base branch, or if there are no commits to close. Find the session file (`grep -rlE "branch: $(git branch --show-current)[[:space:]]*$" planning/sessions/*.md`) and read its **Intent**, **Amendments** and **Pulse log**. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
 
 Commit or stash anything outstanding before verifying — the check runs the working tree, so uncommitted work would be verified and then not shipped.
 
@@ -86,7 +89,7 @@ The engine never writes that line; this skill does. It is what lets the next che
 **b. Every subject this change touched has a note that changed with it.**
 
 ```bash
-git diff --name-only "$BASE...HEAD"
+git diff --name-only "<base>...HEAD"
 ```
 
 From that list, take the subjects the change actually touched — files under the controllers folder, URL models and pipeline steps added or edited in the build script — and confirm the matching note is in the same list:
@@ -165,4 +168,4 @@ git push -u origin HEAD
 
 **Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date and stamped, all four note lines clean, `AIKB/` recorded and committed, reflection written, branch pushed.
 
-Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Then name the next beat: once the work has merged, `kiss-branch-merged` tidies up. If the branch is in a worktree (`worktree:` in the session file), it stays until then, because review fixes go there. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-memory-consolidate`", with the trigger.
+Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-memory-consolidate`", with the trigger. Then, after those lines, name the next beat: once the work has merged, `kiss-branch-merged` tidies up. If the branch is in a worktree (`worktree:` in the session file), it stays until then, because review fixes go there.

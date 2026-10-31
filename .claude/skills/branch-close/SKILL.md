@@ -11,7 +11,7 @@ Run `/branch-close` when you are ready to open a pull request. This replaces man
 
 > **Sub-agent / fork hard stop.** This skill MUST only be invoked by the human operator typing `/branch-close`, or by Claude Code's main session acting on an explicit human instruction to close. It MUST NOT be invoked autonomously by any sub-agent, fork, or agent running a plan step. If you are a fork or sub-agent — STOP here. Return your findings to the main session and surface them to the user. The human decides when the branch closes, not the plan.
 
-`/branch-close` is the **Verify & close** beat — the summative end of the three-beat dev loop (**Frame** `/branch-open` → **Steer** `/branch-pulse` → **Verify & close**, here). The split is deliberate: the pulse is _formative_ (`npm test`, run often mid-branch); the close is _summative_ (the full `npm run gates` battery). If the branch was pulsed, its `## Pulse log` already holds evidence against the success criteria, so the verification here reads that trail rather than starting cold. A branch that reaches close having never been pulsed is doing all its verification in one batch at the boundary — exactly the drift the pulse exists to prevent.
+`/branch-close` is the **Verify & close** beat — the summative end of the branch's work in the four-beat dev loop (**Frame** `/branch-open` → **Steer** `/branch-pulse` → **Verify & close**, here → **Tidy** `/branch-merged`, once the pull request has merged). The split is deliberate: the pulse is _formative_ (`npm test`, run often mid-branch); the close is _summative_ (the full `npm run gates` battery). If the branch was pulsed, its `## Pulse log` already holds evidence against the success criteria, so the verification here reads that trail rather than starting cold. A branch that reaches close having never been pulsed is doing all its verification in one batch at the boundary — exactly the drift the pulse exists to prevent.
 
 Do not run if:
 
@@ -84,6 +84,7 @@ If on the base branch: stop, tell the user. If there are uncommitted changes: te
 Then check whether the branch is behind the base:
 
 ```bash
+BASE=$(node scripts/base-branch.mjs)
 git fetch origin 2>/dev/null; git rev-list --count "HEAD..$BASE"
 ```
 
@@ -185,6 +186,7 @@ CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so gr
 **The default is to run it whenever the branch changed `lib/` or `bin/`**, and a close that skips it there says why in its report — "this session reviewed it" is not a reason, because an author reviewing its own diff has the author's blind spots. Four reflections asked for exactly this before it was the default (2026-09-06, 09-16, 09-21, 09-26), and on the two where one ran (09-21, 09-26) it found defects the gates and the session's self-check had passed. Otherwise skip it for docs-only or trivial branches, where a code review is a multi-minute round trip that finds nothing (the same judgment call as `/corpse-collector`). Skip it too — noting why in the close — if the Codex plugin isn't installed or authenticated in this environment: it needs per-user OpenAI auth that committed config can't supply, so not every operator will have it, and a missing reviewer must never block the ritual.
 
 ```bash
+BASE=$(node scripts/base-branch.mjs)
 node "$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs | tail -1)" \
   review --wait --base "$BASE" --scope branch
 ```
@@ -235,6 +237,7 @@ The PR body is the same in every case:
 1. **`gh` CLI present** (`command -v gh`) — the normal desktop path:
 
    ```bash
+   BASE=$(node scripts/base-branch.mjs)
    gh pr create --base "${BASE#origin/}" --title "<concise title, under 70 chars>" --body "$(cat <<'EOF'
    <the body above>
    EOF

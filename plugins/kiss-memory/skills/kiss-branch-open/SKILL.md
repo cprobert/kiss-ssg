@@ -39,7 +39,7 @@ It is a recommendation, not a gate: the user may open the branch anyway. Do not 
 **Also list possibly abandoned work.** A session file still `status: open` on a branch that is not this one is a piece of work somebody walked away from:
 
 ```bash
-grep -l "^status: open$" planning/sessions/*.md | xargs grep -H "^branch:"
+grep -lE "^status: open[[:space:]]*$" planning/sessions/*.md | xargs grep -H "^branch:"
 ```
 
 Name each one with its branch and its opened date, and ask the user what it is — finished but never closed, genuinely still in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one of them is the branch you are about to adopt in step 2, that is not abandoned work — that is this piece of work, and step 2 handles it.
@@ -48,10 +48,13 @@ Name each one with its branch and its opened date, and ask the user what it is �
 
 ```bash
 BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
-BASE=${BASE:-main}
+[ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
+echo "base: ${BASE:-unknown}"
 git branch --show-current
 git status --short
 ```
+
+The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered (no remote, or offline): ask which branch the work will merge into. Never assume `main`. Shell state does not carry from one command to the next, so later steps write the name this printed where they say `<base>`.
 
 - **On the base branch** — the normal case; you will create a branch in step 5.
 - **Already on a feature branch** (a harness often creates one for you) — **adopt it in place**, do not branch off it. Confirm: "You're already on `<branch>` — I'll capture intent onto this branch." If it already carries unrelated work or an existing session file, stop and ask.
@@ -107,13 +110,19 @@ Adopting (step 2)? Skip this. Otherwise propose a name from the objective (`cont
   git checkout -b <branch-name>
   ```
 
-- **In a worktree:** start it from the newest base. `git fetch origin`, then `git rev-list --left-right --count "$BASE...origin/$BASE"`: if the first number is 0, start from `origin/$BASE`; if it is more than 0, the local base has commits the remote lacks, so start from the local `$BASE`; if both are more than 0, they have diverged — stop and ask. With no remote, start from the local base.
+- **In a worktree:** start it from the newest base. `git fetch origin`, then `git rev-list --left-right --count "<base>...origin/<base>"`: if the first number is 0, start from `origin/<base>`; if it is more than 0, the local base has commits the remote lacks, so start from the local `<base>`; if both are more than 0, they have diverged — stop and ask. With no remote, start from the local base.
+
+  The new folder goes beside the repository, named after it, wherever in the repository you are: a site often sits in a subfolder of its repository, and a path relative to that subfolder would put the worktree inside the repository it belongs to.
 
   ```bash
-  git worktree add --no-track -b <branch-name> "../$(basename "$PWD")-<slug>" <start point>
+  TOP=$(git rev-parse --show-toplevel)
+  git worktree add --no-track -b <branch-name> "$TOP/../$(basename "$TOP")-<slug>" <start point>
+  git worktree list
   ```
 
-  If the folder exists, choose another slug; never reuse or delete one. Run `npm install` in the new folder: a worktree has no `node_modules`, and the build needs them. Every later step happens in the worktree. Tell the person its path, to open it in its own editor window, and that `kiss-branch-merged` removes it once the work has merged.
+  If the folder exists, choose another slug; never reuse or delete one. `git worktree list` shows the new folder's absolute path: that is the path to write in the session file's `worktree:` line, so it means the same thing wherever `kiss-branch-merged` runs. If the site is in a subfolder of the repository, it is in the same subfolder of the worktree.
+
+  Run `npm install` in the worktree's site folder, and **wait for it to finish** before any later step: a worktree has no `node_modules`, the check and the record in step 6 need them, and a pre-commit hook that formats or lints usually runs from them too. If it fails, report it and stop. Every later step happens in the worktree. Tell the person its path, to open it in its own editor window, and that `kiss-branch-merged` removes it once the work has merged.
 
 ### 6. Make sure this branch has a baseline
 
@@ -159,7 +168,7 @@ branch: <branch-name>
 base: <base branch>
 status: open
 opened: <YYYY-MM-DD>
-worktree: <the worktree's path, only when step 5 made one; else omit the line>
+worktree: <the worktree's absolute path, as `git worktree list` shows it, only when step 5 made one; else omit the line>
 ---
 
 # Session — <YYYY-MM-DD>: <Descriptive Title>
@@ -199,4 +208,4 @@ worktree: <the worktree's path, only when step 5 made one; else omit the line>
 
 ## The loop
 
-**Frame** (`kiss-branch-open`, here) → **Steer** (`kiss-branch-pulse`, repeatedly) → **Verify & close** (`kiss-branch-close`). All three read this one file. `kiss-memory-consolidate` sits outside the loop, between pieces of work: it folds the session logs' durable lessons into `AIKB/site.md` and fixes the notes, which is what stops this step's read-back surfacing the same feedback forever. The baseline they measure against moves exactly once per piece of work, at `kiss-branch-close` — this skill records only to establish one that does not exist yet. For the engine's own contract — what `npx kiss-ssg aikb` records, what the report carries, what `check` diffs against — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.
+**Frame** (`kiss-branch-open`, here) → **Steer** (`kiss-branch-pulse`, repeatedly) → **Verify & close** (`kiss-branch-close`) → **Tidy** (`kiss-branch-merged`, once the work has merged). All four read this one file. `kiss-memory-consolidate` sits outside the loop, between pieces of work: it folds the session logs' durable lessons into `AIKB/site.md` and fixes the notes, which is what stops this step's read-back surfacing the same feedback forever. The baseline they measure against moves exactly once per piece of work, at `kiss-branch-close` — this skill records only to establish one that does not exist yet. For the engine's own contract — what `npx kiss-ssg aikb` records, what the report carries, what `check` diffs against — read `node_modules/kiss-ssg/llms.txt`; nothing here restates it.

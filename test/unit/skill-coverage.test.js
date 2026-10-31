@@ -463,6 +463,16 @@ const COVERAGE = [
       skill('kiss-ssg', 'kiss-site-review'),
     ],
   },
+  // 2026-10-31: a page added to a site, and an import that replaces published
+  // pages, take their place in the site's structure from the IA skill.
+  {
+    feature: 'a new page and a replacing import call the IA domain skill',
+    pattern: /`kiss-information-architecture`/,
+    skills: [
+      skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-import'),
+    ],
+  },
   {
     feature: 'the 2.8.0 upgrade note: three audit checks, advisory',
     pattern:
