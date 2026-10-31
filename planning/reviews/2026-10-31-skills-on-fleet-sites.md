@@ -50,6 +50,27 @@ What this branch did not settle:
 One error of this session's own is recorded under pro-plumbing: it compared two commits of a site
 as one, and committed and reverted a skill change on the strength of it.
 
+## Next, on the sites (the operator's call, 2026-10-31)
+
+No agent edit from these runs goes into a site. They were made on an engine the sites' lockfiles
+do not name, and the copy changes are the owners' to approve. After this branch is published,
+each site gets its own session: upgrade the engine, run `kiss-site-review` as shipped, and fix
+what the operator picks. That run is also the reproduction this harness could not be, because it
+loads the marketplace plugin and the site's own skills.
+
+Verified, code-only, and no owner needed:
+
+- **a1k9training:** focus hidden under the sticky header on Shift+Tab; field borders at 1.58:1;
+  the current menu page by colour alone; course dates that go stale without a scheduled rebuild;
+  its `qa/seo-check.mjs`, which fails on the upgrade to 2.8.
+- **k9-solutions:** the lockfile's 2.6.2 against `^2.7.0`; no skip link; field focus at 1.09:1
+  with `outline:none`; the review whose quote marks were added after import.
+- **pro-plumbing:** none outstanding. The call bar and header ring were fixed on `49c4fca`.
+
+For the owners: privacy lines on all three enquiry forms; Gaynor's reply-time promise and the
+vet-referral Google Doc; Greg's "water through a ceiling" line and whether he connects electric
+showers; Lindsay's unsourced facts and prices.
+
 ## How the arms ran
 
 Each arm is one `claude -p` session (`claude-opus-5-5`, Claude Code 2.1.316) in its own copy of the
