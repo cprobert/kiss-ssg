@@ -44,6 +44,8 @@ opened: 2026-10-31
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-10-31 — wiring: a packed copy in a site copy, not a junction in the site.** The operator chose "branch skills and engine via a junction". A junction lets a test agent with write access edit this repo through `node_modules/kiss-ssg`, so each arm runs instead in a robocopy of the site under the session scratchpad, with this tree's `npm pack` tarball installed into it (`--no-save --no-package-lock`), its remotes removed and its `settings.local.json` (which pre-approves commit, push and `gh pr` on a1k9training) replaced by a deny-list. Same engine and skills, and the real site folders are only read. The plugin loads by `--plugin-dir` from this tree under `--setting-sources local`, so the marketplace copy does not load. Measured by a smoke arm: 12 kiss skills visible, `git push` denied. Side effect, recorded rather than fixed: the sites' own `.claude/skills` do not load under these settings either, and three managed `cc-plugin-*` plugins load in every arm.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

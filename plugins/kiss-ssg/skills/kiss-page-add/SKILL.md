@@ -22,7 +22,12 @@ Read the build script — `router.js` on a site that follows the convention in `
 - **Scanned site**: create the `.hbs` view under `config.folders.pages`. If it needs data, add a same-named `.json` under `config.folders.models` (or a matching controller under `config.folders.controllers`) — `.scan()` matches by filename.
 - **Explicitly registered site**: add a `.page()` call with `view`, and `model`/`controller` if the page needs them. A page that belongs to an existing fan-out (a blog post, a product) is usually one new record in the model the `.pages()` call already reads, not a new call — see `node_modules/kiss-ssg/GUIDE.md` § .page() for the full option list (`title`, `path`, `slug`, `sitemapPriority`, etc.).
 - Copy the pattern of a page that already does something similar — its model shape, its controller, which partials/layout it extends — rather than inventing a new one.
-- Build the page to the domain skills, each in build mode: `kiss-information-architecture` for where it sits (its section, its URL, its nav entry or the page that links to it, so it is not an orphan), `kiss-writing-for-the-web` for its words (a visible placeholder for any fact you were not given, never a believable guess), `kiss-seo` for its own `title` and `description`, `kiss-accessibility` for its headings, image `alt` text, labels and focus, and `kiss-front-end` for its image sizes and any interactivity.
+- Build the page to the domain skills, each in build mode. **Open each one's `SKILL.md` before you write the part it covers**; the clause after each name says what it covers, not its rules:
+  - [`kiss-information-architecture`](../kiss-information-architecture/SKILL.md): where it sits, meaning its section, its URL, and its nav entry or the page that links to it, so it is not an orphan.
+  - [`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md): its words, with a visible placeholder for any fact you were not given, never a believable guess.
+  - [`kiss-seo`](../kiss-seo/SKILL.md): its own `title` and `description`.
+  - [`kiss-accessibility`](../kiss-accessibility/SKILL.md): its headings, image `alt` text, labels and focus.
+  - [`kiss-front-end`](../kiss-front-end/SKILL.md): its image sizes and any interactivity.
 
 ### 3. Update an existing page
 
