@@ -79,11 +79,20 @@ const remembered = (run) => {
 // branch, and this repository has tags `v1` and `v2` named like its
 // integration branches, so the ref is printed in full when a tag shares its
 // short name, and every later git command then reads the branch.
-function branchRef(name, cwd, run = git) {
-  const found = [
+// The refs a branch name has here, by full name, the local branch first: the
+// lookup every script shares (session-file.mjs too). Which of them a caller
+// reads is its own rule.
+export function branchRefs(name, exists) {
+  return [
     { full: `refs/heads/${name}`, short: name },
     { full: `refs/remotes/origin/${name}`, short: `origin/${name}` },
-  ].filter((ref) => run(['rev-parse', '--verify', '--quiet', ref.full], cwd))
+  ].filter((ref) => exists(ref.full))
+}
+
+function branchRef(name, cwd, run = git) {
+  const found = branchRefs(name, (full) =>
+    run(['rev-parse', '--verify', '--quiet', full], cwd),
+  )
   if (found.length === 0) return null
   const behind = (ref) =>
     Number(run(['rev-list', '--count', `${ref.full}..HEAD`], cwd) ?? Infinity)

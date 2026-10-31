@@ -6,6 +6,8 @@
 // /branch-close and in CI (.github/workflows/ci.yml), so green here is green
 // there.
 import { execFileSync, spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
+import path from 'node:path'
 import { BaseBranchError, resolveBaseBranch } from './base-branch.mjs'
 
 // package.json's `files` whitelist is load-bearing: llms.txt and AIKB/ ship on
@@ -83,13 +85,24 @@ export function spawnResult(r) {
   return { ok: r.status === 0, stdout: (r.stdout ?? '').trim(), output }
 }
 
+// Node cannot spawn npm's `.cmd` shims on Windows without a shell, so `npx`
+// and `npm` get one there, and their arguments become one cmd.exe command
+// line. Nothing else does: the format gate runs prettier through node itself,
+// so a file name with a space or an `&` reaches it as it is (round 10).
+export const needsShell = (cmd, platform = process.platform) =>
+  platform === 'win32' && (cmd === 'npx' || cmd === 'npm')
+
 const run = (cmd, args) =>
   spawnResult(
-    spawnSync(cmd, args, {
-      encoding: 'utf8',
-      shell: process.platform === 'win32',
-    }),
+    spawnSync(cmd, args, { encoding: 'utf8', shell: needsShell(cmd) }),
   )
+
+// Prettier's own command line, run with `node` rather than through `npx`.
+const require = createRequire(import.meta.url)
+export const PRETTIER_BIN = path.join(
+  path.dirname(require.resolve('prettier/package.json')),
+  require('prettier/package.json').bin,
+)
 
 // What the format gate checks: every file the branch changed, as it is in the
 // working tree now. Prettier reads the working tree, so the list comes from
@@ -99,7 +112,7 @@ const run = (cmd, args) =>
 // files the working tree no longer had, and failed the gate on them twice on
 // 2026-10-31.
 export function changedFiles(base, cwd = process.cwd(), env = process.env) {
-  const run = (args) =>
+  const gitOut = (args) =>
     execFileSync('git', args, {
       cwd,
       env,
@@ -107,14 +120,14 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
   try {
-    const mergeBase = run(['merge-base', base, 'HEAD']).trim()
+    const mergeBase = gitOut(['merge-base', base, 'HEAD']).trim()
     // No commits of the branch's own (on the base itself, as in CI and
     // `prepublishOnly`): list nothing, and the gate checks the whole
     // repository. A dirty tree or a stray untracked file there must not
     // shrink that check to the stray file.
-    if (run(['rev-list', '--count', `${mergeBase}..HEAD`]).trim() === '0')
+    if (gitOut(['rev-list', '--count', `${mergeBase}..HEAD`]).trim() === '0')
       return { files: [] }
-    const changed = run([
+    const changed = gitOut([
       'diff',
       '--name-only',
       '--diff-filter=ACMR',
@@ -128,7 +141,7 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
     // is listed as a directory, `dir/`, and is not this branch's: it stays
     // out. `:(top)` lists the whole repository and `--full-name` prints its
     // paths from the root, as `git diff` does, wherever this runs.
-    const created = run([
+    const created = gitOut([
       'ls-files',
       '--others',
       '--exclude-standard',
@@ -156,9 +169,10 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
 // a longer one with "The syntax of the command is incorrect" — no mention of
 // length, and nothing prettier said. That is what this branch's own diff did to
 // the `windows-latest` leg: 202 changed files, 8117 characters of paths, one
-// gate red while `ubuntu-latest` was green. `run` uses a shell on win32 because
-// Node cannot spawn `npx.cmd` without one, so the arguments become one command
-// line there and the limit is real.
+// gate red while `ubuntu-latest` was green. The gate then ran prettier through
+// `npx`, which needs a shell on win32. It runs it through node now (round 10),
+// and Windows still caps a process's command line, at 32767 characters, so the
+// budget stays, well inside both.
 //
 // The answer is the one the empty-diff case already gives: check the whole tree.
 // It asks a superset of the gate's question and the repo is prettier-clean by
@@ -191,7 +205,12 @@ export function formatGate(base, diff, run) {
   // gate can just hand it every changed file.
   const target = wholeRepo || overflows ? ['.'] : diff.files
   return {
-    ...run('npx', ['prettier', '--check', '--ignore-unknown', ...target]),
+    ...run(process.execPath, [
+      PRETTIER_BIN,
+      '--check',
+      '--ignore-unknown',
+      ...target,
+    ]),
     note,
   }
 }

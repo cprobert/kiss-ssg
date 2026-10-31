@@ -89,6 +89,13 @@ describe.skipIf(process.platform === 'win32')(
       'no-branch.md': '---\ntitle: none\n---\n',
       'no-frontmatter.md': 'branch: feat/x\n',
       'archive/old.md': '---\nbranch: main\n---\n',
+      // Round 10: git quotes a non-ASCII path (core.quotePath), and the
+      // quoted name is no file `git show` can read.
+      'café.md': '---\nbranch: feat/cafe\n---\n',
+      // Round 10: only a byte-order mark may come before the opening
+      // `---`; branchOf reads neither of these as frontmatter.
+      'indented.md': '  ---\nbranch: feat/ind\n---\n',
+      'prefixed.md': 'x---\nbranch: feat/ind\n---\n',
     }
     const branches = [
       'feat/x',
@@ -99,8 +106,11 @@ describe.skipIf(process.platform === 'win32')(
       'feat/c',
       'feat/h#2',
       'fix/v2.8',
+      'feat/cafe',
       'main',
     ]
+    // Branches whose only candidate files must not match.
+    const unmatched = ['feat/ind']
 
     fs.mkdirSync(repo)
     git('init', '-q', '-b', 'main')
@@ -115,7 +125,8 @@ describe.skipIf(process.platform === 'win32')(
     }
     git('add', '.')
     git('commit', '-q', '-m', 'sessions')
-    for (const b of branches.filter((b) => b !== 'main')) git('branch', b)
+    for (const b of [...branches, ...unmatched].filter((b) => b !== 'main'))
+      git('branch', b)
     execFileSync('git', ['init', '-q', '--bare', remote], {
       env,
       stdio: 'ignore',
@@ -138,14 +149,17 @@ describe.skipIf(process.platform === 'win32')(
       '%s finds the current branch’s file, for every shape',
       (skill) => {
         const block = lookupBlock(skill)
-        for (const b of branches.filter((b) => b !== 'feat/q')) {
+        for (const b of [...branches, ...unmatched].filter(
+          (b) => b !== 'feat/q',
+        )) {
           git('checkout', '-q', b)
           const found = bash(block)
             .stdout.split('\n')
             .filter((line) => line.startsWith('planning/'))
             .join('\n')
           expect(found, `${skill} on ${b}`).toBe(expected().trim())
-          expect(found, `${skill} on ${b} finds one file`).toMatch(/^\S+$/)
+          if (unmatched.includes(b)) expect(found, `${skill} on ${b}`).toBe('')
+          else expect(found, `${skill} on ${b} finds one file`).toMatch(/^\S+$/)
         }
         git('checkout', '-q', 'main')
       },
@@ -167,7 +181,7 @@ describe.skipIf(process.platform === 'win32')(
     it(`${MERGED} finds a named branch’s file from its commits, here or on origin`, () => {
       const block = lookupBlock(MERGED)
       expect(block).toContain('B=<branch>\n')
-      for (const b of branches) {
+      for (const b of [...branches, ...unmatched]) {
         const named = block.replace('B=<branch>\n', `B='${b}'\n`)
         const found = bash(named)
           .stdout.split('\n')
@@ -176,7 +190,8 @@ describe.skipIf(process.platform === 'win32')(
         expect(found, `${MERGED} for ${b}`).toBe(
           expected(b, '--from-branch').trim(),
         )
-        expect(found, `${MERGED} for ${b} finds one file`).toMatch(/^\S+$/)
+        if (unmatched.includes(b)) expect(found, `${MERGED} for ${b}`).toBe('')
+        else expect(found, `${MERGED} for ${b} finds one file`).toMatch(/^\S+$/)
       }
     })
 

@@ -40,7 +40,7 @@ Stop if you are on the base branch, or if there are no commits to close. Find th
 B=$(git branch --show-current)
 [ -n "$B" ] || echo "not on a branch (a detached HEAD): there is no session to find"
 [ -n "$B" ] && find planning/sessions -type f -name '*.md' 2>/dev/null | sort | while read -r f; do
-  if [ "$(awk '{ sub(/\r$/, "") } NR == 1 { sub(/^[^-]*/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } /^branch:/ && !found { v = $0; sub(/^branch:/, "", v); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }' "$f")" = "$B" ]; then echo "$f"; fi
+  if [ "$(awk '{ sub(/\r$/, "") } NR == 1 { sub(/^\357\273\277/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } /^branch:/ && !found { v = $0; sub(/^branch:/, "", v); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }' "$f")" = "$B" ]; then echo "$f"; fi
 done
 ```
 

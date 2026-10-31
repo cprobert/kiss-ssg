@@ -286,7 +286,7 @@ back the first launch's place, so the learner reopened there every time.
 
 ### 0i. The release that adds `{{current}}` to `isActive`
 
-Nothing fails, and nothing has to change. Inside `{{#isActive}}`, `{{current}}` is now `true`
+Nothing fails. One kind of site has to change: one that already passes its own `current` key into the block (below), which the build now warns about. Inside `{{#isActive}}`, `{{current}}` is now `true`
 only when the page is the link's own page, whatever `folderMatch` says, beside `{{active}}`,
 which stays true on every page inside a section. `aria-current="page"` names the page itself, so
 a nav whose section items use `folderMatch` used to need a second `isActive` call, without
@@ -298,7 +298,9 @@ a nav whose section items use `folderMatch` used to need a second `isActive` cal
   `node_modules/kiss-ssg/examples/11-blog/src/layouts/layout.hbs` does. Optional: the same
   links are marked as before, though a link's attributes may come out in another order.
 - **A site that passes its own `current` key into the block** (a nav item with a `current`
-  field) now reads the helper's, as it already did for `active`: rename the site's key.
+  field, or `current=` in the hash) now reads the helper's, as it already did for `active`, and
+  the build warns once: `isActive: its own {{current}} hides a "current" key`. Rename the
+  site's key, and the warning goes.
 - Check it the way the change promises: build before and after, and diff the pages. On any
   page, at most one nav link carries `aria-current="page"`, and it points at that page.
 

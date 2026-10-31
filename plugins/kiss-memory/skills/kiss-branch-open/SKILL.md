@@ -135,7 +135,7 @@ Adopting (step 2)? Skip this. Otherwise propose a name from the objective (`cont
 
   If the folder exists, choose another slug; never reuse or delete one. `git worktree list` shows the new folder's absolute path: that is the path to write in the session file's `worktree:` line, so it means the same thing wherever `kiss-branch-merged` runs. If the site is in a subfolder of the repository, it is in the same subfolder of the worktree.
 
-  Run `npm install` in the worktree's site folder, and **wait for it to finish** before any later step: a worktree has no `node_modules`, the check and the record in step 6 need them, and a pre-commit hook that formats or lints usually runs from them too. If it fails, report it and stop. Every later step happens in the worktree. Tell the person its path, to open it in its own editor window, and that `kiss-branch-merged` removes it once the work has merged.
+  Install the dependencies in the worktree's site folder with a command that writes nothing git tracks: `npm ci` when there is a `package-lock.json`, otherwise `npm install --no-package-lock`. A plain `npm install` can create or rewrite the lockfile, and `kiss-branch-merged` removes a worktree only when it is clean. **Wait for it to finish** before any later step: a worktree has no `node_modules`, the check and the record in step 6 need them, and a pre-commit hook that formats or lints usually runs from them too. If it fails, report it and stop. Every later step happens in the worktree. Tell the person its path, to open it in its own editor window, and that `kiss-branch-merged` removes it once the work has merged.
 
 ### 6. Make sure this branch has a baseline
 

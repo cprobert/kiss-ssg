@@ -8,8 +8,10 @@ import {
   FORBIDDEN_PACKED,
   changedFiles,
   forbiddenPackedFiles,
+  PRETTIER_BIN,
   formatGate,
   missingPackedFiles,
+  needsShell,
   parsePackedFiles,
   spawnResult,
 } from '../../scripts/gates.mjs'
@@ -274,6 +276,27 @@ describe('changedFiles', () => {
   })
 })
 
+// Round 10: on Windows `run` used a shell for every command, so a file name
+// with a space or an `&` in the format gate's list was split or run by
+// cmd.exe. Only npm's `.cmd` shims need a shell (Node cannot spawn one
+// without it); node itself, which the format gate now runs prettier with,
+// takes its arguments as they are.
+describe('needsShell', () => {
+  it('gives a shell to npm and npx on Windows only', () => {
+    expect(needsShell('npx', 'win32')).toBe(true)
+    expect(needsShell('npm', 'win32')).toBe(true)
+    expect(needsShell('npx', 'linux')).toBe(false)
+  })
+
+  it('never gives one to node, whose arguments are file names', () => {
+    expect(needsShell(process.execPath, 'win32')).toBe(false)
+  })
+
+  it('names a prettier bin that exists', () => {
+    expect(fs.existsSync(PRETTIER_BIN)).toBe(true)
+  })
+})
+
 describe('formatGate', () => {
   const spy = () => {
     const calls = []
@@ -295,9 +318,9 @@ describe('formatGate', () => {
     )
     expect(calls).toEqual([
       {
-        cmd: 'npx',
+        cmd: process.execPath,
         args: [
-          'prettier',
+          PRETTIER_BIN,
           '--check',
           '--ignore-unknown',
           'lib/kiss.js',
@@ -313,7 +336,10 @@ describe('formatGate', () => {
     const { calls, run } = spy()
     const result = formatGate('origin/v2', { files: [] }, run)
     expect(calls).toEqual([
-      { cmd: 'npx', args: ['prettier', '--check', '--ignore-unknown', '.'] },
+      {
+        cmd: process.execPath,
+        args: [PRETTIER_BIN, '--check', '--ignore-unknown', '.'],
+      },
     ])
     expect(result.ok).toBe(true)
     expect(result.note).toBe('whole repo (no diff against origin/v2)')
@@ -334,7 +360,10 @@ describe('formatGate', () => {
     )
     const result = formatGate('origin/v2', { files }, run)
     expect(calls).toEqual([
-      { cmd: 'npx', args: ['prettier', '--check', '--ignore-unknown', '.'] },
+      {
+        cmd: process.execPath,
+        args: [PRETTIER_BIN, '--check', '--ignore-unknown', '.'],
+      },
     ])
     expect(result.ok).toBe(true)
     expect(result.note).toBe(

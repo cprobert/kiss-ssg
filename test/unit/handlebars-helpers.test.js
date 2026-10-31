@@ -128,6 +128,35 @@ describe('isActive', () => {
     expect(out).toBe('About:active Contact: ')
   })
 
+  // Round 10: `current` became one of the helper's own keys, and a site on ^2
+  // whose nav item or hash already carried a `current` reads the helper's
+  // boolean instead, on a green build. It is shadowed as `active` always was,
+  // and the helper says so, once per build, naming the key to rename.
+  it('says once that its own {{current}} hides a site key of that name', () => {
+    const nav = [
+      { href: '/about', current: 'yes' },
+      { href: '/contact', current: 'no' },
+    ]
+    const out = render(
+      '{{#each nav}}{{#isActive ../page href=href}}{{current}} {{/isActive}}{{/each}}',
+      { page: { pageURL: 'about.html' }, nav },
+    )
+    expect(out).toBe('true false ')
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0].join(' ')).toContain(
+      'isActive: its own {{current}} hides a "current" key',
+    )
+  })
+
+  it('says the same of a current= in the hash', () => {
+    const out = render(
+      '{{#isActive page href="/about" current="mine"}}{{current}}{{/isActive}}',
+      { page: { pageURL: 'about.html' } },
+    )
+    expect(out).toBe('true')
+    expect(warnings).toHaveLength(1)
+  })
+
   it('lets the hash win over a same-named key in the surrounding context', () => {
     expect(
       render(

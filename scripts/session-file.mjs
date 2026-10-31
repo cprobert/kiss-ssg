@@ -19,6 +19,7 @@
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { branchRefs } from './base-branch.mjs'
 
 const SESSIONS = 'planning/sessions'
 
@@ -61,17 +62,15 @@ const resolves = (ref) => {
 
 // The branch's own commits: the local branch, or origin's copy when there is
 // no local one (a branch opened on another machine, or already deleted here).
-// Not base-branch.mjs's `branchRef`, which asks a different question: which
-// of the two refs HEAD started from. Here HEAD is beside the point, and the
-// local branch is the one the branch skills act on (its unmerged commits,
-// its deletion), so its session file is the one that describes it. The
-// frontmatter is written once, at open, so a local copy behind origin's
-// reads the same `branch:`, `base:` and `worktree:` (round 9, kept).
+// Which refs the name has is base-branch.mjs's `branchRefs`, shared. The
+// choice between them is not: base-branch.mjs reads the one HEAD started
+// from, but here HEAD is beside the point, and the local branch is the one
+// the branch skills act on (its unmerged commits, its deletion), so its
+// session file is the one that describes it. The frontmatter is written once,
+// at open, so a local copy behind origin's reads the same `branch:`, `base:`
+// and `worktree:` (rounds 9 and 10).
 export function branchCommits(branch, exists = resolves) {
-  if (exists(`refs/heads/${branch}`)) return `refs/heads/${branch}`
-  if (exists(`refs/remotes/origin/${branch}`))
-    return `refs/remotes/origin/${branch}`
-  return null
+  return branchRefs(branch, exists)[0]?.full ?? null
 }
 
 // Every blob in one git process, not one `git show` per session file: there
