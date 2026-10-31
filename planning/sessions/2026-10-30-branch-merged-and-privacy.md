@@ -1,7 +1,7 @@
 ---
 branch: feat/branch-merged-and-privacy
 base: main
-status: open
+status: closed
 opened: 2026-10-30
 ---
 
@@ -364,6 +364,22 @@ opened: 2026-10-30
   - `test-coverage-check` and `secrets-scan` now use `':(glob)lib/*.js'` and `':(exclude)lib/kiss.js'`. Measured in a scratch repository: the plain `'lib/*.js'` written in `9ff7c85` also listed `lib/sub/b.js` and `lib/kiss.js`, which the prose beside it said were excluded, while the glob form listed only `lib/a.js` and `scripts/c.mjs`.
   - **Decided for a later branch (the operator agreed):** the external-link check becomes an audit finding in `lib/audit.js`, from the `<a>` tags the link scan already extracts at write time. Until then the skill's single `grep` stands.
   - **The review, agreed:** one independent review inside `/branch-close`, scoped to `lib/`, `bin/`, `scripts/base-branch.mjs` and `test/unit/skill-code-blocks.test.js`; only wrong output or crashes count; no second round. Codex if it is installed there; otherwise `/code-review`, said plainly to be a same-family review.
+- **2026-10-31 — Decisions at `/branch-close`.**
+  - **`kiss-privacy-and-security` is deferred to its own branch (the operator's choice, on Claude's recommendation).** The skill was never written, and no earlier amendment dropped it. The research report is committed (`planning/specs/2026-10-30-privacy-and-security-research.md`), with about 15 security claims still unverified (resume run `wf_1fea7226-ca6`). The next branch starts by verifying them. Criteria 4, 5, 8 and the skill half of criterion 6 move with it.
+  - **Version 2.8.4, a patch, against Claude's proposal of 2.9.0 (minor).** The operator's reason: "Nothing is breaking". `CHANGELOG.md` says to update the engine and both plugins together, because the `kiss-memory` skills need the new commands.
+  - **Coverage gate:** `lib/git.js` had no unit test. `test/unit/git.test.js` was written and seen red against round 16's `rev-parse` defect (`a12e4c4`).
+  - **Eyeball:** no pulse-time eyeball happened on this branch. Asked once at the close, the operator answered "Not now": unanswered — proceeding on the ritual's defaults.
+  - **The review ran as one fresh same-family agent** (Codex is not installed in this cloud container), so it is one opinion from the author's model family, not independent confirmation. It found three wrong-output defects, all reproduced and all fixed on the operator's choice, each red then green (`baabf45`):
+    1. `kiss-ssg base <branch> --ref` measured from the checkout's HEAD, not the named branch.
+    2. The skill allow-list accepted `&` and `<(…)`.
+    3. A quoted or commented `<<WORD` switched off checking for the rest of a block.
+  - `a12e4c4..baabf45` (the fixes themselves) has had no review but the author's.
+  - **Recorded, not fixed (out of the agreed severity):**
+    - A `console` transcript fence is rejected loudly.
+    - Redirections pass the allow-list.
+    - `kiss-ssg session --list` outside a git repository fails, though listing needs no git.
+    - `kiss-site-review`'s `npx kiss-ssg check <site-script> --summary` hands `--summary` to the build script. This predates the branch.
+    - `frontmatter` reads prototype keys such as `constructor`.
 
 ## Pulse log
 
@@ -378,3 +394,103 @@ opened: 2026-10-30
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-31: the merged step, a sixth domain skill, and the mechanism moved out of skill prose
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped (2.8.4, 47 commits):**
+
+- `branch-merged` in both homes (`53a52fe`), and the privacy and security research report, about 15 claims unverified (`a43a667`, `e54968c`).
+- `kiss-information-architecture`, folded in from its own branch (`dacf9b7`, `60cf63e`).
+- 21 rounds of code-review fixes (`c734e69`…`c4c62c6`), then a root cause analysis of those rounds (`94357ae`).
+- The mechanism moved into the engine: `kiss-ssg session`, `base` and `check --subjects` (`930a178`), orphan pages in the link report (`feab8f7`), and every skill rewritten onto the commands, held there by an allow-list test (`9ff7c85`, `ab431aa`).
+- The close: `ba3df17`, `7bfc657`, `a12e4c4`, `baabf45`. `kiss-privacy-and-security` is deferred.
+
+## Reflect — what the session was
+
+It opened **planned**. The merged step mirrored a working skill from another repository, and the privacy skill was to be written from a research report first. The operator framed both well, and named "written from a report, not memory" from the evidence that `kiss-seo`, written from memory, drew the most review questions.
+
+It became **emergent**, and the emergent part fought the plan. Three things pulled it off course:
+
+- The research hit the organisation's spend limit twice.
+- The IA skill was folded in from a sibling branch.
+- The operator asked for a code review "until we get a clean slate", and that request turned into the session's main activity: 21 rounds.
+
+Each round found real defects, and nearly all of them were in shell written into skill prose. There were six copies of one `awk` frontmatter reader, ref guards confused by the `v2` tag, and paths that broke in a subfolder. Each fix added more shell for the next round to find. The plan never anticipated that, because the plan never said when the review would stop.
+
+The turn came when the operator stepped back and asked whether the domain skills themselves were the misstep. The root cause analysis (`94357ae`) gave a different answer. The mechanism lived in the wrong place: skills held shell, which no test ran. And the review loop had no stop condition. The remainder of the branch was the structural fix, approved as a scope amendment. That was good drift.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering was the strongest dimension, and it arrived late.** The three questions that changed the branch's direction were all the operator's:
+
+1. "Is there an underlying problem that we should be addressing rather than getting into finer and finer specificity?" reframed 21 rounds as a symptom.
+2. "Are you kicking the problem down the road or cleaning up as you go along?" got the honest answer, "kicking it down the road", and the choice "ship nothing half-done".
+3. "Have you gone too far in the opposite direction?" caught a real overcorrection. Four filters had been replaced by the agent reading a list by eye, and one of those rewrites shipped a wrong pathspec (`'lib/*.js'` also listed subfolders and `lib/kiss.js`) beside prose claiming it didn't.
+
+Each question produced something neither partner held alone. The operator saw the pattern; Claude measured it (inline logic in the `kiss-memory` skills: 4 lines on `main`, 27 on the branch; review findings by area: 25% dev scripts, 23% kiss-memory shell, 17% repo branch skills, 2% domain prose).
+
+**Problem framing was strong for the build and absent for the review.** "Until we get a clean slate" is not a stop condition: a reviewer asked for findings always returns some. Claude offered correctness-only rounds at round 11, but never asked what would end the loop. It never named the architecture either, until the operator asked at round 21. **The intended checkpoint was the review; the actual checkpoint was the operator's alarm**: "I can't believe this is still going. It's concerning." Claude's momentum carried 20 rounds past the moment a structural question should have been raised. That moment was around round 4, when the same `awk` was being fixed in its third copy.
+
+**Verification & ownership was strong on Claude's side and thin on the human's.**
+
+- Claude's side:
+  - Every regression test was seen red first, including the three close-review fixes.
+  - The changelog and skill claims were measured before shipping. `npm pkg get` with two keys prints nothing when one is missing (npm 10.9.4), `curl -f` saves no file on a 404, and the `:(glob)` pathspec was tested in a scratch repository.
+  - The coverage gate caught `lib/git.js` with no unit test.
+- The human's side:
+  - **No pulse-time eyeball happened on this branch**, and at the close the answer was "Not now".
+  - The success criterion "the operator reads the skill end to end" did not apply, since the skill was deferred, but no artefact on this branch was read by the operator.
+  - The one review was a fresh agent from Claude's own model family (Codex is not installed in the cloud container). It found three real wrong-output defects. It is still one opinion held twice, not independent confirmation.
+
+**Iteration discipline:** two pulses, both before the review loop. The 21 rounds were iteration, but in the code reviewer's terms rather than the brief's. No pulse re-asked "are we still building what we set out to build?" until the operator did, by hand.
+
+**Harness leverage was good.** The session used:
+
+- a deep-research workflow (stopped by the spend limit, not by misuse);
+- fresh sub-agents for review;
+- `AskUserQuestion` at each fork (the merge, the review policy, the scope, the bump, the reason, the eyeball, the findings).
+
+The miss was shared: no stop condition was written down before a multi-round workflow began.
+
+**Competency level: Active supervisor**, reaching toward Agentic engineering lead at the end. The operator:
+
+- framed the work;
+- challenged the loop;
+- asked the architectural question;
+- turned a repeated failure into a durable rule (`CLAUDE.md` § Rules) enforced by a test (`test/unit/skill-code-blocks.test.js`). That is the lead's move: improving the system after repeated failures.
+
+It does not reach the lead level, because verification of the artefacts themselves was left to Claude and a same-family reviewer throughout.
+
+## Feedback — recommendations for next session
+
+- **Both — write the stop condition before the first review round.** It needs the scope, the severity that counts, what happens to everything below it, and how many rounds. This is now a rule in `CLAUDE.md`. The concrete habit: the request "review until clean" gets an `AskUserQuestion` back, asking for those three things, before anything runs.
+- **Claude — when a fix repeats in a second copy, stop and name the class.** The same `awk` was patched in three skills by round 4. Fixing a defect in a second copy is the signal to ask "why does this logic live in prose?", not the cue to fix the third copy.
+- **Operator — the one look this branch most needs is `kiss-branch-merged` on its own merge.** When this PR merges, run `/branch-merged` and watch it work: it is the one new ritual on the branch, and nobody has run it end to end on a real merge. "Not now" at the close is a recorded, conscious deferral. `retired.md` records the look-at-one-artefact lesson recurring after two re-routes, and the operator's ruling to keep it where it is ("keep as is", 2026-10-26). So this is a named next step, not a change to the ritual.
+- **Process — pulse at least once after any multi-round review.** Re-read the success criteria against what the rounds actually changed. A pulse at round 5 would have shown that the branch had stopped building the privacy skill.
+- **Process — have a second reviewer from outside Claude's model family available in cloud sessions.** Codex needs per-user auth the container doesn't have. Until it is available there, a close that changed `lib/` says "same-family review only" in the PR. That is what this one does.
+- **Claude — a rewrite that removes a mechanism must replace it with a more exact command, not with the agent's reading.** Four filters became list comparisons by eye, and one shipped a wrong claim. Before deleting a pipeline, ask what single command (a git pathspec, a kiss-ssg option) gives the same answer.
+
+## Verdict — did we achieve the objective?
+
+The brief: complete the branch loop with a merged step in both homes, and add a privacy and security domain skill written from a cited research report.
+
+- [x] `.claude/skills/branch-merged/SKILL.md`. It confirms the merge with `gh`, checks that the PR head holds every local commit, uses `--ff-only`, removes only the named worktree, and never force-pushes. `branch-close` points at it.
+- [x] `plugins/kiss-memory/skills/kiss-branch-merged/SKILL.md`, with one change from the brief. It **checks** the merged site against the record rather than recording it, because the close is the only moment the baseline moves. The plugin README lists it, and the plugin tests pass.
+- [ ] The research report: committed, but about 15 security claims are unverified (run `wf_1fea7226-ca6`).
+- [ ] `kiss-privacy-and-security`: deferred to its own branch (the close's amendment).
+- [ ] One owner per privacy and security rule: deferred with the skill.
+- [~] `llms.txt` and the lists name the new domain skill. `kiss-information-architecture` is named (llms.txt is 15,964 of 16,000 characters); the privacy skill is deferred.
+- [~] Gates and review. `npm run gates` is green. One review ran, from the same model family, and found three wrong-output defects, all fixed; `a12e4c4..baabf45` has had no review but the author's.
+- [ ] The operator reads the skill end to end: no skill on this branch was read by the operator.
+- [ ] A pulse after each slice: two pulses, none after the review loop or the mechanism move.
+
+**Verdict: partially met, and the objective moved.** The merged step landed in both homes. The privacy skill did not land at all. In its place the branch shipped something structural the brief never asked for: the engine answers the memory skills' questions (`kiss-ssg session` and `base`, `links.orphans`, `check --subjects`). A rule and a test now keep mechanism out of skill prose: no shell block in any skill decides anything. Measured by the allow-list test, which failed on 32 lines across 9 skills before the rewrite. The move was good drift, chosen deliberately by the operator ("ship nothing half-done"). The 21 rounds before it were scope creep that a stop condition would have ended early.
+
+**Open:**
+
+- `kiss-privacy-and-security` (verify the 15 claims first).
+- The external-link check as an audit finding in `lib/audit.js`.
+- The five out-of-severity review notes in the close's amendment.
+- An operator's look at `kiss-branch-merged` on a real merge.
