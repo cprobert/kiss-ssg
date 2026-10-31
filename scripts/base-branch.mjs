@@ -13,6 +13,7 @@
 // out, pull it, or name `origin/<name>`):
 //   BASE_NAME=$(node scripts/base-branch.mjs --name)
 import { execFileSync } from 'node:child_process'
+import { branchRefs, refExists } from '../lib/git.js'
 import { isMain } from './is-main.mjs'
 
 // A base is a long-lived integration branch: main/master, or a major line (v2).
@@ -80,16 +81,10 @@ const remembered = (run) => {
 // branch, and this repository has tags `v1` and `v2` named like its
 // integration branches, so the ref is printed in full when a tag shares its
 // short name, and every later git command then reads the branch.
-// The refs a branch name has here, by full name, the local branch first: the
-// lookup every script shares (session-file.mjs too). Which of them a caller
-// reads is its own rule.
-export function branchRefs(name, exists) {
-  return [
-    { full: `refs/heads/${name}`, short: name },
-    { full: `refs/remotes/origin/${name}`, short: `origin/${name}` },
-  ].filter((ref) => exists(ref.full))
-}
-
+// The refs a branch name has (`branchRefs`) and whether one exists by its
+// exact name (`refExists`) are lib/git.js's, the rule `kiss-ssg base` and
+// `kiss-ssg session` use, so it lives once. Which ref a caller reads is its
+// own rule: this script the one HEAD started from.
 function branchRef(name, cwd, run = git) {
   const found = branchRefs(name, (full) => refExists(full, cwd, run))
   if (found.length === 0) return null
@@ -99,13 +94,6 @@ function branchRef(name, cwd, run = git) {
     ? found[1]
     : found[0]
 }
-
-// Whether a ref exists, by its exact name. Not `rev-parse`, which resolves a
-// revision: `refs/tags/v2~1` would read as the tag v2, and an override
-// rooted at a tag (`v2~1`) as a stale one (round 16). Shared with
-// session-file.mjs, so the rule lives once.
-export const refExists = (full, cwd = process.cwd(), run = git) =>
-  Boolean(run(['show-ref', '--verify', full], cwd))
 
 const isTag = (name, cwd, run) => refExists(`refs/tags/${name}`, cwd, run)
 

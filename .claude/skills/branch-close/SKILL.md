@@ -71,32 +71,30 @@ The sequence follows two principles: **cheapest and most critical checks run fir
 ### Step 1 — Confirm branch state
 
 ```bash
+node scripts/base-branch.mjs --name
+git branch --show-current
 BASE=$(node scripts/base-branch.mjs) || exit 1
-B=$(git branch --show-current); [ -n "$B" ] || echo "not on a branch (a detached HEAD)"
-[ -n "$B" ] && [ "$B" = "$(node scripts/base-branch.mjs --name)" ] && echo "on the base branch"
 git log "$BASE..HEAD" --oneline
 git status
 ```
 
 `scripts/base-branch.mjs` resolves the integration branch this work merges back into — `main`, or the major line currently in development (`v2` today). Every step below that says "the base" means whatever it printed.
 
-If it prints `not on a branch`: stop, and ask which branch is being closed. If it prints `on the base branch`: stop, tell the user. The comparison is between names, from `--name`: the plain script prints a ref, which is `refs/heads/v2` in this repository, where `v2` is a tag as well as a branch, and would never equal the branch name `git branch --show-current` prints. If there are uncommitted changes: tell the user and ask whether to commit first before continuing.
+The second prints the current branch: nothing means a detached HEAD, and the base's name means this checkout is on the base. The comparison is between names, from `--name`: the plain script prints a ref, which is `refs/heads/v2` in this repository, where `v2` is a tag as well as a branch, and would never equal a branch name. On a detached HEAD: stop, and ask which branch is being closed. On the base: stop, tell the user. If `--name` fails (an override naming a tag or a commit, so the base has no branch name), say so: the freshness check below is skipped, and Step 9 asks which branch the PR goes to. If there are uncommitted changes: tell the user and ask whether to commit first before continuing.
 
 Then check whether the branch is behind the base:
 
 ```bash
-BASE_NAME=$(node scripts/base-branch.mjs --name) &&
-{ git fetch origin 2>/dev/null || echo "could not reach origin"; } &&
-git rev-list --count "HEAD..refs/remotes/origin/$BASE_NAME"
+git fetch origin
+git rev-list --count "HEAD..refs/remotes/origin/<base name>"
 ```
 
-The count is against `origin/<base>`, not the local base: `git fetch` never moves a local branch, so a local base that was never pulled would count 0 while GitHub's base has moved on. The `&&` keeps a failed `--name` from running the count against an empty name.
+`<base name>` is what `--name` printed. The count is against `origin/<base>`, not the local base: `git fetch` never moves a local branch, so a local base that was never pulled would count 0 while GitHub's base has moved on.
 
-- If `--name` fails (an override naming a tag or a commit, so the base has no branch name): say so, skip the freshness check and continue; Step 9 asks which branch the PR goes to.
-- If the count fails because origin has no `$BASE_NAME` (a base that exists only locally): say "origin has no `$BASE_NAME` — skipping freshness check" and continue.
+- If the count fails because origin has no `<base name>` (a base that exists only locally): say "origin has no `<base name>` — skipping freshness check" and continue.
 - If `git fetch` fails (offline or no network): note "could not reach origin — skipping freshness check" and continue. Never block on this.
 - If the count is 0: silent pass.
-- If the count is > 0: warn — "This branch is N commit(s) behind `origin/$BASE_NAME`." Recommend merging (or rebasing onto) the base before continuing, so the rest of the ritual runs against an up-to-date base. This is the operator's call — never auto-merge.
+- If the count is > 0: warn — "This branch is N commit(s) behind `origin/<base name>`." Recommend merging (or rebasing onto) the base before continuing, so the rest of the ritual runs against an up-to-date base. This is the operator's call — never auto-merge.
 
 ### Step 2 — Secrets Scan
 
@@ -131,7 +129,7 @@ Read the branch's **Impact surface** from its intent artefact (captured at `/bra
 State the proposed bump type and the reason, then confirm with the operator before proceeding. **If the operator picks a different bump, stop and ask for their reason in one sentence**: it goes into the Amendment and shapes the `CHANGELOG.md` entry. If none is given, the Amendment says "no reason given", never a reason Claude inferred (2026-10-26: 2.8.2 was chosen over a proposed 2.9.0 and recorded without one). Then run:
 
 ```bash
-npm version patch|minor|major|prerelease --preid alpha --no-git-tag-version
+npm version <patch, minor, major, or prerelease --preid alpha> --no-git-tag-version
 ```
 
 `--no-git-tag-version` edits `package.json` and `package-lock.json` without creating a git tag — the PR merge is the version event, and publishing is a separate deliberate act. The tag comes with that act: `npm publish`'s `postpublish` hook runs `scripts/tag-release.mjs`, which tags the published commit `v<version>` and pushes the tag, so git can say which commit a version on npm (and a plugin install of that version) came from. Never tag by hand.
@@ -143,7 +141,7 @@ User-visible changes also get an entry in `CHANGELOG.md` at the repo root, writt
 ```bash
 git add package.json package-lock.json CHANGELOG.md \
   .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json
-git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
+git commit -m "chore: bump version to <the version npm version printed>"
 ```
 
 The bumped version is validated by the gates in Step 6 — the `pack` gate in particular, which proves `llms.txt` and `AIKB/` still ship in the tarball.
@@ -192,12 +190,14 @@ CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so gr
 **The default is to run it whenever the branch changed `lib/` or `bin/`**, and a close that skips it there says why in its report — "this session reviewed it" is not a reason, because an author reviewing its own diff has the author's blind spots. Four reflections asked for exactly this before it was the default (2026-09-06, 09-16, 09-21, 09-26), and on the two where one ran (09-21, 09-26) it found defects the gates and the session's self-check had passed. Otherwise skip it for docs-only or trivial branches, where a code review is a multi-minute round trip that finds nothing (the same judgment call as `/corpse-collector`). Skip it too — noting why in the close — if the Codex plugin isn't installed or authenticated in this environment: it needs per-user OpenAI auth that committed config can't supply, so not every operator will have it, and a missing reviewer must never block the ritual.
 
 ```bash
+ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs
 BASE=$(node scripts/base-branch.mjs) || exit 1
-node "$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs | tail -1)" \
-  review --wait --base "$BASE" --scope branch
+node <the companion of the newest version ls listed> review --wait --base "$BASE" --scope branch
 ```
 
-Call the companion script directly — **not** `Skill({ skill: "codex:codex-cli-runtime" })`. That skill declares itself for use only inside the `codex:codex-rescue` subagent and explicitly forbids `review` through that path (it is a `task`-only forwarder), so invoking it here loads a contract that refuses the request. The other slash command, `/codex:review`, has `disable-model-invocation` set and can only be triggered by the operator typing it. The companion script is therefore the one model-invocable route, and the glob keeps it working across plugin version bumps rather than pinning a path like `1.0.2/`.
+Read the version folders as versions, not as text: `1.0.10` is newer than `1.0.9`, though `ls` sorts it first.
+
+Call the companion script directly — **not** `Skill({ skill: "codex:codex-cli-runtime" })`. That skill declares itself for use only inside the `codex:codex-rescue` subagent and explicitly forbids `review` through that path (it is a `task`-only forwarder), so invoking it here loads a contract that refuses the request. The other slash command, `/codex:review`, has `disable-model-invocation` set and can only be triggered by the operator typing it. The companion script is therefore the one model-invocable route, and listing it keeps it working across plugin version bumps rather than pinning a path like `1.0.2/`.
 
 Pass `--wait` so the review runs **synchronously** and the close blocks until the findings are back. The async `--background` pattern is for fire-and-forget work — it doesn't fit a linear ritual where this step gates the next. The review is **read-only**: it reports, it never edits.
 
@@ -243,7 +243,7 @@ The PR body is the same in every case:
 1. **`gh` CLI present** (`command -v gh`) — the normal desktop path:
 
    ```bash
-   BASE_NAME=$(node scripts/base-branch.mjs --name) &&
+   BASE_NAME=$(node scripts/base-branch.mjs --name) || exit 1
    gh pr create --base "$BASE_NAME" --title "<concise title, under 70 chars>" --body-file - <<'EOF'
    <the body above>
    EOF
@@ -251,7 +251,7 @@ The PR body is the same in every case:
 
    The body goes in on stdin through `--body-file -`, as CLAUDE.md asks of every PR body: a quoted heredoc, never a double-quoted argument.
 
-   `--name` prints the base branch's own name, which `--base` needs. If it says the base is not a branch (an override naming a tag or a commit), the `&&` stops before `gh` runs: ask which branch the PR goes to.
+   `--name` prints the base branch's own name, which `--base` needs. If it says the base is not a branch (an override naming a tag or a commit), the block stops before `gh` runs: ask which branch the PR goes to.
 
 2. **No `gh`, but GitHub MCP tools are available** — the mobile / web harness case. Create the PR with the MCP `create_pull_request` tool, passing the same title and body, with this branch as head and the base branch as base. Do not try to shell out to `gh` first to "check" — its absence is the signal, and a failed command in the transcript is noise.
 
@@ -266,8 +266,10 @@ Then name the next step: once the pull request has merged, `/branch-merged` dele
 Then check whether the logs themselves are due a sweep — the close keeps one branch's memory honest, and nothing in it keeps the whole set honest:
 
 ```bash
-grep -rL --include='*.md' "^consolidated:" planning/sessions | wc -l
+node bin/kiss-ssg.js session --list
 ```
+
+Its last column is the date each log was consolidated, `-` for one never folded in.
 
 **Recommend `/memory-consolidate` when either trigger fires** — the same rule `/branch-open` reads back against:
 

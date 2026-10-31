@@ -28,16 +28,13 @@ Then proceed.
 **Which branch:** the current one, or the one the conversation names (the pull request `/branch-close` opened). If neither says, ask. Do not guess.
 
 ```bash
-B=<branch>
 git fetch origin
 git worktree list --porcelain
-C="refs/heads/$B"; git show-ref -q --verify "$C" || C="refs/remotes/origin/$B"
-if [ -f scripts/session-file.mjs ]; then node scripts/session-file.mjs "$B" --from-branch
-else T=$(mktemp -d) && for f in session-file base-branch is-main; do git show "$C:scripts/$f.mjs" > "$T/$f.mjs" || exit 1; done && node "$T/session-file.mjs" "$B" --from-branch; fi
-gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,baseRefName,mergedAt,url
+node bin/kiss-ssg.js session <branch> --from-branch
+gh pr list --head <branch> --state all --json number,state,isCrossRepository,headRefOid,baseRefName,mergedAt,url
 ```
 
-**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. It prints each match as `<ref>:<path>`, the ref it read: the local branch, or origin's copy when there is no local one, and never a tag that shares the name. Read the file with `git show '<the line it printed>'`, written in as it stands, because shell state does not carry between commands. The fetch does not prune: a branch deleted on merge keeps its `origin/` ref until step 4, so the lookup can still read it. A main checkout on a commit older than `scripts/session-file.mjs` does not have the script, so the block then runs the branch's own copy, with the two scripts it imports, from a scratch folder.
+**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. It prints each match as `<ref>:<path>`, the ref it read: the local branch, or origin's copy when there is no local one, and never a tag that shares the name. Read the file with `git show '<the line it printed>'`, written in as it stands, because shell state does not carry between commands. The fetch does not prune: a branch deleted on merge keeps its `origin/` ref until step 4, so the lookup can still read it. It is the `kiss-ssg session` a site's skills call. A main checkout older than the command answers `unknown command: session`: say so, and ask whether to pull the base first, rather than reading the session file some other way.
 
 - **One file:** that is this session's file.
 - **None:** the branch has no session file, so it made no worktree.
@@ -57,17 +54,16 @@ gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRef
 
 Before anything changes. A pull request that says `MERGED` only proves that what was pushed got merged. A commit made locally after the last push, or after the merge, is in no pull request, and `git branch -D` would delete it.
 
-- **No local branch** (`git rev-parse --verify --quiet refs/heads/<branch>` prints nothing: the branch was opened on another machine, or already deleted here): this machine has no commits of it to lose, so this step is done. Step 4 has no local branch to delete, only the prune.
+- **No local branch** (the line `session --from-branch` printed starts `refs/remotes/origin/`: the branch was opened on another machine, or already deleted here): this machine has no commits of it to lose, so this step is done. Step 4 has no local branch to delete, only the prune.
 
 Otherwise, fetch the merged pull request's head and check that it contains the local branch:
 
 ```bash
 git fetch origin "pull/<number>/head"
-git merge-base --is-ancestor refs/heads/<branch> FETCH_HEAD && echo "every local commit is in #<number>"
 git log --oneline FETCH_HEAD..refs/heads/<branch>
 ```
 
-- **It prints the line, and the log is empty:** the merge holds every local commit, and `<number>` is the pull request to report. With several `MERGED` pull requests, use the one that passes. If none does, stop.
+- **The log is empty:** every commit on the local branch is in the pull request's head, so the merge holds every local commit, and `<number>` is the pull request to report. With several `MERGED` pull requests, use the one that passes. If none does, stop.
 - **The log lists commits:** those commits were never merged. Stop and show them: they need a new branch and pull request, or the operator's word that they can go. Delete nothing.
 
 ### 3. Bring the base up to date
@@ -80,9 +76,20 @@ Look before you switch a checkout: another session may be using it.
 - **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work in progress. Then:
 
 ```bash
-git show-ref -q --verify refs/heads/<base> || git switch -c <base> --track refs/remotes/origin/<base>
+git branch --list <base>
+```
+
+It prints the base when there is a local branch of that name, and nothing when there is not. With one:
+
+```bash
 git switch <base>
 git pull --ff-only origin refs/heads/<base>
+```
+
+With none, create it from origin's copy instead:
+
+```bash
+git switch -c <base> --track refs/remotes/origin/<base>
 ```
 
 A tag may share the base's name (this repository has `v1` and `v2`), so the base is named in full where it could be read as one: with no local branch, `git switch <base>` refuses, because the name resolves to the tag, so the first line creates the branch from `refs/remotes/origin/<base>`; and `git pull --ff-only origin <base>` fetches the tag, says "Already up to date", and leaves the base behind, so the pull names `refs/heads/<base>`. Naming what it pulls also means a local base with no upstream set pulls too.

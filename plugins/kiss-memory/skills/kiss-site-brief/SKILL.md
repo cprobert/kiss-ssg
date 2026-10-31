@@ -47,7 +47,7 @@ No diff block at all means this site has never been recorded — that is step 4,
 
 **Read `AIKB/site.md` first when it exists.** It is the one source somebody sat down and curated: authored, evergreen, never written by a build, and periodically fed by `kiss-memory-consolidate` from the session logs. It answers "what is this and who for" better than anything generated can, and its Standing gotchas are the distilled version of what you would otherwise reconstruct from a dozen notes. Label it **recollection (curated)** and keep that distinction in the briefing — it is recollection, so it can be out of date, but unlike a session log it is meant to be true today, and a place where it contradicts the map is a real finding worth reporting.
 
-Read the sessions newest first (`find planning/sessions -type f -name '*.md' | awk -F/ '{ print $NF "\t" $0 }' | sort -r | cut -f2 | head -3`, by the date each log's name starts with) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
+Read the three newest sessions (`npx kiss-ssg session --list` lists every log newest first, by the date its name starts with) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
 
 ### 4. Say plainly when a source is absent
 

@@ -19,29 +19,18 @@ Shell state does not carry from one command to the next, so step 1 prints the ba
 **Which branch:** the current one, or the one the conversation names. If neither says, ask. Do not guess.
 
 ```bash
-BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
-[ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
-echo "base: ${BASE:-unknown}"
+npx kiss-ssg session --help
 git fetch origin
 git worktree list --porcelain
-B=<branch>
-C="refs/heads/$B"
-git show-ref -q --verify "$C" || C="refs/remotes/origin/$B"
-git show-ref -q --verify "$C" || echo "there is no branch $B here or on origin"
-git -c core.quotePath=false ls-tree -r --full-name --name-only "$C" -- planning/sessions 2>/dev/null | while read -r f; do
-  if [ "$(git show "$C:$f" | awk -v k=branch '{ sub(/\r$/, "") } NR == 1 { sub(/^\357\273\277/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } index($0, k ":") == 1 && !found { v = substr($0, length(k) + 2); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }')" = "$B" ]; then echo "$C:$f"; fi
-done
+npx kiss-ssg session <branch> --from-branch
+npx kiss-ssg base <branch> --from-branch
+npx kiss-ssg session <branch> --from-branch --get worktree
 ```
 
-- **The base is the one the work merged into.** With `gh`, that is the merged pull request's `baseRefName` (below), which wins over everything else, because a pull request can be retargeted after it was opened. Without `gh`, it is the one the session file names: `kiss-branch-open` writes the branch the work merges into on its `base:` line, and that is the base for every step below: work aimed at `release` merged into `release`, whatever the remote's default is. Read it from the line the loop printed, which is the file as `<ref>:<path>`, the ref the loop read it from. Shell state does not carry between commands, so write the line in, rather than `$C`:
+The first command prints its usage when the site's kiss-ssg has these commands. If it says `unknown command: session`, the site's kiss-ssg is older than this skill: stop, and upgrade it first (`kiss-site-migrate`).
 
-  ```bash
-  git show '<the line the loop printed>' | awk -v k=base '{ sub(/\r$/, "") } NR == 1 { sub(/^\357\273\277/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } index($0, k ":") == 1 && !found { v = substr($0, length(k) + 2); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }'
-  ```
-
-  It is the same `awk` the loop reads `branch:` with, given another key: the frontmatter only, so a `base:` line in the body is not the base, and a quoted value or a trailing `# comment` reads as the plain name. Only with no session file, or no `base:` line, use what the first lines printed: the local record of the remote's default branch, or the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base then means neither answered: ask which branch the work merges into. Never assume `main`.
-
-- **The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and what an editor or a YAML habit adds still matches (Windows line endings, a byte-order mark, a quoted value, a trailing `# comment`); the `awk` is the one `kiss-branch-close` and `kiss-branch-pulse` carry. It reads the branch by its full ref name, because a tag may share the short one, and from origin's copy when there is no local branch (one opened on another machine). It prints each match as `<ref>:<path>`, which `git show` reads as it stands; `--full-name` makes the path start at the repository's root, and `core.quotePath=false` keeps git from quoting a name with an accent in it, which `git show` could not read, so the lookup also works for a site that lives in a subfolder of its repository. One file is this session's. None means the branch has no session file and made no worktree. **No branch here or on origin** (the lookup says so): the branch was opened on another machine and its remote branch was deleted on merge. This machine then has no worktree of it to remove and no commits of it to lose, so step 2 is done; carry on from step 3, with the base the remote's default gave, and say in the report that the session file could not be read. The fetch does not prune, so a branch deleted on merge keeps its `origin/` ref until step 5, and the lookup can still read it. More than one means the name was used before: stop and ask which is this session's, because a `worktree:` line read from the wrong file would remove another session's worktree.
+- **The session file is read from the branch, not from this folder.** `--from-branch` reads the logs in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It reads the local branch, or origin's copy when there is no local one (a branch opened on another machine), and prints each match as `<ref>:<path>`, which `git show` reads as it stands. One line is this session's file. None means the branch has no session file and made no worktree. More than one means the name was used before: stop and ask which is this session's, because a `worktree:` line read from the wrong file would remove another session's worktree; `--get` refuses for the same reason. **There is no branch here or on origin** (it exits 1 and says so): the branch was opened on another machine and its remote branch was deleted on merge. This machine then has no worktree of it to remove and no commits of it to lose, so step 2 is done; carry on from step 3, with the remote's default branch as the base, and say in the report that the session file could not be read. The fetch does not prune, so a branch deleted on merge keeps its `origin/` copy until step 5, and the lookup can still read it.
+- **The base is the one the work merged into.** With `gh`, that is the merged pull request's `baseRefName` (below), which wins over everything else, because a pull request can be retargeted after it was opened. Without `gh`, it is what `kiss-ssg base` printed: the `base:` line `kiss-branch-open` wrote in the session file, so work aimed at `release` merged into `release`, whatever the remote's default is, and only with no session file, or no `base:` line, the remote's default branch. Its stderr says which. When it exits 1, nothing answered: ask which branch the work merged into. Never assume `main`.
 - **The worktree this session made** is the path in the session file's `worktree:` line, and only that one is this skill's to remove. A file without the line made no worktree. If `git worktree list --porcelain` shows another worktree with the branch checked out (`branch refs/heads/<branch>`), stop and ask: someone may be working in it, and `git branch -D` refuses a branch a worktree has checked out anyway.
 
 **Confirm the merge before deleting anything.** A squash merge, the usual choice on GitHub, puts one new commit on the base and none of the branch's own, so git alone cannot tell a squashed branch from an unmerged one; `git branch -D` would delete either.
@@ -54,16 +43,15 @@ done
 
 Before anything changes. A merged pull request only proves that what was pushed got merged. A commit made locally after the last push, or after the merge, is in no pull request, and `git branch -D` would delete it.
 
-- **No local branch** (`git rev-parse --verify --quiet refs/heads/<branch>` prints nothing: the branch was opened on another machine, or already deleted here): this machine has no commits of it to lose, so this step is done. Step 5 has no local branch to delete, only the prune.
+- **No local branch** (the line `session --from-branch` printed starts `refs/remotes/origin/`: the branch was opened on another machine, or already deleted here): this machine has no commits of it to lose, so this step is done. Step 5 has no local branch to delete, only the prune.
 - **On GitHub,** fetch the merged pull request's head and check that it contains the local branch:
 
   ```bash
   git fetch origin "pull/<number>/head"
-  git merge-base --is-ancestor refs/heads/<branch> FETCH_HEAD && echo "every local commit is in #<number>"
-  git log --oneline FETCH_HEAD..refs/heads/<branch>
+    git log --oneline FETCH_HEAD..refs/heads/<branch>
   ```
 
-  With several `MERGED` pull requests, use the one that passes. If none does, stop. **Any commit the log lists** was never merged: stop and show it. It needs a new branch and pull request, or the person's word that it can go. Delete nothing.
+  An empty log means every commit on the local branch is in the pull request's head. With several `MERGED` pull requests, use the one whose log is empty. If none is, stop. **Any commit the log lists** was never merged: stop and show it. It needs a new branch and pull request, or the person's word that it can go. Delete nothing.
 
 - **Where the person confirmed the merge, and the branch is still on the remote:** what was merged is what was pushed, so the commits never pushed are the ones at risk.
 
@@ -89,12 +77,23 @@ Look before you switch a checkout: another session may be using it.
 - **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work. Then:
 
   ```bash
-  git show-ref -q --verify refs/heads/<base> || git switch -c <base> --track refs/remotes/origin/<base>
+  git branch --list <base>
+  ```
+
+  It prints the base when there is a local branch of that name, and nothing when there is not. With one:
+
+  ```bash
   git switch <base>
   git pull --ff-only origin refs/heads/<base>
   ```
 
-  A tag may share the base's name (this repository has `v1` and `v2`), so the base is named in full where it could be read as one: with no local branch, `git switch <base>` refuses, because the name resolves to the tag, so the first line creates the branch from `refs/remotes/origin/<base>`; and `git pull --ff-only origin <base>` fetches the tag, says "Already up to date", and leaves the base behind, so the pull names `refs/heads/<base>`. Naming what it pulls also means a local base with no upstream set pulls too.
+  With none, create it from origin's copy instead of the switch:
+
+  ```bash
+  git switch -c <base> --track refs/remotes/origin/<base>
+  ```
+
+  A tag may share the base's name (a repository with `v1` and `v2` tags), so the base is named in full where it could be read as one: with no local branch, `git switch <base>` refuses, because the name resolves to the tag, so the branch is created from `refs/remotes/origin/<base>`; and `git pull --ff-only origin <base>` fetches the tag, says "Already up to date", and leaves the base behind, so the pull names `refs/heads/<base>`. Naming what it pulls also means a local base with no upstream set pulls too.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 
@@ -114,13 +113,16 @@ If the pull fails, read what it says before deciding why. "Not possible to fast-
 - **No checkout is on the merged base** (no worktree, and a main checkout left on another branch): skip the check, and say why in the report. A check run anywhere else describes that other branch, not the merge.
 
 ```bash
-if [ -L node_modules/kiss-ssg ]; then echo "kiss-ssg is linked to $(readlink node_modules/kiss-ssg): not installing"
-elif [ -f package-lock.json ]; then npm ci
-else npm install --no-package-lock; fi &&
+ls -l node_modules/kiss-ssg package-lock.json
+```
+
+Then install, unless `node_modules/kiss-ssg` is a link (`ls` shows it with `->` and its target): `npm ci` when there is a `package-lock.json`, and `npm install --no-package-lock` when there is not. Then:
+
+```bash
 npx kiss-ssg check --summary <build-script>
 ```
 
-Run it from that checkout. The install comes first because the merge may have changed the dependencies, kiss-ssg among them, and a check run on the old `node_modules` describes the old engine, not the merged base. `npm ci` installs exactly what the lockfile says and never rewrites it, and with no lockfile `--no-package-lock` keeps `npm install` from writing one, so the checkout stays clean for step 5; if the install fails, report that and skip the check. A `node_modules/kiss-ssg` that is a link to a working tree (`npm link`) is the engine the person chose, and `npm ci` would delete it for the registry's copy, so nothing is installed: the check runs the linked engine, and the report says so, with the link's target. `--summary` goes before the script. Find the build script the way `kiss-site-brief` does (`package.json` scripts).
+Run them from that checkout. The install comes first because the merge may have changed the dependencies, kiss-ssg among them, and a check run on the old `node_modules` describes the old engine, not the merged base. `npm ci` installs exactly what the lockfile says and never rewrites it, and with no lockfile `--no-package-lock` keeps `npm install` from writing one, so the checkout stays clean for step 5; if the install fails, report that and skip the check. A `node_modules/kiss-ssg` that is a link to a working tree (`npm link`) is the engine the person chose, and `npm ci` would delete it for the registry's copy, so nothing is installed: the check runs the linked engine, and the report says so, with the link's target. `--summary` goes before the script. Find the build script the way `kiss-site-brief` does (`package.json` scripts).
 
 - **`ok`, and no diff against the record:** the base is exactly what the close verified.
 - **A diff:** something else reached the base too — another branch merged after this one was recorded, or a merge conflict was resolved by hand. Do not record here, and do not commit to the base: report the diff, and say that the next `kiss-branch-open` will treat it as inherited drift and the next `kiss-branch-close` will record over it.

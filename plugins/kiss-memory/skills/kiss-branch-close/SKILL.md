@@ -17,36 +17,26 @@ Run this only when the human asks to close. Never on your own initiative, and ne
 ### 1. Find the intent and the base
 
 ```bash
-BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
-[ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
-echo "base: ${BASE:-unknown}"
+npx kiss-ssg session --help
 git fetch -q origin
-for r in "refs/heads/$BASE" "refs/remotes/origin/$BASE"; do
-  git rev-parse -q --verify "$r^{commit}" >/dev/null && echo "$(git rev-list --count "$r..HEAD") $r"
-done | awk 'NR == 1 || $1 < best { best = $1; ref = $2 } END { print ref }'
+npx kiss-ssg base
+npx kiss-ssg base --ref
+npx kiss-ssg session
 git branch --show-current
 git status --short
 ```
 
-The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. That is only the default: the session file found below names the base on its `base:` line, and when that names a different branch (work aimed at `release` rather than the default), it is the base. Run this block again with that name in place of `$BASE` before going on. An `unknown` base means neither answered: ask which branch this work merges into, rather than assume `main`, and run the block again with that name in place of `$BASE`.
+The first command prints its usage when the site's kiss-ssg has these commands. If it says `unknown command: session`, the site's kiss-ssg is older than this skill: stop, and upgrade it first (`kiss-site-migrate`).
 
-**The ref to diff against** is the one the loop prints: of the local base and `origin/<base>`, the one with the fewest commits between it and `HEAD`, which is the one this branch started from. `kiss-branch-open` starts a worktree from `origin/<base>` when the local base has nothing of its own, so a local base that is behind would put other people's commits in this branch's diff, and in a clone with no local base it would not resolve at all. Shell state does not carry from one command to the next, so later steps write the ref this printed where they say `<base-ref>`. List the branch's commits with it:
+`kiss-ssg base` prints the branch this work merges into: the `base:` line of this branch's session log, or else the remote's default branch, and on stderr where it came from. It never assumes `main`: with no answer it exits 1 and says so, and then ask which branch this work merges into. `base --ref` prints the ref to diff against, in full: of the local base and origin's, the one this branch started from, so a stale local base never puts other people's commits in this branch's diff. Shell state does not carry from one command to the next, so later steps write the ref it printed where they say `<base-ref>`.
+
+`kiss-ssg session` prints this branch's session log. More than one means the branch name was used before: ask which is this branch's. None means the branch was not opened with `kiss-branch-open`: reconstruct the intent from the work, and say in the reflection that it is self-reported, not captured. On a detached HEAD it exits 1 and says so. Read the log's **Intent**, **Amendments** and **Pulse log**.
+
+Stop if the current branch is the base, or if there are no commits to close:
 
 ```bash
 git log --oneline <base-ref>..HEAD
 ```
-
-Stop if you are on the base branch, or if there are no commits to close. Find the session file and read its **Intent**, **Amendments** and **Pulse log**:
-
-```bash
-B=$(git branch --show-current)
-[ -n "$B" ] || echo "not on a branch (a detached HEAD): there is no session to find"
-[ -n "$B" ] && find planning/sessions -type f -name '*.md' 2>/dev/null | sort | while read -r f; do
-  if [ "$(awk -v k=branch '{ sub(/\r$/, "") } NR == 1 { sub(/^\357\273\277/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } index($0, k ":") == 1 && !found { v = substr($0, length(k) + 2); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }' "$f")" = "$B" ]; then echo "$f"; fi
-done
-```
-
-The loop compares the `branch:` value in each session file's frontmatter, and nowhere else, with the branch name exactly: a dot in the name is only a dot, and what an editor or a YAML habit adds still matches (Windows line endings, a byte-order mark, a quoted value, a trailing `# comment`). `kiss-branch-close`, `kiss-branch-pulse` and `kiss-branch-merged` carry the same `awk`, and a test in kiss-ssg fails if they stop being one text. If it prints more than one file, the branch name was used before: ask which is this branch's. No session file: reconstruct the intent from the work and say in the reflection that it is self-reported, not captured.
 
 Commit or stash anything outstanding before verifying — the check runs the working tree, so uncommitted work would be verified and then not shipped.
 
@@ -84,14 +74,13 @@ The map is generated for you at step 4; the judgement in it never is. Two checks
 
 All four must be empty before step 4 records. Recording a build whose notes are stale or dangling bakes the rot into the baseline the next branch reads.
 
-**Stamp every note you write or update.** The stamp is the one frontmatter line `subject-hash: <sha1>`. Take the hash from the **check's report**, not from the map on disk: `AIKB/site-map.json` is the last record's and holds the old hash for any subject this branch changed, while every check reports the current hashes under `aikb.subjects` — entries of `{ kind, id, note, hash }`; take the `hash` of the entry whose `note` is this note's path:
+**Stamp every note you write or update.** The stamp is the one frontmatter line `subject-hash: <sha1>`. Take the hash from the **check's report**, not from the map on disk: `AIKB/site-map.json` is the last record's and holds the old hash for any subject this branch changed, while every check reports the current hashes under `aikb.subjects` — entries of `{ kind, id, note, hash }`; take the `hash` on the line whose last column is this note's path:
 
 ```bash
-npx kiss-ssg check <build-script> 2>/dev/null \
-  | node -e "const j = JSON.parse(require('fs').readFileSync(0,'utf8')); for (const r of j.reports ?? j) for (const s of r.aikb?.subjects ?? []) console.log(s.hash, s.kind, s.id, s.note)"
+npx kiss-ssg check --subjects <build-script>
 ```
 
-(The JSON is `{ reports, diff }` when the site has a baseline and a bare array when it has not.) The stamp goes at the very top of the note:
+It prints one line per subject, `<hash> <kind> <id> <note>`. The stamp goes at the very top of the note:
 
 ```markdown
 ---
@@ -173,8 +162,10 @@ git commit -m "Close: reflection + status"
 The close keeps one branch's memory honest. Nothing in it keeps the **whole** base honest, and two measurable symptoms say it has stopped being:
 
 ```bash
-grep -rL --include='*.md' "^consolidated:" planning/sessions | wc -l   # sessions never folded in
+npx kiss-ssg session --list
 ```
+
+Its last column is the date each log was consolidated, `-` for one never folded in.
 
 - **A Feedback item has recurred in three or more sessions.** Compare the Feedback you just wrote against every earlier session's — not only the three `kiss-branch-open` reads back. An item on its third outing is not a lesson anybody is going to learn by being told again; it needs promoting to a rule in `AIKB/site.md`.
 - **Five or more sessions lack `consolidated:`.** The logs have outrun the read-back, so everything older than the last three is effectively write-only.

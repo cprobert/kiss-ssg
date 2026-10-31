@@ -2,8 +2,8 @@
 // node was started with. The guard compared `import.meta.filename`, which
 // node resolves through symlinks, with `process.argv[1]`, which it does not,
 // so a script started through a symlinked path did nothing and exited 0
-// (code review, round 13). For session-file.mjs an empty answer means "no
-// session file", and a skill would act on it.
+// (code review, round 13). For a script whose empty answer means "nothing
+// found", a skill would act on it.
 import { describe, it, expect, afterAll } from 'vitest'
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'

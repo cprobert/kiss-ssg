@@ -5,8 +5,9 @@
 // `import.meta.filename` is resolved through symlinks and `process.argv[1]`
 // is not, so comparing the two as they are said "not main" for a script
 // started through a symlinked path: it did nothing and exited 0, which a
-// caller of session-file.mjs reads as "no session file" (code review, round
-// 13). Both sides are compared as real paths.
+// caller that reads empty output as an answer ("no session file", then)
+// would act on (code review, round 13). Both sides are compared as real
+// paths.
 //
 //   if (isMain(import.meta.filename)) main()
 import fs from 'node:fs'

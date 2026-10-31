@@ -26,6 +26,7 @@
 - **Where the name came from is printed on stderr**, and stdout carries the bare answer, so a skill can read either.
 - **`--ref` picks the ref this work started from.** `git fetch` never moves a local branch, so a stale local base would put everyone else's newer commits in the diff, while a local base with unpushed commits is the one the work came from.
 - **`--start` starts from origin's base** unless only the local one exists or it has commits origin lacks; when the two have diverged it exits 1, because which to start from is the person's call.
+- **`--base <name>` skips the lookup.** `kiss-branch-open` creates a worktree before it writes the session log, so at that moment no log can name the base the person chose; without the option, `--start` would answer for the remote's default instead. It does not combine with `--from-branch`, which only says where to look the base up.
 - **Every ref is printed in full**, so a tag of the same name (`v2`) is never read in its place. With the short name, `git pull origin v2` fetched the tag and said "Already up to date" while the base stayed behind (measured, 2026-10-31).
 
 ## Types

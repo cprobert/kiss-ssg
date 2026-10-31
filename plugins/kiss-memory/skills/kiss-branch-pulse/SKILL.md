@@ -15,15 +15,13 @@ The Steer beat between `kiss-branch-open` and `kiss-branch-close`. Work drifts i
 ### 1. Find the intent
 
 ```bash
-B=$(git branch --show-current)
-echo "branch: $B"
-[ -n "$B" ] || echo "not on a branch (a detached HEAD): there is no session to find"
-[ -n "$B" ] && find planning/sessions -type f -name '*.md' 2>/dev/null | sort | while read -r f; do
-  if [ "$(awk -v k=branch '{ sub(/\r$/, "") } NR == 1 { sub(/^\357\273\277/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } index($0, k ":") == 1 && !found { v = substr($0, length(k) + 2); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }' "$f")" = "$B" ]; then echo "$f"; fi
-done
+npx kiss-ssg session --help
+npx kiss-ssg session
 ```
 
-The loop compares the `branch:` value in each session file's frontmatter, and nowhere else, with the branch name exactly: a dot in the name is only a dot, and what an editor or a YAML habit adds still matches (Windows line endings, a byte-order mark, a quoted value, a trailing `# comment`). `kiss-branch-close`, `kiss-branch-pulse` and `kiss-branch-merged` carry the same `awk`, and a test in kiss-ssg fails if they stop being one text. If it prints more than one file, the branch name was used before: ask which is this branch's.
+The first command prints its usage when the site's kiss-ssg has these commands. If it says `unknown command: session`, the site's kiss-ssg is older than this skill: stop, and upgrade it first (`kiss-site-migrate`).
+
+`kiss-ssg session` prints this branch's session log: the file whose frontmatter `branch:` is exactly the branch's name. On a detached HEAD it exits 1 and says so: there is no session to find. If it prints more than one file, the branch name was used before: ask which is this branch's.
 
 Read that file's **Success criteria**, **Non-goals** and **Impact surface**. They are the baseline: read them, never rewrite them.
 

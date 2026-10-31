@@ -45,18 +45,16 @@ Before the interview, pick **one of the quotes below at random** (vary it each t
 ### Step 1 — Confirm starting state
 
 ```bash
-BASE_NAME=$(node scripts/base-branch.mjs --name) || exit 1
-echo "base: $BASE_NAME"
-B=$(git branch --show-current); [ -n "$B" ] || echo "not on a branch (a detached HEAD)"
-[ -n "$B" ] && [ "$B" = "$BASE_NAME" ] && echo "on the base branch"
+node scripts/base-branch.mjs --name
+git branch --show-current
 git status
 ```
 
-`scripts/base-branch.mjs` resolves the integration branch — `main`, or the major line currently in development (`v2` today) — and `--name` prints its name. Every step below that says "the base" means the name it printed on the `base:` line, which is also what the session file's `base:` holds: a name, never the ref the plain script prints, which is `refs/heads/v2` here, where `v2` is a tag as well, or `origin/main` in a clone with no local `main`. If it stops saying the base is not a branch, ask which branch the work merges into. Override it with `git config kiss.baseBranch <name>` if it guesses wrong.
+`scripts/base-branch.mjs` resolves the integration branch — `main`, or the major line currently in development (`v2` today) — and `--name` prints its name. The second prints the current branch: nothing means a detached HEAD, and the base's name means this checkout is on the base. The comparison is between names, from `--name`: the plain script prints a ref, which is `refs/heads/v2` in this repository, where `v2` is a tag as well as a branch, and would never equal a branch name. Every step below that says "the base" means the name `--name` printed, which is also what the session file's `base:` holds: a name, never the ref the plain script prints, which is `refs/heads/v2` here, where `v2` is a tag as well, or `origin/main` in a clone with no local `main`. If it stops saying the base is not a branch, ask which branch the work merges into. Override it with `git config kiss.baseBranch <name>` if it guesses wrong.
 
 Two starting cases:
 
-- **On the base branch** (it printed `on the base branch`) — the normal case. You'll create a new branch in Step 4.
+- **On the base branch** — the normal case. You'll create a new branch in Step 4.
 - **Already on a feature branch** — the harness (mobile / web) often auto-creates one before you ever reach `/branch-open`. Do **not** branch off it (no branch-of-a-branch). Instead **adopt the current branch in place**: capture intent onto it and skip Step 4's creation. Confirm first ("You're already on `<branch>` — I'll capture intent onto this branch rather than create a new one"). Adopt it only when it is this work's: the harness made it for this session, or the operator says so. A branch with work or an intent file of its own, or one nobody here can account for, is another session's, and the checkout is busy (below), which means a worktree. If you cannot tell which it is, ask before writing anything.
 
 If there are uncommitted changes: surface them and ask whether to stash/commit first.
@@ -77,17 +75,12 @@ When unsure, ask one question: "quick chore, or something worth speccing?"
 ### Step 2a — Read back the Feedback, and count how often it has come back
 
 ```bash
-find planning/sessions -type f -name '*.md' | awk -F/ '{ print $NF "\t" $0 }' | sort -r | cut -f2 | head -3
+node bin/kiss-ssg.js session --list
 ```
 
-Read each one's `## Feedback` section — the recommendations the last three branches left for next time. Anything that appears in **two or more** of them is a lesson that has not stuck, and this branch inherits it: surface those items to the user before the interview and keep them visible through it, so the criteria can be written to hold them. A reflection nobody reads at the next open is a diary, not institutional memory.
+It lists every log, newest first by the date its name starts with, one per row: its path, `branch`, `status`, and the date it was `consolidated` (`-` for one never folded in). Read the first three rows' `## Feedback` sections — the recommendations the last three branches left for next time. Anything that appears in **two or more** of them is a lesson that has not stuck, and this branch inherits it: surface those items to the user before the interview and keep them visible through it, so the criteria can be written to hold them. A reflection nobody reads at the next open is a diary, not institutional memory.
 
-The three-log read-back is the briefing. The **count** is the diagnosis, and it needs the whole history:
-
-```bash
-find planning/sessions -type f -name '*.md' | wc -l                 # logs in total
-grep -rL --include='*.md' "^consolidated:" planning/sessions   # the ones never folded in
-```
+The three-log read-back is the briefing. The **count** is the diagnosis, and it needs the whole history: every row of the listing, and the rows whose last column is `-`, the ones never folded in.
 
 Skim **every** log's Feedback, not the last three, and tally which lessons recur — then say that you did. Three is too narrow a window to see the pattern: "look at one built page yourself" recurred across four logs in five days in this repo (2026-09-05, 09-06, 09-08, 09-09) and a window of three would have shown it as an ordinary one-off at any point along the way.
 
@@ -100,13 +93,7 @@ Skim **every** log's Feedback, not the last three, and tally which lessons recur
 
 It is a recommendation, not a gate: the user may open the branch anyway. **Do not run `/memory-consolidate` from here** — it is a separate beat, and its `CLAUDE.md` and skill edits do not belong in this branch's first diff.
 
-**Also list possibly abandoned work.** A log still `status: open` on a branch that is not the one you are about to work on is a piece of work somebody walked away from:
-
-```bash
-grep -rlE --include='*.md' "^status: open[[:space:]]*$" planning/sessions | xargs grep -H "^branch:"
-```
-
-Name each one with its branch and its opened date and ask the user what it is — finished but never closed, still genuinely in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one names the branch you are adopting in Step 4, that is not abandoned work — that is this piece of work.
+**Also list possibly abandoned work.** A row whose `status` is `open`, on a branch that is not the one you are about to work on, is a piece of work somebody walked away from. Name each one with its branch and its opened date and ask the user what it is — finished but never closed, still genuinely in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one names the branch you are adopting in Step 4, that is not abandoned work — that is this piece of work.
 
 ### Step 3 — Interview for intent
 
@@ -142,24 +129,22 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
 - **Worktree** (asked for, or the checkout is busy). First choose its start point: a worktree does not move the main checkout's branch, so the local base can be out of date, or ahead of `origin`.
 
   ```bash
-  echo "this checkout is on: $(git branch --show-current)"
-  BASE_NAME=$(node scripts/base-branch.mjs --name) || exit 1
-  git fetch origin
-  echo "base: $BASE_NAME"
-  git rev-parse --verify --quiet "refs/heads/$BASE_NAME" >/dev/null && echo "local: yes" || echo "local: no"
-  git rev-parse --verify --quiet "refs/remotes/origin/$BASE_NAME" >/dev/null && echo "origin: yes" || echo "origin: no"
-  git rev-list --left-right --count "refs/heads/$BASE_NAME...refs/remotes/origin/$BASE_NAME" 2>/dev/null
+  git branch --show-current
+  node scripts/base-branch.mjs --name
   ```
 
-  Shell state does not carry from one Bash call to the next, so this block sets the base itself. `base-branch.mjs` works the base out from this checkout's HEAD, which is right when the checkout is on the base. **If it is on another branch** (the usual reason for a worktree), the base printed is that branch's base, a guess from someone else's work: confirm it with AskUserQuestion, the printed base first, and for another answer run the block again with `KISS_BASE_BRANCH=<answer>` before `node`. `--name` prints the base branch's own name (`main`), not a ref, so `origin/<name>` below is a real ref even in a clone with no local base. If it prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to start from. The two numbers are the commits only on the local base, then those only on `origin`:
-  - `local: no` (a fresh or cloud clone): start from `refs/remotes/origin/<name>`.
-  - `origin: no` (an unpushed base): start from the local base, `refs/heads/<name>`.
-  - Both, and the first number is 0: start from `refs/remotes/origin/<name>`, the same as the local base or newer.
-  - Both, and the first number is more than 0: the local base has commits `origin` lacks; start from `refs/heads/<name>` so they are kept. If the second number is also more than 0, the two have diverged: stop and ask.
+  `base-branch.mjs` works the base out from this checkout's HEAD, which is right when the checkout is on the base. **If it is on another branch** (the usual reason for a worktree), the base printed is that branch's base, a guess from someone else's work: confirm it with AskUserQuestion, the printed base first. If `--name` says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to start from. Then, with the base's name written in:
 
   ```bash
-  TOP=$(git rev-parse --show-toplevel)
-  git worktree add --no-track -b <branch-name> "$TOP/../kiss-ssg-<slug>" <start point>
+  git fetch origin
+  node bin/kiss-ssg.js base --base <name> --start
+  git rev-parse --show-toplevel
+  ```
+
+  `base --start` prints the ref to start from, in full: `refs/remotes/origin/<name>`, unless the local base has commits `origin` lacks (they are kept) or only the local one exists. When the two have diverged it exits 1 and says so: stop and ask. The last command prints the repository's root, and the worktree goes beside it:
+
+  ```bash
+  git worktree add --no-track -b <branch-name> <the root>/../kiss-ssg-<slug> <the ref --start printed>
   git worktree list
   ```
 
@@ -175,9 +160,11 @@ Create `planning/sessions/<date>-<slug>.md` using the template below — in the 
 
 ```bash
 git add planning/sessions/<date>-<slug>.md
-git commit -m "Open branch: <objective, short>
+git commit -F - <<'EOF'
+Open branch: <objective, short>
 
-Intent captured at branch-open."
+Intent captured at branch-open.
+EOF
 ```
 
 Then tell the user: branch created, intent captured — start the work, run `/branch-pulse` to take stock against the criteria as you go, and run `/branch-close` when done. **Name when the first pulse is due** — after the first slice of work lands, and at minimum once per working session the branch stays open. Claude offers the pulse rather than waiting to be asked for it. Remind them this is now the **single active branch**: work stays here until close, scope drift is recorded as a dated **Amendment** in this file (not split into a new branch), and you will not create another branch on your own initiative — only when they explicitly ask.

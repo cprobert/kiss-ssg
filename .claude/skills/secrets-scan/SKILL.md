@@ -72,10 +72,10 @@ An SSG's attack surface is not authentication — it is what the engine reads, e
 
 ```bash
 BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only "$BASE...HEAD" | grep -E '(lib/(model-resolver|controller-resolver|dev-server|watcher|assets|utils|kiss-page|page-registry|staging|asset-copy)\.js|package\.json)'
+git diff --name-only "$BASE...HEAD"
 ```
 
-Why each one:
+Compare what it lists with the table. Why each one:
 
 | Path                                                | The concern                                                                                                                                                       |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,11 +94,10 @@ Why each one:
 ```bash
 BASE=$(node scripts/base-branch.mjs) || exit 1
 git diff --name-only --diff-filter=A "$BASE...HEAD" -- 'lib/*.js'
-git diff --name-only "$BASE...HEAD" -- 'lib/*.js' \
-  | xargs -r grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'"
+grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'" lib/*.js
 ```
 
-`utils.js` is left out of the second grep on purpose: nearly every module imports it, so the grep would list everything and say nothing. Read each file these print and decide whether it now does one of the things in the table — parses external input, executes code by path, computes an output path, or writes outside the build folder. If it does, it is in scope exactly as if it were in the table, and the table gains a row for it in the same commit.
+The first lists the modules the branch adds. The second lists every module that imports one in the table; the ones of those the first command of this step listed are the changed ones in scope. `utils.js` is left out of the grep on purpose: nearly every module imports it, so the grep would list everything and say nothing. Read each file these print and decide whether it now does one of the things in the table — parses external input, executes code by path, computes an output path, or writes outside the build folder. If it does, it is in scope exactly as if it were in the table, and the table gains a row for it in the same commit.
 
 If any match: this branch is **security-relevant**. Proceed to Step 3.
 

@@ -154,6 +154,14 @@ describe('runBase, in real repositories', () => {
     fs.rmSync(path.join(clone, 'planning'), { recursive: true })
   })
 
+  it('takes the base as given with --base, for work whose session log is not written yet', () => {
+    expect(run(['--base', 'v2'])).toMatchObject({ out: 'v2', code: 0 })
+    expect(run(['--base', 'v2']).err).toContain('named with --base')
+    expect(run(['--base', 'v2', '--start']).out).toBe('refs/remotes/origin/v2')
+    expect(run(['--base']).code).toBe(1)
+    expect(run(['--base', 'v2', '--from-branch']).code).toBe(1)
+  })
+
   it('diffs against origin when the local base is stale, local when it has unpushed work', () => {
     git('branch', '-f', 'trunk', 'refs/remotes/origin/trunk')
     commit(seed, 'newer')

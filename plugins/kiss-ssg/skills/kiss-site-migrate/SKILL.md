@@ -31,9 +31,12 @@ setting named in the error. `cleanBuild: false` does not bypass the guard.
 Compare what the project depends on with what is installed:
 
 ```bash
-node -p "require('./package.json').devDependencies?.['kiss-ssg'] ?? require('./package.json').dependencies?.['kiss-ssg']"
-node -p "require('./node_modules/kiss-ssg/package.json').version"
+npm pkg get devDependencies.kiss-ssg
+npm pkg get dependencies.kiss-ssg
+npm ls kiss-ssg
 ```
+
+The first two print the range `package.json` asks for: one of them prints it, and the other `{}`, for a key that is not there. Ask for the two separately: asked together, npm 10 prints nothing at all when either is missing. The third prints the version installed, and the path it links to when it is a link.
 
 **If the site was on a `file:` link, do not trust a plain `npm install` to move it.** Editing `package.json` from `file:../kiss-ssg` to `^2.5.0` and running `npm install` keeps the link: the lockfile's entry (`"link": true`) already satisfies the range, so `node_modules/kiss-ssg` stays a junction to the working tree while `package.json` says otherwise — six of six sites hit this on the 2.5.0 upgrade. Run `npm install kiss-ssg@^2.5.0 --save-dev` instead, which re-resolves it, then confirm: `node_modules/kiss-ssg` must be a real folder (from the registry it has `CHANGELOG.md`, `llms.txt`, `AIKB/`, `examples/`), and `package-lock.json` must resolve it to `https://registry.npmjs.org/kiss-ssg/-/kiss-ssg-<version>.tgz`. `npx kiss-ssg check <script>` now says which kiss-ssg the site resolves on stderr, and names a link as one.
 

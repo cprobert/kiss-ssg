@@ -51,13 +51,13 @@ What each check can be read from:
 
 ### External links open in a new tab
 
-A link to another site opens in a new tab, so a visitor keeps their place on this one. The audit does not check this, so check the built HTML. Build the site for real first ([the browser pass](../kiss-site-review/browser-pass.md)), then list every link that leaves the site without `target="_blank"`:
+A link to another site opens in a new tab, so a visitor keeps their place on this one. The audit does not check this, so check the built HTML. Build the site for real first ([the browser pass](../kiss-site-review/browser-pass.md)), then list every link whose address is absolute:
 
 ```bash
-grep -rhoE "<a [^>]*href=[\"']https?://[^>]*>" public | grep -vE "target=[\"']_blank" | grep -v 'https://your-site.example'
+grep -rhoE "<a [^>]*href=[\"']https?://[^>]*>" public
 ```
 
-Replace `public` with the build folder and `https://your-site.example` with the site's `siteUrl`. No output and exit code 1 is the passing result: `grep` found no offender. Either quote style matches, so a link written as in the example below is not reported. An absolute URL on the site's own address is internal: `{{link … absolute=true}}`, `{{absUrl}}` and `{{canonical}}` all produce one, and none of them opens a new tab. Neither do `mailto:` and `tel:` links, or a `#` anchor.
+Replace `public` with the build folder. It prints each such opening tag; read them, and report the ones without `target="_blank"` whose address is not the site's own `siteUrl`. No output is a site with no external links. An absolute URL on the site's own address is internal: `{{link … absolute=true}}`, `{{absUrl}}` and `{{canonical}}` all produce one, and none of them opens a new tab. Neither do `mailto:` and `tel:` links, or a `#` anchor.
 
 The fix is in the template or the partial that writes the link, never per page:
 

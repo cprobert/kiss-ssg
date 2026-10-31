@@ -130,14 +130,14 @@ Lifting them into files is an **improvement**, not part of the conversion, becau
 
 ### 7. Collect the files the page links
 
-**The files a page links are not in its HTML** — a linked stylesheet, scripts, images, the favicon, fonts. Collect them into `src/assets/` **at the same path**, so the page's own root-relative references (`/css/site.css`, `/images/hero.webp`) still resolve after the build without a single tag changing. From a live page:
+**The files a page links are not in its HTML** — a linked stylesheet, scripts, images, the favicon, fonts. Collect them into `src/assets/` **at the same path**, so the page's own root-relative references (`/css/site.css`, `/images/hero.webp`) still resolve after the build without a single tag changing. From a live page, one command per file, with the path the page links written in twice:
 
 ```sh
-for p in /css/site.css /js/nav.js /images/hero.webp /favicon.svg; do
-  mkdir -p "src/assets$(dirname "$p")"
-  curl -sSf "<origin>$p" -o "src/assets$p"
-done
+curl -sSf --create-dirs "<origin>/css/site.css" -o "src/assets/css/site.css"
+curl -sSf --create-dirs "<origin>/images/hero.webp" -o "src/assets/images/hero.webp"
 ```
+
+`--create-dirs` makes the folders the path names, and `-f` fails on a missing file rather than saving the server's error page under its name.
 
 Then open each **stylesheet** you downloaded: its `url(…)`, `@import` and `@font-face` name more files, relative to the stylesheet. An absolute URL on another origin (an `og:image` on the production domain) is not yours to copy unless it is the same site; say which you fetched and from where. Say which files you could not find rather than leaving a dead reference. A `<script src>` or `<link rel="stylesheet" href>` the page already had stays where it is, in the layout, ahead of `{{#block "scripts"}}`.
 

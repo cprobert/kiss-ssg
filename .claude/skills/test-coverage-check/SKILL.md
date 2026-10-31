@@ -48,12 +48,12 @@ BASE=$(node scripts/base-branch.mjs) || exit 1
 
 ```bash
 BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only --diff-filter=A "$BASE...HEAD" \
-  | grep -E '^(lib/[^/]+\.js|scripts/[^/]+\.mjs)$' \
-  | grep -v '^lib/kiss\.js$'
+git diff --name-only --diff-filter=A "$BASE...HEAD" -- 'lib/*.js' 'scripts/*.mjs'
 ```
 
-**Advisory mode** (no flag) — added and modified, two separate lists: run the same pipeline twice, with `--diff-filter=A` (tier 1) and `--diff-filter=M` (tier 2).
+The files in scope are the ones directly in `lib/` or `scripts/`, not in a subfolder of either, and never `lib/kiss.js`, which `test/integration/` covers.
+
+**Advisory mode** (no flag) — added and modified, two separate lists: run the same command twice, with `--diff-filter=A` (tier 1) and `--diff-filter=M` (tier 2).
 
 If all lists are empty: report "No new or modified modules — pass." and exit.
 
@@ -62,8 +62,10 @@ If all lists are empty: report "No new or modified modules — pass." and exit.
 For each file in scope, check `test/unit/<basename>.test.js` — the basename with whichever extension it carries stripped, since a `.mjs` module's tests are still `.test.js`:
 
 ```bash
-test -f "test/unit/$(basename "<path>" | sed -E 's/\.(js|mjs)$//').test.js" && echo covered || echo uncovered
+ls test/unit/<basename>.test.js
 ```
+
+`ls` lists the file when it is there, and says it cannot access it when it is not.
 
 Files with a matching test are ✅ **Covered** — skip classification.
 

@@ -17,17 +17,17 @@ This is the site-shaped loop: no version bump, no package, no npm publish. What 
 ### 1. Read back the Feedback, and count how often it has come back
 
 ```bash
-find planning/sessions -type f -name '*.md' 2>/dev/null | awk -F/ '{ print $NF "\t" $0 }' | sort -r | cut -f2 | head -3
+npx kiss-ssg session --help
+npx kiss-ssg session --list
 ```
 
-Read each one's `## Feedback` section. Anything that shows up in **two or more** of them is a recurring lesson that has not stuck — surface those to the user now, as this branch's standing checklist, and copy them into the session file under **Inherited feedback**. If there are no sessions yet, say so and skip; this is the first.
+The first command prints its usage when the site's kiss-ssg has these commands. If it says `unknown command: session`, the site's kiss-ssg is older than this skill: stop, and upgrade it first (`kiss-site-migrate`).
 
-Then count across **all** of them, not just the three you read back:
+The listing is every session log, newest first by the date its name starts with, one per row: its path, `branch`, `status`, and the date it was `consolidated` (`-` for one never folded in). Only the header means there are no sessions yet: say so and skip to step 2; this is the first.
 
-```bash
-grep -rl --include='*.md' "^consolidated:" planning/sessions | wc -l   # already folded into AIKB/site.md
-grep -rL --include='*.md' "^consolidated:" planning/sessions           # not yet
-```
+Read the first three rows' `## Feedback` sections. Anything that shows up in **two or more** of them is a recurring lesson that has not stuck — surface those to the user now, as this branch's standing checklist, and copy them into the session file under **Inherited feedback**.
+
+Then count across **all** of them, not just the three you read back: the rows with a date in the last column are already folded into `AIKB/site.md`, and the `-` rows are not yet.
 
 The three-session read-back is the briefing; the count is the diagnosis, and it needs the whole history because a lesson that recurred in 2026-05, 2026-07 and 2026-08 is invisible to a window of three. Skim every session's Feedback — including the consolidated ones, and say that you did — and tally which items recur.
 
@@ -38,25 +38,17 @@ The three-session read-back is the briefing; the count is the diagnosis, and it 
 
 It is a recommendation, not a gate: the user may open the branch anyway. Do not run `kiss-memory-consolidate` from inside this skill — it is a separate beat, and its commit does not belong in this branch's first diff. An item that already appears under **Retired feedback** in `AIKB/site.md` has been dealt with: it is a convention now, so do not re-surface it as inherited feedback.
 
-**Also list possibly abandoned work.** A session file still `status: open` on a branch that is not this one is a piece of work somebody walked away from:
-
-```bash
-grep -rlE --include='*.md' "^status: open[[:space:]]*$" planning/sessions | xargs grep -H "^branch:"
-```
-
-Name each one with its branch and its opened date, and ask the user what it is — finished but never closed, genuinely still in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one of them is the branch you are about to adopt in step 2, that is not abandoned work — that is this piece of work, and step 2 handles it.
+**Also list possibly abandoned work.** A row whose `status` is `open`, on a branch that is not this one, is a piece of work somebody walked away from. Name each one with its branch and its opened date, and ask the user what it is — finished but never closed, genuinely still in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one of them is the branch you are about to adopt in step 2, that is not abandoned work — that is this piece of work, and step 2 handles it.
 
 ### 2. Confirm the starting state
 
 ```bash
-BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
-[ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
-echo "base: ${BASE:-unknown}"
+npx kiss-ssg base
 git branch --show-current
 git status --short
 ```
 
-The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered (no remote, or offline): ask which branch the work will merge into. Never assume `main`. Shell state does not carry from one command to the next, so later steps write the name this printed where they say `<base>`.
+`kiss-ssg base` prints the remote's default branch, and on stderr where it came from. That is the base unless the person says the work merges somewhere else; ask when the work could reasonably go to more than one. When it exits 1 (no remote, or offline), nothing answered: ask which branch the work will merge into. Never assume `main`. Shell state does not carry from one command to the next, so later steps write the name where they say `<base>`, and the session file's `base:` line records it.
 
 - **On the base branch** — the normal case; you will create a branch in step 5.
 - **Already on a feature branch that is this work's** (a harness often creates one for this session, and says so) — **adopt it in place**, do not branch off it. Confirm: "You're already on `<branch>` — I'll capture intent onto this branch." It is this work's only when the harness made it for this session or the person says so. A feature branch with commits or a session file of its own, or one nobody here can account for, is another session's: the checkout is busy (next bullet). If you cannot tell which it is, ask, before writing anything.
@@ -116,22 +108,16 @@ Adopting (step 2)? Skip this. Otherwise propose a name from the objective (`cont
 
   ```bash
   git fetch origin
-  git rev-parse --verify --quiet "refs/heads/<base>" >/dev/null && echo "local: yes" || echo "local: no"
-  git rev-parse --verify --quiet "refs/remotes/origin/<base>" >/dev/null && echo "origin: yes" || echo "origin: no"
-  git rev-list --left-right --count "refs/heads/<base>...refs/remotes/origin/<base>" 2>/dev/null
+  npx kiss-ssg base --base <base> --start
+  git rev-parse --show-toplevel
   ```
 
-  The two numbers are the commits only on the local base, then those only on the remote:
-  - `local: no` (a fresh clone): start from `refs/remotes/origin/<base>`.
-  - `origin: no` (no remote, or an unpushed base): start from the local `refs/heads/<base>`.
-  - Both, and the first number is 0: start from `refs/remotes/origin/<base>`, the same as the local base or newer.
-  - Both, and the first number is more than 0: the local base has commits the remote lacks, so start from the local `refs/heads/<base>`. If the second number is also more than 0, they have diverged: stop and ask.
+  `--start` prints the ref to start from, in full: origin's base, unless the local base has commits origin lacks, or only one of the two exists. When the two have diverged it exits 1 and says so: stop and ask. `--base` gives it the base step 2 settled on, because the session file that will name it is not written yet.
 
-  The new folder goes beside the repository, named after it, wherever in the repository you are: a site often sits in a subfolder of its repository, and a path relative to that subfolder would put the worktree inside the repository it belongs to.
+  The second command prints the repository's root. The new folder goes beside it, named after it, wherever in the repository you are: a site often sits in a subfolder of its repository, and a path relative to that subfolder would put the worktree inside the repository it belongs to. So the folder is the root's path with `-<slug>` on the end:
 
   ```bash
-  TOP=$(git rev-parse --show-toplevel)
-  git worktree add --no-track -b <branch-name> "$TOP/../$(basename "$TOP")-<slug>" <start point>
+  git worktree add --no-track -b <branch-name> <the root>-<slug> <the ref --start printed>
   git worktree list
   ```
 

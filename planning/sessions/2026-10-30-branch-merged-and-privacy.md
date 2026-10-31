@@ -346,6 +346,19 @@ opened: 2026-10-30
     - No skill code block decides anything.
     - GUIDE.md, `llms.txt` (15,997 of 16,000, so adding index lines means cutting), `types/`, README and AIKB are updated as CLAUDE.md requires for a public API change.
   - **Stop condition, agreed before the work starts:** one independent review at `/branch-close`. Only wrong output or crashes in this work count; everything else is recorded for the operator; there is no loop.
+- **2026-10-31 — The scope above, built.** Slices 1–3 landed in `930a178` (session, base, `check --subjects`) and `feab8f7` (orphans). This commit finishes slices 4–6:
+  - Every `kiss-memory` skill now runs `npx kiss-ssg session`, `base` and `check --subjects`, each opening with `npx kiss-ssg session --help` as the version check. Measured with a grep for `awk`, loops, `node -e`, `show-ref`, `ls-tree` and pipes into filters: the 27 lines of inline logic in those skills are now 0.
+  - The repository's own skills went the same way. `scripts/session-file.mjs` was a second copy of `lib/sessions.js`, so it is deleted with its test, and the skills call `node bin/kiss-ssg.js session`. `scripts/base-branch.mjs` imports `branchRefs` and `refExists` from `lib/git.js` in place of its own copies. `test/unit/plugin-session-lookups.test.js` is deleted: there is no copy left to keep identical.
+  - The rule is in CLAUDE.md, with the Design philosophy line. `test/unit/skill-code-blocks.test.js` holds every shell block in `plugins/*/skills/` and `.claude/skills/` to an allow-list: a listed command with its arguments, `timeout` in front of one, or `NAME=$(…) || exit 1`. Quoted text counts as an argument, and heredoc bodies are set aside.
+    - It was red first: 32 offences, 31 in the repo's own skills (the base guards, a `find | awk | sort | cut | head`, two `xargs` pipelines, a `test -f "$(basename | sed)"`, a `node -p` inside a commit message) and one `merge-base && echo` in `kiss-branch-merged`.
+    - The test's own first draft had a bug, which its unit cases caught: a `$(` inside double quotes kept the `$` and dropped the `(`, so a substitution in a quoted string passed.
+  - Three `kiss-ssg` plugin blocks changed:
+    - `kiss-front-end`'s external-link check is one `grep` whose output the agent reads, in place of a three-stage filter.
+    - `kiss-site-import` fetches with one `curl --create-dirs` per file, in place of a loop. Measured: a 404 saves no file.
+    - `kiss-site-migrate` reads the range with `npm pkg get` and the installed version with `npm ls kiss-ssg`. Measured on npm 10.9.4: `npm pkg get` asked for both keys prints **nothing** when either is missing, so the skill asks for them one at a time.
+  - **Added beyond the approved scope: `kiss-ssg base --base <name>`.** `kiss-branch-open` creates a worktree before it writes the session log, so at that moment no log can name a base the person chose, and `base --start` would have answered for the remote's default. It was red first.
+  - **Recorded, not done:** whether external links open in a new tab is still read by the agent from a `grep`, not decided by the engine. It is a candidate for an audit finding on a later branch, and whether the rule itself is right (WCAG advises warning users, not forcing it) is the operator's call.
+  - **Slips against CLAUDE.md's no-shell-text rule:** one `sed -i` on `AIKB/links.md` in slice 3. The edit was checked and landed as intended; the rule was still broken.
 
 ## Pulse log
 

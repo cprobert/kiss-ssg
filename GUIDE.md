@@ -1308,6 +1308,7 @@ npx kiss-ssg session --list            # every log, newest first: path, branch, 
 npx kiss-ssg base                      # the branch this work merges into
 npx kiss-ssg base --ref                # the ref to diff against
 npx kiss-ssg base --start              # the ref to start new work from
+npx kiss-ssg base --base v2 --start    # the same, for a base named rather than looked up
 npx kiss-ssg check --subjects router.js   # <hash> <kind> <id> <note>, to stamp notes with
 npx kiss-ssg --version
 ```
