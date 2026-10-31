@@ -82,6 +82,11 @@ describe.skipIf(process.platform === 'win32')(
       'dot.md': '---\nbranch: fix/v2.8\n---\n',
       'not-dot.md': '---\nbranch: fix/v2x8\n---\n',
       'body-only.md': '---\ntitle: none\n---\nbranch: feat/x\n',
+      // Never closed: no frontmatter at all, so the body's line is no branch.
+      'unclosed.md': '---\nstatus: open\nbody\nbranch: feat/x\n',
+      // No `branch:` line: on a detached HEAD the branch is empty, and an
+      // empty value must not count as a match (round 9).
+      'no-branch.md': '---\ntitle: none\n---\n',
       'no-frontmatter.md': 'branch: feat/x\n',
       'archive/old.md': '---\nbranch: main\n---\n',
     }
@@ -143,6 +148,19 @@ describe.skipIf(process.platform === 'win32')(
           expect(found, `${skill} on ${b} finds one file`).toMatch(/^\S+$/)
         }
         git('checkout', '-q', 'main')
+      },
+    )
+
+    it.each(LOCAL)(
+      '%s finds nothing on a detached HEAD, and says so',
+      (skill) => {
+        git('checkout', '-q', '--detach', 'main')
+        const out = bash(lookupBlock(skill)).stdout
+        git('checkout', '-q', 'main')
+        expect(
+          out.split('\n').filter((l) => l.startsWith('planning/')),
+        ).toEqual([])
+        expect(out).toContain('not on a branch (a detached HEAD)')
       },
     )
 

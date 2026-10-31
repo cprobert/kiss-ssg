@@ -52,7 +52,11 @@ gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRef
 
 ### 2. Check that the merge holds every local commit
 
-Before anything changes. A pull request that says `MERGED` only proves that what was pushed got merged. A commit made locally after the last push, or after the merge, is in no pull request, and `git branch -D` would delete it. So fetch the merged pull request's head and check that it contains the local branch:
+Before anything changes. A pull request that says `MERGED` only proves that what was pushed got merged. A commit made locally after the last push, or after the merge, is in no pull request, and `git branch -D` would delete it.
+
+- **No local branch** (`git rev-parse --verify --quiet refs/heads/<branch>` prints nothing: the branch was opened on another machine, or already deleted here): this machine has no commits of it to lose, so this step is done. Step 5 has no local branch to delete, only the prune.
+
+Otherwise, fetch the merged pull request's head and check that it contains the local branch:
 
 ```bash
 git fetch origin "pull/<number>/head"
@@ -98,7 +102,7 @@ If the session file names a worktree, work from the main checkout, never from in
 Then, in the main checkout:
 
 ```bash
-git branch -D <branch>        # only after step 2 showed every local commit merged
+git branch -D <branch>        # only after step 2 showed every local commit merged; none with no local branch
 git fetch --prune origin
 ```
 

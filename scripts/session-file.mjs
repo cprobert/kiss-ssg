@@ -61,6 +61,12 @@ const resolves = (ref) => {
 
 // The branch's own commits: the local branch, or origin's copy when there is
 // no local one (a branch opened on another machine, or already deleted here).
+// Not base-branch.mjs's `branchRef`, which asks a different question: which
+// of the two refs HEAD started from. Here HEAD is beside the point, and the
+// local branch is the one the branch skills act on (its unmerged commits,
+// its deletion), so its session file is the one that describes it. The
+// frontmatter is written once, at open, so a local copy behind origin's
+// reads the same `branch:`, `base:` and `worktree:` (round 9, kept).
 export function branchCommits(branch, exists = resolves) {
   if (exists(`refs/heads/${branch}`)) return `refs/heads/${branch}`
   if (exists(`refs/remotes/origin/${branch}`))

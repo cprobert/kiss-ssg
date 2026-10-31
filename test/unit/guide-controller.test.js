@@ -74,6 +74,27 @@ describe('splitSections', () => {
     expect(section.lines[at]).toBe('#### Four')
   })
 
+  // Round 9. A heading with no text has no title for a page or an anchor,
+  // and the old regex skipped one in silence. It is a mistake in GUIDE.md,
+  // so it fails `node docs` with its line, as a broken {{link}} fails a build.
+  it.each([['## '], ['### '], ['#### ']])(
+    'fails on an empty %j heading, naming its line',
+    (heading) => {
+      expect(() =>
+        splitSections(['## One', 'a', heading, 'b'].join('\n')),
+      ).toThrow('GUIDE.md line 3: a heading with no text')
+    },
+  )
+
+  // A paragraph line followed by `---` renders as an <h2>, so it is a
+  // section, as the renderer says. When its text matched an existing title,
+  // the second section replaced the first in the page map with no error.
+  it('fails on two sections with one title, setext included', () => {
+    expect(() =>
+      splitSections(['## One', 'a', '', 'One', '---', 'b'].join('\n')),
+    ).toThrow('GUIDE.md has two sections titled "One" (lines 1 and 4)')
+  })
+
   it('records a sub-heading with the lines it spans', () => {
     const [section] = splitSections(['## One', '', '#### Four', 'a'].join('\n'))
     const [sub] = [...section.subs.values()]

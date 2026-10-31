@@ -40,7 +40,7 @@
 //     --height=900                     viewport height (default 900)
 //     --viewport-only                  the first screen only, not the full page
 //     --out=<dir>                      where the PNGs go (default <os temp>/kiss-screenshots)
-//   e.g. node scripts/screenshot.mjs examples/11-blog/public --page=/,/blog/ --scheme=light,dark
+//   e.g. node scripts/screenshot.mjs examples/11-blog/public --page=/,/journal/ --scheme=light,dark
 //
 // Exits 1 when a page does not answer 200 or overflows (the PNGs are written
 // either way), and 2 when it could not run at all.

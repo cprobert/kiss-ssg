@@ -140,6 +140,7 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
 - **Worktree** (asked for, or the checkout is busy). First choose its start point: a worktree does not move the main checkout's branch, so the local base can be out of date, or ahead of `origin`.
 
   ```bash
+  echo "this checkout is on: $(git branch --show-current)"
   BASE_NAME=$(node scripts/base-branch.mjs --name)
   git fetch origin
   echo "base: $BASE_NAME"
@@ -148,7 +149,7 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
   git rev-list --left-right --count "refs/heads/$BASE_NAME...refs/remotes/origin/$BASE_NAME" 2>/dev/null
   ```
 
-  Shell state does not carry from one Bash call to the next, so this block sets the base itself. `--name` prints the base branch's own name (`main`), not a ref, so `origin/<name>` below is a real ref even in a clone with no local base. If it prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to start from. The two numbers are the commits only on the local base, then those only on `origin`:
+  Shell state does not carry from one Bash call to the next, so this block sets the base itself. `base-branch.mjs` works the base out from this checkout's HEAD, which is right when the checkout is on the base. **If it is on another branch** (the usual reason for a worktree), the base printed is that branch's base, a guess from someone else's work: confirm it with AskUserQuestion, the printed base first, and for another answer run the block again with `KISS_BASE_BRANCH=<answer>` before `node`. `--name` prints the base branch's own name (`main`), not a ref, so `origin/<name>` below is a real ref even in a clone with no local base. If it prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to start from. The two numbers are the commits only on the local base, then those only on `origin`:
   - `local: no` (a fresh or cloud clone): start from `refs/remotes/origin/<name>`.
   - `origin: no` (an unpushed base): start from the local base, `refs/heads/<name>`.
   - Both, and the first number is 0: start from `refs/remotes/origin/<name>`, the same as the local base or newer.

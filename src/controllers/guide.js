@@ -78,13 +78,30 @@ export function splitSections(source) {
       ? [
           {
             level: token.hLevel,
-            title: tokens[i + 1].content,
+            // An empty heading has no inline token after it.
+            title: tokens[i + 1].type === 'inline' ? tokens[i + 1].content : '',
             start: token.lines[0],
             end: token.lines[1],
           },
         ]
       : [],
   )
+  // A heading with no text has no title for a page or an anchor, and a title
+  // two sections share would let the second replace the first in the page
+  // map. Both are mistakes in GUIDE.md, so `node docs` fails on them.
+  const seen = new Map()
+  for (const heading of headings) {
+    if (!heading.title.trim())
+      throw new Error(
+        `GUIDE.md line ${heading.start + 1}: a heading with no text`,
+      )
+    if (heading.level > 3 || heading.title === 'Usage') continue
+    if (seen.has(heading.title))
+      throw new Error(
+        `GUIDE.md has two sections titled "${heading.title}" (lines ${seen.get(heading.title) + 1} and ${heading.start + 1})`,
+      )
+    seen.set(heading.title, heading.start)
+  }
   const sections = []
   let current = null
   let from = lines.length
