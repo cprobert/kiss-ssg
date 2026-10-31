@@ -1,7 +1,7 @@
 ---
 branch: chore/skills-on-fleet-sites
 base: main
-status: open
+status: closed
 opened: 2026-10-31
 ---
 
@@ -63,3 +63,53 @@ opened: 2026-10-31
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-10-31: The kiss-ssg skills on real sites
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** fifteen commits on `chore/skills-on-fleet-sites`. The ones that change what an agent does: `a5c6484` (task skills link the domain skills they hand work to, with a test seen red on HEAD), `2732d93` and `dea7270` (`kiss-page-add` opens the writing skill and replicates the nearest page), `7816771` (the migrate note on `llms.txt` readers). Also `f455b30` and its revert `3b695a4`, the report `planning/reviews/2026-10-31-skills-on-fleet-sites.md`, the docs sweep `aeec01b`, and 2.8.5 (`377f13a`). Gates green; no `lib/` or `bin/` change.
+
+## Reflect — what the session was
+
+Framed well and emergent, as declared. The operator set the goal in one line ("Testing skills on real sites") and three structured answers settled the shape: review, trigger and with/without tests; four buildable sites; fixes in this repo plus a report. Nothing past that was planned, and nothing needed to be: the first site's results decided every later change. The shape served the work. One slice per site gave the pulses a natural boundary, and the two operator rulings that changed the skills (firmer writing check; replicas, not improvements) arrived at those boundaries.
+
+The method was the session's real product. Headless `claude -p` arms in sterilised copies of each site, with this tree's tarball and `--plugin-dir`, and the transcripts read for `Skill` calls and file reads, turned "is this skill used?" into a count rather than an impression. That count found the headline: agents opened every linked support file and none of the merely named domain skills.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering** was where the operator's supervision changed the outcome. Twice the operator chose against Claude's recommendation. First, to make `kiss-page-add` firmer when Claude proposed watching two more sites; the reason was given in a sentence when asked ("Words are the product") and recorded verbatim. Second, unprompted, a design principle Claude had not proposed at all: "when adding we should look to make perfect replicas. I think improvements should come as part of a review process". That rule reframed the page skill's whole step 2, and the re-runs showed it working (the pro-plumbing re-run listed improvements for review and changed none). Scope was steered the same way: "You can skip swan love" dropped a site mid-run. The operator also accepted a sixfold cost rise for reviews with the evidence in front of them, and asked the question that framed the end of the branch: commit to the sites now, or wait for the publish and reproduce?
+
+**Verification & ownership** is the mixed dimension, and the mix is Claude's. The operator looked three times, at the moments the pulses asked: the re-run review ("it holds up"), a screenshot, and `kiss-page-add` read end to end ("it says it"). The screenshot is the lesson. Claude measured the pro-plumbing build in a ground-truth copy, found the call bar hiding "Your name", called the keyboard arm's all-clear false, committed a skill guard (`f455b30`), and showed the operator the screenshot, who agreed. All of that was true of commit `56931df`. The arm had `49c4fca`: the operator had pulled the real site at 19:00:14, between the two copies, and that pull fixed the very defect. Claude found it by chasing why two builds of "the same" page differed, read the reflog, reverted the guard with its reason, corrected the report and the session log, and made the harness record each copy's commit. Caught inside the branch, but only after a commit and an operator confirmation rested on it. The operator's look was honest; what it was shown was mislabelled.
+
+Smaller instances of the same habit: Claude attributed a1k9training's five changed course pages to site edits before checking (an arm corrected it: build-time dates), wrote "about 20" rows before counting (17), and put the `kiss-page-add` evidence as "credited a fact to a person who had not said it" when the request had named Greg. Each was corrected before it shipped, and each was an inference written as a finding.
+
+**Iteration discipline** held: three pulses, one per slice, each with an eyeball and an explicit offer, the first time in recent logs that the pulse-per-slice lesson was kept for a whole branch. **Harness leverage** was high on Claude's side (the arm harness, Monitor, SendUserFile when the operator could not see a path) and the operator used the right tool too: `SendUserFile` exists because "I can't see what you're referring to" was said once and answered.
+
+**Intended versus actual supervision:** the operator intended to judge the keyboard finding and did, but judged a claim Claude had framed. Claude's momentum (measure, conclude, commit, show) carried a false comparison past the checkpoint; the checkpoint itself was real.
+
+**Competency level: Active supervisor**, with the scope and design calls of an agentic engineering lead. The operator framed, steered against recommendations with reasons, set a design rule the skills now carry, and looked at artefacts mid-branch. It falls short of the top level on one point only: the verification it did rested on Claude's framing, and the one framing that was wrong went through.
+
+## Feedback — recommendations for next session
+
+- **Claude — before comparing two copies of anything, check they are the same commit.** The pro-plumbing error cost a commit, a revert and an operator confirmation. The harness now writes `source HEAD` into each copy; the habit is to read it before calling two results a contradiction.
+- **Claude — name an inference as one at the moment of writing.** Three times this branch a guess went into prose as a finding (the course pages, "about 20", the `_source` sentence). The rule exists (`CLAUDE.md` § Rules: measured or inferred); the fix is to apply it to every sentence about a site, not only to claims about the engine.
+- **Operator — say when you change a site Claude is testing.** A one-line "I just pulled pro-plumbing" would have saved the false finding. While a branch tests real sites, their working trees are part of the experiment.
+- **Operator — keep giving the reason in one sentence when you overrule.** "Words are the product" took one question and is now the stated basis of a skill rule. Keep doing it.
+- **Process — promote the arm harness to `scripts/`.** This is the third skill trial (2026-10-13, 10-21, 10-31) to rebuild `make-copy`, `run-arm` and `summarise-arm` in a scratchpad. The 10-13 log asked for promotion on the third trial. It is a new branch, not this one.
+- **Process — run the post-publish reproduction as planned.** One session per site after 2.8.5 publishes, running `kiss-site-review` as shipped from the marketplace. It is the run this harness could not be, and the report lists what to carry in.
+- **Both — give `kiss-seo` its own research-led branch.** Three sites, no measurable difference with or without it. The open question is what it knows that the model does not; start from evidence, as the writing skill did.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** test the shipped skills on real sites so the domain skills are judged by the sites they produce, and fix what the sites show. **Met**, on three sites rather than four: swan-love was dropped by the operator, a recorded amendment, not a shortfall.
+
+- [x] Each in-scope site wired to this tree's engine and plugin, builds with `kiss-ssg check`, and its real tree clean afterwards. Three sites `ok`; all four real trees `git status` exit 0 and empty at the close.
+- [x] Review pass graded on each site. Every spot-checked claim held for its commit; one harness artefact (the lockfile, two sites) and one stale commit (pro-plumbing) named.
+- [x] Trigger test counted from transcripts: 12 of 12 tasks invoked the right top-level skill; domain skills from task skills, 0 before the link fix and 6 of 6 reviews after.
+- [x] With-and-without measured: `kiss-seo` on three sites, no measurable difference.
+- [x] Every skill change traces to a finding and was re-run: the link fix (review 0→6), `kiss-page-add` (writing skill 0/3→2/2), the migrate note (measured on 2.7.0 and 2.8.4). The one change that did not survive its evidence was reverted.
+- [x] Findings report at `planning/reviews/2026-10-31-skills-on-fleet-sites.md`, with a verdict and the site follow-ups.
+- [x] The operator read a changed skill end to end: `kiss-page-add`, "it says it".
+
+**What is concretely better:** a launch review now runs every domain review and found three WCAG failures the old one missed; a page added by an agent copies the site instead of reshaping it and checks its own words; a test stops a task skill naming a domain skill without linking it. **Open:** `kiss-seo`'s value; a replicated template still pulls in an unconfirmed promise (k9-solutions); a placeholder passes the build check (engine); no independent review of this branch, which changed no `lib/` code; and the per-site reviews after the publish.
