@@ -71,9 +71,12 @@ export function skeleton(line) {
   return out.trim()
 }
 
-function simple(command) {
-  if (/\$\(|`/.test(command)) return 'command substitution'
-  if (/\|\||&&|;|\|/.test(command)) return 'a pipe or a chain'
+function simple(given) {
+  // `2>&1` and `>&2` point one stream at another; they run nothing. Any
+  // other `&` separates commands as `;` does, or sends one to the background.
+  const command = given.replace(/\d*>&\d*-?/g, '')
+  if (/\$\(|`|[<>]\(/.test(command)) return 'command substitution'
+  if (/\||&|;/.test(command)) return 'a pipe or a chain'
   const words = command.split(/\s+/)
   if (words[0] === 'timeout' && /^\d+[smh]?$/.test(words[1] ?? ''))
     return simple(words.slice(2).join(' '))
@@ -107,9 +110,20 @@ export function commandLines(code) {
       continue
     }
     pending = ''
-    const end = /<<-?\s*['"]?(\w+)['"]?/.exec(line)
-    if (end) heredoc = end[1]
-    lines.push(line.replace(/<<-?\s*['"]?\w+['"]?/, ''))
+    // A heredoc starts only where the shell reads `<<`: not inside quotes,
+    // not after a `#`. The skeleton knows where those are; the raw line
+    // still has the word, which the skeleton has replaced if it was quoted.
+    const opener = /<<-?\s*(['"]?)(\w+)\1/g
+    const starts = skeleton(line).includes('<<')
+      ? [...line.matchAll(opener)].at(-1)
+      : undefined
+    if (starts) heredoc = starts[2]
+    lines.push(
+      starts
+        ? line.slice(0, starts.index) +
+            line.slice(starts.index + starts[0].length)
+        : line,
+    )
   }
   return lines
 }
@@ -181,6 +195,11 @@ describe('verdict', () => {
       'find planning/sessions -name x',
       'B=$(git branch --show-current); [ -n "$B" ]',
       'X=$(git a | sort) || exit 1',
+      // Code review at the close, finding 2: `&` separates commands as `;`
+      // does, and `<(…)` runs one as `$(…)` does.
+      'git fetch & git push',
+      'npm run dev &',
+      'git diff --no-index <(git show a:x) <(git show b:x)',
     ]
     expect(lines.filter((line) => verdict(line) === null)).toEqual([])
   })
@@ -191,6 +210,20 @@ describe('verdict', () => {
         "gh pr create --body-file - <<'EOF'\n| a | b |\nfor x\nEOF\ngit add a \\\n  b",
       ),
     ).toEqual(['gh pr create --body-file - ', 'git add a    b'])
+  })
+
+  // Code review at the close, finding 3: a `<<WORD` inside quotes or after
+  // a `#` started a heredoc, and every later line went unchecked.
+  it('starts a heredoc only from a `<<` the shell would read', () => {
+    const lines = commandLines(
+      'grep -n "<<EOF" SKILL.md\ngit diff | sh\nls # not <<EOF\nfor x in a; do rm x; done',
+    )
+    expect(lines).toHaveLength(4)
+    expect(lines.filter((line) => verdict(line) !== null)).toHaveLength(2)
+  })
+
+  it('reads a redirection to a file descriptor as no chain', () => {
+    expect(verdict('npm test > out.txt 2>&1')).toBeNull()
   })
 })
 

@@ -185,6 +185,31 @@ describe('runBase, in real repositories', () => {
     expect(result.err).toContain('have diverged')
   })
 
+  // Code review at the close, finding 1: --ref counted to the checkout's
+  // HEAD, so a named branch was measured from wherever this checkout stood.
+  it('measures --ref from the named branch, not from the checkout', () => {
+    at(seed)('branch', 'rel')
+    at(seed)('push', '-q', remote, 'refs/heads/rel:refs/heads/rel')
+    git('fetch', '-q', 'origin')
+    git('branch', '-f', 'rel', 'refs/remotes/origin/rel')
+    at(seed)('checkout', '-q', 'rel')
+    commit(seed, "another person's commit")
+    at(seed)('push', '-q', remote, 'refs/heads/rel:refs/heads/rel')
+    at(seed)('checkout', '-q', 'trunk')
+    git('fetch', '-q', 'origin')
+    git('checkout', '-q', '-b', 'feat/z', 'refs/remotes/origin/rel')
+    fs.mkdirSync(path.join(clone, 'planning/sessions'), { recursive: true })
+    fs.writeFileSync(
+      path.join(clone, 'planning/sessions/2026-01-02-z.md'),
+      '---\nbranch: feat/z\nbase: rel\n---\n',
+    )
+    expect(run(['--ref']).out).toBe('refs/remotes/origin/rel')
+    git('checkout', '-q', '-b', 'elsewhere', 'refs/heads/rel')
+    expect(run(['feat/z', '--ref']).out).toBe('refs/remotes/origin/rel')
+    expect(run(['nowhere', '--base', 'rel', '--ref']).code).toBe(1)
+    fs.rmSync(path.join(clone, 'planning'), { recursive: true })
+  })
+
   it('says so when there is no base to name', () => {
     const lone = path.join(root, 'lone')
     fs.mkdirSync(lone)
