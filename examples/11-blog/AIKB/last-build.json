@@ -7,7 +7,7 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "5d006d6651514d2439aee7f0344d711b25619a13",
+      "hash": "bd1e1646eed6aab9496eb2fe3e5bb30f40d17211",
       "id": "index",
       "canonical": null,
       "markdown": "./public/index.md"
@@ -16,7 +16,7 @@
       "view": "journal/listing.hbs",
       "buildTo": "./public/journal/index.html",
       "ok": true,
-      "hash": "e794fa9a4a454d361f2be3333f9252418997cad2",
+      "hash": "9367ce40a9fa50f73480df96a3c3d5de1637029f",
       "id": "journal",
       "canonical": null,
       "markdown": "./public/journal/index.md"
@@ -25,7 +25,7 @@
       "view": "journal/listing.hbs",
       "buildTo": "./public/journal/page/2/index.html",
       "ok": true,
-      "hash": "8e16ffa6a71148717e331c225e381749463a4b03",
+      "hash": "3cd81247b93ca18f96e1bdefc1b6f8647f8c77c3",
       "id": "journal/page/2",
       "canonical": null,
       "markdown": "./public/journal/page/2/index.md"
@@ -34,7 +34,7 @@
       "view": "journal/tags.hbs",
       "buildTo": "./public/journal/tags/index.html",
       "ok": true,
-      "hash": "ce911901ab3a0fa39719f15dd580b2ff8774bd5c",
+      "hash": "865ec9bbd6ca7950e2cf9b59958977f0a6a45ba7",
       "id": "journal/tags",
       "canonical": null,
       "markdown": "./public/journal/tags/index.md"
@@ -43,7 +43,7 @@
       "view": "404.hbs",
       "buildTo": "./public/404.html",
       "ok": true,
-      "hash": "a2ceb5a12d4b5a635853c52a89bc3d019b1b0761",
+      "hash": "0820be30af194eb1ea604abcfae0ffb718e135fb",
       "id": "404",
       "canonical": null,
       "markdown": "./public/404.md"
@@ -52,7 +52,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/a-year-of-bench-lots/index.html",
       "ok": true,
-      "hash": "15f48ebebf47cc6bd94c0d6671ecac88e43d204e",
+      "hash": "dd6e28e64dd2fe3a2cdf2523af66fb926fe06ea4",
       "id": "journal/post/a-year-of-bench-lots",
       "canonical": null,
       "markdown": "./public/journal/a-year-of-bench-lots/index.md"
@@ -61,7 +61,7 @@
       "view": "journal/tag.hbs",
       "buildTo": "./public/journal/tags/brewing/index.html",
       "ok": true,
-      "hash": "de8ba84fb2c78cf04c668f21b701433194242078",
+      "hash": "02dbaeaf58a24dd6c633c8d448584d3645c42c8e",
       "id": "journal/tags/brewing",
       "canonical": null,
       "markdown": "./public/journal/tags/brewing/index.md"
@@ -70,7 +70,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/grind-size-is-the-dial/index.html",
       "ok": true,
-      "hash": "a451a967a0ca6e799fa55c1d61607f3c2b0b14cd",
+      "hash": "fc3e54c01f550715b2dbf10de085627ffce9d296",
       "id": "journal/post/grind-size-is-the-dial",
       "canonical": null,
       "markdown": "./public/journal/grind-size-is-the-dial/index.md"
@@ -79,7 +79,7 @@
       "view": "journal/tag.hbs",
       "buildTo": "./public/journal/tags/experiments/index.html",
       "ok": true,
-      "hash": "9984d2650bf9e642e7fb829a78cf26398681a7c9",
+      "hash": "5e522578ce2b03609684cdcc3581be2c853c17b5",
       "id": "journal/tags/experiments",
       "canonical": null,
       "markdown": "./public/journal/tags/experiments/index.md"
@@ -88,7 +88,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/why-we-roast-on-wednesdays/index.html",
       "ok": true,
-      "hash": "c850c2dab0bdd5a1297cfc2417cc42fe26683660",
+      "hash": "f77112dea06acde43d95d42d0e6a0d4161c71cde",
       "id": "journal/post/why-we-roast-on-wednesdays",
       "canonical": null,
       "markdown": "./public/journal/why-we-roast-on-wednesdays/index.md"
@@ -97,7 +97,7 @@
       "view": "journal/tag.hbs",
       "buildTo": "./public/journal/tags/roastery/index.html",
       "ok": true,
-      "hash": "15743ad2fe5bfa7098ddcbe0a23bba3d8f6dbbfa",
+      "hash": "7ad672be1625d0222765eb6da7a02d47b8e8f98e",
       "id": "journal/tags/roastery",
       "canonical": null,
       "markdown": "./public/journal/tags/roastery/index.md"
@@ -106,7 +106,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/guji-uraga-has-landed/index.html",
       "ok": true,
-      "hash": "d26c4e731bcb22c47d6c8e24e9cd20c18024d061",
+      "hash": "45a09eb6b4c61dd08d59087c456f08b1c87bec4e",
       "id": "journal/post/guji-uraga-has-landed",
       "canonical": null,
       "markdown": "./public/journal/guji-uraga-has-landed/index.md"
@@ -115,7 +115,7 @@
       "view": "journal/tag.hbs",
       "buildTo": "./public/journal/tags/sourcing/index.html",
       "ok": true,
-      "hash": "db550bb952367c2537b2026955f7bc942fa757b5",
+      "hash": "917af38f3b952688551429ac06ce6702e35e00ea",
       "id": "journal/tags/sourcing",
       "canonical": null,
       "markdown": "./public/journal/tags/sourcing/index.md"
@@ -124,7 +124,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/the-cascara-experiment/index.html",
       "ok": true,
-      "hash": "8cf142b7af51e6afa63b0fc75f532d31fb00204d",
+      "hash": "d482d5a4e3665229c26b98fb1b45543b9c996fa9",
       "id": "blog/post/cascara",
       "canonical": null,
       "markdown": "./public/journal/the-cascara-experiment/index.md"
@@ -133,7 +133,7 @@
       "view": "journal/post.hbs",
       "buildTo": "./public/journal/pour-over-at-home/index.html",
       "ok": true,
-      "hash": "00f78514d50a406e1d72fe3500d8f469f4519fa1",
+      "hash": "228cbe7cde9747f8e0862c163890e1e8a11dde6d",
       "id": "journal/post/pour-over-at-home",
       "canonical": null,
       "markdown": "./public/journal/pour-over-at-home/index.md"

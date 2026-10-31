@@ -36,12 +36,12 @@
       <nav class="nav" aria-label="Site">
         {{!-- The nav names pages by id; `link` turns each into the served
               path, and `isActive` compares that same path with this page's.
-              It asks twice: with the item's `folderMatch`, for the class
-              that marks the section this page is in, and without it, for
-              `aria-current="page"`, which only the link to this very page
-              carries. --}}
+              One call per link: with the item's `folderMatch`, {{active}}
+              marks the section this page is in, and {{current}} is true
+              only on the link to this very page, which alone carries
+              `aria-current="page"`. --}}
         {{#each config.nav}}
-        <a class="nav__link{{#isActive .. href=(link id) folderMatch=folderMatch}}{{#if active}} is-active{{/if}}{{/isActive}}" href="{{link id}}"{{#isActive .. href=(link id)}}{{#if active}} aria-current="page"{{/if}}{{/isActive}}>{{label}}</a>
+        <a href="{{link id}}"{{#isActive .. href=(link id) folderMatch=folderMatch}} class="nav__link{{#if active}} is-active{{/if}}"{{#if current}} aria-current="page"{{/if}}{{/isActive}}>{{label}}</a>
         {{/each}}
       </nav>
     </div>

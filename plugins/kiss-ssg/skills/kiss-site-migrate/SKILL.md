@@ -284,6 +284,24 @@ back the first launch's place, so the learner reopened there every time.
   in the build. Check it in the LMS: launch a page that bookmarks three times, moving somewhere
   else each time, and the third launch opens on the second launch's place.
 
+### 0i. The release that adds `{{current}}` to `isActive`
+
+Nothing fails, and nothing has to change. Inside `{{#isActive}}`, `{{current}}` is now `true`
+only when the page is the link's own page, whatever `folderMatch` says, beside `{{active}}`,
+which stays true on every page inside a section. `aria-current="page"` names the page itself, so
+a nav whose section items use `folderMatch` used to need a second `isActive` call, without
+`folderMatch`, for the attribute alone.
+
+- **Grep the layouts for `aria-current`.** Where a nav link reaches it through a second
+  `{{#isActive}}` without `folderMatch`, fold the two calls into one: the class from
+  `{{active}}`, the attribute from `{{current}}`, as
+  `node_modules/kiss-ssg/examples/11-blog/src/layouts/layout.hbs` does. Optional: the same
+  links are marked as before, though a link's attributes may come out in another order.
+- **A site that passes its own `current` key into the block** (a nav item with a `current`
+  field) now reads the helper's, as it already did for `active`: rename the site's key.
+- Check it the way the change promises: build before and after, and diff the pages. On any
+  page, at most one nav link carries `aria-current="page"`, and it points at that page.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.

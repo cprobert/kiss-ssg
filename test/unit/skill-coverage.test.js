@@ -388,6 +388,18 @@ const COVERAGE = [
     pattern: /^(?=[\s\S]*`scroll-padding-bottom`)(?=[\s\S]*bottom bar)/,
     skills: [skill('kiss-ssg', 'kiss-accessibility')],
   },
+  // 2026-10-31, code review round 9: every nav asked isActive twice per link
+  // to tell the section's mark from aria-current="page"; `{{current}}` is the
+  // exact page, so one call answers both. The two skills that teach the nav.
+  {
+    feature:
+      'one isActive call per nav link: {{active}} marks the section, {{current}} carries aria-current',
+    pattern: /^(?=[\s\S]*`\{\{current\}\}`)(?=[\s\S]*aria-current="page")/,
+    skills: [
+      skill('kiss-ssg', 'kiss-accessibility'),
+      skill('kiss-ssg', 'kiss-information-architecture'),
+    ],
+  },
   {
     feature: 'the review runs the domain reviews, then offers the design lift',
     pattern:
@@ -772,6 +784,15 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-10-31: isActive exposes {{current}}, the exact page, beside {{active}}, so a nav link asks it once; a doc that says to ask it twice teaches the shape that replaced',
+    patterns: [
+      /asks? `?isActive`? twice/i,
+      /isActive`? is asked twice/i,
+      /It asks twice: with the item/,
+      /It is asked twice: with `folderMatch`/,
+    ],
+  },
   {
     why: '2026-10-30: the rule against invented facts and the copy checks live once, in kiss-writing-for-the-web; a second full copy in a task skill drifts from it, and the task skills keep a one-line floor that names the skill',
     allowedIn: [WRITING],

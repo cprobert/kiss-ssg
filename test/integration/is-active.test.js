@@ -39,6 +39,29 @@ describe('isActive, as a page actually renders it', () => {
     expect(await site.read('public/other.html')).not.toContain('active')
   })
 
+  // `aria-current="page"` names the page itself, while a section's nav item
+  // stays marked on every page inside it (`folderMatch`). Every nav asked
+  // isActive twice to tell the two apart (round 9). `current` is the exact
+  // match, whatever `folderMatch` says, so one call answers both.
+  it('exposes the exact page as {{current}} beside the section match', async () => {
+    const nav =
+      '[{{#isActive this href="/journal" folderMatch=true}}{{#if active}}section{{/if}}{{#if current}} page{{/if}}{{/isActive}}]'
+    site = await makeSite({
+      'src/pages/index.hbs': nav,
+      'src/pages/journal/index.hbs': nav,
+      'src/pages/journal/post.hbs': nav,
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/journal/index.html')).toContain(
+      '[section page]',
+    )
+    expect(await site.read('public/journal/post.html')).toContain('[section]')
+    expect(await site.read('public/index.html')).toContain('[]')
+  })
+
   it('works data-driven with a bare .. inside each', async () => {
     site = await makeSite({
       'src/pages/about.hbs':

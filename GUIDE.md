@@ -1397,7 +1397,7 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 `lookup` is Handlebars' own `lookup` helper with one addition: when the key is undefined it logs `lookup: 'moodleAccess' is undefined in handbooks/uob.hbs`, so a dynamic partial `{{> (lookup . 'key')}}` whose key is missing from your data tells you which key and which page — it still fails the build with `The partial undefined could not be found`, as before.
 
-`isActive` **always renders its block**; the match is exposed as `{{active}}` inside it, so a nav item's label appears either way and only the class changes. There is no `{{else}}` branch — and the positional argument is the page context itself (`this`, or a bare `..` inside an `{{#each}}`), not a key called `page`. The block sees the surrounding context **plus** the hash you pass, the hash winning on a clash — so inside an `{{#each}}` the item's own keys are still in scope, and `active`, `href`, `folderMatch` and `pageURL` are always the helper's own:
+`isActive` **always renders its block**; the match is exposed as `{{active}}` inside it, so a nav item's label appears either way and only the class changes. There is no `{{else}}` branch — and the positional argument is the page context itself (`this`, or a bare `..` inside an `{{#each}}`), not a key called `page`. The block sees the surrounding context **plus** the hash you pass, the hash winning on a clash — so inside an `{{#each}}` the item's own keys are still in scope, and `active`, `current`, `href`, `folderMatch` and `pageURL` are always the helper's own:
 
 ```handlebars
 <nav>
@@ -1413,6 +1413,19 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 ```
 
 Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
+
+Beside `{{active}}`, the block has `{{current}}`: `true` only when the page is `href` itself, whatever `folderMatch` says. That is what `aria-current="page"` names, while a section's nav item stays marked on every page inside it, so one call gives a link both:
+
+```handlebars
+{{#each config.nav}}
+  <a
+    href='{{href}}'
+    {{#isActive .. href=href folderMatch=true}}{{#if active}}
+        class='{{active}}'{{/if}}{{#if current}}
+        aria-current='page'{{/if}}{{/isActive}}
+  >{{label}}</a>
+{{/each}}
+```
 
 Two things about `isActive` are easy to get wrong, and both are quiet. A page's context is exactly `title`, `path`, `slug`, `generate`, `view`, `config`, `model` and `pageURL`, so `{{#isActive page …}}` hands the helper `undefined` and logs `isActive received no page context` once per call, on every page; omitting the positional argument altogether is not an error, since Handlebars passes its own options object and the helper finds the block by shape. And because the block always renders, a literal `class="active"` written inside it prints on every page in the site: read the match from `{{active}}`, and put anything that should appear either way around it. An omitted or absent `href` is treated as `''`, not thrown on. A non-block usage, or a page context with no `pageURL`, logs a warning and renders the block as not-active rather than throwing.
 `canonical` is the current page's absolute URL, for a `<link rel="canonical">` — `siteUrl` joined to the page's own URL:
