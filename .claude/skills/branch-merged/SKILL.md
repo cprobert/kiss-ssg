@@ -31,11 +31,13 @@ Then proceed.
 B=<branch>
 git fetch origin
 git worktree list --porcelain
-node scripts/session-file.mjs "$B" --from-branch
+C="refs/heads/$B"; git show-ref -q --verify "$C" || C="refs/remotes/origin/$B"
+if [ -f scripts/session-file.mjs ]; then node scripts/session-file.mjs "$B" --from-branch
+else T=$(mktemp -d) && for f in session-file base-branch is-main; do git show "$C:scripts/$f.mjs" > "$T/$f.mjs" || exit 1; done && node "$T/session-file.mjs" "$B" --from-branch; fi
 gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,baseRefName,mergedAt,url
 ```
 
-**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. It prints each match as `<ref>:<path>`, the ref it read: the local branch, or origin's copy when there is no local one, and never a tag that shares the name. Read the file with `git show '<the line it printed>'`, written in as it stands, because shell state does not carry between commands. The fetch does not prune: a branch deleted on merge keeps its `origin/` ref until step 4, so the lookup can still read it.
+**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. It prints each match as `<ref>:<path>`, the ref it read: the local branch, or origin's copy when there is no local one, and never a tag that shares the name. Read the file with `git show '<the line it printed>'`, written in as it stands, because shell state does not carry between commands. The fetch does not prune: a branch deleted on merge keeps its `origin/` ref until step 4, so the lookup can still read it. A main checkout on a commit older than `scripts/session-file.mjs` does not have the script, so the block then runs the branch's own copy, with the two scripts it imports, from a scratch folder.
 
 - **One file:** that is this session's file.
 - **None:** the branch has no session file, so it made no worktree.

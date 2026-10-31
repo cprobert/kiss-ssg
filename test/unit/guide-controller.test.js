@@ -12,6 +12,7 @@ import guide, {
   renderWithTargets,
   repoTarget,
   splitSections,
+  subHeadingLines,
 } from '../../src/controllers/guide.js'
 
 const root = path.resolve(import.meta.dirname, '../..')
@@ -211,6 +212,18 @@ describe('repoTarget', () => {
     expect(repoTarget('web+cal:x', 'link')).toBe('web+cal:x')
   })
 
+  // Round 21: GUIDE.md is at the repository's root, so `/x` and `./x` and
+  // `a/../x` all name x there; one that climbs out of the repository is a
+  // mistake, and fails like a link to an anchor no page has.
+  it('reads a path from the repository root, and refuses one that leaves it', () => {
+    const blob = 'https://github.com/cprobert/kiss-ssg/blob/main/'
+    expect(repoTarget('/lib/kiss.js', 'link')).toBe(`${blob}lib/kiss.js`)
+    expect(repoTarget('./lib/../GUIDE.md', 'link')).toBe(`${blob}GUIDE.md`)
+    expect(() => repoTarget('../up.md', 'link')).toThrow(
+      'GUIDE.md links to ../up.md, outside the repository',
+    )
+  })
+
   // Round 15: `?raw=true` went after the fragment, inside it, where GitHub
   // never reads it.
   it('puts ?raw=true before a fragment, and beside a query', () => {
@@ -220,6 +233,31 @@ describe('repoTarget', () => {
     expect(repoTarget('img/d.svg?v=2', 'image')).toBe(
       'https://github.com/cprobert/kiss-ssg/blob/main/img/d.svg?v=2&raw=true',
     )
+  })
+})
+
+// Round 21: an ATX heading may follow a paragraph or a list item with no
+// blank line, and the raw <hN> line put in its place joined that block, so
+// the heading rendered inside the <p> or the <li>.
+describe('subHeadingLines', () => {
+  it.each([['Some para'], ['- item'], ['> quoted']])(
+    'stands on its own after %j',
+    (before) => {
+      const html = renderWithTargets(
+        [before, ...subHeadingLines('sub', 3, 'Sub'), 'text'].join('\n'),
+        (t) => t,
+      )
+      expect(html).toMatch(/<\/(p|ul|blockquote)>\s*<h3 id="sub">Sub<\/h3>/)
+    },
+  )
+
+  // Round 21: Remarkable 2.0.1 never starts an HTML block with <h1>–<h6> (its
+  // tag pattern has no digits; AIKB/upstream.md), so every heading the guide
+  // put in was wrapped in a <p>, and the built pages carried `<p></p>`
+  // before each one.
+  it('leaves no injected heading inside a <p>, on any guide page', () => {
+    for (const page of pages)
+      expect(render(page.slug), page.slug).not.toMatch(/<p>\s*<h[1-6]/)
   })
 })
 

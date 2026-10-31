@@ -238,10 +238,21 @@ describe('isActive', () => {
 
     it('an empty href matches the root page only', () => {
       const empty =
-        '{{#isActive page folderMatch=true}}[{{active}}]{{/isActive}}'
+        '{{#isActive page href="" folderMatch=true}}[{{active}}]{{/isActive}}'
       expect(render(empty, { page: { pageURL: 'anything.html' } })).toBe('[]')
       expect(render(empty, { page: { pageURL: 'index.html' } })).toBe(
         '[active]',
+      )
+    })
+
+    // Round 21: a missing href was read as '' and marked the home page, so a
+    // nav item with no href (a label, a separator) got the class there, while
+    // @current (round 19) did not. A missing href names no page, for both.
+    it('a missing href matches no page, not even the root', () => {
+      const missing =
+        '{{#isActive page folderMatch=true}}[{{active}}|{{@current}}]{{/isActive}}'
+      expect(render(missing, { page: { pageURL: 'index.html' } })).toBe(
+        '[|false]',
       )
     })
   })

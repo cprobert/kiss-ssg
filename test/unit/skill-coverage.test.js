@@ -798,6 +798,8 @@ const CONTRADICTIONS = [
       // Round 14: the exact page is private data, `@current`; a context key
       // `current` inside the block is the site's own, or nothing.
       /\{\{#if current\}\}\s*aria-current/,
+      // Round 21: a missing href names no page, so it is not ''.
+      /absent `href` is treated as `''`/,
     ],
   },
   {

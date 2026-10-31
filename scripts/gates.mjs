@@ -238,8 +238,16 @@ export function formatGate(base, diff, run, bin) {
   // `--ignore-unknown` drops anything prettier has no parser for, so the
   // gate can just hand it every changed file.
   const target = wholeRepo || overflows ? ['.'] : diff.files
+  // `--` before the files: a name that starts with `-` was read as an option,
+  // and prettier then checked nothing and exited 0 (measured, round 21).
   return {
-    ...run(process.execPath, [bin, '--check', '--ignore-unknown', ...target]),
+    ...run(process.execPath, [
+      bin,
+      '--check',
+      '--ignore-unknown',
+      '--',
+      ...target,
+    ]),
     note,
   }
 }

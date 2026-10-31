@@ -27,6 +27,33 @@ describe('docs-sweep scope', () => {
   }
   afterAll(() => fs.rmSync(root, { recursive: true, force: true }))
 
+  // Round 21: git quotes a non-ASCII path unless asked not to, and the quoted
+  // name matched no rule, so its doc obligation never fired.
+  it('fires the rule for a changed file whose path has an accent', () => {
+    const repo = path.join(root, 'accent')
+    fs.mkdirSync(path.join(repo, 'lib'), { recursive: true })
+    fs.writeFileSync(path.join(repo, 'CLAUDE.md'), '# x\n')
+    const git = (...args) =>
+      execFileSync('git', args, { cwd: repo, env, stdio: 'ignore' })
+    const commit = (m) =>
+      git('-c', 'user.name=t', '-c', 'user.email=t@e', 'commit', '-q', '-m', m)
+    git('init', '-q', '-b', 'main')
+    git('add', '.')
+    commit('base')
+    git('checkout', '-q', '-b', 'feat')
+    const skill = path.join(repo, '.claude/skills/café/SKILL.md')
+    fs.mkdirSync(path.dirname(skill), { recursive: true })
+    fs.writeFileSync(skill, '# café\n')
+    git('add', '.')
+    commit('a skill')
+    const result = spawnSync('node', [script], {
+      cwd: repo,
+      env,
+      encoding: 'utf8',
+    })
+    expect(result.stdout).toContain('▶ Skills  (.claude/skills/café/SKILL.md)')
+  })
+
   it('says in one line that a base with no commit has nothing to diff', () => {
     const repo = path.join(root, 'unborn')
     fs.mkdirSync(path.join(repo, 'lib'), { recursive: true })

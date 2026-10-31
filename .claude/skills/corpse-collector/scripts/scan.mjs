@@ -171,6 +171,10 @@ export function formerSkillNames(root) {
     out = execFileSync(
       'git',
       [
+        // Unquoted non-ASCII names, as in every other git file list here
+        // (round 21).
+        '-c',
+        'core.quotePath=false',
         'log',
         '--all',
         '--diff-filter=DR',

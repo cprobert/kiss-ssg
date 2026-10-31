@@ -104,7 +104,7 @@ If the pull fails, read what it says before deciding why. "Not possible to fast-
 
 `kiss-branch-close` recorded the knowledge base (`AIKB/`) on the branch, and the merge brought that record onto the base. Check that the merged base still builds to it, in a checkout that is on the merged base:
 
-- **The branch was in the main checkout:** step 3 left it on the merged base. Run the check there.
+- **The branch was in the main checkout:** step 3 left it on the merged base, when step 3 updated it. Run the check there. If step 3 skipped the update (the pull failed), the checkout is on an older base, and a check there would report the merge as drift: skip the check, and say why in the report.
 - **The branch was in its own worktree:** run it in that worktree, which has its own `node_modules`, after moving it onto the merged base. It must be clean first (`git -C <worktree> status --short` prints nothing; if not, stop and ask). Step 5 removes it afterwards.
 
   ```bash

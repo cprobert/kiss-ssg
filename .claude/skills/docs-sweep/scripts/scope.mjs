@@ -49,16 +49,20 @@ try {
   process.exit(2)
 }
 const commits = git(['log', `${BASE}..HEAD`, '--oneline'])
-const changed = git(['diff', `${BASE}...HEAD`, '--name-status'])
-  .split('\n')
-  .filter(Boolean)
-  .map((line) => {
-    const [status, ...rest] = line.split('\t')
-    return {
-      status: status[0],
-      file: rest[rest.length - 1].replace(/\\/g, '/'),
-    }
-  })
+// -z: git quotes a non-ASCII path otherwise, and a quoted name matched no rule
+// (round 21). Fields are NUL-separated: a status, then one path, or two for a
+// rename or a copy (`R100`, `C75`), of which the second is the new name.
+const changed = []
+{
+  const fields = git(['diff', `${BASE}...HEAD`, '--name-status', '-z'])
+    .split('\0')
+    .filter(Boolean)
+  for (let i = 0; i < fields.length;) {
+    const status = fields[i++]
+    if (/^[RC]/.test(status)) i++
+    changed.push({ status: status[0], file: fields[i++].replace(/\\/g, '/') })
+  }
+}
 
 const libModule = (f) => (/^lib\/([\w-]+)\.js$/.exec(f) ?? [])[1]
 

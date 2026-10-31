@@ -31,14 +31,17 @@ export function formatFailureMessage(failures) {
 }
 
 if (isMain(import.meta.filename)) {
+  // -z: git quotes a non-ASCII name otherwise, the quoted name has no parser
+  // prettier knows, and an unformatted café.js was let through unchecked
+  // (measured, round 21).
   const staged = execFileSync(
     'git',
-    ['diff', '--cached', '--name-only', '--diff-filter=ACMR'],
+    ['diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR'],
     {
       encoding: 'utf8',
     },
   )
-    .split(/\r?\n/)
+    .split('\0')
     .filter(Boolean)
 
   const infos = new Map()

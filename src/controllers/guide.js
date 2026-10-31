@@ -3,6 +3,7 @@
 // rendered here rather than by `{{markdown}}`, because that helper trims every
 // line and so flattens the indentation inside fenced code blocks.
 import fs from 'node:fs'
+import path from 'node:path'
 import { Remarkable } from 'remarkable'
 import { linkTokens } from '../../scripts/markdown-links.mjs'
 
@@ -168,6 +169,16 @@ export function splitSections(source) {
   return sections
 }
 
+// The lines a sub-heading becomes on its page: a raw <hN> with its anchor,
+// with a blank line before it. An ATX heading may follow a paragraph, a list
+// item or a quote with none, and the raw line then joined that block, so the
+// heading rendered inside the <p> or <li> (round 21).
+export const subHeadingLines = (anchor, level, title) => [
+  '',
+  `<h${level} id="${anchor}">${headingHtml(title)}</h${level}>`,
+  '',
+]
+
 // Renders a page's Markdown with every link and image target passed through
 // `rewrite`. It changes the tokens Remarkable parsed, not the text, so a link
 // shown inside code (`- [title](url): description`) or written as raw HTML is
@@ -179,7 +190,13 @@ export function renderWithTargets(source, rewrite) {
   for (const token of linkTokens(tokens))
     if (token.type === 'image') token.src = rewrite(token.src, 'image')
     else token.href = rewrite(token.href, 'link')
-  return markdown.renderer.render(tokens, markdown.options, env)
+  // Remarkable 2.0.1 never starts an HTML block with <h1>–<h6>: its opening
+  // tag pattern, /^<([a-zA-Z]{1,15})[\s\/>]/, allows no digit, though h1–h6
+  // are on its block list (AIKB/upstream.md). So a heading put in as raw HTML
+  // comes back as a paragraph; this unwraps exactly that shape (round 21).
+  return markdown.renderer
+    .render(tokens, markdown.options, env)
+    .replace(/<p>(<(h[1-6])\b[^>]*>[\s\S]*?<\/\2>)<\/p>/g, '$1')
 }
 
 // Where a target that is not one of GUIDE.md's own anchors points: a URL
@@ -192,10 +209,15 @@ export function renderWithTargets(source, rewrite) {
 export function repoTarget(target, kind) {
   // A scheme as RFC 3986 spells it (`git+https:`, `web+cal:`), round 19.
   if (!target || /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(target)) return target
-  if (kind !== 'image') return `${REPO}${target}`
-  const [, file, query = '', fragment = ''] = /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(
-    target,
-  )
+  const [, written, query = '', fragment = ''] =
+    /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(target)
+  // GUIDE.md is at the root, so a path is read from there: `/x`, `./x` and
+  // `a/../x` all name x. One that climbs out of the repository is a mistake
+  // (round 21).
+  const file = path.posix.normalize(written.replace(/^\/+/, ''))
+  if (file === '..' || file.startsWith('../'))
+    throw new Error(`GUIDE.md links to ${target}, outside the repository`)
+  if (kind !== 'image') return `${REPO}${file}${query}${fragment}`
   return `${REPO}${file}${query ? `${query}&` : '?'}raw=true${fragment}`
 }
 
@@ -263,10 +285,7 @@ export default function guide({ model }) {
         }
         const level = sub.level - (single ? 2 : 1)
         const anchor = anchorFor(sub.title)
-        body.push(
-          `<h${level} id="${anchor}">${headingHtml(sub.title)}</h${level}>`,
-          '',
-        )
+        body.push(...subHeadingLines(anchor, level, sub.title))
         if (single && level === 2)
           toc.push({ anchor, html: headingHtml(sub.title) })
         i += sub.span - 1

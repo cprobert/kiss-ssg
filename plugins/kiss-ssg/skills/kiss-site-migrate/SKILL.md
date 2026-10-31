@@ -303,6 +303,9 @@ page inside a section. It is private data, like `@index`, so it hides no key of 
 - **A nav that calls `isActive` twice for one link**, once with `folderMatch` for the class and
   once without it for the attribute, can fold the two into one the same way. Optional: the
   same links are marked as before, though a link's attributes may come out in another order.
+- **A nav item with no `href`** (a label or a separator in a data-driven nav) is no longer
+  marked on the home page: a missing `href` names no page, for `{{active}}` as for
+  `{{@current}}`. A call that meant the home page writes `href=""`.
 - Check it the way the change promises: build before and after, and diff the pages. On any
   page, at most one nav link carries `aria-current="page"`, and it points at that page.
 

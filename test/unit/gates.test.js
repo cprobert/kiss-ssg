@@ -336,6 +336,7 @@ describe('formatGate', () => {
           prettierBin(),
           '--check',
           '--ignore-unknown',
+          '--',
           'lib/kiss.js',
           'README.md',
         ],
@@ -351,7 +352,7 @@ describe('formatGate', () => {
     expect(calls).toEqual([
       {
         cmd: process.execPath,
-        args: [prettierBin(), '--check', '--ignore-unknown', '.'],
+        args: [prettierBin(), '--check', '--ignore-unknown', '--', '.'],
       },
     ])
     expect(result.ok).toBe(true)
@@ -375,7 +376,7 @@ describe('formatGate', () => {
     expect(calls).toEqual([
       {
         cmd: process.execPath,
-        args: [prettierBin(), '--check', '--ignore-unknown', '.'],
+        args: [prettierBin(), '--check', '--ignore-unknown', '--', '.'],
       },
     ])
     expect(result.ok).toBe(true)
