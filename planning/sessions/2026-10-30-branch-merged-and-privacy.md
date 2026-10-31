@@ -258,6 +258,21 @@ opened: 2026-10-30
 - **2026-10-31 — Two recurring "recorded" findings, settled before round 19.** Each had come back in two or three rounds, and settling each was cheaper than recording it again.
   - **One exact-ref check.** `base-branch.mjs` exports `refExists` (`show-ref --verify`, with defaults), and `session-file.mjs` uses it in place of its own copy. The script tests pass, and the CLI answers as before, both for a branch and for one that is nowhere.
   - **README names `@current`,** in one sentence beside "Links by identity", which is where README describes helpers. It does not become a second helper reference: the sentence says what one `isActive` call gives a nav, and GUIDE.md § Helpers stays the reference.
+- **2026-10-31 — `/code-review` round 19: nine findings, six counted.** All six counted were fixed, plus finding 9, a one-word simplification; findings 7 and 8 are recorded. Findings 1 and 2 were reproduced by the reviewer, and I measured them again before changing anything.
+  - **Switching to and pulling a base that a tag shares its name with (findings 1 and 2, counted).** Measured in a scratch repository with a `v2` branch and a `v2` tag. With no local `v2`, `git switch v2` refused. With the local `v2` behind, `git pull --ff-only origin v2` fetched the tag, said "Already up to date", and left the base behind. Both merged skills now:
+    - create the local base from `refs/remotes/origin/<base>` when there is none;
+    - switch by name, which works once the branch exists;
+    - pull `refs/heads/<base>`.
+
+    In the same repository, the new lines created `v2` at origin's commit, and the new pull fast-forwarded where the old one did not. The skills explain why.
+
+  - **`@current` on a nav item with no `href` (finding 3, counted).** A missing `href` was coalesced to `''`, the home page's key, so on the home page that item got `aria-current="page"`. `@current` now needs a string `href` (red first). `active` keeps its documented rule, a missing `href` under `folderMatch` matching the home page. My first attempt changed `active` too, and the existing test that pins it caught it. GUIDE.md and the AIKB doc say so, and GUIDE.md's snippet still builds the same nav.
+  - **URL schemes with digits, `+`, `.` or `-` (finding 4, counted).** `git+https:` was turned into a GitHub path. `repoTarget` now uses RFC 3986's scheme grammar (red first).
+  - **`/branch-merged`'s prune in step 1 (finding 5, counted).** For a branch opened elsewhere and deleted on merge, the prune removed the only ref the lookup could read, and "no branch here or on origin" had no instruction. Both merged skills now fetch without pruning in step 1, and prune in their last step as before, and both say what that outcome means: no worktree and no commits here, so carry on from step 3. That a fetch without `--prune` keeps a deleted branch's `origin/` ref is git's documented behaviour; I did not measure it here. The plugin's existence checks in that lookup now use `show-ref --verify`, as the scripts do.
+  - **`/branch-merged` promised a `BASE=` that no block sets (finding 6, counted).** The intro now says the blocks write `<base>` from the pull request's `baseRefName`, and never from `base-branch.mjs`.
+  - **Recorded, not counted:**
+    - Finding 7: count orphans in the engine's link check rather than in a script the IA skill ships. That would be an engine feature, a good one, and it belongs on its own branch.
+    - Finding 8: the plugin's inline `awk` copies, a sixth time.
 
 ## Pulse log
 

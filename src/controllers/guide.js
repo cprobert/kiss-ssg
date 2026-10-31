@@ -173,7 +173,8 @@ export function renderWithTargets(source, rewrite) {
 // too, and `raw=true` joins a query and goes before a fragment, where GitHub
 // reads it (round 15).
 export function repoTarget(target, kind) {
-  if (!target || /^([a-z]+:|\/\/)/i.test(target)) return target
+  // A scheme as RFC 3986 spells it (`git+https:`, `web+cal:`), round 19.
+  if (!target || /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(target)) return target
   if (kind !== 'image') return `${REPO}${target}`
   const [, file, query = '', fragment = ''] = /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(
     target,

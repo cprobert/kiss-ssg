@@ -73,7 +73,7 @@ const git = (args) => {
 // session file is the one that describes it. The frontmatter is written once,
 // at open, so a local copy behind origin's reads the same `branch:`, `base:`
 // and `worktree:` (rounds 9 and 10).
-export function branchCommits(branch, exists = (ref) => refExists(ref)) {
+export function branchCommits(branch, exists = refExists) {
   return branchRefs(branch, exists)[0]?.full ?? null
 }
 

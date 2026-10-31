@@ -1414,7 +1414,7 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
 
-Beside `{{active}}`, the block has `{{@current}}`: `true` only when the page is `href` itself, whatever `folderMatch` says. That is what `aria-current="page"` names, while a section's nav item stays marked on every page inside it, so one call gives a link both. It is private data, like `@index`, so it never hides a `current` of your own:
+Beside `{{active}}`, the block has `{{@current}}`: `true` only when the page is `href` itself, whatever `folderMatch` says. That is what `aria-current="page"` names, while a section's nav item stays marked on every page inside it, so one call gives a link both. It is private data, like `@index`, so it never hides a `current` of your own. A missing `href` names no page, so it is never `@current`, though `href=""` is the home page:
 
 ```handlebars
 {{#each config.nav}}

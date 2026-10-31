@@ -9,7 +9,7 @@ description: After-merge clean-up, the step after /branch-close. Once the pull r
 
 **Why the check comes from GitHub, not git.** A squash merge puts one new commit on the base; the branch's own commits are never in it. So `git branch -d` refuses to delete a squash-merged branch, and `git branch -D` deletes a branch whether or not it was merged. Only the pull request says what was merged, and only its head commit says which commits that was.
 
-**Each code block sets what it uses.** Shell state does not carry from one Bash call to the next, so every block that needs the base starts by setting `BASE`.
+**Each code block sets what it uses.** Shell state does not carry from one Bash call to the next, so a block that needs the branch sets `B` itself, and where a block needs the base it says `<base>`: write in the merged pull request's `baseRefName`, which step 1 asks `gh` for. Never `scripts/base-branch.mjs`, which works the base out from this checkout's HEAD (step 3).
 
 ## On invocation
 
@@ -29,16 +29,17 @@ Then proceed.
 
 ```bash
 B=<branch>
-git fetch --prune origin
+git fetch origin
 git worktree list --porcelain
 node scripts/session-file.mjs "$B" --from-branch
 gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,baseRefName,mergedAt,url
 ```
 
-**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. It prints each match as `<ref>:<path>`, the ref it read: the local branch, or origin's copy when there is no local one, and never a tag that shares the name. Read the file with `git show '<the line it printed>'`, written in as it stands, because shell state does not carry between commands.
+**The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. It prints each match as `<ref>:<path>`, the ref it read: the local branch, or origin's copy when there is no local one, and never a tag that shares the name. Read the file with `git show '<the line it printed>'`, written in as it stands, because shell state does not carry between commands. The fetch does not prune: a branch deleted on merge keeps its `origin/` ref until step 4, so the lookup can still read it.
 
 - **One file:** that is this session's file.
 - **None:** the branch has no session file, so it made no worktree.
+- **No branch here or on origin** (the lookup says so): the branch was opened on another machine and its remote branch was deleted on merge. This machine then has no worktree of it to remove and no commits of it to lose, so step 2 is done; carry on from step 3, and say in the report that the session file could not be read.
 - **More than one:** the branch name was used before. Stop and ask which is this session's: a `worktree:` line read from the wrong file would remove another session's worktree.
 
 **The worktree this session made** is the path in the session file's `worktree:` line, and only that one is this skill's to remove. A session file without the line made no worktree. Then compare it with `git worktree list --porcelain`: if a worktree has the branch checked out (`branch refs/heads/<branch>`) and it is not the one the file names, stop and ask. Never remove a worktree because its name looks right: another session or another person may be working in it. And `git branch -D` refuses a branch that a worktree has checked out, so a worktree nobody accounts for blocks the deletion anyway.
@@ -73,15 +74,16 @@ git log --oneline FETCH_HEAD..refs/heads/<branch>
 
 Look before you switch a checkout: another session may be using it.
 
-- **The branch is in its own worktree** (`worktree:`): leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only origin <base>`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
+- **The branch is in its own worktree** (`worktree:`): leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only origin refs/heads/<base>`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
 - **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work in progress. Then:
 
 ```bash
+git show-ref -q --verify refs/heads/<base> || git switch -c <base> --track refs/remotes/origin/<base>
 git switch <base>
-git pull --ff-only origin <base>
+git pull --ff-only origin refs/heads/<base>
 ```
 
-`git switch <base>` creates the local branch from `origin/<base>` when there is none, and, unlike `git checkout`, only ever switches to a branch, never to a tag that shares its name. The pull names what it pulls, so a local base with no upstream set pulls too.
+A tag may share the base's name (this repository has `v1` and `v2`), so the base is named in full where it could be read as one: with no local branch, `git switch <base>` refuses, because the name resolves to the tag, so the first line creates the branch from `refs/remotes/origin/<base>`; and `git pull --ff-only origin <base>` fetches the tag, says "Already up to date", and leaves the base behind, so the pull names `refs/heads/<base>`. Naming what it pulls also means a local base with no upstream set pulls too.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 

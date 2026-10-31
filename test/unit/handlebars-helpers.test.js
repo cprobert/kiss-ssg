@@ -159,6 +159,18 @@ describe('isActive', () => {
     expect(warnings).toEqual([])
   })
 
+  // Round 19: a nav item with no href was coalesced to '', the home page's
+  // key, so on the home page it got aria-current="page" beside the real Home
+  // link. A missing href names no page; an explicit href="" still names home.
+  it('is never @current without an href, though an explicit "" is home', () => {
+    const t =
+      '{{#each nav}}{{#isActive ../page href=href}}{{label}}:{{@current}} {{/isActive}}{{/each}}'
+    const nav = [{ label: 'none' }, { label: 'home', href: '' }]
+    expect(render(t, { page: { pageURL: 'index.html' }, nav })).toBe(
+      'none:false home:true ',
+    )
+  })
+
   it('keeps @current inside the block', () => {
     expect(
       render('{{#isActive page href="/about"}}{{/isActive}}[{{@current}}]', {

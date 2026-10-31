@@ -22,12 +22,12 @@ Shell state does not carry from one command to the next, so step 1 prints the ba
 BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
 [ -n "$BASE" ] || BASE=$(git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')
 echo "base: ${BASE:-unknown}"
-git fetch --prune origin
+git fetch origin
 git worktree list --porcelain
 B=<branch>
 C="refs/heads/$B"
-git rev-parse -q --verify "$C" >/dev/null || C="refs/remotes/origin/$B"
-git rev-parse -q --verify "$C" >/dev/null || echo "there is no branch $B here or on origin"
+git show-ref -q --verify "$C" || C="refs/remotes/origin/$B"
+git show-ref -q --verify "$C" || echo "there is no branch $B here or on origin"
 git -c core.quotePath=false ls-tree -r --full-name --name-only "$C" -- planning/sessions 2>/dev/null | while read -r f; do
   if [ "$(git show "$C:$f" | awk -v k=branch '{ sub(/\r$/, "") } NR == 1 { sub(/^\357\273\277/, ""); if ($0 !~ /^---[ \t]*$/) exit; next } /^---[ \t]*$/ { if (found) print v; exit } index($0, k ":") == 1 && !found { v = substr($0, length(k) + 2); sub(/[ \t]#.*$/, "", v); gsub(/^[ \t]+|[ \t]+$/, "", v); q = substr(v, 1, 1); if (length(v) > 1 && (q == "\"" || q == "\047") && substr(v, length(v)) == q) v = substr(v, 2, length(v) - 2); found = 1 }')" = "$B" ]; then echo "$C:$f"; fi
 done
@@ -41,7 +41,7 @@ done
 
   It is the same `awk` the loop reads `branch:` with, given another key: the frontmatter only, so a `base:` line in the body is not the base, and a quoted value or a trailing `# comment` reads as the plain name. Only with no session file, or no `base:` line, use what the first lines printed: the local record of the remote's default branch, or the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base then means neither answered: ask which branch the work merges into. Never assume `main`.
 
-- **The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and what an editor or a YAML habit adds still matches (Windows line endings, a byte-order mark, a quoted value, a trailing `# comment`); the `awk` is the one `kiss-branch-close` and `kiss-branch-pulse` carry. It reads the branch by its full ref name, because a tag may share the short one, and from origin's copy when there is no local branch (one opened on another machine). It prints each match as `<ref>:<path>`, which `git show` reads as it stands; `--full-name` makes the path start at the repository's root, and `core.quotePath=false` keeps git from quoting a name with an accent in it, which `git show` could not read, so the lookup also works for a site that lives in a subfolder of its repository. One file is this session's. None means the branch has no session file and made no worktree. More than one means the name was used before: stop and ask which is this session's, because a `worktree:` line read from the wrong file would remove another session's worktree.
+- **The session file is read from the branch, not from this folder.** The loop reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `kiss-branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and what an editor or a YAML habit adds still matches (Windows line endings, a byte-order mark, a quoted value, a trailing `# comment`); the `awk` is the one `kiss-branch-close` and `kiss-branch-pulse` carry. It reads the branch by its full ref name, because a tag may share the short one, and from origin's copy when there is no local branch (one opened on another machine). It prints each match as `<ref>:<path>`, which `git show` reads as it stands; `--full-name` makes the path start at the repository's root, and `core.quotePath=false` keeps git from quoting a name with an accent in it, which `git show` could not read, so the lookup also works for a site that lives in a subfolder of its repository. One file is this session's. None means the branch has no session file and made no worktree. **No branch here or on origin** (the lookup says so): the branch was opened on another machine and its remote branch was deleted on merge. This machine then has no worktree of it to remove and no commits of it to lose, so step 2 is done; carry on from step 3, with the base the remote's default gave, and say in the report that the session file could not be read. The fetch does not prune, so a branch deleted on merge keeps its `origin/` ref until step 5, and the lookup can still read it. More than one means the name was used before: stop and ask which is this session's, because a `worktree:` line read from the wrong file would remove another session's worktree.
 - **The worktree this session made** is the path in the session file's `worktree:` line, and only that one is this skill's to remove. A file without the line made no worktree. If `git worktree list --porcelain` shows another worktree with the branch checked out (`branch refs/heads/<branch>`), stop and ask: someone may be working in it, and `git branch -D` refuses a branch a worktree has checked out anyway.
 
 **Confirm the merge before deleting anything.** A squash merge, the usual choice on GitHub, puts one new commit on the base and none of the branch's own, so git alone cannot tell a squashed branch from an unmerged one; `git branch -D` would delete either.
@@ -85,8 +85,16 @@ Before anything changes. A merged pull request only proves that what was pushed 
 
 Look before you switch a checkout: another session may be using it.
 
-- **The branch is in its own worktree:** leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only origin <base>`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
-- **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work. Then `git switch <base>`, which only ever switches to a branch, never to a tag that shares its name, and `git pull --ff-only origin <base>`, which names what to pull, so a local base with no upstream set pulls too.
+- **The branch is in its own worktree:** leave the main checkout on whatever branch it is on. Pull it (`git pull --ff-only origin refs/heads/<base>`) only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
+- **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work. Then:
+
+  ```bash
+  git show-ref -q --verify refs/heads/<base> || git switch -c <base> --track refs/remotes/origin/<base>
+  git switch <base>
+  git pull --ff-only origin refs/heads/<base>
+  ```
+
+  A tag may share the base's name (this repository has `v1` and `v2`), so the base is named in full where it could be read as one: with no local branch, `git switch <base>` refuses, because the name resolves to the tag, so the first line creates the branch from `refs/remotes/origin/<base>`; and `git pull --ff-only origin <base>` fetches the tag, says "Already up to date", and leaves the base behind, so the pull names `refs/heads/<base>`. Naming what it pulls also means a local base with no upstream set pulls too.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 

@@ -191,6 +191,11 @@ describe('repoTarget', () => {
       'https://example.com/x',
     )
     expect(repoTarget('//example.com/a', 'link')).toBe('//example.com/a')
+    // Round 19: a scheme may hold digits, `+`, `.` and `-` (RFC 3986).
+    expect(repoTarget('git+https://example.com/r.git', 'link')).toBe(
+      'git+https://example.com/r.git',
+    )
+    expect(repoTarget('web+cal:x', 'link')).toBe('web+cal:x')
   })
 
   // Round 15: `?raw=true` went after the fragment, inside it, where GitHub
