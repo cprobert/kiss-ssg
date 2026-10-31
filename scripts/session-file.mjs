@@ -64,10 +64,11 @@ const git = (args) => {
   }
 }
 
-// Whether git can resolve a ref, without throwing.
+// Whether a ref exists, by its exact name, without throwing: not a revision
+// parse, which would read `refs/heads/x~1` as the branch x (round 16).
 const resolves = (ref) => {
   try {
-    git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`])
+    git(['show-ref', '--verify', ref])
     return true
   } catch {
     return false

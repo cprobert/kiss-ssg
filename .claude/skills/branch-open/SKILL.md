@@ -141,7 +141,7 @@ Two more fields, **asked only for a substantial branch** — a chore does not ne
 
   ```bash
   echo "this checkout is on: $(git branch --show-current)"
-  BASE_NAME=$(node scripts/base-branch.mjs --name)
+  BASE_NAME=$(node scripts/base-branch.mjs --name) || exit 1
   git fetch origin
   echo "base: $BASE_NAME"
   git rev-parse --verify --quiet "refs/heads/$BASE_NAME" >/dev/null && echo "local: yes" || echo "local: no"

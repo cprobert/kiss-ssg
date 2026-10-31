@@ -71,15 +71,16 @@ The sequence follows two principles: **cheapest and most critical checks run fir
 ### Step 1 — Confirm branch state
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
-[ "$(git branch --show-current)" = "$(node scripts/base-branch.mjs --name)" ] && echo "on the base branch"
+BASE=$(node scripts/base-branch.mjs) || exit 1
+B=$(git branch --show-current); [ -n "$B" ] || echo "not on a branch (a detached HEAD)"
+[ -n "$B" ] && [ "$B" = "$(node scripts/base-branch.mjs --name)" ] && echo "on the base branch"
 git log "$BASE..HEAD" --oneline
 git status
 ```
 
 `scripts/base-branch.mjs` resolves the integration branch this work merges back into — `main`, or the major line currently in development (`v2` today). Every step below that says "the base" means whatever it printed.
 
-If it prints `on the base branch`: stop, tell the user. The comparison is between names, from `--name`: the plain script prints a ref, which is `refs/heads/v2` in this repository, where `v2` is a tag as well as a branch, and would never equal the branch name `git branch --show-current` prints. If there are uncommitted changes: tell the user and ask whether to commit first before continuing.
+If it prints `not on a branch`: stop, and ask which branch is being closed. If it prints `on the base branch`: stop, tell the user. The comparison is between names, from `--name`: the plain script prints a ref, which is `refs/heads/v2` in this repository, where `v2` is a tag as well as a branch, and would never equal the branch name `git branch --show-current` prints. If there are uncommitted changes: tell the user and ask whether to commit first before continuing.
 
 Then check whether the branch is behind the base:
 
@@ -191,7 +192,7 @@ CI runs the same script on every push and PR (`.github/workflows/ci.yml`), so gr
 **The default is to run it whenever the branch changed `lib/` or `bin/`**, and a close that skips it there says why in its report — "this session reviewed it" is not a reason, because an author reviewing its own diff has the author's blind spots. Four reflections asked for exactly this before it was the default (2026-09-06, 09-16, 09-21, 09-26), and on the two where one ran (09-21, 09-26) it found defects the gates and the session's self-check had passed. Otherwise skip it for docs-only or trivial branches, where a code review is a multi-minute round trip that finds nothing (the same judgment call as `/corpse-collector`). Skip it too — noting why in the close — if the Codex plugin isn't installed or authenticated in this environment: it needs per-user OpenAI auth that committed config can't supply, so not every operator will have it, and a missing reviewer must never block the ritual.
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 node "$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs | tail -1)" \
   review --wait --base "$BASE" --scope branch
 ```

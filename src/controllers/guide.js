@@ -26,13 +26,16 @@ const anchorFor = (text) =>
 const escapeHtml = (text) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-// A method name reads as code; any other heading as Markdown, inline, as the
-// body around it does. Escaped as plain text, `#### SCORM: \`{{scormBridge}}\``
-// showed its backticks in the page's contents (round 15).
-const headingHtml = (text) =>
+// A method name reads as code; any other heading as escaped text with its
+// inline code rendered. Escaped whole, `#### SCORM: \`{{scormBridge}}\``
+// showed its backticks in the page's contents (round 15); rendered as full
+// inline Markdown, a heading's raw HTML became a tag and its link skipped the
+// anchor rewrite and nested inside the contents' own link (round 16). A
+// heading needs code and nothing else.
+export const headingHtml = (text) =>
   /^\.[a-zA-Z]+\(\)$/.test(text)
     ? `<code>${escapeHtml(text)}</code>`
-    : markdown.renderInline(text)
+    : escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>')
 
 // Every absolute link left in a guide page leaves the site, because
 // `rewriteLink` below turns GUIDE.md's links to itself into relative ones. The

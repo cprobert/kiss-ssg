@@ -35,7 +35,7 @@ Then proceed.
 ### Step 1 — Scope the session, and find the intent
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 git log "$BASE..HEAD" --oneline
 git diff "$BASE...HEAD" --name-only
 node scripts/session-file.mjs

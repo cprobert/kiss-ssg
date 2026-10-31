@@ -83,7 +83,7 @@ Aim for an obvious choice at each step, not the fewest clicks; there is no three
 
 ### 6. Show the reader where they are
 
-A reader who lands on a deep page from a search engine should be able to tell where they are without visiting the home page. The page's `<h1>` names the page. The global nav marks its section (`{{#isActive}}` with `folderMatch`) on every page inside it. The section nav shows the page among its neighbours, and a deep page has breadcrumbs. `aria-current="page"` goes only on a link to the page itself: one `isActive` call with `folderMatch` gives `{{active}}` for the section's mark and `{{@current}}` for the attribute, as example 11's layout does; that marking is `kiss-accessibility`'s to review.
+A reader who lands on a deep page from a search engine should be able to tell where they are without visiting the home page. The page's `<h1>` names the page. The global nav marks its section (`{{#isActive}}` with `folderMatch`) on every page inside it. The section nav shows the page among its neighbours, and a deep page has breadcrumbs. `aria-current="page"` goes only on a link to the page itself: one `isActive` call with `folderMatch` gives `{{active}}` for the section's mark and `{{@current}}` for the attribute, as example 11's layout does; that marking is `kiss-accessibility`'s to review. `{{@current}}` needs a kiss-ssg new enough to have it, and a site's may be older than this skill: `grep -c '@current' node_modules/kiss-ssg/GUIDE.md` prints more than 0 when it has it. On an older one `@current` is empty, so no link carries the attribute and nothing warns; upgrade it first (`kiss-site-migrate`).
 
 ### 7. Breadcrumbs
 

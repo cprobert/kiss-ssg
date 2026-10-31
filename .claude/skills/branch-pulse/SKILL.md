@@ -49,7 +49,7 @@ If no intent file (the harness auto-created the branch, or it wasn't opened with
 ### Step 2 — Read the trajectory
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 git diff "$BASE...HEAD" --stat
 git status --short
 ```

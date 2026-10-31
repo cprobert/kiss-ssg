@@ -274,6 +274,15 @@ describe('the command line', () => {
   // a left-over `KISS_BASE_BRANCH=v2` resolved to the tag and was honoured,
   // so every gate diffed against an old release (round 8). A bare name that
   // is only a tag reads as a deleted branch; the tag itself is spelled out.
+  // Round 16: the tag check parsed a revision, so `refs/tags/v1.0~0` "was a
+  // tag" and an override rooted at a tag (`v1.0~0`) was thrown away. Only a
+  // name that is exactly a tag counts as one.
+  it('honours a revision rooted at a tag; only a bare tag name reads as stale', () => {
+    const result = run('v1.0~0')
+    expect(result.stdout.trim()).toBe('v1.0~0')
+    expect(result.stderr).toContain('v1.0~0 (override: KISS_BASE_BRANCH)')
+  })
+
   it('treats an override that names only a tag as a deleted branch, and falls back', () => {
     git(clone, 'tag', 'v9', 'origin/v2')
     const algorithm = run('').stdout.trim()

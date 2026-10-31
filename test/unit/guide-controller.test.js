@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import guide, {
+  headingHtml,
   renderWithTargets,
   repoTarget,
   splitSections,
@@ -115,6 +116,29 @@ describe('splitSections', () => {
     const [section] = splitSections(['## One', '', '#### Four', 'a'].join('\n'))
     const [sub] = [...section.subs.values()]
     expect(sub).toMatchObject({ title: 'Four', level: 4, span: 1 })
+  })
+})
+
+// Round 16: round 15 rendered a heading with Remarkable's `renderInline`,
+// with raw HTML on, so `<head>` in a heading became a tag, and a link in a
+// heading skipped the anchor rewrite and nested an <a> in the contents' <a>.
+// A heading needs inline code and nothing else.
+describe('headingHtml', () => {
+  it('renders inline code', () => {
+    expect(headingHtml('SCORM: `{{scormBridge}}` and `a<b`')).toBe(
+      'SCORM: <code>{{scormBridge}}</code> and <code>a&lt;b</code>',
+    )
+  })
+
+  it('escapes raw HTML, and renders no link', () => {
+    expect(headingHtml('The <head> element & co')).toBe(
+      'The &lt;head&gt; element &amp; co',
+    )
+    expect(headingHtml('See [x](#other)')).not.toContain('<a')
+  })
+
+  it('still shows a method name as code', () => {
+    expect(headingHtml('.page()')).toBe('<code>.page()</code>')
   })
 })
 

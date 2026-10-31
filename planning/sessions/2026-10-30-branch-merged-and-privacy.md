@@ -227,6 +227,16 @@ opened: 2026-10-30
   - **Recorded, not counted:**
     - Finding 7: `kiss-branch-merged`'s plain-merge route treats a branch whose tip is already in the base as merged. Every commit of such a branch is in the base, so deleting it loses nothing, and step 5 still refuses a worktree that is not clean.
     - Finding 9: `session-file.mjs` keeps its own git wrapper beside `base-branch.mjs`'s. They differ on purpose: one throws a one-line error, the other returns null for the algorithm.
+- **2026-10-31 — `/code-review` round 16: eight findings, five counted.** All five counted were fixed; findings 6–8 are recorded. Two of the five (findings 1 and 2) were faults from my own rounds 13 and 15.
+  - **A base that cannot be named reported a clean scan (finding 1, counted; my round 13 fault).** Since round 13, `base-branch.mjs` exits 1 with nothing on stdout when it cannot name a base. Skill snippets that captured it unchecked then ran `git diff "...HEAD"`, an empty diff that exits 0, so `/secrets-scan` reported clean. Every capture in every skill now ends `|| exit 1` or chains with `&&`. `test/unit/skill-base-capture.test.js` holds every capture in the repository's and the plugins' skills to that (red first, on ten captures). In a repository whose only branch is `trunk`, the snippet now stops with the reason and never reaches the diff.
+  - **Raw HTML in a heading (finding 2, counted; my round 15 fault).** Round 15 rendered headings with `renderInline` with raw HTML on, so `<head>` in a heading became a tag, and a link in one would skip the anchor rewrite and nest inside the contents' own link. A heading needs inline code only, so `headingHtml` now escapes the text and renders code spans alone (red first). The built `packages` page still shows the code.
+  - **`{{@current}}` on a site whose kiss-ssg is older than the skills (finding 3, counted).** The plugins update separately from a site's `node_modules`. On an older engine, `@current` is empty and no link gets the attribute, with no warning. `kiss-accessibility` and `kiss-information-architecture` now say to check first with `grep -c '@current' node_modules/kiss-ssg/GUIDE.md` (measured: 2 on this branch, 0 on `main`) and to upgrade if it prints 0. The check works whatever the version number turns out to be.
+  - **Revision expressions read as tags or branches (finding 4, counted).** `isTag` used `rev-parse`, so `refs/tags/v1.0~0` "was a tag", and the override `v1.0~0` was thrown away as stale (red first). The same class was in `branchRefs`' existence check, where `refs/heads/v2~1` "was a branch", and in `session-file.mjs`'s `resolves`. All three now ask `git show-ref --verify`, which takes exact refs only.
+  - **`/branch-close`'s guard on a detached HEAD (finding 5, counted).** Two empty strings compared equal, so it said "on the base branch". It now says "not on a branch (a detached HEAD)", stops, and asks which branch is being closed. Measured on a detached HEAD with a commit override.
+  - **Recorded, not counted:**
+    - Finding 6: the plugin's inline `awk` copies, a fifth time.
+    - Finding 7: print the full ref always, which would remove the short/full spelling logic. A refactor of the script's output, which every skill reads.
+    - Finding 8: one git wrapper for the two scripts.
 
 ## Pulse log
 

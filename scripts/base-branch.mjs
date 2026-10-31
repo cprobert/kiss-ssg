@@ -91,9 +91,7 @@ export function branchRefs(name, exists) {
 }
 
 function branchRef(name, cwd, run = git) {
-  const found = branchRefs(name, (full) =>
-    run(['rev-parse', '--verify', '--quiet', full], cwd),
-  )
+  const found = branchRefs(name, (full) => refExists(full, cwd, run))
   if (found.length === 0) return null
   const behind = (ref) =>
     Number(run(['rev-list', '--count', `${ref.full}..HEAD`], cwd) ?? Infinity)
@@ -102,8 +100,13 @@ function branchRef(name, cwd, run = git) {
     : found[0]
 }
 
-const isTag = (name, cwd, run) =>
-  Boolean(run(['rev-parse', '--verify', '--quiet', `refs/tags/${name}`], cwd))
+// Whether a ref exists, by its exact name. Not `rev-parse`, which resolves a
+// revision: `refs/tags/v2~1` would read as the tag v2, and an override
+// rooted at a tag (`v2~1`) as a stale one (round 16).
+const refExists = (full, cwd, run) =>
+  Boolean(run(['show-ref', '--verify', full], cwd))
+
+const isTag = (name, cwd, run) => refExists(`refs/tags/${name}`, cwd, run)
 
 // How the chosen branch is printed: short, unless a tag shares that spelling.
 // Asked of the winner only, not of every candidate the algorithm weighs.

@@ -41,13 +41,13 @@ The gate scope is narrower deliberately: `CLAUDE.md`'s rule is "engine code goes
 ### Step 1 — Detect files in scope
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 ```
 
 **Gate mode** (`--gate`) — added files only:
 
 ```bash
-BASE=$(node scripts/base-branch.mjs)
+BASE=$(node scripts/base-branch.mjs) || exit 1
 git diff --name-only --diff-filter=A "$BASE...HEAD" \
   | grep -E '^(lib/[^/]+\.js|scripts/[^/]+\.mjs)$' \
   | grep -v '^lib/kiss\.js$'
