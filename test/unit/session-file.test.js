@@ -148,6 +148,19 @@ describe('the command line', () => {
     expect(result.stderr).toMatch(/^session-file: git could not answer: .+\n$/)
   })
 
+  // Round 15: a folder whose name ends in .md was read as a file, and the
+  // EISDIR escaped as a stack trace.
+  it('reads files only, not a folder named like one', () => {
+    const folder = path.join(repo, 'planning/sessions/old.md')
+    fs.mkdirSync(folder)
+    git('checkout', '-q', 'fix/v2.8')
+    const result = run(repo)
+    git('checkout', '-q', 'main')
+    fs.rmSync(folder, { recursive: true, force: true })
+    expect(result.stderr).toBe('')
+    expect(result.stdout).toBe('planning/sessions/a.md\n')
+  })
+
   it('says so, rather than printing nothing, on a detached HEAD', () => {
     git('checkout', '-q', '--detach', 'main')
     const result = run(repo)

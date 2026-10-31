@@ -26,11 +26,13 @@ const anchorFor = (text) =>
 const escapeHtml = (text) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-// A method name reads as code; any other heading as prose.
+// A method name reads as code; any other heading as Markdown, inline, as the
+// body around it does. Escaped as plain text, `#### SCORM: \`{{scormBridge}}\``
+// showed its backticks in the page's contents (round 15).
 const headingHtml = (text) =>
   /^\.[a-zA-Z]+\(\)$/.test(text)
     ? `<code>${escapeHtml(text)}</code>`
-    : escapeHtml(text)
+    : markdown.renderInline(text)
 
 // Every absolute link left in a guide page leaves the site, because
 // `rewriteLink` below turns GUIDE.md's links to itself into relative ones. The
@@ -145,10 +147,16 @@ export function renderWithTargets(source, rewrite) {
 // with a scheme as it is, and a path in this repository on GitHub, a link
 // to the file's page and an image to the file itself, which `?raw=true`
 // serves. An empty target (`[TODO]()`) stays empty rather than becoming the
-// repository's front page (round 14).
+// repository's front page (round 14). A protocol-relative `//host/…` is a URL
+// too, and `raw=true` joins a query and goes before a fragment, where GitHub
+// reads it (round 15).
 export function repoTarget(target, kind) {
-  if (!target || /^[a-z]+:/i.test(target)) return target
-  return kind === 'image' ? `${REPO}${target}?raw=true` : `${REPO}${target}`
+  if (!target || /^([a-z]+:|\/\/)/i.test(target)) return target
+  if (kind !== 'image') return `${REPO}${target}`
+  const [, file, query = '', fragment = ''] = /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(
+    target,
+  )
+  return `${REPO}${file}${query ? `${query}&` : '?'}raw=true${fragment}`
 }
 
 /** @type {import('kiss-ssg').KissController} */

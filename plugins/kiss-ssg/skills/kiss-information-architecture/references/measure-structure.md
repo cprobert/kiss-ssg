@@ -52,6 +52,11 @@ const key = (p) =>
 const linksIn = new Map(files.map((f) => [key('/' + f), new Set()]))
 for (const file of files) {
   const page = key('/' + file)
+  // The page's own URL, which its relative links resolve against: the file's
+  // path, each part encoded, so a `#` or `?` in a folder's name is part of
+  // the path, not a fragment or a query.
+  const pageUrl =
+    site.origin + base + file.split('/').map(encodeURIComponent).join('/')
   // No link a reader cannot follow: one inside a comment, or in the text of
   // a <script>, a <template> or a <style>.
   const readable = html
@@ -65,7 +70,7 @@ for (const file of files) {
   for (const match of readable.matchAll(anchor)) {
     let url
     try {
-      url = new URL(match[1] ?? match[2] ?? match[3], site.origin + base + file)
+      url = new URL(match[1] ?? match[2] ?? match[3], pageUrl)
     } catch {
       continue
     }

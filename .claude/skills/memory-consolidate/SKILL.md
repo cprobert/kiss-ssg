@@ -58,7 +58,7 @@ The rest of the scan's findings are `/corpse-collector`'s business, not this ski
 A session log carries `consolidated: <YYYY-MM-DD>` in its frontmatter once it has been read by this skill. Everything without that line is unread:
 
 ```bash
-grep -L "^consolidated:" planning/sessions/*.md
+grep -rL --include='*.md' "^consolidated:" planning/sessions
 ```
 
 A log still `status: open` will be in that list on **every** sweep until its branch closes and `/session-reflect` writes its Feedback — there is nothing to fold in yet, and Step 7 leaves it unstamped. That is expected, not an oversight, and it is not a reason to stamp it early.

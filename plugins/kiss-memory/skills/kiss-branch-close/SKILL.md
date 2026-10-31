@@ -171,7 +171,7 @@ git commit -m "Close: reflection + status"
 The close keeps one branch's memory honest. Nothing in it keeps the **whole** base honest, and two measurable symptoms say it has stopped being:
 
 ```bash
-grep -L "^consolidated:" planning/sessions/*.md | wc -l   # sessions never folded in
+grep -rL --include='*.md' "^consolidated:" planning/sessions | wc -l   # sessions never folded in
 ```
 
 - **A Feedback item has recurred in three or more sessions.** Compare the Feedback you just wrote against every earlier session's — not only the three `kiss-branch-open` reads back. An item on its third outing is not a lesson anybody is going to learn by being told again; it needs promoting to a rule in `AIKB/site.md`.

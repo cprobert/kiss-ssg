@@ -33,19 +33,19 @@ No diff block at all means this site has never been recorded — that is step 4,
 
 ### 3. Read the sources, in this order
 
-| Source                                     | Gives you                                                                                                                                   | Label                  |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `AIKB/site.md`                             | what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already promoted to rules             | recollection (curated) |
-| `AIKB/site-map.md`                         | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps, subjects and hashes | generated              |
-| `AIKB/site-map.md`'s **Id** column         | the ids `{{link}}` answers to on this site — the list of valid link targets an agent adding a page can point at                             | generated              |
-| the `check` output above                   | whether it builds now, what differs from the last recorded build, and the four note findings                                                | generated              |
-| `AIKB/last-build.json`                     | the recorded build's page list, assets, sitemap, and `aikb.notes` — `missing`, `dead`, `stale`, `dangling`                                  | generated              |
-| `AIKB/notes/**/*.md`                       | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                               | recollection           |
-| the 3 most recent `planning/sessions/*.md` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open                | recollection           |
+| Source                                         | Gives you                                                                                                                                   | Label                  |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `AIKB/site.md`                                 | what the site is and who for, how it is deployed, the conventions, the standing gotchas, the feedback already promoted to rules             | recollection (curated) |
+| `AIKB/site-map.md`                             | pages and their views, models, controllers and partials; the partial → page index; models, controllers, pipeline steps, subjects and hashes | generated              |
+| `AIKB/site-map.md`'s **Id** column             | the ids `{{link}}` answers to on this site — the list of valid link targets an agent adding a page can point at                             | generated              |
+| the `check` output above                       | whether it builds now, what differs from the last recorded build, and the four note findings                                                | generated              |
+| `AIKB/last-build.json`                         | the recorded build's page list, assets, sitemap, and `aikb.notes` — `missing`, `dead`, `stale`, `dangling`                                  | generated              |
+| `AIKB/notes/**/*.md`                           | why a controller, a fetched URL model or a pipeline step is the way it is — the judgement the map cannot hold                               | recollection           |
+| the 3 most recent logs in `planning/sessions/` | what the last three pieces of work set out to do, what was amended mid-flight, and what their Feedback and Verdict left open                | recollection           |
 
 **Read `AIKB/site.md` first when it exists.** It is the one source somebody sat down and curated: authored, evergreen, never written by a build, and periodically fed by `kiss-memory-consolidate` from the session logs. It answers "what is this and who for" better than anything generated can, and its Standing gotchas are the distilled version of what you would otherwise reconstruct from a dozen notes. Label it **recollection (curated)** and keep that distinction in the briefing — it is recollection, so it can be out of date, but unlike a session log it is meant to be true today, and a place where it contradicts the map is a real finding worth reporting.
 
-Read the sessions newest first (`ls -t planning/sessions/*.md | head -3`) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
+Read the sessions newest first (`find planning/sessions -type f -name '*.md' -exec ls -t {} + | head -3`) and take their **Intent**, **Amendments**, **Feedback** and **Verdict** sections — the rest is prose you do not need. A session whose frontmatter carries `consolidated:` has already had its durable lessons folded into `site.md`, so read it for what happened, not for lessons you will then repeat.
 
 ### 4. Say plainly when a source is absent
 

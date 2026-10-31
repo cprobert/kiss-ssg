@@ -44,7 +44,7 @@ If the site has never been recorded there is no `aikb` block at all and none of 
 A session log carries `consolidated: <YYYY-MM-DD>` in its frontmatter once it has been folded in. Everything without that line is unread:
 
 ```bash
-grep -L "^consolidated:" planning/sessions/*.md
+grep -rL --include='*.md' "^consolidated:" planning/sessions
 ```
 
 Read each one's **Feedback**, **Amendments** and **Verdict** sections, newest first — the rest is prose you do not need here. Keep a tally as you go: which Feedback item appeared in which session file, by date. That tally is what decides a retirement in step 6.

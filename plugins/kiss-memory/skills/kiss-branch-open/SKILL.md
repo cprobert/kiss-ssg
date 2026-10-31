@@ -15,7 +15,7 @@ This is the site-shaped loop: no version bump, no package, no npm publish. What 
 ### 1. Read back the Feedback, and count how often it has come back
 
 ```bash
-ls -t planning/sessions/*.md 2>/dev/null | head -3
+find planning/sessions -type f -name '*.md' -exec ls -t {} + 2>/dev/null | head -3
 ```
 
 Read each one's `## Feedback` section. Anything that shows up in **two or more** of them is a recurring lesson that has not stuck — surface those to the user now, as this branch's standing checklist, and copy them into the session file under **Inherited feedback**. If there are no sessions yet, say so and skip; this is the first.
@@ -23,8 +23,8 @@ Read each one's `## Feedback` section. Anything that shows up in **two or more**
 Then count across **all** of them, not just the three you read back:
 
 ```bash
-grep -l "^consolidated:" planning/sessions/*.md | wc -l   # already folded into AIKB/site.md
-grep -L "^consolidated:" planning/sessions/*.md           # not yet
+grep -rl --include='*.md' "^consolidated:" planning/sessions | wc -l   # already folded into AIKB/site.md
+grep -rL --include='*.md' "^consolidated:" planning/sessions           # not yet
 ```
 
 The three-session read-back is the briefing; the count is the diagnosis, and it needs the whole history because a lesson that recurred in 2026-05, 2026-07 and 2026-08 is invisible to a window of three. Skim every session's Feedback — including the consolidated ones, and say that you did — and tally which items recur.
@@ -39,7 +39,7 @@ It is a recommendation, not a gate: the user may open the branch anyway. Do not 
 **Also list possibly abandoned work.** A session file still `status: open` on a branch that is not this one is a piece of work somebody walked away from:
 
 ```bash
-grep -lE "^status: open[[:space:]]*$" planning/sessions/*.md | xargs grep -H "^branch:"
+grep -rlE --include='*.md' "^status: open[[:space:]]*$" planning/sessions | xargs grep -H "^branch:"
 ```
 
 Name each one with its branch and its opened date, and ask the user what it is — finished but never closed, genuinely still in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one of them is the branch you are about to adopt in step 2, that is not abandoned work — that is this piece of work, and step 2 handles it.

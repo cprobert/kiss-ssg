@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isMain } from './is-main.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -66,10 +67,7 @@ export function syncPluginVersions({ root = ROOT, version } = {}) {
 }
 
 // Only when run directly, so importing this for its test writes nothing.
-if (
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-) {
+if (isMain(import.meta.filename)) {
   const changed = syncPluginVersions()
   const version = JSON.parse(
     readFileSync(path.join(ROOT, 'package.json'), 'utf8'),

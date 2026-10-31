@@ -42,6 +42,7 @@ describe('the structure script, as the reference ships it', () => {
     'index.html',
     [
       '<a href="/about/">About</a>',
+      '<a href="/c%23/">C#</a>',
       '<!-- <a href="/orphan.html">Orphan</a> -->',
       '<script>const html = \'<a href="/orphan.html">x</a>\'</script>',
       '<template><a href="/orphan.html">x</a></template>',
@@ -54,6 +55,10 @@ describe('the structure script, as the reference ships it', () => {
   )
   page('mapped.html', '<p>Reached through the image map only.</p>')
   page('orphan.html', '<p>Nothing links here.</p>')
+  // Round 15: a page's own URL was built from its raw file name, so a `#`
+  // in a folder's name became a fragment, and its relative links missed.
+  page('c#/index.html', '<a href="intro/">Intro</a>')
+  page('c#/intro/index.html', '<p>Reached from c#/ only.</p>')
   // A search console verification file: copied as an asset, not a page.
   fs.writeFileSync(
     path.join(site, 'google1234.html'),
@@ -85,6 +90,8 @@ describe('the structure script, as the reference ships it', () => {
     expect(rows.map((r) => r.split('\t')[2]).sort()).toEqual([
       '/',
       '/about',
+      '/c#',
+      '/c#/intro',
       '/mapped',
       '/orphan',
     ])
@@ -92,5 +99,9 @@ describe('the structure script, as the reference ships it', () => {
 
   it('follows an image map’s <area href>', () => {
     expect(rows).toContain('1\t1\t/mapped')
+  })
+
+  it('resolves a relative link from a page whose folder has a # in its name', () => {
+    expect(rows).toContain('1\t2\t/c#/intro')
   })
 })

@@ -145,6 +145,15 @@ function sessionFiles(commits) {
         .readdirSync(dir, { recursive: true })
         .map((f) => String(f).split(path.sep).join('/'))
         .filter((f) => f.endsWith('.md'))
+        // A file, and one that can be read: a folder may be named old.md,
+        // and a symlink may point at nothing (round 15).
+        .filter((f) => {
+          try {
+            return fs.statSync(path.join(dir, f)).isFile()
+          } catch {
+            return false
+          }
+        })
         .sort()
         .map((f) => path.posix.join(SESSIONS, f))
     : []

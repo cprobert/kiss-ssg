@@ -264,7 +264,7 @@ Then name the next step: once the pull request has merged, `/branch-merged` dele
 Then check whether the logs themselves are due a sweep — the close keeps one branch's memory honest, and nothing in it keeps the whole set honest:
 
 ```bash
-grep -L "^consolidated:" planning/sessions/*.md | wc -l
+grep -rL --include='*.md' "^consolidated:" planning/sessions | wc -l
 ```
 
 **Recommend `/memory-consolidate` when either trigger fires** — the same rule `/branch-open` reads back against:

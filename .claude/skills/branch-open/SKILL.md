@@ -75,7 +75,7 @@ When unsure, ask one question: "quick chore, or something worth speccing?"
 ### Step 2a — Read back the Feedback, and count how often it has come back
 
 ```bash
-ls -t planning/sessions/*.md | head -3
+find planning/sessions -type f -name '*.md' -exec ls -t {} + | head -3
 ```
 
 Read each one's `## Feedback` section — the recommendations the last three branches left for next time. Anything that appears in **two or more** of them is a lesson that has not stuck, and this branch inherits it: surface those items to the user before the interview and keep them visible through it, so the criteria can be written to hold them. A reflection nobody reads at the next open is a diary, not institutional memory.
@@ -83,8 +83,8 @@ Read each one's `## Feedback` section — the recommendations the last three bra
 The three-log read-back is the briefing. The **count** is the diagnosis, and it needs the whole history:
 
 ```bash
-ls planning/sessions/*.md | wc -l                 # logs in total
-grep -L "^consolidated:" planning/sessions/*.md   # the ones never folded in
+find planning/sessions -type f -name '*.md' | wc -l                 # logs in total
+grep -rL --include='*.md' "^consolidated:" planning/sessions   # the ones never folded in
 ```
 
 Skim **every** log's Feedback, not the last three, and tally which lessons recur — then say that you did. Three is too narrow a window to see the pattern: "look at one built page yourself" recurred across four logs in five days in this repo (2026-09-05, 09-06, 09-08, 09-09) and a window of three would have shown it as an ordinary one-off at any point along the way.
@@ -101,7 +101,7 @@ It is a recommendation, not a gate: the user may open the branch anyway. **Do no
 **Also list possibly abandoned work.** A log still `status: open` on a branch that is not the one you are about to work on is a piece of work somebody walked away from:
 
 ```bash
-grep -lE "^status: open[[:space:]]*$" planning/sessions/*.md | xargs grep -H "^branch:"
+grep -rlE --include='*.md' "^status: open[[:space:]]*$" planning/sessions | xargs grep -H "^branch:"
 ```
 
 Name each one with its branch and its opened date and ask the user what it is — finished but never closed, still genuinely in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one names the branch you are adopting in Step 4, that is not abandoned work — that is this piece of work.

@@ -14,6 +14,31 @@ import { isMain } from '../../scripts/is-main.mjs'
 
 const repo = fileURLToPath(new URL('../..', import.meta.url))
 
+// Round 15: round 13's sweep grepped one spelling of the guard and missed
+// two scripts that compared `path.resolve(process.argv[1])` with
+// `fileURLToPath(import.meta.url)`, the ones npm runs on `version` and on
+// `postpublish`. Any script that reads `process.argv[1]` to decide whether it
+// is the program goes through isMain, whatever the spelling.
+describe('every script decides it is the program through isMain', () => {
+  const dirs = [
+    'scripts',
+    ...fs
+      .readdirSync(path.join(repo, '.claude/skills'))
+      .map((skill) => `.claude/skills/${skill}/scripts`)
+      .filter((dir) => fs.existsSync(path.join(repo, dir))),
+  ]
+  const files = dirs.flatMap((dir) =>
+    fs
+      .readdirSync(path.join(repo, dir))
+      .filter((f) => /\.m?js$/.test(f))
+      .map((f) => `${dir}/${f}`),
+  )
+  it.each(files.filter((f) => f !== 'scripts/is-main.mjs'))('%s', (file) => {
+    const text = fs.readFileSync(path.join(repo, file), 'utf8')
+    expect(text).not.toMatch(/process\.argv\[1\]/)
+  })
+})
+
 describe('isMain', () => {
   it('is false for a module node was not started with', () => {
     expect(isMain(fileURLToPath(import.meta.url))).toBe(false)

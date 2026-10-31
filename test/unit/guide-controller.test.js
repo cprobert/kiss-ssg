@@ -33,6 +33,21 @@ describe('the guide pages', () => {
     expect(render('discovery')).toContain('href="../urls/#host-url-policy"')
   })
 
+  // Round 15: a sub-heading's title was escaped as plain text, so GUIDE.md's
+  // `#### SCORM: \`{{scormBridge}}\` and \`window.kissScorm\`` showed its
+  // backticks on the docs site, in the heading and in the page's contents.
+  // (The heading itself came out right: Remarkable parses the inline Markdown
+  // left inside the raw HTML line. The contents entry did not.)
+  it('render inline Markdown in a sub-heading and its contents entry', () => {
+    const model = pages
+      .map((page) => guide({ model: page }).model)
+      .find((m) => m.html.includes('SCORM: '))
+    const want =
+      'SCORM: <code>{{scormBridge}}</code> and <code>window.kissScorm</code>'
+    expect(model.html).toContain(want)
+    expect(model.toc.map((entry) => entry.html)).toContain(want)
+  })
+
   it('make every #### heading outside code a heading with an anchor', () => {
     const html = render('index')
     const subs = [...html.matchAll(/<h3 id="([^"]+)">/g)].map((m) => m[1])
@@ -120,9 +135,21 @@ describe('repoTarget', () => {
     )
   })
 
-  it('leaves a URL with a scheme alone', () => {
+  it('leaves a URL with a scheme alone, or a protocol-relative one', () => {
     expect(repoTarget('https://example.com/x', 'link')).toBe(
       'https://example.com/x',
+    )
+    expect(repoTarget('//example.com/a', 'link')).toBe('//example.com/a')
+  })
+
+  // Round 15: `?raw=true` went after the fragment, inside it, where GitHub
+  // never reads it.
+  it('puts ?raw=true before a fragment, and beside a query', () => {
+    expect(repoTarget('img/d.svg#dark', 'image')).toBe(
+      'https://github.com/cprobert/kiss-ssg/blob/main/img/d.svg?raw=true#dark',
+    )
+    expect(repoTarget('img/d.svg?v=2', 'image')).toBe(
+      'https://github.com/cprobert/kiss-ssg/blob/main/img/d.svg?v=2&raw=true',
     )
   })
 })

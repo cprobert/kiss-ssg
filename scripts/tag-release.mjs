@@ -17,6 +17,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isMain } from './is-main.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -83,10 +84,7 @@ function git(args) {
 }
 
 // Only when run directly, so importing this for its test tags nothing.
-if (
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-) {
+if (isMain(import.meta.filename)) {
   const { version } = JSON.parse(
     readFileSync(path.join(ROOT, 'package.json'), 'utf8'),
   )
