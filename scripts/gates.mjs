@@ -127,9 +127,12 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
     // shrink that check to the stray file.
     if (gitOut(['rev-list', '--count', `${mergeBase}..HEAD`]).trim() === '0')
       return { files: [] }
+    // -z on both lists: git quotes a non-ASCII name otherwise, and prettier
+    // was handed `"caf\303\251.json"`, a file that does not exist (round 11).
     const changed = gitOut([
       'diff',
       '--name-only',
+      '-z',
       '--diff-filter=ACMR',
       mergeBase,
     ])
@@ -143,15 +146,15 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
     // paths from the root, as `git diff` does, wherever this runs.
     const created = gitOut([
       'ls-files',
+      '-z',
       '--others',
       '--exclude-standard',
       '--full-name',
       '--',
       ':(top)',
     ])
-    const files = `${changed}\n${created}`
-      .split('\n')
-      .map((f) => f.trim())
+    const files = `${changed}\0${created}`
+      .split('\0')
       // No extension filter: `.prettierignore` decides what is out of scope
       // and `--ignore-unknown` (below) drops anything prettier cannot parse,
       // so the two live in one place instead of drifting apart here.

@@ -138,6 +138,16 @@ describe('the command line', () => {
     )
   })
 
+  // Round 11: outside a git working tree, git's refusal came out as a
+  // ChildProcess stack trace, which a skill cannot tell from "no file".
+  it('says in one line when git refuses, never with a stack trace', () => {
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-no-git-'))
+    const result = run(outside)
+    fs.rmSync(outside, { recursive: true, force: true })
+    expect(result.status).toBe(1)
+    expect(result.stderr).toMatch(/^session-file: git could not answer: .+\n$/)
+  })
+
   it('says so, rather than printing nothing, on a detached HEAD', () => {
     git('checkout', '-q', '--detach', 'main')
     const result = run(repo)

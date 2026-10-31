@@ -4,7 +4,16 @@
 // six did before the script (2026-10-31), so this runs each copy exactly as
 // its SKILL.md ships it, on the same session files, and fails when one finds
 // a different file from the script or the three `awk` programs stop being
-// one text. A fix to one copy that misses the others turns this red.
+// one text. A fix to one copy that misses the others turns this red, and so
+// does a fix to the script alone, once it brings the fixture it was seen red
+// with.
+//
+// Nor a `kiss-ssg session-file` command in the package (code review, round
+// 11, declined): the plugin and a site's `node_modules/kiss-ssg` update on
+// their own schedules, so a skill would meet sites whose installed kiss-ssg
+// has no such command and still need the shell for them; and the kiss-memory
+// skills read a session log before anything else, including in a folder
+// whose dependencies are not installed yet (a fresh worktree).
 //
 // The copies are POSIX shell, run on the Linux leg of CI; on Windows, `bash`
 // on the PATH may be WSL's rather than Git's, so this leg skips.

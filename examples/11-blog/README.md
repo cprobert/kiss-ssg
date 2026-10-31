@@ -194,14 +194,15 @@ in the layout included:
 <a href='{{link model.prev}}'>&larr; Newer posts</a>
 <a class='brand' href='{{link "index"}}'>…</a>
 {{#each config.nav}}
-  <a href='{{link id}}'{{#isActive .. href=(link id) folderMatch=folderMatch}}
-    class='nav__link{{#if active}} is-active{{/if}}'{{#if current}} aria-current='page'{{/if}}{{/isActive}}>{{label}}</a>
+  {{#isActive .. href=(link id) folderMatch=folderMatch}}
+    <a href='{{href}}' class='nav__link{{#if active}} is-active{{/if}}'{{#if current}} aria-current='page'{{/if}}>{{label}}</a>
+  {{/isActive}}
 {{/each}}
 ```
 
 The nav is data — `{ id: 'journal', label: 'The journal', folderMatch: true }` in `router.js` — and
-`isActive` is handed the path `{{link}}` resolved, so the link and the active state are decided
-from one string. One call answers two questions: with `folderMatch`, `{{active}}` marks The journal
+`isActive` is handed the path `{{link}}` resolved and hands it back as `{{href}}`, so the link and
+the active state are decided from one string, resolved once. One call answers two questions: with `folderMatch`, `{{active}}` marks The journal
 on every page inside `/journal/`, so a reader on a post can see which section they are in, and
 `{{current}}` is true only on the link to the page itself, which alone carries `aria-current="page"`. The nav holds the site's top-level sections only,
 so Tags, a page inside the journal, is linked from the listing, the posts and the home page

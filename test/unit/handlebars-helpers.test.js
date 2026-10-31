@@ -148,6 +148,18 @@ describe('isActive', () => {
     )
   })
 
+  // Round 11: every isActive block carries `current`, so an isActive inside
+  // another (a nav partial inside a marked region) saw the outer block's own
+  // key and warned about a key no author wrote.
+  it('does not warn about the current an outer isActive put there', () => {
+    const out = render(
+      '{{#isActive page href="/"}}{{#isActive ../page href="/about"}}{{current}}{{/isActive}}{{/isActive}}',
+      { page: { pageURL: 'about.html' } },
+    )
+    expect(out).toBe('true')
+    expect(warnings).toEqual([])
+  })
+
   it('says the same of a current= in the hash', () => {
     const out = render(
       '{{#isActive page href="/about" current="mine"}}{{current}}{{/isActive}}',

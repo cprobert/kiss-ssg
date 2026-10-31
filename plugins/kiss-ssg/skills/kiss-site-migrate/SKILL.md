@@ -299,7 +299,7 @@ a nav whose section items use `folderMatch` used to need a second `isActive` cal
   links are marked as before, though a link's attributes may come out in another order.
 - **A site that passes its own `current` key into the block** (a nav item with a `current`
   field, or `current=` in the hash) now reads the helper's, as it already did for `active`, and
-  the build warns once: `isActive: its own {{current}} hides a "current" key`. Rename the
+  the build warns the first time (once per run, so a `--dev` session warns once): `isActive: its own {{current}} hides a "current" key`. Rename the
   site's key, and the warning goes.
 - Check it the way the change promises: build before and after, and diff the pages. On any
   page, at most one nav link carries `aria-current="page"`, and it points at that page.

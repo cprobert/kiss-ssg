@@ -260,6 +260,19 @@ describe('changedFiles', () => {
     fs.rmSync(path.join(repo, 'sub'), { recursive: true, force: true })
   })
 
+  // Round 11: git quotes a non-ASCII name (core.quotePath), and prettier was
+  // handed `"caf\303\251.json"`, a file that does not exist.
+  it('lists a non-ASCII name as the file it is, committed or untracked', () => {
+    fs.writeFileSync(path.join(repo, 'café.json'), '{}\n')
+    git('add', 'café.json')
+    commit('accented')
+    fs.writeFileSync(path.join(repo, 'naïve.json'), '{}\n')
+    const { files } = changedFiles('main', repo, env)
+    expect(files).toContain('café.json')
+    expect(files).toContain('naïve.json')
+    fs.rmSync(path.join(repo, 'naïve.json'))
+  })
+
   // On the base branch itself the branch has no changes of its own, and the
   // gate checks the whole repository: a dirty tree or a stray untracked file
   // there must not shrink that to the stray file (round 7, a regression of

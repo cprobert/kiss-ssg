@@ -44,11 +44,24 @@ export function branchOf(text) {
 export const matchingFiles = (files, read, branch) =>
   files.filter((file) => branchOf(read(file)) === branch)
 
-const git = (args) =>
-  execFileSync('git', args, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  })
+// A git that refuses (not a repository, an unsafe directory) is reported
+// in one line, with the first line of what git said, never as the
+// ChildProcess stack trace a skill cannot tell from "no file" (round 11).
+class GitError extends Error {}
+
+const git = (args) => {
+  try {
+    return execFileSync('git', args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+  } catch (error) {
+    const said = String(error.stderr || error.message)
+      .trim()
+      .split('\n')[0]
+    throw new GitError(said)
+  }
+}
 
 // Whether git can resolve a ref, without throwing.
 const resolves = (ref) => {
@@ -78,11 +91,16 @@ export function branchCommits(branch, exists = resolves) {
 // `cat-file --batch` answers each id with `<oid> blob <size>\n<bytes>\n`.
 function readBlobs(oids) {
   if (oids.length === 0) return []
-  const out = execFileSync('git', ['cat-file', '--batch'], {
-    input: `${oids.join('\n')}\n`,
-    stdio: ['pipe', 'pipe', 'ignore'],
-    maxBuffer: 64 * 1024 * 1024,
-  })
+  let out
+  try {
+    out = execFileSync('git', ['cat-file', '--batch'], {
+      input: `${oids.join('\n')}\n`,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 64 * 1024 * 1024,
+    })
+  } catch (error) {
+    throw new GitError(String(error.stderr || error.message).trim())
+  }
   const texts = []
   let at = 0
   for (let i = 0; i < oids.length; i++) {
@@ -137,8 +155,7 @@ const fail = (message) => {
   process.exitCode = 1
 }
 
-if (import.meta.filename === process.argv[1]) {
-  const args = process.argv.slice(2)
+function main(args) {
   const fromBranch = args.includes('--from-branch')
   const named = args.find((a) => !a.startsWith('--'))
   const branch = named ?? git(['branch', '--show-current']).trim()
@@ -154,5 +171,14 @@ if (import.meta.filename === process.argv[1]) {
     const { files, read } = sessionFiles(commits)
     for (const file of matchingFiles(files, read, branch))
       console.log(commits ? `${commits}:${file}` : file)
+  }
+}
+
+if (import.meta.filename === process.argv[1]) {
+  try {
+    main(process.argv.slice(2))
+  } catch (error) {
+    if (!(error instanceof GitError)) throw error
+    fail(`git could not answer: ${error.message}`)
   }
 }

@@ -32,7 +32,7 @@ B=<branch>
 git fetch --prune origin
 git worktree list --porcelain
 node scripts/session-file.mjs "$B" --from-branch
-gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,mergedAt,url
+gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRefOid,baseRefName,mergedAt,url
 ```
 
 **The session file is read from the branch, not from this folder.** `--from-branch` reads every session file in the branch's own commits, so it finds the file wherever this skill runs: a branch opened with `/branch-open worktree` committed its session file inside the worktree, and the main checkout does not have it until the base is pulled. It compares the `branch:` value in each file's frontmatter, and nowhere else, with the branch name exactly, so a dot or a slash in the name is only itself, and a file with Windows line endings still matches. It prints each match as `<ref>:<path>`, the ref it read: the local branch, or origin's copy when there is no local one, and never a tag that shares the name. Read the file with `git show '<the line it printed>'`, written in as it stands, because shell state does not carry between commands.
@@ -54,7 +54,7 @@ gh pr list --head "$B" --state all --json number,state,isCrossRepository,headRef
 
 Before anything changes. A pull request that says `MERGED` only proves that what was pushed got merged. A commit made locally after the last push, or after the merge, is in no pull request, and `git branch -D` would delete it.
 
-- **No local branch** (`git rev-parse --verify --quiet refs/heads/<branch>` prints nothing: the branch was opened on another machine, or already deleted here): this machine has no commits of it to lose, so this step is done. Step 5 has no local branch to delete, only the prune.
+- **No local branch** (`git rev-parse --verify --quiet refs/heads/<branch>` prints nothing: the branch was opened on another machine, or already deleted here): this machine has no commits of it to lose, so this step is done. Step 4 has no local branch to delete, only the prune.
 
 Otherwise, fetch the merged pull request's head and check that it contains the local branch:
 
@@ -69,26 +69,26 @@ git log --oneline FETCH_HEAD..refs/heads/<branch>
 
 ### 3. Bring the base up to date
 
+**The base is the merged pull request's `baseRefName`**: the branch GitHub merged into, which step 1 asked `gh` for. Not `scripts/base-branch.mjs`, which works the base out from this checkout's HEAD, and after a merge HEAD may be on another integration branch, or on another session's work. Write that name where the blocks below say `<base>`.
+
 Look before you switch a checkout: another session may be using it.
 
 - **The branch is in its own worktree** (`worktree:`): leave the main checkout on whatever branch it is on. Pull it only when it is on the base with no uncommitted changes; otherwise leave it, and say so in the report.
 - **The branch is in the main checkout:** it is about to switch, so its uncommitted changes are this skill's concern. If `git status --short` prints anything, stop and show it, because it may be someone's work in progress. Then:
 
 ```bash
-BASE_NAME=$(node scripts/base-branch.mjs --name)
-git switch "$BASE_NAME"
+git switch <base>
 git pull --ff-only
 ```
 
-`--name` prints the base branch's own name (`main`), where the plain script prints a ref that is `origin/main` in a clone with no local `main`. `git switch main` creates the local branch from `origin/main` when there is none, and, unlike `git checkout`, only ever switches to a branch, never to a tag that shares its name. If `--name` prints nothing and says the base is not a branch (an override naming a tag or a commit), stop and ask which branch to update.
+`git switch <base>` creates the local branch from `origin/<base>` when there is none, and, unlike `git checkout`, only ever switches to a branch, never to a tag that shares its name.
 
 Uncommitted changes in a checkout this skill does not switch, pull or remove are not its concern, and do not stop it.
 
 A failed `--ff-only` means the local base has commits GitHub does not have. Stop and show them, and never reset the base:
 
 ```bash
-BASE_NAME=$(node scripts/base-branch.mjs --name)
-git log --oneline "refs/remotes/origin/$BASE_NAME..refs/heads/$BASE_NAME"
+git log --oneline refs/remotes/origin/<base>..refs/heads/<base>
 ```
 
 ### 4. Remove this session's worktree, then the branch
