@@ -791,6 +791,10 @@ const CONTRADICTIONS = [
       /isActive`? is asked twice/i,
       /It asks twice: with the item/,
       /It is asked twice: with `folderMatch`/,
+      // Round 12: the instruction before that, which with `folderMatch` put
+      // aria-current="page" on every page in a section. The walk reads .md and
+      // .js only; a grep of every .hbs found none when this was added.
+      /\{\{#if active\}\}\s*aria-current/,
     ],
   },
   {

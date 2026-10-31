@@ -160,6 +160,22 @@ describe('isActive', () => {
     expect(warnings).toEqual([])
   })
 
+  // Round 12: a partial called with hash parameters gets a copy of the
+  // context (Handlebars' Utils.extend), and the copy dropped the helper's
+  // non-enumerable mark, so the outer block's `current` warned again.
+  it('does not warn through a partial called with hash parameters', () => {
+    hbs.registerPartial(
+      'item',
+      '{{#isActive page href=h}}{{current}}{{/isActive}}',
+    )
+    const out = render(
+      '{{#isActive page href="/about"}}{{> item page=page h="/about"}}{{/isActive}}',
+      { page: { pageURL: 'about.html' } },
+    )
+    expect(out).toBe('true')
+    expect(warnings).toEqual([])
+  })
+
   it('says the same of a current= in the hash', () => {
     const out = render(
       '{{#isActive page href="/about" current="mine"}}{{current}}{{/isActive}}',

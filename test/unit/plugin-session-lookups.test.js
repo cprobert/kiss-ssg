@@ -28,6 +28,19 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const skills = path.join(here, '../../plugins/kiss-memory/skills')
 const script = path.join(here, '../../scripts/session-file.mjs')
 
+// The shared frontmatter reader, by its key: `-v k=branch` finds the
+// session file, `-v k=base` reads its base (round 12).
+const READER = /awk -v k=(\w+) '([^']*)'/g
+
+const bashBlocks = (skill) =>
+  [
+    ...fs
+      .readFileSync(path.join(skills, skill, 'SKILL.md'), 'utf8')
+      .replace(/\r\n/g, '\n')
+      // A fence may be indented inside a list item; bash ignores the indent.
+      .matchAll(/^[ \t]*```bash\n([\s\S]*?)^[ \t]*```$/gm),
+  ].map((m) => m[1])
+
 // The one fenced bash block in a skill that reads session files.
 function lookupBlock(skill) {
   const text = fs
@@ -35,24 +48,30 @@ function lookupBlock(skill) {
     .replace(/\r\n/g, '\n')
   const blocks = [...text.matchAll(/^```bash\n([\s\S]*?)^```$/gm)]
     .map((m) => m[1])
-    .filter((block) => block.includes('/^branch:/'))
+    .filter((block) => block.includes('-v k=branch'))
   expect(blocks, `${skill}: one lookup block`).toHaveLength(1)
   return blocks[0]
 }
 
-// The awk that reads a file's frontmatter (a block may hold other awks).
-const awkProgram = (block) =>
-  [...block.matchAll(/awk '([^']*)'/g)]
-    .map((m) => m[1])
-    .find((program) => program.includes('/^branch:/'))
+// Every reader the plugin ships, as [skill, key, program].
+const readers = (skill) =>
+  bashBlocks(skill).flatMap((block) =>
+    [...block.matchAll(READER)].map((m) => [skill, m[1], m[2]]),
+  )
 
 const LOCAL = ['kiss-branch-close', 'kiss-branch-pulse']
 const MERGED = 'kiss-branch-merged'
 
 describe('the plugin skills read session files with one rule', () => {
-  it('ships the same awk program in all three skills', () => {
-    const programs = [...LOCAL, MERGED].map((s) => awkProgram(lookupBlock(s)))
-    expect(new Set(programs).size).toBe(1)
+  it('ships one awk program, for every key, in all three skills', () => {
+    const all = [...LOCAL, MERGED].flatMap(readers)
+    expect(all.map(([skill, key]) => `${skill} ${key}`)).toEqual([
+      'kiss-branch-close branch',
+      'kiss-branch-pulse branch',
+      'kiss-branch-merged branch',
+      'kiss-branch-merged base',
+    ])
+    expect(new Set(all.map(([, , program]) => program)).size).toBe(1)
   })
 })
 
@@ -105,6 +124,11 @@ describe.skipIf(process.platform === 'win32')(
       // `---`; branchOf reads neither of these as frontmatter.
       'indented.md': '  ---\nbranch: feat/ind\n---\n',
       'prefixed.md': 'x---\nbranch: feat/ind\n---\n',
+      // Round 12: the base is read by the same rule: quotes and a comment
+      // come off, and a `base:` in the body is not the session's base.
+      'based.md':
+        '---\nbranch: feat/based\nbase: "release" # the release line\n---\nbase: v1\n',
+      'body-base.md': '---\nbranch: feat/bodybase\n---\nbase: v1\n',
     }
     const branches = [
       'feat/x',
@@ -202,6 +226,17 @@ describe.skipIf(process.platform === 'win32')(
         if (unmatched.includes(b)) expect(found, `${MERGED} for ${b}`).toBe('')
         else expect(found, `${MERGED} for ${b} finds one file`).toMatch(/^\S+$/)
       }
+    })
+
+    it(`${MERGED} reads the base from the frontmatter, by the same rule`, () => {
+      const blocks = bashBlocks(MERGED).filter((b) => b.includes('-v k=base'))
+      expect(blocks).toHaveLength(1)
+      const read = (spec) =>
+        bash(
+          blocks[0].replace("'<the line the loop printed>'", `'${spec}'`),
+        ).stdout.trim()
+      expect(read('HEAD:planning/sessions/based.md')).toBe('release')
+      expect(read('HEAD:planning/sessions/body-base.md')).toBe('')
     })
 
     it(`${MERGED} says when the branch is nowhere`, () => {

@@ -21,10 +21,17 @@ const root = path.resolve(process.argv[2] ?? 'public')
 // root-relative links can be followed.
 const site = new URL(process.argv[3] ?? 'https://site.invalid/')
 const base = site.pathname.replace(/\/?$/, '/')
-const files = fs
-  .readdirSync(root, { recursive: true })
-  .map((f) => f.split(path.sep).join('/'))
-  .filter((f) => f.endsWith('.html') && !/(^|\/)404\.html$/.test(f))
+// A page is an .html file with an <html> or <body> in it: a search console
+// verification file (google1234.html) is copied as an asset, not a page.
+const html = new Map(
+  fs
+    .readdirSync(root, { recursive: true })
+    .map((f) => f.split(path.sep).join('/'))
+    .filter((f) => f.endsWith('.html') && !/(^|\/)404\.html$/.test(f))
+    .map((f) => [f, fs.readFileSync(path.join(root, f), 'utf8')])
+    .filter(([, source]) => /<(html|body)[\s>]/i.test(source)),
+)
+const files = [...html.keys()]
 // One key for /about.html, /about and /about/; index.html only as a whole
 // file name, so /blog/reindex.html stays a page of its own.
 const key = (p) =>
@@ -36,12 +43,17 @@ const key = (p) =>
 const linksIn = new Map(files.map((f) => [key('/' + f), new Set()]))
 for (const file of files) {
   const page = key('/' + file)
-  const html = fs.readFileSync(path.join(root, file), 'utf8')
+  // No link a reader cannot follow: one inside a comment, or in the text of
+  // a <script>, a <template> or a <style>.
+  const readable = html
+    .get(file)
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(script|template|style)\b[\s\S]*?<\/\1\s*>/gi, '')
   // A link a reader can follow: an <a> element's href, quoted or not. Not a
   // <link> in the head, and not a data-href.
   const anchor =
     /<a\s(?:[^>]*?\s)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi
-  for (const match of html.matchAll(anchor)) {
+  for (const match of readable.matchAll(anchor)) {
     let url
     try {
       url = new URL(match[1] ?? match[2] ?? match[3], site.origin + base + file)

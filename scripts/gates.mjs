@@ -271,6 +271,11 @@ const GATES = [
 ]
 
 if (import.meta.filename === process.argv[1]) {
+  // Every gate reads the repository from its root (vitest's config, eslint's,
+  // tsc's project, prettier's root-relative file list, npm pack), so run from
+  // there whichever folder this was started in. From lib/, four of the five
+  // went red on a clean tree (round 12).
+  process.chdir(path.dirname(import.meta.dirname))
   let base
   try {
     base = resolveBaseBranch()

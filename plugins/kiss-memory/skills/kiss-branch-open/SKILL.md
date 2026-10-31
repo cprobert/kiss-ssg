@@ -57,7 +57,7 @@ git status --short
 The first line asks the local record of the remote's default branch, and the second asks the remote itself, because a repository whose remote was added by hand has no local record. An `unknown` base means neither answered (no remote, or offline): ask which branch the work will merge into. Never assume `main`. Shell state does not carry from one command to the next, so later steps write the name this printed where they say `<base>`.
 
 - **On the base branch** — the normal case; you will create a branch in step 5.
-- **Already on a feature branch** (a harness often creates one for you) — **adopt it in place**, do not branch off it. Confirm: "You're already on `<branch>` — I'll capture intent onto this branch." If it already carries unrelated work or an existing session file, stop and ask.
+- **Already on a feature branch that is this work's** (a harness often creates one for this session, and says so) — **adopt it in place**, do not branch off it. Confirm: "You're already on `<branch>` — I'll capture intent onto this branch." It is this work's only when the harness made it for this session or the person says so. A feature branch with commits or a session file of its own, or one nobody here can account for, is another session's: the checkout is busy (next bullet). If you cannot tell which it is, ask, before writing anything.
 - **This checkout is busy** — uncommitted changes that are not this work, a branch another session is working on, or a dev server holding the build folder. Do not `git checkout -b` here: it pulls the files out from under the other work. Use a worktree (step 5).
 
 Uncommitted changes that belong to this work: ask whether to commit or stash first.

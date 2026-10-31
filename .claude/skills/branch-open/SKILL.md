@@ -55,7 +55,7 @@ git status
 Two starting cases:
 
 - **On the base branch** — the normal case. You'll create a new branch in Step 4.
-- **Already on a feature branch** — the harness (mobile / web) often auto-creates one before you ever reach `/branch-open`. Do **not** branch off it (no branch-of-a-branch). Instead **adopt the current branch in place**: capture intent onto it and skip Step 4's creation. Confirm first ("You're already on `<branch>` — I'll capture intent onto this branch rather than create a new one"). Exception: if the current branch already carries substantial unrelated work or an existing intent file, stop and ask — that is a genuine "not at a clean starting line" case, not an auto-created branch.
+- **Already on a feature branch** — the harness (mobile / web) often auto-creates one before you ever reach `/branch-open`. Do **not** branch off it (no branch-of-a-branch). Instead **adopt the current branch in place**: capture intent onto it and skip Step 4's creation. Confirm first ("You're already on `<branch>` — I'll capture intent onto this branch rather than create a new one"). Adopt it only when it is this work's: the harness made it for this session, or the operator says so. A branch with work or an intent file of its own, or one nobody here can account for, is another session's, and the checkout is busy (below), which means a worktree. If you cannot tell which it is, ask before writing anything.
 
 If there are uncommitted changes: surface them and ask whether to stash/commit first.
 
