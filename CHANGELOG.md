@@ -3,6 +3,36 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.4 — 2026-10-31
+
+A sixth domain skill for site structure, a merged step for the branch skills, and the engine now
+answers the memory skills' questions itself. **Update the engine and both plugins together**: the
+`kiss-memory` skills now run `npx kiss-ssg session` and `npx kiss-ssg base`, and on an older
+kiss-ssg they stop and say `unknown command: session`. Nothing changes in how a site builds.
+
+- **`kiss-information-architecture`**, a domain skill for how a site is structured: which pages
+  exist, how they are grouped and named, the navigation, the URL scheme, breadcrumbs, tags and the
+  404 as a way back in. `kiss-site-new`, `kiss-page-add` and `kiss-site-review` call it.
+- **`kiss-branch-merged`**, the step after `kiss-branch-close`: once the pull request has merged, it
+  confirms the merge and that it holds every local commit, brings the base up to date, checks the
+  merged site still builds to its record, then deletes the local branch and removes only the
+  worktree the session file names. `kiss-branch-open worktree` opens a branch in its own folder
+  beside the repository when this checkout is busy.
+- **`npx kiss-ssg session`** finds a branch's session log (`--from-branch` reads it from the
+  branch's own commits, `--get <key>` prints one frontmatter value, `--list` lists every log), and
+  **`npx kiss-ssg base`** prints the branch the work merges into (`--ref` the ref to diff against,
+  `--start` the ref to start from). **`npx kiss-ssg check --subjects`** prints the hashes to stamp
+  notes with, and `npx kiss-ssg --version` the version. GUIDE.md § Branches and session logs.
+- **Orphan pages.** The link check now lists, as `links.orphans`, every page no other page links
+  to, and `--summary` prints one `orphan pages (N, …)` line. It is advisory, like a broken link: a
+  campaign landing page may be unlinked on purpose. The home page, `404.html` and a page in a
+  learning package are never orphans.
+- **`{{@current}}` in `isActive`**: `true` only on the page the link points at, so one call gives a
+  nav link both its section's `{{active}}` and `aria-current="page"`. A missing `href` names no
+  page, so it marks nothing; `href=""` is still the home page.
+- **The skills run commands, not scripts.** No skill carries shell that decides something any more
+  (loops, `awk`, `node -e`); anything that has to be exactly right is a `kiss-ssg` command.
+
 ## 2.8.3 — 2026-10-30
 
 The `kiss-ssg` plugin now has **domain skills**: five skills that each hold one area of web
