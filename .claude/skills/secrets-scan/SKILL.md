@@ -72,10 +72,10 @@ An SSG's attack surface is not authentication — it is what the engine reads, e
 
 ```bash
 BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only "$BASE...HEAD"
+git diff --name-only "$BASE...HEAD" -- lib/model-resolver.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js package.json
 ```
 
-Compare what it lists with the table. Why each one:
+It lists the files in the table below that the branch changed, and nothing else; no output means none. A row added to the table is added to this command in the same commit. Why each one:
 
 | Path                                                | The concern                                                                                                                                                       |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -93,7 +93,7 @@ Compare what it lists with the table. Why each one:
 
 ```bash
 BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only --diff-filter=A "$BASE...HEAD" -- 'lib/*.js'
+git diff --name-only --diff-filter=A "$BASE...HEAD" -- ':(glob)lib/*.js'
 grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'" lib/*.js
 ```
 

@@ -48,10 +48,10 @@ BASE=$(node scripts/base-branch.mjs) || exit 1
 
 ```bash
 BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only --diff-filter=A "$BASE...HEAD" -- 'lib/*.js' 'scripts/*.mjs'
+git diff --name-only --diff-filter=A "$BASE...HEAD" -- ':(glob)lib/*.js' ':(glob)scripts/*.mjs' ':(exclude)lib/kiss.js'
 ```
 
-The files in scope are the ones directly in `lib/` or `scripts/`, not in a subfolder of either, and never `lib/kiss.js`, which `test/integration/` covers.
+It lists exactly the files in scope: `:(glob)` keeps `*` inside one folder, so a file in a subfolder of `lib/` or `scripts/` is not listed, and `lib/kiss.js`, which `test/integration/` covers, is left out.
 
 **Advisory mode** (no flag) — added and modified, two separate lists: run the same command twice, with `--diff-filter=A` (tier 1) and `--diff-filter=M` (tier 2).
 
