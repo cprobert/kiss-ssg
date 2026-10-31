@@ -112,13 +112,15 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `asset`: the emitted path under `config.assets` (hash or `?v=`); fails the build on a file not emitted.
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
-- `scormBridge`: `{{scormBridge}}` in a page's `<head>` inlines the SCORM 1.2 bridge. `window.kissScorm` records `interaction({ id, response, correct, result })` (a `correct` array: all required; `{ anyOf }`: alternatives), `score(fraction)` and `status(value)`: the page reports its own completion, and `complete="seen"` (complete on load) makes Moodle reopen a bookmarking page in review mode, saving nothing. It keeps the place with `bookmark(place)` and `save(state)` (refused past SCORM 1.2's limits, never cut), and hands them back as `resumed` next launch (read it in `ready(fn)`); `mode` is `'review'` when nothing is recorded, and `log` says why tracking failed. With no LMS every call does nothing.
+- `scormBridge`: `{{scormBridge}}` in a page's `<head>` inlines the SCORM 1.2 bridge, `window.kissScorm`: `interaction`, `score`, `status`, `bookmark`, `save`, and `resumed` (read in `ready(fn)`). Trap: the page reports its own completion; `complete="seen"` makes Moodle reopen a bookmarking page in review mode, saving nothing. GUIDE.md § Learning packages.
 
 Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
 
 ## Checking a build
 
 `npx kiss-ssg check <script> [args…]` runs the build staged and discarded. It prints one JSON report per `Kiss` instance and exits 1 on any failure. `--summary` gives one line per site plus each finding, and `--against <file>` names a baseline. Once a knowledge base is recorded, the diff is against `AIKB/last-build.json`. Broken links, redirect findings (`removed`, `moved`, `collisions`) and the launch-readiness audit are advisory and never change the exit code. The audit's checks are tabled in GUIDE.md § Checking a build: build them in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and it records `AIKB/` when the build passes. `KISS_CHECK`, `KISS_REPORT` and `KISS_AIKB` drive both without the bin. GUIDE.md § Checking a build, § Recording the knowledge base, § Starting a site; the `kiss-build-check` skill reads the report.
+
+`npx kiss-ssg session`, `base` and `check --subjects` answer the kiss-memory skills' questions (a branch's session log, its base, the hashes to stamp notes with): call them, never shell. GUIDE.md § Branches and session logs.
 
 ## Docs
 

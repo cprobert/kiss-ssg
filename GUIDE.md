@@ -1286,13 +1286,35 @@ The folder is **source, not output**: it sits outside `config.folders.build`, su
 
 Plain pages, partials and `.json` models are deliberately not subjects — a note saying "renders the about page" is noise. An inline controller or an object model has no file to attach a note to, and is not a subject either. Suggested headings, which nothing enforces: `## What it does`, `## Why it is this way`, `## Gotchas`.
 
-**Every subject carries a hash, and a note may be stamped with it.** `site-map.json`'s `subjects` is `{ kind, id, note, hash }` per subject: sha1 of the controller file (line endings normalised, so a Windows checkout hashes the same), or of the pipeline step's `run` string, and `null` for a URL model — whose id _is_ the subject, so there is nothing for a hash to add. Copy it into the note's frontmatter as `subject-hash: <sha1>` when you write or review the note. The engine never writes a stamp, and an unstamped note is never reported stale — stamping is opt-in, per note. The hash to stamp with is on _every_ build's report as `report().aikb.subjects`, not only on a record's: when a stale note is found, `site-map.json` on disk still describes the previous record, so the report is the only place the current hash exists.
+**Every subject carries a hash, and a note may be stamped with it.** `site-map.json`'s `subjects` is `{ kind, id, note, hash }` per subject: sha1 of the controller file (line endings normalised, so a Windows checkout hashes the same), or of the pipeline step's `run` string, and `null` for a URL model — whose id _is_ the subject, so there is nothing for a hash to add. Copy it into the note's frontmatter as `subject-hash: <sha1>` when you write or review the note. The engine never writes a stamp, and an unstamped note is never reported stale — stamping is opt-in, per note. The hash to stamp with is on _every_ build's report as `report().aikb.subjects`, not only on a record's: when a stale note is found, `site-map.json` on disk still describes the previous record, so the report is the only place the current hash exists. `npx kiss-ssg check --subjects <script>` prints those, one line per subject: `<hash> <kind> <id> <note>`.
 
 **`AIKB/site.md` is the page about the whole site** rather than about any one subject — authored, evergreen, and never written by the engine. It is scanned for dangling references when it is there and checked for nothing else. The generated `AIKB/README.md` names its five sections: What this site is and who for · How it is deployed · Conventions · Standing gotchas · Retired feedback. The `kiss-memory-consolidate` skill is what maintains it.
 
 Every build reports four findings on `report().aikb.notes`: **missing** (a subject nobody has explained), **dead** (a note under `notes/` whose subject is not in the map), **stale** (a note whose `subject-hash` stamp is no longer its subject's hash — a URL model can never be stale) and **dangling** (`"<note path>: <token>"` for a backticked token in a note, or in `site.md`, that looks like a file reference and resolves to nothing: not a file on disk or under a source folder, a page view or output path, a partial name, a model or controller name, a folder in the map, or a path under the AIKB folder). `kiss-ssg check --summary` prints them as `note missing:` / `note dead:` / `note stale:` / `note dangling:` lines. The dangling filter is deliberately narrow — a token needs a `/` or a known extension and must hold no spaces, `<`, `>`, `*`, `{`, `}` or `$`; code fences, trailing-slash folders and anything with a URI scheme are skipped — because a lint that fires on every note is one people learn to ignore. None of the four is a build failure and none changes an exit code.
 
 `examples/9-migrated-from-v1/AIKB/` and `examples/11-blog/AIKB/` are the runnable exemplars: committed knowledge bases recorded with `cd examples/<folder> && npx kiss-ssg aikb router.js` — every example is a folder with its own `router.js`, run from inside itself the way a real site is, each with authored notes beside it stamped with their controllers' hashes — one note on example 9, two on example 11. The `kiss-memory` plugin, for Claude Code or Codex (see [the README](README.md#remember-what-it-is)) is what reads the folder back.
+
+### Branches and session logs
+
+A site worked on with the `kiss-memory` skills keeps one session log per piece of work, `planning/sessions/<date>-<slug>.md`, whose frontmatter names its `branch:`, the `base:` it merges into and any `worktree:` it was opened in. Three commands answer the questions those skills ask about it, so no skill carries shell of its own. Run them from the site's folder:
+
+```bash
+npx kiss-ssg session                   # this branch's log
+npx kiss-ssg session feat/x --from-branch   # read from the branch's own commits: <ref>:<path>
+npx kiss-ssg session --get worktree    # one frontmatter value of this branch's log
+npx kiss-ssg session --list            # every log, newest first: path, branch, status, consolidated
+npx kiss-ssg base                      # the branch this work merges into
+npx kiss-ssg base --ref                # the ref to diff against
+npx kiss-ssg base --start              # the ref to start new work from
+npx kiss-ssg check --subjects router.js   # <hash> <kind> <id> <note>, to stamp notes with
+npx kiss-ssg --version
+```
+
+`session` matches a log's frontmatter `branch:` exactly, as text, and reads the frontmatter only. CRLF endings, a byte-order mark, a quoted value and a trailing ` # comment` read as the plain value. It reads subfolders, prints paths from where you stand, and prints more than one path when a branch name was used twice: decide which is yours. `--from-branch` reads the branch's own commits, the local branch or origin's copy, so it finds a log committed in a worktree this checkout has not pulled.
+
+`base` is the log's `base:` line, then the remote's default branch. With neither, it exits 1 and says to ask: it never assumes `main`. The name goes to stdout and where it came from to stderr. `--ref` and `--start` print refs in full (`refs/heads/…`, `refs/remotes/origin/…`), so a tag of the same name is never read in place of the branch. `--ref` is whichever of the local base and origin's this branch started from. `--start` is origin's, unless the local base has commits origin lacks, and when the two have diverged it exits 1 rather than choose.
+
+Every refusal is one line on stderr with exit code 1, never a stack trace. A skill that needs these commands first checks the installed kiss-ssg has them: `npx kiss-ssg session --help` prints usage when it does.
 
 ### Other methods
 

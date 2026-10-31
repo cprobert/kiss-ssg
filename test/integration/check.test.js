@@ -513,6 +513,60 @@ describe('kiss-ssg check', () => {
   })
 })
 
+describe('kiss-ssg check --subjects', () => {
+  // The kiss-memory skills stamp a note with its subject's hash. They used to
+  // pull it out of check's JSON with an inline `node -e`, which crashed on
+  // the bare array a site with no baseline prints (round 20). One flag now.
+  it('prints one line per subject, <hash> <kind> <id> <note>', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>{{title}}</p>',
+      'src/controllers/index.js': 'export default () => ({ title: "Home" })\n',
+      'build.js': WITH_AIKB,
+    })
+    // A site reports subjects once it has recorded: before that, a check
+    // has no knowledge base to describe.
+    expect(check(temp.root, ['aikb', 'build.js']).status).toBe(0)
+    const run = check(temp.root, ['check', '--subjects', 'build.js'])
+    expect(run.status).toBe(0)
+    expect(run.stdout.trim()).toMatch(
+      /^[0-9a-f]{40} controllers index\.js notes\/controllers\/index\.md$/,
+    )
+  }, 60000)
+})
+
+describe('kiss-ssg session and base, through the bin', () => {
+  // The decisions are unit-tested in test/unit/sessions.test.js and
+  // base.test.js; this is the wrapper: the right stream, the exit code.
+  it('prints a log on stdout, provenance on stderr, and exits 1 on a refusal', async () => {
+    temp = await makeSite({
+      'planning/sessions/2026-01-01-x.md':
+        '---\nbranch: feat/x\nbase: trunk\n---\n',
+    })
+    const git = (...args) =>
+      spawnSync('git', args, { cwd: temp.root, encoding: 'utf8' })
+    git('init', '-q', '-b', 'feat/x')
+    const found = check(temp.root, ['session'])
+    expect(found.status).toBe(0)
+    expect(found.stdout).toBe('planning/sessions/2026-01-01-x.md\n')
+    const base = check(temp.root, ['base'])
+    expect(base.status).toBe(0)
+    expect(base.stdout).toBe('trunk\n')
+    expect(base.stderr).toContain('from the base: line of')
+    const refused = check(temp.root, ['session', '--bogus'])
+    expect(refused.status).toBe(1)
+    expect(refused.stderr).toBe('kiss-ssg session: unknown option: --bogus\n')
+  })
+
+  it('prints its own version for --version', () => {
+    const run = check(repoRoot, ['--version'])
+    expect(run.status).toBe(0)
+    expect(run.stdout.trim()).toBe(
+      JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'))
+        .version,
+    )
+  })
+})
+
 describe('kiss-ssg aikb', () => {
   it('records the folder from a passing build, publishes nothing, and says so', async () => {
     temp = await makeSite({

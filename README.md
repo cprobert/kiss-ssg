@@ -87,6 +87,7 @@ _A verdict, not a log. Mistakes can't ship quietly._
 _The next session starts from facts, not guesses._
 
 - **[`kiss-ssg aikb`](GUIDE.md#recording-the-knowledge-base) →** Records what the site is into `AIKB/` from the same staged build, and is the only thing that writes that folder. Commit it with the work.
+- **[`kiss-ssg session` and `kiss-ssg base`](GUIDE.md#branches-and-session-logs) →** A branch's session log and the branch it merges into, answered by the engine, so the memory skills run a command instead of carrying shell of their own.
 - **[kiss-site-brief](plugins/kiss-memory/skills/kiss-site-brief/SKILL.md) →** Catch up on a site: what it is, how it's built and what bites, read back to a developer returning after two years.
 - **[kiss-branch-open, -pulse, -close and -merged](plugins/kiss-memory/) →** Frame a piece of work, steer it against the site's own build output, close it, moving that baseline only when the close records it, and tidy up once it has merged. `kiss-memory-consolidate` tidies what the loop accumulates.
 - **[kiss-site-migrate](plugins/kiss-ssg/skills/kiss-site-migrate/SKILL.md) →** Move a site across kiss-ssg versions, with the upgrade note each version a site on `^2` receives without asking.

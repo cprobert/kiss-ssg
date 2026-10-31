@@ -44,6 +44,9 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Build report (the machine verdict)         | `lib/build-report.js`        | `AIKB/build-report.md`        |
 | Settled build (report, links, redirects)   | `lib/build-finish.js`        | `AIKB/build-finish.md`        |
 | `kiss-ssg check` decision core             | `lib/check.js`               | `AIKB/check.md`               |
+| `kiss-ssg session` (session logs)          | `lib/sessions.js`            | `AIKB/sessions.md`            |
+| `kiss-ssg base` (the work's base branch)   | `lib/base.js`                | `AIKB/base.md`                |
+| Git, asked one way (exact refs)            | `lib/git.js`                 | `AIKB/git.md`                 |
 | `kiss-ssg init` plan                       | `lib/init.js`                | `AIKB/init.md`                |
 | Logger                                     | `lib/logger.js`              | `AIKB/logger.md`              |
 | Config + folder derivation                 | `lib/config.js`              | `AIKB/config.md`              |
