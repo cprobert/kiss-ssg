@@ -403,6 +403,7 @@ describe('kiss-ssg check', () => {
       checked: 3,
       hostServed: 2,
       broken: [{ page: './public/index.html', href: '/news/gone.html' }],
+      orphans: [],
     })
   }, 60000)
 
@@ -478,6 +479,7 @@ describe('kiss-ssg check', () => {
     const lines = run.stdout.trim().split('\n')
     expect(lines[0]).toMatch(/^ok \.\/public \(check\) — 2 pages/)
     expect(lines.slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/contact.html',
       '  + ./public/contact.html',
       '  - ./public/about.html',
       '  = 1 unchanged',
@@ -672,6 +674,7 @@ describe('kiss-ssg check, against the knowledge base', () => {
     const clean = check(temp.root, ['check', '--summary', 'build.js'])
     expect(clean.status).toBe(0)
     expect(clean.stdout.trim().split('\n').slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/about.html',
       '  = 2 unchanged',
     ])
 
@@ -681,6 +684,7 @@ describe('kiss-ssg check, against the knowledge base', () => {
     const dirty = check(temp.root, ['check', '--summary', 'build.js'])
     expect(dirty.status).toBe(0)
     expect(dirty.stdout.trim().split('\n').slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/about.html',
       '  ~ ./public/about.html',
       '  = 1 unchanged',
     ])
@@ -802,7 +806,10 @@ describe('kiss-ssg check, against the knowledge base', () => {
 
     expect(run.status).toBe(0)
     // Against the baseline it would be `+ ./public/about.html, = 1 unchanged`.
-    expect(run.stdout.trim().split('\n').slice(1)).toEqual(['  = 2 unchanged'])
+    expect(run.stdout.trim().split('\n').slice(1)).toEqual([
+      '  orphan pages (1, no other page links to them): ./public/about.html',
+      '  = 2 unchanged',
+    ])
   }, 60000)
 })
 

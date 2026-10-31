@@ -447,7 +447,7 @@ describe('checkLinks', () => {
   it('reports nothing for a build with no pages, and does not throw on an empty manifest', () => {
     expect(
       checkLinks({ pages: [], buildDir: './public', manifestTargets: [] }),
-    ).toEqual({ checked: 0, hostServed: 0, broken: [] })
+    ).toEqual({ checked: 0, hostServed: 0, broken: [], orphans: [] })
   })
 
   it('counts a reference the host serves instead of reporting it broken', () => {
@@ -533,6 +533,75 @@ describe('checkLinks', () => {
     })
     expect(result.hostServed).toBe(2)
     expect(result.broken).toEqual([])
+  })
+
+  // The information architecture skill needs the pages nothing links to. It
+  // shipped a 94-line scraper for sites to copy, which counted links inside
+  // comments and scripts and missed image maps, one review at a time
+  // (2026-10-31). The scan already resolves every link with a real parser,
+  // so it names them.
+  describe('orphans', () => {
+    const site = (pages) =>
+      checkLinks({
+        pages,
+        buildDir: './public',
+        siteUrl: 'https://site.example',
+        exists: () => false,
+      }).orphans
+
+    it('names an HTML page no other page links to, by any spelling', () => {
+      expect(
+        site([
+          {
+            buildTo: './public/index.html',
+            links: ['/about/', 'https://site.example/blog/post'],
+          },
+          { buildTo: './public/about/index.html', links: ['/', 'about'] },
+          { buildTo: './public/blog/post.html', links: ['../index.html'] },
+          { buildTo: './public/lonely.html', links: ['/'] },
+        ]),
+      ).toEqual(['./public/lonely.html'])
+    })
+
+    it('does not count a page linking to itself', () => {
+      expect(
+        site([
+          { buildTo: './public/index.html', links: [] },
+          { buildTo: './public/self.html', links: ['self.html', '#top'] },
+        ]),
+      ).toEqual(['./public/self.html'])
+    })
+
+    it('never names the home page, a 404 page, or a page that is not HTML', () => {
+      expect(
+        site([
+          { buildTo: './public/index.html', links: [] },
+          { buildTo: './public/404.html', links: ['/'] },
+          { buildTo: './public/data/index.json', links: [] },
+        ]),
+      ).toEqual([])
+    })
+
+    // Measured on example 13: an LMS opens a learning package's pages from
+    // its manifest, and a SCORM page does not link to its fellow members, so
+    // all three lesson pages read as orphans.
+    it('never names a page in a learning package', () => {
+      expect(
+        site([
+          { buildTo: './public/index.html', links: [] },
+          { buildTo: './public/lesson.html', links: [], package: 'espresso' },
+        ]),
+      ).toEqual([])
+    })
+
+    it('counts a link a broken page wrote, but not one that resolves nowhere', () => {
+      expect(
+        site([
+          { buildTo: './public/index.html', links: ['/gone.html'] },
+          { buildTo: './public/kept.html', links: [] },
+        ]),
+      ).toEqual(['./public/kept.html'])
+    })
   })
 })
 

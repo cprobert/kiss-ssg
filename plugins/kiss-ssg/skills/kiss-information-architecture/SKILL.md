@@ -117,12 +117,12 @@ An item has one place in the hierarchy, but it can carry several terms, one for 
 
 Report to the [review protocol](../kiss-site-review/review-protocol.md): every finding before anything is edited, each with its priority and its measurement, one row per cause. A choice the site records is not a finding. A record whose own reason a measurement now contradicts is marked **ask**; the protocol has the rule. Look at the site in a browser as the [browser pass](../kiss-site-review/browser-pass.md) says. Without a browser, the browser checks did not run, and the report says so.
 
-**Measure first.** [references/measure-structure.md](references/measure-structure.md) has a script that reads the build folder and prints, for each page, how many other pages link to it and how deep it sits. Give it the site's `siteUrl`, or a layout's absolute links to its own pages read as no links at all. Then check:
+**Measure first.** `npx kiss-ssg check --summary <build-script>` names the pages no other page links to, and the built `sitemap.xml` gives every page's depth; [references/measure-structure.md](references/measure-structure.md) says how to read both. Then check:
 
 1. **Orphans.** A page with no links in is reachable only from a search engine. Name each one, and the page that should link to it.
 2. **The global nav's labels.** Quote each one. Flag a team's internal name, a brand name, a vague label (More, Explore, Resources, Solutions), and a utility action listed among the content sections.
 3. **One concept, one name.** For each global nav item, put its label beside its page's `<h1>` and its URL. Quote each mismatch. "Home" for the home page is not one.
-4. **Depth.** Take the deepest pages from the script's output. Does each have breadcrumbs, and does the section nav show it? Flag a level with one child, and a page that lists many similar links with nothing to tell them apart (give the count).
+4. **Depth.** Take the deepest pages from `sitemap.xml`. Does each have breadcrumbs, and does the section nav show it? Flag a level with one child, and a page that lists many similar links with nothing to tell them apart (give the count).
 5. **Where am I?** Open a page two levels down. Is its section marked in the global nav, with `aria-current` on no link but one to the page itself? Does the `<h1>` name the page? Are breadcrumbs there, where § 7 calls for them?
 6. **Breadcrumbs.** Every crumb is a real page. The trail matches the URL's hierarchy. None appear in a form journey.
 7. **URLs.** Read every `<loc>` in `sitemap.xml`. Flag capitals, underscores, ids or query strings, campaign words, a date on content that is not dated, and an organisation name.

@@ -184,7 +184,8 @@
   "links": {
     "checked": 170,
     "hostServed": 0,
-    "broken": []
+    "broken": [],
+    "orphans": []
   },
   "redirects": {
     "file": "./public/_redirects",
