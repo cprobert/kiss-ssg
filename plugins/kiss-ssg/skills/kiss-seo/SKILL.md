@@ -38,12 +38,38 @@ This skill holds what a model tends to get wrong: facts that changed recently, m
 
 Report to the [review protocol](../kiss-site-review/review-protocol.md): every finding before anything is edited, with its priority and its measurement, one row per cause. A choice the site records is not a finding, and a record whose own reason a measurement now contradicts is marked **ask**; the protocol has the rule. Look at the site in a browser as the [browser pass](../kiss-site-review/browser-pass.md) says; without a browser, the browser checks did not run, and the report says so.
 
-The audit's search checks are `kiss-site-review` step 1's, with their fixes; quote what a fired title or description check found, and say what it should say. Then check:
+The audit's search checks are `kiss-site-review` step 1's, with their fixes; quote what a fired title or description check found, and say what it should say. Then work through the checklist below, whatever state the site seems to be in.
 
-- **Every page's title and description** against the build mode: its own, specific, in the reader's words, the words that matter first. Quote the weak ones.
-- **Pages that compete:** two pages with the same purpose or near-identical titles.
-- **Town or area pages** whose text differs only by the place name.
-- **robots.txt:** a block on a search crawler the owner did not ask for, and whether the site sits behind a CDN that blocks AI crawlers.
-- **Structured data** that states a fact the page does not show, uses a type that earns nothing as if it did, or puts review stars on the business itself.
-- **Dates** that moved on pages whose content did not.
-- **Pages with nothing only this business could say:** service pages a competitor could publish unchanged. The fix is questions for the owner, not new copy (`kiss-writing-for-the-web`).
+## Review checklist
+
+The key findings of the November 2026 research, so a review of any kiss site covers them. The report lists every box: ticked with its evidence, a finding, not applicable with the reason, or **not checked** with the reason (no browser, no network). A box is never left out.
+
+**Can search and AI find the site**
+
+- [ ] `robots.txt` allows every crawler, and any block is one the owner asked for. No search crawler is blocked (Googlebot, Bingbot, Applebot, `OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`); `report().robots.blocked` lists every agent kept out.
+- [ ] Nothing in front of the host blocks crawlers the owner did not choose to block: fetch the live `robots.txt` and read the response headers (a Cloudflare `server` or `cf-ray` means checking its bot settings).
+- [ ] A page kept out of search uses `noindex` and `ignoreSitemap`, never `disallow`.
+- [ ] `sitemap.xml` lists every public page at its production address, and no `<lastmod>` is the time of the build: two builds of the unchanged site write the same file.
+
+**Each page**
+
+- [ ] Every title is the page's own: what it is, in the words its reader searches with, first, then the site name. No title is judged by its character count.
+- [ ] Every description is the page's own and says what the reader gets; none is a site-wide tagline or a keyword list.
+- [ ] One purpose per page: no two pages answer the same question.
+- [ ] No town or area pages whose text differs only by the place name.
+- [ ] Each service or course page carries its concrete facts (price, duration, what is included, who it is for, the areas served, how to book) and something only this business could say. A page a competitor could publish unchanged is a finding whose fix is questions for the owner (`kiss-writing-for-the-web`).
+- [ ] Dates on the page and in `dateModified` moved only when the content did.
+
+**Structured data**
+
+- [ ] Every fact in the JSON-LD is shown on the page, from the same `config/` value.
+- [ ] `Organization` or the right `LocalBusiness` subtype appears once; a `LocalBusiness` has an address.
+- [ ] No `FAQPage` or `HowTo` presented to the owner as a search benefit, no `AggregateRating` or `Review` on the business itself, and a course list only with three or more real courses.
+
+**AI search**
+
+- [ ] Nothing was added "for AI" (a file, a schema type, an FAQ block), and nothing tells the owner that `llms.txt` or the `.md` copies help ranking or AI answers.
+
+**What only the owner can do (the hand-over)**
+
+- [ ] The hand-over names the off-site work: a Google Business Profile under the real trading name with the site's phone, hours and areas; real reviews, never bought or filtered; local directories and "best of" pages; the same details on every profile in `sameAs`; and the site verified in Google Search Console and Bing Webmaster Tools with its sitemap submitted.

@@ -35,6 +35,16 @@ const COVERAGE = [
     pattern: /`<lastmod>`[\s\S]*`updated`[\s\S]*never on a rebuild/,
     skills: [skill('kiss-ssg', 'kiss-seo')],
   },
+  // 2026-11-01, the operator: the fleet's other sites are in an unknown
+  // state, so a review works through a tick-box list of the research's key
+  // findings rather than prose an agent can skim past.
+  {
+    feature:
+      'kiss-seo review checklist: robots allow-all, lastmod, doorways, structured data types, AI claims, the off-site hand-over',
+    pattern:
+      /## Review checklist[\s\S]*- \[ \] `robots\.txt` allows every crawler[\s\S]*- \[ \][^\n]*<lastmod>[\s\S]*- \[ \] No town or area pages[\s\S]*- \[ \] No `FAQPage`[\s\S]*- \[ \] Nothing was added "for AI"[\s\S]*- \[ \] The hand-over names the off-site work/,
+    skills: [skill('kiss-ssg', 'kiss-seo')],
+  },
   // Learning packages: a page added to a course's lesson joins its package by
   // naming it, needs an id (the LMS keeps learners' records by it), and in a
   // SCORM package does not link to its fellow members. The skill that adds a
