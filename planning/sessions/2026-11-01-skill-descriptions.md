@@ -3,6 +3,7 @@ branch: chore/skill-descriptions
 base: main
 status: closed
 opened: 2026-11-01
+consolidated: 2026-11-01
 ---
 
 # Session — 2026-11-01: kiss skill descriptions to one budget

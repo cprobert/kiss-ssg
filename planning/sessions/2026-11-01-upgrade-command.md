@@ -3,6 +3,7 @@ branch: feat/upgrade-command
 base: main
 status: closed
 opened: 2026-11-01
+consolidated: 2026-11-01
 ---
 
 # Session — 2026-11-01: `kiss-ssg upgrade`, and a migrate skill that is a method, not a changelog
