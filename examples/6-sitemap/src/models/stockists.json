@@ -1,6 +1,7 @@
 {
   "title": "Stockists",
   "description": "Cafes and shops carrying Aster & Oak this month.",
+  "updated": "2026-10-14",
   "heading": "Sixteen places, and it moves every month",
-  "lede": "This list changes more often than anything else on the site, which is exactly what a changefreq is for."
+  "lede": "This list changes more often than anything else on the site, so it carries the date it last changed, and the sitemap passes that date on."
 }

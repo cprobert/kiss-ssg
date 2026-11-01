@@ -95,7 +95,7 @@ Each key's prose is in GUIDE.md: § Cleaning the build folder (`cleanBuild`), §
 - A pipeline step writes into your assets folder, so the copy claims and hashes it. One that can only write into the build folder lists those files in its `outputs` (`['img/icons.svg']`): kiss deletes them first, checks them after, claims them for `{{asset}}` and packages, and never hashes them.
 - Tailwind in `assets.pipeline`: keep `-i` (without it the CLI exits 0 and drops everything you authored), and use `@import 'tailwindcss' source(none)` plus explicit `@source` paths, or words in your docs change the hashed stylesheet name on every page. `examples/10-asset-pipeline`.
 - A layout with no `<main>` around the page's own content puts its header, footer and menus (any not in a `<nav>`) into every page's `.md` copy. Wrap the content in `<main>`, or set `markdownCopies.selector`.
-- The default `sitemapLastmod` changes on every build. Set it per page for a byte-stable `sitemap.xml`.
+- `<lastmod>` is a page's `sitemapLastmod`, `updated` or `date`, else omitted. Change the date with the content, never on a rebuild.
 
 ## Helpers
 

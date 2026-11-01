@@ -6,6 +6,16 @@
  */
 export function feedFileName(options?: Record<string, any>): string;
 /**
+ * Reads a page's date: the page option first, the resolved model second. One
+ * field name governs both lookups, so a site that dates its posts in a model
+ * and a site that dates them in the registration read the same key.
+ *
+ * @param {Record<string, any>} options a page's options, with `model` resolved
+ * @param {string} dateField
+ * @returns {unknown} the raw value, `undefined` when the page carries none
+ */
+export function rawDate(options: Record<string, any>, dateField: string): unknown;
+/**
  * A `Date`, epoch milliseconds, or anything `new Date()` parses — and `null`
  * for everything else, including a value that parses to an invalid date.
  *

@@ -540,7 +540,9 @@ It can be called before or after `.generate()` — both just wait for all your p
 
 Each `<loc>` is the same string the `canonical` helper renders on that page, built by the same code — so a page built to a directory index is listed with its trailing slash (`courses/index.html` → `https://example.com/courses/`), which is the URL Netlify serves without a redirect, or without it under `links: { trailingSlash: false }` for a host that serves the bare form ([Host URL policy](#host-url-policy)). See **canonical / absUrl** below.
 
-A page that names another URL as its canonical — `canonical: 'https://sister.example/course'` on the page, or set by its controller — is left out too, and `{{canonical}}` renders that URL: the page has said another one is the real one, and a sitemap that listed it would advertise a duplicate. The same page is out of `llms.txt` and the feed, `report().pages[].canonical` carries the URL, and `--summary` counts them. A value that is not an absolute `http(s)://` URL fails the page at registration. Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages): A page with `generate: false` is left out as well.
+A page that names another URL as its canonical — `canonical: 'https://sister.example/course'` on the page, or set by its controller — is left out too, and `{{canonical}}` renders that URL: the page has said another one is the real one, and a sitemap that listed it would advertise a duplicate. The same page is out of `llms.txt` and the feed, `report().pages[].canonical` carries the URL, and `--summary` counts them. A value that is not an absolute `http(s)://` URL fails the page at registration. Any individual page can opt out with `ignoreSitemap: true`. A page with `generate: false` is left out as well.
+
+**A page's `<lastmod>` is a date it knows, or nothing.** It is the page's `sitemapLastmod`, written as given; without one, its `updated`; without that, its `date`. `updated` and `date` are read the way `.feed()` reads a date: from the page's options first and its resolved model second, a `Date`, a timestamp or any string `new Date()` reads. A date-only string (`2026-10-14`) is written as it is; anything else becomes an ISO datetime. A page with none of the three gets no `<lastmod>`, rather than the time of the build. Google uses `lastmod` only when it is "consistently and verifiably" accurate, and Bing warns against the generation time, so a date that moves on every build teaches both to ignore the field for every page. So date a page when its content changes, never on a rebuild. `<priority>` and `<changefreq>` are written only for a page that sets `sitemapPriority` or `sitemapChangefreq`; Google ignores both. Two builds of an unchanged site write the same `sitemap.xml`.
 
 ```js
 kiss.page({
@@ -549,9 +551,13 @@ kiss.page({
 })
 
 kiss.page({
+  view: 'stockists.hbs',
+  updated: '2026-10-14', // or in the page's model
+})
+
+kiss.page({
   view: 'landing-page.hbs',
-  sitemapPriority: '0.9',
-  sitemapChangefreq: 'weekly',
+  sitemapLastmod: '2026-09-01T09:00:00Z',
 })
 ```
 
@@ -565,7 +571,7 @@ kiss.sitemap({ overwrite: false })
 
 ### .llms()
 
-Writes an [`llms.txt`](https://llmstxt.org) into the root of the build folder: the curated, AI-facing index of your site, the file an answer engine reads before it crawls. It is `.sitemap()`'s sibling — same registry, same titles, a different reader — so the two can never drift apart. Where the sitemap lists each page, `llms.txt` links each page's Markdown copy (see **Markdown copies for agents** below), which is what the llmstxt.org spec asks its links to point at. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
+Writes an [`llms.txt`](https://llmstxt.org) into the root of the build folder: the curated index of your site for an agent or a tool pointed at it, such as a coding agent or an MCP server reading your docs. It is not search optimisation. No search or answer engine documents reading the file, Google says its AI features need no "AI text files", and studies of hundreds of thousands of sites found no link between having one and being cited (2026). AI search finds a kiss site the way search does, through its indexable HTML. It is `.sitemap()`'s sibling — same registry, same titles, a different reader — so the two can never drift apart. Where the sitemap lists each page, `llms.txt` links each page's Markdown copy (see **Markdown copies for agents** below), which is what the llmstxt.org spec asks its links to point at. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
 
 ```js
 kiss

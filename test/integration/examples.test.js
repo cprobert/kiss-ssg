@@ -145,9 +145,16 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(existsSync(path.join(outputDir('6-sitemap'), '404.html'))).toBe(
         true,
       )
-      expect(existsSync(path.join(outputDir('6-sitemap'), 'sitemap.xml'))).toBe(
-        true,
+      // Only the page that knows when it changed states a date: the stockists
+      // model's `updated`. No build time on the others, and no priority.
+      const sitemap = readFileSync(
+        path.join(outputDir('6-sitemap'), 'sitemap.xml'),
+        'utf8',
       )
+      expect(sitemap.match(/<lastmod>[^<]*<\/lastmod>/g)).toEqual([
+        '<lastmod>2026-10-14</lastmod>',
+      ])
+      expect(sitemap).not.toContain('<priority>')
       // The one example that writes both: llms.txt lists the three pages the
       // sitemap does, and not the two `ignoreSitemap` ones (the rota, the 404).
       const llms = readFileSync(

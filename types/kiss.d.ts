@@ -66,17 +66,21 @@ export type PageOptionsKnown = {
      */
     ignoreSitemap?: boolean;
     /**
-     * default `'1.00'`
+     * omitted from the XML unless set (Google ignores it)
      */
     sitemapPriority?: string;
     /**
-     * omitted from the XML unless set
+     * omitted from the XML unless set (Google ignores it)
      */
     sitemapChangefreq?: string;
     /**
-     * default: one timestamp shared by every page
+     * the page's `<lastmod>`, written as given; without it the page's `updated`, then its `date`, and otherwise no `<lastmod>` at all
      */
     sitemapLastmod?: string;
+    /**
+     * when the page last changed; the sitemap's `<lastmod>` before `date`, read from the options and then the model
+     */
+    updated?: Date | number | string;
     /**
      * keep this page out of `llms.txt`
      */
@@ -175,8 +179,17 @@ export type BuildError = AggregateError & {
  */
 export type SitemapUrl = {
     loc: string;
-    lastmod: string;
-    priority: string;
+    /**
+     * only when the page states a date (`sitemapLastmod`, `updated` or `date`)
+     */
+    lastmod?: string;
+    /**
+     * only when the page sets `sitemapPriority`
+     */
+    priority?: string;
+    /**
+     * only when the page sets `sitemapChangefreq`
+     */
     changefreq?: string;
 };
 export type SitemapOptions = {
@@ -285,9 +298,10 @@ export type WatchOptions = {
  * @property {boolean} [generate] `false` skips building this one page entirely
  * @property {KissConfigInput} [config] per-page config overrides, merged over the site config for this page alone
  * @property {boolean} [ignoreSitemap] keep this page out of `sitemap.xml`
- * @property {string} [sitemapPriority] default `'1.00'`
- * @property {string} [sitemapChangefreq] omitted from the XML unless set
- * @property {string} [sitemapLastmod] default: one timestamp shared by every page
+ * @property {string} [sitemapPriority] omitted from the XML unless set (Google ignores it)
+ * @property {string} [sitemapChangefreq] omitted from the XML unless set (Google ignores it)
+ * @property {string} [sitemapLastmod] the page's `<lastmod>`, written as given; without it the page's `updated`, then its `date`, and otherwise no `<lastmod>` at all
+ * @property {Date|number|string} [updated] when the page last changed; the sitemap's `<lastmod>` before `date`, read from the options and then the model
  * @property {boolean} [ignoreLlms] keep this page out of `llms.txt`
  * @property {string} [llmsSection] the `llms.txt` section this page is listed under, overriding its path
  * @property {boolean} [ignoreFeed] keep this page out of the `.feed()` document
@@ -360,9 +374,9 @@ export type WatchOptions = {
  *
  * @typedef {Object} SitemapUrl
  * @property {string} loc
- * @property {string} lastmod
- * @property {string} priority
- * @property {string} [changefreq]
+ * @property {string} [lastmod] only when the page states a date (`sitemapLastmod`, `updated` or `date`)
+ * @property {string} [priority] only when the page sets `sitemapPriority`
+ * @property {string} [changefreq] only when the page sets `sitemapChangefreq`
  */
 /**
  * @typedef {Object} SitemapOptions

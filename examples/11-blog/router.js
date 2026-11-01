@@ -247,7 +247,7 @@ kiss
     section: 'journal',
   })
   // The registry's third reader: a crawler gets sitemap.xml, a feed client gets
-  // feed.xml, an answer engine gets this.
+  // feed.xml, an agent pointed at the site gets this (no search engine reads it).
   .llms({
     title: journal.name,
     summary: journal.summary,

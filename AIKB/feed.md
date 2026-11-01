@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Builds an RSS 2.0 feed from the page stack and writes it to the build folder. The third file derived from the registry, beside `sitemap.js` and `llms.js`: same pages, same titles, same URL derivation, a different reader — a feed client rather than a crawler or an answer engine.
+Builds an RSS 2.0 feed from the page stack and writes it to the build folder. The third file derived from the registry, beside `sitemap.js` and `llms.js`: same pages, same titles, same URL derivation, a different reader — a feed client rather than a crawler or an agent.
 
 ## Public interface
 
@@ -18,7 +18,7 @@ Builds an RSS 2.0 feed from the page stack and writes it to the build folder. Th
 
 ## Depended on by
 
-`lib/kiss.js` (`Kiss.feed()`, and `feedFileName` for the `_feedPath` it records for the build report). `lib/sitemap.js` and `lib/llms.js` are siblings rather than consumers: all three read the same stack and make the same `buildTo` → `toCanonicalPath` → `toAbsoluteUrl` join, and `ignoreSitemap` excludes from all three.
+`lib/kiss.js` (`Kiss.feed()`, and `feedFileName` for the `_feedPath` it records for the build report). `lib/sitemap.js` (`rawDate` and `toDate`, for a page's `<lastmod>`, so a date is read by one rule in both files). `lib/sitemap.js` and `lib/llms.js` are otherwise siblings rather than consumers: all three read the same stack and make the same `buildTo` → `toCanonicalPath` → `toAbsoluteUrl` join, and `ignoreSitemap` excludes from all three.
 
 ## Non-obvious behavior
 

@@ -856,6 +856,24 @@ const CONTRADICTIONS = [
     ],
   },
   {
+    why: '2.9.0 (planning/reviews/2026-11-01-seo-best-practices-2026.md, C1): a sitemap entry states a lastmod only when the page knows a date, and a priority only when the page sets one, because Google uses lastmod only when it is verifiably accurate and ignores priority; a doc promising the build time or 1.00 as the default describes the file every site used to publish',
+    patterns: [
+      /`sitemapLastmod` \(default: the current time/,
+      /default `sitemapLastmod` changes on every build/,
+      /`sitemapPriority` \(default `'1\.00'`\)/,
+      /lastmod` defaults to `now`/,
+    ],
+  },
+  {
+    why: '2026-11-01 (the same review, C2): no search or answer engine documents reading llms.txt, Google says AI features need no "AI text files", and a study of about 300,000 domains found no link to AI citations; a doc saying an answer engine reads it sells an agent convenience as SEO',
+    patterns: [
+      /the file an answer engine reads/,
+      /recommended to an answer engine/,
+      /the llmstxt\.org index an answer engine/,
+      /a crawler\s+and an answer engine are told the same thing/,
+    ],
+  },
+  {
     why: 'complete() is awaited in dev too: measured 2026-09-27, the if (!dev) guard made a dev server that could not bind exit 0, and awaiting in dev keeps serving',
     patterns: [
       /if \(!dev\) \{(?:\s*\/\/[^\n]*)*\s*await kiss/,
