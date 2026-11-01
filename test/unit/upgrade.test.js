@@ -1,16 +1,112 @@
 import { describe, it, expect } from 'vitest'
 import {
   changelogEntries,
+  chooseLockfile,
   compareVersions,
   formatUpgrade,
+  gitStateFrom,
+  ownEngine,
   parseUpgradeArgs,
   parseVersion,
   planUpgrade,
+  registryFrom,
   specAllows,
   specFloor,
   upgradeNotes,
   verifyUpgrade,
 } from '../../lib/upgrade.js'
+
+// The /code-review of 2026-11-01 (finding 7): the bin made these decisions
+// with no unit test, and two of the review's defects lived there. They are
+// pure functions now; the bin only gathers what they read.
+describe('the facts the bin gathers', () => {
+  it('chooseLockfile: npm-shrinkwrap.json wins, then package-lock.json, then pnpm, then yarn', () => {
+    const has =
+      (...names) =>
+      (name) =>
+        names.includes(name)
+    expect(
+      chooseLockfile(has('package-lock.json', 'npm-shrinkwrap.json')),
+    ).toBe('npm-shrinkwrap.json')
+    expect(chooseLockfile(has('yarn.lock', 'package-lock.json'))).toBe(
+      'package-lock.json',
+    )
+    expect(chooseLockfile(has('yarn.lock', 'pnpm-lock.yaml'))).toBe(
+      'pnpm-lock.yaml',
+    )
+    expect(chooseLockfile(has())).toBeNull()
+  })
+
+  // Finding 1: describeEngine walks up, so a parent folder's copy read as
+  // the site's own. The site's engine is its own node_modules/kiss-ssg only.
+  it("ownEngine keeps the site's own node_modules/kiss-ssg and nothing above it", () => {
+    const own = {
+      version: '2.6.2',
+      dir: 'node_modules/kiss-ssg',
+      linked: false,
+      target: null,
+    }
+    expect(ownEngine(own)).toBe(own)
+    expect(
+      ownEngine({
+        ...own,
+        dir: '../node_modules/kiss-ssg',
+        version: '2.9.0-alpha.1',
+      }),
+    ).toBeNull()
+    expect(ownEngine(null)).toBeNull()
+  })
+
+  // Finding 2: with no git installed there is no commit to protect, as in a
+  // folder that is not a repository.
+  it('gitStateFrom: not a repository, or no git at all, carries on; any other failure blocks', () => {
+    expect(gitStateFrom({ error: null, dirty: [] })).toEqual({ state: 'clean' })
+    expect(gitStateFrom({ error: null, dirty: ['package-lock.json'] })).toEqual(
+      { state: 'dirty', files: ['package-lock.json'] },
+    )
+    expect(
+      gitStateFrom({
+        error:
+          'fatal: not a git repository (or any of the parent directories): .git',
+        dirty: [],
+      }),
+    ).toEqual({ state: 'not-a-repo' })
+    expect(gitStateFrom({ error: 'spawnSync git ENOENT', dirty: [] })).toEqual({
+      state: 'not-a-repo',
+    })
+    expect(
+      gitStateFrom({
+        error: 'fatal: detected dubious ownership in repository',
+        dirty: [],
+      }),
+    ).toEqual({
+      state: 'error',
+      said: 'fatal: detected dubious ownership in repository',
+    })
+  })
+
+  it("registryFrom: an answer, or npm's own error code, never a default", () => {
+    expect(
+      registryFrom({
+        status: 0,
+        stdout: 'https://registry.npmjs.org/\n',
+        stderr: '',
+      }),
+    ).toEqual({ registry: 'https://registry.npmjs.org/', registryError: null })
+    expect(
+      registryFrom({
+        status: 1,
+        stdout: '',
+        stderr:
+          'npm error code ENOWORKSPACES\nnpm error This command does not support workspaces.\n',
+      }),
+    ).toEqual({ registry: null, registryError: 'npm error code ENOWORKSPACES' })
+    expect(registryFrom({ status: null, stdout: '', stderr: '' })).toEqual({
+      registry: null,
+      registryError: 'exit null',
+    })
+  })
+})
 
 describe('parseVersion', () => {
   it('reads a release and a prerelease', () => {
@@ -155,6 +251,28 @@ describe('changelogEntries', () => {
     expect(entries[3].nothingToChange).toBe(false)
   })
 
+  // /code-review finding 10: a non-version `##` heading kept the previous
+  // version open, so its notes were filed under that version.
+  it('ends an entry at a `##` heading that is not a version', () => {
+    const text = [
+      '## 2.0.0 — 2026-09-09',
+      '',
+      '### Upgrading',
+      '',
+      'The real note.',
+      '',
+      '## Older releases',
+      '',
+      '### Upgrading',
+      '',
+      "Not 2.0.0's.",
+    ].join('\n')
+    const [entry] = changelogEntries(text)
+    expect(entry.notes).toEqual([
+      { heading: 'Upgrading', text: 'The real note.' },
+    ])
+  })
+
   it('tolerates CRLF line endings', () => {
     const crlf = changelogEntries(CHANGELOG.replace(/\n/g, '\r\n'))
     expect(crlf.map((e) => e.version)).toEqual(entries.map((e) => e.version))
@@ -214,6 +332,27 @@ describe('specAllows', () => {
   it('allows nothing it cannot read as a registry range', () => {
     for (const spec of ['file:../tree', 'latest', '2.x', null])
       expect(specAllows(spec, '2.9.0')).toBe(false)
+  })
+})
+
+// /code-review finding 3: npm's semver keeps prereleases out of a range that
+// names none, and `^0.0.x` pins the patch.
+describe('specAllows, the prerelease and 0.x rules', () => {
+  it('allows a prerelease only from a range that names one on the same version', () => {
+    expect(specAllows('^2.6.2', '2.9.0-alpha.1')).toBe(false)
+    expect(specAllows('~2.9.0', '2.9.0-alpha.1')).toBe(false)
+    expect(specAllows('>=2.5.0', '2.9.0-alpha.1')).toBe(false)
+    expect(specAllows('2.9.0-alpha.1', '2.9.0-alpha.1')).toBe(true)
+    expect(specAllows('^2.9.0-alpha.0', '2.9.0-alpha.1')).toBe(true)
+    expect(specAllows('^2.9.0-alpha.0', '2.9.1-alpha.0')).toBe(false)
+    expect(specAllows('^2.9.0-alpha.0', '2.9.0')).toBe(true)
+  })
+
+  it('reads ^0.0.x as that patch only, and ^0.x as that minor', () => {
+    expect(specAllows('^0.0.3', '0.0.3')).toBe(true)
+    expect(specAllows('^0.0.3', '0.0.4')).toBe(false)
+    expect(specAllows('^0.2.0', '0.2.5')).toBe(true)
+    expect(specAllows('^0.2.0', '0.3.0')).toBe(false)
   })
 })
 
@@ -485,6 +624,59 @@ describe('planUpgrade', () => {
     ).toBeNull()
   })
 
+  // /code-review finding 4: every printed fix said --save-dev, which moves a
+  // `dependencies` entry into devDependencies.
+  it('names the section package.json uses in every command it prints', () => {
+    const plan = planUpgrade(
+      facts({
+        pkg: { found: true, section: 'dependencies', spec: '^2.6.2' },
+        registry: null,
+        registryError: 'npm error code EPERM',
+      }),
+    )
+    expect(plan.refuse).toMatch(/--save-prod/)
+    expect(plan.refuse).not.toMatch(/--save-dev/)
+  })
+
+  // /code-review finding 5: with no lockfile, "current" was unreachable, so
+  // every run reinstalled.
+  it('installs nothing for a lockfile-less site already on this version', () => {
+    const plan = planUpgrade(
+      facts({
+        engine: { ...facts().engine, version: '2.9.0' },
+        lock: null,
+        committedLockVersion: null,
+      }),
+    )
+    expect(plan.install).toBeNull()
+  })
+
+  // /code-review finding 6: v1 was detected by "v1" anywhere in the warnings.
+  it('flags a v1 site on the plan, not by searching the warnings', () => {
+    expect(
+      planUpgrade(
+        facts({ engine: { ...facts().engine, version: '1.4.4' }, lock: null }),
+      ).v1,
+    ).toBe(true)
+    const linked = planUpgrade(
+      facts({
+        engine: { ...LINKED, target: 'C:/Code/kiss-ssg-v1' },
+        pkg: {
+          found: true,
+          section: 'devDependencies',
+          spec: 'file:../kiss-ssg-v1',
+        },
+        lock: null,
+        committedLockVersion: null,
+        own: { version: '2.0.0-alpha.1', changelog: '# Changelog\n' },
+      }),
+    )
+    expect(linked.v1).toBe(false)
+    expect(formatUpgrade(linked, null)).toContain(
+      'No releases between the two versions.',
+    )
+  })
+
   // Codex, adversarial review (2026-11-01): node_modules restored to the new
   // version while the lockfile still pins the old one. The next `npm ci`
   // puts the old version back, so "already on this version" was wrong.
@@ -732,6 +924,17 @@ describe('verifyUpgrade', () => {
       '2.9.0',
     )
     expect(result.ok).toBe(true)
+  })
+
+  it('prints fixes with the section package.json uses', () => {
+    const result = verifyUpgrade(
+      after({ engine: { ...facts().engine, version: '2.8.0' } }),
+      '2.9.0',
+      '--save-prod',
+    )
+    const fixes = result.checks.map((c) => c.fix ?? '').join('\n')
+    expect(fixes).toMatch(/--save-prod/)
+    expect(fixes).not.toMatch(/--save-dev/)
   })
 
   it('says a missing lockfile was not checked, rather than passing it', () => {

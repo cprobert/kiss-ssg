@@ -31,9 +31,14 @@ import { runBase } from '../lib/base.js'
 import { GitError, git, tryGit } from '../lib/git.js'
 import {
   UPGRADE_HELP,
+  chooseLockfile,
   formatUpgrade,
+  gitStateFrom,
+  ownEngine,
   parseUpgradeArgs,
   planUpgrade,
+  registryFrom,
+  saveFlag,
   verifyUpgrade,
 } from '../lib/upgrade.js'
 import {
@@ -81,25 +86,10 @@ if (process.argv[2] === 'upgrade') {
       return null
     }
   }
-  const slash = (p) => p.split(path.sep).join('/')
-  // The project is the folder upgrade runs in, and its lockfile is that
-  // folder's own. Walking up to the nearest lockfile read a workspace
-  // member's root, or an unrelated parent's (Codex review, 2026-11-01).
-  // `npm prefix` would name a member's root, but npm 11.9 redacts a UUID-like
-  // path segment in its output (AIKB/upstream.md); a member is instead
-  // stopped by npm's own ENOWORKSPACES from `config get registry` below.
-  const project = cwd
-  // npm-shrinkwrap.json wins over package-lock.json beside it (Codex).
-  const findLock = () => {
-    for (const name of [
-      'npm-shrinkwrap.json',
-      'package-lock.json',
-      'pnpm-lock.yaml',
-      'yarn.lock',
-    ])
-      if (fs.existsSync(path.join(project, name))) return { dir: project, name }
-    return null
-  }
+  // The project is the folder upgrade runs in: its own lockfile, its own
+  // node_modules/kiss-ssg. What counts and what wins is lib/upgrade.js's
+  // (chooseLockfile, ownEngine); this only reads the folder.
+  const LOCK_KEY = 'node_modules/kiss-ssg'
   const readPkg = () => {
     const pkg = readJson(path.join(cwd, 'package.json'))
     const section = /** @type {const} */ ([
@@ -113,47 +103,32 @@ if (process.argv[2] === 'upgrade') {
     }
   }
   const readState = () => {
-    const engine = describeEngine({ cwd })
-    const found = findLock()
-    let lock = null
-    if (found?.name === 'package-lock.json') {
-      const file = path.join(found.dir, found.name)
-      const key = slash(
-        path.relative(
-          found.dir,
-          engine
-            ? path.resolve(cwd, engine.dir)
-            : path.join(cwd, 'node_modules', 'kiss-ssg'),
-        ),
-      )
-      const packages = readJson(file)?.packages ?? {}
-      lock = {
-        path: slash(path.relative(cwd, file)),
-        key,
-        entry: packages[key] ?? packages['node_modules/kiss-ssg'] ?? null,
-      }
-    }
-    return { engine, found, lock }
+    const engine = ownEngine(describeEngine({ cwd }))
+    const lockfile = chooseLockfile((name) =>
+      fs.existsSync(path.join(cwd, name)),
+    )
+    const lock =
+      lockfile === 'package-lock.json'
+        ? {
+            path: lockfile,
+            entry:
+              readJson(path.join(cwd, lockfile))?.packages?.[LOCK_KEY] ?? null,
+          }
+        : null
+    return { engine, lockfile, lock }
   }
   const before = readState()
   const pkgPaths = ['package.json', ...(before.lock ? [before.lock.path] : [])]
-  /** @type {import('../lib/upgrade.js').UpgradeFacts['git']} */
-  let gitState
+  let gitError = null
+  let dirty = []
   try {
     git(['rev-parse', '--is-inside-work-tree'], { cwd })
-    const dirty = git(['status', '--porcelain', '--', ...pkgPaths], { cwd })
+    dirty = git(['status', '--porcelain', '--', ...pkgPaths], { cwd })
       .split('\n')
       .filter(Boolean)
-    gitState = dirty.length
-      ? { state: 'dirty', files: dirty.map((l) => l.slice(3)) }
-      : { state: 'clean' }
+      .map((l) => l.slice(3))
   } catch (err) {
-    // "Not a repository" is an answer; anything else git said is not, and
-    // carrying on would skip the check (CLAUDE.md: an empty answer is unknown).
-    gitState =
-      err instanceof GitError && /not a git repository/i.test(err.message)
-        ? { state: 'not-a-repo' }
-        : { state: 'error', said: err.message }
+    gitError = err instanceof GitError ? err.message : String(err)
   }
   const committed = before.lock
     ? tryGit(['show', `HEAD:./${before.lock.path}`], cwd)
@@ -161,44 +136,31 @@ if (process.argv[2] === 'upgrade') {
   let committedLockVersion = null
   try {
     const packages = committed ? JSON.parse(committed).packages : null
-    committedLockVersion = packages?.[before.lock.key]?.version ?? null
+    committedLockVersion = packages?.[LOCK_KEY]?.version ?? null
   } catch {
     /* an unreadable committed lockfile tells us nothing */
   }
-  // In a workspace member `npm config` fails with ENOWORKSPACES, which is
-  // how a member is recognised. A failure is reported, never replaced with
-  // npmjs (Codex review, 2026-11-01).
-  const registryRun = npm(['config', 'get', 'registry'], {
-    cwd: project,
-    encoding: 'utf8',
-  })
-  const registry =
-    (registryRun.status === 0 && String(registryRun.stdout ?? '').trim()) ||
-    null
-  const registryError = registry
-    ? null
-    : (
-        String(registryRun.stderr ?? '')
-          .split('\n')
-          .find((l) => /\bcode\b/.test(l)) ??
-        String(registryRun.stderr ?? '').split('\n')[0] ??
-        `exit ${registryRun.status}`
-      ).trim() || `exit ${registryRun.status}`
+  // In a workspace member this fails with ENOWORKSPACES, which is how a
+  // member is recognised (lib/upgrade.js, AIKB/upstream.md).
+  const { registry, registryError } = registryFrom(
+    npm(['config', 'get', 'registry'], { cwd, encoding: 'utf8' }),
+  )
+  const pkg = readPkg()
   const plan = planUpgrade({
     own: {
       version: readJson(path.join(own, 'package.json')).version,
       changelog: fs.readFileSync(path.join(own, 'CHANGELOG.md'), 'utf8'),
     },
     args,
-    pkg: readPkg(),
+    pkg,
     engine: before.engine,
     lock: before.lock,
     committedLockVersion,
     otherLockfile:
-      before.found && before.found.name !== 'package-lock.json'
-        ? before.found.name
+      before.lockfile && before.lockfile !== 'package-lock.json'
+        ? before.lockfile
         : null,
-    git: gitState,
+    git: gitStateFrom({ error: gitError, dirty }),
     registry,
     registryError,
   })
@@ -235,6 +197,7 @@ if (process.argv[2] === 'upgrade') {
       savedSpec: readPkg().spec,
     },
     plan.to,
+    saveFlag(pkg.section),
   )
   print({ ran, verified })
   process.exit(verified.ok ? 0 : 1)

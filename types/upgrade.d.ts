@@ -67,17 +67,80 @@ export function upgradeNotes(text: string, from: string | null, to: string): {
  */
 export function specFloor(spec: string | null | undefined): string | null;
 /**
- * Whether a plain `package.json` range lets npm install `version`: `^` keeps
- * the major (and the minor below 1.0.0), `~` the minor, an exact pin only
- * itself, `>=` anything from its floor. Anything `specFloor` cannot read (a
- * `file:` link, a URL, a tag) allows nothing, because npm would not install
- * this release from the registry for it.
+ * Whether a plain `package.json` range lets npm install `version`, by npm's
+ * semver rules: `^` keeps the first non-zero part (the major, or below 1.0.0
+ * the minor, or below 0.1.0 the patch), `~` the minor, an exact pin only
+ * itself, `>=` anything from its floor. A prerelease satisfies a range only
+ * when the range's own version is a prerelease of the same major.minor.patch
+ * (/code-review, 2026-11-01: `^2.6.2` does not install `2.9.0-alpha.1`).
+ * Anything `specFloor` cannot read (a `file:` link, a URL, a tag) allows
+ * nothing, because npm would not install this release from the registry.
  *
  * @param {string|null|undefined} spec
  * @param {string} version
  * @returns {boolean}
  */
 export function specAllows(spec: string | null | undefined, version: string): boolean;
+/**
+ * The npm flag that keeps kiss-ssg in the section package.json already uses.
+ *
+ * @param {'dependencies'|'devDependencies'|null} section
+ * @returns {'--save-prod'|'--save-dev'}
+ */
+export function saveFlag(section: "dependencies" | "devDependencies" | null): "--save-prod" | "--save-dev";
+/**
+ * Which lockfile governs the project, by npm's precedence: npm-shrinkwrap.json
+ * over package-lock.json beside it; pnpm and yarn are named so the install
+ * can be blocked. Only the project's own folder is asked: the nearest
+ * lockfile on disk was a workspace root's or an unrelated parent's (Codex,
+ * 2026-11-01).
+ *
+ * @param {(name: string) => boolean} exists
+ * @returns {string|null}
+ */
+export function chooseLockfile(exists: (name: string) => boolean): string | null;
+/**
+ * The site's own engine: `describeEngine` walks up to the nearest
+ * node_modules/kiss-ssg, which may be a parent folder's, and upgrade installs
+ * into the site's own folder (/code-review, 2026-11-01).
+ *
+ * @param {ReturnType<typeof import('./check.js').describeEngine>} engine
+ *   described from the site's folder
+ */
+export function ownEngine(engine: ReturnType<typeof import("./check.js").describeEngine>): {
+    version: string;
+    dir: string;
+    linked: boolean;
+    target: string | null;
+};
+/**
+ * What git said about package.json and the lockfile. "Not a repository", and
+ * no git installed at all, mean there is no commit to protect; any other
+ * failure is unknown, and blocks the install (/code-review, 2026-11-01).
+ *
+ * @param {{ error: string|null, dirty: string[] }} answer
+ * @returns {UpgradeFacts['git']}
+ */
+export function gitStateFrom({ error, dirty }: {
+    error: string | null;
+    dirty: string[];
+}): UpgradeFacts["git"];
+/**
+ * The registry npm installs from, from `npm config get registry`, or npm's
+ * own error code when it could not answer. Never a default: substituting
+ * npmjs failed a private registry's correct lockfile (Codex, 2026-11-01).
+ *
+ * @param {{ status: number|null, stdout?: string|null, stderr?: string|null }} run
+ * @returns {{ registry: string|null, registryError: string|null }}
+ */
+export function registryFrom({ status, stdout, stderr }: {
+    status: number | null;
+    stdout?: string | null;
+    stderr?: string | null;
+}): {
+    registry: string | null;
+    registryError: string | null;
+};
 /**
  * @typedef {Object} UpgradeArgs
  * @property {boolean} plan
@@ -113,6 +176,8 @@ export function planUpgrade(facts: UpgradeFacts): UpgradePlan;
  *
  * @param {{ engine: UpgradeFacts['engine'], lock: LockFacts|null, registry: string|null, savedSpec?: string|null }} after
  * @param {string} to
+ * @param {string} [flag] the save flag for package.json's section, so a fix
+ *   never moves kiss-ssg between dependencies and devDependencies
  * @returns {{ ok: boolean, checks: Check[] }}
  */
 export function verifyUpgrade(after: {
@@ -120,7 +185,7 @@ export function verifyUpgrade(after: {
     lock: LockFacts | null;
     registry: string | null;
     savedSpec?: string | null;
-}, to: string): {
+}, to: string, flag?: string): {
     ok: boolean;
     checks: Check[];
 };
@@ -246,6 +311,11 @@ export type UpgradePlan = {
      * the notes still print, because reading writes nothing
      */
     blocked: string | null;
+    /**
+     * the site starts on v1: it is pointed at GUIDE.md
+     * § Migrating from v1 instead of the v2 notes
+     */
+    v1: boolean;
     warnings: string[];
     notes: (Note & {
         version: string;

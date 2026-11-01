@@ -293,6 +293,22 @@ describe('kiss-ssg upgrade', () => {
     expect(plan.stdout).toMatch(/install blocked: .*registry/)
   })
 
+  // /code-review finding 1: describeEngine walks up, so a parent folder's
+  // kiss-ssg read as the site's own and refused the upgrade as a downgrade.
+  it("ignores a parent folder's kiss-ssg: the site's own node_modules only", () => {
+    const s = setUp({ installed: null, gitInit: false })
+    const parentEngine = path.join(temp, 'node_modules', 'kiss-ssg')
+    fs.mkdirSync(parentEngine, { recursive: true })
+    fs.writeFileSync(
+      path.join(parentEngine, 'package.json'),
+      JSON.stringify({ name: 'kiss-ssg', version: '99.0.0' }),
+    )
+    const run = upgrade(s, ['--plan'])
+    expect(run.status, run.stderr).toBe(0)
+    expect(run.stdout).not.toMatch(/newer than/)
+    expect(run.stdout).toMatch(/^kiss-ssg 2\.6\.2 → .*\(from package\.json\)/)
+  })
+
   it('refuses a registry release newer than itself', () => {
     const s = setUp({ installed: '99.0.0' })
     const run = upgrade(s)

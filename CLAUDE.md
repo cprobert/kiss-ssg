@@ -119,13 +119,14 @@ npx kiss-ssg aikb <script>     # record the site's knowledge base into config.fo
                                # the same staged, discarded build. Publishes nothing, refuses a
                                # failed build, and is the only thing that writes that folder —
                                # run it when a piece of work closes and commit the result.
+                               # e.g. from examples/9-migrated-from-v1/: `node ../../bin/kiss-ssg.js aikb router.js`
 npx kiss-ssg@latest upgrade    # install that kiss-ssg into the site, check node_modules/kiss-ssg
                                # is that version and not a link, and print the CHANGELOG.md
                                # `### Upgrading` notes since the site's version. --plan installs
                                # nothing; --from <v> when it cannot tell where the site started.
-                               # Refuses a dirty package.json/lockfile. By version, because a
-                               # site's own older bin has no `upgrade`.
-                               # e.g. from examples/9-migrated-from-v1/: `node ../../bin/kiss-ssg.js aikb router.js`
+                               # Blocks the install on a dirty package.json/lockfile, a workspace
+                               # member or pnpm/yarn/shrinkwrap; --plan still reads. By version,
+                               # because a site's own older bin has no `upgrade`.
 npm run types            # regenerate types/ from the JSDoc in lib/ (never hand-edit types/)
 node scripts/base-branch.mjs   # print the integration branch this work merges into
 node scripts/sync-plugin-versions.mjs   # carry package.json's version into every plugin
