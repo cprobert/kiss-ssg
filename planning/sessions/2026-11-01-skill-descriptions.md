@@ -39,6 +39,8 @@ opened: 2026-11-01
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-01** — slice 1 (`4d02934`, `ccc4ae4`). Criterion 1 met: the 400-character cap in `plugin-manifests.test.js` was red for 17 of 18 descriptions and is green; `claude plugin validate` passes both plugins. Criterion 2 met: the two plugins' listing, by `/doctor`'s count, 2,970 → 1,751 est. tokens (−41%). Criterion 3 met: 24 routing runs in plan mode with a turn cap — the 10-31 tasks 12/12 on the new descriptions, six near-misses 6/6 on old and new ($6.81, `planning/reviews/2026-11-01-skill-descriptions-trigger.md`). Criterion 4: skill tests 408 passed; gates not yet run. No drift; real sites untouched. **Eyeball: looked** — the operator read all 18 new descriptions: "they're right". **Offer:** the "kiss-site-new and kiss-page-add call it" clauses dropped from the domain-skill descriptions — operator: keep. Decision: ready to close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
