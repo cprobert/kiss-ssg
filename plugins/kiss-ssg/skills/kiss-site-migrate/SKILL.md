@@ -335,10 +335,12 @@ then the model), and a page with none of them has no `<lastmod>`. `<priority>` a
   clock in a controller: that is the old behaviour again.
 - **`sitemapPriority` and `sitemapChangefreq` in the router** still work, and Google ignores both.
   Leave them or remove them; removing them changes nothing in search.
-- **A `.robots()` that blocks `GPTBot`, `ClaudeBot`, `Google-Extended` or `Applebot-Extended`
-  with `disallow: '/'`** no longer logs "robots.txt disallows the whole site" or sets
-  `report().robots.disallowAll`: those tokens control model training, not search. On such a site
-  the report's `robots.disallowAll` goes from `true` to `false`, which is the fix, not a
+- **A `.robots()` that keeps a named agent out of the whole site** (`GPTBot`, `ClaudeBot`,
+  `CCBot` and the like) no longer logs "robots.txt disallows the whole site" or sets
+  `report().robots.disallowAll`, unless the agent is `*` or a search engine's own crawler
+  (Googlebot, Bingbot, Applebot, `OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot` and a
+  few more). The blocked agents are listed in the new `report().robots.blocked` and one `info`
+  line. On such a site `disallowAll` goes from `true` to `false`, which is the fix, not a
   regression.
 - Check it: build, and read `sitemap.xml`. No `<lastmod>` holds the time of the build.
 

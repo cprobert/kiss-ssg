@@ -265,6 +265,7 @@
     "file": "./public/robots.txt",
     "agents": 1,
     "disallowAll": false,
+    "blocked": [],
     "sitemaps": [
       "https://asterandoak.example/sitemap.xml"
     ]

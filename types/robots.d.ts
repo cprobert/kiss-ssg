@@ -25,7 +25,8 @@
  * @property {'written'|'skipped'} status `skipped` means a file was already there under `overwrite: false`
  * @property {string|null} text the rendered file, or `null` when nothing was written
  * @property {number} agents how many crawler blocks it carries
- * @property {boolean} disallowAll whether any block disallows the whole site
+ * @property {boolean} disallowAll whether every crawler (`*`), or a search engine's own crawler, is disallowed the whole site
+ * @property {string[]} blocked every named agent disallowed the whole site, search crawler or not, in file order
  * @property {string[]} sitemaps the absolute sitemap URLs advertised
  */
 /**
@@ -55,12 +56,20 @@ export function collectRobotsAgents(options?: RobotsOptions): {
 }[];
 /**
  * @param {{ userAgent?: string, disallow: string[] }[]} agents
- * @returns {boolean} whether a block that search depends on disallows the whole site
+ * @returns {boolean} whether every crawler (`*`), or a search engine's own crawler, is disallowed the whole site
  */
 export function disallowsEverything(agents?: {
     userAgent?: string;
     disallow: string[];
 }[]): boolean;
+/**
+ * @param {{ userAgent?: string, disallow: string[] }[]} agents
+ * @returns {string[]} every named agent (not `*`) disallowed the whole site, in file order
+ */
+export function blockedAgents(agents?: {
+    userAgent?: string;
+    disallow: string[];
+}[]): string[];
 /**
  * The sitemap URLs to advertise.
  *
@@ -200,9 +209,13 @@ export type RobotsWriteResult = {
      */
     agents: number;
     /**
-     * whether any block disallows the whole site
+     * whether every crawler (`*`), or a search engine's own crawler, is disallowed the whole site
      */
     disallowAll: boolean;
+    /**
+     * every named agent disallowed the whole site, search crawler or not, in file order
+     */
+    blocked: string[];
     /**
      * the absolute sitemap URLs advertised
      */
