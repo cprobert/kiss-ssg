@@ -91,12 +91,43 @@ scope the contract names. Agents never commit: the operator's diff review is the
     really starts from 2.5.0.
   - The command gains `--from <version>`, for a site that broke after an upgrade it did not run.
     That is scope added by the critique.
+- **2026-11-01, at the operator's request: a review of `llms.txt`.** It went past the one named
+  cut the contract needed (C4), from 15,993 to 14,334 characters (`ebde5ad`), and changed two
+  tests that pinned the duplicate text it removed. Tooling and docs, inside the minor. The twelve
+  skill names were kept because `skill-coverage.test.js` records a clean-room agent that followed
+  a skill `llms.txt` did not name. `init`'s npm call now shares `upgrade`'s spawn helper: the same
+  Windows rule, written once.
 
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+- **2026-11-01** — Criteria 1–4 and 10 met.
+  - **1 and 3:** `lib/upgrade.js` has 44 unit tests and 11 integration tests against a fake npm
+    first on `PATH`. `--plan` on a scratch site at `^2.6.2` printed 11 notes from 2.6.4 to 2.8.6
+    and listed 15 releases with nothing to change.
+  - **2:** the opt-in real-npm test was red with a plain `npm install` ("expected true to be
+    false": still a link) and green with `npm install kiss-ssg@2.8.0 --save-dev`. With
+    `KISS_NETWORK_TESTS=1` the integration file is 13/13, on npm 11.9.0 under Windows. The
+    link-survives integration test also went red with `verifyUpgrade`'s link check disabled.
+  - **4:** `changelog.test.js` was red against the unedited `CHANGELOG.md` (7 notes in other
+    shapes, and 2.5.0, 2.6.0 and 2.8.0 with no note) and green after the backfill (`0f3b943`).
+  - **10:** `npm run gates` passed all five, with the pack at 350 files.
+
+  Criterion 7 is partial: CLAUDE.md's table row, Commands entry and Rules line, and `types/`, are
+  done. Criteria 5, 6, 8 and 9 are not yet, as W3 and W4.
+
+  Drift: the `llms.txt` review, recorded as an Amendment. Nothing against the non-goals.
+
+  **Eyeball: looked** — the operator read the `upgrade --plan` output for a site at `^2.6.2`
+  (`scratchpad/up1/out.txt`): "reads well".
+
+  **Offer:** for a working-tree link, `from` is unknown, so every note up to `to` prints unless
+  `--from` is given. The operator said keep.
+
+  Decision: continue, to W3.
 
 ---
 
