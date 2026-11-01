@@ -1,6 +1,6 @@
 ---
 name: kiss-page-add
-description: Add a new page to a kiss-ssg site that is already set up, or update an existing page's content, model or controller. Use when asked to "add a page", "add a new page to the site", "add a blog post", "update this page", "change what's on this page", or when editing a `.hbs` view, a `.json` model or a controller in a project that already has `node_modules/kiss-ssg` installed. Not for scaffolding a brand-new site or adding a whole new section with its own model/controller pattern (use kiss-site-new for that), and not for a v1-to-v2 upgrade (use kiss-site-migrate).
+description: Add or update a page on a kiss-ssg site that is already set up — its view, model or controller, replicating the nearest existing page. Use for "add a page", "add a blog post", "update this page", "change what's on this page", or when editing a .hbs view or .json model. Not for a new site or a whole new section (kiss-site-new), or a version upgrade (kiss-site-migrate).
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

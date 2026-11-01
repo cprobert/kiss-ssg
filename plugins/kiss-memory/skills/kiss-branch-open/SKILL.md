@@ -1,6 +1,6 @@
 ---
 name: kiss-branch-open
-description: Capture what a piece of work on a kiss-ssg site is meant to change, before changing it — objective, checkable criteria, non-goals, impact surface — into a session file, then create or adopt the branch. Use when starting work on a kiss site, or when asked to "open a branch", "start a new feature on the site", "add a section to the site" (before writing it), "capture intent", "spec this before we build", or "plan this change". Pair it with kiss-branch-pulse mid-work and kiss-branch-close at the end.
+description: Capture what a change to a kiss-ssg site is meant to do before doing it — objective, criteria, non-goals, impact — in a session file, then create or adopt the branch. Use for "open a branch", "start a new feature on the site", "add a section" (before writing it), "capture intent", "spec this before we build", "plan this change". Pair with kiss-branch-pulse and kiss-branch-close.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: kiss-site-import
-description: Convert an existing web page into a structured kiss-ssg site — a Claude or ChatGPT artifact (often given as a link to the published artifact or share), a page that is already live, an exported page, a hand-written HTML file — keeping what it looks like while giving it a layout, partials and models. Use when someone arrives with a working page rather than a description, or asks to "turn my artifact into a real site", "convert this HTML to kiss", "make this page maintainable", "I built a site in Claude, now what", "here's the link to my artifact", "import an existing page", or "get this off a chat and onto a host". For a site described rather than supplied, use kiss-site-new; for moving a site across kiss-ssg versions, use kiss-site-migrate.
+description: Turn an existing page into a kiss-ssg site, keeping its look — a Claude or ChatGPT artifact or its link, a live page, an exported or hand-written HTML file. Use for "turn my artifact into a real site", "convert this HTML to kiss", "here's the link to my artifact", "import an existing page", "make this page maintainable". For a site described, use kiss-site-new; for an upgrade, kiss-site-migrate.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

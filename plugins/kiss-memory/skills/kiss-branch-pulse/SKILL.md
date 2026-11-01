@@ -1,6 +1,6 @@
 ---
 name: kiss-branch-pulse
-description: Mid-work checkpoint on a kiss-ssg site — re-run the build check against the recorded baseline, read the page diff against the criteria captured at kiss-branch-open, log the beat and decide continue / adjust / amend / ready-to-close. Use when asked to "pulse", "check progress", "how are we doing against the brief", "am I drifting", "is this ready to close yet", or every time a slice of the change is finished. Cheap and repeatable; not a substitute for kiss-branch-close.
+description: Mid-work checkpoint on a kiss-ssg site — re-run the build check, read the page diff against the captured criteria, log it and decide continue, adjust, amend or close. Use for "pulse", "check progress", "how are we doing against the brief", "am I drifting", "is this ready to close yet", or when a slice of the change is done. Not a substitute for kiss-branch-close.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

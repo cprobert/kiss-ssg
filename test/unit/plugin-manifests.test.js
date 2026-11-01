@@ -334,6 +334,21 @@ describe('skills', () => {
     },
   )
 
+  // Every session on a kiss site loads every description into its skill
+  // list, which has a budget of about 1% of the context; past it, entries are
+  // cut and routing degrades. Eighteen descriptions cost about 2,970 est.
+  // tokens before this cap (/doctor, 2026-11-01). A description says what the
+  // skill does, the phrases that call it, and what it is not for; the rules
+  // live in the body.
+  const DESCRIPTION_CAP = 400
+  it.each(everySkill)(
+    `$plugin/$skill: description is at most ${DESCRIPTION_CAP} characters`,
+    ({ file }) => {
+      const length = (readFrontmatter(file).description ?? '').length
+      expect(length).toBeLessThanOrEqual(DESCRIPTION_CAP)
+    },
+  )
+
   // A skill that cites a path the tarball does not ship sends the agent to a
   // file that is not there — the whole point of pointing at llms.txt rather
   // than restating it.

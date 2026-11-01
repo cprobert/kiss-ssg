@@ -1,6 +1,6 @@
 ---
 name: kiss-memory-consolidate
-description: Tidy a kiss-ssg site's knowledge base — fold the durable lessons out of the session logs into `AIKB/site.md`, retire feedback that keeps coming back, and fix the stale, dangling and dead notes the check reports. Use when asked to "consolidate the knowledge base", "tidy the notes", "fold the session logs into site.md", "the same feedback keeps coming back", "the knowledge base feels inconsistent", "the notes are out of date", "clean up AIKB", or when kiss-branch-open or kiss-branch-close recommends it. Housekeeping between pieces of work — it never records the knowledge base and never opens or closes a branch.
+description: Tidy a kiss-ssg site's knowledge base — fold durable lessons from the session logs into AIKB/site.md, retire feedback that keeps coming back, fix stale, dangling and dead notes. Use for "consolidate the knowledge base", "tidy the notes", "clean up AIKB", "the same feedback keeps coming back", "the notes are out of date". Between pieces of work; never opens or closes a branch.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
