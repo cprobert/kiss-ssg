@@ -83,10 +83,16 @@ if (process.argv[2] === 'upgrade') {
   }
   const slash = (p) => p.split(path.sep).join('/')
   // The lockfile nearest above the site, the way npm finds it: in a
-  // workspace it is the root's, not the member's (the critique, measured).
+  // workspace it is the root's, not the member's (the critique, measured),
+  // and npm-shrinkwrap.json wins over package-lock.json beside it (Codex).
   const findLock = () => {
     for (let dir = cwd; ; dir = path.dirname(dir)) {
-      for (const name of ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock'])
+      for (const name of [
+        'npm-shrinkwrap.json',
+        'package-lock.json',
+        'pnpm-lock.yaml',
+        'yarn.lock',
+      ])
         if (fs.existsSync(path.join(dir, name))) return { dir, name }
       if (path.dirname(dir) === dir) return null
     }
@@ -206,7 +212,9 @@ if (process.argv[2] === 'upgrade') {
       engine: after.engine,
       lock: after.lock,
       registry,
-      savedSpec: ran ? readPkg().spec : null,
+      // Read every time, not only after an install: "already current" is
+      // only true when package.json would install this version too.
+      savedSpec: readPkg().spec,
     },
     plan.to,
   )

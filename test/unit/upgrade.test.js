@@ -6,6 +6,7 @@ import {
   parseUpgradeArgs,
   parseVersion,
   planUpgrade,
+  specAllows,
   specFloor,
   upgradeNotes,
   verifyUpgrade,
@@ -195,6 +196,24 @@ describe('upgradeNotes', () => {
     const result = upgradeNotes(CHANGELOG, '2.8.5-alpha.0', '2.8.6')
     expect(result.quiet).toEqual(['2.8.5'])
     expect(result.notes).toHaveLength(2)
+  })
+})
+
+describe('specAllows', () => {
+  it('reads a caret, a tilde, an exact pin and a floor the way npm does', () => {
+    expect(specAllows('^2.6.2', '2.9.0')).toBe(true)
+    expect(specAllows('^2.6.2', '3.0.0')).toBe(false)
+    expect(specAllows('~2.9.0', '2.9.4')).toBe(true)
+    expect(specAllows('~2.8.0', '2.9.0')).toBe(false)
+    expect(specAllows('2.9.0', '2.9.0')).toBe(true)
+    expect(specAllows('2.6.2', '2.9.0')).toBe(false)
+    expect(specAllows('>=2.5.0', '2.9.0')).toBe(true)
+    expect(specAllows('^2.9.0', '2.8.7')).toBe(false)
+  })
+
+  it('allows nothing it cannot read as a registry range', () => {
+    for (const spec of ['file:../tree', 'latest', '2.x', null])
+      expect(specAllows(spec, '2.9.0')).toBe(false)
   })
 })
 
@@ -491,6 +510,48 @@ describe('planUpgrade', () => {
     },
   )
 
+  // Codex, second pass (2026-11-01): "current" was judged from node_modules
+  // and the lockfile, two of the three places a version lives. A
+  // package.json still pinning the old release, or a file: link, makes the
+  // next npm ci fail or npm install put the old one back.
+  it.each([
+    ['an older exact pin', '2.6.2'],
+    ['a file: link', 'file:../tree'],
+  ])(
+    'installs when node_modules and the lockfile are current but package.json has %s',
+    (_, spec) => {
+      const plan = planUpgrade(
+        facts({
+          pkg: { found: true, section: 'devDependencies', spec },
+          engine: { ...facts().engine, version: '2.9.0' },
+          lock: {
+            path: 'package-lock.json',
+            entry: {
+              version: '2.9.0',
+              resolved: `${REGISTRY}kiss-ssg/-/kiss-ssg-2.9.0.tgz`,
+            },
+          },
+          committedLockVersion: '2.9.0',
+        }),
+      )
+      expect(plan.install).not.toBeNull()
+    },
+  )
+
+  // Codex, second pass: npm installs from npm-shrinkwrap.json in preference
+  // to package-lock.json, and upgrade neither guards nor verifies it.
+  it('blocks the install on an npm-shrinkwrap.json, naming it, and --plan still reads', () => {
+    const over = { lock: null, otherLockfile: 'npm-shrinkwrap.json' }
+    expect(planUpgrade(facts(over)).refuse).toMatch(
+      /npm-shrinkwrap\.json.*in preference to package-lock\.json/,
+    )
+    const plan = planUpgrade(
+      facts({ ...over, args: { ...facts().args, plan: true } }),
+    )
+    expect(plan.blocked).toMatch(/npm-shrinkwrap\.json/)
+    expect(plan.notes.length).toBeGreaterThan(0)
+  })
+
   it('reads the committed lockfile with --plan after npm update moved it', () => {
     const plan = planUpgrade(
       facts({
@@ -594,6 +655,14 @@ describe('verifyUpgrade', () => {
     expect(result.ok).toBe(false)
     expect(result.checks.find((c) => c.ok === false)?.what).toMatch(
       /2\.6\.2.*not 2\.9\.0/,
+    )
+  })
+
+  it('fails a package.json that does not allow the version installed', () => {
+    const result = verifyUpgrade(after({ savedSpec: '2.6.2' }), '2.9.0')
+    expect(result.ok).toBe(false)
+    expect(result.checks.find((c) => c.ok === false)?.what).toMatch(
+      /package\.json asks for 2\.6\.2/,
     )
   })
 

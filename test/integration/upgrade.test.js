@@ -218,6 +218,21 @@ describe('kiss-ssg upgrade', () => {
     expect(run.installs).toEqual([])
   })
 
+  it('will not install over an npm-shrinkwrap.json, and --plan still prints the notes', () => {
+    const s = setUp({ gitInit: false })
+    fs.writeFileSync(
+      path.join(s.site, 'npm-shrinkwrap.json'),
+      JSON.stringify({ lockfileVersion: 3, packages: { '': {} } }),
+    )
+    const run = upgrade(s)
+    expect(run.status).toBe(1)
+    expect(run.stderr).toMatch(/npm-shrinkwrap\.json/)
+    expect(run.installs).toEqual([])
+    const plan = upgrade(s, ['--plan'])
+    expect(plan.status, plan.stderr).toBe(0)
+    expect(plan.stdout).toMatch(/install blocked: .*npm-shrinkwrap\.json/)
+  })
+
   it('refuses a folder with no package.json', () => {
     const s = setUp({ gitInit: false })
     fs.rmSync(path.join(s.site, 'package.json'))
