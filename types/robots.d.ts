@@ -54,10 +54,11 @@ export function collectRobotsAgents(options?: RobotsOptions): {
     crawlDelay: number | null;
 }[];
 /**
- * @param {{ disallow: string[] }[]} agents
- * @returns {boolean} whether any block disallows the whole site
+ * @param {{ userAgent?: string, disallow: string[] }[]} agents
+ * @returns {boolean} whether a block that search depends on disallows the whole site
  */
 export function disallowsEverything(agents?: {
+    userAgent?: string;
     disallow: string[];
 }[]): boolean;
 /**

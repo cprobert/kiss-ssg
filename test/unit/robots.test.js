@@ -90,6 +90,46 @@ describe('disallowsEverything', () => {
     ).toBe(false)
     expect(disallowsEverything(collectRobotsAgents())).toBe(false)
   })
+
+  // Blocking a token its vendor documents as training-only opts the site out
+  // of model training and costs no search visibility (OpenAI, Anthropic,
+  // Google and Apple crawler docs, 2026). Calling it "no crawler will index
+  // it" would push an author to undo a correct block.
+  const blocks = (...userAgents) =>
+    collectRobotsAgents({
+      agents: userAgents.map((userAgent) => ({ userAgent, disallow: '/' })),
+    })
+
+  it('does not count a block on a training-only token', () => {
+    for (const ua of [
+      'GPTBot',
+      'ClaudeBot',
+      'Google-Extended',
+      'Applebot-Extended',
+      'gptbot',
+    ])
+      expect(disallowsEverything(blocks(ua)), ua).toBe(false)
+    expect(
+      disallowsEverything(
+        blocks('GPTBot', 'ClaudeBot', 'Google-Extended', 'Applebot-Extended'),
+      ),
+    ).toBe(false)
+  })
+
+  it('still counts a search crawler, an unknown agent and *', () => {
+    for (const ua of [
+      '*',
+      'Googlebot',
+      'Bingbot',
+      'OAI-SearchBot',
+      'Claude-SearchBot',
+      'PerplexityBot',
+      'Applebot',
+      'SomeNewBot',
+    ])
+      expect(disallowsEverything(blocks(ua)), ua).toBe(true)
+    expect(disallowsEverything(blocks('GPTBot', '*'))).toBe(true)
+  })
 })
 
 describe('collectSitemapUrls', () => {
