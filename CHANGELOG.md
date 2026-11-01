@@ -3,6 +3,49 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.9.0 — 2026-11-01
+
+`npx kiss-ssg@latest upgrade` installs a release into a site, checks it really landed, and prints
+the upgrade notes between the site's version and the new one. Every release's upgrade note now
+lives here, under `### Upgrading`, and nowhere else.
+
+### Upgrading: upgrade with the command
+
+Run `npx kiss-ssg@latest upgrade --plan` to read the notes since the site's version without
+installing anything, then `npx kiss-ssg@latest upgrade` to install. Name the version (`@latest`, or
+`@2.9.0`): a site's own older kiss-ssg has no `upgrade` command.
+
+- **It checks the install landed.** After installing, `node_modules/kiss-ssg` must be the new
+  version and not a link to a working tree, `package.json` must allow it, and `package-lock.json`
+  must pin it from the registry npm uses. Each check prints an `ok:` or `FAILED:` line with the
+  fix, and any `FAILED` exits 1. This is what replaces a `file:` link that a plain `npm install`
+  keeps.
+- **When it cannot tell where the site started**, which is the case for a site linked to a
+  working tree, it prints every note and suggests `--from <version>`, naming the version the tree
+  reports. After an `npm update` has already moved the site, `--plan --from <old version>` still
+  prints the notes.
+- **When it will not install**, it says why and `--plan` still reads: uncommitted changes to
+  `package.json` or the lockfile, a workspace member (install from the workspace's root with `-w`),
+  a pnpm, yarn or `npm-shrinkwrap.json` lockfile, or a registry npm cannot name.
+- **The `kiss-site-migrate` skill no longer holds release notes.** It is the method for working the
+  notes the command prints, and it needs a plugin update to match: an older copy describes the
+  manual steps.
+
+### What changed
+
+- **`npx kiss-ssg upgrade`**, as above, with `--plan`, `--from` and `--json`. `GUIDE.md` § Upgrading
+  a site.
+- **Every upgrade note is in this file, in one shape.** Notes that only the skill held are here
+  under their real versions (2.5.0 to 2.8.6), and the older note shapes are `### Upgrading` now.
+- **`kiss-site-migrate`** is about a third of its old length: install with the command, check
+  before changing anything, work each note, done when the site builds the way it did, and the URL
+  decisions an upgrade can raise.
+- **`llms.txt`** is about 1,300 characters shorter. The plugin install commands and the full flag
+  list moved to `npx kiss-ssg init` and `npx kiss-ssg --help`, and every method, helper, config
+  default and trap stays.
+- **The documentation site has a Skills page.** It explains kiss as two parts, the engine and the
+  skills, each useful alone and best together, and describes every skill in both plugins.
+
 ## 2.8.7 — 2026-11-01
 
 Skills only: nothing changes in how a site builds.
