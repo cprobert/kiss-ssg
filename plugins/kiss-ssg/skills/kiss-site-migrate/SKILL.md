@@ -51,13 +51,13 @@ The upgrade is done when the site builds the way it did, not when it builds bett
 
 New audit findings, broken-link lines a release has just started reporting, and anything else that makes the site _better_ are not the upgrade. Offer them as their own piece of work, with the `kiss-site-review` skill.
 
-### 5. Record, and commit the upgrade on its own
+### 5. Record, and keep the upgrade in a commit of its own
 
 ```bash
 npx kiss-ssg aikb router.js
 ```
 
-It records the knowledge base from a passing build, so the next `check` diffs against the new version's output. Commit `package.json`, the lockfile, `AIKB/` and the fixes the notes asked for as one upgrade, apart from any other work.
+It records the knowledge base from a passing build, so the next `check` diffs against the new version's output. The upgrade is `package.json`, the lockfile, `AIKB/` and the fixes the notes asked for: keep it apart from any other work, so it is one commit when the owner asks for one. Never commit unasked; say what is ready to commit and stop.
 
 Make sure the project's `CLAUDE.md` carries `@node_modules/kiss-ssg/llms.txt` (create the file if there is none), so every later session reads the installed version's contract instead of remembering an older one. Say whether you added the line or found it.
 

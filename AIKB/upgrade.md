@@ -38,6 +38,8 @@
 - **An `npm-shrinkwrap.json` blocks the install.** npm installs from it in preference to `package-lock.json` beside it, so a current `package-lock.json` would prove nothing. `upgrade` neither guards nor verifies a shrinkwrap; it says so and names the manual command, and `--plan` still reads. No fleet site uses one, which is why it is a block and not a second lockfile path.
 - **The lockfile is found by walking up**, as npm does, so a workspace member's lockfile is the root's. The engine's entry is keyed by its path relative to that lockfile's folder.
 - **Under `--json`, npm's output goes to stderr**, so stdout is only the report.
+- **The checks print last, unindented, beside "Next:".** Everything the command says starts in column one; only the notes' own text is indented. In the 2026-11-01 arms an agent skipped the notes with `grep -v '^## \|^- \|^ '` and dropped the then-indented `ok:` lines with them (`planning/reviews/2026-11-01-upgrade-arms.md`).
+- **A working-tree link's own version is named, never used.** For a linked engine the warning says what the tree reports and suggests `--from` with it, because that is the first guess an agent makes; it stays a suggestion, because a tree can carry unreleased changes on top of that version.
 - **The tests never reach the network.** `test/integration/upgrade.test.js` puts `test/helpers/fake-npm.mjs` first on `PATH`. The real npm's behaviour is checked by an opt-in block that runs only with `KISS_NETWORK_TESTS=1`.
 
 ## Types

@@ -147,6 +147,16 @@ const COVERAGE = [
     pattern: /FAILED: node_modules\/kiss-ssg is still a link/,
     skills: [skill('kiss-ssg', 'kiss-site-migrate')],
   },
+  // The 2026-11-01 arms: "commit … as one upgrade" in step 5 sent one agent
+  // to `git commit` unasked (a deny list stopped it); another read the same
+  // words and asked first. Keeping the upgrade apart is the rule; committing
+  // is the owner's call.
+  {
+    feature:
+      'upgrade: one commit of its own when asked, never committed unasked',
+    pattern: /never commit unasked/i,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
   // 2.9.0: the command is the upgrade. Run by version (the site's own older
   // bin has none), read with --plan first, and told --from where it cannot
   // tell: a fleet site junctioned to a working tree, or one npm update moved.

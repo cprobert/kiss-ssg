@@ -359,6 +359,27 @@ describe('planUpgrade', () => {
     expect(plan.warnings.join('\n')).toMatch(/--from/)
   })
 
+  // The 2026-11-01 clean room: the agent's first guess was the version the
+  // linked tree reports, which the command had read and not said.
+  it("names the linked tree's version as the --from to consider", () => {
+    const plan = planUpgrade(
+      facts({
+        engine: LINKED,
+        pkg: {
+          found: true,
+          section: 'devDependencies',
+          spec: 'file:../kiss-ssg',
+        },
+        lock: null,
+        committedLockVersion: null,
+      }),
+    )
+    expect(plan.from).toBeNull()
+    expect(plan.warnings.join('\n')).toMatch(
+      /the tree it links to says 2\.8\.7.*--from 2\.8\.7/i,
+    )
+  })
+
   it('takes the declared floor when nothing is installed', () => {
     const plan = planUpgrade(facts({ engine: null, lock: null }))
     expect(plan.from).toBe('2.6.2')
@@ -718,5 +739,43 @@ describe('formatUpgrade', () => {
       }),
     )
     expect(formatUpgrade(plan, null)).toMatch(/^kiss-ssg \(unknown\) → 2\.9\.0/)
+  })
+
+  // The 2026-11-01 arms: an agent piped the output through
+  // `grep -v '^## \|^- \|^ '` to skip the notes, and the indented ok: lines
+  // went with them. The check lines are the verdict, so they come last,
+  // beside the next step, and start in column one.
+  it('prints the checks after the notes, unindented, beside the next step', () => {
+    const plan = planUpgrade(
+      facts({ engine: { ...facts().engine, version: '2.8.5' } }),
+    )
+    const verified = verifyUpgrade(
+      {
+        engine: { ...facts().engine, version: '2.9.0' },
+        lock: {
+          path: 'package-lock.json',
+          entry: {
+            version: '2.9.0',
+            resolved: `${REGISTRY}kiss-ssg/-/kiss-ssg-2.9.0.tgz`,
+          },
+        },
+        registry: REGISTRY,
+        savedSpec: '^2.9.0',
+      },
+      '2.9.0',
+    )
+    const lines = formatUpgrade(plan, {
+      ran: 'npm install kiss-ssg@2.9.0 --save-dev',
+      verified,
+    }).split('\n')
+    const check = lines.indexOf(
+      'ok: node_modules/kiss-ssg is 2.9.0, not a link',
+    )
+    const lastNote = lines.findLastIndex((l) => l.startsWith('## '))
+    expect(check).toBeGreaterThan(lastNote)
+    expect(lines.slice(check).some((l) => l.startsWith('Next:'))).toBe(true)
+    // What the arm's filter kept still holds the verdict.
+    const kept = lines.filter((l) => !/^## |^- |^ /.test(l))
+    expect(kept).toContain('ok: package.json asks for ^2.9.0')
   })
 })
