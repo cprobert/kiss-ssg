@@ -111,6 +111,17 @@ describe('buildSitemapEntries', () => {
     ])
   })
 
+  // Codex, 2026-11-01: a padded date-only string parses as local midnight, so
+  // east of UTC in summer it read back as the day before and was rejected.
+  // Checked on a machine on Europe/London; red there under BST for August.
+  it('keeps a whitespace-padded date-only string as its own day', () => {
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { updated: ' 2026-08-08 ' })],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(url.lastmod).toBe('2026-08-08')
+  })
+
   it('does not write a date-only string for a day that does not exist', () => {
     const [url] = buildSitemapEntries(
       [entry('out/a.html', { updated: '2026-02-30', date: '2026-08-08' })],
