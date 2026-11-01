@@ -128,6 +128,7 @@
       <li>
         <h3>{{title}}</h3>
         <p>{{text}}</p>
+        {{#if more}}<p><a class="text-link" href="{{link more.id absolute=true}}">{{more.text}}</a></p>{{/if}}
       </li>
       {{/each}}
     </ul>

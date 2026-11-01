@@ -93,6 +93,8 @@ Skim **every** log's Feedback, not the last three, and tally which lessons recur
 
 It is a recommendation, not a gate: the user may open the branch anyway. **Do not run `/memory-consolidate` from here** — it is a separate beat, and its `CLAUDE.md` and skill edits do not belong in this branch's first diff.
 
+**A recurring item that is a piece of work, not a habit, is a scheduling question — stop and ask it.** "Promote X to `scripts/`", "build a fixture for Y", "measure Z" cannot be learned by being read back; it only stops recurring when someone decides when it is done. When the read-back finds such an item in **two or more** logs, put it to the operator with `AskUserQuestion` before the interview: **this branch** (it joins the intent as a criterion), **the next branch** (it becomes that branch's objective, named now), or **dropped** (with the reason in one sentence, recorded in this session file's Amendments). The arm harness was asked for in five logs (2026-10-13, 10-21, 10-31, and twice on 11-01) and rebuilt in a scratchpad every time, because each read-back surfaced it and none asked when.
+
 **Also list possibly abandoned work.** A row whose `status` is `open`, on a branch that is not the one you are about to work on, is a piece of work somebody walked away from. Name each one with its branch and its opened date and ask the user what it is — finished but never closed, still genuinely in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one names the branch you are adopting in Step 4, that is not abandoned work — that is this piece of work.
 
 ### Step 3 — Interview for intent

@@ -106,8 +106,8 @@ describe('llms.txt documents the public API', () => {
 })
 
 // The same net one file over: a helper is a published surface too, and the two
-// docs that enumerate the roster (llms.txt's list and § Helpers, and the AIKB
-// doc) are the ones a new helper is quietly left out of. Read off
+// docs that enumerate the roster (llms.txt § Helpers and the AIKB doc) are the
+// ones a new helper is quietly left out of. Read off
 // `registerHelper('<name>'` rather than a hand-kept list, so the source is the
 // only place the roster lives.
 const helperNames = [
@@ -131,12 +131,9 @@ describe('every built-in helper is documented', () => {
     const next = text.indexOf('\n## ', at + heading.length + 1)
     return text.slice(at, next === -1 ? text.length : next)
   }
+  // § Helpers is llms.txt's one roster. A second, one-line copy on the
+  // `kiss.handlebars` bullet was cut for the 16,000-character cap (2026-11-01).
   const llmsHelpers = section(llmsTxt, '## Helpers')
-  // The one-line roster on the `kiss.handlebars` bullet, the other place a new
-  // helper is left out of.
-  const llmsRoster =
-    llmsTxt.split('\n').find((line) => line.includes('Built-in helpers (')) ??
-    ''
 
   it('finds the roster in lib/handlebars-helpers.js', () => {
     expect(helperNames.length).toBeGreaterThan(5)
@@ -145,13 +142,6 @@ describe('every built-in helper is documented', () => {
   it.each(helperNames)('llms.txt § Helpers documents %s', (name) => {
     expect(llmsHelpers).toMatch(new RegExp(`^- \`${escaped(name)}`, 'm'))
   })
-
-  it.each(helperNames)(
-    'llms.txt lists %s among the built-in helpers',
-    (name) => {
-      expect(llmsRoster).toContain(`\`${name}\``)
-    },
-  )
 
   it.each(helperNames)('AIKB/handlebars-helpers.md documents %s', (name) => {
     expect(helpersDoc).toMatch(new RegExp(`^\\s*- \`${escaped(name)}`, 'm'))

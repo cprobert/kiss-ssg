@@ -161,6 +161,12 @@ kiss is the upgrade path for a site you made in Claude or ChatGPT: converting ke
     
     npx kiss-ssg aikb records what the site is, so the next session starts from facts rather than guesses.
     
+-   ### Skills for every job on the site
+    
+    kiss's skills give your agent a recipe for each job (a new site, a new page, a launch review, an upgrade) and the web know-how behind it: writing, structure, search, accessibility, front end and design. The skills decide; the engine checks.
+    
+    [What the skills do](https://cprobert.github.io/kiss-ssg/skills/)
+    
 
 ## Websites built with kiss-ssg
 

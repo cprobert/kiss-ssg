@@ -1,0 +1,70 @@
+{{#extend "layout"}}
+{{#content "main"}}
+<div class="wrap page">
+  <header class="page__head">
+    <h1>Skills</h1>
+    <p class="lede">
+      kiss comes in two parts: the kiss-ssg engine, and the skills a coding agent follows to use it well.
+      Each part is useful on its own. Together, your agent builds the site, checks it, reviews it and remembers it.
+    </p>
+  </header>
+
+  <section aria-labelledby="two-parts">
+    <h2 id="two-parts">Two parts</h2>
+    <ul class="examples examples--wide">
+      {{#each model.parts}}
+      <li class="example">
+        <h3>{{name}}</h3>
+        <p class="example__when">From {{where}}.</p>
+        <p>{{alone}}</p>
+        {{#if commands}}
+        <ul>
+          {{#each commands}}
+          <li><code>{{command}}</code> {{does}}</li>
+          {{/each}}
+        </ul>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ul>
+  </section>
+
+  <section aria-labelledby="together">
+    <h2 id="together">How they work together</h2>
+    {{#each model.together}}
+    <p>{{this}}</p>
+    {{/each}}
+  </section>
+
+  {{#each model.plugins}}
+  <section aria-labelledby="plugin-{{name}}">
+    <h2 id="plugin-{{name}}">The {{name}} plugin</h2>
+    <p class="section-intro">{{summary}}</p>
+    {{#each groups}}
+    <h3>{{title}}</h3>
+    <p>{{intro}}</p>
+    <ul class="examples">
+      {{#each skills}}
+      <li class="example">
+        <h4><a href="https://github.com/cprobert/kiss-ssg/blob/main/plugins/{{../../name}}/skills/{{name}}/SKILL.md" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></h4>
+        <p>{{does}}</p>
+      </li>
+      {{/each}}
+    </ul>
+    {{/each}}
+  </section>
+  {{/each}}
+
+  <section aria-labelledby="install">
+    <h2 id="install">Install them</h2>
+    <p>
+      The skills install from this repository's marketplace, not from npm. The commands for Claude Code and
+      Codex are in the <a href="{{link "index" absolute=true}}#how">quick start on the home page</a>, and
+      <code>npx kiss-ssg init</code> prints them too. A site that only declares the plugins does not have them
+      until those commands run. With any other agent, the engine still works: point the agent at
+      <code>node_modules/kiss-ssg/llms.txt</code>.
+    </p>
+  </section>
+</div>
+{{/content}}
+{{/extend}}

@@ -90,7 +90,7 @@ _The next session starts from facts, not guesses._
 - **[`kiss-ssg session` and `kiss-ssg base`](GUIDE.md#branches-and-session-logs) →** A branch's session log and the branch it merges into, answered by the engine, so the memory skills run a command instead of carrying shell of their own.
 - **[kiss-site-brief](plugins/kiss-memory/skills/kiss-site-brief/SKILL.md) →** Catch up on a site: what it is, how it's built and what bites, read back to a developer returning after two years.
 - **[kiss-branch-open, -pulse, -close and -merged](plugins/kiss-memory/) →** Frame a piece of work, steer it against the site's own build output, close it, moving that baseline only when the close records it, and tidy up once it has merged. `kiss-memory-consolidate` tidies what the loop accumulates.
-- **[kiss-site-migrate](plugins/kiss-ssg/skills/kiss-site-migrate/SKILL.md) →** Move a site across kiss-ssg versions, with the upgrade note each version a site on `^2` receives without asking.
+- **[kiss-site-migrate](plugins/kiss-ssg/skills/kiss-site-migrate/SKILL.md) →** Move a site across kiss-ssg versions: `npx kiss-ssg@latest upgrade` installs the release, checks it landed, and prints the `CHANGELOG.md` notes since the site's version; the skill works them and proves the site builds the way it did.
 - **[Docs that ship with the engine](llms.txt) →** `llms.txt`, `GUIDE.md`, the examples and the per-module notes all install into `node_modules/kiss-ssg/`, and the skills carry no copy of the API: each reads the docs for the engine you have, so the guidance cannot drift from it.
 
 ---
@@ -210,7 +210,7 @@ Then install the plugins for your agent — the three `claude plugin` or the thr
 | Check a build, then record it           | [Checking a build](GUIDE.md#checking-a-build) · [Recording the knowledge base](GUIDE.md#recording-the-knowledge-base)                                                                                                  |
 | Convert a page I already have           | [Converting an existing page](GUIDE.md#converting-an-existing-page) · [Example 12](examples/12-from-a-single-file/)                                                                                                    |
 | Read what the package ships for agents  | [`llms.txt`](llms.txt) (the API index, `CLAUDE.md` imports it) · [`AIKB/`](AIKB/) (per-module notes) · [`examples/`](examples/) · [`types/`](types/) (declarations your editor reads) · [`CHANGELOG.md`](CHANGELOG.md) |
-| Move a site between versions            | [Migrating from v1](GUIDE.md#migrating-from-v1) · [`kiss-site-migrate`](plugins/kiss-ssg/skills/kiss-site-migrate/SKILL.md) · [`CHANGELOG.md`](CHANGELOG.md)                                                           |
+| Move a site between versions            | [Upgrading a site](GUIDE.md#upgrading-a-site) · [Migrating from v1](GUIDE.md#migrating-from-v1) · [`kiss-site-migrate`](plugins/kiss-ssg/skills/kiss-site-migrate/SKILL.md) · [`CHANGELOG.md`](CHANGELOG.md)           |
 | Work on kiss-ssg itself                 | [`CLAUDE.md`](CLAUDE.md) (how the repo is run) · [`AIKB/design.md`](AIKB/design.md) (the design and its lineage) · [`AIKB/testing.md`](AIKB/testing.md)                                                                |
 
 Everything above is in **[GUIDE.md](GUIDE.md)**, and the same guide is on the [website](https://cprobert.github.io/kiss-ssg/guide/), one page per section.

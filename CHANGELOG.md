@@ -3,6 +3,49 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.9.0 — 2026-11-01
+
+`npx kiss-ssg@latest upgrade` installs a release into a site, checks it really landed, and prints
+the upgrade notes between the site's version and the new one. Every release's upgrade note now
+lives here, under `### Upgrading`, and nowhere else.
+
+### Upgrading: upgrade with the command
+
+Run `npx kiss-ssg@latest upgrade --plan` to read the notes since the site's version without
+installing anything, then `npx kiss-ssg@latest upgrade` to install. Name the version (`@latest`, or
+`@2.9.0`): a site's own older kiss-ssg has no `upgrade` command.
+
+- **It checks the install landed.** After installing, `node_modules/kiss-ssg` must be the new
+  version and not a link to a working tree, `package.json` must allow it, and `package-lock.json`
+  must pin it from the registry npm uses. Each check prints an `ok:` or `FAILED:` line with the
+  fix, and any `FAILED` exits 1. This is what replaces a `file:` link that a plain `npm install`
+  keeps.
+- **When it cannot tell where the site started**, which is the case for a site linked to a
+  working tree, it prints every note and suggests `--from <version>`, naming the version the tree
+  reports. After an `npm update` has already moved the site, `--plan --from <old version>` still
+  prints the notes.
+- **When it will not install**, it says why and `--plan` still reads: uncommitted changes to
+  `package.json` or the lockfile, a workspace member (install from the workspace's root with `-w`),
+  a pnpm, yarn or `npm-shrinkwrap.json` lockfile, or a registry npm cannot name.
+- **The `kiss-site-migrate` skill no longer holds release notes.** It is the method for working the
+  notes the command prints, and it needs a plugin update to match: an older copy describes the
+  manual steps.
+
+### What changed
+
+- **`npx kiss-ssg upgrade`**, as above, with `--plan`, `--from` and `--json`. `GUIDE.md` § Upgrading
+  a site.
+- **Every upgrade note is in this file, in one shape.** Notes that only the skill held are here
+  under their real versions (2.5.0 to 2.8.6), and the older note shapes are `### Upgrading` now.
+- **`kiss-site-migrate`** is about a third of its old length: install with the command, check
+  before changing anything, work each note, done when the site builds the way it did, and the URL
+  decisions an upgrade can raise.
+- **`llms.txt`** is about 1,300 characters shorter. The plugin install commands and the full flag
+  list moved to `npx kiss-ssg init` and `npx kiss-ssg --help`, and every method, helper, config
+  default and trap stays.
+- **The documentation site has a Skills page.** It explains kiss as two parts, the engine and the
+  skills, each useful alone and best together, and describes every skill in both plugins.
+
 ## 2.8.7 — 2026-11-01
 
 Skills only: nothing changes in how a site builds.
@@ -16,7 +59,25 @@ Skills only: nothing changes in how a site builds.
 ## 2.8.6 — 2026-11-01
 
 SEO best practice for 2026, built in. Nothing fails, but `sitemap.xml` changes on every site that
-calls `.sitemap()`: read `kiss-site-migrate` § 0j.
+calls `.sitemap()`: read the note below.
+
+### Upgrading: the sitemap states only dates a page knows
+
+- **Nothing to do for the file to be correct.** A page with no date loses its `<lastmod>`, which is
+  the honest state, and two builds of an unchanged site now write the same `sitemap.xml`.
+- **A page whose content changes over time** (a price list, a timetable, a stockists page) can
+  carry `updated` in its model, set to the day the content last changed. Never set it from the
+  clock in a controller: that is the old behaviour again.
+- **`sitemapPriority` and `sitemapChangefreq`** still work, and Google ignores both. Leave them or
+  remove them.
+- **A `.robots()` that keeps a named agent out of the whole site** (`GPTBot`, `ClaudeBot`, `CCBot`
+  and the like) no longer logs "robots.txt disallows the whole site" or sets
+  `report().robots.disallowAll`, unless the agent is `*` or a search engine's own crawler. On such
+  a site `disallowAll` goes from `true` to `false`, which is the fix, not a regression.
+
+Check it: build, and read `sitemap.xml`. No `<lastmod>` holds the time of the build.
+
+### What changed
 
 - **The sitemap states only dates a page knows.** Every `<url>` used to carry the time of the build
   as its `<lastmod>` and `1.00` as its `<priority>`. Google uses `lastmod` only when it is
@@ -67,7 +128,8 @@ agents that were never told the skills existed, and these are what that showed.
 A sixth domain skill for site structure, a merged step for the branch skills, and the engine now
 answers the memory skills' questions itself. **Update the engine and both plugins together**: the
 `kiss-memory` skills now run `npx kiss-ssg session` and `npx kiss-ssg base`, and on an older
-kiss-ssg they stop and say `unknown command: session`. Nothing changes in how a site builds.
+kiss-ssg they stop and say `unknown command: session`. Nothing fails, and the notes below say
+what to check.
 
 - **`kiss-information-architecture`**, a domain skill for how a site is structured: which pages
   exist, how they are grouped and named, the navigation, the URL scheme, breadcrumbs, tags and the
@@ -91,6 +153,34 @@ kiss-ssg they stop and say `unknown command: session`. Nothing changes in how a 
   page, so it marks nothing; `href=""` is still the home page.
 - **The skills run commands, not scripts.** No skill carries shell that decides something any more
   (loops, `awk`, `node -e`); anything that has to be exactly right is a `kiss-ssg` command.
+
+### Upgrading: update the engine and both plugins together
+
+The `kiss-memory` skills now run `npx kiss-ssg session` and `npx kiss-ssg base`; on an older
+kiss-ssg they stop and say `unknown command: session`.
+
+### Upgrading: `aria-current` on a nav that marks a whole section
+
+Nothing fails, but a layout copied from kiss's examples probably puts `aria-current="page"` on
+every page in a section. Inside `{{#isActive}}`, `{{active}}` stays true on every page inside a
+section when the call has `folderMatch`, and `aria-current="page"` names only the page itself,
+which only the new `{{@current}}` says.
+
+- **Grep the layouts for `aria-current`.** A nav link that sets it inside `{{#if active}}`, in an
+  `{{#isActive}}` with `folderMatch`, marks every page in the section. Until this release ten of
+  kiss's example layouts (1, 2, 3 and 5 to 11) had that shape and passed each nav item's
+  `folderMatch` through, so a site that copied any of them has it, and it shows as soon as one nav
+  item sets `folderMatch: true`. Set the attribute inside `{{#if @current}}` and keep the class on
+  `{{#if active}}`, as `examples/11-blog/src/layouts/layout.hbs` does. On a page inside the
+  section, the section link keeps its class and loses the attribute.
+- **A nav that calls `isActive` twice for one link**, once with `folderMatch` for the class and
+  once without it for the attribute, can fold the two into one the same way. Optional: the same
+  links are marked, though a link's attributes may come out in another order.
+- **A nav item with no `href`** (a label or a separator in a data-driven nav) is no longer marked
+  on the home page. A call that meant the home page writes `href=""`.
+
+Check it by building before and after and diffing the pages: on any page, at most one nav link
+carries `aria-current="page"`, and it points at that page.
 
 ## 2.8.3 — 2026-10-30
 
@@ -124,7 +214,26 @@ plugin to get them (`claude plugin update kiss-ssg@kiss-ssg`; in Codex,
 
 SCORM pages report their own completion, so resume keeps working in Moodle. Example 13 now shows
 how to build a quiz in a SCORM lesson. **A site that uses `{{scormBridge}}` should check its pages
-on upgrade**: the `kiss-site-migrate` skill's § 0h has the steps.
+on upgrade**: the note below has the steps.
+
+### Upgrading: a SCORM page reports its own completion
+
+Only a site that puts `{{scormBridge}}` on its pages is affected. Grep for `scormBridge` and for
+the layouts that carry it. For each page that uses it with no `complete` (and none passed through
+its `{{#extend}}` hash):
+
+- **It calls `bookmark()` or `save()`, or has a point the learner finishes at**: give it a
+  `kissScorm.status('completed')` call there. This is the case the change exists for.
+- **It keeps no place and nothing marks the end** (a page to read, with no question): pass
+  `complete="seen"`, which keeps the old behaviour.
+
+`complete="manual"` is now the default; leave it or remove it. Learners' records already in an
+LMS are not changed: a page completed under the old default stays completed, and in Moodle still
+opens in review mode for those learners. `kiss-ssg check` reports nothing new, because completion
+happens in the browser. Check it in the LMS: launch a page that bookmarks three times, moving
+somewhere else each time, and the third launch opens on the second launch's place.
+
+### What changed
 
 - **`{{scormBridge}}` no longer marks a page complete when it loads.** A new attempt now starts as
   `incomplete`, and the page is complete when its own script calls `kissScorm.status('completed')`
@@ -183,18 +292,49 @@ A fix to `kiss-ssg init` and a documentation trap, with nothing to change on upg
 ## 2.8.0 — 2026-10-25
 
 kiss can now package pages for a learning management system. Two changes need a look when you
-upgrade, and the `kiss-site-migrate` skill's §§ 0e–0g walk through all three:
+upgrade, and the audit asks three more questions.
 
-- **`package` is now a page option.** If your pages, fan-out records or controllers already set a
-  `package` key for their own use, rename it (`packageName`, say). A value that is not a slug fails
-  the build, and one that is gets your pages zipped into `packages/`. Sites without the key see no
-  change.
-- **Markdown copies are written only when the build calls `.llms()`.** Since 2.7.5 every page had a
-  `.md` beside it, linked from nowhere unless the site wrote an `llms.txt`. A site that calls
-  `.llms()` sees no change. One that does not stops publishing the `.md` files; set
-  `markdownCopies: true` to keep them. `true` now means always, and `false` still means never.
-- **The audit has three more checks**, so your first build may report findings it never did
-  (below). They are advisory: `ok` and the exit code do not move.
+### Upgrading: `package` is now a page option
+
+A page's `package` option puts it in a learning package (below), and packaging is on by default.
+A site that never sets `package` gets no zips and no change. A site that already had a `package`
+key for its own purposes now has its pages packaged instead.
+
+- **Find the key before the first build.** Grep the build script and `controllers/` for `package`:
+  a `.page({ package: … })`, a fan-out record with a `package` field, or a controller that spreads
+  model fields into the page's options (`{ ...options, ...model }`) where a record carries one.
+- **A value that is not a slug fails the build** (`package must be a slug …`). One that is a slug
+  is quietly zipped into `packages/<value>.imscp.zip`, and fails as `<packages>` if one of its
+  pages has no usable `id`.
+- **Rename the site's key** (`packageName`, say) wherever the site reads it. `packages: false`
+  also turns packaging off, but the rename is the honest fix: the key means something to kiss now.
+  Afterwards `kiss-ssg check` lists no `package:` lines, and the build folder has no `packages/`.
+
+### Upgrading: Markdown copies only when the build calls `.llms()`
+
+Since 2.7.5 every page had a `.md` beside it, linked from nowhere unless the site wrote an
+`llms.txt`. Now a copy is written only when the build calls `.llms()` (`markdownCopies.write`
+defaults to `'llms'`).
+
+- **A site that calls `.llms()`** sees no change.
+- **A site that does not** stops publishing the `.md` files. Grep it for a hand-written link to a
+  `.md` page first; if it has one, or wants the copies anyway, set `markdownCopies: true`, which
+  now means always. `false` still means never, even with `.llms()`.
+- `kiss-ssg check` against a record made before the upgrade shows each page's `markdown` going
+  from a path to `null`. Re-record with `npx kiss-ssg aikb router.js` once it builds.
+- A deploy step that uploads the build folder without deleting files the build no longer writes
+  keeps the old `.md` files on the server; remove them there.
+
+### Upgrading: three more audit checks
+
+The first build after upgrading can report `viewport-zoom-lock`, `href-hash` and
+`fragment-missing` findings the site never had (below). They are advisory: `ok` and the exit code
+do not move, and the upgrade is done when the site builds the way it did.
+
+- **The record catches up.** The first `npx kiss-ssg aikb` after upgrading records the new
+  findings in `AIKB/last-build.json`; that is the record, not a change to the site.
+- **A site whose script adds an `id` at runtime** can only ignore all of `fragment-missing`, which
+  also stops it checking the skip link. Say that in the `audit.ignore` comment.
 
 ### Learning packages: IMS content packages and SCORM 1.2
 
@@ -435,7 +575,7 @@ stylesheet into your own site, nothing changes there.
 
 ## 2.7.5 — 2026-10-07
 
-### Your build folder gains a `.md` copy of every page
+### Upgrading: your build folder gains a `.md` copy of every page
 
 **Every HTML page your build writes now gets a Markdown copy beside it**: `about.md` next to
 `about.html`, and `courses/index.md` next to `courses/index.html`. It is the
@@ -444,6 +584,12 @@ It is on by default, so your next build publishes these files with the rest of t
 
 - **`llms.txt` now links the copies** (`https://your-site/about.md`) instead of the pages, as the
   llmstxt.org spec asks.
+- **Your site's own scripts that read `llms.txt` change answer.** Grep the site's tooling (`qa/`,
+  `scripts/`, its tests) for `llms.txt`. A check that compares its links with `sitemap.xml` now
+  fails on every page, because the sitemap still lists the pages and `llms.txt` lists the copies.
+  Measured on a real site: its SEO check went from passing to 36 failures on the upgrade, and the
+  agents that met it blamed an earlier upgrade. Update the check to expect the copies, or set
+  `markdownCopies: false`.
 - **Each copy is the page's `<main>`**, or its `<body>` when there is no `<main>` (or the `<main>`
   is empty). `<nav>`, `<script>`, `<style>` and `<template>` are dropped. Links are kept as the page
   wrote them.
@@ -706,7 +852,11 @@ Nothing in a site's build changes. To set an existing site up for Codex,
 `.codex/config.toml` gains only the tables it does not already define, and a
 file that defines them in some other shape (a dotted key, an inline table) is
 left exactly as it is, with a note to add the rest by hand. It never rewrites
-text that is already there.
+text that is already there. Codex installs plugins per user: if the owner uses
+Codex, they run the three `codex plugin` lines `init` prints once on their
+machine, and a second site needs only its project file. Commit the new and
+changed files with the upgrade, so the site records which skills it uses for
+both agents.
 
 `links.hostServed` is opt-in, with a default of `[]`. The one visible change
 is in `check`'s build log, which now counts findings instead of listing them;
@@ -803,6 +953,25 @@ browser (widths, long text, consistency, things that look clickable and are
 not, the 404 page) and reports before it fixes anything. Anthropic's
 `frontend-design` skill is recommended in the README as an optional companion
 for the look; kiss keeps the structure.
+
+### Upgrading: the audit's first run
+
+Nothing new fails, but every build says more, and a site on `^2` gets it
+without asking. Every non-dev build whose pages all succeeded logs one `info`
+line, `Audit: N pages, M findings`, then one `notice` line per check that
+fired. Expect them on the first build after upgrading: every shipped example
+fired `og-image-missing`, `favicon-missing` and `not-found-missing` the first
+time the audit ran over it.
+
+- **The report gains a key.** `audit` is appended last, after `outputs`, on
+  `report()`, `err.report` and every `kiss-ssg check` report. Tooling that
+  asserts the exact key list needs the new key.
+- **So does the record.** `AIKB/last-build.json` is the report, so the first
+  `npx kiss-ssg aikb` after upgrading writes an `audit` key the committed
+  record never had. That is the new key arriving, not a change to the site.
+- **Do not fix findings as part of the upgrade.** The upgrade is done when the
+  site builds the way it did; the findings are their own piece of work, for
+  the `kiss-site-review` skill.
 
 ### Upgrading: a page's default title is its own name
 
@@ -916,9 +1085,17 @@ configured source folders or sit inside a content folder, including helpers
 and AIKB. Symlinks and junctions count as their actual locations. A separate
 `src/public` remains valid.
 
-**Upgrade note:** previously accepted unsafe layouts must be separated before
-building. This is a compatibility restriction; 2.6.0 is the maintainer's explicit
-version choice rather than a claim that every 2.5 layout remains accepted.
+### Upgrading: separate a site's source from its root and its output
+
+Previously accepted unsafe layouts must be separated before building. This is a
+compatibility restriction; 2.6.0 is the maintainer's explicit version choice
+rather than a claim that every 2.5 layout remains accepted.
+
+Move a project-root `folders.src` (`./`) to a dedicated directory such as
+`./src`, and keep the build folder apart from every configured content folder,
+including helpers and AIKB; a link or junction counts as the folder it points
+at. The error names the setting to change, and `GUIDE.md` § Cleaning the build
+folder has the rules. `cleanBuild: false` does not bypass the guard.
 
 ### Development rebuilds follow additions, deletions and empty saves
 
@@ -1014,7 +1191,7 @@ output has to land in the build being staged.
 
 ## 2.5.0 — 2026-09-20
 
-### ⚠️ Breaking changes, in a minor release
+### Upgrading: three builds that used to pass now fail
 
 Three of the changes below will fail a build that used to pass. That is
 deliberate, and it is a minor release on the same reasoning as 2.4.0's redirect
@@ -1022,17 +1199,19 @@ change: the maintainer owns every site consuming this package, so a break is a
 migration he schedules rather than a promise made to strangers.
 
 **If you installed this from the registry expecting `^2.4.0` to be safe, these
-are the three paragraphs that explain why your build started failing** — and in
-all three cases the thing that now fails was already broken, silently, in the
-output you were publishing.
+are the three notes that explain why your build started failing** — and in all
+three cases the thing that now fails was already broken, silently, in the
+output you were publishing. Treat a new failure as a bug the upgrade surfaced,
+not one it caused.
 
-**Upgrading?** Run `npx kiss-ssg check router.js --summary` before you change
-anything: it reports all three against a staged build it then throws away, so
-you find out without publishing. If you are working with an agent, the
-`kiss-site-migrate` skill walks each break by the error text you will actually
-be looking at — what it means, and the three things it is usually caused by.
+Run `npx kiss-ssg check router.js --summary` before you change anything: it
+reports all three against a staged build it then throws away, so you find out
+without publishing. Work the `failures` entries first: a page that fails to
+render is absent from the output, which makes every `{{link}}` to it a
+`broken link:` finding as well, so fixing the failure clears findings
+downstream of it.
 
-### ⚠️ Read this first: a missing asset now fails the build
+### Upgrading: a missing asset now fails the build
 
 `{{asset "css/site.css"}}` on a path no `.copyAssets()` emitted used to log a
 warning and render the path anyway. Your build passed, `report().ok` stayed
@@ -1050,9 +1229,17 @@ asset: 'css/typo.css' is not in the build (asked by index.hbs)
 
 **Nothing becomes wrong that was not already wrong** — the warning has been in
 your log all along. It becomes visible. If a build starts failing here, the
-404 was already being published.
+404 was already being published. It is usually one of three things:
 
-Two details worth knowing:
+- **A typo, or a file that moved.** Fix the path in the template.
+- **A real file that kiss never copied**, put there by a bundler, a CSS
+  toolchain, or committed into the build folder by hand. kiss only knows what
+  a `.copyAssets()` emitted, so add one:
+  `kiss.copyAssets('./vendor', './public/vendor')`.
+- **Not a path into this build at all**, which is fine (see below). If one of
+  those is failing, you are on 2.5.0 before that was fixed; upgrade.
+
+Details worth knowing:
 
 - **`dev: true` still warns and carries on**, because the file you are about to
   add legitimately is not there yet. It now renders the path **as you wrote
@@ -1068,14 +1255,22 @@ Two details worth knowing:
   underneath it, so a stripped slash or a split-off fragment never leaves you
   searching your templates for a string you never typed.
 
-### ⚠️ A stylesheet that will not compile now fails the build
+### Upgrading: a stylesheet that will not compile now fails the build
 
 A Sass syntax error used to be logged in red and then dropped: the build
 resolved, `report().ok` stayed `true`, and the site shipped with no CSS. It is
 a build failure now, named `<sass: css/site.scss>`, in the same shape as a
 failing page. One broken stylesheet still does not stop the others or the copy.
 
-### ⚠️ Sass partials are no longer compiled on their own
+```
+1 build failure: <sass: css/site.scss>
+```
+
+Fix the stylesheet. If the site has been shipping without that CSS for a
+while, expect the first successful compile to change the rendered page, and
+compare it before you deploy.
+
+### Upgrading: Sass partials are no longer compiled on their own
 
 A leading underscore is the Sass convention for "this is a partial, do not
 compile me standalone", and dart-sass never compiles one. kiss did — so
@@ -1085,8 +1280,34 @@ ordinary Sass layout there is (a `main.scss` that defines variables and
 made a compile error fatal.
 
 **If you were serving one of those emitted files, it will 404 after this
-upgrade.** One `info` line per build names the set that was skipped, so you
-will see which. Rename it without the underscore if you need it compiled.
+upgrade.** One `info` line per build names the set that was skipped:
+
+```
+Skipped 1 Sass partial (a leading underscore means "do not compile standalone"): css/_vendor.scss
+```
+
+Grep the templates and stylesheets for a `_<name>.css` reference to see
+whether anything asks for one. If a file genuinely needs compiling on its own,
+rename it without the underscore and update whatever `@use`s or `@import`s it.
+If nothing references it, the emitted file was dead weight.
+
+### Upgrading: a `helpers/` folder you already had is now imported
+
+kiss now imports `config.folders.helpers` (default `./helpers`) and calls its
+`registerHelpers` export itself (below). A site that already had a root
+`helpers/` folder with an `index.js` for something else now has it imported on
+every build. If it is **not** a kiss registrar, point `folders.helpers`
+somewhere else, move the folder, or leave it: kiss warns and carries on when it
+defaulted to a folder whose entry exports no registrar, and fails the build
+only when you named the folder yourself. If it **is** a registrar that the
+build script also calls by hand, drop the manual call: it now runs twice.
+
+### Upgrading: a dev build's `report()` now shows a failing page
+
+Under `.watch()`, a page that starts failing mid-edit now moves `report().ok`
+to `false` until the next save, where it used to be absent from the report.
+Nothing to fix, but tooling that reads `report()` during a dev session will
+see failures it did not see before, and they are real ones.
 
 ### Custom helpers register themselves
 
@@ -1155,7 +1376,7 @@ stylesheet, or a page, put the failure in the log immediately while
 
 ## 2.4.0 — 2026-09-16
 
-### ⚠️ Read this first if your site uses `aliases`
+### Upgrading: read this first if your site uses `aliases`
 
 **Your `_redirects` file will stop being written unless you ask for it.** Until
 now every build with page `aliases` wrote `<build>/_redirects` automatically.

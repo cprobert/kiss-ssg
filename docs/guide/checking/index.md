@@ -1,6 +1,6 @@
 # Checking a build
 
-Waiting for a build, dry-running it with kiss-ssg check, reading the report, and recording a site's knowledge base with kiss-ssg aikb.
+Waiting for a build, dry-running it with kiss-ssg check, reading the report, recording a site's knowledge base with kiss-ssg aikb, and upgrading a site with kiss-ssg upgrade.
 
 ## Waiting for the build
 
@@ -242,6 +242,27 @@ npx kiss-ssg --version
 `base` is the log's `base:` line, then the remote's default branch. With neither, it exits 1 and says to ask: it never assumes `main`. The name goes to stdout and where it came from to stderr. `--ref` and `--start` print refs in full (`refs/heads/…`, `refs/remotes/origin/…`), so a tag of the same name is never read in place of the branch. `--ref` is whichever of the local base and origin's this branch started from. `--start` is origin's, unless the local base has commits origin lacks, and when the two have diverged it exits 1 rather than choose.
 
 Every refusal is one line on stderr with exit code 1, never a stack trace. A skill that needs these commands first checks the installed kiss-ssg has them: `npx kiss-ssg session --help` prints usage when it does.
+
+## Upgrading a site
+
+`kiss-ssg upgrade` installs a kiss-ssg release into the site in the current folder, checks that it really landed, and prints the upgrade notes between the version the site had and the new one. Run it by version, so npx fetches the release you mean: a site's own older kiss-ssg has no `upgrade` command.
+
+```bash
+npx kiss-ssg@latest upgrade --plan          # where the site is, what it would run, the notes; installs nothing
+npx kiss-ssg@latest upgrade                 # install, check, print the notes
+npx kiss-ssg@latest upgrade --plan --from 2.6.2   # the notes since 2.6.2, when it cannot tell
+npx kiss-ssg@latest upgrade --json          # the same as JSON on stdout; npm's output goes to stderr
+```
+
+**What it installs.** `kiss-ssg@<its own version>`, exactly, into whichever of `dependencies` and `devDependencies` already holds kiss-ssg (`devDependencies` when neither does). That replaces a `file:` link, a URL or a git dependency. A plain `npm install` after a `file:` spec is edited keeps the link to the working tree, which is why the command names the version.
+
+**What it checks afterwards**, and the exit code it gives: `node_modules/kiss-ssg` is that version and not a link to a working tree; `package.json`'s range allows it; and `package-lock.json` pins it from the registry npm is configured for (`npm config get registry`, so a private registry passes and a GitHub tarball does not). Each prints as an `ok:` or `FAILED:` line, with the fix, after the notes and just before the next step; any `FAILED` exits 1. A site already on the version passes the same checks and installs nothing.
+
+**The notes** are every `### Upgrading` section of `CHANGELOG.md` after the site's version, up to and including the new one, oldest first; a release with none is counted, not printed. The site's version is, in order: `--from`, the installed copy, the committed lockfile's version when the installed copy already equals the new one (a site `npm update` moved), and the floor of `package.json`'s range. A `node_modules/kiss-ssg` linked to a working tree has no release version, so the notes start from nothing unless `--from` names one; the output says what the tree reports, as the `--from` to consider. A v1 site is pointed at this guide's § Migrating from v1 instead.
+
+**When it refuses**, it writes nothing and exits 1: no `package.json`, or an installed registry release newer than itself. **When it will not install**, `--plan` still prints the notes and says why: uncommitted changes to `package.json` or the lockfile (so the upgrade is the only change in them), a git failure other than "not a repository", a registry npm cannot name (it is never assumed to be npmjs), an npm workspace member (install from the workspace's root with `-w`), or a pnpm, yarn or `npm-shrinkwrap.json` lockfile, which it does not drive or verify; install by hand, then read the notes with `--plan --from <old version>`. The lockfile it reads is the one in the folder it runs in, never a parent's.
+
+After it, run `npx kiss-ssg check <script> --summary` before changing anything, and work the notes. The `kiss-site-migrate` skill is that method.
 
 ## Other methods
 

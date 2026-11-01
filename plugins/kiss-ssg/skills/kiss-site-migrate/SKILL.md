@@ -1,409 +1,80 @@
 ---
 name: kiss-site-migrate
-description: Upgrade a kiss-ssg site across versions — v1 to v2, or a release that changed what a folder or a default means. Use when a build script targets an older kiss-ssg, an upgrade fails with an AggregateError or empty output, or for "upgrade kiss", "migrate to kiss-ssg v2", "update kiss-ssg", "my kiss site broke after the upgrade".
+description: Upgrade a kiss-ssg site across versions — install it with `npx kiss-ssg@latest upgrade`, work the notes it prints, and prove the site builds the way it did. Use when a build script targets an older kiss-ssg, an upgrade fails with an AggregateError or empty output, or for "upgrade kiss", "migrate to kiss-ssg v2", "update kiss-ssg", "my kiss site broke after the upgrade".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # Upgrade a kiss site
 
-Two jobs share this skill because they fail the same way — silently.
-
-**A v1 → v2 migration** is short: real consumer sites needed two or three edits each, but each one is
-silent if you miss it. That is §1 onward.
-
-**A point upgrade within v2** is shorter still and easier to skip, which is the trap. A minor release
-can change what a folder or a default _means_ without changing any signature, so nothing fails at
-install time and the site keeps building — differently. Do §0 for any upgrade, including a v1 → v2
-one, then continue.
-
-Work from the shipped recipes and the CHANGELOG, not from memory.
-
-When the installed version enforces folder safety, migrate a project-root
-`folders.src` (`./`) to a dedicated directory such as `./src`. Separate output
-from every configured content folder, including helpers and AIKB; aliases count
-as the same location. Follow the installed `GUIDE.md` § Cleaning the build folder rules and the
-setting named in the error. `cleanBuild: false` does not bypass the guard.
+An upgrade fails silently. A release can change what a folder or a default _means_ without changing any signature, so nothing fails at install time and the site keeps building — differently. This skill is the method; what each release changed is in `CHANGELOG.md`, under `### Upgrading` in that version's entry, and `kiss-ssg upgrade` prints exactly the notes between the site's version and the new one. Work from those notes, never from memory.
 
 ## Execution instructions
 
-### 0. Read what changed between the two versions
+### 1. Install with the command, and read the notes first
 
-Compare what the project depends on with what is installed:
-
-```bash
-npm pkg get devDependencies.kiss-ssg
-npm pkg get dependencies.kiss-ssg
-npm ls kiss-ssg
-```
-
-The first two print the range `package.json` asks for: one of them prints it, and the other `{}`, for a key that is not there. Ask for the two separately: asked together, npm 10 prints nothing at all when either is missing. The third prints the version installed, and the path it links to when it is a link.
-
-**If the site was on a `file:` link, do not trust a plain `npm install` to move it.** Editing `package.json` from `file:../kiss-ssg` to `^2.5.0` and running `npm install` keeps the link: the lockfile's entry (`"link": true`) already satisfies the range, so `node_modules/kiss-ssg` stays a junction to the working tree while `package.json` says otherwise — six of six sites hit this on the 2.5.0 upgrade. Run `npm install kiss-ssg@^2.5.0 --save-dev` instead, which re-resolves it, then confirm: `node_modules/kiss-ssg` must be a real folder (from the registry it has `CHANGELOG.md`, `llms.txt`, `AIKB/`, `examples/`), and `package-lock.json` must resolve it to `https://registry.npmjs.org/kiss-ssg/-/kiss-ssg-<version>.tgz`. `npx kiss-ssg check <script>` now says which kiss-ssg the site resolves on stderr, and names a link as one.
-
-Then read `node_modules/kiss-ssg/CHANGELOG.md` — every entry between those two versions, not only the
-newest. It is written for people building sites rather than maintaining the engine, so an entry that
-names a folder, a default or a config key is one that can change this site's behaviour without
-changing its code.
-
-**A new default that adopts a folder you already have is the hazard to look for.** Concretely, from
-2.5: `config.folders.helpers` defaults to `./helpers`, and kiss now imports that folder's `index.js`
-itself and calls its `registerHelpers` export. A site that already had a root `helpers/` folder for
-unrelated utilities now has it imported on every build. Check for one:
+Run it by version, so npx fetches the release you mean rather than the site's own older copy, which has no `upgrade` command:
 
 ```bash
-ls helpers/index.js helpers/index.mjs helpers/index.cjs 2>/dev/null
+npx kiss-ssg@latest upgrade --plan
+npx kiss-ssg@latest upgrade
 ```
 
-If it is there and is **not** a kiss registrar, either point `folders.helpers` somewhere else, move
-the folder, or leave it — kiss warns and carries on when it defaulted to a folder whose entry exports
-no registrar, and only fails the build when you named the folder explicitly. If it **is** a registrar
-that `router.js` also calls by hand, drop the manual call: it now runs twice.
+The first installs nothing: it prints where the site is, where it is going, what it would run, and every note in between, oldest first. Read them before going on. The second installs `kiss-ssg@<version>` into whichever section of `package.json` already holds it, replacing a `file:` link, a URL or a git dependency, and then checks the install really landed: `node_modules/kiss-ssg` is that version and not a link, `package.json` allows it, and `package-lock.json` pins it from the registry. A plain `npm install` keeps a `file:` link to a working tree even after its spec is edited, so a line such as `FAILED: node_modules/kiss-ssg is still a link` is the command doing its job: run the fix it prints, never work past it.
 
-### 0a. Three things in 2.5 fail a build that used to pass
+**When it cannot tell where the site started**, it says so and prints every note up to the new version. That is the normal case on a site whose `node_modules/kiss-ssg` is a junction to a working tree. Tell it the version the site was last built against (the site's `AIKB/last-build.json` record, its committed lockfile, or the owner):
 
-A point upgrade usually changes what something _means_. This one also changes what **fails**, in
-three places. All three were already wrong in the site's published output — they were being logged
-and then ignored — so treat a new failure as a bug the upgrade surfaced, not one it caused.
+```bash
+npx kiss-ssg@latest upgrade --plan --from 2.6.2
+```
 
-**Run the check before you change anything.** It reports every one of them at once, against a staged
-build it then throws away, so nothing is published while you are finding out:
+**When the site was already upgraded some other way** (`npm update`, Dependabot) and the build broke, the installed version already equals the new one. `--plan --from <old version>` still prints the notes, even with the lockfile uncommitted.
+
+**When it refuses**, it says why and writes nothing. Uncommitted changes to `package.json` or the lockfile: commit or revert them, so the upgrade is the only change in those files. pnpm, yarn or an `npm-shrinkwrap.json`: install with the command it names, then use `--plan --from` for the notes.
+
+If `npx kiss-ssg@latest upgrade --help` answers `unknown command`, npx ran a kiss-ssg from before the command existed: name a version instead (`npx kiss-ssg@2.9.0 upgrade`).
+
+### 2. Check before changing anything
 
 ```bash
 npx kiss-ssg check router.js --summary
 ```
 
-Work the `failures` entries first: a page that fails to render is absent from the output, which makes
-every `{{link}}` to it a `broken link:` finding as well, so fixing the failure clears findings
-downstream of it.
+It builds staged and discards the result, so nothing published is touched. If the first line does not start `ok`, work the `failures` entries first, with the `kiss-build-check` skill: a page that fails to render is absent from the output, so it also turns every `{{link}}` to it into a `broken link:` finding, and fixing the failure clears those. Treat a new failure as a bug the upgrade surfaced, not one it caused: the notes say which releases made an old mistake fatal, and in each case the published output was already wrong.
 
-#### 1. `{{asset}}` on a path no `.copyAssets()` emitted
+### 3. Work each note
 
-```
-asset: 'css/typo.css' is not in the build (asked by index.hbs)
-  — no .copyAssets() emitted it. Check the path, or the folder it should have been copied from.
-```
+Go note by note, against the site's own build script, controllers, layouts and tooling, and record for each: applies / does not apply. Most will not apply; knowing that is the point. A note that says to grep for something means grep, not recall. The notes are the contract — this skill holds no copy of them, so a note it does not mention is not a note to skip.
 
-It used to warn and render the path anyway, so the build passed and the site served a 404. Three
-things it might be:
+### 4. Done when it builds the way it did
 
-- **A typo, or a file that moved.** Fix the path in the template.
-- **A real file that kiss never copied** — put there by a bundler, a CSS toolchain, or committed
-  into the build folder by hand. kiss only knows what a `.copyAssets()` emitted, so add one:
-  `kiss.copyAssets('./vendor', './public/vendor')`.
-- **Not a path into this build at all.** Anything carrying a scheme (`https:`, `data:`, `mailto:`)
-  or the protocol-relative `//cdn/x.css` passes through untouched, and a `?query`/`#fragment` on a
-  path that _is_ in the build is fine — `{{asset "img/logo.svg#symbol"}}` resolves the sprite and
-  keeps the fragment. If one of those is failing, you are on 2.5.0 before that was fixed; upgrade.
+The upgrade is done when the site builds the way it did, not when it builds better. `check` diffs against the site's recorded `AIKB/last-build.json` when it has one, and names every page added (`+`), removed (`-`) or changed (`~`). A difference is a finding to explain: either a change a note names (a default title, a sitemap date), or a regression you have not found yet. Without a record, compare the page list and the page bodies with the committed build output.
 
-**In `dev: true` it still warns and carries on**, rendering the path as written, because the file you
-are about to add legitimately is not there yet. So a dev session will not show you these — the check
-above is how you find them.
+New audit findings, broken-link lines a release has just started reporting, and anything else that makes the site _better_ are not the upgrade. Offer them as their own piece of work, with the `kiss-site-review` skill.
 
-#### 2. A stylesheet that will not compile
-
-```
-1 build failure: <sass: css/site.scss>
-```
-
-A Sass syntax error used to be red in the log and then dropped: the build resolved, the report said
-`ok`, and the site shipped with no CSS. Fix the stylesheet. If the site has been shipping without
-that CSS for a while, expect the first successful compile to change the rendered page — compare it
-before you deploy.
-
-#### 3. A `_`-prefixed Sass file is no longer compiled on its own
-
-```
-Skipped 1 Sass partial (a leading underscore means "do not compile standalone"): css/_vendor.scss
-```
-
-A leading underscore is the Sass convention for "this is a partial", and dart-sass never compiles
-one. kiss did, so `_vendor.scss` was emitting a `_vendor.css`. **If a page or a stylesheet references
-one of those emitted files, it will 404 after this upgrade.** The `info` line names the set that was
-skipped; check whether anything asks for them:
+### 5. Record, and keep the upgrade in a commit of its own
 
 ```bash
-grep -rn "_[a-z0-9-]*\.css" src/ --include=*.hbs --include=*.html --include=*.css --include=*.scss
+npx kiss-ssg aikb router.js
 ```
 
-If a file genuinely needs compiling on its own, rename it without the underscore and update whatever
-`@use`/`@import`s it. If nothing references it, the emitted file was dead weight and you are done.
+It records the knowledge base from a passing build, so the next `check` diffs against the new version's output. The upgrade is `package.json`, the lockfile, `AIKB/` and the fixes the notes asked for: keep it apart from any other work, so it is one commit when the owner asks for one. Never commit unasked; say what is ready to commit and stop.
 
-#### And one that changes what a _green_ build means
+Make sure the project's `CLAUDE.md` carries `@node_modules/kiss-ssg/llms.txt` (create the file if there is none), so every later session reads the installed version's contract instead of remembering an older one. Say whether you added the line or found it.
 
-Under `.watch()`, a page that starts failing mid-edit now moves `report().ok` to `false` until the
-next save, where it used to be absent from the report entirely. Nothing to fix — but if the site has
-tooling that reads `report()` during a dev session, it will see failures it did not see before, and
-they are real ones.
+### 6. When an upgrade moves a URL
 
-### 0b. The release that adds the launch-readiness audit
+Most upgrades move none. When one does — turning on `extensionLess`, a slug rule that normalises differently, a v1 site's hand-written hrefs meeting v2's paths — three decisions belong to the site's host, so make them before the cutover, not after:
 
-Nothing new fails, but every build says more, and a site on `^2` gets it without asking. Every
-non-dev build whose pages all succeeded now runs the launch-readiness audit and logs it: one `info`
-line, `Audit: N pages, M findings`, then one `notice` line per check that fired
-(`audit description-missing: 12 pages (…)`). Expect those lines on the first build after upgrading —
-every shipped example fired `og-image-missing`, `favicon-missing` and `not-found-missing` the first
-time the audit ran over it.
-They are advisory: `ok` and the exit code do not move.
+- **`aliases`.** The old URL goes in that page's `aliases`, and that list is the redirect plan. `check` reports `moved without redirect:` and `removed without redirect:` against the last record; the fix is the old path pasted into `aliases`, or saying out loud that it is meant to be gone. Take the old paths from the committed output: every path in it the new build no longer writes is a page you have lost or an alias you owe.
+- **`redirects: { format: … }`.** There is no default host: unset writes `<build>/redirects.json` alone and logs a notice. `'netlify'` (also Cloudflare Pages) writes `_redirects`, which Firebase and Vercel do not read at all; `'firebase'`, `'vercel'` and `'htaccess'` write a fragment to merge into the host's own config; a list writes several. The wrong format leaves every old URL 404ing while the build reports the redirects as written.
+- **`links: { trailingSlash: … }`.** With `extensionLess`, every page is a directory index. Netlify serves `/about/` and 301s `/about`; Firebase with `cleanUrls: true` and `trailingSlash: false` serves `/about` and 301s `/about/`. The default `true` is Netlify's. Set it to match the host, and the canonical, sitemap, `{{link}}`, `llms.txt` and feed all name URLs that return 200.
 
-- **The report gains a key.** `audit` is appended **last**, after `outputs`, on `report()`,
-  `err.report` and every `kiss-ssg check` report. Tooling that asserts the exact key list needs the
-  new key.
-- **So does the record.** `AIKB/last-build.json` is the report, so the first `npx kiss-ssg aikb`
-  after upgrading writes an `audit` key the committed record never had. That is the new key showing
-  up in the commit, not a change to the site.
-- **Turning a check off is a config line with a reason.** `audit: { ignore: ['og-image-missing'] }`,
-  with a comment saying why; `audit: false` turns the pass off. An id that is not a check
-  **throws at construction**, naming the valid ids — so a typo in `ignore` stops the build before
-  anything is written. The ids and what each one means are in `node_modules/kiss-ssg/GUIDE.md` § Checking a
-  build.
-- **The default title is the page's own slug.** A page that set no `title` (no option, no controller
-  return) used to get the default title `"Index"` whatever it was called, so a layout rendering
-  `{{title}}` titled every such page the same. It now gets its own slug, title-cased with hyphens
-  as spaces — `about-us.hbs` is `About Us`, the rule `llms.txt` entries already used. On such a
-  site `kiss-ssg check` reports those pages as **changed**: their `<title>` is the only difference,
-  and it is the fix. A page that should keep a particular title sets `title` explicitly.
+If the old site served pretty URLs and the new one is not `extensionLess`, set `links: { canonical: true }` rather than `canonical=true` on every `{{link}}` call. And `check`'s `broken link:` lines are the proof every internal link still points somewhere; they are advisory, so read them rather than trusting the exit code.
 
-Do not start fixing findings as part of the upgrade: the upgrade is done when the site builds the
-way it did. Offer the findings as their own piece of work with the `kiss-site-review` skill.
+### 7. From v1
 
-### 0c. 2.7.0: Codex beside Claude Code
+A v1 → v2 migration is the same method with one more source. Node ≥22.12 first. Then read `node_modules/kiss-ssg/GUIDE.md` § Migrating from v1, every recipe including its "unchanged in v2" list, and `node_modules/kiss-ssg/examples/9-migrated-from-v1/`, whose README maps each v1 idiom to its replacement. Go recipe by recipe against the site, recording applies / does not apply. The goal for a content-only migration is byte-identical output against the v1 build's committed output; one real consumer got an empty diff.
 
-Nothing in the build changes. What changes is how the folder is set up for an agent: the kiss
-plugins now serve Codex too, and `init` writes a `.codex/config.toml` that switches them on for the
-project once Codex trusts the folder. A site set up by an earlier `init` has neither that file nor
-the Codex section in `AGENTS.md`.
+Two v1 shapes to replace while you are there: helpers registered by hand on a global Handlebars move to `config.folders.helpers` (default `./helpers`, whose `registerHelpers(kiss)` kiss calls itself), and the build script becomes `router.js` at the project root (`node_modules/kiss-ssg/llms.txt` § The build script). Renaming it breaks references nothing reports, so grep the whole repo for the old basename and fix every hit before you build: `package.json`'s `main` and scripts, the host's build command and CI, a CSS toolchain's source globs (a Tailwind v4 `@source` that matches nothing is scanned in silence, so classes used only in the script stop compiling), `kiss-ssg check` and `aikb` invocations, and the project's docs. Do the rename as its own commit, so the diff that proves the migration is not also carrying it.
 
-- **Re-run `npx kiss-ssg init`** in the site. It appends the Codex section to an `AGENTS.md` that
-  lacks it and adds `.codex/config.toml`, and it never rewrites text already there. An existing
-  `.codex/config.toml` gains only the tables it does not define. One that defines them in another
-  shape (a dotted key, an inline table) is left alone, and `init` says to add the rest by hand.
-- **The install is per user.** If the owner uses Codex, they run the three `codex plugin` lines
-  `init` prints once on their machine; a second site needs only its project file.
-- Commit the new and changed files with the upgrade, so the site records which skills it uses for
-  both agents.
-
-### 0d. 2.7.5: a Markdown copy of every page
-
-From 2.8.0 the copies are written only when the build calls `.llms()` (§ 0g). Read this section
-for what a copy is; read § 0g for when one is written.
-
-Nothing fails. What changes is the build folder and `llms.txt`:
-
-- **Every HTML page now has a `.md` copy beside it** (`about.md`, `courses/index.md`), converted
-  from the page's `<main>`, or from `<body>` when it has none. They are published with the rest of
-  the build folder. `kiss-ssg check` reports each one as `pages[].markdown`. Its diff against a
-  record compares each page's HTML hash, which the copies do not change, so no page reads as
-  changed because of them.
-- **`llms.txt` now links the copies** (`https://site/about.md`) rather than the pages. It is the
-  llmstxt.org convention. A site that wants the old links sets `markdownCopies: false`.
-- **The site's own scripts that read `llms.txt` change answer.** Grep the site's tooling (`qa/`,
-  `scripts/`, its tests) for `llms.txt`. A check that compares its links with `sitemap.xml` now
-  fails on every page, because the sitemap still lists the pages and `llms.txt` lists the copies.
-  Measured on a real site: its SEO check went from passing to 36 failures on the upgrade, and the
-  agents that met it blamed an earlier upgrade. Update the check to expect the copies, or set
-  `markdownCopies: false`.
-- **Read one copy.** Open one built `.md`. If the site's layout has no `<main>`, its header, footer
-  and any menu not in a `<nav>` are in every copy. Wrap the page content in `<main>` in the layout,
-  or set `markdownCopies: { selector: '…' }`.
-- **A page that should have no copy** sets `config: { markdownCopies: false }`.
-- Re-record the knowledge base (`npx kiss-ssg aikb router.js`) once the upgrade builds green, so
-  the next `check` diffs against a record that has the new field.
-
-### 0e. 2.8.0: three more audit checks
-
-Nothing fails, and `ok` and the exit code do not move. The audit asks three more questions of
-every page, so the first build after upgrading can print findings the site never had:
-
-- **`viewport-zoom-lock`**: the layout's viewport meta has `user-scalable=no` or a `maximum-scale`
-  below 2. One edit to the layout fixes every page.
-- **`href-hash`**: a link with `href="#"`.
-- **`fragment-missing`**: a link's `#fragment` names no `id` on the page it lands on. A skip link to
-  a `<main>` with no `id` is the usual one. So is a `[link](#heading)` in Markdown content, because
-  Markdown headings get no `id`.
-
-What changes besides the log:
-
-- **The record.** `AIKB/last-build.json` carries the report's `audit.findings`, so the first
-  `npx kiss-ssg aikb` after upgrading records any new findings. That is the record catching up, not
-  a change to the site.
-- **Turning one off** is the same as for every audit check: `audit: { ignore: ['href-hash'] }`, with
-  a comment saying why. A site whose script adds an `id` at runtime can only ignore all of
-  `fragment-missing`, which also stops it checking the skip link. Say that in the comment.
-
-As with the first audit release, the upgrade is done when the site builds the way it did. Offer
-the findings as their own piece of work with the `kiss-site-review` skill, whose usability pass
-now covers them.
-
-### 0f. 2.8.0: `package` is a page option
-
-A page's `package` option now puts it in a learning package (an IMS content package or SCORM 1.2
-zip). Packaging is on by default. A site that never sets `package` gets no zips and no change. A
-site that already had a `package` key on its pages, for its own purposes, now has its pages
-packaged instead:
-
-- **Find the key before the first build.** Grep the build script and `controllers/` for `package`:
-  a `.page({ package: … })`, a fan-out record with a `package` field, or a controller that spreads
-  model fields into the page's options (`{ ...options, ...model }`) where a record carries one.
-- **A value that is not a slug fails the build** (`package must be a slug …`). One that is a slug
-  is quietly packaged into `packages/<value>.imscp.zip`, and fails as `<packages>` if one of its
-  pages has no usable `id`.
-- **The fix is to rename the site's key** (`packageName`, say) wherever the site reads it. If the
-  site never makes learning packages, `packages: false` in the config turns them off as well, but
-  the rename is still the honest fix: the key means something to kiss now.
-- After the rename, `kiss-ssg check` lists no `package:` lines, and the build folder has no
-  `packages/` folder.
-
-### 0g. 2.8.0: Markdown copies only with `.llms()`
-
-Nothing fails. Since 2.7.5 every HTML page had a `.md` copy beside it. Now a copy is written only
-when the build script calls `.llms()`, whose `llms.txt` is the one thing that links them
-(`markdownCopies.write` defaults to `'llms'`).
-
-- **A site that calls `.llms()`** sees no change.
-- **A site that does not** stops publishing the `.md` files. They were linked from nowhere, so
-  nothing should break. Grep the site for a hand-written link to a `.md` page before you assume
-  that; if it has one, or wants the copies for another reason, set `markdownCopies: true`, which now
-  means always.
-- `markdownCopies: false` still means never, even with `.llms()`.
-- `kiss-ssg check` against a record made before the upgrade shows each page's `markdown` going from
-  a path to `null`. Re-record the knowledge base (`npx kiss-ssg aikb router.js`) once it builds.
-- A host or deploy step that uploads the build folder may keep the old `.md` files on the server;
-  remove them there if it does not delete files the build no longer writes.
-
-### 0h. 2.8.2: a SCORM page reports its own completion
-
-Nothing fails, and only a site that puts `{{scormBridge}}` on its pages is affected. Until now a
-page with no `complete` was marked complete as soon as it loaded in an LMS. Now it starts each new
-attempt as `incomplete` and is complete only when its own script calls
-`kissScorm.status('completed')` (or `'passed'`/`'failed'`). Completing on load broke resume in
-Moodle: from then on Moodle opens every launch in review mode, where nothing is saved, and hands
-back the first launch's place, so the learner reopened there every time.
-
-- **Grep the site for `scormBridge`** and for the layouts that carry it. For each page that uses
-  it with no `complete` (and no `complete` passed through its `{{#extend}}` hash):
-  - **It calls `bookmark()` or `save()`, or has a point the learner finishes at**: give it a
-    `kissScorm.status('completed')` call there. This is the case the change exists for.
-  - **It keeps no place and nothing marks the end** (a page to read, with no question): pass
-    `complete="seen"`, which keeps the old behaviour.
-- **A `complete="manual"` is now the default.** It still works, so leave it or remove it.
-- **Learners' records already in an LMS are not changed.** A page completed under the old default
-  stays completed, and in Moodle it still opens in review mode for those learners. Only a new
-  attempt, or a learner who had not opened it yet, gets the new behaviour.
-- After the change, `kiss-ssg check` reports nothing new: completion happens in the browser, not
-  in the build. Check it in the LMS: launch a page that bookmarks three times, moving somewhere
-  else each time, and the third launch opens on the second launch's place.
-
-### 0i. The release that adds `{{@current}}` to `isActive`
-
-Nothing fails. Inside `{{#isActive}}`, `{{@current}}` is now `true` only when the page is the
-link's own page, whatever `folderMatch` says, beside `{{active}}`, which stays true on every
-page inside a section. It is private data, like `@index`, so it hides no key of the site's.
-`aria-current="page"` names the page itself, and only `{{@current}}` says when that is.
-
-- **Grep the layouts for `aria-current`, and fix the shape that marks a whole section.** A nav
-  link that sets the attribute inside `{{#if active}}`, in an `{{#isActive}}` with
-  `folderMatch`, puts `aria-current="page"` on every page in that section. Until this release,
-  ten of kiss's example layouts (1, 2, 3 and 5 to 11) had that shape and passed each nav item's
-  `folderMatch` through, so a site that copied any of them has it, and it shows as soon as one
-  nav item sets `folderMatch: true` (examples 3 and 11 did). Set the
-  attribute inside `{{#if @current}}` instead, and keep the class on `{{#if active}}`, as
-  `node_modules/kiss-ssg/examples/11-blog/src/layouts/layout.hbs` does. This changes the built
-  HTML: on a page inside the section, the section link keeps its class and loses the attribute.
-- **A nav that calls `isActive` twice for one link**, once with `folderMatch` for the class and
-  once without it for the attribute, can fold the two into one the same way. Optional: the
-  same links are marked as before, though a link's attributes may come out in another order.
-- **A nav item with no `href`** (a label or a separator in a data-driven nav) is no longer
-  marked on the home page: a missing `href` names no page, for `{{active}}` as for
-  `{{@current}}`. A call that meant the home page writes `href=""`.
-- Check it the way the change promises: build before and after, and diff the pages. On any
-  page, at most one nav link carries `aria-current="page"`, and it points at that page.
-
-### 0j. 2.8.6: the sitemap states only dates a page knows
-
-Nothing fails, but `sitemap.xml` changes on every site. Until 2.8.6 every `<url>` carried the
-time of the build as its `<lastmod>` and `1.00` as its `<priority>`. Google uses `lastmod` only
-when it is consistently accurate and ignores `priority` and `changefreq`, and Bing warns against
-the build time, so a date that moved on every build taught both to ignore it. Now a page's
-`<lastmod>` is its `sitemapLastmod`, else its `updated`, else its `date` (from the page options,
-then the model), and a page with none of them has no `<lastmod>`. `<priority>` and
-`<changefreq>` appear only for a page that sets `sitemapPriority` or `sitemapChangefreq`.
-
-- **Nothing to do for the file to be correct.** A page with no date loses its `<lastmod>`, which
-  is the honest state. Two builds of an unchanged site now write the same `sitemap.xml`.
-- **A page whose content changes over time** (a price list, a timetable, a stockists page) can
-  carry `updated` in its model, set to the day the content last changed. Never set it from the
-  clock in a controller: that is the old behaviour again.
-- **`sitemapPriority` and `sitemapChangefreq` in the router** still work, and Google ignores both.
-  Leave them or remove them; removing them changes nothing in search.
-- **A `.robots()` that keeps a named agent out of the whole site** (`GPTBot`, `ClaudeBot`,
-  `CCBot` and the like) no longer logs "robots.txt disallows the whole site" or sets
-  `report().robots.disallowAll`, unless the agent is `*` or a search engine's own crawler
-  (Googlebot, Bingbot, Applebot, `OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot` and a
-  few more). The blocked agents are listed in the new `report().robots.blocked` and one `info`
-  line. On such a site `disallowAll` goes from `true` to `false`, which is the fix, not a
-  regression.
-- Check it: build, and read `sitemap.xml`. No `<lastmod>` holds the time of the build.
-
-### 1. Check the floor, then read the recipes
-
-Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.
-
-Then read `node_modules/kiss-ssg/GUIDE.md` § Migrating from v1 — every recipe, including the "unchanged in v2" list, which is there to stop you rewriting code that still works. The runnable version of the same recipes is `node_modules/kiss-ssg/examples/9-migrated-from-v1/`; its README maps one page to each v1 idiom it replaces.
-
-### 2. Point every future session at the contract
-
-Open the project's `CLAUDE.md` (create it if the project has none) and make sure it carries this line:
-
-```markdown
-@node_modules/kiss-ssg/llms.txt
-```
-
-A migrated site is one that will be edited again; the import makes every later Claude Code session read the v2 contract instead of remembering v1. Add the line if it is missing, keep it if it is there, and say which you did.
-
-### 2a. Rename the build script to `router.js` — then grep for the old name
-
-A v1 site's script is usually `generate.js`, `site.js` or `build.js`. v2's convention is `router.js` at the project root (`node_modules/kiss-ssg/llms.txt` § The build script), and a migration is the cheapest moment to adopt it: you are already editing the file, and the alternative is renaming it on some later branch when far more things point at it.
-
-The rename itself is one `git mv`. What makes it worth a step of its own is that **nothing reports a reference it breaks.** Grep the whole repo for the old basename before you build, and fix every hit:
-
-- `package.json` — `main`, and every script that runs it (`build`, `dev`, `check`, anything a host calls).
-- The host's build command and any CI workflow — Netlify, Cloudflare Pages, GitHub Actions.
-- A CSS toolchain's source globs. Tailwind v4's `@source` is the sharp one: a glob matching nothing is scanned in silence, so class names used only in the build script stop compiling, the stylesheet's content hash changes, and every page that links it changes with it. A real site lost a build to exactly this.
-- Any `npx kiss-ssg check <script>` or `npx kiss-ssg aikb <script>` invocation, in scripts and in the project's `CLAUDE.md`.
-- The project's own docs and `README.md`.
-
-If the migration is aiming at byte-identical output (step 4), do the rename as its own commit before the recipes, so the diff that proves the migration is not also carrying a rename.
-
-### 3. Diff the site's script against each recipe
-
-Go recipe by recipe against the site's own build script, controllers and helpers, and record for each: applies / does not apply. The two consumer migrations both found most recipes did not apply — knowing that is the point of the pass.
-
-The three that actually bit, in the order they cost the most:
-
-| Symptom in the site                                                                        | What to change                                                                                                                                                                                                                                                   |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `complete()` called callback-style, or a chain ending at `.generate()`                     | Attach a `.catch` to the `complete()` promise, print each `err.failures[]` entry, set `process.exitCode = 1`. A failed build **never runs `complete()`'s callback**, so anything that lived there — sitemap, index, deploy trigger — has to run in the catch too |
-| A helper reading `require('handlebars').partials` or registering on the global module      | Pass `kiss.handlebars` into the helper and register there. This one fails **silently**: the build stays green and the element renders empty                                                                                                                      |
-| Two sources that can claim one output path (a fan-out registered last so v1 would skip it) | Dedupe the slugs yourself before registering. v2 fails the build with `Page already processed` — v1's tolerance was an idiom, and it is gone                                                                                                                     |
-
-Also check `livereloadPort` if the project runs more than one dev site: without it, a second site's pages poll the first site's reload server.
-
-### 4. Build, verify, then compare against the old output
-
-Run the build. Run the `kiss-build-check` skill (`/kiss-ssg:kiss-build-check`) and fix until it reports `ok: true`.
-
-Then compare the page list and the page bodies against the previous v1 build's committed output. **For a content-only migration the goal is byte-identical output** — one consumer test diffed v2-built pages against the v1-built ones and got an empty diff, which is the strongest evidence a migration is complete. A difference is a finding to explain, not noise to accept: it is either a v2 improvement you can name, or a regression you have not found yet.
-
-A page that is missing rather than different usually means a failing controller or a model the new build could not resolve — see the `check` skill on reading a failure.
-
-### 5. Links, and the URLs the migration changed
-
-A v1 site's templates carry hand-written hrefs. **Converting them to `{{link "<id>"}}` is optional here** and usually wrong for a content-only migration: it rewrites bytes, and byte-identical output is the evidence you are trying to produce. Leave them, note the option, and offer it as a follow-up piece of work once the diff is empty — `node_modules/kiss-ssg/examples/11-blog/` is the site to copy that shape from.
-
-What is not optional is checking they still point somewhere. The check's `broken link:` lines are the verification that the migration kept every internal link: each one names the page and the `href` that now resolves to no file, page, directory index or emitted asset, and an absolute URL on the site's own `siteUrl` counts as internal. A v1 href that survived into a v2 build whose URLs moved shows up there and nowhere else — it is advisory, so it never touches `ok` or the exit code.
-
-If the old site served pretty URLs and the new one is not `extensionLess`, set `links: { canonical: true }` rather than adding `canonical=true` to every `{{link}}` call: it makes the bare helper emit `/about` instead of `/about.html`, so the migrated site links internally the way the host serves — and a link the migration must keep extension-ful takes `canonical=false` on that one call.
-
-Where a page's URL **does** change in v2 — `extensionLess` turning `/about.html` into `/about/`, a slug rule that normalises differently — the old URL belongs in that page's `aliases`, and that list is the migration's redirect plan. kiss writes them with no method to call, in the encodings `redirects: { format: … }` names. **There is no default host format** — unset writes `<build>/redirects.json` alone and logs a notice — so a migration must name its host explicitly: `'netlify'` (also Cloudflare Pages) gives `<build>/_redirects`, one `301` per line, which **Firebase and Vercel do not read at all**; `'firebase'`/`'vercel'`/`'htaccess'` give a fragment to merge into the host's own config; a list (`['netlify','firebase']`) gives several at once; or read `report().redirects.rules` and write your own. A migrating site already has a host, so this is a question to answer now rather than after the cutover: the wrong format leaves every old URL 404ing while the build reports the redirects as written.
-
-The same question decides `links: { trailingSlash: … }`. A migration that turns on `extensionLess` makes **every** page a directory index, so the whole site's URL shape starts depending on it: Netlify serves `/about/` and 301s `/about`, while Firebase with `cleanUrls: true` + `trailingSlash: false` serves `/about` and 301s `/about/` (both measured). The default `true` is Netlify's. Set it to match the host before the cutover and the v2 canonical, sitemap, `{{link}}`, `llms.txt` and feed all name URLs that return 200; get it wrong and every one of them names a redirect. Take the old paths from the v1 build's committed output you are already diffing against: every path in it that the v2 build no longer writes is either a page you have lost or an alias you owe.
+Converting v1's hand-written hrefs to `{{link "<id>"}}` is optional and usually wrong in the migration itself: it rewrites bytes, and byte-identical output is the evidence. Offer it afterwards; `node_modules/kiss-ssg/examples/11-blog/` is the shape to copy.

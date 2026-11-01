@@ -95,10 +95,10 @@ describe('the home page carries the whole quick start', () => {
     expect(box('Codex').code.split('\n').slice(2, -1)).toEqual(CODEX_STEPS)
   })
 
-  it('gives an agent reading llms.txt every Codex install line', () => {
-    const llms = read('llms.txt')
-    for (const line of CODEX_STEPS) expect(llms).toContain(line)
-  })
+  // llms.txt carried the Codex install lines too, until the 2026-11-01 cut for
+  // its 16,000-character cap: it now says `init` prints them. A Codex session
+  // gets them from the AGENTS.md init writes, which `init.test.js` holds to
+  // every CODEX_STEPS line.
 
   it('installs the skills, not just declares them', () => {
     // The step that was missing from the page the first-time user read.
