@@ -1,0 +1,137 @@
+{
+  "parts": [
+    {
+      "name": "The engine",
+      "where": "npm: kiss-ssg",
+      "alone": "A static site generator for Node. It turns Handlebars views, JSON models and small JavaScript controllers into a site you can host anywhere. It checks every build before it goes live, records what the site is made of, and upgrades a site from one version to the next. Any coding agent can drive it: the package ships its own short API guide, llms.txt, for the agent to read.",
+      "commands": [
+        {
+          "command": "npx kiss-ssg check",
+          "does": "builds the site without publishing it and reports every failed page and broken link"
+        },
+        {
+          "command": "npx kiss-ssg aikb",
+          "does": "records the site's knowledge base, so later work can see what changed"
+        },
+        {
+          "command": "npx kiss-ssg@latest upgrade",
+          "does": "installs a new version, checks it really landed, and prints what changed"
+        }
+      ]
+    },
+    {
+      "name": "The skills",
+      "where": "this repository's plugin marketplace, for Claude Code and Codex",
+      "alone": "Step-by-step recipes and web know-how that a coding agent follows: how to start a site, add a page or review one for launch, and how to get the words, structure, search, accessibility, front end and design right. They install on their own, from this repository rather than from npm, and they work in Claude Code and Codex alike."
+    }
+  ],
+  "together": [
+    "A skill holds the judgement, and the engine does the mechanical part. A skill never guesses whether a build worked or what changed: it runs one of the engine's commands and acts on the report.",
+    "The task skills do a job on a site, such as building it, adding a page or upgrading it. When a job needs web expertise, the task skill opens the domain skill that holds it, so each area is written down in one place an expert can review.",
+    "The memory skills keep a site's history. Each piece of work starts with what it is meant to do, is checked against that as it goes, and ends with a short reflection. The next session, or the next developer, reads that record instead of starting cold."
+  ],
+  "plugins": [
+    {
+      "name": "kiss-ssg",
+      "summary": "Building, checking, reviewing and upgrading a site, and the web expertise those jobs call on.",
+      "groups": [
+        {
+          "title": "Task skills",
+          "intro": "Each does one job on a site.",
+          "skills": [
+            {
+              "name": "kiss-site-new",
+              "does": "Builds a new site from a description, or adds a whole new section to one."
+            },
+            {
+              "name": "kiss-site-import",
+              "does": "Turns a page you already have into a site and keeps its look: a Claude or ChatGPT artifact, a live page, an HTML file."
+            },
+            {
+              "name": "kiss-page-add",
+              "does": "Adds or updates a page on a site that is already set up, following the page most like it."
+            },
+            {
+              "name": "kiss-build-check",
+              "does": "Checks that the site builds without publishing it, and reads the report: failed pages, broken links, the launch audit."
+            },
+            {
+              "name": "kiss-site-review",
+              "does": "Reviews a site for launch: the build's audit, then every domain skill's review, in one report by priority, before anything is fixed."
+            },
+            {
+              "name": "kiss-site-migrate",
+              "does": "Upgrades a site to a new kiss-ssg version: installs it with the upgrade command, works through each change it lists, and proves the site still builds the way it did."
+            }
+          ]
+        },
+        {
+          "title": "Domain skills",
+          "intro": "Each holds one area of web expertise. The task skills open them when a job needs them; you can also ask for one by name.",
+          "skills": [
+            {
+              "name": "kiss-writing-for-the-web",
+              "does": "The words on the site: page copy, headings, links and buttons, form labels and errors, titles and descriptions. Never invents a fact about the business."
+            },
+            {
+              "name": "kiss-information-architecture",
+              "does": "How the site is organised: which pages exist, how they are grouped and named, the navigation, breadcrumbs and URLs."
+            },
+            {
+              "name": "kiss-seo",
+              "does": "Being found in Google and AI search: titles and descriptions, robots.txt and AI crawlers, structured data, sitemap dates, and the work only the owner can do."
+            },
+            {
+              "name": "kiss-accessibility",
+              "does": "Building and reviewing to WCAG 2.2 AA: labels, the skip link, keyboard focus, contrast, target size, zoom and motion."
+            },
+            {
+              "name": "kiss-front-end",
+              "does": "The markup, CSS and scripts the site ships: image sizes, built-in browser features before script, phones, touch, and sideways scrolling."
+            },
+            {
+              "name": "kiss-design",
+              "does": "The look of the site and the craft under it, including a design lift for a site that looks generated or unfinished."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "kiss-memory",
+      "summary": "A memory for a site: what it is, what each piece of work was for, and what was learned.",
+      "groups": [
+        {
+          "title": "Memory skills",
+          "intro": "They work on the knowledge base the engine records, and on one short session log per piece of work.",
+          "skills": [
+            {
+              "name": "kiss-site-brief",
+              "does": "Catches you up on a site: what it is, how it is built, what changed lately, what is still open and what to watch out for."
+            },
+            {
+              "name": "kiss-branch-open",
+              "does": "Writes down what a change is meant to do before any of it is done, then starts the branch for it."
+            },
+            {
+              "name": "kiss-branch-pulse",
+              "does": "A checkpoint during the work: checks the build, compares the changes with what was planned, and decides whether to go on, adjust or finish."
+            },
+            {
+              "name": "kiss-branch-close",
+              "does": "Finishes a piece of work: checks the build against the plan, records the knowledge base, writes the reflection and pushes."
+            },
+            {
+              "name": "kiss-branch-merged",
+              "does": "Tidies up after the pull request merges: confirms the merge, brings the base branch up to date, and removes only what this piece of work created."
+            },
+            {
+              "name": "kiss-memory-consolidate",
+              "does": "Between pieces of work, folds the lessons that keep coming back into the site's own notes, and fixes notes that have gone stale."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -47,6 +47,14 @@ kiss
     version,
   })
   .page({
+    view: 'skills.hbs',
+    model: 'skills.json',
+    title: 'Skills',
+    description:
+      'kiss comes in two parts: the kiss-ssg engine, and the skills for Claude Code and Codex that a coding agent follows to build, check, review and remember a site. Each is useful alone; together they make kiss.',
+    version,
+  })
+  .page({
     view: 'examples.hbs',
     model: 'examples.json',
     title: 'Examples',

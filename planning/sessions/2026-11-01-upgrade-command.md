@@ -104,6 +104,19 @@ scope the contract names. Agents never commit: the operator's diff review is the
   (`AIKB/upstream.md`). npm's own `ENOWORKSPACES` now blocks the install, and `--plan` still
   reads. Claude chose this to match the operator's shrinkwrap call, and the operator has not
   overruled it.
+- **2026-11-01, at `/branch-close`, paused before the version bump: the skills on the docs
+  site.** The operator asked that, before the close, the documentation website say what the
+  skills are. The repository is two parts, the kiss static site generator and the skills that
+  accompany it. The skills install on their own and are useful, and the site has to tell
+  people how the parts combine into "the kiss experience".
+  - **Claude found** that the site names skills only in its install lines and two example
+    prompts: nothing describes the two plugins, each skill, or how they combine with the
+    engine.
+  - **Operator's decisions:** do it on this branch. The page claims "each part useful alone,
+    best together", describing value rather than a measured claim about non-kiss sites.
+  - **The bump:** the operator chose a patch (2.8.8) over the proposed minor (2.9.0). The reason
+    was not yet given when the close paused; it is asked again when the close resumes. The close
+    reruns from the top, because this adds commits.
 
 ## Pulse log
 
