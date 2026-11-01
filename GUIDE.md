@@ -1325,6 +1325,27 @@ npx kiss-ssg --version
 
 Every refusal is one line on stderr with exit code 1, never a stack trace. A skill that needs these commands first checks the installed kiss-ssg has them: `npx kiss-ssg session --help` prints usage when it does.
 
+### Upgrading a site
+
+`kiss-ssg upgrade` installs a kiss-ssg release into the site in the current folder, checks that it really landed, and prints the upgrade notes between the version the site had and the new one. Run it by version, so npx fetches the release you mean: a site's own older kiss-ssg has no `upgrade` command.
+
+```bash
+npx kiss-ssg@latest upgrade --plan          # where the site is, what it would run, the notes; installs nothing
+npx kiss-ssg@latest upgrade                 # install, check, print the notes
+npx kiss-ssg@latest upgrade --plan --from 2.6.2   # the notes since 2.6.2, when it cannot tell
+npx kiss-ssg@latest upgrade --json          # the same as JSON on stdout; npm's output goes to stderr
+```
+
+**What it installs.** `kiss-ssg@<its own version>`, exactly, into whichever of `dependencies` and `devDependencies` already holds kiss-ssg (`devDependencies` when neither does). That replaces a `file:` link, a URL or a git dependency. A plain `npm install` after a `file:` spec is edited keeps the link to the working tree, which is why the command names the version.
+
+**What it checks afterwards**, and the exit code it gives: `node_modules/kiss-ssg` is that version and not a link to a working tree; `package.json`'s range allows it; and `package-lock.json` pins it from the registry npm is configured for (`npm config get registry`, so a private registry passes and a GitHub tarball does not). Each line prints as `ok:` or `FAILED:` with the fix; any `FAILED` exits 1. A site already on the version passes the same checks and installs nothing.
+
+**The notes** are every `### Upgrading` section of `CHANGELOG.md` after the site's version, up to and including the new one, oldest first; a release with none is counted, not printed. The site's version is, in order: `--from`, the installed copy, the committed lockfile's version when the installed copy already equals the new one (a site `npm update` moved), and the floor of `package.json`'s range. A `node_modules/kiss-ssg` linked to a working tree has no release version, so the notes start from nothing unless `--from` names one. A v1 site is pointed at this guide's § Migrating from v1 instead.
+
+**When it refuses**, it writes nothing and exits 1: no `package.json`, or an installed registry release newer than itself. **When it will not install**, `--plan` still prints the notes and says why: uncommitted changes to `package.json` or the lockfile (so the upgrade is the only change in them), a git failure other than "not a repository", or a pnpm, yarn or `npm-shrinkwrap.json` lockfile, which it does not drive or verify; install by hand, then read the notes with `--plan --from <old version>`.
+
+After it, run `npx kiss-ssg check <script> --summary` before changing anything, and work the notes. The `kiss-site-migrate` skill is that method.
+
 ### Other methods
 
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is Markdown rendered to HTML and then compiled, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only. That is what makes a code sample work without hand-escaping:

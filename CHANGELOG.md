@@ -914,9 +914,11 @@ for the look; kiss keeps the structure.
 ### Upgrading: the audit's first run
 
 Nothing new fails, but every build says more, and a site on `^2` gets it
-without asking. Expect `audit` lines on the first build after upgrading: every
-shipped example fired `og-image-missing`, `favicon-missing` and
-`not-found-missing` the first time the audit ran over it.
+without asking. Every non-dev build whose pages all succeeded logs one `info`
+line, `Audit: N pages, M findings`, then one `notice` line per check that
+fired. Expect them on the first build after upgrading: every shipped example
+fired `og-image-missing`, `favicon-missing` and `not-found-missing` the first
+time the audit ran over it.
 
 - **The report gains a key.** `audit` is appended last, after `outputs`, on
   `report()`, `err.report` and every `kiss-ssg check` report. Tooling that

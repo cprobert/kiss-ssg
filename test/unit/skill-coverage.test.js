@@ -12,6 +12,14 @@ import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
 // .feed() before this table existed. Add a row when a public feature lands.
 const root = path.resolve(import.meta.dirname, '../..')
 const skill = (plugin, name) => `plugins/${plugin}/skills/${name}/SKILL.md`
+// Since 2.9.0 a release's upgrade note lives in CHANGELOG.md under
+// `### Upgrading`, which `kiss-ssg upgrade` prints to a site moving across
+// that release, and kiss-site-migrate holds only the method. A row that used
+// to pin a note in the skill pins it here instead. That makes it a record
+// rather than a guard: a released entry is not rewritten, so the row says the
+// note was carried across and keeps it from being cut, not that a new
+// release remembered one (test/unit/changelog.test.js does that).
+const CHANGELOG = 'CHANGELOG.md'
 const WRITING = 'plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md'
 const BROWSER_PASS = 'plugins/kiss-ssg/skills/kiss-site-review/browser-pass.md'
 const REVIEW_PROTOCOL =
@@ -85,7 +93,7 @@ const COVERAGE = [
     feature: 'the 2.7.5 upgrade note: .md copies, and llms.txt links them',
     pattern:
       /2\.7\.5[\s\S]*`llms\.txt` now links the copies[\s\S]*markdownCopies: false/,
-    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+    skills: [CHANGELOG],
   },
   // The 2026-09-27 clean-room agent: router.js uses import and top-level
   // await, and `npm init -y` writes "type": "commonjs", so a literal follower's
@@ -126,18 +134,27 @@ const COVERAGE = [
   {
     feature: 'folder safety — dedicated source and no cleanup-policy bypass',
     pattern: /dedicated[\s\S]*cleanBuild: false/,
-    skills: [
-      skill('kiss-ssg', 'kiss-site-new'),
-      skill('kiss-ssg', 'kiss-site-migrate'),
-    ],
+    skills: [skill('kiss-ssg', 'kiss-site-new'), CHANGELOG],
   },
   // Found on six of six sites during the 2.5.0 fleet upgrade: after a `file:`
-  // link is repinned to a range, a plain `npm install` keeps the link. The
-  // upgrade skill is the one place an upgrading agent reads.
+  // link is repinned to a range, a plain `npm install` keeps the link. Since
+  // 2.9.0 `kiss-ssg upgrade` installs in a way that replaces it and fails
+  // with this line when one survives; the skill has to tell an agent that
+  // line is the fix to run, not noise to work past.
   {
     feature:
-      'upgrade: a file: link survives a plain npm install after the pin changes',
-    pattern: /"link": true/,
+      'upgrade: a file: link that survives the install is the command failing, not noise',
+    pattern: /FAILED: node_modules\/kiss-ssg is still a link/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
+  // 2.9.0: the command is the upgrade. Run by version (the site's own older
+  // bin has none), read with --plan first, and told --from where it cannot
+  // tell: a fleet site junctioned to a working tree, or one npm update moved.
+  {
+    feature:
+      'kiss-ssg upgrade: by version, --plan first, --from when it cannot tell',
+    pattern:
+      /^(?=[\s\S]*npx kiss-ssg@latest upgrade --plan\n)(?=[\s\S]*--plan --from)(?=[\s\S]*unknown command)/,
     skills: [skill('kiss-ssg', 'kiss-site-migrate')],
   },
   // 2.5.1: a page can name another URL as its canonical. The page-add skill is
@@ -147,24 +164,24 @@ const COVERAGE = [
     pattern: /canonical: 'https:\/\//,
     skills: [skill('kiss-ssg', 'kiss-page-add')],
   },
-  // 2.5 fails builds that used to pass, in three places. The upgrade skill is
-  // the only thing a consuming agent reads when a site breaks on upgrade, so
-  // each break has to be findable there by the error text the author is
-  // actually looking at — not by a description of it.
+  // 2.5 fails builds that used to pass, in three places. Each break has to be
+  // findable in the upgrade note by the error text the author is actually
+  // looking at — not by a description of it. The note `kiss-ssg upgrade`
+  // prints is the one a consuming agent reads when a site breaks on upgrade.
   {
     feature: 'upgrade: a missing {{asset}} path now fails the build',
     pattern: /is not in the build/,
-    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+    skills: [CHANGELOG],
   },
   {
     feature: 'upgrade: a Sass compile error now fails the build',
     pattern: /<sass:/,
-    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+    skills: [CHANGELOG],
   },
   {
     feature: 'upgrade: a _-prefixed Sass file is no longer compiled standalone',
     pattern: /do not compile standalone/,
-    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+    skills: [CHANGELOG],
   },
   {
     feature: 'upgrade: run `kiss-ssg check` before changing anything',
@@ -515,8 +532,8 @@ const COVERAGE = [
   {
     feature: 'the 2.8.0 upgrade note: three audit checks, advisory',
     pattern:
-      /2\.8\.0: three more audit checks[\s\S]*`viewport-zoom-lock`[\s\S]*`href-hash`[\s\S]*`fragment-missing`/,
-    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+      /### Upgrading: three more audit checks[\s\S]*`viewport-zoom-lock`[\s\S]*`href-hash`[\s\S]*`fragment-missing`/,
+    skills: [CHANGELOG],
   },
   // 2026-10-12, from the same trial: the floors a new site keeps whatever
   // look frontend-design chooses. The first exists because frontend-design
@@ -586,21 +603,24 @@ const COVERAGE = [
     skills: [skill('kiss-ssg', 'kiss-build-check')],
   },
   // A minor reaches every ^2 site unasked, and this one adds lines to every
-  // build log and a key to every record.
+  // build log and a key to every record. In the changelog the ignore list is
+  // the config block (`ignore: [`) and an unknown id "throws when the site
+  // starts", the same facts the skill stated as `audit: { ignore` and
+  // "throws at construction".
   {
     feature:
       'upgrade: the launch-readiness audit — log lines, report key, ignore',
     pattern:
-      /^(?=[\s\S]*launch-readiness audit)(?=[\s\S]*`Audit: )(?=[\s\S]*last-build\.json)(?=[\s\S]*audit: \{ ignore)(?=[\s\S]*audit: false)(?=[\s\S]*throws at construction)/,
-    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+      /^(?=[\s\S]*launch-readiness audit)(?=[\s\S]*`Audit: )(?=[\s\S]*last-build\.json)(?=[\s\S]*ignore: \[)(?=[\s\S]*audit: false)(?=[\s\S]*throws when the site\s+starts)/,
+    skills: [CHANGELOG],
   },
   // Operator decision 2026-09-27, found by the audit: the default title was
   // "Index" on every page that set none. A site that relied on it sees every
   // such page's <title> change on upgrade, and has to be told why.
   {
     feature: 'upgrade: the default page title is the page’s own slug',
-    pattern: /default title[\s\S]*"Index"[\s\S]*own slug/,
-    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+    pattern: /default title `Index`[\s\S]*own slug/,
+    skills: [CHANGELOG],
   },
   // Operator decision 2026-09-27: Anthropic's frontend-design skill is an
   // optional companion. It sets the look; kiss keeps the structure — and never
@@ -811,6 +831,15 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: "2.9.0: a release's upgrade note lives in CHANGELOG.md, which `kiss-ssg upgrade` prints, and kiss-site-migrate holds the method only; a per-release section in the skill, or a doc sending a reader to one, is the second unchecked copy that grew the skill to 31k characters",
+    patterns: [
+      // The old skill's per-release headings (§ 0, § 0a … § 0j).
+      /^### 0[a-z]?\. /m,
+      /`kiss-site-migrate` skill's §/,
+      /kiss-site-migrate[^\n]*with the upgrade note each version/,
+    ],
+  },
   {
     why: '2026-10-31: isActive exposes {{@current}}, the exact page, beside {{active}}, so a nav link asks it once; a doc that says to ask it twice teaches the shape that replaced',
     patterns: [

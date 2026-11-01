@@ -120,6 +120,8 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 `npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code; build the audit's checks in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. Every flag: `npx kiss-ssg --help`. GUIDE.md § Checking a build (the report, the audit, `KISS_*` variables), § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell.
 
+`npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed (not a link, and pinned in package.json and the lockfile), and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
+
 ## Docs
 
 - [README.md](README.md): the agent quick start: `init`, the plugin install, prompts to copy.

@@ -104,3 +104,20 @@ describe('CHANGELOG.md upgrade notes', () => {
     expect(silent).toEqual([])
   })
 })
+
+// The rule that sent a release's note into the kiss-site-migrate skill as
+// well, which grew the skill to 31k characters of unchecked changelog copy.
+// These two files sit outside skill-coverage's CONTRADICTIONS walk (it reads
+// only what ships), so the old sentence is banned here.
+describe('the repo rules send upgrade notes to the changelog only', () => {
+  it.each(['CLAUDE.md', '.claude/skills/branch-close/SKILL.md'])(
+    '%s no longer puts a note in kiss-site-migrate',
+    (file) => {
+      const text = fs.readFileSync(path.join(root, file), 'utf8')
+      expect(text).not.toMatch(
+        /upgrade note in `CHANGELOG\.md` and in the `kiss-site-migrate` skill/,
+      )
+      expect(text).toMatch(/### Upgrading/)
+    },
+  )
+})
