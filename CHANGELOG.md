@@ -3,6 +3,16 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.7 — 2026-11-01
+
+Skills only: nothing changes in how a site builds.
+
+- **Every kiss skill's description is 400 characters or fewer**: what the skill does, the phrases
+  that call it, and what it is not for. Every session on a kiss site loads these descriptions into
+  its skill list, whose budget is about 1% of the context, so the two plugins now cost about 1,750
+  est. tokens there instead of about 2,970. The same tasks still reach the same skills: 24
+  routing runs on three real sites matched every time.
+
 ## 2.8.6 — 2026-11-01
 
 SEO best practice for 2026, built in. Nothing fails, but `sitemap.xml` changes on every site that
