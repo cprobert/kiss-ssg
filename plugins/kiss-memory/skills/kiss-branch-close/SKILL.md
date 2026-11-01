@@ -1,6 +1,6 @@
 ---
 name: kiss-branch-close
-description: Finish a piece of work on a kiss-ssg site — verify the build diff against the intent captured at kiss-branch-open, prove the site's knowledge base was kept up (notes for every controller, URL model and pipeline step the change touched), record and commit `AIKB/`, write the reflection into the session file, and push. Use when asked to "close the branch", "wrap this up", "we're done, ship it", "finish this change", or "write the retrospective" on a kiss-ssg site. Opens a pull request only when asked.
+description: Finish a piece of work on a kiss-ssg site — verify the build diff against the captured intent, check the knowledge base kept up, record AIKB/, write the reflection, push. Use for "close the branch", "wrap this up", "we're done, ship it", "finish this change", "write the retrospective". Opens a pull request only when asked.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

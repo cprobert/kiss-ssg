@@ -1,6 +1,6 @@
 ---
 name: kiss-branch-merged
-description: Tidy up after a piece of work on a kiss-ssg site has been merged — confirm the merge really happened and holds every local commit, bring the base branch up to date, check that the merged site still builds to the knowledge base kiss-branch-close recorded, delete the local branch, prune, and remove only the worktree the session file names. Use when told "it's merged", "the PR was merged", "squashed and merged", "clean up after the merge", or after kiss-branch-close once the pull request has gone in. The last beat after kiss-branch-open, kiss-branch-pulse and kiss-branch-close.
+description: Tidy up after a kiss-ssg site's pull request merges — confirm the merge holds every local commit, update the base, check the site still builds to the recorded knowledge base, delete the branch, prune, remove only the session's worktree. Use for "it's merged", "the PR was merged", "squashed and merged", "clean up after the merge".
 allowed-tools: Read, Bash, Glob, Grep, AskUserQuestion
 ---
 

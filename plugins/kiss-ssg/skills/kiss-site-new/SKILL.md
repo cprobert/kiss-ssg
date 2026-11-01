@@ -1,6 +1,6 @@
 ---
 name: kiss-site-new
-description: Build a new static site with kiss-ssg from a description of what it should contain, or add a whole new section to an existing site (its own model, controller and view pattern). Use when scaffolding a kiss-ssg site from scratch, doing kiss-ssg initial setup, or when asked to "make a site with kiss", "set up kiss-ssg", "initialise a kiss-ssg site", or "write the build script for this site". For adding or updating a single page on a site that is already set up, use the kiss-page-add skill instead. If the person already HAS a working page — a Claude or ChatGPT artifact, an exported page, a hand-written HTML file — they want kiss-site-import, which keeps what it looks like rather than rebuilding it from a description.
+description: Build a new kiss-ssg site from a description, or add a whole new section with its own model, controller and view. Use for "make a site with kiss", "set up kiss-ssg", "initialise a kiss-ssg site", "write the build script for this site". For one page on an existing site, use kiss-page-add; for a working page or artifact to keep, kiss-site-import.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: kiss-site-review
-description: Review a kiss-ssg site for launch — the build's launch-readiness audit, then each domain skill's review (accessibility, front end, design, SEO, the words) in one prioritised report before anything is fixed, then an optional design lift. Use when asked to "review the site", "is this site ready to launch", "is it ready to go live", "does this look finished", "run a launch checklist", "do a polish pass", "usability audit", or when a kiss build passes but the site still looks rough. For a build that fails, use kiss-build-check first.
+description: Review a kiss-ssg site for launch — the build's audit, then every domain skill's review, in one prioritised report before anything is fixed, then an optional design lift. Use for "review the site", "is it ready to launch", "ready to go live", "does this look finished", "launch checklist", "polish pass", "usability audit". For a build that fails, use kiss-build-check first.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

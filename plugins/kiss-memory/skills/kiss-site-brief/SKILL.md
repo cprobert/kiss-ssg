@@ -1,6 +1,6 @@
 ---
 name: kiss-site-brief
-description: Brief a developer returning to (or joining) a kiss-ssg site — what it is, how it is built, what changed lately, what was left open, what bites. Use when asked to "catch me up", "what is this site", "remind me how this site works", "I haven't touched this in months", "onboard me to this repo", "who is this site for", or when starting work in an unfamiliar project that has `node_modules/kiss-ssg` installed. Not for verifying a build (use kiss-build-check) or for starting a piece of work (use kiss-branch-open).
+description: Brief a developer returning to or joining a kiss-ssg site — what it is, how it is built, what changed lately, what is open, what bites. Use for "catch me up", "what is this site", "remind me how this site works", "I haven't touched this in months", "onboard me", or when starting in a project with node_modules/kiss-ssg. Not for a build check or for starting work (kiss-branch-open).
 allowed-tools: Read, Bash, Glob, Grep
 ---
 

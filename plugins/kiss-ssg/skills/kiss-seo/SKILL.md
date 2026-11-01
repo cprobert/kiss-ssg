@@ -1,6 +1,6 @@
 ---
 name: kiss-seo
-description: Make a kiss-ssg site findable in Google and in AI search — titles and descriptions, noindex not disallow, robots.txt and AI crawlers, structured data, town pages, sitemap dates, and the owner's off-site work. Use for "SEO", "Google", "ranking", "search results", "page title", "meta description", "noindex", "robots.txt", "sitemap", "structured data", "schema", "rich results", "FAQ schema", "AI search", "AI Overviews", "ChatGPT", "AI crawlers", "llms.txt", "local SEO", or when a page is added or renamed. Not for body copy (kiss-writing-for-the-web).
+description: Make a kiss-ssg site findable in Google and AI search — titles, descriptions, noindex, robots.txt and AI crawlers, structured data, town pages, sitemap dates, the owner's off-site work. Use for "SEO", "Google", "ranking", "meta description", "robots.txt", "sitemap", "schema", "rich results", "AI search", "ChatGPT", "llms.txt", "local SEO", or when a page is added or renamed. Not for body copy.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

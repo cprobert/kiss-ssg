@@ -1,6 +1,6 @@
 ---
 name: kiss-design
-description: The look of a kiss-ssg site and the craft under it — when and how to bring in Anthropic's frontend-design skill for the visual direction while kiss keeps the structure, the measured design checks (weights that render, colours that mean one thing, hover and press that show, no line ending on one word, readable line length, consistency across templates, nothing that looks clickable and is not), and the design lift for an existing site. Use when asked to "give the site a lift", "freshen up the design", "make it look better", "why does this look AI-generated", "why does this look templated", "does this look finished", or when setting a new site's look. kiss-site-new calls it to set the look, and kiss-site-review calls it to review and for the lift. Not for accessibility (kiss-accessibility) or the words (kiss-writing-for-the-web).
+description: The look of a kiss-ssg site and the craft under it — when to bring in frontend-design, the measured design checks, and a design lift for an existing site. Use for "give the site a lift", "make it look better", "looks AI-generated", "looks templated", "does this look finished", or when setting a new site's look. Not for accessibility (kiss-accessibility) or the words (kiss-writing-for-the-web).
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: kiss-front-end
-description: Build and review the markup, CSS and scripts a kiss-ssg site ships — image sizes and lazy loading, the order to reach for interactivity (the platform's own <details>, popover and <dialog> before any script, then Alpine's CSP build), full-screen heroes on phones, named transitions, hover kept off touch screens, no sideways scroll from 100vw or long strings, external links, and lists that work at 0 and 1 items. Use when asked about "front-end best practice", "performance", "lazy loading images", "layout shift", "add an accordion / a dropdown / a modal", "should I use JavaScript for this", "the page scrolls sideways on mobile", "hover sticks on my phone", or when writing a layout, a partial or the stylesheet. kiss-site-new and kiss-page-add call it to build, and kiss-site-review calls it to review. Not for accessibility (kiss-accessibility), the look (kiss-design) or the words (kiss-writing-for-the-web).
+description: Build and review the markup, CSS and scripts a kiss-ssg site ships — image sizes and lazy loading, platform elements before script, heroes on phones, hover on touch, sideways scroll, lists at 0 and 1. Use for "front-end", "performance", "layout shift", "accordion", "modal", "dropdown", "scrolls sideways on mobile", or when writing a layout. Not for accessibility, the look or the words.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

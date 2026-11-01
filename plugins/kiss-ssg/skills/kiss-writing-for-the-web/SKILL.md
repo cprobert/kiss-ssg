@@ -1,6 +1,6 @@
 ---
 name: kiss-writing-for-the-web
-description: Write, review or rewrite the words on a kiss-ssg site — page copy, headings, link and button text, form labels, hints and error messages, empty states, the 404 page, product and service descriptions, titles and meta descriptions, and notification or email text — to evidence-based web-writing practice (NN/g, GOV.UK, Baymard, WCAG, Google Search Central). Use when asked to "write the copy", "improve the wording", "make this page clearer", "is this copy any good", "rewrite this page", "write the error messages", "what should this button say", "make it more scannable", "it sounds like AI wrote it", or when copy in a model, view or Markdown page needs writing or checking. kiss-site-new, kiss-page-add and kiss-site-import call it to write a site's words, and kiss-site-review calls it to review them; for a whole launch review, use kiss-site-review. Not for chat replies, code documentation or the site's README.
+description: Write, review or rewrite the words on a kiss-ssg site — page copy, headings, links and buttons, form labels and errors, empty states, the 404 page, titles and descriptions. Use for "write the copy", "improve the wording", "make this clearer", "rewrite this page", "what should this button say", "it sounds like AI wrote it". For a launch review, use kiss-site-review. Not for chat or code docs.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

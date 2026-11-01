@@ -1,6 +1,6 @@
 ---
 name: kiss-information-architecture
-description: Decide and review how a kiss-ssg site is structured — which pages it has and what type each is, how they group into sections and what each group is called, the navigation layers (global, section, utility, related links, footer), how a reader knows where they are, breadcrumbs, the URL scheme, categories and tags, orphan pages, and the 404 page as a way back in. Use when asked about "information architecture", "IA", "site structure", "the pages a site needs", "navigation", "menu structure", "nav labels", "breadcrumbs", "URL structure", "categories", "taxonomy", "tags", "orphan pages" or "restructure the site", or when planning a new site's pages or adding a section. kiss-site-new and kiss-page-add call it to build, and kiss-site-review calls it to review. Not for the wording of a label or a page (kiss-writing-for-the-web), titles, descriptions and search (kiss-seo), aria-current and landmarks (kiss-accessibility), the mobile menu's mechanics (kiss-front-end), or how the nav looks (kiss-design).
+description: Decide and review how a kiss-ssg site is structured — its pages and sections and their names, navigation layers, where-am-I, breadcrumbs, URLs, categories and tags, orphan pages. Use for "information architecture", "site structure", "navigation", "menu", "nav labels", "breadcrumbs", "URL structure", "taxonomy", "orphan pages", or planning a site's pages. Not for wording, search or the nav's look.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

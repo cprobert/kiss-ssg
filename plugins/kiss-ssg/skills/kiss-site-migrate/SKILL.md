@@ -1,6 +1,6 @@
 ---
 name: kiss-site-migrate
-description: Upgrade a site built on kiss-ssg across any version boundary — a v1 to v2 migration, or a minor release that changed what a folder or a default means. Use when a project's build script targets an older kiss-ssg than the installed one, when an upgrade fails with an unhandled AggregateError or silently empty output, or when asked to "upgrade kiss", "migrate to kiss-ssg v2", "migrate kiss-ssg", "update kiss-ssg", or "why did my kiss site break after the upgrade".
+description: Upgrade a kiss-ssg site across versions — v1 to v2, or a release that changed what a folder or a default means. Use when a build script targets an older kiss-ssg, an upgrade fails with an AggregateError or empty output, or for "upgrade kiss", "migrate to kiss-ssg v2", "update kiss-ssg", "my kiss site broke after the upgrade".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
