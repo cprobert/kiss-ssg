@@ -210,6 +210,89 @@ describe('kiss-ssg upgrade', () => {
     expect(run.installs).toEqual([])
   })
 
+  // Codex review (2026-11-01): in a workspace the lockfile npm uses is the
+  // root's, and a member's own stale one hid the root's uncommitted change.
+  // `npm prefix` would name the root, but npm 11.9 redacts a UUID-like path
+  // segment in its output (AIKB/upstream.md), so a member is not driven at
+  // all: npm's own ENOWORKSPACES blocks the install, before either lockfile
+  // is read or written, and the message says to install from the root.
+  it('blocks the install in a workspace member, and --plan still reads', () => {
+    const s = setUp({ gitInit: false })
+    const root = path.join(temp, 'ws')
+    const member = path.join(root, 'packages', 'site')
+    fs.mkdirSync(path.dirname(member), { recursive: true })
+    fs.renameSync(s.site, member)
+    fs.writeFileSync(
+      path.join(root, 'package.json'),
+      JSON.stringify({ name: 'ws', private: true, workspaces: ['packages/*'] }),
+    )
+    // The member's stale lockfile stays in place; the root's is the real one.
+    fs.copyFileSync(
+      path.join(member, 'package-lock.json'),
+      path.join(root, 'package-lock.json'),
+    )
+    const g = (...args) =>
+      spawnSync('git', args, { cwd: root, encoding: 'utf8' })
+    g('init', '-q')
+    g('add', '.')
+    g(
+      '-c',
+      'user.name=test',
+      '-c',
+      'user.email=test@example.com',
+      '-c',
+      'commit.gpgsign=false',
+      'commit',
+      '-q',
+      '-m',
+      'ws',
+    )
+    fs.appendFileSync(path.join(root, 'package-lock.json'), '\n')
+    const run = upgrade({ ...s, site: member })
+    expect(run.status).toBe(1)
+    expect(run.stderr).toMatch(/workspace member.*workspace's root/)
+    expect(run.installs).toEqual([])
+    const plan = upgrade({ ...s, site: member }, ['--plan'])
+    expect(plan.status, plan.stderr).toBe(0)
+    expect(plan.stdout).toMatch(/install blocked: .*workspace member/)
+    expect(plan.stdout).toContain("## 2.6.4 — Upgrading: the audit's first run")
+  })
+
+  it('does not inherit an unrelated lockfile from a folder above the project', () => {
+    const s = setUp({ gitInit: false })
+    fs.rmSync(path.join(s.site, 'package-lock.json'))
+    // An entry the old walk-up would have read, and warned about.
+    fs.writeFileSync(
+      path.join(temp, 'package-lock.json'),
+      JSON.stringify({
+        lockfileVersion: 3,
+        packages: {
+          '': {},
+          'site/node_modules/kiss-ssg': {
+            version: '9.9.9',
+            resolved: `${REGISTRY}kiss-ssg/-/kiss-ssg-9.9.9.tgz`,
+          },
+        },
+      }),
+    )
+    const run = upgrade(s, ['--plan'])
+    expect(run.status, run.stderr).toBe(0)
+    expect(run.stdout).not.toMatch(/package-lock\.json says/)
+  })
+
+  // Codex review: `npm config get registry` fails in a workspace member
+  // (ENOWORKSPACES), and the command substituted npmjs for the answer.
+  it('blocks the install when npm cannot say which registry it uses, and --plan still reads', () => {
+    const s = setUp()
+    const run = upgrade(s, [], { FAKE_NPM_REGISTRY_FAIL: '1' })
+    expect(run.status).toBe(1)
+    expect(run.stderr).toMatch(/could not say which registry.*EPERM/)
+    expect(run.installs).toEqual([])
+    const plan = upgrade(s, ['--plan'], { FAKE_NPM_REGISTRY_FAIL: '1' })
+    expect(plan.status, plan.stderr).toBe(0)
+    expect(plan.stdout).toMatch(/install blocked: .*registry/)
+  })
+
   it('refuses a registry release newer than itself', () => {
     const s = setUp({ installed: '99.0.0' })
     const run = upgrade(s)

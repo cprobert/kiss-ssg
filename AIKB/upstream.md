@@ -223,6 +223,24 @@ development tool, so the split is stated in `CLAUDE.md` and `.nvmrc` pins the
 development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
 whether kiss's own floor has moved past it.
 
+### npm redacts a UUID-like path segment in `npm prefix`, and `npm config` refuses a workspace member
+
+**Observed (npm 11.9.0, Windows, 2026-11-01):** run from a workspace member, `npm prefix`
+prints the workspace root, but with a path segment that looks like a UUID replaced by `***`
+(the folder was a Claude Code session scratchpad, `…\C--Code-kiss-ssg\<uuid>\scratchpad\ws`).
+The printed path does not exist, so a process started in it fails with `ENOENT`. In the same
+member, `npm config get registry` exits 1 with `ENOWORKSPACES` ("This command does not support
+workspaces"). **Effect:** `npm prefix` cannot be trusted for the project root wherever a
+path holds such a segment (temp folders, CI workspaces), and a member has no registry answer.
+**What kiss does:** `kiss-ssg upgrade` does not call `npm prefix`. The project is the folder it
+runs in, and its lockfile is that folder's own. A workspace member is recognised by npm's own
+`ENOWORKSPACES`, and the install is blocked with the command to run from the workspace's root;
+`--plan` still prints the notes (`AIKB/upgrade.md`). Re-implementing npm's workspace
+resolution to support members would be the mechanism this file exists to avoid. **Re-check:**
+in a folder whose path has a UUID segment, make a root `package.json` with
+`"workspaces": ["packages/*"]` and a `packages/site/package.json`, then from `packages/site` run
+`npm prefix` (is the path whole?) and `npm config get registry` (does it still exit 1?).
+
 ### domino's type declaration names the wrong module
 
 **Observed:** `@mixmark-io/domino` 2.2.0 (turndown 7.2.4's DOM, imported directly

@@ -6,7 +6,11 @@
 // Environment:
 //   FAKE_NPM_LOG        a file each call's argv is appended to, one JSON line
 //   FAKE_NPM_REGISTRY   what `config get registry` prints
+//   FAKE_NPM_REGISTRY_FAIL  fail `config get registry` (exit 1) wherever it runs
 //   FAKE_NPM_KEEP_LINK  leave a link in place, as a plain `npm install` does
+// Like the real npm (11.9, measured 2026-11-01), `config get registry` fails
+// with ENOWORKSPACES in a folder some ancestor's package.json declares
+// `workspaces` for; this fake treats any ancestor declaring them that way.
 //   FAKE_NPM_FAIL       exit 1 from `install`
 // @test-exempt: test fixture, exercised by test/integration/upgrade.test.js
 import fs from 'node:fs'
@@ -17,7 +21,30 @@ if (process.env.FAKE_NPM_LOG)
   fs.appendFileSync(process.env.FAKE_NPM_LOG, `${JSON.stringify(args)}\n`)
 const registry = process.env.FAKE_NPM_REGISTRY ?? 'https://registry.npmjs.org/'
 
+const inWorkspace = () => {
+  for (let dir = path.dirname(process.cwd()); ; dir = path.dirname(dir)) {
+    try {
+      const pkg = JSON.parse(
+        fs.readFileSync(path.join(dir, 'package.json'), 'utf8'),
+      )
+      if (pkg.workspaces) return true
+    } catch {
+      /* no package.json here */
+    }
+    if (path.dirname(dir) === dir) return false
+  }
+}
 if (args[0] === 'config' && args[1] === 'get' && args[2] === 'registry') {
+  if (inWorkspace()) {
+    console.error('npm error code ENOWORKSPACES')
+    console.error('npm error This command does not support workspaces.')
+    process.exit(1)
+  }
+  if (process.env.FAKE_NPM_REGISTRY_FAIL) {
+    console.error('npm error code EPERM')
+    console.error('npm error operation not permitted, open .npmrc')
+    process.exit(1)
+  }
   console.log(registry)
   process.exit(0)
 }

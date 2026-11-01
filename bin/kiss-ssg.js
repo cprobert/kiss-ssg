@@ -82,20 +82,23 @@ if (process.argv[2] === 'upgrade') {
     }
   }
   const slash = (p) => p.split(path.sep).join('/')
-  // The lockfile nearest above the site, the way npm finds it: in a
-  // workspace it is the root's, not the member's (the critique, measured),
-  // and npm-shrinkwrap.json wins over package-lock.json beside it (Codex).
+  // The project is the folder upgrade runs in, and its lockfile is that
+  // folder's own. Walking up to the nearest lockfile read a workspace
+  // member's root, or an unrelated parent's (Codex review, 2026-11-01).
+  // `npm prefix` would name a member's root, but npm 11.9 redacts a UUID-like
+  // path segment in its output (AIKB/upstream.md); a member is instead
+  // stopped by npm's own ENOWORKSPACES from `config get registry` below.
+  const project = cwd
+  // npm-shrinkwrap.json wins over package-lock.json beside it (Codex).
   const findLock = () => {
-    for (let dir = cwd; ; dir = path.dirname(dir)) {
-      for (const name of [
-        'npm-shrinkwrap.json',
-        'package-lock.json',
-        'pnpm-lock.yaml',
-        'yarn.lock',
-      ])
-        if (fs.existsSync(path.join(dir, name))) return { dir, name }
-      if (path.dirname(dir) === dir) return null
-    }
+    for (const name of [
+      'npm-shrinkwrap.json',
+      'package-lock.json',
+      'pnpm-lock.yaml',
+      'yarn.lock',
+    ])
+      if (fs.existsSync(path.join(project, name))) return { dir: project, name }
+    return null
   }
   const readPkg = () => {
     const pkg = readJson(path.join(cwd, 'package.json'))
@@ -162,11 +165,25 @@ if (process.argv[2] === 'upgrade') {
   } catch {
     /* an unreadable committed lockfile tells us nothing */
   }
+  // In a workspace member `npm config` fails with ENOWORKSPACES, which is
+  // how a member is recognised. A failure is reported, never replaced with
+  // npmjs (Codex review, 2026-11-01).
+  const registryRun = npm(['config', 'get', 'registry'], {
+    cwd: project,
+    encoding: 'utf8',
+  })
   const registry =
-    String(
-      npm(['config', 'get', 'registry'], { cwd, encoding: 'utf8' }).stdout ??
-        '',
-    ).trim() || 'https://registry.npmjs.org/'
+    (registryRun.status === 0 && String(registryRun.stdout ?? '').trim()) ||
+    null
+  const registryError = registry
+    ? null
+    : (
+        String(registryRun.stderr ?? '')
+          .split('\n')
+          .find((l) => /\bcode\b/.test(l)) ??
+        String(registryRun.stderr ?? '').split('\n')[0] ??
+        `exit ${registryRun.status}`
+      ).trim() || `exit ${registryRun.status}`
   const plan = planUpgrade({
     own: {
       version: readJson(path.join(own, 'package.json')).version,
@@ -183,6 +200,7 @@ if (process.argv[2] === 'upgrade') {
         : null,
     git: gitState,
     registry,
+    registryError,
   })
   const print = (result) => {
     if (args.json) console.log(JSON.stringify({ ...plan, ...result }, null, 2))

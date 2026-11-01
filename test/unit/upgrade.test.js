@@ -573,6 +573,36 @@ describe('planUpgrade', () => {
     expect(plan.notes.length).toBeGreaterThan(0)
   })
 
+  // Codex review (2026-11-01): a registry npm could not name was replaced
+  // with npmjs, so a private registry's correct lockfile then failed the
+  // check. Unknown is a reason not to install, never a default.
+  it('blocks the install when npm could not say which registry it uses', () => {
+    const over = {
+      registry: null,
+      registryError: 'npm error code EPERM',
+    }
+    expect(planUpgrade(facts(over)).refuse).toMatch(
+      /could not say which registry.*EPERM/,
+    )
+    const plan = planUpgrade(
+      facts({ ...over, args: { ...facts().args, plan: true } }),
+    )
+    expect(plan.blocked).toMatch(/registry/)
+    expect(plan.notes.length).toBeGreaterThan(0)
+  })
+
+  it('names a workspace member as one, and says to install from the root', () => {
+    const plan = planUpgrade(
+      facts({
+        registry: null,
+        registryError: 'npm error code ENOWORKSPACES',
+      }),
+    )
+    expect(plan.refuse).toMatch(
+      /workspace member.*npm install kiss-ssg@2\.9\.0 -w .*workspace's root/,
+    )
+  })
+
   it('reads the committed lockfile with --plan after npm update moved it', () => {
     const plan = planUpgrade(
       facts({
