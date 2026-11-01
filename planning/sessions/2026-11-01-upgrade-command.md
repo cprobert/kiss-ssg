@@ -78,6 +78,19 @@ scope the contract names. Agents never commit: the operator's diff review is the
 
 - **2026-11-01, at the open: the command also installs** (Claude recommended a read-only report).
   The operator's reason: no reason given.
+- **2026-11-01, after the contract critique** (`planning/plans/2026-11-01-upgrade-command.md` §
+  Amendments).
+  - npm's latest is 2.8.0, and 2.8.1–2.8.7 were never published. The operator says this is
+    deliberate, and `upgrade` installs from the registry only.
+  - Criterion 2's regression test is an opt-in test (`KISS_NETWORK_TESTS=1`) against the real
+    registry. It is seen red and then green on this machine, with both runs in the Pulse log.
+    The gates use a fake `npm`.
+  - The fleet arm and the clean room install this branch's 2.9.0 from a verdaccio running in the
+    scratchpad. Nothing is published to npm.
+  - The fleet copy's `node_modules` holds 2.5.0 although its lockfile says 2.6.2, so the arm
+    really starts from 2.5.0.
+  - The command gains `--from <version>`, for a site that broke after an upgrade it did not run.
+    That is scope added by the critique.
 
 ## Pulse log
 
