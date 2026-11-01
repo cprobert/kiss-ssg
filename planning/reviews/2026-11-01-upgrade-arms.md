@@ -72,3 +72,41 @@ Total: $1.55. Session criteria: **8 met** (`fleet-new`) and **9 met** (`cleanroo
 - **One site, already in good shape for an upgrade.** No note required a code change. A site
   that hits a note's failure (a `package` key, a SCORM page, a section-wide `aria-current`) is the
   bench that would show whether the method holds under a real fix.
+
+## Run 2: the same arms after the fixes (HEAD `5cea21b`)
+
+The engine was re-packed from `5cea21b` as 2.9.0. That includes:
+
+- the three fixes from run 1 (`25d9eb2`);
+- the Codex fixes for workspaces and the registry (`27c6e7e`);
+- the `/code-review` fixes (`5cea21b`).
+
+The old 2.9.0 was removed from the scratchpad registry's storage before the new pack was
+published. The served tarball's sha512 matched the local pack. Every copy was rebuilt from
+source, with the same briefs, caps and settings. Run 1's transcripts are kept in the
+scratchpad's `w4/run1/`. Each arm ran once: a signal, not a verdict. The real swan-love was
+clean afterwards.
+
+| Arm         | Reached                                                                                                                                                                     | Cost, time   |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `fleet-old` | As in run 1: the old manual steps, then `upgrade --plan --from 2.6.2` found through the 2.9.0 note; `check` ok, 11 unchanged; not committed (the local registry)            | $0.65, 112 s |
+| `fleet-new` | `kiss-ssg 2.5.0 → 2.9.0 (from installed)`, the lockfile disagreement printed, every note worked, `check` ok, 11 unchanged, `AIKB/` re-recorded; **asked before committing** | $0.43, 77 s  |
+| `cleanroom` | Link replaced; three `ok:` lines; `diff -r` against a pre-upgrade build empty; `AIKB/` recorded; **asked before committing**; five guesses listed                           | $0.35, 65 s  |
+
+Total: $1.43. Criteria 8 and 9 are still met.
+
+**Run 1's three findings, checked against the run 2 transcripts:**
+
+1. **Committing unasked: gone.** Neither new-skill arm ran `git commit`. Both ended with "say if
+   you want it committed" (`fleet-new`) and "Want me to commit them?" (`cleanroom`).
+2. **Checks filtered away: gone.** `fleet-new` again piped the install run through a filter
+   (`grep -v '^##\|^$'`, a narrower one than run 1's). The three `ok:` lines, now unindented and
+   last, came through: its transcript holds `ok: node_modules/kiss-ssg is 2.9.0, not a link` and
+   the two others.
+3. **"Unknown" for a linked tree: named.** `cleanroom`'s `--plan` printed "The tree it links to
+   says 2.8.7: if the site was last built against that, pass --from 2.8.7", and the next call
+   was `--plan --from 2.8.7`. It still listed the starting version as a guess, which is honest:
+   a tree can carry unreleased changes.
+
+**Still true of the harness:** both fleet arms and the clean room flagged the local registry in
+the lockfile as a reason not to deploy as is. A real upgrade against npmjs would not raise it.
