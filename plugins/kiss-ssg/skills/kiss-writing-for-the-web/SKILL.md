@@ -58,6 +58,8 @@ Ask "must the reader know this now?" before "how short can this be?".
 
 **Plain, factual language.** Familiar words, active voice, short sentences. Replace adjectives with facts the reader can check ("Battery lasts up to 18 hours of video playback", not "outstanding all-day battery life"). Cut marketese and generated-sounding filler ("world-class", "seamless", "Let's dive in", "It's not just X, it's Y"); [references/ai-and-marketing-tells.md](references/ai-and-marketing-tells.md) lists what to look for. Keep a necessary technical, medical or legal term and explain it; never change one only to lower a reading score.
 
+**Say what only this business can say.** A page that repeats what every other plumber's or trainer's page says gives a reader, a search engine and an AI answer nothing to choose it for: Google asks for "original" content with "first-hand experience", and AI answers drop a passage that only repeats one they already have. So ask the owner for the facts only they hold: jobs done and where, real prices and what they include, how long things take, what clients came for and what changed, the method and why. Put them on the page that owns them, in the owner's words. Never fill the gap with a generic sentence that sounds specific, and never invent one (§ Never invent a fact): a missing first-hand fact is a placeholder and a question in the hand-over.
+
 **Accessible words.** A link makes sense out of context ("Download the price list (PDF)", never "Click here"). An error is said in text, not colour alone. A control has a name a screen reader can say.
 
 **Search follows the reader.** Write in the words people use for the thing; where those words go (the title, the description, the headings) is the `kiss-seo` skill's.

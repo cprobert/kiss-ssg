@@ -31,6 +31,7 @@ This skill holds what a model tends to get wrong: facts that changed recently, m
   - **Earns nothing in Google:** `FAQPage` (deprecated 2026-05, its documentation removed 2026-06), `HowTo` (2023), Course info and learning video (2025), the sitelinks search box (2024). Truthful markup of these does no harm, but it is not a reason to write an FAQ.
   - **Never** `AggregateRating` or `Review` about the business on its own `Organization` or `LocalBusiness`: Google gives no stars for reviews a business shows about itself. In the UK, fake or cherry-picked reviews are also illegal (DMCC Act, in force 2025-04-06).
   - Structured data is not a ranking factor; it decides how a result can look.
+- **The hand-over names what only the owner can do off the site,** because for a small business it often counts for more than anything in the build: a Google Business Profile under the real trading name, with the same phone, hours and service areas as the site; reviews there from real customers (asked for, never bought or filtered); listings in the local directories and "best of" pages for the trade; and the same name and details on every profile the site's `sameAs` names. AI answers name businesses that other sites mention, and Google's local ranking counts links and reviews. Say it once, briefly, and never claim the site does it.
 - **Dates move only when content does.** A page's visible date, its `dateModified` and its sitemap `<lastmod>` (the page's `updated` or `date`, `node_modules/kiss-ssg/GUIDE.md` § .sitemap()) change when its content changes, never on a rebuild or a restyle. Google lists "changing page dates without substantive updates" as a warning sign.
 
 ## Review mode
@@ -45,3 +46,4 @@ The audit's search checks are `kiss-site-review` step 1's, with their fixes; quo
 - **robots.txt:** a block on a search crawler the owner did not ask for, and whether the site sits behind a CDN that blocks AI crawlers.
 - **Structured data** that states a fact the page does not show, uses a type that earns nothing as if it did, or puts review stars on the business itself.
 - **Dates** that moved on pages whose content did not.
+- **Pages with nothing only this business could say:** service pages a competitor could publish unchanged. The fix is questions for the owner, not new copy (`kiss-writing-for-the-web`).
