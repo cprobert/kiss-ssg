@@ -3,6 +3,7 @@ branch: chore/skills-on-fleet-sites
 base: main
 status: closed
 opened: 2026-10-31
+consolidated: 2026-11-01
 ---
 
 # Session — 2026-10-31: Testing the kiss-ssg skills on the real fleet sites

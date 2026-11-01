@@ -13,7 +13,7 @@ This is supervised collaboration: the pulse is where the human steers and verifi
 
 ## When to use
 
-Run `/branch-pulse` mid-branch, as often as it earns its keep, while the branch is `status: open`. Do **not** run it on the base branch, and it is **not** a substitute for `/branch-close` (it runs the cheap check subset, never the full gate battery).
+Run `/branch-pulse` mid-branch, as often as it earns its keep, while the branch is `status: open`, and always after an Amendment or a multi-round review: each moves the work away from the criteria the last pulse checked. Five logs found the big change verified only at the close because the pulse came before it (2026-09-21 to 2026-10-30, counted in the 2026-10-31 log); the two branches since that pulsed after each slice and amendment held it. Do **not** run it on the base branch, and it is **not** a substitute for `/branch-close` (it runs the cheap check subset, never the full gate battery).
 
 ---
 
@@ -85,6 +85,7 @@ Name **one** artefact this branch has changed that a gate structurally cannot ju
 - a regenerated signature in `types/kiss.d.ts` that a consuming site will hover
 - a rendered colour, a piece of copy, a live-reload round trip
 - a performance claim re-measured while you watch — a number you only read is a report, not a check
+- a shipped skill's `SKILL.md`, read end to end — on a branch that changes a skill this is the artefact, and it was left unread or deferred on three branches running (the information-architecture and writing skills, 2026-10-30; `kiss-seo` twice, 2026-11-01). When the operator is away from the desk, send the file to their device rather than taking "not now": the 2026-11-01 read happened on a phone
 
 Then **stop and ask** with AskUserQuestion: did you look, and what did you see? Do not answer it for them, and do not accept your own summary as the answer — Claude reporting that Claude's output looks right is the loop this step breaks.
 

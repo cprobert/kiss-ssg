@@ -3,6 +3,7 @@ branch: feat/kiss-writing-for-the-web
 base: main
 status: closed
 opened: 2026-10-30
+consolidated: 2026-11-01
 ---
 
 # Session — 2026-10-30: kiss-writing-for-the-web, the first domain skill

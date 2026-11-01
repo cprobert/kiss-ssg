@@ -3,6 +3,7 @@ branch: ccr-f6af9894-zy0ccy
 base: main
 status: closed
 opened: 2026-10-30
+consolidated: 2026-11-01
 ---
 
 # Session — 2026-10-30: kiss-information-architecture, the sixth domain skill
