@@ -97,6 +97,13 @@ scope the contract names. Agents never commit: the operator's diff review is the
   skill names were kept because `skill-coverage.test.js` records a clean-room agent that followed
   a skill `llms.txt` did not name. `init`'s npm call now shares `upgrade`'s spawn helper: the same
   Windows rule, written once.
+- **2026-11-01, after the operator's Codex review (`27c6e7e`): a workspace member is blocked,
+  not supported.** This reverses the critique's walk-up-to-the-root's-lockfile amendment. The
+  walk read a member's stale lockfile, or an unrelated parent's. The intended fix, `npm prefix`,
+  was disproved by the real npm 11.9, which redacts a UUID-like path segment in its output
+  (`AIKB/upstream.md`). npm's own `ENOWORKSPACES` now blocks the install, and `--plan` still
+  reads. Claude chose this to match the operator's shrinkwrap call, and the operator has not
+  overruled it.
 
 ## Pulse log
 
@@ -172,6 +179,26 @@ scope the contract names. Agents never commit: the operator's diff review is the
   guarded only by the "every minor has a note" shape test. The operator said keep.
 
   Decision: continue, to W4.
+
+- **2026-11-01** — W4 and three more review rounds, recorded at the close.
+  - **W4 run 1** (`dd213a6`): criteria 8 and 9 met, $1.55. The arms found three issues, all
+    fixed in `25d9eb2`:
+    - an unasked commit;
+    - indented checks that a filter dropped;
+    - "unknown" for a linked tree whose version the command knew.
+  - **The operator's Codex review** found two P2s on workspaces and the registry, fixed in
+    `27c6e7e`; the Amendment above records the workspace decision.
+  - **The operator's `/code-review`** found ten. 1–8 and 10 were fixed in `5cea21b`, by the
+    operator's choice; #9, a delay rather than a wrong answer, was left. The class: the bin's
+    decisions moved into `lib/upgrade.js` with unit tests (#7). Every fix in these rounds was
+    seen red first.
+  - **W4 run 2** (`9b8a748`), against `5cea21b`: criteria 8 and 9 still met, $1.43, and run 1's
+    three findings are gone in the transcripts.
+  - **The launch:** the operator launched the arms; Claude's launch with
+    `--dangerously-skip-permissions` was refused by the permission check. Run 2 was launched by
+    Claude at the operator's explicit request.
+
+  Decision: close.
 
 ---
 
