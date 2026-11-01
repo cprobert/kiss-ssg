@@ -28,6 +28,14 @@ import {
 import { formatReport } from '../lib/build-report.js'
 import { runSession } from '../lib/sessions.js'
 import { runBase } from '../lib/base.js'
+import { GitError, git, tryGit } from '../lib/git.js'
+import {
+  UPGRADE_HELP,
+  formatUpgrade,
+  parseUpgradeArgs,
+  planUpgrade,
+  verifyUpgrade,
+} from '../lib/upgrade.js'
 import {
   INIT_HELP,
   describeAction,
@@ -45,6 +53,165 @@ if (process.argv[2] === 'session' || process.argv[2] === 'base') {
   if (result.err) console.error(result.err)
   if (result.out) console.log(result.out)
   process.exit(result.code)
+}
+
+// npm is npm.cmd on Windows, which Node will not spawn without a shell, and a
+// shell given an argument array prints DEP0190 on every run. One command
+// string instead: the only values in it are our own version and flags.
+const npm = (args, options) =>
+  process.platform === 'win32'
+    ? spawnSync(`npm ${args.join(' ')}`, { ...options, shell: true })
+    : spawnSync('npm', args, options)
+
+// `upgrade` installs this kiss-ssg into the site and checks it landed. Every
+// decision is lib/upgrade.js's; this gathers the facts, runs npm and prints.
+if (process.argv[2] === 'upgrade') {
+  const args = parseUpgradeArgs(process.argv.slice(3))
+  if (args.error || args.help) {
+    if (args.error) console.error(`kiss-ssg: ${args.error}\n`)
+    ;(args.error ? console.error : console.log)(UPGRADE_HELP)
+    process.exit(args.error ? 1 : 0)
+  }
+  const cwd = process.cwd()
+  const own = path.join(import.meta.dirname, '..')
+  const readJson = (file) => {
+    try {
+      return JSON.parse(fs.readFileSync(file, 'utf8'))
+    } catch {
+      return null
+    }
+  }
+  const slash = (p) => p.split(path.sep).join('/')
+  // The lockfile nearest above the site, the way npm finds it: in a
+  // workspace it is the root's, not the member's (the critique, measured).
+  const findLock = () => {
+    for (let dir = cwd; ; dir = path.dirname(dir)) {
+      for (const name of ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock'])
+        if (fs.existsSync(path.join(dir, name))) return { dir, name }
+      if (path.dirname(dir) === dir) return null
+    }
+  }
+  const readPkg = () => {
+    const pkg = readJson(path.join(cwd, 'package.json'))
+    const section = /** @type {const} */ ([
+      'dependencies',
+      'devDependencies',
+    ]).find((s) => pkg?.[s]?.['kiss-ssg'])
+    return {
+      found: pkg !== null,
+      section: section ?? null,
+      spec: section ? pkg[section]['kiss-ssg'] : null,
+    }
+  }
+  const readState = () => {
+    const engine = describeEngine({ cwd })
+    const found = findLock()
+    let lock = null
+    if (found?.name === 'package-lock.json') {
+      const file = path.join(found.dir, found.name)
+      const key = slash(
+        path.relative(
+          found.dir,
+          engine
+            ? path.resolve(cwd, engine.dir)
+            : path.join(cwd, 'node_modules', 'kiss-ssg'),
+        ),
+      )
+      const packages = readJson(file)?.packages ?? {}
+      lock = {
+        path: slash(path.relative(cwd, file)),
+        key,
+        entry: packages[key] ?? packages['node_modules/kiss-ssg'] ?? null,
+      }
+    }
+    return { engine, found, lock }
+  }
+  const before = readState()
+  const pkgPaths = ['package.json', ...(before.lock ? [before.lock.path] : [])]
+  /** @type {import('../lib/upgrade.js').UpgradeFacts['git']} */
+  let gitState
+  try {
+    git(['rev-parse', '--is-inside-work-tree'], { cwd })
+    const dirty = git(['status', '--porcelain', '--', ...pkgPaths], { cwd })
+      .split('\n')
+      .filter(Boolean)
+    gitState = dirty.length
+      ? { state: 'dirty', files: dirty.map((l) => l.slice(3)) }
+      : { state: 'clean' }
+  } catch (err) {
+    // "Not a repository" is an answer; anything else git said is not, and
+    // carrying on would skip the check (CLAUDE.md: an empty answer is unknown).
+    gitState =
+      err instanceof GitError && /not a git repository/i.test(err.message)
+        ? { state: 'not-a-repo' }
+        : { state: 'error', said: err.message }
+  }
+  const committed = before.lock
+    ? tryGit(['show', `HEAD:./${before.lock.path}`], cwd)
+    : null
+  let committedLockVersion = null
+  try {
+    const packages = committed ? JSON.parse(committed).packages : null
+    committedLockVersion = packages?.[before.lock.key]?.version ?? null
+  } catch {
+    /* an unreadable committed lockfile tells us nothing */
+  }
+  const registry =
+    String(
+      npm(['config', 'get', 'registry'], { cwd, encoding: 'utf8' }).stdout ??
+        '',
+    ).trim() || 'https://registry.npmjs.org/'
+  const plan = planUpgrade({
+    own: {
+      version: readJson(path.join(own, 'package.json')).version,
+      changelog: fs.readFileSync(path.join(own, 'CHANGELOG.md'), 'utf8'),
+    },
+    args,
+    pkg: readPkg(),
+    engine: before.engine,
+    lock: before.lock,
+    committedLockVersion,
+    otherLockfile:
+      before.found && before.found.name !== 'package-lock.json'
+        ? before.found.name
+        : null,
+    git: gitState,
+    registry,
+  })
+  const print = (result) => {
+    if (args.json) console.log(JSON.stringify({ ...plan, ...result }, null, 2))
+    else
+      (plan.refuse ? console.error : console.log)(formatUpgrade(plan, result))
+  }
+  if (plan.refuse || args.plan) {
+    print({ ran: null, verified: null })
+    process.exit(plan.refuse ? 1 : 0)
+  }
+  let ran = null
+  if (plan.install) {
+    ran = `npm ${plan.install.args.join(' ')}`
+    console.error(`kiss-ssg: ${ran}`)
+    // npm's own output goes to stderr, so stdout stays the report (--json).
+    const result = npm(plan.install.args, { cwd, stdio: ['inherit', 2, 2] })
+    if (result.status !== 0) {
+      console.error(
+        `kiss-ssg: ${ran} failed (exit ${result.status}). If a dev server or watcher is running on this site it may hold node_modules open: stop it and run the upgrade again`,
+      )
+      process.exit(1)
+    }
+  }
+  const after = readState()
+  const verified = verifyUpgrade(
+    {
+      engine: after.engine,
+      lock: after.lock,
+      registry,
+      savedSpec: ran ? readPkg().spec : null,
+    },
+    plan.to,
+  )
+  print({ ran, verified })
+  process.exit(verified.ok ? 0 : 1)
 }
 
 if (process.argv[2] === '--version' || process.argv[2] === '-v') {
@@ -229,18 +396,11 @@ if (process.argv[2] === 'init') {
     }
     console.log(describeAction(action))
     if (action.kind === 'install') {
-      // npm is npm.cmd on Windows, which Node will not spawn without a shell,
-      // and a shell given an argument array prints DEP0190 on every run. One
-      // command string instead: the only value in it is our own version.
-      const command = `npm install --save-dev ${action.spec}`
-      const npm =
-        process.platform === 'win32'
-          ? spawnSync(command, { cwd, stdio: 'inherit', shell: true })
-          : spawnSync('npm', ['install', '--save-dev', action.spec], {
-              cwd,
-              stdio: 'inherit',
-            })
-      if (npm.status !== 0) {
+      const installed = npm(['install', '--save-dev', action.spec], {
+        cwd,
+        stdio: 'inherit',
+      })
+      if (installed.status !== 0) {
         console.error(
           `kiss-ssg: npm install --save-dev ${action.spec} failed; run it yourself before building`,
         )
