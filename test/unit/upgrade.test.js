@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  GUARDED_FILES,
   changelogEntries,
   chooseLockfile,
   compareVersions,
@@ -35,6 +36,16 @@ describe('the facts the bin gathers', () => {
       'pnpm-lock.yaml',
     )
     expect(chooseLockfile(has())).toBeNull()
+  })
+
+  // Codex at the close: a deleted lockfile is an uncommitted change, so git
+  // is asked about every file the install writes, existing or not.
+  it('GUARDED_FILES names every file the install writes, existing or not', () => {
+    expect(GUARDED_FILES).toEqual([
+      'package.json',
+      'package-lock.json',
+      'npm-shrinkwrap.json',
+    ])
   })
 
   // Finding 1: describeEngine walks up, so a parent folder's copy read as

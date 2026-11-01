@@ -309,6 +309,18 @@ describe('kiss-ssg upgrade', () => {
     expect(run.stdout).toMatch(/^kiss-ssg 2\.6\.2 → .*\(from package\.json\)/)
   })
 
+  // Codex review at the close (2026-11-01): git was asked only about a
+  // lockfile that exists, so a deleted-but-uncommitted one read as clean and
+  // the install wrote a fresh one into the user's pending change.
+  it('blocks the install when a tracked lockfile was deleted and not committed', () => {
+    const s = setUp()
+    fs.rmSync(path.join(s.site, 'package-lock.json'))
+    const run = upgrade(s)
+    expect(run.status).toBe(1)
+    expect(run.stderr).toMatch(/uncommitted changes in package-lock\.json/)
+    expect(run.installs).toEqual([])
+  })
+
   it('refuses a registry release newer than itself', () => {
     const s = setUp({ installed: '99.0.0' })
     const run = upgrade(s)

@@ -202,6 +202,14 @@ export function formatUpgrade(plan: UpgradePlan, result: {
     ran: string | null;
     verified: ReturnType<typeof verifyUpgrade> | null;
 } | null): string;
+/**
+ * The files git is asked about before an install, by name, whether or not
+ * they exist now: a tracked lockfile deleted and not committed is an
+ * uncommitted change too, and asking only about the lockfile on disk missed
+ * it, so the install wrote a fresh one into the user's pending change (Codex,
+ * at the close, 2026-11-01). These are the files the install writes.
+ */
+export const GUARDED_FILES: string[];
 export const UPGRADE_HELP: "kiss-ssg upgrade [--plan] [--from <version>] [--json]\n\n  Install this kiss-ssg into the site in this folder, check that it landed,\n  and print the CHANGELOG.md upgrade notes between the version the site had and\n  this one. Run it by version, so npx fetches the one you mean rather than the\n  site's own older copy, which has no upgrade command:\n\n    npx kiss-ssg@latest upgrade --plan     read the notes first\n    npx kiss-ssg@latest upgrade            install, verify, print the notes\n\n  It installs kiss-ssg@<this version> into the section package.json already\n  uses (devDependencies when neither), which replaces a file: link, a URL or a\n  git dependency. It then checks that node_modules/kiss-ssg is not a link to a\n  working tree, is this version, and that package-lock.json resolves it from\n  the registry npm is configured for.\n\n  It refuses, and writes nothing, when there is no package.json or when the\n  installed kiss-ssg is a registry release newer than this one. It will not\n  install when the site uses pnpm, yarn or an npm-shrinkwrap.json, when it is\n  an npm workspace member, when npm cannot say which registry it uses, when\n  package.json or package-lock.json has uncommitted changes, or when git fails;\n  --plan still prints the notes then, and says why the install is blocked.\n\n  --plan             print the notes and what it would run; install nothing\n  --from <version>   the version the site was on, when it cannot tell: a link\n                     to a working tree, or a site already upgraded by npm\n                     update. It changes which notes print, never what installs\n  --json             print { from, to, install, verified, notes, ... }\n  --help             this text\n\nExits 1 when it refused, npm failed, or the check after the install failed.";
 export type Version = {
     major: number;

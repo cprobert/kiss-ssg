@@ -14,6 +14,7 @@
 - `specAllows(spec, version)` — whether npm would install `version` for that range, by semver's rules: prereleases only from a prerelease range on the same version, and `^0.0.x` as that patch only.
 - `saveFlag(section)` — `--save-prod` or `--save-dev`, so every command printed keeps kiss-ssg in its section.
 - `chooseLockfile(exists)`, `ownEngine(engine)`, `gitStateFrom({ error, dirty })`, `registryFrom(run)` — the decisions about the facts the bin gathers: which lockfile wins, the site's own engine only, what git's answer means, the registry or npm's error.
+- `GUARDED_FILES` — the files git is asked about before an install, by name, whether or not they exist: `package.json`, `package-lock.json`, `npm-shrinkwrap.json`. A tracked lockfile deleted and not committed is an uncommitted change; asking only about the lockfile on disk missed it, and the install wrote a fresh one into the pending change (Codex, at the close, 2026-11-01).
 - `parseUpgradeArgs(argv)` — `--plan`, `--from <version>`, `--json`, `--help`.
 - `planUpgrade(facts)` — the plan: `from` (and where it came from), `to`, the npm arguments or `null`, a refusal or `null`, `blocked`, `v1`, warnings, the notes.
 - `verifyUpgrade(after, to, flag)` — `{ ok, checks }`: the check after the install, its fixes in `flag`'s section.

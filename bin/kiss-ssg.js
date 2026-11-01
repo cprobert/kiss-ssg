@@ -30,6 +30,7 @@ import { runSession } from '../lib/sessions.js'
 import { runBase } from '../lib/base.js'
 import { GitError, git, tryGit } from '../lib/git.js'
 import {
+  GUARDED_FILES,
   UPGRADE_HELP,
   chooseLockfile,
   formatUpgrade,
@@ -118,12 +119,11 @@ if (process.argv[2] === 'upgrade') {
     return { engine, lockfile, lock }
   }
   const before = readState()
-  const pkgPaths = ['package.json', ...(before.lock ? [before.lock.path] : [])]
   let gitError = null
   let dirty = []
   try {
     git(['rev-parse', '--is-inside-work-tree'], { cwd })
-    dirty = git(['status', '--porcelain', '--', ...pkgPaths], { cwd })
+    dirty = git(['status', '--porcelain', '--', ...GUARDED_FILES], { cwd })
       .split('\n')
       .filter(Boolean)
       .map((l) => l.slice(3))
