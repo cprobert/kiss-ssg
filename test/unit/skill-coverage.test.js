@@ -18,6 +18,23 @@ const REVIEW_PROTOCOL =
   'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
 
 const COVERAGE = [
+  // 2.9.0: a Disallow: / under a training-only token no longer counts as the
+  // site leaving search, so the skill that answers "stop AI scraping us" has
+  // to tell the training tokens from the search crawlers, and a sitemap's
+  // lastmod comes from the page's own date, which the skill must keep honest.
+  {
+    feature:
+      'AI crawlers: training tokens are not search crawlers, blocked with .robots({ agents })',
+    pattern:
+      /`GPTBot`[\s\S]*`ClaudeBot`[\s\S]*`OAI-SearchBot`[\s\S]*`Claude-SearchBot`[\s\S]*\.robots\(\{ agents/,
+    skills: [skill('kiss-ssg', 'kiss-seo')],
+  },
+  {
+    feature:
+      'a page date moves only with its content: updated / date / lastmod',
+    pattern: /`<lastmod>`[\s\S]*`updated`[\s\S]*never on a rebuild/,
+    skills: [skill('kiss-ssg', 'kiss-seo')],
+  },
   // Learning packages: a page added to a course's lesson joins its package by
   // naming it, needs an id (the LMS keeps learners' records by it), and in a
   // SCORM package does not link to its fellow members. The skill that adds a

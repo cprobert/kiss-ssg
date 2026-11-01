@@ -64,7 +64,7 @@ The expertise lives in the domain skills; this skill runs them and merges what t
 - **[`kiss-accessibility`](../kiss-accessibility/SKILL.md)**: labels, focus, the skip link, the current page, contrast, targets, zoom, motion, content without script.
 - **[`kiss-front-end`](../kiss-front-end/SKILL.md)**: long strings and sideways scroll, the hero height, transitions, hover on touch, `100vw`, lists at 0 and 1, external links.
 - **[`kiss-design`](../kiss-design/SKILL.md)**: consistency, things that look clickable, weights, colour meaning, hover and press, lines ending on one word, line length.
-- **[`kiss-seo`](../kiss-seo/SKILL.md)**: titles, descriptions, headings, robots.txt, competing and moved pages, structured data.
+- **[`kiss-seo`](../kiss-seo/SKILL.md)**: titles, descriptions, competing pages, town pages, robots.txt and AI crawlers, structured data types, dates.
 - **[`kiss-information-architecture`](../kiss-information-architecture/SKILL.md)**: orphan pages, nav labels, one name per concept, depth, where-am-I, breadcrumbs, URLs, tag variants.
 - **[`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md)**: the words, meaning demo and placeholder copy, invented facts, links and buttons, the 404 page, empty states, the line about personal details.
 

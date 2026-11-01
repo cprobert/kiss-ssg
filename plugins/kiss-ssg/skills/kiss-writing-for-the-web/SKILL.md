@@ -23,6 +23,8 @@ This rule comes before every other, in build mode and in review mode. **Never in
 - **keep every placeholder visible on the page**, so a launch with one still in it is obvious to whoever looks;
 - list every placeholder for the owner when you hand the work over.
 
+**Who wrote it is a fact too.** A byline, a trainer's name, a qualification or a photo of "the team" is the owner's to give. Never an invented author, an AI-made headshot or a credential nobody stated: Google's guidance treats each as deception (2026), and a reader who checks finds nobody there.
+
 A menu, a price list or a team with no items given gets empty, marked slots, never example items: a believable loaf at a believable price is an invented fact the day the site goes live with it. A section whose items become their own pages or feed entries (news, a blog, events) gets **no placeholder item at all**: kiss would publish a placeholder post as a real URL, in the sitemap and in the feed. The section builds with zero items and shows its empty state (`kiss-front-end`).
 
 A design skill or a template that asks for "realistic" or "organic" sample data, or tells you to "come up with copy and placeholder content", is the trap. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it. A business name read off the domain is a guess: use it, and say in the hand-over that it needs confirming. A sum the owner did not state (a total of two yearly fees, a weekday worked out from a date) is a new fact too: leave it out or mark it.

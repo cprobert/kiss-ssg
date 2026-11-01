@@ -318,6 +318,30 @@ page inside a section. It is private data, like `@index`, so it hides no key of 
 - Check it the way the change promises: build before and after, and diff the pages. On any
   page, at most one nav link carries `aria-current="page"`, and it points at that page.
 
+### 0j. 2.9.0: the sitemap states only dates a page knows
+
+Nothing fails, but `sitemap.xml` changes on every site. Until 2.9.0 every `<url>` carried the
+time of the build as its `<lastmod>` and `1.00` as its `<priority>`. Google uses `lastmod` only
+when it is consistently accurate and ignores `priority` and `changefreq`, and Bing warns against
+the build time, so a date that moved on every build taught both to ignore it. Now a page's
+`<lastmod>` is its `sitemapLastmod`, else its `updated`, else its `date` (from the page options,
+then the model), and a page with none of them has no `<lastmod>`. `<priority>` and
+`<changefreq>` appear only for a page that sets `sitemapPriority` or `sitemapChangefreq`.
+
+- **Nothing to do for the file to be correct.** A page with no date loses its `<lastmod>`, which
+  is the honest state. Two builds of an unchanged site now write the same `sitemap.xml`.
+- **A page whose content changes over time** (a price list, a timetable, a stockists page) can
+  carry `updated` in its model, set to the day the content last changed. Never set it from the
+  clock in a controller: that is the old behaviour again.
+- **`sitemapPriority` and `sitemapChangefreq` in the router** still work, and Google ignores both.
+  Leave them or remove them; removing them changes nothing in search.
+- **A `.robots()` that blocks `GPTBot`, `ClaudeBot`, `Google-Extended` or `Applebot-Extended`
+  with `disallow: '/'`** no longer logs "robots.txt disallows the whole site" or sets
+  `report().robots.disallowAll`: those tokens control model training, not search. On such a site
+  the report's `robots.disallowAll` goes from `true` to `false`, which is the fix, not a
+  regression.
+- Check it: build, and read `sitemap.xml`. No `<lastmod>` holds the time of the build.
+
 ### 1. Check the floor, then read the recipes
 
 Node ≥22.12 first: v2 will not install or run below it, so bump any pinned dev Node version before touching code.
