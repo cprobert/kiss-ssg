@@ -25,12 +25,12 @@ calls `.sitemap()`: read `kiss-site-migrate` § 0j.
 - **`llms.txt` and the `.md` copies are described as what they are:** an index for agents and tools
   pointed at the site. No search or answer engine documents reading them, and the docs no longer
   say one does.
-- **`kiss-seo` holds what a model gets wrong about SEO in 2026,** in no more words than before: AI search is
+- **`kiss-seo` holds what a model gets wrong about SEO in 2026,** in about half the words, as one checklist that a site is built to and reviewed against: AI search is
   ordinary search; which crawlers to block for "stop AI scraping" and which cost search
   visibility; no page per town without the town's own content; the structured data that still
   earns something (a course list needs three courses) and what earns nothing (`FAQPage`, `HowTo`);
-  dates that move only with content; and the off-site work only the owner can do. Its review is a
-  checklist, every box reported. `kiss-writing-for-the-web` asks the owner for the first-hand facts
+  dates that move only with content; and the off-site work only the owner can do. A review reports
+  every box. `kiss-writing-for-the-web` asks the owner for the first-hand facts
   only they hold, and never invents an author or a credential.
 
 ## 2.8.5 — 2026-10-31

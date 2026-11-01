@@ -32,17 +32,17 @@ const COVERAGE = [
   {
     feature:
       'a page date moves only with its content: updated / date / lastmod',
-    pattern: /`<lastmod>`[\s\S]*`updated`[\s\S]*never on a rebuild/,
+    pattern: /`<lastmod>`[^\n]*`updated`[^\n]*never the build time/,
     skills: [skill('kiss-ssg', 'kiss-seo')],
   },
   // 2026-11-01, the operator: the fleet's other sites are in an unknown
-  // state, so a review works through a tick-box list of the research's key
-  // findings rather than prose an agent can skim past.
+  // state, so the skill is one tick-box list of the research's key findings,
+  // built to and reviewed against, every box reported.
   {
     feature:
-      'kiss-seo review checklist: robots allow-all, lastmod, doorways, structured data types, AI claims, the off-site hand-over',
+      'kiss-seo checklist: robots allow-all, lastmod, doorways, nothing for AI, structured data types, the off-site hand-over',
     pattern:
-      /## Review checklist[\s\S]*- \[ \] `robots\.txt` allows every crawler[\s\S]*- \[ \][^\n]*<lastmod>[\s\S]*- \[ \] No town or area pages[\s\S]*- \[ \] No `FAQPage`[\s\S]*- \[ \] Nothing was added "for AI"[\s\S]*- \[ \] The hand-over names the off-site work/,
+      /report every box[\s\S]*## Checklist[\s\S]*- \[ \] `robots\.txt` allows every crawler[\s\S]*- \[ \][^\n]*<lastmod>[\s\S]*- \[ \] No page per town[\s\S]*add nothing "for AI"[\s\S]*- \[ \] No `FAQPage`[\s\S]*- \[ \] It names the owner's off-site work/,
     skills: [skill('kiss-ssg', 'kiss-seo')],
   },
   // Learning packages: a page added to a course's lesson joins its package by
