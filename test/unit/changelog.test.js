@@ -1,6 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
+import {
+  changelogEntries,
+  compareVersions,
+  parseVersion,
+} from '../../lib/upgrade.js'
 
 const root = path.resolve(import.meta.dirname, '../..')
 
@@ -46,5 +51,56 @@ describe('CHANGELOG.md', () => {
     )
     const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8')
     expect(firstEntryVersion(changelog)).toBe(pkg.version)
+  })
+})
+
+// `kiss-ssg upgrade` prints a site the `### Upgrading` sections between its
+// version and the new one, read by lib/upgrade.js's parser, the one parser of
+// that shape. So the changelog is the one home of upgrade notes, and a note in
+// any other shape is a note the command never prints. This holds the file to
+// the shape, and holds the promise in CLAUDE.md that a minor always says what
+// a site must do, even when the answer is nothing.
+describe('CHANGELOG.md upgrade notes', () => {
+  const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8')
+  const entries = changelogEntries(changelog)
+
+  it('lists its versions newest first', () => {
+    const versions = entries.map((e) => e.version)
+    expect(versions.length).toBeGreaterThan(40)
+    expect(versions).toEqual(
+      [...versions].sort((a, b) => compareVersions(b, a)),
+    )
+  })
+
+  // Every older spelling, so a note cannot be written in a shape the parser
+  // reads as ordinary text: `### Upgrading` is the only heading it prints.
+  it('writes every upgrade note as `### Upgrading` or `### Upgrading: <topic>`', () => {
+    const stray = changelog
+      .split(/\r?\n/)
+      .filter(
+        (line) =>
+          /^#{2,4} .*upgrad/i.test(line) ||
+          /^### ⚠️/.test(line) ||
+          /^\*\*Upgrad(e note|ing\?)/.test(line),
+      )
+      .filter((line) => !/^### Upgrading(: .+)?\s*$/.test(line))
+    expect(stray).toEqual([])
+  })
+
+  // From 2.5.0, the first minor that changed what a site's build means.
+  it('gives every minor from 2.5.0 a note, or says there is nothing to change', () => {
+    const silent = entries
+      .filter((e) => {
+        const v = parseVersion(e.version)
+        return (
+          v &&
+          v.patch === 0 &&
+          v.pre.length === 0 &&
+          compareVersions(e.version, '2.5.0') >= 0
+        )
+      })
+      .filter((e) => e.notes.length === 0 && !e.nothingToChange)
+      .map((e) => e.version)
+    expect(silent).toEqual([])
   })
 })
