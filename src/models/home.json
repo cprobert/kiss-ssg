@@ -175,6 +175,11 @@
     {
       "title": "A memory of the site",
       "text": "npx kiss-ssg aikb records what the site is, so the next session starts from facts rather than guesses."
+    },
+    {
+      "title": "Skills for every job on the site",
+      "text": "kiss's skills give your agent a recipe for each job (a new site, a new page, a launch review, an upgrade) and the web know-how behind it: writing, structure, search, accessibility, front end and design. The skills decide; the engine checks.",
+      "more": { "id": "skills", "text": "What the skills do" }
     }
   ],
   "sites": [
