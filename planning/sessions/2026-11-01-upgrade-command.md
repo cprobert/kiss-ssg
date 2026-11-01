@@ -129,6 +129,25 @@ scope the contract names. Agents never commit: the operator's diff review is the
 
   Decision: continue, to W3.
 
+- **2026-11-01, Codex adversarial review: two passes.** The stop condition, set before the second
+  pass: the scope is `lib/upgrade.js`, the `upgrade` section of `bin/kiss-ssg.js`, and its tests
+  and fake npm; only high and medium findings count; anything lower is recorded here. No pass
+  reported a lower note.
+  - **Pass 1 (`ca05204`).**
+    - _High:_ "current" ignored the lockfile's version.
+    - _Medium:_ the write guards also refused `--plan`. The fix covered the class, including the
+      pnpm refusal, which told the reader to run the very `--plan` it then refused.
+  - **Pass 2 (`36d1b20`).**
+    - _Medium:_ "current" ignored `package.json`. Now `node_modules`, the lockfile and
+      `specAllows` must all agree.
+    - _Medium:_ `npm-shrinkwrap.json` was invisible. It now blocks the install, by the
+      operator's choice over supporting it.
+
+  Every fix was seen red first: 6 + 1 tests in pass 1, 6 + 1 in pass 2. Gates were green after
+  each. Both passes found narrower faces of one class, "current" judged from part of the
+  evidence. The operator stopped the loop there: W4's clean room and fleet arm test the command
+  against the real npm. Decision: W3.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
