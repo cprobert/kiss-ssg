@@ -318,9 +318,9 @@ page inside a section. It is private data, like `@index`, so it hides no key of 
 - Check it the way the change promises: build before and after, and diff the pages. On any
   page, at most one nav link carries `aria-current="page"`, and it points at that page.
 
-### 0j. 2.9.0: the sitemap states only dates a page knows
+### 0j. 2.8.6: the sitemap states only dates a page knows
 
-Nothing fails, but `sitemap.xml` changes on every site. Until 2.9.0 every `<url>` carried the
+Nothing fails, but `sitemap.xml` changes on every site. Until 2.8.6 every `<url>` carried the
 time of the build as its `<lastmod>` and `1.00` as its `<priority>`. Google uses `lastmod` only
 when it is consistently accurate and ignores `priority` and `changefreq`, and Bing warns against
 the build time, so a date that moved on every build taught both to ignore it. Now a page's

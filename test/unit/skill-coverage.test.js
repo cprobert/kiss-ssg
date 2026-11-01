@@ -18,7 +18,7 @@ const REVIEW_PROTOCOL =
   'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
 
 const COVERAGE = [
-  // 2.9.0: a Disallow: / under a training-only token no longer counts as the
+  // 2.8.6: a Disallow: / under a training-only token no longer counts as the
   // site leaving search, so the skill that answers "stop AI scraping us" has
   // to tell the training tokens from the search crawlers, and a sitemap's
   // lastmod comes from the page's own date, which the skill must keep honest.
@@ -883,7 +883,7 @@ const CONTRADICTIONS = [
     ],
   },
   {
-    why: '2.9.0 (planning/reviews/2026-11-01-seo-best-practices-2026.md, C1): a sitemap entry states a lastmod only when the page knows a date, and a priority only when the page sets one, because Google uses lastmod only when it is verifiably accurate and ignores priority; a doc promising the build time or 1.00 as the default describes the file every site used to publish',
+    why: '2.8.6 (planning/reviews/2026-11-01-seo-best-practices-2026.md, C1): a sitemap entry states a lastmod only when the page knows a date, and a priority only when the page sets one, because Google uses lastmod only when it is verifiably accurate and ignores priority; a doc promising the build time or 1.00 as the default describes the file every site used to publish',
     patterns: [
       /`sitemapLastmod` \(default: the current time/,
       /default `sitemapLastmod` changes on every build/,
