@@ -306,3 +306,118 @@ W4. Agents implement inside one row's files, and never commit.
 ## Amendments
 
 <!-- Dated sections, appended. The design above is amended in place only by pointing to these. -->
+
+### 2026-11-01 — after the critique
+
+A fresh-context agent critiqued the contract adversarially. It edited nothing and ran npm
+experiments in a scratchpad, on npm 11.9.0 and Node 24.14. The main session re-checked the
+load-bearing claims locally before writing this:
+
+- `npm view` confirms `latest` is 2.8.0, with nothing published after it.
+- Tags stop at `v2.8.0`.
+- `llms.txt` is 15,993 characters.
+- The `### ⚠️` headings are at 1017, 1035, 1071, 1078 and 1158.
+- The `CONTRADICTIONS` walk covers only `llms.txt`, `README.md`, `GUIDE.md`, `plugins/`,
+  `examples/` and `AIKB/`.
+
+One claim did not hold: `AIKB/kiss-page.md:44` does not name `kiss-site-migrate`. Where this
+section and the design above disagree, this section wins.
+
+**Measured, so Q1 and Q2 are settled.**
+
+- **Q1.** `npx kiss-ssg@latest` runs the registry copy even where a local or linked older copy
+  exists. `@^<installed range>` runs the local one. A1 stands, and the documented form is
+  `npx kiss-ssg@latest upgrade`.
+- **Q2.** A plain `npm install` after the spec is edited keeps a `file:` link
+  (`{resolved:"../tree", link:true}`). `npm install -D kiss-ssg@<spec>` replaces it with the
+  registry tarball. A4 stands. A link's lock entry has no `version`.
+- **The platform is npm 11.9**, not the npm 10 A1 assumed.
+
+**The operator's decisions (2026-11-01).**
+
+- **Publishing only some versions is deliberate**, and `upgrade` installs from the registry only.
+  Patches 2.8.1–2.8.7 were never published, so a site resolving `^2.7.0` gets 2.8.0. Changing the
+  release model is out of scope.
+- **W4 uses a verdaccio run from the scratchpad through npx.** The packed 2.9.0 is published to
+  it, and both arms and the clean room point at it with `npm_config_registry`. Nothing is
+  published to npm, and verdaccio is not a dependency.
+- **Q2's proof is an opt-in test**, `KISS_NETWORK_TESTS=1`, against the real registry and 2.8.0.
+  It is seen red against a plain `npm install` and green against the command's install on this
+  machine, and both runs are recorded in the Pulse log. CI never runs it. The gates use a fake
+  `npm` first on `PATH`.
+
+**Changes to the design.**
+
+- **A3: version.**
+  - Never refuse on version when the engine is a link, or when `from` is ahead of npm. A linked
+    tree's version is not a release.
+  - `from` precedence, first match wins:
+    1. `--from <version>` (new);
+    2. the installed copy, when it is not a link;
+    3. the committed lockfile's version (`git show HEAD:<lockfile>`), when the working one already
+       equals `to`;
+    4. the declared spec's floor;
+    5. `null`.
+  - The downgrade refusal stays for a real registry install whose version is above `to`.
+- **A3: `--from`.** A build that broke after an upgrade the command did not run (`npm update`,
+  Dependabot) gets its notes with `upgrade --plan --from <old>`. Skill step 3 says so.
+- **A3: version strings.**
+  - An `unknown` version from `describeEngine` is `null`.
+  - A 1.x `from` prints a pointer to `GUIDE.md` § Migrating from v1, not every 2.0 prerelease
+    note.
+  - When the installed copy and the lockfile disagree, both are printed. That is metacarpus and
+    swan-love today: `node_modules` has 2.5.0 and the lock has 2.6.2.
+- **A3: git.** The refusal asks `git rev-parse --is-inside-work-tree` first.
+  - "not a repository" → no refusal.
+  - Any other git failure (git missing, `safe.directory`, a corrupt repository) → refuse, naming
+    git's line.
+  - `tryGit`'s `null` is never read as "not a repository".
+- **A2 and A3: workspaces.** The lockfile is found by walking up from `cwd`, the way
+  `describeEngine` finds `node_modules`. The lock key is the engine's path relative to the
+  lockfile's folder. The dirty-tree check runs on the lockfile it found.
+- **A4: what is installed.** It installs `kiss-ssg@<to>`, the exact version, on every platform.
+  cmd.exe eats `^` under `shell: true`, and npm writes its own caret anyway, measured:
+  `-D kiss-ssg@2.8.0` saved `^2.8.0`. A prerelease adds `--save-exact`. The output reports the
+  spec npm actually saved, because `.npmrc` can change it, rather than asserting one. A URL or git
+  spec being replaced is said in the `from → to` line.
+- **A4: npm failure.** When npm fails, the message names a running `--dev` server or watcher as a
+  possible lock (EPERM/EBUSY on Windows). This is inferred, not measured.
+- **A5: what counts as the registry.** The lockfile check passes when there is no `link`,
+  `resolved` does not start with `file:`, and `resolved` starts with `npm config get registry`
+  (a fact the bin gathers). A GitHub tarball does not pass, and a private registry does.
+- **A5: the link test.** It is a new export in `lib/check.js`, `isWorkingTreeLink(engine)`.
+  `engineLine` uses it, and `upgrade` imports it. The rule exists once.
+- **B1 and B2: a fifth shape.** Every `### ⚠️ …` section becomes `### Upgrading: …`. 2.5.0's
+  `**Upgrading?**` paragraph is a pointer to its `### ⚠️` sections, so it is removed, not
+  converted.
+- **B3: what a minor must carry.** Each minor from 2.5.0 has `### Upgrading…` or
+  `### Nothing for a site to change`, the heading already used at 470, 491, 507 and 527. A6
+  counts the second and does not print it. The test also bans `### ⚠️` and the old spellings
+  anywhere.
+- **B3: the red run.** Order W1's pure core (`changelogEntries`, `compareVersions`) before W2
+  edits `CHANGELOG.md`, and record the red run against the unedited file.
+- **C2: bans outside the walk.** The `CONTRADICTIONS` walk covers only consumer-facing files. The
+  bans for `CLAUDE.md` and `.claude/skills/branch-close/SKILL.md` go in a dedicated test in
+  `test/unit/changelog.test.js`. A coverage row pinning `CHANGELOG.md` text is a record, not a
+  guard, and the commit says so.
+- **C4: the `llms.txt` cap.** `llms.txt` is at 15,993 of 16,000 characters, so the new index line
+  needs a named cut in the same commit.
+- **Ownership (replaces the table's rows where they differ).**
+  - W1 also owns: `lib/check.js`'s `isWorkingTreeLink` and `engineLine`; CLAUDE.md's AIKB table
+    row and Commands line for `upgrade`; `types/` (regenerated). Without them W1's
+    `AIKB/upgrade.md` and the new module fail `aikb.test.js` and `types.test.js`.
+  - W3 also owns the files that name `kiss-site-migrate`:
+    - `plugins/kiss-ssg/skills/` `kiss-accessibility`, `kiss-information-architecture`,
+      `kiss-page-add`, `kiss-site-import` and `kiss-site-new`;
+    - `plugins/kiss-memory/skills/` `kiss-branch-close`, `kiss-branch-merged`,
+      `kiss-branch-open`, `kiss-branch-pulse` and `kiss-memory-consolidate`.
+
+    They change only where what they say becomes wrong.
+- **Integration tests.** `test/integration/upgrade.test.js` puts a fake `npm`/`npm.cmd` first on
+  `PATH`. The fake records its argv and makes the planned change to `node_modules` and the
+  lockfile, so the bin's spawn, verification and output are tested offline on both CI operating
+  systems. `--plan` covers the rest.
+
+**Not taken.** Refusing the bin when it is not inside `node_modules` or the npx cache was proposed
+as a guard against running from a working tree. It is not needed: a working-tree run installs
+`kiss-ssg@<to>` from the configured registry like any other, and under verdaccio that is the point.
