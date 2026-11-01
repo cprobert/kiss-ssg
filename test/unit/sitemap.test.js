@@ -111,6 +111,22 @@ describe('buildSitemapEntries', () => {
     ])
   })
 
+  it('does not write a date-only string for a day that does not exist', () => {
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { updated: '2026-02-30', date: '2026-08-08' })],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(url.lastmod).toBe('2026-08-08')
+  })
+
+  it('passes over an out-of-range timestamp to the date rather than failing the sitemap', () => {
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { updated: 1e20, date: '2026-08-08' })],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(url.lastmod).toBe('2026-08-08')
+  })
+
   it('passes over an unreadable updated to the date, and warns', () => {
     const warnings = []
     const [url] = buildSitemapEntries(
