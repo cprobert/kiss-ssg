@@ -114,9 +114,10 @@ scope the contract names. Agents never commit: the operator's diff review is the
     engine.
   - **Operator's decisions:** do it on this branch. The page claims "each part useful alone,
     best together", describing value rather than a measured claim about non-kiss sites.
-  - **The bump:** the operator chose a patch (2.8.8) over the proposed minor (2.9.0). The reason
-    was not yet given when the close paused; it is asked again when the close resumes. The close
-    reruns from the top, because this adds commits.
+  - **The bump:** the operator first chose a patch (2.8.8) over the proposed minor (2.9.0), with
+    no reason given when the close paused. Asked again when the close resumed, the operator
+    switched to the minor, 2.9.0 (`3e49461`). The close reran from the top, because this added
+    commits: the Skills page (`3df31bc`) and the home page's fifth reason (`bc329c4`).
 
 ## Pulse log
 
