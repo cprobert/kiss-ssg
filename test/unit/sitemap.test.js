@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import {
   buildSitemapEntries,
@@ -27,14 +27,13 @@ describe('buildSitemapEntries', () => {
         entry('out/about/us.html'),
         entry('out/blog/index.html'),
       ],
-      { siteUrl: 'https://e.com/', buildDir: 'out', now: 'T' },
+      { siteUrl: 'https://e.com/', buildDir: 'out' },
     )
     expect(urls.map((u) => u.loc)).toEqual([
       'https://e.com/',
       'https://e.com/about/us',
       'https://e.com/blog/',
     ])
-    expect(urls[0]).toMatchObject({ lastmod: 'T', priority: '1.00' })
   })
 
   it('honours per-page overrides and ignoreSitemap', () => {
@@ -57,6 +56,119 @@ describe('buildSitemapEntries', () => {
     })
   })
 
+  // Google uses `lastmod` only when it is "consistently and verifiably"
+  // accurate and ignores `priority`; Bing warns against stamping the build
+  // time. So an entry states a date only when the page knows one.
+  it('states no lastmod and no priority for a page that carries no date', () => {
+    const [url] = buildSitemapEntries([entry('out/a.html')], {
+      siteUrl: 'https://e.com',
+      buildDir: 'out',
+    })
+    expect(url).toEqual({ loc: 'https://e.com/a' })
+  })
+
+  it('takes lastmod from sitemapLastmod, then updated, then date', () => {
+    const urls = buildSitemapEntries(
+      [
+        entry('out/a.html', {
+          sitemapLastmod: '2026-01-01',
+          updated: '2026-02-02',
+          date: '2026-03-03',
+        }),
+        entry('out/b.html', { updated: '2026-02-02', date: '2026-03-03' }),
+        entry('out/c.html', { date: '2026-03-03' }),
+      ],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(urls.map((u) => u.lastmod)).toEqual([
+      '2026-01-01',
+      '2026-02-02',
+      '2026-03-03',
+    ])
+  })
+
+  it("reads the date from the page's model when the options have none", () => {
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { model: { updated: '2026-04-04' } })],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(url.lastmod).toBe('2026-04-04')
+  })
+
+  it('writes a Date or a timestamp as a W3C datetime, and keeps a date-only string', () => {
+    const urls = buildSitemapEntries(
+      [
+        entry('out/a.html', { date: new Date('2026-05-05T10:00:00Z') }),
+        entry('out/b.html', { date: Date.UTC(2026, 5, 6) }),
+        entry('out/c.html', { date: '2026-07-07' }),
+      ],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(urls.map((u) => u.lastmod)).toEqual([
+      '2026-05-05T10:00:00.000Z',
+      '2026-06-06T00:00:00.000Z',
+      '2026-07-07',
+    ])
+  })
+
+  // Codex, 2026-11-01: a padded date-only string parses as local midnight, so
+  // east of UTC in summer it read back as the day before and was rejected.
+  // Checked on a machine on Europe/London; red there under BST for August.
+  it('keeps a whitespace-padded date-only string as its own day', () => {
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { updated: ' 2026-08-08 ' })],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(url.lastmod).toBe('2026-08-08')
+  })
+
+  it('does not write a date-only string for a day that does not exist', () => {
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { updated: '2026-02-30', date: '2026-08-08' })],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(url.lastmod).toBe('2026-08-08')
+  })
+
+  it('passes over an out-of-range timestamp to the date rather than failing the sitemap', () => {
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { updated: 1e20, date: '2026-08-08' })],
+      { siteUrl: 'https://e.com', buildDir: 'out' },
+    )
+    expect(url.lastmod).toBe('2026-08-08')
+  })
+
+  it('passes over an unreadable updated to the date, and warns', () => {
+    const warnings = []
+    const [url] = buildSitemapEntries(
+      [entry('out/a.html', { updated: 'soon', date: '2026-08-08' })],
+      {
+        siteUrl: 'https://e.com',
+        buildDir: 'out',
+        logger: { ...silentLogger, warn: (m) => warnings.push(m) },
+      },
+    )
+    expect(url.lastmod).toBe('2026-08-08')
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('soon')
+  })
+
+  it('renders the same bytes on every build of an unchanged site', () => {
+    const stack = [
+      entry('out/a.html'),
+      entry('out/b.html', { date: '2026-01-01' }),
+    ]
+    const opts = { siteUrl: 'https://e.com', buildDir: 'out' }
+    vi.useFakeTimers({ now: new Date('2026-01-01T00:00:00Z') })
+    try {
+      const first = renderSitemapXml(buildSitemapEntries(stack, opts))
+      vi.setSystemTime(new Date('2026-06-01T00:00:00Z'))
+      expect(renderSitemapXml(buildSitemapEntries(stack, opts))).toBe(first)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('skips a page that is not generated', () => {
     const urls = buildSitemapEntries(
       [entry('out/a.html'), entry('out/b.html', { generate: false })],
@@ -67,16 +179,18 @@ describe('buildSitemapEntries', () => {
 })
 
 describe('renderSitemapXml', () => {
-  it('emits changefreq only when set', () => {
+  it('emits lastmod, changefreq and priority only when set', () => {
     const xml = renderSitemapXml([
-      { loc: 'a', lastmod: 'T', priority: '1.00' },
+      { loc: 'a' },
       { loc: 'b', lastmod: 'T', priority: '0.5', changefreq: 'weekly' },
     ])
     expect(xml).toContain(
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     )
+    expect(xml.match(/<lastmod>/g)).toHaveLength(1)
     expect(xml.match(/<changefreq>/g)).toHaveLength(1)
-    expect(xml).toContain('<loc>a</loc>')
+    expect(xml.match(/<priority>/g)).toHaveLength(1)
+    expect(xml).toContain('<url>\n    <loc>a</loc>\n  </url>')
   })
 })
 

@@ -52,12 +52,12 @@ const kiss = new Kiss({
   // Linked from nowhere and deliberately left out of the sitemap.
   .page({ view: 'rota.hbs', ignoreSitemap: true })
 
-  // Changes weekly and matters less than the front page, so it says so.
-  .page({
-    view: 'stockists.hbs',
-    sitemapPriority: '0.5',
-    sitemapChangefreq: 'weekly',
-  })
+  // The one page that changes often, so its model carries `updated`: the date
+  // the list last changed, which the sitemap writes as this page's
+  // `<lastmod>`. The other pages carry no date, so the sitemap states none for
+  // them, rather than the time of the build, which a search engine learns to
+  // ignore. No `sitemapPriority` or `sitemapChangefreq`: Google ignores both.
+  .page({ view: 'stockists.hbs' })
 
   // What the host serves for a URL the site does not have. On this
   // `extensionLess` site a `404` view would land at 404/index.html, which no
@@ -73,10 +73,11 @@ const kiss = new Kiss({
     console.log('sitemap.xml lists:', urls)
   })
 
-  // The sitemap's sibling: llms.txt, the llmstxt.org index an answer engine
-  // reads first. Same registry, same URLs — `rota` is out of both, because a
-  // page kept out of the sitemap is kept out of this too. The summary is
-  // inline here; a path to a `.md` file would be read instead.
+  // The sitemap's sibling: llms.txt, the llmstxt.org index of the site for an
+  // agent or a tool pointed at it. No search or answer engine documents
+  // reading it, so it is not SEO. Same registry, same URLs — `rota` is out of
+  // both, because a page kept out of the sitemap is kept out of this too. The
+  // summary is inline here; a path to a `.md` file would be read instead.
   .llms({
     title: 'Aster & Oak',
     summary:

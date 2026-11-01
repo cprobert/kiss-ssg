@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import os from 'node:os'
 import path from 'node:path'
 import {
+  blockedAgents,
   collectRobotsAgents,
   collectSitemapUrls,
   disallowsEverything,
@@ -89,6 +90,63 @@ describe('disallowsEverything', () => {
       disallowsEverything(collectRobotsAgents({ disallow: '/admin' })),
     ).toBe(false)
     expect(disallowsEverything(collectRobotsAgents())).toBe(false)
+  })
+
+  // "No crawler will index it" is true only when every crawler is out (`*`)
+  // or a search engine's own crawler is. A block on any other named agent
+  // (a training token, an archive, a scraper) leaves the site in search; an
+  // arm blocking CCBot, meta-externalagent and Bytespider was told otherwise
+  // on every build (2026-11-01).
+  const blocks = (...userAgents) =>
+    collectRobotsAgents({
+      agents: userAgents.map((userAgent) => ({ userAgent, disallow: '/' })),
+    })
+
+  it('does not count a block on a named agent that is not a search crawler', () => {
+    for (const ua of [
+      'GPTBot',
+      'ClaudeBot',
+      'Google-Extended',
+      'Applebot-Extended',
+      'CCBot',
+      'meta-externalagent',
+      'Bytespider',
+      'SomeNewBot',
+    ])
+      expect(disallowsEverything(blocks(ua)), ua).toBe(false)
+  })
+
+  it('counts * and a search engine crawler, whatever its case', () => {
+    for (const ua of [
+      '*',
+      'Googlebot',
+      'googlebot',
+      'Bingbot',
+      'OAI-SearchBot',
+      'Claude-SearchBot',
+      'PerplexityBot',
+      'Applebot',
+      'DuckDuckBot',
+    ])
+      expect(disallowsEverything(blocks(ua)), ua).toBe(true)
+    expect(disallowsEverything(blocks('GPTBot', '*'))).toBe(true)
+  })
+})
+
+describe('blockedAgents', () => {
+  const blocks = (...userAgents) =>
+    collectRobotsAgents({
+      agents: userAgents.map((userAgent) => ({ userAgent, disallow: '/' })),
+    })
+
+  it('names every agent other than * that is kept out of the whole site, in file order', () => {
+    expect(
+      blockedAgents([
+        ...blocks('GPTBot', '*', 'Googlebot'),
+        ...collectRobotsAgents({ userAgent: 'CCBot', disallow: '/private/' }),
+      ]),
+    ).toEqual(['GPTBot', 'Googlebot'])
+    expect(blockedAgents(collectRobotsAgents())).toEqual([])
   })
 })
 
@@ -210,6 +268,26 @@ describe('writeRobots', () => {
     })
 
     expect(result.disallowAll).toBe(true)
+    expect(result.blocked).toEqual([])
+  })
+
+  it('reports the named agents a whole-site block keeps out, without the alarm', async () => {
+    const config = await build()
+    const result = await writeRobots({
+      config,
+      logger: silentLogger,
+      options: {
+        agents: [
+          { userAgent: '*', allow: '/' },
+          { userAgent: 'GPTBot', disallow: '/' },
+          { userAgent: 'CCBot', disallow: '/' },
+        ],
+      },
+      hasSitemap: true,
+    })
+
+    expect(result.disallowAll).toBe(false)
+    expect(result.blocked).toEqual(['GPTBot', 'CCBot'])
   })
 
   it('leaves a robots.txt copied from src/assets alone under overwrite:false', async () => {

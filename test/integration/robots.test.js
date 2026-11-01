@@ -62,6 +62,7 @@ describe('.robots()', () => {
       file: `${site.build}/robots.txt`,
       agents: 1,
       disallowAll: false,
+      blocked: [],
       sitemaps: ['https://e.com/sitemap.xml'],
     })
   })
@@ -108,10 +109,31 @@ describe('.robots()', () => {
     const { kiss, notices } = await build({ robots: { disallow: '/' } })
 
     expect(notices).toContain(
-      'robots.txt disallows the whole site (Disallow: /) — no crawler will index it',
+      'robots.txt disallows the whole site (Disallow: /) to every crawler or a search engine — search will not index it',
     )
     expect(kiss.report().robots.disallowAll).toBe(true)
     expect(await site.read('public/robots.txt')).toContain('Disallow: /')
+  })
+
+  it('names, without the alarm, the agents a block keeps out while search is allowed', async () => {
+    // "Stop AI scraping us": a whole-site block on agents that are not search
+    // crawlers leaves the site in search, so it is no notice and no
+    // disallowAll — but the report and the log still name them.
+    const { kiss, notices } = await build({
+      robots: {
+        agents: [
+          { userAgent: '*', allow: '/' },
+          { userAgent: 'GPTBot', disallow: '/' },
+          { userAgent: 'CCBot', disallow: '/' },
+        ],
+      },
+    })
+
+    expect(notices).toEqual([])
+    expect(kiss.report().robots).toMatchObject({
+      disallowAll: false,
+      blocked: ['GPTBot', 'CCBot'],
+    })
   })
 
   it('does not infer a Disallow from ignoreSitemap', async () => {

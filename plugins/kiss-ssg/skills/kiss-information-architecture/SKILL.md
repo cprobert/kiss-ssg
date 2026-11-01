@@ -101,7 +101,7 @@ Readers and search engines both read a URL, so it is part of the structure.
 - **Readable words, lower case, hyphenated,** with no ids or query strings. kiss slugifies `path` and `slug` already. Choose the words; do not leave them to a title someone will edit later.
 - **Name the lasting concept:** `/courses/bread-making/`. Not `/spring-offer/` (a campaign), not `/learning-division/programmes/` (an org chart that will change), not `/course.php?id=184` (a technology). A date belongs only where the date is the content, as on a news post.
 - **Follow the hierarchy where it is stable:** prefer `/courses/bread-making/` to `/bread-making/` when Courses is a real section.
-- **One page, one URL.** A deliberate copy names its original with `canonical` (`kiss-seo`).
+- **One page, one URL.** A deliberate copy names its original with `canonical` (`node_modules/kiss-ssg/GUIDE.md` § .sitemap()).
 - **Settle a URL before it is published.** One that moves later keeps its old URL in `aliases` for good. An alias keeps links working, but a dated page in the feed also gets a new `<guid>` (the feed identifies an item by its URL), so a feed reader lists it again as new, and nothing keeps the old guid (`node_modules/kiss-ssg/examples/11-blog/README.md`, the move).
 
 ### 9. Categories, tags and the 404 page
@@ -129,8 +129,9 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
 8. **Terms.** List the distinct values of each term field across a fan-out's records. Flag two spellings of one idea, and a filter that repeats the navigation.
 9. **A second way in.** On a site beyond a handful of pages, is there a way to find a page other than the global nav?
 10. **The 404 page** renders inside the layout, with the global nav.
+11. **Moved pages.** An old URL that now 404s, where an `aliases` entry would keep it: from the owner's old links, the last record's `removed` and `moved` findings, or a URL the owner remembers.
 
-Leave competing and moved pages to `kiss-seo`'s review, a label's wording to `kiss-writing-for-the-web`'s, and `aria-current` to `kiss-accessibility`'s, so that no finding is reported twice.
+Leave competing pages to `kiss-seo`'s review, a label's wording to `kiss-writing-for-the-web`'s, and `aria-current` to `kiss-accessibility`'s, so that no finding is reported twice.
 
 ## Sources
 

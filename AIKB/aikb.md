@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Writes the site's own knowledge base — the folder `config.folders.aikb` names, default `./AIKB` — from one settled build. The third of the three "describe the site" writers: `sitemap.js` writes it for a crawler, `llms.js` for an answer engine, this one for the **next developer**, who is usually the same developer two years later with none of the context left.
+Writes the site's own knowledge base — the folder `config.folders.aikb` names, default `./AIKB` — from one settled build. The third of the three "describe the site" writers: `sitemap.js` writes it for a crawler, `llms.js` for an agent pointed at the site, this one for the **next developer**, who is usually the same developer two years later with none of the context left.
 
 Unlike the other two it has no public API call behind it. The only thing that writes this folder is `npx kiss-ssg aikb <script>` — a ceremony performed once at the end of a piece of work — which sets `KISS_AIKB` for the build it spawns. Every other build reads the folder and reports on it, and writes nothing. That is the whole point: `last-build.json` is the baseline `kiss-ssg check` diffs against, so it must move when a piece of work closes and at no other moment, or "what have I changed" silently means "since I last ran a build".
 

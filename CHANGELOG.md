@@ -3,6 +3,36 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.6 — 2026-11-01
+
+SEO best practice for 2026, built in. Nothing fails, but `sitemap.xml` changes on every site that
+calls `.sitemap()`: read `kiss-site-migrate` § 0j.
+
+- **The sitemap states only dates a page knows.** Every `<url>` used to carry the time of the build
+  as its `<lastmod>` and `1.00` as its `<priority>`. Google uses `lastmod` only when it is
+  verifiably accurate and ignores `priority`, and Bing warns against the build time, so a date that
+  moved on every build taught both to ignore it. A page's `<lastmod>` is now its `sitemapLastmod`,
+  else its `updated`, else its `date` (from the page options, then its model), and a page with none
+  has no `<lastmod>`. `<priority>` and `<changefreq>` appear only for a page that sets them. Two
+  builds of an unchanged site write the same `sitemap.xml`. Give a page whose content changes
+  (a price list, a timetable) an `updated` date in its model, set when the content changes.
+- **Blocking AI training crawlers no longer says the site has left search.** `robots.txt`'s
+  "disallows the whole site" notice and `report().robots.disallowAll` used to fire for a
+  `Disallow: /` under any agent. They now fire only for `*` or a search engine's own crawler
+  (Googlebot, Bingbot, Applebot, `OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot` and a few
+  more). Every agent kept out of the whole site is listed in the new `report().robots.blocked` and
+  one info line. Every crawler is still allowed by default.
+- **`llms.txt` and the `.md` copies are described as what they are:** an index for agents and tools
+  pointed at the site. No search or answer engine documents reading them, and the docs no longer
+  say one does.
+- **`kiss-seo` holds what a model gets wrong about SEO in 2026,** in about half the words, as one checklist that a site is built to and reviewed against: AI search is
+  ordinary search; which crawlers to block for "stop AI scraping" and which cost search
+  visibility; no page per town without the town's own content; the structured data that still
+  earns something (a course list needs three courses) and what earns nothing (`FAQPage`, `HowTo`);
+  dates that move only with content; and the off-site work only the owner can do. A review reports
+  every box. `kiss-writing-for-the-web` asks the owner for the first-hand facts
+  only they hold, and never invents an author or a credential.
+
 ## 2.8.5 — 2026-10-31
 
 Skills only: nothing changes in how a site builds. The skills were tried on three real sites by

@@ -1,9 +1,25 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
-import { buildFeedItems, renderRss, writeFeed } from '../../lib/feed.js'
+import { buildFeedItems, renderRss, toDate, writeFeed } from '../../lib/feed.js'
 import { buildSitemapEntries } from '../../lib/sitemap.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
+
+// Found by the 2026-11-01 Codex review: a finite number outside the Date
+// range (1e20) made an Invalid Date, which toDate returned as a date, so the
+// sitemap's toISOString() threw and took the whole sitemap with it.
+describe('toDate', () => {
+  it('returns null for a timestamp outside the range a Date can hold', () => {
+    expect(toDate(1e20)).toBe(null)
+    expect(toDate(-1e20)).toBe(null)
+  })
+
+  it('reads a timestamp inside the range', () => {
+    expect(toDate(Date.UTC(2026, 0, 1))?.toISOString()).toBe(
+      '2026-01-01T00:00:00.000Z',
+    )
+  })
+})
 
 const entry = (buildTo, options = {}) => ({
   view: 'v',

@@ -23,6 +23,8 @@ This rule comes before every other, in build mode and in review mode. **Never in
 - **keep every placeholder visible on the page**, so a launch with one still in it is obvious to whoever looks;
 - list every placeholder for the owner when you hand the work over.
 
+**Who wrote it is a fact too.** A byline, a trainer's name, a qualification or a photo of "the team" is the owner's to give. Never an invented author, an AI-made headshot or a credential nobody stated: Google's guidance treats each as deception (2026), and a reader who checks finds nobody there.
+
 A menu, a price list or a team with no items given gets empty, marked slots, never example items: a believable loaf at a believable price is an invented fact the day the site goes live with it. A section whose items become their own pages or feed entries (news, a blog, events) gets **no placeholder item at all**: kiss would publish a placeholder post as a real URL, in the sitemap and in the feed. The section builds with zero items and shows its empty state (`kiss-front-end`).
 
 A design skill or a template that asks for "realistic" or "organic" sample data, or tells you to "come up with copy and placeholder content", is the trap. On a real business's site an invented number is a false claim, and it looks finished enough that nobody checks it. A business name read off the domain is a guess: use it, and say in the hand-over that it needs confirming. A sum the owner did not state (a total of two yearly fees, a weekday worked out from a date) is a new fact too: leave it out or mark it.
@@ -55,6 +57,8 @@ Ask "must the reader know this now?" before "how short can this be?".
 **Make it scannable.** One idea per paragraph, usually 2–5 sentences. A heading for each distinct reader question, written as what the section answers ("What you need", "After you book"), never "More details" or "Important information". Lists for real lists, kept as lists.
 
 **Plain, factual language.** Familiar words, active voice, short sentences. Replace adjectives with facts the reader can check ("Battery lasts up to 18 hours of video playback", not "outstanding all-day battery life"). Cut marketese and generated-sounding filler ("world-class", "seamless", "Let's dive in", "It's not just X, it's Y"); [references/ai-and-marketing-tells.md](references/ai-and-marketing-tells.md) lists what to look for. Keep a necessary technical, medical or legal term and explain it; never change one only to lower a reading score.
+
+**Say what only this business can say.** A page that repeats what every other plumber's or trainer's page says gives a reader, a search engine and an AI answer nothing to choose it for: Google asks for "original" content with "first-hand experience", and AI answers drop a passage that only repeats one they already have. So ask the owner for the facts only they hold: jobs done and where, real prices and what they include, how long things take, what clients came for and what changed, the method and why. Put them on the page that owns them, in the owner's words. Never fill the gap with a generic sentence that sounds specific, and never invent one (§ Never invent a fact): a missing first-hand fact is a placeholder and a question in the hand-over.
 
 **Accessible words.** A link makes sense out of context ("Download the price list (PDF)", never "Click here"). An error is said in text, not colour alone. A control has a name a screen reader can say.
 

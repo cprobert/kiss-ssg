@@ -18,6 +18,33 @@ const REVIEW_PROTOCOL =
   'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
 
 const COVERAGE = [
+  // 2.8.6: a Disallow: / under a training-only token no longer counts as the
+  // site leaving search, so the skill that answers "stop AI scraping us" has
+  // to tell the training tokens from the search crawlers, and a sitemap's
+  // lastmod comes from the page's own date, which the skill must keep honest.
+  {
+    feature:
+      'AI crawlers: training tokens are not search crawlers, blocked with .robots({ agents })',
+    pattern:
+      /`GPTBot`[\s\S]*`ClaudeBot`[\s\S]*`OAI-SearchBot`[\s\S]*`Claude-SearchBot`[\s\S]*\.robots\(\{ agents/,
+    skills: [skill('kiss-ssg', 'kiss-seo')],
+  },
+  {
+    feature:
+      'a page date moves only with its content: updated / date / lastmod',
+    pattern: /`<lastmod>`[^\n]*`updated`[^\n]*never the build time/,
+    skills: [skill('kiss-ssg', 'kiss-seo')],
+  },
+  // 2026-11-01, the operator: the fleet's other sites are in an unknown
+  // state, so the skill is one tick-box list of the research's key findings,
+  // built to and reviewed against, every box reported.
+  {
+    feature:
+      'kiss-seo checklist: robots allow-all, lastmod, doorways, nothing for AI, structured data types, the off-site hand-over',
+    pattern:
+      /report every box[\s\S]*## Checklist[\s\S]*- \[ \] `robots\.txt` allows every crawler[\s\S]*- \[ \][^\n]*<lastmod>[\s\S]*- \[ \] No page per town[\s\S]*add nothing "for AI"[\s\S]*- \[ \] No `FAQPage`[\s\S]*- \[ \] It names the owner's off-site work/,
+    skills: [skill('kiss-ssg', 'kiss-seo')],
+  },
   // Learning packages: a page added to a course's lesson joins its package by
   // naming it, needs an id (the LMS keeps learners' records by it), and in a
   // SCORM package does not link to its fellow members. The skill that adds a
@@ -853,6 +880,24 @@ const CONTRADICTIONS = [
       /so every URL is the page's `\{\{canonical\}\}`/,
       /same registry, same titles, same URLs, a different reader/,
       /the `llms\.txt` entry, the feed and every alias target move together/,
+    ],
+  },
+  {
+    why: '2.8.6 (planning/reviews/2026-11-01-seo-best-practices-2026.md, C1): a sitemap entry states a lastmod only when the page knows a date, and a priority only when the page sets one, because Google uses lastmod only when it is verifiably accurate and ignores priority; a doc promising the build time or 1.00 as the default describes the file every site used to publish',
+    patterns: [
+      /`sitemapLastmod` \(default: the current time/,
+      /default `sitemapLastmod` changes on every build/,
+      /`sitemapPriority` \(default `'1\.00'`\)/,
+      /lastmod` defaults to `now`/,
+    ],
+  },
+  {
+    why: '2026-11-01 (the same review, C2): no search or answer engine documents reading llms.txt, Google says AI features need no "AI text files", and a study of about 300,000 domains found no link to AI citations; a doc saying an answer engine reads it sells an agent convenience as SEO',
+    patterns: [
+      /the file an answer engine reads/,
+      /recommended to an answer engine/,
+      /the llmstxt\.org index an answer engine/,
+      /a crawler\s+and an answer engine are told the same thing/,
     ],
   },
   {

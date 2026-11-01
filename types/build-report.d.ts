@@ -31,7 +31,8 @@
  * @typedef {Object} BuildRobots
  * @property {string} file the `robots.txt` written, against the real build folder
  * @property {number} agents how many `User-agent:` blocks it carries
- * @property {boolean} disallowAll whether any block disallows the whole site
+ * @property {boolean} disallowAll whether every crawler (`*`), or a search engine's own crawler, is disallowed the whole site
+ * @property {string[]} [blocked] every named agent disallowed the whole site, in file order (2.8.6; absent from an older record)
  * @property {string[]} sitemaps the absolute sitemap URLs it advertises
  */
 /**
@@ -326,9 +327,13 @@ export type BuildRobots = {
      */
     agents: number;
     /**
-     * whether any block disallows the whole site
+     * whether every crawler (`*`), or a search engine's own crawler, is disallowed the whole site
      */
     disallowAll: boolean;
+    /**
+     * every named agent disallowed the whole site, in file order (2.8.6; absent from an older record)
+     */
+    blocked?: string[];
     /**
      * the absolute sitemap URLs it advertises
      */

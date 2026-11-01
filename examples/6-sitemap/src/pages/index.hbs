@@ -10,17 +10,17 @@
   <div class="grid">
     <article class="card">
       <h2>Home</h2>
-      <p class="meta">Priority 1.00, no changefreq</p>
-      <p>The default treatment: every page is priority 1.00 unless it says otherwise.</p>
+      <p class="meta">Listed, with no date</p>
+      <p>The default: a page with no date of its own is listed without a <code>&lt;lastmod&gt;</code>.</p>
     </article>
     <article class="card">
       <h2>About</h2>
-      <p class="meta">Priority 1.00, no changefreq</p>
+      <p class="meta">Listed, with no date</p>
       <p><a href="about/index.html">Open the about page</a></p>
     </article>
     <article class="card">
       <h2>Stockists</h2>
-      <p class="meta">Priority 0.50, changefreq weekly</p>
+      <p class="meta">Listed, last modified 2026-10-14</p>
       <p><a href="stockists/index.html">Open the stockists page</a></p>
     </article>
     <article class="card">
@@ -43,10 +43,11 @@
     it logs an error and skips the file.
   </p>
   <p>
-    Two per-page options steer it. The rota sets <code>ignoreSitemap</code> and drops out
-    of the file entirely; the stockists page sets <code>sitemapPriority</code> and
-    <code>sitemapChangefreq</code> because it changes weekly and matters less than the
-    front page. <code>extensionLess</code> is a whole-site setting: pages build to
+    The rota sets <code>ignoreSitemap</code> and drops out of the file entirely. The
+    stockists page's model carries <code>updated</code>, the date the list last changed,
+    and that is its <code>&lt;lastmod&gt;</code>; the pages with no date state none, because
+    a date that moves on every build is one a search engine learns to ignore.
+    <code>extensionLess</code> is a whole-site setting: pages build to
     <code>about/index.html</code>, so the sitemap advertises tidy folder URLs.
   </p>
   {{/content}}

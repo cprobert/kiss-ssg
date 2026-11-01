@@ -42,7 +42,8 @@ These options are both used internally by kiss and are available in view.
 -   view = A handlebars view.
 -   model = A json object, the name of the json file relative to the models folder or a URL for an API endpoint.
 -   controller = A function that returns a page options object - used for manipulating data in the model.
--   title = The page title
+-   title = The page title. Unset, it is the model's `title`; with neither, the page's slug, title-cased (`about-us` → `About Us`, and a home page → `Index`)
+-   description = The page's description. kiss sets no fallback: the layout prints it from wherever the site keeps it, this option (`{{description}}`) or a model field (`{{model.description}}`)
 -   config = Config overrides for this page only, merged over the global config
 -   path = the folder path to the page
 -   slug = the name of the file without the extension

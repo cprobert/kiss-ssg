@@ -1,44 +1,37 @@
 ---
 name: kiss-seo
-description: Make a kiss-ssg site findable in search and clear in a search result or a link preview — one purpose per page, titles and meta descriptions written for the person reading the result, the reader's own search words used naturally, a clean heading outline, canonical URLs for deliberate copies, when to keep a page out of search (noindex, not robots disallow), old URLs kept with redirects, social preview images, and structured data. Use when asked about "SEO", "ranking", "Google", "search results", "meta description", "page title", "noindex", "robots.txt", "canonical", "og:image", "link preview", "structured data", or when a page is added or renamed. kiss-site-new and kiss-page-add call it to build, and kiss-site-review calls it to review. Not for writing the page's body copy (kiss-writing-for-the-web).
+description: Make a kiss-ssg site findable in Google and in AI search — titles and descriptions, noindex not disallow, robots.txt and AI crawlers, structured data, town pages, sitemap dates, and the owner's off-site work. Use for "SEO", "Google", "ranking", "search results", "page title", "meta description", "noindex", "robots.txt", "sitemap", "structured data", "schema", "rich results", "FAQ schema", "AI search", "AI Overviews", "ChatGPT", "AI crawlers", "llms.txt", "local SEO", or when a page is added or renamed. Not for body copy (kiss-writing-for-the-web).
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # SEO
 
-Search follows the reader. Google's own guidance (Search Central) is to write for people first and use search optimisation to help them find it: descriptive titles and headings, the words people search with used naturally, meaningful link text, and no preferred word count. The order is **the reader's task → clear content → a clean structure → search**, never keyword targets first and copy after.
+Write for the reader; search follows. Facts are as of November 2026, from Google's, OpenAI's, Anthropic's and Apple's documentation.
 
-## In a kiss site
+**Build** to the checklist. **Review** against it: follow the [review protocol](../kiss-site-review/review-protocol.md) and the [browser pass](../kiss-site-review/browser-pass.md), and report every box as ticked (with evidence), a finding, not applicable, or not checked (with the reason). Never leave one out. The audit's title and description findings are `kiss-site-review`'s; say what a flagged one should say.
 
-kiss writes most of the machinery from one registry, so it cannot disagree with the site; this skill says what to put in it and why:
+## Checklist
 
-- **A page's `title` and `description`** are printed by the layout; where kiss takes each from (the page option, the model, or the slug for an untitled page) is `node_modules/kiss-ssg/GUIDE.md` § .page(). The audit reports a missing or duplicate one; `kiss-site-review` says the layout fix.
-- **The sitemap, robots.txt, the feed and `llms.txt`** come from `.sitemap()`, `.robots()`, `.feed()` and `.llms()` (`node_modules/kiss-ssg/GUIDE.md` § .sitemap(), § .robots(), § .feed(), § .llms()).
-- **`{{canonical}}`, `siteUrl`, `links.canonical` and `links.trailingSlash`** decide every URL kiss prints (`node_modules/kiss-ssg/GUIDE.md` § Host URL policy). A setting that does not match the host costs a redirect on every link and a sitemap of redirecting URLs; `kiss-site-new` says how to choose.
-- **A page that moves keeps its old URL** through `aliases` (`node_modules/kiss-ssg/GUIDE.md` § Redirects), so links and bookmarks that point at it still arrive.
-- **A fact said twice** (a phone number in the markup and in the JSON-LD) lives once, in `config/` (`node_modules/kiss-ssg/llms.txt` § The build script).
+**Crawling**
 
-## Build mode
+- [ ] `robots.txt` allows every crawler (`.robots()` writes `User-agent: *` / `Allow: /`). Block only what the owner asks, after asking which they mean: training tokens cost nothing in search (`GPTBot`, `ClaudeBot`, `Google-Extended`, `Applebot-Extended`); search crawlers remove the site from that engine (`OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`, `Applebot`, `Bingbot`, `Googlebot`). Use `.robots({ agents: [...] })`; `report().robots.blocked` lists what is blocked.
+- [ ] No CDN blocks crawlers the owner didn't choose to (Cloudflare blocks AI crawlers by default on many sites): check the live response headers.
+- [ ] A page kept out of search uses `noindex` + `ignoreSitemap`, never `disallow`, which hides the `noindex`.
+- [ ] `sitemap.xml` has every public page, and `<lastmod>` is the page's `updated` or `date`, never the build time; dates move only when content does.
 
-- **One main purpose per page.** Two pages that answer the same question compete with each other; merge them, or give each its own question.
-- **A title says what this page is,** in the words its reader would search with, front-loaded, then the site name: never the site name alone, and never the page's slug (a home page with no `title` ships as "Index"). Every page's title is its own.
-- **A description says what the reader gets from the page,** for the person deciding whether to click a search result. Every page's description is its own; one tagline on every page is a finding. It is written like the page's copy (`kiss-writing-for-the-web`), and never stuffed with keywords.
-- **Headings are an outline:** one `<h1>` that names the page, and levels that never skip. The audit reports both.
-- **Links say where they go,** in words that also tell a search engine what the target is about ("Prices and call-out times", not "Learn more").
-- **Image `alt` text** is `kiss-accessibility`'s; search reads the same words a screen reader does.
-- **A deliberate copy of another page** sets its `canonical` option to the original's absolute URL: the page's canonical link names the original, and kiss leaves the copy out of the sitemap, `llms.txt` and the feed (`node_modules/kiss-ssg/llms.txt`, `.page()`).
-- **Keeping a page out of search:** Use `disallow` for real exclusions only: **`disallow: '/'` removes the site from search**, so never reach for it to hide a staging build without being certain that config cannot ship (it logs a notice every build and sets `report().robots.disallowAll` so a check diff catches it). Do **not** reach for `disallow` to keep a page out of search — that is what `ignoreSitemap` plus a `noindex` tag is for; blocking the crawler stops it seeing the `noindex` and can leave the URL indexed with no snippet.
-- **A link preview** needs an absolute `og:image` (the audit reports one missing or relative), and the page's own title and description.
-- **Structured data** (JSON-LD) states facts the page already shows — the organisation, its address, a product's price — and never a fact the page does not. Its facts come from the same `config/` values as the markup, so the two cannot disagree. `kiss-site-import` says where it goes in a layout.
+**Pages**
 
-## Review mode
+- [ ] Each title says what the page is, in the searcher's words, first, then the site name. No character limit exists.
+- [ ] Each description is the page's own and says what the reader gets; never a tagline or keyword list.
+- [ ] One purpose per page; no two pages answer the same question.
+- [ ] No page per town unless the town has its own true content (jobs, a venue, local testimonials); otherwise it is a doorway page. List areas on the service page.
+- [ ] Each service or course page has its concrete facts (price, duration, what's included, who it's for, areas, how to book) and something only this business can say (`kiss-writing-for-the-web`). That is also what gets it named in AI answers: Google's AI features need no special file or schema, so add nothing "for AI". `llms.txt` and the `.md` copies are for agents; never sell them as SEO.
 
-Report to the [review protocol](../kiss-site-review/review-protocol.md): every finding before anything is edited, with its priority and its measurement, one row per cause. A choice the site records is not a finding, and a record whose own reason a measurement now contradicts is marked **ask**; the protocol has the rule. Look at the site in a browser as the [browser pass](../kiss-site-review/browser-pass.md) says; without a browser, the browser checks did not run, and the report says so.
+**Structured data**
 
-Read the build's audit first (`npx kiss-ssg check <site-script> --summary`): `title-missing`, `title-duplicate`, `description-missing`, `description-duplicate`, `canonical-missing`, `og-image-missing`, `og-image-relative`, `h1-count`, `heading-skip` and `site-url-local` are about search. The layout fix for each is `kiss-site-review`'s; what the title, description or heading should say is this skill's. Then check:
+- [ ] JSON-LD states only facts the page shows, from `config/`: one `Organization`, or a `LocalBusiness` subtype with an `address` (a business that visits customers uses `Organization`); `WebSite`; `BreadcrumbList`; `Event` for real dates; `Course` in a list only for three or more courses.
+- [ ] No `FAQPage` or `HowTo` sold as a benefit (Google dropped both, 2023 and 2026), and no review stars on the business itself (also illegal in the UK if fake or filtered).
 
-- **Every page's title and description** against the build mode: its own, specific, front-loaded, in the reader's words. Quote the weak ones.
-- **robots.txt:** a `Disallow: /` takes the whole site out of search. kiss logs a notice on every build that writes one and sets `report().robots.disallowAll`; a site that is meant to be found must not ship it.
-- **Pages that compete:** two pages with the same purpose or near-identical titles.
-- **Moved pages:** an old URL that now 404s, where an `aliases` entry would keep it.
-- **Structured data** that states a fact the page does not show, or that disagrees with it.
+**Hand-over**
+
+- [ ] It names the owner's off-site work: Google Business Profile under the real name (keywords in it risk suspension) matching the site's phone, hours and areas; real reviews; local directories and "best of" lists; consistent `sameAs` profiles; Search Console and Bing Webmaster Tools with the sitemap submitted.
