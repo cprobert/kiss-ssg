@@ -148,6 +148,31 @@ scope the contract names. Agents never commit: the operator's diff review is the
   evidence. The operator stopped the loop there: W4's clean room and fleet arm test the command
   against the real npm. Decision: W3.
 
+- **2026-11-01** — After W3 (`0fef6a2`), criteria 1–7 and 10 are met.
+  - **5:** `kiss-site-migrate` is 8,892 characters, down from 30,894. It has no per-release
+    section; the heading ban matched 11 headings in the old skill.
+  - **6:** of the 19 coverage rows that named the skill, 11 were kept and 8 re-pointed to
+    `CHANGELOG.md` as records, with the reason in a test comment. One new row covers the
+    command. The bans were seen red against the old skill, rule and README.
+  - **7:** the rule is replaced in CLAUDE.md and `branch-close` and banned in
+    `changelog.test.js`. GUIDE.md gains § Upgrading a site; the guide controller test caught a
+    `#migrating-from-v1` link the docs site leaves out. `llms.txt` is 14,675 characters, and
+    both READMEs are updated. `docs/` is regenerated at close.
+  - **10:** `npm run gates` passed all five.
+
+  Criteria 8 and 9 are not yet: W4.
+
+  Drift: none. The ten other skills naming `kiss-site-migrate` were read; all are still true,
+  so none changed.
+
+  **Eyeball: looked** — the operator read the new `kiss-site-migrate` `SKILL.md` end to end:
+  "reads well".
+
+  **Offer:** the eight re-pointed rows are records, not guards; a future note's content is
+  guarded only by the "every minor has a note" shape test. The operator said keep.
+
+  Decision: continue, to W4.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
