@@ -85,7 +85,20 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
 
-Two things about `isActive` are easy to get wrong, and both are quiet. A page's context is exactly `title`, `path`, `slug`, `generate`, `view`, `config`, `model` and `pageURL`, so `{{#isActive page …}}` hands the helper `undefined` and logs `isActive received no page context` once per call, on every page; omitting the positional argument altogether is not an error, since Handlebars passes its own options object and the helper finds the block by shape. And because the block always renders, a literal `class="active"` written inside it prints on every page in the site: read the match from `{{active}}`, and put anything that should appear either way around it. An omitted or absent `href` is treated as `''`, not thrown on. A non-block usage, or a page context with no `pageURL`, logs a warning and renders the block as not-active rather than throwing. `canonical` is the current page's absolute URL, for a `<link rel="canonical">` — `siteUrl` joined to the page's own URL:
+Beside `{{active}}`, the block has `{{@current}}`: `true` only when the page is `href` itself, whatever `folderMatch` says. That is what `aria-current="page"` names, while a section's nav item stays marked on every page inside it, so one call gives a link both. It is private data, like `@index`, so it never hides a `current` of your own. A missing `href` names no page, so it is never `@current` (or `active`), though `href=""` is the home page:
+
+```handlebars
+{{#each config.nav}}
+  <a
+    href='{{href}}'
+    {{#isActive .. href=href folderMatch=true}}{{#if active}}
+        class='{{active}}'{{/if}}{{#if @current}}
+        aria-current='page'{{/if}}{{/isActive}}
+  >{{label}}</a>
+{{/each}}
+```
+
+Two things about `isActive` are easy to get wrong, and both are quiet. A page's context is exactly `title`, `path`, `slug`, `generate`, `view`, `config`, `model` and `pageURL`, so `{{#isActive page …}}` hands the helper `undefined` and logs `isActive received no page context` once per call, on every page; omitting the positional argument altogether is not an error, since Handlebars passes its own options object and the helper finds the block by shape. And because the block always renders, a literal `class="active"` written inside it prints on every page in the site: read the match from `{{active}}`, and put anything that should appear either way around it. An omitted or absent `href` names no page: it is not thrown on, and nothing is marked, neither `{{active}}` nor `{{@current}}` (`href=""` is the home page). A non-block usage, or a page context with no `pageURL`, logs a warning and renders the block as not-active rather than throwing. `canonical` is the current page's absolute URL, for a `<link rel="canonical">` — `siteUrl` joined to the page's own URL:
 
 ```handlebars
 <link rel='canonical' href='{{canonical}}' />
@@ -130,12 +143,12 @@ A missing or non-string `is` logs an error and renders neither branch. `markdown
 
 ```handlebars
 {{scormBridge}}
-{{! complete when the page is seen }}
-{{scormBridge complete='manual'}}
 {{! the page calls kissScorm.status('completed') itself }}
+{{scormBridge complete='seen'}}
+{{! complete when the page is seen: only for a page that keeps no place }}
 ```
 
-In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. A `complete` other than `"seen"` or `"manual"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
+In an LMS it starts the session and gives the page `window.kissScorm`; anywhere else it does nothing. `complete` is `"manual"` unless given; anything other than `"manual"` or `"seen"` logs an error and renders nothing. Handlebars expands `{{…}}` everywhere in a view, a JavaScript comment included: a comment that names the helper in braces gets a second copy of the bridge, whose `</script>` cuts the page's own script in two. Name it in words there ("the scormBridge helper"), or use a Handlebars comment (`{{!-- … --}}`).
 
 Kiss exposes the handlebars object so you can register your own helpers, e.g.
 
@@ -184,6 +197,6 @@ export function registerJsonLdHelpers(kiss) {
 <meta property='og:url' content='{{link "about" absolute=true}}' />
 ```
 
-`{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/blog/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (add `absolute=true` for `https://example.com/about`). A site whose host serves the pretty form on every page sets `links: { canonical: true }` once instead of writing `canonical=true` at every call site; the per-call hash still wins either way, `canonical=false` included, and `canonical` and `absolute` compose — with both, the link is the absolute URL of the pretty path. **It fails the build** — as `{{asset}}` now does, on a path no copy emitted: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
+`{{link "about"}}` renders `/about.html`, or `/about/` on an `extensionLess` site — the path the host actually serves (`/`, `/courses/`, `/journal/the-cascara-experiment/`, `/data/index.json`). Every page has an `id` (see `.page()` above). It is **root-relative**: for a site served from a path prefix, or a link that has to be absolute, `absolute=true` gives `https://example.com/about.html`; for the pretty form the sitemap and `{{canonical}}` emit, `canonical=true` gives `/about` (add `absolute=true` for `https://example.com/about`). A site whose host serves the pretty form on every page sets `links: { canonical: true }` once instead of writing `canonical=true` at every call site; the per-call hash still wins either way, `canonical=false` included, and `canonical` and `absolute` compose — with both, the link is the absolute URL of the pretty path. **It fails the build** — as `{{asset}}` now does, on a path no copy emitted: an id no page claims, an id two pages' defaults both arrived at, or a page with `generate: false` (which claims no id) fails the page that linked it, naming the id and the view that asked — a link is a promise, and unlike a hand-written path it is checkable at render. Under `dev: true` it warns and renders `#` instead, so the live preview shows you both the page and the mistake.
 
 **On a page in a learning package, `{{link}}` is relative to the page**, and names the file: `{{link "l1/tab-2"}}` from `course/l1/tab-1.html` renders `tab-2.html`, and a link to an extension-less page renders `../tab-2/index.html`, never `/course/l1/tab-2/`. An LMS serves a package's files as they are, from wherever it unpacks them, so neither a root-relative path nor a folder would reach the page there; the relative file works there and on the web alike. `canonical` and `links.trailingSlash` do not apply to it. `relative=false` on the call gives the served path back, `relative=true` asks for the relative form on any page, and `absolute=true` is always absolute. With `packages: false`, a page's `package` option no longer changes its links.

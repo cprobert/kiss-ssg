@@ -65,7 +65,7 @@ The engine does not do this part and will not learn to. `hero: { kicker, heading
 Two more things belong in `router.js` rather than in the model, and the second is the quieter of the two:
 
 -   **`siteUrl`**, which `{{canonical}}`, `.sitemap()` and `.robots()` all need. An artifact rarely carries its own domain; if you genuinely cannot establish it, say so rather than inventing one silently, because it is baked into every canonical link.
--   **`title` and `description` are page options**, set on `.page()`, not model fields. A page with neither still builds: `title` falls back to the slug, title-cased, so a converted home page ships as `<title>Index</title>`. That is plausible enough to survive review, and nothing catches it — the audit only flags an absent title, and a body-level comparison never looks at `<head>`.
+-   **Give every page a real `title` and `description`.** A page's title is its `title` option, else its model's `title`, else its slug, title-cased; its description is whatever the layout prints (§ .page()). A page with neither still builds, so a converted home page ships as `<title>Index</title>`. That is plausible enough to survive review, and nothing catches it — the audit only flags an absent title, and a body-level comparison never looks at `<head>`.
 
 ## Verifying it
 

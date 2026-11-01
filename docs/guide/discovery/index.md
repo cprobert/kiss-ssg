@@ -1,6 +1,6 @@
 # Sitemap, llms.txt and feeds
 
-The files search engines and answer engines read, derived from the same page registry: sitemap.xml, llms.txt and a Markdown copy of every page, an RSS feed and robots.txt.
+The files crawlers, feed readers and agents read, derived from the same page registry: sitemap.xml and robots.txt for search, an RSS feed, and llms.txt with a Markdown copy of every page for agents.
 
 ## `.sitemap()`
 
@@ -16,7 +16,9 @@ It can be called before or after `.generate()` — both just wait for all your p
 
 Each `<loc>` is the same string the `canonical` helper renders on that page, built by the same code — so a page built to a directory index is listed with its trailing slash (`courses/index.html` → `https://example.com/courses/`), which is the URL Netlify serves without a redirect, or without it under `links: { trailingSlash: false }` for a host that serves the bare form ([Host URL policy](../urls/#host-url-policy)). See **canonical / absUrl** below.
 
-A page that names another URL as its canonical — `canonical: 'https://sister.example/course'` on the page, or set by its controller — is left out too, and `{{canonical}}` renders that URL: the page has said another one is the real one, and a sitemap that listed it would advertise a duplicate. The same page is out of `llms.txt` and the feed, `report().pages[].canonical` carries the URL, and `--summary` counts them. A value that is not an absolute `http(s)://` URL fails the page at registration. Any individual page can opt out with `ignoreSitemap: true`, and override the sitemap entry with `sitemapPriority` (default `'1.00'`), `sitemapChangefreq` (omitted unless set), and `sitemapLastmod` (default: the current time, shared across all pages): A page with `generate: false` is left out as well.
+A page that names another URL as its canonical — `canonical: 'https://sister.example/course'` on the page, or set by its controller — is left out too, and `{{canonical}}` renders that URL: the page has said another one is the real one, and a sitemap that listed it would advertise a duplicate. The same page is out of `llms.txt` and the feed, `report().pages[].canonical` carries the URL, and `--summary` counts them. A value that is not an absolute `http(s)://` URL fails the page at registration. Any individual page can opt out with `ignoreSitemap: true`. A page with `generate: false` is left out as well.
+
+**A page's `<lastmod>` is a date it knows, or nothing.** It is the page's `sitemapLastmod`, written as given; without one, its `updated`; without that, its `date`. `updated` and `date` are read the way `.feed()` reads a date: from the page's options first and its resolved model second, a `Date`, a timestamp or any string `new Date()` reads. A date-only string (`2026-10-14`) is written as it is; anything else becomes an ISO datetime. A page with none of the three gets no `<lastmod>`, rather than the time of the build. Google uses `lastmod` only when it is "consistently and verifiably" accurate, and Bing warns against the generation time, so a date that moves on every build teaches both to ignore the field for every page. So date a page when its content changes, never on a rebuild. `<priority>` and `<changefreq>` are written only for a page that sets `sitemapPriority` or `sitemapChangefreq`; Google ignores both. Two builds of an unchanged site write the same `sitemap.xml`.
 
 ```js
 kiss.page({
@@ -25,9 +27,13 @@ kiss.page({
 })
 
 kiss.page({
+  view: 'stockists.hbs',
+  updated: '2026-10-14', // or in the page's model
+})
+
+kiss.page({
   view: 'landing-page.hbs',
-  sitemapPriority: '0.9',
-  sitemapChangefreq: 'weekly',
+  sitemapLastmod: '2026-09-01T09:00:00Z',
 })
 ```
 
@@ -41,7 +47,7 @@ kiss.sitemap({ overwrite: false })
 
 ## `.llms()`
 
-Writes an [`llms.txt` (opens in a new tab)](https://llmstxt.org) into the root of the build folder: the curated, AI-facing index of your site, the file an answer engine reads before it crawls. It is `.sitemap()`'s sibling — same registry, same titles, a different reader — so the two can never drift apart. Where the sitemap lists each page, `llms.txt` links each page's Markdown copy (see **Markdown copies for agents** below), which is what the llmstxt.org spec asks its links to point at. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
+Writes an [`llms.txt` (opens in a new tab)](https://llmstxt.org) into the root of the build folder: the curated index of your site for an agent or a tool pointed at it, such as a coding agent or an MCP server reading your docs. It is not search optimisation. No search or answer engine documents reading the file, Google says its AI features need no "AI text files", and studies of hundreds of thousands of sites found no link between having one and being cited (2026). AI search finds a kiss site the way search does, through its indexable HTML. It is `.sitemap()`'s sibling — same registry, same titles, a different reader — so the two can never drift apart. Where the sitemap lists each page, `llms.txt` links each page's Markdown copy (see **Markdown copies for agents** below), which is what the llmstxt.org spec asks its links to point at. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
 
 ```js
 kiss
@@ -80,7 +86,7 @@ writes:
 
 **The options**: `title` is the `#` heading and `summary` the `>` blockquote — and `summary` (like the optional `notes`, which becomes a trailing `## Notes` section) is either the text itself or a path, relative to your working directory, to a `.md`/`.txt` file holding it, so a long summary can live beside the rest of your content. `sections` maps a top-level path segment to a heading (`{ courses: 'Courses' }`); the key `root` names the section holding pages with no path (default `Pages`), and any segment you do not map is title-cased (`behavioural-consultations` → `Behavioural Consultations`). `overwrite` (default `true`) behaves exactly as the sitemap's.
 
-**Which pages are listed**: every registered page, grouped by the first segment of its `path` with the root group first, in registration order. A page opts out with `ignoreLlms: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of `llms.txt` too — the index is a subset of the site the sitemap describes, never a superset. `llmsSection: 'Name'` puts one page under a heading of your choosing regardless of its path. Each entry is `- [title](https://github.com/cprobert/kiss-ssg/blob/main/url): description`, with the description omitted when the page has none and the title falling back to the page's slug, title-cased. Each URL is the page's Markdown copy (`…/courses/bronze-obedience.md`, `…/index.md` for the home page); on a site with `markdownCopies: false`, and for a page that turns its copy off, it is instead the same string that page's own `{{canonical}}` renders.
+**Which pages are listed**: every registered page, grouped by the first segment of its `path` with the root group first, in registration order. A page opts out with `ignoreLlms: true`, and a page already out of the sitemap (`ignoreSitemap: true`) or not being built at all (`generate: false`) is out of `llms.txt` too — the index is a subset of the site the sitemap describes, never a superset. `llmsSection: 'Name'` puts one page under a heading of your choosing regardless of its path. Each entry is `- [title](url): description`, with the description omitted when the page has none and the title falling back to the page's slug, title-cased. Each URL is the page's Markdown copy (`…/courses/bronze-obedience.md`, `…/index.md` for the home page); on a site with `markdownCopies: false`, and for a page that turns its copy off, it is instead the same string that page's own `{{canonical}}` renders.
 
 It is chainable, can be called before or after `.generate()` (or from its callback, when the pages have already rendered: their Markdown copies are written then, before `llms.txt`), and is re-run by a whole-site watch rebuild like `.sitemap()`. Its callback receives the rendered text (`kiss.llms(options, (text) => …)`), and the file it wrote is reported as the build report's `llms`.
 
@@ -189,8 +195,8 @@ kiss.robots({
 
 `agents` is one block per crawler; `userAgent`/`allow`/`disallow` at the top level are the shorthand for a single block, and each takes a path or an array. `sitemap` is `true` (the default), `false`, or a URL or path — or an array — to advertise instead of this build's own. `overwrite: false` leaves a `robots.txt` you keep in `src/assets/` exactly where it is. A path containing whitespace is dropped rather than written, because one directive is one line and there is no escape for a newline.
 
-`report().robots` is `{ file, agents, disallowAll, sitemaps }`, or `null` when you never called the method — an object rather than a bare path, unlike `sitemap` and `feed`, for one reason:
+`report().robots` is `{ file, agents, disallowAll, blocked, sitemaps }`, or `null` when you never called the method — an object rather than a bare path, unlike `sitemap` and `feed`, for one reason:
 
-> **`disallow: '/'` removes your site from search.** It is one character from the bare `Disallow:` that means the opposite, and nothing else about the build looks wrong afterwards. So it logs a `notice` on **every** build that emits it, and `disallowAll` is on the report — which means a staging crawl policy that reaches production shows up in a `kiss-ssg check` diff rather than in Search Console a month later.
+> **`disallow: '/'` removes your site from search.** It is one character from the bare `Disallow:` that means the opposite, and nothing else about the build looks wrong afterwards. So it logs a `notice` on **every** build that emits it, and `disallowAll` is on the report — which means a staging crawl policy that reaches production shows up in a `kiss-ssg check` diff rather than in Search Console a month later. The alarm is raised by the `*` block or by a search engine's own crawler: Googlebot, Bingbot, Applebot, DuckDuckBot, Yandex, Baiduspider, and the AI search crawlers `OAI-SearchBot`, `Claude-SearchBot` and `PerplexityBot`, each of which takes the site out of that engine's results or answers. A whole-site block on any other agent — a training token such as `GPTBot`, `ClaudeBot`, `Google-Extended` or `Applebot-Extended`, an archive such as `CCBot` — leaves the site in search, so it raises no notice; it is listed in `blocked` and in one `info` line instead.
 
 kiss never infers a `Disallow` for you. In particular **`ignoreSitemap` does not imply one**, and the omission is deliberate: blocking a crawler stops it fetching the page, which stops it seeing a `noindex`, which can leave the URL indexed with no snippet — worse than leaving it crawlable. Keeping a page out of the sitemap and keeping a crawler out of a page are different intents, and you state the second explicitly.
