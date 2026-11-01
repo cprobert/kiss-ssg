@@ -110,14 +110,14 @@ Whatever the look, keep these:
 
 - **Never invent a fact about the business.** Write every page's words with the `kiss-writing-for-the-web` skill (build mode), which has the rule in full: a missing price, figure or testimonial is a visible placeholder in the model, never a believable guess, and every placeholder is listed for the owner at the hand-over. A design skill that asks for sample data does not change this, and a news section or blog gets no placeholder post at all.
 
-Build every page to the domain skills, each in its build mode. They own the rules; this skill only names them, with the one-line floor each keeps:
+Build every page to the domain skills, each in its build mode. They own the rules. **Open each one's `SKILL.md` before the work it covers starts**: the line beside each name below is the floor it keeps, not the skill.
 
-- **`kiss-information-architecture`** — before the first view: the reader's tasks, the pages and sections they need, named in the reader's words, the nav, and URLs that name lasting concepts.
-- **`kiss-writing-for-the-web`** — the words: front-loaded and plain, and never an invented fact.
-- **`kiss-accessibility`** — `alt` text on every image, a visible `<label>` on every field, a skip link, visible focus, `aria-current` on the current nav link, a viewport that zooms, inputs of 16px or more, content that shows without script.
-- **`kiss-front-end`** — `width` and `height` on every image and `loading="lazy"` below the first screen, the platform's own controls before any script, the hero height, named transitions, lists that work at 0 and 1.
-- **`kiss-seo`** — every page's own title and description, one purpose per page, and when to keep a page out of search.
-- **`kiss-design`** — the look, and the craft checks under it.
+- **[`kiss-information-architecture`](../kiss-information-architecture/SKILL.md)**, before the first view: the reader's tasks, the pages and sections they need, named in the reader's words, the nav, and URLs that name lasting concepts.
+- **[`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md)**: the words, front-loaded and plain, and never an invented fact.
+- **[`kiss-accessibility`](../kiss-accessibility/SKILL.md)**: `alt` text on every image, a visible `<label>` on every field, a skip link, visible focus, `aria-current` on the current nav link, a viewport that zooms, inputs of 16px or more, content that shows without script.
+- **[`kiss-front-end`](../kiss-front-end/SKILL.md)**: `width` and `height` on every image and `loading="lazy"` below the first screen, the platform's own controls before any script, the hero height, named transitions, lists that work at 0 and 1.
+- **[`kiss-seo`](../kiss-seo/SKILL.md)**: every page's own title and description, one purpose per page, and when to keep a page out of search.
+- **[`kiss-design`](../kiss-design/SKILL.md)**: the look, and the craft checks under it.
 
 Three mistakes real consumer sites made, all of which passed review before they bit:
 

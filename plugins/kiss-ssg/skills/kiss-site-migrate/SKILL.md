@@ -196,6 +196,12 @@ Nothing fails. What changes is the build folder and `llms.txt`:
   changed because of them.
 - **`llms.txt` now links the copies** (`https://site/about.md`) rather than the pages. It is the
   llmstxt.org convention. A site that wants the old links sets `markdownCopies: false`.
+- **The site's own scripts that read `llms.txt` change answer.** Grep the site's tooling (`qa/`,
+  `scripts/`, its tests) for `llms.txt`. A check that compares its links with `sitemap.xml` now
+  fails on every page, because the sitemap still lists the pages and `llms.txt` lists the copies.
+  Measured on a real site: its SEO check went from passing to 36 failures on the upgrade, and the
+  agents that met it blamed an earlier upgrade. Update the check to expect the copies, or set
+  `markdownCopies: false`.
 - **Read one copy.** Open one built `.md`. If the site's layout has no `<main>`, its header, footer
   and any menu not in a `<nav>` are in every copy. Wrap the page content in `<main>` in the layout,
   or set `markdownCopies: { selector: '…' }`.

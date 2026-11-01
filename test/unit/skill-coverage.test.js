@@ -1179,3 +1179,38 @@ describe('llms.txt names every skill the plugins ship', () => {
     for (const line of lists) expect(line).toContain(`\`${name}\``)
   })
 })
+
+// 2026-10-31, on a1k9training: kiss-site-review named the six domain skills
+// with a line each, and the agent following it opened none of them. It worked
+// from the one-line summaries and missed what only the skill's measurement
+// finds (focus hidden under the sticky header). kiss-page-add named five, and
+// that agent opened none either. Both agents did open every support file that
+// was a Markdown link (review-protocol.md, browser-pass.md). So a task skill
+// that hands work to a domain skill links that skill's SKILL.md, which is the
+// form agents were seen to follow, in Claude Code and Codex alike.
+const DOMAIN_SKILLS = [
+  'kiss-writing-for-the-web',
+  'kiss-information-architecture',
+  'kiss-seo',
+  'kiss-accessibility',
+  'kiss-front-end',
+  'kiss-design',
+]
+describe('a task skill links the SKILL.md of every domain skill it names', () => {
+  const dir = path.join(root, 'plugins/kiss-ssg/skills')
+  const shipped = fs.readdirSync(dir)
+  const tasks = shipped.filter((name) => !DOMAIN_SKILLS.includes(name))
+
+  it('knows every domain skill, and they all ship', () => {
+    for (const name of DOMAIN_SKILLS) expect(shipped).toContain(name)
+  })
+
+  it.each(tasks)('%s links each domain skill it names', (task) => {
+    const text = fs.readFileSync(path.join(dir, task, 'SKILL.md'), 'utf8')
+    const named = DOMAIN_SKILLS.filter((d) =>
+      new RegExp(`\\b${d}\\b`).test(text),
+    )
+    const unlinked = named.filter((d) => !text.includes(`](../${d}/SKILL.md)`))
+    expect(unlinked).toEqual([])
+  })
+})

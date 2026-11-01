@@ -59,14 +59,16 @@ Group the findings by check. The fix for each, in kiss terms — nearly all of t
 
 ### 2. Run each domain skill's review mode
 
-The expertise lives in the domain skills; this skill runs them and merges what they find. Run each in its review mode, on the built site:
+The expertise lives in the domain skills; this skill runs them and merges what they find. **Open each one's `SKILL.md` and run its review mode, on the built site.** The line beside each name below says what it covers, not how to check it: the checks, their thresholds and how to measure them are in the skill. A review that works from these lines alone misses what only the skill's measurement finds, such as focus hidden under a sticky header.
 
-- **`kiss-accessibility`** — labels, focus, the skip link, the current page, contrast, targets, zoom, motion, content without script.
-- **`kiss-front-end`** — long strings and sideways scroll, the hero height, transitions, hover on touch, `100vw`, lists at 0 and 1, external links.
-- **`kiss-design`** — consistency, things that look clickable, weights, colour meaning, hover and press, lines ending on one word, line length.
-- **`kiss-seo`** — titles, descriptions, headings, robots.txt, competing and moved pages, structured data.
-- **`kiss-information-architecture`** — orphan pages, nav labels, one name per concept, depth, where-am-I, breadcrumbs, URLs, tag variants.
-- **`kiss-writing-for-the-web`** — the words: demo and placeholder copy, invented facts, links and buttons, the 404 page, empty states, the line about personal details.
+- **[`kiss-accessibility`](../kiss-accessibility/SKILL.md)**: labels, focus, the skip link, the current page, contrast, targets, zoom, motion, content without script.
+- **[`kiss-front-end`](../kiss-front-end/SKILL.md)**: long strings and sideways scroll, the hero height, transitions, hover on touch, `100vw`, lists at 0 and 1, external links.
+- **[`kiss-design`](../kiss-design/SKILL.md)**: consistency, things that look clickable, weights, colour meaning, hover and press, lines ending on one word, line length.
+- **[`kiss-seo`](../kiss-seo/SKILL.md)**: titles, descriptions, headings, robots.txt, competing and moved pages, structured data.
+- **[`kiss-information-architecture`](../kiss-information-architecture/SKILL.md)**: orphan pages, nav labels, one name per concept, depth, where-am-I, breadcrumbs, URLs, tag variants.
+- **[`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md)**: the words, meaning demo and placeholder copy, invented facts, links and buttons, the 404 page, empty states, the line about personal details.
+
+The report says which of the six ran. One that did not is named as not run, never folded into the others.
 
 Each reports to the same [review protocol](./review-protocol.md) and looks at the site through the same [browser pass](./browser-pass.md), so their rows join one table.
 

@@ -3,6 +3,25 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.8.5 — 2026-10-31
+
+Skills only: nothing changes in how a site builds. The skills were tried on three real sites by
+agents that were never told the skills existed, and these are what that showed.
+
+- **A launch review now runs every domain review.** `kiss-site-review` named the six domain skills,
+  and the agent following it opened none of them, so its review missed what only their
+  measurements find. Each task skill now links the domain skills it hands work to and says to open
+  them first. The same review on the same site then found three WCAG failures it had missed. It
+  costs more: about $4 to $8 and 6 to 12 minutes, against about $1 and 4 minutes.
+- **`kiss-page-add` replicates.** A new page or record copies the nearest existing one faithfully,
+  flaws included; anything it would improve goes in its hand-over for `kiss-site-review`, so adding
+  a page never quietly changes the site. It opens `kiss-writing-for-the-web` before writing a word
+  a visitor will read, and a fact or template slot the owner did not fill becomes a visible
+  placeholder.
+- **`kiss-site-migrate`'s 2.7.5 note** adds that a site's own scripts that read `llms.txt` change
+  answer: a check that compares its links with `sitemap.xml` fails on every page once `llms.txt`
+  links the Markdown copies.
+
 ## 2.8.4 — 2026-10-31
 
 A sixth domain skill for site structure, a merged step for the branch skills, and the engine now
