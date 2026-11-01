@@ -444,6 +444,72 @@ describe('planUpgrade', () => {
       planUpgrade(facts({ git: { state: 'not-a-repo' } })).refuse,
     ).toBeNull()
   })
+
+  // Codex, adversarial review (2026-11-01): node_modules restored to the new
+  // version while the lockfile still pins the old one. The next `npm ci`
+  // puts the old version back, so "already on this version" was wrong.
+  it('installs when the copy is current but the lockfile pins an older version', () => {
+    const plan = planUpgrade(
+      facts({
+        engine: { ...facts().engine, version: '2.9.0' },
+        committedLockVersion: '2.6.2',
+      }),
+    )
+    expect(plan.install).not.toBeNull()
+  })
+
+  // Codex, the same review: a refusal that protects what the install writes
+  // also blocked reading the notes, so the recovery the docs give after
+  // `npm update` broke a build (`--plan --from`) refused exactly then. And
+  // the pnpm refusal told the reader to run that very `--plan`.
+  it.each([
+    [
+      'uncommitted changes',
+      { git: { state: 'dirty', files: ['package-lock.json'] } },
+      /uncommitted/,
+    ],
+    [
+      'a git that failed',
+      { git: { state: 'error', said: 'fatal: dubious ownership' } },
+      /dubious ownership/,
+    ],
+    [
+      'a pnpm lockfile',
+      { lock: null, otherLockfile: 'pnpm-lock.yaml' },
+      /pnpm-lock\.yaml/,
+    ],
+  ])(
+    '--plan still prints the notes past %s, and says the install is blocked',
+    (_, over, reason) => {
+      const plan = planUpgrade(
+        facts({ ...over, args: { ...facts().args, plan: true } }),
+      )
+      expect(plan.refuse).toBeNull()
+      expect(plan.install).toBeNull()
+      expect(plan.blocked).toMatch(reason)
+      expect(plan.notes.length).toBeGreaterThan(0)
+    },
+  )
+
+  it('reads the committed lockfile with --plan after npm update moved it', () => {
+    const plan = planUpgrade(
+      facts({
+        args: { ...facts().args, plan: true },
+        engine: { ...facts().engine, version: '2.9.0' },
+        lock: {
+          path: 'package-lock.json',
+          entry: {
+            version: '2.9.0',
+            resolved: `${REGISTRY}kiss-ssg/-/kiss-ssg-2.9.0.tgz`,
+          },
+        },
+        committedLockVersion: '2.8.5',
+        git: { state: 'dirty', files: ['package-lock.json'] },
+      }),
+    )
+    expect(plan.from).toBe('2.8.5')
+    expect(plan.notes.map((n) => n.version)).toContain('2.8.6')
+  })
 })
 
 describe('verifyUpgrade', () => {
@@ -509,6 +575,26 @@ describe('verifyUpgrade', () => {
       '2.9.0',
     )
     expect(result.ok).toBe(false)
+  })
+
+  // Codex (2026-11-01): the origin was checked, the version was not.
+  it('fails a lockfile that pins an older version from the registry', () => {
+    const result = verifyUpgrade(
+      after({
+        lock: {
+          path: 'package-lock.json',
+          entry: {
+            version: '2.6.2',
+            resolved: `${REGISTRY}kiss-ssg/-/kiss-ssg-2.6.2.tgz`,
+          },
+        },
+      }),
+      '2.9.0',
+    )
+    expect(result.ok).toBe(false)
+    expect(result.checks.find((c) => c.ok === false)?.what).toMatch(
+      /2\.6\.2.*not 2\.9\.0/,
+    )
   })
 
   it('passes a private registry the site is configured for', () => {

@@ -198,6 +198,18 @@ describe('kiss-ssg upgrade', () => {
     expect(run.installs).toEqual([])
   })
 
+  // Codex (2026-11-01): the recovery after `npm update` broke a build is
+  // `--plan --from`, and the lockfile is uncommitted exactly then.
+  it('--plan prints the notes past uncommitted changes, and says the install is blocked', () => {
+    const s = setUp()
+    fs.appendFileSync(path.join(s.site, 'package-lock.json'), '\n')
+    const run = upgrade(s, ['--plan', '--from', '2.6.2'])
+    expect(run.status, run.stderr).toBe(0)
+    expect(run.stdout).toMatch(/install blocked: uncommitted changes/)
+    expect(run.stdout).toContain("## 2.6.4 — Upgrading: the audit's first run")
+    expect(run.installs).toEqual([])
+  })
+
   it('refuses a registry release newer than itself', () => {
     const s = setUp({ installed: '99.0.0' })
     const run = upgrade(s)

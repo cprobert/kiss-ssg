@@ -125,7 +125,7 @@ export function formatUpgrade(plan: UpgradePlan, result: {
     ran: string | null;
     verified: ReturnType<typeof verifyUpgrade> | null;
 } | null): string;
-export const UPGRADE_HELP: "kiss-ssg upgrade [--plan] [--from <version>] [--json]\n\n  Install this kiss-ssg into the site in this folder, check that it landed,\n  and print the CHANGELOG.md upgrade notes between the version the site had and\n  this one. Run it by version, so npx fetches the one you mean rather than the\n  site's own older copy, which has no upgrade command:\n\n    npx kiss-ssg@latest upgrade --plan     read the notes first\n    npx kiss-ssg@latest upgrade            install, verify, print the notes\n\n  It installs kiss-ssg@<this version> into the section package.json already\n  uses (devDependencies when neither), which replaces a file: link, a URL or a\n  git dependency. It then checks that node_modules/kiss-ssg is not a link to a\n  working tree, is this version, and that package-lock.json resolves it from\n  the registry npm is configured for.\n\n  It refuses, and writes nothing, when there is no package.json, when the site\n  uses pnpm or yarn, when package.json or package-lock.json has uncommitted\n  changes, when git fails, or when the installed kiss-ssg is a registry release\n  newer than this one.\n\n  --plan             print the notes and what it would run; install nothing\n  --from <version>   the version the site was on, when it cannot tell: a link\n                     to a working tree, or a site already upgraded by npm\n                     update. It changes which notes print, never what installs\n  --json             print { from, to, install, verified, notes, ... }\n  --help             this text\n\nExits 1 when it refused, npm failed, or the check after the install failed.";
+export const UPGRADE_HELP: "kiss-ssg upgrade [--plan] [--from <version>] [--json]\n\n  Install this kiss-ssg into the site in this folder, check that it landed,\n  and print the CHANGELOG.md upgrade notes between the version the site had and\n  this one. Run it by version, so npx fetches the one you mean rather than the\n  site's own older copy, which has no upgrade command:\n\n    npx kiss-ssg@latest upgrade --plan     read the notes first\n    npx kiss-ssg@latest upgrade            install, verify, print the notes\n\n  It installs kiss-ssg@<this version> into the section package.json already\n  uses (devDependencies when neither), which replaces a file: link, a URL or a\n  git dependency. It then checks that node_modules/kiss-ssg is not a link to a\n  working tree, is this version, and that package-lock.json resolves it from\n  the registry npm is configured for.\n\n  It refuses, and writes nothing, when there is no package.json or when the\n  installed kiss-ssg is a registry release newer than this one. It will not\n  install when the site uses pnpm or yarn, when package.json or\n  package-lock.json has uncommitted changes, or when git fails; --plan still\n  prints the notes then, and says why the install is blocked.\n\n  --plan             print the notes and what it would run; install nothing\n  --from <version>   the version the site was on, when it cannot tell: a link\n                     to a working tree, or a site already upgraded by npm\n                     update. It changes which notes print, never what installs\n  --json             print { from, to, install, verified, notes, ... }\n  --help             this text\n\nExits 1 when it refused, npm failed, or the check after the install failed.";
 export type Version = {
     major: number;
     minor: number;
@@ -224,6 +224,11 @@ export type UpgradePlan = {
      * why it will not run; nothing is written
      */
     refuse: string | null;
+    /**
+     * why an install would refuse; under `--plan`
+     * the notes still print, because reading writes nothing
+     */
+    blocked: string | null;
     warnings: string[];
     notes: (Note & {
         version: string;
