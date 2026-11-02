@@ -1180,6 +1180,20 @@ describe('extractPageFacts — the privacy facts', () => {
     expect(facts.placeholders).toEqual([])
   })
 
+  it('reads no bracketed placeholder from code that documents it', () => {
+    // kiss's own guide page for this check fired on itself (2026-11-02):
+    // `<code>[to confirm</code>` is the marker quoted, not a fact left blank.
+    const facts = extractPageFacts(
+      doc(
+        '<p>The check fires on <code>[to confirm</code> in the copy.</p>' +
+          '<pre><code>&lt;mark&gt;[to confirm: the address]&lt;/mark&gt;</code></pre>' +
+          '<p>Our address: [to confirm: street]</p>',
+      ),
+      'a.html',
+    )
+    expect(facts.placeholders).toEqual(['[to confirm: street]'])
+  })
+
   it('reads a checked box with its label, by for/id, by wrapping, and by aria', () => {
     const facts = extractPageFacts(
       doc(
