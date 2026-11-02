@@ -3,6 +3,50 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.10.0 — 2026-11-02
+
+The build now notices the legal basics a small site most often misses, and a new domain skill,
+`kiss-legal-and-privacy`, says what to do about them: a privacy notice written from the law's
+checklist and the site's real inventory, storage measured in a browser, unconfirmed facts marked,
+each finding sent to the right person (you, the owner, or an adviser), and an owner handout. UK and
+EU law, each fact dated and sourced. Not legal advice.
+
+### Upgrading: three new audit findings, one new report key
+
+Nothing breaks. The audit stays advisory: it never changes `ok` or the exit code.
+
+- **A site may see new findings** on its next build or `kiss-ssg check`:
+  - `privacy-link-missing`: a form that asks for an email address or phone number, on a page with
+    no link to the privacy page;
+  - `placeholder-left`: a `<mark>`, or the bracketed text `[to confirm`, left in the copy;
+  - `checkbox-prechecked`: a ticked checkbox whose label is about offers, news or marketing.
+
+  Fix them, or ignore one with a comment saying why: `audit: { ignore: ['placeholder-left'] }` (for
+  example, a site that uses `<mark>` for highlighting).
+
+- **The privacy page** is the page with id `privacy`, else the one written to `privacy.html` or
+  `privacy/index.html`. If yours is elsewhere, set `audit: { privacyPage: '<id>' }`. An id no page
+  has is reported as a finding, not thrown.
+- **`report().thirdParty`** is a new last key: the origins other than the site's own that each
+  page's static markup fetches from (scripts, iframes, images, stylesheets, preloads, form actions),
+  `null` on a failed build. An iframe a script injects and a CSS `@import` are not in it, so an
+  empty list proves nothing. `kiss-ssg check --summary` prints a `third-party origins` line.
+  `AIKB/last-build.json` gains the key at the next `kiss-ssg aikb`: commit that diff.
+- **Update the plugin** to get `kiss-legal-and-privacy` and the skills that now call it.
+  `kiss-site-new`, `kiss-site-review` and `kiss-page-add` open it when a site gains a form, an
+  embed or a third-party script. `kiss-writing-for-the-web`, `kiss-seo` and the review protocol keep
+  only a link to it for the legal rules.
+
+### What changed
+
+- **`kiss-legal-and-privacy`**, the seventh domain skill. Method in `SKILL.md`; the law in
+  `references/uk.md` and `references/eu.md`; the owner checklist in `references/owner-handout.md`.
+- **Three audit checks and `report().thirdParty`**, as above. `GUIDE.md` § Checking a build.
+- **`audit.privacyPage`**, a new config key, default `null`.
+- **`kiss-front-end`** gains the click-to-load facade for video and maps. A `youtube-nocookie.com`
+  embed was measured writing to `localStorage` on load: "privacy-enhanced" is not storage-free.
+- **The review protocol** gains legal P1 examples and an accepted-risk record format.
+
 ## 2.9.0 — 2026-11-01
 
 `npx kiss-ssg@latest upgrade` installs a release into a site, checks it really landed, and prints

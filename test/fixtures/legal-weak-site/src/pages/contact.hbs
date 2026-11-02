@@ -1,0 +1,34 @@
+{{#extend "layout" pageTitle="Contact" pageDescription="Ask about a place on a group walk or a puppy visit, and we will reply within a day."}}
+  {{#content "main"}}
+  <h1>Ask about a place</h1>
+  <p>Tell us about your dog and we will reply within a day.</p>
+  {{!-- Planted: email and phone collected with no line about them and no
+        privacy link; a pre-ticked marketing box. The honeypot is not a gap. --}}
+  <form name="enquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+    <p hidden>
+      <label>Leave this empty: <input name="bot-field"></label>
+    </p>
+    <p>
+      <label for="name">Your name</label>
+      <input id="name" name="name" type="text" autocomplete="name" required>
+    </p>
+    <p>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+    </p>
+    <p>
+      <label for="phone">Phone</label>
+      <input id="phone" name="phone" type="tel" autocomplete="tel">
+    </p>
+    <p>
+      <label for="dog">Your dog's name and breed</label>
+      <input id="dog" name="dog" type="text">
+    </p>
+    <p>
+      <input id="offers" name="offers" type="checkbox" value="yes" checked>
+      <label for="offers">Send me offers and news</label>
+    </p>
+    <p><button type="submit">Send</button></p>
+  </form>
+  {{/content}}
+{{/extend}}

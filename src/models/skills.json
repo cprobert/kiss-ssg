@@ -22,7 +22,7 @@
     {
       "name": "The skills",
       "where": "this repository's plugin marketplace, for Claude Code and Codex",
-      "alone": "Step-by-step recipes and web know-how that a coding agent follows: how to start a site, add a page or review one for launch, and how to get the words, structure, search, accessibility, front end and design right. They install on their own, from this repository rather than from npm, and they work in Claude Code and Codex alike."
+      "alone": "Step-by-step recipes and web know-how that a coding agent follows: how to start a site, add a page or review one for launch, and how to get the words, structure, search, accessibility, front end, design and legal pages right. They install on their own, from this repository rather than from npm, and they work in Claude Code and Codex alike."
     }
   ],
   "together": [
@@ -92,6 +92,10 @@
             {
               "name": "kiss-design",
               "does": "The look of the site and the craft under it, including a design lift for a site that looks generated or unfinished."
+            },
+            {
+              "name": "kiss-legal-and-privacy",
+              "does": "The privacy page, cookies and storage before consent, the line beside a form, business details, reviews and image rights, from dated UK and EU law, with a one-page list of habits for the owner. Not legal advice."
             }
           ]
         }

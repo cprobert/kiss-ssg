@@ -30,7 +30,7 @@ Write for the reader; search follows. Facts are as of November 2026, from Google
 **Structured data**
 
 - [ ] JSON-LD states only facts the page shows, from `config/`: one `Organization`, or a `LocalBusiness` subtype with an `address` (a business that visits customers uses `Organization`); `WebSite`; `BreadcrumbList`; `Event` for real dates; `Course` in a list only for three or more courses.
-- [ ] No `FAQPage` or `HowTo` sold as a benefit (Google dropped both, 2023 and 2026), and no review stars on the business itself (also illegal in the UK if fake or filtered).
+- [ ] No `FAQPage` or `HowTo` sold as a benefit (Google dropped both, 2023 and 2026), and no review stars on the business itself. The law on reviews shown on the site is [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)'s: open it when the site shows any.
 
 **Hand-over**
 

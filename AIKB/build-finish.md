@@ -37,7 +37,7 @@ imports: `checkLinks` (`lib/links.js`), `writeRedirects` and `redirectFindings`
 ## Depends on
 
 `fs-extra`, `./utils.js`, `./build-report.js` (`buildReport`, `auditLines`), `./links.js`,
-`./audit.js`, `./redirects.js` (`collectAliases`, `redirectFindings`, `writeRedirects`),
+`./audit.js` (`auditBuild`, `thirdPartyOrigins`), `./redirects.js` (`collectAliases`, `redirectFindings`, `writeRedirects`),
 `./check.js` (`readReportsFile`, `aikbRecordRequested`), `./aikb.js` (`buildSiteMap`,
 `isRecorded`, `writeAikb`, `writeLastBuild`).
 
@@ -46,6 +46,9 @@ imports: `checkLinks` (`lib/links.js`), `writeRedirects` and `redirectFindings`
 `lib/kiss.js` only, through its delegating methods.
 
 ## Non-obvious behavior
+
+- **`runAudit()` threads each page's `id` and `config.audit.privacyPage` into `auditBuild`**, so `privacy-link-missing` can find the privacy page by id. The pages come from `_stackForRecord()`, not the raw stack, so the ids are the ones the report shows: a default `privacy` that two pages arrived at, which `{{link}}` would refuse, finds no privacy page either.
+- **`reportInputs()` derives `thirdParty` on every assembly**, from the audit facts each written page parked (`thirdPartyOrigins`, `lib/audit.js`), against the instance's `config.siteUrl` (a page's own `siteUrl` override is not consulted for this key). It reads no file, so it costs a walk over the stack and is current under `_refreshReport()` too; `buildReport` nulls it on a failed build. It is the last input, after `packages`, as the report's key order fixes it.
 
 - **`writeLearningPackages()` runs just after `_writeRedirects()`, and for its reasons**: the zips are files this build publishes, so they are written into the staging folder before the swap, from the pages where they were written. It is latched as `_packagesRun` (reset by the replay) and skipped with nothing to report when no page names a `package`, when `config.packages` is `false`, and when the build has already failed, so a failed page is reported once and not again as a package that could not be made. A dev build skips it with one notice per instance: a scoped re-render re-runs no writer. A package that cannot be made fails the build as `<packages>`, and no zip is written at all. `written(file)` is a lookup in the output registry, never the disk, which is what keeps a stale file out of a package (`AIKB/packages.md`). `reportInputs()` carries `_packagesResult` as the report's last key. After writing, it logs one `Package: <build folder>/<dir>/<id>.<format>.zip  <title>  (<n> pages, <m> files)` info line per zip, beside `Links:` and `Audit:`, named by `config.folders.build` rather than the staging folder an atomic build wrote it in, and a `package outside: <page> -> <href> (<reason>)` notice per reference left out. Before 2026-10-25 only `check --summary` listed packages, and a clean-room run found GUIDE's claim that the build did.
 - **`_writeRedirects()` now writes up to two files, and only one of them is the host's.** `redirects.json` — the host-neutral IR — goes out on every build that has an alias, whatever `config.redirects.format` says; the format picks what goes beside it. `_redirectsPath` stays the **host** file, so the report's `redirects.file` keeps the meaning it had in 2.3, and it is `null` under `format: 'none'`: the honest answer for a build that deliberately wrote no host file, rather than a path that would read as a redirect some host is serving. A custom writer runs inside the same promise the `.catch` below wraps, so a writer that throws fails the build exactly as a failed write does — swallowing it would rebuild, in the site's own code, the silent no-op the format block exists to end.

@@ -6,7 +6,7 @@ This file is the index: what exists, the shape to follow, and the traps nothing 
 
 Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `Kiss` instance per build folder, built with `new Kiss(config)` and driven by a chainable API. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict. `config` is in every view as `this.config`.
 
-**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-design`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands for Claude Code and Codex; a declaration alone installs nothing. Offer them to the site's owner before building without them.
+**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-design`, `kiss-legal-and-privacy`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands for Claude Code and Codex; a declaration alone installs nothing. Offer them to the site's owner before building without them.
 
 ## The build script
 
@@ -36,7 +36,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.scan()`: `.page()` for every unregistered `.hbs` under `folders.pages`.
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
 - `.complete(callback)`: resolves when everything is written; rejects with an `AggregateError` (`err.failures`, `err.report`) on any failed page, controller, callback, Sass file, pipeline step or redirects write. A chain without it exits 0 on a broken build.
-- `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit` and more). GUIDE.md § Checking a build has the shape.
+- `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit`, `thirdParty` and more). GUIDE.md § Checking a build has the shape.
 - `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
 - Learning packages: pages with `package: '<slug>'` zip into an IMS content package or SCORM 1.2 (`config.packages`). Give each an `id`: the LMS keeps learners' records by it. GUIDE.md § Learning packages; `examples/13-course-packages`.
 - Markdown copies (`config.markdownCopies`, written when the build calls `.llms()`): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
@@ -63,7 +63,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   markdown: { html: true, xhtmlOut: true, breaks: false },
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   redirects: { format: null }, // 'netlify' | 'firebase' | 'vercel' | 'htaccess' | fn | an array
-  audit: { check: true, ignore: [] },
+  audit: { check: true, ignore: [], privacyPage: null },
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
   port: 3001,

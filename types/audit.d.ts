@@ -22,9 +22,12 @@ export function extractPageFacts(html: string, outputPath: string): PageFacts;
  * @param {boolean} [options.debugWritten] `viewStats()` wrote `debug.json`
  * @param {boolean} [options.extensionLess] `config.extensionLess`, for
  * resolving a cross-page fragment the way the link scan resolves its path
+ * @param {string|null} [options.privacyPage] `config.audit.privacyPage`: the
+ * id of the privacy page, when it is not the convention (id `privacy`, else
+ * `privacy.html` or `privacy/index.html`)
  * @returns {AuditResult}
  */
-export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, }: {
+export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, privacyPage, }: {
     pages: AuditPage[];
     buildDir: string;
     siteUrl?: string | null;
@@ -32,14 +35,89 @@ export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debug
     ownsFolder?: boolean;
     debugWritten?: boolean;
     extensionLess?: boolean;
+    privacyPage?: string | null;
 }): AuditResult;
+/**
+ * The third-party origins the build's pages fetch from. First-party is a
+ * relative URL (never recorded) or an absolute one whose host equals
+ * `siteUrl`'s, with a leading `www.` dropped on both sides — the host, not
+ * the origin, so `http:` and a port do not make the site's own assets
+ * someone else's.
+ *
+ * @param {Object} options
+ * @param {{ buildTo: string, facts: PageFacts|null }[]} options.pages
+ * @param {string|null} [options.siteUrl] `config.siteUrl`
+ * @returns {ThirdPartyOrigins|null} `null` when no page wrote HTML facts
+ */
+export function thirdPartyOrigins({ pages, siteUrl }: {
+    pages: {
+        buildTo: string;
+        facts: PageFacts | null;
+    }[];
+    siteUrl?: string | null;
+}): ThirdPartyOrigins | null;
 /**
  * Every check the audit can run, in the order findings are reported. These ids
  * are public vocabulary: `config.audit.ignore`, the report's `check` field and
  * the summary lines all use them, so renaming one is a breaking change.
  */
-export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log"];
+export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked"];
+/** @typedef {typeof CHECKS[number]} CheckId */
+/**
+ * The words that make a pre-ticked checkbox a consent to marketing:
+ * `checkbox-prechecked` fires when a checked box's label contains one, matched
+ * whole-word and case-insensitively, so "renews" never matches "news". A space
+ * also matches a hyphen ("third-party"). "Updates" is deliberately absent: it
+ * catches service updates, which are not marketing (2026-11-02 critique).
+ */
+export const MARKETING_WORDS: readonly string[];
 export type CheckId = (typeof CHECKS)[number];
+/**
+ * What a page fetches from an absolute origin, and as what.
+ *
+ * - `script`, `iframe`, `form-action`: the element's `src` or `action`
+ * - `img`: an `<img>` `src`/`srcset`, a `<source srcset>`, a `<video poster>`
+ * - `media`: a `<video>`/`<audio>` `src`, a `<source src>`
+ * - `stylesheet`, `preconnect`, `dns-prefetch`: a `<link>` with that rel token
+ * - `preload`, or `preload:<as>` when the link says what it preloads
+ *   (`preload:font`)
+ */
+export type PageOrigin = {
+    /**
+     * `https://fonts.gstatic.com` — scheme, host and any
+     * port, as WHATWG `URL` gives it; a protocol-relative `//host` reads as https
+     */
+    origin: string;
+    kind: string;
+};
+/**
+ * One field of a form, as written.
+ */
+export type FormField = {
+    /**
+     * `input`'s `type` lowercased (`text` when absent),
+     * or `select` / `textarea`
+     */
+    type: string;
+    name: string | null;
+    autocomplete: string | null;
+};
+/**
+ * One `<form>` and the fields inside it.
+ */
+export type PageForm = {
+    action: string | null;
+    /**
+     * the form's `netlify-honeypot` attribute:
+     * the name of the field that is a trap for bots, not a question
+     */
+    honeypot: string | null;
+    /**
+     * every `input`, `select` and `textarea`
+     * between the form's tags, in document order
+     */
+    fields: FormField[];
+};
 /**
  * What one written page says about itself, extracted at write time from the
  * same minified bytes `KissPage.links` comes from.
@@ -101,6 +179,36 @@ export type PageFacts = {
      * `#`, decoded, sorted and deduplicated
      */
     fragmentLinks: string[];
+    /**
+     * every absolute `http(s)` or `//host`
+     * origin a `script`, `iframe`, `img`, `source`, `video`, `audio`, `form` or
+     * `<link rel=stylesheet|preload|preconnect|dns-prefetch>` names, sorted by
+     * origin then kind. Never an `<a>`, and never `rel=canonical`/`alternate`:
+     * a browser fetches nothing from those. Whether one is third-party depends
+     * on `siteUrl`, so it is decided later (`thirdPartyOrigins`)
+     */
+    origins: PageOrigin[];
+    /**
+     * every `<form>`, in document order
+     */
+    forms: PageForm[];
+    /**
+     * every `<a>`/`<area>` `href` a reader can follow
+     * (not a bare `#fragment`, not `mailto:`/`tel:`/`javascript:`/`data:`),
+     * decoded, sorted and deduplicated
+     */
+    anchors: string[];
+    /**
+     * the text of every `<mark>`, then every
+     * `[to confirm…` outside one — unfinished copy a person has to replace
+     */
+    placeholders: string[];
+    /**
+     * the label text of every `<input
+     * type="checkbox" checked>`, from `for`/`id`, a wrapping `<label>`,
+     * `aria-label` and `aria-labelledby`, joined; `''` for an unlabelled one
+     */
+    prechecked: string[];
 };
 export type AuditFinding = {
     check: CheckId;
@@ -156,4 +264,35 @@ export type AuditPage = {
      * the page's own merged `siteUrl`
      */
     siteUrl?: string | null;
+    /**
+     * the page's identity, so the privacy page can be
+     * found by its id
+     */
+    id?: string | null;
+};
+/**
+ * What the build fetches from origins other than the site's own, per page.
+ * A fact, not a finding: the privacy review's inventory starts here.
+ */
+export type ThirdPartyOrigins = {
+    /**
+     * the `siteUrl` first-party was decided
+     * against; `null` when it is unset or local, and then every absolute origin
+     * is listed, because which of them is the site's own cannot be told
+     */
+    siteUrl: string | null;
+    /**
+     * the pages that fetch from one, sorted by page; origins sorted, kinds sorted
+     */
+    pages: {
+        page: string;
+        origins: {
+            origin: string;
+            kinds: string[];
+        }[];
+    }[];
+    /**
+     * every third-party origin, distinct and sorted
+     */
+    origins: string[];
 };

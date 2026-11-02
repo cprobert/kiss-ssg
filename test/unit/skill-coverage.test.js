@@ -24,6 +24,9 @@ const WRITING = 'plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md'
 const BROWSER_PASS = 'plugins/kiss-ssg/skills/kiss-site-review/browser-pass.md'
 const REVIEW_PROTOCOL =
   'plugins/kiss-ssg/skills/kiss-site-review/review-protocol.md'
+const LEGAL = 'plugins/kiss-ssg/skills/kiss-legal-and-privacy/SKILL.md'
+const LEGAL_UK =
+  'plugins/kiss-ssg/skills/kiss-legal-and-privacy/references/uk.md'
 
 const COVERAGE = [
   // 2.8.6: a Disallow: / under a training-only token no longer counts as the
@@ -401,6 +404,51 @@ const COVERAGE = [
     feature: "the personal-details line is the writing skill's",
     pattern: /personal details/,
     skills: [skill('kiss-ssg', 'kiss-writing-for-the-web')],
+  },
+  // 2026-11-02, a1k9training: kiss-site-review found one legal issue and a
+  // separate compliance check found seventeen more
+  // (planning/reviews/2026-11-02-a1k9-legal-feedback.md). The legal rules now
+  // live once, in kiss-legal-and-privacy; the three task skills open it, and
+  // the skills that keep a trigger sentence link it for what to do.
+  {
+    feature: 'the task skills open kiss-legal-and-privacy through its SKILL.md',
+    pattern: /\]\(\.\.\/kiss-legal-and-privacy\/SKILL\.md\)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-site-review'),
+      skill('kiss-ssg', 'kiss-page-add'),
+    ],
+  },
+  {
+    feature:
+      'the trigger sentences link kiss-legal-and-privacy for what the notice says',
+    pattern: /\]\(\.\.\/kiss-legal-and-privacy\/SKILL\.md\)/,
+    skills: [
+      WRITING,
+      skill('kiss-ssg', 'kiss-seo'),
+      skill('kiss-ssg', 'kiss-front-end'),
+    ],
+  },
+  {
+    feature:
+      'the legal skill: jurisdiction first, thirdParty and its blind spot, the three checks, storage measured in a browser, four lanes, not legal advice',
+    pattern:
+      /^(?=[\s\S]*Ask the jurisdiction first)(?=[\s\S]*`thirdParty`)(?=[\s\S]*An empty `thirdParty` proves nothing)(?=[\s\S]*`privacy-link-missing`)(?=[\s\S]*`checkbox-prechecked`)(?=[\s\S]*`placeholder-left`)(?=[\s\S]*\]\(\.\.\/kiss-site-review\/browser-pass\.md\))(?=[\s\S]*<mark>\[to confirm: …\]<\/mark>)(?=[\s\S]*four lanes)(?=[\s\S]*not legal advice)/,
+    skills: [LEGAL],
+  },
+  {
+    feature:
+      'a facade for video and maps: youtube-nocookie.com is not storage-free',
+    pattern:
+      /click-to-load facade[\s\S]*youtube-nocookie\.com[\s\S]*localStorage/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature:
+      'the protocol: legal P1 examples, the three privacy checks above P2, the accepted-risk record',
+    pattern:
+      /^(?=[\s\S]*storage before consent)(?=[\s\S]*except `privacy-link-missing`, `checkbox-prechecked` and `placeholder-left`)(?=[\s\S]*## Accepted risks)/,
+    skills: [REVIEW_PROTOCOL],
   },
   // 2026-10-20, the six-repo design-skill evaluation: the lessons taken in, not
   // the skills. The review runs as two passes, and each new craft check is one
@@ -891,6 +939,22 @@ const CONTRADICTIONS = [
     ],
   },
   {
+    why: '2026-11-02: the law on reviews (DMCC Act 2024) lives once, in the legal skill\'s UK reference; kiss-seo keeps "no review stars on the business itself" and links the skill, and a second copy of the legal clause drifts from the dated, sourced one',
+    allowedIn: [LEGAL_UK],
+    patterns: [/illegal in the UK if fake or filtered/],
+  },
+  {
+    why: "2026-11-02: what a form's line and the privacy notice say lives once, in kiss-legal-and-privacy; kiss-writing-for-the-web keeps the trigger (a form that collects personal details says what happens to them) and links the skill for the contents",
+    allowedIn: [LEGAL],
+    patterns: [
+      /who receives the details and that the visitor can ask for them to be deleted/,
+    ],
+  },
+  {
+    why: '2026-11-02: kiss-legal-and-privacy is the seventh domain skill, so a review that says "which of the six ran" names a list one short',
+    patterns: [/which of the six ran/],
+  },
+  {
     why: '2.8.0: Markdown copies are written only when the build calls .llms() (markdownCopies.write defaults to "llms"); from 2.7.5 every page had one, and a doc saying every page gets one tells an agent to expect a .md that a build without .llms() never writes',
     patterns: [
       /Every HTML page gets a Markdown copy/,
@@ -1279,6 +1343,7 @@ const DOMAIN_SKILLS = [
   'kiss-accessibility',
   'kiss-front-end',
   'kiss-design',
+  'kiss-legal-and-privacy',
 ]
 describe('a task skill links the SKILL.md of every domain skill it names', () => {
   const dir = path.join(root, 'plugins/kiss-ssg/skills')

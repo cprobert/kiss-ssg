@@ -136,7 +136,7 @@ Then read every page template's built page, and one page's Markdown copy if the 
 
 - **Placeholder, demo and scaffold copy**: lorem ipsum, "Example", "TODO", "fictional", a "how this works" panel, a build badge, a sentence addressed to the developer rather than the visitor. It is the plainest sign of a site that is not finished, and it lands in the Markdown copies too. A site that says it is an example or a demo has recorded that as a decision: ask before calling it a finding.
 - **Invented facts**: a figure, price, testimonial or claim the owner never gave. Ask where each one came from.
-- **A form that collects personal details** (a name, a phone number, an email, a photo) **says what happens to them**: who receives the details and that the visitor can ask for them to be deleted, in the site's own voice. Draft the line and mark every claim for the owner to confirm; do not publish a promise they have not made.
+- **A form that collects personal details** (a name, a phone number, an email, a photo) **says what happens to them**, in the site's own voice. What the line and the privacy page must say is [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)'s: open it before you draft either. Draft the line and mark every claim for the owner to confirm; do not publish a promise they have not made.
 - **The 404 page and empty states**: do they help, in words (above)?
 - **The review checklist** below, page by page.
 

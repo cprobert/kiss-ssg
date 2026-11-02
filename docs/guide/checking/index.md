@@ -126,7 +126,7 @@ The finding is advisory: it never changes `ok` and never changes the exit code. 
 
 **Orphan pages.** The same scan lists, as `links.orphans`, every HTML page no other page links to by any spelling, which only a search engine or a URL someone was given can reach. `--summary` names the first five on one line, `orphan pages (N, no other page links to them): …`. The home page and `404.html` are never orphans, and neither is a page in a learning package, which an LMS opens from the package's manifest. A page that links only to itself is still one. It is advisory, like a broken link: a campaign landing page may be unlinked on purpose. The `kiss-information-architecture` skill reads it.
 
-**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on. Four checks get one line per value instead, because the value is what you change: the two duplicate checks, `viewport-zoom-lock` and `fragment-missing`.
+**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on. Five checks get one line per value instead, because the value is what you change: the two duplicate checks, `viewport-zoom-lock`, `fragment-missing` and `checkbox-prechecked` (whose value is the box's label).
 
 ```
   audit description-missing: 12 pages (./public/about.html, ./public/contact.html, ./public/index.html, …)
@@ -155,6 +155,9 @@ The checks, by the id `check` carries:
 | `debug-dump` | `viewStats()` under `verbose: true` wrote `debug.json`, every page's options, into the build |
 | `stray-file` | a dotfile (bar `.nojekyll`, `.htaccess` and `.well-known/`), a `.map`, `.log`, `.bak`, `.swp` or `~` file, `.DS_Store` or `Thumbs.db` |
 | `console-log` | a `.js` file you wrote contains `console.log(` — `*.min.js`, `vendor/` and `node_modules/` are skipped |
+| `privacy-link-missing` | a page with a form that asks for an email address or a phone number has no link to the privacy page |
+| `placeholder-left` | a page still carries a `<mark>`, or the bracketed text `[to confirm` |
+| `checkbox-prechecked` | a checkbox is ticked before the reader ticks it, and its label is about marketing (offers, news, newsletters, partners, third parties) |
 
 Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the three checks that walk it — `not-found-missing`, `stray-file`, `console-log` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
 
@@ -174,6 +177,40 @@ Two cases come up often:
 The `.md` copies beside each page are not audited. Only `.html` output is.
 
 Every `detail` is the value as the page was written, after minification, so `viewport-zoom-lock`'s is the content with the minifier's spacing (`width=device-width,maximum-scale=1`).
+
+**The three privacy checks.** They find what a privacy review would otherwise find by reading every page; the `kiss-legal-and-privacy` skill says what to do about each.
+
+-   **`privacy-link-missing`** reads each `<form>`. A form counts when one of its fields has `type="email"` or `type="tel"`, a `name` of `email`, `e-mail`, `tel`, `phone` or `telephone`, or an `autocomplete` of `email` or `tel…`. A `type="hidden"` field does not count, and neither does a honeypot: a field named `bot-field`, or the one the form's `netlify-honeypot` attribute names. Such a page needs an `<a>` that resolves, the way the link scan resolves any link, to the privacy page. That is the page whose id is `privacy`, or failing that the page written to `privacy.html` or `privacy/index.html`. Name a different one with `audit: { privacyPage: '<id>' }`. Link text is never read, a link to another site never counts, and the privacy page needs no link to itself. A page with a `<base href>` is not checked, because its relative links resolve somewhere the build cannot see (the fragment check skips it too). The `detail` is the field that made the form count. With no privacy page at all, one site-wide line says so; a `privacyPage` no page has is reported the same way rather than thrown. A newsletter form in the footer fires on every page that does not also link the privacy page: one line, naming three of them.
+-   **`placeholder-left`** fires on every `<mark>`, and on the text `[to confirm` outside one, in the page's markup (not in a script, a style, a template or a comment, and not inside `<code>` or `<pre>`, where a page documenting the marker quotes it). Write an unconfirmed fact as `<mark>[to confirm: the registered office]</mark>`, and the build will not let it ship unnoticed. The bare words "to confirm" are prose ("we will email you to confirm your booking") and never fire. A site that uses `<mark>` for highlighting ignores the check.
+-   **`checkbox-prechecked`** fires on an `<input type="checkbox" checked>` whose label mentions offers, news, a newsletter, marketing, promotions, partners or third parties, as whole words, so "renews" is not "news". The label is read from a `<label for>`, a wrapping `<label>`, `aria-label` and `aria-labelledby`. `data-checked` and `aria-checked` are not `checked`. "Updates" is not on the list, because a box for service updates is not marketing.
+
+**Third-party origins.** Every build that wrote HTML and did not fail also lists, as `report().thirdParty`, the origins other than your own that its pages fetch from:
+
+```json
+"thirdParty": {
+  "siteUrl": "https://weak-site.example",
+  "pages": [
+    {
+      "page": "./public/about.html",
+      "origins": [
+        { "origin": "https://fonts.googleapis.com", "kinds": ["stylesheet"] },
+        { "origin": "https://fonts.gstatic.com", "kinds": ["preconnect"] },
+        { "origin": "https://www.googletagmanager.com", "kinds": ["script"] },
+        { "origin": "https://www.youtube-nocookie.com", "kinds": ["iframe"] }
+      ]
+    },
+    …
+  ],
+  "origins": [
+    "https://fonts.googleapis.com",
+    "https://fonts.gstatic.com",
+    "https://www.googletagmanager.com",
+    "https://www.youtube-nocookie.com"
+  ]
+}
+```
+
+It reads `<script src>`, `<iframe src>`, `<img>` and `<source>` `src` and `srcset`, `<video>`/`<audio>` `src` and `poster`, `<form action>`, and `<link>` with a `rel` of `stylesheet`, `preload`, `preconnect` or `dns-prefetch`. The kinds are `script`, `iframe`, `img`, `media`, `form-action`, `stylesheet`, `preconnect`, `dns-prefetch`, and `preload`, or `preload:<as>` when the link says what it preloads (`preload:font`). It never reads an `<a>`, a canonical or an alternate link, because a browser fetches nothing from those. An origin is your own when its host is `siteUrl`'s, with a leading `www.` ignored on both sides. A relative URL is always your own, and a `//host` URL is read as https. With `siteUrl` unset or local, kiss cannot tell which origin is yours, so every absolute origin is listed and `siteUrl` is `null`. `--summary` names them on one line, `third-party origins (N): …`. It is a fact, not a finding: `audit: false` does not turn it off, and it never changes `ok`. A failed build reports `null`, since its list would be partial. It sees **static markup only**: an iframe your script injects, or a font a stylesheet `@import`s, is not in it. An empty list proves nothing, and the browser pass in `kiss-site-review` is what measures storage and requests.
 
 **Redirects and renames.** The same report carries `redirects` — the redirect files this build wrote from your pages' `aliases`, the resolved `rules` as data, and three more advisory findings: a page the last record had that this build no longer writes and no alias covers (`removed without redirect: <path>`), a page the record and this build share an `id` with that is now written somewhere else with nothing answering its old URL (`moved without redirect: <from> -> <to> (<id>)`), and an alias a live page already answers, which the host will silently ignore (`alias collides with a page: <path>`). See [Redirects](../urls/#redirects).
 

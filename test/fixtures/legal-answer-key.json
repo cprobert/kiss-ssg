@@ -1,0 +1,357 @@
+{
+  "schema": 1,
+  "about": "The answer key for the kiss-legal-and-privacy arms (planning/plans/2026-11-02-kiss-legal-and-privacy.md, workstream A). One item per finding. a1k9 items come from planning/reviews/2026-11-02-a1k9-legal-feedback.md and the compliance check it cites (a1k9training c07d5df:planning/reviews/2026-11-02-privacy-compliance-check.md, numbered #1-#18 there); fixture items are the gaps planted in test/fixtures/legal-weak-site/. visibleAt385434a was measured with read-only git against C:/Code/kiss/a1k9training at 385434a (git grep, git show, git ls-tree; nothing checked out or fetched), and `evidence` says how. An item not visible there is scored not applicable, never planted. `cues` are case-insensitive regular expressions scripts/arms.mjs summarise uses to gather candidate lines; they find lines for a person to read and decide nothing. A person marks each item hit, missed or not applicable.",
+  "lanes": ["page-wording", "owner-habit", "owner-decision", "adviser"],
+  "howScored": [
+    "fixed-on-site",
+    "listed-as-question",
+    "in-handout",
+    "accepted-risk",
+    "flagged-to-adviser"
+  ],
+  "items": [
+    {
+      "id": "a1k9-01",
+      "finding": "The enquiry form collects email and phone with no line about what happens to them, and the site has no privacy notice or link to one (the one legal finding kiss-site-review made, P1)",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "fixed-on-site",
+      "evidence": "git grep -n -E 'type=\"(email|tel)\"' 385434a -- src: src/partials/courses/enquiry.hbs:121 (type=email) and :127 (type=tel); git grep -c -i privacy 385434a -- src router.js: no file",
+      "cues": [
+        "privacy",
+        "personal (details|data|information)",
+        "what happens to"
+      ]
+    },
+    {
+      "id": "a1k9-02",
+      "finding": "The notice must say whether giving details is required and what happens if not (UK GDPR Art. 13(2)(e))",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "fixed-on-site",
+      "evidence": "No notice exists at 385434a, so any notice an arm writes is scored for this item; the form marks email and mobile `required` (enquiry.hbs:121, :127)",
+      "cues": [
+        "13\\(2\\)\\(e\\)",
+        "(not|aren't|are not) (compulsory|required|obligatory)",
+        "(can't|cannot|unable to) (reply|book|respond)",
+        "optional"
+      ]
+    },
+    {
+      "id": "a1k9-03",
+      "finding": "Transfers outside the UK: the safeguards named and where to get a copy (Art. 13(1)(f)) — Netlify and the owner's email provider are US-based",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "fixed-on-site",
+      "evidence": "git grep data-netlify 385434a -- src: src/partials/courses/enquiry.hbs:82 (Netlify Forms); the email provider is known only by asking",
+      "cues": [
+        "transfer",
+        "data (privacy )?framework|DPF",
+        "data bridge",
+        "IDTA|standard contractual|adequacy",
+        "13\\(1\\)\\(f\\)"
+      ]
+    },
+    {
+      "id": "a1k9-04",
+      "finding": "The legitimate interest behind marketing was not named (Art. 13(1)(d))",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": false,
+      "howScored": "fixed-on-site",
+      "evidence": "Not visible: no marketing intent at 385434a. git grep -i -E 'newsletter|checkbox' 385434a -- src: no file; 'marketing' only in a code comment (src/helpers/navigation.js:36); 'offers' only as a verb. The owner said 'we may send offers' later in the a1k9 session",
+      "cues": ["legitimate interest", "13\\(1\\)\\(d\\)"]
+    },
+    {
+      "id": "a1k9-05",
+      "finding": "The youtube-nocookie.com embed writes to localStorage on load, before consent (PECR reg. 6); found only by measuring in a browser. Fixed with a click-to-load facade, or recorded as an accepted risk as a1k9 did",
+      "lane": "owner-decision",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "accepted-risk",
+      "evidence": "git grep -n youtube-nocookie 385434a -- src: src/pages/courses/course.hbs:44 (static iframe) and src/assets/js/site.js:88 (injected by script, invisible to a static scan). Without a browser in the arm, 'said the browser pass did not run' is the scored outcome, not a miss",
+      "cues": [
+        "localStorage|IndexedDB|device storage",
+        "youtube",
+        "click[- ]to[- ]load|facade",
+        "reg(ulation)?\\.? ?6",
+        "consent"
+      ]
+    },
+    {
+      "id": "a1k9-06",
+      "finding": "No email address on the site (E-Commerce Regs 2002 reg. 6; a contact form alone is not enough, CJEU C-298/07). a1k9's owner accepted the risk",
+      "lane": "owner-decision",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "accepted-risk",
+      "evidence": "git grep -c mailto: 385434a -- src router.js: no file",
+      "cues": [
+        "e-?mail address",
+        "mailto:",
+        "C-298/07",
+        "E-?Commerce",
+        "reg(ulation)?\\.? ?6"
+      ]
+    },
+    {
+      "id": "a1k9-07",
+      "finding": "No full geographic address for the business (E-Commerce Regs 2002 reg. 6): the Training Grounds appear by locality only on the page, the postcode only in the JSON-LD",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "fixed-on-site",
+      "evidence": "git grep -n -F Pontarddulais 385434a -- src: page text says 'at Pontarddulais' (index.hbs:27, footer.hbs:25); git show 385434a:src/config/business.js: postalCode 'SA4 8NP' in the JSON-LD block only, and 'No street address ... invented'",
+      "cues": ["geographic address", "postal address", "SA4 8NP", "address"]
+    },
+    {
+      "id": "a1k9-08",
+      "finding": "Marketing soft opt-in (PECR reg. 22) needs a way to refuse at collection: an unticked opt-out box on the form, and in every message",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": false,
+      "howScored": "fixed-on-site",
+      "evidence": "Not visible: there is no marketing at 385434a (see a1k9-04), so there is nothing for an opt-out to refuse",
+      "cues": ["soft opt-in", "opt[- ]out", "reg(ulation)?\\.? ?22", "unticked"]
+    },
+    {
+      "id": "a1k9-09",
+      "finding": "No written processor contract (Art. 28) with the site's own developer and administrator, who can see enquiries",
+      "lane": "owner-habit",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "in-handout",
+      "evidence": "The repository is maintained by a developer (git log -1 --format=%an 385434a: Courtenay Probert; src/partials/courses/index/collars-and-leads.hbs:3 'relayed by Courtenay'); Netlify Forms (enquiry.hbs:82) shows enquiries to whoever administers the account",
+      "cues": [
+        "Art(icle)?\\.? ?28",
+        "processor (agreement|contract)",
+        "administrator",
+        "developer"
+      ]
+    },
+    {
+      "id": "a1k9-10",
+      "finding": "The notice must name everyone who can see enquiries, including the site's developer and administrator: a claim that 'nobody else sees enquiries' is false",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "listed-as-question",
+      "evidence": "As a1k9-09. The feedback's method rule 'never write a legal fact the owner hasn't given' was learned on this claim",
+      "cues": [
+        "recipient",
+        "who (else )?(can )?sees?",
+        "nobody else",
+        "administrator",
+        "developer"
+      ]
+    },
+    {
+      "id": "a1k9-11",
+      "finding": "The ICO data protection fee (Data Protection (Charges and Information) Regs 2018): self-assessment, likely the lowest tier",
+      "lane": "owner-habit",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "in-handout",
+      "evidence": "Applies to any business holding client details electronically; enquiries arrive through Netlify Forms (enquiry.hbs:82). Found only by asking",
+      "cues": [
+        "ICO fee",
+        "data protection fee",
+        "Charges and Information",
+        "self-assessment",
+        "register with the ICO"
+      ]
+    },
+    {
+      "id": "a1k9-12",
+      "finding": "A plan for a data breach: report to the ICO within 72 hours if people are at risk (Art. 33)",
+      "lane": "owner-habit",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "in-handout",
+      "evidence": "Applies to any controller; found only by asking",
+      "cues": ["breach", "72 hours", "Art(icle)?\\.? ?33"]
+    },
+    {
+      "id": "a1k9-13",
+      "finding": "Security of the accounts that hold enquiries: two-step sign-in on the email account and Netlify (Art. 32)",
+      "lane": "owner-habit",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "in-handout",
+      "evidence": "Netlify Forms (enquiry.hbs:82); the email account is known only by asking",
+      "cues": [
+        "two-step",
+        "2-step",
+        "two-factor",
+        "2FA|MFA",
+        "Art(icle)?\\.? ?32"
+      ]
+    },
+    {
+      "id": "a1k9-14",
+      "finding": "Retention in practice: a stated period, and a habit of deleting old enquiries from Netlify and the inbox",
+      "lane": "owner-habit",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "in-handout",
+      "evidence": "Enquiries accumulate in Netlify Forms (enquiry.hbs:82); no retention period is stated anywhere (git grep -i -E 'retain|retention' 385434a -- src: no file)",
+      "cues": [
+        "retention",
+        "retain",
+        "keep (your|the|them|enquiries)",
+        "delete",
+        "12 months|six years|6 years"
+      ]
+    },
+    {
+      "id": "a1k9-15",
+      "finding": "Photo consent that is specific and provable (Art. 7(1)), with a parent's permission for anyone under 18",
+      "lane": "owner-habit",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "in-handout",
+      "evidence": "Found only by asking. Hook on the site: src/pages/index.hbs:380 'Follow me on facebook for our most recent photos'",
+      "cues": [
+        "photo",
+        "image consent",
+        "under 18",
+        "parent",
+        "Art(icle)?\\.? ?7"
+      ]
+    },
+    {
+      "id": "a1k9-16",
+      "finding": "Class WhatsApp groups show every member's phone number to strangers",
+      "lane": "owner-habit",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "in-handout",
+      "evidence": "git grep -n -i whatsapp 385434a -- src: src/partials/courses/enquiry.hbs:131 'So Gaynor can add you to the class WhatsApp group', src/partials/how-booking-works.hbs:87",
+      "cues": ["WhatsApp", "group", "phone numbers?"]
+    },
+    {
+      "id": "a1k9-17",
+      "finding": "Deposits and cancellation rights for bookings made by email or phone (Consumer Contracts Regs 2013): flag it, don't draft it",
+      "lane": "adviser",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "flagged-to-adviser",
+      "evidence": "git grep -n -i deposit 385434a -- src: src/config/business.js:102 'Confirm your place with a deposit', src/llms/notes.md:8",
+      "cues": [
+        "Consumer Contracts",
+        "cancel",
+        "deposit",
+        "14[- ]day",
+        "adviser|solicitor|lawyer"
+      ]
+    },
+    {
+      "id": "a1k9-18",
+      "finding": "A complaints route, and acknowledging a complaint within 30 days (Data (Use and Access) Act 2025), written only once its commencement date is verified",
+      "lane": "page-wording",
+      "bench": "a1k9",
+      "visibleAt385434a": true,
+      "howScored": "listed-as-question",
+      "evidence": "No notice exists at 385434a, so any notice an arm writes is scored for this item; the commencement date is a fact to verify, not to assume",
+      "cues": [
+        "complain",
+        "Data \\(Use and Access\\)|DUAA",
+        "30 days",
+        "commencement"
+      ]
+    },
+    {
+      "id": "fixture-01",
+      "finding": "The contact form collects email (type=email) and phone (type=tel) with no line about them and no link to a privacy page; the site has no privacy page",
+      "lane": "page-wording",
+      "bench": "fixture",
+      "visibleAt385434a": null,
+      "howScored": "fixed-on-site",
+      "evidence": "test/fixtures/legal-weak-site/src/pages/contact.hbs",
+      "cues": [
+        "privacy",
+        "personal (details|data|information)",
+        "privacy-link-missing"
+      ]
+    },
+    {
+      "id": "fixture-02",
+      "finding": "A pre-ticked 'Send me offers and news' checkbox (PECR reg. 22; consent is not a pre-ticked box)",
+      "lane": "page-wording",
+      "bench": "fixture",
+      "visibleAt385434a": null,
+      "howScored": "fixed-on-site",
+      "evidence": "test/fixtures/legal-weak-site/src/pages/contact.hbs (input#offers checked)",
+      "cues": [
+        "pre-?ticked",
+        "checked",
+        "offers",
+        "checkbox-prechecked",
+        "opt[- ]in"
+      ]
+    },
+    {
+      "id": "fixture-03",
+      "finding": "A <mark>[to confirm: …]</mark> left in a page",
+      "lane": "page-wording",
+      "bench": "fixture",
+      "visibleAt385434a": null,
+      "howScored": "listed-as-question",
+      "evidence": "test/fixtures/legal-weak-site/src/pages/about.hbs",
+      "cues": ["to confirm", "<mark", "placeholder-left", "first[- ]aid"]
+    },
+    {
+      "id": "fixture-04",
+      "finding": "Google Fonts loaded from Google's CDN (a stylesheet from fonts.googleapis.com and a preconnect to fonts.gstatic.com) sends every visitor's IP address to Google",
+      "lane": "page-wording",
+      "bench": "fixture",
+      "visibleAt385434a": null,
+      "howScored": "fixed-on-site",
+      "evidence": "test/fixtures/legal-weak-site/src/layouts/layout.hbs",
+      "cues": [
+        "fonts\\.(googleapis|gstatic)",
+        "Google Fonts",
+        "self-host",
+        "thirdParty"
+      ]
+    },
+    {
+      "id": "fixture-05",
+      "finding": "A youtube-nocookie.com iframe loaded on page load (storage before consent, PECR reg. 6)",
+      "lane": "owner-decision",
+      "bench": "fixture",
+      "visibleAt385434a": null,
+      "howScored": "accepted-risk",
+      "evidence": "test/fixtures/legal-weak-site/src/pages/about.hbs. A click-to-load facade (fixed-on-site) also counts",
+      "cues": [
+        "youtube",
+        "click[- ]to[- ]load|facade",
+        "localStorage",
+        "consent"
+      ]
+    },
+    {
+      "id": "fixture-06",
+      "finding": "An analytics script from a third-party origin (googletagmanager.com) on every page, before consent (PECR reg. 6)",
+      "lane": "owner-decision",
+      "bench": "fixture",
+      "visibleAt385434a": null,
+      "howScored": "listed-as-question",
+      "evidence": "test/fixtures/legal-weak-site/src/layouts/layout.hbs",
+      "cues": ["analytics", "googletagmanager|gtag", "cookie", "consent"]
+    },
+    {
+      "id": "fixture-07",
+      "finding": "No postal address and no email address anywhere on the site (E-Commerce Regs 2002 reg. 6)",
+      "lane": "owner-decision",
+      "bench": "fixture",
+      "visibleAt385434a": null,
+      "howScored": "listed-as-question",
+      "evidence": "test/fixtures/legal-weak-site/src/layouts/layout.hbs footer",
+      "cues": ["address", "mailto:", "E-?Commerce", "reg(ulation)?\\.? ?6"]
+    }
+  ]
+}

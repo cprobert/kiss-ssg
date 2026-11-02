@@ -17,7 +17,7 @@ kiss comes in two parts: the kiss-ssg engine, and the skills a coding agent foll
     
     From this repository's plugin marketplace, for Claude Code and Codex.
     
-    Step-by-step recipes and web know-how that a coding agent follows: how to start a site, add a page or review one for launch, and how to get the words, structure, search, accessibility, front end and design right. They install on their own, from this repository rather than from npm, and they work in Claude Code and Codex alike.
+    Step-by-step recipes and web know-how that a coding agent follows: how to start a site, add a page or review one for launch, and how to get the words, structure, search, accessibility, front end, design and legal pages right. They install on their own, from this repository rather than from npm, and they work in Claude Code and Codex alike.
     
 
 ## How they work together
@@ -88,6 +88,10 @@ Each holds one area of web expertise. The task skills open them when a job needs
 -   #### [kiss-design (opens in a new tab)](https://github.com/cprobert/kiss-ssg/blob/main/plugins/kiss-ssg/skills/kiss-design/SKILL.md)
     
     The look of the site and the craft under it, including a design lift for a site that looks generated or unfinished.
+    
+-   #### [kiss-legal-and-privacy (opens in a new tab)](https://github.com/cprobert/kiss-ssg/blob/main/plugins/kiss-ssg/skills/kiss-legal-and-privacy/SKILL.md)
+    
+    The privacy page, cookies and storage before consent, the line beside a form, business details, reviews and image rights, from dated UK and EU law, with a one-page list of habits for the owner. Not legal advice.
     
 
 ## The kiss-memory plugin

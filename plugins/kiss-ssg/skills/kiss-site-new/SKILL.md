@@ -118,6 +118,7 @@ Build every page to the domain skills, each in its build mode. They own the rule
 - **[`kiss-front-end`](../kiss-front-end/SKILL.md)**: `width` and `height` on every image and `loading="lazy"` below the first screen, the platform's own controls before any script, the hero height, named transitions, lists that work at 0 and 1.
 - **[`kiss-seo`](../kiss-seo/SKILL.md)**: every page's own title and description, one purpose per page, and when to keep a page out of search.
 - **[`kiss-design`](../kiss-design/SKILL.md)**: the look, and the craft checks under it.
+- **[`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)**, as soon as the site has a form, an embed, analytics or any third-party script: a site with a form ships from day one with a privacy page, a link to it in the footer and beside the form, and the form's line, every claim marked to confirm until the owner gives it, and an owner handout at the hand-over.
 
 Three mistakes real consumer sites made, all of which passed review before they bit:
 

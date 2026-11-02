@@ -166,5 +166,10 @@
     "skipped": [],
     "findings": []
   },
-  "packages": null
+  "packages": null,
+  "thirdParty": {
+    "siteUrl": "https://asterandoak.example",
+    "pages": [],
+    "origins": []
+  }
 }
