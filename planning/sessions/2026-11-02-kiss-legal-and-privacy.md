@@ -1,7 +1,7 @@
 ---
 branch: feat/kiss-legal-and-privacy
 base: main
-status: open
+status: closed
 opened: 2026-11-02
 ---
 
@@ -79,3 +79,105 @@ opened: 2026-11-02
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-02: kiss-legal-and-privacy, the audits that feed it, and the harness that measures it
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped (2.10.0, 15 commits):**
+
+- `5e2300e`: the arm harness `scripts/arms.mjs`, the legal weak-site fixture and its answer key.
+- `a969c50`: the three audit checks, `report().thirdParty` and `audit.privacyPage`.
+- `61a9eee`: the seventh domain skill, with the legal sentences moved out of four other skills.
+- `ac6544f`: the measurement.
+- `6d98b98`: fixes from grading the live a1k9training.
+- `c178964`: the clean room.
+- `4391de2` and `83e299c`: a false positive and two Codex P2s, each fixed with a test seen red first.
+- `771b9cc`: the bump.
+
+**Outside this repo:** a local, unpushed branch in a1k9training, `fix/privacy-review-2026-11-02` (`1e8ac66`), with four page fixes.
+
+## Reflect — what the session was
+
+**The framing was unusually good, because it began from evidence.** The operator opened with a three-word ask ("Lew legal domain skill"), then supplied the feedback from a real compliance session on a1k9training: 18 findings and the method that found them. That turned an open-ended "write a legal skill" into a concrete brief. Its sharpest instruction was "no duplication with llms.txt or other skills."
+
+The shape sat **between planned and emergent**:
+
+- **Planned:** the harness, rebuilt five times before; and the contract with its names table, critiqued before any build and corrected for two blockers (`thirdParty` cannot come from `KissPage.links`; the first-party rule was undecided).
+- **Emergent:** the skill's content, and two extensions the operator added mid-branch. One was a legal-plugin review of the agents' output. The other was grading the live a1k9training, which found a1k9-specific examples in the skill that primed any review of that site with its own answers.
+
+The planned half held. The emergent half is where the skill got better.
+
+## Evaluate — how the human supervised the AI
+
+**Harness leverage was the strongest dimension, and it came from the operator.** Two of the most productive moves were the operator's, not Claude's.
+
+- **Installing the `legal` plugin and saying "use the legal plugin to review the results from the sub agents".** Claude checked each claim at legislation.gov.uk before acting on it, and the review produced six fixes. One example: the statistics exception's no-sharing condition, PECR Sch. A1 para. 5(1)(c). As written, it would have let an agent file Google Analytics under the exception.
+- **"Review C:\Code\kiss\a1k9training using our new skill — grade its compliance".** This tested the skill against a site in its real state. It found what neither the arms nor the clean room could:
+  - the skill quoted a1k9training's own findings;
+  - its storage check read too early for a 6-second idle timer;
+  - P1 had no slot for an unmet Art. 28 contract.
+
+Each sum-beats-the-parts moment pointed the work at a reviewer with a different view (a plugin, a real site). Claude's side was to check what came back before acting on it.
+
+**Pushback & steering: strong on scope, silent on reasons.** The operator decided every scope fork asked: the engine audits on this branch, `eu.md` now, the bench, blind marking, both Codex fixes. Two of those overrode Claude's recommendation (the engine on this branch, `eu.md` now). Both were recorded as "no reason given" after Claude asked once and no answer came. The reason rule recurs in the read-back and in `retired.md`, so it comes back again here.
+
+**Learning engagement was thin, and the miss was partly Claude's.** The pulse's one-decision offer was "who marks the arm results". The operator answered "I'm not sure what you're talking about. Can we just proceed with building the skill". The question was asked before the measurement existed, about a harness the operator had not seen. Claude parked it, re-asked it with context at the measurement, and the operator chose a blind fresh agent. That was a good answer, so the lesson is the timing, not the question.
+
+**Verification & ownership: the artefact everyone depends on was read only by agents.**
+
+- **Where the operator supervised:** the contract ("Looked, it matches"), and the measurement and grade results as relayed.
+- **Where they did not:** the shipped `SKILL.md` was not read end to end by a person before close, the Step 5a outcome passed in.
+- **The checkpoint that slipped:** the operator meant to steer the skill, and the skill's content was judged by a sub-agent writer, a same-family legal plugin, a blind same-family marker and Claude. That is four same-family readers and no human one.
+
+**Claude's own errors, named:**
+
+- **A guess the operator approved on:** Claude described the process holding port 3001 as "likely your `npm run dev` docs preview". It was `node router.js --dev`, some site's dev server, and was stopped on that description.
+- **A sub-agent incident:** workstream C deleted the real `node_modules` through a scratch worktree's junction. It restored it with `npm ci`, and Claude verified the lockfile was unchanged and no worktree was left.
+- **Never-red tests:** two tests B added were never seen red (the skill's own needles row; the `allowedIn` owners test).
+
+**Iteration discipline was good.** There were two pulses and three review loops (the critique, the legal plugin, Codex). After each, the claims were checked at the source or in the code. The full suite was run on the combined tree before it was sliced into three commits.
+
+**Competency level: Active supervisor.** The operator framed from evidence, chose the decisive reviewers and bench, and took every scope decision. Two things keep it from Agentic engineering lead: the shipped skill was never read by its owner, and two overrides carry no reason.
+
+## Feedback — recommendations for next session
+
+- **Operator — read the shipped skill before the close.** `kiss-legal-and-privacy/SKILL.md` is about 7.7k and is what every site will follow. Four same-family readers checked it; none was you. This lesson is in `retired.md` row 78 ("send it to the device rather than take 'not now'") and recurred here. Claude offered it after the measurement and the close went ahead without it.
+- **Operator — when you overrule, give the one sentence first.** It applied twice here (the engine on this branch; `eu.md` now). Both read as sound calls, and both are recorded as "no reason given".
+- **Claude — ask the one-decision question about something the operator has seen.** "Who marks the arm results" was asked before any result existed and read as noise. Hold the question until the artefact it is about is on screen.
+- **Claude — identify a process before asking to stop it.** Read its command line (`Get-CimInstance Win32_Process`) first and name it exactly. A guess in the question is a guess the operator approves.
+- **Claude — brief sub-agents never to remove a worktree that holds a junction**, and never to touch the main checkout's `node_modules`. C's red-test worktree deleted it. A cheaper red-test route is `git stash` of the fix, or a copy of the one module.
+- **Process — `scripts/arms/transcript.mjs` counts only `Read` calls as skill reads.** The clean room read `SKILL.md` with `cat`, and the summary said 0. Count `Bash` reads of `SKILL.md` paths too, with a test. Recorded in `planning/reviews/2026-11-02-legal-arms.md`.
+- **Process — the fixture bench needs a scratch repo,** because `setup` copies a whole repository at a commit. A `--site-path <subfolder>` option on `setup` would make the fixture a one-command bench.
+- **Process — finish the a1k9training branch from a session in that repo.** `fix/privacy-review-2026-11-02` (`1e8ac66`) needs its `qa/baseline/content.json` refresh as the last commit, its `kiss-branch-*` close, a push and a PR. Gaynor's processor agreement and the two accepted-risk records are hers.
+- **Process — three pre-existing dead paths** found by the corpse collector belong to the next docs branch: `lib/css-split.js` in `AIKB/html-split.md` and `AIKB/kiss.md`; `examples/_shared/assets/robots.txt` in `AIKB/robots.md`.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** a UK-first legal domain skill with no duplication, the audits that feed it, and the harness promoted to `scripts/` to measure it on a weak bench. **Met, with one criterion partly met.** The objective moved by Amendment (engine audits, `eu.md`, `kiss-page-add`, the a1k9 bench), and that was good drift: each piece was used by the measurement.
+
+- [x] **The skill exists.** UK and EU, four areas, build and review modes, a 353-character description (`61a9eee`, refined in `6d98b98`).
+- [ ] **Every rule cites a primary source: partly met.**
+  - **UK:** every fact is dated with a legislation.gov.uk or gov.uk source, and the six legal-review fixes were each checked at the source.
+  - **EU:** EUR-Lex and curia returned nothing to automated fetches. C-298/07, E-Commerce Directive art. 5, the Omnibus review rules and the EAA are marked "unverified at source", which is honest, but they are not cited at the primary source.
+- [x] **Behaviour sentences measured.** The `youtube-nocookie` keys and the 6-second idle timer were measured in Chromium. The legal-review facts were checked at legislation.gov.uk.
+- [x] **Three callers link the skill,** and `skill-coverage.test.js` holds each link and the `CONTRADICTIONS` bans.
+- [x] **The site-facing lists:** README, `llms.txt` (14,734 of 16,000), the docs Skills page (rebuilt), init, `CLAUDE.md`.
+- [x] **The harness is in `scripts/` with tests.** 43 tests; no bypass flag can be built; transcripts stream.
+- [x] **The weak-bench fixture** is in `test/fixtures/`, with its integration test.
+- [x] **Measured with and without, $4.12, blind-marked.**
+  - On a1k9 the skill changed the outcome: 13 hit, 3 partial, 0 missed with it, against 2 hit and 6 missed without.
+  - On the fixture there was no difference, reported as such, and its two shortfalls became skill fixes.
+- [x] **Clean room:** an empty folder reached the skill through `kiss-site-new` and passed `kiss-ssg check`. $1.59.
+- [x] **`npm run gates` passes,** re-run after every fix. Codex reviewed the whole branch in two passes, with two P2s fixed.
+- [x] _(Amendment)_ **No duplication:** the moved sentences are banned in `CONTRADICTIONS`. **Engine audits** shipped with an `### Upgrading` note.
+
+**What is concretely better:** a kiss site with a form now gets a flagged missing privacy link, a pre-ticked marketing box and leftover placeholders from the build itself. Its agent has one place to learn what the law asks, and that place was measured to change the outcome on a real site.
+
+**Still open:**
+
+- the operator's own read of `SKILL.md`;
+- the EU facts EUR-Lex would not serve;
+- the a1k9training branch's close and Gaynor's agreement;
+- the transcript undercount;
+- a bench with a special-category form, a consent banner and a price, since the legal-review fixes for those are not exercised yet.
