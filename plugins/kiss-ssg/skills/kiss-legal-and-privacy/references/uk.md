@@ -28,7 +28,7 @@ When details are collected from the person, the notice gives (checked 2026-11-02
 - [ ] where the basis is consent, the right to withdraw it at any time (13(2)(c));
 - [ ] the right to complain to the controller (13(2)(ca), from 19 June 2026);
 - [ ] the right to complain to the Commission (13(2)(d));
-- [ ] whether giving the details is required, and what happens if not (13(2)(e)), the item the a1k9training draft missed;
+- [ ] whether giving the details is required, and what happens if not (13(2)(e)), the item drafts most often miss, and it must match the fields the form marks `required`;
 - [ ] any automated decision-making, with its safeguards (13(2)(f)).
 
 Details obtained from someone else (a referral, a booking made for another person) need the Art. 14 notice, given within a reasonable period and at the latest within one month (checked 2026-11-02, https://www.legislation.gov.uk/eur/2016/679/article/14).
