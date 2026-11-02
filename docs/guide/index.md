@@ -83,7 +83,8 @@ The default config options are:
   },
   audit: {
     check: true,
-    ignore: []
+    ignore: [],
+    privacyPage: null
   },
   markdownCopies: {
     write: 'llms',
@@ -129,7 +130,7 @@ Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compi
 | assets | `{ hash: false, version: null, pipeline: [] }` | Cache busting for the files copied into the build, plus the external commands run before the copy. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`; `pipeline` is an ordered list of `{ name?, run, watch?, cwd?, outputs? }` steps. All off is today's build, unchanged. See **Cache-busting asset URLs** and **An asset pipeline** below. |
 | links | `{ check: true, canonical: false, trailingSlash: true, hostServed: [] }` | The broken-internal-link scan, and what `{{link}}` emits. `check: true` scans every written page for internal references that resolve to nothing and reports them as `report().links` — advisory, never changing `ok` or the exit code. `canonical: true` makes a bare `{{link}}` emit the extension-less form (`/about` rather than `/about.html`) for a host that serves it, with the per-call `canonical=` hash still overriding. `trailingSlash: false` drops the slash from a directory index (`/courses`) in every URL kiss emits, for a host that serves the bare form; `hostServed` lists paths the host serves that no build writes. See **Host URL policy**, **Broken internal links** and the `link` helper below. |
 | redirects | `{ format: null }` | How page `aliases` are emitted. `redirects.json` is always written when a page has an alias; `format` names the host files beside it (`'netlify'`, `'firebase'`, `'vercel'`, `'htaccess'`, `'none'`, a writer function, or a list of those). Unset writes no host file. See **Redirects** below. |
-| audit | `{ check: true, ignore: [] }` | The launch-readiness audit: whether the built site looks finished (titles, descriptions, `og:image`, alt text, headings, a favicon, a 404 page, stray files). Advisory, reported as `report().audit`. `ignore` lists check ids not to run; `audit: false` turns it off. See **Launch-readiness audit** below. |
+| audit | `{ check: true, ignore: [], privacyPage: null }` | The launch-readiness audit: whether the built site looks finished (titles, descriptions, `og:image`, alt text, headings, a favicon, a 404 page, stray files). Advisory, reported as `report().audit`. `ignore` lists check ids not to run; `privacyPage` is the id of your privacy page when it is not the page with id `privacy` (or at `privacy.html`); `audit: false` turns it off. See **Launch-readiness audit** below. |
 | markdownCopies | `{ write: 'llms', selector: 'main' }` | A Markdown copy of every HTML page, beside it (`about.md`, `courses/index.md`), converted from the page's `<main>` (or `<body>` when it has none), and the page `llms.txt` links to. Written when the build calls `.llms()`; `true` writes them regardless, `false` never, site-wide or for one page. `selector` names a different element. See **Markdown copies for agents** below. |
 | packages | `{ format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }` | Learning packages for an LMS, from the pages that name a `package`: IMS content packages, SCORM 1.2, or both. `false` turns them off. See **Learning packages** below. |
 | port | 3001 | The port the dev server listens on (`dev: true` only). A port already in use fails the build with one message naming it — nothing can be served, so give a second site its own `port` rather than letting them clash. |
