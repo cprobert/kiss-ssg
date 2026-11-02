@@ -64,6 +64,8 @@ opened: 2026-11-02
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-02** — Planning only: the session file, the contract with the critique folded in, and the feedback. Every criterion is not yet met; all are designed in the contract. No drift beyond the Amendment, which already moved the surface to public API. **Eyeball: looked** — the operator read the contract's critique section: "Looked, it matches". **Offer: unanswered** — the offer was who marks the arm results (Claude marking its own skill is self-assessment). The operator was unsure what it meant and asked to proceed with building, so it will be re-asked, with context, before the measurement. Decision: continue. A writes the fixture and the harness, and B and C start against the contract's names table.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
