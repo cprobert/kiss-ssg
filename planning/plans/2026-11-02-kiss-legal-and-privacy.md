@@ -219,3 +219,116 @@ Each row has a test or a measured run, named at the close.
 ## Amendments
 
 <!-- Dated sections, appended when the design moves. -->
+
+### 2026-11-02 — the fresh-context critique, folded in
+
+One fresh-context agent read the contract against the code and against a1k9 at `385434a`, and found 2 blockers, 10 majors and 3 minors. The main session re-checked the load-bearing claims itself:
+
+- `extractReferences` returns a flat, sorted string list (`lib/links.js`);
+- `llms.txt` is 14,675 characters;
+- `DOMAIN_SKILLS` sits at `test/unit/skill-coverage.test.js:1275`, and `kiss-site-review/SKILL.md:71` says "which of the six";
+- at `385434a` the site has the email form, the Maps iframes and the `youtube-nocookie` iframes, one of them injected by `site.js:88`;
+- "to confirm" appears 12 times in fleet `src/`.
+
+Where this section disagrees with the body above, **this section wins**.
+
+**C — `thirdParty` (blocker 1).** It is its own kind-aware fact in `extractPageFacts`, read quote-aware in the `ATTRS` style. It is **not** derived from `KissPage.links`, which keeps no tag kind and includes every `<a>`.
+
+- **What it reads:**
+  - `script[src]`, `iframe[src]`, `img`/`source` `src` and `srcset`, and `form[action]`;
+  - `link` whose `rel` is `stylesheet`, `preload`, `preconnect` or `dns-prefetch`.
+- **Never `<a>`,** and never `rel=canonical` or `alternate`.
+- **Kinds:** `script`, `iframe`, `img`, `form-action`, `stylesheet`, `preload`, `preconnect`. There is no `font` kind; a `preload as=font` reports as `preload` with its `as` value.
+- **Scope:** it covers static markup only. An iframe injected by script (a1k9's facade) and a CSS `@import` are invisible to it, and `GUIDE.md` and the skill say an empty `thirdParty` proves nothing.
+
+**C — what counts as first-party (blocker 2).**
+
+- **First-party:** a relative URL, or an absolute URL whose host equals `siteUrl`'s host, with a leading `www.` dropped on both sides. A `//host` URL resolves as https.
+- **With `siteUrl` unset or local:** every absolute http(s) origin is listed, and the key carries `siteUrl: null`. The audit does not guess.
+- **The report key follows the report's conventions:**
+  - appended last;
+  - `null` when no page extracted facts (a failed build);
+  - each `page` mapped out of staging the way findings are.
+- **The Upgrading note says** every site's `AIKB/last-build.json` gains the key at its next `aikb`.
+
+**C — `placeholder-left` (major 3).**
+
+- **Fires on:** any `<mark>` outside script, style, template and comments, or the bracketed text `[to confirm`.
+- **Does not fire on:** the bare phrase "to confirm" (12 prose hits in the fleet). The matrix gains a row: prose containing "to confirm" must not fire.
+- **The skill tells authors** to write a placeholder as `<mark>[to confirm: …]</mark>`.
+
+**C — the privacy page (major 4, the operator's choice: convention plus a config key).**
+
+- **Which page is the privacy page:** the page whose id is `privacy`. Failing that, the internal page whose built path is `privacy.html` or `privacy/index.html`.
+- **The override:** a new config key, `audit.privacyPage: '<id>'`. `lib/config.js` validates it, and it is public API, so it goes in `GUIDE.md`, `types/` and the Upgrading note.
+- **A form's privacy link must resolve to that page** through `resolveTarget`. Link text is never matched, and an external href never counts.
+- **New facts:**
+  - forms, with each field's `type`, `name` and `autocomplete`;
+  - internal anchor hrefs;
+  - the page id, threaded into `AuditPage` through `build-finish.js`.
+- **A field counts** when it is not `type=hidden` and not a honeypot (a `name` of `bot-field`, or Netlify's `netlify-honeypot` attribute naming it).
+- **Matrix rows added:** a honeypot email field; `type=hidden name=email`; a footer newsletter form, which fires on every page, where the summary line must stay readable.
+
+**C — `checkbox-prechecked` (minor 13).**
+
+- **`checked`** is a presence test on quote-blanked attributes, as `ALT` is, so `data-checked` and `aria-checked` never match.
+- **The label** is matched on word boundaries against the word list, and is read from `for`/`id`, a wrapping `<label>`, `aria-label` or `aria-labelledby`.
+- **The word list:** offers, news, newsletter, marketing, promotions, partners, third parties. "Updates" is dropped because it catches service updates.
+
+**A — scoring is human-marked, and `setup` makes a baseline (major 5).**
+
+- **`setup`** runs `git init` in the extracted copy and commits it as the baseline. Without that, "fixed on the site" has nothing to diff against, and the "arm tries to commit" row tests nothing.
+- **`summarise`** reports `git diff --stat` and the changed files. With `--answer-key`, it emits an **evidence index** per item: candidate lines from the tool calls, the diff and the final message.
+- **A person marks each item** from that index. The tested code builds the index and never decides a prose judgement. The write-up says the scoring is human-marked.
+
+**A — the brief (major 6).** For both arms: "Review this site's privacy and legal pages before launch, fix what you can, and tell me what only I can decide. You cannot ask me questions now; list what you would ask." The answer key scores "asked of the owner" as "listed as a question". This includes the jurisdiction question.
+
+**A — two benches (major 7, the operator's choice: a second, smaller pair).**
+
+- **a1k9 at `385434a`** carries the form, the Maps iframes, the `youtube-nocookie` iframes (static and injected), no privacy page and a locality-only address.
+- **`test/fixtures/legal-weak-site/`** carries the Google Fonts link, the analytics script, the pre-ticked box and the `<mark>`. Its planted gaps join the answer key with `bench: 'fixture'`.
+- **The fixture pair** runs at a lower budget cap.
+- **The write-up says** which bench measured which gap. `385434a` is the clone's head on `^2.7.0`; the feedback was written against a later tree, and the answer key's `visibleAt385434a` records the difference.
+
+**A — what the arms vary (major 8).** The variable is "this branch's plugin diff", not "the skill". Both arms run this branch's packed engine, whose docs name the new checks; the write-up says so, as `upgrade-arms.md` did.
+
+- **Plugin trees** come from `git archive` of a recorded sha: `main`'s at a fixed sha, and this branch's at its head.
+- **`arm.json` records:**
+  - the plugin sha, and whether the tree was dirty;
+  - the engine tarball's sha512;
+  - the Claude Code version and the model.
+
+**A — environment matrix additions (major 9).**
+
+| Case                                                                                                  | Covered by                                             |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| A browser available in the arm (Playwright Chromium on the allow-list) vs not                         | the measured run, recorded in `arm.json`               |
+| Network for npm, Playwright and the regulators' pages                                                 | the measured run                                       |
+| The site's own dependencies (`npm ci`, including a1k9's `@tailwindcss/cli`) before the engine tarball | A test (the order of `setup`'s steps) plus the run     |
+| Whether `--setting-sources local` stops the copy's `CLAUDE.md`, `.claude/skills/` and `.mcp.json`     | the first run checks it and records it; **unverified** |
+
+Without a browser, the storage finding is scored as "said the pass did not run" (`browser-pass.md`), never as a miss.
+
+**B — files added to B's ownership (major 10):**
+
+- `DOMAIN_SKILLS` in `test/unit/skill-coverage.test.js`;
+- "which of the six" in `kiss-site-review/SKILL.md:71`, which becomes "seven" or is reworded so it doesn't count;
+- `test/unit/init.test.js`'s list of domain skills;
+- the 400-character description test.
+
+**B — `llms.txt` (major 11).** The skill's name goes on the line that lists the domain skills, and `thirdParty` joins the list of report keys. No line per audit check: no existing check id is in `llms.txt`, and they live in `GUIDE.md`. That spends well under the 1,325 characters left.
+
+**B — de-duplication corrections (major 12).**
+
+- **Every edit is anchored on a quoted sentence, never a line number.** P1 is at `review-protocol.md:24`. `kiss-writing-for-the-web:131` is that skill's own P1 scale.
+- **Both coverage rows that assert "personal details"** (`skill-coverage.test.js` ~401 and ~579) must still pass after the move: the trigger sentence stays.
+- **Severity:** `review-protocol.md`'s P2 ("the audit's page checks") names `privacy-link-missing`, `checkbox-prechecked` and `placeholder-left` as exceptions, because they are P1.
+- **Each `CONTRADICTIONS` ban** gets `allowedIn: kiss-legal-and-privacy/references/uk.md`, or wherever the sentence moved to.
+
+**Ownership (minor 15).**
+
+- **The main session owns** the single `CHANGELOG.md` entry and the plugin-manifest version sync. A and C hand their notes to it.
+- **C owns** `GUIDE.md` and `README.md:81`, which lists audit checks.
+- **`arms.mjs` spawns `claude` and `npm` behind an injectable runner**, so `run` is testable without a real `claude`, and every argument goes through the tested builder.
+
+**Order, revised.** The privacy-page convention is now settled (above), so B and C can start together. A writes the fixture first, because C's tests read it. Everything else stands.
