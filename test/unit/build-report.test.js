@@ -76,6 +76,7 @@ describe('buildReport', () => {
       'outputs',
       'audit',
       'packages',
+      'thirdParty',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -290,6 +291,7 @@ describe('buildReport', () => {
       outputs: { collisions: [] },
       audit: null,
       packages: null,
+      thirdParty: null,
     })
   })
 
@@ -540,12 +542,15 @@ describe('the audit key', () => {
     ...extra,
   })
 
-  it('is appended after outputs, with only packages after it', () => {
+  it('is appended after outputs, with only packages and thirdParty after it', () => {
     const keys = Object.keys(
       buildReport({ buildDir: './public', startedAt: Date.now() }),
     )
     expect(keys.indexOf('audit')).toBe(keys.indexOf('outputs') + 1)
-    expect(keys.slice(keys.indexOf('audit') + 1)).toEqual(['packages'])
+    expect(keys.slice(keys.indexOf('audit') + 1)).toEqual([
+      'packages',
+      'thirdParty',
+    ])
   })
 
   it('is null when no audit ran, and an object when one ran and found nothing', () => {
@@ -761,5 +766,111 @@ describe('formatReport — audit lines', () => {
       }),
     ).toEqual(['audit favicon-missing'])
     expect(auditLines(null)).toEqual([])
+  })
+
+  it('names the label of a pre-ticked marketing box, one line per label', () => {
+    expect(
+      auditLines({
+        checked: 3,
+        ignored: [],
+        skipped: [],
+        findings: [
+          {
+            check: 'checkbox-prechecked',
+            page: './public/a.html',
+            detail: 'Send me offers',
+          },
+          {
+            check: 'checkbox-prechecked',
+            page: './public/b.html',
+            detail: 'Send me offers',
+          },
+        ],
+      }),
+    ).toEqual([
+      'audit checkbox-prechecked: "Send me offers" on 2 pages (./public/a.html, ./public/b.html)',
+    ])
+  })
+})
+
+describe('the thirdParty key', () => {
+  const staging = './public.kiss-staging-1-abc'
+  const facts = {
+    siteUrl: 'https://site.example',
+    pages: [
+      {
+        page: `${staging}/contact.html`,
+        origins: [
+          { origin: 'https://formspree.io', kinds: ['form-action'] },
+          { origin: 'https://www.youtube-nocookie.com', kinds: ['iframe'] },
+        ],
+      },
+    ],
+    origins: ['https://formspree.io', 'https://www.youtube-nocookie.com'],
+  }
+
+  it('is the last key, null when there is nothing to say', () => {
+    const report = buildReport({ buildDir: './public', startedAt: Date.now() })
+    expect(Object.keys(report).at(-1)).toBe('thirdParty')
+    expect(report.thirdParty).toBeNull()
+  })
+
+  it('maps each page out of staging and keeps the origins as they are', () => {
+    const report = buildReport({
+      buildDir: './public',
+      stagingDir: staging,
+      startedAt: Date.now(),
+      thirdParty: facts,
+    })
+    expect(report.thirdParty).toEqual({
+      siteUrl: 'https://site.example',
+      pages: [
+        {
+          page: './public/contact.html',
+          origins: facts.pages[0].origins,
+        },
+      ],
+      origins: facts.origins,
+    })
+    expect(Object.keys(report.thirdParty ?? {})).toEqual([
+      'siteUrl',
+      'pages',
+      'origins',
+    ])
+    expect(JSON.stringify(report)).not.toContain('kiss-staging')
+  })
+
+  it('is null on a failed build, whose inventory would be partial', () => {
+    const report = buildReport({
+      buildDir: './public',
+      startedAt: Date.now(),
+      failures: [failure('a.hbs', './public/a.html', 'boom')],
+      thirdParty: facts,
+    })
+    expect(report.thirdParty).toBeNull()
+  })
+
+  it('names the origins on one summary line, the first five', () => {
+    const origins = ['a', 'b', 'c', 'd', 'e', 'f'].map(
+      (x) => `https://${x}.example`,
+    )
+    const line = (list) =>
+      formatReport(
+        buildReport({
+          buildDir: './public',
+          startedAt: 0,
+          finishedAt: 1,
+          thirdParty: { siteUrl: null, pages: [], origins: list },
+        }),
+      )
+        .split('\n')
+        .filter((l) => l.includes('third-party'))
+    expect(line(origins)).toEqual([
+      '  third-party origins (6): https://a.example, https://b.example, https://c.example, https://d.example, https://e.example, …',
+    ])
+    expect(line(origins.slice(0, 2))).toEqual([
+      '  third-party origins (2): https://a.example, https://b.example',
+    ])
+    expect(line([])).toEqual([])
   })
 })

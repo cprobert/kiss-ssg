@@ -2,8 +2,14 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, it, expect, afterEach } from 'vitest'
-import { CHECKS, extractPageFacts, auditBuild } from '../../lib/audit.js'
-import { reportedPath } from '../../lib/build-report.js'
+import {
+  CHECKS,
+  MARKETING_WORDS,
+  extractPageFacts,
+  auditBuild,
+  thirdPartyOrigins,
+} from '../../lib/audit.js'
+import { auditLines, reportedPath } from '../../lib/build-report.js'
 
 // A finished page, minified the way KissPage writes it: every fact the audit
 // asks for is present, so a test that breaks one thing sees one finding.
@@ -43,6 +49,9 @@ describe('CHECKS', () => {
       'debug-dump',
       'stray-file',
       'console-log',
+      'privacy-link-missing',
+      'placeholder-left',
+      'checkbox-prechecked',
     ])
     expect(Object.isFrozen(CHECKS)).toBe(true)
   })
@@ -63,6 +72,11 @@ describe('extractPageFacts', () => {
       base: false,
       ids: [],
       fragmentLinks: [],
+      origins: [],
+      forms: [],
+      anchors: [],
+      placeholders: [],
+      prechecked: [],
     })
   })
 
@@ -90,6 +104,11 @@ describe('extractPageFacts', () => {
       base: false,
       ids: [],
       fragmentLinks: [],
+      origins: [],
+      forms: [],
+      anchors: [],
+      placeholders: [],
+      prechecked: [],
     })
   })
 
@@ -276,6 +295,11 @@ function facts(overrides = {}) {
     base: false,
     ids: [],
     fragmentLinks: [],
+    origins: [],
+    forms: [],
+    anchors: [],
+    placeholders: [],
+    prechecked: [],
     ...overrides,
   }
 }
@@ -1000,5 +1024,570 @@ describe('auditBuild — ownership, ignore and order', () => {
     const buildDir = `${buildFolder({})}/not-there`
     const result = audit({ pages: [page()], buildDir })
     expect(result.findings.map((f) => f.check)).toEqual(['not-found-missing'])
+  })
+})
+
+// The privacy facts end to end: real markup through `extractPageFacts`, then
+// `auditBuild` over the pages of a real build folder, ids included, so a link
+// to the privacy page resolves exactly as it would in a build.
+const doc = (body, head = '') =>
+  `<!doctype html><html><head>${head}</head><body>${body}</body></html>`
+
+function privacySite(pages, options = {}) {
+  const buildDir = buildFolder()
+  return audit({
+    buildDir,
+    pages: Object.entries(pages).map(([rel, html]) => ({
+      buildTo: `${buildDir}/${rel}`,
+      facts: extractPageFacts(html, `${buildDir}/${rel}`),
+      canonicalElsewhere: false,
+      siteUrl: null,
+      id: rel.replace(/(?:\/index)?\.html$/, '') || 'index',
+    })),
+    ...options,
+  })
+}
+const named = (result, check) =>
+  only(result, check).map(({ page, detail }) => [
+    page === null ? null : page.slice(page.lastIndexOf('/') + 1),
+    detail,
+  ])
+
+describe('extractPageFacts — the privacy facts', () => {
+  it('reads each form with its fields, and nothing outside one', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<input type="email" name="stray">' +
+          '<form action="/thanks" data-netlify="true" netlify-honeypot="bot">' +
+          '<input name="name"><input type="Email" name="email" autocomplete="email">' +
+          '<select name="topic"></select><textarea name="message"></textarea>' +
+          '<button>Send</button></form>',
+      ),
+      'contact.html',
+    )
+    expect(facts.forms).toEqual([
+      {
+        action: '/thanks',
+        honeypot: 'bot',
+        fields: [
+          { type: 'text', name: 'name', autocomplete: null },
+          { type: 'email', name: 'email', autocomplete: 'email' },
+          { type: 'select', name: 'topic', autocomplete: null },
+          { type: 'textarea', name: 'message', autocomplete: null },
+        ],
+      },
+    ])
+  })
+
+  it('reads a form quote-aware, past a > inside a value', () => {
+    const facts = extractPageFacts(
+      doc('<form x-show="step > 1" action="/go"><input type="tel"></form>'),
+      'a.html',
+    )
+    expect(facts.forms).toEqual([
+      {
+        action: '/go',
+        honeypot: null,
+        fields: [{ type: 'tel', name: null, autocomplete: null }],
+      },
+    ])
+  })
+
+  it('collects followable anchors, not fragments or other schemes', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<a href="/privacy">P</a><a href="#top">T</a><a href="mailto:a@b.c">M</a>' +
+          '<a href="tel:+44">T</a><a href="https://other.example/x">X</a>' +
+          '<a href="/privacy">again</a>',
+      ),
+      'a.html',
+    )
+    expect(facts.anchors).toEqual(['/privacy', 'https://other.example/x'])
+  })
+
+  it('reads origins with their kinds, never from <a>, canonical or alternate', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<iframe src="https://www.youtube-nocookie.com/embed/x"></iframe>' +
+          '<script src="https://plausible.io/js/script.js"></script>' +
+          '<img src="//cdn.example.net/a.png" srcset="https://img.example.org/a.png 2x">' +
+          '<video src="https://media.example.org/v.mp4" poster="https://img.example.org/p.jpg"></video>' +
+          '<form action="https://formspree.io/f/x"></form>' +
+          '<a href="https://linked.example.org/">not fetched</a>' +
+          '<img src="/local.png">',
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter">' +
+          '<link rel="preload" as="font" href="https://fonts.gstatic.com/s/inter.woff2">' +
+          '<link rel="dns-prefetch" href="https://dns.example.org">' +
+          '<link rel="canonical" href="https://elsewhere.example.org/">' +
+          '<link rel="alternate" href="https://feeds.example.org/feed.xml">',
+      ),
+      'a.html',
+    )
+    expect(facts.origins).toEqual([
+      { origin: 'https://cdn.example.net', kind: 'img' },
+      { origin: 'https://dns.example.org', kind: 'dns-prefetch' },
+      { origin: 'https://fonts.googleapis.com', kind: 'stylesheet' },
+      { origin: 'https://fonts.gstatic.com', kind: 'preconnect' },
+      { origin: 'https://fonts.gstatic.com', kind: 'preload:font' },
+      { origin: 'https://formspree.io', kind: 'form-action' },
+      { origin: 'https://img.example.org', kind: 'img' },
+      { origin: 'https://media.example.org', kind: 'media' },
+      { origin: 'https://plausible.io', kind: 'script' },
+      { origin: 'https://www.youtube-nocookie.com', kind: 'iframe' },
+    ])
+  })
+
+  it('reads no origin from a script body, a template or a comment', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<script>const f = \'<iframe src="https://in-script.example">\'</script>' +
+          '<template><iframe src="https://in-template.example"></iframe></template>' +
+          '<!-- <script src="https://in-comment.example/x.js"></script> -->',
+      ),
+      'a.html',
+    )
+    expect(facts.origins).toEqual([])
+  })
+
+  it('reads every <mark> and every bracketed [to confirm, once each', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<p>Registered office: <mark>[to confirm: address]</mark></p>' +
+          '<p>Data kept for [To confirm: how long].</p>' +
+          '<p><mark class="hl">Opening   hours &amp; days</mark></p>',
+      ),
+      'a.html',
+    )
+    expect(facts.placeholders).toEqual([
+      '[to confirm: address]',
+      'Opening hours & days',
+      '[To confirm: how long]',
+    ])
+  })
+
+  it('reads no placeholder from prose, a script string or a comment', () => {
+    // The bare phrase is prose: the fleet's sources say it twelve times.
+    const facts = extractPageFacts(
+      doc(
+        '<p>We will email you to confirm your booking.</p>' +
+          '<script>const s = "<mark>[to confirm]</mark>"</script>' +
+          '<style>mark{color:red}</style>' +
+          '<!-- <mark>[to confirm]</mark> -->',
+      ),
+      'a.html',
+    )
+    expect(facts.placeholders).toEqual([])
+  })
+
+  it('reads a checked box with its label, by for/id, by wrapping, and by aria', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<input type="checkbox" id="offers" checked><label for="offers">Send me offers</label>' +
+          '<label><input type="checkbox" name="n" checked="checked"> Our newsletter</label>' +
+          '<span id="lbl">Partner deals</span>' +
+          '<input type="checkbox" checked aria-labelledby="lbl">' +
+          '<input type="checkbox" checked aria-label="Keep me signed in">' +
+          '<input type="checkbox" id="plain"><label for="plain">Unticked offers</label>' +
+          '<input type="checkbox" checked>',
+      ),
+      'a.html',
+    )
+    expect(facts.prechecked).toEqual([
+      'Send me offers',
+      'Our newsletter',
+      'Partner deals',
+      'Keep me signed in',
+      '',
+    ])
+  })
+
+  it('reads checked as an attribute, never data-checked, aria-checked or a value', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<input type="checkbox" data-checked aria-label="Offers A">' +
+          '<input type="checkbox" aria-checked="true" aria-label="Offers B">' +
+          '<input type="checkbox" title="is checked" aria-label="Offers C">' +
+          '<input type="radio" checked aria-label="Offers D">',
+      ),
+      'a.html',
+    )
+    expect(facts.prechecked).toEqual([])
+  })
+})
+
+describe('auditBuild — privacy-link-missing', () => {
+  const FORM = '<form action="/thanks"><input type="email" name="email"></form>'
+  const PRIVACY = doc('<h1>Privacy</h1>')
+
+  it('does not fire on a site with no form', () => {
+    const result = privacySite({ 'index.html': doc('<p>Hello</p>') })
+    expect(only(result, 'privacy-link-missing')).toEqual([])
+  })
+
+  it('fires on a form with no link to the privacy page, and not with one', () => {
+    const result = privacySite({
+      'contact.html': doc(FORM),
+      'enquire.html': doc(`${FORM}<a href="privacy">Privacy</a>`),
+      'privacy.html': PRIVACY,
+    })
+    expect(named(result, 'privacy-link-missing')).toEqual([
+      ['contact.html', 'email'],
+    ])
+  })
+
+  it('fires the same for a Netlify form and one posting elsewhere', () => {
+    const result = privacySite({
+      'a.html': doc(
+        '<form data-netlify="true" name="contact"><input type="email" name="email"></form>',
+      ),
+      'b.html': doc(
+        '<form action="https://formspree.io/f/x"><input type="email" name="email"></form>',
+      ),
+      'privacy.html': PRIVACY,
+    })
+    expect(named(result, 'privacy-link-missing')).toEqual([
+      ['a.html', 'email'],
+      ['b.html', 'email'],
+    ])
+  })
+
+  it('counts a field by name or autocomplete when its type is text', () => {
+    const result = privacySite({
+      'a.html': doc('<form><input type="text" name="email"></form>'),
+      'b.html': doc('<form><input name="phone"></form>'),
+      'c.html': doc(
+        '<form><input name="contact" autocomplete="home tel"></form>',
+      ),
+      'd.html': doc('<form><input name="message"></form>'),
+      'privacy.html': PRIVACY,
+    })
+    expect(named(result, 'privacy-link-missing')).toEqual([
+      ['a.html', 'email'],
+      ['b.html', 'phone'],
+      ['c.html', 'contact'],
+    ])
+  })
+
+  it('does not count a hidden field or a honeypot', () => {
+    const result = privacySite({
+      'hidden.html': doc(
+        '<form><input type="hidden" name="email" value="x"><input name="message"></form>',
+      ),
+      'bot.html': doc(
+        '<form><input name="bot-field" type="email"><input name="message"></form>',
+      ),
+      'named.html': doc(
+        '<form netlify-honeypot="email2"><input name="email2" type="email"><input name="m"></form>',
+      ),
+      'privacy.html': PRIVACY,
+    })
+    expect(only(result, 'privacy-link-missing')).toEqual([])
+  })
+
+  it('finds the privacy page by id, then by path, and resolves the link to it', () => {
+    // By id: the page's id, wherever it was written.
+    const byId = privacySite({
+      'contact.html': doc(`${FORM}<a href="/legal/notice.html">Notice</a>`),
+      'legal/notice.html': PRIVACY,
+    })
+    // Without the id, a page at legal/notice.html is not the privacy page.
+    expect(named(byId, 'privacy-link-missing')).toEqual([
+      [null, expect.stringMatching(/^no privacy page/)],
+      ['contact.html', 'email'],
+    ])
+    const buildDir = buildFolder()
+    const withId = audit({
+      buildDir,
+      pages: [
+        {
+          buildTo: `${buildDir}/contact.html`,
+          facts: extractPageFacts(
+            doc(`${FORM}<a href="/legal/notice.html">Notice</a>`),
+            'contact.html',
+          ),
+          id: 'contact',
+        },
+        {
+          buildTo: `${buildDir}/legal/notice.html`,
+          facts: extractPageFacts(PRIVACY, 'notice.html'),
+          id: 'privacy',
+        },
+      ],
+    })
+    expect(only(withId, 'privacy-link-missing')).toEqual([])
+    // By path: privacy/index.html, linked extension-less with a slash.
+    const byPath = privacySite({
+      'contact.html': doc(`${FORM}<a href="/privacy/">Privacy</a>`),
+      'privacy/index.html': PRIVACY,
+    })
+    expect(only(byPath, 'privacy-link-missing')).toEqual([])
+  })
+
+  it('never counts link text, or an external privacy page', () => {
+    const result = privacySite({
+      'a.html': doc(`${FORM}<a href="/about.html">Privacy policy</a>`),
+      'b.html': doc(
+        `${FORM}<a href="https://other.example/privacy">Privacy</a>`,
+      ),
+      'about.html': doc('<h1>About</h1>'),
+      'privacy.html': PRIVACY,
+    })
+    expect(named(result, 'privacy-link-missing')).toEqual([
+      ['a.html', 'email'],
+      ['b.html', 'email'],
+    ])
+  })
+
+  it('counts an absolute link on the site’s own origin', () => {
+    const result = privacySite(
+      {
+        'a.html': doc(
+          `${FORM}<a href="https://site.example/privacy.html">P</a>`,
+        ),
+        'privacy.html': PRIVACY,
+      },
+      { siteUrl: 'https://site.example' },
+    )
+    expect(only(result, 'privacy-link-missing')).toEqual([])
+  })
+
+  it('says once, site-wide, that there is no privacy page at all', () => {
+    const result = privacySite({ 'contact.html': doc(FORM) })
+    expect(named(result, 'privacy-link-missing')).toEqual([
+      [null, expect.stringMatching(/^no privacy page/)],
+      ['contact.html', 'email'],
+    ])
+  })
+
+  it('a footer newsletter form fires on every page, in one readable line', () => {
+    const footer =
+      '<footer><form><input type="email" name="email"></form></footer>'
+    const pages = {}
+    for (const name of ['index', 'about', 'blog', 'contact', 'news'])
+      pages[`${name}.html`] = doc(`<h1>${name}</h1>${footer}`)
+    pages['privacy.html'] = doc(`<h1>Privacy</h1>${footer}`)
+    const result = privacySite(pages)
+    // The privacy page itself needs no link to itself.
+    expect(only(result, 'privacy-link-missing')).toHaveLength(5)
+    const lines = auditLines({
+      ...result,
+      findings: only(result, 'privacy-link-missing').map((f) => ({
+        ...f,
+        page: f.page && `./public/${f.page.slice(f.page.lastIndexOf('/') + 1)}`,
+      })),
+    })
+    expect(lines).toEqual([
+      'audit privacy-link-missing: 5 pages (./public/about.html, ./public/blog.html, ./public/contact.html, …)',
+    ])
+  })
+
+  it('takes config.audit.privacyPage over the convention, and reports an id no page has', () => {
+    const pages = {
+      'contact.html': doc(`${FORM}<a href="/data.html">Data</a>`),
+      'data.html': PRIVACY,
+      'privacy.html': PRIVACY,
+    }
+    expect(
+      only(privacySite(pages, { privacyPage: 'data' }), 'privacy-link-missing'),
+    ).toEqual([])
+    expect(
+      named(
+        privacySite(pages, { privacyPage: 'nope' }),
+        'privacy-link-missing',
+      ),
+    ).toEqual([
+      [null, 'audit.privacyPage "nope" names no page this build wrote'],
+      ['contact.html', 'email'],
+    ])
+  })
+
+  it('is ignorable like every check', () => {
+    const result = privacySite(
+      { 'contact.html': doc(FORM) },
+      { ignore: ['privacy-link-missing'] },
+    )
+    expect(only(result, 'privacy-link-missing')).toEqual([])
+  })
+})
+
+describe('auditBuild — placeholder-left and checkbox-prechecked', () => {
+  it('placeholder-left fires once per placeholder, with its text', () => {
+    const result = privacySite({
+      'privacy.html': doc(
+        '<p>Controller: <mark>[to confirm: name]</mark>. Kept [to confirm: period].</p>',
+      ),
+      'index.html': doc('<p>We email you to confirm.</p>'),
+    })
+    expect(named(result, 'placeholder-left')).toEqual([
+      ['privacy.html', '[to confirm: name]'],
+      ['privacy.html', '[to confirm: period]'],
+    ])
+  })
+
+  it('checkbox-prechecked fires on marketing words, whole words only', () => {
+    const result = privacySite({
+      'a.html': doc(
+        '<label><input type="checkbox" checked> Send me offers and news</label>' +
+          '<label><input type="checkbox" checked> Share with third-party partners</label>' +
+          '<label><input type="checkbox" checked> Remember me</label>' +
+          '<label><input type="checkbox" checked> Auto-renews yearly</label>' +
+          '<label><input type="checkbox" checked> Service updates</label>' +
+          '<label><input type="checkbox"> Newsletter</label>',
+      ),
+    })
+    expect(named(result, 'checkbox-prechecked')).toEqual([
+      ['a.html', 'Send me offers and news'],
+      ['a.html', 'Share with third-party partners'],
+    ])
+  })
+
+  it('exports the word list it matches', () => {
+    expect(MARKETING_WORDS).toContain('newsletter')
+    expect(MARKETING_WORDS).toContain('third parties')
+    expect(MARKETING_WORDS).not.toContain('updates')
+    expect(Object.isFrozen(MARKETING_WORDS)).toBe(true)
+  })
+
+  it('reads facts from before these checks existed as having none', () => {
+    const result = audit({
+      pages: [
+        page({
+          forms: undefined,
+          anchors: undefined,
+          placeholders: undefined,
+          prechecked: undefined,
+          origins: undefined,
+        }),
+      ],
+    })
+    expect(result.findings).toEqual([])
+  })
+})
+
+describe('thirdPartyOrigins', () => {
+  const at = (html, rel = 'index.html') => ({
+    buildTo: `public/${rel}`,
+    facts: extractPageFacts(doc(html), rel),
+  })
+
+  it('lists the origins that are not the site’s own, per page, with kinds', () => {
+    const result = thirdPartyOrigins({
+      siteUrl: 'https://site.example',
+      pages: [
+        at(
+          '<link rel="stylesheet" href="https://site.example/css/fonts.css">' +
+            '<link rel="preload" as="font" href="https://site.example/f.woff2">' +
+            '<link rel="preconnect" href="https://fonts.gstatic.com">' +
+            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2">' +
+            '<img src="/local.png">',
+        ),
+        at('<p>Nothing fetched</p>', 'about.html'),
+        at(
+          '<iframe src="https://www.youtube-nocookie.com/embed/x"></iframe>' +
+            '<form action="https://formspree.io/f/x"></form>',
+          'contact.html',
+        ),
+      ],
+    })
+    expect(result).toEqual({
+      siteUrl: 'https://site.example',
+      pages: [
+        {
+          page: 'public/contact.html',
+          origins: [
+            { origin: 'https://formspree.io', kinds: ['form-action'] },
+            { origin: 'https://www.youtube-nocookie.com', kinds: ['iframe'] },
+          ],
+        },
+        {
+          page: 'public/index.html',
+          origins: [
+            { origin: 'https://fonts.googleapis.com', kinds: ['stylesheet'] },
+            { origin: 'https://fonts.gstatic.com', kinds: ['preconnect'] },
+          ],
+        },
+      ],
+      origins: [
+        'https://fonts.googleapis.com',
+        'https://fonts.gstatic.com',
+        'https://formspree.io',
+        'https://www.youtube-nocookie.com',
+      ],
+    })
+  })
+
+  it('merges kinds per origin on a page', () => {
+    const result = thirdPartyOrigins({
+      siteUrl: 'https://site.example',
+      pages: [
+        at(
+          '<link rel="preconnect" href="https://fonts.gstatic.com">' +
+            '<link rel="preload" as="font" href="https://fonts.gstatic.com/a.woff2">',
+        ),
+      ],
+    })
+    expect(result?.pages[0].origins).toEqual([
+      {
+        origin: 'https://fonts.gstatic.com',
+        kinds: ['preconnect', 'preload:font'],
+      },
+    ])
+  })
+
+  it('treats www and the apex as one host, both ways, and a // URL as https', () => {
+    const page = at(
+      '<script src="https://www.site.example/a.js"></script>' +
+        '<script src="//site.example/b.js"></script>' +
+        '<script src="http://site.example:8080/c.js"></script>' +
+        '<script src="https://cdn.site.example/d.js"></script>',
+    )
+    for (const siteUrl of ['https://site.example', 'https://www.site.example/'])
+      expect(thirdPartyOrigins({ siteUrl, pages: [page] })?.origins).toEqual([
+        // A subdomain is another host.
+        'https://cdn.site.example',
+      ])
+  })
+
+  it('lists every absolute origin, and says so, when siteUrl is unset or local', () => {
+    const page = at(
+      '<script src="https://site.example/a.js"></script>' +
+        '<script src="https://plausible.io/js/script.js"></script>' +
+        '<img src="/local.png">',
+    )
+    for (const siteUrl of [null, '', 'http://localhost:3000', 'not a url']) {
+      const result = thirdPartyOrigins({ siteUrl, pages: [page] })
+      expect(result?.siteUrl).toBeNull()
+      expect(result?.origins).toEqual([
+        'https://plausible.io',
+        'https://site.example',
+      ])
+    }
+  })
+
+  it('is null when no page wrote HTML facts, and empty when none fetch elsewhere', () => {
+    expect(thirdPartyOrigins({ pages: [] })).toBeNull()
+    expect(
+      thirdPartyOrigins({
+        pages: [{ buildTo: 'public/x.json', facts: { html: false } }],
+      }),
+    ).toBeNull()
+    expect(
+      thirdPartyOrigins({
+        siteUrl: 'https://site.example',
+        pages: [at('<img src="/a.png">')],
+      }),
+    ).toEqual({ siteUrl: 'https://site.example', pages: [], origins: [] })
+  })
+
+  it('reads facts from before origins existed as fetching nothing', () => {
+    expect(
+      thirdPartyOrigins({
+        siteUrl: 'https://site.example',
+        pages: [
+          { buildTo: 'public/a.html', facts: facts({ origins: undefined }) },
+        ],
+      }),
+    ).toEqual({ siteUrl: 'https://site.example', pages: [], origins: [] })
   })
 })

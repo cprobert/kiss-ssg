@@ -141,6 +141,17 @@
  * @property {{collisions: import('./output-registry.js').OutputCollision[]}} outputs advisory output collisions between active producers
  * @property {BuildAudit|null} audit the launch-readiness audit, or `null` when this build ran none
  * @property {BuildPackage[]|null} packages the learning packages written, one per package and format, sorted by id then format; `null` when no page is in a package, packaging is off, the build failed, and in a dev build
+ * @property {BuildThirdParty|null} thirdParty the origins other than the site's own that the written pages fetch from; `null` when the build failed or wrote no HTML page
+ */
+/**
+ * What the written pages fetch from other origins: the privacy review's
+ * inventory, read from static markup only — an iframe a script injects, and a
+ * font a stylesheet `@import`s, are not in it, so an empty list proves nothing.
+ *
+ * @typedef {Object} BuildThirdParty
+ * @property {string|null} siteUrl the `siteUrl` first-party was decided against; `null` when it is unset or local, and then every absolute origin is listed
+ * @property {{ page: string, origins: { origin: string, kinds: string[] }[] }[]} pages the pages that fetch from one, against the real build folder, sorted; a page that fetches from none is not listed
+ * @property {string[]} origins every third-party origin, distinct and sorted
  */
 /**
  * One learning package written in one format (`lib/packages.js`).
@@ -197,9 +208,10 @@ export function reportedView(view: string): string;
  * @param {{collisions: import('./output-registry.js').OutputCollision[]}} [input.outputs]
  * @param {BuildAudit|null} [input.audit] what the launch-readiness audit found, `null` when none ran
  * @param {import('./packages.js').PackageResult[]|null} [input.packages] the learning packages written, as written
+ * @param {import('./audit.js').ThirdPartyOrigins|null} [input.thirdParty] the third-party origins, with each page where it was written
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, thirdParty, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -232,6 +244,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     };
     audit?: BuildAudit | null;
     packages?: import("./packages.js").PackageResult[] | null;
+    thirdParty?: import("./audit.js").ThirdPartyOrigins | null;
 }): BuildReport;
 /**
  * The audit's summary lines, unindented: one per check that fired, naming up
@@ -596,6 +609,35 @@ export type BuildReport = {
      * the learning packages written, one per package and format, sorted by id then format; `null` when no page is in a package, packaging is off, the build failed, and in a dev build
      */
     packages: BuildPackage[] | null;
+    /**
+     * the origins other than the site's own that the written pages fetch from; `null` when the build failed or wrote no HTML page
+     */
+    thirdParty: BuildThirdParty | null;
+};
+/**
+ * What the written pages fetch from other origins: the privacy review's
+ * inventory, read from static markup only — an iframe a script injects, and a
+ * font a stylesheet `@import`s, are not in it, so an empty list proves nothing.
+ */
+export type BuildThirdParty = {
+    /**
+     * the `siteUrl` first-party was decided against; `null` when it is unset or local, and then every absolute origin is listed
+     */
+    siteUrl: string | null;
+    /**
+     * the pages that fetch from one, against the real build folder, sorted; a page that fetches from none is not listed
+     */
+    pages: {
+        page: string;
+        origins: {
+            origin: string;
+            kinds: string[];
+        }[];
+    }[];
+    /**
+     * every third-party origin, distinct and sorted
+     */
+    origins: string[];
 };
 /**
  * One learning package written in one format (`lib/packages.js`).

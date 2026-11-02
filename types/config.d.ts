@@ -107,6 +107,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @typedef {Object} KissAudit
  * @property {boolean} check run the audit at all; `false` leaves the report's `audit` key `null`
  * @property {import('./audit.js').CheckId[]} ignore checks not to run, by id — each must be one of `CHECKS` in `lib/audit.js`
+ * @property {string|null} privacyPage the id of the page `privacy-link-missing` looks for a link to; `null` (the default) finds the page whose id is `privacy`, else the one written to `privacy.html` or `privacy/index.html`. An id no page has is reported as a finding, not thrown
  */
 /**
  * The Markdown-copy block (`config.markdownCopies`): every HTML page the build
@@ -230,7 +231,8 @@ export const DEFAULT_LINKS: Readonly<{
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
-    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked")[];
+    privacyPage: string | null;
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
     /** @type {boolean | 'llms'} */
@@ -283,7 +285,8 @@ export const DEFAULT_CONFIG: Readonly<{
     }>;
     audit: Readonly<{
         check: true;
-        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log")[];
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked")[];
+        privacyPage: string | null;
     }>;
     markdownCopies: Readonly<{
         /** @type {boolean | 'llms'} */
@@ -457,6 +460,10 @@ export type KissAudit = {
      * checks not to run, by id — each must be one of `CHECKS` in `lib/audit.js`
      */
     ignore: import("./audit.js").CheckId[];
+    /**
+     * the id of the page `privacy-link-missing` looks for a link to; `null` (the default) finds the page whose id is `privacy`, else the one written to `privacy.html` or `privacy/index.html`. An id no page has is reported as a finding, not thrown
+     */
+    privacyPage: string | null;
 };
 /**
  * The Markdown-copy block (`config.markdownCopies`): every HTML page the build

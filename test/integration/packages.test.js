@@ -473,10 +473,13 @@ describe('learning packages', () => {
     )
   })
 
-  it('reports each package with its hash, last in the report, and says so in the summary', async () => {
+  it('reports each package with its hash, after the audit in the report, and says so in the summary', async () => {
     await build()
     const report = kiss.report()
-    expect(Object.keys(report).at(-1)).toBe('packages')
+    // Relative, like the llms.txt assertion: `thirdParty` was appended after
+    // `packages`, for the reason every key was appended after the one before.
+    const keys = Object.keys(report)
+    expect(keys.indexOf('packages')).toBe(keys.indexOf('audit') + 1)
     const l2 = report.packages.find((p) => p.id === 'l2')
     expect(l2).toMatchObject({
       id: 'l2',

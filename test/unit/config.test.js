@@ -253,22 +253,36 @@ describe('resolveConfig', () => {
   })
 
   it('defaults the audit block: on, nothing ignored', () => {
-    expect(resolveConfig({}).audit).toEqual({ check: true, ignore: [] })
-    expect(DEFAULT_AUDIT).toEqual({ check: true, ignore: [] })
+    expect(resolveConfig({}).audit).toEqual({
+      check: true,
+      ignore: [],
+      privacyPage: null,
+    })
+    expect(DEFAULT_AUDIT).toEqual({
+      check: true,
+      ignore: [],
+      privacyPage: null,
+    })
     expect(Object.isFrozen(DEFAULT_AUDIT)).toBe(true)
   })
 
   it('merges the audit block one level deep, like links', () => {
     expect(
       resolveConfig({ audit: { ignore: ['og-image-missing'] } }).audit,
-    ).toEqual({ check: true, ignore: ['og-image-missing'] })
+    ).toEqual({
+      check: true,
+      ignore: ['og-image-missing'],
+      privacyPage: null,
+    })
     expect(resolveConfig({ audit: { check: false } }).audit).toEqual({
       check: false,
       ignore: [],
+      privacyPage: null,
     })
     expect(resolveConfig({ audit: { check: undefined } }).audit).toEqual({
       check: true,
       ignore: [],
+      privacyPage: null,
     })
   })
 
@@ -276,11 +290,29 @@ describe('resolveConfig', () => {
     expect(resolveConfig({ audit: false }).audit).toEqual({
       check: false,
       ignore: [],
+      privacyPage: null,
     })
     expect(resolveConfig({ audit: true }).audit).toEqual({
       check: true,
       ignore: [],
+      privacyPage: null,
     })
+  })
+
+  it('takes the privacy page as an id, and refuses anything else', () => {
+    expect(
+      resolveConfig({ audit: { privacyPage: 'legal/privacy' } }).audit,
+    ).toEqual({ check: true, ignore: [], privacyPage: 'legal/privacy' })
+    // `undefined` takes the default, as every block's keys do.
+    expect(
+      resolveConfig({ audit: { privacyPage: undefined } }).audit.privacyPage,
+    ).toBeNull()
+    // Whether a page has that id is the audit's to report once the build has
+    // run, as a finding; the type is this function's to refuse.
+    for (const privacyPage of ['', 42, true, ['privacy'], { id: 'privacy' }])
+      expect(() => resolveConfig({ audit: { privacyPage } })).toThrow(
+        /config\.audit\.privacyPage must be a page id/,
+      )
   })
 
   it('refuses an audit that is neither a boolean nor a plain object', () => {
