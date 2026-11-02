@@ -84,3 +84,35 @@ The run with the skill:
 - **One run per arm.** a1k9-with took three times as long (788 s, against 250 s), much of it in the browser measurement.
 - **Neither bench has a special-category form, a consent banner or a price,** so the legal-review fixes in `61a9eee` (Art. 9, the consent standard, DMCC s.230) are not exercised by either bench.
 - **The without arm had the new audit checks too.** The engine's contribution is in both arms; the comparison measures the skills on top of it.
+- **`summarise` counts only `Read` calls as skill reads.** The clean room below read `kiss-legal-and-privacy/SKILL.md` with `cat` in Bash, and the summary's "SKILL.md reads" count showed 0 for it. Grep the transcript before concluding that a skill went unread.
+
+## Clean room (2026-11-02, plugin at `6d98b98`)
+
+The aim was to show what an agent does with only what ships. The setup was:
+
+- **Starting point:** an empty repo with a bare `package.json`, set up by `scripts/arms.mjs setup`.
+- **Engine:** this branch's packed engine.
+- **Plugin:** the plugin at `HEAD`.
+- **Brief:** "a sole trader in Cardiff offering home bicycle repairs", three pages, and a contact form with a newsletter sign-up, "ready to launch, including whatever the law needs". No questions allowed; list the guesses.
+
+**Run:** $1.59, 336 s, 41 turns, no commit attempts.
+
+**Route:** it invoked `kiss-site-new`, followed that skill's link to `kiss-legal-and-privacy/SKILL.md` and read it (with `cat`), and listed its references.
+
+**Result:** `npx kiss-ssg check router.js` in the copy, run by the main session: exit 0, 6 pages, 0 failed. The only audit finding is `placeholder-left`, which is expected because the owner's facts are marked. There is no `privacy-link-missing` and no `checkbox-prechecked`.
+
+**What it built:**
+
+- a privacy page;
+- the line beside the form;
+- an **unticked** newsletter box;
+- business details in the footer, every fact marked;
+- an owner handout.
+
+**How it handled the owner and the law:**
+
+- It measured storage after a 10-second idle wait, a scroll and a click.
+- It listed 9 guesses and 16 questions.
+- It put a published home address to the owner as "choosing not to meet that rule; ask an adviser before relying on any other address".
+- It said prices must be the total the customer pays.
+- It sent the 14-day cancellation question to a solicitor rather than drafting terms.
