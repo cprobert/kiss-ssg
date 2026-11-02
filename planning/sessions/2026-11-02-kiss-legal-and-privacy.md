@@ -49,6 +49,15 @@ opened: 2026-11-02
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+**2026-11-02 — seeded from the a1k9training legal feedback.** The operator ran a review on a1k9training, a sole trader's site, and a separate compliance check found 17 legal findings beyond the one `kiss-site-review` reported. Evidence: `planning/reviews/2026-11-02-a1k9-legal-feedback.md`. The operator's direction: "draw all of this into a legal skill. So no duplication with llms.txt or other skills." The contract is `planning/plans/2026-11-02-kiss-legal-and-privacy.md`. Changes to the Intent above:
+
+- **Engine audits come onto this branch:** `report().thirdParty`, plus the audit checks `privacy-link-missing`, `placeholder-left` and `checkbox-prechecked`. This was against the recommendation, which was the next branch. Reason: no reason given. **The impact surface moves from tooling & docs to public API: a minor bump with a `### Upgrading` note.** The non-goal "no engine feature" is withdrawn.
+- **`references/eu.md` ships alongside `uk.md`.** This was against the recommendation, which was `uk.md` only, shaped for more. Reason: no reason given. The skill asks for the jurisdiction first. It holds the method in `SKILL.md` and the dated law in the per-jurisdiction references.
+- **`kiss-page-add` becomes a third caller**, as recommended. It was a non-goal at the open.
+- **The bench is a copy of a1k9training at `385434a`**, the local clone's head, which predates the privacy work. The feedback's 18 findings become its answer key. A small fixture in `test/fixtures/` is added for the unit tests. This replaces the "built fixture" criterion as the measurement bench.
+- **No duplication is now a criterion.** Every legal rule lives in the new skill. `kiss-writing-for-the-web`, `kiss-seo`, `review-protocol.md`, `kiss-front-end` and `kiss-site-new` keep only the trigger sentence and a link to the skill, and each moved sentence is banned in a `CONTRADICTIONS` table.
+- **The contract has three workstreams:** A (the harness and the bench), B (the skill and its wiring) and C (the engine), with the seams fixed in its names table.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
