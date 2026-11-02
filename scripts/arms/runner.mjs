@@ -100,17 +100,21 @@ export function realRunner() {
           fs.openSync(stdoutFile, 'w'),
           fs.openSync(stderrFile, 'w'),
         ]
-        const close = () => fds.forEach((fd) => fs.closeSync(fd))
+        // A command that cannot start emits `error` and then `close`: the
+        // descriptors are closed, and the result settled, once.
+        let settled = false
+        const finish = (/** @type {number|null} */ status) => {
+          if (settled) return
+          settled = true
+          fds.forEach((fd) => fs.closeSync(fd))
+          resolve({ status })
+        }
         const child = start({ cmd, args, cwd, env }, fds)
         child.on('error', (error) => {
-          fs.writeSync(fds[2], `${error.message}\n`)
-          close()
-          resolve({ status: null })
+          if (!settled) fs.writeSync(fds[2], `${error.message}\n`)
+          finish(null)
         })
-        child.on('close', (status) => {
-          close()
-          resolve({ status })
-        })
+        child.on('close', (status) => finish(status))
       })
     },
   }

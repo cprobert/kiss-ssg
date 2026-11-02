@@ -12,7 +12,7 @@ import {
   formatCommand,
   shellQuote,
 } from '../../scripts/arms/claude-argv.mjs'
-import { cmdQuote, spawnShape } from '../../scripts/arms/runner.mjs'
+import { cmdQuote, realRunner, spawnShape } from '../../scripts/arms/runner.mjs'
 import {
   ArmsSetupError,
   isInside,
@@ -276,6 +276,38 @@ describe('formatCommand', () => {
     expect(shellQuote("it's")).toBe(`'it'\\''s'`)
     expect(shellQuote('')).toBe("''")
     expect(shellQuote('$(rm -rf /)')).toBe("'$(rm -rf /)'")
+  })
+})
+
+describe('realRunner().stream', () => {
+  // Codex review (2026-11-02): a command that cannot be spawned emits
+  // `error` and then `close`; both closed the descriptors, and the second
+  // closeSync threw EBADF instead of reporting the launch failure.
+  it('reports a command that cannot start, once, without throwing', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'arms-runner-'))
+    try {
+      const stdinFile = path.join(dir, 'in.txt')
+      fs.writeFileSync(stdinFile, '')
+      const uncaught = []
+      const onUncaught = (e) => uncaught.push(e)
+      process.on('uncaughtException', onUncaught)
+      const result = await realRunner().stream(
+        'kiss-arms-no-such-command-zz',
+        [],
+        {
+          cwd: dir,
+          stdinFile,
+          stdoutFile: path.join(dir, 'out.txt'),
+          stderrFile: path.join(dir, 'err.txt'),
+        },
+      )
+      await new Promise((r) => setTimeout(r, 200))
+      process.off('uncaughtException', onUncaught)
+      expect(uncaught).toEqual([])
+      expect(result.status).not.toBe(0)
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
 

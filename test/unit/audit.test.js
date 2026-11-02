@@ -1299,6 +1299,20 @@ describe('auditBuild — privacy-link-missing', () => {
     expect(only(result, 'privacy-link-missing')).toEqual([])
   })
 
+  it('says nothing about a page with a <base href>, whose links it cannot resolve', () => {
+    // Codex review (2026-11-02): with <base href="/">, a nested page's
+    // href="privacy.html" opens the root privacy page in a browser, and was
+    // reported missing; an external base could make a link wrongly pass.
+    // The fragment check skips such a page for the same reason.
+    const site = privacySite({
+      'courses/contact.html': doc(
+        `<base href="/">${FORM}<a href="privacy.html">Privacy</a>`,
+      ),
+      'privacy.html': PRIVACY,
+    })
+    expect(only(site, 'privacy-link-missing')).toEqual([])
+  })
+
   it('finds the privacy page by id, then by path, and resolves the link to it', () => {
     // By id: the page's id, wherever it was written.
     const byId = privacySite({
