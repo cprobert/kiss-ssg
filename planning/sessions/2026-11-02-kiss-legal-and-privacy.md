@@ -65,6 +65,16 @@ opened: 2026-11-02
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
 - **2026-11-02** — Planning only: the session file, the contract with the critique folded in, and the feedback. Every criterion is not yet met; all are designed in the contract. No drift beyond the Amendment, which already moved the surface to public API. **Eyeball: looked** — the operator read the contract's critique section: "Looked, it matches". **Offer: unanswered** — the offer was who marks the arm results (Claude marking its own skill is self-assessment). The operator was unsure what it meant and asked to proceed with building, so it will be re-asked, with context, before the measurement. Decision: continue. A writes the fixture and the harness, and B and C start against the contract's names table.
+- **2026-11-02 (2)** — All three workstreams have landed: `5e2300e` (harness and fixture), `a969c50` (engine), `61a9eee` (skill and wiring).
+  - **Evidence:** `npm test` passes 3,249 tests; typecheck and lint pass; `llms.txt` is 14,734 characters.
+  - **Legal plugin review (`/legal:compliance-check`):** 9 findings. The operator chose to fix the high and medium ones (#1–#6), and each fix was checked at legislation.gov.uk before it was written. It is the same model family, so it is a second opinion, not an independent one.
+  - **Measurement:** `planning/reviews/2026-11-02-legal-arms.md`, $4.12 for four arms, marked blind by a fresh agent (the operator's choice).
+    - On a1k9 the skill changed the outcome: with it, 13 hit, 3 partial, 0 missed; without it, 2 hit, 8 partial, 6 missed.
+    - On the fixture there was no difference: 6 hit and 1 partial with it, 7 hit without.
+    - Two fixture shortfalls traced to the skill and were fixed in the same message: self-host a CDN font; analytics is an owner decision.
+  - **Criteria:** skill, sources, callers, lists, harness, fixture and measurement are met, with evidence above. Clean-room and gates are not yet met.
+  - **Drift:** none beyond the 2026-11-02 Amendment. **Eyeball: not asked this pulse** (the operator read the contract at the first pulse). The skill's `SKILL.md` is the artefact to read before close.
+  - **Decision:** continue to the clean room, then close.
 
 ---
 
