@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{pageTitle}} · {{config.site.name}}</title>
+  <meta name="description" content="{{pageDescription}}">
+  <link rel="canonical" href="{{canonical}}">
+  <link rel="icon" type="image/svg+xml" href="/{{asset 'img/icon.svg'}}">
+  <meta property="og:image" content="{{absUrl (asset 'img/og-card.svg')}}">
+  {{!-- Planted: Google Fonts from Google's CDN, and a preconnect to its font host. --}}
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap">
+  <link rel="stylesheet" href="/{{asset 'css/site.css'}}">
+  {{!-- Planted: an analytics tag from a third-party origin, loaded on every page. --}}
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FIXTURE00"></script>
+</head>
+<body>
+  <header>
+    <a href="/">{{config.site.name}}</a>
+    <nav aria-label="Site">
+      <a href="/">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/contact.html">Contact</a>
+    </nav>
+  </header>
+  <main id="main">
+    {{#block "main"}}{{/block}}
+  </main>
+  {{!-- Planted: no postal address, no email address and no privacy link. --}}
+  <footer>
+    <p>&copy; {{config.site.name}}. Walks every weekday, whatever the weather.</p>
+  </footer>
+</body>
+</html>
