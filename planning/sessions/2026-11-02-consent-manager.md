@@ -1,0 +1,135 @@
+---
+branch: feat/consent-manager
+base: main
+status: open
+opened: 2026-11-02
+---
+
+# Session — 2026-11-02: Consent management built into kiss
+
+## Intent (captured at /branch-open)
+
+**Objective:** Give kiss a built-in consent manager. A site declares its third-party services once in `config.consent`, kiss gates them behind the visitor's choice and renders a themable default banner. This replaces paid tools such as Cookiebot across the fleet without a third party.
+
+**Decided before the open (conversation of 2026-11-02):**
+
+- **Shape:**
+  - built into the engine, not a plugin system (one use case does not justify an extension API);
+  - services declared once in `config.consent.services` and loaded by name in templates (`{{script "name"}}`), so the banner, the cookie table and the audit read one list;
+  - explicit gating with `type="text/plain"` and a data attribute; no auto-blocking;
+  - click-to-load placeholders for iframes.
+- **Banner rules:**
+  - Accept and Reject equal on the first layer;
+  - closing the banner means no consent;
+  - category toggles off by default;
+  - a settings link on every page to withdraw.
+- **The choice:** a first-party cookie holding a consent ID, a timestamp and the config version; ask again after 6 months, and again when the version changes.
+- **Consent log:** an optional `config.consent.endpoint` in v1. The build records a timestamped hash of every banner version either way.
+- **Google:**
+  - Consent Mode v2, basic by default; advanced is an opt-in with a warning;
+  - AdSense and Ad Manager tags are refused or warned on, because they need a Google-certified consent manager.
+- **UK statistics exception:** a category with `mode: 'objection'` (on by default, can be switched off), opt-in per site. The audit warns when a third-party origin sits in it.
+- **Default UI:** themable from config (logo, wording, colours as CSS custom properties), plus an overridable banner partial. kiss keeps the behaviour.
+
+**Inputs:**
+
+- `planning/reviews/2026-11-02-consent-research.md`: the research pass, sources dated 2026-11-02; Google's four claims re-checked at source by the main session.
+- `planning/reviews/2026-11-02-cookiebot-baseline.md`: Cookiebot on diploma-msc.com, measured in a clean profile.
+
+**Success criteria:**
+
+- [ ] **Contract first.** `planning/plans/2026-11-02-consent-manager.md` names:
+  - the config shape, the helpers and the client API;
+  - the cookie format;
+  - the audit findings;
+  - an **environment matrix**: script kinds (src, inline, module, `async`/`defer`, `document.write`, GTM-injected), iframes, no JavaScript, a returning visitor, a version bump, withdrawal, Consent Mode basic and advanced, a partial override.
+
+  Each row of the matrix has a test. A fresh-context agent critiques the contract adversarially before anything is built against it.
+
+- [ ] **Nothing before a choice, nothing after Reject.** On the new example, measured in a clean Chromium profile: no cookie, `localStorage` or IndexedDB entry and no request to a gated origin before a choice, or after Reject (the consent cookie aside). After Accept, the gated services load in document order.
+- [ ] **Withdrawal works.** Changing the choice from the settings link deletes the declared first-party cookies, reloads the page, and the next measurement matches Reject.
+- [ ] **Asking again works.** A version bump, or a choice older than 6 months, shows the banner again. A test covers both.
+- [ ] **Consent Mode.**
+  - `gtag('consent','default',…)` is emitted before anything Google loads;
+  - `update` fires on load from the stored choice, and on every change;
+  - the order is measured in a real browser, not inferred.
+- [ ] **The audit.**
+  - It reports a third-party script or iframe that loads without a declared service;
+  - it reports a service an `objection` category would run from a third-party origin;
+  - it refuses or warns on AdSense or Ad Manager.
+
+  Each is seen red before it is fixed.
+
+- [ ] **Theming.**
+  - A site changes the logo, the wording and the colours from config alone.
+  - A site that overrides the banner partial keeps gating, storage, events and focus behaviour; a test proves it.
+  - The default banner passes WCAG 2.2 SC 2.4.11: a non-fixed region first in `<body>`, keyboard reachable.
+- [ ] **The endpoint.** With `config.consent.endpoint` set, a choice POSTs the consent ID, the timestamp, the choices and the version. Without it, nothing is sent. A test covers both.
+- [ ] **The diploma-msc trial.** With diploma-msc wired locally to this branch (junction) and Cookiebot replaced by `config.consent`, the clean-profile measurement shows:
+  - nothing before a choice;
+  - nothing after Reject, the Vimeo storage included;
+  - after Accept, the same tag hosts the Cookiebot baseline loaded.
+
+  Nothing in diploma-msc is committed or deployed from this branch.
+
+- [ ] **Clean room.** A fresh agent given only the packed tarball adds consent to an empty site with GTM and a YouTube embed. It passes `kiss-ssg check` and the measurement, and reports every place it had to guess.
+- [ ] **Docs.**
+  - a `GUIDE.md` section, with its page entry in `src/models/guide.json` so `node docs` builds;
+  - one index line in `llms.txt`, kept under the 16,000-character cap;
+  - `README.md`;
+  - `types/` regenerated;
+  - every snippet run against the real engine.
+- [ ] **Skills.**
+  - `kiss-legal-and-privacy`, `kiss-front-end` and `kiss-site-new` reach for `config.consent`, with rows in `skill-coverage.test.js`;
+  - wording that this makes wrong is banned in `CONTRADICTIONS`.
+- [ ] **Engine.** Every new `lib/` module has a `test/unit/` sibling and an `AIKB/` doc with a row in `CLAUDE.md`. The client script is a real function inlined by its source, as `scorm-bridge.js` is: linted, type-checked, and tested both rendered and minified.
+- [ ] **`npm run gates` passes**, and Codex reviews the `lib/` changes.
+
+**Non-goals / out of scope:**
+
+- IAB TCF, and any Google-certified CMP status; sites that show AdSense or Ad Manager ads keep a certified CMP.
+- A hosted consent server; v1 only POSTs to an endpoint the site provides.
+- Geotargeting, and automatic translation.
+- Scanning for cookies at runtime; the services are declared.
+- A general plugin or extension API.
+- Committing or deploying anything in diploma-msc, including its Vimeo fix. That belongs in that repo.
+- A Cookiebot-migration upgrade note; the 2.11.0 entry still carries `### Upgrading` or `### Nothing for a site to change`.
+
+**Impact surface:** public API — new `config.consent`, new helpers, a client API (`window.kissConsent`), new audit findings. A minor bump, 2.11.0.
+
+**Expected shape:** planned. The research and the measurement fix the destination, and the contract maps the route. The GTM and Consent Mode ordering is the part most likely to move once measured.
+
+**Delegation convention:**
+
+- The main session writes the contract and builds the engine core: config, the helpers, the client script, the cookie.
+- Sub-agents take named slices within the files the contract assigns them: the default UI and theme, the example, the skill updates, the measurement runs.
+- A fresh-context agent critiques the contract before any slice starts.
+- **Agents never commit**; the operator's diff review is the checkpoint.
+- No sub-agent removes a worktree that holds a junction, or touches the main checkout's `node_modules` (11-02 feedback).
+
+**Contract:** `planning/plans/2026-11-02-consent-manager.md` (written in plan mode; amended in place with dated sections).
+
+**Carried from earlier feedback:**
+
+- **Decide in `lib/` from the first draft,** including which facts are gathered (11-01).
+- **Measure an upstream tool before coding on it:** GTM and Consent Mode ordering, how the browser runs a cloned script (11-01).
+- **The environment matrix goes in the contract** (11-01).
+- **The operator reads the shipped skill changes before the close,** sent to a device if need be (11-02, retired row 58).
+- **An overrule comes with its one-sentence reason** (11-01, 11-02, retired row 56).
+
+### Amendments
+
+<!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
+     mid-branch, append a dated note here and stay on the branch — a new branch is
+     the operator's call, never spawned on initiative. Good drift gets recorded;
+     it is not silent scope creep. -->
+
+## Pulse log
+
+<!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
+     criteria status + evidence + the continue/adjust/amend/close decision.
+     Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+---
+
+<!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
