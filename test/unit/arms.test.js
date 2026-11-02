@@ -794,8 +794,10 @@ describe('runArm', () => {
     })
     expect(status).toBe(0)
     expect(logged[0]).toBe(command)
+    // A path is single-quoted when it needs it: Windows CI's temp folder is
+    // the 8.3 short path `C:/Users/RUNNER~1/…`, and `~` is quoted.
     expect(command).toMatch(
-      / claude -p .* < .*brief\.txt > .*transcript\.jsonl 2> .*stderr\.txt$/,
+      / claude -p .* < '?[^ ]*brief\.txt'? > '?[^ ]*transcript\.jsonl'? 2> '?[^ ]*stderr\.txt'?$/,
     )
     const [call] = runner.calls
     expect(call).toMatchObject({
