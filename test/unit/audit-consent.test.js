@@ -147,6 +147,19 @@ describe('consent facts', () => {
     ])
   })
 
+  it('reads no signature from a script a browser never runs: in a comment or a template', () => {
+    const facts = extractPageFacts(
+      doc(
+        HEAD,
+        '<!-- <script>var u="gtm.js"</script> -->' +
+          '<template><script>(adsbygoogle=window.adsbygoogle||[]).push({})</script></template>' +
+          '<script>var v="gtag/js"</script>',
+      ),
+      'a.html',
+    )
+    expect(facts.consent.signatures).toEqual(['gtag/js'])
+  })
+
   it('reads an inline script of any type a browser runs, not only the common ones', () => {
     const facts = extractPageFacts(
       doc(
@@ -335,6 +348,18 @@ describe('the site-wide consent checks', () => {
     expect(only(result, 'consent-settings-missing')).toEqual([
       [`public/p${n - 1}.html`, null],
     ])
+  })
+
+  it('consent-settings-missing: not when every service is necessary, since there is nothing to ask', () => {
+    // {{consentSettings}} renders nothing then, so no page could satisfy it
+    const necessaryOnly = consentOf({
+      services: {
+        jquery: { category: 'necessary', origins: ['https://code.jquery.com'] },
+      },
+    })
+    expect(
+      only(run([at(doc(HEAD, ''))], necessaryOnly), 'consent-settings-missing'),
+    ).toEqual([])
   })
 
   it('consent-google-advanced: advanced Consent Mode', () => {

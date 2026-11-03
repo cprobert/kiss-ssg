@@ -1296,7 +1296,7 @@ Seven audit checks, advisory like every audit check (§ Checking a build):
 | `consent-ungated`               | `config.consent` is set, and a page loads a third-party script or iframe that no service gates and no `necessary` service names in its `origins`, a `<noscript>` GTM frame included               |
 | `consent-ads-cmp`               | AdSense or Ad Manager is on a page: these need a Google-certified CMP                                                                                                                             |
 | `consent-objection-third-party` | a service in an `objection` category loads from another site                                                                                                                                      |
-| `consent-settings-missing`      | a page has `{{consentHead}}` and no `{{consentSettings}}`                                                                                                                                         |
+| `consent-settings-missing`      | a page has `{{consentHead}}` and no `{{consentSettings}}`, on a site with something to ask (not when every service is `necessary`)                                                                |
 | `consent-google-advanced`       | `google.mode` is `'advanced'`                                                                                                                                                                     |
 | `consent-records-missing`       | a Google tag under `marketing`, and no `endpoint`                                                                                                                                                 |
 
