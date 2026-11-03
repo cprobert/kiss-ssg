@@ -84,6 +84,20 @@ would use) is fixed here, and the rest is recorded for later.
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-03** — after three slices (`b0e0dc6` consent URLs, `f24cd15` link check, `f9982a9`
+  format 2 and the log). Criterion 1 met (client unit tests, 8 cases × as rendered and
+  minified; Chromium replay of the spec's history, red on the old client); 2 partial (D1 met,
+  D2 labels not yet); 3 not yet; 4 partial (D11 met, D12 not yet); 5, 6 not yet (client
+  baseline 12,600 B minified, 4,618 gzipped, measured); 7 partial (policy link and logo met,
+  red first; history link and client URL not built yet, will go through `consentUrl`); 8
+  partial (GUIDE, AIKB, types, `kiss-site-new` and a CONTRADICTIONS ban as we go; no new API
+  name yet, so no `llms.txt`/README line due); 9 not yet; 10 partial (test 3,674 passed, lint,
+  typecheck, format green; pack not run). Drift: one Amendment (link check), recorded; surface
+  unchanged. **Eyeball: looked** — the operator ran example 14 with `--dev`, Accept all then a
+  Save, and read `kiss_consent_log` in DevTools: matched. **Offer:** keep — the link check
+  reporting `/` outside a prefix (cleared by `hostServed: ['/']`). Decision: continue, to the
+  viewer (D2 labels, `{{consentRecord}}`, `ui.history`).
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
