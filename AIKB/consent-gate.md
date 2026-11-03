@@ -18,7 +18,8 @@ The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` ca
     - `defer` is dropped, because the queue already runs in document order;
     - other attributes are kept;
     - attribute values are read decoded, as a browser reads them, and escaped once on the way out, so `src="/s.js?a=1&amp;b=2"` stays exactly that. Until 2026-11-03 they were read raw and escaped again, which wrote `&amp;amp;` and changed the URL loaded after consent (found by the Codex review);
-    - everything around the scripts is kept byte for byte, and a data block (`application/ld+json`) is left alone.
+    - everything around the scripts is kept byte for byte, and a data block (`application/ld+json`) is left alone;
+    - which scripts are rewritten is `scriptKind` (`lib/consent.js`): every type a browser runs, `application/x-javascript`, `text/javascript1.5`, a padded `text/javascript` and `language="javascript"` included, and `language` is dropped with `type`. Until 2026-11-03 a hand-written list of six types let those through ungated, and the wiring check and the audit each had a copy of it (found by the Codex review).
 
     A body with no `<script>` tag is taken as one script's text.
 

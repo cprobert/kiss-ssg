@@ -16,10 +16,46 @@ import {
   originOf,
   purposesVersion,
   resolveConsent,
+  scriptKind,
   serviceParams,
   textOf,
 } from '../../lib/consent.js'
 import { resolveConfig } from '../../lib/config.js'
+
+describe('scriptKind', () => {
+  // What Chromium 156 runs, measured 2026-11-03 (AIKB/upstream.md): the
+  // type, or text/ plus the language, stripped of ASCII whitespace and
+  // matched without case against the JavaScript MIME types; `module`
+  // matched without case but not stripped.
+  it.each([
+    [undefined, undefined, 'classic'],
+    ['', undefined, 'classic'],
+    [undefined, '', 'classic'],
+    ['text/javascript', undefined, 'classic'],
+    [' Text/JavaScript\n', undefined, 'classic'],
+    ['application/x-javascript', undefined, 'classic'],
+    ['text/javascript1.5', undefined, 'classic'],
+    ['text/jscript', undefined, 'classic'],
+    ['text/livescript', undefined, 'classic'],
+    ['text/x-ecmascript', undefined, 'classic'],
+    [undefined, 'javascript', 'classic'],
+    [undefined, 'JavaScript1.2', 'classic'],
+    // a type attribute wins over language
+    ['text/javascript', 'vbscript', 'classic'],
+    ['module', undefined, 'module'],
+    ['MODULE', undefined, 'module'],
+    // measured, Chromium 156: `module` is not stripped of whitespace
+    [' module', undefined, null],
+    ['application/ld+json', undefined, null],
+    ['text/plain', undefined, null],
+    ['importmap', undefined, null],
+    ['text/javascript; charset=utf-8', undefined, null],
+    ['  ', undefined, null],
+    [undefined, 'vbscript', null],
+  ])('type %j, language %j → %j', (type, language, kind) => {
+    expect(scriptKind(type, language)).toBe(kind)
+  })
+})
 
 const minimal = () => ({ services: { gtm: { id: 'GTM-X' }, youtube: {} } })
 /** @param {any} input */

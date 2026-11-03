@@ -440,6 +440,16 @@ first launch's place.
 
 **Re-check:** the spike scripts' shape is in Appendix A. Serve a page whose gated scripts log their order (a slow external, an inline, a module, a `defer` that listens for `DOMContentLoaded`), revive them at `DOMContentLoaded`, and compare with the same page ungated.
 
+### Which `<script>` types a browser runs: `module` is not trimmed
+
+**Observed:** Chromium 156.0.8078.4 (playwright-core), 2026-11-03, a parser-inserted page of one `<script>` per case.
+
+**Effect:** as the HTML spec says, an empty or absent type (with no or an empty `language`) runs, and so does any JavaScript MIME type (`application/x-javascript`, `text/javascript1.5`, `text/jscript`, `text/livescript`, …) after ASCII whitespace is stripped and case ignored; `language="javascript"` runs as `text/javascript`, and a `type` wins over `language`. A type with parameters (`text/javascript; charset=utf-8`), a whitespace-only type, `application/ld+json` and `text/plain` do not run. One difference from a plain reading of the spec: `module` is matched without case (`MODULE` runs), but **not stripped** (` module` and `module ` do not run).
+
+**What kiss does:** `scriptKind` in `lib/consent.js` encodes exactly this, and the consent gate, the wiring check and the audit all ask it.
+
+**Re-check:** write a page with one `<script>` per type/language pair, each pushing its index to an array, load it in Chromium and read the array; the cases are in `test/unit/consent.test.js`'s `scriptKind` table.
+
 ### Consent Mode governs Google's tags, not a container's other tags
 
 **Observed:** Chromium, 2026-11-03, against diploma-msc's live container `GTM-NXRHGJ8`, with every request but the container scripts aborted (Appendix A, S1 and S1b).

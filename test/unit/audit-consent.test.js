@@ -146,6 +146,18 @@ describe('consent facts', () => {
       'gtm.js',
     ])
   })
+
+  it('reads an inline script of any type a browser runs, not only the common ones', () => {
+    const facts = extractPageFacts(
+      doc(
+        HEAD,
+        '<script type="application/x-javascript">var u="gtm.js"</script>' +
+          '<script language="javascript">var v="gtag/js"</script>',
+      ),
+      'a.html',
+    )
+    expect(facts.consent.signatures).toEqual(['gtag/js', 'gtm.js'])
+  })
 })
 
 describe('thirdParty with gated origins', () => {

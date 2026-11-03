@@ -330,6 +330,21 @@ describe.skipIf(!browser)('consent in Chromium', () => {
     await context.close()
   })
 
+  it('shows a focus outline on the footer settings button and the cookie table', async () => {
+    const { context, page } = await open()
+    await page.goto(`${site.base}/cookies.html`)
+    const outline = (selector) =>
+      page.evaluate((s) => {
+        const el = /** @type {HTMLElement} */ (document.querySelector(s))
+        el.focus()
+        const style = getComputedStyle(el)
+        return `${style.outlineStyle} ${style.outlineWidth}`
+      }, selector)
+    expect(await outline('footer .kiss-consent-settings')).toBe('solid 3px')
+    expect(await outline('.kiss-consent-table-wrap')).toBe('solid 3px')
+    await context.close()
+  })
+
   it('withdrawal deletes a declared __Secure- and __Host- cookie', async () => {
     const { context, page } = await open()
     await page.goto(`${site.local}/`)

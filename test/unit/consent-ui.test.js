@@ -330,7 +330,7 @@ describe('themeCss', () => {
 
   it('declares each custom property with the configured value', () => {
     expect(css).toContain(
-      '.kiss-consent,.kiss-consent-dialog,.kiss-embed,[data-kiss-consent-confirmation]{',
+      '.kiss-consent,.kiss-consent-dialog,.kiss-embed,[data-kiss-consent-confirmation],.kiss-consent-settings,.kiss-consent-table-wrap{',
     )
     for (const [prop, value] of [
       ['background', '#000'],

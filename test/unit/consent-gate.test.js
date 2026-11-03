@@ -125,6 +125,31 @@ describe('gatedScript', () => {
     )
   })
 
+  it('gates every script type a browser runs, and only those', () => {
+    const out = script('stats', {
+      body:
+        '<script type="application/x-javascript">a()</script>' +
+        '<script type=" text/javascript ">b()</script>' +
+        '<script type="text/javascript1.5">c()</script>' +
+        '<script language="javascript">d()</script>' +
+        '<script type="MODULE">e()</script>' +
+        '<script type="text/x-template">f</script>' +
+        '<script language="vbscript">g</script>',
+    })
+    const gated = (body) =>
+      `<script type="text/plain" data-kiss-service="stats" data-kiss-consent="statistics">${body}</script>`
+    expect(out).toBe(
+      gated('a()') +
+        gated('b()') +
+        gated('c()') +
+        // the language attribute is dropped with the type it stood for
+        gated('d()') +
+        '<script type="text/plain" data-kiss-service="stats" data-kiss-consent="statistics" data-type="module">e()</script>' +
+        '<script type="text/x-template">f</script>' +
+        '<script language="vbscript">g</script>',
+    )
+  })
+
   it('keeps a block’s attribute values as the browser reads them, escaped once', () => {
     // `&amp;` in the source is `&` to a browser; written back it must be
     // `&amp;` again, not `&amp;amp;`, or the URL loaded after consent changes.
@@ -279,6 +304,16 @@ describe('consentWiringProblems', () => {
         page(`<script type="application/ld+json">{}</script>${HEAD}`, BANNER),
       ),
     ).toEqual([])
+    expect(
+      consentWiringProblems(
+        page(
+          `<script type="application/x-javascript" src="/old.js"></script>${HEAD}`,
+          BANNER,
+        ),
+      ),
+    ).toEqual([
+      '/old.js would run before {{consentHead}} sets the Consent Mode default — move {{consentHead}} above every script',
+    ])
   })
 
   it('reports one service loaded twice', () => {

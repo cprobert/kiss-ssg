@@ -1,4 +1,22 @@
 /**
+ * How a browser runs a `<script>` with these `type` and `language` attribute
+ * values (`undefined`/`null` for an absent one): as a classic script, as a
+ * module, or not at all (a data block such as `application/ld+json`, a gated
+ * `text/plain`). The one answer for the gate, the wiring check and the audit,
+ * so none of them lets through a type the others would catch.
+ *
+ * The HTML spec's rule, as Chromium 156 applies it (measured 2026-11-03,
+ * `AIKB/upstream.md`): an empty type, or no type and no or an empty
+ * `language`, is classic; otherwise the type (or `text/` + the language) is
+ * stripped of ASCII whitespace and matched without case against the
+ * JavaScript MIME types. `module` is matched without case but not stripped.
+ *
+ * @param {string|null|undefined} type
+ * @param {string|null|undefined} [language]
+ * @returns {'classic'|'module'|null}
+ */
+export function scriptKind(type: string | null | undefined, language?: string | null | undefined): "classic" | "module" | null;
+/**
  * The origin of an absolute http(s) URL, or `null` for anything else (a
  * site-relative path, a placeholder-only value). A `{param}` placeholder in
  * the query or path does not stop the origin being read.

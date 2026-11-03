@@ -28,6 +28,7 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
   - `'none'` for a `necessary` service, or a Google service under `google.mode: 'advanced'`;
   - `'embed'` for a service with an `embed`;
   - `'script'` otherwise.
+- **`scriptKind(type, language)` → `'classic'|'module'|null`.** How a browser runs a `<script>` with those attributes, as Chromium 156 measured it (`AIKB/upstream.md`). The gate, the wiring check and the audit's inline-script reading all call it, so a type one of them lets through cannot be caught by another.
 - **`clientConfig(resolved, { logoUrl, policyUrl, bannerHash })`** → the object `{{consentHead}}` inlines. It carries only what the client acts on: the version, the cookie settings, categories, every service with its first-party cookie and storage names (a `necessary` service with none, so `has()` and `when()` answer for it while its cookies are never deleted), the Google block with its computed defaults, the endpoint, the position and two strings.
 - **`consentReport({ consent, pages, real, gatedPages })`** → the report's `consent` key, or `null` without a consent manager.
 - **`originOf(url)`** and **`matchesHost(url, list)`** → URL helpers for the audit.
