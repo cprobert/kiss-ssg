@@ -284,5 +284,6 @@
     "siteUrl": "https://asterandoak.example",
     "pages": [],
     "origins": []
-  }
+  },
+  "consent": null
 }

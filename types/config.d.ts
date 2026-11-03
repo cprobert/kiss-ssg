@@ -234,7 +234,7 @@ export const DEFAULT_LINKS: Readonly<{
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
-    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked")[];
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing")[];
     privacyPage: string | null;
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
@@ -288,7 +288,7 @@ export const DEFAULT_CONFIG: Readonly<{
     }>;
     audit: Readonly<{
         check: true;
-        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked")[];
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing")[];
         privacyPage: string | null;
     }>;
     markdownCopies: Readonly<{

@@ -52,10 +52,26 @@ describe('CHECKS', () => {
       'privacy-link-missing',
       'placeholder-left',
       'checkbox-prechecked',
+      'consent-missing',
+      'consent-ungated',
+      'consent-ads-cmp',
+      'consent-objection-third-party',
+      'consent-settings-missing',
+      'consent-google-advanced',
+      'consent-records-missing',
     ])
     expect(Object.isFrozen(CHECKS)).toBe(true)
   })
 })
+
+// A page with none of the consent manager's markup (`test/unit/audit-consent.test.js`).
+const NO_CONSENT = {
+  head: false,
+  banner: null,
+  settings: false,
+  gated: false,
+  signatures: [],
+}
 
 describe('extractPageFacts', () => {
   it('reads every fact from a finished page', () => {
@@ -77,6 +93,7 @@ describe('extractPageFacts', () => {
       anchors: [],
       placeholders: [],
       prechecked: [],
+      consent: NO_CONSENT,
     })
   })
 
@@ -109,6 +126,7 @@ describe('extractPageFacts', () => {
       anchors: [],
       placeholders: [],
       prechecked: [],
+      consent: NO_CONSENT,
     })
   })
 
