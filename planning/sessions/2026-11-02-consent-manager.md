@@ -1,7 +1,7 @@
 ---
 branch: feat/consent-manager
 base: main
-status: open
+status: closed
 opened: 2026-11-02
 ---
 
@@ -217,3 +217,105 @@ opened: 2026-11-02
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-03: Consent management built into kiss
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** kiss-ssg 2.11.0's cookie consent manager, 33 commits from `bba695a` to `4de886e`, before this reflection.
+
+- **Engine:** four new modules, `lib/consent.js`, `lib/consent-client.js`, `lib/consent-gate.js` and `lib/consent-ui.js`, plus the wiring check in `lib/kiss-page.js`.
+- **The build's report:** seven audit checks in `lib/audit.js`, the `consent` report key, and `kiss-ssg check`'s banner and version lines.
+- **Tests:** an 18-test Chromium suite, run in CI on both legs.
+- **Site-facing work:** example 14, the guide section, and four skills.
+- **Proof:** a diploma-msc trial that replaced Cookiebot and caught the Vimeo storage it missed, a clean room from an empty folder, and eight Codex review rounds with 17 findings, each fixed red first.
+- **Outside the repo:** a published draft specification for kiss-consent, the next project, not committed here.
+
+## Reflect — what the session was
+
+**The framing was strong, and the destination was planned.** The objective, thirteen criteria, non-goals and a delegation convention were captured at `/branch-open`. Two research passes were committed before the open: the consent rules, and Cookiebot measured on diploma-msc. The contract was written in plan mode. A seven-case browser spike measured the risky upstream behaviour (Consent Mode order, cloned-script order, `document.write`, parent-domain cookie deletion), and a fresh-context agent critiqued the contract adversarially before a slice was built. Six blockers came out of that critique, at the cost of a document edit.
+
+**The second half was emergent, in three waves the brief did not hold.**
+
+1. **A restyle.** It started with "the diploma MSc one looks better than ours" and ended with Google's "More options" model for Choose cookies.
+2. **Eight Codex review rounds.** Their findings declined from consent ignored in normal use (rounds 1–5) to edge cases and false audit findings (6–7), then one P2 (8).
+3. **A design conversation for the next phase:** the consent log, the visitor's history, a hosted service.
+
+Each wave was absorbed with an Amendment or a session-log entry. The work stayed inside the objective, but the second half ran without a pulse.
+
+## Evaluate — how the human supervised the AI
+
+**Learning engagement was the session's strongest dimension.** The operator kept asking questions that moved the design, not questions that sought reassurance:
+
+- **"What's the real risk here?"** about a more prominent Accept. The answer separated the settled rule (Reject on the first layer) from the grey zone (colour), and shipped as the GUIDE's filled-Accept override with its limits.
+- **"Is it better to have an inline script or to have it separate so it's cached?"** This surfaced the inline-and-cached-file split, now planned.
+- **"Are these reviews still proving value?"** It came at round 7, and the answer set the loop's stop condition.
+- **"Was this the right decision?"** about building in rather than writing a plugin. The answer named what only the engine could do: the wiring check, the audit facts, the report key.
+
+**Pushback & steering: the operator corrected Claude where it mattered most.** When the operator first suggested `localStorage` for a consent log, Claude argued against it: the cookie already holds the choice, and a local history is not evidence. The operator came back with the case Claude had flattened: "they withdraw consent … then go back in and give limited consent". The point was never to replace the cookie. It was to give the visitor a dated history they can see. Claude conceded, captured the exact sequence in Chromium, and rebuilt the spec around it. That is the session's clearest case of the sum beating the parts: Claude knew the mechanism, and the operator knew what the visitor needs to see.
+
+**The operator also overruled Claude without a reason, and Claude did not ask for one.** After round 2, the operator chose "Fix both, loop until clean" over the recommended "one more run, P1 only". CLAUDE.md asks Claude, in that case, for the reason in one sentence before writing the choice down. Claude recorded it as "no stop condition beyond a clean run" and did not ask. The loop then ran five more rounds before a stop condition existed. CLAUDE.md says a review loop needs one before it starts.
+
+**Iteration discipline: the pulses stopped where the work was densest.** There were three pulses, each with evidence and an eyeball answer, up to the clean room. After that came the restyle, eight Codex rounds, two raises of the client's size ceiling and a five-commit docs and version close, with no pulse at all. CLAUDE.md tells Claude to offer a pulse "after every Amendment and every multi-round review". Claude offered none, so the close read a pulse log that stopped before most of the late changes. In mitigation, every Codex fix had a regression test seen red first, and the browser ones were measured in Chromium. The cadence of checks held inside each fix, even though no pulse brought the operator back in.
+
+**Where the human intended to supervise, versus where they did.** On the UI, the operator supervised fully: they looked at the preview and every restyle screenshot, and asked for a different colour. On the skill, they deferred the read at the third pulse and did it at the close ("looks right"). On the Codex loop, the operator chose the policy and Claude verified every fix itself. No fix diff from rounds 1–8 was looked at by the operator. That was acceptable because each came with a failing-then-passing test. Still, the eight rounds' 17 fixes, into the part of the engine visitors run, are the least supervised code on the branch.
+
+**Harness leverage was high and deliberate:**
+
+- plan mode for the contract;
+- Claude in Chrome to study Cookiebot;
+- sub-agents for the critique, the slices, the docs, a verification pass and the clean room;
+- a real-site trial through a junction;
+- Codex as the independent reviewer;
+- `AskUserQuestion` at every fork;
+- a published page for the next project's spec.
+
+Two places it fell short:
+
+- **The size ceiling was raised twice in one afternoon.** Each time Claude reported the overshoot only after it had happened. Neither time did it suggest a budget for the review rounds still to come.
+- **The diminishing returns from Codex were visible by round 6.** The operator had to ask before Claude raised them.
+
+**Competency level: Active supervisor**, with lead-level framing. The research, plan mode, the critique, the trial and the clean room are agentic-engineering-lead behaviour, and so were the decisions on build-vs-plugin, the buttons, packaged pages and records. What holds the level back is the late branch: an unbounded review loop with no pulses, whose fixes the operator saw only as summaries.
+
+## Feedback — recommendations for next session
+
+- **Claude — ask for the reason when the operator overrules a recommendation, every time.** The "loop until clean" choice went into the log without one, against CLAUDE.md § Rules. Next time, one `AskUserQuestion` follow-up before writing the choice down, and "no reason given" if none comes.
+- **Claude — offer `/branch-pulse` after each Codex round that changes `lib/`, and after an Amendment.** The rule exists and was not followed for the restyle or any of eight rounds. A pulse per round costs a few minutes; the branch-close had to rely on the commit messages instead.
+- **Claude — raise diminishing returns before the operator asks.** By round 6 the findings had turned into false audit findings. The table Claude produced at round 7 could have been produced at round 5 or 6, with the stop-condition question attached. The operator should never have to ask to be asked.
+- **Both — set a review loop's stop condition when it starts, even when the answer is "until clean".** "Until clean" can still carry a checkpoint ("revisit after three rounds", "P1 only after round N"). The loop found real defects; the open-ended part was the cost, not the finding count.
+- **Claude — measure before reporting a number in an AIKB doc, and re-measure when touching it.** `AIKB/consent-client.md` said 10,932 bytes when the client was already 11,607. That was found only when the size test failed in round 4. A ceiling raised twice in an afternoon also says the budget was set without headroom for review fixes.
+- **Operator — look at one Codex fix diff per round in a long review loop.** Every fix was tested, but none was read by a person. Glancing at the biggest one per round (the withdrawal tracking in round 4, the shared-cookie rule in round 5) keeps the reviewer's findings and the fixes in view at the same time.
+- **Process — the next branch's brief is ready.** The kiss-consent specification (draft 0.5, published as a page) has D1–D13 for the history log and viewer, with D13 still to decide. Copy it into `planning/specs/` at `/branch-open` as the contract. Two items from this branch fit that branch:
+  - the round-8 P2, the policy and logo URLs losing a sub-folder prefix, which lives in the same URL code `ui.history` will use;
+  - the inline-and-cached-file split, which decides where the viewer's code loads.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** give kiss a built-in consent manager. A site declares its services once in `config.consent`, kiss gates them and renders a themable banner, and paid tools such as Cookiebot are no longer needed.
+
+**Met.** The criteria, against the pulse log and the close:
+
+- [x] **Contract first:** `0f78eef`, an environment matrix of about 50 rows, the browser spike (Appendix A), and an adversarial critique folded in.
+- [x] **Nothing before a choice, nothing after Reject:** measured in Chromium on example 14 and on the diploma-msc trial (`698777a`); document order after Accept is in the browser suite.
+- [x] **Withdrawal works:** deletes on the host and parent domains (prefixed cookies too since `e373d25`), reloads, and matches Reject; services started by `when()` or their scripts are withdrawn too since `37d9897`.
+- [x] **Asking again works:** version bump and expiry, unit and browser tests.
+- [x] **Consent Mode:** default before `gtm.js`, update on load and change, measured in Chromium; `gcs=G111` on the trial after `c3e8321`.
+- [x] **The audit:** ungated third parties, an objection category's third-party origin, AdSense or Ad Manager; each red first.
+- [x] **Theming:** logo, wording and colours from config, the override partial keeping behaviour (browser test), and WCAG 2.2 SC 2.4.11 kept by the spacer and focus handling. The criterion's "non-fixed region" was amended to a fixed bottom bar by default.
+- [x] **The endpoint:** POSTs a choice with an endpoint, nothing without; browser test, and captured records in the kiss-consent spec.
+- [x] **The diploma-msc trial:** nothing before a choice; nothing after Reject, the Vimeo storage included; the same tag hosts after Accept; nothing committed there.
+- [x] **Clean room:** `072258a`, an empty folder to a passing, gated site, with every guess reported.
+- [x] **Docs:** GUIDE section and docs page, the `llms.txt` lines under the cap, README, types, snippets run.
+- [x] **Skills:** the four skills, with coverage rows and contradiction bans.
+- [x] **Engine:** four modules, each with tests and an AIKB doc; the client inlined from its source, tested rendered and minified.
+- [x] **Gates and Codex:** `npm run gates` green at `4de886e`; eight Codex rounds over `lib/`, the last at `655b2f7`. `655b2f7..HEAD` is documentation, the changelog and the version only, with no independent review.
+
+**What is concretely better:** a kiss site can now replace a paid consent manager with one block of config. The build fails a page wired wrongly, and the audit names a tracker nothing gates, which no hosted manager can do.
+
+**Open:**
+
+- the round-8 P2 (sub-folder deployments);
+- the inline-and-cached-file split of the client, now 12,346 bytes minified, 4,517 gzipped, under a 13,312 ceiling;
+- Firefox and Safari, never measured;
+- D13 in the next phase's spec;
+- the adviser's answers on retention and the history log's storage status.
