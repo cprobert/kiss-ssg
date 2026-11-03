@@ -103,7 +103,7 @@ consent: {
 -   **`category: 'necessary'`** is a service the site cannot work without: it is never gated and never asked about. A library from a CDN is one, and naming its origin is how the audit's `consent-ungated` stops reporting it.
 -   **`google: true`** marks a Google tag your config builds itself, so Consent Mode applies to it.
 
-A service's name is lowercase letters, digits and `-`. Every level of `consent` refuses a key it does not know, and the error names the valid ones.
+A service's name is lowercase letters, digits and `-`, and never a category's (`necessary`, `preferences`, `statistics`, `marketing`), because `kissConsent.has()` takes either by one name. Every level of `consent` refuses a key it does not know, and the error names the valid ones.
 
 ## Categories
 

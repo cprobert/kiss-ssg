@@ -687,6 +687,31 @@ describe.each(forms)('the client, %s', (_, build) => {
     })
   })
 
+  describe('a necessary service', () => {
+    it('is always allowed, before any choice and after Reject all', async () => {
+      const source = await build(
+        configFor({
+          ...SITE,
+          services: {
+            ...SITE.services,
+            cdn: { category: 'necessary', src: '/lib.js', cookies: ['cdn_s'] },
+          },
+        }),
+      )
+      const p = page(source, { cookies: { cdn_s: '1' } })
+      let ran = 0
+      p.win.kissConsent.when('cdn', () => ran++)
+      expect(p.win.kissConsent.has('cdn')).toBe(true)
+      expect(ran).toBe(1)
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.win.kissConsent.has('cdn')).toBe(true)
+      // its cookie is not the client's to delete
+      expect([...p.jar.jar.values()].map((c) => c.name)).toContain('cdn_s')
+    })
+  })
+
   describe('the API', () => {
     it('answers has() for necessary, categories and services', () => {
       const p = page(plain, { cookies: valid({ statistics: 1, marketing: 0 }) })

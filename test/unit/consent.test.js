@@ -142,6 +142,20 @@ describe('resolveConsent: services', () => {
     },
   )
 
+  // kissConsent.has() takes a category or a service by one name, so a
+  // service named for a category would be answered as the category: one
+  // named `necessary` would run before any choice.
+  it.each(['necessary', 'preferences', 'statistics', 'marketing'])(
+    'refuses the service name %j, which is a category’s',
+    (name) => {
+      expect(() =>
+        resolveConsent({
+          services: { [name]: { category: 'statistics', src: '/t.js' } },
+        }),
+      ).toThrow(/is a category's name/)
+    },
+  )
+
   it('takes any other key as a placeholder value', () => {
     const r = resolved({
       services: {
@@ -616,15 +630,29 @@ describe('gatingOf', () => {
 })
 
 describe('clientConfig', () => {
-  it('hands the browser first-party names only, and no necessary service', () => {
+  it('hands the browser first-party names only, and a necessary service with nothing to delete', () => {
     const r = resolved({
-      services: { gtm: { id: 'G' }, vimeo: {}, cdn: { category: 'necessary' } },
+      services: {
+        gtm: { id: 'G' },
+        vimeo: {},
+        cdn: {
+          category: 'necessary',
+          cookies: ['cdn_s'],
+        },
+      },
       endpoint: '/log',
     })
     const cfg = clientConfig(r, { policyUrl: '/cookies/', bannerHash: 'abc' })
-    expect(cfg.services.map((s) => s.name)).toEqual(['gtm', 'vimeo'])
+    expect(cfg.services.map((s) => s.name)).toEqual(['gtm', 'vimeo', 'cdn'])
     expect(cfg.services[0].cookies).toEqual(['_ga', '_ga_*', '_gcl_au'])
     expect(cfg.services[1].cookies).toEqual([])
+    // named, so has('cdn') is true; its cookies are never the client's to delete
+    expect(cfg.services[2]).toEqual({
+      name: 'cdn',
+      category: 'necessary',
+      cookies: [],
+      storage: [],
+    })
     expect(cfg.categories).toEqual([{ name: 'marketing', mode: 'consent' }])
     expect(cfg.v).toBe(r.version)
     expect(cfg.endpoint).toBe('/log')

@@ -28,7 +28,7 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
   - `'none'` for a `necessary` service, or a Google service under `google.mode: 'advanced'`;
   - `'embed'` for a service with an `embed`;
   - `'script'` otherwise.
-- **`clientConfig(resolved, { logoUrl, policyUrl, bannerHash })`** → the object `{{consentHead}}` inlines. It carries only what the client acts on: the version, the cookie settings, categories, services with first-party cookie and storage names, the Google block with its computed defaults, the endpoint, the position and two strings.
+- **`clientConfig(resolved, { logoUrl, policyUrl, bannerHash })`** → the object `{{consentHead}}` inlines. It carries only what the client acts on: the version, the cookie settings, categories, every service with its first-party cookie and storage names (a `necessary` service with none, so `has()` and `when()` answer for it while its cookies are never deleted), the Google block with its computed defaults, the endpoint, the position and two strings.
 - **`consentReport({ consent, pages, real, gatedPages })`** → the report's `consent` key, or `null` without a consent manager.
 - **`originOf(url)`** and **`matchesHost(url, list)`** → URL helpers for the audit.
 - **Frozen tables:**
@@ -66,6 +66,7 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
   - **Where it shows:** `resolved.google.map` is the rebased map, and `consentModeDefault`, `clientConfig` and the client all read it.
 - **A site's `cookies` and `storage` add to a preset's,** as `origins` do; an entry with a preset entry's name replaces it in place (`mergeStored`). Until slice 6's documentation found the two rules disagreed, a site's list replaced the preset's, and a `gtm` that declared `_fbp` silently dropped `_ga`.
 - **First- and third-party storage.** A stored item (a cookie, or a `localStorage` key under `storage`) with a `domain` is third-party unless `party: 'first'` says otherwise. `clientConfig` hands the browser first-party names only, because a page can delete nothing else. The presets' YouTube storage and Vimeo cookies are third-party: listed in the cookie table, never deleted.
+- **A service may not take a category's name.** `kissConsent.has()` and `when()` take a category or a service by one name and answer for the category first, so a service named `necessary` would have run before any choice (found by the Codex review, 2026-11-03).
 - **A required placeholder is a render error, not a config error.** A preset needs `{id}`, but the value may come from the helper's hash per page (`{{consentScript "gtm" id=gtmId}}`, as diploma-msc passes it), so `resolveConsent` cannot know it is missing. `fill` throws when it is.
 - **`consentReport` holds no timestamp,** so `last-build.json` stays byte-identical across identical builds. The time a banner version was first shown is the commit time of the `kiss-ssg aikb` record that first holds its hash.
 - **Theme values refuse `;`, `{`, `}`, `<` and `>`,** so a site's colour cannot end the declaration or the `<style>` element it is written into.
