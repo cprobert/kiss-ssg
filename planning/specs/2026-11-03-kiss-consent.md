@@ -326,3 +326,27 @@ banner wording attached.
 ## Amendments
 
 <!-- Dated sections, appended when the design moves during the branch. -->
+
+### 2026-11-03 — built: format 2, the log, the viewer, `ui.history`
+
+What was built against D1–D13, and where it moved from the table above.
+
+- **Built as agreed:** D1 (the id at every choice), D3, D4, D5 (19 `ui.text` keys rather than about
+  eight: one per string the page shows, all named in GUIDE.md), D7, D8 (the client skips the log;
+  `resolveConsent` refuses a service declaring its name), D9, D10, D11, D12 (`ui.history`, default
+  `null`; one `pageUrlFor` with `ui.policy`, so both fail the build alike) and D13 (`format: 2`
+  and `action` on the POST and the log; the cookie stays `f: 1`).
+- **D2 moved, the operator's decision at the viewer slice:** the category and service labels ride
+  in the **viewer's** config (`recordConfig()`, `lib/consent-record.js`), on the history page
+  alone, not in `clientConfig()` on every page. Same labels printed, records still keys only, and
+  the head script did not grow (12,600 bytes minified before and after the viewer).
+- **D6 refined, from Chromium:** "the page's `lang`" alone gave an en-GB visitor on a `lang="en"`
+  page US dates (`Nov 3, 2026, 6:22:56 PM`). The viewer uses the visitor's locale when its
+  language is the page's, and the page's `lang` otherwise, so month names match the words around
+  them.
+- **The viewer shows the id only with an endpoint**, and says what is sent (`historySent`) only
+  then: the id exists to be quoted to the site, and without an endpoint the site holds nothing to
+  look up. It never says what the site's server keeps; that is the privacy notice's, and
+  `kiss-legal-and-privacy` says so.
+- **The dialog links the history page** after the policy link; the banner does not. Setting
+  `ui.history` changes the banner hash, as any change to the dialog's wording does.

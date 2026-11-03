@@ -161,6 +161,74 @@ describe('a consent site, built', () => {
     expect(home).toMatch(/kiss-consent__logo"? src="?\/img\/logo\.svg/)
   })
 
+  // The history page: {{consentRecord}} on the privacy page, linked from the
+  // settings dialog by ui.history (D12), through the same URL policy and
+  // siteUrl prefix as the policy link (criterion 7).
+  const HISTORY_FILES = {
+    ...CONSENT_FILES,
+    'src/pages/privacy.hbs': consentPage(
+      '<h1>Privacy</h1><p>How we use your data.</p>{{consentRecord}}',
+      'Privacy',
+    ),
+  }
+
+  it('links the history page from the dialog only, through the URL policy and the prefix', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { report, errors } = await build(
+      config({
+        siteUrl: 'https://site.example/site/',
+        extensionLess: true,
+        consent: { ...CONSENT_CONFIG, ui: { history: 'privacy' } },
+      }),
+    )
+    expect(errors).toEqual([])
+    const home = await site.read('public/index.html')
+    const links = [
+      ...home.matchAll(/kiss-consent__history"? href="?([^"> ]+)"?>([^<]*)</g),
+    ].map((m) => [m[1], m[2]])
+    expect(links).toEqual([
+      ['https://site.example/site/privacy/', 'See your consent history'],
+    ])
+    // In the dialog's template, not the banner's.
+    const banner = home.slice(
+      home.indexOf('data-kiss-consent-banner'),
+      home.indexOf('data-kiss-consent-settings'),
+    )
+    expect(/<a class="?kiss-consent__history/.test(banner)).toBe(false)
+    expect(report.links.broken.map((b) => b.href)).not.toContain(
+      'https://site.example/site/privacy/',
+    )
+  })
+
+  it('writes no history link without ui.history', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { errors } = await build(config())
+    expect(errors).toEqual([])
+    // The anchor, not the class: the theme's CSS names the class either way.
+    const home = await site.read('public/index.html')
+    expect(/<a class="?kiss-consent__history/.test(home)).toBe(false)
+  })
+
+  it('writes the viewer on its page, and keeps its statements but not its controls in the Markdown copy', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { errors } = await build(
+      config({ consent: { ...CONSENT_CONFIG, endpoint: '/api/consent' } }),
+      { llms: true },
+    )
+    expect(errors).toEqual([])
+    const privacy = await site.read('public/privacy.html')
+    expect(privacy).toMatch(/<section class="?kiss-consent-record"?/)
+    expect(privacy).toMatch(/data-kiss-consent-record-script/)
+    // Its own script, on this page alone (D3).
+    expect(await site.read('public/index.html')).not.toMatch(
+      /data-kiss-consent-record/,
+    )
+    const md = await site.read('public/privacy.md')
+    expect(md).toContain('Your cookie choices')
+    expect(md).toContain('Each choice is also sent to this site')
+    expect(md).not.toMatch(/No cookie choice|Purposes version|JavaScript/)
+  })
+
   it('keeps the banner out of the Markdown copy, and the embed as its link', async () => {
     site = await makeSite(CONSENT_FILES)
     const { errors } = await build(config(), { llms: true })
@@ -331,6 +399,16 @@ describe('a consent site, wired wrongly', () => {
     const { errors } = await build(config())
     expect(errors.join('\n')).toMatch(
       /ui\.policy names the page "cookies", and no page has that id/,
+    )
+  })
+
+  it('fails when ui.history names no page (D12)', async () => {
+    site = await makeSite(CONSENT_FILES)
+    const { errors } = await build(
+      config({ consent: { ...CONSENT_CONFIG, ui: { history: 'my-choices' } } }),
+    )
+    expect(errors.join('\n')).toMatch(
+      /ui\.history names the page "my-choices", and no page has that id — add the page with \{\{consentRecord\}\}/,
     )
   })
 

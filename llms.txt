@@ -121,6 +121,7 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `consentEmbed`: a click-to-load iframe; `title=` required.
 - `consentSettings`: the "Cookie settings" control, for every footer.
 - `consentTable`: the cookie declaration, for the cookie page.
+- `consentRecord`: the visitor's own consent history, from the browser's log, for the privacy page; `ui.history: '<its page id>'` links it from the settings dialog.
 
 Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
 

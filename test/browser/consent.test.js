@@ -608,6 +608,65 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
     }
   }, 60000)
 
+  // The history page in a real browser: the dialog's link to it, the rows
+  // from the log newest first in the page's locale, and a choice made on the
+  // page itself appearing without a reload.
+  it('shows the visitor’s history on the page ui.history names, linked from the dialog', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/privacy.hbs': consentPage(
+          '<h1>Privacy</h1>{{consentRecord}}',
+          'Privacy',
+        ),
+      },
+      { ...CONSENT_CONFIG, ui: { history: 'privacy' } },
+    )
+    try {
+      const { context, page } = await open({ locale: 'en-GB' })
+      const rows = () =>
+        page.$$eval('[data-kiss-consent-record] tbody tr', (trs) =>
+          trs.map((tr) =>
+            Array.from(tr.querySelectorAll('th, td'), (c) => c.textContent),
+          ),
+        )
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await Promise.all([
+        page.waitForURL(/\/privacy\.html$/),
+        page.click('dialog a.kiss-consent__history'),
+      ])
+      expect(await page.isVisible('[data-kiss-consent-record-empty]')).toBe(
+        false,
+      )
+      expect(await rows()).toEqual([
+        [
+          expect.stringMatching(/\d{4}.*\d{2}:\d{2}:\d{2}/),
+          'Rejected all',
+          'Refused',
+          'Refused',
+          '—',
+          expect.stringMatching(/^[0-9a-f]{12}$/),
+        ],
+      ])
+      // A choice made here, from the footer, shows at once, newest first.
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await page.check('dialog input[data-kiss-consent-category="statistics"]')
+      await page.click('dialog [data-kiss-consent-action="save"]')
+      await expect.poll(async () => (await rows()).length).toBe(2)
+      expect((await rows()).map((r) => r.slice(1, 4))).toEqual([
+        ['Saved choices', 'Allowed', 'Refused'],
+        ['Rejected all', 'Refused', 'Refused'],
+      ])
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
   it('a site’s own banner partial keeps the behaviour', async () => {
     const site = await serve(
       {

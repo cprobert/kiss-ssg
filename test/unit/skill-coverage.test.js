@@ -471,6 +471,12 @@ const COVERAGE = [
   },
   {
     feature:
+      'the visitor’s consent history: {{consentRecord}} on the privacy page, linked from the dialog by ui.history',
+    pattern: /^(?=[\s\S]*\{\{consentRecord\}\})(?=[\s\S]*`ui\.history`)/,
+    skills: [skill('kiss-ssg', 'kiss-legal-and-privacy')],
+  },
+  {
+    feature:
       'the legal skill: the seven consent ids, report.consent, consentEmbed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
     pattern: new RegExp(
       [

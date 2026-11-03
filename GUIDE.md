@@ -1188,6 +1188,27 @@ You must be able to show what a visitor agreed to. Google's EU user consent poli
 
 The audit's `consent-records-missing` fires on a Google marketing tag with no endpoint.
 
+#### The visitor's history: `{{consentRecord}}`
+
+Put `{{consentRecord}}` on the privacy page, and set `ui.history` to that page's id. The settings dialog then links it ("See your consent history", beside the cookie policy link), and a build with no page of that id fails, as `{{link}}` does. `ui.history` is `null` by default, so the dialog links nothing until the page exists.
+
+```hbs
+<h1>Privacy</h1>
+<p>…</p>
+{{consentRecord}}
+```
+
+```js
+consent: {
+  services: { gtm: { id: 'GTM-XXXXXXX' } },
+  ui: { history: 'privacy' },
+}
+```
+
+It writes a section headed "Your cookie choices", which says what the history is, and a table the browser fills from `kiss_consent_log`. Rows are newest first: the date and time to the second, which choice it was, each category allowed or refused, any service always allowed, and the purposes version. A row marks where the purposes changed and the visitor was asked again. The date follows the visitor's own locale when it is the page's language (an en-GB browser on a `lang="en"` page writes `3 Nov 2026, 15:40:42`), and the page's `lang` otherwise. With an `endpoint` set, the section also says exactly which details each choice sends, and shows the visitor's id to quote. It says nothing about what your server keeps: that is for your privacy notice to say.
+
+There is no control to delete the history. A record that has to show consent should not be easy to change, and the visitor can still clear it with the browser's own site data. With JavaScript off, a note says the history needs it; where the browser refuses storage, it says there is none to show. A choice made on the page, from its footer's settings, appears at once. Its script is its own and is on this page only. The Markdown copy keeps the heading and the statements, and drops the table. Every string is a `ui.text` key: `historyLink`, `historyTitle`, `historyIntro`, `historySent`, `historyId`, `historyEmpty`, `historyUnavailable`, `historyNoScript`, `historyWhen`, `historyChoice`, `historyAllowed`, `historyVersion`, `historyChanged`, `historyYes`, `historyNo`, and one per choice, `historyAccept`, `historyReject`, `historySave` and `historyAllow`.
+
 #### Customising the banner
 
 ```js
@@ -1215,7 +1236,8 @@ consent: {
 
 The policy link and the logo are root-relative (`/cookies/`), unless `siteUrl` carries a path prefix (`https://example.com/site/`): then they are absolute and carry it (`https://example.com/site/cookies/`), as `{{link absolute=true}}` would write them.
 
-- **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in).
+- **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in), and the history page's `history…` keys (above).
+- **`history`** is the id of the page with `{{consentRecord}}`, linked from the dialog; `null` (the default) links none.
 - **`theme`** sets `background`, `text`, `accent`, `accentText`, `border`, `radius` and `font`. A value is any CSS value without `;`, `{`, `}`, `<` or `>`, so `var(--surface)` uses your site's own custom properties and the banner follows its dark scheme. `theme: false` drops kiss's stylesheet altogether.
 
 **A filled Accept beside an outlined Reject.** By default Accept all and Reject all are identical. A site that wants Accept a step ahead can outline Reject in the same colour, from its own stylesheet (which loads after kiss's, so the rule wins):

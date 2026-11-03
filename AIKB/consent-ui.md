@@ -21,7 +21,7 @@ No Handlebars and no browser. The markup speaks the attribute vocabulary of cont
   - the policy link, only with `policyUrl`;
   - Accept all and Reject all (`data-kiss-consent-action` `accept`, `reject`), both `class="kiss-consent__button"`, then Choose cookies (`settings`), `class="kiss-consent__more"`, a text button;
   - the ✕ (`class="kiss-consent__close"`, `action="close"`, `aria-label="{close}"`) at the column's corner.
-- **`settingsHtml(resolved, { policyUrl })`** → the `<dialog class="kiss-consent-dialog">`, in three parts:
+- **`settingsHtml(resolved, { policyUrl, historyUrl })`** → the `<dialog class="kiss-consent-dialog">`, in three parts (`historyUrl`, `ui.history`'s page, is linked as `<a class="kiss-consent__history">` `historyLink` right after the policy link, only when given; D12):
   - **`__head`:** its `h2` (`id="kiss-consent-dialog-title"`) and a ✕ (`close-dialog`).
   - **`__body`:** the policy link, then one `__category` per category: the `necessary` one first, then each in `inUse`. Each has a `__row` holding a `<label for>` and a **switch**, then the description. A switch is `<input type="checkbox" role="switch" class="kiss-consent-switch" id="…">`: `disabled checked` for `necessary`, and `data-kiss-consent-category="…"` otherwise. Under a category, a hidden `__grant` row with a `data-kiss-consent-service` switch for each of its services.
   - **`__foot`:** Reject all, Accept all and Save choices, the three choices together and alike.
@@ -35,7 +35,7 @@ No Handlebars and no browser. The markup speaks the attribute vocabulary of cont
 
 ## Depended on by
 
-- Planned on this branch (contract §9): `lib/handlebars-helpers.js` (the `consentHead`, `consentBanner`, `consentSettings` and `consentTable` helpers).
+- `lib/handlebars-helpers.js` (the `consentHead`, `consentBanner`, `consentSettings` and `consentTable` helpers) and `lib/consent-record.js` (`escapeHtml`).
 - `test/unit/consent-ui.test.js`.
 
 ## Non-obvious behavior

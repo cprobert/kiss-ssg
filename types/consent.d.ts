@@ -240,6 +240,8 @@ export function consentReport({ consent, pages, real, gatedPages, }: {
  * @property {string|null} logo an asset path
  * @property {string} partial the site partial that replaces the default banner, when it exists
  * @property {string|null} policy the page id the banner links for the cookie policy
+ * @property {string|null} history the page id the dialog links for the
+ * visitor's consent history, the page with `{{consentRecord}}`; `null` for none
  * @property {Record<string, string>} text
  * @property {Record<string, string>|false} theme
  */
@@ -328,6 +330,25 @@ export const DEFAULT_TEXT: Readonly<{
     embedLoad: "Load it";
     embedAllow: "Always allow {provider}";
     embedWatch: "Open it on {provider}";
+    historyLink: "See your consent history";
+    historyTitle: "Your cookie choices";
+    historyIntro: "Every cookie choice made in this browser on this site, newest first. It is kept in this browser only: another browser or device has its own.";
+    historySent: "Each choice is also sent to this site as a record holding exactly these details: when you made it, which choice it was, your consent id, the version of the cookie purposes, what you chose for each kind of cookie, any service you always allowed, the version of the banner wording, and the page you were on.";
+    historyId: "Your consent id, to quote if you ask what this site holds:";
+    historyEmpty: "No cookie choice has been made in this browser yet.";
+    historyUnavailable: "This browser does not let the site keep a history, so there is none to show.";
+    historyNoScript: "Your history is shown with JavaScript, which is off in this browser.";
+    historyWhen: "When";
+    historyChoice: "Choice";
+    historyAllowed: "Always allowed";
+    historyVersion: "Purposes version";
+    historyChanged: "The cookie purposes changed after this, so you were asked again.";
+    historyYes: "Allowed";
+    historyNo: "Refused";
+    historyAccept: "Accepted all";
+    historyReject: "Rejected all";
+    historySave: "Saved choices";
+    historyAllow: "Always allowed a service";
 }>;
 export const DEFAULT_THEME: Readonly<{
     background: "#ffffff";
@@ -343,6 +364,7 @@ export const DEFAULT_UI: Readonly<{
     logo: any;
     partial: "consent-banner";
     policy: "cookies";
+    history: any;
 }>;
 export const DEFAULT_COOKIE: Readonly<{
     name: "kiss_consent";
@@ -592,6 +614,11 @@ export type ConsentUi = {
      * the page id the banner links for the cookie policy
      */
     policy: string | null;
+    /**
+     * the page id the dialog links for the
+     * visitor's consent history, the page with `{{consentRecord}}`; `null` for none
+     */
+    history: string | null;
     text: Record<string, string>;
     theme: Record<string, string> | false;
 };

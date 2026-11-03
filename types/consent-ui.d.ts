@@ -25,11 +25,13 @@ export function bannerHtml(resolved: KissConsent, { logoUrl, policyUrl }?: {
  * sets each from the stored choice. `''` when no service needs a choice.
  *
  * @param {KissConsent} resolved
- * @param {{ policyUrl?: string|null }} [options]
+ * @param {{ policyUrl?: string|null, historyUrl?: string|null }} [options]
+ * `historyUrl` is `ui.history`'s page, linked beside the policy (D12)
  * @returns {string}
  */
-export function settingsHtml(resolved: KissConsent, { policyUrl }?: {
+export function settingsHtml(resolved: KissConsent, { policyUrl, historyUrl }?: {
     policyUrl?: string | null;
+    historyUrl?: string | null;
 }): string;
 /**
  * The cookie declaration: one table for `necessary`, which begins with kiss's
