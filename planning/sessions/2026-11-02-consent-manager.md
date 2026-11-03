@@ -163,6 +163,20 @@ opened: 2026-11-02
   - **Offer: answered.** Consent helpers on learning-package pages: kept, with the operator's reason, "the lms should deal with that". Refined to match it: head, banner and settings render nothing on a packaged page; `consentScript` and `consentEmbed` fail there (contract §3).
   - **Decision: continue** into slice 2a.
 
+- **2026-11-03 (second):** slices 2a (`7df4f1c`), 2c and 3 (`4634c44`) have landed: `lib/consent.js`, `lib/consent-client.js` and `lib/consent-ui.js`, plus the config wiring.
+  - **Evidence:**
+    - `npm test` was green at 109 files and 3,432 tests, and the consent and AIKB tests passed again after the size test was added (332);
+    - typecheck and lint are clean (one older warning in example 7);
+    - every new module has its `test/unit/` sibling, `AIKB/` doc and `CLAUDE.md` row.
+  - **Criteria 4 (asking again) and 8 (endpoint): partial.** Both are unit-tested in the client (version, expiry, the beacon payload, no id without an endpoint); the browser suite is still to come (slice 4).
+  - **Criterion 7 (theming): partial.** The UI is unit-tested; the override partial and the focus measurement come in slices 2b and 4.
+  - **Criteria 2, 3 and 5: partial,** client logic only, with real-browser proof due in slice 4.
+  - **Criteria 6 and 9–13: not yet.**
+  - **Drift:** none. The impact surface is still the public API.
+  - **Eyeball: looked.** The operator opened `scratchpad/preview/consent-preview-bottom.html`, a page built from the three modules (banner, settings dialog, embed, cookie table, settings control): "it's right". Claude's own screenshots first confirmed it rendered with no script errors, and that Accept set the cookie and revealed the embed.
+  - **Offer: answered, kept.** A one-off "Load it" on an embed, followed by a choice that leaves its category off, reloads the page and stops the video, so that nothing refused keeps running.
+  - **Decision: continue** into slice 2b (the helpers, the gated markup, the wiring check and the fixture site).
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
