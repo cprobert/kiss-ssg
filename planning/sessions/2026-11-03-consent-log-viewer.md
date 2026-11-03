@@ -105,6 +105,10 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     script ran and the page reloaded to withdraw it. The class is the replay's order: queued
     listeners, then the visitor's clicks, then the activation, then `when()` and `show()`.
     Red in the simulated DOM and in Chromium on the old order.
+  - **Round 3** (over `aa38d3d`): one P2, fixed — the client replaced `window.kissConsent`, so a
+    script that had kept the stub (or a method of it) from before the file arrived queued its
+    later calls into a drained queue, for ever. Now one object for the page's life, whose
+    methods hand to `S.api` once the client has started; unit test seen red first.
 
 ## Pulse log
 

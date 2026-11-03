@@ -666,6 +666,26 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.reloads()).toBe(0)
     })
 
+    // Codex round 3 (P2): a script that kept `window.kissConsent`, or one of
+    // its methods, from before the file arrived kept the stub, and its later
+    // calls were queued after the queue had been drained, forever.
+    it('keeps one window.kissConsent, whose methods reach the client once it has started', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head)
+      const kept = p.win.kissConsent
+      const { when, show } = kept
+      p.run(client)
+      p.ready()
+      expect(p.win.kissConsent).toBe(kept)
+      const ran = []
+      when('necessary', () => ran.push('detached'))
+      kept.when('necessary', () => ran.push('kept'))
+      kept.on('ready', () => ran.push('ready'))
+      expect(ran).toEqual(['detached', 'kept', 'ready'])
+      show()
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+    })
+
     it('runs nothing gated and writes nothing if the file never arrives', async () => {
       const [head] = await split(configFor(SITE))
       const p = page(head)
