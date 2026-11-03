@@ -334,7 +334,7 @@ export const DEFAULT_TEXT: Readonly<{
     historyTitle: "Your cookie choices";
     historyIntro: "Every cookie choice made in this browser on this site, newest first. It is kept in this browser only: another browser or device has its own.";
     historySent: "Each choice is also sent to this site as a record holding exactly these details: when you made it, which choice it was, your consent id, the version of the cookie purposes, what you chose for each kind of cookie, any service you always allowed, the version of the banner wording, and the page you were on.";
-    historyId: "Your consent id, to quote if you ask what this site holds:";
+    historyId: "Your consent id, carried by every record of your choices:";
     historyEmpty: "No cookie choice has been made in this browser yet.";
     historyUnavailable: "This browser does not let the site keep a history, so there is none to show.";
     historyNoScript: "Your history is shown with JavaScript, which is off in this browser.";

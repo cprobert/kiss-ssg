@@ -116,9 +116,14 @@ describe('recordHtml', () => {
     expect(html.indexOf('<noscript>')).toBeGreaterThan(ui)
   })
 
-  it('says what is sent, and shows the id, only when the site has an endpoint', () => {
+  // The visitor's copy mirrors the server's record, id included: it is what
+  // a visitor quotes in a data request (the operator, 2026-11-03). What is
+  // sent is said only when something is.
+  it('always has the id line; says what is sent only when the site has an endpoint', () => {
     expect(html).not.toContain('Each choice is also sent')
-    expect(html).not.toContain('data-kiss-consent-record-id')
+    expect(html).toMatch(
+      /<p data-kiss-consent-record-id hidden>Your consent id, carried by every record of your choices: <code><\/code><\/p>/,
+    )
     const sent = recordHtml(site({ ...SITE, endpoint: '/api/consent' }))
     expect(sent).toContain('Each choice is also sent to this site')
     expect(sent).toMatch(/<p data-kiss-consent-record-id hidden>/)
@@ -240,6 +245,14 @@ describe.each(forms)('the viewer, %s', (_, build) => {
     )
     expect(await shown('en', ['de-DE'])).not.toBe(
       new Intl.DateTimeFormat('de-DE', style).format(at),
+    )
+  })
+
+  it('shows the id with no endpoint too', async () => {
+    const p = page(recordHtml(site()), { log: [entry()] })
+    expect(p.shown('id')).toBe(true)
+    expect(p.find('[data-kiss-consent-record-id] code').textContent).toBe(
+      'a68e41c1-78ea-46a9-bead-709c2148c782',
     )
   })
 

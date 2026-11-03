@@ -77,6 +77,14 @@ would use) is fixed here, and the rest is recorded for later.
   either, and `/` is the documented ambiguous case. It can add findings on a prefixed site; a grep
   of `C:\Code\kiss` found no fleet site with a literal prefixed `siteUrl`, and this repo's docs
   (`/kiss-ssg/`) check clean (231 internal, none broken).
+- **2026-11-03, the viewer slice — two decisions against the spec's letter.** (1) D2: the labels
+  ride in the viewer's own config, not the head's; Claude recommended it and the operator agreed.
+  (2) The consent id on the history page: Claude built it endpoint-only and proposed keeping that;
+  the operator overruled, the reason in their words: "I'd like the client-side report to be as
+  close a representation of the server-side report as possible … If someone's going to complain,
+  they're going to want to know what their ID is so they can do a data request. For me, the client
+  side is like an instant data request, a self-service data takeout." The D6 locale refinement
+  (from Chromium) the operator kept. All three are in the spec's Amendments.
 
 ## Pulse log
 
