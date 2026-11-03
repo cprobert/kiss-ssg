@@ -350,6 +350,8 @@ describe('a consent site, built', () => {
     expect(
       client.exec(await site.read('public/blog/post/index.html'))?.[1],
     ).toMatch(/^\.\.\/kiss-consent\./)
+    // And the link scan resolves it where the browser does (Codex round 6).
+    expect(bare.report.links.broken).toEqual([])
   })
 
   it('writes no cached client without a consent manager', async () => {

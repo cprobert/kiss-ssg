@@ -142,6 +142,16 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
   - **The loop stops here**: further iterations need Codex, which cannot run. Unreviewed by
     Codex: `5c6eda4` and the stopgap fixes after it. Re-run Codex over the branch once credit
     is back, before `/branch-close`.
+  - **Round 6, run** (2026-11-03, after the operator added credit; over `main...5a7a8de`, so the
+    whole branch including `5c6eda4` and the stopgap fixes): one P2, fixed. The stopgap's
+    relative client URL is right in the browser, but under `links.trailingSlash: false` the link
+    scan resolved relative references against the file's folder, not the served URL, and
+    reported the build's own client on `blog/post/index.html` (served at `/blog/post`) as
+    broken. The class, not the case: every relative reference, in `resolveTarget`, in
+    `requestPath` (the `hostServed` match) and in the audit's fragment and privacy-link
+    resolutions; a learning package's page keeps its file's folder. Four tests red first
+    (three unit in links, one in audit), plus the integration fixture's link report. Full suite
+    green (exit 0, 3,758).
 - **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
   (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
   history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;

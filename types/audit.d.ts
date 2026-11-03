@@ -22,6 +22,8 @@ export function extractPageFacts(html: string, outputPath: string): PageFacts;
  * @param {boolean} [options.debugWritten] `viewStats()` wrote `debug.json`
  * @param {boolean} [options.extensionLess] `config.extensionLess`, for
  * resolving a cross-page fragment the way the link scan resolves its path
+ * @param {boolean} [options.trailingSlash] `config.links.trailingSlash`, for
+ * the same reason: a relative href resolves against the page's served URL
  * @param {string|null} [options.privacyPage] `config.audit.privacyPage`: the
  * id of the privacy page, when it is not the convention (id `privacy`, else
  * `privacy.html` or `privacy/index.html`)
@@ -29,7 +31,7 @@ export function extractPageFacts(html: string, outputPath: string): PageFacts;
  * `config.consent`, resolved: the consent checks read its services
  * @returns {AuditResult}
  */
-export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, privacyPage, consent, }: {
+export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, trailingSlash, privacyPage, consent, }: {
     pages: AuditPage[];
     buildDir: string;
     siteUrl?: string | null;
@@ -37,6 +39,7 @@ export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debug
     ownsFolder?: boolean;
     debugWritten?: boolean;
     extensionLess?: boolean;
+    trailingSlash?: boolean;
     privacyPage?: string | null;
     consent?: import("./consent.js").KissConsent | null;
 }): AuditResult;
@@ -74,6 +77,15 @@ export const CHECKS: readonly ["title-missing", "title-duplicate", "description-
  * catches service updates, which are not marketing (2026-11-02 critique).
  */
 export const MARKETING_WORDS: readonly string[];
+/**
+ * How the link scan resolves a page's references, handed to the audit's own
+ * resolutions so a fragment or a privacy link lands where `checkLinks` would
+ * land the same href.
+ */
+export type Resolving = {
+    extensionLess: boolean;
+    trailingSlash: boolean;
+};
 export type CheckId = (typeof CHECKS)[number];
 /**
  * What a page fetches from an absolute origin, and as what.
@@ -315,6 +327,11 @@ export type AuditPage = {
      * found by its id
      */
     id?: string | null;
+    /**
+     * the learning package it belongs to: an LMS
+     * opens it as its file, so no `trailingSlash` policy moves its folder
+     */
+    package?: string;
 };
 /**
  * What the build fetches from origins other than the site's own, per page.

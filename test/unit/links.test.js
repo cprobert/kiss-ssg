@@ -397,6 +397,32 @@ describe('resolveTarget', () => {
     }
   })
 
+  // Codex round 6 on the consent-log branch (2026-11-03): under
+  // `links.trailingSlash: false` the host serves `blog/post/index.html` at
+  // `/blog/post`, so a browser resolves `../x.js` there against `/blog/`, not
+  // the folder the file was written into.
+  it('resolves a relative reference against the served URL, under the trailingSlash policy', () => {
+    const exists = (file) =>
+      ['public/x.js', 'public/blog/x.js', 'public/index.html'].includes(file)
+    const target = (ref, pageBuildTo, trailingSlash) =>
+      resolveTarget(ref, {
+        pageBuildTo,
+        buildDir: 'public',
+        exists,
+        trailingSlash,
+      })
+    const post = 'public/blog/post/index.html'
+    expect(target('../x.js', post, true)).toBe('blog/x.js')
+    expect(target('../x.js', post, false)).toBe('x.js')
+    expect(target('x.js', post, false)).toBe('blog/x.js')
+    // A page that is not a directory index, and the home page, are served
+    // where they were written either way.
+    expect(target('x.js', 'public/blog/post.html', false)).toBe('blog/x.js')
+    expect(target('x.js', 'public/index.html', false)).toBe('x.js')
+    // Root-relative references never depended on the page's place.
+    expect(target('/x.js', post, false)).toBe('x.js')
+  })
+
   it('agrees with resolveReference on every answer', () => {
     const exists = (file) =>
       ['public/a.html', 'public/b/index.html'].includes(file)
@@ -541,6 +567,49 @@ describe('checkLinks', () => {
     expect(result.broken).toEqual([
       { page: './public/index.html', href: '/gone.html' },
     ])
+  })
+
+  // The same served-URL rule for the scan as a whole: the finding Codex
+  // reported was the build's own consent client, `../kiss-consent.<hash>.js`
+  // on a page served at `/blog/post`. A learning package's page keeps its
+  // file's folder: an LMS opens the file itself, wherever it unpacks it.
+  it('resolves relative references against each page’s served URL under trailingSlash: false', () => {
+    const files = new Set(['public/x.js'])
+    const run = (trailingSlash) =>
+      checkLinks({
+        pages: [
+          { buildTo: 'public/blog/post/index.html', links: ['../x.js'] },
+          {
+            buildTo: 'public/course/l1/index.html',
+            links: ['../l2/index.html'],
+            package: 'course',
+          },
+          {
+            buildTo: 'public/course/l2/index.html',
+            links: [],
+            package: 'course',
+          },
+        ],
+        buildDir: 'public',
+        exists: (file) => files.has(file),
+        trailingSlash,
+      })
+    expect(run(false).broken).toEqual([])
+    expect(run(true).broken).toEqual([
+      { page: 'public/blog/post/index.html', href: '../x.js' },
+    ])
+  })
+
+  it('matches a hostServed pattern against the served URL under trailingSlash: false', () => {
+    const result = checkLinks({
+      pages: [{ buildTo: 'public/blog/post/index.html', links: ['../v1/a'] }],
+      buildDir: 'public',
+      hostServed: ['/v1/**'],
+      exists: () => false,
+      trailingSlash: false,
+    })
+    expect(result.hostServed).toBe(1)
+    expect(result.broken).toEqual([])
   })
 
   // A browser resolves dot segments before it requests a root-relative URL,
