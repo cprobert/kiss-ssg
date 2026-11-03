@@ -52,12 +52,11 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 
   That is all before any other script, which the wiring check enforces.
 
-- **A stored choice is valid only when all of these hold:**
+- **A stored record counts only when all of these hold,** decided once for the category choice and the "always allow" grants alike:
   - the format is `1` and the version matches;
-  - it holds a category answer `c`;
   - it is younger than `cookie.days`.
 
-  An "always allow" grant made before the banner was answered is stored with `c: null`. It is honoured, but the banner still asks. A version mismatch ignores the grants too.
+  The category choice also needs a category answer `c`. An "always allow" grant made before the banner was answered is stored with `c: null`: it is honoured while the record is current, but the banner still asks. An expired or old-version record honours neither. Until 2026-11-03 the grants were checked against the version only, so a site that shortened `cookie.days` left old grants working after their choice had expired (found by the Codex review).
 
 - **The activation queue is serial.**
   - **Why:** S2 measured inline and module scripts running before an earlier external when everything was inserted at once.
@@ -74,7 +73,8 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 
   "Reject all" denies `objection` categories too, so it withdraws one that started at load. Every load also repeats the deletion in the head, which catches a cookie rewritten on `pagehide` before the reload, and a withdrawal made in another tab.
 
-- **Denying a category clears its "always allow" grants,** but only on the change from granted to denied. A grant made later, while the category stays denied, stands until the dialog's grant checkbox removes it.
+- **Reject all clears every "always allow" grant.** It commits with no grants at all, so a video allowed while marketing was refused stops with the rest, and a page showing it reloads.
+- **Saving the dialog clears the grants of a category it changes from granted to denied.** A grant made while its category stays denied survives a Save, because the dialog shows that grant's own switch and the visitor left it on. Before 2026-11-03 Reject all went through this same rule and so kept such a grant (found by the Codex review).
 - **Close is not consent.** It sets `<cookie.name>_closed=1` with no `Max-Age` (a session cookie) and removes the banner. Nothing else is written, so the banner returns in the next browser session.
 - **The visitor id exists only with an endpoint.** `id` is written to the cookie and sent only when `cfg.endpoint` is set: `crypto.randomUUID()`, else `getRandomValues` hex. The POST is `navigator.sendBeacon` with a `text/plain` Blob (it survived an immediate reload, S6), falling back to `fetch` with `keepalive` and `mode: 'no-cors'`. A failure never blocks the choice.
 - **The client renders the confirmation itself** (`role="status"`, `tabindex="-1"`, focused, with a Hide button). An override partial therefore needs none.

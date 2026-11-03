@@ -125,6 +125,17 @@ describe('gatedScript', () => {
     )
   })
 
+  it('keeps a block’s attribute values as the browser reads them, escaped once', () => {
+    // `&amp;` in the source is `&` to a browser; written back it must be
+    // `&amp;` again, not `&amp;amp;`, or the URL loaded after consent changes.
+    const out = script('stats', {
+      body: `<script src="/s.js?a=1&amp;b=2" data-note='say "hi" &lt;3'></script>`,
+    })
+    expect(out).toBe(
+      '<script type="text/plain" data-kiss-service="stats" data-kiss-consent="statistics" data-src="/s.js?a=1&amp;b=2" data-note="say &quot;hi&quot; &lt;3"></script>',
+    )
+  })
+
   it('survives the production minifier with its gating intact', async () => {
     const html = `<!doctype html><html><head></head><body>${script('gtm')}${script('stats', { body: '<script src="/a.js" async></script>' })}</body></html>`
     const min = await minify(html, {

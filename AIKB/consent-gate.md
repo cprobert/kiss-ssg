@@ -17,6 +17,7 @@ The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` ca
     - `src` becomes `data-src`, `async` becomes `data-async`, and `type="module"` becomes `data-type="module"`;
     - `defer` is dropped, because the queue already runs in document order;
     - other attributes are kept;
+    - attribute values are read decoded, as a browser reads them, and escaped once on the way out, so `src="/s.js?a=1&amp;b=2"` stays exactly that. Until 2026-11-03 they were read raw and escaped again, which wrote `&amp;amp;` and changed the URL loaded after consent (found by the Codex review);
     - everything around the scripts is kept byte for byte, and a data block (`application/ld+json`) is left alone.
 
     A body with no `<script>` tag is taken as one script's text.

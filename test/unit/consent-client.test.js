@@ -352,6 +352,24 @@ describe.each(forms)('the client, %s', (_, build) => {
       expired.win.kissConsent.mount()
       expect(expired.find('[data-kiss-consent-root]')).not.toBeNull()
     })
+
+    it('treats an always-allow grant in an expired record as none', () => {
+      const expired = page(plain, {
+        cookies: valid(
+          { statistics: 0, marketing: 0 },
+          { u: NOW - 183 * DAY, s: { youtube: 1 } },
+        ),
+      })
+      expect(expired.win.kissConsent.has('youtube')).toBe(false)
+      const grantOnly = page(plain, {
+        cookies: valid(null, { u: NOW - 183 * DAY, s: { youtube: 1 } }),
+      })
+      expect(grantOnly.win.kissConsent.has('youtube')).toBe(false)
+      // a grant-only record inside its lifetime still counts
+      const fresh = page(plain, { cookies: valid(null, { s: { youtube: 1 } }) })
+      expect(fresh.win.kissConsent.has('youtube')).toBe(true)
+      expect(fresh.win.kissConsent.choice).toBeNull()
+    })
   })
 
   describe('the banner', () => {
@@ -562,6 +580,30 @@ describe.each(forms)('the client, %s', (_, build) => {
       p.win.kissConsent.show()
       p.click('[data-kiss-consent-action="reject"]')
       expect(p.stored().s).toEqual({})
+    })
+
+    it('Reject all clears always-allow grants even when their category was already refused', () => {
+      const p = page(plain)
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="allow"]')
+      expect(p.win.kissConsent.has('youtube')).toBe(true)
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.stored().s).toEqual({})
+      expect(p.win.kissConsent.has('youtube')).toBe(false)
+      // the revealed video is withdrawn the only way a running frame can be
+      expect(p.reloads()).toBe(1)
+    })
+
+    it('Reject all clears a stored grant under a refused category', () => {
+      const p = page(plain, {
+        cookies: valid({ statistics: 0, marketing: 0 }, { s: { youtube: 1 } }),
+      })
+      p.ready()
+      p.win.kissConsent.show()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.stored().s).toEqual({})
+      expect(p.win.kissConsent.has('youtube')).toBe(false)
     })
   })
 
