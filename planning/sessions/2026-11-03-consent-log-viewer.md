@@ -134,6 +134,11 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
       posted twice; a replayed click whose control has left the page is skipped.
     - Not acted on, the reviewer's own "speculation, unmeasured": a filter list blocking a file
       named `kiss-consent`, which would leave a banner with dead buttons.
+  - **A gate slip, for the reflection:** `08e6bf6` was committed while the full suite was red
+    (one watch test). The commit's `&&` chain guarded the two greps but not `npm test`'s exit
+    code: the CLAUDE.md "conclusion from a command needs its exit code" rule, broken. The
+    failure was a watch-timing flake (5 of 5 alone, the next full suite green at 3,754), now in
+    `AIKB/rebuild.md`'s Known knowns; the committed tree was green, but by luck, not by check.
   - **The loop stops here**: further iterations need Codex, which cannot run. Unreviewed by
     Codex: `5c6eda4` and the stopgap fixes after it. Re-run Codex over the branch once credit
     is back, before `/branch-close`.
