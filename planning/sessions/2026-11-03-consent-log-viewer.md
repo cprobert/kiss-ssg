@@ -94,6 +94,12 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
   fixed unless it is wrong, and a rejected finding is recorded here with why. The loop stops at
   iteration 10, or from iteration 6 once the split and the clean room are done and a round
   reports nothing to fix. No push and no PR, and nothing outside this branch.
+  - **Round 1** (over `main..5549b45`+amendment): one P2, fixed — `classifyReference` decoded a
+    reference before comparing it with `siteUrl`'s still-encoded prefix, so every link under
+    `/my%20site/` read as outside the site and went unchecked. Now compared encoded, both sides
+    as parsed, then decoded; unit tests (classification and `checkLinks`) seen red on the old
+    module. Noted, not changed: on a site with no prefix, an encoded relative path is still
+    passed on undecoded, as before this branch.
 
 ## Pulse log
 

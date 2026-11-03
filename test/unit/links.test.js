@@ -233,6 +233,40 @@ describe('classifyReference', () => {
     expect(of('/about')).toEqual({ kind: 'internal', path: '/about' })
   })
 
+  // Codex round 1 (2026-11-03): the prefix stays percent-encoded in a parsed
+  // `siteUrl`, and the reference was decoded before the comparison, so every
+  // link under `/my%20site/` read as outside the site. Compared encoded, as
+  // the browser requests them, and decoded after the prefix is stripped.
+  it('compares an encoded prefix with the reference as the browser requests it', () => {
+    const encoded = 'https://example.com/my%20site/'
+    expect(of('https://example.com/my%20site/about', encoded)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    expect(of('https://example.com/my%20site/caf%C3%A9', encoded)).toEqual({
+      kind: 'internal',
+      path: '/café',
+    })
+    expect(of('/my%20site/about', encoded)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    // A browser encodes the space itself before it requests the path.
+    expect(of('/my site/about', encoded)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    expect(of('/my%20site', encoded)).toEqual({ kind: 'internal', path: '/' })
+    expect(of('/other/x', encoded)).toEqual({
+      kind: 'outside',
+      path: '/other/x',
+    })
+    // A prefix written unencoded in siteUrl is parsed to the same thing.
+    expect(
+      of('https://example.com/my%20site/about', 'https://example.com/my site/'),
+    ).toEqual({ kind: 'internal', path: '/about' })
+  })
+
   it('calls every absolute URL external when the site has no siteUrl', () => {
     expect(classifyReference('https://site.example/about', {}).kind).toBe(
       'external',
@@ -597,6 +631,32 @@ describe('checkLinks', () => {
     // `/docs/cookies.html` lands, so cookies is linked; about only from the
     // wrong address, which links nothing.
     expect(result.orphans).toEqual(['./public/about.html'])
+  })
+
+  it('checks links under an encoded prefix, and counts the pages they land on as linked', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: [
+            'https://example.com/my%20site/about.html',
+            'https://example.com/my%20site/gone.html',
+          ],
+        },
+        { buildTo: './public/about.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/my%20site/',
+      exists: () => false,
+    })
+    expect(result.checked).toBe(2)
+    expect(result.broken).toEqual([
+      {
+        page: './public/index.html',
+        href: 'https://example.com/my%20site/gone.html',
+      },
+    ])
+    expect(result.orphans).toEqual([])
   })
 
   it('lets hostServed claim a path outside the prefix', () => {
