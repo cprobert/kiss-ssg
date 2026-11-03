@@ -120,6 +120,8 @@ Build every page to the domain skills, each in its build mode. They own the rule
 - **[`kiss-design`](../kiss-design/SKILL.md)**: the look, and the craft checks under it.
 - **[`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)**, as soon as the site has a form, an embed, analytics or any third-party script: a site with a form ships from day one with a privacy page, a link to it in the footer and beside the form, and the form's line, every claim marked to confirm until the owner gives it, and an owner handout at the hand-over.
 
+**A brief with analytics, an advertising tag or an embed gets `config.consent` from the first build.** Declare each service in `config.consent.services`; the name picks a preset (`gtm`, `gtag`, `youtube`, `vimeo`, `google-maps`). In the layout, put `{{consentHead}}` straight after the two meta tags, `{{consentBanner}}` first in `<body>` and `{{consentSettings}}` in the footer. Load each service with `{{consentScript}}` or `{{consentEmbed}}`, never a bare `<script>` or `<iframe>`. Give the site a page with the id `cookies` holding `{{consentTable}}`: the banner links it, and a build without it fails. `node_modules/kiss-ssg/examples/14-consent/` is the exemplar, and GUIDE.md § Cookie consent the reference. Which category each service belongs in, what it stores and what records the owner keeps are [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)'s: open it before writing the block.
+
 Three mistakes real consumer sites made, all of which passed review before they bit:
 
 - **A chain that ends at `.generate()` exits 0 on a broken build.** Page failures surface only through `complete()`'s rejection. A deploy script that does not await it ships a half-built tree and reports success.

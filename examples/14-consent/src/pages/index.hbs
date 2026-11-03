@@ -1,0 +1,47 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 14 &middot; cookie consent</p>
+    <h1>Roasted on Tuesday, in your cup by Friday</h1>
+    <p>
+      We buy three or four coffees at a time, roast them in twelve-kilo batches on the
+      roastery floor, and pour them in the cafe beside the drum. Come and watch.
+    </p>
+  </section>
+
+  <div class="grid">
+    <article class="card">
+      <h2>The cafe</h2>
+      <p class="meta">Whatever came out of the drum this week, as espresso or filter.</p>
+    </article>
+    <article class="card">
+      <h2>Roast days</h2>
+      <p class="meta">Tuesdays and Wednesdays. <a href="{{link 'roasting'}}">Watch a roast</a> if you cannot be here.</p>
+    </article>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <strong>One block of config.</strong> <code>router.js</code> declares the three things this
+    site loads that store anything on a visitor's device: Google Tag Manager, a visit counter
+    of the site's own, and YouTube. The banner, the settings dialog, the
+    <a href="{{link 'cookies'}}">cookie table</a> and the gating on every page are made from it.
+  </p>
+  <p>
+    <strong>Nothing loads until it is allowed.</strong> The layout's
+    <code>consentScript</code> helpers write each script as
+    <code>type="text/plain"</code>, which a browser does not run. When the visitor accepts a
+    category, the script <code>consentHead</code> wrote turns those of that
+    category back into scripts, in the order the page has them. The video on
+    <a href="{{link 'roasting'}}">Watch a roast</a> waits for a click the same way.
+  </p>
+  <p>
+    <strong>Refusing is as easy as accepting.</strong> Accept all and Reject all are two buttons
+    of one weight, with Choose cookies beside them for a choice in detail, and
+    <em>Cookie settings</em> at the foot of every page reopens the choice.
+  </p>
+  {{/content}}
+
+{{/extend}}

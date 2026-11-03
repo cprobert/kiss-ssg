@@ -66,6 +66,18 @@ describe('the legal-weak-site fixture', () => {
     expect(findings('checkbox-prechecked')).toEqual([
       ['contact.html', 'Send me offers and news'],
     ])
+    // The planted analytics tag and YouTube frame, on a site with no consent
+    // manager (2.11.0): the tag on every page, the frame on the one with it.
+    const missing = findings('consent-missing')
+    expect(missing).toContainEqual([
+      'about.html',
+      'https://www.youtube-nocookie.com',
+    ])
+    expect(
+      missing.filter(
+        ([, detail]) => detail === 'https://www.googletagmanager.com',
+      ).length,
+    ).toBe(report.audit.checked)
     // Everything else on the fixture is deliberately clean.
     expect(
       new Set(report.audit.findings.map((finding) => finding.check)),
@@ -74,6 +86,7 @@ describe('the legal-weak-site fixture', () => {
         'privacy-link-missing',
         'placeholder-left',
         'checkbox-prechecked',
+        'consent-missing',
       ]),
     )
   })

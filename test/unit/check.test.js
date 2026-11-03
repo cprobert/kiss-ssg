@@ -394,6 +394,58 @@ describe('diffReports: learning packages', () => {
   })
 })
 
+describe('diffReports and formatDiff: the consent banner', () => {
+  const site = built('./public', { './public/a.html': 'aaa' })
+  const withConsent = (report, version, hashes) => ({
+    ...report,
+    consent: {
+      version,
+      purposes: version,
+      mode: 'basic',
+      banners: hashes.map((hash) => ({ hash, pages: ['./public/a.html'] })),
+      categories: [],
+      services: [],
+      pagesWithoutHead: [],
+    },
+  })
+
+  it('names a changed banner text and a changed version, the facts a deploy needs recorded first', () => {
+    const [diff] = diffReports(
+      [withConsent(site, 'v1', ['aaaaaaaaaaaa'])],
+      [withConsent(site, 'v2', ['bbbbbbbbbbbb'])],
+    )
+    expect(diff.consent).toEqual({
+      version: { from: 'v1', to: 'v2' },
+      banners: { added: ['bbbbbbbbbbbb'], removed: ['aaaaaaaaaaaa'] },
+    })
+    const text = formatDiff(diff)
+    expect(text).toContain(
+      '  ! consent version v1 -> v2: every visitor is asked again',
+    )
+    expect(text).toContain(
+      '  ! consent banner bbbbbbbbbbbb (was aaaaaaaaaaaa): record it with kiss-ssg aikb and commit before deploying',
+    )
+    expect(text.indexOf('consent')).toBeLessThan(text.indexOf('='))
+  })
+
+  it('says nothing when the banner and version are unchanged, or there is no consent manager', () => {
+    const same = withConsent(site, 'v1', ['aaaaaaaaaaaa'])
+    expect(diffReports([same], [same])[0]).not.toHaveProperty('consent')
+    expect(diffReports([site], [site])[0]).not.toHaveProperty('consent')
+  })
+
+  it('names a banner as new against a baseline with no consent manager', () => {
+    const [diff] = diffReports(
+      [site],
+      [withConsent(site, 'v1', ['aaaaaaaaaaaa'])],
+    )
+    expect(diff.consent).toEqual({
+      version: { from: null, to: 'v1' },
+      banners: { added: ['aaaaaaaaaaaa'], removed: [] },
+    })
+  })
+})
+
 describe('diffReports', () => {
   it('sorts every page into added, removed, changed or unchanged', () => {
     const before = built('./public', {

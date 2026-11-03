@@ -53,6 +53,10 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | `kiss-ssg init` plan                       | `lib/init.js`                | `AIKB/init.md`                |
 | Logger                                     | `lib/logger.js`              | `AIKB/logger.md`              |
 | Config + folder derivation                 | `lib/config.js`              | `AIKB/config.md`              |
+| Consent config + decisions                 | `lib/consent.js`             | `AIKB/consent.md`             |
+| Consent default UI (banner, dialog, table) | `lib/consent-ui.js`          | `AIKB/consent-ui.md`          |
+| Consent browser client (inlined)           | `lib/consent-client.js`      | `AIKB/consent-client.md`      |
+| Consent gating markup + wiring check       | `lib/consent-gate.js`        | `AIKB/consent-gate.md`        |
 | Built-in Handlebars helpers                | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
 | Site's own helpers (auto-registered)       | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
 | Partials / layouts registration            | `lib/partials.js`            | `AIKB/partials.md`            |

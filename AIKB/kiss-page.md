@@ -26,6 +26,7 @@ One page's render logic: resolving its title/slug/path/extension, compiling and 
   - `async generate()` — compiles the template, renders with `this.options`, injects the livereload script in dev, minifies in production (dev skips minification entirely), asserts the resolved `buildTo` is inside the resolved `buildDir`, converts the bytes to Markdown when `markdownTo` is set, writes the file (records its `hash`), then the copy beside it, and, in dev, the debug `.json`; returns `this.buildTo`. Logs _and rethrows_ render/minify/escape/output-write errors.
 - `loadMinifier()` — the one shared `Promise` for the `html-minifier-terser` import, resolving to its `minify`; every render awaits it.
 - `preloadMinifier()` — starts that load without awaiting it, swallowing a failure that `loadMinifier()` will re-surface at the render that needs it. Called by the `Kiss` constructor for non-dev builds.
+- **The consent wiring check.** `generate()` runs `consentWiringProblems` (`lib/consent-gate.js`) on every HTML page's rendered output, before the live-reload script is added and before minifying. Any problem fails the page in a real build, with `consent: <problems> (<view>)`, and warns in dev. It catches a gated service with no `{{consentHead}}`, a script ahead of the head, a missing or doubled banner, and a service loaded twice (`AIKB/consent-gate.md`).
 
 ## Depends on
 

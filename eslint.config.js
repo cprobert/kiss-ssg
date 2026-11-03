@@ -58,6 +58,12 @@ export default [
     },
   },
   {
+    // The browser suite runs Node, and its `page.evaluate` callbacks run in
+    // the page: both sets of globals are real there.
+    files: ['test/browser/**'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
     ignores: [
       'docs/**',
       '.preview/**',

@@ -1,6 +1,6 @@
 # kiss-ssg examples
 
-Thirteen runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery. **Each one is
+Fourteen runnable sites, all in one theme — Aster & Oak, a fictional Bristol roastery. **Each one is
 a standalone project you can copy wholesale**: `router.js` at its root, everything it renders under
 `src/`, its own copy of the layout and stylesheet, and its output in its own gitignored `public/`.
 
@@ -27,9 +27,9 @@ arrives at one example rather than reading the set in order.
 
 They come in two tiers.
 
-**Examples 1–6, 10 and 13 are the feature reference: one idea each.** Scanning a folder of views,
+**Examples 1–6, 10, 13 and 14 are the feature reference: one idea each.** Scanning a folder of views,
 registering a page by hand, fanning out over an array, layouts and partials, the built-in
-helpers, the sitemap and llms.txt, an external tool in the asset pipeline, learning packages for an LMS. Each script is short enough to read in one sitting and each page explains,
+helpers, the sitemap and llms.txt, an external tool in the asset pipeline, learning packages for an LMS, cookie consent. Each script is short enough to read in one sitting and each page explains,
 in a "How this example works" panel, the feature it is demonstrating — with the script that built
 it printed underneath. Read one when you want to know how a single thing works.
 
@@ -55,6 +55,7 @@ assembling it from the feature reference.
 | [11 · blog](11-blog/)                               | Exemplar  | **tier 2** ² | Posts as a fan-out, pagination, tag pages, `.feed()`, a rename's `aliases`, links by `{{link}}`; recorded `AIKB/`                                                   | `npm run eg11` · `--broken` · `--dev`                  |
 | [12 · from a single file](12-from-a-single-file/)   | Exemplar  | **tier 1** ³ | An existing page — an artifact, an export, a hand-written file — converted into a site that still looks the same, with the source and the conversion both committed | `npm run eg12` · `--dev`                               |
 | [13 · course packages](13-course-packages/)         | Reference | tier 0       | Pages that name a `package` zipped as IMS content packages and SCORM 1.2 for an LMS: one SCO per page, and one SCO with many views and a recorded question          | `npm run eg13`                                         |
+| [14 · cookie consent](14-consent/)                  | Reference | tier 0       | `config.consent` and the six consent helpers: GTM, a first-party counter and a YouTube embed held back until allowed, a themed banner, the cookie table             | `npm run eg14` · `--dev`                               |
 
 ¹ Example 9 registers exactly one custom helper, and therefore has a `helpers/` folder. One is the
 trigger: a helper inside `router.js` cannot be imported and so cannot be tested, which is as true
@@ -69,7 +70,7 @@ address two ways, 47 lines apart. One fact typed twice drifts; that is the whole
 
 `npm run egN` runs from the repo root; from this folder the same thing is `cd N-name && node
 router`. Each router's own header states its tier and why it is there.
-Examples 1–6 and 8–12 take `--dev` for a live-reloading preview; 7 builds and exits, and takes a
+Examples 1–6, 8–12 and 14 take `--dev` for a live-reloading preview; 7 builds and exits, and takes a
 season slug instead. Example 8 is the only one that exits non-zero, and it does so on purpose;
 example 11 takes `--broken`, which adds one broken link — a finding, not a failure, so that run
 still exits 0 and only `npx kiss-ssg check` reports it.

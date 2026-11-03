@@ -3,6 +3,58 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.11.0 — 2026-11-03
+
+A cookie consent manager, built in. Declare the services that store anything on a visitor's device
+once, in `config.consent`, and kiss makes the banner, the settings dialog, the cookie table and the
+gating on every page: nothing third-party loads until the visitor allows it, Google Consent Mode v2
+is set before any Google tag, and withdrawing deletes the site's own declared cookies and reloads.
+The build checks each page's wiring, and the audit reports trackers nothing gates. It replaced
+Cookiebot on a real site in a trial, and caught the Vimeo embed Cookiebot missed. Not legal advice.
+
+### Upgrading: two new findings any site may see, one new report key
+
+Nothing breaks, and nothing changes on a site that does not set `config.consent`, apart from these.
+The audit stays advisory: it never changes `ok` or the exit code.
+
+- **A site may see new findings** on its next build or `kiss-ssg check`:
+  - `consent-missing`: no `config.consent`, and a page loads a known tracker or embed (Google, Meta,
+    Clarity, Bing, Hotjar, LinkedIn, Reddit, YouTube, Vimeo, Google Maps, Superchat) or has a GTM or
+    gtag loader inline. Add `config.consent`, or load it with a click-to-load facade
+    (`kiss-front-end`);
+  - `consent-ads-cmp`: AdSense or Ad Manager on a page, with or without a consent manager. Google
+    requires a certified consent manager for those, and kiss's is not one.
+- **`report().consent`** is a new last key, after `thirdParty`: the purposes version, the banner
+  hashes with their pages, and the categories and services, or `null` without a consent manager.
+  `AIKB/last-build.json` gains it (as `null` on most sites) at the next `kiss-ssg aikb`: commit that
+  diff.
+- **Five more checks** apply only once `config.consent` is set: `consent-ungated`,
+  `consent-objection-third-party`, `consent-settings-missing`, `consent-google-advanced` and
+  `consent-records-missing`.
+- **Update the plugin** to get the skills that now use it: `kiss-legal-and-privacy`,
+  `kiss-front-end`, `kiss-site-new` and `kiss-site-review`.
+
+### What changed
+
+- **`config.consent`**: categories (`statistics` may be `objection` under the UK's statistics
+  exception, per site), services picked by name from presets (`gtm`, `gtag`, `youtube`, `vimeo`,
+  `google-maps`) or declared, the cookie, Google Consent Mode, an optional `endpoint` that receives
+  each choice as `text/plain` JSON, and `ui` (position, logo, policy page, wording, theme, or your
+  own banner partial). An unknown key fails the build and names the valid ones; a service may not
+  take a category's name. `GUIDE.md` § Cookie consent.
+- **Six helpers**: `{{consentHead}}`, `{{consentBanner}}`, `{{consentScript}}`,
+  `{{consentEmbed}}`, `{{consentSettings}}` and `{{consentTable}}`.
+- **`window.kissConsent`** in the browser: `has()`, `choice`, `show()`, `when()`, `on()`, and the
+  `kiss-consent:ready` and `kiss-consent:change` events.
+- **The wiring check**: a page that gates a service with no `{{consentHead}}`, has a script ahead of
+  it, or loads one service twice fails the build (and warns under `dev`).
+- **`thirdParty` entries** an origin is gated behind gain `services`. `kiss-ssg check` prints
+  `! consent banner …` when the banner's wording changed since `AIKB/last-build.json`, so a record
+  of the text shown can be committed before it is deployed, and `! consent version …` when every
+  visitor will be asked again.
+- **The Markdown copies** leave out the consent banner, dialog and embed notices.
+- **`examples/14-consent`**, a roastery's site with GTM, a first-party counter and a YouTube video.
+
 ## 2.10.0 — 2026-11-02
 
 The build now notices the legal basics a small site most often misses, and a new domain skill,

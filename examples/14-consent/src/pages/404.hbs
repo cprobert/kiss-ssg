@@ -1,0 +1,18 @@
+{{!-- The host serves this for any URL the site does not have, at any depth.
+      Every link on it is `link` or `asset` output — root-relative — so it
+      works wherever the visitor got lost. --}}
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Page not found</p>
+    <h1>Nothing on this shelf</h1>
+    <p>
+      The page you asked for is not here. It may have moved, or the link may have a typo in
+      it. <a href="{{link 'index'}}">The home page</a> &middot;
+      <a href="{{link 'roasting'}}">Watch a roast</a>
+    </p>
+  </section>
+  {{/content}}
+
+{{/extend}}

@@ -25,9 +25,11 @@ export function extractPageFacts(html: string, outputPath: string): PageFacts;
  * @param {string|null} [options.privacyPage] `config.audit.privacyPage`: the
  * id of the privacy page, when it is not the convention (id `privacy`, else
  * `privacy.html` or `privacy/index.html`)
+ * @param {import('./consent.js').KissConsent|null} [options.consent]
+ * `config.consent`, resolved: the consent checks read its services
  * @returns {AuditResult}
  */
-export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, privacyPage, }: {
+export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, privacyPage, consent, }: {
     pages: AuditPage[];
     buildDir: string;
     siteUrl?: string | null;
@@ -36,6 +38,7 @@ export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debug
     debugWritten?: boolean;
     extensionLess?: boolean;
     privacyPage?: string | null;
+    consent?: import("./consent.js").KissConsent | null;
 }): AuditResult;
 /**
  * The third-party origins the build's pages fetch from. First-party is a
@@ -61,7 +64,7 @@ export function thirdPartyOrigins({ pages, siteUrl }: {
  * are public vocabulary: `config.audit.ignore`, the report's `check` field and
  * the summary lines all use them, so renaming one is a breaking change.
  */
-export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked"];
+export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing"];
 /** @typedef {typeof CHECKS[number]} CheckId */
 /**
  * The words that make a pre-ticked checkbox a consent to marketing:
@@ -89,6 +92,39 @@ export type PageOrigin = {
      */
     origin: string;
     kind: string;
+    /**
+     * the consent service it is gated behind: a
+     * `<script type="text/plain" data-kiss-service>`'s `data-src`, or a consent
+     * embed's frame. Fetched only after the visitor allows it
+     */
+    service?: string;
+};
+/**
+ * What a page carries of the consent manager.
+ */
+export type PageConsent = {
+    /**
+     * a `{{consentHead}}` script
+     */
+    head: boolean;
+    /**
+     * the banner's `data-kiss-consent-hash`
+     */
+    banner: string | null;
+    /**
+     * a `data-kiss-consent-action="settings"` control
+     */
+    settings: boolean;
+    /**
+     * any gated script or consent embed
+     */
+    gated: boolean;
+    /**
+     * Google loader and ad markers found in
+     * ungated executable inline scripts (`adsbygoogle`, `googletag.cmd`,
+     * `gtm.js`, `gtag/js`) and `data-ad-client` on an `<ins>`, sorted
+     */
+    signatures: string[];
 };
 /**
  * One field of a form, as written.
@@ -209,6 +245,11 @@ export type PageFacts = {
      * `aria-label` and `aria-labelledby`, joined; `''` for an unlabelled one
      */
     prechecked: string[];
+    /**
+     * the consent manager's markup on the page;
+     * absent from facts parked by an engine from before it existed
+     */
+    consent?: PageConsent;
 };
 export type AuditFinding = {
     check: CheckId;
@@ -282,6 +323,8 @@ export type ThirdPartyOrigins = {
      */
     siteUrl: string | null;
     /**
+     * `services` is present on an origin a consent service gates: fetched only
+     * after the visitor allows it
      * the pages that fetch from one, sorted by page; origins sorted, kinds sorted
      */
     pages: {
@@ -289,6 +332,7 @@ export type ThirdPartyOrigins = {
         origins: {
             origin: string;
             kinds: string[];
+            services?: string[];
         }[];
     }[];
     /**

@@ -77,6 +77,7 @@ describe('buildReport', () => {
       'audit',
       'packages',
       'thirdParty',
+      'consent',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -292,6 +293,7 @@ describe('buildReport', () => {
       audit: null,
       packages: null,
       thirdParty: null,
+      consent: null,
     })
   })
 
@@ -542,7 +544,7 @@ describe('the audit key', () => {
     ...extra,
   })
 
-  it('is appended after outputs, with only packages and thirdParty after it', () => {
+  it('is appended after outputs, with only packages, thirdParty and consent after it', () => {
     const keys = Object.keys(
       buildReport({ buildDir: './public', startedAt: Date.now() }),
     )
@@ -550,6 +552,7 @@ describe('the audit key', () => {
     expect(keys.slice(keys.indexOf('audit') + 1)).toEqual([
       'packages',
       'thirdParty',
+      'consent',
     ])
   })
 
@@ -793,6 +796,69 @@ describe('formatReport — audit lines', () => {
   })
 })
 
+describe('the consent key', () => {
+  const staging = './public.kiss-staging-1-abc'
+  const consent = {
+    version: 'aaaaaaaaaaaa',
+    purposes: 'aaaaaaaaaaaa',
+    mode: /** @type {'basic'} */ ('basic'),
+    banners: [
+      {
+        hash: '0123456789ab',
+        pages: [`${staging}/b.html`, `${staging}/a.html`],
+      },
+    ],
+    categories: [
+      {
+        name: /** @type {'marketing'} */ ('marketing'),
+        mode: /** @type {'consent'} */ ('consent'),
+      },
+    ],
+    services: [
+      {
+        name: 'gtm',
+        category: 'marketing',
+        gated: /** @type {'script'} */ ('script'),
+        origins: ['https://www.googletagmanager.com'],
+        cookies: ['_ga'],
+      },
+    ],
+    pagesWithoutHead: [`${staging}/c.html`],
+  }
+
+  it('is the last key, null without a consent manager', () => {
+    const report = buildReport({ buildDir: './public', startedAt: Date.now() })
+    expect(Object.keys(report).at(-1)).toBe('consent')
+    expect(report.consent).toBeNull()
+  })
+
+  it('maps every page out of staging and carries no timestamp', () => {
+    const report = buildReport({
+      buildDir: './public',
+      stagingDir: staging,
+      startedAt: Date.now(),
+      consent,
+    })
+    expect(report.consent?.banners).toEqual([
+      { hash: '0123456789ab', pages: ['./public/a.html', './public/b.html'] },
+    ])
+    expect(report.consent?.pagesWithoutHead).toEqual(['./public/c.html'])
+    expect(JSON.stringify(report.consent)).not.toMatch(
+      /kiss-staging|"(at|time|timestamp)"/,
+    )
+  })
+
+  it('is null on a failed build', () => {
+    const report = buildReport({
+      buildDir: './public',
+      startedAt: Date.now(),
+      consent,
+      failures: [failure('x.hbs', './public/x.html', 'could not render')],
+    })
+    expect(report.consent).toBeNull()
+  })
+})
+
 describe('the thirdParty key', () => {
   const staging = './public.kiss-staging-1-abc'
   const facts = {
@@ -809,10 +875,44 @@ describe('the thirdParty key', () => {
     origins: ['https://formspree.io', 'https://www.youtube-nocookie.com'],
   }
 
-  it('is the last key, null when there is nothing to say', () => {
+  it('comes just before consent, null when there is nothing to say', () => {
     const report = buildReport({ buildDir: './public', startedAt: Date.now() })
-    expect(Object.keys(report).at(-1)).toBe('thirdParty')
+    expect(Object.keys(report).slice(-2)).toEqual(['thirdParty', 'consent'])
     expect(report.thirdParty).toBeNull()
+  })
+
+  it('keeps the services an origin is gated behind', () => {
+    const report = buildReport({
+      buildDir: './public',
+      stagingDir: staging,
+      startedAt: Date.now(),
+      thirdParty: {
+        siteUrl: 'https://site.example',
+        pages: [
+          {
+            page: `${staging}/index.html`,
+            origins: [
+              {
+                origin: 'https://www.googletagmanager.com',
+                kinds: ['script'],
+                services: ['gtm'],
+              },
+            ],
+          },
+        ],
+        origins: ['https://www.googletagmanager.com'],
+      },
+    })
+    expect(report.thirdParty?.pages[0]).toEqual({
+      page: './public/index.html',
+      origins: [
+        {
+          origin: 'https://www.googletagmanager.com',
+          kinds: ['script'],
+          services: ['gtm'],
+        },
+      ],
+    })
   })
 
   it('maps each page out of staging and keeps the origins as they are', () => {

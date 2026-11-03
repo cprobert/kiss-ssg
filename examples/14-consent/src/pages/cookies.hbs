@@ -1,0 +1,28 @@
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Your choices</p>
+    <h1>Cookies</h1>
+    <p>
+      A cookie is a small file a website keeps in your browser. Some make this site work and
+      are always on. The rest are set only if you allow them: a visit counter of our own,
+      Google Tag Manager, and YouTube when you play a video.
+    </p>
+    <p>
+      You can change your choice at any time with <em>Cookie settings</em>, at the foot of
+      every page. Switching a kind of cookie off deletes the ones this site set; cookies
+      that Google or YouTube set on their own sites stay until you clear them in your
+      browser.
+    </p>
+  </section>
+
+  {{!-- Made from config.consent, so it lists exactly what the banner asks
+        about. On a narrow screen each table scrolls sideways in its own
+        focusable region. --}}
+  <div class="card">
+    {{consentTable}}
+  </div>
+  {{/content}}
+
+{{/extend}}

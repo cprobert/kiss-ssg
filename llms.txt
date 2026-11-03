@@ -39,6 +39,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit`, `thirdParty` and more). GUIDE.md § Checking a build has the shape.
 - `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
 - Learning packages: pages with `package: '<slug>'` zip into an IMS content package or SCORM 1.2 (`config.packages`). Give each an `id`: the LMS keeps learners' records by it. GUIDE.md § Learning packages; `examples/13-course-packages`.
+- Cookie consent: declare every service that stores anything in `config.consent`, and gate it with the consent helpers below. Trap: a gated script never sees `DOMContentLoaded`; site code that loads a third party itself waits with `window.kissConsent.when(name, fn)`. GUIDE.md § Cookie consent; `examples/14-consent`.
 - Markdown copies (`config.markdownCopies`, written when the build calls `.llms()`): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
@@ -66,6 +67,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   audit: { check: true, ignore: [], privacyPage: null },
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
+  consent: null, // { services: { gtm: { id } } } turns on the cookie consent manager
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -113,6 +115,12 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
 - `scormBridge`: in `<head>`, gives a package page `window.kissScorm`. Trap: the page reports its own completion (`kissScorm.status('completed')`); `complete="seen"` on a bookmarking page makes Moodle reopen it in review mode, saving nothing.
+- `consentHead`: in `<head>` after `<meta charset>`, before any script; needs `config.consent`.
+- `consentBanner`: first in `<body>`; the default banner, or the site's `consent-banner` partial.
+- `consentScript`: a service's scripts, held back until allowed (`{{consentScript "gtm" id=…}}`, or a block).
+- `consentEmbed`: a click-to-load iframe; `title=` required.
+- `consentSettings`: the "Cookie settings" control, for every footer.
+- `consentTable`: the cookie declaration, for the cookie page.
 
 Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
 

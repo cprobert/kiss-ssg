@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {{!-- Straight after the two meta tags and before any other script: it sets
+        Google Consent Mode's defaults, reads the visitor's stored choice, and
+        releases what that choice allows once the page has loaded. A script
+        above it fails the build, because it would run before the choice was
+        read. --}}
+  {{consentHead}}
+  <title>{{title}} · {{config.site.name}}</title>
+  <meta name="description" content="{{#if description}}{{description}}{{else}}{{config.site.tagline}}{{/if}}">
+  <meta name="generator" content="kiss-ssg">
+  <link rel="canonical" href="{{canonical}}">
+  {{!-- One link style, root-relative, on every page: a page by its id with
+        `link`, a file the build wrote with "/" plus `asset`. So the site is
+        previewed served from its build folder (`--dev`, or any static server
+        rooted at public/), never opened off the file system. --}}
+  <link rel="stylesheet" href="/{{asset 'css/site.css'}}">
+  <link rel="icon" type="image/png" href="/{{asset 'img/icon.png'}}">
+  <meta property="og:image" content="{{absUrl (asset 'img/og-card.png')}}">
+  {{#block "head"}}{{/block}}
+  {{!-- On every page, and inert until the visitor allows its category:
+        Google Tag Manager under marketing, the visit counter under
+        statistics. --}}
+  {{consentScript "gtm"}}
+  {{#consentScript "visits"}}<script src="/{{asset 'js/visits.js'}}"></script>{{/consentScript}}
+</head>
+<body>
+  {{!-- First in <body>: the banner waits in a <template> and is shown only
+        to a visitor who has not chosen yet, so a returning visitor never sees
+        it flash. --}}
+  {{consentBanner}}
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a class="brand" href="{{link 'index'}}">
+        <span class="brand__mark" aria-hidden="true">A&amp;O</span>
+        <span class="brand__text">
+          <strong>{{config.site.name}}</strong>
+          <small>{{config.site.tagline}}</small>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Site">
+        {{#each config.nav}}
+        {{#isActive .. href=(link id)}}<a href="{{href}}" class="nav__link{{#if active}} is-active{{/if}}"{{#if @current}} aria-current="page"{{/if}}>{{label}}</a>{{/isActive}}
+        {{/each}}
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    {{#block "main"}}{{/block}}
+
+    {{#if showSource}}
+    <section class="source-panel">
+      <h2>How this example works</h2>
+      {{#block "demo"}}{{/block}}
+    </section>
+    {{/if}}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap site-footer__inner">
+      <p>&copy; {{config.site.name}} — a fictional roastery, built with&nbsp;<strong>kiss-ssg</strong>.</p>
+      {{!-- On every page, so a visitor can change their mind as easily as
+            they made it. --}}
+      <p>{{consentSettings}} &middot; <a href="{{link 'cookies'}}">Cookies</a> &middot; <a href="{{link 'privacy'}}">Privacy</a></p>
+    </div>
+  </footer>
+</body>
+</html>

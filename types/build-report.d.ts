@@ -142,6 +142,7 @@
  * @property {BuildAudit|null} audit the launch-readiness audit, or `null` when this build ran none
  * @property {BuildPackage[]|null} packages the learning packages written, one per package and format, sorted by id then format; `null` when no page is in a package, packaging is off, the build failed, and in a dev build
  * @property {BuildThirdParty|null} thirdParty the origins other than the site's own that the written pages fetch from; `null` when the build failed or wrote no HTML page
+ * @property {import('./consent.js').BuildConsent|null} consent the consent manager's record: the version, the banner hash each page carries, the categories and the services; `null` without `config.consent` and when the build failed
  */
 /**
  * What the written pages fetch from other origins: the privacy review's
@@ -209,9 +210,10 @@ export function reportedView(view: string): string;
  * @param {BuildAudit|null} [input.audit] what the launch-readiness audit found, `null` when none ran
  * @param {import('./packages.js').PackageResult[]|null} [input.packages] the learning packages written, as written
  * @param {import('./audit.js').ThirdPartyOrigins|null} [input.thirdParty] the third-party origins, with each page where it was written
+ * @param {import('./consent.js').BuildConsent|null} [input.consent] the consent record, with each page where it was written
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, thirdParty, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, thirdParty, consent, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -245,6 +247,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     audit?: BuildAudit | null;
     packages?: import("./packages.js").PackageResult[] | null;
     thirdParty?: import("./audit.js").ThirdPartyOrigins | null;
+    consent?: import("./consent.js").BuildConsent | null;
 }): BuildReport;
 /**
  * The audit's summary lines, unindented: one per check that fired, naming up
@@ -613,6 +616,10 @@ export type BuildReport = {
      * the origins other than the site's own that the written pages fetch from; `null` when the build failed or wrote no HTML page
      */
     thirdParty: BuildThirdParty | null;
+    /**
+     * the consent manager's record: the version, the banner hash each page carries, the categories and the services; `null` without `config.consent` and when the build failed
+     */
+    consent: import("./consent.js").BuildConsent | null;
 };
 /**
  * What the written pages fetch from other origins: the privacy review's

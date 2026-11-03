@@ -162,6 +162,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
  * @property {KissMarkdownCopies} markdownCopies the `.md` copy written beside every HTML page, for agents
  * @property {import('./packages.js').KissPackages|false} packages the learning packages written for the pages that name one (`package`); `false` writes none
+ * @property {import('./consent.js').KissConsent|null} consent the cookie consent manager: the services a site gates behind the visitor's choice, and the banner that asks; `null` (the default) means none
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
  * @property {string} devHost interface the dev and live reload servers bind to
@@ -181,8 +182,9 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  * `audit`, `markdownCopies` and `packages` also take a bare boolean: `false` turns the whole block off.
+ * `consent` is `false` or its settings, resolved by `resolveConsent` in `lib/consent.js`.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'|'markdownCopies'|'packages'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'|'markdownCopies'|'packages'|'consent'>> & {
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
@@ -192,6 +194,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  *   audit?: boolean|Partial<KissAudit>,
  *   markdownCopies?: boolean|Partial<KissMarkdownCopies>,
  *   packages?: boolean|Partial<import('./packages.js').KissPackages>,
+ *   consent?: false|null|import('./consent.js').KissConsentInput,
  *   folders?: KissFoldersInput,
  * } & Record<string, any>} KissConfigInput
  */
@@ -231,7 +234,7 @@ export const DEFAULT_LINKS: Readonly<{
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
-    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked")[];
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing")[];
     privacyPage: string | null;
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
@@ -285,7 +288,7 @@ export const DEFAULT_CONFIG: Readonly<{
     }>;
     audit: Readonly<{
         check: true;
-        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked")[];
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing")[];
         privacyPage: string | null;
     }>;
     markdownCopies: Readonly<{
@@ -300,6 +303,7 @@ export const DEFAULT_CONFIG: Readonly<{
         only: any;
         schemas: false;
     }>;
+    consent: any;
     port: 3001;
     livereloadPort: 35729;
     devHost: "127.0.0.1";
@@ -576,6 +580,10 @@ export type KissSettings = {
      */
     packages: import("./packages.js").KissPackages | false;
     /**
+     * the cookie consent manager: the services a site gates behind the visitor's choice, and the banner that asks; `null` (the default) means none
+     */
+    consent: import("./consent.js").KissConsent | null;
+    /**
      * dev server port
      */
     port: number;
@@ -604,8 +612,9 @@ export type KissConfig = KissSettings & {
  * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  * `audit`, `markdownCopies` and `packages` also take a bare boolean: `false` turns the whole block off.
+ * `consent` is `false` or its settings, resolved by `resolveConsent` in `lib/consent.js`.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit" | "markdownCopies" | "packages">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit" | "markdownCopies" | "packages" | "consent">> & {
     sass?: {
         includePaths?: string[];
     };
@@ -617,5 +626,6 @@ export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "ass
     audit?: boolean | Partial<KissAudit>;
     markdownCopies?: boolean | Partial<KissMarkdownCopies>;
     packages?: boolean | Partial<import("./packages.js").KissPackages>;
+    consent?: false | null | import("./consent.js").KissConsentInput;
     folders?: KissFoldersInput;
 } & Record<string, any>;
