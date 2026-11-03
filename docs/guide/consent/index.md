@@ -223,6 +223,17 @@ consent: {
 -   **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in).
 -   **`theme`** sets `background`, `text`, `accent`, `accentText`, `border`, `radius` and `font`. A value is any CSS value without `;`, `{`, `}`, `<` or `>`, so `var(--surface)` uses your site's own custom properties and the banner follows its dark scheme. `theme: false` drops kiss's stylesheet altogether.
 
+**A filled Accept beside an outlined Reject.** By default Accept all and Reject all are identical. A site that wants Accept a step ahead can outline Reject in the same colour, from its own stylesheet (which loads after kiss's, so the rule wins):
+
+```css
+.kiss-consent__button[data-kiss-consent-action='reject'] {
+  background: transparent;
+  color: var(--kiss-consent-accent);
+}
+```
+
+Both buttons keep the same size, border, colour and place, in the banner and in the settings dialog, and a dark scheme follows because the rule uses the theme's own accent. This is as far as the styling should go. Regulators judge a highlighted Accept case by case, but a Reject that is faded, low in contrast, smaller, worded as something else or moved off the first layer is a clear breach. That breach makes the consent invalid, and Google Ads relies on that consent. So check that the accent on the banner's background still reaches 4.5:1, and never hide Reject.
+
 **Your own banner markup** is a partial named `consent-banner` (or `ui.partial`), rendered with `text`, `position`, `logoUrl`, `policyUrl`, `categories` and `services`. Keep the buttons' `data-kiss-consent-action` values, `accept`, `reject`, `settings` and `close`, because the client acts on them, and keep Accept and Reject equally prominent. Keep the `kiss-consent` classes and `data-position` to keep kiss's styles and the bottom bar's placement, or style it all yourself; the client makes room at the foot of the page only when the banner is actually `position: fixed`. The dialog and the confirmation stay kiss's.
 
 A site whose every service is `necessary` has nothing to ask: `{{consentBanner}}` writes empty templates and no banner is shown, so the same layout works whether or not a site asks for anything.
