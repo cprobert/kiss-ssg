@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   ADS_CMP_SIGNATURES,
+  DEFAULT_GOOGLE,
   PRESETS,
   TRACKER_ORIGINS,
   bannerHash,
@@ -473,8 +474,47 @@ describe('Consent Mode', () => {
     ).toHaveProperty('wait_for_update', 800)
   })
 
+  it('gives a type whose category is not offered to the category holding the Google tags', () => {
+    // gtm alone is marketing: no statistics category is offered, so
+    // analytics_storage rides on marketing. Accept all must grant it, or GA4
+    // runs cookieless for a visitor who accepted everything (diploma-msc
+    // trial, 2026-11-03: gcs=G110 after Accept all).
+    const r = resolved(minimal())
+    expect(r.google.map.marketing).toEqual([
+      'ad_storage',
+      'ad_user_data',
+      'ad_personalization',
+      'functionality_storage',
+      'personalization_storage',
+      'analytics_storage',
+    ])
+    expect(r.google.map.statistics).toEqual([])
+    expect(r.google.map.preferences).toEqual([])
+    expect(
+      consentModeState({ marketing: true }, r.google.map).analytics_storage,
+    ).toBe('granted')
+    expect(consentModeDefault(r).analytics_storage).toBe('denied')
+  })
+
+  it('leaves the map alone when every mapped category is offered', () => {
+    const r = resolved({
+      services: {
+        gtag: { id: 'G-1' },
+        gtm: { id: 'G' },
+        geo: { category: 'preferences' },
+      },
+    })
+    expect(r.google.map.statistics).toEqual(['analytics_storage'])
+    expect(r.google.map.marketing).toEqual([
+      'ad_storage',
+      'ad_user_data',
+      'ad_personalization',
+    ])
+  })
+
   it('maps granted categories to an update', () => {
-    const map = resolved(minimal()).google.map
+    // The default map: every category offered, nothing rebased.
+    const map = /** @type {any} */ (DEFAULT_GOOGLE.map)
     expect(consentModeState({ statistics: true }, map)).toEqual({
       analytics_storage: 'granted',
       ad_storage: 'denied',

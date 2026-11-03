@@ -666,3 +666,11 @@ Each was found by a later slice and fixed with a test seen red first.
   - The client now keeps a spacer and checks `focusin`, as well as `scroll-padding`.
   - All three apply only while the bar's computed position is `fixed`, so an override partial in the flow gets none.
 - **Example 14 also found** the cookie table unreadable on a phone. It now scrolls in a focusable region (slice 5's commit).
+
+### 2026-11-03: the diploma-msc trial found a Consent Mode gap, fixed
+
+The trial (slice 7) measured `gcs=G110` after Accept all on the real container. diploma-msc's only Google tag is `gtm`, which sits in marketing, and it offers no statistics category, so `analytics_storage` (mapped to statistics) was never granted.
+
+`resolveConsent` now rebases `google.map` (`offeredMap`). The types of every category not in use go to the category holding the site's Google tags, the most restrictive when they span several. Seen red in `test/unit/consent.test.js`; the trial then measured `G111`.
+
+§1's default map holds for a site that offers every category. The GUIDE says a marketing category that carries analytics should say so in its description.
