@@ -98,7 +98,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
   // `public/`, so two builds racing would corrupt each other's page counts.
   // Vitest runs a plain `describe`'s tests in declaration order by default,
   // which is all sequencing this needs.
-  describe('the thirteen examples, built in place', () => {
+  describe('the fourteen examples, built in place', () => {
     it('1 · scan builds 2 pages', () => {
       cleanOutput('1-scan')
       const r = runExample('1-scan')
@@ -540,6 +540,63 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(page.match(/if\(\w+\.kissScorm\)return/g)).toHaveLength(1)
       for (const code of scripts)
         expect(() => new vm.Script(code)).not.toThrow()
+    }, 60000)
+
+    it('14 · cookie consent builds 5 pages, every third party held back until allowed', () => {
+      cleanOutput('14-consent')
+      const r = runExample('14-consent')
+      expect(r.status, output(r)).toBe(0)
+      const dir = outputDir('14-consent')
+      // Home, the video page, the cookie and privacy pages, and the 404.
+      expect(countHtmlFiles(dir)).toBe(5)
+      const read = (file) => readFileSync(path.join(dir, file), 'utf8')
+
+      // The layout's wiring, on every page: the head straight after the meta
+      // tags and before any other script, the banner first in <body>, and
+      // the settings control in the footer.
+      const home = read('index.html')
+      expect(home).toMatch(
+        /^<!doctype html><html lang="?en"?><head><meta charset="?utf-8"?><meta name="?viewport"?[^>]*><script data-kiss-consent-head>/,
+      )
+      expect(home).toMatch(/<body><template data-kiss-consent-banner/)
+      expect(home).toContain('data-kiss-consent-action="settings"')
+      // GTM and the visit counter are inert scripts until allowed, and the
+      // counter's URL is the one the asset copy emitted.
+      expect(home).toMatch(
+        /<script type="?text\/plain"? data-kiss-service="?gtm"? data-kiss-consent="?marketing"? data-src="?https:\/\/www\.googletagmanager\.com\/gtm\.js\?id=GTM-XXXXXXX"?>/,
+      )
+      expect(home).toMatch(
+        /<script type="?text\/plain"? data-kiss-service="?visits"? data-kiss-consent="?statistics"? data-src="?\/js\/visits\.js"?>/,
+      )
+      expect(existsSync(path.join(dir, 'js/visits.js'))).toBe(true)
+      // The customised banner: the logo through the asset manifest, and the
+      // theme as the site's own custom properties.
+      expect(home).toContain('src="/img/logo.svg"')
+      expect(home).toContain('--kiss-consent-accent:var(--accent)')
+      // No executable script anywhere reaches a third party: every one that
+      // names an origin is a gated one.
+      for (const tag of home.match(/<script\b[^>]*>/g) ?? []) {
+        if (/https?:\/\//.test(tag)) expect(tag).toMatch(/text\/plain/)
+      }
+
+      // The video waits in a <template>, and the Markdown copy keeps only
+      // the link to YouTube.
+      const video = read('roasting.html')
+      expect(video).toMatch(
+        /<template data-kiss-embed-frame><iframe src="?https:\/\/www\.youtube-nocookie\.com\/embed\/VIDEO_ID"?/,
+      )
+      expect(video.replace(/<template[\s\S]*?<\/template>/g, '')).not.toMatch(
+        /<iframe/,
+      )
+      expect(read('roasting.md')).toContain(
+        '[Open it on YouTube](https://www.youtube.com/watch?v=VIDEO_ID)',
+      )
+
+      // The cookie table lists the declared counter cookie and kiss's own.
+      const cookies = read('cookies.html')
+      expect(cookies).toContain('kiss-consent-table')
+      expect(cookies).toContain('ao_visits')
+      expect(cookies).toContain('kiss_consent')
     }, 60000)
 
     it('11 · gives every page an id, explicitly where the default withdraws', () => {

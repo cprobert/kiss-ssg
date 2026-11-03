@@ -195,7 +195,15 @@ describe('tableHtml', () => {
     [...t.matchAll(/<tr><td>([\s\S]*?)<\/td><\/tr>/g)].map((m) =>
       m[1].split('</td><td>'),
     )
-  const tables = html.split('</table>').filter(Boolean)
+  const tables = html.split('</table>').filter((t) => t.includes('<table'))
+
+  it('puts each table in a labelled, focusable scrolling region', () => {
+    expect(
+      html.match(
+        /<div class="kiss-consent-table-wrap" role="region" tabindex="0" aria-label="[^"]+"><table/g,
+      ),
+    ).toHaveLength(tables.length)
+  })
 
   it('has one table per category: necessary first, then those in use', () => {
     expect(tables.map((t) => /<caption>([^<]*)</.exec(t)?.[1])).toEqual([
@@ -342,7 +350,10 @@ describe('themeCss', () => {
     expect(css).toContain('.kiss-consent-dialog::backdrop')
     expect(css).toContain('@media (prefers-reduced-motion:reduce)')
     expect(css).toContain('aspect-ratio:16/9')
-    expect(css).toContain('overflow-wrap:anywhere')
+    // The table scrolls rather than breaking words: at 320px a broken one
+    // showed a letter per line (example 14, 2026-11-03).
+    expect(css).toContain('.kiss-consent-table-wrap{overflow-x:auto')
+    expect(css).not.toContain('overflow-wrap:anywhere')
   })
 
   it('has no !important, @import or url(', () => {

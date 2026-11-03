@@ -1,0 +1,23 @@
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Roast days</p>
+    <h1>Watch a roast</h1>
+    <p>
+      Twelve minutes in the drum, from green beans to the cooling tray, filmed on a Tuesday
+      morning. Listen for first crack at about nine minutes.
+    </p>
+  </section>
+
+  <div class="card">
+    {{!-- A click-to-load placeholder: the iframe waits in a <template>, so
+          YouTube is not contacted until the visitor loads it here, or allows
+          marketing. The placeholder also links to the video on YouTube, for
+          a visitor who would rather watch it there. The id is the site's own
+          video; replace it. --}}
+    {{consentEmbed "youtube" id="VIDEO_ID" title="A roast at Aster & Oak, from green beans to first crack"}}
+  </div>
+  {{/content}}
+
+{{/extend}}

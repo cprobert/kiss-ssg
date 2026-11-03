@@ -1,0 +1,48 @@
+{{!-- An example notice, not one to copy as it stands. Every fact only the
+      owner can give is marked <mark>[to confirm: …]</mark>, visibly, and the
+      audit's `placeholder-left` check reports each page that still has one,
+      so a notice cannot ship half-written by accident. --}}
+{{#extend "layout"}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example notice</p>
+    <h1>Privacy</h1>
+    <p>
+      This is the privacy notice of an example site. The marked facts are the ones a real
+      owner has to supply before it is published.
+    </p>
+  </section>
+
+  <div class="card">
+    <h2>Who we are</h2>
+    <p>
+      Aster &amp; Oak, <mark>[to confirm: the business's legal name and postal address]</mark>.
+      You can reach us about your information at <mark>[to confirm: an email address that is read]</mark>.
+    </p>
+
+    <h2>What this site collects</h2>
+    <p>
+      This site has no forms and no accounts. With your permission, a visit counter of our
+      own and Google Tag Manager use cookies to count visits and see how the site is used,
+      and YouTube sets cookies when you play a video. The <a href="{{link 'cookies'}}">cookie
+      page</a> lists each one, what it is for and how long it lasts. Without your permission
+      none of them is set.
+    </p>
+    <p>
+      Our host keeps a log of requests to the site, as every host does:
+      <mark>[to confirm: the host's name, what its logs hold and how long it keeps them]</mark>.
+    </p>
+
+    <h2>Your rights</h2>
+    <p>
+      You can withdraw your permission for cookies at any time with <em>Cookie settings</em>
+      at the foot of every page. You can ask us for a copy of the information we hold about
+      you, and ask us to correct or delete it. You can complain to us, and to the
+      Information Commission at ico.org.uk.
+      <mark>[to confirm: how to complain to the business, and whether any other right applies]</mark>
+    </p>
+  </div>
+  {{/content}}
+
+{{/extend}}
