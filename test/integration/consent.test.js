@@ -141,6 +141,33 @@ describe('a consent site, built', () => {
   })
 })
 
+describe('a consent site with nothing to ask', () => {
+  it('builds when every service is necessary: no banner to show, and no wiring problem', async () => {
+    site = await makeSite({
+      ...CONSENT_FILES,
+      'src/pages/index.hbs': consentPage('{{consentScript "lib"}}'),
+    })
+    const { errors } = await build(
+      config({
+        consent: {
+          services: {
+            lib: {
+              category: 'necessary',
+              src: 'https://cdn.example/lib.js',
+              origins: ['https://cdn.example'],
+            },
+          },
+        },
+      }),
+    )
+    expect(errors).toEqual([])
+    const home = await site.read('public/index.html')
+    expect(home).toMatch(/<script src="?https:\/\/cdn\.example\/lib\.js"?>/)
+    // The banner's template is there, and empty: nothing to ask.
+    expect(home).toMatch(/<template data-kiss-consent-banner><\/template>/)
+  })
+})
+
 describe('a consent site, wired wrongly', () => {
   it('fails a page that gates a service with no consentHead, naming the service', async () => {
     site = await makeSite({

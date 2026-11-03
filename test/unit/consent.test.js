@@ -211,6 +211,28 @@ describe('resolveConsent: services', () => {
     ])
   })
 
+  it('adds a site’s own cookies and storage to the preset’s, its own entry winning by name', () => {
+    const r = resolved({
+      services: {
+        gtm: {
+          id: 'G',
+          cookies: [
+            '_fbp',
+            { name: '_ga', duration: '13 months', description: 'own words' },
+          ],
+          storage: ['_gcl_ls'],
+        },
+      },
+    })
+    expect(r.services.gtm.cookies.map((c) => [c.name, c.duration])).toEqual([
+      ['_ga', '13 months'],
+      ['_ga_*', '2 years'],
+      ['_gcl_au', '3 months'],
+      ['_fbp', ''],
+    ])
+    expect(r.services.gtm.storage.map((s) => s.name)).toEqual(['_gcl_ls'])
+  })
+
   it('refuses a Google tag in an objection category', () => {
     expect(() =>
       resolveConsent({

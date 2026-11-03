@@ -483,6 +483,15 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
       const { context, page } = await open()
       await page.goto(`${site.base}/`)
       expect(await page.locator('section.mine').isVisible()).toBe(true)
+      // The partial is not fixed to the bottom, so nothing is added to make
+      // room for it: no spacer, no scroll padding.
+      expect(
+        await page.evaluate(() => ({
+          spacer: document.querySelectorAll('[data-kiss-consent-spacer]')
+            .length,
+          padding: document.documentElement.style.scrollPaddingBottom,
+        })),
+      ).toEqual({ spacer: 0, padding: '' })
       await page.click('section.mine [data-kiss-consent-action="accept"]')
       await expect
         .poll(() => page.evaluate(() => window.__loaded))

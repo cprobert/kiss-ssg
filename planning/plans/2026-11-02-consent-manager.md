@@ -652,3 +652,17 @@ Where the code settled a detail the contract left open, or departed from it:
 - **The policy link and the logo are resolved in the helpers.** The policy page goes through `lookupPage` and `servedPathFor` under `links.trailingSlash`; the logo goes through the asset manifest, root-relative. A policy id no page claims, or a logo no copy emitted, fails the page, and warns in dev.
 - **The wiring check adds a fourth problem** to §3's list: one service's script `src` twice on a page. A settings control with no head is reported too.
 - **Block form:** `defer` is dropped (the queue already runs in document order), and a block with no `<script>` tag is one script's text.
+
+### 2026-11-03: slices 2d, 4, 5 and 6 found four engine gaps, fixed
+
+Each was found by a later slice and fixed with a test seen red first.
+
+- **§6 overclaimed `check`.** It said a changed banner hash shows in `kiss-ssg check`'s diff. It did not: `diffReports` compared page hashes only. Now `diffReports` carries `consent` (version and banner hashes), and `formatDiff` prints `! consent banner …: record it with kiss-ssg aikb and commit before deploying` above the page rows.
+- **A site's `cookies` and `storage` replaced a preset's**, while `origins` merged. They now merge too (`mergeStored`), so declaring `_fbp` keeps `_ga`.
+- **A site with only `necessary` services failed the wiring check** (a head with no banner). `{{consentBanner}}` now writes empty templates.
+- **The bottom bar.**
+  - The browser suite found that Chromium does not scroll a focused element out from under a fixed bar.
+  - It also found that the bar covered the page's last content, the footer's settings control included.
+  - The client now keeps a spacer and checks `focusin`, as well as `scroll-padding`.
+  - All three apply only while the bar's computed position is `fixed`, so an override partial in the flow gets none.
+- **Example 14 also found** the cookie table unreadable on a phone. It now scrolls in a focusable region (slice 5's commit).

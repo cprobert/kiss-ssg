@@ -83,7 +83,7 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
   - **`scroll-padding-bottom` on `<html>`**, for scrolling to a fragment.
   - **A `focusin` check** that scrolls a focused element clear of the bar. Chromium does not scroll an element that is inside the viewport but under the bar when focus moves to it, so `scroll-padding` alone left links hidden under the banner.
 
-  All three follow the bar's height through `ResizeObserver`, and are removed with the bar.
+  All three follow the bar's height through `ResizeObserver`, and are removed with the bar. They apply only while the bar's computed `position` is `fixed`. A site's own banner partial may sit in the flow whatever `ui.position` says, and then nothing is added (the browser suite checks the override partial gets no spacer).
 
 - **The dialog** is cloned from its template on first open, gets `data-kiss-consent-dialog`, and opens with `showModal()` (falling back to `open`). Its checkboxes are set from the current state each time it opens.
 - **Size, inlined on every page:** 10,932 bytes minified, 4,047 gzipped, for a gtm + youtube + vimeo site (measured 2026-11-03; the contract had estimated 5–7 kB). `test/unit/consent-client.test.js` holds it under 12,000 bytes; raising that ceiling is a decision, not a fix.

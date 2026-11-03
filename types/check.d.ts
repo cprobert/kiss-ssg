@@ -261,6 +261,26 @@ export type CheckDiff = {
      * removed
      */
     packages?: CheckDiffPackages;
+    /**
+     * the consent manager's version and
+     * banner text, present only when either changed
+     */
+    consent?: CheckDiffConsent;
+};
+/**
+ * What changed in what a visitor is asked. A new banner hash is words the
+ * consent record does not hold until `kiss-ssg aikb` records them; a new
+ * version asks every visitor again.
+ */
+export type CheckDiffConsent = {
+    version: {
+        from: string | null;
+        to: string | null;
+    } | null;
+    banners: {
+        added: string[];
+        removed: string[];
+    };
 };
 /**
  * The learning packages of a site against the baseline's, by zip file and the
