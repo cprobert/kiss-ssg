@@ -165,7 +165,8 @@ opened: 2026-11-02
 **2026-11-03: the Codex review loops until clean.**
 
 - **The operator's choice:** after round 2, "fix both, loop until clean" over the recommended one-more-run stop. No stop condition beyond a clean run.
-- **Rounds so far:** 1 (adversarial) and 2–5 (review). Every finding has been fixed with a regression test seen red first, the browser ones in Chromium.
+- **Rounds so far:** 1 (adversarial) and 2–7 (review), 17 findings. Every finding has been fixed with a regression test seen red first, the browser ones in Chromium. Severity fell round by round: rounds 1–5 held defects that ignored a visitor's choice in a setup a site would use; rounds 6–7 found edge cases and false audit findings.
+- **Stop condition, set after round 7 (the operator, on the recommendation):** one last run. Only a P1, meaning consent bypassed or a choice ignored in a setup a site would really use, is fixed on this branch; anything below it is recorded here for later, and the branch goes to `/branch-close`.
 - **The client's size ceiling, raised twice by the operator:** 12,000 → 12,288 → 13,312 bytes, at 12,346 minified, 4,517 gzipped.
 - **Raised, not taken here:** the operator asked whether the client should be a cached file rather than inline. The recommendation is to split it into a small inline part (Consent Mode default and update, the stored-choice read, a `kissConsent` stub) and a cached, deferred file. That is its own piece of work after this branch, not absorbed into it.
 
