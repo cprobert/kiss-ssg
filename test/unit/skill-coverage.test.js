@@ -443,6 +443,59 @@ const COVERAGE = [
       /click-to-load facade[\s\S]*youtube-nocookie\.com[\s\S]*localStorage/,
     skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
+  // 2.11.0, the consent manager (planning/plans/2026-11-02-consent-manager.md
+  // §10): a site with analytics, an ads tag or an embed declares its services
+  // in config.consent and gates them, so the skills that build one, decide
+  // the legal side of one and write its embeds all say so.
+  {
+    feature: 'config.consent: a site with third parties declares them',
+    pattern: /config\.consent/,
+    skills: [
+      LEGAL,
+      skill('kiss-ssg', 'kiss-front-end'),
+      skill('kiss-ssg', 'kiss-site-new'),
+    ],
+  },
+  {
+    feature:
+      'a video or map on a consent site is {{consentEmbed}}; site code waits with kissConsent.when',
+    pattern: /^(?=[\s\S]*\{\{consentEmbed)(?=[\s\S]*kissConsent\.when)/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature:
+      'the layout of a consent site: consentHead, consentBanner, consentSettings, the cookies page',
+    pattern:
+      /\{\{consentHead\}\}[\s\S]*\{\{consentBanner\}\}[\s\S]*\{\{consentSettings\}\}[\s\S]*\{\{consentTable\}\}/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature:
+      'the legal skill: the seven consent ids, report.consent, consentEmbed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
+    pattern: new RegExp(
+      [
+        ...CHECKS.filter((id) => id.startsWith('consent-')).map(
+          (id) => `\`${id}\``,
+        ),
+        '`report\\.consent`',
+        '\\{\\{consentEmbed\\}\\}',
+        '`endpoint`',
+        'kiss-ssg aikb[^\\n]*\\*\\*before\\*\\*',
+        'Google-certified CMP',
+        '182 days',
+      ]
+        .map((needle) => `(?=[\\s\\S]*${needle})`)
+        .join(''),
+    ),
+    skills: [LEGAL],
+  },
+  {
+    feature:
+      "the UK reference: the regulator's six months, and Google's records and certified-CMP terms",
+    pattern:
+      /^(?=[\s\S]*six months)(?=[\s\S]*182 days)(?=[\s\S]*the date and time)(?=[\s\S]*Google-certified)/,
+    skills: [LEGAL_UK],
+  },
   {
     feature:
       'the protocol: legal P1 examples, the three privacy checks above P2, the accepted-risk record',
@@ -1229,6 +1282,17 @@ const CONTRADICTIONS = [
       /page is complete when (it is )?seen \(`complete="manual"`/,
       /With no `complete`, a page is complete/,
       /complete when it is seen; `\{\{scormBridge complete="manual"\}\}`/,
+    ],
+  },
+  {
+    why: '2.11.0: kiss has a consent manager, so on a site with config.consent an embed is {{consentEmbed}}, which honours the stored choice and the cookie table; a hand-built facade is only for a site without one. The legal skill sent every embed to a facade, and a sentence saying a banner is not the job of kiss would send an agent to a third-party CMP',
+    patterns: [
+      /The fix is a click-to-load facade \(`kiss-front-end`\)\./,
+      /no third-party embed that stores anything before a click: a facade instead/,
+      /A video or a map is a click-to-load facade\*\*/,
+      /(cookie|consent) (banner|manager)s? (is|are) (out of scope|not part of kiss|not kiss's)/i,
+      /kiss (has|ships|provides|includes) no (cookie|consent) (banner|manager)/i,
+      /out of scope[^\n.]*(cookie|consent) (banner|manager)/i,
     ],
   },
 ]

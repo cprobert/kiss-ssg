@@ -59,6 +59,12 @@
     "sections": ["Learning packages"]
   },
   {
+    "slug": "consent",
+    "title": "Cookie consent",
+    "description": "The consent manager built into kiss: services declared once in config.consent, the banner and settings, gated scripts and click-to-load embeds, Google Consent Mode, withdrawal, records of each choice, and what the audit checks.",
+    "sections": ["Cookie consent"]
+  },
+  {
     "slug": "checking",
     "title": "Checking a build",
     "description": "Waiting for a build, dry-running it with kiss-ssg check, reading the report, recording a site's knowledge base with kiss-ssg aikb, and upgrading a site with kiss-ssg upgrade.",
