@@ -177,6 +177,21 @@ opened: 2026-11-02
   - **Offer: answered, kept.** A one-off "Load it" on an embed, followed by a choice that leaves its category off, reloads the page and stops the video, so that nothing refused keeps running.
   - **Decision: continue** into slice 2b (the helpers, the gated markup, the wiring check and the fixture site).
 
+- **2026-11-03 (third):** six slices since the last pulse.
+  - **What landed:**
+    - slices 2b (`675b755`), 2d (`0f7bd3e`), 5 (`514cbd2`), 4m (`a7c4542`), 4 (`0988140`), 6 (`4530b42`) and 7 (`698777a`);
+    - two fix commits (`d8e026c`, `c3e8321`), plus 5 engine gaps found by later slices, each seen red first (contract Amendments).
+  - **Evidence:**
+    - `npm run gates` green at `c3e8321` (test, the 15-test Chromium suite included, lint, typecheck, format, pack); only the trial report has changed since;
+    - the diploma-msc trial measured nothing before a choice or after Reject (the Vimeo storage Cookiebot let through included), the same tag families after Accept with `gcs=G111`, and a clean withdrawal.
+  - **Criteria met:** 1–9, 11 and 12 (12 in tests).
+  - **Criterion 10 (clean room): not yet.**
+  - **Criterion 13: partial;** Codex review at close.
+  - **Drift:** none. The fixes stay inside the objective, and the impact surface is still the public API.
+  - **Eyeball: deferred** to `/branch-close`: the updated `kiss-legal-and-privacy/SKILL.md` (steps 2–3, Build mode). The operator has not yet read the shipped skill changes, the lesson carried from 11-02.
+  - **Offer: answered, kept.** On a site that offers no statistics category, Google's `analytics_storage` follows the category holding its Google tags (marketing for `gtm`). The guide tells authors that marketing's description must then cover measuring the site.
+  - **Decision: continue** into slice 8 (the clean room).
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
