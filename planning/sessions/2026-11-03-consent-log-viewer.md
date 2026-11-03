@@ -224,6 +224,16 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
   first, rendered and minified; (2) example 14's CSS styled every `th` as a column heading,
   so the history's dates were uppercase small caps: now `thead th`. Re-walked: 20 of 20.
   Not a defect: "Always allowed" is a column of dashes until an embed's Always allow is used.
+- **2026-11-03** — pulse after Codex rounds 6–7 (`0d8b8e1`, clean `9649200`) and the walk's fixes
+  (`522ae63`). Criteria 1–9 met (evidence above: the Chromium walk 20/20, the full suite
+  3,760, the clean room); 10 partial (pack not run). Drift: the open's stop condition (P1 only
+  after round 3) was replaced by the operator's `/loop` ("fix issues"); the walk's two P3-sized
+  fixes went in outside any review round and `522ae63` has had no Codex review. **Eyeball:
+  looked** — the operator: "Looked, matched"; they had expected the history on a page of its
+  own, and have no problem with the privacy page. **Offer:** the record keeps category answers
+  plus single-service grants, the services a category covered resolved from `bannerHash` on
+  the server — "Keep, research first": the operator asked for a comparison with an open-source
+  consent manager, which tests exactly that. Decision: continue, with that research next.
 
 ---
 
