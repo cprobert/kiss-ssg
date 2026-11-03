@@ -128,6 +128,24 @@ describe('consent facts', () => {
     ])
   })
 
+  it('reads a script with data-kiss-service as live when its type runs, not as gated', () => {
+    // hand-written, so not text/plain: a browser runs it at once
+    const facts = extractPageFacts(
+      doc(
+        HEAD,
+        BANNER +
+          '<script data-kiss-service="video" src="https://tracker.example/a.js"></script>' +
+          '<script data-kiss-service="video">var u="gtm.js"</script>',
+      ),
+      'a.html',
+    )
+    expect(facts.origins).toEqual([
+      { origin: 'https://tracker.example', kind: 'script' },
+    ])
+    expect(facts.consent.gated).toBe(false)
+    expect(facts.consent.signatures).toEqual(['gtm.js'])
+  })
+
   it('records Google loader and ad signatures in ungated inline scripts only', () => {
     const facts = extractPageFacts(
       doc(

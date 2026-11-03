@@ -177,16 +177,19 @@ describe('settingsHtml', () => {
     for (const m of boxes) expect(m[0]).not.toContain('checked')
   })
 
-  it('has a hidden grant toggle for embed services only', () => {
+  it('has a hidden grant toggle for every service a category holds', () => {
+    // {{consentEmbed}} takes any service with src=, not only one with an
+    // `embed` block, and offers "Always allow" for it: every grant the client
+    // can hold needs a switch to withdraw it. Hidden until one is held.
     const grants = [
       ...html.matchAll(/data-kiss-consent-grant="([^"]+)" hidden/g),
     ]
-    expect(grants.map((m) => m[1])).toEqual(['vimeo', 'youtube'])
+    expect(grants.map((m) => m[1])).toEqual(['chat', 'gtm', 'vimeo', 'youtube'])
     expect(html).toContain(
       '<div class="kiss-consent-dialog__grant" data-kiss-consent-grant="youtube" hidden><label for="kiss-consent-grant-youtube">YouTube</label><input type="checkbox" role="switch" class="kiss-consent-switch" id="kiss-consent-grant-youtube" data-kiss-consent-service="youtube"></div>',
     )
-    expect(html).not.toContain('data-kiss-consent-service="gtm"')
-    expect(html).not.toContain('data-kiss-consent-service="chat"')
+    // a necessary service is never asked about, so it holds no grant
+    expect(html).not.toContain('data-kiss-consent-service="fonts"')
   })
 
   it('escapes every string', () => {
