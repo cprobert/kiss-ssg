@@ -105,6 +105,18 @@ would use) is fixed here, and the rest is recorded for later.
   Save, and read `kiss_consent_log` in DevTools: matched. **Offer:** keep — the link check
   reporting `/` outside a prefix (cleared by `hostServed: ['/']`). Decision: continue, to the
   viewer (D2 labels, `{{consentRecord}}`, `ui.history`).
+- **2026-11-03** — after the viewer (`9fb4d7b`, `af4dc5e`) and the registry (`7fe5ef8`). Criteria
+  1–5 met: 2 by D1 plus D2 in the viewer's config (head unchanged at 12,600 B); 3 by
+  `consent-record.test.js` (28 cases, rendered and minified, tampered log, locale) and Chromium
+  (follow the dialog link, read the row, a choice on the page appears); 4 by integration (link
+  through `trailingSlash` and the prefix, failing id); 5 by unit and integration (the text hashes
+  to the pages' hash), example 14 writing one banner. 6 not yet; 7 partial (policy, logo, history
+  link met; the cached client's URL to come); 8 partial (`llms.txt` 15,846 of 16,000); 9 not yet;
+  10 partial (test 3,720, lint, typecheck, format green; pack not run). Drift: none unrecorded.
+  **Eyeball: deferred** — to the next pulse, after the split, the history page in example 14
+  (the operator's preview on 3001, pid 38520, predated the viewer and needs a restart).
+  **Offer:** explained, then changed — `consent-banners.json` always-on became endpoint-only, on
+  Claude's recommendation (`ebf1298`). Decision: continue, to the inline/cached client split.
 
 ---
 
