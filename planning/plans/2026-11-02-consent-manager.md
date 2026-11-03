@@ -625,3 +625,20 @@ Where the code settled a detail the contract left open, or departed from it:
   - `originOf` and `matchesHost`, the URL helpers slice 2d uses with `TRACKER_ORIGINS` and `ADS_CMP_SIGNATURES`.
 - **Theme values refuse `;`, `{`, `}`, `<` and `>`,** so a site's colour cannot end the CSS declaration or the `<style>` element.
 - **`config.consent` defaults to `null`** in `DEFAULT_CONFIG`, and `llms.txt` and `GUIDE.md` show it in their default blocks (`test/aikb.test.js` compares those blocks with `resolveConfig({})`).
+
+### 2026-11-03: slices 2c and 3, as built (`lib/consent-client.js`, `lib/consent-ui.js`)
+
+- **The action vocabulary** is `accept`, `reject`, `settings`, `save`, `close` (the banner), `close-dialog`, `hide` (the confirmation), `load` and `allow` (an embed). §3 named `close` for both the banner and the dialog; the dialog's Close is `close-dialog`, because closing the banner records the session cookie and closing the dialog must not.
+- **The banner root carries `data-kiss-consent-root`.** The client finds the banner by it, and sets it on an override partial's first element when the partial leaves it off. The cloned dialog gets `data-kiss-consent-dialog`.
+- **The closed cookie is `<cookie.name>_closed`** (`kiss_consent_closed` by default), named by the client and listed under that name by `{{consentTable}}`.
+- **An "always allow" grant before the banner is answered** is stored with `c: null`. It is honoured, but the banner still asks, because a grant for one service is not an answer to the categories.
+- **Grant toggles** are rendered, hidden, for every service in a category that has an `embed`; the client unhides those with a grant. §3 said "one per service with a grant", which the markup cannot know at build time.
+- **Banner markup details** the contract left open:
+  - **`ui.position: 'top'`** is `position: relative`, in the flow, so it anchors the ✕ button.
+  - **Buttons** sit in a `.kiss-consent__actions` wrapper.
+  - **The embed notice's buttons** share the one button rule, so every choice button has equal weight.
+- **Dialog closing guard.** The client guards `dialog.close()`, which domino does not implement and which a browser should not throw from.
+- **The client is 10,932 bytes minified, 4,047 gzipped** for a gtm + youtube + vimeo site, against the 5–7 kB estimated in §12. A test holds it under 12,000 bytes.
+- **Two Chrome behaviours are recorded in `AIKB/upstream.md`, with how to re-check them:**
+  - revived scripts miss `DOMContentLoaded` and need the serial queue;
+  - Consent Mode reaches Google's tags only.

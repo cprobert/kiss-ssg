@@ -45,7 +45,8 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
 ## Depended on by
 
 - `lib/config.js` (`resolveConfig`).
-- Planned on this branch (contract §9): `lib/consent-gate.js`, `lib/consent-ui.js`, `lib/consent-client.js`, `lib/handlebars-helpers.js`, `lib/audit.js` and `lib/build-finish.js`.
+- `lib/consent-ui.js` (the resolved shape it renders; `clientConfig` feeds `lib/consent-client.js`'s `consentHeadScript`).
+- Planned on this branch (contract §9): `lib/consent-gate.js`, `lib/handlebars-helpers.js`, `lib/audit.js` and `lib/build-finish.js`.
 - `test/unit/consent.test.js`.
 
 ## Non-obvious behavior

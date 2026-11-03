@@ -421,6 +421,43 @@ page uses `complete="seen"` and bookmarks three times, moving somewhere
 different each time: the third launch shows "Review mode" and opens on the
 first launch's place.
 
+### A revived script never sees `DOMContentLoaded`, and runs out of order unless queued
+
+**Observed:** Chromium (playwright-core 1.64), 2026-11-03, contract `planning/plans/2026-11-02-consent-manager.md` Appendix A, S2–S3.
+
+**Effect:** a gated `type="text/plain"` script cloned into a live one after consent runs after the page has parsed.
+
+- It misses `DOMContentLoaded`: a deferred original that listened for it never heard it, while the ungated control did. Revived after a click, it also misses `load`.
+- Clones inserted all at once run out of document order. A dynamically inserted external script is forced async, and `async=false` orders the externals among themselves only: inline and module scripts ran before an earlier external.
+- `document.write` in a revived script replaces the whole document, and in a serial queue `load` never fires.
+
+**What kiss does:**
+
+- `lib/consent-client.js` revives scripts through one serial queue: an external holds the queue until `load` or `error`, or 10 seconds.
+- `kissConsent.when()` is the documented way for site code to wait for a service.
+- `{{consentScript}}` refuses `document.write` in an inline body.
+
+**Re-check:** the spike scripts' shape is in Appendix A. Serve a page whose gated scripts log their order (a slow external, an inline, a module, a `defer` that listens for `DOMContentLoaded`), revive them at `DOMContentLoaded`, and compare with the same page ungated.
+
+### Consent Mode governs Google's tags, not a container's other tags
+
+**Observed:** Chromium, 2026-11-03, against diploma-msc's live container `GTM-NXRHGJ8`, with every request but the container scripts aborted (Appendix A, S1 and S1b).
+
+**Effect:**
+
+- **Basic mode** (GTM loaded only after the choice): every Google hit carries `gcs=G111` after Accept, whether `update` ran before or after GTM was inserted.
+- **Advanced mode** (GTM loaded before a choice): GA4 sends `G100` pings before any choice.
+- **Partial consent:** with only `analytics_storage` granted, the container still loaded Clarity, Bing UET, ActiveCampaign and OpenAI scripts, because Consent Mode reaches only Google tags and tags given consent checks in GTM.
+
+**What kiss does:**
+
+- The `gtm` preset defaults to `marketing`.
+- Basic mode is the default.
+- Advanced mode is opt-in, with an audit finding.
+- Each change also pushes a `kiss_consent` event, so a container can trigger on it.
+
+**Re-check:** load a GTM container with the Consent Mode default denied, grant `analytics_storage` alone, and list the hosts it requests.
+
 ## Supported alternatives not used
 
 ### Codex project skills in `.agents/skills/`
