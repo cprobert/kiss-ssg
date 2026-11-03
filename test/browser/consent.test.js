@@ -77,11 +77,11 @@ const FILES = {
 }
 
 /** Build a site and serve it; hand back its base URL and a closer. */
-async function serve(files, consent) {
+async function serve(files, consent, siteUrl = `https://${HOST}`) {
   const site = await makeSite(files)
   const kiss = new Kiss({
     folders: site.folders,
-    siteUrl: `https://${HOST}`,
+    siteUrl,
     logger: silentLogger,
     consent,
   })
@@ -764,6 +764,35 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
       expect(await page.locator('#kiss-consent-history h2').isVisible()).toBe(
         true,
       )
+      // Focus is on the history, not back on the footer's settings button.
+      await expect
+        .poll(() => page.evaluate(() => document.activeElement?.id ?? null))
+        .toBe('kiss-consent-history')
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // The stopgap review (P2), in the browser: a prefixed siteUrl on another
+  // origin, the build served locally (a --dev or preview of a GitHub Pages
+  // project site). The cached client must still load from here, or the
+  // banner shows and its buttons do nothing.
+  it('loads the cached client from wherever the build is served, whatever siteUrl says', async () => {
+    const site = await serve(
+      FILES,
+      CONSENT_CONFIG,
+      'https://elsewhere.example/project/',
+    )
+    try {
+      const { context, page } = await open()
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await expect
+        .poll(async () => (await stored(context))?.c ?? null)
+        .toEqual({ statistics: false, marketing: false })
       await context.close()
     } finally {
       await site.close()

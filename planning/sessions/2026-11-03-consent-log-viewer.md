@@ -115,6 +115,28 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     every link in the dialog (the policy link on the cookie page had it too): the cached client
     closes the dialog after such a click, not during it, since a link removed from the
     document is not followed. Red in the simulated DOM and in Chromium first.
+  - **Round 6: did not run** — "Your workspace is out of credits." Codex has not reviewed
+    `5c6eda4` (the round-5 fix) or anything after it. Per the operator's recorded preference
+    (a fresh-context reviewer as the stopgap, Codex re-run once available), a fresh Claude
+    agent reviewed the branch. **That is not an independent review**: same model family.
+  - **Stopgap review** (fresh Claude agent over `main...5c6eda4`): no P1; one P2 and three P3s,
+    all inferred from reading; each re-derived here, and fixed with tests red first:
+    - P2: every consent page fetched the cached client at a root-relative or `siteUrl`-absolute
+      URL, so a page served from anything but `siteUrl` (a prefixed site's dev or preview, a
+      deploy preview, a `{{root}}` site) showed a banner with dead buttons. Now relative to the
+      page as served, under `trailingSlash`. Reproduced in Chromium (prefixed `siteUrl` on
+      another origin, served locally): red before, green after.
+    - P3: a Ctrl/Cmd/Shift-click or `target` link in the dialog closed it and lost unsaved
+      switches; now skipped.
+    - P3: after the same-page history jump, `dialog.close()` returned focus to the settings
+      button; focus now goes to the section. Red in Chromium on `document.activeElement`.
+    - P3: a double click on Accept before the file arrived replayed as two choices, logged and
+      posted twice; a replayed click whose control has left the page is skipped.
+    - Not acted on, the reviewer's own "speculation, unmeasured": a filter list blocking a file
+      named `kiss-consent`, which would leave a banner with dead buttons.
+  - **The loop stops here**: further iterations need Codex, which cannot run. Unreviewed by
+    Codex: `5c6eda4` and the stopgap fixes after it. Re-run Codex over the branch once credit
+    is back, before `/branch-close`.
 - **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
   (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
   history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;

@@ -150,6 +150,7 @@ function page(source, opts = {}) {
       protocol: 'https:',
       hostname: host,
       pathname: '/a/',
+      href: `https://${host}/a/`,
       reload: () => reloads++,
     },
     navigator: {
@@ -168,6 +169,7 @@ function page(source, opts = {}) {
     setTimeout: (fn, ms) => timers.push({ fn, ms }),
     crypto: { randomUUID: () => 'uuid-1' },
     CustomEvent: dwin.CustomEvent,
+    URL,
     __ran: [],
   }
   // Storage a browser refuses (blocked site data, some private windows):
@@ -585,6 +587,44 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.find('[data-kiss-consent-dialog]')).toBeNull()
     })
 
+    // The stopgap review (P3s, 2026-11-03).
+    it('leaves the dialog open for a modified click, a new tab, or a cancelled one', () => {
+      const p = page(plain)
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      const link = p.find('dialog a.kiss-consent__history')
+      for (const key of ['ctrlKey', 'metaKey', 'shiftKey']) {
+        const e = p.doc.createEvent('Event')
+        e.initEvent('click', true, true)
+        Object.defineProperty(e, key, { value: true })
+        link.dispatchEvent(e)
+      }
+      link.setAttribute('target', '_blank')
+      p.click('dialog a.kiss-consent__history')
+      expect(p.timers.filter((t) => t.ms === 0)).toEqual([])
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+    })
+
+    it('moves focus to the section a same-page link names, once the dialog has closed', () => {
+      const p = page(plain, {
+        extraBody:
+          '<section id="kiss-consent-history"><h2>History</h2></section>',
+      })
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      const link = p.find('dialog a.kiss-consent__history')
+      link.setAttribute('href', '/a/#kiss-consent-history')
+      const target = p.find('#kiss-consent-history')
+      let focused = 0
+      // domino's `focus` is read-only to assignment.
+      Object.defineProperty(target, 'focus', { value: () => focused++ })
+      p.click('dialog a.kiss-consent__history')
+      p.timers.find((t) => t.ms === 0)?.fn()
+      expect(p.find('[data-kiss-consent-dialog]')).toBeNull()
+      expect(focused).toBe(1)
+      expect(target.getAttribute('tabindex')).toBe('-1')
+    })
+
     it('Hide removes the confirmation', () => {
       const p = page(plain)
       p.win.kissConsent.mount()
@@ -702,6 +742,28 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(ran).toEqual(['detached', 'kept', 'ready'])
       show()
       expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+    })
+
+    // The stopgap review (P3): a double click on Accept while the file
+    // downloaded replayed as two choices, two log entries and two POSTs.
+    // Replayed, a click whose control has left the page is not a click.
+    it('replays a double click on Accept as one choice', async () => {
+      const [head, client] = await split(
+        configFor({ ...SITE, endpoint: '/consent-log' }),
+      )
+      const p = page(head)
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      p.click('[data-kiss-consent-action="accept"]')
+      p.run(client)
+      p.ready()
+      expect(
+        p.jar.writes.filter((w) => w.startsWith('kiss_consent=')),
+      ).toHaveLength(1)
+      expect(p.beacons).toHaveLength(1)
+      expect(
+        JSON.parse(p.win.localStorage.getItem('kiss_consent_log')),
+      ).toHaveLength(1)
     })
 
     it('runs nothing gated and writes nothing if the file never arrives', async () => {

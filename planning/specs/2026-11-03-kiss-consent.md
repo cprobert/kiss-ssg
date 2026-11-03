@@ -390,3 +390,15 @@ inline client is 12,600 bytes minified, 4,618 gzipped, on every page.
   a failed write fails the build (every consent page would be dead without it).
 - **Ceilings:** the inline part gets its own size test, set from its measurement with stated
   headroom; the cached file is measured and recorded.
+
+### 2026-11-03 — amended after review: the client file's URL is relative
+
+The design above linked the cached file through `consentUrl` (root-relative, or `siteUrl`-absolute
+under a prefix). The stopgap review found, and Chromium confirmed, that this fetched the file
+from the wrong place wherever a page is served from anything but `siteUrl` itself (a prefixed
+site's dev or local preview, a deploy preview on another origin, a `{{root}}` site), and every
+consent page then showed a banner whose buttons did nothing. It is now relative to the page as
+served, under `links.trailingSlash`, so it loads wherever the folder is served; under a prefix it
+resolves inside the prefix, which is what criterion 7 asked of it. The policy, history and logo
+links keep `consentUrl`. Measured after the review fixes: inline 4,887 bytes minified (2,112
+gzipped), the file 9,551 (3,656).
