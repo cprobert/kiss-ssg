@@ -210,6 +210,20 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
   (the operator's preview on 3001, pid 38520, predated the viewer and needs a restart).
   **Offer:** explained, then changed — `consent-banners.json` always-on became endpoint-only, on
   Claude's recommendation (`ebf1298`). Decision: continue, to the inline/cached client split.
+- **2026-11-03** — the deferred eyeball, taken by Claude at the operator's request ("Use
+  /webapp-testing and try it for yourself"), so it is **Claude's look, not the operator's**:
+  /branch-close Step 5a still owes one from the operator. Example 14 copied to the scratchpad
+  (the operator's preview, pid 38520, left alone), built (exit 0, 50 references none broken),
+  walked in headless Chromium with Python Playwright: empty state before a choice, Accept from
+  the banner (one format-2 record), the dialog's history link lands on the section with the
+  dialog closed, one row with the id shown, a save on the history page reloads to two rows
+  with a stable id, a tampered entry injects no markup, no page overflow at 320 px, dark
+  scheme, storage refused shows the unavailable state, no console errors. Screenshots read.
+  Two findings, fixed: (1) the viewer printed a non-boolean category (`'<b>x</b>'`) as
+  "Allowed": now only a boolean answers and only a `1` grant lists a service, unit test red
+  first, rendered and minified; (2) example 14's CSS styled every `th` as a column heading,
+  so the history's dates were uppercase small caps: now `thead th`. Re-walked: 20 of 20.
+  Not a defect: "Always allowed" is a column of dashes until an embed's Always allow is used.
 
 ---
 

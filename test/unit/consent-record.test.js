@@ -322,6 +322,23 @@ describe.each(forms)('the viewer, %s', (_, build) => {
     ])
   })
 
+  // Found walking example 14 in Chromium (2026-11-03): a tampered category of
+  // `'<b>x</b>'` read as "Allowed". The client writes a category answer as a
+  // boolean and a service grant as `1`, so anything else is not a choice, and
+  // the history, which mirrors the record, must not present it as one.
+  it('shows only a real answer: a boolean category, a service granted as 1', async () => {
+    const p = await open({
+      log: [
+        entry({
+          categories: { statistics: '<b>x</b>', marketing: 0 },
+          services: { youtube: 'yes', stats: 1 },
+        }),
+      ],
+    })
+    const [row] = p.rows()
+    expect(row.slice(2, 5)).toEqual(['—', '—', 'Visit counter'])
+  })
+
   it('treats a log that is not JSON, or not a list, as empty', async () => {
     expect((await open({ raw: '{nope' })).shown('empty')).toBe(true)
     expect((await open({ log: { a: 1 } })).shown('empty')).toBe(true)
