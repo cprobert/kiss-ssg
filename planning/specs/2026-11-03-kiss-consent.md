@@ -351,5 +351,9 @@ What was built against D1–D13, and where it moved from the table above.
   what their ID is so they can do a data request. For me, the client side is like an instant data
   request, a self-service data takeout." The page never says what the site's server keeps; that
   is the privacy notice's, and `kiss-legal-and-privacy` says so.
+- **`consent-banners.json` is written only with an `endpoint`** (the 2026-11-03 pulse, on
+  Claude's recommendation after an explanation): its one reader is the server the records go to,
+  so a site with none would publish a file nobody reads. A site that adds an endpoint gets it
+  from that build on.
 - **The dialog links the history page** after the policy link; the banner does not. Setting
   `ui.history` changes the banner hash, as any change to the dialog's wording does.

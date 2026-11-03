@@ -230,10 +230,16 @@ describe('a consent site, built', () => {
     expect(md).not.toMatch(/No cookie choice|Purposes version|JavaScript/)
   })
 
-  it('writes consent-banners.json: each banner the pages carry, with the text its hash was taken from', async () => {
+  it('writes consent-banners.json with an endpoint: each banner the pages carry, with the text its hash was taken from', async () => {
     site = await makeSite(HISTORY_FILES)
     const { report, errors } = await build(
-      config({ consent: { ...CONSENT_CONFIG, ui: { history: 'privacy' } } }),
+      config({
+        consent: {
+          ...CONSENT_CONFIG,
+          endpoint: '/api/consent',
+          ui: { history: 'privacy' },
+        },
+      }),
     )
     expect(errors).toEqual([])
     const registry = JSON.parse(await site.read('public/consent-banners.json'))
@@ -255,6 +261,15 @@ describe('a consent site, built', () => {
       'statistics',
       'marketing',
     ])
+  })
+
+  // Its one reader is the server records go to; a site with no endpoint has
+  // none (the operator, at the 2026-11-03 pulse).
+  it('writes no consent-banners.json without an endpoint', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { errors } = await build(config())
+    expect(errors).toEqual([])
+    await expect(site.read('public/consent-banners.json')).rejects.toThrow()
   })
 
   it('writes no consent-banners.json without a consent manager', async () => {

@@ -724,6 +724,7 @@ describe('clientConfig', () => {
 // "The banner registry file").
 describe('bannerRegistry', () => {
   const consent = resolveConsent({
+    endpoint: '/api/consent',
     services: {
       stats: { category: 'statistics', label: 'Visit counter' },
       youtube: {},
@@ -785,9 +786,16 @@ describe('bannerRegistry', () => {
     ])
   })
 
-  it('is null without a consent manager', () => {
+  it('is null without a consent manager, and without an endpoint to read it', () => {
     expect(
       bannerRegistry({ consent: null, hashes: [], texts: new Map() }),
+    ).toBeNull()
+    expect(
+      bannerRegistry({
+        consent: resolveConsent({ services: { youtube: {} } }),
+        hashes: ['aaaaaaaaaaaa'],
+        texts: new Map(),
+      }),
     ).toBeNull()
   })
 })

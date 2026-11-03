@@ -170,6 +170,9 @@ export function clientConfig(resolved: KissConsent, extra?: {
  * @param {Map<string, string>} options.texts each hash's text, as the helper
  * hashed it; a hash with none is listed with `text: null`
  * @returns {{ format: 1, version: string, banners: { hash: string, text: string|null, categories: { key: string, label: string, description: string, mode: string }[], services: { name: string, label: string, category: string }[] }[] }|null}
+ * `null` without a consent manager, and without an `endpoint`: its one reader
+ * is the server records go to, and a site with none has no such server (the
+ * operator, 2026-11-03)
  */
 export function bannerRegistry({ consent, hashes, texts }: {
     consent: KissConsent | null;
