@@ -85,6 +85,15 @@ would use) is fixed here, and the rest is recorded for later.
   they're going to want to know what their ID is so they can do a data request. For me, the client
   side is like an instant data request, a self-service data takeout." The D6 locale refinement
   (from Chromium) the operator kept. All three are in the spec's Amendments.
+- **2026-11-03, the operator away from the desk — the review loop's stop condition replaced.**
+  The operator's instruction: `/loop 6-10 Run codex review on each loop and fix issues before
+proceeding`. Claude's reading, stated here because the operator was on mobile: 6 to 10
+  iterations, each a Codex review of the branch (`codex-companion.mjs review --scope branch`)
+  with its findings fixed (regression test seen red first) before the next slice of work. This
+  replaces the open's "three rounds, then P1 only". Scope: this branch's diff. Every finding is
+  fixed unless it is wrong, and a rejected finding is recorded here with why. The loop stops at
+  iteration 10, or from iteration 6 once the split and the clean room are done and a round
+  reports nothing to fix. No push and no PR, and nothing outside this branch.
 
 ## Pulse log
 
