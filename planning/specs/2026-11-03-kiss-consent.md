@@ -357,3 +357,36 @@ What was built against D1–D13, and where it moved from the table above.
   from that build on.
 - **The dialog links the history page** after the policy link; the banner does not. Setting
   `ui.history` changes the banner hash, as any change to the dialog's wording does.
+
+### 2026-11-03 — design: the inline part and the cached file
+
+Written before the code, while the operator was away (the review loop). Measured baseline: the
+inline client is 12,600 bytes minified, 4,618 gzipped, on every page.
+
+- **Two functions, one module** (`lib/consent-client.js`). `kissConsentHead(win, cfg)` stays
+  inline in `{{consentHead}}`, with the config: the `gtag` stub, the Consent Mode default and the
+  two `set`s, the stored-choice read, `has()`, the Consent Mode `update` for a stored choice,
+  `mount()` with the bottom bar's padding (the banner still appears before first paint, S5), and
+  a `window.kissConsent` stub. `kissConsentClient(win)` is the rest, in the cached file: the
+  click handling, the cookie write, the log and the POST, the activation queue, embeds, the
+  dialog, the confirmation, withdrawal, and the load-time clearing of denied services.
+- **Shared state, not duplicated code.** The head part keeps the state (`stored`, `choice`,
+  `grants`) and the functions both halves need (`has`, `categoryGranted`, `snapshot`,
+  `readCookie`, the bar padding) on one object, `window.__kissConsent`. The cached part reads and
+  writes that object, so no rule is written twice.
+- **Nothing is lost before the file arrives.** The stub answers `has()` and `choice` at once,
+  queues `show()`, `when()` and `on()`, and a click on a consent control is queued too; the cached
+  part replays both in order when it starts. If the file never arrives, the banner shows and
+  nothing gated runs: it fails closed.
+- **The file:** `<build>/kiss-consent.<hash>.js`, the cached part's source as a call
+  `(kissConsentClient)(window)`, minified by the same `html-minifier-terser` call the pages use
+  (no new dependency), unminified in dev as pages are. `<hash>` is 10 hex of its source's sha256,
+  so it changes only when kiss's client code does and can be cached for good. `{{consentHead}}`
+  writes `<script src="…" defer data-kiss-consent-client></script>` after the inline part, its URL
+  through the same `consentUrl` as the policy link (criterion 7). It holds no site config, so it
+  is the same file for every site on one kiss version: the first step to a hosted script.
+- **Written** in the settle path beside `consent-banners.json` whenever `config.consent` is set
+  and a page rendered `{{consentHead}}`, inside the staging folder before the swap; claimed;
+  a failed write fails the build (every consent page would be dead without it).
+- **Ceilings:** the inline part gets its own size test, set from its measurement with stated
+  headroom; the cached file is measured and recorded.
