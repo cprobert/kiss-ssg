@@ -152,6 +152,10 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     resolutions; a learning package's page keeps its file's folder. Four tests red first
     (three unit in links, one in audit), plus the integration fixture's link report. Full suite
     green (exit 0, 3,758).
+  - **Round 7** (over `0d8b8e1`, the whole branch): no findings ("no actionable regressions";
+    Codex read code and tests, it did not run the suite). The loop's stop condition is met:
+    past round 6, the split and the clean room done, a round clean. Every commit on the branch
+    has now had a Codex review.
 - **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
   (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
   history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;
