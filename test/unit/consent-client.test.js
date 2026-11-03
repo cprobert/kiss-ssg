@@ -2,7 +2,12 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import { minify } from 'terser'
-import { consentHeadScript } from '../../lib/consent-client.js'
+import { createHash } from 'node:crypto'
+import {
+  consentClientName,
+  consentClientSource,
+  consentHeadScript,
+} from '../../lib/consent-client.js'
 import { clientConfig, resolveConsent } from '../../lib/consent.js'
 
 const require = createRequire(import.meta.url)
@@ -183,6 +188,8 @@ function page(source, opts = {}) {
     win,
     doc,
     find,
+    // More code into the same window, later: the cached file arriving.
+    run: (more) => vm.runInNewContext(more, { window: win, Date: FakeDate }),
     jar,
     beacons,
     timers,
@@ -214,28 +221,41 @@ function storedCookie(c) {
   return encodeURIComponent(JSON.stringify(c))
 }
 
+const CLIENT_URL = '/kiss-consent.abcdef0123.js'
+// The split's measurement (2026-11-03, gtm + youtube + vimeo): the inline
+// part 4,839 bytes minified, 2,092 gzipped, config included; the cached file
+// 8,939, 3,421 gzipped. About 10% headroom each; see the size block below.
+const INLINE_CEILING = 5376
+const FILE_CEILING = 9728
+
+/** The inline part's code, from what `{{consentHead}}` writes. */
 const scriptOf = (html) =>
-  html.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')
+  /^<script data-kiss-consent-head>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? ''
 
 describe('consentHeadScript', () => {
-  it('writes one script carrying the client and its config', () => {
-    const html = consentHeadScript(configFor(SITE))
+  it('writes the inline part with its config, then the cached file, deferred', () => {
+    const html = consentHeadScript(configFor(SITE), CLIENT_URL)
     expect(
       html.startsWith(
-        '<script data-kiss-consent-head>(function kissConsentClient(win, cfg)',
+        '<script data-kiss-consent-head>(function kissConsentHead(win, cfg)',
       ),
     ).toBe(true)
-    expect(html.endsWith('</script>')).toBe(true)
+    expect(
+      html.endsWith(
+        `<script src="${CLIENT_URL}" defer data-kiss-consent-client></script>`,
+      ),
+    ).toBe(true)
   })
 
   it('escapes < and line separators in the config, so no site text can end the script', () => {
     const cfg = configFor(SITE)
     cfg.text.confirmation = 'Saved </script><script>alert(1)</script> x '
-    const html = consentHeadScript(cfg)
-    expect(html.match(/<\/script>/g)).toHaveLength(1)
+    const html = consentHeadScript(cfg, CLIENT_URL)
+    // The inline part's end, and the cached file's.
+    expect(html.match(/<\/script>/g)).toHaveLength(2)
     expect(html).not.toContain(' ')
     expect(html).not.toContain(' ')
-    const p = page(scriptOf(html))
+    const p = page(`${scriptOf(html)};\n${consentClientSource()}`)
     p.win.kissConsent.mount()
     p.click('[data-kiss-consent-action="reject"]')
     expect(p.find('[data-kiss-consent-confirmation]').textContent).toContain(
@@ -244,31 +264,51 @@ describe('consentHeadScript', () => {
   })
 })
 
-describe('size', () => {
-  // Inlined into every page. 10,932 bytes minified (4,047 gzipped) for
-  // gtm + youtube + vimeo when first measured (2026-11-03); the ceiling
-  // catches growth, and moving it is a decision, not a fix. Raised from
-  // 12,000 to 12,288 by the operator on 2026-11-03, at 12,048 bytes (4,427
-  // gzipped), after the Codex review fixes to withdrawal, module order and
-  // cookie deletion added about 430 bytes. Raised again to 13,312 by the
-  // operator the same day, at 12,346 bytes (4,517 gzipped), after round 5's
-  // shared-cookie, own-property and grant fixes, with splitting the client
-  // into a small inline part and a cached file planned as its own work.
-  it('stays under 13,312 bytes minified for a three-service site', async () => {
-    const cfg = configFor({
-      services: { gtm: { id: 'GTM-X' }, youtube: {}, vimeo: {} },
-    })
-    const min = (await minify(scriptOf(consentHeadScript(cfg)))).code ?? ''
-    expect(min.length).toBeLessThan(13312)
+describe('consentClientSource and consentClientName', () => {
+  it('holds no site config, and is named by its own hash', () => {
+    const source = consentClientSource()
+    expect(source.startsWith('(function kissConsentClient(win)')).toBe(true)
+    expect(source).not.toContain('GTM-X')
+    const hash = createHash('sha256').update(source).digest('hex')
+    expect(consentClientName()).toBe(`kiss-consent.${hash.slice(0, 10)}.js`)
   })
 })
 
+describe('size', () => {
+  // Inlined into every page. 10,932 bytes minified (4,047 gzipped) for
+  // gtm + youtube + vimeo when first measured, and 12,600 (4,618) on
+  // 2026-11-03 before the split, under a 13,312 ceiling the operator raised
+  // twice that day. The split moved everything but Consent Mode, the stored
+  // choice, `has()`, the banner's mount and the stub into a cached file (spec
+  // planning/specs/2026-11-03-kiss-consent.md); the ceilings are the split's
+  // measurements with headroom, and moving one is a decision, not a fix.
+  const cfg = () =>
+    configFor({ services: { gtm: { id: 'GTM-X' }, youtube: {}, vimeo: {} } })
+
+  it('keeps the inline part under its ceiling for a three-service site', async () => {
+    const min =
+      (await minify(scriptOf(consentHeadScript(cfg(), CLIENT_URL)))).code ?? ''
+    expect(min.length).toBeLessThan(INLINE_CEILING)
+  })
+
+  it('keeps the cached file under its ceiling', async () => {
+    const min = (await minify(consentClientSource())).code ?? ''
+    expect(min.length).toBeLessThan(FILE_CEILING)
+  })
+})
+
+/**
+ * What a browser runs: the inline part, then (deferred) the cached file.
+ *
+ * @param {(code: string) => Promise<string>} shape
+ */
+const both = (shape) => async (cfg) =>
+  `${await shape(scriptOf(consentHeadScript(cfg, CLIENT_URL)))};${SPLIT}${await shape(consentClientSource())}`
+// Between the two parts, so a test can run them apart.
+const SPLIT = '\n/* the cached file */\n'
 const forms = [
-  ['as rendered', async (cfg) => scriptOf(consentHeadScript(cfg))],
-  [
-    'minified',
-    async (cfg) => (await minify(scriptOf(consentHeadScript(cfg)))).code ?? '',
-  ],
+  ['as rendered', both(async (code) => code)],
+  ['minified', both(async (code) => (await minify(code)).code ?? '')],
 ]
 
 describe.each(forms)('the client, %s', (_, build) => {
@@ -554,6 +594,77 @@ describe.each(forms)('the client, %s', (_, build) => {
         bannerHash: 'abcdef012345',
         page: '/a/',
       })
+    })
+  })
+
+  // The split: the inline part runs first and alone, the cached file arrives
+  // later (`defer`). What a visitor does in between must not be lost, and if
+  // the file never arrives nothing gated may run.
+  describe('before the cached file arrives', () => {
+    const split = async (cfg) => {
+      const [head, client] = (await build(cfg)).split(SPLIT)
+      return [head, client]
+    }
+
+    it('shows the banner and answers has() and choice from the inline part alone', async () => {
+      const [head] = await split(configFor(SITE))
+      const p = page(head, { cookies: valid({ statistics: 1, marketing: 0 }) })
+      expect(p.win.kissConsent.has('stats')).toBe(true)
+      expect(p.win.kissConsent.has('gtm')).toBe(false)
+      expect(p.win.kissConsent.choice.categories).toEqual({
+        statistics: true,
+        marketing: false,
+      })
+      const q = page(head)
+      q.win.kissConsent.mount()
+      expect(q.find('[data-kiss-consent-root]')).not.toBeNull()
+      // Consent Mode's default is set before any file arrives.
+      expect(q.layer()[0]).toEqual(['consent', 'default', expect.any(Object)])
+    })
+
+    it('replays a click and the stub’s calls, in order, when the file arrives', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head)
+      p.win.kissConsent.mount()
+      const seen = []
+      p.win.kissConsent.when('gtm', () => seen.push('when gtm'))
+      p.win.kissConsent.on('change', () => seen.push('change'))
+      p.click('[data-kiss-consent-action="accept"]')
+      // Nothing written yet: only the cached file writes.
+      expect(p.stored()).toBeNull()
+      p.run(client)
+      p.ready()
+      expect(p.stored().c).toEqual({ statistics: true, marketing: true })
+      expect(p.find('[data-kiss-consent-confirmation]')).not.toBeNull()
+      expect(seen).toEqual(['change', 'when gtm'])
+      expect(p.live()).toContain(
+        'https://www.googletagmanager.com/gtm.js?id=GTM-X',
+      )
+    })
+
+    it('runs nothing gated and writes nothing if the file never arrives', async () => {
+      const [head] = await split(configFor(SITE))
+      const p = page(head)
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="accept"]')
+      expect(p.stored()).toBeNull()
+      expect(p.live()).toEqual([])
+      expect(p.gated()).toBeGreaterThan(0)
+    })
+
+    it('runs once: a second copy of either part does nothing', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head)
+      p.run(client)
+      p.ready()
+      p.win.kissConsent.mount()
+      p.run(head)
+      p.run(client)
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(
+        p.jar.writes.filter((w) => w.startsWith('kiss_consent=')),
+      ).toHaveLength(1)
     })
   })
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createHash } from 'node:crypto'
+import fs from 'fs-extra'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 import {
@@ -265,6 +266,57 @@ describe('a consent site, built', () => {
 
   // Its one reader is the server records go to; a site with no endpoint has
   // none (the operator, at the 2026-11-03 pulse).
+  // The cached part of the client (spec, "the inline part and the cached
+  // file"): written once at the build's root, minified, named by its hash,
+  // and loaded by every consent page with defer.
+  it('writes the cached client file, and every consent page loads it deferred', async () => {
+    site = await makeSite(CONSENT_FILES)
+    const { report, errors } = await build(config())
+    expect(errors).toEqual([])
+    const files = await fs.readdir(site.build)
+    const clients = files.filter((f) =>
+      /^kiss-consent\.[0-9a-f]{10}\.js$/.test(f),
+    )
+    expect(clients).toHaveLength(1)
+    const [name] = clients
+    const code = await site.read(`public/${name}`)
+    expect(code).toMatch(/^!?function|^\(function/)
+    // Minified: no comments, and far smaller than its source.
+    expect(code).not.toContain('// ')
+    const home = await site.read('public/index.html')
+    expect(home).toMatch(
+      // The minifier writes `defer="defer"`.
+      new RegExp(
+        `<script src="?/${name.replace(/\./g, '\\.')}"? defer(="?defer"?)? data-kiss-consent-client`,
+      ),
+    )
+    // After the inline part, which still comes first.
+    expect(home.indexOf('data-kiss-consent-head')).toBeLessThan(
+      home.indexOf('data-kiss-consent-client'),
+    )
+    expect(report.links.broken).toEqual([])
+  })
+
+  it('carries siteUrl’s path prefix into the cached client’s URL', async () => {
+    site = await makeSite(CONSENT_FILES)
+    const { errors } = await build(
+      config({ siteUrl: 'https://site.example/site/' }),
+    )
+    expect(errors).toEqual([])
+    const home = await site.read('public/index.html')
+    expect(home).toMatch(
+      /<script src="?https:\/\/site\.example\/site\/kiss-consent\.[0-9a-f]{10}\.js"? defer/,
+    )
+  })
+
+  it('writes no cached client without a consent manager', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': '<h1>Home</h1>' })
+    const { errors } = await build(config({ consent: undefined }))
+    expect(errors).toEqual([])
+    const files = await fs.readdir(site.build)
+    expect(files.filter((f) => f.startsWith('kiss-consent.'))).toEqual([])
+  })
+
   it('writes no consent-banners.json without an endpoint', async () => {
     site = await makeSite(HISTORY_FILES)
     const { errors } = await build(config())

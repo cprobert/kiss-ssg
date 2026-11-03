@@ -30,6 +30,7 @@ Each is the body of the `Kiss` private method named beside it:
 - `writeAliasRedirects(kiss)` — `_writeRedirects()`; `findRedirectChanges(kiss)` —
   `_redirectFindings()`; `lastBuildRecord(kiss)` — `_lastBuildRecord()`.
 - `writeBannerRegistry(kiss)` — `_writeBannerRegistry()`: `<build>/consent-banners.json`.
+- `writeConsentClient(kiss)` — `_writeConsentClient()`: `<build>/kiss-consent.<hash>.js`, the consent client's cached part, whenever `config.consent` is set, dev included; minified with the pages' minifier outside dev; latched as `_consentClientRun`, reset by the replay; claimed; a failed write fails the build (`<consent-client>`), since every consent page loads it. Written before the link scan, so each page's reference to it resolves.
 
 Three are named apart from their method because the method's own name is a function this module
 imports: `checkLinks` (`lib/links.js`), `writeRedirects` and `redirectFindings`

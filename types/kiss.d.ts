@@ -607,6 +607,8 @@ declare class Kiss {
     /** @private */
     private _bannerRegistryRun;
     /** @private */
+    private _consentClientRun;
+    /** @private */
     private _packagesDevNoticed;
     /** @private */
     private _registrationSeq;
@@ -748,6 +750,8 @@ declare class Kiss {
     private _writePackages;
     /** @private */
     private _writeBannerRegistry;
+    /** @private */
+    private _writeConsentClient;
     /** @private */
     private _lastBuildRecord;
     /** @private */

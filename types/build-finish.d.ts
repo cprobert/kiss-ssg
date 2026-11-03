@@ -50,6 +50,7 @@ export function runAudit(kiss: any, { quiet }?: {
     quiet?: boolean;
 }): any;
 export function writeBannerRegistry(kiss: any): any;
+export function writeConsentClient(kiss: any): any;
 export function writeAliasRedirects(kiss: any): any;
 export function writeLearningPackages(kiss: any): any;
 export function lastBuildRecord(kiss: any): import("./build-report.js").BuildReport;

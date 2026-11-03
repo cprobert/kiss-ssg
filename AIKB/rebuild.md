@@ -48,7 +48,7 @@ Each is the body of the `Kiss` method named beside it:
 
 ## Non-obvious behavior
 
-- `replaySession` resets `_bannerRegistryRun` with the redirects latch, so a replay writes `consent-banners.json` again; `_bannerTexts` is kept, since only the hashes the new pages carry are written.
+- `replaySession` resets `_bannerRegistryRun` and `_consentClientRun` with the redirects latch, so a replay writes `consent-banners.json` again; `_bannerTexts` is kept, since only the hashes the new pages carry are written.
 - `replaySession` resets `_packagesRun` and `_packagesResult` with the redirects latch, so a non-dev `.watch()` replay writes its learning packages again. A dev session writes none at all, and a scoped re-render re-runs no writer, so the zips of a dev build would be stale: this is in the Known knowns below.
 - Non-dev `watch()` with `cleanBuild: 'atomic'` is unsupported: a failed build latches disposal, and later replays can write staging without promoting it. Use a separate one-shot atomic build for publication. This existing limitation is documented, not repaired by the source-protection branch.
 - Replay invalidates the settled link-check cache after orphan removal and asset restoration: removed pages must no longer resolve, and restored copies can bring in newly added files. The rebuild queue's preliminary scan is quiet; the final scan logs its verdict and refreshes the report. Dev mode and `links.check: false` still skip link checking. The launch-readiness audit follows the scan here exactly: `_audit` is reset and `_runAudit()` re-run beside it, because the orphan sweep and the restoration change what the folder walk finds.

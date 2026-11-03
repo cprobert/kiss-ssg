@@ -112,12 +112,19 @@ const STUBS = {
  * A fresh context and page: every off-host request recorded and stubbed,
  * `/js/a.js` held back 300 ms so the order test can see a slow external.
  */
-async function open(options = {}) {
+async function open(options = {}, { holdClient = false } = {}) {
   if (!browser) throw new Error('no browser')
   const context = await browser.newContext({
     viewport: { width: 900, height: 600 },
     ...options,
   })
+  // `holdClient`: the consent client's cached file waits until `release()`,
+  // the way it would on a slow connection.
+  /** @type {() => void} */
+  let release = () => {}
+  const held = holdClient
+    ? new Promise((resolve) => (release = () => resolve(undefined)))
+    : Promise.resolve()
   await context.addInitScript(() => {
     // @ts-ignore
     window.__loaded = []
@@ -132,6 +139,7 @@ async function open(options = {}) {
     if (url.hostname.endsWith('.kiss.test') || url.hostname === 'localhost') {
       if (url.pathname === '/js/a.js')
         await new Promise((r) => setTimeout(r, 300))
+      if (/^\/kiss-consent\.[0-9a-f]+\.js$/.test(url.pathname)) await held
       if (url.pathname === '/consent-log') {
         offHost.push({
           host: url.hostname,
@@ -167,7 +175,7 @@ async function open(options = {}) {
     return route.fulfill({ status: 204 })
   })
   const page = await context.newPage()
-  return { context, page, offHost }
+  return { context, page, offHost, release }
 }
 
 const cookieNames = async (context) =>
@@ -207,6 +215,29 @@ describe.skipIf(!browser)('consent in Chromium', () => {
   }, 60000)
   afterAll(async () => {
     await site?.close()
+  })
+
+  // The split on a slow connection: the inline part shows the banner before
+  // the cached file arrives, and an Accept made in between takes effect when
+  // it does, with nothing gated running before.
+  it('shows the banner before the cached file arrives, and keeps an early Accept', async () => {
+    const { context, page, release } = await open({}, { holdClient: true })
+    await page.goto(`${site.base}/`, { waitUntil: 'commit' })
+    await expect.poll(() => bannerShown(page)).toBe(true)
+    await page.click(
+      '[data-kiss-consent-root] [data-kiss-consent-action="accept"]',
+    )
+    await page.waitForTimeout(200)
+    expect(await stored(context)).toBeNull()
+    expect(await page.evaluate(() => window.__loaded)).toEqual([])
+    release()
+    await expect
+      .poll(async () => (await stored(context))?.c ?? null)
+      .toEqual({ statistics: true, marketing: true })
+    await expect
+      .poll(() => page.evaluate(() => window.__loaded.includes('gtm')))
+      .toBe(true)
+    await context.close()
   })
 
   it('loads nothing gated and stores nothing before a choice', async () => {

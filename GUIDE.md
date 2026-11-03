@@ -1115,14 +1115,14 @@ consent: {
 
 #### The helpers
 
-| Helper                | Where                                                                   | What it writes                                                                                                                    |
-| --------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `{{consentHead}}`     | in `<head>`, after `<meta charset>` and the viewport, before any script | the inline client: sets Consent Mode's defaults, reads the stored choice, defines `window.kissConsent`; and the theme's `<style>` |
-| `{{consentBanner}}`   | first in `<body>`                                                       | the banner and the settings dialog, each in a `<template>`, shown only to a visitor who has not chosen                            |
-| `{{consentScript}}`   | wherever the script belongs                                             | the service's scripts as `type="text/plain"`, which the browser does not run, until allowed                                       |
-| `{{consentEmbed}}`    | where the embed belongs; `title=` is required                           | a notice with **Load it** and **Always allow** buttons, a link to the provider, and the iframe in a `<template>`                  |
-| `{{consentSettings}}` | in every page's footer                                                  | the "Cookie settings" button, so a visitor can change their mind from any page                                                    |
-| `{{consentTable}}`    | on the cookie page                                                      | one table per category: each service, its provider, purpose, cookies and storage, duration, and first or third party              |
+| Helper                | Where                                                                   | What it writes                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{{consentHead}}`     | in `<head>`, after `<meta charset>` and the viewport, before any script | the inline client: sets Consent Mode's defaults, reads the stored choice, defines `window.kissConsent`; the rest of the client, `kiss-consent.<hash>.js`, deferred; and the theme's `<style>` |
+| `{{consentBanner}}`   | first in `<body>`                                                       | the banner and the settings dialog, each in a `<template>`, shown only to a visitor who has not chosen                                                                                        |
+| `{{consentScript}}`   | wherever the script belongs                                             | the service's scripts as `type="text/plain"`, which the browser does not run, until allowed                                                                                                   |
+| `{{consentEmbed}}`    | where the embed belongs; `title=` is required                           | a notice with **Load it** and **Always allow** buttons, a link to the provider, and the iframe in a `<template>`                                                                              |
+| `{{consentSettings}}` | in every page's footer                                                  | the "Cookie settings" button, so a visitor can change their mind from any page                                                                                                                |
+| `{{consentTable}}`    | on the cookie page                                                      | one table per category: each service, its provider, purpose, cookies and storage, duration, and first or third party                                                                          |
 
 `{{consentScript}}` has three forms. With no body it writes the service's `inline` script, then its `src`; `src=` in the hash overrides the service's. As a block, every `<script>` inside is gated as the service, the service's own `src` is not used, and a block with no `<script>` tag is one script's body. For a service with a `partial`, it renders that partial with the page's context and gates its scripts the same way:
 
@@ -1155,6 +1155,8 @@ kissConsent.show() // open the settings dialog
 kissConsent.when('vimeo', () => startPlayer()) // now, or once it is allowed
 kissConsent.on('change', ({ choice, granted }) => console.info(granted))
 ```
+
+`has` and `choice` answer from the first moment. The rest of the client is a separate file, `kiss-consent.<hash>.js`, which the build writes at its root and every consent page loads with `defer`, so a returning visitor's browser has it cached. Until it has arrived, `show`, `when` and `on` are held and run in order when it does, and so is a click on the banner: nothing is lost. If the file never arrives, the banner still shows and nothing gated runs. Serve it like any other file; its name changes only when kiss's client code does, so it can be cached for good. Under a Content Security Policy it needs `'self'`, and the inline part still needs `'unsafe-inline'` or its hash.
 
 `on('ready', fn)` runs once per page when the queue of allowed scripts has started, and at once for a listener added after that. Started is not finished: a listener must not assume a gated script has run. `when` is for that. The same two moments are DOM events on `document`: `kiss-consent:ready` (`detail.choice`) and `kiss-consent:change` (`detail.choice`, `detail.granted`). Each choice also pushes `{ event: 'kiss_consent', kiss_consent: { statistics: true, marketing: false } }` to `dataLayer`, for a GTM trigger.
 
