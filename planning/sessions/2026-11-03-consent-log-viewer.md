@@ -110,6 +110,11 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     later calls into a drained queue, for ever. Now one object for the page's life, whose
     methods hand to `S.api` once the client has started; unit test seen red first.
   - **Round 4** (over `3ed9396`): no findings ("no actionable regressions").
+  - **Round 5** (over `1dcc529`): one P2, fixed — on the history page itself the dialog's
+    history link was a same-page jump and the modal stayed open over the history. The class is
+    every link in the dialog (the policy link on the cookie page had it too): the cached client
+    closes the dialog after such a click, not during it, since a link removed from the
+    document is not followed. Red in the simulated DOM and in Chromium first.
 - **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
   (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
   history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;

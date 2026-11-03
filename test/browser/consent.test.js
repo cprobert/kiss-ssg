@@ -735,6 +735,41 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
     }
   }, 60000)
 
+  // Codex round 5 (P2), in the browser: on the history page itself the
+  // dialog's link is a same-page jump; the dialog closes and the history is
+  // what the visitor sees.
+  it('closes the dialog when its history link jumps within the history page', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/privacy.hbs': consentPage(
+          '<h1>Privacy</h1><div style="height:3000px"></div>{{consentRecord}}',
+          'Privacy',
+        ),
+      },
+      { ...CONSENT_CONFIG, ui: { history: 'privacy' } },
+    )
+    try {
+      const { context, page } = await open()
+      await page.goto(`${site.base}/privacy.html`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await page.click('dialog a.kiss-consent__history')
+      await expect.poll(() => page.locator('dialog[open]').count()).toBe(0)
+      expect(await page.evaluate(() => location.hash)).toBe(
+        '#kiss-consent-history',
+      )
+      expect(await page.locator('#kiss-consent-history h2').isVisible()).toBe(
+        true,
+      )
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
   it('a site’s own banner partial keeps the behaviour', async () => {
     const site = await serve(
       {

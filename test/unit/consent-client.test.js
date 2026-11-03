@@ -39,7 +39,7 @@ const SITE = {
 
 const BODY = `
 <template data-kiss-consent-banner data-kiss-consent-hash="abcdef012345"><div class="kiss-consent" data-kiss-consent-root data-position="bottom" role="region" aria-label="Cookies"><button type="button" data-kiss-consent-action="accept">Accept all</button><button type="button" data-kiss-consent-action="reject">Reject all</button><button type="button" data-kiss-consent-action="settings">Choose</button><button type="button" data-kiss-consent-action="close">x</button></div></template>
-<template data-kiss-consent-settings><dialog class="kiss-consent-dialog"><button type="button" data-kiss-consent-action="reject">Reject all</button><input type="checkbox" data-kiss-consent-category="statistics"><input type="checkbox" data-kiss-consent-category="marketing"><label data-kiss-consent-grant="youtube" hidden><input type="checkbox" data-kiss-consent-service="youtube"> YouTube</label><button type="button" data-kiss-consent-action="save">Save</button><button type="button" data-kiss-consent-action="close-dialog">Close</button></dialog></template>
+<template data-kiss-consent-settings><dialog class="kiss-consent-dialog"><a class="kiss-consent__history" href="/privacy/#kiss-consent-history">See your consent history</a><button type="button" data-kiss-consent-action="reject">Reject all</button><input type="checkbox" data-kiss-consent-category="statistics"><input type="checkbox" data-kiss-consent-category="marketing"><label data-kiss-consent-grant="youtube" hidden><input type="checkbox" data-kiss-consent-service="youtube"> YouTube</label><button type="button" data-kiss-consent-action="save">Save</button><button type="button" data-kiss-consent-action="close-dialog">Close</button></dialog></template>
 <p id="first">page</p>
 <script type="text/plain" data-kiss-service="gtm" data-kiss-consent="marketing">window.__ran.push('gtm-inline')</script>
 <script type="text/plain" data-kiss-service="gtm" data-kiss-consent="marketing" data-src="https://www.googletagmanager.com/gtm.js?id=GTM-X"></script>
@@ -565,6 +565,24 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.reloads()).toBe(0)
       expect(p.live()).toEqual([])
       expect(p.find('[data-kiss-consent-confirmation]')).not.toBeNull()
+    })
+
+    // Codex round 5 (P2): on the history page itself the dialog's link is a
+    // same-page jump, and the modal stayed open over the history. Any link
+    // in the dialog closes it, after the click: removed during it, the link
+    // would leave the document, and a browser follows no such link.
+    it('closes the dialog after a link in it is followed, not during the click', () => {
+      const p = page(plain)
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+      p.click('dialog a.kiss-consent__history')
+      // Still there while the click is handled, so the link can be followed.
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+      const close = p.timers.find((t) => t.ms === 0)
+      expect(close).toBeDefined()
+      close?.fn()
+      expect(p.find('[data-kiss-consent-dialog]')).toBeNull()
     })
 
     it('Hide removes the confirmation', () => {
