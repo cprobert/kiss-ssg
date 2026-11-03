@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { createHash } from 'node:crypto'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 import {
@@ -227,6 +228,42 @@ describe('a consent site, built', () => {
     expect(md).toContain('Your cookie choices')
     expect(md).toContain('Each choice is also sent to this site')
     expect(md).not.toMatch(/No cookie choice|Purposes version|JavaScript/)
+  })
+
+  it('writes consent-banners.json: each banner the pages carry, with the text its hash was taken from', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { report, errors } = await build(
+      config({ consent: { ...CONSENT_CONFIG, ui: { history: 'privacy' } } }),
+    )
+    expect(errors).toEqual([])
+    const registry = JSON.parse(await site.read('public/consent-banners.json'))
+    const pageHash = /data-kiss-consent-hash="?([0-9a-f]{12})/.exec(
+      await site.read('public/index.html'),
+    )?.[1]
+    expect(registry.format).toBe(1)
+    expect(registry.version).toBe(report.consent.version)
+    expect(registry.banners.map((b) => b.hash)).toEqual([pageHash])
+    expect(report.consent.banners.map((b) => b.hash)).toEqual([pageHash])
+    const [banner] = registry.banners
+    expect(banner.text).toMatch(/^Cookies on this site We use some cookies/)
+    // The dialog's words are in it too: the history link among them.
+    expect(banner.text).toContain('See your consent history')
+    expect(
+      createHash('sha256').update(banner.text).digest('hex').slice(0, 12),
+    ).toBe(pageHash)
+    expect(banner.categories.map((c) => c.key)).toEqual([
+      'statistics',
+      'marketing',
+    ])
+  })
+
+  it('writes no consent-banners.json without a consent manager', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '<h1>Home</h1>',
+    })
+    const { errors } = await build(config({ consent: undefined }))
+    expect(errors).toEqual([])
+    await expect(site.read('public/consent-banners.json')).rejects.toThrow()
   })
 
   it('keeps the banner out of the Markdown copy, and the embed as its link', async () => {

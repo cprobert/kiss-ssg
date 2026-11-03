@@ -157,6 +157,44 @@ export function clientConfig(resolved: KissConsent, extra?: {
     bannerHash?: string | null;
 }): Record<string, any>;
 /**
+ * The banner registry a kiss-consent server reads, written as
+ * `consent-banners.json` beside the pages: for each banner hash the pages
+ * carry, the text that hash was taken from (`textOf` of the banner and the
+ * dialog, so `bannerHash` of it is the hash) and the categories and services
+ * as the visitor saw them. Records stay small, keys and true or false; this
+ * is where their words are (spec `planning/specs/2026-11-03-kiss-consent.md`).
+ *
+ * @param {Object} options
+ * @param {KissConsent|null} options.consent
+ * @param {string[]} options.hashes the hashes the build's written pages carry
+ * @param {Map<string, string>} options.texts each hash's text, as the helper
+ * hashed it; a hash with none is listed with `text: null`
+ * @returns {{ format: 1, version: string, banners: { hash: string, text: string|null, categories: { key: string, label: string, description: string, mode: string }[], services: { name: string, label: string, category: string }[] }[] }|null}
+ */
+export function bannerRegistry({ consent, hashes, texts }: {
+    consent: KissConsent | null;
+    hashes: string[];
+    texts: Map<string, string>;
+}): {
+    format: 1;
+    version: string;
+    banners: {
+        hash: string;
+        text: string | null;
+        categories: {
+            key: string;
+            label: string;
+            description: string;
+            mode: string;
+        }[];
+        services: {
+            name: string;
+            label: string;
+            category: string;
+        }[];
+    }[];
+} | null;
+/**
  * The report's `consent` key, from the resolved config and each page's
  * write-time consent facts. `null` without a consent manager. Page paths go
  * through `real`, the staging-to-real mapping `thirdParty` uses, so a staged
