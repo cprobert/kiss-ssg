@@ -123,13 +123,18 @@ describe('a consent site, built', () => {
       ...CONSENT_FILES,
       'src/assets/img/logo.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
     })
-    const { errors } = await build(
+    const { report, errors } = await build(
       config({
         siteUrl: 'https://site.example/site/',
         consent: { ...CONSENT_CONFIG, ui: { logo: 'img/logo.svg' } },
       }),
     )
     expect(errors).toEqual([])
+    // The link check reads the banner's links where the browser requests
+    // them: they land. The fixture footer's plain `{{link "cookies"}}` does
+    // not, on a prefixed site, and is the one finding per page.
+    const brokenHrefs = new Set(report.links.broken.map((b) => b.href))
+    expect([...brokenHrefs]).toEqual(['/cookies.html'])
     const home = await site.read('public/index.html')
     const hrefs = [...home.matchAll(/kiss-consent__policy"? href="?([^"> ]+)/g)]
     // The banner's and the dialog's.

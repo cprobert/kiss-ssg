@@ -50,14 +50,16 @@ export function browserReference(value: unknown): string;
  *
  * @param {string} ref a reference as `extractReferences` returned it
  * @param {{ siteUrl?: string|null }} [options] the site's `config.siteUrl`
- * @returns {{ kind: 'external'|'internal', path: string|null }} `path` is the
- * reference with its query and fragment removed — root-relative or relative,
- * kept as written — and `null` for anything external
+ * @returns {{ kind: 'external'|'internal'|'outside', path: string|null }}
+ * `path` is the reference with its query and fragment removed — root-relative
+ * or relative, kept as written, with `siteUrl`'s path prefix removed — and
+ * `null` for anything external. `outside` is a same-origin path outside that
+ * prefix, root-relative as requested: not this build's address
  */
 export function classifyReference(ref: string, { siteUrl }?: {
     siteUrl?: string | null;
 }): {
-    kind: "external" | "internal";
+    kind: "external" | "internal" | "outside";
     path: string | null;
 };
 /**

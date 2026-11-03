@@ -201,8 +201,36 @@ describe('classifyReference', () => {
       kind: 'internal',
       path: '/',
     })
-    // Same origin, but served by something this build did not write.
-    expect(of('https://site.example/blog/x', prefixed).kind).toBe('external')
+    // Same origin, outside the prefix: not this build's address, so not
+    // internal. `outside` carries the path, for checkLinks to ask whether it
+    // names a page this build wrote at another address.
+    expect(of('https://site.example/blog/x', prefixed)).toEqual({
+      kind: 'outside',
+      path: '/blog/x',
+    })
+  })
+
+  // A browser requests a root-relative path from the origin's root, whatever
+  // `siteUrl` says, so on a prefixed site `/about` is not this build's
+  // `about`. It was read against the build folder, and `{{link}}` without
+  // `absolute=true`, or the consent banner's policy link, passed the check
+  // while every visitor got the origin root's page (2026-11-03).
+  it('reads a root-relative path against siteUrl’s prefix, as a browser requests it', () => {
+    const prefixed = 'https://site.example/docs/'
+    expect(of('/docs/about?x=1', prefixed)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    expect(of('/docs', prefixed)).toEqual({ kind: 'internal', path: '/' })
+    expect(of('/docs/', prefixed)).toEqual({ kind: 'internal', path: '/' })
+    expect(of('/about', prefixed)).toEqual({ kind: 'outside', path: '/about' })
+    // `/docsy` is not under `/docs/`.
+    expect(of('/docsy/x', prefixed)).toEqual({
+      kind: 'outside',
+      path: '/docsy/x',
+    })
+    // No prefix, no change: root-relative is the build's root.
+    expect(of('/about')).toEqual({ kind: 'internal', path: '/about' })
   })
 
   it('calls every absolute URL external when the site has no siteUrl', () => {
@@ -533,6 +561,70 @@ describe('checkLinks', () => {
     })
     expect(result.hostServed).toBe(2)
     expect(result.broken).toEqual([])
+  })
+
+  // The forgotten prefix: a reference that names this build's page at the
+  // origin's root rather than under siteUrl's prefix. What the browser gets
+  // there is not this page, so it is broken. A same-origin path outside the
+  // prefix that names nothing this build wrote (a link back to the main site
+  // at `/shop/`) is someone else's, and the build cannot say: not checked.
+  it('reports a page linked without siteUrl’s prefix, and leaves the rest of the origin alone', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: [
+            '/cookies.html',
+            'https://example.com/about.html',
+            '/docs/cookies.html',
+            '/shop/',
+            'https://example.com/shop/basket',
+          ],
+        },
+        { buildTo: './public/cookies.html', links: [] },
+        { buildTo: './public/about.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      exists: () => false,
+    })
+    expect(result.broken).toEqual([
+      { page: './public/index.html', href: '/cookies.html' },
+      { page: './public/index.html', href: 'https://example.com/about.html' },
+    ])
+    // The two misplaced ones and the one inside the prefix.
+    expect(result.checked).toBe(3)
+    // `/docs/cookies.html` lands, so cookies is linked; about only from the
+    // wrong address, which links nothing.
+    expect(result.orphans).toEqual(['./public/about.html'])
+  })
+
+  it('lets hostServed claim a path outside the prefix', () => {
+    const result = checkLinks({
+      // `/` is the ambiguous one: a prefixed build always has an index, so a
+      // link back to the main site at the origin's root reads as the prefix
+      // forgotten until the site says otherwise.
+      pages: [
+        { buildTo: './public/index.html', links: ['/cookies.html', '/'] },
+        { buildTo: './public/cookies.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      exists: () => false,
+    })
+    expect(result.broken.map((b) => b.href)).toEqual(['/', '/cookies.html'])
+    const claimed = checkLinks({
+      pages: [
+        { buildTo: './public/index.html', links: ['/cookies.html', '/'] },
+        { buildTo: './public/cookies.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      hostServed: ['/cookies.html', '/'],
+      exists: () => false,
+    })
+    expect(claimed.hostServed).toBe(2)
+    expect(claimed.broken).toEqual([])
   })
 
   // The information architecture skill needs the pages nothing links to. It

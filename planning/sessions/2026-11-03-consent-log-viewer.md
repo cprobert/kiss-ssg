@@ -67,6 +67,16 @@ would use) is fixed here, and the rest is recorded for later.
   split as its own piece of work after that branch; the operator put it on this one, with the
   banner registry file and the round-8 P2, knowing it enlarges the PR. Claude flagged the size;
   the operator confirmed the brief as written.
+- **2026-11-03, after the first slice — the link check on a prefixed site.** The round-8 P2 went
+  unseen because the link check read a root-relative href against the build folder even when
+  `siteUrl` carries a path prefix, so `/cookies.html` on a `/site/` deployment passed. Asked
+  whether to fix it here or record it for the next branch; the operator chose **here**. The rule:
+  on a prefixed site a root-relative path under the prefix is internal with it stripped; a
+  same-origin path outside it (root-relative or absolute) is reported broken only when it names a
+  file this build wrote (the prefix forgotten), and left alone otherwise; `hostServed` claims
+  either, and `/` is the documented ambiguous case. It can add findings on a prefixed site; a grep
+  of `C:\Code\kiss` found no fleet site with a literal prefixed `siteUrl`, and this repo's docs
+  (`/kiss-ssg/`) check clean (231 internal, none broken).
 
 ## Pulse log
 
