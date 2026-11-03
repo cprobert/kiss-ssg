@@ -98,12 +98,12 @@ function storage(initial = {}) {
  * Build a page, run the client in it, and hand back the handles a test needs.
  *
  * @param {string} source the script body
- * @param {{ cookies?: Record<string, string>, extraCookies?: [string, string, string][], local?: Record<string, string>, now?: number }} [opts]
+ * @param {{ cookies?: Record<string, string>, extraCookies?: [string, string, string][], local?: Record<string, string>, now?: number, extraBody?: string }} [opts]
  */
 function page(source, opts = {}) {
   const host = 'www.example.com'
   const dwin = domino.createWindow(
-    `<!doctype html><html><head></head><body>${BODY}</body></html>`,
+    `<!doctype html><html><head></head><body>${BODY}${opts.extraBody ?? ''}</body></html>`,
     `https://${host}/a/`,
   )
   const doc = dwin.document
@@ -242,13 +242,16 @@ describe('size', () => {
   // catches growth, and moving it is a decision, not a fix. Raised from
   // 12,000 to 12,288 by the operator on 2026-11-03, at 12,048 bytes (4,427
   // gzipped), after the Codex review fixes to withdrawal, module order and
-  // cookie deletion added about 430 bytes.
-  it('stays under 12,288 bytes minified for a three-service site', async () => {
+  // cookie deletion added about 430 bytes. Raised again to 13,312 by the
+  // operator the same day, at 12,346 bytes (4,517 gzipped), after round 5's
+  // shared-cookie, own-property and grant fixes, with splitting the client
+  // into a small inline part and a cached file planned as its own work.
+  it('stays under 13,312 bytes minified for a three-service site', async () => {
     const cfg = configFor({
       services: { gtm: { id: 'GTM-X' }, youtube: {}, vimeo: {} },
     })
     const min = (await minify(scriptOf(consentHeadScript(cfg)))).code ?? ''
-    expect(min.length).toBeLessThan(12288)
+    expect(min.length).toBeLessThan(13312)
   })
 })
 
@@ -627,6 +630,34 @@ describe.each(forms)('the client, %s', (_, build) => {
       )
     })
 
+    it('keeps a cookie an allowed service also declares, while deleting a refused one’s own', async () => {
+      // gtag (statistics) and gtm (marketing) both declare the Google
+      // cookies: _ga, _ga_* and _gcl_au
+      const cfg = configFor({
+        ...SITE,
+        services: {
+          ...SITE.services,
+          gtm: { id: 'GTM-X', cookies: ['_gtm_own'] },
+          gtag: { id: 'G-X' },
+        },
+      })
+      const p = page(await build(cfg), {
+        cookies: {
+          ...valid({ statistics: 1, marketing: 0 }, { v: cfg.v }),
+          _ga: '1',
+          _ga_X: '2',
+          _gcl_au: '3',
+          _gtm_own: '4',
+        },
+      })
+      const names = [...p.jar.jar.values()].map((c) => c.name)
+      expect(names).toContain('_ga')
+      expect(names).toContain('_ga_X')
+      expect(names).toContain('_gcl_au')
+      // gtm's own, which no allowed service declares
+      expect(names).not.toContain('_gtm_own')
+    })
+
     it('withdraws a granted service whose gated scripts ran, with its category refused', () => {
       const p = page(plain, {
         cookies: {
@@ -728,6 +759,17 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.find('[data-kiss-consent-root]')).not.toBeNull()
     })
 
+    it('always allow also starts the service’s gated scripts on the page', () => {
+      const p = page(plain, {
+        extraBody:
+          '<script type="text/plain" data-kiss-service="youtube" data-kiss-consent="marketing" data-src="/yt-api.js"></script>',
+      })
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="allow"]')
+      expect(p.live()).toContain('/yt-api.js')
+    })
+
     it('reveals allowed embeds on load', () => {
       const p = page(plain, { cookies: valid({ statistics: 0, marketing: 1 }) })
       p.ready()
@@ -743,11 +785,16 @@ describe.each(forms)('the client, %s', (_, build) => {
           ...SITE,
           services: {
             ...SITE.services,
-            cdn: { category: 'necessary', src: '/lib.js', cookies: ['cdn_s'] },
+            // _gcl_au is gtm's too: the necessary service keeps it
+            cdn: {
+              category: 'necessary',
+              src: '/lib.js',
+              cookies: ['cdn_s', '_gcl_au'],
+            },
           },
         }),
       )
-      const p = page(source, { cookies: { cdn_s: '1' } })
+      const p = page(source, { cookies: { cdn_s: '1', _gcl_au: '2' } })
       let ran = 0
       p.win.kissConsent.when('cdn', () => ran++)
       expect(p.win.kissConsent.has('cdn')).toBe(true)
@@ -757,7 +804,29 @@ describe.each(forms)('the client, %s', (_, build) => {
       p.click('[data-kiss-consent-action="reject"]')
       expect(p.win.kissConsent.has('cdn')).toBe(true)
       // its cookie is not the client's to delete
-      expect([...p.jar.jar.values()].map((c) => c.name)).toContain('cdn_s')
+      const names = [...p.jar.jar.values()].map((c) => c.name)
+      expect(names).toContain('cdn_s')
+      expect(names).toContain('_gcl_au')
+    })
+  })
+
+  describe('names that are also Object.prototype’s', () => {
+    it('grants nothing through an inherited property', async () => {
+      const cfg = configFor({
+        ...SITE,
+        services: {
+          ...SITE.services,
+          constructor: { category: 'marketing', src: '/c.js' },
+        },
+      })
+      const p = page(await build(cfg))
+      expect(p.win.kissConsent.has('constructor')).toBe(false)
+      expect(p.win.kissConsent.has('tostring')).toBe(false)
+      expect(p.win.kissConsent.has('hasOwnProperty')).toBe(false)
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.win.kissConsent.has('constructor')).toBe(false)
     })
   })
 

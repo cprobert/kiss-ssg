@@ -162,6 +162,13 @@ opened: 2026-11-02
 - **The cost:** the CSS ceiling moves from 4,096 to 7,168 bytes; it is about 6.7 kB.
 - **Then, the operator's:** "Choose cookies should be a different colour", pointing at Google's own consent screen. Accept all and Reject all stay two buttons of one weight; Choose cookies becomes a text button in the accent colour (`kiss-consent__more`), as Google sets "More options". The ICO's equal prominence is about accepting and refusing, so the detail route may differ.
 
+**2026-11-03: the Codex review loops until clean.**
+
+- **The operator's choice:** after round 2, "fix both, loop until clean" over the recommended one-more-run stop. No stop condition beyond a clean run.
+- **Rounds so far:** 1 (adversarial) and 2–5 (review). Every finding has been fixed with a regression test seen red first, the browser ones in Chromium.
+- **The client's size ceiling, raised twice by the operator:** 12,000 → 12,288 → 13,312 bytes, at 12,346 minified, 4,517 gzipped.
+- **Raised, not taken here:** the operator asked whether the client should be a cached file rather than inline. The recommendation is to split it into a small inline part (Consent Mode default and update, the stored-choice read, a `kissConsent` stub) and a cached, deferred file. That is its own piece of work after this branch, not absorbed into it.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

@@ -666,7 +666,7 @@ describe('gatingOf', () => {
 })
 
 describe('clientConfig', () => {
-  it('hands the browser first-party names only, and a necessary service with nothing to delete', () => {
+  it('hands the browser first-party names only, a necessary service’s included', () => {
     const r = resolved({
       services: {
         gtm: { id: 'G' },
@@ -682,11 +682,12 @@ describe('clientConfig', () => {
     expect(cfg.services.map((s) => s.name)).toEqual(['gtm', 'vimeo', 'cdn'])
     expect(cfg.services[0].cookies).toEqual(['_ga', '_ga_*', '_gcl_au'])
     expect(cfg.services[1].cookies).toEqual([])
-    // named, so has('cdn') is true; its cookies are never the client's to delete
+    // named, so has('cdn') is true; never refused, so its cookies are never
+    // deleted, and listed so a refused service sharing one keeps it too
     expect(cfg.services[2]).toEqual({
       name: 'cdn',
       category: 'necessary',
-      cookies: [],
+      cookies: ['cdn_s'],
       storage: [],
     })
     expect(cfg.categories).toEqual([{ name: 'marketing', mode: 'consent' }])
