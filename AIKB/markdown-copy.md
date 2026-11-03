@@ -7,7 +7,7 @@ Turns a page the build has written into its Markdown copy — the [llmstxt.org](
 ## Public interface
 
 - `markdownCopyPath(htmlPath)` → `string|null`. The page's output path with a trailing `.html`/`.htm` swapped for `.md` (`about.html` → `about.md`, `courses/index.html` → `courses/index.md`, the spec's spelling for a directory index). Anything else — an `ext: 'json'`/`'xml'` page, an existing `.md` — is not an HTML page and gets `null`. Only the trailing extension is swapped, so a folder named `html` is left alone.
-- `async toMarkdown(html, { selector = 'main' } = {})` → `Promise<string>`. Parses the HTML, takes the first element `selector` matches (or `<body>` when nothing does), removes every `script`, `style`, `nav` and `template` inside it, and converts what is left with turndown. ATX headings (`#`), fenced code blocks, `-` bullets, `_` emphasis, GFM tables. The result is trimmed and ends in exactly one newline; a page with nothing to say is `'\n'`.
+- `async toMarkdown(html, { selector = 'main' } = {})` → `Promise<string>`. Parses the HTML, takes the first element `selector` matches (or `<body>` when nothing does), removes every `script`, `style`, `nav` and `template` inside it, and every `[data-kiss-consent-ui]` (a consent embed's click-to-load notice, whose buttons mean nothing in Markdown; the provider's link beside it is kept, `AIKB/consent-gate.md`), and converts what is left with turndown. ATX headings (`#`), fenced code blocks, `-` bullets, `_` emphasis, GFM tables. The result is trimmed and ends in exactly one newline; a page with nothing to say is `'\n'`.
 
 ## Depends on
 

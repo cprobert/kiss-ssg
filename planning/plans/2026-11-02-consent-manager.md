@@ -642,3 +642,13 @@ Where the code settled a detail the contract left open, or departed from it:
 - **Two Chrome behaviours are recorded in `AIKB/upstream.md`, with how to re-check them:**
   - revived scripts miss `DOMContentLoaded` and need the serial queue;
   - Consent Mode reaches Google's tags only.
+
+### 2026-11-03: slice 2b, as built (`lib/consent-gate.js`, the helpers, the wiring check)
+
+- **The fixture is a module, not a folder.** It lives at `test/helpers/consent-site.js` (`CONSENT_FILES`, `CONSENT_CONFIG`, `CONSENT_LAYOUT`) and is built by `makeSite`, the integration suite's own pattern. The browser suite (slice 4) imports the same module. §7 and §9 named `test/fixtures/consent-site/`.
+- **`llms.txt` carries one line per helper.** That is six lines, not the one index line §10 named: `test/aikb.test.js` holds every built-in helper to its own line in `llms.txt` § Helpers and in `AIKB/handlebars-helpers.md`. Each line is a name and a placement, with no rules.
+- **Packaged pages.** `{{consentTable}}` still renders on a packaged page: it states facts and loads nothing. The head, the banner and the settings control render nothing there, and the script and embed helpers fail.
+- **The banner hash is computed by both `consentHead` and `consentBanner`,** from the same parts, so the client config and the template carry one hash.
+- **The policy link and the logo are resolved in the helpers.** The policy page goes through `lookupPage` and `servedPathFor` under `links.trailingSlash`; the logo goes through the asset manifest, root-relative. A policy id no page claims, or a logo no copy emitted, fails the page, and warns in dev.
+- **The wiring check adds a fourth problem** to §3's list: one service's script `src` twice on a page. A settings control with no head is reported too.
+- **Block form:** `defer` is dropped (the queue already runs in document order), and a block with no `<script>` tag is one script's text.

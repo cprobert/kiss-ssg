@@ -114,6 +114,12 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
 - `scormBridge`: in `<head>`, gives a package page `window.kissScorm`. Trap: the page reports its own completion (`kissScorm.status('completed')`); `complete="seen"` on a bookmarking page makes Moodle reopen it in review mode, saving nothing.
+- `consentHead`: in `<head>` after `<meta charset>`, before any script; needs `config.consent`.
+- `consentBanner`: first in `<body>`; the default banner, or the site's `consent-banner` partial.
+- `consentScript`: a service's scripts, held back until allowed (`{{consentScript "gtm" id=…}}`, or a block).
+- `consentEmbed`: a click-to-load iframe; `title=` required.
+- `consentSettings`: the "Cookie settings" control, for every footer.
+- `consentTable`: the cookie declaration, for the cookie page.
 
 Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
 
