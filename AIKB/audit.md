@@ -18,14 +18,15 @@ The findings are **advisory**. They never move `ok`, `failures` or an exit code,
   - **Gated origins.** `PageOrigin` gains an optional `service`. It is set for a gated `<script type="text/plain" data-kiss-service>`, read from its `data-src`, and for a consent embed's frame. Gated means inert (`scriptKind` says a browser does not run it): a hand-written `data-kiss-service` script of a running type is read as live, its `src` and its inline signatures with it; until 2026-11-03 the attribute alone hid it from the inventory and `consent-ungated` (round 7 of the Codex review). The frame is read from the raw bytes, because `stripForIds` empties the `<template data-kiss-embed-frame>` it waits in. The dedup key includes the service, so `gtm` and `gtag` on one origin stay two entries.
   - **`PageFacts.consent`** is `{ head, banner, settings, gated, signatures }`. `signatures` is `adsbygoogle`, `googletag.cmd`, `gtm.js` or `gtag/js` found in an ungated executable inline script, and `data-ad-client` on an `<ins>`. A script inside a comment or a `<template>` is not read, since a browser never runs it; until 2026-11-03 a commented-out snippet was reported as a tracker (round 6 of the Codex review). The `data-kiss-consent-head` script is never scanned, because its inlined config may name `gtm.js`. The field is absent from facts parked by an older engine.
   - **`thirdPartyOrigins`** puts a sorted `services` beside `kinds` on an origin a service gates. Every other entry keeps its old shape.
-  - **`auditBuild`** takes `consent` (the resolved `config.consent`, or `null`) and runs seven checks, appended to `CHECKS`:
+  - **`auditBuild`** takes `consent` (the resolved `config.consent`, or `null`) and runs eight checks, appended to `CHECKS`:
     - `consent-missing`: no consent manager, and a page loads from `TRACKER_ORIGINS` or carries `gtm.js`/`gtag/js` inline;
     - `consent-ungated`: a third-party script or iframe no service gates, and no `necessary` service lists in its `origins`, a `<noscript>` GTM frame included;
     - `consent-ads-cmp`: any page, consent or not: an AdSense or Ad Manager loader, an `adsbygoogle`/`googletag.cmd` signature, or `<ins data-ad-client>`;
     - `consent-objection-third-party`, site-wide;
     - `consent-settings-missing`: a page with the head and no settings control, only when some category is in use. With every service `necessary`, `{{consentSettings}}` renders nothing, so no page could satisfy it (round 6 of the Codex review);
     - `consent-google-advanced`, site-wide;
-    - `consent-records-missing`, site-wide: a Google marketing tag with no `endpoint`.
+    - `consent-records-missing`, site-wide: a Google marketing tag with no `endpoint`;
+    - `consent-history-missing`: the page whose `id` is `ui.history` has no `{{consentRecord}}` section (the page fact `consent.record`, read from a bare `data-kiss-consent-record` attribute, never its `-id`/`-rows` parts). Needed because the dialog's link to `#kiss-consent-history` sits in a `<template>`, which the fragment check never reads (measured 2026-11-03).
 
 ## Depends on
 

@@ -1192,7 +1192,7 @@ The audit's `consent-records-missing` fires on a Google marketing tag with no en
 
 #### The visitor's history: `{{consentRecord}}`
 
-Put `{{consentRecord}}` on the privacy page, and set `ui.history` to that page's id. The settings dialog then links it ("See your consent history", beside the cookie policy link), and a build with no page of that id fails, as `{{link}}` does. `ui.history` is `null` by default, so the dialog links nothing until the page exists.
+Put `{{consentRecord}}` on the privacy page, and set `ui.history` to that page's id. The settings dialog then links it ("See your consent history", beside the cookie policy link), straight to the section (`#kiss-consent-history`) rather than the top of the page. A build with no page of that id fails, as `{{link}}` does, and the audit's `consent-history-missing` reports a page of that id with no `{{consentRecord}}` on it. `ui.history` is `null` by default, so the dialog links nothing until the page exists.
 
 ```hbs
 <h1>Privacy</h1>
@@ -1329,6 +1329,7 @@ Seven audit checks, advisory like every audit check (§ Checking a build):
 | `consent-settings-missing`      | a page has `{{consentHead}}` and no `{{consentSettings}}`, on a site with something to ask (not when every service is `necessary`)                                                                |
 | `consent-google-advanced`       | `google.mode` is `'advanced'`                                                                                                                                                                     |
 | `consent-records-missing`       | a Google tag under `marketing`, and no `endpoint`                                                                                                                                                 |
+| `consent-history-missing`       | the page `ui.history` names has no `{{consentRecord}}`                                                                                                                                            |
 
 `report().consent` is `{ version, purposes, mode, banners: [{ hash, pages }], categories, services: [{ name, category, gated, origins, cookies }], pagesWithoutHead }`, or `null` without `config.consent` and on a failed build. `purposes` is the computed version, kept even when `version` is set by hand. `--summary` prints it as `consent: version <v>, banner <hash>, <n> services`. In `report().thirdParty`, an origin that a service gates carries `services: ['gtm']`: it is fetched only after consent.
 
@@ -1598,7 +1599,7 @@ The checks, by the id `check` carries:
 | `privacy-link-missing`                                                | a page with a form that asks for an email address or a phone number has no link to the privacy page                                          |
 | `placeholder-left`                                                    | a page still carries a `<mark>`, or the bracketed text `[to confirm`                                                                         |
 | `checkbox-prechecked`                                                 | a checkbox is ticked before the reader ticks it, and its label is about marketing (offers, news, newsletters, partners, third parties)       |
-| `consent-missing`, `consent-ungated`, `consent-ads-cmp` and four more | a tracker, an embed or an ad tag the consent manager does not hold back, and its settings; [Cookie consent](#cookie-consent) lists all seven |
+| `consent-missing`, `consent-ungated`, `consent-ads-cmp` and five more | a tracker, an embed or an ad tag the consent manager does not hold back, and its settings; [Cookie consent](#cookie-consent) lists all seven |
 
 Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the three checks that walk it — `not-found-missing`, `stray-file`, `console-log` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
 

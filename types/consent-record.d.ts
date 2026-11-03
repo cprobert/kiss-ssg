@@ -15,6 +15,13 @@ export function recordConfig(resolved: KissConsent): Record<string, any>;
  * @returns {string}
  */
 export function recordHtml(resolved: KissConsent): string;
+/** @typedef {import('./consent.js').KissConsent} KissConsent */
+/**
+ * The history section's `id`, which the settings dialog's `ui.history` link
+ * names as its fragment, so a visitor lands on the history rather than at the
+ * top of a long privacy page (the clean room, 2026-11-03).
+ */
+export const RECORD_ID: "kiss-consent-history";
 export type KissConsent = import("./consent.js").KissConsent;
 /**
  * The viewer's browser side, inlined through `Function.prototype.toString` as

@@ -667,7 +667,8 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
       )
       await page.click('footer [data-kiss-consent-action="settings"]')
       await Promise.all([
-        page.waitForURL(/\/privacy\.html$/),
+        // On the section itself, not the top of the page.
+        page.waitForURL(/\/privacy\.html#kiss-consent-history$/),
         page.click('dialog a.kiss-consent__history'),
       ])
       expect(await page.isVisible('[data-kiss-consent-record-empty]')).toBe(

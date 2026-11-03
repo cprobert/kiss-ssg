@@ -6,7 +6,8 @@ The visitor's consent history: what `{{consentRecord}}` writes on a site's priva
 
 ## Public interface
 
-- **`recordHtml(resolved)` → `string`.** `<section class="kiss-consent-record" data-kiss-consent-record>`:
+- **`RECORD_ID`**, `'kiss-consent-history'`: the section's `id`, which the settings dialog's `ui.history` link carries as its fragment, so a visitor lands on the history, not the top of a long privacy page (the clean room, 2026-11-03). The audit's `consent-history-missing` reports a `ui.history` page without the section.
+- **`recordHtml(resolved)` → `string`.** `<section class="kiss-consent-record" id="kiss-consent-history" data-kiss-consent-record>`:
   - `<h2>` `historyTitle`, a `<p>` `historyIntro`, and with an `endpoint` a `<p>` `historySent`;
   - `<div data-kiss-consent-ui>` holding everything that changes with the visitor: a `<noscript>` note, the id line (`[data-kiss-consent-record-id]`), the empty and unavailable states (`[data-kiss-consent-record-empty]`, `[data-kiss-consent-record-unavailable]`), and the table in the cookie table's focusable scrolling region (`[data-kiss-consent-record-rows]`), all `hidden`;
   - the table's head: When, Choice, one column per category in use (its label), Always allowed, Purposes version; `<tbody>` empty;

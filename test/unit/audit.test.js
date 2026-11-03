@@ -59,6 +59,7 @@ describe('CHECKS', () => {
       'consent-settings-missing',
       'consent-google-advanced',
       'consent-records-missing',
+      'consent-history-missing',
     ])
     expect(Object.isFrozen(CHECKS)).toBe(true)
   })
@@ -70,6 +71,7 @@ const NO_CONSENT = {
   banner: null,
   settings: false,
   gated: false,
+  record: false,
   signatures: [],
 }
 

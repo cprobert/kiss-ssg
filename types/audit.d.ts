@@ -64,7 +64,7 @@ export function thirdPartyOrigins({ pages, siteUrl }: {
  * are public vocabulary: `config.audit.ignore`, the report's `check` field and
  * the summary lines all use them, so renaming one is a breaking change.
  */
-export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing"];
+export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing", "consent-history-missing"];
 /** @typedef {typeof CHECKS[number]} CheckId */
 /**
  * The words that make a pre-ticked checkbox a consent to marketing:
@@ -119,6 +119,11 @@ export type PageConsent = {
      * any gated script or consent embed
      */
     gated: boolean;
+    /**
+     * `{{consentRecord}}`'s section, the visitor's
+     * consent history
+     */
+    record: boolean;
     /**
      * Google loader and ad markers found in
      * ungated executable inline scripts (`adsbygoogle`, `googletag.cmd`,

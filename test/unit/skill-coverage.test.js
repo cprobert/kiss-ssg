@@ -477,7 +477,7 @@ const COVERAGE = [
   },
   {
     feature:
-      'the legal skill: the seven consent ids, report.consent, consentEmbed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
+      'the legal skill: the eight consent ids, report.consent, consentEmbed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
     pattern: new RegExp(
       [
         ...CHECKS.filter((id) => id.startsWith('consent-')).map(

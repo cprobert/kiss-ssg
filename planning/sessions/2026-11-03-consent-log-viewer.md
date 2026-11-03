@@ -109,6 +109,29 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     script that had kept the stub (or a method of it) from before the file arrived queued its
     later calls into a drained queue, for ever. Now one object for the page's life, whose
     methods hand to `S.api` once the client has started; unit test seen red first.
+  - **Round 4** (over `3ed9396`): no findings ("no actionable regressions").
+- **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
+  (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
+  history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;
+  `--summary` advisory findings only (`og-image-missing`, its own `placeholder-left` marks).
+  The build wrote `consent-banners.json` and `kiss-consent.<hash>.js`. Read: `llms.txt`,
+  GUIDE.md § Cookie consent onward, README head, example 14, the starter. Its guesses, triaged:
+  - **Fixed here:** the dialog's link landed at the top of the privacy page (no fragment, no
+    section id). The section is now `#kiss-consent-history` and the link carries it; and
+    because the fragment check never reads a link inside a `<template>` (measured: a
+    `ui.history` page with no `{{consentRecord}}` passed silently), a new audit check,
+    `consent-history-missing`, reports it. Tests red first.
+  - **Recorded, not this branch's (pre-existing):** `check` run from another folder creates an
+    empty `src/` tree there, and a build leaves empty `src/controllers`, `models`, `partials`;
+    check's log says "Copied assets … to ./public" while writing nothing there; `cookies.md`
+    loses the cookie tables' headings; a placeholder video id (`VIDEO_ID`) builds without
+    complaint; `llms.txt` advises `cleanBuild: 'atomic'` while the starter and example 14 leave
+    the default; `.example` `siteUrl` is not flagged; nothing flags a privacy notice that
+    undersells what a consent record holds.
+  - **Brief ambiguity, not a doc gap:** a fourth page for the cookie table.
+- **2026-11-03 — a rule slip, for the reflection.** A one-word test-label change in
+  `test/unit/skill-coverage.test.js` was made with `sed`, against CLAUDE.md's rule that text
+  into a file goes through Edit. It landed as intended (checked by a count before commit).
 
 ## Pulse log
 

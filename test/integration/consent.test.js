@@ -188,9 +188,17 @@ describe('a consent site, built', () => {
     const links = [
       ...home.matchAll(/kiss-consent__history"? href="?([^"> ]+)"?>([^<]*)</g),
     ].map((m) => [m[1], m[2]])
+    // To the section itself: the clean room's visitor landed at the top of a
+    // long privacy page (2026-11-03).
     expect(links).toEqual([
-      ['https://site.example/site/privacy/', 'See your consent history'],
+      [
+        'https://site.example/site/privacy/#kiss-consent-history',
+        'See your consent history',
+      ],
     ])
+    expect(await site.read('public/privacy/index.html')).toMatch(
+      /<section class="?kiss-consent-record"? id="?kiss-consent-history"?/,
+    )
     // In the dialog's template, not the banner's.
     const banner = home.slice(
       home.indexOf('data-kiss-consent-banner'),
@@ -198,7 +206,7 @@ describe('a consent site, built', () => {
     )
     expect(/<a class="?kiss-consent__history/.test(banner)).toBe(false)
     expect(report.links.broken.map((b) => b.href)).not.toContain(
-      'https://site.example/site/privacy/',
+      'https://site.example/site/privacy/#kiss-consent-history',
     )
   })
 
