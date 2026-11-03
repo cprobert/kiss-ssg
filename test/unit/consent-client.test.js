@@ -642,6 +642,30 @@ describe.each(forms)('the client, %s', (_, build) => {
       )
     })
 
+    // Codex round 2 (P1): the queued Reject was replayed after start() had
+    // activated an objection category, so its script ran and the page
+    // reloaded to withdraw it. A choice made before the file arrived applies
+    // before anything starts, and so before any queued when() callback.
+    it('applies a Reject made before the file arrived before anything starts', async () => {
+      const [head, client] = await split(
+        configFor({
+          ...SITE,
+          categories: { statistics: { mode: 'objection' } },
+        }),
+      )
+      const p = page(head)
+      p.win.kissConsent.mount()
+      const ran = []
+      p.win.kissConsent.when('stats', () => ran.push('stats'))
+      p.click('[data-kiss-consent-action="reject"]')
+      p.run(client)
+      p.ready()
+      expect(p.stored().c.statistics).toBe(false)
+      expect(p.live()).toEqual([])
+      expect(ran).toEqual([])
+      expect(p.reloads()).toBe(0)
+    })
+
     it('runs nothing gated and writes nothing if the file never arrives', async () => {
       const [head] = await split(configFor(SITE))
       const p = page(head)

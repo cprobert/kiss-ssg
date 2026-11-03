@@ -698,6 +698,42 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
     }
   }, 60000)
 
+  // Codex round 2 (P1), in the browser: a Reject queued while the cached
+  // file is held back must apply before an objection category starts.
+  it('applies a Reject made before the cached file arrives before an objection category runs', async () => {
+    const site = await serve(FILES, {
+      ...CONSENT_CONFIG,
+      categories: { statistics: { mode: 'objection' } },
+    })
+    try {
+      const { context, page, release } = await open({}, { holdClient: true })
+      await page.goto(`${site.base}/`, { waitUntil: 'commit' })
+      await expect.poll(() => bannerShown(page)).toBe(true)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      // A marker that a reload would wipe.
+      await page.evaluate(() => {
+        // @ts-ignore
+        window.__sameDocument = true
+      })
+      release()
+      await expect
+        .poll(async () => (await stored(context))?.c?.statistics ?? null)
+        .toBe(false)
+      await page.waitForTimeout(300)
+      // @ts-ignore
+      expect(await page.evaluate(() => window.statsLoaded ?? null)).toBeNull()
+      // @ts-ignore
+      expect(await page.evaluate(() => window.__sameDocument ?? null)).toBe(
+        true,
+      )
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
   it('a site’s own banner partial keeps the behaviour', async () => {
     const site = await serve(
       {

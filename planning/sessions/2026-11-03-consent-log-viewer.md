@@ -100,6 +100,11 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     as parsed, then decoded; unit tests (classification and `checkLinks`) seen red on the old
     module. Noted, not changed: on a site with no prefix, an encoded relative path is still
     passed on undecoded, as before this branch.
+  - **Round 2** (over the split, `1b23041`): one P1, fixed — a Reject clicked before the cached
+    file arrived was replayed after `start()` had activated an `objection` category, so its
+    script ran and the page reloaded to withdraw it. The class is the replay's order: queued
+    listeners, then the visitor's clicks, then the activation, then `when()` and `show()`.
+    Red in the simulated DOM and in Chromium on the old order.
 
 ## Pulse log
 
