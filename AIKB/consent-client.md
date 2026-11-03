@@ -22,7 +22,7 @@ The contract is `planning/plans/2026-11-02-consent-manager.md` §3–§5. Every 
 - **`consentHeadScript(cfg)` → `string`.** It returns `<script data-kiss-consent-head>(<the client>)(window,<cfg JSON>)</script>`, where `cfg` is `clientConfig()` from `lib/consent.js`. The JSON escapes `<` as `<` and U+2028/U+2029, so no site text can end the script.
 - **`kissConsentClient`** is exported for the tests.
 - **In the browser, `window.kissConsent`:**
-  - `has(name)`: `necessary` is always true. A category is true when it is granted. A service is true when its category is granted or it has an "always allow" grant.
+  - `has(name)`: `necessary` is always true, and so is a `necessary` service. A category is true when it is granted. Any other service is true when its category is granted or it has an "always allow" grant. Only own properties answer, so `constructor` and the rest of `Object.prototype` never do.
   - `choice`: `null`, or a frozen `{ id, version, at, categories, services }`.
   - `show()`: opens the settings dialog.
   - `when(name, fn)`: runs `fn` now if `name` is granted, otherwise once on the change that grants it.

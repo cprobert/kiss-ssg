@@ -1134,7 +1134,7 @@ consent: {
 {{/consentScript}}
 ```
 
-Gated scripts run in document order once allowed, each external one waiting for the one before it (for up to ten seconds). `async` keeps a script from holding the queue, `type="module"` is kept, and `defer` is dropped, because the queue already keeps the order.
+Gated scripts run in document order once allowed, each external one and each inline module waiting for the one before it (for up to ten seconds). `async` keeps a script from holding the queue, `type="module"` is kept, and `defer` is dropped, because the queue already keeps the order. Every script type a browser runs is gated, `application/x-javascript` and `language="javascript"` included; a data block such as JSON-LD is left as it is. A `necessary` service, or a Google tag under advanced mode, is not gated, so its block is written exactly as you wrote it, `defer` and all.
 
 **The build checks the wiring of every page**, from the HTML it wrote. A page fails, and warns under `dev`, when it has gated markup or a settings button with no `{{consentHead}}`; a head with no banner, or two of either; an executable script before the head's (JSON-LD is fine); or one service's script twice. A mistake in a helper fails the page the same way: `config.consent` not set, an unknown service, a missing placeholder, an iframe inside `{{consentScript}}`, or a `ui.policy` or `ui.logo` that the build does not have.
 
@@ -1149,6 +1149,7 @@ Site code reads the choice through `window.kissConsent`, which `{{consentHead}}`
 ```js
 kissConsent.has('marketing') // a category is allowed; necessary always is
 kissConsent.has('vimeo') // a service: its category is allowed, or "Always allow"
+kissConsent.has('cdn') // a necessary service: always true
 kissConsent.choice // null, or { id, version, at, categories, services }
 kissConsent.show() // open the settings dialog
 kissConsent.when('vimeo', () => startPlayer()) // now, or once it is allowed

@@ -19,13 +19,13 @@ No Handlebars and no browser. The markup speaks the attribute vocabulary of cont
   - the logo (`<img alt="">`), only with `logoUrl`;
   - the `h2` title and the body text;
   - the policy link, only with `policyUrl`;
-  - Accept all, Reject all and Choose cookies (`data-kiss-consent-action` `accept`, `reject`, `settings`), all `class="kiss-consent__button"`;
+  - Accept all and Reject all (`data-kiss-consent-action` `accept`, `reject`), both `class="kiss-consent__button"`, then Choose cookies (`settings`), `class="kiss-consent__more"`, a text button;
   - the ✕ (`class="kiss-consent__close"`, `action="close"`, `aria-label="{close}"`) at the column's corner.
 - **`settingsHtml(resolved, { policyUrl })`** → the `<dialog class="kiss-consent-dialog">`, in three parts:
   - **`__head`:** its `h2` (`id="kiss-consent-dialog-title"`) and a ✕ (`close-dialog`).
-  - **`__body`:** the policy link, then one `__category` per category: the `necessary` one first, then each in `inUse`. Each has a `__row` holding a `<label for>` and a **switch**, then the description. A switch is `<input type="checkbox" role="switch" class="kiss-consent-switch" id="…">`: `disabled checked` for `necessary`, and `data-kiss-consent-category="…"` otherwise. Under a category, a hidden `__grant` row with a `data-kiss-consent-service` switch for each of its services that has an `embed`.
+  - **`__body`:** the policy link, then one `__category` per category: the `necessary` one first, then each in `inUse`. Each has a `__row` holding a `<label for>` and a **switch**, then the description. A switch is `<input type="checkbox" role="switch" class="kiss-consent-switch" id="…">`: `disabled checked` for `necessary`, and `data-kiss-consent-category="…"` otherwise. Under a category, a hidden `__grant` row with a `data-kiss-consent-service` switch for each of its services.
   - **`__foot`:** Reject all, Accept all and Save choices, the three choices together and alike.
-- **`tableHtml(resolved)`** → one `<table class="kiss-consent-table">` for `necessary`, then one per category in `inUse`. Columns: Service, Provider, Purpose, Name, Kind (Cookie / Local storage), Duration, Party (First / Third).
+- **`tableHtml(resolved)`** → one `<table class="kiss-consent-table">` for `necessary`, then one per category in `inUse`, each inside a `<div class="kiss-consent-table-wrap" role="region" tabindex="0">` that scrolls sideways on a phone. Columns: Service, Provider, Purpose, Name, Kind (Cookie / Local storage), Duration, Party (First / Third).
 - **`settingsControlHtml(resolved)`** → `<button type="button" class="kiss-consent-settings" data-kiss-consent-action="settings">`.
 - **`themeCss(ui)`** → the CSS, or `''` under `ui.theme: false`.
 
