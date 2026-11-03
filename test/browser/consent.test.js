@@ -48,6 +48,16 @@ const ORDER_PAGE = consentPage(
     '{{/consentScript}}',
   'Order',
 )
+// An inline module has no load event, and a revived one runs later than the
+// code that inserted it: a classic script after it must still wait for it.
+const MODULE_ORDER_PAGE = consentPage(
+  '<h1>Module order</h1>' +
+    '{{#consentScript "stats"}}' +
+    '<script type="module">window.__order.push(\'M\')</script>' +
+    "<script>window.__order.push('N')</script>" +
+    '{{/consentScript}}',
+  'Module order',
+)
 const LONG_PAGE = consentPage(
   '<h1>Long</h1>' +
     Array.from(
@@ -60,6 +70,7 @@ const LONG_PAGE = consentPage(
 const FILES = {
   ...CONSENT_FILES,
   'src/pages/order.hbs': ORDER_PAGE,
+  'src/pages/module-order.hbs': MODULE_ORDER_PAGE,
   'src/pages/long.hbs': LONG_PAGE,
   'src/assets/js/a.js': "window.__order.push('A')",
   'src/assets/js/e.js': "window.__order.push('E')",
@@ -82,6 +93,9 @@ async function serve(files, consent) {
   const port = new URL(server.url).port
   return {
     base: `http://${HOST}:${port}`,
+    // localhost is a secure context, where `__Secure-` and `__Host-` cookies
+    // can be set over http
+    local: `http://localhost:${port}`,
     close: async () => {
       await server.close()
       await site.cleanup()
@@ -115,7 +129,7 @@ async function open(options = {}) {
   await context.route('**/*', async (route) => {
     const req = route.request()
     const url = new URL(req.url())
-    if (url.hostname.endsWith('.kiss.test')) {
+    if (url.hostname.endsWith('.kiss.test') || url.hostname === 'localhost') {
       if (url.pathname === '/js/a.js')
         await new Promise((r) => setTimeout(r, 300))
       if (url.pathname === '/consent-log') {
@@ -168,11 +182,28 @@ const bannerShown = (page) =>
     .isVisible()
     .catch(() => false)
 
+// The fixture's counter also declares the two prefixed cookie names, which a
+// browser deletes only with `Secure` (and `__Host-` only with no Domain).
+const CONFIG = {
+  ...CONSENT_CONFIG,
+  services: {
+    ...CONSENT_CONFIG.services,
+    stats: {
+      ...CONSENT_CONFIG.services.stats,
+      cookies: [
+        ...CONSENT_CONFIG.services.stats.cookies,
+        '__Secure-st',
+        '__Host-st',
+      ],
+    },
+  },
+}
+
 describe.skipIf(!browser)('consent in Chromium', () => {
-  /** @type {{ base: string, close: () => Promise<void> }} */
+  /** @type {{ base: string, local: string, close: () => Promise<void> }} */
   let site
   beforeAll(async () => {
-    site = await serve(FILES, CONSENT_CONFIG)
+    site = await serve(FILES, CONFIG)
   }, 60000)
   afterAll(async () => {
     await site?.close()
@@ -283,6 +314,46 @@ describe.skipIf(!browser)('consent in Chromium', () => {
       'C',
       'E',
     ])
+    await context.close()
+  })
+
+  it('holds the queue for an inline module, which runs after the code that inserts it', async () => {
+    const { context, page } = await open()
+    await page.goto(`${site.base}/module-order.html`)
+    await page.click(
+      '[data-kiss-consent-root] [data-kiss-consent-action="accept"]',
+    )
+    await expect
+      .poll(() => page.evaluate(() => window.__order.length), { timeout: 5000 })
+      .toBe(2)
+    expect(await page.evaluate(() => window.__order)).toEqual(['M', 'N'])
+    await context.close()
+  })
+
+  it('withdrawal deletes a declared __Secure- and __Host- cookie', async () => {
+    const { context, page } = await open()
+    await page.goto(`${site.local}/`)
+    await page.click(
+      '[data-kiss-consent-root] [data-kiss-consent-action="accept"]',
+    )
+    await page.evaluate(() => {
+      document.cookie = '__Secure-st=1; Path=/; Secure'
+      document.cookie = '__Host-st=2; Path=/; Secure'
+    })
+    const names = async () => (await context.cookies()).map((c) => c.name)
+    expect(await names()).toEqual(
+      expect.arrayContaining(['__Secure-st', '__Host-st']),
+    )
+    await page.click('footer [data-kiss-consent-action="settings"]')
+    await page.uncheck('dialog input[data-kiss-consent-category="statistics"]')
+    await Promise.all([
+      page.waitForEvent('load'),
+      page.click('dialog [data-kiss-consent-action="save"]'),
+    ])
+    await page.waitForTimeout(300)
+    const left = await names()
+    expect(left).not.toContain('__Secure-st')
+    expect(left).not.toContain('__Host-st')
     await context.close()
   })
 

@@ -430,10 +430,11 @@ first launch's place.
 - It misses `DOMContentLoaded`: a deferred original that listened for it never heard it, while the ungated control did. Revived after a click, it also misses `load`.
 - Clones inserted all at once run out of document order. A dynamically inserted external script is forced async, and `async=false` orders the externals among themselves only: inline and module scripts ran before an earlier external.
 - `document.write` in a revived script replaces the whole document, and in a serial queue `load` never fires.
+- An inline `type="module"` script runs after the code that inserts it and fires no `load` event (the HTML spec fires `load` only for a script from an external file). A classic inline script queued after it ran first: `['N', 'M']` (2026-11-03, found by the Codex review, measured by `test/browser/consent.test.js`).
 
 **What kiss does:**
 
-- `lib/consent-client.js` revives scripts through one serial queue: an external holds the queue until `load` or `error`, or 10 seconds.
+- `lib/consent-client.js` revives scripts through one serial queue: an external holds the queue until `load` or `error`, or 10 seconds. An inline module holds it too, released by a call kiss appends as the module's last statement, or by `error` or the timer.
 - `kissConsent.when()` is the documented way for site code to wait for a service.
 - `{{consentScript}}` refuses `document.write` in an inline body.
 

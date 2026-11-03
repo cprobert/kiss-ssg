@@ -60,7 +60,7 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 
 - **The activation queue is serial.**
   - **Why:** S2 measured inline and module scripts running before an earlier external when everything was inserted at once.
-  - **How it runs:** each gated script is replaced by a live clone in document order. An external one holds the queue until `load` or `error`, or a 10-second timer. A `data-async` one never holds it.
+  - **How it runs:** each gated script is replaced by a live clone in document order. An external one holds the queue until `load` or `error`, or a 10-second timer. An inline module holds it too: it fires no `load`, so kiss appends `;window["__kissConsentRan<n>"]()` as its last statement, and the call, `error` (a failed import) or the timer releases the queue. A module that throws before its end waits out the timer. A `data-async` one never holds it.
   - **No double runs:** the original is replaced, and queued elements are marked, so no later pass revives one twice.
   - **When:**
     - at `DOMContentLoaded` for the stored choice or an `objection` category;
@@ -68,7 +68,7 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
   - **What scripts miss:** revived scripts never see `DOMContentLoaded` (`AIKB/upstream.md`).
 - **Withdrawal reloads.** A choice that refuses a category active on this page, or a service whose embed was revealed, takes the withdrawal path:
   1. write the cookie, send the `update` and the POST;
-  2. delete the first-party cookies and storage of every denied service, on no domain, the host and each parent domain (S7);
+  2. delete the first-party cookies and storage of every denied service, on no domain, the host and each parent domain (S7). A `__Secure-` or `__Host-` cookie is deleted with `Secure`, which a browser requires, and a `__Host-` one on no domain only, since it cannot carry one (found by the Codex review, 2026-11-03);
   3. `location.reload()`, because a script that ran cannot be un-run.
 
   "Reject all" denies `objection` categories too, so it withdraws one that started at load. Every load also repeats the deletion in the head, which catches a cookie rewritten on `pagehide` before the reload, and a withdrawal made in another tab.
