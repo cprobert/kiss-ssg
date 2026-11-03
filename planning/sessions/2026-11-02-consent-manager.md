@@ -124,6 +124,31 @@ opened: 2026-11-02
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+**2026-11-03: the banner's default position.**
+
+- **What changes:** the theming criterion said the default banner is "a non-fixed region first in `<body>`". The operator chose a **fixed bottom bar by default, configurable to top** (inline, GOV.UK style).
+- **The reason**, in the operator's choice of the option: it looks like what diploma-msc visitors already see.
+- **What the criterion now reads:**
+  - the default banner is first in `<body>` in DOM order and fixed to the bottom;
+  - while it shows, `scroll-padding-bottom` equals its height, so no focused control is obscured (WCAG 2.2 SC 2.4.11), measured in the browser suite;
+  - `ui.position: 'top'` gives the inline region.
+
+**2026-11-03: the `gtm` preset defaults to `marketing`.**
+
+- **The evidence:** spike S1b, contract Appendix A. In diploma-msc's real container, a statistics-only grant loaded Bing UET, ActiveCampaign and OpenAI scripts. Consent Mode governs Google's own tags, not a container's other tags.
+- **What follows:**
+  - GTM loads only when marketing is granted;
+  - a site whose container gives every non-Google tag a consent check may set `category: 'statistics'`;
+  - the diploma-msc trial adds a statistics-only scenario.
+- **Not done here:** fixing diploma-msc's container is the operator's work, outside this branch.
+
+**2026-11-03: the withdrawal criterion, restated after the contract critique.**
+
+- **Why:** a page cannot delete a third party's cookies (`vuid` on `.vimeo.com`) or the storage inside an embed's frame, so "the next measurement matches Reject" was unachievable as written for any site with an embed that already ran.
+- **What the criterion now reads:** changing the choice from the settings link deletes the declared **first-party** cookies and storage keys, reloads the page, and afterwards no request goes to a gated origin and no new storage is written. Third-party state that already exists is documented as out of reach, in the guide and in `{{consentTable}}`'s party column.
+
+**2026-11-03: the helpers are `consentScript` and `consentEmbed`.** The operator chose these over `script` and `embed` so that no site field or helper of those names can collide, and so all six consent helpers read as one family. Every mention of `{{script}}` and `{{embed}}` in the Intent above means these.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
