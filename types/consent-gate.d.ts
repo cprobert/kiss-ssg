@@ -12,8 +12,9 @@ export function findDocumentWrite(js: string): boolean;
  * - With no body and no partial: the service's `inline` script, then its
  *   `src`, each gated (or plain, for a `necessary` service or a Google tag
  *   under advanced mode).
- * - With a body (the block form): every `<script>` in it is gated; a body
- *   with no `<script>` tag is taken as one script's text.
+ * - With a body (the block form): every `<script>` in it is gated, or left
+ *   exactly as written for a service that is not gated; a body with no
+ *   `<script>` tag is taken as one script's text.
  * - With a rendered partial: the same, over the partial's HTML.
  *
  * @param {string} name

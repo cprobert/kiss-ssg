@@ -84,6 +84,14 @@ describe('gatedScript', () => {
     )
   })
 
+  it('writes the scripts of a service it does not gate exactly as written', () => {
+    // defer is dropped only for the activation queue, which a plain script
+    // never enters: in the head, losing it would run the script before <body>.
+    const body =
+      '<script defer src="/app.js"></script><script async src="/b.js"></script>'
+    expect(script('cdn', { body })).toBe(body)
+  })
+
   it('writes a necessary service, and a Google tag under advanced mode, plainly', () => {
     expect(script('cdn')).toBe(
       '<script src="https://cdn.example/lib.js"></script>',

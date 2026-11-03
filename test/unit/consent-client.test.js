@@ -239,13 +239,16 @@ describe('consentHeadScript', () => {
 describe('size', () => {
   // Inlined into every page. 10,932 bytes minified (4,047 gzipped) for
   // gtm + youtube + vimeo when first measured (2026-11-03); the ceiling
-  // catches growth, and moving it is a decision, not a fix.
-  it('stays under 12,000 bytes minified for a three-service site', async () => {
+  // catches growth, and moving it is a decision, not a fix. Raised from
+  // 12,000 to 12,288 by the operator on 2026-11-03, at 12,048 bytes (4,427
+  // gzipped), after the Codex review fixes to withdrawal, module order and
+  // cookie deletion added about 430 bytes.
+  it('stays under 12,288 bytes minified for a three-service site', async () => {
     const cfg = configFor({
       services: { gtm: { id: 'GTM-X' }, youtube: {}, vimeo: {} },
     })
     const min = (await minify(scriptOf(consentHeadScript(cfg)))).code ?? ''
-    expect(min.length).toBeLessThan(12000)
+    expect(min.length).toBeLessThan(12288)
   })
 })
 
@@ -593,6 +596,52 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.win.kissConsent.has('youtube')).toBe(false)
       // the revealed video is withdrawn the only way a running frame can be
       expect(p.reloads()).toBe(1)
+    })
+
+    it('withdraws a granted service that site code started with when(), with no embed on the page', async () => {
+      const cfg = configFor({
+        ...SITE,
+        services: { ...SITE.services, vimeo: { cookies: ['vm_first'] } },
+      })
+      const source = await build(cfg)
+      const p = page(source, {
+        cookies: {
+          // a new service is a new version: the record must carry this one
+          ...valid(
+            { statistics: 0, marketing: 0 },
+            { v: cfg.v, s: { vimeo: 1 } },
+          ),
+          vm_first: '1',
+        },
+      })
+      let ran = 0
+      p.win.kissConsent.when('vimeo', () => ran++)
+      expect(ran).toBe(1)
+      p.ready()
+      p.win.kissConsent.show()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.win.kissConsent.has('vimeo')).toBe(false)
+      expect(p.reloads()).toBe(1)
+      expect([...p.jar.jar.values()].map((c) => c.name)).not.toContain(
+        'vm_first',
+      )
+    })
+
+    it('withdraws a granted service whose gated scripts ran, with its category refused', () => {
+      const p = page(plain, {
+        cookies: {
+          ...valid({ statistics: 0, marketing: 0 }, { s: { gtm: 1 } }),
+          _ga: '1',
+        },
+      })
+      p.ready()
+      expect(p.live()).toContain(
+        'https://www.googletagmanager.com/gtm.js?id=GTM-X',
+      )
+      p.win.kissConsent.show()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.reloads()).toBe(1)
+      expect([...p.jar.jar.values()].map((c) => c.name)).not.toContain('_ga')
     })
 
     it('Reject all clears a stored grant under a refused category', () => {

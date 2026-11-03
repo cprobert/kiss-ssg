@@ -13,7 +13,8 @@ The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` ca
 
 - **`gatedScript(name, service, { consent, params, body, partialHtml, src })` → `string`.** What `{{consentScript}}` writes.
   - **No body or partial:** the service's `inline` script, then its `src` (or `src=` from the call). Each is `<script type="text/plain" data-kiss-service data-kiss-consent [data-src]>`.
-  - **A body (block form) or a rendered partial:** every `<script>` in it is rewritten into that form:
+  - **A body (block form) or a rendered partial of a service that is not gated** (necessary, or a Google tag under advanced mode) is written exactly as the author wrote it. Until 2026-11-03 it went through the rewrite below, which drops `defer` because the queue keeps order; a plain script never enters the queue, so a `defer` head script lost it and ran before `<body>` existed (found by the Codex review).
+  - **A body (block form) or a rendered partial of a gated service:** every `<script>` in it is rewritten into that form:
     - `src` becomes `data-src`, `async` becomes `data-async`, and `type="module"` becomes `data-type="module"`;
     - `defer` is dropped, because the queue already runs in document order;
     - other attributes are kept;

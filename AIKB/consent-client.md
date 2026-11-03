@@ -66,7 +66,7 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
     - at `DOMContentLoaded` for the stored choice or an `objection` category;
     - on the click for a new grant.
   - **What scripts miss:** revived scripts never see `DOMContentLoaded` (`AIKB/upstream.md`).
-- **Withdrawal reloads.** A choice that refuses a category active on this page, or a service whose embed was revealed, takes the withdrawal path:
+- **Withdrawal reloads.** A choice that refuses a category active on this page, or a service this page started, takes the withdrawal path. A service counts as started when its embed was revealed, a gated script of it was revived, or a `when()` callback for it ran, each recorded by `started()`. Until 2026-11-03 only a revealed embed counted, so a service started under an "always allow" grant by `when()` or its own scripts, with its category refused, kept running after Reject all, and its cookies stayed (found by the Codex review):
   1. write the cookie, send the `update` and the POST;
   2. delete the first-party cookies and storage of every denied service, on no domain, the host and each parent domain (S7). A `__Secure-` or `__Host-` cookie is deleted with `Secure`, which a browser requires, and a `__Host-` one on no domain only, since it cannot carry one (found by the Codex review, 2026-11-03);
   3. `location.reload()`, because a script that ran cannot be un-run.
@@ -86,5 +86,5 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
   All three follow the bar's height through `ResizeObserver`, and are removed with the bar. They apply only while the bar's computed `position` is `fixed`. A site's own banner partial may sit in the flow whatever `ui.position` says, and then nothing is added (the browser suite checks the override partial gets no spacer).
 
 - **The dialog** is cloned from its template on first open, gets `data-kiss-consent-dialog`, and opens with `showModal()` (falling back to `open`). Its switches (styled checkboxes) are set from the current state each time it opens.
-- **Size, inlined on every page:** 10,932 bytes minified, 4,047 gzipped, for a gtm + youtube + vimeo site (measured 2026-11-03; the contract had estimated 5–7 kB). `test/unit/consent-client.test.js` holds it under 12,000 bytes; raising that ceiling is a decision, not a fix.
+- **Size, inlined on every page:** 12,048 bytes minified, 4,427 gzipped, for a gtm + youtube + vimeo site (measured 2026-11-03, after the Codex review fixes; 10,932 when first measured, and the contract had estimated 5–7 kB). `test/unit/consent-client.test.js` holds it under 12,288 bytes, raised from 12,000 by the operator the same day; raising that ceiling is a decision, not a fix.
 - **Written in ES5 style (`var`, `function`)**, except optional `catch` bindings (ES2019), so the inlined source runs on the browsers a static site serves with no transpile step. It is minified with the page in production.
