@@ -160,6 +160,7 @@ opened: 2026-11-02
   - **The dialog:** a header with ✕, real switches (checkboxes with `role="switch"`), divided rows, and the three choices in its footer.
 - **Kept as it was:** the equal weight of the choices; Cookiebot's filled-versus-outlined pair was not copied.
 - **The cost:** the CSS ceiling moves from 4,096 to 7,168 bytes; it is about 6.7 kB.
+- **Then, the operator's:** "Choose cookies should be a different colour", pointing at Google's own consent screen. Accept all and Reject all stay two buttons of one weight; Choose cookies becomes a text button in the accent colour (`kiss-consent__more`), as Google sets "More options". The ICO's equal prominence is about accepting and refusing, so the detail route may differ.
 
 ## Pulse log
 

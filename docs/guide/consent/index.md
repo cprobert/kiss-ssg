@@ -153,7 +153,7 @@ Gated scripts run in document order once allowed, each external one waiting for 
 
 ## In the browser: `window.kissConsent`
 
-The banner offers **Accept all**, **Reject all** and **Choose cookies**, as three buttons of equal weight, and a ✕ that closes it without choosing. The dialog has a ✕ to close it, a switch per category (a real checkbox, announced as a switch), and Reject all, Accept all and Save choices at its foot. After a choice the banner is replaced by a short confirmation that takes focus. A bottom banner keeps a focused control and the end of the page scrollable clear of it.
+The banner offers **Accept all** and **Reject all** as two buttons of equal weight (the ICO asks that refusing be as prominent as accepting), **Choose cookies** beside them as a text button for a choice in detail (the arrangement Google's own consent screen uses), and a ✕ that closes it without choosing. The dialog has a ✕ to close it, a switch per category (a real checkbox, announced as a switch), and Reject all, Accept all and Save choices at its foot. After a choice the banner is replaced by a short confirmation that takes focus. A bottom banner keeps a focused control and the end of the page scrollable clear of it.
 
 Site code reads the choice through `window.kissConsent`, which `{{consentHead}}` defines:
 
@@ -223,7 +223,7 @@ consent: {
 -   **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in).
 -   **`theme`** sets `background`, `text`, `accent`, `accentText`, `border`, `radius` and `font`. A value is any CSS value without `;`, `{`, `}`, `<` or `>`, so `var(--surface)` uses your site's own custom properties and the banner follows its dark scheme. `theme: false` drops kiss's stylesheet altogether.
 
-**Your own banner markup** is a partial named `consent-banner` (or `ui.partial`), rendered with `text`, `position`, `logoUrl`, `policyUrl`, `categories` and `services`. Keep the buttons' `data-kiss-consent-action` values, `accept`, `reject`, `settings` and `close`, because the client acts on them, and keep the three choices equally prominent. Keep the `kiss-consent` classes and `data-position` to keep kiss's styles and the bottom bar's placement, or style it all yourself; the client makes room at the foot of the page only when the banner is actually `position: fixed`. The dialog and the confirmation stay kiss's.
+**Your own banner markup** is a partial named `consent-banner` (or `ui.partial`), rendered with `text`, `position`, `logoUrl`, `policyUrl`, `categories` and `services`. Keep the buttons' `data-kiss-consent-action` values, `accept`, `reject`, `settings` and `close`, because the client acts on them, and keep Accept and Reject equally prominent. Keep the `kiss-consent` classes and `data-position` to keep kiss's styles and the bottom bar's placement, or style it all yourself; the client makes room at the foot of the page only when the banner is actually `position: fixed`. The dialog and the confirmation stay kiss's.
 
 A site whose every service is `necessary` has nothing to ask: `{{consentBanner}}` writes empty templates and no banner is shown, so the same layout works whether or not a site asks for anything.
 

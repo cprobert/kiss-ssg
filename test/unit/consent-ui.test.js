@@ -71,13 +71,15 @@ describe('bannerHtml', () => {
     )
   })
 
-  it('has three buttons of equal weight and a close button', () => {
+  it('has Accept and Reject of equal weight, Choose cookies set apart, and a close button', () => {
     const html = bannerHtml(site())
     const all = buttons(html)
     expect(all).toEqual([
       '<button type="button" class="kiss-consent__button" data-kiss-consent-action="accept">',
       '<button type="button" class="kiss-consent__button" data-kiss-consent-action="reject">',
-      '<button type="button" class="kiss-consent__button" data-kiss-consent-action="settings">',
+      // The way to answer in detail, not a third answer: a text button, as on
+      // Google's consent screen (operator, 2026-11-03).
+      '<button type="button" class="kiss-consent__more" data-kiss-consent-action="settings">',
       '<button type="button" class="kiss-consent__close" data-kiss-consent-action="close" aria-label="Close">',
     ])
     expect(html).toContain('>Accept all</button>')
