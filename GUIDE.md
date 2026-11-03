@@ -103,6 +103,7 @@ The default config options are:
     only: null,
     schemas: false
   },
+  consent: null,
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',

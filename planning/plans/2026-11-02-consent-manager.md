@@ -610,3 +610,18 @@ A fresh-context agent reviewed this contract (6 blockers, 18 should-fix, 6 notes
 - **Law and UX:** the dialog has Reject all and Accept all (§3); Close sets a session cookie (§4, §5); `id` only with an endpoint (§4); every load clears denied services' first-party cookies (§5); a policy link through the URL policy (§1, §3); `google: true` in an objection category is an error (§1).
 - **Scope:** consent helpers fail on learning-package pages (§3; refined at the 2026-11-03 pulse: head, banner and settings render nothing there, script and embed fail); the aikb-before-deploy dependency is documented and visible in `check`'s diff (§6); the helpers are named `consentScript` and `consentEmbed` (operator, 2026-11-03), so no site field or helper named `script` or `embed` can collide.
 - **Notes taken into the guide:** marketing-only grants still let GA4 send cookieless pings; `ready` fires after the queue starts; CDN libraries answer `consent-ungated` with a `necessary` service; `thirdParty`'s gated origins load only after consent; two sites sharing `cookie.domain` need distinct cookie names.
+
+### 2026-11-03: slice 2a, as built (`lib/consent.js`)
+
+Where the code settled a detail the contract left open, or departed from it:
+
+- **A preset's required `{id}` is a render error, not a config error.** §1 said "`id` is required" by `gtm`, and Validation listed "a preset's required param missing". diploma-msc passes its container id per page (`{{consentScript "gtm" id=gtmId}}`), so `resolveConsent` cannot know a value is missing; `fill` throws `consentScript "gtm": no value for {id}` at render.
+- **`inline` is a service key.** It holds the script run, gated, before `src`. The `gtm` and `gtag` presets use it, and a site may set it.
+- **`storage` entries have the `cookies` shape** (`{ name, duration, description, domain, party }`, or a bare name). A `domain` makes an entry third-party unless `party: 'first'` says otherwise. Withdrawal and `clientConfig` use first-party names only.
+- **`consentReport` takes `gatedPages`:** the pages that carry gated markup, from which `pagesWithoutHead` is derived. Slice 2d supplies them from the page facts.
+- **More exports than §2 listed:**
+  - `CATEGORY_NAMES`, `CONSENT_TYPES` and the `DEFAULT_*` blocks;
+  - `gatingOf(service, resolved)` (`'script'|'embed'|'none'`), which `consentReport` and slice 2b share;
+  - `originOf` and `matchesHost`, the URL helpers slice 2d uses with `TRACKER_ORIGINS` and `ADS_CMP_SIGNATURES`.
+- **Theme values refuse `;`, `{`, `}`, `<` and `>`,** so a site's colour cannot end the CSS declaration or the `<style>` element.
+- **`config.consent` defaults to `null`** in `DEFAULT_CONFIG`, and `llms.txt` and `GUIDE.md` show it in their default blocks (`test/aikb.test.js` compares those blocks with `resolveConfig({})`).

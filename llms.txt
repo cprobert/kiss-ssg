@@ -66,6 +66,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   audit: { check: true, ignore: [], privacyPage: null },
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
+  consent: null, // { services: { gtm: { id } } } turns on the cookie consent manager
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
