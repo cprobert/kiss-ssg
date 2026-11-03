@@ -85,6 +85,6 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 
   All three follow the bar's height through `ResizeObserver`, and are removed with the bar. They apply only while the bar's computed `position` is `fixed`. A site's own banner partial may sit in the flow whatever `ui.position` says, and then nothing is added (the browser suite checks the override partial gets no spacer).
 
-- **The dialog** is cloned from its template on first open, gets `data-kiss-consent-dialog`, and opens with `showModal()` (falling back to `open`). Its checkboxes are set from the current state each time it opens.
+- **The dialog** is cloned from its template on first open, gets `data-kiss-consent-dialog`, and opens with `showModal()` (falling back to `open`). Its switches (styled checkboxes) are set from the current state each time it opens.
 - **Size, inlined on every page:** 10,932 bytes minified, 4,047 gzipped, for a gtm + youtube + vimeo site (measured 2026-11-03; the contract had estimated 5–7 kB). `test/unit/consent-client.test.js` holds it under 12,000 bytes; raising that ceiling is a decision, not a fix.
 - **Written in ES5 style (`var`, `function`)**, except optional `catch` bindings (ES2019), so the inlined source runs on the browsers a static site serves with no transpile step. It is minified with the page in production.

@@ -136,18 +136,33 @@ describe('settingsHtml', () => {
     expect(settingsHtml(site())).not.toContain('<a ')
   })
 
-  it('has reject all, accept all, save and close actions, all one class', () => {
+  it('has a close in its header, then reject all, accept all and save, the three choices one class', () => {
     const actions = buttons(html).map(
       (b) => /data-kiss-consent-action="([^"]+)"/.exec(b)?.[1],
     )
-    expect(actions).toEqual(['reject', 'accept', 'save', 'close-dialog'])
-    for (const b of buttons(html))
+    expect(actions).toEqual(['close-dialog', 'reject', 'accept', 'save'])
+    expect(buttons(html)[0]).toContain('class="kiss-consent__close"')
+    for (const b of buttons(html).slice(1))
       expect(b).toContain('class="kiss-consent__button"')
   })
 
-  it('has necessary disabled and checked, with no category attribute', () => {
-    expect(html).toContain('<input type="checkbox" disabled checked> Necessary')
+  it('has necessary as a disabled, checked switch, with no category attribute', () => {
+    expect(html).toContain(
+      '<label for="kiss-consent-necessary">Necessary</label><input type="checkbox" role="switch" class="kiss-consent-switch" id="kiss-consent-necessary" disabled checked>',
+    )
     expect(html).not.toContain('data-kiss-consent-category="necessary"')
+  })
+
+  it('labels every switch, and every switch is a checkbox announced as a switch', () => {
+    const switches = [
+      ...html.matchAll(/<input[^>]*class="kiss-consent-switch"[^>]*>/g),
+    ]
+    expect(switches.length).toBeGreaterThan(0)
+    for (const [input] of switches) {
+      expect(input).toContain('type="checkbox" role="switch"')
+      const id = /id="([^"]+)"/.exec(input)?.[1]
+      expect(html).toContain(`<label for="${id}">`)
+    }
   })
 
   it('has one unchecked checkbox per category in use', () => {
@@ -166,7 +181,7 @@ describe('settingsHtml', () => {
     ]
     expect(grants.map((m) => m[1])).toEqual(['vimeo', 'youtube'])
     expect(html).toContain(
-      '<label class="kiss-consent-dialog__grant" data-kiss-consent-grant="youtube" hidden><input type="checkbox" data-kiss-consent-service="youtube"> YouTube</label>',
+      '<div class="kiss-consent-dialog__grant" data-kiss-consent-grant="youtube" hidden><label for="kiss-consent-grant-youtube">YouTube</label><input type="checkbox" role="switch" class="kiss-consent-switch" id="kiss-consent-grant-youtube" data-kiss-consent-service="youtube"></div>',
     )
     expect(html).not.toContain('data-kiss-consent-service="gtm"')
     expect(html).not.toContain('data-kiss-consent-service="chat"')
@@ -332,16 +347,28 @@ describe('themeCss', () => {
       /\.kiss-consent\[data-position="bottom"\][^{]*\{position:fixed;[^}]*bottom:0;z-index:2147483000;max-height:80vh;overflow:auto;/,
     )
     expect(css).toMatch(
-      /\.kiss-consent\[data-position="top"\][^{]*\{position:relative\}/,
+      /\.kiss-consent\[data-position="top"\][^{]*\{position:relative;/,
     )
   })
 
-  it('styles every banner button by one rule, with no variant', () => {
-    expect(css.match(/\.kiss-consent__button/g)).toHaveLength(1)
+  it('styles every choice button alike, with no variant for any one choice', () => {
     expect(css).toMatch(
       /\.kiss-consent__button,\.kiss-embed__notice button\{[^}]*background:var\(--kiss-consent-accent\);color:var\(--kiss-consent-accent-text\)/,
     )
-    expect(css).not.toMatch(/\.kiss-consent__button[.:[-]/)
+    // Hover and the phone layout apply to every choice button at once; no
+    // rule may single one out (by a modifier, an action, a position).
+    expect(css).not.toMatch(
+      /\.kiss-consent__button(--|\[|\.|:(first|last|nth))/,
+    )
+    expect(css).not.toMatch(/data-kiss-consent-action=/)
+  })
+
+  it('draws the switches from the theme, on and off told apart by colour and knob', () => {
+    expect(css).toMatch(/\.kiss-consent-switch\{appearance:none;/)
+    expect(css).toMatch(
+      /\.kiss-consent-switch:checked\{background:var\(--kiss-consent-accent\)\}/,
+    )
+    expect(css).toContain('.kiss-consent-switch:checked::before{left:')
   })
 
   it('has visible focus, the dialog backdrop and reduced motion', () => {
@@ -364,7 +391,10 @@ describe('themeCss', () => {
     expect(themeCss(site({ ui: { theme: false } }).ui)).toBe('')
   })
 
+  // Inlined on every page. The 2026-11-03 restyle (the operator: "the
+  // diploma MSc one looks better than ours") took it from 4,005 bytes to
+  // about 6.7 kB; the ceiling catches growth, and moving it is a decision.
   it('stays compact', () => {
-    expect(Buffer.byteLength(themeCss(site().ui))).toBeLessThan(4096)
+    expect(Buffer.byteLength(themeCss(site().ui))).toBeLessThan(7168)
   })
 })

@@ -149,6 +149,18 @@ opened: 2026-11-02
 
 **2026-11-03: the helpers are `consentScript` and `consentEmbed`.** The operator chose these over `script` and `embed` so that no site field or helper of those names can collide, and so all six consent helpers read as one family. Every mention of `{{script}}` and `{{embed}}` in the Intent above means these.
 
+**2026-11-03: the default UI restyled before the close.**
+
+- **The reason, the operator's:** "the diploma MSc one looks better than ours" (its Cookiebot banner).
+- **The operator's choices:**
+  - keep the full-width bar, polished, rather than Cookiebot's column panel;
+  - category switches in the dialog only, not on the first layer.
+- **What changed:**
+  - **The bar:** a centred inner column, a shadow, quieter body text from the theme's own colours, and full-width stacked choices on a phone.
+  - **The dialog:** a header with ✕, real switches (checkboxes with `role="switch"`), divided rows, and the three choices in its footer.
+- **Kept as it was:** the equal weight of the choices; Cookiebot's filled-versus-outlined pair was not copied.
+- **The cost:** the CSS ceiling moves from 4,096 to 7,168 bytes; it is about 6.7 kB.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
