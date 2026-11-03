@@ -98,7 +98,7 @@ function storage(initial = {}) {
  * Build a page, run the client in it, and hand back the handles a test needs.
  *
  * @param {string} source the script body
- * @param {{ cookies?: Record<string, string>, extraCookies?: [string, string, string][], local?: Record<string, string>, now?: number, extraBody?: string }} [opts]
+ * @param {{ cookies?: Record<string, string>, extraCookies?: [string, string, string][], local?: Record<string, string>, storageThrows?: boolean, now?: number, extraBody?: string }} [opts]
  */
 function page(source, opts = {}) {
   const host = 'www.example.com'
@@ -159,12 +159,20 @@ function page(source, opts = {}) {
         this.type = o.type
       }
     },
-    localStorage: storage(opts.local),
+    localStorage: opts.storageThrows ? null : storage(opts.local),
     setTimeout: (fn, ms) => timers.push({ fn, ms }),
     crypto: { randomUUID: () => 'uuid-1' },
     CustomEvent: dwin.CustomEvent,
     __ran: [],
   }
+  // Storage a browser refuses (blocked site data, some private windows):
+  // reading `localStorage` itself throws a SecurityError.
+  if (opts.storageThrows)
+    Object.defineProperty(win, 'localStorage', {
+      get() {
+        throw new Error('SecurityError')
+      },
+    })
   vm.runInNewContext(source, { window: win, Date: FakeDate })
   const fire = (target, type) => {
     const e = doc.createEvent('Event')
@@ -484,7 +492,9 @@ describe.each(forms)('the client, %s', (_, build) => {
         c: { statistics: true, marketing: true },
         s: {},
       })
-      expect(stored).not.toHaveProperty('id')
+      // Made whether or not there is an endpoint (D1): the browser's log and
+      // the history page carry it.
+      expect(stored.id).toBe('uuid-1')
       const line = p.jar.writes.find((w) => w.startsWith('kiss_consent='))
       expect(line).toMatch(/; Path=\/; Max-Age=15724800; SameSite=Lax; Secure$/)
       const layer = p.layer()
@@ -534,6 +544,8 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.beacons[0].url).toBe('/consent-log')
       expect(p.beacons[0].type).toBe('text/plain')
       expect(JSON.parse(p.beacons[0].body)).toEqual({
+        format: 2,
+        action: 'accept',
         id: 'uuid-1',
         version: configFor(SITE).v,
         timestamp: new Date(NOW).toISOString(),
@@ -542,6 +554,130 @@ describe.each(forms)('the client, %s', (_, build) => {
         bannerHash: 'abcdef012345',
         page: '/a/',
       })
+    })
+  })
+
+  // `kiss_consent_log`: the browser's own dated copy of every record it
+  // made, in the format it posts (spec planning/specs/2026-11-03-kiss-consent.md,
+  // D1, D8, D10, D13).
+  describe('the browser log', () => {
+    const LOG = 'kiss_consent_log'
+    const logOf = (p) => JSON.parse(p.win.localStorage.getItem(LOG) ?? 'null')
+
+    it('logs each choice, oldest first, exactly as it posts it', () => {
+      const p = page(withEndpoint)
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      p.clock.now = NOW + 1000
+      p.click('[data-kiss-consent-action="settings"]')
+      const boxes = p
+        .find('dialog')
+        .querySelectorAll('input[data-kiss-consent-category]')
+      boxes[1].checked = false
+      p.click('[data-kiss-consent-action="save"]')
+      const log = logOf(p)
+      expect(log.map((r) => r.action)).toEqual(['accept', 'save'])
+      expect(log.map((r) => r.format)).toEqual([2, 2])
+      expect(log[1].categories).toEqual({ statistics: true, marketing: false })
+      expect(log[1].timestamp).toBe(new Date(NOW + 1000).toISOString())
+      expect(log).toEqual(p.beacons.map((b) => JSON.parse(b.body)))
+    })
+
+    it('logs with no endpoint, and always makes the id (D1)', () => {
+      const p = page(plain)
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.beacons).toEqual([])
+      expect(p.stored().id).toBe('uuid-1')
+      expect(p.win.kissConsent.choice.id).toBe('uuid-1')
+      expect(logOf(p)).toEqual([
+        {
+          format: 2,
+          action: 'reject',
+          id: 'uuid-1',
+          version: configFor(SITE).v,
+          timestamp: new Date(NOW).toISOString(),
+          categories: { statistics: false, marketing: false },
+          services: {},
+          bannerHash: 'abcdef012345',
+          page: '/a/',
+        },
+      ])
+    })
+
+    it('logs an Always allow made before the banner was answered', () => {
+      const p = page(plain)
+      p.ready()
+      p.click('[data-kiss-consent-action="allow"]')
+      const [entry] = logOf(p)
+      expect(entry.action).toBe('allow')
+      expect(entry.categories).toBeNull()
+      expect(entry.services).toEqual({ youtube: 1 })
+    })
+
+    it('never logs a page load, a Close, the settings or a plain Load', () => {
+      const p = page(plain, { cookies: valid({ statistics: 1, marketing: 0 }) })
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      p.click('[data-kiss-consent-action="close-dialog"]')
+      p.click('[data-kiss-consent-action="load"]')
+      const q = page(plain)
+      q.win.kissConsent.mount()
+      q.click('[data-kiss-consent-action="close"]')
+      expect(p.win.localStorage.getItem(LOG)).toBeNull()
+      expect(q.win.localStorage.getItem(LOG)).toBeNull()
+    })
+
+    it('is written before a withdrawal reloads, and never deleted by a service’s pattern (D8)', async () => {
+      const greedy = await build(
+        configFor({
+          ...SITE,
+          categories: { statistics: { mode: 'objection' } },
+          services: {
+            ...SITE.services,
+            stats: { ...SITE.services.stats, storage: ['st_key', 'kiss_*'] },
+          },
+        }),
+      )
+      const p = page(greedy, { local: { kiss_other: 'x' } })
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.reloads()).toBe(1)
+      // The pattern ran: it took the key it matched, and left the log.
+      expect(p.win.localStorage.getItem('kiss_other')).toBeNull()
+      expect(logOf(p).map((r) => r.action)).toEqual(['reject'])
+    })
+
+    it('keeps the last 50 records, dropping the oldest', () => {
+      const old = Array.from({ length: 50 }, (_, n) => ({ n }))
+      const p = page(plain, { local: { [LOG]: JSON.stringify(old) } })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      const log = logOf(p)
+      expect(log).toHaveLength(50)
+      expect(log[0]).toEqual({ n: 1 })
+      expect(log[49].action).toBe('accept')
+    })
+
+    it('starts again from a log that is not a list', () => {
+      const p = page(plain, { local: { [LOG]: '{not json' } })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      expect(logOf(p).map((r) => r.action)).toEqual(['accept'])
+    })
+
+    it('makes the choice as before when storage is unavailable (D10)', () => {
+      const p = page(withEndpoint, { storageThrows: true })
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="accept"]')
+      expect(p.stored().c).toEqual({ statistics: true, marketing: true })
+      expect(p.beacons).toHaveLength(1)
+      // The queue started: GTM first, holding it until it loads.
+      expect(p.live()).toContain(
+        'https://www.googletagmanager.com/gtm.js?id=GTM-X',
+      )
     })
   })
 
@@ -561,7 +697,9 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect([...p.jar.jar.values()].map((c) => c.name)).toEqual([
         'kiss_consent',
       ])
-      expect([...p.win.localStorage.map.keys()]).toEqual([])
+      // The service's key is gone; the consent log, written before the
+      // reload, is all that is left.
+      expect([...p.win.localStorage.map.keys()]).toEqual(['kiss_consent_log'])
       expect(p.reloads()).toBe(1)
     })
 

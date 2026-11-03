@@ -12,10 +12,10 @@ The consent manager's browser side. One function, `kissConsentClient(win, cfg)`,
 - starts allowed scripts in document order;
 - reveals allowed embeds;
 - withdraws a choice;
-- logs each choice to the site's endpoint;
+- records each choice: appends it to the browser's own log, then posts it to the site's endpoint;
 - gives site code `window.kissConsent`.
 
-The contract is `planning/plans/2026-11-02-consent-manager.md` §3–§5. Every behavioural choice was first measured in Chromium (its Appendix A).
+The contract is `planning/plans/2026-11-02-consent-manager.md` §3–§5, and for the record format, the log and the id, `planning/specs/2026-11-03-kiss-consent.md` (D1, D8, D10, D13). Every behavioural choice was first measured in Chromium (its Appendix A).
 
 ## Public interface
 
@@ -38,7 +38,7 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 
 ## Depended on by
 
-`lib/handlebars-helpers.js` (`{{consentHead}}`, slice 2b). `test/unit/consent-client.test.js` runs the script in Node's `vm` against a domino DOM with a fake cookie jar, clock, storage and beacon, both as rendered and terser-minified. `test/browser/consent.test.js` runs it in Chromium on built sites (`test/helpers/consent-site.js`), with every off-host request stubbed. It covers: before a choice, Reject, Accept, a returning visitor, document order, statistics only, withdrawal, a version bump, Close, an embed, focus under the bar, no JavaScript, the endpoint, an override partial, and the top position.
+`lib/handlebars-helpers.js` (`{{consentHead}}`, slice 2b). `test/unit/consent-client.test.js` runs the script in Node's `vm` against a domino DOM with a fake cookie jar, clock, storage and beacon, both as rendered and terser-minified. `test/browser/consent.test.js` runs it in Chromium on built sites (`test/helpers/consent-site.js`), with every off-host request stubbed. It covers: before a choice, Reject, Accept, a returning visitor, document order, statistics only, withdrawal, a version bump, Close, an embed, focus under the bar, no JavaScript, the endpoint, the log across a withdrawal's reload, an override partial, and the top position.
 
 ## Non-obvious behavior
 
@@ -67,7 +67,7 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
     - on the click for a new grant.
   - **What scripts miss:** revived scripts never see `DOMContentLoaded` (`AIKB/upstream.md`).
 - **Withdrawal reloads.** A choice that refuses a category active on this page, or a service this page started, takes the withdrawal path. A service counts as started when its embed was revealed, a gated script of it was revived, or a `when()` callback for it ran, each recorded by `started()`. Until 2026-11-03 only a revealed embed counted, so a service started under an "always allow" grant by `when()` or its own scripts, with its category refused, kept running after Reject all, and its cookies stayed (found by the Codex review):
-  1. write the cookie, send the `update` and the POST;
+  1. write the cookie, send the `update`, append to the log and send the POST;
   2. delete the first-party cookies and storage of every denied service, on no domain, the host and each parent domain (S7). A `__Secure-` or `__Host-` cookie is deleted with `Secure`, which a browser requires, and a `__Host-` one on no domain only, since it cannot carry one (found by the Codex review, 2026-11-03);
   3. `location.reload()`, because a script that ran cannot be un-run.
 
@@ -79,7 +79,9 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 - **Reject all clears every "always allow" grant.** It commits with no grants at all, so a video allowed while marketing was refused stops with the rest, and a page showing it reloads.
 - **Saving the dialog clears the grants of a category it changes from granted to denied.** A grant made while its category stays denied survives a Save, because the dialog shows that grant's own switch and the visitor left it on. Before 2026-11-03 Reject all went through this same rule and so kept such a grant (found by the Codex review).
 - **Close is not consent.** It sets `<cookie.name>_closed=1` with no `Max-Age` (a session cookie) and removes the banner. Nothing else is written, so the banner returns in the next browser session.
-- **The visitor id exists only with an endpoint.** `id` is written to the cookie and sent only when `cfg.endpoint` is set: `crypto.randomUUID()`, else `getRandomValues` hex. The POST is `navigator.sendBeacon` with a `text/plain` Blob (it survived an immediate reload, S6), falling back to `fetch` with `keepalive` and `mode: 'no-cors'`. A failure never blocks the choice.
+- **The visitor id is always made** (D1), at the first choice: `crypto.randomUUID()`, else `getRandomValues` hex, kept in the cookie and carried by every record. Until 2026-11-03 it was made only with an endpoint; the log and the history page need it either way. It leaves the browser only in a POST.
+- **One record, two copies, the log first.** `logChoice(stored, action)` builds the format-2 record (`format`, `action`, then format 1's `id`, `version`, `timestamp`, `categories`, `services`, `bannerHash`, `page`), appends it to `localStorage[<cookie.name>_log]`, and then hands the same JSON to `post()`, so the browser's copy and the server's are identical (the Chromium suite compares them across a withdrawal's reload). `action` is `accept`, `reject`, `save` (from `commit()`) or `allow` (an embed's grant); Close, Load, the dialog and a page load record nothing. The log keeps the last 50; anything that is not a JSON array is started again; if storage throws on both tries, the choice stands unlogged (D10). The POST is `navigator.sendBeacon` with a `text/plain` Blob (it survived an immediate reload, S6), falling back to `fetch` with `keepalive` and `mode: 'no-cors'`. A failure never blocks the choice.
+- **The log survives withdrawal** (D8). `clearServices()` skips `<cookie.name>_log` whatever a service's pattern matches (a `kiss_*` storage pattern took it before), and `resolveConsent` refuses a service that declares the name outright.
 - **The client renders the confirmation itself** (`role="status"`, `tabindex="-1"`, focused, with a Hide button). An override partial therefore needs none.
 - **A bottom-positioned banner or confirmation keeps the page reachable under it** (WCAG 2.2 SC 2.4.11). All three measures are measured by `test/browser/consent.test.js`, which was red before them:
   - **A spacer at the end of `<body>`:** `[data-kiss-consent-spacer]`, `aria-hidden`, the bar's height. It is moved to the end again at `DOMContentLoaded`, because it is placed while the page is still parsing. Without it the page's last content, the footer's Cookie settings control included, could never scroll clear of the bar, and a click on it failed.
@@ -89,5 +91,5 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
   All three follow the bar's height through `ResizeObserver`, and are removed with the bar. They apply only while the bar's computed `position` is `fixed`. A site's own banner partial may sit in the flow whatever `ui.position` says, and then nothing is added (the browser suite checks the override partial gets no spacer).
 
 - **The dialog** is cloned from its template on first open, gets `data-kiss-consent-dialog`, and opens with `showModal()` (falling back to `open`). Its switches (styled checkboxes) are set from the current state each time it opens.
-- **Size, inlined on every page:** 12,346 bytes minified, 4,517 gzipped, for a gtm + youtube + vimeo site (measured 2026-11-03, after five rounds of Codex review fixes; 10,932 when first measured, and the contract had estimated 5–7 kB). `test/unit/consent-client.test.js` holds it under 13,312 bytes, raised by the operator twice that day (12,000 → 12,288 → 13,312); raising that ceiling is a decision, not a fix. **Planned:** split the client into a small inline part (the Consent Mode default and update, the stored-choice read, a `kissConsent` stub) and a cached, deferred file for the rest, which also eases a site's Content Security Policy.
+- **Size, inlined on every page:** 12,600 bytes minified, 4,618 gzipped, for a gtm + youtube + vimeo site (measured 2026-11-03 after the log was added, +282 bytes; 12,318 before it, 12,346 after five rounds of Codex review fixes, and 10,932 when first measured, where the contract had estimated 5–7 kB). `test/unit/consent-client.test.js` holds it under 13,312 bytes, raised by the operator twice that day (12,000 → 12,288 → 13,312); raising that ceiling is a decision, not a fix. **Planned:** split the client into a small inline part (the Consent Mode default and update, the stored-choice read, a `kissConsent` stub) and a cached, deferred file for the rest, which also eases a site's Content Security Policy.
 - **Written in ES5 style (`var`, `function`)**, except optional `catch` bindings (ES2019), so the inlined source runs on the browsers a static site serves with no transpile step. It is minified with the page in production.

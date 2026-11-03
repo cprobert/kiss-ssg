@@ -329,6 +329,23 @@ describe('resolveConsent: refuses settings outside the contract', () => {
       /cookie\.name must be a cookie name/,
     ],
     [{ services: {}, cookie: { path: '/' } }, /cookie\.path is not a setting/],
+    // The consent log is the mechanism's own; a service that declared it
+    // would have it deleted on withdrawal and listed as the service's (D8).
+    [
+      {
+        services: {
+          stats: { category: 'statistics', storage: ['kiss_consent_log'] },
+        },
+      },
+      /services\.stats declares kiss_consent_log, the consent log's own name/,
+    ],
+    [
+      {
+        cookie: { name: 'my_c' },
+        services: { stats: { category: 'statistics', cookies: ['my_c_log'] } },
+      },
+      /services\.stats declares my_c_log, the consent log's own name/,
+    ],
     [
       { services: {}, google: { mode: 'full' } },
       /google\.mode must be 'basic' or 'advanced'/,

@@ -556,6 +556,58 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
     }
   }, 60000)
 
+  // The spec's captured history (planning/specs/2026-11-03-kiss-consent.md):
+  // consent, a withdrawal that reloads, partial consent again. The browser's
+  // log holds all three, before each POST and before the reload, in the
+  // format it posts.
+  it('keeps the browser’s log of every choice, across a withdrawal’s reload, as posted', async () => {
+    const site = await serve(FILES, {
+      ...CONSENT_CONFIG,
+      endpoint: '/consent-log',
+    })
+    try {
+      const { context, page, offHost } = await open()
+      const posts = () =>
+        offHost
+          .filter((r) => r.path === '/consent-log')
+          .map((r) => JSON.parse(r.body ?? '{}'))
+      const log = () =>
+        page.evaluate(() =>
+          JSON.parse(localStorage.getItem('kiss_consent_log') ?? 'null'),
+        )
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="accept"]',
+      )
+      await expect.poll(() => posts().length).toBe(1)
+      // Withdraw everything from the dialog: the page reloads.
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await Promise.all([
+        page.waitForEvent('load'),
+        page.click('dialog [data-kiss-consent-action="reject"]'),
+      ])
+      await expect.poll(() => posts().length).toBe(2)
+      // Back, and statistics only.
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await page.check('dialog input[data-kiss-consent-category="statistics"]')
+      await page.click('dialog [data-kiss-consent-action="save"]')
+      await expect.poll(() => posts().length).toBe(3)
+      const entries = await log()
+      expect(entries.map((e) => e.action)).toEqual(['accept', 'reject', 'save'])
+      expect(entries.map((e) => e.categories)).toEqual([
+        { statistics: true, marketing: true },
+        { statistics: false, marketing: false },
+        { statistics: true, marketing: false },
+      ])
+      expect(new Set(entries.map((e) => e.id)).size).toBe(1)
+      expect(entries.every((e) => e.format === 2)).toBe(true)
+      expect(entries).toEqual(posts())
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
   it('a site’s own banner partial keeps the behaviour', async () => {
     const site = await serve(
       {

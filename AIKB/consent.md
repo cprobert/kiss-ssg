@@ -18,6 +18,7 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
 
 - **`resolveConsent(input)` → `KissConsent | null`.** `config.consent`, resolved and checked; `undefined`, `null` and `false` give `null`. `lib/config.js`'s `resolveConfig` calls it for `config.consent`.
   - **Unknown keys:** every level refuses them, naming the valid keys. The exception is a service's own extra keys, which are placeholder values (`gtm: { id: 'GTM-X' }`) and must be strings or numbers.
+  - **The consent log's name is kiss's:** a service whose cookies or storage name `<cookie.name>_log` exactly is refused (D8 of `planning/specs/2026-11-03-kiss-consent.md`), because it would be listed as that service's and deleted with it. A pattern that matches it is allowed; the client never deletes the log.
   - **The resolved block:** `{ version, categories, inUse, services, cookie, google, endpoint, ui }`.
 - **`categoriesInUse(resolved)`** → the categories at least one service belongs to, `necessary` aside, in `CATEGORY_NAMES` order. Decided once per site (`inUse`), so every page offers the same set.
 - **`purposesVersion(resolved)`** → 12 hex characters. The default `version`; see Non-obvious behavior.
