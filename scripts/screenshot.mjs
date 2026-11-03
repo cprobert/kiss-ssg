@@ -193,7 +193,7 @@ export async function serveFolder(root) {
   }
 }
 
-async function launchChromium() {
+export async function launchChromium() {
   const { chromium } = await import('playwright-core')
   try {
     return await chromium.launch()
