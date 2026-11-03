@@ -678,7 +678,7 @@ describe('clientConfig', () => {
       },
       endpoint: '/log',
     })
-    const cfg = clientConfig(r, { policyUrl: '/cookies/', bannerHash: 'abc' })
+    const cfg = clientConfig(r, { bannerHash: 'abc' })
     expect(cfg.services.map((s) => s.name)).toEqual(['gtm', 'vimeo', 'cdn'])
     expect(cfg.services[0].cookies).toEqual(['_ga', '_ga_*', '_gcl_au'])
     expect(cfg.services[1].cookies).toEqual([])
@@ -693,7 +693,9 @@ describe('clientConfig', () => {
     expect(cfg.categories).toEqual([{ name: 'marketing', mode: 'consent' }])
     expect(cfg.v).toBe(r.version)
     expect(cfg.endpoint).toBe('/log')
-    expect(cfg.policyUrl).toBe('/cookies/')
+    // No URL rides in the client config: the links are in the markup.
+    expect(cfg).not.toHaveProperty('policyUrl')
+    expect(cfg).not.toHaveProperty('logoUrl')
     expect(cfg.bannerHash).toBe('abc')
     expect(cfg.google.defaults.security_storage).toBe('granted')
   })

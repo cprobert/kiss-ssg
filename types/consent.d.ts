@@ -149,12 +149,11 @@ export function gatingOf(service: ConsentService, resolved: KissConsent): "scrip
  * else can be deleted.
  *
  * @param {KissConsent} resolved
- * @param {{ logoUrl?: string|null, policyUrl?: string|null, bannerHash?: string|null }} [extra]
+ * @param {{ bannerHash?: string|null }} [extra] the banner and dialog's
+ * links are in their markup, never here: the client reads no URL of its own
  * @returns {Record<string, any>}
  */
 export function clientConfig(resolved: KissConsent, extra?: {
-    logoUrl?: string | null;
-    policyUrl?: string | null;
     bannerHash?: string | null;
 }): Record<string, any>;
 /**

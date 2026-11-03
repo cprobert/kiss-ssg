@@ -1210,6 +1210,9 @@ consent: {
 
 - **`position`** is `'bottom'` (a fixed bar, the default) or `'top'` (in the page's flow, before the skip link).
 - **`logo`** is an asset path, looked up as `{{asset}}` looks one up.
+
+The policy link and the logo are root-relative (`/cookies/`), unless `siteUrl` carries a path prefix (`https://example.com/site/`): then they are absolute and carry it (`https://example.com/site/cookies/`), as `{{link absolute=true}}` would write them.
+
 - **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in).
 - **`theme`** sets `background`, `text`, `accent`, `accentText`, `border`, `radius` and `font`. A value is any CSS value without `;`, `{`, `}`, `<` or `>`, so `var(--surface)` uses your site's own custom properties and the banner follows its dark scheme. `theme: false` drops kiss's stylesheet altogether.
 

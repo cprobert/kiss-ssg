@@ -113,6 +113,49 @@ describe('a consent site, built', () => {
     expect(home).toMatch(/class="?kiss-consent__policy"? href="?\/cookies"?>/)
   })
 
+  // The round-8 P2 of the consent-manager branch: a site served from a path
+  // prefix names it in `siteUrl` and links absolutely (`{{link absolute=true}}`,
+  // as this repo's own docs do). The banner's links have no hash to ask for
+  // that, so they take it from `siteUrl`: root-relative `/cookies/` is the
+  // origin's root, a different site.
+  it('carries siteUrl’s path prefix into the policy link and the logo', async () => {
+    site = await makeSite({
+      ...CONSENT_FILES,
+      'src/assets/img/logo.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    })
+    const { errors } = await build(
+      config({
+        siteUrl: 'https://site.example/site/',
+        consent: { ...CONSENT_CONFIG, ui: { logo: 'img/logo.svg' } },
+      }),
+    )
+    expect(errors).toEqual([])
+    const home = await site.read('public/index.html')
+    const hrefs = [...home.matchAll(/kiss-consent__policy"? href="?([^"> ]+)/g)]
+    // The banner's and the dialog's.
+    expect(hrefs.map((m) => m[1])).toEqual([
+      'https://site.example/site/cookies.html',
+      'https://site.example/site/cookies.html',
+    ])
+    expect(home).toMatch(
+      /kiss-consent__logo"? src="?https:\/\/site\.example\/site\/img\/logo\.svg/,
+    )
+  })
+
+  it('keeps the policy link and the logo root-relative on a site at its origin’s root', async () => {
+    site = await makeSite({
+      ...CONSENT_FILES,
+      'src/assets/img/logo.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    })
+    const { errors } = await build(
+      config({ consent: { ...CONSENT_CONFIG, ui: { logo: 'img/logo.svg' } } }),
+    )
+    expect(errors).toEqual([])
+    const home = await site.read('public/index.html')
+    expect(home).toMatch(/kiss-consent__policy"? href="?\/cookies\.html/)
+    expect(home).toMatch(/kiss-consent__logo"? src="?\/img\/logo\.svg/)
+  })
+
   it('keeps the banner out of the Markdown copy, and the embed as its link', async () => {
     site = await makeSite(CONSENT_FILES)
     const { errors } = await build(config(), { llms: true })
