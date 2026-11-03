@@ -155,6 +155,14 @@ opened: 2026-11-02
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-03:** the branch so far is `planning/` only: no code, so no tests or example run apply.
+  - **Criterion 1 (contract first): met.** `0f78eef` holds the contract: about 50 environment-matrix rows, each naming its test file; the browser spike as Appendix A (S1–S7, plus S1b, statistics only, against the live GTM container with every hit aborted); and a fresh-context adversarial critique (6 blockers, 18 should-fix) folded into the body.
+  - **Criteria 2–13: not yet.** Designed, not built. The spike already shows basic mode makes 0 requests before a choice, and the deletion loop clears every cookie shape tried.
+  - **Drift:** none. The impact surface is still the public API (2.11.0). The four Amendments (bottom banner, `gtm` defaulting to marketing, the withdrawal criterion, the helper names) stay inside the objective.
+  - **Eyeball: deferred.** Contract §1 (lines 21–146, the API a site writes) is to be asked again at the next pulse, before slice 2a closes.
+  - **Offer: answered.** Consent helpers on learning-package pages: kept, with the operator's reason, "the lms should deal with that". Refined to match it: head, banner and settings render nothing on a packaged page; `consentScript` and `consentEmbed` fail there (contract §3).
+  - **Decision: continue** into slice 2a.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
