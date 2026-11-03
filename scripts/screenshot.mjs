@@ -193,10 +193,16 @@ export async function serveFolder(root) {
   }
 }
 
-export async function launchChromium() {
+/**
+ * Playwright's Chromium, with the install advice when it is missing.
+ *
+ * @param {import('playwright-core').LaunchOptions} [options] passed to
+ * `chromium.launch`, e.g. `args` for `--host-resolver-rules`
+ */
+export async function launchChromium(options = {}) {
   const { chromium } = await import('playwright-core')
   try {
-    return await chromium.launch()
+    return await chromium.launch(options)
   } catch (err) {
     if (/Executable doesn't exist/.test(String(err?.message)))
       throw new Error(

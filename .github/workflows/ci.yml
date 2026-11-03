@@ -34,4 +34,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Chromium for the browser suite (test/browser/): the consent manager's
+      # gating, ordering and focus can only be proved in a real browser, and
+      # a browser test that never runs in CI is a note, not a gate. Under `CI`
+      # a missing browser fails that suite rather than skipping it.
+      - name: Install Chromium (ubuntu, with its system libraries)
+        if: matrix.os == 'ubuntu-latest'
+        run: npx playwright-core install --with-deps chromium
+      - name: Install Chromium (windows)
+        if: matrix.os == 'windows-latest'
+        run: npx playwright-core install chromium
       - run: npm run gates

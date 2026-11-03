@@ -38,7 +38,7 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 
 ## Depended on by
 
-`lib/handlebars-helpers.js` (`{{consentHead}}`, slice 2b). `test/unit/consent-client.test.js` runs the script in Node's `vm` against a domino DOM with a fake cookie jar, clock, storage and beacon, both as rendered and terser-minified.
+`lib/handlebars-helpers.js` (`{{consentHead}}`, slice 2b). `test/unit/consent-client.test.js` runs the script in Node's `vm` against a domino DOM with a fake cookie jar, clock, storage and beacon, both as rendered and terser-minified. `test/browser/consent.test.js` runs it in Chromium on built sites (`test/helpers/consent-site.js`), with every off-host request stubbed. It covers: before a choice, Reject, Accept, a returning visitor, document order, statistics only, withdrawal, a version bump, Close, an embed, focus under the bar, no JavaScript, the endpoint, an override partial, and the top position.
 
 ## Non-obvious behavior
 
@@ -78,7 +78,13 @@ Nothing: it runs in the browser, on `window` alone. `consentHeadScript` serialis
 - **Close is not consent.** It sets `<cookie.name>_closed=1` with no `Max-Age` (a session cookie) and removes the banner. Nothing else is written, so the banner returns in the next browser session.
 - **The visitor id exists only with an endpoint.** `id` is written to the cookie and sent only when `cfg.endpoint` is set: `crypto.randomUUID()`, else `getRandomValues` hex. The POST is `navigator.sendBeacon` with a `text/plain` Blob (it survived an immediate reload, S6), falling back to `fetch` with `keepalive` and `mode: 'no-cors'`. A failure never blocks the choice.
 - **The client renders the confirmation itself** (`role="status"`, `tabindex="-1"`, focused, with a Hide button). An override partial therefore needs none.
-- **A bottom-positioned banner or confirmation sets `scroll-padding-bottom` on `<html>`** to its height, updated by `ResizeObserver`, and clears it when removed. A focused element is then never hidden under it (WCAG 2.2 SC 2.4.11).
+- **A bottom-positioned banner or confirmation keeps the page reachable under it** (WCAG 2.2 SC 2.4.11). All three measures are measured by `test/browser/consent.test.js`, which was red before them:
+  - **A spacer at the end of `<body>`:** `[data-kiss-consent-spacer]`, `aria-hidden`, the bar's height. It is moved to the end again at `DOMContentLoaded`, because it is placed while the page is still parsing. Without it the page's last content, the footer's Cookie settings control included, could never scroll clear of the bar, and a click on it failed.
+  - **`scroll-padding-bottom` on `<html>`**, for scrolling to a fragment.
+  - **A `focusin` check** that scrolls a focused element clear of the bar. Chromium does not scroll an element that is inside the viewport but under the bar when focus moves to it, so `scroll-padding` alone left links hidden under the banner.
+
+  All three follow the bar's height through `ResizeObserver`, and are removed with the bar.
+
 - **The dialog** is cloned from its template on first open, gets `data-kiss-consent-dialog`, and opens with `showModal()` (falling back to `open`). Its checkboxes are set from the current state each time it opens.
 - **Size, inlined on every page:** 10,932 bytes minified, 4,047 gzipped, for a gtm + youtube + vimeo site (measured 2026-11-03; the contract had estimated 5–7 kB). `test/unit/consent-client.test.js` holds it under 12,000 bytes; raising that ceiling is a decision, not a fix.
 - **Written in ES5 style (`var`, `function`)**, except optional `catch` bindings (ES2019), so the inlined source runs on the browsers a static site serves with no transpile step. It is minified with the page in production.
