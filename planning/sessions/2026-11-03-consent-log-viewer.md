@@ -412,4 +412,4 @@ The planned shape served the work. What fought it was taking each URL finding as
 - the dialog naming the services (the next branch);
 - a kiss-consent server keeping every registry it receives;
 - the clean room re-run on 2.11.1's tarball if the dialog branch changes what a site author follows;
-- `/memory-consolidate`, due: four logs unconsolidated, and "look at one fix diff per round" has now recurred in two.
+- `/memory-consolidate`, not yet due by its triggers: three logs unconsolidated (the trigger is five), and "look at one fix diff per round" has recurred in two (the trigger is three).
