@@ -29,9 +29,12 @@ export function extractPageFacts(html: string, outputPath: string): PageFacts;
  * `privacy.html` or `privacy/index.html`)
  * @param {import('./consent.js').KissConsent|null} [options.consent]
  * `config.consent`, resolved: the consent checks read its services
+ * @param {string[]} [options.hostUnset] the concerns (`'cache headers'`,
+ * `'redirects'`) whose writer had something to write and found neither
+ * `host` nor a `format` chosen: `host-unset` names them
  * @returns {AuditResult}
  */
-export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, trailingSlash, privacyPage, consent, }: {
+export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debugWritten, extensionLess, trailingSlash, privacyPage, consent, hostUnset, }: {
     pages: AuditPage[];
     buildDir: string;
     siteUrl?: string | null;
@@ -42,6 +45,7 @@ export function auditBuild({ pages, buildDir, siteUrl, ignore, ownsFolder, debug
     trailingSlash?: boolean;
     privacyPage?: string | null;
     consent?: import("./consent.js").KissConsent | null;
+    hostUnset?: string[];
 }): AuditResult;
 /**
  * The third-party origins the build's pages fetch from. First-party is a
@@ -67,7 +71,7 @@ export function thirdPartyOrigins({ pages, siteUrl }: {
  * are public vocabulary: `config.audit.ignore`, the report's `check` field and
  * the summary lines all use them, so renaming one is a breaking change.
  */
-export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing", "consent-history-missing"];
+export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing", "consent-history-missing", "img-dimensions-missing", "img-first-lazy", "fetchpriority-excess", "font-preload-excess", "script-blocking", "host-unset"];
 /** @typedef {typeof CHECKS[number]} CheckId */
 /**
  * The words that make a pre-ticked checkbox a consent to marketing:
@@ -262,6 +266,35 @@ export type PageFacts = {
      * `aria-label` and `aria-labelledby`, joined; `''` for an unlabelled one
      */
     prechecked: string[];
+    /**
+     * the src of each `<img>` lacking `width` or
+     * `height` with no inline `aspect-ratio` other than `auto`, in document
+     * order; `''` for an image with no src. `<template>` and `<svg>` contents are
+     * not read, a `<noscript>` image is
+     */
+    imgNoSize: string[];
+    /**
+     * the src of an `<img>` that is both
+     * `loading="lazy"` and `fetchpriority="high"`; failing one, of the first
+     * `<img>` inside `<main>` before its first `<h2>`, when that image is lazy
+     */
+    imgFirstLazy: string | null;
+    /**
+     * elements carrying
+     * `fetchpriority="high"`, scripts and links included
+     */
+    fetchpriorityHigh: number;
+    /**
+     * `<link rel="preload" as="font">` elements
+     */
+    fontPreloads: number;
+    /**
+     * the src of each `<script src>` in the
+     * head that a browser runs as a classic script with neither `defer` nor
+     * `async`. The head ends at the first `</head>` or `<body`; with neither,
+     * none is listed
+     */
+    blockingScripts: string[];
     /**
      * the consent manager's markup on the page;
      * absent from facts parked by an engine from before it existed

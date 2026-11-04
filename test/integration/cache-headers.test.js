@@ -85,6 +85,16 @@ describe('cache headers', () => {
     expect(report.cacheHeaders.unset).toBe(true)
     expect(report.cacheHeaders.formats).toEqual([])
     expect(await site.read('public/_headers')).toBe(CSP)
+    expect(
+      report.audit.findings.filter((f) => f.check === 'host-unset'),
+    ).toEqual([{ check: 'host-unset', page: null, detail: 'cache headers' }])
+  })
+
+  it('has no host-unset finding once host is set', async () => {
+    const report = await build({ host: 'netlify', assets: { hash: true } })
+    expect(
+      report.audit.findings.filter((f) => f.check === 'host-unset'),
+    ).toEqual([])
   })
 
   it('writes nothing in dev', async () => {

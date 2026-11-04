@@ -599,6 +599,8 @@ declare class Kiss {
     /** @private */
     private _redirectsRun;
     /** @private */
+    private _redirectsUnset;
+    /** @private */
     private _packagesRun;
     /** @private @type {import('./packages.js').PackageResult[]|null} */
     private _packagesResult;
