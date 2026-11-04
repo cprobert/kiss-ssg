@@ -735,6 +735,25 @@ kiss never infers a `Disallow` for you. In particular **`ignoreSitemap` does not
 
 Two of the things kiss emits are decided by your **host**, not by the generator. Both are config keys, and both default to what kiss has always done, so an existing site does not move.
 
+#### Where the site is deployed: `host`
+
+`host` says it once: `'netlify'`, `'cloudflare'`, `'firebase'`, `'vercel'`, `'github-pages'`, or a list of them for a site deployed to more than one. It is `null` by default, because kiss does not guess. Each host sets the host file for every concern that has one: [Redirects](#redirects) and [Cache headers](#cache-headers). A concern's own `format` still wins, so a site that keeps its headers in `netlify.toml` says so:
+
+```js
+new Kiss({ host: 'netlify', cacheHeaders: { format: 'none' } })
+// _redirects from the aliases; no _headers: netlify.toml stays in charge
+```
+
+| `host`           | `redirects.format` it sets | `cacheHeaders.format` it sets                                                      |
+| ---------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| `'netlify'`      | `'netlify'` (`_redirects`) | `'netlify'` (`_headers`)                                                           |
+| `'cloudflare'`   | `'netlify'` (`_redirects`) | `'cloudflare'` (`_headers`)                                                        |
+| `'firebase'`     | `'firebase'`               | `'firebase'`                                                                       |
+| `'vercel'`       | `'vercel'`                 | none yet: the build warns, and `cache-headers.json` has the list                   |
+| `'github-pages'` | `'none'`                   | `'none'`: GitHub Pages cannot be configured (it sends `max-age=600` on everything) |
+
+A name kiss does not know throws at `new Kiss()`, with every known one listed. `host` never sets `links.trailingSlash`: Firebase's slash policy is in your `firebase.json`, not in the host's name, so that stays its own statement (below).
+
 #### The trailing slash on a directory index
 
 `links: { trailingSlash: true }` by default. Measured live on 2026-09-16 — not inferred:
@@ -867,6 +886,29 @@ A site with no aliases writes **no file at all**, not an empty one and not an em
 - `collisions` — aliases a live page already answers, by its canonical path (`/about`) or by the file itself (`/about.html`), and any source two pages both claim. On both hosts a non-forced rule whose source is a real file is **silently ignored** — the line does nothing at all, with no error anywhere — which is why this is worth saying out loud.
 
 Under `--summary` they print as `  removed without redirect: <path>`, `  moved without redirect: <from> -> <to> (<id>)` and `  alias collides with a page: <path>`; the build log's `notice` for a move carries the fix with it (`add "<from>" to that page's aliases`). None of them changes `ok`, and none changes the exit code.
+
+### Cache headers
+
+A file kiss content-hashed (`assets: { hash: true }`, and the consent client `kiss-consent.<hash>.js`) has its bytes in its name, so a browser can keep it for a year and never be wrong. kiss writes the host file that says so, `Cache-Control: public, max-age=31536000, immutable`, for **those files only**:
+
+- **Never an unhashed file.** A photograph replaced under its old name would stay stale in returning visitors' browsers for as long as the header said. Give an image or font that changes now and then a day (`public, max-age=86400, stale-while-revalidate=604800`) in your own config.
+- **Never HTML.** A page answers at several URLs (`/about`, `/about.html`, `/courses/index.html`), so a rule for one misses the others. Netlify already serves HTML with `public, max-age=0, must-revalidate` (measured on five sites, 2026-11-04).
+
+`cacheHeaders.format` picks the file, and [`host`](#where-the-site-is-deployed-host) sets it when you leave it unset:
+
+| `cacheHeaders.format`        | Writes                                             | Notes                                                                                                                                                      |
+| ---------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'netlify'` / `'cloudflare'` | `_headers`: each hashed file by exact path         | Rebuilt on every deploy, so the paths never go stale. A `_headers` you keep in `src/assets/` keeps every line; kiss appends its marked block after it      |
+| `'firebase'`                 | `cache-headers.firebase.json`: a fragment to merge | Patterns, not paths (`regex` for `.<8 hex>.css` and `.js`, and the consent client), so you merge it into `firebase.json` once and it stays right           |
+| `'none'` / `[]`              | nothing but the list                               | a site that sets its own headers (`netlify.toml`)                                                                                                          |
+| _unset_, no `host`           | nothing but the list, and the audit's `host-unset` |                                                                                                                                                            |
+| a function                   | whatever it returns                                | `(rules, { buildDir, config }) => [{ file, contents }]`; `renderHeadersBlock`, `renderFirebaseCacheHeaders` and `renderCacheHeadersJson` are named exports |
+
+`cache-headers.json` (`{ version: 1, rules: [{ path, headers }] }`) carries the list whatever you pick, and only when the build hashed something. Nothing is written in dev, nor by a failed build. `report().cacheHeaders` is `{ rules, files, formats, unset, merged }`, or `null` when nothing was written.
+
+On Firebase, a file kiss did not hash but whose name looks hashed (`vendor/lib.deadbeef.js`) matches the pattern too and would be cached for a year: the build names it in a warning, so you can rename it.
+
+**Not yet measured, so not stated here:** which wins on Netlify when `_headers` and `netlify.toml` both set `Cache-Control` for one path, and how Firebase orders a `regex` header rule against your own `source` globs. Check your deploy with `curl -sI` on one hashed file until this section says.
 
 ### Learning packages
 
@@ -1618,27 +1660,32 @@ The finding is advisory: it never changes `ok` and never changes the exit code. 
 
 The checks, by the id `check` carries:
 
-| id                                                                    | fires when                                                                                                                                   |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title-missing`, `description-missing`                                | a page has no `<title>`, or no `<meta name="description">`, or an empty one                                                                  |
-| `title-duplicate`, `description-duplicate`                            | two or more pages share one — a page whose `canonical` option names another URL is left out, since it has said it is a copy                  |
-| `og-image-missing`, `og-image-relative`                               | no `og:image`, or one that is not an absolute `http(s)` URL — scrapers do not resolve a relative one                                         |
-| `canonical-missing`                                                   | `siteUrl` is set and the page has no `<link rel="canonical">` — `{{canonical}}` writes it                                                    |
-| `img-alt-missing`                                                     | an `<img>` with no `alt` attribute at all (`alt=""` is right for a decorative image)                                                         |
-| `h1-count`, `heading-skip`                                            | a page without exactly one `<h1>`, or one whose headings jump a level (`h2 -> h4`)                                                           |
-| `viewport-zoom-lock`                                                  | a `<meta name="viewport">` with `user-scalable=no` (or `0`), or a `maximum-scale` below 2, stops the 200% zoom WCAG 1.4.4 asks for           |
-| `href-hash`                                                           | an `<a>` or `<area>` with `href="#"`: a link to nowhere, usually a control that should be a `<button>`, or a link not yet filled in          |
-| `fragment-missing`                                                    | a link's `#fragment` names no `id` (or `<a name>`) on the page it lands on, whether that page is this one or another the build wrote         |
-| `favicon-missing`                                                     | no page links an icon and there is no `favicon.ico` at the build root                                                                        |
-| `not-found-missing`                                                   | no `404.html` at the build root — under `extensionLess` a `404` view lands at `404/index.html`, which hosts do not serve                     |
-| `site-url-local`                                                      | `siteUrl` is `localhost`, `127.*`, a `.local`/`.test`/`.invalid` name or a preview deploy (`.example` is fine)                               |
-| `debug-dump`                                                          | `viewStats()` under `verbose: true` wrote `debug.json`, every page's options, into the build                                                 |
-| `stray-file`                                                          | a dotfile (bar `.nojekyll`, `.htaccess` and `.well-known/`), a `.map`, `.log`, `.bak`, `.swp` or `~` file, `.DS_Store` or `Thumbs.db`        |
-| `console-log`                                                         | a `.js` file you wrote contains `console.log(` — `*.min.js`, `vendor/` and `node_modules/` are skipped                                       |
-| `privacy-link-missing`                                                | a page with a form that asks for an email address or a phone number has no link to the privacy page                                          |
-| `placeholder-left`                                                    | a page still carries a `<mark>`, or the bracketed text `[to confirm`                                                                         |
-| `checkbox-prechecked`                                                 | a checkbox is ticked before the reader ticks it, and its label is about marketing (offers, news, newsletters, partners, third parties)       |
-| `consent-missing`, `consent-ungated`, `consent-ads-cmp` and five more | a tracker, an embed or an ad tag the consent manager does not hold back, and its settings; [Cookie consent](#cookie-consent) lists all seven |
+| id                                                                    | fires when                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title-missing`, `description-missing`                                | a page has no `<title>`, or no `<meta name="description">`, or an empty one                                                                                                                                                                                                |
+| `title-duplicate`, `description-duplicate`                            | two or more pages share one — a page whose `canonical` option names another URL is left out, since it has said it is a copy                                                                                                                                                |
+| `og-image-missing`, `og-image-relative`                               | no `og:image`, or one that is not an absolute `http(s)` URL — scrapers do not resolve a relative one                                                                                                                                                                       |
+| `canonical-missing`                                                   | `siteUrl` is set and the page has no `<link rel="canonical">` — `{{canonical}}` writes it                                                                                                                                                                                  |
+| `img-alt-missing`                                                     | an `<img>` with no `alt` attribute at all (`alt=""` is right for a decorative image)                                                                                                                                                                                       |
+| `h1-count`, `heading-skip`                                            | a page without exactly one `<h1>`, or one whose headings jump a level (`h2 -> h4`)                                                                                                                                                                                         |
+| `viewport-zoom-lock`                                                  | a `<meta name="viewport">` with `user-scalable=no` (or `0`), or a `maximum-scale` below 2, stops the 200% zoom WCAG 1.4.4 asks for                                                                                                                                         |
+| `href-hash`                                                           | an `<a>` or `<area>` with `href="#"`: a link to nowhere, usually a control that should be a `<button>`, or a link not yet filled in                                                                                                                                        |
+| `fragment-missing`                                                    | a link's `#fragment` names no `id` (or `<a name>`) on the page it lands on, whether that page is this one or another the build wrote                                                                                                                                       |
+| `favicon-missing`                                                     | no page links an icon and there is no `favicon.ico` at the build root                                                                                                                                                                                                      |
+| `not-found-missing`                                                   | no `404.html` at the build root — under `extensionLess` a `404` view lands at `404/index.html`, which hosts do not serve                                                                                                                                                   |
+| `site-url-local`                                                      | `siteUrl` is `localhost`, `127.*`, a `.local`/`.test`/`.invalid` name or a preview deploy (`.example` is fine)                                                                                                                                                             |
+| `debug-dump`                                                          | `viewStats()` under `verbose: true` wrote `debug.json`, every page's options, into the build                                                                                                                                                                               |
+| `stray-file`                                                          | a dotfile (bar `.nojekyll`, `.htaccess` and `.well-known/`), a `.map`, `.log`, `.bak`, `.swp` or `~` file, `.DS_Store` or `Thumbs.db`                                                                                                                                      |
+| `console-log`                                                         | a `.js` file you wrote contains `console.log(` — `*.min.js`, `vendor/` and `node_modules/` are skipped                                                                                                                                                                     |
+| `privacy-link-missing`                                                | a page with a form that asks for an email address or a phone number has no link to the privacy page                                                                                                                                                                        |
+| `placeholder-left`                                                    | a page still carries a `<mark>`, or the bracketed text `[to confirm`                                                                                                                                                                                                       |
+| `checkbox-prechecked`                                                 | a checkbox is ticked before the reader ticks it, and its label is about marketing (offers, news, newsletters, partners, third parties)                                                                                                                                     |
+| `consent-missing`, `consent-ungated`, `consent-ads-cmp` and five more | a tracker, an embed or an ad tag the consent manager does not hold back, and its settings; [Cookie consent](#cookie-consent) lists all seven                                                                                                                               |
+| `img-dimensions-missing`                                              | an `<img>` with no `width` or no `height`, and no inline `aspect-ratio` other than `auto`. One finding per image per page; an image in a `<template>` or an `<svg>` is not read, one in `<noscript>` is. A site that sizes every image in CSS ignores the check, saying so |
+| `img-first-lazy`                                                      | an `<img>` that is `loading="lazy"` and `fetchpriority="high"` at once (certain), or the first `<img>` in `<main>` before its first `<h2>` is lazy: that one may be the first image a visitor sees (an approximation, not a measurement)                                   |
+| `fetchpriority-excess`, `font-preload-excess`                         | more than two elements with `fetchpriority="high"`, or more than two `<link rel="preload" as="font">`: when everything is first, nothing is                                                                                                                                |
+| `script-blocking`                                                     | a `<script src>` in the head (before `</head>` or `<body>`) that runs as a classic script with neither `defer` nor `async`. A module, a consent-gated script and a data block (JSON-LD, speculation rules, an import map) never fire                                       |
+| `host-unset`                                                          | once for the site: the build wrote hashed files or has aliases, and neither `host` nor that concern's `format` chose a host file ([Cache headers](#cache-headers), [Redirects](#redirects))                                                                                |
 
 Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the three checks that walk it — `not-found-missing`, `stray-file`, `console-log` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
 

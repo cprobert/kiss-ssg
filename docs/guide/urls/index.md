@@ -1,10 +1,29 @@
 # URLs and redirects
 
-Telling kiss how your host serves URLs, trailing slashes included, and keeping old addresses alive with aliases and redirect files.
+Telling kiss where the site is deployed and how its host serves URLs, keeping old addresses alive with redirect files, and letting the host cache hashed files for a year.
 
 ## Host URL policy
 
 Two of the things kiss emits are decided by your **host**, not by the generator. Both are config keys, and both default to what kiss has always done, so an existing site does not move.
+
+### Where the site is deployed: `host`
+
+`host` says it once: `'netlify'`, `'cloudflare'`, `'firebase'`, `'vercel'`, `'github-pages'`, or a list of them for a site deployed to more than one. It is `null` by default, because kiss does not guess. Each host sets the host file for every concern that has one: [Redirects](#redirects) and [Cache headers](#cache-headers). A concern's own `format` still wins, so a site that keeps its headers in `netlify.toml` says so:
+
+```js
+new Kiss({ host: 'netlify', cacheHeaders: { format: 'none' } })
+// _redirects from the aliases; no _headers: netlify.toml stays in charge
+```
+
+| `host` | `redirects.format` it sets | `cacheHeaders.format` it sets |
+| --- | --- | --- |
+| `'netlify'` | `'netlify'` (`_redirects`) | `'netlify'` (`_headers`) |
+| `'cloudflare'` | `'netlify'` (`_redirects`) | `'cloudflare'` (`_headers`) |
+| `'firebase'` | `'firebase'` | `'firebase'` |
+| `'vercel'` | `'vercel'` | none yet: the build warns, and `cache-headers.json` has the list |
+| `'github-pages'` | `'none'` | `'none'`: GitHub Pages cannot be configured (it sends `max-age=600` on everything) |
+
+A name kiss does not know throws at `new Kiss()`, with every known one listed. `host` never sets `links.trailingSlash`: Firebase's slash policy is in your `firebase.json`, not in the host's name, so that stays its own statement (below).
 
 ### The trailing slash on a directory index
 
@@ -138,3 +157,26 @@ A site with no aliases writes **no file at all**, not an empty one and not an em
 -   `collisions` — aliases a live page already answers, by its canonical path (`/about`) or by the file itself (`/about.html`), and any source two pages both claim. On both hosts a non-forced rule whose source is a real file is **silently ignored** — the line does nothing at all, with no error anywhere — which is why this is worth saying out loud.
 
 Under `--summary` they print as `removed without redirect: <path>`, `moved without redirect: <from> -> <to> (<id>)` and `alias collides with a page: <path>`; the build log's `notice` for a move carries the fix with it (`add "<from>" to that page's aliases`). None of them changes `ok`, and none changes the exit code.
+
+## Cache headers
+
+A file kiss content-hashed (`assets: { hash: true }`, and the consent client `kiss-consent.<hash>.js`) has its bytes in its name, so a browser can keep it for a year and never be wrong. kiss writes the host file that says so, `Cache-Control: public, max-age=31536000, immutable`, for **those files only**:
+
+-   **Never an unhashed file.** A photograph replaced under its old name would stay stale in returning visitors' browsers for as long as the header said. Give an image or font that changes now and then a day (`public, max-age=86400, stale-while-revalidate=604800`) in your own config.
+-   **Never HTML.** A page answers at several URLs (`/about`, `/about.html`, `/courses/index.html`), so a rule for one misses the others. Netlify already serves HTML with `public, max-age=0, must-revalidate` (measured on five sites, 2026-11-04).
+
+`cacheHeaders.format` picks the file, and [`host`](#where-the-site-is-deployed-host) sets it when you leave it unset:
+
+| `cacheHeaders.format` | Writes | Notes |
+| --- | --- | --- |
+| `'netlify'` / `'cloudflare'` | `_headers`: each hashed file by exact path | Rebuilt on every deploy, so the paths never go stale. A `_headers` you keep in `src/assets/` keeps every line; kiss appends its marked block after it |
+| `'firebase'` | `cache-headers.firebase.json`: a fragment to merge | Patterns, not paths (`regex` for `.<8 hex>.css` and `.js`, and the consent client), so you merge it into `firebase.json` once and it stays right |
+| `'none'` / `[]` | nothing but the list | a site that sets its own headers (`netlify.toml`) |
+| _unset_, no `host` | nothing but the list, and the audit's `host-unset` |  |
+| a function | whatever it returns | `(rules, { buildDir, config }) => [{ file, contents }]`; `renderHeadersBlock`, `renderFirebaseCacheHeaders` and `renderCacheHeadersJson` are named exports |
+
+`cache-headers.json` (`{ version: 1, rules: [{ path, headers }] }`) carries the list whatever you pick, and only when the build hashed something. Nothing is written in dev, nor by a failed build. `report().cacheHeaders` is `{ rules, files, formats, unset, merged }`, or `null` when nothing was written.
+
+On Firebase, a file kiss did not hash but whose name looks hashed (`vendor/lib.deadbeef.js`) matches the pattern too and would be cached for a year: the build names it in a warning, so you can rename it.
+
+**Not yet measured, so not stated here:** which wins on Netlify when `_headers` and `netlify.toml` both set `Cache-Control` for one path, and how Firebase orders a `regex` header rule against your own `source` globs. Check your deploy with `curl -sI` on one hashed file until this section says.

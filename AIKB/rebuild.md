@@ -48,6 +48,7 @@ Each is the body of the `Kiss` method named beside it:
 
 ## Non-obvious behavior
 
+- `replaySession` resets `_cacheHeadersRun`, `_cacheHeadersResult` and `_redirectsUnset` with the redirects latch, so a non-dev replay writes the cache-header files again and the audit's `host-unset` reads this build's answer, not the last one's.
 - `replaySession` resets `_bannerRegistryRun` and `_consentClientRun` with the redirects latch, so a replay writes `consent-banners.json` again; `_bannerTexts` is kept, since only the hashes the new pages carry are written.
 - `replaySession` resets `_packagesRun` and `_packagesResult` with the redirects latch, so a non-dev `.watch()` replay writes its learning packages again. A dev session writes none at all, and a scoped re-render re-runs no writer, so the zips of a dev build would be stale: this is in the Known knowns below.
 - Non-dev `watch()` with `cleanBuild: 'atomic'` is unsupported: a failed build latches disposal, and later replays can write staging without promoting it. Use a separate one-shot atomic build for publication. This existing limitation is documented, not repaired by the source-protection branch.

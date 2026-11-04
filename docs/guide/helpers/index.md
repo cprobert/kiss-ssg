@@ -45,6 +45,14 @@ If you want to take a peek at whats properties you have available to to in a han
 {{{stringify this}}}
 ```
 
+You can put a YouTube or Vimeo video, a Google map or an Instagram post on a page so that nothing loads from the provider until the visitor clicks, on any site, with or without a cookie banner:
+
+```handlebars
+{{embed 'youtube' id='VIDEO_ID' title='What the video shows'}}
+```
+
+The presets, the sizing and what changes under `config.consent` are in § Cookie consent, under Embeds.
+
 You can compile Sass, either from a file or an inline block:
 
 ```handlebars

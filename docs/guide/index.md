@@ -78,7 +78,11 @@ The default config options are:
     trailingSlash: true,
     hostServed: []
   },
+  host: null,
   redirects: {
+    format: null
+  },
+  cacheHeaders: {
     format: null
   },
   audit: {

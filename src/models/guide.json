@@ -49,8 +49,8 @@
   {
     "slug": "urls",
     "title": "URLs and redirects",
-    "description": "Telling kiss how your host serves URLs, trailing slashes included, and keeping old addresses alive with aliases and redirect files.",
-    "sections": ["Host URL policy", "Redirects"]
+    "description": "Telling kiss where the site is deployed and how its host serves URLs, keeping old addresses alive with redirect files, and letting the host cache hashed files for a year.",
+    "sections": ["Host URL policy", "Redirects", "Cache headers"]
   },
   {
     "slug": "packages",
