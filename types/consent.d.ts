@@ -368,10 +368,11 @@ export const DEFAULT_TEXT: Readonly<{
     hide: "Hide";
     necessaryLabel: "Necessary";
     necessaryDescription: "Make the site work, and remember the choice you make here. They cannot be switched off.";
+    servicesLabel: "Services";
     embedNotice: "This content is hosted by {provider}, which may set cookies when it loads.";
     embedLoad: "Load it";
-    embedAllow: "Always allow {provider}";
-    embedWatch: "Open it on {provider}";
+    embedAllow: "Always allow {service}";
+    embedWatch: "Open it on {service}";
     historyLink: "See your consent history";
     historyTitle: "Your cookie choices";
     historyIntro: "Every cookie choice made in this browser on this site, newest first. It is kept in this browser only: another browser or device has its own.";
@@ -461,7 +462,7 @@ export const PRESETS: Readonly<{
     youtube: Readonly<{
         category: "marketing";
         label: "YouTube";
-        provider: "YouTube";
+        provider: "Google";
         description: "Plays videos hosted on YouTube.";
         policy: "https://policies.google.com/privacy";
         embed: {

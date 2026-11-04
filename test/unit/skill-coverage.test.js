@@ -291,6 +291,13 @@ const COVERAGE = [
     ],
   },
   {
+    // 2026-11-04 (the operator): closing a site's branch opens its pull
+    // request, against the base the session names, rather than only when asked.
+    feature: 'the close opens the pull request against the base',
+    pattern: /gh pr create --base <base>/,
+    skills: [skill('kiss-memory', 'kiss-branch-close')],
+  },
+  {
     feature: 'the record command',
     pattern: /kiss-ssg aikb/,
     skills: [
@@ -948,6 +955,14 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-11-04 (the operator): kiss-branch-close opens the pull request as part of the close; a sentence saying it does so only when asked is the instruction that replaced',
+    patterns: [
+      /Opens a pull request only when asked/,
+      /Open a pull request only if the user asks/,
+      /PR only when asked/,
+    ],
+  },
   {
     why: '2026-11-03 (D1, planning/specs/2026-11-03-kiss-consent.md): the consent id is made at every choice, endpoint or not, because the browser log and the history page carry it; a doc saying it exists only with an endpoint tells a site its visitors are unidentified when the cookie holds an id',
     patterns: [

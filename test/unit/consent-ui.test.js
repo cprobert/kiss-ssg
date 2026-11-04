@@ -135,14 +135,37 @@ describe('settingsHtml', () => {
       '<h2 id="kiss-consent-dialog-title">Cookie settings</h2>',
     )
     expect(html).toContain('href="/cookies/"')
-    expect(settingsHtml(site())).not.toContain('<a ')
+    // The service lists link providers' policies; the site's own links need
+    // policyUrl and historyUrl.
+    expect(settingsHtml(site())).not.toMatch(
+      /kiss-consent__policy|kiss-consent__history/,
+    )
   })
 
-  it('has a close in its header, then reject all, accept all and save, the three choices one class', () => {
+  it('puts the policy and history links in the footer, below the choices', () => {
+    const withBoth = settingsHtml(site(), {
+      policyUrl: '/cookies/',
+      historyUrl: '/privacy/#kiss-consent-history',
+    })
+    const body = withBoth.slice(
+      withBoth.indexOf('kiss-consent-dialog__body'),
+      withBoth.indexOf('kiss-consent-dialog__foot'),
+    )
+    const foot = withBoth.slice(withBoth.indexOf('kiss-consent-dialog__foot'))
+    expect(body).not.toMatch(/kiss-consent__policy|kiss-consent__history/)
+    expect(foot).toMatch(
+      /data-kiss-consent-action="save"[^]*<div class="kiss-consent-dialog__links"><a class="kiss-consent__policy" href="\/cookies\/">Cookie policy<\/a><a class="kiss-consent__history" href="\/privacy\/#kiss-consent-history">See your consent history<\/a><\/div><\/div><\/dialog>$/,
+    )
+    // No empty links row when there is nothing to link.
+    expect(settingsHtml(site())).not.toContain('kiss-consent-dialog__links')
+  })
+
+  it('has a close in its header, then accept all, reject all and save, the three choices one class', () => {
     const actions = buttons(html).map(
       (b) => /data-kiss-consent-action="([^"]+)"/.exec(b)?.[1],
     )
-    expect(actions).toEqual(['close-dialog', 'reject', 'accept', 'save'])
+    // Accept first, as in the banner (the operator, 2026-11-04).
+    expect(actions).toEqual(['close-dialog', 'accept', 'reject', 'save'])
     expect(buttons(html)[0]).toContain('class="kiss-consent__close"')
     for (const b of buttons(html).slice(1))
       expect(b).toContain('class="kiss-consent__button"')
@@ -192,9 +215,99 @@ describe('settingsHtml', () => {
     expect(html).not.toContain('data-kiss-consent-service="fonts"')
   })
 
+  /**
+   * The service list under one category: the `<li>` texts in order, or null
+   * when the category's block holds no list.
+   *
+   * @param {string} markup
+   * @param {string} id the category switch's id
+   */
+  const listed = (markup, id) => {
+    const block = markup
+      .split('<div class="kiss-consent-dialog__category">')
+      .find((b) => b.includes(`<label for="${id}">`))
+    const list = block?.match(
+      /<ul class="kiss-consent-dialog__services" aria-label="([^"]*)">(.*?)<\/ul>/,
+    )
+    if (!list) return null
+    return {
+      label: list[1],
+      // The text a visitor reads; the policy links are tested on their own.
+      items: [...list[2].matchAll(/<li>(.*?)<\/li>/g)].map((m) =>
+        m[1].replace(/<[^>]*>/g, ''),
+      ),
+    }
+  }
+
+  it('links the provider to its privacy policy, and leaves one without a policy plain', () => {
+    expect(html).toContain(
+      '<li>YouTube (<a href="https://policies.google.com/privacy">Google</a>)</li>',
+    )
+    expect(html).toContain('<li>Chat (Chatter)</li>')
+  })
+
+  it('escapes a policy URL in the href', () => {
+    const r = resolved({
+      services: {
+        chat: {
+          category: 'marketing',
+          provider: 'Chatter',
+          policy: 'https://chat.example/p?a=1&b="x"',
+        },
+      },
+    })
+    expect(settingsHtml(r)).toContain(
+      '<a href="https://chat.example/p?a=1&amp;b=&quot;x&quot;">Chatter</a>',
+    )
+    expect(tableHtml(r)).toContain(
+      '<a href="https://chat.example/p?a=1&amp;b=&quot;x&quot;">Chatter</a>',
+    )
+  })
+
+  it('names every service of a category in use, label (provider) always, in name order (the ICO: name each controller)', () => {
+    expect(listed(html, 'kiss-consent-marketing')).toEqual({
+      label: 'Services',
+      items: [
+        'Google Tag Manager (Google)',
+        'Vimeo (Vimeo)',
+        'YouTube (Google)',
+      ],
+    })
+    expect(listed(html, 'kiss-consent-preferences')?.items).toEqual([
+      'Chat (Chatter)',
+    ])
+  })
+
+  it('names the necessary services too, and lists nothing for a category with none', () => {
+    expect(listed(html, 'kiss-consent-necessary')?.items).toEqual([
+      'Fonts (This site)',
+    ])
+    const none = settingsHtml(resolved({ services: { youtube: {} } }))
+    expect(listed(none, 'kiss-consent-necessary')).toBeNull()
+    expect(none).toContain('<ul class="kiss-consent-dialog__services"')
+  })
+
+  it('puts the list after the description and before the grant toggles', () => {
+    const block =
+      html
+        .split('<div class="kiss-consent-dialog__category">')
+        .find((b) => b.includes('<label for="kiss-consent-marketing">')) ?? ''
+    const at = (/** @type {string} */ s) => block.indexOf(s)
+    expect(at('<p>')).toBeGreaterThan(-1)
+    expect(at('<p>')).toBeLessThan(at('<ul'))
+    expect(at('<ul')).toBeLessThan(at('kiss-consent-dialog__grant'))
+  })
+
+  it('takes the list label from ui.text.servicesLabel', () => {
+    const r = site({ ui: { text: { servicesLabel: 'Used by' } } })
+    expect(listed(settingsHtml(r), 'kiss-consent-marketing')?.label).toBe(
+      'Used by',
+    )
+  })
+
   it('escapes every string', () => {
     const r = resolved({
-      services: { youtube: { label: HOSTILE } },
+      services: { youtube: { label: HOSTILE, provider: HOSTILE } },
       categories: { marketing: { label: HOSTILE, description: HOSTILE } },
       ui: {
         text: { settings: HOSTILE, save: HOSTILE, necessaryLabel: HOSTILE },
@@ -292,6 +405,19 @@ describe('tableHtml', () => {
     ])
   })
 
+  // Cookiebot's declaration links each provider to its privacy policy; kiss
+  // had the URL (`policy`) and showed it nowhere (the operator, 2026-11-04).
+  it('links each provider to its privacy policy, and leaves one without a policy plain', () => {
+    expect(html).toContain(
+      '<td>YouTube</td><td><a href="https://policies.google.com/privacy">Google</a></td>',
+    )
+    expect(html).toContain(
+      '<td>Vimeo</td><td><a href="https://vimeo.com/privacy">Vimeo</a></td>',
+    )
+    expect(html).toContain('<td>Chat</td><td>Chatter</td>')
+    expect(html).toContain('<td>Cookie consent</td><td>This site</td>')
+  })
+
   it('gives a service that stores nothing one row named —', () => {
     expect(rows(tables[1])).toEqual([
       ['Chat', 'Chatter', 'Live chat', '—', '—', '—', '—'],
@@ -385,6 +511,15 @@ describe('themeCss', () => {
     expect(css).toContain('.kiss-consent-switch:checked::before{left:')
   })
 
+  it("sets the dialog's links apart under the choices, ruled off and centred (the operator, 2026-11-04)", () => {
+    const rule = /\.kiss-consent-dialog__links\{([^}]*)\}/.exec(
+      themeCss(site().ui),
+    )?.[1]
+    expect(rule).toContain('flex-basis:100%')
+    expect(rule).toContain('justify-content:center')
+    expect(rule).toContain('border-top:1px solid var(--kiss-consent-border)')
+  })
+
   it('has visible focus, the dialog backdrop and reduced motion', () => {
     expect(css).toContain(':focus-visible')
     expect(css).toContain('outline:3px solid var(--kiss-consent-accent)')
@@ -408,7 +543,9 @@ describe('themeCss', () => {
   // Inlined on every page. The 2026-11-03 restyle (the operator: "the
   // diploma MSc one looks better than ours") took it from 4,005 bytes to
   // about 6.7 kB; the ceiling catches growth, and moving it is a decision.
+  // 2026-11-04: 7,168 → 7,424, the operator's call, for the dialog's service
+  // lists and its ruled-off, centred footer links (7,204 bytes then).
   it('stays compact', () => {
-    expect(Buffer.byteLength(themeCss(site().ui))).toBeLessThan(7168)
+    expect(Buffer.byteLength(themeCss(site().ui))).toBeLessThan(7424)
   })
 })
