@@ -81,3 +81,18 @@ Cost $0.23, 28 s, 9 turns, 0 commit attempts.
 - **Measured in Chromium**, as before: 0 third-party requests and nothing stored before the click; after it, 13 requests and the same frame storage as the before run (`ytidb::LAST_RESULT_ENTRY_KEY`, IndexedDB `YtIdbMeta`).
 - **What it got wrong:** "I relied on kiss's default 16:9 sizing because the site has no stylesheet." The frame is 16:9 once loaded, but the facade before it reserves no space. On a page with no stylesheet it is a paragraph, a button and a link (`shots-after/index--1440-light.png` in the session scratchpad), and the page shifts when the frame arrives. The hand-built facade of the before run had a 16:9 dark box.
 - **Not opened by either run:** `kiss-legal-and-privacy`. `kiss-page-add` says to open it when a page gains an embed; the after run never opened `kiss-page-add`, and the before run read only its build-mode lines with `sed`.
+
+## Checks on the branch's own output (2026-11-04, at `6ddf6ee` and after)
+
+- **The box geometry, at 320 px, through this branch's working tree** (the after site rebuilt by a scratch router): the notice centred in an unbordered 16:9 space. The operator looked at it on the phone and said: "Looked, it's right".
+- **GUIDE's new snippets, as written,** in a scratch site with no `config.consent`, built by the working tree: the build passed, and `thirdParty` listed `www.instagram.com` and `www.youtube-nocookie.com`.
+- **The real Instagram reel through `{{embed}}`**, Load pressed, 8 s later:
+
+  | Viewport | Box before | Box after | Frame height | Cookies |
+  | -------- | ---------- | --------- | ------------ | ------- |
+  | 320 px   | 288 × 600  | 288 × 568 | 568 px       | none    |
+  | 1440 px  | 540 × 600  | 540 × 883 | 883 px       | none    |
+
+  The frame took the height it reported, at the width cap. The box moved once, by −32 px and +283 px, because a post's height is not known before it loads. GUIDE first said "nothing on the page moves"; it now says that holds for a video, and gives these numbers for Instagram.
+
+- **Example 14 on `main` and on the branch** (`kiss-ssg check router.js`, `main` from a scratch worktree): the purposes version `25694fdbc78a` and the banner hash `a85bf1298732` are the same. The only difference in the consent record is `YtIdbMeta` in the YouTube service's list.
