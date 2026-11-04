@@ -60,6 +60,11 @@ opened: 2026-11-04
   - the skill measures first and last.
   - Added criterion: `kiss-ssg speed` exists with its decisions in a tested `lib/` module, and `kiss-performance` uses it before and after.
 - Claude decided the mechanics: patterns on Firebase, no HTML rules on Netlify, `cacheHeaders` appended to the report, the renamed check ids, the `llms.txt` cut, and the skill-rule fixes against `kiss-legal-and-privacy`.
+- **2026-11-04: the install instructions offer Lighthouse.** The operator asked whether the docs should change, given that the full kiss experience now needs one more install. The operator chose "offered, not installed" (Claude's recommendation) over installing it at `init`. The changes:
+  - the README's optional panel and prompts table (`a927125`);
+  - a `speed` script for the starter only, the last of `init`'s next steps, and `AGENTS.md` (`a927125`);
+  - every install box on the docs site's home page, and `kiss-performance` on its Skills page, which had missed the skill (`cc91574`).
+- **2026-11-04: `speed` takes a build folder, not a site script.** The sub-agent found no way to learn `folders.build` without running the build. Claude accepted the folder form rather than adding a config-only mode, and recorded it in the contract.
 
 ## Pulse log
 
@@ -76,6 +81,15 @@ opened: 2026-11-04
   - **Eyeball: deferred** to `/branch-close`'s eyeball step: step 2 of `kiss-site-review/SKILL.md`.
   - **Offer: overturned.** Claude had the build fail when an unhashed file matches the Firebase hash pattern. The operator chose a warning: "It's an optimisation rather than a critical issue. So a warning will suffice." The contract is updated.
   - Decision: adjust (the link fix), then continue with C, the engine.
+- **2026-11-04**: after the engine slice, the speed command and the install docs (`04c3dd0`..`cc91574`, plus the test fix below).
+  - **Met:** criteria 1–5 and 8, and the `kiss-ssg speed` Amendment. `npm test` gives 120 files, 3,984 passed, 7 skipped. Every new test was seen red: against the old code, or under mutations of the new.
+  - **Partial:** the cache-header Amendment, built and tested, with the operator's deploy previews still to run. Criterion 9: tests are green, the gates and the Codex review are not yet run.
+  - **Not yet:** criteria 6 (the measurement) and 7 (the clean room).
+  - The pulse's `npm test` found a fault in `cc91574`: `test/unit/home-quickstart.test.js` still forbade optional panels outside Claude Code's box. The test now pins both rules, no Anthropic plugin outside that box and Lighthouse in every box.
+  - Drift: the remit grew by the operator's decisions, each recorded in the Amendments, the install docs included. The impact surface is still public API, and a minor is proposed.
+  - **Eyeball: looked.** The operator read `plugins/kiss-ssg/skills/kiss-performance/SKILL.md` end to end: "Looked, it's right".
+  - **Offer: kept.** kiss writes no HTML cache rule on any host, Firebase included, whose HTML default is an hour. The operator chose "keep, decide after the preview": add a `no-cache` HTML rule for Firebase only if the deploy preview shows it is still served from the edge.
+  - Decision: continue with the measurement (criterion 6), then the clean room (7), then the operator's deploy previews.
 
 ---
 
