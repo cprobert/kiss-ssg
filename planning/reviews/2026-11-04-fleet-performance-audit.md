@@ -62,7 +62,7 @@ No site hashes its assets (0 of 17, 0 of 210 and 0 of 92), so `host-unset` had n
 
 **swan-love: the one with a real speed problem.**
 
-1. **The SoundCloud player** is a bare iframe on the home page with `auto_play=true`. It loads, and plays, with the page. Most of the home page's 3.1 MB is likely its player, since the page's six images total about 620 KB. That is inferred from the sizes, not isolated by a measurement. Make it click to load. kiss's `{{embed}}` has no `soundcloud` preset yet, which is a gap in the engine (below).
+1. **The SoundCloud player** is a bare iframe on the home page with `auto_play=true`. It loads, and plays, with the page. The page's six images total about 620 KB. The player alone, measured on its own afterwards in a clean Chromium profile with `auto_play=false`, fetched **2,632 KB** of response bodies on load, from six SoundCloud origins, and stored nothing while logged out. Those are decoded bodies, where Lighthouse counts bytes on the wire, but they make the player most of the page. Make it click to load: `{{embed "soundcloud" id="317030874" title="…"}}`, added on this branch (below).
 2. **The hero `/images/swan-love.jpg`** (503 KB, no `width`/`height`): give it its size, `fetchpriority="high"`, and a WebP or AVIF of a sensible width. It is the likely LCP element and the likely source of the 0.091 CLS. Both are inferred: `speed` records the time, not the element.
 3. **jQuery 1.10 in the head, blocking:** `defer`, or remove it if nothing needs it.
 4. Turning on hashing would buy nothing here: GitHub Pages sends `max-age=600` on everything.
@@ -85,6 +85,6 @@ No site hashes its assets (0 of 17, 0 of 210 and 0 of 92), so `host-unset` had n
 - **The checks found true problems at the scale they exist**, and k9's clean result agrees with its 95–98 scores. No false finding was seen on kiss's own markup.
 - **`script-blocking` needs a second line in the skill:** when the blocking script is a consent manager that must load first (Cookiebot), the fix is the consent decision, not `defer`. → add it to `kiss-performance` and the review's fix row.
 - **`img-dimensions-missing` counts per image per page**, so a logo repeated in the layout reads as 768 findings. The summary already groups by page, and the fix is one layout edit. → say so in the fix row ("a layout image counts once per page: fix it in the layout").
-- **`{{embed}}` has no `soundcloud` preset.** The worst page in the fleet is that embed. → a candidate for the engine, outside this branch's scope unless the operator chooses it.
+- **`{{embed}}` had no `soundcloud` preset**, and the worst page in the fleet is that embed. → The operator chose to add it on this branch. It is the classic 166 px player for a track `{id}`, never autoplaying, with `src=` for a playlist. It has no provider link, because a track id does not lead to the track's page: SoundCloud answers `/tracks/<id>` with a redirect to its charts. Its origins are the six measured, and `consent-missing` now knows `w.soundcloud.com`.
 - **The audit cannot see an LCP of 2.7 s on a page it finds clean.** k9's service page is near the line with nothing to report. That is why the skill measures with `speed` before and after, and does not stop at the audit.
 - **`speed` worked on live URLs through three CDNs** and exited 0 each time. Every page loaded.

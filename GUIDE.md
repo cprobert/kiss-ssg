@@ -1054,7 +1054,7 @@ A frame from another site loads only when the visitor asks for it:
 {{embed 'instagram' id='DfQCqMnhpsG' title='Our latest roast, on Instagram'}}
 ```
 
-The name is a preset (`youtube`, `vimeo`, `google-maps`, `instagram`; the table under § Services and presets), `title=` is the frame's accessible name and is required, `src=` replaces the preset's URL (`google-maps` has none, so it needs one), and any other key fills a `{placeholder}` in the URL, as `id` does. `instagram` takes the code from the post's or the reel's address (`instagram.com/p/<id>/` or `instagram.com/reel/<id>/`): one id covers both.
+The name is a preset (`youtube`, `vimeo`, `google-maps`, `instagram`, `soundcloud`; the table under § Services and presets), `title=` is the frame's accessible name and is required, `src=` replaces the preset's URL (`google-maps` has none, so it needs one), and any other key fills a `{placeholder}` in the URL, as `id` does. `instagram` takes the code from the post's or the reel's address (`instagram.com/p/<id>/` or `instagram.com/reel/<id>/`): one id covers both.
 
 kiss writes a notice saying who hosts the content, a **Load it** button, a link to the content on the provider's own site, and the frame held in a `<template>`, so the browser fetches nothing from the provider before the click. The frame is sized for its provider: 16:9 for a video, and for Instagram, a frame at most 540 px wide whose height follows what the post reports. The box around the notice takes the frame's size before the click, so a video's frame arrives without moving anything on the page. An Instagram post's height is known only once it loads, so its box starts at 600 px and then takes the height the post reports: measured on one post, 568 px at a phone's width and 883 px at 540 px wide. kiss sets only that geometry; the colours, border and spacing are your CSS's (`.kiss-embed`, `.kiss-embed__notice`, `.kiss-embed__watch`), or the consent theme's under `config.consent`.
 
@@ -1128,14 +1128,15 @@ The banner links the page whose id is `cookies`, and a build with no such page f
 
 A service is one thing the site loads: a tag, a script of its own, or an embed. **Its name picks a preset** when kiss has one of that name. A preset fills in the loader URL, the provider, the origins, the cookies it sets and, for a Google tag, Consent Mode. Your own keys win over the preset's, except `origins`, which add to them. Any key that is not a setting is a placeholder value: `id` above fills the `{id}` in the preset's URL. The helper's hash fills it first, so `{{consentScript "gtm" id=gtmId}}` takes the id per page, and a placeholder with no value fails the render (`consentScript "gtm": no value for {id}`).
 
-| Name          | Category     | What it loads                                                                                                 |
-| ------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| `gtm`         | `marketing`  | Google Tag Manager, `gtm.js?id={id}`, after its inline `gtm.start` push                                       |
-| `gtag`        | `statistics` | Google Analytics, `gtag/js?id={id}`, with its inline `config` call                                            |
-| `youtube`     | `marketing`  | an embed from `www.youtube-nocookie.com/embed/{id}`, with a link to the video on YouTube                      |
-| `vimeo`       | `marketing`  | an embed from `player.vimeo.com/video/{id}?dnt=1`, with a link to the video on Vimeo                          |
-| `google-maps` | `marketing`  | an embed whose URL you give: `{{embed "google-maps" src="https://www.google.com/maps/embed?…" title="…"}}`    |
-| `instagram`   | `marketing`  | a post or reel from `www.instagram.com/p/{id}/embed`, sized by its own height, with a link to it on Instagram |
+| Name          | Category     | What it loads                                                                                                                                        |
+| ------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gtm`         | `marketing`  | Google Tag Manager, `gtm.js?id={id}`, after its inline `gtm.start` push                                                                              |
+| `gtag`        | `statistics` | Google Analytics, `gtag/js?id={id}`, with its inline `config` call                                                                                   |
+| `youtube`     | `marketing`  | an embed from `www.youtube-nocookie.com/embed/{id}`, with a link to the video on YouTube                                                             |
+| `vimeo`       | `marketing`  | an embed from `player.vimeo.com/video/{id}?dnt=1`, with a link to the video on Vimeo                                                                 |
+| `google-maps` | `marketing`  | an embed whose URL you give: `{{embed "google-maps" src="https://www.google.com/maps/embed?…" title="…"}}`                                           |
+| `instagram`   | `marketing`  | a post or reel from `www.instagram.com/p/{id}/embed`, sized by its own height, with a link to it on Instagram                                        |
+| `soundcloud`  | `marketing`  | the classic 166 px player for track `{id}`, never autoplaying; a playlist or permalink is `src=`. No link: a track id does not give the track's page |
 
 **Why `gtm` is `marketing`.** Consent Mode reaches Google's own tags only. A container also loads other companies' tags, and those run whatever Consent Mode says. Measured on a real container (2026-11-03), a grant of statistics alone loaded Bing, ActiveCampaign and OpenAI scripts. Under `marketing`, the container loads only when marketing is allowed. A site whose container gives every tag that is not Google's its own consent check may set `gtm: { id, category: 'statistics' }`.
 
@@ -1401,16 +1402,16 @@ A site whose every service is `necessary` has nothing to ask: `{{consentBanner}}
 
 Seven audit checks, advisory like every audit check (§ Checking a build):
 
-| id                              | fires when                                                                                                                                                                                        |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consent-missing`               | no `config.consent`, and a page loads a known tracker or embed (Google, Meta, Clarity, Bing, Hotjar, LinkedIn, Reddit, YouTube, Vimeo, Google Maps, Superchat) or has a GTM or gtag loader inline |
-| `consent-ungated`               | `config.consent` is set, and a page loads a third-party script or iframe that no service gates and no `necessary` service names in its `origins`, a `<noscript>` GTM frame included               |
-| `consent-ads-cmp`               | AdSense or Ad Manager is on a page: these need a Google-certified CMP                                                                                                                             |
-| `consent-objection-third-party` | a service in an `objection` category loads from another site                                                                                                                                      |
-| `consent-settings-missing`      | a page has `{{consentHead}}` and no `{{consentSettings}}`, on a site with something to ask (not when every service is `necessary`)                                                                |
-| `consent-google-advanced`       | `google.mode` is `'advanced'`                                                                                                                                                                     |
-| `consent-records-missing`       | a Google tag under `marketing`, and no `endpoint`                                                                                                                                                 |
-| `consent-history-missing`       | the page `ui.history` names has no `{{consentRecord}}`                                                                                                                                            |
+| id                              | fires when                                                                                                                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consent-missing`               | no `config.consent`, and a page loads a known tracker or embed (Google, Meta, Clarity, Bing, Hotjar, LinkedIn, Reddit, YouTube, Vimeo, SoundCloud, Google Maps, Superchat) or has a GTM or gtag loader inline |
+| `consent-ungated`               | `config.consent` is set, and a page loads a third-party script or iframe that no service gates and no `necessary` service names in its `origins`, a `<noscript>` GTM frame included                           |
+| `consent-ads-cmp`               | AdSense or Ad Manager is on a page: these need a Google-certified CMP                                                                                                                                         |
+| `consent-objection-third-party` | a service in an `objection` category loads from another site                                                                                                                                                  |
+| `consent-settings-missing`      | a page has `{{consentHead}}` and no `{{consentSettings}}`, on a site with something to ask (not when every service is `necessary`)                                                                            |
+| `consent-google-advanced`       | `google.mode` is `'advanced'`                                                                                                                                                                                 |
+| `consent-records-missing`       | a Google tag under `marketing`, and no `endpoint`                                                                                                                                                             |
+| `consent-history-missing`       | the page `ui.history` names has no `{{consentRecord}}`                                                                                                                                                        |
 
 `report().consent` is `{ version, purposes, mode, banners: [{ hash, pages }], categories, services: [{ name, category, gated, origins, cookies }], pagesWithoutHead }`, or `null` without `config.consent` and on a failed build. `purposes` is the computed version, kept even when `version` is set by hand. `--summary` prints it as `consent: version <v>, banner <hash>, <n> services`. In `report().thirdParty`, an origin that a service gates carries `services: ['gtm']`: it is fetched only after consent.
 

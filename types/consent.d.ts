@@ -568,6 +568,21 @@ export const PRESETS: Readonly<{
         };
         origins: string[];
     }>;
+    soundcloud: Readonly<{
+        category: "marketing";
+        label: "SoundCloud";
+        provider: "SoundCloud";
+        description: "Plays audio hosted on SoundCloud.";
+        policy: "https://soundcloud.com/pages/privacy";
+        embed: {
+            src: string;
+            title: any;
+            watch: any;
+            ratio: any;
+            height: number;
+        };
+        origins: string[];
+    }>;
 }>;
 /**
  * Hosts whose scripts or frames store or track, for the `consent-missing`
