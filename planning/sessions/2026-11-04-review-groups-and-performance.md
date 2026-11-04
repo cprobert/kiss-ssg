@@ -61,6 +61,16 @@ opened: 2026-11-04
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-04** — after the contract critique and its amendment (`6ec5e5d`).
+  - **Met:** criterion 5, the contract (written, critiqued with 20 findings, amended). Criterion 8, the doc gaps: already closed by `137e36c`, re-checked in GUIDE.md lines 1074–1079.
+  - **Partial:** criterion 1, the review groups. Step 2 is written and its coverage row was seen red, then green.
+  - **Not yet:** criteria 2–4, 6, 7 and 9.
+  - `npm test` found one failure from `6b66d95`: the review skill linked `kiss-performance/SKILL.md` before it exists. Fixed in `c17db4f` by removing the bullet until the skill lands, with the check ids renamed to the amended names. Plugin and coverage tests are green.
+  - No drift; the impact surface is still public API.
+  - **Eyeball: deferred** to `/branch-close`'s eyeball step: step 2 of `kiss-site-review/SKILL.md`.
+  - **Offer: overturned.** Claude had the build fail when an unhashed file matches the Firebase hash pattern. The operator chose a warning: "It's an optimisation rather than a critical issue. So a warning will suffice." The contract is updated.
+  - Decision: adjust (the link fix), then continue with C, the engine.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
