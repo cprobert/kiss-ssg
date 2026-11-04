@@ -65,7 +65,7 @@ With Node.js and Claude Code or Codex installed, these do the rest.
     
     The plugins install for this folder. init declares them in the site's settings, but a declared plugin is not installed until these lines run.
     
-    Optional Anthropic skills for design and testing
+    Optional: Anthropic skills for design and testing, and Lighthouse for speed numbers
     
     kiss decides how a site is built, not what it looks like or how it renders on a phone. One plugin from Anthropic adds both, from the site's folder:
     
@@ -87,7 +87,15 @@ With Node.js and Claude Code or Codex installed, these do the rest.
     python -m playwright install chromium
     ```
     
-    The plugin carries ten other example skills as well. init does not declare it, so installing it is your choice.
+    ##### Lighthouse, for speed numbers
+    
+    Not a skill: Google's page-speed tool, as an npm package. With it, npx kiss-ssg speed public measures a built site, and the kiss-performance skill measures before and after its changes. kiss does not install it, because it is about 19 MB and needs Node 22.19 or later and a Chrome:
+    
+    ```bash
+    npm install -D lighthouse
+    ```
+    
+    The plugin carries ten other example skills as well. init declares neither the plugin nor Lighthouse, so installing them is your choice.
     
     #### Codex
     
@@ -104,6 +112,16 @@ With Node.js and Claude Code or Codex installed, these do the rest.
     
     init enables the plugins for this folder in .codex/config.toml, but Codex installs them once, for your user, and that also switches them on in every folder: your next site needs only the first two lines and codex.
     
+    Optional: Lighthouse for speed numbers
+    
+    Google's page-speed tool, as an npm package. With it, npx kiss-ssg speed public measures a built site, and the kiss-performance skill measures before and after its changes:
+    
+    ```bash
+    npm install -D lighthouse
+    ```
+    
+    kiss does not install it: it is about 19 MB and needs Node 22.19 or later and a Chrome.
+    
     #### Other agent
     
     Copy
@@ -114,6 +132,16 @@ With Node.js and Claude Code or Codex installed, these do the rest.
     ```
     
     For Cursor, Copilot and any other agent: kiss's skills install through Claude Code's and Codex's plugin systems, so yours will not have them — leave the skill names out of the prompts below. init writes AGENTS.md, which points your agent at node\_modules/kiss-ssg/llms.txt; if yours does not read AGENTS.md, ask it to read that file first. Then open your agent in this folder, describe the site, and have it run npm run check.
+    
+    Optional: Lighthouse for speed numbers
+    
+    Google's page-speed tool, as an npm package. With it, npx kiss-ssg speed public measures a built site, before and after a change:
+    
+    ```bash
+    npm install -D lighthouse
+    ```
+    
+    kiss does not install it: it is about 19 MB and needs Node 22.19 or later and a Chrome.
     
 2.  ### Say what you want
     
