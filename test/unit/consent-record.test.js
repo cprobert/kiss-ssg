@@ -100,7 +100,8 @@ describe('recordHtml', () => {
       'Choice',
       'Statistics',
       'Marketing',
-      'Always allowed',
+      'Services allowed',
+      'Services refused',
       'Purposes version',
     ])
     expect(html).toContain('role="region" tabindex="0"')
@@ -223,7 +224,7 @@ describe.each(forms)('the viewer, %s', (_, build) => {
     expect(times[0].textContent).toMatch(/:43\b/)
     expect(times[2].textContent).toMatch(/:42\b/)
     expect(p.doc.querySelector('tbody th').getAttribute('scope')).toBe('row')
-    expect(rows[0][5]).toBe('61f7f5e9e977')
+    expect(rows[0][6]).toBe('61f7f5e9e977')
   })
 
   // D6, as Chromium showed it: the page's `lang` alone gave an en-GB visitor
@@ -280,20 +281,45 @@ describe.each(forms)('the viewer, %s', (_, build) => {
       p.doc
         .querySelector('[data-kiss-consent-record-changed] td')
         .getAttribute('colspan'),
-    ).toBe('6')
+    ).toBe('7')
   })
 
   it('prints an Always allow by its service label, with no category answer', async () => {
     const p = await open({
       log: [
-        entry({ action: 'allow', categories: null, services: { youtube: 1 } }),
+        entry({
+          action: 'allow',
+          categories: null,
+          services: { stats: false, youtube: true },
+        }),
       ],
     })
-    expect(p.rows()[0].slice(1, 5)).toEqual([
+    expect(p.rows()[0].slice(1, 6)).toEqual([
       'Always allowed a service',
       '—',
       '—',
       'YouTube',
+      'Visit counter',
+    ])
+  })
+
+  // Each record names every service it covered, allowed or refused, by the
+  // label this site gives it now; a service the site no longer declares is
+  // named as the record has it (the operator, 2026-11-04: the services can
+  // change, the record says what was agreed then).
+  it('names the services each choice allowed and refused', async () => {
+    const p = await open({
+      log: [
+        entry({
+          action: 'save',
+          categories: { statistics: true, marketing: false },
+          services: { stats: true, youtube: false, retired: false },
+        }),
+      ],
+    })
+    expect(p.rows()[0].slice(4, 6)).toEqual([
+      'Visit counter',
+      'YouTube, retired',
     ])
   })
 
@@ -304,7 +330,7 @@ describe.each(forms)('the viewer, %s', (_, build) => {
           action: '<img src=x onerror=alert(1)>',
           timestamp: '<b>now</b>',
           version: '<i>v</i>',
-          services: { '<script>x</script>': 1 },
+          services: { '<script>x</script>': true },
         }),
         'not a record',
         null,
@@ -318,25 +344,26 @@ describe.each(forms)('the viewer, %s', (_, build) => {
       'Allowed',
       'Allowed',
       '<script>x</script>',
+      '—',
       '<i>v</i>',
     ])
   })
 
   // Found walking example 14 in Chromium (2026-11-03): a tampered category of
-  // `'<b>x</b>'` read as "Allowed". The client writes a category answer as a
-  // boolean and a service grant as `1`, so anything else is not a choice, and
-  // the history, which mirrors the record, must not present it as one.
-  it('shows only a real answer: a boolean category, a service granted as 1', async () => {
+  // `'<b>x</b>'` read as "Allowed". The client writes every answer as a
+  // boolean, so anything else is not a choice, and the history, which mirrors
+  // the record, must not present it as one.
+  it('shows only a real answer: a boolean, for a category and a service', async () => {
     const p = await open({
       log: [
         entry({
           categories: { statistics: '<b>x</b>', marketing: 0 },
-          services: { youtube: 'yes', stats: 1 },
+          services: { youtube: 'yes', stats: 1, gone: null },
         }),
       ],
     })
     const [row] = p.rows()
-    expect(row.slice(2, 5)).toEqual(['—', '—', 'Visit counter'])
+    expect(row.slice(2, 6)).toEqual(['—', '—', '—', '—'])
   })
 
   it('treats a log that is not JSON, or not a list, as empty', async () => {

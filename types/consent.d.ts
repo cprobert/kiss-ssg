@@ -169,7 +169,7 @@ export function clientConfig(resolved: KissConsent, extra?: {
  * @param {string[]} options.hashes the hashes the build's written pages carry
  * @param {Map<string, string>} options.texts each hash's text, as the helper
  * hashed it; a hash with none is listed with `text: null`
- * @returns {{ format: 1, version: string, banners: { hash: string, text: string|null, categories: { key: string, label: string, description: string, mode: string }[], services: { name: string, label: string, category: string }[] }[] }|null}
+ * @returns {{ format: 1, version: string, banners: { hash: string, text: string|null, categories: { key: string, label: string, description: string, mode: string }[], services: { name: string, label: string, provider: string, category: string }[] }[] }|null}
  * `null` without a consent manager, and without an `endpoint`: its one reader
  * is the server records go to, and a site with none has no such server (the
  * operator, 2026-11-03)
@@ -193,6 +193,7 @@ export function bannerRegistry({ consent, hashes, texts }: {
         services: {
             name: string;
             label: string;
+            provider: string;
             category: string;
         }[];
     }[];
@@ -374,14 +375,15 @@ export const DEFAULT_TEXT: Readonly<{
     historyLink: "See your consent history";
     historyTitle: "Your cookie choices";
     historyIntro: "Every cookie choice made in this browser on this site, newest first. It is kept in this browser only: another browser or device has its own.";
-    historySent: "Each choice is also sent to this site as a record holding exactly these details: when you made it, which choice it was, your consent id, the version of the cookie purposes, what you chose for each kind of cookie, any service you always allowed, the version of the banner wording, and the page you were on.";
+    historySent: "Each choice is also sent to this site as a record holding exactly these details: when you made it, which choice it was, your consent id, the version of the cookie purposes, what you chose for each kind of cookie, each service that choice allowed or refused, the version of the banner wording, and the page you were on.";
     historyId: "Your consent id, carried by every record of your choices:";
     historyEmpty: "No cookie choice has been made in this browser yet.";
     historyUnavailable: "This browser does not let the site keep a history, so there is none to show.";
     historyNoScript: "Your history is shown with JavaScript, which is off in this browser.";
     historyWhen: "When";
     historyChoice: "Choice";
-    historyAllowed: "Always allowed";
+    historyServicesAllowed: "Services allowed";
+    historyServicesRefused: "Services refused";
     historyVersion: "Purposes version";
     historyChanged: "The cookie purposes changed after this, so you were asked again.";
     historyYes: "Allowed";

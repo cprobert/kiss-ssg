@@ -227,8 +227,12 @@ const CLIENT_URL = '/kiss-consent.abcdef0123.js'
 // The split's measurement (2026-11-03, gtm + youtube + vimeo): the inline
 // part 4,839 bytes minified, 2,092 gzipped, config included; the cached file
 // 8,939, 3,421 gzipped. About 10% headroom each; see the size block below.
+// The file's ceiling moved once (2026-11-04): the stopgap review's fixes took
+// it to 9,551 and recording every service in each choice to 9,806 (3,769
+// gzipped). It is fetched once and then served from cache, so it was raised
+// to about 10% over that rather than the record losing the services.
 const INLINE_CEILING = 5376
-const FILE_CEILING = 9728
+const FILE_CEILING = 10752
 
 /** The inline part's code, from what `{{consentHead}}` writes. */
 const scriptOf = (html) =>
@@ -648,7 +652,7 @@ describe.each(forms)('the client, %s', (_, build) => {
         version: configFor(SITE).v,
         timestamp: new Date(NOW).toISOString(),
         categories: { statistics: true, marketing: true },
-        services: {},
+        services: { gtm: true, stats: true, youtube: true },
         bannerHash: 'abcdef012345',
         page: '/a/',
       })
@@ -814,6 +818,15 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(log.map((r) => r.action)).toEqual(['accept', 'save'])
       expect(log.map((r) => r.format)).toEqual([2, 2])
       expect(log[1].categories).toEqual({ statistics: true, marketing: false })
+      // Every non-necessary service, allowed or refused, as it stood at that
+      // choice: the services can change later, and the record says what was
+      // agreed to then (the operator, 2026-11-04).
+      expect(log[0].services).toEqual({ gtm: true, stats: true, youtube: true })
+      expect(log[1].services).toEqual({
+        gtm: false,
+        stats: true,
+        youtube: false,
+      })
       expect(log[1].timestamp).toBe(new Date(NOW + 1000).toISOString())
       expect(log).toEqual(p.beacons.map((b) => JSON.parse(b.body)))
     })
@@ -833,7 +846,7 @@ describe.each(forms)('the client, %s', (_, build) => {
           version: configFor(SITE).v,
           timestamp: new Date(NOW).toISOString(),
           categories: { statistics: false, marketing: false },
-          services: {},
+          services: { gtm: false, stats: false, youtube: false },
           bannerHash: 'abcdef012345',
           page: '/a/',
         },
@@ -847,7 +860,19 @@ describe.each(forms)('the client, %s', (_, build) => {
       const [entry] = logOf(p)
       expect(entry.action).toBe('allow')
       expect(entry.categories).toBeNull()
-      expect(entry.services).toEqual({ youtube: 1 })
+      expect(entry.services).toEqual({
+        gtm: false,
+        stats: false,
+        youtube: true,
+      })
+    })
+
+    it('records an objection-mode service as allowed before any category answer', () => {
+      const p = page(withObjection)
+      p.ready()
+      p.click('[data-kiss-consent-action="allow"]')
+      const [entry] = logOf(p)
+      expect(entry.services).toEqual({ gtm: false, stats: true, youtube: true })
     })
 
     it('never logs a page load, a Close, the settings or a plain Load', () => {

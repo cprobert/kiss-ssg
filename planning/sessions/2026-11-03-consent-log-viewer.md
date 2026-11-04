@@ -178,6 +178,22 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
 - **2026-11-03 — a rule slip, for the reflection.** A one-word test-label change in
   `test/unit/skill-coverage.test.js` was made with `sed`, against CLAUDE.md's rule that text
   into a file goes through Edit. It landed as intended (checked by a count before commit).
+- **2026-11-04, after the open-source comparison — the record names its services; the dialog
+  joins the branch.** Claude cloned cookieconsent and Klaro into `C:\Code` (read, never run) and
+  checked the ICO's consent guidance. Two choices, both against Claude's recommendation:
+  - **Every record lists every non-necessary service, `true`/`false`** (recommended: name them
+    in the history from `version` and leave the record alone). The operator's reason: "Because
+    we can change scripts over time, we're going to need to record what was agreed to at the
+    point they agreed to it." The shape, Klaro's, was Claude's recommendation and was taken.
+    `consent-banners.json` gains `provider` with it. Done in this slice; the spec's 2026-11-04
+    amendment has the detail.
+  - **The settings dialog lists each category's services by name, on this branch**
+    (recommended: the next branch, since it changes every page's banner and every banner hash).
+    The operator's reason, as given: "I followed your advice." Claude's recommendation had been
+    the next branch, so the answer may rest on a misread; it is put to the operator once more,
+    as a two-way question, before any dialog work starts.
+  - **The cached file's ceiling moved** from 9,728 to 10,752 bytes (Claude's call, recorded
+    beside it): the services took the file to 9,806, and it is fetched once and then cached.
 
 ## Pulse log
 

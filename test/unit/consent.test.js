@@ -760,9 +760,21 @@ describe('bannerRegistry', () => {
               mode: 'consent',
             },
           ],
+          // `provider`: the ICO asks for the controller who relies on the
+          // consent by name, and a label is not always one (2026-11-04).
           services: [
-            { name: 'stats', label: 'Visit counter', category: 'statistics' },
-            { name: 'youtube', label: 'YouTube', category: 'marketing' },
+            {
+              name: 'stats',
+              label: 'Visit counter',
+              provider: 'Visit counter',
+              category: 'statistics',
+            },
+            {
+              name: 'youtube',
+              label: 'YouTube',
+              provider: 'YouTube',
+              category: 'marketing',
+            },
           ],
         },
       ],

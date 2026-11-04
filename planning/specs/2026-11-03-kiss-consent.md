@@ -402,3 +402,29 @@ served, under `links.trailingSlash`, so it loads wherever the folder is served; 
 resolves inside the prefix, which is what criterion 7 asked of it. The policy, history and logo
 links keep `consentUrl`. Measured after the review fixes: inline 4,887 bytes minified (2,112
 gzipped), the file 9,551 (3,656).
+
+### 2026-11-04 — amended: every record names its services, and the registry its providers
+
+Compared with two open-source managers (cookieconsent records `acceptedServices` per category,
+Klaro a `true`/`false` per service) and with the ICO's consent guidance ("the names of any other
+controllers who will rely on the consent"; "consent for categories of third-party controllers
+will not be specific enough"; records of "what they were told"). The operator: "Because we can
+change scripts over time, we're going to need to record what was agreed to at the point they
+agreed to it."
+
+- **`services` in a format-2 record is now every non-necessary service, `true` or `false`**:
+  what runs after that choice, by its category's answer (before one, its category's mode) or its
+  own Always allow. It replaces the single-grant map (`{ "youtube": 1 }` above), which was the
+  cookie's compact `s` copied as it stood; the cookie keeps `s`. Format 2 had not shipped, so it
+  changes in place rather than becoming format 3. A record now says what it covered without the
+  registry, and a refusal is stated, not inferred from an absence. A new service still changes
+  `version` and asks everyone again: a category's answer never covers a service added later.
+- **The history** names them, in two columns, Services allowed and Services refused, in place
+  of Always allowed (`ui.text.historyServicesAllowed` and `historyServicesRefused` replace
+  `historyAllowed`, which never shipped). A service the site no longer declares is named as the
+  record has it.
+- **`consent-banners.json`** gives each service its `provider`, which `purposesVersion` already
+  hashed. The file is still a snapshot of one build: a server proving what was agreed in the past
+  must keep every version it receives.
+- **The cached file** is 9,806 bytes minified (3,769 gzipped); its ceiling moved from 9,728 to
+  10,752, recorded beside it.

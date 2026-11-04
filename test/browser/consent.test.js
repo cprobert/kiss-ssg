@@ -681,6 +681,8 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
           'Refused',
           'Refused',
           '—',
+          // Every service the choice covered, named (2026-11-04).
+          'Google Tag Manager, Visit counter, YouTube',
           expect.stringMatching(/^[0-9a-f]{12}$/),
         ],
       ])
@@ -689,9 +691,21 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
       await page.check('dialog input[data-kiss-consent-category="statistics"]')
       await page.click('dialog [data-kiss-consent-action="save"]')
       await expect.poll(async () => (await rows()).length).toBe(2)
-      expect((await rows()).map((r) => r.slice(1, 4))).toEqual([
-        ['Saved choices', 'Allowed', 'Refused'],
-        ['Rejected all', 'Refused', 'Refused'],
+      expect((await rows()).map((r) => r.slice(1, 6))).toEqual([
+        [
+          'Saved choices',
+          'Allowed',
+          'Refused',
+          'Visit counter',
+          'Google Tag Manager, YouTube',
+        ],
+        [
+          'Rejected all',
+          'Refused',
+          'Refused',
+          '—',
+          'Google Tag Manager, Visit counter, YouTube',
+        ],
       ])
       await context.close()
     } finally {
