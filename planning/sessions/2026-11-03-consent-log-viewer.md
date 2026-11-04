@@ -201,6 +201,12 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     banner hash.
   - **The cached file's ceiling moved** from 9,728 to 10,752 bytes (Claude's call, recorded
     beside it): the services took the file to 9,806, and it is fetched once and then cached.
+- **2026-11-04, at /branch-close — the version: 2.11.1, not the proposed 2.12.0.** Claude
+  proposed a minor from the open's impact surface (public API: a helper, config keys, a build
+  output, a new record shape). The operator chose a patch. Their reason: "It's a tiny change for
+  users and I've not published 2.11 yet. So the privacy stuff belongs on 2.11.x." Checked: npm's
+  newest is 2.9.0, so neither 2.10.0 nor 2.11.0 has reached a site. The entry still carries an
+  `### Upgrading` note, since a consent site must serve the new file.
 
 ## Pulse log
 
