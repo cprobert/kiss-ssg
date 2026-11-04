@@ -28,7 +28,7 @@ Read the build script — `router.js` on a site that follows the convention in `
   - [`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md): its words, with a visible placeholder for any fact you were not given, never a believable guess.
   - [`kiss-seo`](../kiss-seo/SKILL.md): its own `title` and `description`.
   - [`kiss-accessibility`](../kiss-accessibility/SKILL.md): its headings, image `alt` text, labels and focus.
-  - [`kiss-front-end`](../kiss-front-end/SKILL.md): its image sizes and any interactivity.
+  - [`kiss-front-end`](../kiss-front-end/SKILL.md): its image sizes, any interactivity, and any video, map or post it embeds.
 - **A page that adds a form field, an embed (a video, a map) or a third-party script changes what the site does with visitors' details.** Open [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md) before you add it, even when the page you are replicating has the same thing: the privacy page and the form's line may need to change in the same edit, and that is not a flaw to leave for a review.
 
 ### 3. Update an existing page

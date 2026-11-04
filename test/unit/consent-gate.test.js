@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { minify } from 'html-minifier-terser'
 import {
   consentWiringProblems,
-  embedMarkup,
   findDocumentWrite,
   gatedScript,
 } from '../../lib/consent-gate.js'
@@ -31,28 +30,6 @@ const script = (name, extra = {}) =>
     params: serviceParams(consent.services[name], extra.hash ?? {}),
     ...extra,
   })
-const embed = (name, extra = {}) =>
-  embedMarkup(name, consent.services[name], {
-    consent,
-    params: serviceParams(consent.services[name], extra.hash ?? {}),
-    ...extra,
-  })
-
-/**
- * An embed under a site's own `ui.text`.
- *
- * @param {Record<string, string>} text
- * @param {string} name
- * @param {Record<string, any>} [extra]
- */
-const embedWith = (text, name, extra = {}) => {
-  const own = resolved({ services: { youtube: {} }, ui: { text } })
-  return embedMarkup(name, own.services[name], {
-    consent: own,
-    params: serviceParams(own.services[name], extra.hash ?? {}),
-    ...extra,
-  })
-}
 
 describe('gatedScript', () => {
   it('writes a preset as its gated inline part, then its gated loader', () => {
@@ -137,7 +114,7 @@ describe('gatedScript', () => {
     )
     expect(() =>
       script('stats', { body: '<iframe src="https://x.example"></iframe>' }),
-    ).toThrow(/use \{\{consentEmbed\}\} for an iframe/)
+    ).toThrow(/use \{\{embed\}\} for an iframe/)
     expect(() => script('chat')).toThrow(
       /has no src, inline script or partial to load/,
     )
@@ -211,70 +188,6 @@ describe('gatedScript', () => {
   })
 })
 
-describe('embedMarkup', () => {
-  it('holds the frame in a template behind a notice, with the provider’s link', () => {
-    const out = embed('youtube', { hash: { id: 'abc' }, title: 'Our video' })
-    expect(out).toContain(
-      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-consent="marketing">',
-    )
-    expect(out).toContain(
-      '<div class="kiss-embed__notice" data-kiss-consent-ui>',
-    )
-    expect(out).toContain(
-      'This content is hosted by Google, which may set cookies when it loads.',
-    )
-    expect(out).toContain(
-      '<button type="button" data-kiss-consent-action="load">Load it</button>',
-    )
-    expect(out).toContain(
-      '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
-    )
-    expect(out).toContain(
-      '<a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc">Open it on YouTube</a>',
-    )
-    expect(out).toMatch(
-      /<template data-kiss-embed-frame><iframe src="https:\/\/www\.youtube-nocookie\.com\/embed\/abc" title="Our video" loading="lazy" allow="[^"]+" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"><\/iframe><\/template>/,
-    )
-  })
-
-  it('requires a title', () => {
-    expect(() => embed('youtube', { hash: { id: 'abc' } })).toThrow(
-      /title= is required/,
-    )
-  })
-
-  it('takes src= over the preset, and omits a watch link it cannot fill', () => {
-    const out = embed('youtube', {
-      src: 'https://www.youtube-nocookie.com/embed/zzz',
-      title: 'T',
-    })
-    expect(out).toContain('src="https://www.youtube-nocookie.com/embed/zzz"')
-    expect(out).not.toContain('kiss-embed__watch')
-  })
-
-  it('needs a src for a preset with none, and has no watch link for maps', () => {
-    expect(() => embed('maps', { title: 'Map' })).toThrow(/no src — pass src=/)
-    const out = embed('maps', {
-      src: 'https://www.google.com/maps/embed?pb=1',
-      title: 'Map',
-    })
-    expect(out).not.toContain('kiss-embed__watch')
-    // The grant is for this service alone, so the button names it, not its
-    // provider: "Always allow Google" offered all of Google (2026-11-04).
-    expect(out).toContain('Always allow Google Maps')
-    expect(out).toContain('This content is hosted by Google,')
-  })
-
-  it('fills {service} with the label and {provider} with the provider, in a site’s own wording', () => {
-    const out = embedWith(
-      { embedAllow: 'Allow {service} by {provider}' },
-      'youtube',
-      { hash: { id: 'abc' }, title: 'T' },
-    )
-    expect(out).toContain('Allow YouTube by Google</button>')
-  })
-})
-
 describe('consentWiringProblems', () => {
   const HEAD = '<script data-kiss-consent-head>x</script>'
   const BANNER =
@@ -312,6 +225,17 @@ describe('consentWiringProblems', () => {
       'the page gates gtm, youtube but has no {{consentHead}} — put it in <head>, after <meta charset>',
       'the page has a {{consentSettings}} control but no {{consentHead}}',
     ])
+  })
+
+  it('asks no head of a facade embed, which wires itself and remembers nothing', () => {
+    expect(
+      consentWiringProblems(
+        page(
+          '',
+          '<div data-kiss-embed="youtube" data-kiss-embed-facade></div>',
+        ),
+      ),
+    ).toEqual([])
   })
 
   it('reports a head with no banner, and doubles', () => {

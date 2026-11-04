@@ -109,6 +109,16 @@ const STUBS = {
     "window.__loaded.push('gtm');window.__gtmSaw=JSON.stringify(Array.from(window.dataLayer,function(e){return e&&typeof e.length==='number'&&typeof e!=='string'?Array.from(e):e}))",
 }
 
+// Frames that report their height, as Instagram's does (measured 2026-11-04):
+// Instagram's is the one `{{embed}}` listens to; YouTube's sends the same
+// message to show that a frame from another origin is not followed.
+const measuring = (/** @type {number} */ height) =>
+  `<p>embedded</p><script>parent.postMessage(JSON.stringify({type:'MEASURE',details:{height:${height}}}),'*')</script>`
+const DOCUMENT_STUBS = {
+  'www.instagram.com': measuring(777),
+  'www.youtube-nocookie.com': measuring(1234),
+}
+
 /**
  * A fresh context and page: every off-host request recorded and stubbed,
  * `/js/a.js` held back 300 ms so the order test can see a slow external.
@@ -171,7 +181,7 @@ async function open(options = {}, { holdClient = false } = {}) {
       return route.fulfill({
         status: 200,
         contentType: 'text/html',
-        body: '<p>embedded</p>',
+        body: DOCUMENT_STUBS[url.hostname] ?? '<p>embedded</p>',
       })
     return route.fulfill({ status: 204 })
   })
@@ -929,3 +939,115 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
     }
   }, 60000)
 })
+
+// `{{embed}}` on a site with no config.consent: the facade wires itself, with
+// no head and no banner (the 2026-11-04 clean room).
+describe.skipIf(!browser)(
+  '{{embed}} without config.consent, in Chromium',
+  () => {
+    const PLAIN_LAYOUT = [
+      '<!doctype html><html lang="en"><head>',
+      '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">',
+      '<title>{{#block "name"}}{{/block}}</title>',
+      '</head><body><main>{{#block "body"}}{{/block}}</main></body></html>',
+    ].join('')
+    /** @type {{ base: string, local: string, close: () => Promise<void> }} */
+    let site
+    beforeAll(async () => {
+      site = await serve(
+        {
+          'src/layouts/layout.hbs': PLAIN_LAYOUT,
+          'src/pages/index.hbs': consentPage(
+            [
+              '<h1>Home</h1>',
+              '{{embed "youtube" id="abc" title="Our video"}}',
+              '{{embed "instagram" id="DfQCqMnhpsG" title="Our post"}}',
+            ].join(''),
+            'Home',
+          ),
+        },
+        undefined,
+      )
+    }, 60000)
+    afterAll(async () => {
+      await site?.close()
+    })
+
+    it('fetches nothing and stores nothing before a click', async () => {
+      const { context, page, offHost } = await open()
+      await page.goto(`${site.base}/`)
+      await page.waitForTimeout(300)
+      expect(await page.locator('iframe').count()).toBe(0)
+      expect(offHost).toEqual([])
+      expect(await cookieNames(context)).toEqual([])
+      expect(await page.evaluate(() => localStorage.length)).toBe(0)
+      await context.close()
+    })
+
+    it('loads one embed on its own Load button, hides its notice and focuses the frame', async () => {
+      const { context, page, offHost } = await open()
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-embed="youtube"] [data-kiss-embed-action="load"]',
+      )
+      await expect
+        .poll(() => page.locator('iframe[src*="youtube-nocookie"]').count())
+        .toBe(1)
+      expect(await page.locator('iframe[src*="instagram"]').count()).toBe(0)
+      await expect
+        .poll(() => [...new Set(offHost.map((r) => r.host))])
+        .toEqual(['www.youtube-nocookie.com'])
+      expect(
+        await page
+          .locator('[data-kiss-embed="youtube"] .kiss-embed__notice')
+          .isVisible(),
+      ).toBe(false)
+      expect(await page.evaluate(() => document.activeElement?.tagName)).toBe(
+        'IFRAME',
+      )
+      // Its 16:9 size, with nothing from the provider: the height it reports
+      // is not followed, since only Instagram's origin is listened to.
+      const box = await page
+        .locator('iframe[src*="youtube-nocookie"]')
+        .boundingBox()
+      expect(Math.round(((box?.width ?? 0) / (box?.height ?? 1)) * 9)).toBe(16)
+      expect(await cookieNames(context)).toEqual([])
+      await context.close()
+    })
+
+    it('sizes an Instagram frame from the height it reports', async () => {
+      const { context, page } = await open()
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-embed="instagram"] [data-kiss-embed-action="load"]',
+      )
+      await expect
+        .poll(() =>
+          page
+            .locator('iframe[src*="instagram"]')
+            .evaluate((f) => /** @type {HTMLElement} */ (f).style.height),
+        )
+        .toBe('777px')
+      const width = await page
+        .locator('iframe[src*="instagram"]')
+        .evaluate((f) => f.getBoundingClientRect().width)
+      expect(width).toBeLessThanOrEqual(540)
+      await context.close()
+    })
+
+    it('with JavaScript off: the notice and the link to the provider, and no frame', async () => {
+      const { context, page, offHost } = await open({
+        javaScriptEnabled: false,
+      })
+      await page.goto(`${site.base}/`)
+      expect(await page.locator('iframe').count()).toBe(0)
+      expect(
+        await page
+          .locator('a[href="https://www.youtube.com/watch?v=abc"]')
+          .count(),
+      ).toBe(1)
+      expect(offHost).toEqual([])
+      await context.close()
+    })
+  },
+)

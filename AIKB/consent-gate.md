@@ -4,10 +4,10 @@
 
 The consent manager's server side:
 
-- the markup that holds a service back until the visitor allows it: gated scripts and click-to-load embeds;
+- the markup that holds a script back until the visitor allows it;
 - the check that a rendered page is wired so that it can be.
 
-The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` calls the second on every rendered HTML page. The attribute vocabulary is the contract's (`planning/plans/2026-11-02-consent-manager.md` §3), and `lib/consent-client.js` reads the same names.
+`{{consentScript}}` in `lib/handlebars-helpers.js` calls the first; `lib/kiss-page.js` calls the second on every rendered HTML page. An embed's markup is `lib/embed.js`'s (`AIKB/embed.md`). The attribute vocabulary is the contract's (`planning/plans/2026-11-02-consent-manager.md` §3), and `lib/consent-client.js` reads the same names.
 
 ## Public interface
 
@@ -28,17 +28,10 @@ The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` ca
   - **Throws** on:
     - a missing `{param}` value;
     - `document.write` or `writeln` in an inline body;
-    - an `<iframe>` in a block or partial;
+    - an `<iframe>` in a block or partial (the message points at `{{embed}}`);
     - a service with nothing to load.
-- **`embedMarkup(name, service, { consent, params, src, title })` → `string`.** What `{{consentEmbed}}` writes:
-  - a `div.kiss-embed[data-kiss-embed][data-kiss-consent]` holding a `[data-kiss-consent-ui]` notice with **Load it** and **Always allow** buttons (wording from `ui.text`, filled in one pass: `{provider}` with the provider, `{service}` with the label. The default buttons name the service, since the grant is for it alone: "Always allow Google" on a YouTube video read as all of Google, 2026-11-04);
-  - the provider's own link (`embed.watch`), omitted when it has none or a placeholder cannot be filled;
-  - the iframe inside `<template data-kiss-embed-frame>`.
-
-  A `necessary` service gets the plain iframe. **Throws** with no title, or no src.
-
 - **`consentWiringProblems(html)` → `string[]`.** One sentence per problem:
-  1. gated markup, or a settings control, with no consent head;
+  1. gated markup, or a settings control, with no consent head. A facade embed (`data-kiss-embed-facade`, `{{embed}}` with no `config.consent`) is not gated markup: it wires itself and remembers nothing;
   2. a head with no banner, or more than one head or banner;
   3. an executable script before the head's;
   4. one service's script `src` twice on a page.
@@ -46,11 +39,11 @@ The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` ca
 
 ## Depends on
 
-`htmlparser2` (`Parser`, tokenising with source indices); `./consent.js` (`fill`, `gatingOf`).
+`htmlparser2` (`Parser`, tokenising with source indices); `./consent.js` (`fill`, `gatingOf`, `scriptKind`).
 
 ## Depended on by
 
-`lib/handlebars-helpers.js` (`consentScript`, `consentEmbed`); `lib/kiss-page.js` (`consentWiringProblems`). Tests: `test/unit/consent-gate.test.js`, and `test/integration/consent.test.js`, which builds `test/helpers/consent-site.js`.
+`lib/handlebars-helpers.js` (`consentScript`); `lib/kiss-page.js` (`consentWiringProblems`). Tests: `test/unit/consent-gate.test.js`, and `test/integration/consent.test.js`, which builds `test/helpers/consent-site.js`.
 
 ## Non-obvious behavior
 
@@ -61,4 +54,4 @@ The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` ca
   - It fails the page in a production build, with `consent: <problems> (<view>)`, and warns in dev, the `{{link}}` stance. A gated service with no consent head would never run, and a script ahead of the head would run before the Consent Mode default is set.
   - JSON-LD and other data blocks before the head are fine.
   - A page with no `data-kiss-` attribute at all costs one `includes` and is never parsed.
-- **A service loaded twice on one page is a problem,** because the client would run it twice. Two `{{consentEmbed}}` of one service are not: each embed is its own frame.
+- **A service loaded twice on one page is a problem,** because the client would run it twice. Two `{{embed}}` of one service are not: each embed is its own frame.

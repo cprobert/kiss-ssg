@@ -37,6 +37,15 @@ export function matchesHost(url: string, list: readonly {
     path?: string;
 }[]): boolean;
 /**
+ * A preset alone, resolved as a service with no settings of the site's own:
+ * what `{{embed}}` loads on a site with no `config.consent`. `null` for a
+ * name with no preset.
+ *
+ * @param {string} name
+ * @returns {ConsentService|null}
+ */
+export function presetService(name: string): ConsentService | null;
+/**
  * The categories at least one declared service belongs to, `necessary`
  * aside, in `CATEGORY_NAMES` order. Decided once per site, so every page's
  * banner, dialog and cookie hold the same set.
@@ -233,10 +242,11 @@ export function consentReport({ consent, pages, real, gatedPages, }: {
  * @property {ConsentMode} mode
  */
 /**
- * One thing a service stores: a cookie, or a `localStorage` key. Without a
- * `domain` it is the site's own (first-party): withdrawal deletes it. With one
- * it belongs to someone else's origin, which a page cannot clear, so it is
- * listed in `{{consentTable}}` and never deleted.
+ * One thing a service stores: a cookie, or an item of browser storage. Without
+ * a `domain` it is the site's own (first-party): withdrawal deletes it, when it
+ * is a cookie or a `localStorage` key. With one it belongs to someone else's
+ * origin, which a page cannot clear, so it is listed in `{{consentTable}}` and
+ * never deleted.
  *
  * @typedef {Object} ConsentStored
  * @property {string} name a trailing `*` matches any name with that prefix
@@ -244,7 +254,16 @@ export function consentReport({ consent, pages, real, gatedPages, }: {
  * @property {string} description
  * @property {string|null} domain
  * @property {'first'|'third'} party
+ * @property {'cookie'|'local'|'session'|'indexeddb'} kind a cookie, or which
+ * browser storage holds it: a `storage` entry is `local` unless it says
+ * otherwise
  */
+/** A `storage` entry's `kind`, as the cookie table names it. */
+export const STORAGE_KINDS: Readonly<{
+    local: "Local storage";
+    session: "Session storage";
+    indexeddb: "IndexedDB";
+}>;
 /**
  * A declared service, resolved over its preset.
  *
@@ -259,12 +278,27 @@ export function consentReport({ consent, pages, real, gatedPages, }: {
  * @property {string|null} src the script URL, `{param}` placeholders unfilled
  * @property {string|null} inline script run, gated, before `src`
  * @property {string|null} partial a site partial whose scripts are this service
- * @property {{ src: string|null, title: string|null, watch: string|null }|null} embed
+ * @property {ConsentEmbed|null} embed
  * @property {string[]} origins every third-party origin it loads, `src` and `embed.src` included
  * @property {ConsentStored[]} cookies
  * @property {ConsentStored[]} storage `localStorage` keys
  * @property {boolean} google a Google tag: Consent Mode governs it
  * @property {Record<string, string>} params placeholder values (`id`)
+ */
+/**
+ * What `{{embed}}` loads for a service, and how its frame is sized.
+ *
+ * @typedef {Object} ConsentEmbed
+ * @property {string|null} src the frame URL, `{param}` placeholders unfilled
+ * @property {string|null} title the frame's accessible name
+ * @property {string|null} watch the provider's own page for it
+ * @property {string|null} ratio the frame's CSS `aspect-ratio` (`16/9`), or
+ * null for a frame whose content decides its height
+ * @property {number|null} width the frame's widest, in CSS pixels
+ * @property {number|null} height the frame's starting height in CSS pixels,
+ * when it has no `ratio`
+ * @property {boolean} measure the frame reports its height (`MEASURE`
+ * messages, as Instagram's does), and the page follows it
  */
 /**
  * The Google Consent Mode block.
@@ -471,12 +505,19 @@ export const PRESETS: Readonly<{
             watch: string;
         };
         origins: string[];
-        storage: {
+        storage: ({
             name: string;
             duration: string;
             description: string;
             domain: string;
-        }[];
+            kind?: undefined;
+        } | {
+            name: string;
+            kind: string;
+            duration: string;
+            description: string;
+            domain: string;
+        })[];
     }>;
     vimeo: Readonly<{
         category: "marketing";
@@ -507,6 +548,23 @@ export const PRESETS: Readonly<{
             src: any;
             title: any;
             watch: any;
+        };
+        origins: string[];
+    }>;
+    instagram: Readonly<{
+        category: "marketing";
+        label: "Instagram";
+        provider: "Meta";
+        description: "Shows a post or reel hosted on Instagram.";
+        policy: "https://privacycenter.instagram.com/policy";
+        embed: {
+            src: string;
+            title: any;
+            watch: string;
+            ratio: any;
+            width: number;
+            height: number;
+            measure: boolean;
         };
         origins: string[];
     }>;
@@ -555,10 +613,11 @@ export type ConsentCategory = {
     mode: ConsentMode;
 };
 /**
- * One thing a service stores: a cookie, or a `localStorage` key. Without a
- * `domain` it is the site's own (first-party): withdrawal deletes it. With one
- * it belongs to someone else's origin, which a page cannot clear, so it is
- * listed in `{{consentTable}}` and never deleted.
+ * One thing a service stores: a cookie, or an item of browser storage. Without
+ * a `domain` it is the site's own (first-party): withdrawal deletes it, when it
+ * is a cookie or a `localStorage` key. With one it belongs to someone else's
+ * origin, which a page cannot clear, so it is listed in `{{consentTable}}` and
+ * never deleted.
  */
 export type ConsentStored = {
     /**
@@ -572,6 +631,12 @@ export type ConsentStored = {
     description: string;
     domain: string | null;
     party: "first" | "third";
+    /**
+     * a cookie, or which
+     * browser storage holds it: a `storage` entry is `local` unless it says
+     * otherwise
+     */
+    kind: "cookie" | "local" | "session" | "indexeddb";
 };
 /**
  * A declared service, resolved over its preset.
@@ -602,11 +667,7 @@ export type ConsentService = {
      * a site partial whose scripts are this service
      */
     partial: string | null;
-    embed: {
-        src: string | null;
-        title: string | null;
-        watch: string | null;
-    } | null;
+    embed: ConsentEmbed | null;
     /**
      * every third-party origin it loads, `src` and `embed.src` included
      */
@@ -624,6 +685,42 @@ export type ConsentService = {
      * placeholder values (`id`)
      */
     params: Record<string, string>;
+};
+/**
+ * What `{{embed}}` loads for a service, and how its frame is sized.
+ */
+export type ConsentEmbed = {
+    /**
+     * the frame URL, `{param}` placeholders unfilled
+     */
+    src: string | null;
+    /**
+     * the frame's accessible name
+     */
+    title: string | null;
+    /**
+     * the provider's own page for it
+     */
+    watch: string | null;
+    /**
+     * the frame's CSS `aspect-ratio` (`16/9`), or
+     * null for a frame whose content decides its height
+     */
+    ratio: string | null;
+    /**
+     * the frame's widest, in CSS pixels
+     */
+    width: number | null;
+    /**
+     * the frame's starting height in CSS pixels,
+     * when it has no `ratio`
+     */
+    height: number | null;
+    /**
+     * the frame reports its height (`MEASURE`
+     * messages, as Instagram's does), and the page follows it
+     */
+    measure: boolean;
 };
 /**
  * The Google Consent Mode block.

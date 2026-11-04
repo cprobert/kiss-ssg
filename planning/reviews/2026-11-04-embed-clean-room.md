@@ -52,3 +52,20 @@ After the click, requests went to `youtube-nocookie.com`, `fonts.gstatic.com`, `
 - **What the hand-built version lost, compared with `{{consentEmbed}}`:** no tested client, no audit facts (the iframe is injected by script, so `thirdParty` cannot see it), a guessed title, autoplay chosen for the visitor, and inline styles. Every site that gets a video this way gets a different 30 lines.
 
 So the evidence points at the structural fix the intent made conditional: an embed helper that works on a site with no banner.
+
+## The YouTube preset against today's measurement
+
+The preset declares `yt-icons-last-purged` and `ytidb::LAST_RESULT_ENTRY_KEY` (measured 2026-11-02). Today, after the click, the frame held `ytidb::LAST_RESULT_ENTRY_KEY` in `localStorage` and the IndexedDB database `YtIdbMeta`, and no `yt-icons-last-purged`. The operator chose (2026-11-04) to add `YtIdbMeta` and keep both earlier keys, since one measurement missing a key does not show the player never writes it.
+
+## Instagram, measured in Chromium (2026-11-04)
+
+Public items on @instagram, found logged out: the reel `DfQCqMnhpsG` and the post `DfPQchkG1tg`. Each was loaded as a plain `<iframe src="https://www.instagram.com/{reel|p}/{id}/embed">` in a page served over HTTP, in a clean profile, and read 8 s after load.
+
+| Embed | Requests | `Set-Cookie` headers | Cookies stored | Frame `localStorage` / IndexedDB |
+| ----- | -------- | -------------------- | -------------- | -------------------------------- |
+| reel  | 48       | none                 | none           | none / none                      |
+| post  | 55       | none                 | none           | none / none                      |
+
+- **Origins:** `www.instagram.com`, `static.cdninstagram.com`, `scontent.cdninstagram.com`, and an `*.fna.fbcdn.net` image host whose name varies by region (`instagram.fbrs4-2.fna.fbcdn.net` here).
+- **Not measured:** storage after playing the reel or interacting inside the frame, and a logged-in visitor, whose existing Instagram cookies the frame will read. A request to Meta carries the visitor's IP address and the page whatever is stored, so the embed stays gated, in `marketing`, even with nothing stored on load.
+- **Size.** The frame has no fixed ratio: its height is the media's plus about 215 px for the header, the link and the actions. Rendered at a fixed 900 px it fitted at 1440 px wide and left about 330 px blank at 320 px. **The frame reports its own height** to the parent page with `postMessage`, without `embed.js`: `{"type":"MEASURE","details":{"height":568}}` at 320 px wide and `883` at 1440 px (its width capped at 540 px). The same messages came from the reel and the post, along with `LOADING` and `MOUNTED`.

@@ -587,7 +587,7 @@ describe('a consent site, wired wrongly', () => {
       ),
     })
     const { errors } = await build(config())
-    expect(errors.join('\n')).toMatch(/use \{\{consentEmbed\}\} for an iframe/)
+    expect(errors.join('\n')).toMatch(/use \{\{embed\}\} for an iframe/)
   })
 
   it('fails when ui.policy names no page', async () => {
@@ -652,5 +652,93 @@ describe('consent on learning-package pages', () => {
     )
     const lesson = await site.read('public/lesson.html')
     expect(lesson).not.toMatch(/data-kiss-consent/)
+  })
+})
+
+// The 2026-11-04 clean room: an agent asked to add a video to a site with no
+// banner hand-built a facade, because the embed helper existed only under
+// config.consent. {{embed}} works on any site.
+describe('{{embed}} on a site with no config.consent', () => {
+  const PLAIN_LAYOUT = [
+    '<!doctype html><html lang="en"><head>',
+    '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<title>{{#block "name"}}{{/block}}</title>',
+    '</head><body><main>{{#block "body"}}{{/block}}</main></body></html>',
+  ].join('')
+
+  it('writes a facade that needs no head, banner or cookie page, and the audit sees the frame as held back', async () => {
+    site = await makeSite({
+      'src/layouts/layout.hbs': PLAIN_LAYOUT,
+      'src/pages/index.hbs': consentPage(
+        [
+          '<h1>Home</h1>',
+          '{{embed "youtube" id="dQw4w9WgXcQ" title="Our video"}}',
+          '{{embed "instagram" id="DfQCqMnhpsG" title="Our latest post"}}',
+        ].join(''),
+        'Home',
+      ),
+    })
+    const { report, errors } = await build(config({ consent: undefined }))
+    expect(errors).toEqual([])
+    expect(report.ok).toBe(true)
+    const home = await site.read('public/index.html')
+    expect(home).toContain(
+      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade>',
+    )
+    expect(home).toContain('data-kiss-embed-action="load"')
+    expect(home).not.toContain('data-kiss-consent')
+    // One wiring script per facade, and Instagram's height listener for its
+    // own origin; minified, so read by what they do, not their names.
+    expect(
+      home.match(/hasAttribute\("data-kiss-embed-facade"\)/g),
+    ).toHaveLength(2)
+    expect(home).toContain('"MEASURE"')
+    expect(home).toContain('(window,"https://www.instagram.com")</script>')
+    // Nothing fetches before a click, so no consent finding, and the
+    // inventory still names both providers as held-back frames.
+    const checks = (report.audit?.findings ?? []).map((f) => f.check)
+    expect(checks.filter((c) => c.startsWith('consent-'))).toEqual([])
+    expect(report.thirdParty?.origins).toEqual([
+      'https://www.instagram.com',
+      'https://www.youtube-nocookie.com',
+    ])
+    expect(report.consent).toBeNull()
+  })
+
+  it('fails a name with no embed preset, and a learning package’s page', async () => {
+    site = await makeSite({
+      'src/layouts/layout.hbs': PLAIN_LAYOUT,
+      'src/pages/index.hbs': consentPage('{{embed "tiktok" id="x" title="T"}}'),
+      'src/pages/lesson.hbs': consentPage(
+        '{{embed "youtube" id="x" title="T"}}',
+      ),
+    })
+    kiss = new Kiss(config({ consent: undefined }))
+      .page({ view: 'index.hbs' })
+      .page({ view: 'lesson.hbs', package: 'course' })
+      .generate()
+    let errors = []
+    try {
+      await kiss.complete()
+    } catch (err) {
+      errors = (err.errors ?? [err]).map((e) => String(e?.message ?? e))
+    }
+    expect(errors.join('\n')).toMatch(
+      /embed "tiktok": kiss has no embed preset "tiktok" — use one of youtube, vimeo, google-maps, instagram/,
+    )
+    expect(errors.join('\n')).toMatch(
+      /embed "youtube": a learning package's pages carry no third-party embeds/,
+    )
+  })
+
+  it('fails, under config.consent, an embed the site has not declared', async () => {
+    site = await makeSite({
+      ...CONSENT_FILES,
+      'src/pages/index.hbs': consentPage('{{embed "vimeo" id="1" title="T"}}'),
+    })
+    const { errors } = await build(config())
+    expect(errors.join('\n')).toMatch(
+      /embed "vimeo": no service "vimeo" in config\.consent\.services — declare it there/,
+    )
   })
 })

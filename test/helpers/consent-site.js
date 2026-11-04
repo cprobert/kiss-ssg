@@ -27,7 +27,7 @@ export const CONSENT_FILES = {
       '{{consentScript "gtm"}}',
       '{{#consentScript "stats"}}<script src="/js/stats.js" async></script><script>window.statsReady = true</script>{{/consentScript}}',
       '<p>A video.</p>',
-      '{{consentEmbed "youtube" id="abc123" title="Our video"}}',
+      '{{embed "youtube" id="abc123" title="Our video"}}',
     ].join(''),
     'Home',
   ),

@@ -993,7 +993,30 @@ None of it throws, and a value is cleaned to what SCORM 1.2 accepts (an interact
 
 A site that loads analytics, an advertising tag or a video from another company stores something on its visitors' devices, and in the UK and the EU most of that needs the visitor's consent first. kiss has a consent manager built in. Declare once, in `config.consent`, every service the site loads that stores or reads anything, and kiss makes four things from that one block: the banner, the settings dialog, the cookie table, and the gating on every page. **Nothing a gated service loads is fetched until the visitor allows it.** `examples/14-consent` (`npm run eg14`) is a working site. Whether a site needs consent for a given service, and what its privacy page says, is the `kiss-legal-and-privacy` skill's.
 
-**When you do not need it.** A site with nothing to ask about needs no banner. That means no analytics, no tags, and no embed that loads with the page. A video or a map can stay that way with a hand-built click-to-load facade: a poster and a button that loads the iframe only when pressed (the `kiss-front-end` skill). `consent` is `null` by default. The audit's `consent-missing` says when a page loads a known tracker or embed without it.
+**When you do not need it.** A site with nothing to ask about needs no banner. That means no analytics, no tags, and no embed that loads with the page. A video, a map or an Instagram post can stay that way with `{{embed}}` (below), which needs no `config.consent`: nothing loads until the visitor presses its button. `consent` is `null` by default. The audit's `consent-missing` says when a page loads a known tracker or embed without it.
+
+#### Embeds: `{{embed}}`
+
+A frame from another site loads only when the visitor asks for it:
+
+```hbs
+{{embed
+  'youtube'
+  id='VIDEO_ID'
+  title='A roast, from green beans to first crack'
+}}
+{{embed 'instagram' id='DfQCqMnhpsG' title='Our latest roast, on Instagram'}}
+```
+
+The name is a preset (`youtube`, `vimeo`, `google-maps`, `instagram`; the table under § Services and presets), `title=` is the frame's accessible name and is required, `src=` replaces the preset's URL (`google-maps` has none, so it needs one), and any other key fills a `{placeholder}` in the URL, as `id` does. `instagram` takes the code from the post's or the reel's address (`instagram.com/p/<id>/` or `instagram.com/reel/<id>/`): one id covers both.
+
+kiss writes a notice saying who hosts the content, a **Load it** button, a link to the content on the provider's own site, and the frame held in a `<template>`, so the browser fetches nothing from the provider before the click. The frame is sized for its provider: 16:9 for a video, and for Instagram, a frame at most 540 px wide whose height follows what the post reports. Style the box through `.kiss-embed`, `.kiss-embed__notice` and `.kiss-embed__watch`.
+
+- **With no `config.consent`,** each embed carries its own small script, so nothing goes in `<head>` and no banner is needed. Nothing is remembered: the next page asks again. The wording is the default `ui.text` (below); to change it, use `config.consent`.
+- **Under `config.consent`,** the embed is one of the site's services, and it must be declared there (`youtube: {}` is enough), or the page fails: an undeclared embed would be missing from the banner and the cookie table. The notice also offers **Always allow**, the visitor's stored choice reveals it, and withdrawing that choice puts the notice back.
+- **On a learning package's page** `{{embed}}` fails, with or without `config.consent` (§ below).
+
+A bare `<iframe>` from YouTube or Instagram fetches the provider's pages, scripts and images as the page loads, and the privacy-enhanced YouTube player writes to the visitor's device once it plays (measured: `localStorage` and an IndexedDB database). `{{embed}}` holds all of it back.
 
 The minimum is the services, and the layout's five places:
 
@@ -1035,7 +1058,7 @@ const kiss = new Kiss({
 {{#extend 'layout'}}
   {{#content 'main'}}
     <h1>Watch a roast</h1>
-    {{consentEmbed
+    {{embed
       'youtube'
       id='VIDEO_ID'
       title='A roast, from green beans to first crack'
@@ -1050,13 +1073,14 @@ The banner links the page whose id is `cookies`, and a build with no such page f
 
 A service is one thing the site loads: a tag, a script of its own, or an embed. **Its name picks a preset** when kiss has one of that name. A preset fills in the loader URL, the provider, the origins, the cookies it sets and, for a Google tag, Consent Mode. Your own keys win over the preset's, except `origins`, which add to them. Any key that is not a setting is a placeholder value: `id` above fills the `{id}` in the preset's URL. The helper's hash fills it first, so `{{consentScript "gtm" id=gtmId}}` takes the id per page, and a placeholder with no value fails the render (`consentScript "gtm": no value for {id}`).
 
-| Name          | Category     | What it loads                                                                                                     |
-| ------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `gtm`         | `marketing`  | Google Tag Manager, `gtm.js?id={id}`, after its inline `gtm.start` push                                           |
-| `gtag`        | `statistics` | Google Analytics, `gtag/js?id={id}`, with its inline `config` call                                                |
-| `youtube`     | `marketing`  | an embed from `www.youtube-nocookie.com/embed/{id}`, with a link to the video on YouTube                          |
-| `vimeo`       | `marketing`  | an embed from `player.vimeo.com/video/{id}?dnt=1`, with a link to the video on Vimeo                              |
-| `google-maps` | `marketing`  | an embed whose URL you give: `{{consentEmbed "google-maps" src="https://www.google.com/maps/embed?…" title="…"}}` |
+| Name          | Category     | What it loads                                                                                                 |
+| ------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| `gtm`         | `marketing`  | Google Tag Manager, `gtm.js?id={id}`, after its inline `gtm.start` push                                       |
+| `gtag`        | `statistics` | Google Analytics, `gtag/js?id={id}`, with its inline `config` call                                            |
+| `youtube`     | `marketing`  | an embed from `www.youtube-nocookie.com/embed/{id}`, with a link to the video on YouTube                      |
+| `vimeo`       | `marketing`  | an embed from `player.vimeo.com/video/{id}?dnt=1`, with a link to the video on Vimeo                          |
+| `google-maps` | `marketing`  | an embed whose URL you give: `{{embed "google-maps" src="https://www.google.com/maps/embed?…" title="…"}}`    |
+| `instagram`   | `marketing`  | a post or reel from `www.instagram.com/p/{id}/embed`, sized by its own height, with a link to it on Instagram |
 
 **Why `gtm` is `marketing`.** Consent Mode reaches Google's own tags only. A container also loads other companies' tags, and those run whatever Consent Mode says. Measured on a real container (2026-11-03), a grant of statistics alone loaded Bing, ActiveCampaign and OpenAI scripts. Under `marketing`, the container loads only when marketing is allowed. A site whose container gives every tag that is not Google's its own consent check may set `gtm: { id, category: 'statistics' }`.
 
@@ -1086,10 +1110,10 @@ consent: {
 }
 ```
 
-- **`cookies` and `storage`** list what a service writes: `{ name, duration, description, domain }`, or a bare name. A name ending `*` is a prefix (`_ga_*`). An entry with a `domain` is another site's (third-party) unless it says `party: 'first'`. A site's own `cookies` and `storage` are added to the preset's, as `origins` are, and an entry with the same name as a preset's replaces it: a `gtm` that declares its container's own cookies (`_fbp`, `_clck`) keeps `_ga`, `_ga_*` and `_gcl_au`.
-- **`src`**, **`inline`** and **`partial`** say what `{{consentScript}}` loads: a URL, a script body run before it, or the name of a site partial whose `<script>` tags are gated as this service. **`embed`** (`{ src, title, watch }`) is what `{{consentEmbed}}` loads, and `watch` is the provider's own page for it.
+- **`cookies` and `storage`** list what a service writes: `{ name, duration, description, domain }`, or a bare name. A name ending `*` is a prefix (`_ga_*`). An entry with a `domain` is another site's (third-party) unless it says `party: 'first'`. A `storage` entry is a `localStorage` key unless its `kind` says `'session'` or `'indexeddb'`; the cookie table names the kind, and withdrawal deletes only the site's own cookies and `localStorage` keys. A site's own `cookies` and `storage` are added to the preset's, as `origins` are, and an entry with the same name as a preset's replaces it: a `gtm` that declares its container's own cookies (`_fbp`, `_clck`) keeps `_ga`, `_ga_*` and `_gcl_au`.
+- **`src`**, **`inline`** and **`partial`** say what `{{consentScript}}` loads: a URL, a script body run before it, or the name of a site partial whose `<script>` tags are gated as this service. **`embed`** (`{ src, title, watch, ratio, width, height, measure }`) is what `{{embed}}` loads. `watch` is the provider's own page for it. `ratio` is the frame's CSS aspect ratio (`'16/9'` by default), or `null` for a frame whose content decides its height, starting at `height` pixels; `width` caps it in pixels; and `measure: true` follows the height the frame reports to the page, as Instagram's does.
 - **`origins`** names the other sites a service loads from, beyond its `src`: for the audit and the version (below).
-- **`label`**, **`provider`** and **`policy`** are how the service is named to the visitor. The dialog lists it as "label (provider)", and the cookie table gives both. `policy` is the provider's own privacy policy, an `http://` or `https://` URL, which links the provider's name in the dialog and the table. The presets carry Google's and Vimeo's. Anything else, such as a page id or a `javascript:` URL, fails the build. `null`, or no `policy`, leaves the name unlinked.
+- **`label`**, **`provider`** and **`policy`** are how the service is named to the visitor. The dialog lists it as "label (provider)", and the cookie table gives both. `policy` is the provider's own privacy policy, an `http://` or `https://` URL, which links the provider's name in the dialog and the table. The presets carry Google's, Vimeo's and Meta's. Anything else, such as a page id or a `javascript:` URL, fails the build. `null`, or no `policy`, leaves the name unlinked.
 - **`category: 'necessary'`** is a service the site cannot work without: it is never gated and never asked about. A library from a CDN is one, and naming its origin is how the audit's `consent-ungated` stops reporting it.
 - **`google: true`** marks a Google tag your config builds itself, so Consent Mode applies to it.
 
@@ -1121,7 +1145,7 @@ consent: {
 | `{{consentHead}}`     | in `<head>`, after `<meta charset>` and the viewport, before any script | the inline client: sets Consent Mode's defaults, reads the stored choice, defines `window.kissConsent`; the rest of the client, `kiss-consent.<hash>.js`, deferred; and the theme's `<style>` |
 | `{{consentBanner}}`   | first in `<body>`                                                       | the banner and the settings dialog, each in a `<template>`, shown only to a visitor who has not chosen                                                                                        |
 | `{{consentScript}}`   | wherever the script belongs                                             | the service's scripts as `type="text/plain"`, which the browser does not run, until allowed                                                                                                   |
-| `{{consentEmbed}}`    | where the embed belongs; `title=` is required                           | a notice with **Load it** and **Always allow** buttons, a link to the provider, and the iframe in a `<template>`                                                                              |
+| `{{embed}}`           | where the embed belongs; `title=` is required                           | a notice with **Load it** and **Always allow** buttons, a link to the provider, and the iframe in a `<template>` (§ Embeds)                                                                   |
 | `{{consentSettings}}` | in every page's footer                                                  | the "Cookie settings" button, so a visitor can change their mind from any page                                                                                                                |
 | `{{consentTable}}`    | on the cookie page                                                      | one table per category: each service, its provider, purpose, cookies and storage, duration, and first or third party                                                                          |
 
@@ -1139,7 +1163,7 @@ Gated scripts run in document order once allowed, each external one and each inl
 
 **The build checks the wiring of every page**, from the HTML it wrote. A page fails, and warns under `dev`, when it has gated markup or a settings button with no `{{consentHead}}`; a head with no banner, or two of either; an executable script before the head's (JSON-LD is fine); or one service's script twice. A mistake in a helper fails the page the same way: `config.consent` not set, an unknown service, a missing placeholder, an iframe inside `{{consentScript}}`, or a `ui.policy` or `ui.logo` that the build does not have.
 
-**On a learning package's pages** (§ Learning packages) `{{consentHead}}`, `{{consentBanner}}` and `{{consentSettings}}` render nothing, so one layout serves both, and `{{consentScript}}` and `{{consentEmbed}}` fail the page. The LMS deals with consent for a course: a reload inside it would break the learner's session, and a `Path=/` cookie would be shared by every course on its domain.
+**On a learning package's pages** (§ Learning packages) `{{consentHead}}`, `{{consentBanner}}` and `{{consentSettings}}` render nothing, so one layout serves both, and `{{consentScript}}` and `{{embed}}` fail the page. The LMS deals with consent for a course: a reload inside it would break the learner's session, and a `Path=/` cookie would be shared by every course on its domain.
 
 #### In the browser: `window.kissConsent`
 
@@ -1825,6 +1849,14 @@ If you want to take a peek at whats properties you have available to to in a han
 ```handlebars
 {{{stringify this}}}
 ```
+
+You can put a YouTube or Vimeo video, a Google map or an Instagram post on a page so that nothing loads from the provider until the visitor clicks, on any site, with or without a cookie banner:
+
+```handlebars
+{{embed 'youtube' id='VIDEO_ID' title='What the video shows'}}
+```
+
+The presets, the sizing and what changes under `config.consent` are in § Cookie consent, under Embeds.
 
 You can compile Sass, either from a file or an inline block:
 

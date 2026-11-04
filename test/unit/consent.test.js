@@ -101,8 +101,70 @@ describe('resolveConsent: the minimum a site writes', () => {
       src: 'https://www.youtube-nocookie.com/embed/{id}',
       title: null,
       watch: 'https://www.youtube.com/watch?v={id}',
+      ratio: '16/9',
+      width: null,
+      height: null,
+      measure: false,
     })
     expect(yt.storage.every((s) => s.party === 'third')).toBe(true)
+  })
+
+  it('reads a storage entry as localStorage unless its kind says otherwise, and a cookie has none', () => {
+    const own = resolveConsent({
+      services: {
+        s: {
+          category: 'statistics',
+          cookies: ['c'],
+          storage: [
+            'a',
+            { name: 'b', kind: 'indexeddb' },
+            { name: 'd', kind: 'session' },
+          ],
+        },
+      },
+    })
+    const s = own?.services.s
+    expect(s?.cookies.map((c) => c.kind)).toEqual(['cookie'])
+    expect(s?.storage.map((c) => c.kind)).toEqual([
+      'local',
+      'indexeddb',
+      'session',
+    ])
+    expect(() =>
+      resolveConsent({
+        services: {
+          s: { category: 'statistics', storage: [{ name: 'b', kind: 'idb' }] },
+        },
+      }),
+    ).toThrow(/storage\[0\]\.kind must be one of local, session, indexeddb/)
+    expect(() =>
+      resolveConsent({
+        services: {
+          s: {
+            category: 'statistics',
+            cookies: [{ name: 'c', kind: 'local' }],
+          },
+        },
+      }),
+    ).toThrow(/cookies\[0\]\.kind is for a storage entry/)
+  })
+
+  it('sends the client only first-party localStorage keys to delete', () => {
+    const own = resolveConsent({
+      services: {
+        s: {
+          category: 'statistics',
+          storage: [
+            'a',
+            { name: 'b', kind: 'indexeddb' },
+            { name: 'd', kind: 'session' },
+          ],
+        },
+      },
+    })
+    if (!own) throw new Error('no consent')
+    const sent = clientConfig(own).services.find((x) => x.name === 's')
+    expect(sent.storage).toEqual(['a'])
   })
 
   it('takes the defaults for everything else', () => {
