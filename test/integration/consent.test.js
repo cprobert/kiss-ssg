@@ -327,7 +327,7 @@ describe('a consent site, built', () => {
   // none (the operator, at the 2026-11-03 pulse).
   // The cached part of the client (spec, "the inline part and the cached
   // file"): written once at the build's root, minified, named by its hash,
-  // and loaded by every consent page with defer.
+  // and loaded by every consent page through its inline part.
   it('writes the cached client file, and every consent page loads it', async () => {
     site = await makeSite(CONSENT_FILES)
     const { report, errors } = await build(config())
