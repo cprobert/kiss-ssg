@@ -50,6 +50,10 @@ opened: 2026-11-04
   - The Cookie policy and consent history links move from the dialog's body to its footer, below the buttons (the recommendation, taken).
   - Forced by the provider change, the operator chose the recommendation: the embed's buttons name the service, not the provider. A new `{service}` placeholder (the label) and the defaults "Always allow {service}" and "Open it on {service}". The notice keeps "hosted by {provider}". Otherwise a YouTube embed would offer "Always allow Google" for a grant of YouTube alone, and Google Maps already did.
 
+- **2026-11-04, at the close (the operator):**
+  - Version 2.11.2, not the proposed 2.12.0. The operator's reason: "2.11 isn't published yet". npm's newest is 2.9.0, and 2.11.1 was never published.
+  - The docs sweep measured that the YouTube provider change moves the purposes `version` of every site using the preset (`b870e36a9103` → `1588eaa503a3`), so their visitors are asked again. The operator accepted the re-ask, the recommendation: the controller named has changed. The upgrade note says so, and that a site can pin `version`.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
