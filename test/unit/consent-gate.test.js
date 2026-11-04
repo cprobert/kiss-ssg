@@ -38,6 +38,22 @@ const embed = (name, extra = {}) =>
     ...extra,
   })
 
+/**
+ * An embed under a site's own `ui.text`.
+ *
+ * @param {Record<string, string>} text
+ * @param {string} name
+ * @param {Record<string, any>} [extra]
+ */
+const embedWith = (text, name, extra = {}) => {
+  const own = resolved({ services: { youtube: {} }, ui: { text } })
+  return embedMarkup(name, own.services[name], {
+    consent: own,
+    params: serviceParams(own.services[name], extra.hash ?? {}),
+    ...extra,
+  })
+}
+
 describe('gatedScript', () => {
   it('writes a preset as its gated inline part, then its gated loader', () => {
     expect(script('gtm')).toBe(
@@ -205,7 +221,7 @@ describe('embedMarkup', () => {
       '<div class="kiss-embed__notice" data-kiss-consent-ui>',
     )
     expect(out).toContain(
-      'This content is hosted by YouTube, which may set cookies when it loads.',
+      'This content is hosted by Google, which may set cookies when it loads.',
     )
     expect(out).toContain(
       '<button type="button" data-kiss-consent-action="load">Load it</button>',
@@ -243,7 +259,19 @@ describe('embedMarkup', () => {
       title: 'Map',
     })
     expect(out).not.toContain('kiss-embed__watch')
-    expect(out).toContain('Always allow Google')
+    // The grant is for this service alone, so the button names it, not its
+    // provider: "Always allow Google" offered all of Google (2026-11-04).
+    expect(out).toContain('Always allow Google Maps')
+    expect(out).toContain('This content is hosted by Google,')
+  })
+
+  it('fills {service} with the label and {provider} with the provider, in a site’s own wording', () => {
+    const out = embedWith(
+      { embedAllow: 'Allow {service} by {provider}' },
+      'youtube',
+      { hash: { id: 'abc' }, title: 'T' },
+    )
+    expect(out).toContain('Allow YouTube by Google</button>')
   })
 })
 

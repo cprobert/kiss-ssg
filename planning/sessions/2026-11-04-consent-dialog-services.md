@@ -43,6 +43,13 @@ opened: 2026-11-04
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-11-04, from the pulse eyeball (the operator):** four dialog changes.
+  - The YouTube preset's provider becomes Google.
+  - Every list item shows the provider in brackets, always: "YouTube (Google)", "Vimeo (Vimeo)". This replaces criterion 1's "label — provider, provider omitted when it equals the label".
+  - The dialog's choices put Accept all first: Accept, Reject, Save. The banner already did.
+  - The Cookie policy and consent history links move from the dialog's body to its footer, below the buttons (the recommendation, taken).
+  - Forced by the provider change, the operator chose the recommendation: the embed's buttons name the service, not the provider. A new `{service}` placeholder (the label) and the defaults "Always allow {service}" and "Open it on {service}". The notice keeps "hosted by {provider}". Otherwise a YouTube embed would offer "Always allow Google" for a grant of YouTube alone, and Google Maps already did.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

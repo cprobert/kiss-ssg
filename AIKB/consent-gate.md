@@ -31,7 +31,7 @@ The helpers in `lib/handlebars-helpers.js` call the first; `lib/kiss-page.js` ca
     - an `<iframe>` in a block or partial;
     - a service with nothing to load.
 - **`embedMarkup(name, service, { consent, params, src, title })` → `string`.** What `{{consentEmbed}}` writes:
-  - a `div.kiss-embed[data-kiss-embed][data-kiss-consent]` holding a `[data-kiss-consent-ui]` notice with **Load it** and **Always allow** buttons (wording from `ui.text`, `{provider}` filled);
+  - a `div.kiss-embed[data-kiss-embed][data-kiss-consent]` holding a `[data-kiss-consent-ui]` notice with **Load it** and **Always allow** buttons (wording from `ui.text`, filled in one pass: `{provider}` with the provider, `{service}` with the label. The default buttons name the service, since the grant is for it alone: "Always allow Google" on a YouTube video read as all of Google, 2026-11-04);
   - the provider's own link (`embed.watch`), omitted when it has none or a placeholder cannot be filled;
   - the iframe inside `<template data-kiss-embed-frame>`.
 

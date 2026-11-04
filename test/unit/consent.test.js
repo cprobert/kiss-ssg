@@ -772,7 +772,7 @@ describe('bannerRegistry', () => {
             {
               name: 'youtube',
               label: 'YouTube',
-              provider: 'YouTube',
+              provider: 'Google',
               category: 'marketing',
             },
           ],

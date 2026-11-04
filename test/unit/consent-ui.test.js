@@ -138,11 +138,30 @@ describe('settingsHtml', () => {
     expect(settingsHtml(site())).not.toContain('<a ')
   })
 
-  it('has a close in its header, then reject all, accept all and save, the three choices one class', () => {
+  it('puts the policy and history links in the footer, below the choices', () => {
+    const withBoth = settingsHtml(site(), {
+      policyUrl: '/cookies/',
+      historyUrl: '/privacy/#kiss-consent-history',
+    })
+    const body = withBoth.slice(
+      withBoth.indexOf('kiss-consent-dialog__body'),
+      withBoth.indexOf('kiss-consent-dialog__foot'),
+    )
+    const foot = withBoth.slice(withBoth.indexOf('kiss-consent-dialog__foot'))
+    expect(body).not.toContain('<a ')
+    expect(foot).toMatch(
+      /data-kiss-consent-action="save"[^]*<div class="kiss-consent-dialog__links"><a class="kiss-consent__policy" href="\/cookies\/">Cookie policy<\/a><a class="kiss-consent__history" href="\/privacy\/#kiss-consent-history">See your consent history<\/a><\/div><\/div><\/dialog>$/,
+    )
+    // No empty links row when there is nothing to link.
+    expect(settingsHtml(site())).not.toContain('kiss-consent-dialog__links')
+  })
+
+  it('has a close in its header, then accept all, reject all and save, the three choices one class', () => {
     const actions = buttons(html).map(
       (b) => /data-kiss-consent-action="([^"]+)"/.exec(b)?.[1],
     )
-    expect(actions).toEqual(['close-dialog', 'reject', 'accept', 'save'])
+    // Accept first, as in the banner (the operator, 2026-11-04).
+    expect(actions).toEqual(['close-dialog', 'accept', 'reject', 'save'])
     expect(buttons(html)[0]).toContain('class="kiss-consent__close"')
     for (const b of buttons(html).slice(1))
       expect(b).toContain('class="kiss-consent__button"')
@@ -213,19 +232,23 @@ describe('settingsHtml', () => {
     }
   }
 
-  it('names every service of a category in use, label and provider, in name order (the ICO: name each controller)', () => {
+  it('names every service of a category in use, label (provider) always, in name order (the ICO: name each controller)', () => {
     expect(listed(html, 'kiss-consent-marketing')).toEqual({
       label: 'Services',
-      items: ['Google Tag Manager — Google', 'Vimeo', 'YouTube'],
+      items: [
+        'Google Tag Manager (Google)',
+        'Vimeo (Vimeo)',
+        'YouTube (Google)',
+      ],
     })
     expect(listed(html, 'kiss-consent-preferences')?.items).toEqual([
-      'Chat — Chatter',
+      'Chat (Chatter)',
     ])
   })
 
   it('names the necessary services too, and lists nothing for a category with none', () => {
     expect(listed(html, 'kiss-consent-necessary')?.items).toEqual([
-      'Fonts — This site',
+      'Fonts (This site)',
     ])
     const none = settingsHtml(resolved({ services: { youtube: {} } }))
     expect(listed(none, 'kiss-consent-necessary')).toBeNull()

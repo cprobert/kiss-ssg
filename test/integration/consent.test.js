@@ -316,9 +316,10 @@ describe('a consent site, built', () => {
     }
     const before = await hashWith('This site')
     const after = await hashWith('Counter Ltd')
-    expect(before.text).toContain('Visit counter — This site')
-    expect(before.text).toContain('Google Tag Manager — Google')
-    expect(after.text).toContain('Visit counter — Counter Ltd')
+    expect(before.text).toContain('Visit counter (This site)')
+    expect(before.text).toContain('Google Tag Manager (Google)')
+    expect(before.text).toContain('YouTube (Google)')
+    expect(after.text).toContain('Visit counter (Counter Ltd)')
     expect(after.hash).not.toBe(before.hash)
   })
 
