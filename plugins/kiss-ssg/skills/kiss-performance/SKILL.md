@@ -37,7 +37,7 @@ Speed work is judged by numbers, so take them before the first edit and again af
    npx kiss-ssg speed public --page / --page /blog/ --out <temp>/speed-before.json
    ```
 
-   `public` is the site's `folders.build`. Put the file in the system's temp folder, never in the site. If it exits 2 asking for `npm install -D lighthouse`, ask the owner before installing it. It is a development dependency only, nothing reaches the deployed site, and it needs Node 22.19 or later and a Chrome. If they decline, review without the numbers and say so in the report.
+   `public` is the site's `folders.build`. Put the file in the system's temp folder, never in the site. If it exits 2 asking for `npm install -D lighthouse`, ask the owner before installing it. It is a development dependency that needs Node 22.19+ and a Chrome. If they decline, review without the numbers and say so in the report.
 
 2. **After the fixes**, build again and measure the same pages against the first run:
 
@@ -81,6 +81,7 @@ Speed work is judged by numbers, so take them before the first edit and again af
 
 - **`defer` on every script**, or `type="module"`, which defers by itself. Never a bare `<script src>` in `<head>`: it stops the page being read until the script has downloaded and run.
 - **`async` only for a script that must start early and depends on nothing else**, such as an analytics tag. Async scripts run in whatever order they arrive.
+- **A consent manager that insists on loading first** (a third-party banner such as Cookiebot's `uc.js`) blocks every page by design, so `defer` is not its fix. kiss's own consent manager loads nothing from another site before a choice. Whether to switch is the owner's decision with [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md), never a speed edit made alone.
 - **The platform before a script** (`kiss-front-end` has the order), and no script at all for anything the HTML and CSS can do.
 
 ### Third parties

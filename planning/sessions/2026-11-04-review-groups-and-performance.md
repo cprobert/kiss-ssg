@@ -64,6 +64,7 @@ opened: 2026-11-04
   - the README's optional panel and prompts table (`a927125`);
   - a `speed` script for the starter only, the last of `init`'s next steps, and `AGENTS.md` (`a927125`);
   - every install box on the docs site's home page, and `kiss-performance` on its Skills page, which had missed the skill (`cc91574`).
+- **2026-11-04: audit three fleet sites instead of a synthetic slow site.** The operator directed it: "Rather than a synthetic slow site, please audit the existing kiss sites using our new found performance powers (choose 3)". It replaces criterion 6's synthetic fixture and with/without arms. Claude chose three sites on three hosts with likely failures: k9-solutions (Netlify), diploma-msc (Firebase), swan-love (GitHub Pages). On each, the branch engine ran a staged `check` through a junction swap, with the site's tree clean before and after; Lighthouse ran on the live URLs through `kiss-ssg speed`; and the live headers came from the earlier measurement. Write-up: `planning/reviews/2026-11-04-fleet-performance-audit.md`. **What it does not show:** it tests the tools (the audit checks, `speed`, headers) on real sites, not the skill's effect on a site an agent changes. CLAUDE.md's with/without measurement of a domain skill has not been run.
 - **2026-11-04: `speed` takes a build folder, not a site script.** The sub-agent found no way to learn `folders.build` without running the build. Claude accepted the folder form rather than adding a config-only mode, and recorded it in the contract.
 
 ## Pulse log
