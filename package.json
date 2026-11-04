@@ -93,6 +93,14 @@
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2"
   },
+  "peerDependencies": {
+    "lighthouse": "^13"
+  },
+  "peerDependenciesMeta": {
+    "lighthouse": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.1",

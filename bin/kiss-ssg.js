@@ -28,6 +28,7 @@ import {
 import { formatReport } from '../lib/build-report.js'
 import { runSession } from '../lib/sessions.js'
 import { runBase } from '../lib/base.js'
+import { runSpeed } from '../lib/speed.js'
 import { GitError, git, tryGit } from '../lib/git.js'
 import {
   GUARDED_FILES,
@@ -56,6 +57,22 @@ import {
 if (process.argv[2] === 'session' || process.argv[2] === 'base') {
   const run = process.argv[2] === 'session' ? runSession : runBase
   const result = run(process.argv.slice(3), { cwd: process.cwd() })
+  if (result.err) console.error(result.err)
+  if (result.out) console.log(result.out)
+  process.exit(result.code)
+}
+
+// `speed` measures pages with Lighthouse, an optional peer loaded from the
+// site's folder. Every decision is lib/speed.js's; this prints and exits.
+if (process.argv[2] === 'speed') {
+  const result = await runSpeed(process.argv.slice(3), {
+    cwd: process.cwd(),
+    progress: (line) => console.error(line),
+  }).catch((err) => ({
+    code: 1,
+    out: '',
+    err: `kiss-ssg speed: ${err.message}`,
+  }))
   if (result.err) console.error(result.err)
   if (result.out) console.log(result.out)
   process.exit(result.code)

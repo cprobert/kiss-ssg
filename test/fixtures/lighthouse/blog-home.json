@@ -1,0 +1,88 @@
+{
+  "lighthouseVersion": "13.6.0",
+  "requestedUrl": "http://127.0.0.1:4000/",
+  "finalDisplayedUrl": "http://127.0.0.1:4000/",
+  "fetchTime": "2026-11-04T21:40:02.801Z",
+  "configSettings": {
+    "formFactor": "mobile",
+    "throttlingMethod": "simulate",
+    "onlyCategories": ["performance"]
+  },
+  "categories": {
+    "performance": {
+      "id": "performance",
+      "title": "Performance",
+      "score": 1
+    }
+  },
+  "audits": {
+    "largest-contentful-paint": {
+      "id": "largest-contentful-paint",
+      "score": 1,
+      "numericValue": 753.8289,
+      "numericUnit": "millisecond",
+      "displayValue": "0.8 s"
+    },
+    "cumulative-layout-shift": {
+      "id": "cumulative-layout-shift",
+      "score": 1,
+      "numericValue": 0,
+      "numericUnit": "unitless",
+      "displayValue": "0"
+    },
+    "total-blocking-time": {
+      "id": "total-blocking-time",
+      "score": 1,
+      "numericValue": 0,
+      "numericUnit": "millisecond",
+      "displayValue": "0 ms"
+    },
+    "first-contentful-paint": {
+      "id": "first-contentful-paint",
+      "score": 1,
+      "numericValue": 753.8289,
+      "numericUnit": "millisecond",
+      "displayValue": "0.8 s"
+    },
+    "speed-index": {
+      "id": "speed-index",
+      "score": 1,
+      "numericValue": 753.8289,
+      "numericUnit": "millisecond",
+      "displayValue": "0.8 s"
+    },
+    "total-byte-weight": {
+      "id": "total-byte-weight",
+      "score": 1,
+      "numericValue": 12642,
+      "numericUnit": "byte",
+      "displayValue": "Total size was 12 KiB"
+    },
+    "network-requests": {
+      "id": "network-requests",
+      "details": {
+        "type": "table",
+        "items": [
+          {
+            "url": "http://127.0.0.1:4000/",
+            "resourceType": "Document",
+            "transferSize": 5636,
+            "statusCode": 200
+          },
+          {
+            "url": "http://127.0.0.1:4000/css/site.css",
+            "resourceType": "Stylesheet",
+            "transferSize": 5880,
+            "statusCode": 200
+          },
+          {
+            "url": "http://127.0.0.1:4000/img/icon.png",
+            "resourceType": "Other",
+            "transferSize": 1126,
+            "statusCode": 200
+          }
+        ]
+      }
+    }
+  }
+}
