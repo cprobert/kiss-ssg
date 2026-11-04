@@ -1,4 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { createHash } from 'node:crypto'
+import fs from 'fs-extra'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
 import {
@@ -18,6 +20,20 @@ vi.mock('../../lib/dev-server.js', () => ({
 const { default: Kiss } = await import('../helpers/kiss.js')
 
 const SITE_URL = 'https://site.example'
+
+/**
+ * The `client` block of a page's inline config: the cached file's name, the
+ * page's own file and the root to fall back to. Minified, its keys are bare.
+ *
+ * @param {string} html
+ */
+const clientOf = (html) => {
+  const m =
+    /"?client"?:\{"?name"?:"([^"]+)","?page"?:"([^"]*)","?root"?:"([^"]*)"\}/.exec(
+      html,
+    )
+  return m ? { name: m[1], page: m[2], root: m[3] } : null
+}
 
 let site
 let kiss
@@ -111,6 +127,265 @@ describe('a consent site, built', () => {
     expect(errors).toEqual([])
     const home = await site.read('public/index.html')
     expect(home).toMatch(/class="?kiss-consent__policy"? href="?\/cookies"?>/)
+  })
+
+  // The round-8 P2 of the consent-manager branch: a site served from a path
+  // prefix names it in `siteUrl` and links absolutely (`{{link absolute=true}}`,
+  // as this repo's own docs do). The banner's links have no hash to ask for
+  // that, so they take it from `siteUrl`: root-relative `/cookies/` is the
+  // origin's root, a different site.
+  it('carries siteUrl’s path prefix into the policy link and the logo', async () => {
+    site = await makeSite({
+      ...CONSENT_FILES,
+      'src/assets/img/logo.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    })
+    const { report, errors } = await build(
+      config({
+        siteUrl: 'https://site.example/site/',
+        consent: { ...CONSENT_CONFIG, ui: { logo: 'img/logo.svg' } },
+      }),
+    )
+    expect(errors).toEqual([])
+    // The link check reads the banner's links where the browser requests
+    // them: they land. The fixture footer's plain `{{link "cookies"}}` does
+    // not, on a prefixed site, and is the one finding per page.
+    const brokenHrefs = new Set(report.links.broken.map((b) => b.href))
+    expect([...brokenHrefs]).toEqual(['/cookies.html'])
+    const home = await site.read('public/index.html')
+    const hrefs = [...home.matchAll(/kiss-consent__policy"? href="?([^"> ]+)/g)]
+    // The banner's and the dialog's.
+    expect(hrefs.map((m) => m[1])).toEqual([
+      'https://site.example/site/cookies.html',
+      'https://site.example/site/cookies.html',
+    ])
+    expect(home).toMatch(
+      /kiss-consent__logo"? src="?https:\/\/site\.example\/site\/img\/logo\.svg/,
+    )
+  })
+
+  it('keeps the policy link and the logo root-relative on a site at its origin’s root', async () => {
+    site = await makeSite({
+      ...CONSENT_FILES,
+      'src/assets/img/logo.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    })
+    const { errors } = await build(
+      config({ consent: { ...CONSENT_CONFIG, ui: { logo: 'img/logo.svg' } } }),
+    )
+    expect(errors).toEqual([])
+    const home = await site.read('public/index.html')
+    expect(home).toMatch(/kiss-consent__policy"? href="?\/cookies\.html/)
+    expect(home).toMatch(/kiss-consent__logo"? src="?\/img\/logo\.svg/)
+  })
+
+  // The history page: {{consentRecord}} on the privacy page, linked from the
+  // settings dialog by ui.history (D12), through the same URL policy and
+  // siteUrl prefix as the policy link (criterion 7).
+  const HISTORY_FILES = {
+    ...CONSENT_FILES,
+    'src/pages/privacy.hbs': consentPage(
+      '<h1>Privacy</h1><p>How we use your data.</p>{{consentRecord}}',
+      'Privacy',
+    ),
+  }
+
+  it('links the history page from the dialog only, through the URL policy and the prefix', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { report, errors } = await build(
+      config({
+        siteUrl: 'https://site.example/site/',
+        extensionLess: true,
+        consent: { ...CONSENT_CONFIG, ui: { history: 'privacy' } },
+      }),
+    )
+    expect(errors).toEqual([])
+    const home = await site.read('public/index.html')
+    const links = [
+      ...home.matchAll(/kiss-consent__history"? href="?([^"> ]+)"?>([^<]*)</g),
+    ].map((m) => [m[1], m[2]])
+    // To the section itself: the clean room's visitor landed at the top of a
+    // long privacy page (2026-11-03).
+    expect(links).toEqual([
+      [
+        'https://site.example/site/privacy/#kiss-consent-history',
+        'See your consent history',
+      ],
+    ])
+    expect(await site.read('public/privacy/index.html')).toMatch(
+      /<section class="?kiss-consent-record"? id="?kiss-consent-history"?/,
+    )
+    // In the dialog's template, not the banner's.
+    const banner = home.slice(
+      home.indexOf('data-kiss-consent-banner'),
+      home.indexOf('data-kiss-consent-settings'),
+    )
+    expect(/<a class="?kiss-consent__history/.test(banner)).toBe(false)
+    expect(report.links.broken.map((b) => b.href)).not.toContain(
+      'https://site.example/site/privacy/#kiss-consent-history',
+    )
+  })
+
+  it('writes no history link without ui.history', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { errors } = await build(config())
+    expect(errors).toEqual([])
+    // The anchor, not the class: the theme's CSS names the class either way.
+    const home = await site.read('public/index.html')
+    expect(/<a class="?kiss-consent__history/.test(home)).toBe(false)
+  })
+
+  it('writes the viewer on its page, and keeps its statements but not its controls in the Markdown copy', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { errors } = await build(
+      config({ consent: { ...CONSENT_CONFIG, endpoint: '/api/consent' } }),
+      { llms: true },
+    )
+    expect(errors).toEqual([])
+    const privacy = await site.read('public/privacy.html')
+    expect(privacy).toMatch(/<section class="?kiss-consent-record"?/)
+    expect(privacy).toMatch(/data-kiss-consent-record-script/)
+    // Its own script, on this page alone (D3).
+    expect(await site.read('public/index.html')).not.toMatch(
+      /data-kiss-consent-record/,
+    )
+    const md = await site.read('public/privacy.md')
+    expect(md).toContain('Your cookie choices')
+    expect(md).toContain('Each choice is also sent to this site')
+    expect(md).not.toMatch(/No cookie choice|Purposes version|JavaScript/)
+  })
+
+  it('writes consent-banners.json with an endpoint: each banner the pages carry, with the text its hash was taken from', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { report, errors } = await build(
+      config({
+        consent: {
+          ...CONSENT_CONFIG,
+          endpoint: '/api/consent',
+          ui: { history: 'privacy' },
+        },
+      }),
+    )
+    expect(errors).toEqual([])
+    const registry = JSON.parse(await site.read('public/consent-banners.json'))
+    const pageHash = /data-kiss-consent-hash="?([0-9a-f]{12})/.exec(
+      await site.read('public/index.html'),
+    )?.[1]
+    expect(registry.format).toBe(1)
+    expect(registry.version).toBe(report.consent.version)
+    expect(registry.banners.map((b) => b.hash)).toEqual([pageHash])
+    expect(report.consent.banners.map((b) => b.hash)).toEqual([pageHash])
+    const [banner] = registry.banners
+    expect(banner.text).toMatch(/^Cookies on this site We use some cookies/)
+    // The dialog's words are in it too: the history link among them.
+    expect(banner.text).toContain('See your consent history')
+    expect(
+      createHash('sha256').update(banner.text).digest('hex').slice(0, 12),
+    ).toBe(pageHash)
+    expect(banner.categories.map((c) => c.key)).toEqual([
+      'statistics',
+      'marketing',
+    ])
+  })
+
+  // Its one reader is the server records go to; a site with no endpoint has
+  // none (the operator, at the 2026-11-03 pulse).
+  // The cached part of the client (spec, "the inline part and the cached
+  // file"): written once at the build's root, minified, named by its hash,
+  // and loaded by every consent page with defer.
+  it('writes the cached client file, and every consent page loads it deferred', async () => {
+    site = await makeSite(CONSENT_FILES)
+    const { report, errors } = await build(config())
+    expect(errors).toEqual([])
+    const files = await fs.readdir(site.build)
+    const clients = files.filter((f) =>
+      /^kiss-consent\.[0-9a-f]{10}\.js$/.test(f),
+    )
+    expect(clients).toHaveLength(1)
+    const [name] = clients
+    const code = await site.read(`public/${name}`)
+    expect(code).toMatch(/^!?function|^\(function/)
+    // Minified: no comments, and far smaller than its source.
+    expect(code).not.toContain('// ')
+    const home = await site.read('public/index.html')
+    // No tag for it in the page: the inline part adds one, named here.
+    expect(home).not.toMatch(/<script[^>]*data-kiss-consent-client/)
+    expect(clientOf(home)?.name).toBe(name)
+    expect(report.links.broken).toEqual([])
+  })
+
+  // The stopgap review (2026-11-03, P2): the split made every consent page
+  // depend on fetching the client, and a root-relative or siteUrl-absolute
+  // URL fetched it from the wrong place wherever a page is served from
+  // anywhere but siteUrl itself (a prefixed site's --dev or local preview, a
+  // deploy preview, a {{root}} site), leaving the banner's buttons dead. A
+  // URL relative to the served path then missed it at /guide/ and
+  // /guide/index.html under trailingSlash: false (Codex at the close,
+  // 2026-11-04). So each page hands the inline part its own file and the
+  // root siteUrl names, and the browser works the URL out from its address
+  // (the unit and Chromium suites prove that half).
+  const NESTED = {
+    ...CONSENT_FILES,
+    'src/pages/blog/post.hbs': consentPage('<h1>Post</h1>', 'Post'),
+  }
+
+  it('hands each page’s inline part its own file and the root siteUrl names', async () => {
+    site = await makeSite(NESTED)
+    const { errors } = await build(
+      config({ siteUrl: 'https://site.example/site/' }),
+    )
+    expect(errors).toEqual([])
+    const of = async (page) => clientOf(await site.read(page))
+    expect(await of('public/index.html')).toMatchObject({
+      page: 'index.html',
+      root: '/site/',
+    })
+    expect(await of('public/blog/post.html')).toMatchObject({
+      page: 'blog/post.html',
+      root: '/site/',
+    })
+  })
+
+  it('names the file the page was written to, whatever the trailingSlash policy', async () => {
+    for (const trailingSlash of [true, false]) {
+      site = await makeSite(NESTED)
+      const built = await build(
+        config({ extensionLess: true, links: { trailingSlash } }),
+      )
+      expect(built.errors).toEqual([])
+      expect(
+        clientOf(await site.read('public/blog/post/index.html')),
+      ).toMatchObject({ page: 'blog/post/index.html', root: '/' })
+      // Nothing in the page links the file, so the scan has nothing to
+      // misread (Codex round 6 found it reporting the old relative URL).
+      expect(built.report.links.broken).toEqual([])
+      await kiss.close()
+      kiss = null
+      await site.cleanup()
+      site = null
+    }
+  })
+
+  it('writes no cached client without a consent manager', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': '<h1>Home</h1>' })
+    const { errors } = await build(config({ consent: undefined }))
+    expect(errors).toEqual([])
+    const files = await fs.readdir(site.build)
+    expect(files.filter((f) => f.startsWith('kiss-consent.'))).toEqual([])
+  })
+
+  it('writes no consent-banners.json without an endpoint', async () => {
+    site = await makeSite(HISTORY_FILES)
+    const { errors } = await build(config())
+    expect(errors).toEqual([])
+    await expect(site.read('public/consent-banners.json')).rejects.toThrow()
+  })
+
+  it('writes no consent-banners.json without a consent manager', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '<h1>Home</h1>',
+    })
+    const { errors } = await build(config({ consent: undefined }))
+    expect(errors).toEqual([])
+    await expect(site.read('public/consent-banners.json')).rejects.toThrow()
   })
 
   it('keeps the banner out of the Markdown copy, and the embed as its link', async () => {
@@ -283,6 +558,16 @@ describe('a consent site, wired wrongly', () => {
     const { errors } = await build(config())
     expect(errors.join('\n')).toMatch(
       /ui\.policy names the page "cookies", and no page has that id/,
+    )
+  })
+
+  it('fails when ui.history names no page (D12)', async () => {
+    site = await makeSite(CONSENT_FILES)
+    const { errors } = await build(
+      config({ consent: { ...CONSENT_CONFIG, ui: { history: 'my-choices' } } }),
+    )
+    expect(errors.join('\n')).toMatch(
+      /ui\.history names the page "my-choices", and no page has that id — add the page with \{\{consentRecord\}\}/,
     )
   })
 

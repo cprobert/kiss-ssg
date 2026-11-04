@@ -2,7 +2,12 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import { minify } from 'terser'
-import { consentHeadScript } from '../../lib/consent-client.js'
+import { createHash } from 'node:crypto'
+import {
+  consentClientName,
+  consentClientSource,
+  consentHeadScript,
+} from '../../lib/consent-client.js'
 import { clientConfig, resolveConsent } from '../../lib/consent.js'
 
 const require = createRequire(import.meta.url)
@@ -34,7 +39,7 @@ const SITE = {
 
 const BODY = `
 <template data-kiss-consent-banner data-kiss-consent-hash="abcdef012345"><div class="kiss-consent" data-kiss-consent-root data-position="bottom" role="region" aria-label="Cookies"><button type="button" data-kiss-consent-action="accept">Accept all</button><button type="button" data-kiss-consent-action="reject">Reject all</button><button type="button" data-kiss-consent-action="settings">Choose</button><button type="button" data-kiss-consent-action="close">x</button></div></template>
-<template data-kiss-consent-settings><dialog class="kiss-consent-dialog"><button type="button" data-kiss-consent-action="reject">Reject all</button><input type="checkbox" data-kiss-consent-category="statistics"><input type="checkbox" data-kiss-consent-category="marketing"><label data-kiss-consent-grant="youtube" hidden><input type="checkbox" data-kiss-consent-service="youtube"> YouTube</label><button type="button" data-kiss-consent-action="save">Save</button><button type="button" data-kiss-consent-action="close-dialog">Close</button></dialog></template>
+<template data-kiss-consent-settings><dialog class="kiss-consent-dialog"><a class="kiss-consent__history" href="/privacy/#kiss-consent-history">See your consent history</a><button type="button" data-kiss-consent-action="reject">Reject all</button><input type="checkbox" data-kiss-consent-category="statistics"><input type="checkbox" data-kiss-consent-category="marketing"><label data-kiss-consent-grant="youtube" hidden><input type="checkbox" data-kiss-consent-service="youtube"> YouTube</label><button type="button" data-kiss-consent-action="save">Save</button><button type="button" data-kiss-consent-action="close-dialog">Close</button></dialog></template>
 <p id="first">page</p>
 <script type="text/plain" data-kiss-service="gtm" data-kiss-consent="marketing">window.__ran.push('gtm-inline')</script>
 <script type="text/plain" data-kiss-service="gtm" data-kiss-consent="marketing" data-src="https://www.googletagmanager.com/gtm.js?id=GTM-X"></script>
@@ -98,7 +103,7 @@ function storage(initial = {}) {
  * Build a page, run the client in it, and hand back the handles a test needs.
  *
  * @param {string} source the script body
- * @param {{ cookies?: Record<string, string>, extraCookies?: [string, string, string][], local?: Record<string, string>, now?: number, extraBody?: string }} [opts]
+ * @param {{ cookies?: Record<string, string>, extraCookies?: [string, string, string][], local?: Record<string, string>, storageThrows?: boolean, now?: number, extraBody?: string }} [opts]
  */
 function page(source, opts = {}) {
   const host = 'www.example.com'
@@ -107,6 +112,13 @@ function page(source, opts = {}) {
     `https://${host}/a/`,
   )
   const doc = dwin.document
+  // `loading`: the document is still being parsed until `ready()`, as when
+  // the cached file, added by the inline part, arrives early.
+  let loading = Boolean(opts.loading)
+  Object.defineProperty(doc, 'readyState', {
+    get: () => (loading ? 'loading' : 'complete'),
+    configurable: true,
+  })
   // domino answers a selector that matches nothing with undefined, a browser with null.
   const find = (selector) => doc.querySelector(selector) ?? null
   const jar = cookieJar(host)
@@ -144,7 +156,8 @@ function page(source, opts = {}) {
     location: {
       protocol: 'https:',
       hostname: host,
-      pathname: '/a/',
+      pathname: opts.pathname ?? '/a/',
+      href: `https://${host}${opts.pathname ?? '/a/'}`,
       reload: () => reloads++,
     },
     navigator: {
@@ -159,12 +172,21 @@ function page(source, opts = {}) {
         this.type = o.type
       }
     },
-    localStorage: storage(opts.local),
+    localStorage: opts.storageThrows ? null : storage(opts.local),
     setTimeout: (fn, ms) => timers.push({ fn, ms }),
     crypto: { randomUUID: () => 'uuid-1' },
     CustomEvent: dwin.CustomEvent,
+    URL,
     __ran: [],
   }
+  // Storage a browser refuses (blocked site data, some private windows):
+  // reading `localStorage` itself throws a SecurityError.
+  if (opts.storageThrows)
+    Object.defineProperty(win, 'localStorage', {
+      get() {
+        throw new Error('SecurityError')
+      },
+    })
   vm.runInNewContext(source, { window: win, Date: FakeDate })
   const fire = (target, type) => {
     const e = doc.createEvent('Event')
@@ -175,13 +197,18 @@ function page(source, opts = {}) {
     win,
     doc,
     find,
+    // More code into the same window, later: the cached file arriving.
+    run: (more) => vm.runInNewContext(more, { window: win, Date: FakeDate }),
     jar,
     beacons,
     timers,
     events,
     clock,
     reloads: () => reloads,
-    ready: () => fire(doc, 'DOMContentLoaded'),
+    ready: () => {
+      loading = false
+      fire(doc, 'DOMContentLoaded')
+    },
     click: (selector, index = 0) =>
       fire(doc.querySelectorAll(selector)[index], 'click'),
     fire,
@@ -206,28 +233,92 @@ function storedCookie(c) {
   return encodeURIComponent(JSON.stringify(c))
 }
 
+const CLIENT_NAME = 'kiss-consent.abcdef0123.js'
+// What `{{consentHead}}` hands the inline part about the cached file: its
+// name, the page's own file (build-relative), and the root to use when the
+// address the browser is at is not one the page is reached by.
+const CLIENT = { name: CLIENT_NAME, page: 'a/index.html', root: '/' }
+// The split's measurement (2026-11-03, gtm + youtube + vimeo): the inline
+// part 4,839 bytes minified, 2,092 gzipped, config included; the cached file
+// 8,939, 3,421 gzipped. About 10% headroom each; see the size block below.
+// The file's ceiling moved once (2026-11-04): the stopgap review's fixes took
+// it to 9,551 and recording every service in each choice to 9,806 (3,769
+// gzipped). It is fetched once and then served from cache, so it was raised
+// to about 10% over that rather than the record losing the services.
+// The inline ceiling moved once too (2026-11-04): the inline part now adds
+// the cached file's tag itself, working the site's root out from the
+// browser's address, because no URL written at build time was right at every
+// address a page is reached by (Codex at the close). That took it from 4,887
+// to 5,483 (2,389 gzipped), on every page; 6,144 is about 12% over that.
+const INLINE_CEILING = 6144
+const FILE_CEILING = 10752
+
+/** The inline part's code, from what `{{consentHead}}` writes. */
 const scriptOf = (html) =>
-  html.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')
+  /^<script data-kiss-consent-head>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? ''
 
 describe('consentHeadScript', () => {
-  it('writes one script carrying the client and its config', () => {
-    const html = consentHeadScript(configFor(SITE))
+  it('writes the inline part alone, with the cached file’s name, page and fallback in its config', () => {
+    const html = consentHeadScript(configFor(SITE), CLIENT)
     expect(
       html.startsWith(
-        '<script data-kiss-consent-head>(function kissConsentClient(win, cfg)',
+        '<script data-kiss-consent-head>(function kissConsentHead(win, cfg)',
       ),
     ).toBe(true)
-    expect(html.endsWith('</script>')).toBe(true)
+    // No tag for the file at build time: the inline part adds it, at the URL
+    // the address the browser is at gives (Codex at the close, 2026-11-04).
+    expect(html).not.toMatch(/<script[^>]*data-kiss-consent-client/)
+    expect(html.match(/<\/script>/g)).toHaveLength(1)
+    expect(html).toContain(
+      `"client":{"name":"${CLIENT_NAME}","page":"a/index.html","root":"/"}`,
+    )
+  })
+
+  // Every address a page is reached by gives the site's root: the file, its
+  // folder with and without the slash, an `.html` page without its
+  // extension, under any prefix, on file://. Anything else (a 404 page
+  // served at a stray address) takes the fallback.
+  it.each([
+    ['guide/index.html', '/guide', `/${CLIENT_NAME}`],
+    ['guide/index.html', '/guide/', `/${CLIENT_NAME}`],
+    ['guide/index.html', '/guide/index.html', `/${CLIENT_NAME}`],
+    ['guide/index.html', '/site/guide', `/site/${CLIENT_NAME}`],
+    ['guide/index.html', '/site/guide/', `/site/${CLIENT_NAME}`],
+    ['index.html', '/', `/${CLIENT_NAME}`],
+    ['index.html', '/index.html', `/${CLIENT_NAME}`],
+    ['index.html', '/site/', `/site/${CLIENT_NAME}`],
+    ['about.html', '/about', `/${CLIENT_NAME}`],
+    ['about.html', '/site/about.html', `/site/${CLIENT_NAME}`],
+    [
+      'guide/index.html',
+      '/C:/sites/public/guide/index.html',
+      `/C:/sites/public/${CLIENT_NAME}`,
+    ],
+    ['my guide/index.html', '/my%20guide/', `/${CLIENT_NAME}`],
+    ['404.html', '/missing/deep/page', `/root/${CLIENT_NAME}`],
+    ['guide/index.html', '/guidebook/', `/root/${CLIENT_NAME}`],
+    [null, '/anywhere/', `/root/${CLIENT_NAME}`],
+  ])('loads the cached file for %s reached at %s from %s', (file, at, src) => {
+    const html = consentHeadScript(configFor(SITE), {
+      name: CLIENT_NAME,
+      page: file,
+      root: '/root/',
+    })
+    const p = page(scriptOf(html), { pathname: at })
+    const tag = p.find('script[data-kiss-consent-client]')
+    expect(tag?.getAttribute('src')).toBe(src)
+    expect(tag?.parentNode).toBe(p.doc.head)
   })
 
   it('escapes < and line separators in the config, so no site text can end the script', () => {
     const cfg = configFor(SITE)
     cfg.text.confirmation = 'Saved </script><script>alert(1)</script> x '
-    const html = consentHeadScript(cfg)
+    const html = consentHeadScript(cfg, CLIENT)
+    // The inline part's end, and nothing else.
     expect(html.match(/<\/script>/g)).toHaveLength(1)
     expect(html).not.toContain(' ')
     expect(html).not.toContain(' ')
-    const p = page(scriptOf(html))
+    const p = page(`${scriptOf(html)};\n${consentClientSource()}`)
     p.win.kissConsent.mount()
     p.click('[data-kiss-consent-action="reject"]')
     expect(p.find('[data-kiss-consent-confirmation]').textContent).toContain(
@@ -236,31 +327,51 @@ describe('consentHeadScript', () => {
   })
 })
 
-describe('size', () => {
-  // Inlined into every page. 10,932 bytes minified (4,047 gzipped) for
-  // gtm + youtube + vimeo when first measured (2026-11-03); the ceiling
-  // catches growth, and moving it is a decision, not a fix. Raised from
-  // 12,000 to 12,288 by the operator on 2026-11-03, at 12,048 bytes (4,427
-  // gzipped), after the Codex review fixes to withdrawal, module order and
-  // cookie deletion added about 430 bytes. Raised again to 13,312 by the
-  // operator the same day, at 12,346 bytes (4,517 gzipped), after round 5's
-  // shared-cookie, own-property and grant fixes, with splitting the client
-  // into a small inline part and a cached file planned as its own work.
-  it('stays under 13,312 bytes minified for a three-service site', async () => {
-    const cfg = configFor({
-      services: { gtm: { id: 'GTM-X' }, youtube: {}, vimeo: {} },
-    })
-    const min = (await minify(scriptOf(consentHeadScript(cfg)))).code ?? ''
-    expect(min.length).toBeLessThan(13312)
+describe('consentClientSource and consentClientName', () => {
+  it('holds no site config, and is named by its own hash', () => {
+    const source = consentClientSource()
+    expect(source.startsWith('(function kissConsentClient(win)')).toBe(true)
+    expect(source).not.toContain('GTM-X')
+    const hash = createHash('sha256').update(source).digest('hex')
+    expect(consentClientName()).toBe(`kiss-consent.${hash.slice(0, 10)}.js`)
   })
 })
 
+describe('size', () => {
+  // Inlined into every page. 10,932 bytes minified (4,047 gzipped) for
+  // gtm + youtube + vimeo when first measured, and 12,600 (4,618) on
+  // 2026-11-03 before the split, under a 13,312 ceiling the operator raised
+  // twice that day. The split moved everything but Consent Mode, the stored
+  // choice, `has()`, the banner's mount and the stub into a cached file (spec
+  // planning/specs/2026-11-03-kiss-consent.md); the ceilings are the split's
+  // measurements with headroom, and moving one is a decision, not a fix.
+  const cfg = () =>
+    configFor({ services: { gtm: { id: 'GTM-X' }, youtube: {}, vimeo: {} } })
+
+  it('keeps the inline part under its ceiling for a three-service site', async () => {
+    const min =
+      (await minify(scriptOf(consentHeadScript(cfg(), CLIENT)))).code ?? ''
+    expect(min.length).toBeLessThan(INLINE_CEILING)
+  })
+
+  it('keeps the cached file under its ceiling', async () => {
+    const min = (await minify(consentClientSource())).code ?? ''
+    expect(min.length).toBeLessThan(FILE_CEILING)
+  })
+})
+
+/**
+ * What a browser runs: the inline part, then (deferred) the cached file.
+ *
+ * @param {(code: string) => Promise<string>} shape
+ */
+const both = (shape) => async (cfg) =>
+  `${await shape(scriptOf(consentHeadScript(cfg, CLIENT)))};${SPLIT}${await shape(consentClientSource())}`
+// Between the two parts, so a test can run them apart.
+const SPLIT = '\n/* the cached file */\n'
 const forms = [
-  ['as rendered', async (cfg) => scriptOf(consentHeadScript(cfg))],
-  [
-    'minified',
-    async (cfg) => (await minify(scriptOf(consentHeadScript(cfg)))).code ?? '',
-  ],
+  ['as rendered', both(async (code) => code)],
+  ['minified', both(async (code) => (await minify(code)).code ?? '')],
 ]
 
 describe.each(forms)('the client, %s', (_, build) => {
@@ -484,7 +595,9 @@ describe.each(forms)('the client, %s', (_, build) => {
         c: { statistics: true, marketing: true },
         s: {},
       })
-      expect(stored).not.toHaveProperty('id')
+      // Made whether or not there is an endpoint (D1): the browser's log and
+      // the history page carry it.
+      expect(stored.id).toBe('uuid-1')
       const line = p.jar.writes.find((w) => w.startsWith('kiss_consent='))
       expect(line).toMatch(/; Path=\/; Max-Age=15724800; SameSite=Lax; Secure$/)
       const layer = p.layer()
@@ -517,6 +630,62 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.find('[data-kiss-consent-confirmation]')).not.toBeNull()
     })
 
+    // Codex round 5 (P2): on the history page itself the dialog's link is a
+    // same-page jump, and the modal stayed open over the history. Any link
+    // in the dialog closes it, after the click: removed during it, the link
+    // would leave the document, and a browser follows no such link.
+    it('closes the dialog after a link in it is followed, not during the click', () => {
+      const p = page(plain)
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+      p.click('dialog a.kiss-consent__history')
+      // Still there while the click is handled, so the link can be followed.
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+      const close = p.timers.find((t) => t.ms === 0)
+      expect(close).toBeDefined()
+      close?.fn()
+      expect(p.find('[data-kiss-consent-dialog]')).toBeNull()
+    })
+
+    // The stopgap review (P3s, 2026-11-03).
+    it('leaves the dialog open for a modified click, a new tab, or a cancelled one', () => {
+      const p = page(plain)
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      const link = p.find('dialog a.kiss-consent__history')
+      for (const key of ['ctrlKey', 'metaKey', 'shiftKey']) {
+        const e = p.doc.createEvent('Event')
+        e.initEvent('click', true, true)
+        Object.defineProperty(e, key, { value: true })
+        link.dispatchEvent(e)
+      }
+      link.setAttribute('target', '_blank')
+      p.click('dialog a.kiss-consent__history')
+      expect(p.timers.filter((t) => t.ms === 0)).toEqual([])
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+    })
+
+    it('moves focus to the section a same-page link names, once the dialog has closed', () => {
+      const p = page(plain, {
+        extraBody:
+          '<section id="kiss-consent-history"><h2>History</h2></section>',
+      })
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      const link = p.find('dialog a.kiss-consent__history')
+      link.setAttribute('href', '/a/#kiss-consent-history')
+      const target = p.find('#kiss-consent-history')
+      let focused = 0
+      // domino's `focus` is read-only to assignment.
+      Object.defineProperty(target, 'focus', { value: () => focused++ })
+      p.click('dialog a.kiss-consent__history')
+      p.timers.find((t) => t.ms === 0)?.fn()
+      expect(p.find('[data-kiss-consent-dialog]')).toBeNull()
+      expect(focused).toBe(1)
+      expect(target.getAttribute('tabindex')).toBe('-1')
+    })
+
     it('Hide removes the confirmation', () => {
       const p = page(plain)
       p.win.kissConsent.mount()
@@ -534,14 +703,339 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.beacons[0].url).toBe('/consent-log')
       expect(p.beacons[0].type).toBe('text/plain')
       expect(JSON.parse(p.beacons[0].body)).toEqual({
+        format: 2,
+        action: 'accept',
         id: 'uuid-1',
         version: configFor(SITE).v,
         timestamp: new Date(NOW).toISOString(),
         categories: { statistics: true, marketing: true },
-        services: {},
+        services: { gtm: true, stats: true, youtube: true },
         bannerHash: 'abcdef012345',
         page: '/a/',
       })
+    })
+  })
+
+  // The split: the inline part runs first and alone, the cached file arrives
+  // later (`defer`). What a visitor does in between must not be lost, and if
+  // the file never arrives nothing gated may run.
+  describe('before the cached file arrives', () => {
+    const split = async (cfg) => {
+      const [head, client] = (await build(cfg)).split(SPLIT)
+      return [head, client]
+    }
+
+    it('shows the banner and answers has() and choice from the inline part alone', async () => {
+      const [head] = await split(configFor(SITE))
+      const p = page(head, { cookies: valid({ statistics: 1, marketing: 0 }) })
+      expect(p.win.kissConsent.has('stats')).toBe(true)
+      expect(p.win.kissConsent.has('gtm')).toBe(false)
+      expect(p.win.kissConsent.choice.categories).toEqual({
+        statistics: true,
+        marketing: false,
+      })
+      const q = page(head)
+      q.win.kissConsent.mount()
+      expect(q.find('[data-kiss-consent-root]')).not.toBeNull()
+      // Consent Mode's default is set before any file arrives.
+      expect(q.layer()[0]).toEqual(['consent', 'default', expect.any(Object)])
+    })
+
+    it('replays a click and the stub’s calls, in order, when the file arrives', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head)
+      p.win.kissConsent.mount()
+      const seen = []
+      p.win.kissConsent.when('gtm', () => seen.push('when gtm'))
+      p.win.kissConsent.on('change', () => seen.push('change'))
+      p.click('[data-kiss-consent-action="accept"]')
+      // Nothing written yet: only the cached file writes.
+      expect(p.stored()).toBeNull()
+      p.run(client)
+      p.ready()
+      expect(p.stored().c).toEqual({ statistics: true, marketing: true })
+      expect(p.find('[data-kiss-consent-confirmation]')).not.toBeNull()
+      expect(seen).toEqual(['change', 'when gtm'])
+      expect(p.live()).toContain(
+        'https://www.googletagmanager.com/gtm.js?id=GTM-X',
+      )
+    })
+
+    // Codex round 2 (P1): the queued Reject was replayed after start() had
+    // activated an objection category, so its script ran and the page
+    // reloaded to withdraw it. A choice made before the file arrived applies
+    // before anything starts, and so before any queued when() callback.
+    it('applies a Reject made before the file arrived before anything starts', async () => {
+      const [head, client] = await split(
+        configFor({
+          ...SITE,
+          categories: { statistics: { mode: 'objection' } },
+        }),
+      )
+      const p = page(head)
+      p.win.kissConsent.mount()
+      const ran = []
+      p.win.kissConsent.when('stats', () => ran.push('stats'))
+      p.click('[data-kiss-consent-action="reject"]')
+      p.run(client)
+      p.ready()
+      expect(p.stored().c.statistics).toBe(false)
+      expect(p.live()).toEqual([])
+      expect(ran).toEqual([])
+      expect(p.reloads()).toBe(0)
+    })
+
+    // Codex round 10 (P2, 2026-11-04): the inline part adds the file's tag,
+    // so the file can run while the page is still loading. It handed the
+    // stub's calls to the live client at once, and a when() called then ran
+    // under an objection category while the Reject before it was still
+    // queued. Nothing goes live until start() has applied what came first.
+    it('keeps calls queued, while the page loads, until the Reject before them holds', async () => {
+      const [head, client] = await split(
+        configFor({
+          ...SITE,
+          categories: { statistics: { mode: 'objection' } },
+        }),
+      )
+      const p = page(head, { loading: true })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="reject"]')
+      p.run(client)
+      const ran = []
+      p.win.kissConsent.when('stats', () => ran.push('stats'))
+      expect(ran).toEqual([])
+      p.ready()
+      expect(p.stored().c.statistics).toBe(false)
+      expect(ran).toEqual([])
+      expect(p.live()).toEqual([])
+    })
+
+    // The same class, for clicks: one made after the file ran but before the
+    // page had parsed went live at once, while the click before it waited in
+    // the queue, so the earlier choice was applied last.
+    it('applies clicks in the order they were made, while the page loads', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head, { loading: true })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="reject"]')
+      p.run(client)
+      p.click('footer [data-kiss-consent-action="settings"]')
+      p.ready()
+      // The Reject removed the banner; the settings click still holds, last.
+      expect(p.stored().c).toEqual({ statistics: false, marketing: false })
+      expect(p.find('dialog')).not.toBeNull()
+    })
+
+    // Codex round 3 (P2): a script that kept `window.kissConsent`, or one of
+    // its methods, from before the file arrived kept the stub, and its later
+    // calls were queued after the queue had been drained, forever.
+    it('keeps one window.kissConsent, whose methods reach the client once it has started', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head)
+      const kept = p.win.kissConsent
+      const { when, show } = kept
+      p.run(client)
+      p.ready()
+      expect(p.win.kissConsent).toBe(kept)
+      const ran = []
+      when('necessary', () => ran.push('detached'))
+      kept.when('necessary', () => ran.push('kept'))
+      kept.on('ready', () => ran.push('ready'))
+      expect(ran).toEqual(['detached', 'kept', 'ready'])
+      show()
+      expect(p.find('[data-kiss-consent-dialog]')).not.toBeNull()
+    })
+
+    // The stopgap review (P3): a double click on Accept while the file
+    // downloaded replayed as two choices, two log entries and two POSTs.
+    // Replayed, a click whose control has left the page is not a click.
+    it('replays a double click on Accept as one choice', async () => {
+      const [head, client] = await split(
+        configFor({ ...SITE, endpoint: '/consent-log' }),
+      )
+      const p = page(head)
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      p.click('[data-kiss-consent-action="accept"]')
+      p.run(client)
+      p.ready()
+      expect(
+        p.jar.writes.filter((w) => w.startsWith('kiss_consent=')),
+      ).toHaveLength(1)
+      expect(p.beacons).toHaveLength(1)
+      expect(
+        JSON.parse(p.win.localStorage.getItem('kiss_consent_log')),
+      ).toHaveLength(1)
+    })
+
+    it('runs nothing gated and writes nothing if the file never arrives', async () => {
+      const [head] = await split(configFor(SITE))
+      const p = page(head)
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="accept"]')
+      expect(p.stored()).toBeNull()
+      expect(p.live()).toEqual([])
+      expect(p.gated()).toBeGreaterThan(0)
+    })
+
+    it('runs once: a second copy of either part does nothing', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head)
+      p.run(client)
+      p.ready()
+      p.win.kissConsent.mount()
+      p.run(head)
+      p.run(client)
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(
+        p.jar.writes.filter((w) => w.startsWith('kiss_consent=')),
+      ).toHaveLength(1)
+    })
+  })
+
+  // `kiss_consent_log`: the browser's own dated copy of every record it
+  // made, in the format it posts (spec planning/specs/2026-11-03-kiss-consent.md,
+  // D1, D8, D10, D13).
+  describe('the browser log', () => {
+    const LOG = 'kiss_consent_log'
+    const logOf = (p) => JSON.parse(p.win.localStorage.getItem(LOG) ?? 'null')
+
+    it('logs each choice, oldest first, exactly as it posts it', () => {
+      const p = page(withEndpoint)
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      p.clock.now = NOW + 1000
+      p.click('[data-kiss-consent-action="settings"]')
+      const boxes = p
+        .find('dialog')
+        .querySelectorAll('input[data-kiss-consent-category]')
+      boxes[1].checked = false
+      p.click('[data-kiss-consent-action="save"]')
+      const log = logOf(p)
+      expect(log.map((r) => r.action)).toEqual(['accept', 'save'])
+      expect(log.map((r) => r.format)).toEqual([2, 2])
+      expect(log[1].categories).toEqual({ statistics: true, marketing: false })
+      // Every non-necessary service, allowed or refused, as it stood at that
+      // choice: the services can change later, and the record says what was
+      // agreed to then (the operator, 2026-11-04).
+      expect(log[0].services).toEqual({ gtm: true, stats: true, youtube: true })
+      expect(log[1].services).toEqual({
+        gtm: false,
+        stats: true,
+        youtube: false,
+      })
+      expect(log[1].timestamp).toBe(new Date(NOW + 1000).toISOString())
+      expect(log).toEqual(p.beacons.map((b) => JSON.parse(b.body)))
+    })
+
+    it('logs with no endpoint, and always makes the id (D1)', () => {
+      const p = page(plain)
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.beacons).toEqual([])
+      expect(p.stored().id).toBe('uuid-1')
+      expect(p.win.kissConsent.choice.id).toBe('uuid-1')
+      expect(logOf(p)).toEqual([
+        {
+          format: 2,
+          action: 'reject',
+          id: 'uuid-1',
+          version: configFor(SITE).v,
+          timestamp: new Date(NOW).toISOString(),
+          categories: { statistics: false, marketing: false },
+          services: { gtm: false, stats: false, youtube: false },
+          bannerHash: 'abcdef012345',
+          page: '/a/',
+        },
+      ])
+    })
+
+    it('logs an Always allow made before the banner was answered', () => {
+      const p = page(plain)
+      p.ready()
+      p.click('[data-kiss-consent-action="allow"]')
+      const [entry] = logOf(p)
+      expect(entry.action).toBe('allow')
+      expect(entry.categories).toBeNull()
+      expect(entry.services).toEqual({
+        gtm: false,
+        stats: false,
+        youtube: true,
+      })
+    })
+
+    it('records an objection-mode service as allowed before any category answer', () => {
+      const p = page(withObjection)
+      p.ready()
+      p.click('[data-kiss-consent-action="allow"]')
+      const [entry] = logOf(p)
+      expect(entry.services).toEqual({ gtm: false, stats: true, youtube: true })
+    })
+
+    it('never logs a page load, a Close, the settings or a plain Load', () => {
+      const p = page(plain, { cookies: valid({ statistics: 1, marketing: 0 }) })
+      p.ready()
+      p.click('[data-kiss-consent-action="settings"]')
+      p.click('[data-kiss-consent-action="close-dialog"]')
+      p.click('[data-kiss-consent-action="load"]')
+      const q = page(plain)
+      q.win.kissConsent.mount()
+      q.click('[data-kiss-consent-action="close"]')
+      expect(p.win.localStorage.getItem(LOG)).toBeNull()
+      expect(q.win.localStorage.getItem(LOG)).toBeNull()
+    })
+
+    it('is written before a withdrawal reloads, and never deleted by a service’s pattern (D8)', async () => {
+      const greedy = await build(
+        configFor({
+          ...SITE,
+          categories: { statistics: { mode: 'objection' } },
+          services: {
+            ...SITE.services,
+            stats: { ...SITE.services.stats, storage: ['st_key', 'kiss_*'] },
+          },
+        }),
+      )
+      const p = page(greedy, { local: { kiss_other: 'x' } })
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="reject"]')
+      expect(p.reloads()).toBe(1)
+      // The pattern ran: it took the key it matched, and left the log.
+      expect(p.win.localStorage.getItem('kiss_other')).toBeNull()
+      expect(logOf(p).map((r) => r.action)).toEqual(['reject'])
+    })
+
+    it('keeps the last 50 records, dropping the oldest', () => {
+      const old = Array.from({ length: 50 }, (_, n) => ({ n }))
+      const p = page(plain, { local: { [LOG]: JSON.stringify(old) } })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      const log = logOf(p)
+      expect(log).toHaveLength(50)
+      expect(log[0]).toEqual({ n: 1 })
+      expect(log[49].action).toBe('accept')
+    })
+
+    it('starts again from a log that is not a list', () => {
+      const p = page(plain, { local: { [LOG]: '{not json' } })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="accept"]')
+      expect(logOf(p).map((r) => r.action)).toEqual(['accept'])
+    })
+
+    it('makes the choice as before when storage is unavailable (D10)', () => {
+      const p = page(withEndpoint, { storageThrows: true })
+      p.win.kissConsent.mount()
+      p.ready()
+      p.click('[data-kiss-consent-action="accept"]')
+      expect(p.stored().c).toEqual({ statistics: true, marketing: true })
+      expect(p.beacons).toHaveLength(1)
+      // The queue started: GTM first, holding it until it loads.
+      expect(p.live()).toContain(
+        'https://www.googletagmanager.com/gtm.js?id=GTM-X',
+      )
     })
   })
 
@@ -561,7 +1055,9 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect([...p.jar.jar.values()].map((c) => c.name)).toEqual([
         'kiss_consent',
       ])
-      expect([...p.win.localStorage.map.keys()]).toEqual([])
+      // The service's key is gone; the consent log, written before the
+      // reload, is all that is left.
+      expect([...p.win.localStorage.map.keys()]).toEqual(['kiss_consent_log'])
       expect(p.reloads()).toBe(1)
     })
 

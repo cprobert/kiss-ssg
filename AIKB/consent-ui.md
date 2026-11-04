@@ -21,7 +21,7 @@ No Handlebars and no browser. The markup speaks the attribute vocabulary of cont
   - the policy link, only with `policyUrl`;
   - Accept all and Reject all (`data-kiss-consent-action` `accept`, `reject`), both `class="kiss-consent__button"`, then Choose cookies (`settings`), `class="kiss-consent__more"`, a text button;
   - the ✕ (`class="kiss-consent__close"`, `action="close"`, `aria-label="{close}"`) at the column's corner.
-- **`settingsHtml(resolved, { policyUrl })`** → the `<dialog class="kiss-consent-dialog">`, in three parts:
+- **`settingsHtml(resolved, { policyUrl, historyUrl })`** → the `<dialog class="kiss-consent-dialog">`, in three parts (`historyUrl`, `ui.history`'s page, is linked as `<a class="kiss-consent__history">` `historyLink` right after the policy link, only when given; D12):
   - **`__head`:** its `h2` (`id="kiss-consent-dialog-title"`) and a ✕ (`close-dialog`).
   - **`__body`:** the policy link, then one `__category` per category: the `necessary` one first, then each in `inUse`. Each has a `__row` holding a `<label for>` and a **switch**, then the description. A switch is `<input type="checkbox" role="switch" class="kiss-consent-switch" id="…">`: `disabled checked` for `necessary`, and `data-kiss-consent-category="…"` otherwise. Under a category, a hidden `__grant` row with a `data-kiss-consent-service` switch for each of its services.
   - **`__foot`:** Reject all, Accept all and Save choices, the three choices together and alike.
@@ -35,7 +35,7 @@ No Handlebars and no browser. The markup speaks the attribute vocabulary of cont
 
 ## Depended on by
 
-- Planned on this branch (contract §9): `lib/handlebars-helpers.js` (the `consentHead`, `consentBanner`, `consentSettings` and `consentTable` helpers).
+- `lib/handlebars-helpers.js` (the `consentHead`, `consentBanner`, `consentSettings` and `consentTable` helpers) and `lib/consent-record.js` (`escapeHtml`).
 - `test/unit/consent-ui.test.js`.
 
 ## Non-obvious behavior
@@ -44,7 +44,7 @@ No Handlebars and no browser. The markup speaks the attribute vocabulary of cont
 - **Equal weight is structural.** Accept and Reject share one class and the CSS has one rule for it, with no primary variant (the ICO: "equally prominent"). A test pins both. Choose cookies is a different thing, `kiss-consent__more`: a text button in the accent colour, as Google's own consent screen sets "More options" beside its two equal buttons (the operator's call, 2026-11-03). The ICO's equal-prominence rule is about accepting and refusing; a way to choose in detail may look different.
 - **The switches carry no `checked`** (except `necessary`'s). The client sets each from the stored choice, and from an `objection` category's default, so the markup is the same for every visitor and the banner hash does not depend on state.
 - **The grant toggles are hidden in the markup.** The client unhides the one for a service with an "always allow" grant, so a grant can be withdrawn where it is shown. Every service of a category in use gets one, not only a service with an `embed` block: `{{consentEmbed}}` takes any service with `src=` and offers "Always allow" for it, and until 2026-11-03 such a grant had no switch, so Save kept it with its category unticked (round 7 of the Codex review).
-- **The table always starts with kiss's own two cookies:** `cookie.name` (`{days} days`) and `<cookie.name>_closed` (Session; `kiss_consent_closed` by default, the name `lib/consent-client.js` derives), both first-party. A service that stores nothing gets one row with `—` for name, kind, duration and party, so every declared service is listed. Services are in name order; a stored item with no description takes its service's.
+- **The table always starts with kiss's own three items:** `cookie.name` (`{days} days`), `<cookie.name>_closed` (Session; `kiss_consent_closed` by default) and the consent log, `<cookie.name>_log` (Local storage, Until cleared; D11), all first-party, both derived names being the ones `lib/consent-client.js` derives. A service that stores nothing gets one row with `—` for name, kind, duration and party, so every declared service is listed. Services are in name order; a stored item with no description takes its service's.
 - **What the client does instead.** The confirmation after a choice and the bottom banner's `scroll-padding-bottom` are the client's (contract §3). The CSS styles `[data-kiss-consent-confirmation]` by the `data-position` the client copies onto it.
 - **A top banner is `position:relative`, not `static`.** It stays in the flow as the contract says, and anchors the absolutely placed close button. A bottom banner is fixed, `z-index:2147483000`, `max-height:80vh` and scrolls.
 - **The look was restyled on 2026-11-03,** when the operator judged diploma-msc's Cookiebot banner better looking. The changes:

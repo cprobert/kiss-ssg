@@ -471,7 +471,13 @@ const COVERAGE = [
   },
   {
     feature:
-      'the legal skill: the seven consent ids, report.consent, consentEmbed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
+      'the visitor’s consent history: {{consentRecord}} on the privacy page, linked from the dialog by ui.history',
+    pattern: /^(?=[\s\S]*\{\{consentRecord\}\})(?=[\s\S]*`ui\.history`)/,
+    skills: [skill('kiss-ssg', 'kiss-legal-and-privacy')],
+  },
+  {
+    feature:
+      'the legal skill: the eight consent ids, report.consent, consentEmbed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
     pattern: new RegExp(
       [
         ...CHECKS.filter((id) => id.startsWith('consent-')).map(
@@ -942,6 +948,14 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-11-03 (D1, planning/specs/2026-11-03-kiss-consent.md): the consent id is made at every choice, endpoint or not, because the browser log and the history page carry it; a doc saying it exists only with an endpoint tells a site its visitors are unidentified when the cookie holds an id',
+    patterns: [
+      /without one, nothing identifies the visitor/,
+      /visitor id exists only with an endpoint/i,
+      /With an endpoint set, the cookie also carries a random `id`/,
+    ],
+  },
   {
     why: "2.9.0: a release's upgrade note lives in CHANGELOG.md, which `kiss-ssg upgrade` prints, and kiss-site-migrate holds the method only; a per-release section in the skill, or a doc sending a reader to one, is the second unchecked copy that grew the skill to 31k characters",
     patterns: [

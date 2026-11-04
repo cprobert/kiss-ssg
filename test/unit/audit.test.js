@@ -59,6 +59,7 @@ describe('CHECKS', () => {
       'consent-settings-missing',
       'consent-google-advanced',
       'consent-records-missing',
+      'consent-history-missing',
     ])
     expect(Object.isFrozen(CHECKS)).toBe(true)
   })
@@ -70,6 +71,7 @@ const NO_CONSENT = {
   banner: null,
   settings: false,
   gated: false,
+  record: false,
   signatures: [],
 }
 
@@ -613,6 +615,23 @@ describe('auditBuild — href-hash and fragment-missing', () => {
     })
     expect(findings(result, 'fragment-missing')).toEqual([
       ['index.html', '#gone:~:text=x'],
+    ])
+  })
+
+  // The link scan's served-URL rule (Codex round 6, 2026-11-03): under
+  // `trailingSlash: false`, `blog/post/index.html` is served at `/blog/post`,
+  // so `../about.html#team` on it is the home folder's about page.
+  it('resolves a relative fragment link against the served URL under trailingSlash: false', () => {
+    const pages = {
+      'about.html': { ids: ['team'] },
+      'blog/about.html': { ids: [] },
+      'blog/post/index.html': { fragmentLinks: ['../about.html#team'] },
+    }
+    expect(
+      findings(site(pages, { trailingSlash: false }), 'fragment-missing'),
+    ).toEqual([])
+    expect(findings(site(pages), 'fragment-missing')).toEqual([
+      ['index.html', '../about.html#team'],
     ])
   })
 

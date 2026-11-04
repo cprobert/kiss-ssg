@@ -50,14 +50,16 @@ export function browserReference(value: unknown): string;
  *
  * @param {string} ref a reference as `extractReferences` returned it
  * @param {{ siteUrl?: string|null }} [options] the site's `config.siteUrl`
- * @returns {{ kind: 'external'|'internal', path: string|null }} `path` is the
- * reference with its query and fragment removed — root-relative or relative,
- * kept as written — and `null` for anything external
+ * @returns {{ kind: 'external'|'internal'|'outside', path: string|null }}
+ * `path` is the reference with its query and fragment removed — root-relative
+ * or relative, kept as written, with `siteUrl`'s path prefix removed — and
+ * `null` for anything external. `outside` is a same-origin path outside that
+ * prefix, root-relative as requested: not this build's address
  */
 export function classifyReference(ref: string, { siteUrl }?: {
     siteUrl?: string | null;
 }): {
-    kind: "external" | "internal";
+    kind: "external" | "internal" | "outside";
     path: string | null;
 };
 /**
@@ -74,6 +76,10 @@ export function classifyReference(ref: string, { siteUrl }?: {
  * defaults to `fs.existsSync`
  * @param {Set<string>} [options.known] build-relative paths this build knows it
  * produced, whether or not they are on disk yet
+ * @param {boolean} [options.trailingSlash] `config.links.trailingSlash`: false
+ * serves a directory index without its slash, which moves the folder its
+ * relative references resolve against up one. Pass true for a learning
+ * package's page, which an LMS opens as the file itself
  * @returns {boolean}
  */
 export function resolveReference(ref: string, options?: {
@@ -82,6 +88,7 @@ export function resolveReference(ref: string, options?: {
     extensionLess?: boolean;
     exists?: (file: string) => boolean;
     known?: Set<string>;
+    trailingSlash?: boolean;
 }): boolean;
 /**
  * Which file an internal reference resolves to — `resolveReference`'s answer
@@ -102,16 +109,18 @@ export function resolveReference(ref: string, options?: {
  * @param {boolean} [options.extensionLess]
  * @param {(file: string) => boolean} [options.exists]
  * @param {Set<string>} [options.known]
+ * @param {boolean} [options.trailingSlash]
  * @returns {string|null} the matched candidate, relative to the build folder
  * with forward slashes; `null` when nothing matched or the reference climbs
  * out of the build folder
  */
-export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLess, exists, known, }?: {
+export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLess, exists, known, trailingSlash, }?: {
     pageBuildTo: string;
     buildDir: string;
     extensionLess?: boolean;
     exists?: (file: string) => boolean;
     known?: Set<string>;
+    trailingSlash?: boolean;
 }): string | null;
 /**
  * One page's output as the scan needs it: where it was written, and what it
@@ -137,13 +146,16 @@ export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLes
  * @param {string[]} [options.hostServed] `config.links.hostServed` — patterns
  * for paths the host serves that no build folder holds
  * @param {(file: string) => boolean} [options.exists] injected for tests
+ * @param {boolean} [options.trailingSlash] `config.links.trailingSlash`, so a
+ * relative reference resolves against the page's served URL (a learning
+ * package's pages always against their file's folder)
  * @returns {{ checked: number, hostServed: number, broken: { page: string, href: string }[], orphans: string[] }}
  * `checked` counts every reference classified internal; `hostServed` the ones
  * among them that resolved to nothing in the build but match a `hostServed`
  * pattern; `broken` is sorted by page, then href; `orphans` are the HTML
  * pages no other page links to, never the home page or `404.html`, sorted
  */
-export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, hostServed: patterns, exists, }: {
+export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, hostServed: patterns, exists, trailingSlash, }: {
     pages: LinkPage[];
     buildDir: string;
     siteUrl?: string | null;
@@ -151,6 +163,7 @@ export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTa
     manifestTargets?: string[];
     hostServed?: string[];
     exists?: (file: string) => boolean;
+    trailingSlash?: boolean;
 }): {
     checked: number;
     hostServed: number;

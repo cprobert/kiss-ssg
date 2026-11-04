@@ -3,6 +3,65 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.11.1 — 2026-11-04
+
+The consent manager keeps a history of each visitor's choices, and shows it to them. Every choice
+is kept in the visitor's own browser, and with an `endpoint` sent to your server. Each choice now
+names every service it allowed and every one it refused, because the services behind a category
+change over time and a record has to say what was agreed to then. `{{consentRecord}}` on your
+privacy page shows the visitor that history and the consent id to quote in a request for their
+data. The client is now split in two: a small part inline in the head, and a file every page loads,
+which the browser caches.
+
+### Upgrading: serve one more file, and expect a new record shape
+
+Only a site with `config.consent` is affected.
+
+- **Serve `kiss-consent.<hash>.js`.** The build writes it at the root of the build folder, and
+  every consent page loads it, however the page was reached (`/guide`, `/guide/`,
+  `/guide/index.html`, under any path prefix, in a preview or on the host). Deploy it with the rest of the build. Its name changes only when
+  kiss's client code does, so it can be cached for good. Under a Content Security Policy it needs
+  `'self'` in `script-src`.
+- **An `endpoint` receives format 2.** Each record is
+  `{ format: 2, action, id, version, timestamp, categories, services, bannerHash, page }`.
+  `action` is `accept`, `reject`, `save` or `allow`. `services` lists every service you declared
+  outside `necessary`, each `true` or `false`. The record is still sent as `text/plain`.
+- **To show visitors their history**, put `{{consentRecord}}` on your privacy page and set
+  `ui.history` to that page's id. The settings dialog then links to it. An id no page claims
+  fails the build, and the audit's new `consent-history-missing` reports a page of that id with
+  no `{{consentRecord}}` on it.
+- **The cookie table gains a row** for `kiss_consent_log`, the browser's copy of the history.
+- **Behind a path prefix** (`siteUrl: 'https://example.com/site/'`), the banner's links and logo
+  now carry the prefix. A link that leaves out the prefix is reported broken when it names a page
+  you built.
+- **Under `links: { trailingSlash: false }`**, the link scan now resolves a relative link from
+  the URL the page is served at, not the folder its file is in. A finding that was only ever an
+  artefact of the old resolution goes away.
+
+### What changed
+
+- **`{{consentRecord}}`**: a section headed "Your cookie choices", with a table the browser fills
+  from its own log. Each row shows when the choice was made, which choice it was, each category
+  allowed or refused, the services allowed and refused, and the purposes version. It shows the
+  visitor's consent id, an empty state, a note for a browser with JavaScript off, and one for a
+  browser that refuses storage. Dates follow the visitor's locale for the page's language. It has
+  no delete control. Its wording is in `ui.text`, from `historyTitle` to `historyAllow`.
+- **`kiss_consent_log`**: the last 50 choices, in `localStorage`, written before each one is sent
+  and before a withdrawal's reload. It needs no endpoint, and withdrawing never deletes it.
+- **The consent id is always made**, endpoint or not, so the history and the server records
+  carry the same one.
+- **`consent-banners.json`**, written beside `sitemap.xml` when an `endpoint` is set. It lists
+  each banner hash the pages carry, with the exact text it was hashed from, the categories, and
+  each service's label, provider and category. Your server can then show the wording a record's
+  visitor saw. It describes one build: keep every copy you receive.
+- **Fixed**:
+  - a banner click made before the client file arrived now runs in the order it was made, so a
+    Reject is never overtaken;
+  - a script holding `window.kissConsent` from before the file arrived keeps working;
+  - a link inside the settings dialog closes the dialog after the click, and a modified click
+    leaves it open;
+  - the link check reads a `siteUrl` prefix with encoded characters (`/my%20site/`) correctly.
+
 ## 2.11.0 — 2026-11-03
 
 A cookie consent manager, built in. Declare the services that store anything on a visitor's device

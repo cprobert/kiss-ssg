@@ -149,14 +149,55 @@ export function gatingOf(service: ConsentService, resolved: KissConsent): "scrip
  * else can be deleted.
  *
  * @param {KissConsent} resolved
- * @param {{ logoUrl?: string|null, policyUrl?: string|null, bannerHash?: string|null }} [extra]
+ * @param {{ bannerHash?: string|null }} [extra] the banner and dialog's
+ * links are in their markup, never here: the client reads no URL of its own
  * @returns {Record<string, any>}
  */
 export function clientConfig(resolved: KissConsent, extra?: {
-    logoUrl?: string | null;
-    policyUrl?: string | null;
     bannerHash?: string | null;
 }): Record<string, any>;
+/**
+ * The banner registry a kiss-consent server reads, written as
+ * `consent-banners.json` beside the pages: for each banner hash the pages
+ * carry, the text that hash was taken from (`textOf` of the banner and the
+ * dialog, so `bannerHash` of it is the hash) and the categories and services
+ * as the visitor saw them. Records stay small, keys and true or false; this
+ * is where their words are (spec `planning/specs/2026-11-03-kiss-consent.md`).
+ *
+ * @param {Object} options
+ * @param {KissConsent|null} options.consent
+ * @param {string[]} options.hashes the hashes the build's written pages carry
+ * @param {Map<string, string>} options.texts each hash's text, as the helper
+ * hashed it; a hash with none is listed with `text: null`
+ * @returns {{ format: 1, version: string, banners: { hash: string, text: string|null, categories: { key: string, label: string, description: string, mode: string }[], services: { name: string, label: string, provider: string, category: string }[] }[] }|null}
+ * `null` without a consent manager, and without an `endpoint`: its one reader
+ * is the server records go to, and a site with none has no such server (the
+ * operator, 2026-11-03)
+ */
+export function bannerRegistry({ consent, hashes, texts }: {
+    consent: KissConsent | null;
+    hashes: string[];
+    texts: Map<string, string>;
+}): {
+    format: 1;
+    version: string;
+    banners: {
+        hash: string;
+        text: string | null;
+        categories: {
+            key: string;
+            label: string;
+            description: string;
+            mode: string;
+        }[];
+        services: {
+            name: string;
+            label: string;
+            provider: string;
+            category: string;
+        }[];
+    }[];
+} | null;
 /**
  * The report's `consent` key, from the resolved config and each page's
  * write-time consent facts. `null` without a consent manager. Page paths go
@@ -241,6 +282,8 @@ export function consentReport({ consent, pages, real, gatedPages, }: {
  * @property {string|null} logo an asset path
  * @property {string} partial the site partial that replaces the default banner, when it exists
  * @property {string|null} policy the page id the banner links for the cookie policy
+ * @property {string|null} history the page id the dialog links for the
+ * visitor's consent history, the page with `{{consentRecord}}`; `null` for none
  * @property {Record<string, string>} text
  * @property {Record<string, string>|false} theme
  */
@@ -329,6 +372,26 @@ export const DEFAULT_TEXT: Readonly<{
     embedLoad: "Load it";
     embedAllow: "Always allow {provider}";
     embedWatch: "Open it on {provider}";
+    historyLink: "See your consent history";
+    historyTitle: "Your cookie choices";
+    historyIntro: "Every cookie choice made in this browser on this site, newest first. It is kept in this browser only: another browser or device has its own.";
+    historySent: "Each choice is also sent to this site as a record holding exactly these details: when you made it, which choice it was, your consent id, the version of the cookie purposes, what you chose for each kind of cookie, each service that choice allowed or refused, the version of the banner wording, and the page you were on.";
+    historyId: "Your consent id, carried by every record of your choices:";
+    historyEmpty: "No cookie choice has been made in this browser yet.";
+    historyUnavailable: "This browser does not let the site keep a history, so there is none to show.";
+    historyNoScript: "Your history is shown with JavaScript, which is off in this browser.";
+    historyWhen: "When";
+    historyChoice: "Choice";
+    historyServicesAllowed: "Services allowed";
+    historyServicesRefused: "Services refused";
+    historyVersion: "Purposes version";
+    historyChanged: "The cookie purposes changed after this, so you were asked again.";
+    historyYes: "Allowed";
+    historyNo: "Refused";
+    historyAccept: "Accepted all";
+    historyReject: "Rejected all";
+    historySave: "Saved choices";
+    historyAllow: "Always allowed a service";
 }>;
 export const DEFAULT_THEME: Readonly<{
     background: "#ffffff";
@@ -344,6 +407,7 @@ export const DEFAULT_UI: Readonly<{
     logo: any;
     partial: "consent-banner";
     policy: "cookies";
+    history: any;
 }>;
 export const DEFAULT_COOKIE: Readonly<{
     name: "kiss_consent";
@@ -593,6 +657,11 @@ export type ConsentUi = {
      * the page id the banner links for the cookie policy
      */
     policy: string | null;
+    /**
+     * the page id the dialog links for the
+     * visitor's consent history, the page with `{{consentRecord}}`; `null` for none
+     */
+    history: string | null;
     text: Record<string, string>;
     theme: Record<string, string> | false;
 };

@@ -71,8 +71,8 @@ const CONSENT = consentOf({
 })
 
 describe('the consent checks are appended to CHECKS, in order', () => {
-  it('ends with the seven', () => {
-    expect(CHECKS.slice(-7)).toEqual([
+  it('ends with the eight', () => {
+    expect(CHECKS.slice(-8)).toEqual([
       'consent-missing',
       'consent-ungated',
       'consent-ads-cmp',
@@ -80,6 +80,7 @@ describe('the consent checks are appended to CHECKS, in order', () => {
       'consent-settings-missing',
       'consent-google-advanced',
       'consent-records-missing',
+      'consent-history-missing',
     ])
   })
 })
@@ -95,6 +96,7 @@ describe('consent facts', () => {
       banner: '0123456789ab',
       settings: true,
       gated: true,
+      record: false,
       signatures: [],
     })
   })
@@ -105,6 +107,7 @@ describe('consent facts', () => {
       banner: null,
       settings: false,
       gated: false,
+      record: false,
       signatures: [],
     })
   })
@@ -366,6 +369,34 @@ describe('the site-wide consent checks', () => {
     expect(only(result, 'consent-settings-missing')).toEqual([
       [`public/p${n - 1}.html`, null],
     ])
+  })
+
+  // The clean room's finding made checkable: the dialog's link lands on
+  // `#kiss-consent-history`, and nothing checked a link inside a <template>,
+  // so a ui.history page with no {{consentRecord}} passed in silence
+  // (measured 2026-11-03).
+  it('consent-history-missing: the page ui.history names has no {{consentRecord}}', () => {
+    const RECORD =
+      '<section class="kiss-consent-record" id="kiss-consent-history" data-kiss-consent-record><h2>Your cookie choices</h2></section>'
+    const without = { ...at(doc(HEAD, BANNER + SETTINGS)), id: 'about' }
+    const withRecord = {
+      ...at(doc(HEAD, BANNER + SETTINGS + RECORD)),
+      id: 'privacy',
+    }
+    const audit = (history) =>
+      auditBuild({
+        pages: [without, withRecord],
+        buildDir: buildDir(),
+        siteUrl: SITE,
+        consent: consentOf({ services: { gtm: { id: 'G' } }, ui: { history } }),
+      })
+    expect(only(audit('about'), 'consent-history-missing')).toEqual([
+      [without.buildTo, null],
+    ])
+    expect(only(audit('privacy'), 'consent-history-missing')).toEqual([])
+    expect(only(audit(null), 'consent-history-missing')).toEqual([])
+    expect(withRecord.facts.consent.record).toBe(true)
+    expect(without.facts.consent.record).toBe(false)
   })
 
   it('consent-settings-missing: not when every service is necessary, since there is nothing to ask', () => {

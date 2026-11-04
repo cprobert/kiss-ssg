@@ -236,8 +236,17 @@ describe('tableHtml', () => {
     )
   })
 
-  it("begins necessary with kiss's own two cookies", () => {
-    const [first, second, third] = rows(tables[0])
+  it("begins necessary with kiss's own two cookies and its log (D11)", () => {
+    const [first, second, log, third] = rows(tables[0])
+    expect(log).toEqual([
+      'Cookie consent',
+      'This site',
+      'Keeps a dated copy of each cookie choice made in this browser, for you to see',
+      'kiss_consent_log',
+      'Local storage',
+      'Until cleared',
+      'First',
+    ])
     expect(first).toEqual([
       'Cookie consent',
       'This site',
@@ -265,9 +274,9 @@ describe('tableHtml', () => {
   })
 
   it('names the configured cookie', () => {
-    expect(tableHtml(site({ cookie: { name: 'my_c', days: 30 } }))).toContain(
-      '<td>my_c</td><td>Cookie</td><td>30 days</td>',
-    )
+    const named = tableHtml(site({ cookie: { name: 'my_c', days: 30 } }))
+    expect(named).toContain('<td>my_c</td><td>Cookie</td><td>30 days</td>')
+    expect(named).toContain('<td>my_c_log</td><td>Local storage</td>')
   })
 
   it('has one row per stored item with kind and party, services in name order', () => {

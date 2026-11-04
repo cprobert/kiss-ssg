@@ -77,13 +77,14 @@ const FILES = {
 }
 
 /** Build a site and serve it; hand back its base URL and a closer. */
-async function serve(files, consent) {
+async function serve(files, consent, siteUrl = `https://${HOST}`, extra = {}) {
   const site = await makeSite(files)
   const kiss = new Kiss({
     folders: site.folders,
-    siteUrl: `https://${HOST}`,
+    siteUrl,
     logger: silentLogger,
     consent,
+    ...extra,
   })
     .scan()
     .generate()
@@ -112,12 +113,19 @@ const STUBS = {
  * A fresh context and page: every off-host request recorded and stubbed,
  * `/js/a.js` held back 300 ms so the order test can see a slow external.
  */
-async function open(options = {}) {
+async function open(options = {}, { holdClient = false } = {}) {
   if (!browser) throw new Error('no browser')
   const context = await browser.newContext({
     viewport: { width: 900, height: 600 },
     ...options,
   })
+  // `holdClient`: the consent client's cached file waits until `release()`,
+  // the way it would on a slow connection.
+  /** @type {() => void} */
+  let release = () => {}
+  const held = holdClient
+    ? new Promise((resolve) => (release = () => resolve(undefined)))
+    : Promise.resolve()
   await context.addInitScript(() => {
     // @ts-ignore
     window.__loaded = []
@@ -132,6 +140,7 @@ async function open(options = {}) {
     if (url.hostname.endsWith('.kiss.test') || url.hostname === 'localhost') {
       if (url.pathname === '/js/a.js')
         await new Promise((r) => setTimeout(r, 300))
+      if (/^\/kiss-consent\.[0-9a-f]+\.js$/.test(url.pathname)) await held
       if (url.pathname === '/consent-log') {
         offHost.push({
           host: url.hostname,
@@ -167,7 +176,7 @@ async function open(options = {}) {
     return route.fulfill({ status: 204 })
   })
   const page = await context.newPage()
-  return { context, page, offHost }
+  return { context, page, offHost, release }
 }
 
 const cookieNames = async (context) =>
@@ -207,6 +216,29 @@ describe.skipIf(!browser)('consent in Chromium', () => {
   }, 60000)
   afterAll(async () => {
     await site?.close()
+  })
+
+  // The split on a slow connection: the inline part shows the banner before
+  // the cached file arrives, and an Accept made in between takes effect when
+  // it does, with nothing gated running before.
+  it('shows the banner before the cached file arrives, and keeps an early Accept', async () => {
+    const { context, page, release } = await open({}, { holdClient: true })
+    await page.goto(`${site.base}/`, { waitUntil: 'commit' })
+    await expect.poll(() => bannerShown(page)).toBe(true)
+    await page.click(
+      '[data-kiss-consent-root] [data-kiss-consent-action="accept"]',
+    )
+    await page.waitForTimeout(200)
+    expect(await stored(context)).toBeNull()
+    expect(await page.evaluate(() => window.__loaded)).toEqual([])
+    release()
+    await expect
+      .poll(async () => (await stored(context))?.c ?? null)
+      .toEqual({ statistics: true, marketing: true })
+    await expect
+      .poll(() => page.evaluate(() => window.__loaded.includes('gtm')))
+      .toBe(true)
+    await context.close()
   })
 
   it('loads nothing gated and stores nothing before a choice', async () => {
@@ -551,6 +583,273 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
       expect(body.id).toMatch(/[0-9a-f-]{16,}/)
       expect(body.bannerHash).toMatch(/^[0-9a-f]{12}$/)
       await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // The spec's captured history (planning/specs/2026-11-03-kiss-consent.md):
+  // consent, a withdrawal that reloads, partial consent again. The browser's
+  // log holds all three, before each POST and before the reload, in the
+  // format it posts.
+  it('keeps the browser’s log of every choice, across a withdrawal’s reload, as posted', async () => {
+    const site = await serve(FILES, {
+      ...CONSENT_CONFIG,
+      endpoint: '/consent-log',
+    })
+    try {
+      const { context, page, offHost } = await open()
+      const posts = () =>
+        offHost
+          .filter((r) => r.path === '/consent-log')
+          .map((r) => JSON.parse(r.body ?? '{}'))
+      const log = () =>
+        page.evaluate(() =>
+          JSON.parse(localStorage.getItem('kiss_consent_log') ?? 'null'),
+        )
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="accept"]',
+      )
+      await expect.poll(() => posts().length).toBe(1)
+      // Withdraw everything from the dialog: the page reloads.
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await Promise.all([
+        page.waitForEvent('load'),
+        page.click('dialog [data-kiss-consent-action="reject"]'),
+      ])
+      await expect.poll(() => posts().length).toBe(2)
+      // Back, and statistics only.
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await page.check('dialog input[data-kiss-consent-category="statistics"]')
+      await page.click('dialog [data-kiss-consent-action="save"]')
+      await expect.poll(() => posts().length).toBe(3)
+      const entries = await log()
+      expect(entries.map((e) => e.action)).toEqual(['accept', 'reject', 'save'])
+      expect(entries.map((e) => e.categories)).toEqual([
+        { statistics: true, marketing: true },
+        { statistics: false, marketing: false },
+        { statistics: true, marketing: false },
+      ])
+      expect(new Set(entries.map((e) => e.id)).size).toBe(1)
+      expect(entries.every((e) => e.format === 2)).toBe(true)
+      expect(entries).toEqual(posts())
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // The history page in a real browser: the dialog's link to it, the rows
+  // from the log newest first in the page's locale, and a choice made on the
+  // page itself appearing without a reload.
+  it('shows the visitor’s history on the page ui.history names, linked from the dialog', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/privacy.hbs': consentPage(
+          '<h1>Privacy</h1>{{consentRecord}}',
+          'Privacy',
+        ),
+      },
+      { ...CONSENT_CONFIG, ui: { history: 'privacy' } },
+    )
+    try {
+      const { context, page } = await open({ locale: 'en-GB' })
+      const rows = () =>
+        page.$$eval('[data-kiss-consent-record] tbody tr', (trs) =>
+          trs.map((tr) =>
+            Array.from(tr.querySelectorAll('th, td'), (c) => c.textContent),
+          ),
+        )
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await Promise.all([
+        // On the section itself, not the top of the page.
+        page.waitForURL(/\/privacy\.html#kiss-consent-history$/),
+        page.click('dialog a.kiss-consent__history'),
+      ])
+      expect(await page.isVisible('[data-kiss-consent-record-empty]')).toBe(
+        false,
+      )
+      expect(await rows()).toEqual([
+        [
+          expect.stringMatching(/\d{4}.*\d{2}:\d{2}:\d{2}/),
+          'Rejected all',
+          'Refused',
+          'Refused',
+          '—',
+          // Every service the choice covered, named (2026-11-04).
+          'Google Tag Manager, Visit counter, YouTube',
+          expect.stringMatching(/^[0-9a-f]{12}$/),
+        ],
+      ])
+      // A choice made here, from the footer, shows at once, newest first.
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await page.check('dialog input[data-kiss-consent-category="statistics"]')
+      await page.click('dialog [data-kiss-consent-action="save"]')
+      await expect.poll(async () => (await rows()).length).toBe(2)
+      expect((await rows()).map((r) => r.slice(1, 6))).toEqual([
+        [
+          'Saved choices',
+          'Allowed',
+          'Refused',
+          'Visit counter',
+          'Google Tag Manager, YouTube',
+        ],
+        [
+          'Rejected all',
+          'Refused',
+          'Refused',
+          '—',
+          'Google Tag Manager, Visit counter, YouTube',
+        ],
+      ])
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // Codex round 2 (P1), in the browser: a Reject queued while the cached
+  // file is held back must apply before an objection category starts.
+  it('applies a Reject made before the cached file arrives before an objection category runs', async () => {
+    const site = await serve(FILES, {
+      ...CONSENT_CONFIG,
+      categories: { statistics: { mode: 'objection' } },
+    })
+    try {
+      const { context, page, release } = await open({}, { holdClient: true })
+      await page.goto(`${site.base}/`, { waitUntil: 'commit' })
+      await expect.poll(() => bannerShown(page)).toBe(true)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      // A marker that a reload would wipe.
+      await page.evaluate(() => {
+        // @ts-ignore
+        window.__sameDocument = true
+      })
+      release()
+      await expect
+        .poll(async () => (await stored(context))?.c?.statistics ?? null)
+        .toBe(false)
+      await page.waitForTimeout(300)
+      // @ts-ignore
+      expect(await page.evaluate(() => window.statsLoaded ?? null)).toBeNull()
+      // @ts-ignore
+      expect(await page.evaluate(() => window.__sameDocument ?? null)).toBe(
+        true,
+      )
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // Codex round 5 (P2), in the browser: on the history page itself the
+  // dialog's link is a same-page jump; the dialog closes and the history is
+  // what the visitor sees.
+  it('closes the dialog when its history link jumps within the history page', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/privacy.hbs': consentPage(
+          '<h1>Privacy</h1><div style="height:3000px"></div>{{consentRecord}}',
+          'Privacy',
+        ),
+      },
+      { ...CONSENT_CONFIG, ui: { history: 'privacy' } },
+    )
+    try {
+      const { context, page } = await open()
+      await page.goto(`${site.base}/privacy.html`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await page.click('footer [data-kiss-consent-action="settings"]')
+      await page.click('dialog a.kiss-consent__history')
+      await expect.poll(() => page.locator('dialog[open]').count()).toBe(0)
+      expect(await page.evaluate(() => location.hash)).toBe(
+        '#kiss-consent-history',
+      )
+      expect(await page.locator('#kiss-consent-history h2').isVisible()).toBe(
+        true,
+      )
+      // Focus is on the history, not back on the footer's settings button.
+      await expect
+        .poll(() => page.evaluate(() => document.activeElement?.id ?? null))
+        .toBe('kiss-consent-history')
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // The stopgap review (P2), in the browser: a prefixed siteUrl on another
+  // origin, the build served locally (a --dev or preview of a GitHub Pages
+  // project site). The cached client must still load from here, or the
+  // banner shows and its buttons do nothing.
+  it('loads the cached client from wherever the build is served, whatever siteUrl says', async () => {
+    const site = await serve(
+      FILES,
+      CONSENT_CONFIG,
+      'https://elsewhere.example/project/',
+    )
+    try {
+      const { context, page } = await open()
+      await page.goto(`${site.base}/`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await expect
+        .poll(async () => (await stored(context))?.c ?? null)
+        .toEqual({ statistics: false, marketing: false })
+      await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // Codex at the close (P2, 2026-11-04): a page is reached at more than one
+  // address. Under `trailingSlash: false`, `guide/index.html` is linked as
+  // /guide, but serve-static (as kiss's dev server) redirects that to
+  // /guide/, and anyone can open /guide/index.html. A URL written at build
+  // time, relative to one of them, missed the file at the others. A 404 page
+  // is served at any address at all.
+  it('loads the cached client at every address a page is reached by', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/guide/index.hbs': consentPage('<h1>Guide</h1>', 'Guide'),
+        'src/pages/404.hbs': consentPage('<h1>Not found</h1>', 'Not found'),
+      },
+      CONSENT_CONFIG,
+      undefined,
+      { links: { trailingSlash: false } },
+    )
+    try {
+      for (const at of [
+        '/guide',
+        '/guide/',
+        '/guide/index.html',
+        '/missing/deep/page',
+      ]) {
+        const { context, page } = await open()
+        await page.goto(`${site.base}${at}`)
+        await page.click(
+          '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+        )
+        await expect
+          .poll(async () => (await stored(context))?.c ?? null, {
+            message: at,
+          })
+          .toEqual({ statistics: false, marketing: false })
+        await context.close()
+      }
     } finally {
       await site.close()
     }

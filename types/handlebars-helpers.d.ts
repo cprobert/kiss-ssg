@@ -3,7 +3,7 @@
  * `sass`, `offset`, `stringify`, `lookup`, `canonical`, `absUrl`, `asset`,
  * `link`, `isActive`, `env`, `scormBridge`, and the consent manager's
  * `consentHead`, `consentBanner`, `consentScript`, `consentEmbed`,
- * `consentSettings` and `consentTable`. Each is Handlebars runtime — see `AIKB` and
+ * `consentSettings`, `consentTable` and `consentRecord`. Each is Handlebars runtime — see `AIKB` and
  * llms.txt for what each one renders.
  *
  * @param {typeof import('handlebars')} hbs the environment to register on
@@ -22,9 +22,12 @@
  * instance and a watch replay builds a new stack. The default resolves nothing,
  * so a caller that registers helpers without a registry still gets every other
  * helper.
+ * @param {(hash: string, text: string) => void} [deps.recordBanner] told each
+ * consent banner's hash and the text it was taken from, for the banner
+ * registry (`consent-banners.json`); the default records nothing
  * @returns {typeof import('handlebars')} the same environment
  */
-export function registerHandlebarsHelpers(hbs: typeof import("handlebars"), config: import("./config.js").KissConfig, { markdown, logger, assets, lookupPage }: {
+export function registerHandlebarsHelpers(hbs: typeof import("handlebars"), config: import("./config.js").KissConfig, { markdown, logger, assets, lookupPage, recordBanner, }: {
     markdown: any;
     logger: ReturnType<typeof import("./logger.js").createLogger>;
     assets?: ReturnType<typeof createAssetManifest>;
@@ -34,5 +37,6 @@ export function registerHandlebarsHelpers(hbs: typeof import("handlebars"), conf
         withdrawn: true;
         views: string[];
     } | null);
+    recordBanner?: (hash: string, text: string) => void;
 }): typeof import("handlebars");
 import { createAssetManifest } from './asset-manifest.js';

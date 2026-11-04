@@ -43,6 +43,13 @@
       <mark>[to confirm: how to complain to the business, and whether any other right applies]</mark>
     </p>
   </div>
+
+  {{!-- The visitor's own history of cookie choices, from this browser's log.
+        `ui.history: 'privacy'` in router.js links it from the settings
+        dialog. --}}
+  <div class="card">
+    {{consentRecord}}
+  </div>
   {{/content}}
 
 {{/extend}}

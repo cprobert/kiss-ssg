@@ -602,6 +602,12 @@ declare class Kiss {
     private _packagesRun;
     /** @private @type {import('./packages.js').PackageResult[]|null} */
     private _packagesResult;
+    /** @private @type {Map<string, string>} each consent banner's text, by hash */
+    private _bannerTexts;
+    /** @private */
+    private _bannerRegistryRun;
+    /** @private */
+    private _consentClientRun;
     /** @private */
     private _packagesDevNoticed;
     /** @private */
@@ -742,6 +748,10 @@ declare class Kiss {
     private _writeRedirects;
     /** @private */
     private _writePackages;
+    /** @private */
+    private _writeBannerRegistry;
+    /** @private */
+    private _writeConsentClient;
     /** @private */
     private _lastBuildRecord;
     /** @private */

@@ -5,6 +5,7 @@ import {
   PRESETS,
   TRACKER_ORIGINS,
   bannerHash,
+  bannerRegistry,
   categoriesInUse,
   clientConfig,
   consentModeDefault,
@@ -329,6 +330,23 @@ describe('resolveConsent: refuses settings outside the contract', () => {
       /cookie\.name must be a cookie name/,
     ],
     [{ services: {}, cookie: { path: '/' } }, /cookie\.path is not a setting/],
+    // The consent log is the mechanism's own; a service that declared it
+    // would have it deleted on withdrawal and listed as the service's (D8).
+    [
+      {
+        services: {
+          stats: { category: 'statistics', storage: ['kiss_consent_log'] },
+        },
+      },
+      /services\.stats declares kiss_consent_log, the consent log's own name/,
+    ],
+    [
+      {
+        cookie: { name: 'my_c' },
+        services: { stats: { category: 'statistics', cookies: ['my_c_log'] } },
+      },
+      /services\.stats declares my_c_log, the consent log's own name/,
+    ],
     [
       { services: {}, google: { mode: 'full' } },
       /google\.mode must be 'basic' or 'advanced'/,
@@ -678,7 +696,7 @@ describe('clientConfig', () => {
       },
       endpoint: '/log',
     })
-    const cfg = clientConfig(r, { policyUrl: '/cookies/', bannerHash: 'abc' })
+    const cfg = clientConfig(r, { bannerHash: 'abc' })
     expect(cfg.services.map((s) => s.name)).toEqual(['gtm', 'vimeo', 'cdn'])
     expect(cfg.services[0].cookies).toEqual(['_ga', '_ga_*', '_gcl_au'])
     expect(cfg.services[1].cookies).toEqual([])
@@ -693,9 +711,104 @@ describe('clientConfig', () => {
     expect(cfg.categories).toEqual([{ name: 'marketing', mode: 'consent' }])
     expect(cfg.v).toBe(r.version)
     expect(cfg.endpoint).toBe('/log')
-    expect(cfg.policyUrl).toBe('/cookies/')
+    // No URL rides in the client config: the links are in the markup.
+    expect(cfg).not.toHaveProperty('policyUrl')
+    expect(cfg).not.toHaveProperty('logoUrl')
     expect(cfg.bannerHash).toBe('abc')
     expect(cfg.google.defaults.security_storage).toBe('granted')
+  })
+})
+
+// The file a kiss-consent server reads to turn a record's bannerHash into the
+// wording the visitor saw (spec planning/specs/2026-11-03-kiss-consent.md,
+// "The banner registry file").
+describe('bannerRegistry', () => {
+  const consent = resolveConsent({
+    endpoint: '/api/consent',
+    services: {
+      stats: { category: 'statistics', label: 'Visit counter' },
+      youtube: {},
+    },
+  })
+
+  it('lists each banner the build wrote with the text its hash was taken from, and the categories as shown', () => {
+    const html = '<h2>Cookies</h2><p>We use &amp; ask.</p>'
+    const hash = bannerHash(html)
+    const registry = bannerRegistry({
+      consent,
+      hashes: [hash],
+      texts: new Map([[hash, textOf(html)]]),
+    })
+    expect(registry).toEqual({
+      format: 1,
+      version: consent?.version,
+      banners: [
+        {
+          hash,
+          text: 'Cookies We use & ask.',
+          categories: [
+            {
+              key: 'statistics',
+              label: 'Statistics',
+              description: consent?.categories.statistics.description,
+              mode: 'consent',
+            },
+            {
+              key: 'marketing',
+              label: 'Marketing',
+              description: consent?.categories.marketing.description,
+              mode: 'consent',
+            },
+          ],
+          // `provider`: the ICO asks for the controller who relies on the
+          // consent by name, and a label is not always one (2026-11-04).
+          services: [
+            {
+              name: 'stats',
+              label: 'Visit counter',
+              provider: 'Visit counter',
+              category: 'statistics',
+            },
+            {
+              name: 'youtube',
+              label: 'YouTube',
+              provider: 'YouTube',
+              category: 'marketing',
+            },
+          ],
+        },
+      ],
+    })
+    // The text is exactly what was hashed, so a server can check it.
+    expect(bannerHash(registry?.banners[0].text ?? '')).toBe(hash)
+  })
+
+  it('sorts banners by hash, takes only the hashes the build wrote, and leaves an unknown text null', () => {
+    const registry = bannerRegistry({
+      consent,
+      hashes: ['bbbbbbbbbbbb', 'aaaaaaaaaaaa'],
+      texts: new Map([
+        ['bbbbbbbbbbbb', 'b'],
+        ['cccccccccccc', 'stale, from an earlier render'],
+      ]),
+    })
+    expect(registry?.banners.map((b) => [b.hash, b.text])).toEqual([
+      ['aaaaaaaaaaaa', null],
+      ['bbbbbbbbbbbb', 'b'],
+    ])
+  })
+
+  it('is null without a consent manager, and without an endpoint to read it', () => {
+    expect(
+      bannerRegistry({ consent: null, hashes: [], texts: new Map() }),
+    ).toBeNull()
+    expect(
+      bannerRegistry({
+        consent: resolveConsent({ services: { youtube: {} } }),
+        hashes: ['aaaaaaaaaaaa'],
+        texts: new Map(),
+      }),
+    ).toBeNull()
   })
 })
 

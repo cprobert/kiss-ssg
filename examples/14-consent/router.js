@@ -66,6 +66,9 @@ const kiss = new Kiss({
     ui: {
       // An asset path, looked up the way {{asset}} looks one up.
       logo: 'img/logo.svg',
+      // The page with {{consentRecord}}, linked from the settings dialog as
+      // "See your consent history". Its id, so a page that moves keeps it.
+      history: 'privacy',
       // The site's own custom properties, so the banner follows its dark
       // scheme too. A theme value is any CSS value.
       theme: {

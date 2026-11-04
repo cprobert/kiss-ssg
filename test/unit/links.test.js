@@ -201,8 +201,70 @@ describe('classifyReference', () => {
       kind: 'internal',
       path: '/',
     })
-    // Same origin, but served by something this build did not write.
-    expect(of('https://site.example/blog/x', prefixed).kind).toBe('external')
+    // Same origin, outside the prefix: not this build's address, so not
+    // internal. `outside` carries the path, for checkLinks to ask whether it
+    // names a page this build wrote at another address.
+    expect(of('https://site.example/blog/x', prefixed)).toEqual({
+      kind: 'outside',
+      path: '/blog/x',
+    })
+  })
+
+  // A browser requests a root-relative path from the origin's root, whatever
+  // `siteUrl` says, so on a prefixed site `/about` is not this build's
+  // `about`. It was read against the build folder, and `{{link}}` without
+  // `absolute=true`, or the consent banner's policy link, passed the check
+  // while every visitor got the origin root's page (2026-11-03).
+  it('reads a root-relative path against siteUrl’s prefix, as a browser requests it', () => {
+    const prefixed = 'https://site.example/docs/'
+    expect(of('/docs/about?x=1', prefixed)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    expect(of('/docs', prefixed)).toEqual({ kind: 'internal', path: '/' })
+    expect(of('/docs/', prefixed)).toEqual({ kind: 'internal', path: '/' })
+    expect(of('/about', prefixed)).toEqual({ kind: 'outside', path: '/about' })
+    // `/docsy` is not under `/docs/`.
+    expect(of('/docsy/x', prefixed)).toEqual({
+      kind: 'outside',
+      path: '/docsy/x',
+    })
+    // No prefix, no change: root-relative is the build's root.
+    expect(of('/about')).toEqual({ kind: 'internal', path: '/about' })
+  })
+
+  // Codex round 1 (2026-11-03): the prefix stays percent-encoded in a parsed
+  // `siteUrl`, and the reference was decoded before the comparison, so every
+  // link under `/my%20site/` read as outside the site. Compared encoded, as
+  // the browser requests them, and decoded after the prefix is stripped.
+  it('compares an encoded prefix with the reference as the browser requests it', () => {
+    const encoded = 'https://example.com/my%20site/'
+    expect(of('https://example.com/my%20site/about', encoded)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    expect(of('https://example.com/my%20site/caf%C3%A9', encoded)).toEqual({
+      kind: 'internal',
+      path: '/café',
+    })
+    expect(of('/my%20site/about', encoded)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    // A browser encodes the space itself before it requests the path.
+    expect(of('/my site/about', encoded)).toEqual({
+      kind: 'internal',
+      path: '/about',
+    })
+    expect(of('/my%20site', encoded)).toEqual({ kind: 'internal', path: '/' })
+    expect(of('/other/x', encoded)).toEqual({
+      kind: 'outside',
+      path: '/other/x',
+    })
+    // A prefix written unencoded in siteUrl is parsed to the same thing.
+    expect(
+      of('https://example.com/my%20site/about', 'https://example.com/my site/'),
+    ).toEqual({ kind: 'internal', path: '/about' })
   })
 
   it('calls every absolute URL external when the site has no siteUrl', () => {
@@ -333,6 +395,32 @@ describe('resolveTarget', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  // Codex round 6 on the consent-log branch (2026-11-03): under
+  // `links.trailingSlash: false` the host serves `blog/post/index.html` at
+  // `/blog/post`, so a browser resolves `../x.js` there against `/blog/`, not
+  // the folder the file was written into.
+  it('resolves a relative reference against the served URL, under the trailingSlash policy', () => {
+    const exists = (file) =>
+      ['public/x.js', 'public/blog/x.js', 'public/index.html'].includes(file)
+    const target = (ref, pageBuildTo, trailingSlash) =>
+      resolveTarget(ref, {
+        pageBuildTo,
+        buildDir: 'public',
+        exists,
+        trailingSlash,
+      })
+    const post = 'public/blog/post/index.html'
+    expect(target('../x.js', post, true)).toBe('blog/x.js')
+    expect(target('../x.js', post, false)).toBe('x.js')
+    expect(target('x.js', post, false)).toBe('blog/x.js')
+    // A page that is not a directory index, and the home page, are served
+    // where they were written either way.
+    expect(target('x.js', 'public/blog/post.html', false)).toBe('blog/x.js')
+    expect(target('x.js', 'public/index.html', false)).toBe('x.js')
+    // Root-relative references never depended on the page's place.
+    expect(target('/x.js', post, false)).toBe('x.js')
   })
 
   it('agrees with resolveReference on every answer', () => {
@@ -481,6 +569,49 @@ describe('checkLinks', () => {
     ])
   })
 
+  // The same served-URL rule for the scan as a whole: the finding Codex
+  // reported was the build's own consent client, `../kiss-consent.<hash>.js`
+  // on a page served at `/blog/post`. A learning package's page keeps its
+  // file's folder: an LMS opens the file itself, wherever it unpacks it.
+  it('resolves relative references against each page’s served URL under trailingSlash: false', () => {
+    const files = new Set(['public/x.js'])
+    const run = (trailingSlash) =>
+      checkLinks({
+        pages: [
+          { buildTo: 'public/blog/post/index.html', links: ['../x.js'] },
+          {
+            buildTo: 'public/course/l1/index.html',
+            links: ['../l2/index.html'],
+            package: 'course',
+          },
+          {
+            buildTo: 'public/course/l2/index.html',
+            links: [],
+            package: 'course',
+          },
+        ],
+        buildDir: 'public',
+        exists: (file) => files.has(file),
+        trailingSlash,
+      })
+    expect(run(false).broken).toEqual([])
+    expect(run(true).broken).toEqual([
+      { page: 'public/blog/post/index.html', href: '../x.js' },
+    ])
+  })
+
+  it('matches a hostServed pattern against the served URL under trailingSlash: false', () => {
+    const result = checkLinks({
+      pages: [{ buildTo: 'public/blog/post/index.html', links: ['../v1/a'] }],
+      buildDir: 'public',
+      hostServed: ['/v1/**'],
+      exists: () => false,
+      trailingSlash: false,
+    })
+    expect(result.hostServed).toBe(1)
+    expect(result.broken).toEqual([])
+  })
+
   // A browser resolves dot segments before it requests a root-relative URL,
   // so a pattern is matched against that path, not the string as written
   // (Codex's review, 2026-10-02): `/v1/../gone.html` is a request for
@@ -533,6 +664,96 @@ describe('checkLinks', () => {
     })
     expect(result.hostServed).toBe(2)
     expect(result.broken).toEqual([])
+  })
+
+  // The forgotten prefix: a reference that names this build's page at the
+  // origin's root rather than under siteUrl's prefix. What the browser gets
+  // there is not this page, so it is broken. A same-origin path outside the
+  // prefix that names nothing this build wrote (a link back to the main site
+  // at `/shop/`) is someone else's, and the build cannot say: not checked.
+  it('reports a page linked without siteUrl’s prefix, and leaves the rest of the origin alone', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: [
+            '/cookies.html',
+            'https://example.com/about.html',
+            '/docs/cookies.html',
+            '/shop/',
+            'https://example.com/shop/basket',
+          ],
+        },
+        { buildTo: './public/cookies.html', links: [] },
+        { buildTo: './public/about.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      exists: () => false,
+    })
+    expect(result.broken).toEqual([
+      { page: './public/index.html', href: '/cookies.html' },
+      { page: './public/index.html', href: 'https://example.com/about.html' },
+    ])
+    // The two misplaced ones and the one inside the prefix.
+    expect(result.checked).toBe(3)
+    // `/docs/cookies.html` lands, so cookies is linked; about only from the
+    // wrong address, which links nothing.
+    expect(result.orphans).toEqual(['./public/about.html'])
+  })
+
+  it('checks links under an encoded prefix, and counts the pages they land on as linked', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './public/index.html',
+          links: [
+            'https://example.com/my%20site/about.html',
+            'https://example.com/my%20site/gone.html',
+          ],
+        },
+        { buildTo: './public/about.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/my%20site/',
+      exists: () => false,
+    })
+    expect(result.checked).toBe(2)
+    expect(result.broken).toEqual([
+      {
+        page: './public/index.html',
+        href: 'https://example.com/my%20site/gone.html',
+      },
+    ])
+    expect(result.orphans).toEqual([])
+  })
+
+  it('lets hostServed claim a path outside the prefix', () => {
+    const result = checkLinks({
+      // `/` is the ambiguous one: a prefixed build always has an index, so a
+      // link back to the main site at the origin's root reads as the prefix
+      // forgotten until the site says otherwise.
+      pages: [
+        { buildTo: './public/index.html', links: ['/cookies.html', '/'] },
+        { buildTo: './public/cookies.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      exists: () => false,
+    })
+    expect(result.broken.map((b) => b.href)).toEqual(['/', '/cookies.html'])
+    const claimed = checkLinks({
+      pages: [
+        { buildTo: './public/index.html', links: ['/cookies.html', '/'] },
+        { buildTo: './public/cookies.html', links: [] },
+      ],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      hostServed: ['/cookies.html', '/'],
+      exists: () => false,
+    })
+    expect(claimed.hostServed).toBe(2)
+    expect(claimed.broken).toEqual([])
   })
 
   // The information architecture skill needs the pages nothing links to. It
