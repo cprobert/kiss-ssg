@@ -1,7 +1,7 @@
 ---
 branch: feat/consent-log-viewer
 base: main
-status: open
+status: closed
 opened: 2026-11-03
 ---
 
@@ -180,6 +180,8 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
   - **The watch flake, seen again** at the first gates run of the close: "settles rapid asset
     and page edits together", the ENOENT on `style.<hash>.css` already in `AIKB/rebuild.md`'s
     Known knowns. 5 of 5 alone, then the gates green. The second sighting on this branch.
+  - **Round 11** (over `34eb8a7`, the whole branch): no findings. The close's review is clean;
+    every commit on the branch has had a Codex review.
 - **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
   (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
   history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;
@@ -288,3 +290,126 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-04: The consent log, the history page, and what a record must say
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 33 commits on `feat/consent-log-viewer` (`936d99e`..`34eb8a7`), released as 2.11.1:
+
+- record format 2 and the browser's own log, `kiss_consent_log` (`f9982a9`);
+- `{{consentRecord}}` and `ui.history` (`9fb4d7b`, `af4dc5e`, `1dcc529`);
+- `consent-banners.json`, written only with an endpoint (`7fe5ef8`, `ebf1298`);
+- the inline/cached client split (`1b23041`) and its start-up order (`aa38d3d`, `3ed9396`, `34eb8a7`);
+- the `siteUrl` prefix fixes (`b0e0dc6`, `f24cd15`, `69ea86f`);
+- the link scan resolving from the served URL (`0d8b8e1`);
+- every record naming each service it covered, allowed or refused, with each service's provider in the registry (`2faf7c0`);
+- the browser working out the client file's URL from its own address (`f13996b`).
+
+## Reflect — what the session was
+
+**Planned.** The spec settled D1–D13 before a line was written, and the open fixed the scope: the log, the viewer, the registry, the split, and the round-8 URL fix.
+
+The destination held. The route did not, in two places:
+
+- **The client's URL.** The client split's URL was designed three times. First root-relative or `siteUrl`-absolute (`1b23041`). Then relative to the served path (`08e6bf6`, after the stopgap review). Then worked out in the browser from its own address (`f13996b`, after Codex at the close). Each design was right for the case that broke the one before it. The third is the one that matches what the browser actually does: a page is reached at several addresses, and no URL written at build time is right at all of them.
+- **What a record holds.** The record's `services` changed meaning late, and for the better (below).
+
+The planned shape served the work. What fought it was taking each URL finding as a case instead of asking the class question once.
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing — strong.**
+
+- The open answered every structural question (D13, the scope, here, one session), and the spec was the contract.
+- When the operator left for mobile, the `/loop 6-10` instruction was a stop condition with a range. That is exactly what CLAUDE.md asks of a review loop, and it was written into an Amendment before round 1.
+
+**Pushback & steering — the dimension that discriminated this session.**
+
+- The operator's "I thought they would be script names such as analytics or tag manager, Facebook, etc. Not just categories" turned into a design change Claude had recommended against. The operator's reason ("because we can change scripts over time, we're going to need to record what was agreed to at the point they agreed to it") was better than Claude's. Claude's version would have worked out the services from the version hash and the registry. That rests on the server keeping every registry it ever received, and on a hand-set `version` never hiding a change of services.
+- Claude's half of that exchange was the evidence: two open-source managers cloned and read (cookieconsent's `acceptedServices`, Klaro's per-service booleans), the ICO's words checked rather than recalled, and the vendors' server logs compared. The result was a record that proves itself (`2faf7c0`). Neither input held that alone.
+- The operator also caught Claude's framing error in the same turn: "forever and a day" consent to whatever is later filed under a category. Claude could answer it with the code's `purposesVersion`.
+- **Three overrules, three reasons:**
+  - the history placement ("I don't have a problem with that");
+  - services per record (the reason above);
+  - the version, 2.11.1 not 2.12.0 ("I've not published 2.11 yet"; Claude checked that npm's newest release is 2.9.0).
+
+  Claude asked for each reason before writing it down. The 2026-11-02 log's top Claude lesson held.
+
+- **One misread was caught, not filed.** "This branch" for the dialog came with the reason "I followed your advice", but the advice had been "Next branch". Claude put it back as a two-way question, and the answer reversed it.
+
+**Verification & ownership — late, then real.**
+
+- The eyeball was deferred at two pulses and taken at the third ("Looked, matched"). The pull that made it happen was the operator's: "Use /webapp-testing and try it for yourself".
+- That walk-through, Claude's and not a substitute for the operator's look, found two defects that every gate had passed (`522ae63`):
+  - a tampered category read as "Allowed";
+  - example 14's CSS styling the history's dates as column headings.
+- The operator never read a Codex fix diff. Eleven rounds and eight fixes were each tested, but none was read by a person. That was the 2026-11-02 lesson, and it recurred.
+
+**Iteration discipline — good cadence, with one chain of patches.**
+
+- Four pulses and a Codex round after every `lib/` change.
+- The chain is the lesson. The stopgap review's relative URL (`08e6bf6`) produced round 6's false broken link (`0d8b8e1`) and round 9's dead buttons at `/guide/` (`f13996b`). Round 9's fix then produced round 10's start-up race (`34eb8a7`): an added tag is not `defer`red.
+- Three of the branch's last four findings came from one decision, and two of them from fixes made at the close.
+- CLAUDE.md's "after the first finding, fix the class" was followed within each fix (every relative reference, calls and clicks alike), but not across them. The class question was "at which addresses is a page reached, and when does the file run?", and it was asked only at the third finding.
+
+**Harness leverage — strong, mostly on the operator's initiative.**
+
+- `/loop` while away, the Codex companion every round, `/webapp-testing` on request, WebFetch to check the ICO's text, and clones of real libraries instead of answering from memory.
+- Missed: the walk-through ran under the default `trailingSlash`. Running it once under `false` would have found round 9's defect a day earlier.
+
+**Rule slips, for the record:**
+
+- `08e6bf6` was committed while the suite was red, a watch flake that went green on the rerun, and the `&&` chain didn't check the test's exit code.
+- `sed` on a test label.
+- A meaningless `cat > /dev/null <<'X'` plus `python -` command, which wrote nothing but hung for two minutes.
+- Two `http.server` processes left behind by `with_server.py` on Windows. Claude found and stopped them.
+
+**Intended versus actual supervision:**
+
+- The operator meant to supervise the design and the outcome, and did both. The design change and the walk-through were theirs.
+- They did not supervise the fixes. The close's two P2 fixes were shipped on one "Fix now", the second being a defect the first introduced, and Claude covered both under that one approval. That reading is defensible and was recorded as such, but it is Claude closing its own loop.
+- Claude also moved two size ceilings by its own call: the cached file 9,728 → 10,752, and the inline part 5,376 → 6,144, which is every page's bytes. Both were stated in the report, neither was asked.
+
+**Competency level: Active supervisor.**
+
+- The operator framed it, steered the record's design with a better reason than the AI's, demanded verification at the point it paid, and gave a reason every time they overruled.
+- It falls short of agentic engineering lead on two counts: no fix diff was read across eleven review rounds, and the eyeball needed a second prompt to happen.
+
+## Feedback — recommendations for next session
+
+- **Claude — ask the class question at the first URL finding, not the third.** When a review finds one wrong URL, before patching, list every address the thing is reached at (each `trailingSlash` form, `/index.html`, a prefix, a preview, `file://`, a 404) and when it runs (parsed, deferred, added). Test the fix against that list. Here it would have gone straight from `08e6bf6` to `f13996b`, and round 10's race would have been designed out, not found.
+- **Claude — a fix made at the close is a design change; say so.** Round 9's fix changed how the client loads (no `defer`) and moved a ceiling on every page. That deserved its own line to the operator before the commit: what it changes beyond the finding, and what it might break. Round 10 found that what it might break was the start-up order.
+- **Claude — ask before moving a size ceiling that every page pays.** The cached file's ceiling is a Claude call, since it is cached. The inline part's is the operator's: its comment says "a decision, not a fix", and 600 bytes on every page is a product cost.
+- **Operator — read one Codex fix diff per round.** Second branch running: eleven rounds, eight fixes, none read by a person. The biggest diff of each round takes two minutes, and round 9's would have shown a `defer`red tag becoming an added one.
+- **Operator — when a walk-through is asked for, name the configuration too.** "Try it for yourself" found two defects. "Try it under `trailingSlash: false` and with a prefix" would have found round 9's as well. The walk-through script is in the scratchpad and takes its config from the router.
+- **Process — `with_server.py` leaves its server running on Windows.** Its shutdown kills the shell, not the Python child. In this repo, start the server with `Start-Process -PassThru` and stop it by PID, or use `scripts/screenshot.mjs`'s `serveFolder`, which the Chromium suite already uses.
+- **Process — the next branch's objective is recorded:** the settings dialog lists each category's services by label and provider (the ICO: "consent for categories of third-party controllers will not be specific enough"). It changes every page's banner and every banner hash.
+
+## Verdict — did we achieve the objective?
+
+**Met, with the objective strengthened on the way.** The brief was a dated, browser-kept history of consent choices, a page to see it on, and the kiss side ready for a kiss-consent server: record format 2, the registry and the split. All of it shipped, plus the round-8 URL fix the history link builds on.
+
+- [x] **The log.** Each Accept / Reject / Save / Always allow appends one format-2 record before the POST and before a withdrawal's reload; never on Close or a page load. It works with no endpoint, keeps the last 50, survives D8, and degrades per D10. Evidence: the unit suite, Chromium, and the 2026-11-03 walk-through (one record per choice, storage refused handled).
+- [x] **The id and the labels.** The id is always made (D1); the labels are in the viewer's config (D2, the operator's amendment).
+- [x] **`{{consentRecord}}`.** Every state, newest first, the locale date to the second with `<time datetime>`, version changes marked, no delete control, wording in `ui.text`, and the Markdown copy drops the controls. Evidence: `consent-record.test.js` (32 cases) and Chromium.
+- [x] **`ui.history`.** The dialog link lands on the section, an unknown id fails the build, the audit reports a missing section, and the cookie table lists the log.
+- [x] **`consent-banners.json`.** Each hash with its text, categories and services, now with `provider`; written only with an endpoint, by the operator's amendment.
+- [x] **The client split**, measured with ceilings: inline 5,483 bytes minified (2,389 gzipped) against 6,144; the file 9,806 (3,769) against 10,752. Both ceilings were moved by Claude, and recorded.
+- [x] **The round-8 P2.** The prefix is carried by the policy link, the logo and the history link. The client file now loads at every address, under any prefix (Chromium at four addresses).
+- [x] **Public-API obligations.** GUIDE.md, `llms.txt`, README.md, `types/`, three skills, the skill-coverage rows and the spec, amended four times with dated sections.
+- [x] **Clean room.** `kiss-ssg check` exit 0 from the tarball, packed after round 2. Not repeated after the late changes (`2faf7c0`, `f13996b`, `34eb8a7`), so those are covered by the suites, not by a fresh agent.
+- [x] **`npm run gates`** passes at `34eb8a7`, pack included (378 files), after the watch flake's second sighting cleared on a rerun.
+
+**What is better now:**
+
+- A visitor can see, on the site, every choice they made, with the services it covered by name and the id to quote for their data.
+- A server receives records that prove themselves, and a registry of the wording each one saw.
+- Every consent page loads a cached script, wherever it is served from.
+
+**Open:**
+
+- the dialog naming the services (the next branch);
+- a kiss-consent server keeping every registry it receives;
+- the clean room re-run on 2.11.1's tarball if the dialog branch changes what a site author follows;
+- `/memory-consolidate`, due: four logs unconsolidated, and "look at one fix diff per round" has now recurred in two.
