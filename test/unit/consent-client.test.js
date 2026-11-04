@@ -149,8 +149,8 @@ function page(source, opts = {}) {
     location: {
       protocol: 'https:',
       hostname: host,
-      pathname: '/a/',
-      href: `https://${host}/a/`,
+      pathname: opts.pathname ?? '/a/',
+      href: `https://${host}${opts.pathname ?? '/a/'}`,
       reload: () => reloads++,
     },
     navigator: {
@@ -223,7 +223,11 @@ function storedCookie(c) {
   return encodeURIComponent(JSON.stringify(c))
 }
 
-const CLIENT_URL = '/kiss-consent.abcdef0123.js'
+const CLIENT_NAME = 'kiss-consent.abcdef0123.js'
+// What `{{consentHead}}` hands the inline part about the cached file: its
+// name, the page's own file (build-relative), and the root to use when the
+// address the browser is at is not one the page is reached by.
+const CLIENT = { name: CLIENT_NAME, page: 'a/index.html', root: '/' }
 // The split's measurement (2026-11-03, gtm + youtube + vimeo): the inline
 // part 4,839 bytes minified, 2,092 gzipped, config included; the cached file
 // 8,939, 3,421 gzipped. About 10% headroom each; see the size block below.
@@ -231,7 +235,12 @@ const CLIENT_URL = '/kiss-consent.abcdef0123.js'
 // it to 9,551 and recording every service in each choice to 9,806 (3,769
 // gzipped). It is fetched once and then served from cache, so it was raised
 // to about 10% over that rather than the record losing the services.
-const INLINE_CEILING = 5376
+// The inline ceiling moved once too (2026-11-04): the inline part now adds
+// the cached file's tag itself, working the site's root out from the
+// browser's address, because no URL written at build time was right at every
+// address a page is reached by (Codex at the close). That took it from 4,887
+// to 5,483 (2,389 gzipped), on every page; 6,144 is about 12% over that.
+const INLINE_CEILING = 6144
 const FILE_CEILING = 10752
 
 /** The inline part's code, from what `{{consentHead}}` writes. */
@@ -239,26 +248,64 @@ const scriptOf = (html) =>
   /^<script data-kiss-consent-head>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? ''
 
 describe('consentHeadScript', () => {
-  it('writes the inline part with its config, then the cached file, deferred', () => {
-    const html = consentHeadScript(configFor(SITE), CLIENT_URL)
+  it('writes the inline part alone, with the cached file’s name, page and fallback in its config', () => {
+    const html = consentHeadScript(configFor(SITE), CLIENT)
     expect(
       html.startsWith(
         '<script data-kiss-consent-head>(function kissConsentHead(win, cfg)',
       ),
     ).toBe(true)
-    expect(
-      html.endsWith(
-        `<script src="${CLIENT_URL}" defer data-kiss-consent-client></script>`,
-      ),
-    ).toBe(true)
+    // No tag for the file at build time: the inline part adds it, at the URL
+    // the address the browser is at gives (Codex at the close, 2026-11-04).
+    expect(html).not.toMatch(/<script[^>]*data-kiss-consent-client/)
+    expect(html.match(/<\/script>/g)).toHaveLength(1)
+    expect(html).toContain(
+      `"client":{"name":"${CLIENT_NAME}","page":"a/index.html","root":"/"}`,
+    )
+  })
+
+  // Every address a page is reached by gives the site's root: the file, its
+  // folder with and without the slash, an `.html` page without its
+  // extension, under any prefix, on file://. Anything else (a 404 page
+  // served at a stray address) takes the fallback.
+  it.each([
+    ['guide/index.html', '/guide', `/${CLIENT_NAME}`],
+    ['guide/index.html', '/guide/', `/${CLIENT_NAME}`],
+    ['guide/index.html', '/guide/index.html', `/${CLIENT_NAME}`],
+    ['guide/index.html', '/site/guide', `/site/${CLIENT_NAME}`],
+    ['guide/index.html', '/site/guide/', `/site/${CLIENT_NAME}`],
+    ['index.html', '/', `/${CLIENT_NAME}`],
+    ['index.html', '/index.html', `/${CLIENT_NAME}`],
+    ['index.html', '/site/', `/site/${CLIENT_NAME}`],
+    ['about.html', '/about', `/${CLIENT_NAME}`],
+    ['about.html', '/site/about.html', `/site/${CLIENT_NAME}`],
+    [
+      'guide/index.html',
+      '/C:/sites/public/guide/index.html',
+      `/C:/sites/public/${CLIENT_NAME}`,
+    ],
+    ['my guide/index.html', '/my%20guide/', `/${CLIENT_NAME}`],
+    ['404.html', '/missing/deep/page', `/root/${CLIENT_NAME}`],
+    ['guide/index.html', '/guidebook/', `/root/${CLIENT_NAME}`],
+    [null, '/anywhere/', `/root/${CLIENT_NAME}`],
+  ])('loads the cached file for %s reached at %s from %s', (file, at, src) => {
+    const html = consentHeadScript(configFor(SITE), {
+      name: CLIENT_NAME,
+      page: file,
+      root: '/root/',
+    })
+    const p = page(scriptOf(html), { pathname: at })
+    const tag = p.find('script[data-kiss-consent-client]')
+    expect(tag?.getAttribute('src')).toBe(src)
+    expect(tag?.parentNode).toBe(p.doc.head)
   })
 
   it('escapes < and line separators in the config, so no site text can end the script', () => {
     const cfg = configFor(SITE)
     cfg.text.confirmation = 'Saved </script><script>alert(1)</script> x '
-    const html = consentHeadScript(cfg, CLIENT_URL)
-    // The inline part's end, and the cached file's.
-    expect(html.match(/<\/script>/g)).toHaveLength(2)
+    const html = consentHeadScript(cfg, CLIENT)
+    // The inline part's end, and nothing else.
+    expect(html.match(/<\/script>/g)).toHaveLength(1)
     expect(html).not.toContain(' ')
     expect(html).not.toContain(' ')
     const p = page(`${scriptOf(html)};\n${consentClientSource()}`)
@@ -293,7 +340,7 @@ describe('size', () => {
 
   it('keeps the inline part under its ceiling for a three-service site', async () => {
     const min =
-      (await minify(scriptOf(consentHeadScript(cfg(), CLIENT_URL)))).code ?? ''
+      (await minify(scriptOf(consentHeadScript(cfg(), CLIENT)))).code ?? ''
     expect(min.length).toBeLessThan(INLINE_CEILING)
   })
 
@@ -309,7 +356,7 @@ describe('size', () => {
  * @param {(code: string) => Promise<string>} shape
  */
 const both = (shape) => async (cfg) =>
-  `${await shape(scriptOf(consentHeadScript(cfg, CLIENT_URL)))};${SPLIT}${await shape(consentClientSource())}`
+  `${await shape(scriptOf(consentHeadScript(cfg, CLIENT)))};${SPLIT}${await shape(consentClientSource())}`
 // Between the two parts, so a test can run them apart.
 const SPLIT = '\n/* the cached file */\n'
 const forms = [

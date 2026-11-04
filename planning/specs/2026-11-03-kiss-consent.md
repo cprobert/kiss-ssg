@@ -428,3 +428,19 @@ agreed to it."
   must keep every version it receives.
 - **The cached file** is 9,806 bytes minified (3,769 gzipped); its ceiling moved from 9,728 to
   10,752, recorded beside it.
+
+### 2026-11-04 — amended at the close: the browser works out the client file's URL
+
+The relative URL of the 2026-11-03 amendment was right at one address a page is reached by and
+wrong at the others: under `trailingSlash: false`, `guide/index.html` is linked as `/guide`, but
+kiss's dev server (serve-static) redirects that to `/guide/`, and anyone can open
+`/guide/index.html`; each fetched `/guide/kiss-consent.<hash>.js`, and the banner's buttons were
+dead (Codex at the close, P2; red in Chromium). No URL written at build time is right at all of
+them. So `{{consentHead}}` writes no tag for the file: it hands the inline part the file's name,
+the page's own build-relative file and the root `siteUrl` names, and the inline part finds the
+root in front of the page's file in `location.pathname` (the file, its folder with and without
+the slash, an `.html` page without its extension) and adds the tag. An address that is none of
+them (a 404 page, served anywhere) uses the `siteUrl` root. The tag is added, not parsed, so it is
+not `defer`red; the cached part already waits for `DOMContentLoaded`. The inline part grew from
+4,887 to 5,483 bytes minified (2,389 gzipped) on every page; its ceiling moved from 5,376 to 6,144,
+recorded beside it.

@@ -22,14 +22,46 @@ export function consentClientSource(): string;
  */
 export function consentClientName(): string;
 /**
+ * What the inline part needs to load the cached file: its name, the page's
+ * own file, and the root to use for an address that is not the page's.
+ *
+ * @typedef {Object} ConsentClientFile
+ * @property {string} name `consentClientName()`
+ * @property {string|null} page the page's build-relative file
+ * (`guide/index.html`); `null` when the page has none, and `root` is used
+ * @property {string} root the root `siteUrl` names, as a path with its
+ * slash (`/`, or `/site/` under a prefix)
+ */
+/**
  * What `{{consentHead}}` writes: the inline part, called with the page's
- * config as `inlineJson`, then the cached file, deferred.
+ * config as `inlineJson`. It adds the cached file's tag itself, at the URL
+ * the browser's address gives (`rootOf`), so no tag for it is written here.
  *
  * @param {Record<string, any>} cfg `clientConfig()` from `lib/consent.js`
- * @param {string} clientUrl the cached file's URL, as `consentUrl` writes it
+ * @param {ConsentClientFile} client the cached file
  * @returns {string}
  */
-export function consentHeadScript(cfg: Record<string, any>, clientUrl: string): string;
+export function consentHeadScript(cfg: Record<string, any>, client: ConsentClientFile): string;
+/**
+ * What the inline part needs to load the cached file: its name, the page's
+ * own file, and the root to use for an address that is not the page's.
+ */
+export type ConsentClientFile = {
+    /**
+     * `consentClientName()`
+     */
+    name: string;
+    /**
+     * the page's build-relative file
+     * (`guide/index.html`); `null` when the page has none, and `root` is used
+     */
+    page: string | null;
+    /**
+     * the root `siteUrl` names, as a path with its
+     * slash (`/`, or `/site/` under a prefix)
+     */
+    root: string;
+};
 /**
  * The inline part.
  *

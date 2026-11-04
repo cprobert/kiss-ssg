@@ -18,7 +18,8 @@ which the browser caches.
 Only a site with `config.consent` is affected.
 
 - **Serve `kiss-consent.<hash>.js`.** The build writes it at the root of the build folder, and
-  every consent page loads it. Deploy it with the rest of the build. Its name changes only when
+  every consent page loads it, however the page was reached (`/guide`, `/guide/`,
+  `/guide/index.html`, under any path prefix, in a preview or on the host). Deploy it with the rest of the build. Its name changes only when
   kiss's client code does, so it can be cached for good. Under a Content Security Policy it needs
   `'self'` in `script-src`.
 - **An `endpoint` receives format 2.** Each record is

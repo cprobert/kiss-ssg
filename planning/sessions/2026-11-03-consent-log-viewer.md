@@ -159,6 +159,18 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
   - **Round 8** (2026-11-04, over `29c0648`, the whole branch, so the walk's fixes `522ae63` and
     the services record `2faf7c0` too): no findings ("no actionable regressions"; Codex read
     code and tests, it did not run them). Every commit on the branch is again Codex-reviewed.
+  - **Round 9, the close's review** (2026-11-04, over `b3715b5` plus the docs regeneration): one
+    P2, fixed on the operator's "Fix now". Under `trailingSlash: false` the stopgap's relative
+    client URL fetched `/guide/kiss-consent.<hash>.js` at `/guide/` (kiss's dev server
+    redirects to it) and at `/guide/index.html`, so the banner's buttons were dead. The class:
+    no URL written at build time is right at every address a page is reached by. The inline
+    part now finds the site's root from `location.pathname` and the page's own file, and adds
+    the tag; a 404 page served anywhere uses the `siteUrl` root. Red first in Chromium (at
+    `/guide`, redirected) and in 15 unit cases. The inline ceiling moved from 5,376 to 6,144
+    (Claude's call, recorded beside it): 4,887 → 5,483 bytes on every page, 2,389 gzipped.
+  - **The watch flake, seen again** at the first gates run of the close: "settles rapid asset
+    and page edits together", the ENOENT on `style.<hash>.css` already in `AIKB/rebuild.md`'s
+    Known knowns. 5 of 5 alone, then the gates green. The second sighting on this branch.
 - **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
   (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
   history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;

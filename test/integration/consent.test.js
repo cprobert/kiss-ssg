@@ -21,6 +21,20 @@ const { default: Kiss } = await import('../helpers/kiss.js')
 
 const SITE_URL = 'https://site.example'
 
+/**
+ * The `client` block of a page's inline config: the cached file's name, the
+ * page's own file and the root to fall back to. Minified, its keys are bare.
+ *
+ * @param {string} html
+ */
+const clientOf = (html) => {
+  const m =
+    /"?client"?:\{"?name"?:"([^"]+)","?page"?:"([^"]*)","?root"?:"([^"]*)"\}/.exec(
+      html,
+    )
+  return m ? { name: m[1], page: m[2], root: m[3] } : null
+}
+
 let site
 let kiss
 afterEach(async () => {
@@ -292,17 +306,9 @@ describe('a consent site, built', () => {
     // Minified: no comments, and far smaller than its source.
     expect(code).not.toContain('// ')
     const home = await site.read('public/index.html')
-    expect(home).toMatch(
-      // The minifier writes `defer="defer"`.
-      new RegExp(
-        // Relative to the page: the home page is at the root.
-        `<script src="?${name.replace(/\./g, '\\.')}"? defer(="?defer"?)? data-kiss-consent-client`,
-      ),
-    )
-    // After the inline part, which still comes first.
-    expect(home.indexOf('data-kiss-consent-head')).toBeLessThan(
-      home.indexOf('data-kiss-consent-client'),
-    )
+    // No tag for it in the page: the inline part adds one, named here.
+    expect(home).not.toMatch(/<script[^>]*data-kiss-consent-client/)
+    expect(clientOf(home)?.name).toBe(name)
     expect(report.links.broken).toEqual([])
   })
 
@@ -310,48 +316,52 @@ describe('a consent site, built', () => {
   // depend on fetching the client, and a root-relative or siteUrl-absolute
   // URL fetched it from the wrong place wherever a page is served from
   // anywhere but siteUrl itself (a prefixed site's --dev or local preview, a
-  // deploy preview, a {{root}} site), leaving the banner's buttons dead. Its
-  // URL is relative to the page as served, under the same trailingSlash
-  // policy, so it loads wherever the folder is served.
-  const client = /<script src="?([^" >]*kiss-consent\.[0-9a-f]{10}\.js)"? defer/
+  // deploy preview, a {{root}} site), leaving the banner's buttons dead. A
+  // URL relative to the served path then missed it at /guide/ and
+  // /guide/index.html under trailingSlash: false (Codex at the close,
+  // 2026-11-04). So each page hands the inline part its own file and the
+  // root siteUrl names, and the browser works the URL out from its address
+  // (the unit and Chromium suites prove that half).
   const NESTED = {
     ...CONSENT_FILES,
     'src/pages/blog/post.hbs': consentPage('<h1>Post</h1>', 'Post'),
   }
 
-  it('links the cached client relative to each page, whatever siteUrl says', async () => {
+  it('hands each page’s inline part its own file and the root siteUrl names', async () => {
     site = await makeSite(NESTED)
     const { errors } = await build(
       config({ siteUrl: 'https://site.example/site/' }),
     )
     expect(errors).toEqual([])
-    const src = async (page) => client.exec(await site.read(page))?.[1]
-    expect(await src('public/index.html')).toMatch(/^kiss-consent\./)
-    expect(await src('public/blog/post.html')).toMatch(/^\.\.\/kiss-consent\./)
+    const of = async (page) => clientOf(await site.read(page))
+    expect(await of('public/index.html')).toMatchObject({
+      page: 'index.html',
+      root: '/site/',
+    })
+    expect(await of('public/blog/post.html')).toMatchObject({
+      page: 'blog/post.html',
+      root: '/site/',
+    })
   })
 
-  it('links it relative to the served path, under the trailingSlash policy', async () => {
-    site = await makeSite(NESTED)
-    const slash = await build(config({ extensionLess: true }))
-    expect(slash.errors).toEqual([])
-    // Served at /blog/post/: two folders up.
-    expect(
-      client.exec(await site.read('public/blog/post/index.html'))?.[1],
-    ).toMatch(/^\.\.\/\.\.\/kiss-consent\./)
-    await kiss.close()
-    kiss = null
-    await site.cleanup()
-    site = await makeSite(NESTED)
-    const bare = await build(
-      config({ extensionLess: true, links: { trailingSlash: false } }),
-    )
-    expect(bare.errors).toEqual([])
-    // Served at /blog/post: one folder up.
-    expect(
-      client.exec(await site.read('public/blog/post/index.html'))?.[1],
-    ).toMatch(/^\.\.\/kiss-consent\./)
-    // And the link scan resolves it where the browser does (Codex round 6).
-    expect(bare.report.links.broken).toEqual([])
+  it('names the file the page was written to, whatever the trailingSlash policy', async () => {
+    for (const trailingSlash of [true, false]) {
+      site = await makeSite(NESTED)
+      const built = await build(
+        config({ extensionLess: true, links: { trailingSlash } }),
+      )
+      expect(built.errors).toEqual([])
+      expect(
+        clientOf(await site.read('public/blog/post/index.html')),
+      ).toMatchObject({ page: 'blog/post/index.html', root: '/' })
+      // Nothing in the page links the file, so the scan has nothing to
+      // misread (Codex round 6 found it reporting the old relative URL).
+      expect(built.report.links.broken).toEqual([])
+      await kiss.close()
+      kiss = null
+      await site.cleanup()
+      site = null
+    }
   })
 
   it('writes no cached client without a consent manager', async () => {

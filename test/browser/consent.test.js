@@ -77,13 +77,14 @@ const FILES = {
 }
 
 /** Build a site and serve it; hand back its base URL and a closer. */
-async function serve(files, consent, siteUrl = `https://${HOST}`) {
+async function serve(files, consent, siteUrl = `https://${HOST}`, extra = {}) {
   const site = await makeSite(files)
   const kiss = new Kiss({
     folders: site.folders,
     siteUrl,
     logger: silentLogger,
     consent,
+    ...extra,
   })
     .scan()
     .generate()
@@ -808,6 +809,47 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
         .poll(async () => (await stored(context))?.c ?? null)
         .toEqual({ statistics: false, marketing: false })
       await context.close()
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // Codex at the close (P2, 2026-11-04): a page is reached at more than one
+  // address. Under `trailingSlash: false`, `guide/index.html` is linked as
+  // /guide, but serve-static (as kiss's dev server) redirects that to
+  // /guide/, and anyone can open /guide/index.html. A URL written at build
+  // time, relative to one of them, missed the file at the others. A 404 page
+  // is served at any address at all.
+  it('loads the cached client at every address a page is reached by', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/guide/index.hbs': consentPage('<h1>Guide</h1>', 'Guide'),
+        'src/pages/404.hbs': consentPage('<h1>Not found</h1>', 'Not found'),
+      },
+      CONSENT_CONFIG,
+      undefined,
+      { links: { trailingSlash: false } },
+    )
+    try {
+      for (const at of [
+        '/guide',
+        '/guide/',
+        '/guide/index.html',
+        '/missing/deep/page',
+      ]) {
+        const { context, page } = await open()
+        await page.goto(`${site.base}${at}`)
+        await page.click(
+          '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+        )
+        await expect
+          .poll(async () => (await stored(context))?.c ?? null, {
+            message: at,
+          })
+          .toEqual({ statistics: false, marketing: false })
+        await context.close()
+      }
     } finally {
       await site.close()
     }
