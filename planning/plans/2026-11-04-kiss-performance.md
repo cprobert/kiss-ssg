@@ -156,3 +156,75 @@ Per `CLAUDE.md`, a domain skill is judged by the sites it produces, on a site wi
 3. HTML at `max-age=0, must-revalidate` on Firebase: is listing every page's served path sound on a 1,000-page site (file size, Firebase's limits on header rules)?
 4. D1: does `config.host` survive the redirects custom-writer case, multi-host sites and `'none'`?
 5. Does anything here contradict a rule in `kiss-front-end`, `kiss-legal-and-privacy` (fonts and third parties) or `kiss-seo`?
+
+## Amendment 2026-11-04: after the critique
+
+One fresh-context critique, read-only, 20 findings (6 blockers). Claude re-checked the load-bearing code claims before acting on them: `llms.txt` is 15,966 of 16,000 characters; `writeRedirects` defaults to `overwrite = true` (`lib/redirects.js:579`) and generated output beats a copied asset (`lib/output-registry.js:53`); the banner logo has no `width`/`height` (`lib/consent-ui.js:82`). **This section overrides §C2, §C1's last row, the report sentence, rules 6, 8 and 10, and § Measurement wherever they disagree.** The operator decided D1, the site-kept `_headers`, and the deploy measurement; the rest are mechanics, decided by Claude from the evidence.
+
+### D1, decided (the operator): `config.host`, with per-concern overrides
+
+- **`config.host`** — where the site is deployed: `'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages'`, or a list of them. Unset by default: kiss does not guess.
+- **`redirects.format`** and the new **`cacheHeaders.format`** default to the encodings `host` implies, and stay as overrides per concern (`'none'`, a list, a writer function). An existing `redirects.format` still wins, so no site breaks. `htaccess` stays a redirects format, not a host.
+- Named `cacheHeaders`, not `headers`, because `config.fetch.headers` already exists and means something else.
+- `host` is **never** read for `links.trailingSlash`: Firebase's slash policy lives in `firebase.json`, not in the host's name.
+- What each host implies:
+
+| `host`         | Redirects                 | Cache headers                                                               |
+| -------------- | ------------------------- | --------------------------------------------------------------------------- |
+| `netlify`      | `_redirects`              | `_headers`                                                                  |
+| `cloudflare`   | `_redirects`              | `_headers`                                                                  |
+| `firebase`     | `redirects.firebase.json` | `cache-headers.firebase.json` (a fragment, patterns)                        |
+| `vercel`       | `redirects.vercel.json`   | none — a `warn`: no encoding for this concern yet                           |
+| `github-pages` | none                      | none — silent: the host cannot be configured, and that is a fact, not a gap |
+
+### The site's own `_headers`, decided (the operator): append
+
+When the asset copy put a `_headers` in the build (the output registry holds it as `kind: 'asset'`), kiss keeps it byte for byte and appends one marked block after it (`# kiss-ssg: cache headers for hashed files — generated, do not edit`). Nothing of the site's is lost. This is a deliberate exception to "kiss never merges", and the reason is in the doc: this file is build output rebuilt on every deploy, unlike `firebase.json`, which is source. An integration test builds a site with a CSP in `src/assets/_headers` and asserts both survive.
+
+### What is written (replaces §C2's table and "by exact path")
+
+- **The hashed files** come from the asset manifest filtered to `isHashable(key) && key !== value` (`lib/asset-manifest.js`), plus the consent client `kiss-consent.<hash>.js` when `config.consent` is set. A copy whose target is outside `folders.build` is skipped.
+- **Netlify and Cloudflare:** the hashed files by exact path, `Cache-Control: public, max-age=31536000, immutable`. **No HTML rules**: hosts answer several URLs per page (`/about`, `/about.html`, `/courses/index.html`), and Netlify's default for HTML is already right. The file is rebuilt every deploy, so exact paths never go stale.
+- **Firebase:** stable patterns, never paths, because the fragment is merged into `firebase.json` by hand once. One `regex` for kiss's hash shape (`\.[0-9a-f]{8}\.(css|js)$`) and one for the consent client. kiss checks that **no unhashed file in the build matches** the pattern, and fails the build if one does. An HTML rule (`no-cache`) is written only once the deploy measurement shows that Firebase keeps it at the edge.
+- **`cache-headers.json`** (the host-neutral list) is written only when there is a hashed file or `cacheHeaders.format` is set, not on every build.
+- **When it runs:** in `complete()`'s settle path after `_writeConsentClient()`, to `kiss._writeRoot`, latched like `_redirectsRun` and reset at replay. It is **skipped in dev** and when `_failures` is non-empty, as packages are. A second instance writing the same file is an output collision, and the warning names it.
+- **Report:** `cacheHeaders`, **appended after `consent`**: `{ rules: [{ path | regex, headers }], files, formats, unset }`, or `null` when nothing was written. The upgrade note says every `AIKB/last-build.json` gains the key at its next `kiss-ssg aikb`.
+
+### Must measure before the docs say it (the operator runs the deploy previews)
+
+1. Netlify: does `_headers` or `netlify.toml` win when both set `Cache-Control` for one path? (pro-plumbing)
+2. Firebase: are `regex` header rules applied, and in what order against `**` globs?
+3. Firebase: does HTML at `max-age=0, must-revalidate` (no `s-maxage`) still come from the edge?
+
+### Audit checks (replaces §C1)
+
+| Id                       | Fires when                                                                                                                                                                                                | Reading       |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `img-dimensions-missing` | an `<img>` lacks `width` or `height` and has no inline `aspect-ratio`. `<template>` and `<svg>` contents are already stripped, so kiss's banner logo is not judged; a `<noscript>` image is, deliberately | `strip()`     |
+| `img-first-lazy`         | an `<img>` carries `loading="lazy"` and `fetchpriority="high"` (certain), or the first `<img>` in `<main>` before its first `<h2>` is lazy (approximate, worded "may be the first image seen")            | `strip()`     |
+| `fetchpriority-excess`   | more than two `fetchpriority="high"`                                                                                                                                                                      | `strip()`     |
+| `font-preload-excess`    | more than two `<link rel="preload" as="font">`                                                                                                                                                            | `stripForIds` |
+| `script-blocking`        | an executable `<script src>` (by `inert()`/`scriptKind()`) in the head with no `defer`, `async` or `type="module"`. The head ends at the first `</head>` or `<body`; a page with neither is not judged    | `stripForIds` |
+| `host-unset`             | site-wide: the build has hashed files or aliases, and neither `host` nor the concern's own format is set. The redirects `warn` line stays as it is                                                        | —             |
+
+- New `PageFacts` fields: `imgNoSize: string[]`, `imgFirstLazy: string|null`, `fetchpriorityHigh: number`, `fontPreloads: number`, `blockingScripts: string[]`.
+- Facts are never older than the engine running them (they are extracted in memory, and `last-build.json` does not carry them), so a missing field happens only in hand-built tests: `?? []`, or `?? null` and skip.
+- One finding per image per page, as `img-alt-missing` does, and GUIDE.md says so.
+- `kiss-site-review`'s table renames `cache-headers-unset` to `host-unset` and `img-lcp-lazy` to `img-first-lazy`. `stray-file`, `console-log` and `debug-dump` are listed as "no group".
+
+### `llms.txt` (34 characters of room)
+
+Two lines: one naming the performance check ids with a pointer to GUIDE.md, and one for `host` / cache headers with the trap ("`immutable` only on a hashed file"). An equal number of characters is cut from an existing passage, named in the commit that adds them.
+
+### Skill rules changed
+
+- **6. Fonts:** self-hosted, with a link to `kiss-legal-and-privacy`, which already says to drop the font CDN; metric overrides "where the browser supports them".
+- **8. Never `preconnect`** to an origin a consent service gates, or to a font CDN: the connection hands the visitor's address over before any choice.
+- **10. Speculation rules default to `prefetch`.** `prerender` is allowed only on a site with no third-party script, because a prerendered page runs its scripts for a visit that may never happen.
+- **2. The consent banner's logo is kiss's markup** and outside the rule. It is not the site's to fix.
+
+### Measurement (replaces § Measurement's fixture and arms)
+
+- **A synthetic site**, never a copy of a client's site, under `test/fixtures/slow-site/`.
+- **Both arms run the same engine (with C).** The "without" arm's plugin tree is this branch's after B with `kiss-performance` removed, so the arms measure the skill, not the move out of `kiss-front-end`.
+- **The answer key is the planted failures only.** Whether a rule contradicts the research judges the skill, not a site, and is left out of the score.

@@ -49,6 +49,11 @@ opened: 2026-11-04
 
 - **2026-11-04 — kiss writes cache headers for each host.** The research passes verified nothing on host cache headers, so Claude measured the fleet's live responses (`planning/research/2026-11-04-static-site-performance.md` § Measured). Netlify's default is `max-age=0, must-revalidate` on every asset, two sites cache unhashed images for a year, and only one site's hand-written rules are right, while kiss already knows exactly which files are hashed. The operator chose the engine feature on this branch (Claude's recommendation): kiss writes the host header files beside `redirects.json`, `immutable` for hashed files, revalidation for HTML, a short lifetime for unhashed files. Added criterion: the header files are written, documented in `GUIDE.md`, indexed in `llms.txt`, typed, covered by a unit test seen red, and the fleet's Netlify and Firebase sites build the right headers with the new engine.
 - **2026-11-04 — the carried doc gaps were already closed.** Checked before editing: all six are in `GUIDE.md` § Cookie consent, "Where each piece goes" (lines 1074–1079 at `58db954`), and the three dead paths now read as history with no path, both from the `{{embed}}` branch (`137e36c`, criterion 34 of its intent). That branch's Feedback did not say so, so the item kept being carried. The criterion is met by the earlier branch; nothing to change here.
+- **2026-11-04 — the contract critique, and three operator decisions.** One fresh-context agent critiqued the contract and found 20 issues, 6 of them blockers. Claude re-checked the code claims before acting on any. The contract's dated section "after the critique" records the result. The operator chose all three recommendations:
+  - `config.host`, with per-concern overrides, so `redirects.format` keeps working;
+  - kiss appends its block to a site's own `_headers`;
+  - the operator runs a Netlify and a Firebase deploy preview, so host behaviour is measured before the docs state it.
+- Claude decided the mechanics: patterns on Firebase, no HTML rules on Netlify, `cacheHeaders` appended to the report, the renamed check ids, the `llms.txt` cut, and the skill-rule fixes against `kiss-legal-and-privacy`.
 
 ## Pulse log
 
