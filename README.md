@@ -143,7 +143,7 @@ Running `init` in a folder that already has a project is safe: it never overwrit
 </details>
 
 <details>
-<summary><b>Optional: Anthropic's skills for the look, and for a browser</b></summary>
+<summary><b>Optional: Anthropic's skills for the look and for a browser, and Lighthouse for speed numbers</b></summary>
 
 <br/>
 
@@ -171,6 +171,14 @@ With that installed, your agent can open the pages it builds at phone and deskto
 
 What was measured (2026-10-13): in three review runs, agents wrote their own Playwright scripts rather than invoking the skill. The browser was what mattered. One agent with no Playwright at all installed it into a scratch folder and did as well.
 
+**Optional: Lighthouse, for speed numbers.** `npx kiss-ssg speed public` measures a built site with Google's Lighthouse and prints its performance score, LCP, CLS and the rest, as the median of three runs. It can also compare against an earlier run, so a change shows as a before and after. kiss does not install Lighthouse, because it is about 19 MB and needs Node 22.19 or later and a Chrome. Add it to a site that wants the numbers:
+
+```sh
+npm install -D lighthouse
+```
+
+The `kiss-performance` skill measures before its first change and after its last, and offers this install when it is missing. A starter site made by `init` already has the `npm run speed` script.
+
 </details>
 
 ### Prompts to copy
@@ -185,6 +193,7 @@ You don't have to name the skills — each one's description is written so the a
 | Add or change one page                                    | Add a Contact page with our address and opening hours, linked from the nav.                          | `kiss-page-add`                                      |
 | Find out why a build fails                                | The kiss build is failing — run the check and fix what it reports.                                   | `kiss-build-check`                                   |
 | Get a site ready to launch                                | Is this site ready to launch? Review it and show me what's unfinished before fixing anything.        | `kiss-site-review`                                   |
+| Make it faster                                            | Make this site load faster. Measure it before and after, and show me the numbers.                    | `kiss-performance`                                   |
 | Catch up on a site                                        | Catch me up on this site: what it is, how it's built and what bites.                                 | `kiss-site-brief`                                    |
 | Upgrade kiss-ssg                                          | Upgrade this site to the latest kiss-ssg and tell me what changed.                                   | `kiss-site-migrate`                                  |
 | Frame, steer, finish a change                             | Open a branch for … / Pulse this branch / We're done, close the branch. / It's merged, tidy up.      | `kiss-branch-open` / `-pulse` / `-close` / `-merged` |
