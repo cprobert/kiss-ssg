@@ -1749,6 +1749,26 @@ Two things a check cannot make true. A site that reads its own build folder back
 
 `outputs.collisions` lists output paths claimed by multiple producers, their observed `producers` (`{ owner, kind }`), current `winner` (or null), and `refused` owner names. Collisions track active producers and disappear when a conflicting source is removed; page renames do not collide with the previous build. File paths use the configured build-folder spelling in plain, atomic and check builds. They remain advisory: they do not change `ok` or the check exit code. On a discarded check build, the winner describes the last successful writer before disposal. Inline-template owners use compact fingerprint IDs rather than template bodies.
 
+#### Measuring speed
+
+`npx kiss-ssg speed <build-folder | url>` measures pages with [Lighthouse](https://developer.chrome.com/docs/lighthouse), so a change can be judged by numbers rather than by eye. Lighthouse is an **optional peer**: kiss installs nothing, and a site that wants the numbers installs it once (it needs Node 22.19 or later, and a Chrome on the machine):
+
+```bash
+npm install -D lighthouse
+npm run build
+npx kiss-ssg speed public --page / --page /blog/ --out speed-before.json
+```
+
+It never builds: build first, then name the folder (`folders.build`, `public/` by default), which it serves as the site root on a free port. A URL is measured as it is, and only a deployed URL shows delivery: the CDN, compression and cache headers. Each page (`--page`, `/` by default) is measured `--runs` times (3 by default, 1–9), each run in a fresh Chrome with Lighthouse's mobile preset and simulated throttling, and the table gives the **median** of each: the performance score, LCP, CLS, TBT, FCP, Speed Index, total bytes and the number of requests, with the score's spread.
+
+`--out <file>` writes those numbers as JSON; `--against <file>` compares this run with an earlier one, page by page, and marks a metric **changed** only when the change is larger than the spread of both runs, so noise is never reported as a gain:
+
+```bash
+npx kiss-ssg speed public --page / --page /blog/ --against speed-before.json
+```
+
+It exits 0 when every page was measured, 1 when a page failed to load or Lighthouse failed, and 2 on a usage error or a missing prerequisite, naming it (`npm install -D lighthouse`, the Node version, or `CHROME_PATH` when no Chrome is found). These are lab numbers from one machine with an empty cache, never the field verdict real visitors give: Search Console's Core Web Vitals report is that. `npx kiss-ssg speed --help` has every option.
+
 ### Recording the knowledge base
 
 `npx kiss-ssg aikb <script>` writes the site's own knowledge base into `config.folders.aikb` (default `./AIKB`) — the map of the site as the build saw it, for the developer who comes back to it in two years and finds that every context window that held this is gone. It runs exactly the build `check` runs — staged and then discarded, publishing nothing — and the folder is the only thing it leaves behind.

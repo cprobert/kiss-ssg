@@ -26,6 +26,28 @@ Most of these rules are one edit in one shared file:
 - image encoding is not kiss's: run the site's image tool as a step in `config.assets.pipeline` (GUIDE.md § An asset pipeline), writing into the asset folder before the copy;
 - the audit reports `img-dimensions-missing`, `img-first-lazy`, `fetchpriority-excess`, `font-preload-excess`, `script-blocking` and `host-unset`; `kiss-site-review` has the kiss fix for each.
 
+## Measure first, and last
+
+Speed work is judged by numbers, so take them before the first edit and again after the last, the same way both times.
+
+1. **Before anything is edited**, build the site and measure one page of each distinct template (the home page, a list, an article):
+
+   ```bash
+   npm run build
+   npx kiss-ssg speed public --page / --page /blog/ --out <temp>/speed-before.json
+   ```
+
+   `public` is the site's `folders.build`. Put the file in the system's temp folder, never in the site. If it exits 2 asking for `npm install -D lighthouse`, ask the owner before installing it. It is a development dependency only, nothing reaches the deployed site, and it needs Node 22.19 or later and a Chrome. If they decline, review without the numbers and say so in the report.
+
+2. **After the fixes**, build again and measure the same pages against the first run:
+
+   ```bash
+   npm run build
+   npx kiss-ssg speed public --page / --page /blog/ --against <temp>/speed-before.json
+   ```
+
+   Put its table in the report as the result: before, after, and which changes are larger than the noise. It is a lab measurement on this machine, never the site's verdict.
+
 ## Build mode
 
 ### The image seen first

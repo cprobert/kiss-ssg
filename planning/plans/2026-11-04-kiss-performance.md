@@ -283,3 +283,5 @@ npx kiss-ssg speed <site-script | build-folder | https-url> [--page /path]… [-
 2. Measure **after** the fixes, with the same pages and `--against` the before file. The report gives the table, and calls it a lab measurement on this machine, never the site's verdict.
 
 The arms measurement (§ Measurement) uses the same command, so the skill is judged the way a site would be.
+
+**Amendment 2026-11-04, from the build: a build folder, never a script.** kiss cannot learn a script's `folders.build` without running the build: `check` and `aikb` learn it from the report of a build they ran, and there is no config-only mode. `speed` never builds, so a script target exits 2 and names the folder form instead. The skill builds, then runs `npx kiss-ssg speed public …`. Claude accepted this deviation by the sub-agent rather than adding a config-only mode to `lib/kiss.js`: the build step was already in the skill, and the folder is one word the agent reads from `router.js`.

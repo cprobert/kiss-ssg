@@ -981,6 +981,16 @@ const COVERAGE = [
       /^(?=[\s\S]*Never `loading="lazy"` on the first image)(?=[\s\S]*`fetchpriority="high"`)(?=[\s\S]*`width` and `height` on every `<img>`)(?=[\s\S]*\*\*Self-hosted\*\*)(?=[\s\S]*`defer` on every script)(?=[\s\S]*Never `immutable`, or a year, on a file that is not hashed)(?=[\s\S]*lab measurement, never the site's verdict)/,
     skills: [skill('kiss-ssg', 'kiss-performance')],
   },
+  // 2026-11-04, the operator: run Lighthouse before any edit and after, so
+  // the skill yields measurable KPIs. kiss-ssg speed takes a build folder,
+  // never a script, and Lighthouse is installed only when the owner agrees.
+  {
+    feature:
+      'kiss-performance measures with kiss-ssg speed before the first edit and --against it after the last',
+    pattern:
+      /^(?=[\s\S]*## Measure first, and last)(?=[\s\S]*npx kiss-ssg speed public[^\n]*--out )(?=[\s\S]*npx kiss-ssg speed public[^\n]*--against )(?=[\s\S]*ask the owner before installing it)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
   {
     feature:
       'the task skills send images, fonts and scripts to kiss-performance',
