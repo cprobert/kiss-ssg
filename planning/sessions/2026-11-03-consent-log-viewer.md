@@ -191,7 +191,11 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     (recommended: the next branch, since it changes every page's banner and every banner hash).
     The operator's reason, as given: "I followed your advice." Claude's recommendation had been
     the next branch, so the answer may rest on a misread; it is put to the operator once more,
-    as a two-way question, before any dialog work starts.
+    as a two-way question, before any dialog work starts. **Answer: "Next branch"**, so it was
+    a misread, and the earlier "This branch" is withdrawn. **The next branch's objective:** the
+    settings dialog lists each category's services by label and provider (the ICO: categories
+    of third parties are not specific enough), which changes every page's banner and every
+    banner hash.
   - **The cached file's ceiling moved** from 9,728 to 10,752 bytes (Claude's call, recorded
     beside it): the services took the file to 9,806, and it is fetched once and then cached.
 
