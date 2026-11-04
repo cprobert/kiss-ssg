@@ -24,8 +24,10 @@ Links are root-relative, so preview it served (`--dev`, or any static server roo
   footer beside the cookie and privacy links.
 - `public/index.html`: each gated script is `type="text/plain"` with its URL in `data-src`, so
   the browser does not run it; the banner waits in a `<template>`.
-- `src/pages/roasting.hbs`: `{{consentEmbed}}`. The iframe is in a `<template>`, so YouTube is
-  not contacted until the visitor loads the video or allows marketing. `public/roasting.md`, the
+- `src/pages/roasting.hbs`: `{{embed}}`. The iframe is in a `<template>`, so YouTube is
+  not contacted until the visitor loads the video or allows marketing. Because the site has
+  `config.consent`, the embed also offers "Always allow YouTube", which the settings dialog can
+  withdraw. `public/roasting.md`, the
   page's Markdown copy, keeps only the link to YouTube.
 - `src/pages/cookies.hbs`: `{{consentTable}}`, the declaration made from the same config.
 - `router.js`'s `ui` block: a logo and the site's own colours, with no partial to maintain.

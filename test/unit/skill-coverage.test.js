@@ -445,9 +445,8 @@ const COVERAGE = [
   },
   {
     feature:
-      'a facade for video and maps: youtube-nocookie.com is not storage-free',
-    pattern:
-      /click-to-load facade[\s\S]*youtube-nocookie\.com[\s\S]*localStorage/,
+      'a click-to-load {{embed}} for video and maps: youtube-nocookie.com is not storage-free',
+    pattern: /\{\{embed [\s\S]*youtube-nocookie\.com[\s\S]*localStorage/,
     skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
   // 2.11.0, the consent manager (planning/plans/2026-11-02-consent-manager.md
@@ -465,9 +464,35 @@ const COVERAGE = [
   },
   {
     feature:
-      'a video or map on a consent site is {{consentEmbed}}; site code waits with kissConsent.when',
-    pattern: /^(?=[\s\S]*\{\{consentEmbed)(?=[\s\S]*kissConsent\.when)/,
+      'a video or map on a consent site is {{embed}}; site code waits with kissConsent.when',
+    pattern: /^(?=[\s\S]*\{\{embed )(?=[\s\S]*kissConsent\.when)/,
     skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  // 2.12.0: the 2026-11-04 clean room hand-built a facade on a site with no
+  // banner, because the embed helper existed only under config.consent.
+  // {{embed}} works on any site, so each skill that puts a video on a page
+  // names it, Instagram among the presets.
+  {
+    feature:
+      '{{embed}} on any site, with no config.consent and no banner, Instagram included',
+    pattern:
+      /^(?=[\s\S]*\{\{embed "youtube")(?=[\s\S]*no `config\.consent`)(?=[\s\S]*`instagram`)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-front-end'),
+      skill('kiss-ssg', 'kiss-site-new'),
+    ],
+  },
+  {
+    feature:
+      'kiss-front-end is found by "add a video" and "embed a map" (its description)',
+    pattern: /^description:[^\n]*"add a video"[^\n]*"embed a map"/m,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature:
+      'a page that adds a video sends the agent to kiss-front-end for it',
+    pattern: /kiss-front-end[^\n]*any video, map or post it embeds/,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
   },
   {
     feature:
@@ -484,14 +509,14 @@ const COVERAGE = [
   },
   {
     feature:
-      'the legal skill: the eight consent ids, report.consent, consentEmbed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
+      'the legal skill: the eight consent ids, report.consent, embed as the fix, records via endpoint and aikb before deploy, a certified CMP for AdSense, 182 days',
     pattern: new RegExp(
       [
         ...CHECKS.filter((id) => id.startsWith('consent-')).map(
           (id) => `\`${id}\``,
         ),
         '`report\\.consent`',
-        '\\{\\{consentEmbed\\}\\}',
+        '\\{\\{embed\\}\\}',
         '`endpoint`',
         'kiss-ssg aikb[^\\n]*\\*\\*before\\*\\*',
         'Google-certified CMP',
@@ -1322,6 +1347,16 @@ const CONTRADICTIONS = [
       /(cookie|consent) (banner|manager)s? (is|are) (out of scope|not part of kiss|not kiss's)/i,
       /kiss (has|ships|provides|includes) no (cookie|consent) (banner|manager)/i,
       /out of scope[^\n.]*(cookie|consent) (banner|manager)/i,
+    ],
+  },
+  {
+    why: '2.12.0: {{consentEmbed}} became {{embed}}, which works on any site. The 2026-11-04 clean room followed "one video may use a click-to-load facade and no banner" and hand-built 32 lines of facade on a site with no config.consent (planning/reviews/2026-11-04-embed-clean-room.md); a sentence sending an agent to a hand-built facade, or naming the old helper, is the instruction that replaced',
+    patterns: [
+      /\{\{consentEmbed/,
+      /may use a click-to-load facade and no banner/,
+      /hand-built click-to-load facade/i,
+      /Only on a site without `config\.consent` is it a hand-built/,
+      /uses a hand-built click-to-load facade instead/,
     ],
   },
 ]

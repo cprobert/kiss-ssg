@@ -201,7 +201,7 @@ describe('settingsHtml', () => {
   })
 
   it('has a hidden grant toggle for every service a category holds', () => {
-    // {{consentEmbed}} takes any service with src=, not only one with an
+    // {{embed}} takes any service with src=, not only one with an
     // `embed` block, and offers "Always allow" for it: every grant the client
     // can hold needs a switch to withdraw it. Hidden until one is held.
     const grants = [
@@ -402,6 +402,7 @@ describe('tableHtml', () => {
       ['Vimeo', 'player', 'Cookie', 'Third'],
       ['YouTube', 'yt-icons-last-purged', 'Local storage', 'Third'],
       ['YouTube', 'ytidb::LAST_RESULT_ENTRY_KEY', 'Local storage', 'Third'],
+      ['YouTube', 'YtIdbMeta', 'IndexedDB', 'Third'],
     ])
   })
 
@@ -525,7 +526,9 @@ describe('themeCss', () => {
     expect(css).toContain('outline:3px solid var(--kiss-consent-accent)')
     expect(css).toContain('.kiss-consent-dialog::backdrop')
     expect(css).toContain('@media (prefers-reduced-motion:reduce)')
-    expect(css).toContain('aspect-ratio:16/9')
+    // The frame's size is the provider's, so `{{embed}}` writes it on the
+    // iframe (lib/embed.js): a theme rule would fight Instagram's height.
+    expect(css).not.toContain('.kiss-embed iframe')
     // The table scrolls rather than breaking words: at 320px a broken one
     // showed a letter per line (example 14, 2026-11-03).
     expect(css).toContain('.kiss-consent-table-wrap{overflow-x:auto')

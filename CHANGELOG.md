@@ -3,6 +3,39 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.11.3 — 2026-11-04
+
+`{{consentEmbed}}` is now `{{embed}}`, and it works on any site. On a site with no `config.consent`
+it writes a click-to-load box with a notice, a Load button and a link to the video or post on the
+provider's own site. Nothing is fetched or stored until the visitor presses Load, so it needs no
+cookie banner and nothing in `<head>`. On a site with `config.consent` it works as
+`{{consentEmbed}}` did, with Always allow and the stored choice. Write it as
+`{{embed 'youtube' id='VIDEO_ID' title='What the video shows'}}`.
+
+A new `instagram` preset embeds a post or a reel by its id. The box holds the space its frame will
+take, so a video loads without moving the page. An Instagram post can't do that, because its height
+is only known once it loads: the box starts at 600 px and then takes the post's own height (568 px
+on a phone and 883 px on a desktop, in the post measured). On a learning package's page, `{{embed}}`
+is now allowed, and is always the plain click-to-load box, even on a consent site. An LMS's own
+security settings may still block the frame, so press Load inside the LMS before a course goes
+live. Each page's Markdown copy shows an embed as its link to the provider.
+
+### Upgrading: rename `{{consentEmbed}}` to `{{embed}}`
+
+- **`{{consentEmbed …}}` no longer exists.** Replace it with `{{embed …}}`, with the same arguments.
+  The build fails on the old name until you do.
+- **If you hand-built a click-to-load box for a video**, `{{embed}}` can replace it.
+- **A `storage` entry can say which kind it is**: `kind: 'local'` (the default, as before),
+  `'session'` or `'indexeddb'`. The cookie table names the kind, where every entry used to say
+  "Local storage". Withdrawing consent still deletes `local` entries only: a `session` item ends
+  when the tab closes, and an `indexeddb` database is listed in the table, not deleted. A `kind` on a `cookies` entry fails the build.
+- **The `youtube` preset lists one more item**, the IndexedDB database `YtIdbMeta`, in the cookie
+  table. The purposes `version` and the banner hash do not change, so visitors are not asked
+  again.
+- **The embed box's size is now set inline** on the box and its frame. The consent theme no longer
+  styles `.kiss-embed iframe`. If your CSS sizes the box or its iframe, check the embed still looks
+  right.
+
 ## 2.11.2 — 2026-11-04
 
 The consent settings dialog now names who relies on each choice. Under each category's description

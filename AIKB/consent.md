@@ -12,7 +12,7 @@ The cookie consent manager's config, and every decision made from it. It covers:
 - what the browser is handed;
 - what the build report records.
 
-It writes no markup and runs nothing in a browser. The gated tags are `lib/consent-gate.js`'s job, the default banner `lib/consent-ui.js`'s, and the page's own behaviour `lib/consent-client.js`'s. The contract is `planning/plans/2026-11-02-consent-manager.md`.
+It writes no markup and runs nothing in a browser. The gated tags are `lib/consent-gate.js`'s job, an embed `lib/embed.js`'s, the default banner `lib/consent-ui.js`'s, and the page's own behaviour `lib/consent-client.js`'s. The contract is `planning/plans/2026-11-02-consent-manager.md`.
 
 ## Public interface
 
@@ -36,10 +36,12 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
 - **`originOf(url)`** and **`matchesHost(url, list)`** → URL helpers for the audit.
 - **Frozen tables:**
   - `CATEGORY_NAMES`, `CONSENT_TYPES`;
-  - `PRESETS` (gtm, gtag, youtube, vimeo, google-maps);
+  - `PRESETS` (gtm, gtag, youtube, vimeo, google-maps, instagram);
+  - `STORAGE_KINDS` (a storage item's `kind`, as the cookie table names it);
   - `TRACKER_ORIGINS`, `ADS_CMP_SIGNATURES`;
   - the `DEFAULT_*` blocks.
-- **Typedefs:** `KissConsent`, `KissConsentInput`, `ConsentService`, `ConsentStored`, `BuildConsent`, `PageConsentFacts`.
+- **`presetService(name)`** → `ConsentService | null`, a preset resolved alone (below).
+- **Typedefs:** `KissConsent`, `KissConsentInput`, `ConsentService`, `ConsentEmbed`, `ConsentStored`, `BuildConsent`, `PageConsentFacts`.
 
 ## Depends on
 
@@ -48,9 +50,9 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
 ## Depended on by
 
 - `lib/config.js` (`resolveConfig`).
-- `lib/consent-ui.js` (the resolved shape it renders; `clientConfig` feeds `lib/consent-client.js`'s `consentHeadScript`).
-- Planned on this branch (contract §9): `lib/consent-gate.js`, `lib/handlebars-helpers.js`, `lib/audit.js` and `lib/build-finish.js`.
-- `test/unit/consent.test.js`.
+- `lib/consent-ui.js` (the resolved shape it renders, and `STORAGE_KINDS`; `clientConfig` feeds `lib/consent-client.js`'s `consentHeadScript`).
+- `lib/consent-gate.js` (`fill`, `gatingOf`, `scriptKind`), `lib/embed.js` (`PRESETS`, `fill`, `gatingOf`, `presetService`), `lib/handlebars-helpers.js`, `lib/audit.js` and `lib/build-finish.js`.
+- `test/unit/consent.test.js`, `test/unit/embed.test.js`.
 
 ## Non-obvious behavior
 
@@ -69,7 +71,10 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
   - **Where it shows:** `resolved.google.map` is the rebased map, and `consentModeDefault`, `clientConfig` and the client all read it.
 - **A site's `cookies` and `storage` add to a preset's,** as `origins` do; an entry with a preset entry's name replaces it in place (`mergeStored`). Until slice 6's documentation found the two rules disagreed, a site's list replaced the preset's, and a `gtm` that declared `_fbp` silently dropped `_ga`.
 - **A preset's provider is part of `version`.** On 2026-11-04 the `youtube` preset's provider became Google (the operator: "YouTube is Google"). The provider names the controller relying on the consent, so the change moved the purposes version of every site using the preset, and their visitors are asked again on upgrade. That is the rule working as written above, not a side effect. The changelog's upgrade note says so. The same day, the embed wording's defaults moved from `{provider}` to `{service}` (the label) for its two buttons, so a YouTube embed does not offer "Always allow Google" for a grant of YouTube alone. `servicesLabel` names the dialog's service lists. A service's `policy` became an href that day, so `policyUrl` accepts only an absolute http(s) URL or null, and fails the build on anything else (a page id, `javascript:`, a bare host). It is not part of `version`.
-- **First- and third-party storage.** A stored item (a cookie, or a `localStorage` key under `storage`) with a `domain` is third-party unless `party: 'first'` says otherwise. `clientConfig` hands the browser first-party names only, because a page can delete nothing else. The presets' YouTube storage and Vimeo cookies are third-party: listed in the cookie table, never deleted.
+- **First- and third-party storage.** A stored item (a cookie, or an item under `storage`) with a `domain` is third-party unless `party: 'first'` says otherwise. `clientConfig` hands the browser first-party names only, because a page can delete nothing else. The presets' YouTube storage and Vimeo cookies are third-party: listed in the cookie table, never deleted.
+- **A storage item has a `kind`:** `local` (the default), `session` or `indexeddb`; a cookie's is `cookie`, and `kind` on a cookie entry is refused. The cookie table names it (`STORAGE_KINDS`: Local storage, Session storage, IndexedDB), and `clientConfig` sends only first-party `local` names, since the client deletes `localStorage` keys and nothing else. Added 2026-11-04 with the YouTube preset's IndexedDB database `YtIdbMeta`: before it, every storage item was labelled "Local storage", which would have put a false row in every YouTube site's table. `kind` is not part of `version`.
+- **An embed's frame sizing is config** (`embed.ratio`, `width`, `height`, `measure`), resolved here and written by `lib/embed.js` (`AIKB/embed.md`). `ratio` defaults to `'16/9'`; `null` means the frame's content decides its height, starting at `height` (600 px when unset), and `measure: true` follows the height the frame reports. The `instagram` preset is the one that uses them (2026-11-04).
+- **`presetService(name)`** resolves a preset alone, as a service with no site settings: what `{{embed}}` loads with no `config.consent`. `null` for a name with no preset.
 - **A service may not take a category's name.** `kissConsent.has()` and `when()` take a category or a service by one name and answer for the category first, so a service named `necessary` would have run before any choice (found by the Codex review, 2026-11-03).
 - **A required placeholder is a render error, not a config error.** A preset needs `{id}`, but the value may come from the helper's hash per page (`{{consentScript "gtm" id=gtmId}}`, as diploma-msc passes it), so `resolveConsent` cannot know it is missing. `fill` throws when it is.
 - **`consentReport` holds no timestamp,** so `last-build.json` stays byte-identical across identical builds. The time a banner version was first shown is the commit time of the `kiss-ssg aikb` record that first holds its hash.

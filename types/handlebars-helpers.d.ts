@@ -1,8 +1,8 @@
 /**
  * Registers kiss's built-in helpers on one Handlebars environment: `markdown`,
  * `sass`, `offset`, `stringify`, `lookup`, `canonical`, `absUrl`, `asset`,
- * `link`, `isActive`, `env`, `scormBridge`, and the consent manager's
- * `consentHead`, `consentBanner`, `consentScript`, `consentEmbed`,
+ * `link`, `isActive`, `env`, `scormBridge`, `embed`, and the consent
+ * manager's `consentHead`, `consentBanner`, `consentScript`,
  * `consentSettings`, `consentTable` and `consentRecord`. Each is Handlebars runtime — see `AIKB` and
  * llms.txt for what each one renders.
  *

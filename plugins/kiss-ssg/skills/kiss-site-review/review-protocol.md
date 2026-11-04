@@ -32,7 +32,7 @@ Then ask the operator which to fix. Fix those, and **re-run `npx kiss-ssg check`
 
 ## Accepted risks
 
-A finding the owner decides to live with (no published email address, an embed with no facade) is recorded where the site keeps its decisions, so the next review reads it as a decision and leaves it, as § Look for the decision first says. One entry per risk:
+A finding the owner decides to live with (no published email address, an embed that loads with the page) is recorded where the site keeps its decisions, so the next review reads it as a decision and leaves it, as § Look for the decision first says. One entry per risk:
 
 ```markdown
 ### Accepted risk: <the finding, in one line>

@@ -59,7 +59,7 @@ From 5 February 2026, nobody may store information on, or read it from, a visito
 - locating someone who has asked for **emergency assistance** (para. 7);
 - **anything else with consent**, after clear and comprehensive information (para. 2).
 
-No exception covers advertising or tracking by a third party for its own purposes. So a YouTube or Maps embed that writes storage on load needs consent first, or a facade so nothing loads until the visitor clicks.
+No exception covers advertising or tracking by a third party for its own purposes. So a YouTube or Maps embed that writes storage on load needs consent first, or a click-to-load embed (`{{embed}}`) so nothing loads until the visitor clicks.
 
 **The statistics exception is narrow.** Para. 5 needs the storage to be solely for statistics on how the site is used, to improve it, and what it collects must **not be shared** with anyone except to help them improve the site (para. 5(1)(c)), on top of the information and a free way to object (checked 2026-11-02, https://www.legislation.gov.uk/uksi/2003/2426/schedule/A1). A third-party analytics product that uses the data for its own purposes does not fit: it needs consent. Whether a given product's terms keep the data to improving this site is a question for the vendor's terms, verified at source, and an adviser when unsure. Never put a tag under para. 5 on its name alone.
 

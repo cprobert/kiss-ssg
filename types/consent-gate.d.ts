@@ -32,24 +32,6 @@ export function gatedScript(name: string, service: ConsentService, { consent, pa
     src?: string | null;
 }): string;
 /**
- * The markup `{{consentEmbed}}` writes: a click-to-load placeholder, the
- * provider's own link, and the frame held in a `<template>` until revealed
- * (no request is made before: Appendix A, S4). A `necessary` service gets the
- * plain iframe.
- *
- * @param {string} name
- * @param {ConsentService} service
- * @param {{ consent: KissConsent, params: Record<string, string>, src?: string|null, title?: string|null }} opts
- * @returns {string}
- * @throws on a missing title or src, or a missing placeholder value in the src
- */
-export function embedMarkup(name: string, service: ConsentService, { consent, params, src, title }: {
-    consent: KissConsent;
-    params: Record<string, string>;
-    src?: string | null;
-    title?: string | null;
-}): string;
-/**
  * What is wrong with a rendered page's consent wiring, one sentence each;
  * empty when nothing is. Read from the bytes, so a hand-written gated tag is
  * checked too.
