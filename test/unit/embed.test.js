@@ -83,11 +83,15 @@ const gatedWith = (text, name, extra = {}) => {
   })
 }
 
+// The box holds the frame's space, geometry only (the operator, 2026-11-04).
+const BOX_16_9 =
+  'display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-sizing:content-box;aspect-ratio:16/9'
+
 describe('embedMarkup under config.consent', () => {
   it('holds the frame in a template behind a notice, with the provider’s link', () => {
     const out = gated('youtube', { hash: { id: 'abc' }, title: 'Our video' })
     expect(out).toContain(
-      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-consent="marketing">',
+      `<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-consent="marketing" style="${BOX_16_9}">`,
     )
     expect(out).toContain(
       '<div class="kiss-embed__notice" data-kiss-consent-ui>',
@@ -101,8 +105,9 @@ describe('embedMarkup under config.consent', () => {
     expect(out).toContain(
       '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
     )
+    // Inside the notice, so it goes with it when the frame comes.
     expect(out).toContain(
-      '<a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc">Open it on YouTube</a>',
+      '<p><a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc">Open it on YouTube</a></p></div><template',
     )
     expect(out).toMatch(
       /<template data-kiss-embed-frame><iframe src="https:\/\/www\.youtube-nocookie\.com\/embed\/abc" title="Our video" loading="lazy" allow="[^"]+" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="display:block;width:100%;border:0;aspect-ratio:16\/9;height:auto"><\/iframe><\/template>/,
@@ -167,7 +172,7 @@ describe('embedMarkup with no config.consent (a facade)', () => {
   it('writes a Load button and the provider’s link, and no Always allow', () => {
     const out = facade('youtube', { hash: { id: 'abc' }, title: 'Our video' })
     expect(out).toContain(
-      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade>',
+      `<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade style="${BOX_16_9}">`,
     )
     expect(out).toContain('<div class="kiss-embed__notice" data-kiss-embed-ui>')
     expect(out).toContain(
@@ -176,7 +181,7 @@ describe('embedMarkup with no config.consent (a facade)', () => {
     expect(out).not.toContain('data-kiss-consent')
     expect(out).not.toContain('Always allow')
     expect(out).toContain(
-      '<a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc">Open it on YouTube</a>',
+      '<p><a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc">Open it on YouTube</a></p></div><template',
     )
     expect(out).toContain(
       '<template data-kiss-embed-frame><iframe src="https://www.youtube-nocookie.com/embed/abc"',
@@ -230,6 +235,11 @@ describe('the instagram preset', () => {
     )
     expect(out).toContain(
       'style="display:block;width:100%;border:0;max-width:540px;margin:0 auto;aspect-ratio:auto;height:600px"',
+    )
+    // The box holds the starting height and the width cap until the frame
+    // reports its own height.
+    expect(out).toContain(
+      'data-kiss-embed-facade style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-sizing:content-box;min-height:600px;max-width:540px;margin-left:auto;margin-right:auto">',
     )
     expect(out).toContain(
       'href="https://www.instagram.com/p/DfQCqMnhpsG/">Open it on Instagram</a>',

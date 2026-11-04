@@ -683,7 +683,7 @@ describe('{{embed}} on a site with no config.consent', () => {
     expect(report.ok).toBe(true)
     const home = await site.read('public/index.html')
     expect(home).toContain(
-      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade>',
+      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade style="display:flex;',
     )
     expect(home).toContain('data-kiss-embed-action="load"')
     expect(home).not.toContain('data-kiss-consent')

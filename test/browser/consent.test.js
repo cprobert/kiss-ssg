@@ -1015,6 +1015,38 @@ describe.skipIf(!browser)(
       await context.close()
     })
 
+    // The box reserves the frame's space, so nothing below it moves when the
+    // frame arrives (the operator, 2026-11-04).
+    it('holds the frame’s space before the click, so the page does not move when it loads', async () => {
+      const { context, page } = await open({
+        viewport: { width: 320, height: 800 },
+      })
+      await page.goto(`${site.base}/`)
+      const yt = page.locator('[data-kiss-embed="youtube"]')
+      const before = await yt.boundingBox()
+      const nextTop = () =>
+        page
+          .locator('[data-kiss-embed="instagram"]')
+          .evaluate((el) => el.getBoundingClientRect().top)
+      const nextBefore = await nextTop()
+      // 16:9 of the box's width, the notice centred in it.
+      expect(
+        Math.abs((before?.height ?? 0) - ((before?.width ?? 0) * 9) / 16),
+      ).toBeLessThan(1.5)
+      await page.click(
+        '[data-kiss-embed="youtube"] [data-kiss-embed-action="load"]',
+      )
+      await expect
+        .poll(() => page.locator('iframe[src*="youtube-nocookie"]').count())
+        .toBe(1)
+      const after = await yt.boundingBox()
+      expect(
+        Math.abs((after?.height ?? 0) - (before?.height ?? 0)),
+      ).toBeLessThan(1)
+      expect(Math.abs((await nextTop()) - nextBefore)).toBeLessThan(1)
+      await context.close()
+    })
+
     it('sizes an Instagram frame from the height it reports', async () => {
       const { context, page } = await open()
       await page.goto(`${site.base}/`)
@@ -1032,6 +1064,11 @@ describe.skipIf(!browser)(
         .locator('iframe[src*="instagram"]')
         .evaluate((f) => f.getBoundingClientRect().width)
       expect(width).toBeLessThanOrEqual(540)
+      // The box gave up its starting height for the reported one.
+      const boxHeight = await page
+        .locator('[data-kiss-embed="instagram"]')
+        .evaluate((el) => el.getBoundingClientRect().height)
+      expect(Math.round(boxHeight)).toBe(777)
       await context.close()
     })
 

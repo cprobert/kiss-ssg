@@ -39,6 +39,25 @@ describe('toMarkdown', () => {
     expect(md).toBe('# Hello\n\nBody text.\n')
   })
 
+  it('writes an embed as its provider’s link alone, in either mode, and drops one with none', async () => {
+    const box = (attrs, link) =>
+      `<div class="kiss-embed" data-kiss-embed="youtube" ${attrs} style="aspect-ratio:16/9">` +
+      `<div class="kiss-embed__notice" data-kiss-embed-ui><p>This content is hosted by Google.</p>` +
+      '<button type="button" data-kiss-embed-action="load">Load it</button>' +
+      (link
+        ? '<p><a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc">Open it on YouTube</a></p>'
+        : '') +
+      '</div><template data-kiss-embed-frame><iframe src="https://www.youtube-nocookie.com/embed/abc" title="V"></iframe></template></div>'
+    const md = await toMarkdown(
+      page(
+        `<main><h1>Videos</h1>${box('data-kiss-embed-facade', true)}${box('data-kiss-consent="marketing"', true)}<p>A map:</p>${box('data-kiss-embed-facade', false)}</main>`,
+      ),
+    )
+    expect(md).toBe(
+      '# Videos\n\n[Open it on YouTube](https://www.youtube.com/watch?v=abc)\n\n[Open it on YouTube](https://www.youtube.com/watch?v=abc)\n\nA map:\n',
+    )
+  })
+
   it('always drops script, style and nav, inside <main> too', async () => {
     const md = await toMarkdown(
       page(

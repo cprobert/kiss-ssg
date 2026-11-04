@@ -69,3 +69,15 @@ Public items on @instagram, found logged out: the reel `DfQCqMnhpsG` and the pos
 - **Origins:** `www.instagram.com`, `static.cdninstagram.com`, `scontent.cdninstagram.com`, and an `*.fna.fbcdn.net` image host whose name varies by region (`instagram.fbrs4-2.fna.fbcdn.net` here).
 - **Not measured:** storage after playing the reel or interacting inside the frame, and a logged-in visitor, whose existing Instagram cookies the frame will read. A request to Meta carries the visitor's IP address and the page whatever is stored, so the embed stays gated, in `marketing`, even with nothing stored on load.
 - **Size.** The frame has no fixed ratio: its height is the media's plus about 215 px for the header, the link and the actions. Rendered at a fixed 900 px it fitted at 1440 px wide and left about 330 px blank at 320 px. **The frame reports its own height** to the parent page with `postMessage`, without `embed.js`: `{"type":"MEASURE","details":{"height":568}}` at 320 px wide and `883` at 1440 px (its width capped at 540 px). The same messages came from the reel and the post, along with `LOADING` and `MOUNTED`.
+
+## After: the same brief on this branch (2026-11-04)
+
+The same starter at `a3f580c`, the same brief, model and budget. Plugin and engine are this branch at `9ec2fac` (`{{embed}}`, the skill changes, the new `kiss-front-end` description), packed as `kiss-ssg-2.11.2.tgz` (the version is not bumped yet).
+
+Cost $0.23, 28 s, 9 turns, 0 commit attempts.
+
+- **What it read:** `kiss-front-end` through the Skill tool, first, then `kiss-build-check`. The before run opened `kiss-page-add` first. One run cannot separate the causes, but `kiss-front-end`'s description now names "add a video", and nothing else it could have matched changed.
+- **What it built:** five lines, `{{embed 'youtube' id='dQw4w9WgXcQ' title='…'}}` after the introduction, and no `config.consent`. The build check passed. It listed its guesses: the title from memory, where "under the introduction" is, no caption, no styling, and no privacy page.
+- **Measured in Chromium**, as before: 0 third-party requests and nothing stored before the click; after it, 13 requests and the same frame storage as the before run (`ytidb::LAST_RESULT_ENTRY_KEY`, IndexedDB `YtIdbMeta`).
+- **What it got wrong:** "I relied on kiss's default 16:9 sizing because the site has no stylesheet." The frame is 16:9 once loaded, but the facade before it reserves no space. On a page with no stylesheet it is a paragraph, a button and a link (`shots-after/index--1440-light.png` in the session scratchpad), and the page shifts when the frame arrives. The hand-built facade of the before run had a 16:9 dark box.
+- **Not opened by either run:** `kiss-legal-and-privacy`. `kiss-page-add` says to open it when a page gains an embed; the after run never opened `kiss-page-add`, and the before run read only its build-mode lines with `sed`.
