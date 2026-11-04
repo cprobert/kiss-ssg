@@ -168,6 +168,15 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     the tag; a 404 page served anywhere uses the `siteUrl` root. Red first in Chromium (at
     `/guide`, redirected) and in 15 unit cases. The inline ceiling moved from 5,376 to 6,144
     (Claude's call, recorded beside it): 4,887 → 5,483 bytes on every page, 2,389 gzipped.
+  - **Round 10** (over `f13996b` and the docs regeneration): one P2, caused by round 9's fix.
+    The added tag is not `defer`red, so the file can run while the page still loads; it set
+    `S.api` at once and replayed queued clicks only at `DOMContentLoaded`, so a `when()` ran
+    under an objection category while an earlier Reject was still queued (Codex reproduced it).
+    The class: nothing goes live before `start()` applies what came first. That covers calls,
+    and clicks too (a click made then went live ahead of the queued one before it). `S.loaded`
+    now guards the run-once, and `S.ready` and `S.api` are set inside `start()`. Two unit
+    tests, each red first in both forms, with a loading document. Fixed without a separate
+    question: the operator's "Fix now" for round 9 covers a defect its own fix introduced.
   - **The watch flake, seen again** at the first gates run of the close: "settles rapid asset
     and page edits together", the ENOENT on `style.<hash>.css` already in `AIKB/rebuild.md`'s
     Known knowns. 5 of 5 alone, then the gates green. The second sighting on this branch.

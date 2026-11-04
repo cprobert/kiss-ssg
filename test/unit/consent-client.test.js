@@ -112,6 +112,13 @@ function page(source, opts = {}) {
     `https://${host}/a/`,
   )
   const doc = dwin.document
+  // `loading`: the document is still being parsed until `ready()`, as when
+  // the cached file, added by the inline part, arrives early.
+  let loading = Boolean(opts.loading)
+  Object.defineProperty(doc, 'readyState', {
+    get: () => (loading ? 'loading' : 'complete'),
+    configurable: true,
+  })
   // domino answers a selector that matches nothing with undefined, a browser with null.
   const find = (selector) => doc.querySelector(selector) ?? null
   const jar = cookieJar(host)
@@ -198,7 +205,10 @@ function page(source, opts = {}) {
     events,
     clock,
     reloads: () => reloads,
-    ready: () => fire(doc, 'DOMContentLoaded'),
+    ready: () => {
+      loading = false
+      fire(doc, 'DOMContentLoaded')
+    },
     click: (selector, index = 0) =>
       fire(doc.querySelectorAll(selector)[index], 'click'),
     fire,
@@ -773,6 +783,47 @@ describe.each(forms)('the client, %s', (_, build) => {
       expect(p.live()).toEqual([])
       expect(ran).toEqual([])
       expect(p.reloads()).toBe(0)
+    })
+
+    // Codex round 10 (P2, 2026-11-04): the inline part adds the file's tag,
+    // so the file can run while the page is still loading. It handed the
+    // stub's calls to the live client at once, and a when() called then ran
+    // under an objection category while the Reject before it was still
+    // queued. Nothing goes live until start() has applied what came first.
+    it('keeps calls queued, while the page loads, until the Reject before them holds', async () => {
+      const [head, client] = await split(
+        configFor({
+          ...SITE,
+          categories: { statistics: { mode: 'objection' } },
+        }),
+      )
+      const p = page(head, { loading: true })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="reject"]')
+      p.run(client)
+      const ran = []
+      p.win.kissConsent.when('stats', () => ran.push('stats'))
+      expect(ran).toEqual([])
+      p.ready()
+      expect(p.stored().c.statistics).toBe(false)
+      expect(ran).toEqual([])
+      expect(p.live()).toEqual([])
+    })
+
+    // The same class, for clicks: one made after the file ran but before the
+    // page had parsed went live at once, while the click before it waited in
+    // the queue, so the earlier choice was applied last.
+    it('applies clicks in the order they were made, while the page loads', async () => {
+      const [head, client] = await split(configFor(SITE))
+      const p = page(head, { loading: true })
+      p.win.kissConsent.mount()
+      p.click('[data-kiss-consent-action="reject"]')
+      p.run(client)
+      p.click('footer [data-kiss-consent-action="settings"]')
+      p.ready()
+      // The Reject removed the banner; the settings click still holds, last.
+      expect(p.stored().c).toEqual({ statistics: false, marketing: false })
+      expect(p.find('dialog')).not.toBeNull()
     })
 
     // Codex round 3 (P2): a script that kept `window.kissConsent`, or one of
