@@ -53,6 +53,12 @@ opened: 2026-11-04
   - `config.host`, with per-concern overrides, so `redirects.format` keeps working;
   - kiss appends its block to a site's own `_headers`;
   - the operator runs a Netlify and a Firebase deploy preview, so host behaviour is measured before the docs state it.
+- **2026-11-04 — Lighthouse KPIs through `kiss-ssg speed`, with Lighthouse an optional peer dependency.** The operator asked for Lighthouse to run before and after the skill's edits, so the skill yields measurable KPIs. The non-goal "no Lighthouse or other new dependency" was **Claude's**, written into the intent at the open from a guess that it is heavy, and never decided by the operator. Claude said so when the operator asked where it came from, and measured: `lighthouse` 13.6.0 is 19,351,495 bytes unpacked, with 22 direct dependencies and `engines.node >=22.19` (kiss-ssg's floor is 22.12). The operator chose Claude's option 2, which **replaces that non-goal**:
+  - `lighthouse` is an optional peer dependency of kiss-ssg (`peerDependencies` plus `peerDependenciesMeta.optional`);
+  - a site that wants the KPIs installs it with `npm install -D lighthouse`;
+  - `npx kiss-ssg speed` loads it only when it runs, and names the install when it is missing;
+  - the skill measures first and last.
+  - Added criterion: `kiss-ssg speed` exists with its decisions in a tested `lib/` module, and `kiss-performance` uses it before and after.
 - Claude decided the mechanics: patterns on Firebase, no HTML rules on Netlify, `cacheHeaders` appended to the report, the renamed check ids, the `llms.txt` cut, and the skill-rule fixes against `kiss-legal-and-privacy`.
 
 ## Pulse log

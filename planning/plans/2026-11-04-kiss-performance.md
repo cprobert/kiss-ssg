@@ -228,3 +228,58 @@ Two lines: one naming the performance check ids with a pointer to GUIDE.md, and 
 - **A synthetic site**, never a copy of a client's site, under `test/fixtures/slow-site/`.
 - **Both arms run the same engine (with C).** The "without" arm's plugin tree is this branch's after B with `kiss-performance` removed, so the arms measure the skill, not the move out of `kiss-front-end`.
 - **The answer key is the planted failures only.** Whether a rule contradicts the research judges the skill, not a site, and is left out of the score.
+
+## Amendment 2026-11-04: Lighthouse KPIs, `kiss-ssg speed` (workstream E)
+
+The operator asked for Lighthouse to run before and after the skill's edits, so the skill produces measurable KPIs. Lighthouse becomes an **optional peer dependency** (the operator's choice of Claude's option 2). This replaces the intent's non-goal "no Lighthouse or other new dependency", which was Claude's and never the operator's.
+
+**Measured facts it rests on** (`npm view`, 2026-11-04): `lighthouse` 13.6.0, 19,351,495 bytes unpacked, 22 direct dependencies, `engines.node >=22.19`. kiss-ssg's floor stays at 22.12, because only a site that installs Lighthouse needs the newer Node.
+
+### The dependency
+
+- `package.json`: `peerDependencies: { "lighthouse": "^13" }` and `peerDependenciesMeta: { "lighthouse": { "optional": true } }`. npm installs nothing for it, and a site without it hears nothing.
+- `lib/speed.js` loads it with a dynamic `import('lighthouse')` resolved **from the site's folder**, never from kiss-ssg's. When the import is missing, the command exits 2 and prints one line: `npm install -D lighthouse`. When Node is older than 22.19, it says that instead.
+- Lighthouse finds Chrome through its own `chrome-launcher`. With no Chrome installed, the command names `CHROME_PATH` and exits 2. kiss installs no browser.
+
+### The command
+
+```
+npx kiss-ssg speed <site-script | build-folder | https-url> [--page /path]… [--runs 3] [--out <file>] [--against <file>]
+```
+
+- **What it measures.** A build folder is served as the site root, over HTTP on port 0, with the dev server's static rules (`serve-static`, no livereload). A site script resolves `folders.build` from its config and serves that folder; it does **not** build, because the skill builds first and says so. A URL is measured as it is, and that is the only way delivery (CDN, compression, cache headers) shows up.
+- **Pages.** `/` by default; `--page` repeats.
+- **How.** Lighthouse's mobile preset with simulated throttling (its default), the performance category only, `--runs` times per page (3 by default, 1–9 allowed), each run in a fresh Chrome.
+- **What it reports.** Per page, the **median** of the runs for:
+  - the performance score;
+  - LCP, CLS, TBT, FCP and Speed Index;
+  - `total-byte-weight` and the network request count.
+
+  It also gives the spread (min–max) for the score, so noise is visible.
+
+- **Output.** A table on stdout. `--out <file>` writes the JSON: `{ version: 1, lighthouse, runs, pages: [{ page, median: {…}, spread: {…} }] }`.
+- **Comparing.** `--against <file>` prints before → after per page and metric, and the change. A metric is marked _changed_ only when the change is larger than the spread of both runs, so noise is never reported as a gain.
+- **Where files go.** Never `folders.aikb`: only `kiss-ssg aikb` writes there. The skill saves the files in the system temp folder and puts the table in its report.
+- **Exit codes.** 0 measured; 1 a page failed to load or Lighthouse errored; 2 a usage error or missing prerequisite.
+
+### Where the logic lives
+
+- `lib/speed.js` (decisions, unit-tested with no Lighthouse):
+  - parse the arguments;
+  - resolve the target;
+  - extract the KPIs from a Lighthouse result object (fixture: one real result, trimmed, under `test/fixtures/lighthouse/`);
+  - compute medians and spreads;
+  - diff two files, with the noise rule;
+  - format the table.
+- `bin/kiss-ssg.js`: a thin `speed` wrapper.
+- An integration test with a fake `lighthouse` module on the site's resolution path covers the wrapper end to end. A real run happens only with `KISS_LIGHTHOUSE_TESTS=1`, like the network tests.
+- Documentation: `AIKB/speed.md` and its CLAUDE.md table row; GUIDE.md § Measuring speed; one `llms.txt` line, paid for by the same cut as the other new lines.
+
+### The skill
+
+`kiss-performance` gains a first and a last step:
+
+1. Measure **before** any edit: build, then run `npx kiss-ssg speed <site-script> --out <temp>/speed-before.json`, with one `--page` for each distinct template. If Lighthouse is missing, offer `npm install -D lighthouse` and wait for the answer. A site that declines is reviewed without the KPIs, and the report says so.
+2. Measure **after** the fixes, with the same pages and `--against` the before file. The report gives the table, and calls it a lab measurement on this machine, never the site's verdict.
+
+The arms measurement (§ Measurement) uses the same command, so the skill is judged the way a site would be.
