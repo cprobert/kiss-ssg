@@ -128,7 +128,7 @@ consent: {
 
 | Helper | Where | What it writes |
 | --- | --- | --- |
-| `{{consentHead}}` | in `<head>`, after `<meta charset>` and the viewport, before any script | the inline client: sets Consent Mode's defaults, reads the stored choice, defines `window.kissConsent`; and the theme's `<style>` |
+| `{{consentHead}}` | in `<head>`, after `<meta charset>` and the viewport, before any script | the inline client: sets Consent Mode's defaults, reads the stored choice, defines `window.kissConsent`; the rest of the client, `kiss-consent.<hash>.js`, deferred; and the theme's `<style>` |
 | `{{consentBanner}}` | first in `<body>` | the banner and the settings dialog, each in a `<template>`, shown only to a visitor who has not chosen |
 | `{{consentScript}}` | wherever the script belongs | the service's scripts as `type="text/plain"`, which the browser does not run, until allowed |
 | `{{consentEmbed}}` | where the embed belongs; `title=` is required | a notice with **Load it** and **Always allow** buttons, a link to the provider, and the iframe in a `<template>` |
@@ -162,10 +162,13 @@ kissConsent.has('marketing') // a category is allowed; necessary always is
 kissConsent.has('vimeo') // a service: its category is allowed, or "Always allow"
 kissConsent.has('cdn') // a necessary service: always true
 kissConsent.choice // null, or { id, version, at, categories, services }
+// choice.services holds the "Always allow" grants only; a record's services lists every one
 kissConsent.show() // open the settings dialog
 kissConsent.when('vimeo', () => startPlayer()) // now, or once it is allowed
 kissConsent.on('change', ({ choice, granted }) => console.info(granted))
 ```
+
+`has` and `choice` answer from the first moment. The rest of the client is a separate file, `kiss-consent.<hash>.js`, which the build writes at its root and every consent page loads with `defer`, so a returning visitor's browser has it cached. Until it has arrived, `show`, `when` and `on` are held and run in order when it does, and so is a click on the banner: nothing is lost. If the file never arrives, the banner still shows and nothing gated runs. Serve it like any other file; its name changes only when kiss's client code does, so it can be cached for good. Under a Content Security Policy it needs `'self'`, and the inline part still needs `'unsafe-inline'` or its hash.
 
 `on('ready', fn)` runs once per page when the queue of allowed scripts has started, and at once for a listener added after that. Started is not finished: a listener must not assume a gated script has run. `when` is for that. The same two moments are DOM events on `document`: `kiss-consent:ready` (`detail.choice`) and `kiss-consent:change` (`detail.choice`, `detail.granted`). Each choice also pushes `{ event: 'kiss_consent', kiss_consent: { statistics: true, marketing: false } }` to `dataLayer`, for a GTM trigger.
 
@@ -186,16 +189,39 @@ The choice is a first-party cookie, `kiss_consent`, used for nothing else and li
 
 **Everyone is asked again when the purposes change.** `version` defaults to a hash of the categories in use, with their modes, and each service's name, category, provider and origins. So a new service, a new third-party origin or a category's mode changing asks everyone again. Wording, colours, the logo, cookie names and a different GTM id ask nobody, because the ICO says not to ask repeatedly. Set `version` yourself to ask everyone again on purpose.
 
-**Withdrawing is as easy as giving**, from the settings button on every page. Refusing a category that is running on the page deletes the first-party cookies and storage keys its services declared, then reloads the page, because a script that has run cannot be un-run. Every page load deletes them too, which catches a withdrawal made in another tab. **What it cannot clear:** another site's cookies (Vimeo's `vuid` on `.vimeo.com`), and storage inside an embed's own frame (YouTube's `localStorage`). They stay until the visitor clears them in the browser, and your cookie page should say so. Withdrawal also clears only what is declared, so declare the first-party cookies your container's tags set.
+**Withdrawing is as easy as giving**, from the settings button on every page. Refusing a category that is running on the page deletes the first-party cookies and storage keys its services declared, then reloads the page, because a script that has run cannot be un-run. Every page load deletes them too, which catches a withdrawal made in another tab. **What it cannot clear:** another site's cookies (Vimeo's `vuid` on `.vimeo.com`), and storage inside an embed's own frame (YouTube's `localStorage`). They stay until the visitor clears them in the browser, and your cookie page should say so. Withdrawal also clears only what is declared, so declare the first-party cookies your container's tags set. It never clears kiss's own consent log, even when a service's pattern (`kiss_*`) matches it.
 
 ## Records: the endpoint and the banner hash
 
 You must be able to show what a visitor agreed to. Google's EU user consent policy asks advertisers to keep "the text and choices presented to users" and "the date and time" of each consent.
 
--   **The text.** Every page's banner carries a hash of its words (`data-kiss-consent-hash`), and `report().consent.banners` lists each hash with its pages. `npx kiss-ssg aikb` records the report into `AIKB/last-build.json`, so the commit that first holds a hash dates that wording. **That proof holds only if the record is made before the banner is deployed**: run `kiss-ssg aikb` and commit whenever the banner changes, then deploy. `kiss-ssg check` says so: when its diff against `AIKB/last-build.json` finds a banner hash the record does not hold, it prints `! consent banner <hash> (was <hash>): record it with kiss-ssg aikb and commit before deploying` above the page rows, and `! consent version a -> b: every visitor is asked again` when the version moved.
--   **The choices.** `endpoint: '/api/consent'` (or an `https://` URL) makes every choice POST `{ id, version, timestamp, categories, services, bannerHash, page }` to it. Store that on your own server. The body is JSON sent as **`text/plain`**, so the browser sends it with no CORS preflight; parse the raw body, because a JSON body parser looking for `application/json` will skip it. With an endpoint set, the cookie also carries a random `id`, so a record can be matched to a browser; without one, nothing identifies the visitor and nothing is sent anywhere.
+-   **The text.** Every page's banner carries a hash of its words (`data-kiss-consent-hash`), and `report().consent.banners` lists each hash with its pages. `npx kiss-ssg aikb` records the report into `AIKB/last-build.json`, so the commit that first holds a hash dates that wording. **That proof holds only if the record is made before the banner is deployed**: run `kiss-ssg aikb` and commit whenever the banner changes, then deploy. `kiss-ssg check` says so: when its diff against `AIKB/last-build.json` finds a banner hash the record does not hold, it prints `! consent banner <hash> (was <hash>): record it with kiss-ssg aikb and commit before deploying` above the page rows, and `! consent version a -> b: every visitor is asked again` when the version moved. With an `endpoint` set, the build also writes **`consent-banners.json`** beside the pages, for the server your records go to: for each hash, the exact text it was taken from (its sha256 begins with the hash) and the categories and services as the visitor saw them, so a server holding records can show each one with the words it was given under.
+-   **The choices.** `endpoint: '/api/consent'` (or an `https://` URL) makes every choice POST a record to it: `{ format: 2, action, id, version, timestamp, categories, services, bannerHash, page }`. `action` is the control that made it: `accept`, `reject`, `save` or `allow` (an embed's "Always allow"). A withdrawal is a record whose categories are now `false`. `categories` is `null` for an "Always allow" made before the banner was answered. `services` names every service this config declares outside `necessary`, each `true` or `false`: what runs after that choice, whether its category or its own "Always allow" decided it. Services change over time and a category's answer does not cover one added later, so the record says what was agreed to then. A new service also changes `version`, which asks every visitor again. Store each one on your own server. The body is JSON sent as **`text/plain`**, so the browser sends it with no CORS preflight; parse the raw body, because a JSON body parser looking for `application/json` will skip it. Nothing is sent on Close or on a page load, and nothing is retried: a record lost to a network error or a blocker is gone.
+-   **The browser's own copy.** Every choice is also appended, before it is posted, to `localStorage` under `kiss_consent_log` (named after `cookie.name`): the same records, oldest first, the last 50. It needs no endpoint, so a visitor can see their history from the day the site ships. It is not evidence, because the visitor can edit it; the server's records are. Withdrawal never deletes it, and a service may not declare its name. The cookie table lists it.
+-   **The id.** The cookie carries a random `id` (`crypto.randomUUID()`), made in the browser at the first choice, and every record from that browser carries it. It says nothing about the person, and it leaves the browser only in a record posted to your endpoint. A visitor quotes it to ask what you hold, or to have it deleted.
 
 The audit's `consent-records-missing` fires on a Google marketing tag with no endpoint.
+
+## The visitor's history: `{{consentRecord}}`
+
+Put `{{consentRecord}}` on the privacy page, and set `ui.history` to that page's id. The settings dialog then links it ("See your consent history", beside the cookie policy link), straight to the section (`#kiss-consent-history`) rather than the top of the page. A build with no page of that id fails, as `{{link}}` does, and the audit's `consent-history-missing` reports a page of that id with no `{{consentRecord}}` on it. `ui.history` is `null` by default, so the dialog links nothing until the page exists.
+
+```hbs
+<h1>Privacy</h1>
+<p>…</p>
+{{consentRecord}}
+```
+
+```js
+consent: {
+  services: { gtm: { id: 'GTM-XXXXXXX' } },
+  ui: { history: 'privacy' },
+}
+```
+
+It writes a section headed "Your cookie choices", which says what the history is, and a table the browser fills from `kiss_consent_log`. Rows are newest first: the date and time to the second, which choice it was, each category allowed or refused, the services that choice allowed and the ones it refused, by the labels you gave them, and the purposes version. A row marks where the purposes changed and the visitor was asked again. The date follows the visitor's own locale when it is the page's language (an en-GB browser on a `lang="en"` page writes `3 Nov 2026, 15:40:42`), and the page's `lang` otherwise. Above the table it shows the visitor's consent id, which every record of theirs carries, on your server and in their browser alike: it is what they quote in a request for the data you hold. With an `endpoint` set, the section also says exactly which details each choice sends. It says nothing about what your server keeps: that is for your privacy notice to say.
+
+There is no control to delete the history. A record that has to show consent should not be easy to change, and the visitor can still clear it with the browser's own site data. With JavaScript off, a note says the history needs it; where the browser refuses storage, it says there is none to show. A choice made on the page, from its footer's settings, appears at once. Its script is its own and is on this page only. The Markdown copy keeps the heading and the statements, and drops the table. Every string is a `ui.text` key: `historyLink`, `historyTitle`, `historyIntro`, `historySent`, `historyId`, `historyEmpty`, `historyUnavailable`, `historyNoScript`, `historyWhen`, `historyChoice`, `historyServicesAllowed`, `historyServicesRefused`, `historyVersion`, `historyChanged`, `historyYes`, `historyNo`, and one per choice, `historyAccept`, `historyReject`, `historySave` and `historyAllow`.
 
 ## Customising the banner
 
@@ -221,7 +247,11 @@ consent: {
 
 -   **`position`** is `'bottom'` (a fixed bar, the default) or `'top'` (in the page's flow, before the skip link).
 -   **`logo`** is an asset path, looked up as `{{asset}}` looks one up.
--   **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in).
+
+The policy link and the logo are root-relative (`/cookies/`), unless `siteUrl` carries a path prefix (`https://example.com/site/`): then they are absolute and carry it (`https://example.com/site/cookies/`), as `{{link absolute=true}}` would write them.
+
+-   **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in), and the history page's `history…` keys (above).
+-   **`history`** is the id of the page with `{{consentRecord}}`, linked from the dialog; `null` (the default) links none.
 -   **`theme`** sets `background`, `text`, `accent`, `accentText`, `border`, `radius` and `font`. A value is any CSS value without `;`, `{`, `}`, `<` or `>`, so `var(--surface)` uses your site's own custom properties and the banner follows its dark scheme. `theme: false` drops kiss's stylesheet altogether.
 
 **A filled Accept beside an outlined Reject.** By default Accept all and Reject all are identical. A site that wants Accept a step ahead can outline Reject in the same colour, from its own stylesheet (which loads after kiss's, so the rule wins):
@@ -311,6 +341,7 @@ Seven audit checks, advisory like every audit check (§ Checking a build):
 | `consent-settings-missing` | a page has `{{consentHead}}` and no `{{consentSettings}}`, on a site with something to ask (not when every service is `necessary`) |
 | `consent-google-advanced` | `google.mode` is `'advanced'` |
 | `consent-records-missing` | a Google tag under `marketing`, and no `endpoint` |
+| `consent-history-missing` | the page `ui.history` names has no `{{consentRecord}}` |
 
 `report().consent` is `{ version, purposes, mode, banners: [{ hash, pages }], categories, services: [{ name, category, gated, origins, cookies }], pagesWithoutHead }`, or `null` without `config.consent` and on a failed build. `purposes` is the computed version, kept even when `version` is set by hand. `--summary` prints it as `consent: version <v>, banner <hash>, <n> services`. In `report().thirdParty`, an origin that a service gates carries `services: ['gtm']`: it is fetched only after consent.
 
