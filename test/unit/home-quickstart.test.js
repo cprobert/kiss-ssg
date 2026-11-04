@@ -146,8 +146,19 @@ describe('the home page carries the whole quick start', () => {
     // only there: it is a Claude Code plugin.
     const optional = box('Claude Code').optional
     expect(optional).toBeDefined()
-    expect(box('Codex').optional).toBeUndefined()
-    expect(box('Other agent').optional).toBeUndefined()
+    // 2026-11-04: Lighthouse, an npm package rather than a plugin, is offered
+    // in every box; the Anthropic plugin still only in Claude Code's.
+    for (const label of ['Codex', 'Other agent']) {
+      const other = box(label).optional
+      expect(JSON.stringify(other ?? {})).not.toMatch(
+        /anthropic|frontend-design|webapp-testing/i,
+      )
+      expect(other?.code).toBe('npm install -D lighthouse')
+    }
+    expect(optional.skills.at(-1).code).toBe('npm install -D lighthouse')
+    expect(read('README.md').replace(/\r\n/g, '\n')).toContain(
+      '```sh\nnpm install -D lighthouse\n```',
+    )
     const readme = read('README.md').replace(/\r\n/g, '\n')
     const section = readme.slice(
       readme.indexOf("**Optional: Anthropic's `frontend-design`"),
