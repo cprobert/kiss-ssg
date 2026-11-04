@@ -466,6 +466,15 @@ describe('themeCss', () => {
     expect(css).toContain('.kiss-consent-switch:checked::before{left:')
   })
 
+  it("sets the dialog's links apart under the choices, ruled off and centred (the operator, 2026-11-04)", () => {
+    const rule = /\.kiss-consent-dialog__links\{([^}]*)\}/.exec(
+      themeCss(site().ui),
+    )?.[1]
+    expect(rule).toContain('flex-basis:100%')
+    expect(rule).toContain('justify-content:center')
+    expect(rule).toContain('border-top:1px solid var(--kiss-consent-border)')
+  })
+
   it('has visible focus, the dialog backdrop and reduced motion', () => {
     expect(css).toContain(':focus-visible')
     expect(css).toContain('outline:3px solid var(--kiss-consent-accent)')
@@ -489,7 +498,9 @@ describe('themeCss', () => {
   // Inlined on every page. The 2026-11-03 restyle (the operator: "the
   // diploma MSc one looks better than ours") took it from 4,005 bytes to
   // about 6.7 kB; the ceiling catches growth, and moving it is a decision.
+  // 2026-11-04: 7,168 → 7,424, the operator's call, for the dialog's service
+  // lists and its ruled-off, centred footer links (7,204 bytes then).
   it('stays compact', () => {
-    expect(Buffer.byteLength(themeCss(site().ui))).toBeLessThan(7168)
+    expect(Buffer.byteLength(themeCss(site().ui))).toBeLessThan(7424)
   })
 })
