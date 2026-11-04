@@ -368,6 +368,7 @@ export const DEFAULT_TEXT: Readonly<{
     hide: "Hide";
     necessaryLabel: "Necessary";
     necessaryDescription: "Make the site work, and remember the choice you make here. They cannot be switched off.";
+    servicesLabel: "Services";
     embedNotice: "This content is hosted by {provider}, which may set cookies when it loads.";
     embedLoad: "Load it";
     embedAllow: "Always allow {provider}";

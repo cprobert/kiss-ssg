@@ -192,9 +192,67 @@ describe('settingsHtml', () => {
     expect(html).not.toContain('data-kiss-consent-service="fonts"')
   })
 
+  /**
+   * The service list under one category: the `<li>` texts in order, or null
+   * when the category's block holds no list.
+   *
+   * @param {string} markup
+   * @param {string} id the category switch's id
+   */
+  const listed = (markup, id) => {
+    const block = markup
+      .split('<div class="kiss-consent-dialog__category">')
+      .find((b) => b.includes(`<label for="${id}">`))
+    const list = block?.match(
+      /<ul class="kiss-consent-dialog__services" aria-label="([^"]*)">(.*?)<\/ul>/,
+    )
+    if (!list) return null
+    return {
+      label: list[1],
+      items: [...list[2].matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1]),
+    }
+  }
+
+  it('names every service of a category in use, label and provider, in name order (the ICO: name each controller)', () => {
+    expect(listed(html, 'kiss-consent-marketing')).toEqual({
+      label: 'Services',
+      items: ['Google Tag Manager — Google', 'Vimeo', 'YouTube'],
+    })
+    expect(listed(html, 'kiss-consent-preferences')?.items).toEqual([
+      'Chat — Chatter',
+    ])
+  })
+
+  it('names the necessary services too, and lists nothing for a category with none', () => {
+    expect(listed(html, 'kiss-consent-necessary')?.items).toEqual([
+      'Fonts — This site',
+    ])
+    const none = settingsHtml(resolved({ services: { youtube: {} } }))
+    expect(listed(none, 'kiss-consent-necessary')).toBeNull()
+    expect(none).toContain('<ul class="kiss-consent-dialog__services"')
+  })
+
+  it('puts the list after the description and before the grant toggles', () => {
+    const block =
+      html
+        .split('<div class="kiss-consent-dialog__category">')
+        .find((b) => b.includes('<label for="kiss-consent-marketing">')) ?? ''
+    const at = (/** @type {string} */ s) => block.indexOf(s)
+    expect(at('<p>')).toBeGreaterThan(-1)
+    expect(at('<p>')).toBeLessThan(at('<ul'))
+    expect(at('<ul')).toBeLessThan(at('kiss-consent-dialog__grant'))
+  })
+
+  it('takes the list label from ui.text.servicesLabel', () => {
+    const r = site({ ui: { text: { servicesLabel: 'Used by' } } })
+    expect(listed(settingsHtml(r), 'kiss-consent-marketing')?.label).toBe(
+      'Used by',
+    )
+  })
+
   it('escapes every string', () => {
     const r = resolved({
-      services: { youtube: { label: HOSTILE } },
+      services: { youtube: { label: HOSTILE, provider: HOSTILE } },
       categories: { marketing: { label: HOSTILE, description: HOSTILE } },
       ui: {
         text: { settings: HOSTILE, save: HOSTILE, necessaryLabel: HOSTILE },

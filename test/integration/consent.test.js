@@ -286,6 +286,42 @@ describe('a consent site, built', () => {
     ])
   })
 
+  // The dialog names each category's services (the ICO: name every controller
+  // relying on the consent), so the banner hash, taken over the banner and the
+  // dialog, moves when a service's provider does: a record keeps naming the
+  // words the visitor actually saw.
+  it('names each service in the dialog, and a changed provider moves the banner hash', async () => {
+    /** @param {string} provider */
+    const hashWith = async (provider) => {
+      site = await makeSite(HISTORY_FILES)
+      const consent = {
+        ...CONSENT_CONFIG,
+        endpoint: '/api/consent',
+        services: {
+          ...CONSENT_CONFIG.services,
+          stats: { ...CONSENT_CONFIG.services.stats, provider },
+        },
+      }
+      const { errors } = await build(config({ consent }))
+      expect(errors).toEqual([])
+      const registry = JSON.parse(
+        await site.read('public/consent-banners.json'),
+      )
+      const [banner] = registry.banners
+      await kiss.close()
+      kiss = null
+      await site.cleanup()
+      site = null
+      return banner
+    }
+    const before = await hashWith('This site')
+    const after = await hashWith('Counter Ltd')
+    expect(before.text).toContain('Visit counter — This site')
+    expect(before.text).toContain('Google Tag Manager — Google')
+    expect(after.text).toContain('Visit counter — Counter Ltd')
+    expect(after.hash).not.toBe(before.hash)
+  })
+
   // Its one reader is the server records go to; a site with no endpoint has
   // none (the operator, at the 2026-11-03 pulse).
   // The cached part of the client (spec, "the inline part and the cached

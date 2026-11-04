@@ -1,6 +1,6 @@
 ---
 name: kiss-branch-close
-description: Finish a piece of work on a kiss-ssg site — verify the build diff against the captured intent, check the knowledge base kept up, record AIKB/, write the reflection, push. Use for "close the branch", "wrap this up", "we're done, ship it", "finish this change", "write the retrospective". Opens a pull request only when asked.
+description: Finish a piece of work on a kiss-ssg site — verify the build diff against the captured intent, check the knowledge base kept up, record AIKB/, write the reflection, push, and open the pull request. Use for "close the branch", "wrap this up", "we're done, ship it", "finish this change", "write the retrospective".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -172,12 +172,24 @@ Its last column is the date each log was consolidated, `-` for one never folded 
 
 Either one: recommend `kiss-memory-consolidate` in the final report, naming which trigger fired and the evidence (the item and its dates, or the count). **Do not run it here.** It is a separate beat, on nobody's branch, and folding it into a close would mix housekeeping edits into the diff you just verified.
 
-### 7. Push, and stop
+### 7. Push, and open the pull request
 
 ```bash
 git push -u origin HEAD
+gh auth status
+gh pr list --head <branch> --state open --json number,url
 ```
 
-**Open a pull request only if the user asks.** If they do, seed the Summary from the Objective and the test plan from the Success criteria, so the reviewer reads the intent beside the diff. Otherwise report: build green, criteria met, notes up to date and stamped, all four note lines clean, `AIKB/` recorded and committed, reflection written, branch pushed.
+`<branch>` is what `git branch --show-current` printed in step 1. Closing a branch opens its pull request: that is where the work is reviewed and merged, and a pushed branch with no pull request waits for someone to remember it.
+
+- **`gh auth status` fails** (no `gh`, not signed in, or a remote that is not on GitHub): do not stop the close. Say so in the report, with the command the person runs once they have signed in (`gh auth login`), or the remote's own way of opening a merge request.
+- **A pull request is already open** for the branch (a close re-run after review fixes): the push has updated it. Report its URL, and open no second one.
+- **Otherwise, open it** against the base `kiss-ssg base` printed in step 1, never an assumed `main`. Write the body to a file first with your file-writing tool, outside the site (the system's temp folder), never through the shell: the Summary from the Objective, the test plan from the Success criteria, each ticked as the Verdict ticked it, and what the Verdict leaves open. Then:
+
+```bash
+gh pr create --base <base> --head <branch> --title "<the objective, in a line>" --body-file <the body file>
+```
+
+Report: build green, criteria met, notes up to date and stamped, all four note lines clean, `AIKB/` recorded and committed, reflection written, branch pushed, and the pull request's URL or why there is none.
 
 Finish with three lines to the console — what shipped and the verdict, the competency level, and the single most useful piece of feedback — so nobody has to open the file to get the point. Add a fourth line only if step 6 fired: "the knowledge base is due a sweep — run `kiss-memory-consolidate`", with the trigger. Then, after those lines, name the next beat: once the work has merged, `kiss-branch-merged` tidies up. If the branch is in a worktree (`worktree:` in the session file), it stays until then, because review fixes go there.

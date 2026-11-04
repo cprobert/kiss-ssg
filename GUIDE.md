@@ -1142,7 +1142,7 @@ Gated scripts run in document order once allowed, each external one and each inl
 
 #### In the browser: `window.kissConsent`
 
-The banner offers **Accept all** and **Reject all** as two buttons of equal weight (the ICO asks that refusing be as prominent as accepting), **Choose cookies** beside them as a text button for a choice in detail (the arrangement Google's own consent screen uses), and a ✕ that closes it without choosing. The dialog has a ✕ to close it, a switch per category (a real checkbox, announced as a switch), and Reject all, Accept all and Save choices at its foot. After a choice the banner is replaced by a short confirmation that takes focus. A bottom banner keeps a focused control and the end of the page scrollable clear of it.
+The banner offers **Accept all** and **Reject all** as two buttons of equal weight (the ICO asks that refusing be as prominent as accepting), **Choose cookies** beside them as a text button for a choice in detail (the arrangement Google's own consent screen uses), and a ✕ that closes it without choosing. The dialog has a ✕ to close it, a switch per category (a real checkbox, announced as a switch), and Reject all, Accept all and Save choices at its foot. Under each category's description it lists every service that category covers, as "label — provider" (just the label when the two are the same), so the visitor knows which companies rely on the consent before giving it (the ICO: consent for categories of third-party controllers is not specific enough on its own). The banner hash is taken over the banner and the dialog, so a service added, removed or given a new provider moves it, and a record names the list the visitor saw. After a choice the banner is replaced by a short confirmation that takes focus. A bottom banner keeps a focused control and the end of the page scrollable clear of it.
 
 Site code reads the choice through `window.kissConsent`, which `{{consentHead}}` defines:
 
@@ -1239,7 +1239,7 @@ consent: {
 
 The policy link and the logo are root-relative (`/cookies/`), unless `siteUrl` carries a path prefix (`https://example.com/site/`): then they are absolute and carry it (`https://example.com/site/cookies/`), as `{{link absolute=true}}` would write them.
 
-- **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in), and the history page's `history…` keys (above).
+- **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, `servicesLabel` (the accessible name of each category's service list, "Services"), and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{provider}` is filled in), and the history page's `history…` keys (above).
 - **`history`** is the id of the page with `{{consentRecord}}`, linked from the dialog; `null` (the default) links none.
 - **`theme`** sets `background`, `text`, `accent`, `accentText`, `border`, `radius` and `font`. A value is any CSS value without `;`, `{`, `}`, `<` or `>`, so `var(--surface)` uses your site's own custom properties and the banner follows its dark scheme. `theme: false` drops kiss's stylesheet altogether.
 
