@@ -156,6 +156,9 @@ proceeding`. Claude's reading, stated here because the operator was on mobile: 6
     Codex read code and tests, it did not run the suite). The loop's stop condition is met:
     past round 6, the split and the clean room done, a round clean. Every commit on the branch
     has now had a Codex review.
+  - **Round 8** (2026-11-04, over `29c0648`, the whole branch, so the walk's fixes `522ae63` and
+    the services record `2faf7c0` too): no findings ("no actionable regressions"; Codex read
+    code and tests, it did not run them). Every commit on the branch is again Codex-reviewed.
 - **2026-11-03 — the clean room (criterion 9).** A fresh agent, given only the packed tarball
   (packed after round 2), built a cafe site with GTM, a YouTube embed, a cookie page, the
   history on the privacy page, `ui.history` and an endpoint. `kiss-ssg check` exit 0;
