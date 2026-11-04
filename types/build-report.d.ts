@@ -143,6 +143,17 @@
  * @property {BuildPackage[]|null} packages the learning packages written, one per package and format, sorted by id then format; `null` when no page is in a package, packaging is off, the build failed, and in a dev build
  * @property {BuildThirdParty|null} thirdParty the origins other than the site's own that the written pages fetch from; `null` when the build failed or wrote no HTML page
  * @property {import('./consent.js').BuildConsent|null} consent the consent manager's record: the version, the banner hash each page carries, the categories and the services; `null` without `config.consent` and when the build failed
+ * @property {BuildCacheHeaders|null} cacheHeaders the cache-header files written for the hashed files; `null` when nothing was written: no hashed file, a dev build, or a failed build
+ */
+/**
+ * What the build wrote so a host caches its hashed files for a year.
+ *
+ * @typedef {Object} BuildCacheHeaders
+ * @property {import('./cache-headers.js').CacheHeaderRule[]} rules one per hashed file, by exact path: the list `cache-headers.json` carries
+ * @property {string[]} files every path written, `cache-headers.json` first
+ * @property {string[]} formats the formats that ran, `'custom'` for a function
+ * @property {boolean} unset hashed files exist and neither `host` nor `cacheHeaders.format` chose a host file
+ * @property {boolean} merged kiss's block was appended to a `_headers` the site keeps in its assets
  */
 /**
  * What the written pages fetch from other origins: the privacy review's
@@ -211,9 +222,10 @@ export function reportedView(view: string): string;
  * @param {import('./packages.js').PackageResult[]|null} [input.packages] the learning packages written, as written
  * @param {import('./audit.js').ThirdPartyOrigins|null} [input.thirdParty] the third-party origins, with each page where it was written
  * @param {import('./consent.js').BuildConsent|null} [input.consent] the consent record, with each page where it was written
+ * @param {BuildCacheHeaders|null} [input.cacheHeaders] the cache-header files, as written
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, thirdParty, consent, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, thirdParty, consent, cacheHeaders, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -248,6 +260,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     packages?: import("./packages.js").PackageResult[] | null;
     thirdParty?: import("./audit.js").ThirdPartyOrigins | null;
     consent?: import("./consent.js").BuildConsent | null;
+    cacheHeaders?: BuildCacheHeaders | null;
 }): BuildReport;
 /**
  * The audit's summary lines, unindented: one per check that fired, naming up
@@ -620,6 +633,35 @@ export type BuildReport = {
      * the consent manager's record: the version, the banner hash each page carries, the categories and the services; `null` without `config.consent` and when the build failed
      */
     consent: import("./consent.js").BuildConsent | null;
+    /**
+     * the cache-header files written for the hashed files; `null` when nothing was written: no hashed file, a dev build, or a failed build
+     */
+    cacheHeaders: BuildCacheHeaders | null;
+};
+/**
+ * What the build wrote so a host caches its hashed files for a year.
+ */
+export type BuildCacheHeaders = {
+    /**
+     * one per hashed file, by exact path: the list `cache-headers.json` carries
+     */
+    rules: import("./cache-headers.js").CacheHeaderRule[];
+    /**
+     * every path written, `cache-headers.json` first
+     */
+    files: string[];
+    /**
+     * the formats that ran, `'custom'` for a function
+     */
+    formats: string[];
+    /**
+     * hashed files exist and neither `host` nor `cacheHeaders.format` chose a host file
+     */
+    unset: boolean;
+    /**
+     * kiss's block was appended to a `_headers` the site keeps in its assets
+     */
+    merged: boolean;
 };
 /**
  * What the written pages fetch from other origins: the privacy review's

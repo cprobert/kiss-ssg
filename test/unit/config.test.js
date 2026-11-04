@@ -526,6 +526,64 @@ describe('resolveConfig', () => {
   })
 })
 
+describe('host', () => {
+  it('is null by default, and leaves both formats null', () => {
+    const config = resolveConfig({})
+    expect(config.host).toBeNull()
+    expect(config.redirects.format).toBeNull()
+    expect(config.cacheHeaders.format).toBeNull()
+  })
+
+  it('sets each concern the site left unset', () => {
+    const config = resolveConfig({ host: 'netlify' })
+    expect(config.host).toEqual(['netlify'])
+    expect(config.redirects.format).toEqual(['netlify'])
+    expect(config.cacheHeaders.format).toEqual(['netlify'])
+  })
+
+  it('takes a list, in order, without repeats', () => {
+    const config = resolveConfig({ host: ['firebase', 'netlify', 'firebase'] })
+    expect(config.host).toEqual(['firebase', 'netlify'])
+    expect(config.redirects.format).toEqual(['firebase', 'netlify'])
+    expect(config.cacheHeaders.format).toEqual(['firebase', 'netlify'])
+  })
+
+  it("never overrides a format the site set itself, so 'none' keeps netlify.toml in charge", () => {
+    const config = resolveConfig({
+      host: 'netlify',
+      cacheHeaders: { format: 'none' },
+      redirects: { format: 'htaccess' },
+    })
+    expect(config.cacheHeaders.format).toBe('none')
+    expect(config.redirects.format).toBe('htaccess')
+  })
+
+  it("derives a decided nothing for 'github-pages', and no cache headers for 'vercel'", () => {
+    const pages = resolveConfig({ host: 'github-pages' })
+    expect(pages.redirects.format).toEqual(['none'])
+    expect(pages.cacheHeaders.format).toEqual(['none'])
+    const vercel = resolveConfig({ host: 'vercel' })
+    expect(vercel.redirects.format).toEqual(['vercel'])
+    expect(vercel.cacheHeaders.format).toEqual([])
+  })
+
+  it('refuses a host it does not know, naming every one it does', () => {
+    expect(() => resolveConfig({ host: 'netlfy' })).toThrow(
+      /config\.host must be one of 'netlify', 'cloudflare', 'firebase', 'vercel', 'github-pages'.*"netlfy"/,
+    )
+  })
+
+  it('never touches links.trailingSlash', () => {
+    expect(resolveConfig({ host: 'firebase' }).links.trailingSlash).toBe(true)
+  })
+
+  it('refuses a cache-header format it does not know', () => {
+    expect(() => resolveConfig({ cacheHeaders: { format: 'vercel' } })).toThrow(
+      /config\.cacheHeaders\.format must be one of/,
+    )
+  })
+})
+
 describe('markdownCopies', () => {
   it("follows .llms() by default ('llms'), converting <main>", () => {
     expect(DEFAULT_MARKDOWN_COPIES).toEqual({

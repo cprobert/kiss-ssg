@@ -44,7 +44,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
 - `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Partials are `.hbs`, `.md` (Markdown first, so `"` args and `{{>` break it), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
-- Named exports: `utils`, the redirect encoders (`renderRedirects`, `renderFirebaseRedirects`, …) and `splitDocument`/`parseHtml`/`findTag` for converting a single-file page (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
+- Named exports: `utils`, the redirect and cache-header encoders (`renderRedirects`, `renderHeadersBlock`, …) and `splitDocument`/`parseHtml`/`findTag` for converting a single-file page (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
 - Types ship in `types/`: `// @ts-check` plus `/** @type {import('kiss-ssg').KissConfigInput} */` gives a plain-JS site full checking.
 
 ## Config
@@ -63,7 +63,9 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   assets: { hash: false, version: null, pipeline: [] },
   markdown: { html: true, xhtmlOut: true, breaks: false },
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
-  redirects: { format: null }, // 'netlify' | 'firebase' | 'vercel' | 'htaccess' | fn | an array
+  host: null, // 'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages' | a list
+  redirects: { format: null }, // null: follows host
+  cacheHeaders: { format: null }, // null: follows host
   audit: { check: true, ignore: [], privacyPage: null },
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
@@ -86,12 +88,12 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
 }
 ```
 
-Each key's prose is in GUIDE.md: § Cleaning the build folder (`cleanBuild`), § Building more than one site from one source tree, § Remote models (`fetch`), § Assets (`assets`, `pipeline`), § Markdown options, § Host URL policy (`links.trailingSlash`, `redirects.format`), § Redirects, § Checking a build (`links`, `audit`).
+Each key's prose is in GUIDE.md: § Cleaning the build folder, § Building more than one site from one source tree, § Remote models, § Assets, § Markdown options, § Host URL policy, § Redirects, § Cache headers, § Checking a build.
 
 ## Traps nothing reports
 
 - `cleanBuild: true` empties the build folder **before** anything renders, so a failed build leaves it empty. Use `'atomic'` for published output. A `dev` run writes a dev build into `folders.build`, so point dev at a git-ignored folder if that folder is published.
-- `links.trailingSlash` and `redirects.format` are statements about your host, not defaults kiss can get right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `format` names one.
+- `links.trailingSlash` and `host` are statements about your host, not defaults kiss can get right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `host` (or a `format`) names one. kiss marks only hashed files `immutable`; never give an unhashed one a year.
 - `{{asset}}` renders **no leading slash**: write `href="/{{asset "css/site.css"}}"`. `{{root}}` is a value your page supplies, not a helper.
 - `{{#isActive this href="/about"}}{{active}}{{/isActive}}`: the positional argument is the page context (`this`, or `..` in an `{{#each}}`), and the block **always** renders, so the match is `{{active}}`.
 - A pipeline step writes into your assets folder, so the copy claims and hashes it. One that can only write into the build folder lists those files in its `outputs` (`['img/icons.svg']`): kiss deletes them first, checks them after, claims them for `{{asset}}` and packages, and never hashes them.
@@ -135,7 +137,7 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 - [README.md](README.md): the agent quick start: `init`, the plugin install, prompts to copy.
 - [GUIDE.md](GUIDE.md): the full reference, including § Migrating from v1.
-- [examples/](examples/): runnable sites, each run from inside its own folder (`node router.js`, `--dev` for a preview). `examples/README.md` says what each shows and which are whole sites to copy by shape.
-- [types/](types/): TypeScript declarations generated from the JSDoc in `lib/`.
+- [examples/](examples/): runnable sites, each run from its own folder; `examples/README.md` says what each shows.
+- [types/](types/): TypeScript declarations.
 - [CHANGELOG.md](CHANGELOG.md): what changed between the version a site was written against and this one.
 - [AIKB/](AIKB/): per-module engine notes.

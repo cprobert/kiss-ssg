@@ -609,6 +609,10 @@ declare class Kiss {
     /** @private */
     private _consentClientRun;
     /** @private */
+    private _cacheHeadersRun;
+    /** @private @type {import('./build-report.js').BuildCacheHeaders|null} */
+    private _cacheHeadersResult;
+    /** @private */
     private _packagesDevNoticed;
     /** @private */
     private _registrationSeq;
@@ -752,6 +756,8 @@ declare class Kiss {
     private _writeBannerRegistry;
     /** @private */
     private _writeConsentClient;
+    /** @private */
+    private _writeCacheHeaders;
     /** @private */
     private _lastBuildRecord;
     /** @private */
@@ -993,8 +999,11 @@ import { renderRedirectsJson } from './redirects.js';
 import { renderFirebaseRedirects } from './redirects.js';
 import { renderVercelRedirects } from './redirects.js';
 import { renderHtaccessRedirects } from './redirects.js';
+import { renderCacheHeadersJson } from './cache-headers.js';
+import { renderHeadersBlock } from './cache-headers.js';
+import { renderFirebaseCacheHeaders } from './cache-headers.js';
 import { splitDocument } from './html-split.js';
 import { parseHtml } from './html-split.js';
 import { findTag } from './html-split.js';
 import Handlebars from 'handlebars';
-export { Kiss as 'module.exports', utils, renderRedirects, renderRedirectsJson, renderFirebaseRedirects, renderVercelRedirects, renderHtaccessRedirects, splitDocument, parseHtml, findTag };
+export { Kiss as 'module.exports', utils, renderRedirects, renderRedirectsJson, renderFirebaseRedirects, renderVercelRedirects, renderHtaccessRedirects, renderCacheHeadersJson, renderHeadersBlock, renderFirebaseCacheHeaders, splitDocument, parseHtml, findTag };

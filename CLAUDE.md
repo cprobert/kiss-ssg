@@ -83,6 +83,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Broken internal links                      | `lib/links.js`               | `AIKB/links.md`               |
 | Launch-readiness audit                     | `lib/audit.js`               | `AIKB/audit.md`               |
 | Redirects (`aliases` → `_redirects`)       | `lib/redirects.js`           | `AIKB/redirects.md`           |
+| Cache headers for hashed files             | `lib/cache-headers.js`       | `AIKB/cache-headers.md`       |
 | Deterministic zip (learning packages)      | `lib/zip.js`                 | `AIKB/zip.md`                 |
 | Learning package manifest (IMS CP, SCORM)  | `lib/package-manifest.js`    | `AIKB/package-manifest.md`    |
 | Learning packages (`package`, the writer)  | `lib/packages.js`            | `AIKB/packages.md`            |

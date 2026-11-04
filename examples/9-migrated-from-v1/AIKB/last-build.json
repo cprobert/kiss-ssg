@@ -172,5 +172,6 @@
     "pages": [],
     "origins": []
   },
-  "consent": null
+  "consent": null,
+  "cacheHeaders": null
 }
