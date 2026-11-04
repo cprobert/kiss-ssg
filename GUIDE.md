@@ -1014,7 +1014,7 @@ kiss writes a notice saying who hosts the content, a **Load it** button, a link 
 
 - **With no `config.consent`,** each embed carries its own small script, so nothing goes in `<head>` and no banner is needed. Nothing is remembered: the next page asks again. The wording is the default `ui.text` (below); to change it, use `config.consent`.
 - **Under `config.consent`,** the embed is one of the site's services, and it must be declared there (`youtube: {}` is enough), or the page fails: an undeclared embed would be missing from the banner and the cookie table. The notice also offers **Always allow**, the visitor's stored choice reveals it, and withdrawing that choice puts the notice back.
-- **On a learning package's page** `{{embed}}` fails, with or without `config.consent` (§ below).
+- **On a learning package's page** `{{embed}}` is always the facade, even under `config.consent`: the LMS deals with consent for a course, and a facade stores and remembers nothing. An LMS may serve packages under a Content-Security-Policy that refuses frames from other sites, so press Load in the LMS itself before the course goes live; the link to the provider works either way.
 
 A bare `<iframe>` from YouTube or Instagram fetches the provider's pages, scripts and images as the page loads, and the privacy-enhanced YouTube player writes to the visitor's device once it plays (measured: `localStorage` and an IndexedDB database). `{{embed}}` holds all of it back.
 
@@ -1163,7 +1163,7 @@ Gated scripts run in document order once allowed, each external one and each inl
 
 **The build checks the wiring of every page**, from the HTML it wrote. A page fails, and warns under `dev`, when it has gated markup or a settings button with no `{{consentHead}}`; a head with no banner, or two of either; an executable script before the head's (JSON-LD is fine); or one service's script twice. A mistake in a helper fails the page the same way: `config.consent` not set, an unknown service, a missing placeholder, an iframe inside `{{consentScript}}`, or a `ui.policy` or `ui.logo` that the build does not have.
 
-**On a learning package's pages** (§ Learning packages) `{{consentHead}}`, `{{consentBanner}}` and `{{consentSettings}}` render nothing, so one layout serves both, and `{{consentScript}}` and `{{embed}}` fail the page. The LMS deals with consent for a course: a reload inside it would break the learner's session, and a `Path=/` cookie would be shared by every course on its domain.
+**On a learning package's pages** (§ Learning packages) `{{consentHead}}`, `{{consentBanner}}` and `{{consentSettings}}` render nothing, so one layout serves both, `{{consentScript}}` fails the page, and `{{embed}}` writes its facade (§ Embeds). The LMS deals with consent for a course: a reload inside it would break the learner's session, and a `Path=/` cookie would be shared by every course on its domain.
 
 #### In the browser: `window.kissConsent`
 

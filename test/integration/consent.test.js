@@ -705,30 +705,43 @@ describe('{{embed}} on a site with no config.consent', () => {
     expect(report.consent).toBeNull()
   })
 
-  it('fails a name with no embed preset, and a learning package’s page', async () => {
+  it('fails a name with no embed preset', async () => {
     site = await makeSite({
       'src/layouts/layout.hbs': PLAIN_LAYOUT,
       'src/pages/index.hbs': consentPage('{{embed "tiktok" id="x" title="T"}}'),
-      'src/pages/lesson.hbs': consentPage(
-        '{{embed "youtube" id="x" title="T"}}',
-      ),
     })
-    kiss = new Kiss(config({ consent: undefined }))
-      .page({ view: 'index.hbs' })
-      .page({ view: 'lesson.hbs', package: 'course' })
-      .generate()
-    let errors = []
-    try {
-      await kiss.complete()
-    } catch (err) {
-      errors = (err.errors ?? [err]).map((e) => String(e?.message ?? e))
-    }
+    const { errors } = await build(config({ consent: undefined }))
     expect(errors.join('\n')).toMatch(
       /embed "tiktok": kiss has no embed preset "tiktok" — use one of youtube, vimeo, google-maps, instagram/,
     )
-    expect(errors.join('\n')).toMatch(
-      /embed "youtube": a learning package's pages carry no third-party embeds/,
-    )
+  })
+
+  // The LMS deals with consent (2026-11-03), so a package page stores and
+  // remembers nothing; a facade does neither, so it is allowed there, and is
+  // always a facade, even on a consent site (the operator, 2026-11-04).
+  it('writes a facade on a learning package’s page, with or without config.consent', async () => {
+    for (const consent of [undefined, CONSENT_CONFIG]) {
+      site = await makeSite({
+        ...CONSENT_FILES,
+        ...(consent ? {} : { 'src/layouts/layout.hbs': PLAIN_LAYOUT }),
+        'src/pages/lesson.hbs': consentPage(
+          '<h1>Lesson</h1>{{embed "youtube" id="x" title="The lesson video"}}',
+        ),
+      })
+      kiss = new Kiss(config({ consent }))
+      if (consent) kiss.page({ view: 'cookies.hbs' })
+      kiss.page({ view: 'lesson.hbs', package: 'course' }).generate()
+      await kiss.complete()
+      const lesson = await site.read('public/lesson.html')
+      expect(lesson).toContain('data-kiss-embed-facade')
+      expect(lesson).toContain('data-kiss-embed-action="load"')
+      expect(lesson).not.toContain('data-kiss-consent-action')
+      expect(lesson).not.toContain('Always allow')
+      await kiss.close()
+      kiss = null
+      await site.cleanup()
+      site = null
+    }
   })
 
   it('fails, under config.consent, an embed the site has not declared', async () => {
