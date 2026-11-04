@@ -1,0 +1,58 @@
+---
+branch: feat/review-groups-and-performance
+base: main
+status: open
+opened: 2026-11-04
+---
+
+# Session — 2026-11-04: Review groups, a performance skill, and the carried doc gaps
+
+## Intent (captured at /branch-open)
+
+**Objective:** Let `kiss-site-review` ask which review groups to run, as one multi-select question, add a `kiss-performance` domain skill (with engine audit checks) that takes performance over from `kiss-front-end`, and close the doc gaps and dead paths carried by the last two branches — all on one branch, because the operator wants fewer, larger pull requests.
+
+**Success criteria:**
+
+- [ ] **Review groups.** `kiss-site-review` runs the audit first, then asks one multi-select `AskUserQuestion` with four groups: Content & discovery (writing, IA, SEO), Interface & usability (accessibility, front-end, design), Legal & compliance (legal-and-privacy), Speed & performance (kiss-performance). A group the audit found something in is marked "(Recommended)"; a group not chosen is reported as _not run_; under Codex, which has no `AskUserQuestion`, the same choice is a numbered list in plain text. A `test/unit/skill-coverage.test.js` row pins the prompt.
+- [ ] **The performance skill.** `plugins/kiss-ssg/skills/kiss-performance/SKILL.md` has a build mode and a review mode that reports to `kiss-site-review/review-protocol.md` and looks through `browser-pass.md`; `kiss-site-new`, `kiss-page-add` and `kiss-site-review` link to it, and skill-coverage holds them to the link.
+- [ ] **One home for performance.** `kiss-front-end` no longer claims "performance" or "layout shift"; its image `width`/`height` and `loading="lazy"` rule lives in `kiss-performance`; `kiss-accessibility`'s "not for performance" pointer names the new skill; every moved sentence is banned in the old file's `CONTRADICTIONS` table.
+- [ ] **Engine audit checks.** The performance checks the contract decides on are in `lib/audit.js`, each seen red before it was green, documented in `GUIDE.md` § Launch-readiness audit, indexed in `llms.txt`, given a fix row in `kiss-site-review`'s table, with `AIKB/audit.md` and `types/` updated.
+- [ ] **Contract first.** `planning/plans/2026-11-04-kiss-performance.md` (what moves out of front-end, the skill's checks and thresholds, which become audit checks, the slow-site fixture) is written and critiqued by one fresh-context agent before the skill or the checks are built.
+- [ ] **Measured, not reviewed.** The same brief, with and without `kiss-performance`, through `scripts/arms.mjs`, on a site that is actually slow; the result written up in `planning/reviews/`. The operator reads the shipped `kiss-performance/SKILL.md` before the close.
+- [ ] **Clean room.** A fresh agent given only the packed tarball and the plugin runs `kiss-site-review` on a site, meets the group question, and reaches a report naming the groups it did not run, listing every place it had to guess.
+- [ ] **Carried doc gaps.** Documented, each snippet run against the engine: the consent docs say `"type": "module"`; the default folders; how a page gets its id; one page for policy and history; the URL shape under the default `trailingSlash`; which hash keys are settings. The dead paths are fixed — `lib/css-split.js` in `AIKB/html-split.md` and `AIKB/kiss.md`, `examples/_shared/assets/robots.txt` in `AIKB/robots.md` — and `/corpse-collector` finds none.
+- [ ] `npm run gates` green; a Codex review of the `lib/` change, focused on the new checks' sites.
+
+**Non-goals / out of scope:** no Lighthouse or other new dependency; no change to the other domain skills beyond the performance pointers; no second question or fifth group in the review prompt.
+
+**Impact surface:** public API — new audit check ids are observable in every site's build report. Minor bump proposed at close.
+
+**Expected shape:** between — the review prompt and the doc gaps are planned; the performance skill's content is settled by the contract and the measurement.
+
+**Delegation convention:** this session briefs, writes the skills and reviews; sub-agents critique the contract, run the arm measurement and the clean room, and may implement inside a named scope. Agents never commit.
+
+**Contract:** `planning/plans/2026-11-04-kiss-performance.md` (to be written; amended in place with dated sections).
+
+**Decisions at the open:**
+
+- The carried doc gaps (in the 2026-11-04 consent-dialog-services and 2026-11-02 kiss-legal-and-privacy Feedback) were put to the operator: **this branch**.
+- Claude recommended a skill-only performance branch and a separate branch for the review prompt; the operator chose engine checks and one branch. Reason, in the operator's words: changing the review skill is relatively minor and can go along with the performance skill; too many pull requests and branches are being created, and most of the operator's time goes on running pull requests.
+
+**Inherited feedback held through this branch:** no prose through the shell, `sed -i` included (recurred 11-04 twice); measure before giving a number; pulse after every Codex round that changes `lib/`; the operator reads one Codex fix diff per round (11-03, 11-02); the operator reads the shipped `SKILL.md` before the close (11-02). `/memory-consolidate` is recommended: five logs lack `consolidated:`.
+
+### Amendments
+
+<!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
+     mid-branch, append a dated note here and stay on the branch — a new branch is
+     the operator's call, never spawned on initiative. Good drift gets recorded;
+     it is not silent scope creep. -->
+
+## Pulse log
+
+<!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
+     criteria status + evidence + the continue/adjust/amend/close decision.
+     Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+---
+
+<!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
