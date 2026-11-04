@@ -596,7 +596,7 @@ const COVERAGE = [
   {
     feature: 'the review runs the domain reviews, then offers the design lift',
     pattern:
-      /^(?=[\s\S]*### 2\. Run each domain skill's review mode)(?=[\s\S]*### 5\. The design lift)/,
+      /^(?=[\s\S]*### 2\. Ask which reviews to run, then run each one's review mode)(?=[\s\S]*### 5\. The design lift)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
   {
@@ -957,6 +957,17 @@ const COVERAGE = [
       'read result.warnings — the conversion names what it could not do losslessly',
     pattern: /non-empty `warnings`[\s\S]*between two sections/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
+  },
+  // 2026-11-04, the operator: a full review brings back a lot, so after the
+  // audit the operator chooses which groups of domain reviews run, as one
+  // multi-select question, with a plain-text list where the agent has no
+  // such tool (Codex), and every group not chosen named in the report.
+  {
+    feature:
+      'kiss-site-review asks which review groups to run: four, multiSelect, recommended by the audit, a plain-text fallback, not run named',
+    pattern:
+      /^(?=[\s\S]*`multiSelect: true`)(?=[\s\S]*\*\*Content & discovery\*\*)(?=[\s\S]*\*\*Interface & usability\*\*)(?=[\s\S]*\*\*Legal & compliance\*\*)(?=[\s\S]*\*\*Speed & performance\*\*)(?=[\s\S]*`\(Recommended\)` when the audit found)(?=[\s\S]*numbered list in plain text)(?=[\s\S]*\*\*not run, not chosen\*\*)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
 ]
 

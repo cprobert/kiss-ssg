@@ -68,9 +68,33 @@ Group the findings by check. The fix for each, in kiss terms — nearly all of t
 | `consent-records-missing`       | A Google marketing tag with no `config.consent.endpoint`. Google's EU user consent policy asks advertisers to keep a record of each consent; set an endpoint that stores the POSTed choices (a `text/plain` body). The record of the wording shown is the banner hash in a `kiss-ssg aikb` record committed before the banner was deployed                                                                                                                                             |
 | `consent-history-missing`       | The page `config.consent.ui.history` names has no `{{consentRecord}}`, so the settings dialog's "See your consent history" lands on a page with no history. Put `{{consentRecord}}` on it, or point `ui.history` at the page that has it                                                                                                                                                                                                                                               |
 
-### 2. Run each domain skill's review mode
+### 2. Ask which reviews to run, then run each one's review mode
 
-The expertise lives in the domain skills; this skill runs them and merges what they find. **Open each one's `SKILL.md` and run its review mode, on the built site.** The line beside each name below says what it covers, not how to check it: the checks, their thresholds and how to measure them are in the skill. A review that works from these lines alone misses what only the skill's measurement finds, such as focus hidden under a sticky header.
+A full review is long. Once the audit has run, ask the operator which groups of reviews they want, **before opening any domain skill**. Ask once, as one multiple-choice question that allows several answers (`AskUserQuestion` with `multiSelect: true`, when the agent has it), with these four options:
+
+| Option                    | Runs                                                                    |
+| ------------------------- | ----------------------------------------------------------------------- |
+| **Content & discovery**   | `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo` |
+| **Interface & usability** | `kiss-accessibility`, `kiss-front-end`, `kiss-design`                   |
+| **Legal & compliance**    | `kiss-legal-and-privacy`                                                |
+| **Speed & performance**   | `kiss-performance`                                                      |
+
+- **Mark a group `(Recommended)` when the audit found something it owns**, from this table, and say in the option's description what was found ("3 pages share one title"):
+
+  | Group                 | Audit checks it owns                                                                                                                                      |
+  | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Content & discovery   | `title-*`, `description-*`, `og-image-*`, `canonical-missing`, `site-url-local`, `not-found-missing`, `fragment-missing`, `href-hash`, `placeholder-left` |
+  | Interface & usability | `img-alt-missing`, `h1-count`, `heading-skip`, `viewport-zoom-lock`, `favicon-missing`                                                                    |
+  | Legal & compliance    | `privacy-link-missing`, `checkbox-prechecked`, `consent-*`                                                                                                |
+  | Speed & performance   | `img-dimensions-missing`, `img-lcp-lazy`, `fetchpriority-excess`, `font-preload-excess`, `script-blocking`, `cache-headers-unset`                         |
+
+  The audit's own findings are in the report whatever is chosen: this question chooses the domain reviews, not the audit.
+
+- **An answer typed in instead** ("all", "just SEO") is honoured as written. If it is unclear which skills it means, ask again rather than guess.
+- **Without that tool** (Codex, or any agent with no multiple-choice question), put the same four as a numbered list in plain text, say that several numbers can be given, and wait for the answer.
+- **Nothing chosen** means the audit and step 3 alone. Say so, and do not run a domain skill nobody asked for.
+
+The expertise lives in the domain skills; this skill runs them and merges what they find. **For each chosen group, open each skill's `SKILL.md` and run its review mode, on the built site.** The line beside each name below says what it covers, not how to check it: the checks, their thresholds and how to measure them are in the skill. A review that works from these lines alone misses what only the skill's measurement finds, such as focus hidden under a sticky header.
 
 - **[`kiss-accessibility`](../kiss-accessibility/SKILL.md)**: labels, focus, the skip link, the current page, contrast, targets, zoom, motion, content without script.
 - **[`kiss-front-end`](../kiss-front-end/SKILL.md)**: long strings and sideways scroll, the hero height, transitions, hover on touch, `100vw`, lists at 0 and 1, external links.
@@ -79,8 +103,9 @@ The expertise lives in the domain skills; this skill runs them and merges what t
 - **[`kiss-information-architecture`](../kiss-information-architecture/SKILL.md)**: orphan pages, nav labels, one name per concept, depth, where-am-I, breadcrumbs, URLs, tag variants.
 - **[`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md)**: the words, meaning demo and placeholder copy, invented facts, links and buttons, the 404 page, empty states, the line about personal details.
 - **[`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)**: the jurisdiction, the inventory of where personal details go, storage before consent measured in the browser, the privacy notice against the law's list, business details, reviews, image rights, and the owner's handout.
+- **[`kiss-performance`](../kiss-performance/SKILL.md)**: the image seen first, image dimensions and lazy loading, fonts, blocking scripts and stylesheets, third parties, and the cache headers the host sends.
 
-The report names each of these that ran. One that did not is named as not run, never folded into the others.
+The report names every one of these. One that ran says so; one in a group that was not chosen is named as **not run, not chosen**, and one that was chosen but could not run (no browser, say) as **not run** with the reason. Never fold a skill that did not run into the others, and never call a review complete when a group was left out.
 
 Each reports to the same [review protocol](./review-protocol.md) and looks at the site through the same [browser pass](./browser-pass.md), so their rows join one table.
 

@@ -130,6 +130,8 @@ GUIDE.md § Launch-readiness audit (each new id, with its approximation and its 
 
 From the 2026-11-04 consent-dialog-services and 2026-11-02 kiss-legal-and-privacy Feedback. Each snippet run against the engine.
 
+**Amendment 2026-11-04: already done.** All seven were closed by the `{{embed}}` branch (`137e36c`): items 1–6 are `GUIDE.md` § Cookie consent, "Where each piece goes"; item 7's references now read as history with no path. Workstream D has no work.
+
 1. The consent docs say the site's `package.json` needs `"type": "module"`.
 2. The default folders `folders` derives from `src`.
 3. How a page gets its `id`.
