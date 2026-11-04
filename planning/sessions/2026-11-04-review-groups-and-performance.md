@@ -47,6 +47,8 @@ opened: 2026-11-04
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-11-04 — kiss writes cache headers for each host.** The research passes verified nothing on host cache headers, so Claude measured the fleet's live responses (`planning/research/2026-11-04-static-site-performance.md` § Measured). Netlify's default is `max-age=0, must-revalidate` on every asset, two sites cache unhashed images for a year, and only one site's hand-written rules are right, while kiss already knows exactly which files are hashed. The operator chose the engine feature on this branch (Claude's recommendation): kiss writes the host header files beside `redirects.json`, `immutable` for hashed files, revalidation for HTML, a short lifetime for unhashed files. Added criterion: the header files are written, documented in `GUIDE.md`, indexed in `llms.txt`, typed, covered by a unit test seen red, and the fleet's Netlify and Firebase sites build the right headers with the new engine.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
