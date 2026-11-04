@@ -1,6 +1,6 @@
 ---
 name: kiss-front-end
-description: Build and review the markup, CSS and scripts a kiss-ssg site ships — image sizes and lazy loading, platform elements before script, heroes on phones, hover on touch, lists at 0 and 1, embeds. Use for "front-end", "performance", "layout shift", "accordion", "modal", "scrolls sideways on mobile", "add a video", "embed a map", or when writing a layout. Not for accessibility, the look or the words.
+description: Build and review the markup, CSS and scripts a kiss-ssg site ships — platform elements before script, heroes on phones, hover on touch, lists at 0 and 1, embeds, external links. Use for "front-end", "accordion", "modal", "scrolls sideways on mobile", "add a video", "embed a map", or when writing a layout. Not for speed (kiss-performance), accessibility, the look or the words.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -16,7 +16,7 @@ What a page ships should be small, stable and readable by the person who opens i
 
 ## Build mode
 
-- **Every `<img>` has its `width` and `height`**, from the model beside its `src` and `alt`, so the page does not jump as images arrive. Add `loading="lazy"` to images below the first screen, never to the first image a visitor sees.
+- **An image's size, format and loading are [`kiss-performance`](../kiss-performance/SKILL.md)'s.** Open it when a page gains an image, a font or a script.
 - **A full-screen hero is `100svh`**, not `100dvh`, with a `100vh` line first as the fallback (review check 1).
 - **Transitions name their properties**, and never `transition: all` (review check 2). A hover that moves or lifts something goes behind `@media (hover: hover) and (pointer: fine)` (review check 3).
 - **A video, a map or an Instagram post loads only when the visitor asks for it**, never as an iframe in the page. On every kiss site that is `{{embed "youtube" id="…" title="…"}}` (or `vimeo`, `instagram`, or `google-maps` with `src=`; GUIDE.md § Cookie consent, Embeds). kiss writes the notice, its Load button, a link to the provider, and the frame held in a `<template>` until it is pressed, sized for the provider. With no `config.consent` it needs nothing in `<head>` and no banner. Under `config.consent`, declare the service there (`youtube: {}`), and the notice also offers Always allow. Never hand-build a facade or write a bare `<iframe>` from another site: kiss's is tested, the audit can see it, and on a consent site a hand-built one bypasses the stored choice and the cookie table. An embed that loads with the page stores data on the visitor's device before they have agreed to anything. `youtube-nocookie.com` is not storage-free: measured on a real site in a browser (2026-11-02), it wrote `yt-icons-last-purged` and `ytidb::LAST_RESULT_ENTRY_KEY` to `localStorage` as soon as it loaded. Measure a site's own embeds in a browser before calling one clean. Whether the site needs consent, and what its privacy page says about the embed, is [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)'s: open it when a page gains an embed.

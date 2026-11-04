@@ -103,6 +103,7 @@ The expertise lives in the domain skills; this skill runs them and merges what t
 - **[`kiss-information-architecture`](../kiss-information-architecture/SKILL.md)**: orphan pages, nav labels, one name per concept, depth, where-am-I, breadcrumbs, URLs, tag variants.
 - **[`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md)**: the words, meaning demo and placeholder copy, invented facts, links and buttons, the 404 page, empty states, the line about personal details.
 - **[`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)**: the jurisdiction, the inventory of where personal details go, storage before consent measured in the browser, the privacy notice against the law's list, business details, reviews, image rights, and the owner's handout.
+- **[`kiss-performance`](../kiss-performance/SKILL.md)**: the image seen first, image sizes and lazy loading, layout shift, fonts, blocking scripts and stylesheets, third parties, and the cache headers the host sends.
 
 The report names every one of these. One that ran says so; one in a group that was not chosen is named as **not run, not chosen**, and one that was chosen but could not run (no browser, say) as **not run** with the reason. Never fold a skill that did not run into the others, and never call a review complete when a group was left out.
 

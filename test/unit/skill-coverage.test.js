@@ -969,6 +969,29 @@ const COVERAGE = [
       /^(?=[\s\S]*`multiSelect: true`)(?=[\s\S]*\*\*Content & discovery\*\*)(?=[\s\S]*\*\*Interface & usability\*\*)(?=[\s\S]*\*\*Legal & compliance\*\*)(?=[\s\S]*\*\*Speed & performance\*\*)(?=[\s\S]*`\(Recommended\)` when the audit found)(?=[\s\S]*numbered list in plain text)(?=[\s\S]*\*\*not run, not chosen\*\*)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
+  // 2026-11-04: kiss-performance, built from two verified research passes
+  // and the fleet's measured headers (planning/research/). The rules an agent
+  // most often gets backwards: lazy on the first image, an unsized image, a
+  // font service, a blocking script, a year on an unhashed file, and a lab
+  // run reported as the site's verdict.
+  {
+    feature:
+      'kiss-performance: first image never lazy, fetchpriority, sized images, self-hosted fonts, defer, immutable only when hashed, lab is not the verdict',
+    pattern:
+      /^(?=[\s\S]*Never `loading="lazy"` on the first image)(?=[\s\S]*`fetchpriority="high"`)(?=[\s\S]*`width` and `height` on every `<img>`)(?=[\s\S]*\*\*Self-hosted\*\*)(?=[\s\S]*`defer` on every script)(?=[\s\S]*Never `immutable`, or a year, on a file that is not hashed)(?=[\s\S]*lab measurement, never the site's verdict)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  {
+    feature:
+      'the task skills send images, fonts and scripts to kiss-performance',
+    pattern: /\[`kiss-performance`\]\(\.\.\/kiss-performance\/SKILL\.md\)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-review'),
+      skill('kiss-ssg', 'kiss-front-end'),
+    ],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {
@@ -991,6 +1014,16 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-11-04: images, fonts, scripts and caching moved from kiss-front-end to kiss-performance, so speed has one home; a sentence that still sends image sizes or performance to kiss-front-end is the second copy that drifts',
+    patterns: [
+      /Add `loading="lazy"` to images below the first screen, never to the first image a visitor sees/,
+      /\[`kiss-front-end`\][^\n]*`width` and `height` on every image/,
+      /\[`kiss-front-end`\][^\n]*image sizes/,
+      /performance \(kiss-front-end\)/,
+      /Use for "front-end", "performance"/,
+    ],
+  },
   {
     why: '2026-11-04 (the operator): kiss-branch-close opens the pull request as part of the close; a sentence saying it does so only when asked is the instruction that replaced',
     patterns: [
@@ -1481,6 +1514,7 @@ const DOMAIN_SKILLS = [
   'kiss-seo',
   'kiss-accessibility',
   'kiss-front-end',
+  'kiss-performance',
   'kiss-design',
   'kiss-legal-and-privacy',
 ]
