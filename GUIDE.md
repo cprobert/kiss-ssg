@@ -1151,6 +1151,7 @@ kissConsent.has('marketing') // a category is allowed; necessary always is
 kissConsent.has('vimeo') // a service: its category is allowed, or "Always allow"
 kissConsent.has('cdn') // a necessary service: always true
 kissConsent.choice // null, or { id, version, at, categories, services }
+// choice.services holds the "Always allow" grants only; a record's services lists every one
 kissConsent.show() // open the settings dialog
 kissConsent.when('vimeo', () => startPlayer()) // now, or once it is allowed
 kissConsent.on('change', ({ choice, granted }) => console.info(granted))
