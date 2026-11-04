@@ -86,9 +86,9 @@ A full review is long. Once the audit has run, ask the operator which groups of 
   | Content & discovery   | `title-*`, `description-*`, `og-image-*`, `canonical-missing`, `site-url-local`, `not-found-missing`, `fragment-missing`, `href-hash`, `placeholder-left` |
   | Interface & usability | `img-alt-missing`, `h1-count`, `heading-skip`, `viewport-zoom-lock`, `favicon-missing`                                                                    |
   | Legal & compliance    | `privacy-link-missing`, `checkbox-prechecked`, `consent-*`                                                                                                |
-  | Speed & performance   | `img-dimensions-missing`, `img-lcp-lazy`, `fetchpriority-excess`, `font-preload-excess`, `script-blocking`, `cache-headers-unset`                         |
+  | Speed & performance   | `img-dimensions-missing`, `img-first-lazy`, `fetchpriority-excess`, `font-preload-excess`, `script-blocking`, `host-unset`                                |
 
-  The audit's own findings are in the report whatever is chosen: this question chooses the domain reviews, not the audit.
+  `debug-dump`, `stray-file` and `console-log` belong to no group: they are fixed from step 1's table whatever is chosen. The audit's own findings are in the report whatever is chosen: this question chooses the domain reviews, not the audit.
 
 - **An answer typed in instead** ("all", "just SEO") is honoured as written. If it is unclear which skills it means, ask again rather than guess.
 - **Without that tool** (Codex, or any agent with no multiple-choice question), put the same four as a numbered list in plain text, say that several numbers can be given, and wait for the answer.
@@ -103,7 +103,6 @@ The expertise lives in the domain skills; this skill runs them and merges what t
 - **[`kiss-information-architecture`](../kiss-information-architecture/SKILL.md)**: orphan pages, nav labels, one name per concept, depth, where-am-I, breadcrumbs, URLs, tag variants.
 - **[`kiss-writing-for-the-web`](../kiss-writing-for-the-web/SKILL.md)**: the words, meaning demo and placeholder copy, invented facts, links and buttons, the 404 page, empty states, the line about personal details.
 - **[`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)**: the jurisdiction, the inventory of where personal details go, storage before consent measured in the browser, the privacy notice against the law's list, business details, reviews, image rights, and the owner's handout.
-- **[`kiss-performance`](../kiss-performance/SKILL.md)**: the image seen first, image dimensions and lazy loading, fonts, blocking scripts and stylesheets, third parties, and the cache headers the host sends.
 
 The report names every one of these. One that ran says so; one in a group that was not chosen is named as **not run, not chosen**, and one that was chosen but could not run (no browser, say) as **not run** with the reason. Never fold a skill that did not run into the others, and never call a review complete when a group was left out.
 
