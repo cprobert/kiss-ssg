@@ -1069,6 +1069,15 @@ const kiss = new Kiss({
 
 The banner links the page whose id is `cookies`, and a build with no such page fails. Give it `{{consentTable}}`, or set `ui.policy` to the id of the page that explains your cookies (`null` links none).
 
+**Where each piece goes, on a site made by `npx kiss-ssg init`:**
+
+- `consent` is a key of the config in the build script, `router.js`, which is an ES module: `package.json` says `"type": "module"` (§ The build script).
+- The layout is `src/layouts/layout.hbs` and the pages are under `src/pages/`: the default folders, all derived from `folders.src` (the config table under § The build script).
+- A page's id is its view's path under `src/pages` without `.hbs`, so `src/pages/cookies.hbs` is the page `cookies`, which is the default `ui.policy`. Give a page another id with `id` in its `.page()` call (§ .page()).
+- The cookie table and the consent history can share one page: put `{{consentTable}}` and `{{consentRecord}}` on it and set `ui.history` to the same id. The dialog then links `/cookies.html` and `/cookies.html#kiss-consent-history` (measured, 2026-11-04).
+- The links are the page's served URL, which `{{link}}` gives too: `/cookies.html` by default, `/cookies/` under `extensionLess: true`. `links.trailingSlash` changes only a directory index (`/` or `/courses/`), never a page like this one (§ Host URL policy).
+- A helper's hash, and a service's own keys, fill `{placeholder}`s in its URLs, except the keys that are settings. In a service's config those are `preset`, `category`, `label`, `provider`, `description`, `policy`, `src`, `inline`, `partial`, `embed`, `origins`, `cookies`, `storage` and `google`. In a helper's hash they are `src=` (`{{consentScript}}` and `{{embed}}`) and `title=` (`{{embed}}`). Any other key, such as `id` or `key`, is a placeholder value.
+
 #### Services and presets
 
 A service is one thing the site loads: a tag, a script of its own, or an embed. **Its name picks a preset** when kiss has one of that name. A preset fills in the loader URL, the provider, the origins, the cookies it sets and, for a Google tag, Consent Mode. Your own keys win over the preset's, except `origins`, which add to them. Any key that is not a setting is a placeholder value: `id` above fills the `{id}` in the preset's URL. The helper's hash fills it first, so `{{consentScript "gtm" id=gtmId}}` takes the id per page, and a placeholder with no value fails the render (`consentScript "gtm": no value for {id}`).
