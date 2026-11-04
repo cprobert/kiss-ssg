@@ -295,6 +295,37 @@ describe('resolveConsent: services', () => {
   })
 })
 
+// A service's `policy` becomes an href in the dialog and the cookie table
+// (2026-11-04), so it is the provider's own page: an absolute http(s) URL.
+describe("resolveConsent: a service's policy is an http(s) URL or null", () => {
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,x',
+    '/privacy/',
+    'policies.google.com/privacy',
+    ' https://x.example/privacy',
+  ])('refuses %j', (policy) => {
+    expect(() =>
+      resolveConsent({ services: { chat: { category: 'marketing', policy } } }),
+    ).toThrow(
+      /config\.consent\.services\.chat\.policy must be an http\(s\) URL or null/,
+    )
+  })
+
+  it('takes an https URL, and a preset keeps its own', () => {
+    const r = resolveConsent({
+      services: {
+        chat: { category: 'marketing', policy: 'https://chat.example/privacy' },
+        youtube: {},
+      },
+    })
+    expect(r?.services.chat.policy).toBe('https://chat.example/privacy')
+    expect(r?.services.youtube.policy).toBe(
+      'https://policies.google.com/privacy',
+    )
+  })
+})
+
 describe('resolveConsent: refuses settings outside the contract', () => {
   it.each([
     [

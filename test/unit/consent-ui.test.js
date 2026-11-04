@@ -135,7 +135,11 @@ describe('settingsHtml', () => {
       '<h2 id="kiss-consent-dialog-title">Cookie settings</h2>',
     )
     expect(html).toContain('href="/cookies/"')
-    expect(settingsHtml(site())).not.toContain('<a ')
+    // The service lists link providers' policies; the site's own links need
+    // policyUrl and historyUrl.
+    expect(settingsHtml(site())).not.toMatch(
+      /kiss-consent__policy|kiss-consent__history/,
+    )
   })
 
   it('puts the policy and history links in the footer, below the choices', () => {
@@ -148,7 +152,7 @@ describe('settingsHtml', () => {
       withBoth.indexOf('kiss-consent-dialog__foot'),
     )
     const foot = withBoth.slice(withBoth.indexOf('kiss-consent-dialog__foot'))
-    expect(body).not.toContain('<a ')
+    expect(body).not.toMatch(/kiss-consent__policy|kiss-consent__history/)
     expect(foot).toMatch(
       /data-kiss-consent-action="save"[^]*<div class="kiss-consent-dialog__links"><a class="kiss-consent__policy" href="\/cookies\/">Cookie policy<\/a><a class="kiss-consent__history" href="\/privacy\/#kiss-consent-history">See your consent history<\/a><\/div><\/div><\/dialog>$/,
     )
@@ -228,9 +232,37 @@ describe('settingsHtml', () => {
     if (!list) return null
     return {
       label: list[1],
-      items: [...list[2].matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1]),
+      // The text a visitor reads; the policy links are tested on their own.
+      items: [...list[2].matchAll(/<li>(.*?)<\/li>/g)].map((m) =>
+        m[1].replace(/<[^>]*>/g, ''),
+      ),
     }
   }
+
+  it('links the provider to its privacy policy, and leaves one without a policy plain', () => {
+    expect(html).toContain(
+      '<li>YouTube (<a href="https://policies.google.com/privacy">Google</a>)</li>',
+    )
+    expect(html).toContain('<li>Chat (Chatter)</li>')
+  })
+
+  it('escapes a policy URL in the href', () => {
+    const r = resolved({
+      services: {
+        chat: {
+          category: 'marketing',
+          provider: 'Chatter',
+          policy: 'https://chat.example/p?a=1&b="x"',
+        },
+      },
+    })
+    expect(settingsHtml(r)).toContain(
+      '<a href="https://chat.example/p?a=1&amp;b=&quot;x&quot;">Chatter</a>',
+    )
+    expect(tableHtml(r)).toContain(
+      '<a href="https://chat.example/p?a=1&amp;b=&quot;x&quot;">Chatter</a>',
+    )
+  })
 
   it('names every service of a category in use, label (provider) always, in name order (the ICO: name each controller)', () => {
     expect(listed(html, 'kiss-consent-marketing')).toEqual({
@@ -371,6 +403,19 @@ describe('tableHtml', () => {
       ['YouTube', 'yt-icons-last-purged', 'Local storage', 'Third'],
       ['YouTube', 'ytidb::LAST_RESULT_ENTRY_KEY', 'Local storage', 'Third'],
     ])
+  })
+
+  // Cookiebot's declaration links each provider to its privacy policy; kiss
+  // had the URL (`policy`) and showed it nowhere (the operator, 2026-11-04).
+  it('links each provider to its privacy policy, and leaves one without a policy plain', () => {
+    expect(html).toContain(
+      '<td>YouTube</td><td><a href="https://policies.google.com/privacy">Google</a></td>',
+    )
+    expect(html).toContain(
+      '<td>Vimeo</td><td><a href="https://vimeo.com/privacy">Vimeo</a></td>',
+    )
+    expect(html).toContain('<td>Chat</td><td>Chatter</td>')
+    expect(html).toContain('<td>Cookie consent</td><td>This site</td>')
   })
 
   it('gives a service that stores nothing one row named —', () => {

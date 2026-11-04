@@ -9,7 +9,8 @@ The consent settings dialog now names who relies on each choice. Under each cate
 it lists every service in that category as "label (provider)", for example "YouTube (Google)". The
 ICO says consent for categories of third-party companies is not specific enough on its own. The
 dialog's choices now put Accept all first, as the banner does. The cookie policy and consent history
-links move to the dialog's footer, centred under the buttons.
+links move to the dialog's footer, centred under the buttons. Each provider's name, in the dialog
+and in the cookie table, links to that company's own privacy policy when the service has one.
 
 The `kiss-branch-close` skill (in the `kiss-memory` plugin) now opens the pull request when it
 closes a branch, instead of only when asked. When `gh` is missing or signed out, it says so and
@@ -17,7 +18,8 @@ gives the command, and the close still finishes.
 
 ### Upgrading: expect new banner hashes, and a fresh banner on sites with YouTube
 
-Only a site with `config.consent` is affected, and nothing in its code has to change.
+Only a site with `config.consent` is affected. Its code changes only if a service sets a `policy`
+that is not a web address.
 
 - **Every banner hash moves.** The hash is taken over the banner and the dialog, and the dialog now
   holds the service list. With an `endpoint`, records carry the new hashes and
@@ -30,9 +32,12 @@ Only a site with `config.consent` is affected, and nothing in its code has to ch
   notice still names the provider ("hosted by Google"). The default wording now uses a new
   `{service}` placeholder, which holds the service's label. Your own `ui.text` wording with
   `{provider}` works as before.
+- **A service's `policy` must be an `http://` or `https://` URL**, the provider's privacy policy.
+  It is now a link, so anything else fails the build and names the service. Fix it, or remove it to
+  show the provider unlinked.
 - **A new `ui.text` key, `servicesLabel`** ("Services"), is the screen-reader name of each service
   list.
-- **The inline consent CSS grows by 126 bytes**, from 7,078 to 7,204. If you style the dialog yourself, the
+- **The inline consent CSS grows by 173 bytes**, from 7,078 to 7,251. If you style the dialog yourself, the
   links are now in `.kiss-consent-dialog__links` inside `.kiss-consent-dialog__foot`, not in
   `.kiss-consent-dialog__body`.
 

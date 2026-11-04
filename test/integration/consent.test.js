@@ -317,8 +317,10 @@ describe('a consent site, built', () => {
     const before = await hashWith('This site')
     const after = await hashWith('Counter Ltd')
     expect(before.text).toContain('Visit counter (This site)')
-    expect(before.text).toContain('Google Tag Manager (Google)')
-    expect(before.text).toContain('YouTube (Google)')
+    // A linked provider reads "( Google )": the text a hash is taken over
+    // turns every tag into a space, the policy link's included.
+    expect(before.text).toContain('Google Tag Manager ( Google )')
+    expect(before.text).toContain('YouTube ( Google )')
     expect(after.text).toContain('Visit counter (Counter Ltd)')
     expect(after.hash).not.toBe(before.hash)
   })

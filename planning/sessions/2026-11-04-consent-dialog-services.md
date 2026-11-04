@@ -54,6 +54,8 @@ opened: 2026-11-04
   - Version 2.11.2, not the proposed 2.12.0. The operator's reason: "2.11 isn't published yet". npm's newest is 2.9.0, and 2.11.1 was never published.
   - The docs sweep measured that the YouTube provider change moves the purposes `version` of every site using the preset (`b870e36a9103` → `1588eaa503a3`), so their visitors are asked again. The operator accepted the re-ask, the recommendation: the controller named has changed. The upgrade note says so, and that a site can pin `version`.
 
+- **2026-11-04, after the PR opened (the operator):** the provider's privacy policy is linked, in the cookie table's Provider column and in the dialog's lists, as Cookiebot's declaration does. It goes on this PR, not the next branch (the recommendation). The operator's reason: "Same feature, ship together". A service's `policy` becomes an href, so it is now validated as an http(s) URL or null; no fleet site sets one. A linked provider reads "( Google )" in the hashed text, because `textOf` turns tags into spaces, and the hashes move once more before any release. A version line under the cookie table was offered and not chosen.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
