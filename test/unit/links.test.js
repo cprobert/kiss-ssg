@@ -672,6 +672,27 @@ describe('checkLinks', () => {
     expect(result.broken).toEqual([])
   })
 
+  // Codex, at the close (2026-11-05): clamping after a filesystem normalise
+  // let `..` walk into the build folder's real parents and back. From
+  // `srv/site/public`'s home page, `../../site/img/a.png` is a request for
+  // `/site/img/a.png`, not `img/a.png`.
+  it('clamps in URL space, never through the build folder’s own parents', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './srv/site/public/index.html',
+          links: ['../../site/img/a.png', '../../img/a.png'],
+        },
+      ],
+      buildDir: './srv/site/public',
+      manifestTargets: ['img/a.png'],
+      exists: () => false,
+    })
+    expect(result.broken).toEqual([
+      { page: './srv/site/public/index.html', href: '../../site/img/a.png' },
+    ])
+  })
+
   it('still reports a climb above a siteUrl prefix, which leaves the site', () => {
     const result = checkLinks({
       pages: [{ buildTo: './public/index.html', links: ['../img/a.png'] }],
