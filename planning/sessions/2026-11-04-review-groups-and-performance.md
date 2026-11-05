@@ -105,6 +105,14 @@ opened: 2026-11-04
   - **Eyeball: looked.** The operator read `plugins/kiss-ssg/skills/kiss-performance/SKILL.md` end to end: "Looked, it's right".
   - **Offer: kept.** kiss writes no HTML cache rule on any host, Firebase included, whose HTML default is an hour. The operator chose "keep, decide after the preview": add a `no-cache` HTML rule for Firebase only if the deploy preview shows it is still served from the edge.
   - Decision: continue with the measurement (criterion 6), then the clean room (7), then the operator's deploy previews.
+- **2026-11-05**: after minify, purge, the purge-order fix, the template-vs-output comparison, the soundcloud preset, the fleet audit and `kiss-ssg css` (`909ad05`..`14d43f7`).
+  - **Met:** criteria 1–5 and 8. The minify, purge and css Amendments too: every new test was seen red first. `npm test` gives 125 files, 4,101 passed, 7 skipped, exit 0. Example 3 builds (exit 0, audit clean), and its `public/css/site.css` is minified.
+  - **Partial:** criterion 6. The fleet audit (Amendment) replaced the synthetic site, and CLAUDE.md's with/without measurement of the skill is still not run. Also partial: the cache headers, which wait on the operator's deploy previews, and criterion 9, where the gates and the Codex review are the close's.
+  - **Not yet:** criterion 7, the clean room.
+  - Drift: none beyond the recorded Amendments. The surface is still public API. `assets.minify` on by default changes every site's copied CSS/JS bytes and hashes, which the upgrade note must say. A minor is proposed.
+  - **Eyeball: looked.** The operator read the "Where CSS goes" and "Ship less CSS and JS" sections of `kiss-performance/SKILL.md`: "Looked, it's right".
+  - **Offer: kept.** `assets.purge` is skipped under `--dev` (`lib/build-finish.js:541`). Claude's option text said the skill already told agents to check purged pages in a production build; it did not say where. Fixed in the skill on this pulse: open every interactive component "in a production build served from the build folder, because `--dev` skips the purge". The skill tests are green.
+  - Decision: continue with the clean room (7), then the operator's deploy previews, then the close. Criterion 6's with/without run is still open, for the operator to decide at the close.
 
 ---
 
