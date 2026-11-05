@@ -22,5 +22,6 @@ Decide which of a build's own `<script src>` and `<link href>` references, writt
 
 - **Only references the build holds are judged.** A file on another origin, a reference that resolves to nothing (the link scan reports that), or an `integrity` with no usable token is skipped, so the check cannot add a second finding for one cause.
 - **Dev never checks**, because it neither minifies nor purges; nor does a build that has already failed.
+- **Only real elements are scanned.** Comments, and the text inside `script`, `style`, `textarea`, `title` and `noscript`, are removed first (the opening tag is kept), so tag-shaped text a browser never loads cannot fail the build. **Digests compare as bytes**, so the URL-safe base64 spelling a browser accepts matches too. Both came from Codex's review of this module's first version (2026-11-05).
 - **The strongest algorithm decides.** A matching `sha256` beside a wrong `sha512` fails, as it does in a browser.
 - **The check reads the pages back from disk** (the written bytes, not a render in memory), the same source the link scan and the audit read.

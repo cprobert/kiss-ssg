@@ -34,6 +34,23 @@ describe('matchesIntegrity', () => {
     ).toBe(false)
   })
 
+  // Codex on the fix (2026-11-05): a browser accepts the URL-safe alphabet
+  // (`-` and `_` for `+` and `/`), so the digests compare as bytes.
+  it('accepts a digest written in URL-safe base64', () => {
+    // Search for content whose sha384 contains a `+` or `/`, so the
+    // URL-safe spelling really differs.
+    let body = ''
+    let digest = ''
+    for (let i = 0; i < 1000; i++) {
+      body = `x${i}`
+      digest = crypto.createHash('sha384').update(body).digest('base64')
+      if (/[+/]/.test(digest)) break
+    }
+    const urlSafe = digest.replaceAll('+', '-').replaceAll('/', '_')
+    expect(urlSafe).not.toBe(digest)
+    expect(matchesIntegrity(Buffer.from(body), `sha384-${urlSafe}`)).toBe(true)
+  })
+
   it('is null when no token is usable, which a browser ignores', () => {
     expect(matchesIntegrity(Buffer.from(text), 'md5-abc')).toBeNull()
   })
@@ -61,6 +78,27 @@ describe('checkIntegrity', () => {
         `<script src="/js/vendor.js" integrity="${sri('sha384', original)}" crossorigin="anonymous"></script>`,
       ),
     ).toEqual([{ page: 'public/index.html', ref: '/js/vendor.js' }])
+  })
+
+  // Codex on the fix (2026-11-05): tag-shaped text the browser never loads,
+  // in a comment, a script's text, a textarea or a title, is not an element.
+  it('ignores tag-shaped text in comments and raw-text elements', () => {
+    const stale = `<script src="/js/vendor.js" integrity="${sri('sha384', original)}"></script>`
+    expect(
+      run(
+        [
+          `<!-- ${stale} -->`,
+          `<script>document.write('${stale.replaceAll('</', '<\\/')}')</script>`,
+          `<textarea>${stale}</textarea>`,
+          `<title>${stale}</title>`,
+          `<noscript>${stale}</noscript>`,
+        ].join('\n'),
+      ),
+    ).toEqual([])
+    // The real element after them still counts.
+    expect(run(`<!-- note -->\n<p>x</p>\n${stale}`)).toEqual([
+      { page: 'public/index.html', ref: '/js/vendor.js' },
+    ])
   })
 
   it('passes a matching file, a stylesheet link, and ignores third-party and unknown files', () => {
