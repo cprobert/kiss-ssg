@@ -1,6 +1,20 @@
 export function defaultIdForView(view: any): string;
 export function explicitIdOf(options: any): string;
 /**
+ * Whether an explicit id was built from a slug as given rather than as
+ * written: the slug `toSlug` changed (a trailing space, a leading `-`, a
+ * capital), and the id ends in the unchanged one. The id is kept as written,
+ * because a `{{link}}` built from the same data has to keep finding it, so
+ * this only says that the two disagree, as the audit's `id-slug-mismatch`
+ * (diploma-msc, 2026-11-05: seven Orchard slugs). An id that merely differs
+ * from the slug says nothing: `id: 'home'` on `index` is a choice.
+ * @param {string|null} id the explicit id, or `null` for a default one
+ * @param {unknown} given `options.slug` as the page or its controller gave it
+ * @param {string} written the slug the page was written under
+ * @returns {string|null} the finding's detail, or `null`
+ */
+export function idSlugMismatch(id: string | null, given: unknown, written: string): string | null;
+/**
  * @param {any} kiss
  * @param {any} options
  * @param {any} [origin]

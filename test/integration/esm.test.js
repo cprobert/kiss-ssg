@@ -50,6 +50,30 @@ describe('package entry', () => {
     expect(stdout.trim()).toBe('function function')
   })
 
+  // `export { Kiss as 'module.exports' }` makes `require()` return the class
+  // and nothing else, so a named export is reachable from CommonJS only as a
+  // static on the class. Every one of them, not `utils` alone: a CommonJS
+  // build script needs `toSlug` and a redirect writer needs its renderers
+  // (diploma-msc, 2026-11-05).
+  it('reaches every named export from CommonJS, as a static on the class', async () => {
+    site = await makeSite({
+      'use.cjs': [
+        `const Kiss = require(${JSON.stringify(ENTRY)})`,
+        `import(require('node:url').pathToFileURL(${JSON.stringify(ENTRY)}).href).then((esm) => {`,
+        `  const names = Object.keys(esm).filter((n) => n !== 'default' && n !== 'module.exports')`,
+        `  console.log(JSON.stringify({ names, missing: names.filter((n) => Kiss[n] !== esm[n]), slug: Kiss.utils && Kiss.utils.toSlug(' -Malformed slug ') }))`,
+        `})`,
+      ].join('\n'),
+    })
+    const { stdout } = await run(process.execPath, [
+      path.join(site.root, 'use.cjs'),
+    ])
+    const result = JSON.parse(stdout)
+    expect(result.names).toContain('utils')
+    expect(result.missing).toEqual([])
+    expect(result.slug).toBe('malformed-slug')
+  })
+
   it('exposes utils as a named export', () => {
     expect(typeof Kiss).toBe('function')
     expect(utils.toSlug('A B')).toBe('a-b')

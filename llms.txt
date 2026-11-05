@@ -43,7 +43,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
 - `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Partials are `.hbs`, `.md` (Markdown first, so `"` args and `{{>` break it), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
-- Named exports: `utils`, the redirect and cache-header encoders (`renderRedirects`, `renderHeadersBlock`, …) and `splitDocument`/`parseHtml`/`findTag` for converting a single-file page (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
+- Named exports, also statics for `require`: `utils`, the redirect and cache-header encoders (`renderRedirects`, `renderHeadersBlock`, …) and `splitDocument`/`parseHtml`/`findTag` (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
 - Types ship in `types/`: `// @ts-check` plus `/** @type {import('kiss-ssg').KissConfigInput} */` gives a plain-JS site full checking.
 
 ## Config

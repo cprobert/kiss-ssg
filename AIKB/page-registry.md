@@ -30,6 +30,7 @@ that patches one on the instance is seen.
   closure. `stackForRecord(kiss)` — the stack with withdrawn default ids nulled.
 - `scanPages(kiss)`, `logViewStats(kiss)` — the bodies of `scan()` and `viewStats()`.
 - `defaultIdForView(view)`, `explicitIdOf(options)` — pure.
+- `idSlugMismatch(id, given, written)` — pure: the detail of the audit's `id-slug-mismatch`, or `null`. It fires only when `toSlug` changed the slug as given (`given !== written`) **and** the explicit id is that slug or ends in `/<given>`, so it names an id built from the raw slug and nothing else: an id that merely differs from the slug (`id: 'home'` on `index`) is a choice. The id is not rewritten. A `{{link}}` built from the same raw data still resolves against it, and silently changing a page's identity would move its `last-build.json` pairing and a package's learner records. `lib/build-finish.js` `runAudit` calls it for each explicit-id page.
 
 ## Depends on
 
