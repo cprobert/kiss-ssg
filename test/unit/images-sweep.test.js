@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -207,6 +207,35 @@ describe('originals', () => {
       orientation: 1,
       gps: false,
     })
+  })
+
+  it('leaves the original byte-identical when the write fails partway', async () => {
+    // A disk filling up mid-write: the first chunk lands, then the write
+    // throws. The original must survive whole, and no temp file be left.
+    await photo('a/located.jpg', 400, 200, { gps: true })
+    const file = path.join(dir, 'a/located.jpg')
+    const before = fs.readFileSync(file)
+    const real = fs.writeFileSync
+    const spy = vi
+      .spyOn(fs, 'writeFileSync')
+      .mockImplementation((target, data) => {
+        real(target, Buffer.from(data).subarray(0, 10))
+        throw Object.assign(new Error('ENOSPC: no space left on device'), {
+          code: 'ENOSPC',
+        })
+      })
+    try {
+      await expect(
+        rewriteOriginals(
+          findOriginals({ dir: path.join(dir, 'a'), maxWidth: 1920 }),
+          1920,
+        ),
+      ).rejects.toThrow(/ENOSPC/)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(fs.readFileSync(file)).toEqual(before)
+    expect(fs.readdirSync(path.join(dir, 'a'))).toEqual(['located.jpg'])
   })
 
   it('keeps a file whose rewrite would be larger and carried no GPS', async () => {
