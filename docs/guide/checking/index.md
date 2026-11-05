@@ -161,8 +161,16 @@ The checks, by the id `check` carries:
 | `placeholder-left` | a page still carries a `<mark>`, or the bracketed text `[to confirm` |
 | `checkbox-prechecked` | a checkbox is ticked before the reader ticks it, and its label is about marketing (offers, news, newsletters, partners, third parties) |
 | `consent-missing`, `consent-ungated`, `consent-ads-cmp` and five more | a tracker, an embed or an ad tag the consent manager does not hold back, and its settings; [Cookie consent](../consent/#cookie-consent) lists all seven |
+| `img-dimensions-missing` | an `<img>` with no `width` or no `height`, and no inline `aspect-ratio` other than `auto`. One finding per image per page; an image in a `<template>` or an `<svg>` is not read, one in `<noscript>` is. A site that sizes every image in CSS ignores the check, saying so |
+| `img-first-lazy` | an `<img>` that is `loading="lazy"` and `fetchpriority="high"` at once (certain), or the first `<img>` in `<main>` before its first `<h2>` is lazy: that one may be the first image a visitor sees (an approximation, not a measurement) |
+| `fetchpriority-excess`, `font-preload-excess` | more than two elements with `fetchpriority="high"`, or more than two `<link rel="preload" as="font">`: when everything is first, nothing is |
+| `script-blocking` | a `<script src>` in the head (before `</head>` or `<body>`) that runs as a classic script with neither `defer` nor `async`. A module, a consent-gated script and a data block (JSON-LD, speculation rules, an import map) never fire |
+| `host-unset` | once for the site: the build wrote hashed files or has aliases, and neither `host` nor that concern's `format` chose a host file ([Cache headers](../urls/#cache-headers), [Redirects](../urls/#redirects)) |
+| `image-oversized` | a JPEG, PNG, WebP or AVIF in the build over 200 KB that a page's `<img src>` or an `<img>`/`<source>` `srcset` names, once per file per page, the detail naming the file and its size. A CSS background image is not read. The threshold is provisional ([Responsive images](../assets/#responsive-images)) |
+| `image-location-metadata` | a shipped JPEG, PNG, WebP or AVIF whose EXIF GPS block or XMP packet names a latitude or longitude, referenced or not. Strip it from the file in `src/` (`npx kiss-ssg images <script> --write`): the original is still copied, so `{{image}}` alone does not remove it |
+| `img-not-responsive` | an `<img>` with no `srcset`, outside any `<picture>`, whose `src` is a raster in the build: one browsers fetch at one size on every screen. The worklist for moving it to `{{image}}` |
 
-Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the three checks that walk it — `not-found-missing`, `stray-file`, `console-log` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
+Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the five checks that read it — `not-found-missing`, `stray-file`, `console-log`, `image-oversized`, `image-location-metadata` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
 
 **What `fragment-missing` can and cannot see.** It reads the ids in the HTML the build wrote, so it checks a skip link (`<a href="#main">` against `<main id="main">`), an in-page table of contents, and a cross-page `{{link "about"}}#team`, resolved to the page exactly as the link scan resolves its path. It leaves alone what it cannot judge:
 
@@ -222,6 +230,45 @@ Under check, the site's own build log **counts** broken links and audit findings
 Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
 
 `outputs.collisions` lists output paths claimed by multiple producers, their observed `producers` (`{ owner, kind }`), current `winner` (or null), and `refused` owner names. Collisions track active producers and disappear when a conflicting source is removed; page renames do not collide with the previous build. File paths use the configured build-folder spelling in plain, atomic and check builds. They remain advisory: they do not change `ok` or the check exit code. On a discarded check build, the winner describes the last successful writer before disposal. Inline-template owners use compact fingerprint IDs rather than template bodies.
+
+### Measuring speed
+
+`npx kiss-ssg speed <build-folder | url>` measures pages with [Lighthouse (opens in a new tab)](https://developer.chrome.com/docs/lighthouse), so a change can be judged by numbers rather than by eye. Lighthouse is an **optional peer**: kiss installs nothing, and a site that wants the numbers installs it once (it needs Node 22.19 or later, and a Chrome on the machine):
+
+```bash
+npm install -D lighthouse
+npm run build
+npx kiss-ssg speed public --page / --page /blog/ --out speed-before.json
+```
+
+It never builds: build first, then name the folder (`folders.build`, `public/` by default), which it serves as the site root on a free port. A URL is measured as it is, and only a deployed URL shows delivery: the CDN, compression and cache headers. Each page (`--page`, `/` by default) is measured `--runs` times (3 by default, 1–9), each run in a fresh Chrome with Lighthouse's mobile preset and simulated throttling, and the table gives the **median** of each: the performance score, LCP, CLS, TBT, FCP, Speed Index, total bytes and the number of requests, with the score's spread.
+
+`--out <file>` writes those numbers as JSON; `--against <file>` compares this run with an earlier one, page by page, and marks a metric **changed** only when the change is larger than the spread of both runs, so noise is never reported as a gain:
+
+```bash
+npx kiss-ssg speed public --page / --page /blog/ --against speed-before.json
+```
+
+It exits 0 when every page was measured, 1 when a page failed to load or Lighthouse failed, and 2 on a usage error or a missing prerequisite, naming it (`npm install -D lighthouse`, the Node version, or `CHROME_PATH` when no Chrome is found). These are lab numbers from one machine with an empty cache, never the field verdict real visitors give: Search Console's Core Web Vitals report is that. `npx kiss-ssg speed --help` has every option.
+
+### Auditing CSS
+
+`npx kiss-ssg css <build-folder>` reads a built site and says how its CSS is split, the same way every run, with no browser:
+
+```bash
+npm run build
+npx kiss-ssg css public --out css-before.json
+```
+
+-   **Each stylesheet:** its Brotli size, how many pages link it, and how much of it is **removable**: the share of its compressed bytes no linking page uses, measured with the same PurgeCSS run as `assets.purge`.
+-   **Each inline `<style>` block**, and the pages it is on. kiss's own consent CSS (`data-kiss-…`) is left out.
+-   **Four findings:**
+    -   `stylesheet-one-page`: a stylesheet only one page links.
+    -   `inline-style-repeated`: one inline block on two or more pages.
+    -   `rule-duplicated`: an identical rule in two stylesheets.
+    -   `inline-style-blocked-by-csp`: inline CSS on a site whose `_headers` sets a `style-src-elem`, `style-src` or `default-src` without `'unsafe-inline'`. A policy that allows the block by hash or nonce is still reported.
+
+The rule they check: CSS goes where the pages that use it share it. That means the site stylesheet for what most pages use, a stylesheet per page type for one type's own styling, and inline `<style>` for one page's (the `kiss-performance` skill has the reasoning). `--out` writes the whole audit as JSON, byte-identical for the same folder, so a before and an after can be compared. A stylesheet the build links but did not write (one a separate tool produces) is listed as `missing`. Findings are advisory, and the command exits 0. It exits 2 on a usage error.
 
 ## Recording the knowledge base
 

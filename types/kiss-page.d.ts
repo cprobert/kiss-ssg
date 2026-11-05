@@ -77,6 +77,17 @@ export class KissPage {
      * @returns {Promise<void>}
      */
     writeMarkdownCopy(): Promise<void>;
+    /**
+     * Rewrites one string in the bytes this page wrote, and re-derives what
+     * describes those bytes (hash, links, audit facts) from the new ones. The
+     * settle's CSS purge (`lib/css-purge.js`) re-hashes a stylesheet after
+     * every page linked the old name; this is how each page follows it.
+     *
+     * @param {string} from the exact string to replace, a build-relative output
+     * @param {string} to its replacement
+     * @returns {Promise<boolean>} whether the page held `from` and was rewritten
+     */
+    replaceInOutput(from: string, to: string): Promise<boolean>;
     generate(): Promise<string>;
     _getTemplate(view: any): any;
 }

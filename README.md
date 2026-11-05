@@ -54,7 +54,8 @@ _Three sentences and a host name. The agent takes it from there._
 - **[kiss-writing-for-the-web](plugins/kiss-ssg/skills/kiss-writing-for-the-web/SKILL.md) →** The words on every page, written to evidence-based web-writing practice: front-loaded, scannable, plain, with buttons and errors that say what happens. It never invents a fact about the business; a missing price is a visible placeholder.
 - **[kiss-information-architecture](plugins/kiss-ssg/skills/kiss-information-architecture/SKILL.md) →** The pages a site needs, grouped and named in the reader's words, with navigation, breadcrumbs and URLs that show where every page sits, and no page that nothing links to.
 - **[kiss-accessibility](plugins/kiss-ssg/skills/kiss-accessibility/SKILL.md) →** Built and reviewed to WCAG 2.2 AA: labels, a skip link, focus you can see and that no bar hides, targets big enough to hit, text that still fits at 200%.
-- **[kiss-front-end](plugins/kiss-ssg/skills/kiss-front-end/SKILL.md) →** Pages that do not jump or scroll sideways: sized images, the platform's own controls before any script, transitions that name what they move.
+- **[kiss-front-end](plugins/kiss-ssg/skills/kiss-front-end/SKILL.md) →** Pages that do not scroll sideways: the platform's own controls before any script, transitions that name what they move, hover kept off touch screens.
+- **[kiss-performance](plugins/kiss-ssg/skills/kiss-performance/SKILL.md) →** Pages that load fast and stay still: the first image never lazy, every image sized, self-hosted fonts, deferred scripts, and hashed files the host caches for a year.
 - **[kiss-seo](plugins/kiss-ssg/skills/kiss-seo/SKILL.md) →** One purpose per page, a title and description for the person reading the search result, and the right way to keep a page out of search.
 - **[kiss-design](plugins/kiss-ssg/skills/kiss-design/SKILL.md) →** The craft under any look, and a design lift that keeps a site's content, URLs and recorded decisions.
 - **[kiss-legal-and-privacy](plugins/kiss-ssg/skills/kiss-legal-and-privacy/SKILL.md) →** A privacy page written from what the site actually does with people's details, storage measured in a browser before anyone consents, and a one-page list of habits for the owner. Dated UK and EU law, every fact sourced; not legal advice.
@@ -71,8 +72,11 @@ _Whoever opens the site in two years can follow what the agent wrote._
 - **[Markdown copies for agents](GUIDE.md#markdown-copies-for-agents) →** A build that calls `.llms()` gives every page a `.md` beside it, converted from its `<main>`, and `llms.txt` links them, so the next agent reads the site rather than parsing it.
 - **[Learning packages for an LMS](GUIDE.md#learning-packages) →** A page that names a `package` is zipped as an IMS content package or SCORM 1.2 for Moodle or any LMS, with every file it needs and nothing it does not. `{{scormBridge}}` lets a page record answers and completion, and does nothing off the LMS.
 - **[Cookie consent](GUIDE.md#cookie-consent) →** Declare the site's analytics, tags and embeds once in `config.consent`, and kiss makes the banner, the settings dialog, the cookie table, a page where visitors see their own choices, and the gating on every page. Nothing third-party loads until the visitor allows it, Google Consent Mode is set before any Google tag, and withdrawing deletes the site's own declared cookies.
-- **[Click-to-load embeds](GUIDE.md#embeds-embed) →** `{{embed "youtube" id=… title=…}}` puts a YouTube or Vimeo video, a Google map or an Instagram post on a page so that nothing loads from the provider until the visitor presses its button. It works on any site, and a site with one video needs no banner.
+- **[Click-to-load embeds](GUIDE.md#embeds-embed) →** `{{embed "youtube" id=… title=…}}` puts a YouTube or Vimeo video, a Google map, an Instagram post or a SoundCloud track on a page so that nothing loads from the provider until the visitor presses its button. It works on any site, and a site with one video needs no banner.
+- **[Responsive images](GUIDE.md#responsive-images) →** `{{image "img/hero.jpg" alt=… sizes=…}}` serves a photo as AVIF and WebP at the widths the layout needs, turned the right way up and stripped of its location data. Variants are encoded once and kept in a committed cache, so CI and the host copy them; `npx kiss-ssg images` keeps that cache tidy.
 - **[Sass, assets and cache busting](GUIDE.md#assets) →** Styles compile from `src/assets`, an asset is keyed by the name a template asks for, and a content hash or version string is one config key away.
+- **[Smaller CSS and JS](GUIDE.md#minified-assets) →** Every copied stylesheet and script is minified outside dev, on by default, and a framework stylesheet named in `assets.purge` loses every rule no written page uses ([Purged CSS](GUIDE.md#purged-css)).
+- **[Cache headers for the host](GUIDE.md#cache-headers) →** Set `host` to where the site is deployed, and kiss writes the header file that caches every hashed file for a year: `_headers` for Netlify and Cloudflare Pages, a fragment for `firebase.json`.
 
 ## Check every build.
 
@@ -142,7 +146,7 @@ Running `init` in a folder that already has a project is safe: it never overwrit
 </details>
 
 <details>
-<summary><b>Optional: Anthropic's skills for the look, and for a browser</b></summary>
+<summary><b>Optional: Anthropic's skills for the look and for a browser, and Lighthouse for speed numbers</b></summary>
 
 <br/>
 
@@ -170,6 +174,14 @@ With that installed, your agent can open the pages it builds at phone and deskto
 
 What was measured (2026-10-13): in three review runs, agents wrote their own Playwright scripts rather than invoking the skill. The browser was what mattered. One agent with no Playwright at all installed it into a scratch folder and did as well.
 
+**Optional: Lighthouse, for speed numbers.** `npx kiss-ssg speed public` measures a built site with Google's Lighthouse and prints its performance score, LCP, CLS and the rest, as the median of three runs. It can also compare against an earlier run, so a change shows as a before and after. kiss does not install Lighthouse, because it is about 19 MB and needs Node 22.19 or later and a Chrome. Add it to a site that wants the numbers:
+
+```sh
+npm install -D lighthouse
+```
+
+The `kiss-performance` skill measures before its first change and after its last, and offers this install when it is missing. A starter site made by `init` already has the `npm run speed` script.
+
 </details>
 
 ### Prompts to copy
@@ -184,6 +196,7 @@ You don't have to name the skills — each one's description is written so the a
 | Add or change one page                                    | Add a Contact page with our address and opening hours, linked from the nav.                          | `kiss-page-add`                                      |
 | Find out why a build fails                                | The kiss build is failing — run the check and fix what it reports.                                   | `kiss-build-check`                                   |
 | Get a site ready to launch                                | Is this site ready to launch? Review it and show me what's unfinished before fixing anything.        | `kiss-site-review`                                   |
+| Make it faster                                            | Make this site load faster. Measure it before and after, and show me the numbers.                    | `kiss-performance`                                   |
 | Catch up on a site                                        | Catch me up on this site: what it is, how it's built and what bites.                                 | `kiss-site-brief`                                    |
 | Upgrade kiss-ssg                                          | Upgrade this site to the latest kiss-ssg and tell me what changed.                                   | `kiss-site-migrate`                                  |
 | Frame, steer, finish a change                             | Open a branch for … / Pulse this branch / We're done, close the branch. / It's merged, tidy up.      | `kiss-branch-open` / `-pulse` / `-close` / `-merged` |

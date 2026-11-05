@@ -30,6 +30,7 @@ const instance = (build) => ({
   _failures: [],
   _sassFailures: new Map(),
   _assetCopies: new Map(),
+  _copySources: new Set(),
   _restorableAssets: new Map(),
   _assetManifest: createAssetManifest(),
   _outputs: new OutputRegistry(silentLogger),

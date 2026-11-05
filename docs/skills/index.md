@@ -83,7 +83,11 @@ Each holds one area of web expertise. The task skills open them when a job needs
     
 -   #### [kiss-front-end (opens in a new tab)](https://github.com/cprobert/kiss-ssg/blob/main/plugins/kiss-ssg/skills/kiss-front-end/SKILL.md)
     
-    The markup, CSS and scripts the site ships: image sizes, built-in browser features before script, phones, touch, and sideways scrolling.
+    The markup, CSS and scripts the site ships: built-in browser features before script, phones, touch, embeds, and sideways scrolling.
+    
+-   #### [kiss-performance (opens in a new tab)](https://github.com/cprobert/kiss-ssg/blob/main/plugins/kiss-ssg/skills/kiss-performance/SKILL.md)
+    
+    How fast a page loads and how still it stays: the first image, sized and lazy images, fonts, scripts, third parties and the cache headers the host sends, measured with Lighthouse before and after.
     
 -   #### [kiss-design (opens in a new tab)](https://github.com/cprobert/kiss-ssg/blob/main/plugins/kiss-ssg/skills/kiss-design/SKILL.md)
     

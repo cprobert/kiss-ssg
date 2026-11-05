@@ -36,7 +36,7 @@ It writes no markup and runs nothing in a browser. The gated tags are `lib/conse
 - **`originOf(url)`** and **`matchesHost(url, list)`** → URL helpers for the audit.
 - **Frozen tables:**
   - `CATEGORY_NAMES`, `CONSENT_TYPES`;
-  - `PRESETS` (gtm, gtag, youtube, vimeo, google-maps, instagram);
+  - `PRESETS` (gtm, gtag, youtube, vimeo, google-maps, instagram, soundcloud; soundcloud's origins measured 2026-11-04, nothing stored logged out);
   - `STORAGE_KINDS` (a storage item's `kind`, as the cookie table names it);
   - `TRACKER_ORIGINS`, `ADS_CMP_SIGNATURES`;
   - the `DEFAULT_*` blocks.

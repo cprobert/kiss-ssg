@@ -29,6 +29,14 @@ export function createAssetManifest(): {
     previous(owner: string, name: string): string | null;
     reconcile(owner: any, current: any): any[];
     lookup(urlPath: any): any;
+    /** Point a name at a new output after the copy: a stylesheet purged at
+     * the settle (`lib/css-purge.js`) is re-hashed, so its name moves. Every
+     * copy that mapped the name to the old output follows it, so the next
+     * reconcile deletes the old file rather than keeping it.
+     * @param {string} name the path a template writes
+     * @param {string} output the new build-relative output
+     */
+    retarget(name: string, output: string): void;
     toObject(): any;
 };
 export const HASH_LENGTH: 8;

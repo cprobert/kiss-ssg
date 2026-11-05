@@ -71,8 +71,9 @@ const CONSENT = consentOf({
 })
 
 describe('the consent checks are appended to CHECKS, in order', () => {
-  it('ends with the eight', () => {
-    expect(CHECKS.slice(-8)).toEqual([
+  it('are the eight, in order', () => {
+    const first = CHECKS.indexOf('consent-missing')
+    expect(CHECKS.slice(first, first + 8)).toEqual([
       'consent-missing',
       'consent-ungated',
       'consent-ads-cmp',

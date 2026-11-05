@@ -12,6 +12,14 @@ import {
 } from '../../lib/config.js'
 import { CHECKS } from '../../lib/audit.js'
 
+// `{{image}}`'s recipe as `resolveConfig({})` fills it in (`lib/images.js`).
+const DEFAULT_IMAGES_RESOLVED = {
+  widths: [480, 960, 1440, 1920],
+  formats: ['avif', 'webp'],
+  quality: { avif: 50, webp: 75, jpeg: 80 },
+  cache: '.kiss-cache/images',
+}
+
 it('names a working-directory inspection failure without blaming folders.src', () => {
   const realpath = vi
     .spyOn(fs.realpathSync, 'native')
@@ -25,6 +33,35 @@ it('names a working-directory inspection failure without blaming folders.src', (
   } finally {
     realpath.mockRestore()
   }
+})
+
+describe('assets.images.cache', () => {
+  // `kiss-ssg images` prunes the cache folder, so it has to be a folder of its
+  // own: never the project, never a folder kiss reads or writes for the site.
+  it.each([
+    ['.', /project root/],
+    ['./', /project root/],
+    ['src', /overlaps folders\./],
+    ['src/assets', /folders\.assets/],
+    ['src/assets/cache', /folders\.assets/],
+    ['public', /folders\.build/],
+    ['public/img-cache', /folders\.build/],
+  ])('refuses %s', (cache, message) => {
+    expect(() => resolveConfig({ assets: { images: { cache } } })).toThrow(
+      message,
+    )
+  })
+
+  it('takes a dedicated folder, and false', () => {
+    expect(
+      resolveConfig({ assets: { images: { cache: '.cache/img' } } }).assets
+        .images.cache,
+    ).toBe('.cache/img')
+    expect(
+      resolveConfig({ assets: { images: { cache: false } } }).assets.images
+        .cache,
+    ).toBe(false)
+  })
 })
 
 describe('resolveFolders', () => {
@@ -109,10 +146,13 @@ describe('resolveConfig', () => {
     })
   })
 
-  it('defaults the assets block: no cache busting, no pipeline', () => {
+  it('defaults the assets block: no cache busting, minified, nothing purged, no pipeline', () => {
     expect(resolveConfig({}).assets).toEqual({
       hash: false,
       version: null,
+      minify: true,
+      purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline: [],
     })
   })
@@ -121,13 +161,38 @@ describe('resolveConfig', () => {
     expect(resolveConfig({ assets: { version: '1.2.3' } }).assets).toEqual({
       hash: false,
       version: '1.2.3',
+      minify: true,
+      purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline: [],
     })
     expect(resolveConfig({ assets: { hash: true } }).assets).toEqual({
       hash: true,
       version: null,
+      minify: true,
+      purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline: [],
     })
+  })
+
+  it('resolves assets.purge, and refuses one with no files', () => {
+    expect(
+      resolveConfig({ assets: { purge: { files: ['css/b.css'] } } }).assets
+        .purge,
+    ).toEqual({ files: ['css/b.css'], safelist: [], scripts: true })
+    expect(() => resolveConfig({ assets: { purge: { files: [] } } })).toThrow(
+      /config\.assets\.purge\.files must be a non-empty list/,
+    )
+  })
+
+  it('takes assets.minify: false, and refuses anything but a boolean', () => {
+    expect(resolveConfig({ assets: { minify: false } }).assets.minify).toBe(
+      false,
+    )
+    expect(() => resolveConfig({ assets: { minify: 'yes' } })).toThrow(
+      /config\.assets\.minify must be true or false/,
+    )
   })
 
   it('defaults the links block: the broken-link scan is on', () => {
@@ -407,6 +472,9 @@ describe('resolveConfig', () => {
     expect(resolveConfig({ assets: { pipeline } }).assets).toEqual({
       hash: false,
       version: null,
+      minify: true,
+      purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline,
     })
   })
@@ -523,6 +591,64 @@ describe('resolveConfig', () => {
 
   it('resolves no static folder', () => {
     expect(resolveConfig({}).folders).not.toHaveProperty('static')
+  })
+})
+
+describe('host', () => {
+  it('is null by default, and leaves both formats null', () => {
+    const config = resolveConfig({})
+    expect(config.host).toBeNull()
+    expect(config.redirects.format).toBeNull()
+    expect(config.cacheHeaders.format).toBeNull()
+  })
+
+  it('sets each concern the site left unset', () => {
+    const config = resolveConfig({ host: 'netlify' })
+    expect(config.host).toEqual(['netlify'])
+    expect(config.redirects.format).toEqual(['netlify'])
+    expect(config.cacheHeaders.format).toEqual(['netlify'])
+  })
+
+  it('takes a list, in order, without repeats', () => {
+    const config = resolveConfig({ host: ['firebase', 'netlify', 'firebase'] })
+    expect(config.host).toEqual(['firebase', 'netlify'])
+    expect(config.redirects.format).toEqual(['firebase', 'netlify'])
+    expect(config.cacheHeaders.format).toEqual(['firebase', 'netlify'])
+  })
+
+  it("never overrides a format the site set itself, so 'none' keeps netlify.toml in charge", () => {
+    const config = resolveConfig({
+      host: 'netlify',
+      cacheHeaders: { format: 'none' },
+      redirects: { format: 'htaccess' },
+    })
+    expect(config.cacheHeaders.format).toBe('none')
+    expect(config.redirects.format).toBe('htaccess')
+  })
+
+  it("derives a decided nothing for 'github-pages', and no cache headers for 'vercel'", () => {
+    const pages = resolveConfig({ host: 'github-pages' })
+    expect(pages.redirects.format).toEqual(['none'])
+    expect(pages.cacheHeaders.format).toEqual(['none'])
+    const vercel = resolveConfig({ host: 'vercel' })
+    expect(vercel.redirects.format).toEqual(['vercel'])
+    expect(vercel.cacheHeaders.format).toEqual([])
+  })
+
+  it('refuses a host it does not know, naming every one it does', () => {
+    expect(() => resolveConfig({ host: 'netlfy' })).toThrow(
+      /config\.host must be one of 'netlify', 'cloudflare', 'firebase', 'vercel', 'github-pages'.*"netlfy"/,
+    )
+  })
+
+  it('never touches links.trailingSlash', () => {
+    expect(resolveConfig({ host: 'firebase' }).links.trailingSlash).toBe(true)
+  })
+
+  it('refuses a cache-header format it does not know', () => {
+    expect(() => resolveConfig({ cacheHeaders: { format: 'vercel' } })).toThrow(
+      /config\.cacheHeaders\.format must be one of/,
+    )
   })
 })
 

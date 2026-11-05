@@ -5,5 +5,6 @@ export function runRebuildQueue(kiss: any): any;
 export function rebuildEntries(kiss: any, entries: any): Promise<void>;
 export function handleChange(kiss: any, event: any, changedPath: any): any;
 export function startWatching(kiss: any, entry: any): void;
+export function imagePagesFor(kiss: any, assets: any): any;
 export function builtAssetPath(kiss: any, changed: any): string;
 export function reload(kiss: any, changed?: string): void;

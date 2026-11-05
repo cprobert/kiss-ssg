@@ -4,9 +4,9 @@
 
 This file is the index: what exists, the shape to follow, and the traps nothing reports. Every rule's full statement is in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line below names. Read the section before relying on a behaviour this file only names.
 
-Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `Kiss` instance per build folder, built with `new Kiss(config)` and driven by a chainable API. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict. `config` is in every view as `this.config`.
+Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `Kiss` instance per build folder, built with `new Kiss(config)` and driven by a chainable API. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict.
 
-**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-design`, `kiss-legal-and-privacy`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands for Claude Code and Codex; a declaration alone installs nothing. Offer them to the site's owner before building without them.
+**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-performance`, `kiss-design`, `kiss-legal-and-privacy`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands for Claude Code and Codex; a declaration alone installs nothing. Offer them to the site's owner before building without them.
 
 ## The build script
 
@@ -25,7 +25,6 @@ Keep build-script modules out of `src`: a module in an unrecognised folder under
 - **Never invent a fact about the business:** mark what is missing.
 - **`npx kiss-ssg check <script> --summary` is the bar, and the bar is zero broken links.**
 - **Record the knowledge base when work closes** (`npx kiss-ssg aikb <script>`), commit it, and write `AIKB/site.md`'s retired-feedback entries while you remember why.
-- **Read one example's page and its layout together** (`examples/4-layouts-and-partials/src/`).
 
 ## API
 
@@ -36,7 +35,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.scan()`: `.page()` for every unregistered `.hbs` under `folders.pages`.
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
 - `.complete(callback)`: resolves when everything is written; rejects with an `AggregateError` (`err.failures`, `err.report`) on any failed page, controller, callback, Sass file, pipeline step or redirects write. A chain without it exits 0 on a broken build.
-- `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit`, `thirdParty` and more). GUIDE.md § Checking a build has the shape.
+- `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `audit` and more). GUIDE.md § Checking a build has the shape.
 - `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
 - Learning packages: pages with `package: '<slug>'` zip into an IMS content package or SCORM 1.2 (`config.packages`). Give each an `id`: the LMS keeps learners' records by it. GUIDE.md § Learning packages; `examples/13-course-packages`.
 - Cookie consent: declare every service that stores anything in `config.consent`, and gate it with the consent helpers below. Trap: a gated script never sees `DOMContentLoaded`; site code that loads a third party itself waits with `window.kissConsent.when(name, fn)`. The build writes `kiss-consent.<hash>.js` (the cached client, which the inline part loads), and with an `endpoint` `consent-banners.json`. GUIDE.md § Cookie consent; `examples/14-consent`.
@@ -44,7 +43,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
 - `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Partials are `.hbs`, `.md` (Markdown first, so `"` args and `{{>` break it), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
-- Named exports: `utils`, the redirect encoders (`renderRedirects`, `renderFirebaseRedirects`, …) and `splitDocument`/`parseHtml`/`findTag` for converting a single-file page (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
+- Named exports: `utils`, the redirect and cache-header encoders (`renderRedirects`, `renderHeadersBlock`, …) and `splitDocument`/`parseHtml`/`findTag` for converting a single-file page (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
 - Types ship in `types/`: `// @ts-check` plus `/** @type {import('kiss-ssg').KissConfigInput} */` gives a plain-JS site full checking.
 
 ## Config
@@ -55,15 +54,18 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
 {
   dev: false,
   verbose: false,
-  cleanBuild: true,     // true empties folders.build in the constructor | false | 'atomic'
+  cleanBuild: true,     // true empties folders.build first | false | 'atomic'
   extensionLess: false, // true: <path>/<slug>/index.html
   siteUrl: undefined,   // needed by sitemap, llms, feed, robots, canonical, absUrl
   sass: { includePaths: [] },
   fetch: { headers: {}, timeout: 10000, retries: 0, cache: false },
-  assets: { hash: false, version: null, pipeline: [] },
+  assets: { hash: false, version: null, minify: true, purge: null, pipeline: [],
+    images: { widths: [480, 960, 1440, 1920], formats: ['avif', 'webp'], quality: { avif: 50, webp: 75, jpeg: 80 }, cache: '.kiss-cache/images' } },
   markdown: { html: true, xhtmlOut: true, breaks: false },
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
-  redirects: { format: null }, // 'netlify' | 'firebase' | 'vercel' | 'htaccess' | fn | an array
+  host: null, // 'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages' | a list
+  redirects: { format: null }, // null: follows host
+  cacheHeaders: { format: null }, // null: follows host
   audit: { check: true, ignore: [], privacyPage: null },
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
@@ -86,12 +88,12 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
 }
 ```
 
-Each key's prose is in GUIDE.md: § Cleaning the build folder (`cleanBuild`), § Building more than one site from one source tree, § Remote models (`fetch`), § Assets (`assets`, `pipeline`), § Markdown options, § Host URL policy (`links.trailingSlash`, `redirects.format`), § Redirects, § Checking a build (`links`, `audit`).
+Each key's prose is in GUIDE.md: § Cleaning the build folder, § Building more than one site from one source tree, § Remote models, § Assets, § Markdown options, § Host URL policy, § Redirects, § Cache headers, § Checking a build.
 
 ## Traps nothing reports
 
 - `cleanBuild: true` empties the build folder **before** anything renders, so a failed build leaves it empty. Use `'atomic'` for published output. A `dev` run writes a dev build into `folders.build`, so point dev at a git-ignored folder if that folder is published.
-- `links.trailingSlash` and `redirects.format` are statements about your host, not defaults kiss can get right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `format` names one.
+- `links.trailingSlash` and `host` are statements about your host, not defaults kiss can get right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `host` (or a `format`) names one. kiss marks only hashed files `immutable`; never give an unhashed one a year.
 - `{{asset}}` renders **no leading slash**: write `href="/{{asset "css/site.css"}}"`. `{{root}}` is a value your page supplies, not a helper.
 - `{{#isActive this href="/about"}}{{active}}{{/isActive}}`: the positional argument is the page context (`this`, or `..` in an `{{#each}}`), and the block **always** renders, so the match is `{{active}}`.
 - A pipeline step writes into your assets folder, so the copy claims and hashes it. One that can only write into the build folder lists those files in its `outputs` (`['img/icons.svg']`): kiss deletes them first, checks them after, claims them for `{{asset}}` and packages, and never hashes them.
@@ -112,10 +114,11 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `canonical`: the page's absolute URL, the same string as its `<loc>`.
 - `absUrl`: `siteUrl` joined to a path, extension kept.
 - `asset`: the emitted path under `config.assets` (hash or `?v=`); fails the build on a file not emitted.
+- `image`: a raster asset as a responsive `<picture>`; `alt=` and `sizes=` required. Trap: commit `.kiss-cache/images` (`npx kiss-ssg images <script>`), or every deploy re-encodes.
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
 - `scormBridge`: in `<head>`, gives a package page `window.kissScorm`. Trap: the page reports its own completion (`kissScorm.status('completed')`); `complete="seen"` on a bookmarking page makes Moodle reopen it in review mode, saving nothing.
-- `embed`: a click-to-load video, map or post (youtube, vimeo, google-maps, instagram), on any site; `title=` required.
+- `embed`: a click-to-load player, map or post (youtube, vimeo, google-maps, instagram, soundcloud), any site; `title=` required.
 - `consentHead`: in `<head>` after `<meta charset>`, before any script; needs `config.consent`.
 - `consentBanner`: first in `<body>`; the default banner, or the site's `consent-banner` partial.
 - `consentScript`: a service's scripts, held back until allowed (`{{consentScript "gtm" id=…}}`, or a block).
@@ -127,15 +130,14 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 ## Checking a build
 
-`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code; build the audit's checks in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. Every flag: `npx kiss-ssg --help`. GUIDE.md § Checking a build (the report, the audit, `KISS_*` variables), § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell.
+`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code; build the audit's checks in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. GUIDE.md § Checking a build, § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell. `speed <build-folder>` gives Lighthouse KPIs (after `npm install -D lighthouse`), `css <build-folder>` audits where CSS goes: GUIDE.md § Measuring speed, § Auditing CSS.
 
 `npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed (not a link, and pinned in package.json and the lockfile), and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
 
 ## Docs
 
-- [README.md](README.md): the agent quick start: `init`, the plugin install, prompts to copy.
+- [README.md](README.md): the agent quick start.
 - [GUIDE.md](GUIDE.md): the full reference, including § Migrating from v1.
-- [examples/](examples/): runnable sites, each run from inside its own folder (`node router.js`, `--dev` for a preview). `examples/README.md` says what each shows and which are whole sites to copy by shape.
-- [types/](types/): TypeScript declarations generated from the JSDoc in `lib/`.
-- [CHANGELOG.md](CHANGELOG.md): what changed between the version a site was written against and this one.
+- [examples/](examples/): runnable sites; `examples/README.md` says what each shows.
+- [CHANGELOG.md](CHANGELOG.md): what changed in each version.
 - [AIKB/](AIKB/): per-module engine notes.

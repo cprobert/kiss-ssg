@@ -986,6 +986,13 @@ describe('origins and signatures', () => {
     expect(
       matchesHost('https://www.google.com/maps/embed?pb=1', TRACKER_ORIGINS),
     ).toBe(true)
+    // The fleet audit's slowest page: a bare SoundCloud player (2026-11-04).
+    expect(
+      matchesHost(
+        'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1',
+        TRACKER_ORIGINS,
+      ),
+    ).toBe(true)
     expect(matchesHost('https://www.google.com/search', TRACKER_ORIGINS)).toBe(
       false,
     )

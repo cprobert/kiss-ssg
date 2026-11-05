@@ -536,9 +536,9 @@ const COVERAGE = [
   },
   {
     feature:
-      'the protocol: legal P1 examples, the three privacy checks above P2, the accepted-risk record',
+      'the protocol: legal P1 examples, every audit check that is a WCAG failure or a legal duty at P1 (2026-11-05 clean room: missing alt was ranked P2), the accepted-risk record',
     pattern:
-      /^(?=[\s\S]*storage before consent)(?=[\s\S]*except `privacy-link-missing`, `checkbox-prechecked` and `placeholder-left`)(?=[\s\S]*## Accepted risks)/,
+      /^(?=[\s\S]*storage before consent)(?=[\s\S]*are P1 by the rule above: `img-alt-missing`, `viewport-zoom-lock`, `privacy-link-missing`, `checkbox-prechecked`, `placeholder-left` and every `consent-\*`)(?=[\s\S]*## Accepted risks)/,
     skills: [REVIEW_PROTOCOL],
   },
   // 2026-10-20, the six-repo design-skill evaluation: the lessons taken in, not
@@ -596,7 +596,7 @@ const COVERAGE = [
   {
     feature: 'the review runs the domain reviews, then offers the design lift',
     pattern:
-      /^(?=[\s\S]*### 2\. Run each domain skill's review mode)(?=[\s\S]*### 5\. The design lift)/,
+      /^(?=[\s\S]*### 2\. Ask which reviews to run, then run each one's review mode)(?=[\s\S]*### 5\. The design lift)/,
     skills: [skill('kiss-ssg', 'kiss-site-review')],
   },
   {
@@ -958,6 +958,136 @@ const COVERAGE = [
     pattern: /non-empty `warnings`[\s\S]*between two sections/,
     skills: [skill('kiss-ssg', 'kiss-site-import')],
   },
+  // 2026-11-04, the operator: a full review brings back a lot, so after the
+  // audit the operator chooses which groups of domain reviews run, as one
+  // multi-select question, with a plain-text list where the agent has no
+  // such tool (Codex), and every group not chosen named in the report.
+  {
+    feature:
+      'kiss-site-review asks which review groups to run: four, multiSelect, recommended by the audit, a plain-text fallback, not run named',
+    pattern:
+      /^(?=[\s\S]*`multiSelect: true`)(?=[\s\S]*\*\*Content & discovery\*\*)(?=[\s\S]*\*\*Interface & usability\*\*)(?=[\s\S]*\*\*Legal & compliance\*\*)(?=[\s\S]*\*\*Speed & performance\*\*)(?=[\s\S]*`\(Recommended\)` when the audit found)(?=[\s\S]*numbered list in plain text)(?=[\s\S]*\*\*not run, not chosen\*\*)/,
+    skills: [skill('kiss-ssg', 'kiss-site-review')],
+  },
+  // 2026-11-04: kiss-performance, built from two verified research passes
+  // and the fleet's measured headers (planning/research/). The rules an agent
+  // most often gets backwards: lazy on the first image, an unsized image, a
+  // font service, a blocking script, a year on an unhashed file, and a lab
+  // run reported as the site's verdict.
+  {
+    feature:
+      'kiss-performance: first image never lazy, fetchpriority, sized images, self-hosted fonts, defer, immutable only when hashed, lab is not the verdict',
+    pattern:
+      /^(?=[\s\S]*Never `loading="lazy"` on the first image)(?=[\s\S]*`fetchpriority="high"`)(?=[\s\S]*`width` and `height` on every other `<img>`)(?=[\s\S]*\*\*Self-hosted\*\*)(?=[\s\S]*`defer` on every script)(?=[\s\S]*Never `immutable`, or a year, on a file that is not hashed)(?=[\s\S]*lab measurement, never the site's verdict)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  // 2026-11-04, the operator: run Lighthouse before any edit and after, so
+  // the skill yields measurable KPIs. kiss-ssg speed takes a build folder,
+  // never a script, and Lighthouse is installed only when the owner agrees.
+  {
+    feature:
+      'kiss-performance measures with kiss-ssg speed before the first edit and --against it after the last',
+    pattern:
+      /^(?=[\s\S]*## Measure first, and last)(?=[\s\S]*npx kiss-ssg speed public[^\n]*--out )(?=[\s\S]*npx kiss-ssg speed public[^\n]*--against )(?=[\s\S]*ask the owner before installing it)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  // 2026-11-04, the operator: the skill is about bundling, minification and
+  // tree shaking as much as images and caching, and a skill states the best
+  // practice whether or not kiss does it itself. Measured: Bootstrap's CSS
+  // 94% unused; PurgeCSS 13.4 KB → 3.4 KB br; one lodash function 3.4 KB.
+  {
+    feature:
+      'kiss-performance: kiss minifies; purge a framework with assets.purge; the platform before a library; bundle for the import chain; recipes linked',
+    pattern:
+      /^(?=[\s\S]*### Ship less CSS and JS)(?=[\s\S]*\*\*Minifying is kiss's\.\*\*)(?=[\s\S]*\*\*A framework stylesheet copied whole is purged\*\* with `assets: \{ purge:)(?=[\s\S]*\*\*A library is the last resort\.\*\*)(?=[\s\S]*\*\*Bundle for the import chain, not the request count\.\*\*)(?=[\s\S]*\[the pipeline recipes\]\(references\/pipeline-recipes\.md\))/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  {
+    feature:
+      'the recipes: assets.purge with a safelist and the open-every-component check, esbuild with no --minify',
+    pattern:
+      /^(?=[\s\S]*purge: \{\n\s*files: \['css\/bootstrap\.css'\])(?=[\s\S]*safelist:)(?=[\s\S]*\*\*Open every interactive component in the browser after turning this on\.\*\*)(?=[\s\S]*npx esbuild src\/scripts\/main\.js --bundle --format=esm)(?=[\s\S]*No `--minify` needed)/,
+    skills: [
+      'plugins/kiss-ssg/skills/kiss-performance/references/pipeline-recipes.md',
+    ],
+  },
+  // 2026-11-05, the operator: fonts self-hosted through Fontsource, which
+  // gives a font service's per-script split without the third party. Run as
+  // written through a kiss build and loaded in Chromium: one Latin file
+  // downloaded, 'Inter Variable' in use, the Capsize fallback loaded.
+  {
+    feature:
+      'kiss-performance: fonts self-hosted via Fontsource, system stack, variable for 3+ weights, Capsize fallback, recipes linked',
+    pattern:
+      /^(?=[\s\S]*### Fonts)(?=[\s\S]*\[the font recipes\]\(references\/fonts\.md\))(?=[\s\S]*Fontsource package, copied into a folder named with the package version)(?=[\s\S]*\*\*A system font stack when the design allows it\*\*)(?=[\s\S]*three or more weights is one variable font)(?=[\s\S]*generated by Capsize, never guessed)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  {
+    feature:
+      'the font recipes: Fontsource files copied into a versioned folder, @font-face per script, a site _headers rule, Capsize createFontStack',
+    pattern:
+      /^(?=[\s\S]*npm install @fontsource-variable\/inter)(?=[\s\S]*'\.\/node_modules\/@fontsource-variable\/inter\/files',\n\s*'\.\/public\/fonts\/inter-5\.3\.0')(?=[\s\S]*unicode-range:)(?=[\s\S]*Do not link the package's own `index\.css`)(?=[\s\S]*\/fonts\/\*\n\s*Cache-Control: public, max-age=31536000, immutable)(?=[\s\S]*createFontStack\(\[inter, arial\]\))/,
+    skills: ['plugins/kiss-ssg/skills/kiss-performance/references/fonts.md'],
+  },
+  // 2026-11-05, the operator: images are kiss's to encode, through {{image}}
+  // at build time into a committed cache, with `kiss-ssg images` as the
+  // sweep. Measured on a fleet photo: 504 KB original, 4.9 KB 480 px AVIF.
+  {
+    feature:
+      'kiss-performance: a photo is {{image}}, eager=true for the first, sizes from the CSS, the committed cache and the images sweep, recipes linked',
+    pattern:
+      /^(?=[\s\S]*\*\*A photo is `\{\{image\}\}`\*\*)(?=[\s\S]*\[the image recipes\]\(references\/images\.md\))(?=[\s\S]*`eager=true` does both)(?=[\s\S]*\*\*`sizes` says how wide the image shows\*\*)(?=[\s\S]*`\.kiss-cache\/images`, which the site commits)(?=[\s\S]*npx kiss-ssg images router\.js)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  // 2026-11-05, the operator: the research's top recommendations checked
+  // against the skill. Redirects and the back/forward cache were missing
+  // (verified at web.dev's optimize-ttfb and bfcache articles), and so were
+  // domain sharding and modulepreload (research pass 1 and 3).
+  {
+    feature:
+      'kiss-performance: no redirect on the way to a page, the back/forward cache (no unload, no no-store) with its browser check, no domain sharding, modulepreload',
+    pattern:
+      /^(?=[\s\S]*\*\*No redirect on the way to a page\.\*\*)(?=[\s\S]*\*\*Keep the back\/forward cache working\*\*)(?=[\s\S]*Never an `unload` listener)(?=[\s\S]*`Cache-Control: no-store`)(?=[\s\S]*Back\/forward cache → Run test)(?=[\s\S]*domain sharding)(?=[\s\S]*rel="modulepreload")/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  // 2026-11-05, the operator: CSS sprites asked about. A shared icon set is
+  // one SVG of <symbol>s drawn in currentColor (measured in Chromium: an
+  // external same-origin sprite renders and takes the text colour); never a
+  // raster CSS sprite or an icon font.
+  {
+    feature:
+      'kiss-performance: an icon set is one SVG <symbol> sprite in currentColor, same origin; never a raster CSS sprite or an icon font',
+    pattern:
+      /^(?=[\s\S]*\*\*A set of icons used on most pages is one SVG of `<symbol>`s\*\*)(?=[\s\S]*fill="currentColor")(?=[\s\S]*<use href=)(?=[\s\S]*Never a CSS sprite of raster images)(?=[\s\S]*never an icon font)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  {
+    feature:
+      'the image recipes: which images, alt and sizes required, eager once, commit the cache, the sweep then --write after asking, img-not-responsive one at a time',
+    pattern:
+      /^(?=[\s\S]*## Which images)(?=[\s\S]*\*\*`sizes`\*\* is required)(?=[\s\S]*\*\*`eager=true`\*\* on the first image a visitor sees, and on no other)(?=[\s\S]*## Commit the cache)(?=[\s\S]*npx kiss-ssg images router\.js --write)(?=[\s\S]*show the list to the owner)(?=[\s\S]*one image at a time, never by search and replace)/,
+    skills: ['plugins/kiss-ssg/skills/kiss-performance/references/images.md'],
+  },
+  // 2026-11-05, the operator: a CSS partitioning strategy (site, page type,
+  // inline for one page), audited the same way every time by kiss-ssg css.
+  {
+    feature:
+      'kiss-performance: CSS in three tiers by who uses it, never a one-page stylesheet, the CSP caveat, audited by kiss-ssg css',
+    pattern:
+      /^(?=[\s\S]*### Where CSS goes)(?=[\s\S]*\*\*The site stylesheet\*\*)(?=[\s\S]*\*\*A stylesheet per page type\*\*)(?=[\s\S]*\*\*Inline, for one page's own styling\*\*)(?=[\s\S]*\*\*Never a stylesheet for one page\*\*)(?=[\s\S]*\*\*A strict Content Security Policy blocks inline CSS\.\*\*)(?=[\s\S]*npx kiss-ssg css public --out)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  {
+    feature:
+      'the task skills send images, fonts and scripts to kiss-performance',
+    pattern: /\[`kiss-performance`\]\(\.\.\/kiss-performance\/SKILL\.md\)/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+      skill('kiss-ssg', 'kiss-site-review'),
+      skill('kiss-ssg', 'kiss-front-end'),
+    ],
+  },
 ]
 
 describe('every skill names the features an agent following it should use', () => {
@@ -980,6 +1110,34 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-11-05, the clean room: the protocol ranked the audit page checks P2 with three exceptions, so a clean-room agent put missing alt text (a WCAG failure, P1 by the rule above it) at P2; the exception list now names every WCAG and legal check',
+    patterns: [
+      /the audit's page checks, except `privacy-link-missing`, `checkbox-prechecked` and `placeholder-left`, which are P1/,
+    ],
+  },
+  {
+    why: '2026-11-05 (the operator): kiss encodes images itself, through {{image}} at build time into a committed cache, so a sentence sending encoding to a pipeline step, or making the resized fallback optional, is the rule that replaced',
+    patterns: [
+      /image encoding is not kiss's/,
+      /AVIF or WebP, through a pipeline step/,
+      /with a JPEG or PNG fallback in a `<picture>` only when the site has a reason/,
+    ],
+  },
+  {
+    why: '2026-11-05 (the operator): CSS goes in three tiers by who uses it (the site stylesheet, one per page type, inline for one page), so a sentence telling an agent to ship one stylesheet for everything is the rule that replaced',
+    patterns: [/\*\*One stylesheet, linked in `<head>`, and small\.\*\*/],
+  },
+  {
+    why: '2026-11-04: images, fonts, scripts and caching moved from kiss-front-end to kiss-performance, so speed has one home; a sentence that still sends image sizes or performance to kiss-front-end is the second copy that drifts',
+    patterns: [
+      /Add `loading="lazy"` to images below the first screen, never to the first image a visitor sees/,
+      /\[`kiss-front-end`\][^\n]*`width` and `height` on every image/,
+      /\[`kiss-front-end`\][^\n]*image sizes/,
+      /performance \(kiss-front-end\)/,
+      /Use for "front-end", "performance"/,
+    ],
+  },
   {
     why: '2026-11-04 (the operator): kiss-branch-close opens the pull request as part of the close; a sentence saying it does so only when asked is the instruction that replaced',
     patterns: [
@@ -1470,6 +1628,7 @@ const DOMAIN_SKILLS = [
   'kiss-seo',
   'kiss-accessibility',
   'kiss-front-end',
+  'kiss-performance',
   'kiss-design',
   'kiss-legal-and-privacy',
 ]

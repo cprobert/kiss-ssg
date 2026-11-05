@@ -4,6 +4,16 @@
  */
 export function resolveFolders(userFolders?: KissFoldersInput): KissFolders;
 /**
+ * A concern's formats as `host` implies them: one entry per host that has an
+ * encoding, in the hosts' order. A host with none (`null` in `HOSTS`) adds
+ * nothing; the writer names it.
+ *
+ * @param {KissHost[]} hosts
+ * @param {'redirects'|'cacheHeaders'} concern
+ * @returns {string[]}
+ */
+export function formatsForHosts(hosts: KissHost[], concern: "redirects" | "cacheHeaders"): string[];
+/**
  * @param {*} markdownCopies the `markdownCopies` key as supplied, or an
  * already-resolved block; `undefined` when absent
  * @returns {KissMarkdownCopies}
@@ -73,6 +83,9 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @typedef {Object} KissAssets
  * @property {boolean} hash rename every emitted `.css`/`.js` to carry a content hash
  * @property {string|null} version leave names alone; `{{asset}}` appends `?v=<version>`
+ * @property {boolean} minify outside dev, minify every copied `.css`/`.js`/`.mjs` that is not `*.min.*` or a Sass compile, before hashing; `true` by default
+ * @property {import('./css-purge.js').KissPurge|null} purge the stylesheets to purge against the written pages at the settle, outside dev; `null` (the default) purges none
+ * @property {import('./images.js').KissImages} images the recipe `{{image}}` serves a source by: widths, formats, quality per format, and the committed encode cache
  * @property {import('./pipeline.js').PipelineStep[]} pipeline ordered commands run before the asset copy
  */
 /**
@@ -129,6 +142,35 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {RedirectFormat|RedirectFormat[]|null} format the host encodings to emit beside `redirects.json`; `null` (the default) emits none
  */
 /**
+ * The cache-header block (`config.cacheHeaders`): which host files say that
+ * the content-hashed files can be cached for a year. Merged exactly one level
+ * deep. Unset, it follows `host`.
+ *
+ * @typedef {Object} KissCacheHeaders
+ * @property {CacheHeaderFormat|CacheHeaderFormat[]|null} format the host encodings to emit beside `cache-headers.json`; `null` (the default) follows `host`, and emits none when `host` is unset too
+ */
+/**
+ * One cache-header encoding: a built-in name, or a function that writes it.
+ *
+ * @typedef {'netlify'|'cloudflare'|'firebase'|'none'|CacheHeaderWriter} CacheHeaderFormat
+ */
+/**
+ * A custom cache-header writer: given the rules, return the files to write
+ * into the build folder, as a redirect writer does.
+ *
+ * @callback CacheHeaderWriter
+ * @param {import('./cache-headers.js').CacheHeaderRule[]} rules one per hashed file, the list `cache-headers.json` carries
+ * @param {{ buildDir: string, config: Object }} context
+ * @returns {{ file: string, contents: string }[]|{ file: string, contents: string }|void|Promise<{ file: string, contents: string }[]|{ file: string, contents: string }|void>}
+ */
+/**
+ * Where a site is deployed. Each host implies a redirects format and a
+ * cache-header format, which `redirects.format` and `cacheHeaders.format`
+ * override.
+ *
+ * @typedef {'netlify'|'cloudflare'|'firebase'|'vercel'|'github-pages'} KissHost
+ */
+/**
  * One host encoding: a built-in name, or a function that writes it.
  *
  * @typedef {'netlify'|'firebase'|'vercel'|'htaccess'|'none'|RedirectWriter} RedirectFormat
@@ -158,7 +200,9 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissAssets} assets
  * @property {KissMarkdown & Record<string, any>} markdown
  * @property {KissLinks} links gates the broken-internal-link scan on a settled non-dev build
+ * @property {KissHost[]|null} host where the site is deployed, as a list; `null` (the default) when the site has not said
  * @property {KissRedirects} redirects how page `aliases` are encoded on a settled build
+ * @property {KissCacheHeaders} cacheHeaders the host files that let the hashed files be cached for a year
  * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
  * @property {KissMarkdownCopies} markdownCopies the `.md` copy written beside every HTML page, for agents
  * @property {import('./packages.js').KissPackages|false} packages the learning packages written for the pages that name one (`package`); `false` writes none
@@ -179,12 +223,15 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links`, `redirects`, `cacheHeaders`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  * `audit`, `markdownCopies` and `packages` also take a bare boolean: `false` turns the whole block off.
  * `consent` is `false` or its settings, resolved by `resolveConsent` in `lib/consent.js`.
+ * `host` is one name or a list.
  *
- * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'redirects'|'audit'|'markdownCopies'|'packages'|'consent'>> & {
+ * @typedef {Partial<Omit<KissSettings, 'sass'|'fetch'|'assets'|'markdown'|'links'|'host'|'redirects'|'cacheHeaders'|'audit'|'markdownCopies'|'packages'|'consent'>> & {
+ *   host?: KissHost|KissHost[]|null,
+ *   cacheHeaders?: Partial<KissCacheHeaders>,
  *   sass?: { includePaths?: string[] },
  *   fetch?: Partial<KissFetch>,
  *   assets?: Partial<KissAssets>,
@@ -219,6 +266,9 @@ export const DEFAULT_FETCH: Readonly<{
 export const DEFAULT_ASSETS: Readonly<{
     hash: false;
     version: any;
+    minify: true;
+    purge: any;
+    images: any;
     pipeline: any[];
 }>;
 export const DEFAULT_MARKDOWN: Readonly<{
@@ -234,7 +284,7 @@ export const DEFAULT_LINKS: Readonly<{
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
-    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing")[];
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive")[];
     privacyPage: string | null;
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
@@ -246,6 +296,32 @@ export const DEFAULT_REDIRECTS: Readonly<{
     format: any;
 }>;
 export const REDIRECT_FORMATS: readonly string[];
+export const DEFAULT_CACHE_HEADERS: Readonly<{
+    format: any;
+}>;
+export const CACHE_HEADER_FORMAT_NAMES: readonly string[];
+export const HOSTS: Readonly<{
+    netlify: {
+        redirects: string;
+        cacheHeaders: string;
+    };
+    cloudflare: {
+        redirects: string;
+        cacheHeaders: string;
+    };
+    firebase: {
+        redirects: string;
+        cacheHeaders: string;
+    };
+    vercel: {
+        redirects: string;
+        cacheHeaders: any;
+    };
+    'github-pages': {
+        redirects: string;
+        cacheHeaders: string;
+    };
+}>;
 export const DEFAULT_PACKAGES: Readonly<{
     format: "imscp";
     dir: "packages";
@@ -270,6 +346,9 @@ export const DEFAULT_CONFIG: Readonly<{
     assets: Readonly<{
         hash: false;
         version: any;
+        minify: true;
+        purge: any;
+        images: any;
         pipeline: any[];
     }>;
     markdown: Readonly<{
@@ -283,12 +362,16 @@ export const DEFAULT_CONFIG: Readonly<{
         trailingSlash: true;
         hostServed: readonly string[];
     }>;
+    host: any;
     redirects: Readonly<{
+        format: any;
+    }>;
+    cacheHeaders: Readonly<{
         format: any;
     }>;
     audit: Readonly<{
         check: true;
-        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing")[];
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive")[];
         privacyPage: string | null;
     }>;
     markdownCopies: Readonly<{
@@ -401,6 +484,18 @@ export type KissAssets = {
      */
     version: string | null;
     /**
+     * outside dev, minify every copied `.css`/`.js`/`.mjs` that is not `*.min.*` or a Sass compile, before hashing; `true` by default
+     */
+    minify: boolean;
+    /**
+     * the stylesheets to purge against the written pages at the settle, outside dev; `null` (the default) purges none
+     */
+    purge: import("./css-purge.js").KissPurge | null;
+    /**
+     * the recipe `{{image}}` serves a source by: widths, formats, quality per format, and the committed encode cache
+     */
+    images: import("./images.js").KissImages;
+    /**
      * ordered commands run before the asset copy
      */
     pipeline: import("./pipeline.js").PipelineStep[];
@@ -498,6 +593,47 @@ export type KissRedirects = {
     format: RedirectFormat | RedirectFormat[] | null;
 };
 /**
+ * The cache-header block (`config.cacheHeaders`): which host files say that
+ * the content-hashed files can be cached for a year. Merged exactly one level
+ * deep. Unset, it follows `host`.
+ */
+export type KissCacheHeaders = {
+    /**
+     * the host encodings to emit beside `cache-headers.json`; `null` (the default) follows `host`, and emits none when `host` is unset too
+     */
+    format: CacheHeaderFormat | CacheHeaderFormat[] | null;
+};
+/**
+ * One cache-header encoding: a built-in name, or a function that writes it.
+ */
+export type CacheHeaderFormat = "netlify" | "cloudflare" | "firebase" | "none" | CacheHeaderWriter;
+/**
+ * A custom cache-header writer: given the rules, return the files to write
+ * into the build folder, as a redirect writer does.
+ */
+export type CacheHeaderWriter = (rules: import("./cache-headers.js").CacheHeaderRule[], context: {
+    buildDir: string;
+    config: any;
+}) => {
+    file: string;
+    contents: string;
+}[] | {
+    file: string;
+    contents: string;
+} | void | Promise<{
+    file: string;
+    contents: string;
+}[] | {
+    file: string;
+    contents: string;
+} | void>;
+/**
+ * Where a site is deployed. Each host implies a redirects format and a
+ * cache-header format, which `redirects.format` and `cacheHeaders.format`
+ * override.
+ */
+export type KissHost = "netlify" | "cloudflare" | "firebase" | "vercel" | "github-pages";
+/**
  * One host encoding: a built-in name, or a function that writes it.
  */
 export type RedirectFormat = "netlify" | "firebase" | "vercel" | "htaccess" | "none" | RedirectWriter;
@@ -564,9 +700,17 @@ export type KissSettings = {
      */
     links: KissLinks;
     /**
+     * where the site is deployed, as a list; `null` (the default) when the site has not said
+     */
+    host: KissHost[] | null;
+    /**
      * how page `aliases` are encoded on a settled build
      */
     redirects: KissRedirects;
+    /**
+     * the host files that let the hashed files be cached for a year
+     */
+    cacheHeaders: KissCacheHeaders;
     /**
      * gates the launch-readiness audit on a settled non-dev build
      */
@@ -609,12 +753,15 @@ export type KissConfig = KissSettings & {
  * The config a site passes to `new Kiss(config)`: every key optional, extra keys
  * allowed. An omitted key — or one explicitly `undefined` — takes its default
  * from `DEFAULT_CONFIG`/`DEFAULT_FOLDERS`. `folders`, `sass`, `fetch`, `assets`,
- * `markdown`, `links`, `redirects`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
+ * `markdown`, `links`, `redirects`, `cacheHeaders`, `audit` and `markdownCopies` are partial here because each is merged exactly one level deep,
  * so a site sets the one key it cares about and keeps the defaults around it.
  * `audit`, `markdownCopies` and `packages` also take a bare boolean: `false` turns the whole block off.
  * `consent` is `false` or its settings, resolved by `resolveConsent` in `lib/consent.js`.
+ * `host` is one name or a list.
  */
-export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "redirects" | "audit" | "markdownCopies" | "packages" | "consent">> & {
+export type KissConfigInput = Partial<Omit<KissSettings, "sass" | "fetch" | "assets" | "markdown" | "links" | "host" | "redirects" | "cacheHeaders" | "audit" | "markdownCopies" | "packages" | "consent">> & {
+    host?: KissHost | KissHost[] | null;
+    cacheHeaders?: Partial<KissCacheHeaders>;
     sass?: {
         includePaths?: string[];
     };

@@ -11,7 +11,7 @@ Compiles every Sass file under the assets folder to a sibling `.css` file in the
 
 ## Depends on
 
-`fs-extra`, `node:path` (the CSS target arithmetic below); `./sass.js` (the resolved sass binding); `./asset-manifest.js` (`createAssetManifest`, `contentHash`, `hashedName`, `isHashable`); `./utils.js` (`globFiles`, `posixPath`, `hashId`).
+`fs-extra`, `node:path` (the CSS target arithmetic below); `./sass.js` (the resolved sass binding); `./asset-manifest.js` (`createAssetManifest`, `contentHash`, `hashedName`, `isHashable`); `./asset-minify.js` (`minifyFile`, `shouldMinify`: outside dev and unless `assets.minify` is `false`, `recordEmitted` minifies each claimed `.css`/`.js`/`.mjs` that is not Sass or `*.min.*`, in place, **before** hashing, so a hashed name follows the served bytes; a file the minifier cannot read is copied as it is, with one `warn` — `AIKB/asset-minify.md`); `./utils.js` (`globFiles`, `posixPath`, `hashId`).
 
 ## Depended on by
 

@@ -649,6 +649,63 @@ describe('checkLinks', () => {
     expect(result.broken).toEqual([])
   })
 
+  // The fleet check (2026-11-05): diploma-msc writes `../img/x` on
+  // `landing-pages/index.html`, which under `trailingSlash: false` is served at
+  // `/landing-pages`, so a browser requests `/img/x` and the file is there.
+  // The build's own files take the same clamp the host patterns do.
+  it('clamps a relative climb at the root for the build’s own files too', () => {
+    const pages = [
+      { buildTo: './public/index.html', links: ['../img/a.png', 'img/a.png'] },
+      {
+        buildTo: './public/landing-pages/index.html',
+        links: ['../img/a.png', '../../img/a.png'],
+      },
+    ]
+    const result = checkLinks({
+      pages,
+      buildDir: './public',
+      manifestTargets: ['img/a.png'],
+      exists: () => false,
+      trailingSlash: false,
+    })
+    expect(result.checked).toBe(4)
+    expect(result.broken).toEqual([])
+  })
+
+  // Codex, at the close (2026-11-05): clamping after a filesystem normalise
+  // let `..` walk into the build folder's real parents and back. From
+  // `srv/site/public`'s home page, `../../site/img/a.png` is a request for
+  // `/site/img/a.png`, not `img/a.png`.
+  it('clamps in URL space, never through the build folder’s own parents', () => {
+    const result = checkLinks({
+      pages: [
+        {
+          buildTo: './srv/site/public/index.html',
+          links: ['../../site/img/a.png', '../../img/a.png'],
+        },
+      ],
+      buildDir: './srv/site/public',
+      manifestTargets: ['img/a.png'],
+      exists: () => false,
+    })
+    expect(result.broken).toEqual([
+      { page: './srv/site/public/index.html', href: '../../site/img/a.png' },
+    ])
+  })
+
+  it('still reports a climb above a siteUrl prefix, which leaves the site', () => {
+    const result = checkLinks({
+      pages: [{ buildTo: './public/index.html', links: ['../img/a.png'] }],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      manifestTargets: ['img/a.png'],
+      exists: () => false,
+    })
+    expect(result.broken).toEqual([
+      { page: './public/index.html', href: '../img/a.png' },
+    ])
+  })
+
   it('matches a prefixed deployment by the full request path, written either way', () => {
     const result = checkLinks({
       pages: [

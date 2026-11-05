@@ -741,13 +741,15 @@ describe('watch filesystem reconciliation', () => {
   })
 
   it('settles rapid asset and page edits together', async () => {
+    // A string marker, which a minifier keeps as written: outside dev the
+    // copy minifies (assets.minify), and clean-css writes `blue` as `#00f`.
     site = await makeSite({
       'src/pages/index.hbs': 'one {{asset "style.css"}}',
-      'src/assets/style.css': 'a { color: red }',
+      'src/assets/style.css': 'a { content: "red" }',
     })
     await start({ assets: { hash: true } })
     await Promise.all([
-      site.touch('src/assets/style.css', 'a { color: blue }'),
+      site.touch('src/assets/style.css', 'a { content: "blue" }'),
       site.touch('src/pages/index.hbs', 'two {{asset "style.css"}}'),
     ])
     await waitFor(async () => {

@@ -6,6 +6,42 @@ Copying and compiling assets, cache-busting URLs, running an external asset pipe
 
 Any static files you have in the assets directory will be copied to the build directory
 
+### Minified assets
+
+Outside dev, every `.css`, `.js` and `.mjs` the copy writes is minified in place, with terser and clean-css, the same minifiers that already minify each page's inline CSS and JS. It happens before the file is hashed, so a hashed name changes exactly when the served bytes do. Three kinds of file are left as they are:
+
+-   a `*.min.css` or `*.min.js`, already minified;
+-   a Sass compile, which is already `compressed`;
+-   a file the minifier cannot read, which is copied unchanged with a warning naming it. The build does not fail. A stylesheet that uses native CSS nesting is one: clean-css does not understand nesting, so rather than drop the nested rules kiss ships that file as it was written.
+
+**A page that loads its own file with `integrity="sha384-…"`** names the hash of the bytes you wrote, and minifying (or purging) changes them, so a browser would refuse the file. The build checks each such reference against the file it wrote, and fails on a mismatch, naming the page. Name the file `*.min.js` or `*.min.css` so it is copied as written, set `assets: { minify: false }`, or take the hash of the file the build writes.
+
+`assets: { minify: false }` turns it off. Minifying is cheap and never makes a file bigger: kiss keeps the original whenever the minified file is no smaller. What it saves depends on the file. On the fleet's sites, measured after Brotli, an unminified script or stylesheet came out about 17% smaller, and one already minified about 1–2%. Removing unused CSS and JavaScript saves far more: see **Purged CSS** below, and the `kiss-performance` skill's recipes for JavaScript.
+
+### Purged CSS
+
+A framework's stylesheet copied whole (Bootstrap, Foundation, Bulma) is mostly rules no page uses. On one measured site, Bootstrap's CSS was 94% unused. Name it, and kiss removes those rules once every page is written:
+
+```js
+new Kiss({
+  assets: {
+    hash: true,
+    purge: {
+      files: ['css/bootstrap.css'], // as a template asks for it
+      safelist: ['show', 'active', 'in', 'collapsing', /^modal/], // classes a script adds
+    },
+  },
+})
+```
+
+At the settle, kiss runs [PurgeCSS (opens in a new tab)](https://purgecss.com) over each named stylesheet against **the HTML this build wrote**, so every class a page carries counts, whether it came from a template, a model, a helper or a partial. It also reads the build's own `.js` files (`scripts: true`, the default), for the class names a script adds. A purged stylesheet is minified again (`assets.minify`). Under `assets.hash` it is re-hashed, and every page that linked the old name is rewritten to the new one, before the link scan, the audit, the cache headers and the report run. Nothing else in the build has to know.
+
+-   **The safelist is the site's job.** A class that appears only when a script runs, and is spelled out neither in a page nor in a script (`'modal-' + name`), is removed, and its component breaks only when it opens. Open every interactive component in the browser after turning this on. A string or a regular expression in `safelist` keeps a selector whatever the pages say.
+-   **Purged first, minified once, after.** The copy does not minify a named stylesheet, so PurgeCSS still reads its comments: `/* purgecss start ignore */ … /* purgecss end ignore */` keeps a block whatever the pages say.
+-   **Not in dev.** `--dev` serves the whole stylesheet while you edit, so the preview never hides a rule a page is about to use.
+-   **A named file that is not in the build fails the build**, with its name. A purge that did nothing would ship the whole file in silence.
+-   **Tailwind needs none of this**: it scans its content itself (§ An asset pipeline).
+
 ### Cache-busting asset URLs
 
 Link an asset with the `asset` helper and the caching policy stops living in your template:
@@ -86,6 +122,86 @@ A path that matches nothing is silent as well: `source(none)` plus an `@source` 
 **Guard it rather than remember it.** Both failures are silent and both produce a plausible file, so a few lines in the build — a `pipeline` step, or a CI check — that fail when `source(none)` is missing from the entry stylesheet, or when any `@source` path no longer resolves, catch the whole class. It needs nothing built, and it is what caught this on a real site.
 
 **Keep the `-i`.** Running `npx @tailwindcss/cli -o out.css` without `-i` exits 0, prints a normal timing line and writes a plausible stylesheet — but it never reads your entry file. The CLI substitutes a default input of `@import 'tailwindcss'`, so what is lost is not a handful of rules but everything you authored: every `@layer components` class, every `@theme` token, every `@font-face`, every plugin import and every `@source` line. Verified on 4.3.3 — an entry file declaring `.btn`, `.card`, `.callout` and a self-hosted `@font-face` compiled all of them with `-i` and none of them without; on a real 20-page site the output fell from 66,384 to 24,990 bytes, leaving generic utilities. Nothing reports an error. A project whose dev command passes `-i` while its build command does not is correct on every developer's machine and wrong only on the deployed site, which is how this survives for months.
+
+## Responsive images
+
+`{{image}}` turns a copied JPEG, PNG, WebP or AVIF into a `<picture>`: an AVIF and a WebP `<source>`, and a fallback `<img>`, each at the widths the recipe allows that image. The path is the one `{{asset}}` takes:
+
+```handlebars
+{{image
+  'img/hero.jpg'
+  alt='A swan on the river at dawn'
+  sizes='(min-width: 60rem) 50vw, 100vw'
+  eager=true
+  class='hero'
+}}
+```
+
+For a 1200×800 photo with the default recipe, that writes (one line in the page, wrapped here):
+
+```html
+<picture>
+  <source
+    type="image/avif"
+    srcset="
+      /img/hero-480.<hash>.avif   480w,
+      /img/hero-960.<hash>.avif   960w,
+      /img/hero-1200.<hash>.avif 1200w
+    "
+    sizes="(min-width: 60rem) 50vw, 100vw"
+  />
+  <source
+    type="image/webp"
+    srcset="… 480w, … 960w, … 1200w"
+    sizes="(min-width: 60rem) 50vw, 100vw"
+  />
+  <img
+    src="/img/hero-960.<hash>.jpg"
+    srcset="… 480w, … 960w, … 1200w"
+    sizes="(min-width: 60rem) 50vw, 100vw"
+    width="1200"
+    height="800"
+    alt="A swan on the river at dawn"
+    fetchpriority="high"
+    decoding="async"
+    class="hero"
+  />
+</picture>
+```
+
+-   **`alt=` and `sizes=` are required**, and a missing one fails the build (it warns in dev), as an unknown `{{link}}` id does. `alt=""` is the explicit decorative image. `sizes` is the width the image takes in your layout: no default is right for every layout, and the browser picks the file by it.
+-   **Lazy by default.** Without `eager=true` the image gets `loading="lazy"` and every `sizes` becomes `auto, …`, so a browser that knows the laid-out width uses it. `eager=true` is for the first image a visitor sees: it writes `fetchpriority="high"` and no `loading`.
+-   **The widths** are each recipe width narrower than the source, plus the source's own width when it falls between two of them or below the smallest. kiss never enlarges an image. `width` and `height` are the largest variant's, so the box is reserved before the file arrives. The fallback `src` is the middle width.
+-   **The fallback format** is the source's for a PNG, and JPEG for a JPEG, WebP or AVIF, so the oldest browsers still get a resized file. A WebP or AVIF with transparency loses it in that JPEG.
+-   **Turned the right way up.** A photo whose EXIF says it was taken sideways (orientations 5–8) is served rotated, with `width` and `height` swapped to match.
+-   **Refused, with a message:** an SVG (write `<img src="/{{asset "logo.svg"}}">`; a vector needs no widths), a GIF, an animated PNG, WebP or AVIF (only the first frame would survive), a path no copy emitted, and the attributes kiss writes itself: `src`, `srcset`, `width`, `height`, `loading`, `fetchpriority`. Any other attribute passes through to the `<img>`, escaped.
+-   **`root=`** is the base the URLs are written against, `/` by default. A learning package or a `{{root}}` site passes its own (`root=root`).
+-   **In dev**, `{{image}}` writes the copied original as one `<img>`, at its own size, with the same `alt` and loading attributes, and encodes nothing. Saving the image re-renders the pages that use it.
+
+**Names.** A variant is `img/hero-960.<hash>.avif` beside its source, the hash taken over the copied file's bytes and the recipe (format, width, quality). It changes exactly when the source or the recipe does, whatever `assets.hash` says, so the cache headers mark every variant `immutable` on every host ([Cache headers](../urls/#cache-headers)). The variants stay out of `report().assets`; `report().images` counts them (`requested`, `encoded`, `cached`, `cache`), `null` when no page rendered an `{{image}}`.
+
+**Encoding** happens at the settle, after every page is written, with [`sharp` (opens in a new tab)](https://sharp.pixelplumbing.com/): each source is decoded once, turned the right way up, resized and encoded per variant. **All metadata is stripped**, GPS included. A source that cannot be encoded fails the build as `<images: img/x.jpg>`, naming the pages that asked for it. A variant no page asks for any more is removed from the build. Images in a model's Markdown (`![](…)`) do not pass through `{{image}}`.
+
+**The encode cache is committed.** Every variant is also kept in `assets.images.cache` (`.kiss-cache/images`, beside the build script), keyed by the same digest as its name, and a hit is a copy. Commit that folder: encoding then happens once, on the machine where an image was added, and CI and the host copy. A build that had to encode logs one line saying how many variants were not in the committed cache. `kiss-ssg check` writes to this folder too, the one thing it writes outside the build. With `cache: false`, every build encodes everything. The folder is the cache's alone: `new Kiss()` refuses one that is the project root, or that sits inside or around `src`, the assets, layouts, pages, partials, models, controllers, helpers, AIKB or build folder, and `kiss-ssg images` removes only files named like a cache entry. The cache key leaves out `sharp`'s version on purpose: an upgrade would otherwise re-encode and re-commit every image, and a variant from an older `sharp` is still a correct image of the same source and recipe.
+
+**`npx kiss-ssg images <script>`** is the cache's sweep. It runs the build staged and discarded, as `check` does, encodes every miss, removes the cache entries no page asked for, and prints how many were added, removed and kept, with their bytes. A build never prunes, because a cache shared by branches would lose what another branch's pages use; a failed build is never pruned against either. `--refresh` encodes everything again. It also lists each original under `folders.assets` that carries a GPS location or is wider than the recipe's largest width, and `--write` rewrites those in place: turned the right way up, metadata stripped, resized down to that width, a JPEG at quality 90 and a PNG losslessly (a WebP at 90, an AVIF at 75), and replaced only when the result is smaller or the file had GPS. Without `--write` nothing in `src/` changes; with it, read the diff in git before committing.
+
+The recipe and its defaults. The qualities were checked by eye on real sites' photos and artwork; the widths are a starting point:
+
+```js
+new Kiss({
+  assets: {
+    images: {
+      widths: [480, 960, 1440, 1920],
+      formats: ['avif', 'webp'], // the <source>s, in order; [] for the fallback alone
+      quality: { avif: 50, webp: 75, jpeg: 80 },
+      cache: '.kiss-cache/images', // or false
+    },
+  },
+})
+```
+
+The audit's `image-oversized`, `image-location-metadata` and `img-not-responsive` report the images `{{image}}` would fix, and the one it does not ([Checking a build](../checking/#checking-a-build)). An existing `<img src="{{asset …}}">` is migrated by hand, or by an agent, with `img-not-responsive` as the worklist: never automatically.
 
 ## Cleaning the build folder
 

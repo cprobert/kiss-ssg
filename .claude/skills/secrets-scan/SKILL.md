@@ -72,7 +72,7 @@ An SSG's attack surface is not authentication — it is what the engine reads, e
 
 ```bash
 BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only "$BASE...HEAD" -- lib/model-resolver.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js package.json
+git diff --name-only "$BASE...HEAD" -- lib/model-resolver.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js lib/image-header.js lib/image-encode.js lib/images-sweep.js lib/css-purge.js lib/cache-headers.js lib/speed.js package.json
 ```
 
 It lists the files in the table below that the branch changed, and nothing else; no output means none. A row added to the table is added to this command in the same commit. Why each one:
@@ -85,6 +85,12 @@ It lists the files in the table below that the branch changed, and nothing else;
 | `lib/watcher.js`                                    | Watches and re-reads files, and re-imports controllers on change                                                                                                  |
 | `lib/assets.js`, `lib/kiss-page.js`, `lib/utils.js` | Compute output paths from user-supplied `slug` / `path` and write files there — the path-traversal surface (`sanitizePath`)                                       |
 | `lib/page-registry.js`                              | Calls the model and controller resolvers for every registered page, and computes each page's output path from its options                                         |
+| `lib/image-header.js`                               | Parses untrusted binary image files (JPEG, PNG, WebP, AVIF) from the build and the assets folder, in every build's audit: bounded reads and walks                 |
+| `lib/image-encode.js`                               | Writes and replaces files in the encode cache, a folder outside the build, and copies cache entries into the build                                                |
+| `lib/images-sweep.js`                               | Deletes files in the encode cache and, under `--write`, rewrites the site's original images in `src/`                                                             |
+| `lib/css-purge.js`                                  | Rewrites, re-hashes and removes stylesheets in the build, and rewrites the pages that link them                                                                   |
+| `lib/cache-headers.js`                              | Writes host header files into the build, including whatever a site's custom writer function returns                                                               |
+| `lib/speed.js`                                      | Launches Chrome through Lighthouse against the build, and writes its `--out` file wherever the caller names                                                       |
 | `lib/staging.js`, `lib/asset-copy.js`               | Rename, copy and remove folders beside the build folder (`cleanBuild: 'atomic'`) and copy asset trees into it                                                     |
 | `lib/packages.js`, `lib/zip.js`                     | Resolve page references to files and read them, write zips with `.tmp`/`.bak` renames, and name the entries of an archive an LMS unpacks — traversal and zip-slip |
 | `package.json`                                      | A new or bumped dependency, or a changed `files` whitelist that could publish something unintended                                                                |

@@ -71,6 +71,14 @@ The default config options are:
   assets: {
     hash: false,
     version: null,
+    minify: true,
+    purge: null,
+    images: {
+      widths: [480, 960, 1440, 1920],
+      formats: ['avif', 'webp'],
+      quality: { avif: 50, webp: 75, jpeg: 80 },
+      cache: '.kiss-cache/images'
+    },
     pipeline: []
   },
   markdown: {
@@ -84,7 +92,11 @@ The default config options are:
     trailingSlash: true,
     hostServed: []
   },
+  host: null,
   redirects: {
+    format: null
+  },
+  cacheHeaders: {
     format: null
   },
   audit: {
@@ -134,7 +146,7 @@ Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compi
 | extensionLess  |                                      false                                      |                                                                                                                                                                                                                                                                                      When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`.                                                                                                                                                                                                                                                                                      |
 | sass           |                             `{ includePaths: [] }`                              |                                                                                                                                                                                                                                                                                                         `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too.                                                                                                                                                                                                                                                                                                          |
 | fetch          |                                    see below                                    |                                                                                                                                                                                                                                               The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below.                                                                                                                                                                                                                                                |
-| assets         |                 `{ hash: false, version: null, pipeline: [] }`                  |                                                                                                                                        Cache busting for the files copied into the build, plus the external commands run before the copy. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`; `pipeline` is an ordered list of `{ name?, run, watch?, cwd?, outputs? }` steps. All off is today's build, unchanged. See **Cache-busting asset URLs** and **An asset pipeline** below.                                                                                                                                        |
+| assets         |                 `{ hash: false, version: null, pipeline: [] }`                  |                                                                                    Cache busting for the files copied into the build, plus the external commands run before the copy. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`; `minify: true` (the default) minifies every copied `.css`/`.js` outside dev (see **Minified assets**); `pipeline` is an ordered list of `{ name?, run, watch?, cwd?, outputs? }` steps. All off is today's build, unchanged. See **Cache-busting asset URLs** and **An asset pipeline** below.                                                                                     |
 | links          |    `{ check: true, canonical: false, trailingSlash: true, hostServed: [] }`     | The broken-internal-link scan, and what `{{link}}` emits. `check: true` scans every written page for internal references that resolve to nothing and reports them as `report().links` — advisory, never changing `ok` or the exit code. `canonical: true` makes a bare `{{link}}` emit the extension-less form (`/about` rather than `/about.html`) for a host that serves it, with the per-call `canonical=` hash still overriding. `trailingSlash: false` drops the slash from a directory index (`/courses`) in every URL kiss emits, for a host that serves the bare form; `hostServed` lists paths the host serves that no build writes. See **Host URL policy**, **Broken internal links** and the `link` helper below. |
 | redirects      |                               `{ format: null }`                                |                                                                                                                                                                                                               How page `aliases` are emitted. `redirects.json` is always written when a page has an alias; `format` names the host files beside it (`'netlify'`, `'firebase'`, `'vercel'`, `'htaccess'`, `'none'`, a writer function, or a list of those). Unset writes no host file. See **Redirects** below.                                                                                                                                                                                                                |
 | audit          |                `{ check: true, ignore: [], privacyPage: null }`                 |                                                                                                                                                 The launch-readiness audit: whether the built site looks finished (titles, descriptions, `og:image`, alt text, headings, a favicon, a 404 page, stray files). Advisory, reported as `report().audit`. `ignore` lists check ids not to run; `privacyPage` is the id of your privacy page when it is not the page with id `privacy` (or at `privacy.html`); `audit: false` turns it off. See **Launch-readiness audit** below.                                                                                                                                                  |
@@ -290,7 +302,7 @@ const kiss = new Kiss({
     headers: { Authorization: `Bearer ${process.env.API_TOKEN}` },
     timeout: 15000,
     retries: 2,
-    cache: './.kiss-cache',
+    cache: './.kiss-cache/fetch',
   },
 })
 ```
@@ -298,10 +310,10 @@ const kiss = new Kiss({
 - **headers** — sent with every URL-model request. This is where an API token or an `Accept` header goes. Keep the token itself in an environment variable, not in the config you commit.
 - **timeout** — milliseconds. The request is aborted and that page fails, naming the URL and the timeout. It defaults to 10 seconds: an API that accepts your connection and then goes quiet no longer hangs your build for ever.
 - **retries** — extra attempts after a network error or a 5xx, with a short backoff. A 4xx is never retried: the server has already told you the request itself is wrong, so asking again only risks locking a key. If every attempt fails, the error says how many were made.
-- **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`:
+- **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`. Ignore that folder alone, never the whole of `.kiss-cache/`: the image encode cache beside it (`.kiss-cache/images`, under **Responsive images**) is committed.
 
 ```
-.kiss-cache/
+.kiss-cache/fetch/
 ```
 
 A cached model is a build input, exactly like a `.json` file in your models folder: what is in that directory is what your site is built from. A response with a non-2xx status fails that page: an error body is never used as the model, and never cached.
@@ -309,6 +321,42 @@ A cached model is a build input, exactly like a `.json` file in your models fold
 ### Assets
 
 Any static files you have in the assets directory will be copied to the build directory
+
+#### Minified assets
+
+Outside dev, every `.css`, `.js` and `.mjs` the copy writes is minified in place, with terser and clean-css, the same minifiers that already minify each page's inline CSS and JS. It happens before the file is hashed, so a hashed name changes exactly when the served bytes do. Three kinds of file are left as they are:
+
+- a `*.min.css` or `*.min.js`, already minified;
+- a Sass compile, which is already `compressed`;
+- a file the minifier cannot read, which is copied unchanged with a warning naming it. The build does not fail. A stylesheet that uses native CSS nesting is one: clean-css does not understand nesting, so rather than drop the nested rules kiss ships that file as it was written.
+
+**A page that loads its own file with `integrity="sha384-…"`** names the hash of the bytes you wrote, and minifying (or purging) changes them, so a browser would refuse the file. The build checks each such reference against the file it wrote, and fails on a mismatch, naming the page. Name the file `*.min.js` or `*.min.css` so it is copied as written, set `assets: { minify: false }`, or take the hash of the file the build writes.
+
+`assets: { minify: false }` turns it off. Minifying is cheap and never makes a file bigger: kiss keeps the original whenever the minified file is no smaller. What it saves depends on the file. On the fleet's sites, measured after Brotli, an unminified script or stylesheet came out about 17% smaller, and one already minified about 1–2%. Removing unused CSS and JavaScript saves far more: see **Purged CSS** below, and the `kiss-performance` skill's recipes for JavaScript.
+
+#### Purged CSS
+
+A framework's stylesheet copied whole (Bootstrap, Foundation, Bulma) is mostly rules no page uses. On one measured site, Bootstrap's CSS was 94% unused. Name it, and kiss removes those rules once every page is written:
+
+```js
+new Kiss({
+  assets: {
+    hash: true,
+    purge: {
+      files: ['css/bootstrap.css'], // as a template asks for it
+      safelist: ['show', 'active', 'in', 'collapsing', /^modal/], // classes a script adds
+    },
+  },
+})
+```
+
+At the settle, kiss runs [PurgeCSS](https://purgecss.com) over each named stylesheet against **the HTML this build wrote**, so every class a page carries counts, whether it came from a template, a model, a helper or a partial. It also reads the build's own `.js` files (`scripts: true`, the default), for the class names a script adds. A purged stylesheet is minified again (`assets.minify`). Under `assets.hash` it is re-hashed, and every page that linked the old name is rewritten to the new one, before the link scan, the audit, the cache headers and the report run. Nothing else in the build has to know.
+
+- **The safelist is the site's job.** A class that appears only when a script runs, and is spelled out neither in a page nor in a script (`'modal-' + name`), is removed, and its component breaks only when it opens. Open every interactive component in the browser after turning this on. A string or a regular expression in `safelist` keeps a selector whatever the pages say.
+- **Purged first, minified once, after.** The copy does not minify a named stylesheet, so PurgeCSS still reads its comments: `/* purgecss start ignore */ … /* purgecss end ignore */` keeps a block whatever the pages say.
+- **Not in dev.** `--dev` serves the whole stylesheet while you edit, so the preview never hides a rule a page is about to use.
+- **A named file that is not in the build fails the build**, with its name. A purge that did nothing would ship the whole file in silence.
+- **Tailwind needs none of this**: it scans its content itself (§ An asset pipeline).
 
 #### Cache-busting asset URLs
 
@@ -392,6 +440,86 @@ A path that matches nothing is silent as well: `source(none)` plus an `@source` 
 **Guard it rather than remember it.** Both failures are silent and both produce a plausible file, so a few lines in the build — a `pipeline` step, or a CI check — that fail when `source(none)` is missing from the entry stylesheet, or when any `@source` path no longer resolves, catch the whole class. It needs nothing built, and it is what caught this on a real site.
 
 **Keep the `-i`.** Running `npx @tailwindcss/cli -o out.css` without `-i` exits 0, prints a normal timing line and writes a plausible stylesheet — but it never reads your entry file. The CLI substitutes a default input of `@import 'tailwindcss'`, so what is lost is not a handful of rules but everything you authored: every `@layer components` class, every `@theme` token, every `@font-face`, every plugin import and every `@source` line. Verified on 4.3.3 — an entry file declaring `.btn`, `.card`, `.callout` and a self-hosted `@font-face` compiled all of them with `-i` and none of them without; on a real 20-page site the output fell from 66,384 to 24,990 bytes, leaving generic utilities. Nothing reports an error. A project whose dev command passes `-i` while its build command does not is correct on every developer's machine and wrong only on the deployed site, which is how this survives for months.
+
+### Responsive images
+
+`{{image}}` turns a copied JPEG, PNG, WebP or AVIF into a `<picture>`: an AVIF and a WebP `<source>`, and a fallback `<img>`, each at the widths the recipe allows that image. The path is the one `{{asset}}` takes:
+
+```handlebars
+{{image
+  'img/hero.jpg'
+  alt='A swan on the river at dawn'
+  sizes='(min-width: 60rem) 50vw, 100vw'
+  eager=true
+  class='hero'
+}}
+```
+
+For a 1200×800 photo with the default recipe, that writes (one line in the page, wrapped here):
+
+```html
+<picture>
+  <source
+    type="image/avif"
+    srcset="
+      /img/hero-480.<hash>.avif   480w,
+      /img/hero-960.<hash>.avif   960w,
+      /img/hero-1200.<hash>.avif 1200w
+    "
+    sizes="(min-width: 60rem) 50vw, 100vw"
+  />
+  <source
+    type="image/webp"
+    srcset="… 480w, … 960w, … 1200w"
+    sizes="(min-width: 60rem) 50vw, 100vw"
+  />
+  <img
+    src="/img/hero-960.<hash>.jpg"
+    srcset="… 480w, … 960w, … 1200w"
+    sizes="(min-width: 60rem) 50vw, 100vw"
+    width="1200"
+    height="800"
+    alt="A swan on the river at dawn"
+    fetchpriority="high"
+    decoding="async"
+    class="hero"
+  />
+</picture>
+```
+
+- **`alt=` and `sizes=` are required**, and a missing one fails the build (it warns in dev), as an unknown `{{link}}` id does. `alt=""` is the explicit decorative image. `sizes` is the width the image takes in your layout: no default is right for every layout, and the browser picks the file by it.
+- **Lazy by default.** Without `eager=true` the image gets `loading="lazy"` and every `sizes` becomes `auto, …`, so a browser that knows the laid-out width uses it. `eager=true` is for the first image a visitor sees: it writes `fetchpriority="high"` and no `loading`.
+- **The widths** are each recipe width narrower than the source, plus the source's own width when it falls between two of them or below the smallest. kiss never enlarges an image. `width` and `height` are the largest variant's, so the box is reserved before the file arrives. The fallback `src` is the middle width.
+- **The fallback format** is the source's for a PNG, and JPEG for a JPEG, WebP or AVIF, so the oldest browsers still get a resized file. A WebP or AVIF with transparency loses it in that JPEG.
+- **Turned the right way up.** A photo whose EXIF says it was taken sideways (orientations 5–8) is served rotated, with `width` and `height` swapped to match.
+- **Refused, with a message:** an SVG (write `<img src="/{{asset "logo.svg"}}">`; a vector needs no widths), a GIF, an animated PNG, WebP or AVIF (only the first frame would survive), a path no copy emitted, and the attributes kiss writes itself: `src`, `srcset`, `width`, `height`, `loading`, `fetchpriority`. Any other attribute passes through to the `<img>`, escaped.
+- **`root=`** is the base the URLs are written against, `/` by default. A learning package or a `{{root}}` site passes its own (`root=root`).
+- **In dev**, `{{image}}` writes the copied original as one `<img>`, at its own size, with the same `alt` and loading attributes, and encodes nothing. Saving the image re-renders the pages that use it.
+
+**Names.** A variant is `img/hero-960.<hash>.avif` beside its source, the hash taken over the copied file's bytes and the recipe (format, width, quality). It changes exactly when the source or the recipe does, whatever `assets.hash` says, so the cache headers mark every variant `immutable` on every host ([Cache headers](#cache-headers)). The variants stay out of `report().assets`; `report().images` counts them (`requested`, `encoded`, `cached`, `cache`), `null` when no page rendered an `{{image}}`.
+
+**Encoding** happens at the settle, after every page is written, with [`sharp`](https://sharp.pixelplumbing.com/): each source is decoded once, turned the right way up, resized and encoded per variant. **All metadata is stripped**, GPS included. A source that cannot be encoded fails the build as `<images: img/x.jpg>`, naming the pages that asked for it. A variant no page asks for any more is removed from the build. Images in a model's Markdown (`![](…)`) do not pass through `{{image}}`.
+
+**The encode cache is committed.** Every variant is also kept in `assets.images.cache` (`.kiss-cache/images`, beside the build script), keyed by the same digest as its name, and a hit is a copy. Commit that folder: encoding then happens once, on the machine where an image was added, and CI and the host copy. A build that had to encode logs one line saying how many variants were not in the committed cache. `kiss-ssg check` writes to this folder too, the one thing it writes outside the build. With `cache: false`, every build encodes everything. The folder is the cache's alone: `new Kiss()` refuses one that is the project root, or that sits inside or around `src`, the assets, layouts, pages, partials, models, controllers, helpers, AIKB or build folder, and `kiss-ssg images` removes only files named like a cache entry. The cache key leaves out `sharp`'s version on purpose: an upgrade would otherwise re-encode and re-commit every image, and a variant from an older `sharp` is still a correct image of the same source and recipe.
+
+**`npx kiss-ssg images <script>`** is the cache's sweep. It runs the build staged and discarded, as `check` does, encodes every miss, removes the cache entries no page asked for, and prints how many were added, removed and kept, with their bytes. A build never prunes, because a cache shared by branches would lose what another branch's pages use; a failed build is never pruned against either. `--refresh` encodes everything again. It also lists each original under `folders.assets` that carries a GPS location or is wider than the recipe's largest width, and `--write` rewrites those in place: turned the right way up, metadata stripped, resized down to that width, a JPEG at quality 90 and a PNG losslessly (a WebP at 90, an AVIF at 75), and replaced only when the result is smaller or the file had GPS. Without `--write` nothing in `src/` changes; with it, read the diff in git before committing.
+
+The recipe and its defaults. The qualities were checked by eye on real sites' photos and artwork; the widths are a starting point:
+
+```js
+new Kiss({
+  assets: {
+    images: {
+      widths: [480, 960, 1440, 1920],
+      formats: ['avif', 'webp'], // the <source>s, in order; [] for the fallback alone
+      quality: { avif: 50, webp: 75, jpeg: 80 },
+      cache: '.kiss-cache/images', // or false
+    },
+  },
+})
+```
+
+The audit's `image-oversized`, `image-location-metadata` and `img-not-responsive` report the images `{{image}}` would fix, and the one it does not ([Checking a build](#checking-a-build)). An existing `<img src="{{asset …}}">` is migrated by hand, or by an agent, with `img-not-responsive` as the worklist: never automatically.
 
 ### Markdown options
 
@@ -731,6 +859,25 @@ kiss never infers a `Disallow` for you. In particular **`ignoreSitemap` does not
 
 Two of the things kiss emits are decided by your **host**, not by the generator. Both are config keys, and both default to what kiss has always done, so an existing site does not move.
 
+#### Where the site is deployed: `host`
+
+`host` says it once: `'netlify'`, `'cloudflare'`, `'firebase'`, `'vercel'`, `'github-pages'`, or a list of them for a site deployed to more than one. It is `null` by default, because kiss does not guess. Each host sets the host file for every concern that has one: [Redirects](#redirects) and [Cache headers](#cache-headers). A concern's own `format` still wins, so a site that keeps its headers in `netlify.toml` says so:
+
+```js
+new Kiss({ host: 'netlify', cacheHeaders: { format: 'none' } })
+// _redirects from the aliases; no _headers: netlify.toml stays in charge
+```
+
+| `host`           | `redirects.format` it sets | `cacheHeaders.format` it sets                                                      |
+| ---------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| `'netlify'`      | `'netlify'` (`_redirects`) | `'netlify'` (`_headers`)                                                           |
+| `'cloudflare'`   | `'netlify'` (`_redirects`) | `'cloudflare'` (`_headers`)                                                        |
+| `'firebase'`     | `'firebase'`               | `'firebase'`                                                                       |
+| `'vercel'`       | `'vercel'`                 | none yet: the build warns, and `cache-headers.json` has the list                   |
+| `'github-pages'` | `'none'`                   | `'none'`: GitHub Pages cannot be configured (it sends `max-age=600` on everything) |
+
+A name kiss does not know throws at `new Kiss()`, with every known one listed. `host` never sets `links.trailingSlash`: Firebase's slash policy is in your `firebase.json`, not in the host's name, so that stays its own statement (below).
+
 #### The trailing slash on a directory index
 
 `links: { trailingSlash: true }` by default. Measured live on 2026-09-16 — not inferred:
@@ -863,6 +1010,29 @@ A site with no aliases writes **no file at all**, not an empty one and not an em
 - `collisions` — aliases a live page already answers, by its canonical path (`/about`) or by the file itself (`/about.html`), and any source two pages both claim. On both hosts a non-forced rule whose source is a real file is **silently ignored** — the line does nothing at all, with no error anywhere — which is why this is worth saying out loud.
 
 Under `--summary` they print as `  removed without redirect: <path>`, `  moved without redirect: <from> -> <to> (<id>)` and `  alias collides with a page: <path>`; the build log's `notice` for a move carries the fix with it (`add "<from>" to that page's aliases`). None of them changes `ok`, and none changes the exit code.
+
+### Cache headers
+
+A file kiss content-hashed (`assets: { hash: true }`, and the consent client `kiss-consent.<hash>.js`) has its bytes in its name, so a browser can keep it for a year and never be wrong. kiss writes the host file that says so, `Cache-Control: public, max-age=31536000, immutable`, for **those files only**:
+
+- **Never an unhashed file.** A photograph replaced under its old name would stay stale in returning visitors' browsers for as long as the header said. Give an image or font that changes now and then a day (`public, max-age=86400, stale-while-revalidate=604800`) in your own config.
+- **Never HTML.** A page answers at several URLs (`/about`, `/about.html`, `/courses/index.html`), so a rule for one misses the others. Netlify already serves HTML with `public, max-age=0, must-revalidate` (measured on five sites, 2026-11-04).
+
+`cacheHeaders.format` picks the file, and [`host`](#where-the-site-is-deployed-host) sets it when you leave it unset:
+
+| `cacheHeaders.format`        | Writes                                             | Notes                                                                                                                                                      |
+| ---------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'netlify'` / `'cloudflare'` | `_headers`: each hashed file by exact path         | Rebuilt on every deploy, so the paths never go stale. A `_headers` you keep in `src/assets/` keeps every line; kiss appends its marked block after it      |
+| `'firebase'`                 | `cache-headers.firebase.json`: a fragment to merge | Patterns, not paths (`regex` for `.<8 hex>.css` and `.js`, and the consent client), so you merge it into `firebase.json` once and it stays right           |
+| `'none'` / `[]`              | nothing but the list                               | a site that sets its own headers (`netlify.toml`)                                                                                                          |
+| _unset_, no `host`           | nothing but the list, and the audit's `host-unset` |                                                                                                                                                            |
+| a function                   | whatever it returns                                | `(rules, { buildDir, config }) => [{ file, contents }]`; `renderHeadersBlock`, `renderFirebaseCacheHeaders` and `renderCacheHeadersJson` are named exports |
+
+`cache-headers.json` (`{ version: 1, rules: [{ path, headers }] }`) carries the list whatever you pick, and only when the build hashed something. Nothing is written in dev, nor by a failed build. `report().cacheHeaders` is `{ rules, files, formats, unset, merged }`, or `null` when nothing was written.
+
+On Firebase, a file kiss did not hash but whose name looks hashed (`vendor/lib.deadbeef.js`) matches the pattern too and would be cached for a year: the build names it in a warning, so you can rename it.
+
+**Not yet measured, so not stated here:** which wins on Netlify when `_headers` and `netlify.toml` both set `Cache-Control` for one path, and how Firebase orders a `regex` header rule against your own `source` globs. Check your deploy with `curl -sI` on one hashed file until this section says.
 
 ### Learning packages
 
@@ -1008,7 +1178,7 @@ A frame from another site loads only when the visitor asks for it:
 {{embed 'instagram' id='DfQCqMnhpsG' title='Our latest roast, on Instagram'}}
 ```
 
-The name is a preset (`youtube`, `vimeo`, `google-maps`, `instagram`; the table under § Services and presets), `title=` is the frame's accessible name and is required, `src=` replaces the preset's URL (`google-maps` has none, so it needs one), and any other key fills a `{placeholder}` in the URL, as `id` does. `instagram` takes the code from the post's or the reel's address (`instagram.com/p/<id>/` or `instagram.com/reel/<id>/`): one id covers both.
+The name is a preset (`youtube`, `vimeo`, `google-maps`, `instagram`, `soundcloud`; the table under § Services and presets), `title=` is the frame's accessible name and is required, `src=` replaces the preset's URL (`google-maps` has none, so it needs one), and any other key fills a `{placeholder}` in the URL, as `id` does. `instagram` takes the code from the post's or the reel's address (`instagram.com/p/<id>/` or `instagram.com/reel/<id>/`): one id covers both.
 
 kiss writes a notice saying who hosts the content, a **Load it** button, a link to the content on the provider's own site, and the frame held in a `<template>`, so the browser fetches nothing from the provider before the click. The frame is sized for its provider: 16:9 for a video, and for Instagram, a frame at most 540 px wide whose height follows what the post reports. The box around the notice takes the frame's size before the click, so a video's frame arrives without moving anything on the page. An Instagram post's height is known only once it loads, so its box starts at 600 px and then takes the height the post reports: measured on one post, 568 px at a phone's width and 883 px at 540 px wide. kiss sets only that geometry; the colours, border and spacing are your CSS's (`.kiss-embed`, `.kiss-embed__notice`, `.kiss-embed__watch`), or the consent theme's under `config.consent`.
 
@@ -1082,14 +1252,15 @@ The banner links the page whose id is `cookies`, and a build with no such page f
 
 A service is one thing the site loads: a tag, a script of its own, or an embed. **Its name picks a preset** when kiss has one of that name. A preset fills in the loader URL, the provider, the origins, the cookies it sets and, for a Google tag, Consent Mode. Your own keys win over the preset's, except `origins`, which add to them. Any key that is not a setting is a placeholder value: `id` above fills the `{id}` in the preset's URL. The helper's hash fills it first, so `{{consentScript "gtm" id=gtmId}}` takes the id per page, and a placeholder with no value fails the render (`consentScript "gtm": no value for {id}`).
 
-| Name          | Category     | What it loads                                                                                                 |
-| ------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| `gtm`         | `marketing`  | Google Tag Manager, `gtm.js?id={id}`, after its inline `gtm.start` push                                       |
-| `gtag`        | `statistics` | Google Analytics, `gtag/js?id={id}`, with its inline `config` call                                            |
-| `youtube`     | `marketing`  | an embed from `www.youtube-nocookie.com/embed/{id}`, with a link to the video on YouTube                      |
-| `vimeo`       | `marketing`  | an embed from `player.vimeo.com/video/{id}?dnt=1`, with a link to the video on Vimeo                          |
-| `google-maps` | `marketing`  | an embed whose URL you give: `{{embed "google-maps" src="https://www.google.com/maps/embed?…" title="…"}}`    |
-| `instagram`   | `marketing`  | a post or reel from `www.instagram.com/p/{id}/embed`, sized by its own height, with a link to it on Instagram |
+| Name          | Category     | What it loads                                                                                                                                        |
+| ------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gtm`         | `marketing`  | Google Tag Manager, `gtm.js?id={id}`, after its inline `gtm.start` push                                                                              |
+| `gtag`        | `statistics` | Google Analytics, `gtag/js?id={id}`, with its inline `config` call                                                                                   |
+| `youtube`     | `marketing`  | an embed from `www.youtube-nocookie.com/embed/{id}`, with a link to the video on YouTube                                                             |
+| `vimeo`       | `marketing`  | an embed from `player.vimeo.com/video/{id}?dnt=1`, with a link to the video on Vimeo                                                                 |
+| `google-maps` | `marketing`  | an embed whose URL you give: `{{embed "google-maps" src="https://www.google.com/maps/embed?…" title="…"}}`                                           |
+| `instagram`   | `marketing`  | a post or reel from `www.instagram.com/p/{id}/embed`, sized by its own height, with a link to it on Instagram                                        |
+| `soundcloud`  | `marketing`  | the classic 166 px player for track `{id}`, never autoplaying; a playlist or permalink is `src=`. No link: a track id does not give the track's page |
 
 **Why `gtm` is `marketing`.** Consent Mode reaches Google's own tags only. A container also loads other companies' tags, and those run whatever Consent Mode says. Measured on a real container (2026-11-03), a grant of statistics alone loaded Bing, ActiveCampaign and OpenAI scripts. Under `marketing`, the container loads only when marketing is allowed. A site whose container gives every tag that is not Google's its own consent check may set `gtm: { id, category: 'statistics' }`.
 
@@ -1355,16 +1526,16 @@ A site whose every service is `necessary` has nothing to ask: `{{consentBanner}}
 
 Seven audit checks, advisory like every audit check (§ Checking a build):
 
-| id                              | fires when                                                                                                                                                                                        |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consent-missing`               | no `config.consent`, and a page loads a known tracker or embed (Google, Meta, Clarity, Bing, Hotjar, LinkedIn, Reddit, YouTube, Vimeo, Google Maps, Superchat) or has a GTM or gtag loader inline |
-| `consent-ungated`               | `config.consent` is set, and a page loads a third-party script or iframe that no service gates and no `necessary` service names in its `origins`, a `<noscript>` GTM frame included               |
-| `consent-ads-cmp`               | AdSense or Ad Manager is on a page: these need a Google-certified CMP                                                                                                                             |
-| `consent-objection-third-party` | a service in an `objection` category loads from another site                                                                                                                                      |
-| `consent-settings-missing`      | a page has `{{consentHead}}` and no `{{consentSettings}}`, on a site with something to ask (not when every service is `necessary`)                                                                |
-| `consent-google-advanced`       | `google.mode` is `'advanced'`                                                                                                                                                                     |
-| `consent-records-missing`       | a Google tag under `marketing`, and no `endpoint`                                                                                                                                                 |
-| `consent-history-missing`       | the page `ui.history` names has no `{{consentRecord}}`                                                                                                                                            |
+| id                              | fires when                                                                                                                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consent-missing`               | no `config.consent`, and a page loads a known tracker or embed (Google, Meta, Clarity, Bing, Hotjar, LinkedIn, Reddit, YouTube, Vimeo, SoundCloud, Google Maps, Superchat) or has a GTM or gtag loader inline |
+| `consent-ungated`               | `config.consent` is set, and a page loads a third-party script or iframe that no service gates and no `necessary` service names in its `origins`, a `<noscript>` GTM frame included                           |
+| `consent-ads-cmp`               | AdSense or Ad Manager is on a page: these need a Google-certified CMP                                                                                                                                         |
+| `consent-objection-third-party` | a service in an `objection` category loads from another site                                                                                                                                                  |
+| `consent-settings-missing`      | a page has `{{consentHead}}` and no `{{consentSettings}}`, on a site with something to ask (not when every service is `necessary`)                                                                            |
+| `consent-google-advanced`       | `google.mode` is `'advanced'`                                                                                                                                                                                 |
+| `consent-records-missing`       | a Google tag under `marketing`, and no `endpoint`                                                                                                                                                             |
+| `consent-history-missing`       | the page `ui.history` names has no `{{consentRecord}}`                                                                                                                                                        |
 
 `report().consent` is `{ version, purposes, mode, banners: [{ hash, pages }], categories, services: [{ name, category, gated, origins, cookies }], pagesWithoutHead }`, or `null` without `config.consent` and on a failed build. `purposes` is the computed version, kept even when `version` is set by hand. `--summary` prints it as `consent: version <v>, banner <hash>, <n> services`. In `report().thirdParty`, an origin that a service gates carries `services: ['gtm']`: it is fetched only after consent.
 
@@ -1417,7 +1588,7 @@ Your browser is reloaded once per rebuild, when that rebuild has finished writin
 
 `npx kiss-ssg init` sets a folder up for a coding agent — `package.json` scripts, `CLAUDE.md` and `AGENTS.md` pointing at `llms.txt`, kiss-ssg's plugins declared in `.claude/settings.json` and `.codex/config.toml`, and a one-page starter site when it finds no project there — and never overwrites a file. `npx kiss-ssg init --help` lists exactly what it writes; the [README](README.md#quick-start) is the walkthrough.
 
-In detail, `npx kiss-ssg init` sets the current folder up for a coding agent and never overwrites a file: it creates or merges `package.json` (the `build` / `dev` / `check` / `aikb` scripts, and — only when it writes the starter — `"type": "module"` and `"main": "router.js"`; a site with `src/` and no `router.js` gets no scripts at all), appends `@node_modules/kiss-ssg/llms.txt` to `CLAUDE.md`, and to `AGENTS.md` a pointer and a section naming the skills and the three `codex plugin` install lines — each checked for on its own, so re-running `init` on a site set up before the Codex section existed adds it, declares the `kiss-ssg` marketplace and both plugins in `.claude/settings.json` and in `.codex/config.toml` (appending to an existing TOML file only the tables it does not define, and leaving one that defines them some other way untouched), installs `kiss-ssg` at its own version unless `--no-install` or `package.json` already asks for a version (then `npm install` is the command), and — only when it finds no project (no `router.js`, no `src/`, no `package.json` `main` naming a real file, no `build` script of its own) — adds `node_modules/` and `public/` to any `.gitignore` already there and drops a one-page starter whose `router.js` begins `` // Started by `npx kiss-ssg init` ``. Grow that starter; do not write a second build script beside it. It ends by printing the three `claude plugin … --scope project` install commands (Claude Code does not install a plugin because the settings file names it), then the three `codex plugin` commands, which install once per user (`.codex/config.toml` enables the plugins for the folder once Codex trusts it, but does not install them). Running `init` twice changes nothing.
+In detail, `npx kiss-ssg init` sets the current folder up for a coding agent and never overwrites a file: it creates or merges `package.json` (the `build` / `dev` / `check` / `aikb` scripts, and — only when it writes the starter — a `speed` script (`kiss-ssg speed public`; Lighthouse itself is not installed, see § Measuring speed), `"type": "module"` and `"main": "router.js"`; a site with `src/` and no `router.js` gets no scripts at all), appends `@node_modules/kiss-ssg/llms.txt` to `CLAUDE.md`, and to `AGENTS.md` a pointer and a section naming the skills and the three `codex plugin` install lines — each checked for on its own, so re-running `init` on a site set up before the Codex section existed adds it, declares the `kiss-ssg` marketplace and both plugins in `.claude/settings.json` and in `.codex/config.toml` (appending to an existing TOML file only the tables it does not define, and leaving one that defines them some other way untouched), installs `kiss-ssg` at its own version unless `--no-install` or `package.json` already asks for a version (then `npm install` is the command), and — only when it finds no project (no `router.js`, no `src/`, no `package.json` `main` naming a real file, no `build` script of its own) — adds `node_modules/` and `public/` to any `.gitignore` already there and drops a one-page starter whose `router.js` begins `` // Started by `npx kiss-ssg init` ``. Grow that starter; do not write a second build script beside it. It ends by printing the three `claude plugin … --scope project` install commands (Claude Code does not install a plugin because the settings file names it), then the three `codex plugin` commands, which install once per user (`.codex/config.toml` enables the plugins for the folder once Codex trusts it, but does not install them). Running `init` twice changes nothing.
 The same two plugins carry kiss-ssg's skills for Claude Code and for Codex, from one marketplace, and `init` ends by printing both agents' install commands. Claude Code's install at project scope, recorded in the site's `.claude/settings.json`. For Codex, `init` writes the same marketplace and plugins to `.codex/config.toml`, which enables them for this site once Codex trusts the folder. Codex still installs plugins per user, so its three lines run once per user, and `codex plugin add` also switches the plugins on for every folder. `AGENTS.md` (the file Codex reads) names the skills and those lines:
 
 ```sh
@@ -1614,29 +1785,37 @@ The finding is advisory: it never changes `ok` and never changes the exit code. 
 
 The checks, by the id `check` carries:
 
-| id                                                                    | fires when                                                                                                                                   |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title-missing`, `description-missing`                                | a page has no `<title>`, or no `<meta name="description">`, or an empty one                                                                  |
-| `title-duplicate`, `description-duplicate`                            | two or more pages share one — a page whose `canonical` option names another URL is left out, since it has said it is a copy                  |
-| `og-image-missing`, `og-image-relative`                               | no `og:image`, or one that is not an absolute `http(s)` URL — scrapers do not resolve a relative one                                         |
-| `canonical-missing`                                                   | `siteUrl` is set and the page has no `<link rel="canonical">` — `{{canonical}}` writes it                                                    |
-| `img-alt-missing`                                                     | an `<img>` with no `alt` attribute at all (`alt=""` is right for a decorative image)                                                         |
-| `h1-count`, `heading-skip`                                            | a page without exactly one `<h1>`, or one whose headings jump a level (`h2 -> h4`)                                                           |
-| `viewport-zoom-lock`                                                  | a `<meta name="viewport">` with `user-scalable=no` (or `0`), or a `maximum-scale` below 2, stops the 200% zoom WCAG 1.4.4 asks for           |
-| `href-hash`                                                           | an `<a>` or `<area>` with `href="#"`: a link to nowhere, usually a control that should be a `<button>`, or a link not yet filled in          |
-| `fragment-missing`                                                    | a link's `#fragment` names no `id` (or `<a name>`) on the page it lands on, whether that page is this one or another the build wrote         |
-| `favicon-missing`                                                     | no page links an icon and there is no `favicon.ico` at the build root                                                                        |
-| `not-found-missing`                                                   | no `404.html` at the build root — under `extensionLess` a `404` view lands at `404/index.html`, which hosts do not serve                     |
-| `site-url-local`                                                      | `siteUrl` is `localhost`, `127.*`, a `.local`/`.test`/`.invalid` name or a preview deploy (`.example` is fine)                               |
-| `debug-dump`                                                          | `viewStats()` under `verbose: true` wrote `debug.json`, every page's options, into the build                                                 |
-| `stray-file`                                                          | a dotfile (bar `.nojekyll`, `.htaccess` and `.well-known/`), a `.map`, `.log`, `.bak`, `.swp` or `~` file, `.DS_Store` or `Thumbs.db`        |
-| `console-log`                                                         | a `.js` file you wrote contains `console.log(` — `*.min.js`, `vendor/` and `node_modules/` are skipped                                       |
-| `privacy-link-missing`                                                | a page with a form that asks for an email address or a phone number has no link to the privacy page                                          |
-| `placeholder-left`                                                    | a page still carries a `<mark>`, or the bracketed text `[to confirm`                                                                         |
-| `checkbox-prechecked`                                                 | a checkbox is ticked before the reader ticks it, and its label is about marketing (offers, news, newsletters, partners, third parties)       |
-| `consent-missing`, `consent-ungated`, `consent-ads-cmp` and five more | a tracker, an embed or an ad tag the consent manager does not hold back, and its settings; [Cookie consent](#cookie-consent) lists all seven |
+| id                                                                    | fires when                                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title-missing`, `description-missing`                                | a page has no `<title>`, or no `<meta name="description">`, or an empty one                                                                                                                                                                                                                       |
+| `title-duplicate`, `description-duplicate`                            | two or more pages share one — a page whose `canonical` option names another URL is left out, since it has said it is a copy                                                                                                                                                                       |
+| `og-image-missing`, `og-image-relative`                               | no `og:image`, or one that is not an absolute `http(s)` URL — scrapers do not resolve a relative one                                                                                                                                                                                              |
+| `canonical-missing`                                                   | `siteUrl` is set and the page has no `<link rel="canonical">` — `{{canonical}}` writes it                                                                                                                                                                                                         |
+| `img-alt-missing`                                                     | an `<img>` with no `alt` attribute at all (`alt=""` is right for a decorative image)                                                                                                                                                                                                              |
+| `h1-count`, `heading-skip`                                            | a page without exactly one `<h1>`, or one whose headings jump a level (`h2 -> h4`)                                                                                                                                                                                                                |
+| `viewport-zoom-lock`                                                  | a `<meta name="viewport">` with `user-scalable=no` (or `0`), or a `maximum-scale` below 2, stops the 200% zoom WCAG 1.4.4 asks for                                                                                                                                                                |
+| `href-hash`                                                           | an `<a>` or `<area>` with `href="#"`: a link to nowhere, usually a control that should be a `<button>`, or a link not yet filled in                                                                                                                                                               |
+| `fragment-missing`                                                    | a link's `#fragment` names no `id` (or `<a name>`) on the page it lands on, whether that page is this one or another the build wrote                                                                                                                                                              |
+| `favicon-missing`                                                     | no page links an icon and there is no `favicon.ico` at the build root                                                                                                                                                                                                                             |
+| `not-found-missing`                                                   | no `404.html` at the build root — under `extensionLess` a `404` view lands at `404/index.html`, which hosts do not serve                                                                                                                                                                          |
+| `site-url-local`                                                      | `siteUrl` is `localhost`, `127.*`, a `.local`/`.test`/`.invalid` name or a preview deploy (`.example` is fine)                                                                                                                                                                                    |
+| `debug-dump`                                                          | `viewStats()` under `verbose: true` wrote `debug.json`, every page's options, into the build                                                                                                                                                                                                      |
+| `stray-file`                                                          | a dotfile (bar `.nojekyll`, `.htaccess` and `.well-known/`), a `.map`, `.log`, `.bak`, `.swp` or `~` file, `.DS_Store` or `Thumbs.db`                                                                                                                                                             |
+| `console-log`                                                         | a `.js` file you wrote contains `console.log(` — `*.min.js`, `vendor/` and `node_modules/` are skipped                                                                                                                                                                                            |
+| `privacy-link-missing`                                                | a page with a form that asks for an email address or a phone number has no link to the privacy page                                                                                                                                                                                               |
+| `placeholder-left`                                                    | a page still carries a `<mark>`, or the bracketed text `[to confirm`                                                                                                                                                                                                                              |
+| `checkbox-prechecked`                                                 | a checkbox is ticked before the reader ticks it, and its label is about marketing (offers, news, newsletters, partners, third parties)                                                                                                                                                            |
+| `consent-missing`, `consent-ungated`, `consent-ads-cmp` and five more | a tracker, an embed or an ad tag the consent manager does not hold back, and its settings; [Cookie consent](#cookie-consent) lists all seven                                                                                                                                                      |
+| `img-dimensions-missing`                                              | an `<img>` with no `width` or no `height`, and no inline `aspect-ratio` other than `auto`. One finding per image per page; an image in a `<template>` or an `<svg>` is not read, one in `<noscript>` is. A site that sizes every image in CSS ignores the check, saying so                        |
+| `img-first-lazy`                                                      | an `<img>` that is `loading="lazy"` and `fetchpriority="high"` at once (certain), or the first `<img>` in `<main>` before its first `<h2>` is lazy: that one may be the first image a visitor sees (an approximation, not a measurement)                                                          |
+| `fetchpriority-excess`, `font-preload-excess`                         | more than two elements with `fetchpriority="high"`, or more than two `<link rel="preload" as="font">`: when everything is first, nothing is                                                                                                                                                       |
+| `script-blocking`                                                     | a `<script src>` in the head (before `</head>` or `<body>`) that runs as a classic script with neither `defer` nor `async`. A module, a consent-gated script and a data block (JSON-LD, speculation rules, an import map) never fire                                                              |
+| `host-unset`                                                          | once for the site: the build wrote hashed files or has aliases, and neither `host` nor that concern's `format` chose a host file ([Cache headers](#cache-headers), [Redirects](#redirects))                                                                                                       |
+| `image-oversized`                                                     | a JPEG, PNG, WebP or AVIF in the build over 200 KB that a page's `<img src>` or an `<img>`/`<source>` `srcset` names, once per file per page, the detail naming the file and its size. A CSS background image is not read. The threshold is provisional ([Responsive images](#responsive-images)) |
+| `image-location-metadata`                                             | a shipped JPEG, PNG, WebP or AVIF whose EXIF GPS block or XMP packet names a latitude or longitude, referenced or not. Strip it from the file in `src/` (`npx kiss-ssg images <script> --write`): the original is still copied, so `{{image}}` alone does not remove it                           |
+| `img-not-responsive`                                                  | an `<img>` with no `srcset`, outside any `<picture>`, whose `src` is a raster in the build: one browsers fetch at one size on every screen. The worklist for moving it to `{{image}}`                                                                                                             |
 
-Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the three checks that walk it — `not-found-missing`, `stray-file`, `console-log` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
+Like the link scan, the findings are advisory: they never change `ok` and never change the exit code. A check your site deliberately does not want goes in `audit: { ignore: ['og-image-missing'] }`, with a comment saying why; it is then listed in `ignored`, so a clean audit with checks switched off is never mistaken for a clean site, and an id that is not a check throws when the `Kiss` is constructed. Under `cleanBuild: false` the build folder holds earlier builds' files, so the five checks that read it — `not-found-missing`, `stray-file`, `console-log`, `image-oversized`, `image-location-metadata` — do not run and are listed in `skipped`. `audit: false` turns the whole pass off; a dev build, a watch rebuild and a build with any failure report `audit: null`.
 
 **What `fragment-missing` can and cannot see.** It reads the ids in the HTML the build wrote, so it checks a skip link (`<a href="#main">` against `<main id="main">`), an in-page table of contents, and a cross-page `{{link "about"}}#team`, resolved to the page exactly as the link scan resolves its path. It leaves alone what it cannot judge:
 
@@ -1697,6 +1876,45 @@ You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns
 Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
 
 `outputs.collisions` lists output paths claimed by multiple producers, their observed `producers` (`{ owner, kind }`), current `winner` (or null), and `refused` owner names. Collisions track active producers and disappear when a conflicting source is removed; page renames do not collide with the previous build. File paths use the configured build-folder spelling in plain, atomic and check builds. They remain advisory: they do not change `ok` or the check exit code. On a discarded check build, the winner describes the last successful writer before disposal. Inline-template owners use compact fingerprint IDs rather than template bodies.
+
+#### Measuring speed
+
+`npx kiss-ssg speed <build-folder | url>` measures pages with [Lighthouse](https://developer.chrome.com/docs/lighthouse), so a change can be judged by numbers rather than by eye. Lighthouse is an **optional peer**: kiss installs nothing, and a site that wants the numbers installs it once (it needs Node 22.19 or later, and a Chrome on the machine):
+
+```bash
+npm install -D lighthouse
+npm run build
+npx kiss-ssg speed public --page / --page /blog/ --out speed-before.json
+```
+
+It never builds: build first, then name the folder (`folders.build`, `public/` by default), which it serves as the site root on a free port. A URL is measured as it is, and only a deployed URL shows delivery: the CDN, compression and cache headers. Each page (`--page`, `/` by default) is measured `--runs` times (3 by default, 1–9), each run in a fresh Chrome with Lighthouse's mobile preset and simulated throttling, and the table gives the **median** of each: the performance score, LCP, CLS, TBT, FCP, Speed Index, total bytes and the number of requests, with the score's spread.
+
+`--out <file>` writes those numbers as JSON; `--against <file>` compares this run with an earlier one, page by page, and marks a metric **changed** only when the change is larger than the spread of both runs, so noise is never reported as a gain:
+
+```bash
+npx kiss-ssg speed public --page / --page /blog/ --against speed-before.json
+```
+
+It exits 0 when every page was measured, 1 when a page failed to load or Lighthouse failed, and 2 on a usage error or a missing prerequisite, naming it (`npm install -D lighthouse`, the Node version, or `CHROME_PATH` when no Chrome is found). These are lab numbers from one machine with an empty cache, never the field verdict real visitors give: Search Console's Core Web Vitals report is that. `npx kiss-ssg speed --help` has every option.
+
+#### Auditing CSS
+
+`npx kiss-ssg css <build-folder>` reads a built site and says how its CSS is split, the same way every run, with no browser:
+
+```bash
+npm run build
+npx kiss-ssg css public --out css-before.json
+```
+
+- **Each stylesheet:** its Brotli size, how many pages link it, and how much of it is **removable**: the share of its compressed bytes no linking page uses, measured with the same PurgeCSS run as `assets.purge`.
+- **Each inline `<style>` block**, and the pages it is on. kiss's own consent CSS (`data-kiss-…`) is left out.
+- **Four findings:**
+  - `stylesheet-one-page`: a stylesheet only one page links.
+  - `inline-style-repeated`: one inline block on two or more pages.
+  - `rule-duplicated`: an identical rule in two stylesheets.
+  - `inline-style-blocked-by-csp`: inline CSS on a site whose `_headers` sets a `style-src-elem`, `style-src` or `default-src` without `'unsafe-inline'`. A policy that allows the block by hash or nonce is still reported.
+
+The rule they check: CSS goes where the pages that use it share it. That means the site stylesheet for what most pages use, a stylesheet per page type for one type's own styling, and inline `<style>` for one page's (the `kiss-performance` skill has the reasoning). `--out` writes the whole audit as JSON, byte-identical for the same folder, so a before and an after can be compared. A stylesheet the build links but did not write (one a separate tool produces) is listed as `missing`. Findings are advisory, and the command exits 0. It exits 2 on a usage error.
 
 ### Recording the knowledge base
 

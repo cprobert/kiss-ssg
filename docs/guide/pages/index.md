@@ -129,7 +129,7 @@ const kiss = new Kiss({
     headers: { Authorization: `Bearer ${process.env.API_TOKEN}` },
     timeout: 15000,
     retries: 2,
-    cache: './.kiss-cache',
+    cache: './.kiss-cache/fetch',
   },
 })
 ```
@@ -137,10 +137,10 @@ const kiss = new Kiss({
 -   **headers** — sent with every URL-model request. This is where an API token or an `Accept` header goes. Keep the token itself in an environment variable, not in the config you commit.
 -   **timeout** — milliseconds. The request is aborted and that page fails, naming the URL and the timeout. It defaults to 10 seconds: an API that accepts your connection and then goes quiet no longer hangs your build for ever.
 -   **retries** — extra attempts after a network error or a 5xx, with a short backoff. A 4xx is never retried: the server has already told you the request itself is wrong, so asking again only risks locking a key. If every attempt fails, the error says how many were made.
--   **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`:
+-   **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`. Ignore that folder alone, never the whole of `.kiss-cache/`: the image encode cache beside it (`.kiss-cache/images`, under **Responsive images**) is committed.
 
 ```
-.kiss-cache/
+.kiss-cache/fetch/
 ```
 
 A cached model is a build input, exactly like a `.json` file in your models folder: what is in that directory is what your site is built from. A response with a non-2xx status fails that page: an error body is never used as the model, and never cached.

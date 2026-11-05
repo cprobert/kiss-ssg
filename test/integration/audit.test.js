@@ -41,7 +41,7 @@ const CLEAN = {
   'src/assets/favicon.ico': 'icon',
   'src/pages/index.hbs': page('<h1>Home</h1><h2>News</h2>', 'Home'),
   'src/pages/about.hbs': page(
-    '<h1>About</h1><img src="/team.png" alt="">',
+    '<h1>About</h1><img src="/team.png" alt="" width="640" height="480">',
     'About',
   ),
   'src/pages/404.hbs': page('<h1>Not found</h1>', 'Not found'),
@@ -90,6 +90,11 @@ const unfinished = (root) => [
   { check: 'not-found-missing', page: null, detail: null },
   { check: 'stray-file', page: `${root}/css/site.css.map`, detail: null },
   { check: 'console-log', page: `${root}/js/app.js`, detail: '1' },
+  {
+    check: 'img-dimensions-missing',
+    page: `${root}/about.html`,
+    detail: '/team.png',
+  },
 ]
 
 describe('the launch-readiness audit', () => {
@@ -171,6 +176,8 @@ describe('the launch-readiness audit', () => {
       'not-found-missing',
       'stray-file',
       'console-log',
+      'image-oversized',
+      'image-location-metadata',
     ])
     const fired = report.audit.findings.map((finding) => finding.check)
     for (const check of report.audit.skipped) expect(fired).not.toContain(check)
@@ -197,6 +204,8 @@ describe('the launch-readiness audit', () => {
       'not-found-missing',
       'stray-file',
       'console-log',
+      'image-oversized',
+      'image-location-metadata',
     ])
   })
 
@@ -229,9 +238,9 @@ describe('the launch-readiness audit', () => {
     )
 
     // Each page misses title, description, og:image and canonical (4 + 4),
-    // index has two h1s and about an image with no alt (2), and the site has
-    // no favicon, no 404 page, a source map and a console.log (4).
-    expect(info).toContain('Audit: 2 pages, 14 findings')
+    // index has two h1s and about an image with no alt and no size (3), and
+    // the site has no favicon, no 404 page, a source map and a console.log (4).
+    expect(info).toContain('Audit: 2 pages, 15 findings')
     expect(notices).toContain(
       `audit stray-file: 1 file (${site.build}/css/site.css.map)`,
     )

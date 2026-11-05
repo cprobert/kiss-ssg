@@ -1,6 +1,6 @@
 ---
 name: kiss-accessibility
-description: Build and review a kiss-ssg site to WCAG 2.2 AA — labels, the skip link, keyboard focus, the current page, contrast, target size, zoom, motion, content without script. Use for "accessibility", "a11y", "WCAG", "keyboard navigation", "screen reader", "focus", "contrast", or when building a layout, a nav or a form. Not for the words, the look (kiss-design) or performance (kiss-front-end).
+description: Build and review a kiss-ssg site to WCAG 2.2 AA — labels, the skip link, keyboard focus, the current page, contrast, target size, zoom, motion, content without script. Use for "accessibility", "a11y", "WCAG", "keyboard navigation", "screen reader", "focus", "contrast", or when building a layout, a nav or a form. Not for the words, the look (kiss-design) or speed (kiss-performance).
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

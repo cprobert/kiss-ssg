@@ -3,6 +3,7 @@ import {
   auditLines,
   buildReport,
   formatReport,
+  reportedPath,
 } from '../../lib/build-report.js'
 import { exitCodeFor } from '../../lib/check.js'
 import path from 'node:path'
@@ -16,6 +17,51 @@ const failure = (view, buildTo, message) => ({
   view,
   buildTo,
   error: new Error(message),
+})
+
+describe('reportedPath', () => {
+  it('maps a path under the staging folder joined with /', () => {
+    expect(
+      reportedPath(
+        'docs.kiss-staging-1-a/x/y.json',
+        './docs',
+        'docs.kiss-staging-1-a',
+      ),
+    ).toBe('./docs/x/y.json')
+  })
+
+  // The fleet check (2026-11-05): lib/cache-headers.js joins with path.join,
+  // so on Windows its file came out as `docs.kiss-staging-…\cache-headers.json`
+  // and the report named a staging folder a check had already discarded.
+  it.skipIf(process.platform !== 'win32')(
+    'maps a path joined with the platform separator, written with /',
+    () => {
+      expect(
+        reportedPath(
+          'docs.kiss-staging-57436-61hhep\\cache-headers.json',
+          './docs',
+          'docs.kiss-staging-57436-61hhep',
+        ),
+      ).toBe('./docs/cache-headers.json')
+      expect(
+        reportedPath(
+          'C:\\site\\public.kiss-staging-1\\a\\b.css',
+          'C:\\site\\public',
+          'C:\\site\\public.kiss-staging-1',
+        ),
+      ).toBe('C:\\site\\public/a/b.css')
+    },
+  )
+
+  it('leaves a path outside the staging folder alone', () => {
+    expect(
+      reportedPath(
+        'docs.kiss-staging-1-ab/x',
+        './docs',
+        'docs.kiss-staging-1-a',
+      ),
+    ).toBe('docs.kiss-staging-1-ab/x')
+  })
 })
 
 describe('buildReport', () => {
@@ -78,6 +124,8 @@ describe('buildReport', () => {
       'packages',
       'thirdParty',
       'consent',
+      'cacheHeaders',
+      'images',
     ])
     expect(Object.keys(report.pages[0])).toEqual([
       'view',
@@ -294,6 +342,8 @@ describe('buildReport', () => {
       packages: null,
       thirdParty: null,
       consent: null,
+      cacheHeaders: null,
+      images: null,
     })
   })
 
@@ -544,7 +594,7 @@ describe('the audit key', () => {
     ...extra,
   })
 
-  it('is appended after outputs, with only packages, thirdParty and consent after it', () => {
+  it('is appended after outputs, with only packages, thirdParty, consent, cacheHeaders and images after it', () => {
     const keys = Object.keys(
       buildReport({ buildDir: './public', startedAt: Date.now() }),
     )
@@ -553,6 +603,8 @@ describe('the audit key', () => {
       'packages',
       'thirdParty',
       'consent',
+      'cacheHeaders',
+      'images',
     ])
   })
 
@@ -826,9 +878,12 @@ describe('the consent key', () => {
     pagesWithoutHead: [`${staging}/c.html`],
   }
 
-  it('is the last key, null without a consent manager', () => {
+  it('comes just before cacheHeaders, null without a consent manager', () => {
     const report = buildReport({ buildDir: './public', startedAt: Date.now() })
-    expect(Object.keys(report).at(-1)).toBe('consent')
+    expect(Object.keys(report).slice(-3, -1)).toEqual([
+      'consent',
+      'cacheHeaders',
+    ])
     expect(report.consent).toBeNull()
   })
 
@@ -877,7 +932,11 @@ describe('the thirdParty key', () => {
 
   it('comes just before consent, null when there is nothing to say', () => {
     const report = buildReport({ buildDir: './public', startedAt: Date.now() })
-    expect(Object.keys(report).slice(-2)).toEqual(['thirdParty', 'consent'])
+    expect(Object.keys(report).slice(-4, -1)).toEqual([
+      'thirdParty',
+      'consent',
+      'cacheHeaders',
+    ])
     expect(report.thirdParty).toBeNull()
   })
 

@@ -29,6 +29,7 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
         previous(owner: string, name: string): string | null;
         reconcile(owner: any, current: any): any[];
         lookup(urlPath: any): any;
+        retarget(name: string, output: string): void;
         toObject(): any;
     };
     outputs?: any;

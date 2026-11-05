@@ -319,7 +319,54 @@ describe('embedPresetNames', () => {
       'vimeo',
       'google-maps',
       'instagram',
+      'soundcloud',
     ])
+  })
+})
+
+// 2026-11-04, the fleet audit: a bare, auto-playing SoundCloud iframe was the
+// slowest page in the fleet (swan-love's home page, LCP 4.7 s). The player
+// alone fetched 2,632 KB of bodies on load, from six origins, and stored
+// nothing, logged out, in Chromium (measured the same day).
+describe('the soundcloud preset', () => {
+  it('is SoundCloud’s, in marketing, with the origins measured on 2026-11-04', () => {
+    const service = /** @type {any} */ (presetService('soundcloud'))
+    expect(service.category).toBe('marketing')
+    expect(service.label).toBe('SoundCloud')
+    expect(service.provider).toBe('SoundCloud')
+    expect(service.origins).toEqual([
+      'https://api-widget.soundcloud.com',
+      'https://dwt.soundcloud.com',
+      'https://i1.sndcdn.com',
+      'https://w.soundcloud.com',
+      'https://wave.sndcdn.com',
+      'https://widget.sndcdn.com',
+    ])
+    expect(service.cookies).toEqual([])
+    expect(service.storage).toEqual([])
+  })
+
+  it('takes a track id, never autoplays, and holds the classic player’s 166 px', () => {
+    const out = facade('soundcloud', {
+      hash: { id: '317030874' },
+      title: 'Our charity single',
+    })
+    expect(out).toContain(
+      'src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/317030874&amp;auto_play=false" title="Our charity single"',
+    )
+    expect(out).toContain('aspect-ratio:auto;height:166px')
+    expect(out).toContain('min-height:166px')
+    // A track id gives no link to the track's own page (measured: SoundCloud
+    // needs the permalink), so the notice offers Load and no link.
+    expect(out).not.toContain('kiss-embed__watch')
+  })
+
+  it('takes src= for a playlist or a permalink URL instead', () => {
+    const out = facade('soundcloud', {
+      src: 'https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/band/sets/live',
+      title: 'Live set',
+    })
+    expect(out).toContain('soundcloud.com/band/sets/live')
   })
 })
 

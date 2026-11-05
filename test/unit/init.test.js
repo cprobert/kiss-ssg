@@ -139,6 +139,23 @@ describe('planInit on an empty folder', () => {
     })
   })
 
+  // The starter builds to public/, so `speed` can name it. Lighthouse is
+  // offered, never installed: the script prints the install line when it is
+  // missing (the operator, 2026-11-04).
+  it('gives the starter a speed script for its public/ folder, and installs no Lighthouse', () => {
+    const pkg = json(byPath(actions, 'package.json'))
+    expect(pkg.scripts.speed).toBe('kiss-ssg speed public')
+    expect(JSON.stringify(pkg)).not.toMatch(/lighthouse/)
+  })
+
+  it('names kiss-ssg speed and the optional Lighthouse install in AGENTS.md', () => {
+    const agents = byPath(actions, 'AGENTS.md').content
+    expect(agents).toMatch(/npx kiss-ssg speed/)
+    expect(agents).toMatch(
+      /ask the owner before running `npm install -D lighthouse`/,
+    )
+  })
+
   it('writes the starter, renaming gitignore to .gitignore', () => {
     expect(byPath(actions, 'router.js').content).toContain(STARTER_MARKER)
     expect(byPath(actions, '.gitignore').verb).toBe('create')
@@ -191,6 +208,12 @@ describe('planInit never destroys anything', () => {
     const actions = planInit(state(ESM_SITE))
     expect(starterWrites(actions)).toEqual([])
     expect(byPath(actions, 'router.js')).toMatchObject({ kind: 'skip' })
+  })
+
+  it('gives an existing site no speed script: its build folder may not be public/', () => {
+    const pkg = json(byPath(planInit(state(ESM_SITE)), 'package.json'))
+    expect(pkg.scripts.check).toBe('kiss-ssg check router.js')
+    expect(pkg.scripts.speed).toBeUndefined()
   })
 
   it('leaves an existing site alone: no starter file when src/ exists', () => {
@@ -778,6 +801,12 @@ describe('describeAction', () => {
 describe('nextSteps', () => {
   it('includes the prompt to paste', () => {
     expect(nextSteps()).toContain(FIRST_PROMPT)
+  })
+
+  it('offers Lighthouse as an optional last step, with its Node floor', () => {
+    const text = nextSteps()
+    expect(text).toMatch(/Optional, for speed numbers[^\n]*Node 22\.19/)
+    expect(text).toMatch(/^ {4}npm install -D lighthouse$/m)
   })
 
   // The other front door. Someone who already has a site — most often one

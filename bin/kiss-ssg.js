@@ -28,6 +28,7 @@ import {
 import { formatReport } from '../lib/build-report.js'
 import { runSession } from '../lib/sessions.js'
 import { runBase } from '../lib/base.js'
+import { runSpeed } from '../lib/speed.js'
 import { GitError, git, tryGit } from '../lib/git.js'
 import {
   GUARDED_FILES,
@@ -59,6 +60,103 @@ if (process.argv[2] === 'session' || process.argv[2] === 'base') {
   if (result.err) console.error(result.err)
   if (result.out) console.log(result.out)
   process.exit(result.code)
+}
+
+// `speed` measures pages with Lighthouse, an optional peer loaded from the
+// site's folder. Every decision is lib/speed.js's; this prints and exits.
+if (process.argv[2] === 'speed') {
+  const result = await runSpeed(process.argv.slice(3), {
+    cwd: process.cwd(),
+    progress: (line) => console.error(line),
+  }).catch((err) => ({
+    code: 1,
+    out: '',
+    err: `kiss-ssg speed: ${err.message}`,
+  }))
+  if (result.err) console.error(result.err)
+  if (result.out) console.log(result.out)
+  process.exit(result.code)
+}
+
+// `css` audits how a built folder partitions its CSS. Every decision is
+// lib/css-audit.js's; this prints and exits. Imported here, not at the top,
+// so no other command loads PostCSS.
+if (process.argv[2] === 'css') {
+  const { runCss } = await import('../lib/css-audit.js')
+  const result = await runCss(process.argv.slice(3), {
+    cwd: process.cwd(),
+  }).catch((err) => ({ code: 1, out: '', err: `kiss-ssg css: ${err.message}` }))
+  if (result.err) console.error(result.err)
+  if (result.out) console.log(result.out)
+  process.exit(result.code)
+}
+
+// `images` runs the site's build staged and discarded, as `check` does, so
+// every instance encodes its misses into the cache and says which entries its
+// pages asked for; lib/images-sweep.js then prunes, lists and rewrites.
+if (process.argv[2] === 'images') {
+  const { IMAGES_HELP, parseImagesArgs, readSweepLines, sweepImages } =
+    await import('../lib/images-sweep.js')
+  const args = parseImagesArgs(process.argv.slice(3))
+  if (args.error || args.help) {
+    if (args.error) console.error(`kiss-ssg: ${args.error}\n`)
+    ;(args.error ? console.error : console.log)(IMAGES_HELP)
+    process.exit(args.error ? 1 : 0)
+  }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-images-'))
+  const reportFile = path.join(dir, 'reports.jsonl')
+  const sweepFile = path.join(dir, 'images.jsonl')
+  let code = 1
+  const read = (file) =>
+    fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
+  try {
+    // A second pass only when the first rewrote an original (`rerun`), and
+    // never with --write: the rewrite changed digests the cache is keyed by.
+    for (let pass = 0; pass < 2; pass++) {
+      // Each pass starts failed: the first pass's 0 must not survive a
+      // second pass that throws before it sets its own.
+      code = 1
+      fs.rmSync(reportFile, { force: true })
+      fs.rmSync(sweepFile, { force: true })
+      const run = spawnSync(
+        process.execPath,
+        [/** @type {string} */ (args.script), ...args.args],
+        {
+          cwd: process.cwd(),
+          env: {
+            ...process.env,
+            KISS_CHECK: '1',
+            KISS_REPORT: reportFile,
+            KISS_IMAGES: sweepFile,
+            ...(args.refresh ? { KISS_IMAGES_REFRESH: '1' } : {}),
+          },
+          stdio: [0, 2, 2],
+        },
+      )
+      if (run.error) console.error(`kiss-ssg: ${run.error.message}`)
+      const result = await sweepImages({
+        lines: readSweepLines(read(sweepFile)),
+        reports: readReports(read(reportFile)),
+        script: {
+          status: run.status,
+          signal: run.signal,
+          error: run.error ?? null,
+        },
+        write: args.write && pass === 0,
+        cwd: process.cwd(),
+      })
+      if (result.err) console.error(result.err)
+      if (result.out) console.log(result.out)
+      code = run.status === 0 ? result.code : 1
+      if (code !== 0 || !result.rerun) break
+    }
+  } catch (err) {
+    console.error(`kiss-ssg images: ${err.message}`)
+    code = 1
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+  process.exit(code)
 }
 
 // npm is npm.cmd on Windows, which Node will not spawn without a shell, and a

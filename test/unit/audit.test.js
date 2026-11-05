@@ -60,6 +60,15 @@ describe('CHECKS', () => {
       'consent-google-advanced',
       'consent-records-missing',
       'consent-history-missing',
+      'img-dimensions-missing',
+      'img-first-lazy',
+      'fetchpriority-excess',
+      'font-preload-excess',
+      'script-blocking',
+      'host-unset',
+      'image-oversized',
+      'image-location-metadata',
+      'img-not-responsive',
     ])
     expect(Object.isFrozen(CHECKS)).toBe(true)
   })
@@ -95,6 +104,13 @@ describe('extractPageFacts', () => {
       anchors: [],
       placeholders: [],
       prechecked: [],
+      imgNoSize: ['/a.jpg', '/b.jpg', '', '/d.jpg'],
+      imgFirstLazy: null,
+      fetchpriorityHigh: 0,
+      fontPreloads: 0,
+      blockingScripts: [],
+      imageRefs: ['/a.jpg', '/b.jpg', '/d.jpg'],
+      imgPlain: ['/a.jpg', '/b.jpg', '/d.jpg'],
       consent: NO_CONSENT,
     })
   })
@@ -128,6 +144,13 @@ describe('extractPageFacts', () => {
       anchors: [],
       placeholders: [],
       prechecked: [],
+      imgNoSize: [],
+      imgFirstLazy: null,
+      fetchpriorityHigh: 0,
+      fontPreloads: 0,
+      blockingScripts: [],
+      imageRefs: [],
+      imgPlain: [],
       consent: NO_CONSENT,
     })
   })
@@ -320,6 +343,13 @@ function facts(overrides = {}) {
     anchors: [],
     placeholders: [],
     prechecked: [],
+    imgNoSize: [],
+    imgFirstLazy: null,
+    fetchpriorityHigh: 0,
+    fontPreloads: 0,
+    blockingScripts: [],
+    imageRefs: [],
+    imgPlain: [],
     ...overrides,
   }
 }
@@ -373,6 +403,29 @@ function audit(options = {}) {
 }
 
 const only = (result, check) => result.findings.filter((f) => f.check === check)
+
+describe('auditBuild — host-unset', () => {
+  it('names the concerns with no host file chosen, once, for the whole site', () => {
+    const result = audit({ hostUnset: ['redirects', 'cache headers'] })
+    expect(only(result, 'host-unset')).toEqual([
+      { check: 'host-unset', page: null, detail: 'cache headers, redirects' },
+    ])
+  })
+
+  it('is silent when every concern was decided', () => {
+    expect(only(audit({ hostUnset: [] }), 'host-unset')).toEqual([])
+    expect(only(audit({}), 'host-unset')).toEqual([])
+  })
+
+  it('can be ignored', () => {
+    const result = audit({
+      hostUnset: ['cache headers'],
+      ignore: ['host-unset'],
+    })
+    expect(only(result, 'host-unset')).toEqual([])
+    expect(result.ignored).toEqual(['host-unset'])
+  })
+})
 
 describe('auditBuild — a finished site', () => {
   it('finds nothing on a finished site', () => {
@@ -989,7 +1042,7 @@ describe('auditBuild — site-level checks', () => {
 })
 
 describe('auditBuild — ownership, ignore and order', () => {
-  it('ownsFolder: false skips the three walk checks and says so', () => {
+  it('ownsFolder: false skips the five walk checks and says so', () => {
     const buildDir = buildFolder({
       'x.map': 'x',
       'app.js': 'console.log(1)',
@@ -1003,6 +1056,8 @@ describe('auditBuild — ownership, ignore and order', () => {
       'not-found-missing',
       'stray-file',
       'console-log',
+      'image-oversized',
+      'image-location-metadata',
     ])
     // The rest still run: the favicon check reads one fixed path, not the walk.
     expect(result.findings).toEqual([
@@ -1027,7 +1082,12 @@ describe('auditBuild — ownership, ignore and order', () => {
       ignore: ['stray-file'],
     })
     expect(result.ignored).toEqual(['stray-file'])
-    expect(result.skipped).toEqual(['not-found-missing', 'console-log'])
+    expect(result.skipped).toEqual([
+      'not-found-missing',
+      'console-log',
+      'image-oversized',
+      'image-location-metadata',
+    ])
   })
 
   it('sorts by check in CHECKS order, then page, then detail', () => {
@@ -1654,5 +1714,295 @@ describe('thirdPartyOrigins', () => {
         ],
       }),
     ).toEqual({ siteUrl: 'https://site.example', pages: [], origins: [] })
+  })
+})
+
+// The speed checks (`planning/plans/2026-11-04-kiss-performance.md`,
+// "Audit checks"). Each fact is read from a whole document, the way
+// `KissPage` hands the written bytes over.
+const perf = (head, body) =>
+  extractPageFacts(
+    `<!doctype html><html><head>${head}</head><body>${body}</body></html>`,
+    'a.html',
+  )
+
+describe('the speed checks are appended to CHECKS, in order', () => {
+  it('has the five, then host-unset, ahead of the image checks', () => {
+    expect(CHECKS.slice(-9, -3)).toEqual([
+      'img-dimensions-missing',
+      'img-first-lazy',
+      'fetchpriority-excess',
+      'font-preload-excess',
+      'script-blocking',
+      'host-unset',
+    ])
+  })
+})
+
+describe('speed facts — imgNoSize', () => {
+  it('lists an image lacking width or height, by src', () => {
+    expect(
+      perf(
+        '',
+        '<img src="/both.png" width="10" height="5">' +
+          '<img src="/w.png" width="10"><img src="/h.png" HEIGHT=5>' +
+          '<img src="/none.png"><img alt="no src">',
+      ).imgNoSize,
+    ).toEqual(['/w.png', '/h.png', '/none.png', ''])
+  })
+
+  it('takes an inline aspect-ratio as reserving the space, unless it is auto', () => {
+    expect(
+      perf(
+        '',
+        '<img src="/r.png" style="width:100%;aspect-ratio:16/9">' +
+          '<img src="/spaced.png" style="aspect-ratio : 4 / 3">' +
+          '<img src="/auto-ratio.png" style="aspect-ratio:auto 4/3">' +
+          '<img src="/auto.png" style="aspect-ratio: auto">',
+      ).imgNoSize,
+    ).toEqual(['/auto.png'])
+  })
+
+  it('never judges an image in a <template> or a script string', () => {
+    // kiss's own consent banner logo waits in a template with no size.
+    expect(
+      perf(
+        '',
+        '<template><img class="kiss-consent__logo" src="/logo.png" alt=""></template>' +
+          '<script>el.innerHTML = \'<img src="/in-script.png">\'</script>' +
+          '<!-- <img src="/commented.png"> -->',
+      ).imgNoSize,
+    ).toEqual([])
+  })
+
+  it('judges an <img> in a <picture> or a <noscript> on its own attributes', () => {
+    expect(
+      perf(
+        '',
+        '<picture><source srcset="/a.avif" width="10" height="5">' +
+          '<img src="/a.jpg" alt=""></picture>' +
+          '<noscript><img src="/pixel.gif"></noscript>',
+      ).imgNoSize,
+    ).toEqual(['/a.jpg', '/pixel.gif'])
+  })
+
+  it('never reads width or height inside another attribute’s value', () => {
+    expect(
+      perf(
+        '',
+        '<img src="/a.png" alt="width=10 height=5" data-x=\'a > b\'>' +
+          '<img data-width="10" data-height="5" src="/b.png">',
+      ).imgNoSize,
+    ).toEqual(['/a.png', '/b.png'])
+  })
+})
+
+describe('speed facts — imgFirstLazy', () => {
+  it('names an image that is both lazy and high priority, wherever it is', () => {
+    expect(
+      perf(
+        '',
+        '<main><h2>x</h2><img src="/a.png"></main>' +
+          '<footer><img src="/both.png" loading="lazy" fetchpriority="HIGH"></footer>',
+      ).imgFirstLazy,
+    ).toBe('/both.png')
+  })
+
+  it('names the first image in <main> before its first <h2>, when it is lazy', () => {
+    expect(
+      perf(
+        '<img src="/head.png" loading="lazy">',
+        '<header><img src="/logo.png" loading="lazy"></header>' +
+          '<main><h1>T</h1><p>x</p><img src="/hero.png" loading="LAZY">' +
+          '<img src="/second.png"><h2>More</h2></main>',
+      ).imgFirstLazy,
+    ).toBe('/hero.png')
+  })
+
+  it('is null when the first image in <main> is eager, or comes after its first <h2>', () => {
+    expect(
+      perf(
+        '',
+        '<main><img src="/hero.png"><img src="/b.png" loading="lazy"></main>',
+      ).imgFirstLazy,
+    ).toBeNull()
+    expect(
+      perf(
+        '',
+        '<main><h1>T</h1><h2>x</h2><img src="/a.png" loading="lazy"></main>',
+      ).imgFirstLazy,
+    ).toBeNull()
+  })
+
+  it('is null with no <main>, and never reads <main-nav> or a template as one', () => {
+    expect(
+      perf('', '<img src="/a.png" loading="lazy">').imgFirstLazy,
+    ).toBeNull()
+    expect(
+      perf(
+        '',
+        '<main-nav><img src="/a.png" loading="lazy"></main-nav>' +
+          '<main><template><img src="/t.png" loading="lazy"></template>' +
+          '<img src="/eager.png"></main>',
+      ).imgFirstLazy,
+    ).toBeNull()
+  })
+})
+
+describe('speed facts — fetchpriorityHigh and fontPreloads', () => {
+  it('counts every element with fetchpriority=high', () => {
+    expect(
+      perf(
+        '<link rel="preload" href="/a.css" as="style" fetchpriority="high">' +
+          '<script src="/a.js" defer fetchpriority="high"></script>',
+        '<img src="/a.png" fetchpriority="High"><img src="/b.png" fetchpriority="low">' +
+          '<img src="/c.png" alt="fetchpriority=high">' +
+          '<template><img src="/t.png" fetchpriority="high"></template>',
+      ).fetchpriorityHigh,
+    ).toBe(3)
+  })
+
+  it('counts <link rel=preload as=font> only', () => {
+    expect(
+      perf(
+        '<link rel="preload" href="/a.woff2" as="font" crossorigin>' +
+          '<link REL="Preload" AS="Font" href="/b.woff2">' +
+          '<link rel="preload" href="/c.css" as="style">' +
+          '<link rel="prefetch" href="/d.woff2" as="font">' +
+          '<link rel="stylesheet" href="/e.css">',
+        '<template><link rel="preload" as="font" href="/t.woff2"></template>',
+      ).fontPreloads,
+    ).toBe(2)
+  })
+})
+
+describe('speed facts — blockingScripts', () => {
+  it('lists a classic <script src> in the head with no defer or async', () => {
+    expect(
+      perf(
+        '<script src="/block.js"></script>' +
+          '<script type="text/javascript" src="/typed.js"></script>' +
+          '<script src="/d.js" defer></script><script src="/a.js" async></script>' +
+          '<script type="module" src="/m.js"></script>' +
+          '<script>inline()</script>',
+        '<script src="/body.js"></script>',
+      ).blockingScripts,
+    ).toEqual(['/block.js', '/typed.js'])
+  })
+
+  it('never lists a script a browser does not run', () => {
+    // kiss's gated scripts are text/plain until consent revives them.
+    expect(
+      perf(
+        '<script type="text/plain" data-kiss-service="gtm" data-src="https://x.example/g.js" src="/gated.js"></script>' +
+          '<script type="application/ld+json" src="/ld.json"></script>' +
+          '<script type="speculationrules" src="/rules.json"></script>' +
+          '<script type="importmap" src="/map.json"></script>',
+        '',
+      ).blockingScripts,
+    ).toEqual([])
+  })
+
+  it('never reads defer or async inside another attribute’s value', () => {
+    expect(
+      perf('<script src="/a.js" data-note="defer async"></script>', '')
+        .blockingScripts,
+    ).toEqual(['/a.js'])
+  })
+
+  it('ends the head at </head> or <body, and judges no page with neither', () => {
+    expect(
+      extractPageFacts(
+        '<html><script src="/early.js"></script><body><script src="/late.js"></script></body></html>',
+        'a.html',
+      ).blockingScripts,
+    ).toEqual(['/early.js'])
+    expect(
+      extractPageFacts(
+        '<html><script src="/where.js"></script></html>',
+        'a.html',
+      ).blockingScripts,
+    ).toEqual([])
+  })
+
+  it('never lists a script in a template or a comment', () => {
+    expect(
+      perf(
+        '<template><script src="/t.js"></script></template>' +
+          '<!-- <script src="/c.js"></script> -->',
+        '',
+      ).blockingScripts,
+    ).toEqual([])
+  })
+})
+
+describe('auditBuild — the speed checks', () => {
+  it('img-dimensions-missing fires once per image, detail the src', () => {
+    const a = page({ imgNoSize: ['/x.png', '/y.png'] })
+    expect(
+      only(audit({ pages: [a, page()] }), 'img-dimensions-missing'),
+    ).toEqual([
+      { check: 'img-dimensions-missing', page: a.buildTo, detail: '/x.png' },
+      { check: 'img-dimensions-missing', page: a.buildTo, detail: '/y.png' },
+    ])
+  })
+
+  it('img-first-lazy fires with the src', () => {
+    const a = page({ imgFirstLazy: '/hero.png' })
+    expect(only(audit({ pages: [a, page()] }), 'img-first-lazy')).toEqual([
+      { check: 'img-first-lazy', page: a.buildTo, detail: '/hero.png' },
+    ])
+  })
+
+  it('fetchpriority-excess and font-preload-excess fire above two, detail the count', () => {
+    const two = page({ fetchpriorityHigh: 2, fontPreloads: 2 })
+    const three = page({ fetchpriorityHigh: 3, fontPreloads: 5 })
+    const result = audit({ pages: [two, three] })
+    expect(only(result, 'fetchpriority-excess')).toEqual([
+      { check: 'fetchpriority-excess', page: three.buildTo, detail: '3' },
+    ])
+    expect(only(result, 'font-preload-excess')).toEqual([
+      { check: 'font-preload-excess', page: three.buildTo, detail: '5' },
+    ])
+  })
+
+  it('script-blocking fires once per script, detail the src', () => {
+    const a = page({ blockingScripts: ['/a.js', '/b.js'] })
+    expect(only(audit({ pages: [a, page()] }), 'script-blocking')).toEqual([
+      { check: 'script-blocking', page: a.buildTo, detail: '/a.js' },
+      { check: 'script-blocking', page: a.buildTo, detail: '/b.js' },
+    ])
+  })
+
+  it('reads facts without the speed fields as having nothing to report', () => {
+    const old = page({
+      imgNoSize: undefined,
+      imgFirstLazy: undefined,
+      fetchpriorityHigh: undefined,
+      fontPreloads: undefined,
+      blockingScripts: undefined,
+    })
+    expect(audit({ pages: [old] }).findings).toEqual([])
+  })
+
+  it('finds none of them on a page built the way kiss writes one', () => {
+    const facts = extractPageFacts(
+      '<!doctype html><html><head><title>T</title>' +
+        '<script data-kiss-consent-head>(function(){})()</script>' +
+        '<link rel="stylesheet" href="/s.css"></head><body><main><h1>T</h1>' +
+        '<img src="/hero.png" width="800" height="400" alt="" fetchpriority="high">' +
+        '<h2>More</h2><img src="/b.png" width="1" height="1" alt="" loading="lazy"></main>' +
+        '<template><img class="kiss-consent__logo" src="/logo.png" alt=""></template>' +
+        '<script type="text/plain" data-kiss-service="gtm" data-src="https://www.googletagmanager.com/gtm.js"></script>' +
+        '</body></html>',
+      'a.html',
+    )
+    expect(facts).toMatchObject({
+      imgNoSize: [],
+      imgFirstLazy: null,
+      fetchpriorityHigh: 1,
+      fontPreloads: 0,
+      blockingScripts: [],
+    })
   })
 })

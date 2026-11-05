@@ -80,6 +80,8 @@ export function classifyReference(ref: string, { siteUrl }?: {
  * serves a directory index without its slash, which moves the folder its
  * relative references resolve against up one. Pass true for a learning
  * package's page, which an LMS opens as the file itself
+ * @param {string|null} [options.siteUrl] `config.siteUrl`: with no path
+ * prefix, a relative `..` above the root stops at it, as a browser's does
  * @returns {boolean}
  */
 export function resolveReference(ref: string, options?: {
@@ -89,6 +91,7 @@ export function resolveReference(ref: string, options?: {
     exists?: (file: string) => boolean;
     known?: Set<string>;
     trailingSlash?: boolean;
+    siteUrl?: string | null;
 }): boolean;
 /**
  * Which file an internal reference resolves to — `resolveReference`'s answer
@@ -110,17 +113,19 @@ export function resolveReference(ref: string, options?: {
  * @param {(file: string) => boolean} [options.exists]
  * @param {Set<string>} [options.known]
  * @param {boolean} [options.trailingSlash]
+ * @param {string|null} [options.siteUrl]
  * @returns {string|null} the matched candidate, relative to the build folder
- * with forward slashes; `null` when nothing matched or the reference climbs
- * out of the build folder
+ * with forward slashes; `null` when nothing matched, or the reference climbs
+ * out of a site served under a `siteUrl` path prefix
  */
-export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLess, exists, known, trailingSlash, }?: {
+export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLess, exists, known, trailingSlash, siteUrl, }?: {
     pageBuildTo: string;
     buildDir: string;
     extensionLess?: boolean;
     exists?: (file: string) => boolean;
     known?: Set<string>;
     trailingSlash?: boolean;
+    siteUrl?: string | null;
 }): string | null;
 /**
  * One page's output as the scan needs it: where it was written, and what it

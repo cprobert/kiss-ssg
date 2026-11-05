@@ -700,7 +700,9 @@ describe('learning packages', () => {
       return readFile(file, ...rest)
     })
     await build(
-      {},
+      // The count is the packager's reads. The asset copy's own read, to
+      // minify the stylesheet before it is hashed, is a different phase.
+      { assets: { minify: false } },
       {
         files: {
           ...FILES,

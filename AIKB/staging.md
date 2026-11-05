@@ -25,14 +25,16 @@ direct call would step around the patch.
   same object as `config` when nothing is staged).
 - `sweepStaleSiblings(kiss)` — `_sweepStaleSiblings()`.
 - `stagedPath(kiss, target)` — `_stagedPath()`. `toReportedPath(kiss, target)` —
-  `_reportedPath()` (named apart from `build-report.js`'s unrelated `reportedPath`).
+  `_reportedPath()`, which delegates to `build-report.js`'s `reportedPath` so the report and
+  the failure messages map a staged path by one rule (they were two copies, and both missed
+  a `\`-joined path on Windows until 2026-11-05).
 - `renameForPromote(from, to, folder)` — `_renameForPromote()`.
 - `restorePrevious`, `promote`, `swapIn`, `discardStaging`, `abandonStaging`, `removeStaging` —
   the `_`-prefixed method of the same name on `Kiss`.
 
 ## Depends on
 
-`fs-extra` and `node:fs/promises` as **default imports** — `test/integration/staging.test.js`,
+`lib/build-report.js` (`reportedPath`, the one staged-path mapping). `fs-extra` and `node:fs/promises` as **default imports** — `test/integration/staging.test.js`,
 `watch.test.js` and `atomic-build.test.js` spy on `fs.rm`, `fs.remove`, `fs.move` and
 `fsp.rename`, which only works while this module calls them as members of those objects. And
 `node:path`. Nothing from `lib/`.
