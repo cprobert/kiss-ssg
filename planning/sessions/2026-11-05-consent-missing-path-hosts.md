@@ -1,7 +1,7 @@
 ---
 branch: fix/consent-missing-path-hosts
 base: main
-status: open
+status: closed
 opened: 2026-11-05
 ---
 
@@ -37,3 +37,26 @@ opened: 2026-11-05
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-11-05: consent-missing misses path-qualified tracker hosts
+
+**What we shipped:** `1021aa6` (`lib/audit.js` decides `tracker: true` per origin entry at extraction, from the whole URL, and `checkConsent` reads the flag; a red-first test in `test/unit/audit-consent.test.js`; `AIKB/audit.md`; `types/audit.d.ts`), `6c21384` (2.12.1, CHANGELOG entry with an upgrade note). A raw Google Maps frame on a site without `config.consent` now raises `consent-missing`, as `GUIDE.md` already claimed it did.
+
+**Supervision:** Planned, small, and found in the field rather than in the repo. The defect came out of the operator's request to verify a1k9training's deploy preview of 2.12.0, followed by the question "Any changes needed to the engine based on your assessment?". That question turned an observation in a site report (the `thirdParty` report listed a `www.google.com` iframe and the audit was silent) into an engine fix. The operator authorised the branch ("Yes open up a new branch to patch this"), which is the rule held: no branch on Claude's initiative. Before closing, the operator also asked for diligence on the cache headers they did not fully follow ("I need your diligence … then explain it to me in simple language"). That is good **Learning engagement**: they asked for an explanation rather than accepting a summary. The weak spot is **Verification & ownership**. At the pulse the operator asked Claude to run the eyeball ("Will you do that for me please?"), so the only look at the real site's result is Claude's own: a1k9training `master` junctioned to this tree, `consent-missing` on `/contact/` only. It is honest evidence and is logged as Claude's, not a human look. The pulse's offer (a `tracker: true` flag rather than full URLs in the facts) was answered: keep. **Iteration discipline** was right for the size: red-first test, one pulse with a real-site check, gates, then a Codex review of the whole branch, which found nothing. Competency level: **Active supervisor**. The framing question and the explicit branch authorisation were the operator's. The one checkpoint meant for the operator's own eyes was handed back to Claude.
+
+**Feedback for next time:**
+
+- **Operator — when the eyeball is a terminal line, read that line yourself.** Here it was one command's output (`check --summary` from a1k9training). Pasting the command and reading the single `audit consent-missing: 1 page` line costs less than delegating it, and it turns Claude's evidence into a human check.
+- **Claude — when a guide sentence lists what a check covers, test one item from the list against the engine.** `GUIDE.md:1531` named Google Maps under `consent-missing` from the day the preset shipped, and nothing tested that a raw Maps frame fires. A sentence about behaviour is a claim (CLAUDE.md § Rules). The class here is "a list in the guide with no test per item", and the consent list deserves a sweep the next time that area is open.
+- **Process — a deploy-preview verification is a good place to find engine bugs; keep asking the follow-up.** The operator's "any changes needed to the engine?" is what turned a site report into a fix. Without it, the finding would have stayed a line in a1k9training's preview notes.
+
+**Did we achieve the objective?** Met.
+
+- [x] Red-first unit test: a raw `/maps/embed` iframe with no `config.consent` expects `consent-missing`, red before `1021aa6`, green after (pulse log).
+- [x] The fix carries the whole URL to the match; the sweep found two `matchesHost` callers: the tracker one fixed, and the ads one host-only on purpose (documented in `AIKB/audit.md`).
+- [x] A non-Maps `www.google.com` frame (reCAPTCHA) and a `{{embed 'google-maps'}}` facade stay quiet (same test).
+- [x] a1k9training checked against this tree: `consent-missing` on `./docs/contact/index.html` only. Claude ran it at the operator's request.
+- [x] `AIKB/audit.md` says what is matched; `CHANGELOG.md` 2.12.1 has an upgrade note naming `{{embed 'google-maps'}}` as the fix.
+- [x] `npm run gates` passed at close (test, lint, typecheck, format, pack — 411 files). Codex review over `main...HEAD`: no findings.
+
+Open: a1k9training's contact maps move to `{{embed 'google-maps'}}` on its own branch once 2.12.1 is published, and the npm publish is the operator's.
