@@ -362,3 +362,57 @@ The tool (fontaine, capsize, or Fontsource's own metrics) is chosen by trying ea
 - **D-F1. `sharp` as a dependency or an optional peer.** As a dependency, every install gets a native binary (about 1 MB plus the platform's libvips), and `{{image}}` just works. As an optional peer (like `lighthouse`), a site that uses `{{image}}` without it fails with `npm i sharp`. Claude leans to the dependency: every site has images, and the helper is meant to be the default way to write one.
 - **D-F2. Images in Markdown content.** `![](…)` in a model's Markdown never passes through `{{image}}`. Options: out of scope (the audit still reports dimensions and size), or a later render step that rewrites `<img>` in the written HTML, the way the purge rewrites links.
 - **D-F3. Existing `<img>` tags.** A migration (an agent rewrites `<img src="{{asset …}}">` to `{{image}}`, guided by the skill and the audit), never automatic.
+
+## Amendment 2026-11-05: workstream F after the critique
+
+One fresh-context agent critiqued F1–F9 and found 17 issues, 2 of them blockers. Claude re-checked the code claims before acting: `hashedFiles` and `FIREBASE_HASHED` cover only `.css`/`.js` (`lib/cache-headers.js:59,74-77`); `urlRevision` assumes image edits need no re-render (`lib/asset-manifest.js:62`); a scoped rebuild never settles (`lib/rebuild.js`, `_refreshReport` only); packages pack only claimed outputs (`lib/packages.js:69`); `kiss-performance/SKILL.md:26` says "image encoding is not kiss's". Claude also measured `sharp` 0.35.5 in a scratch install on Windows. The `@img/sharp-win32-x64` binary is 19 MB, and npm also installed `@img/sharp-wasm32` at 9 MB, so the "about 1 MB" in D-F1 was wrong. Output to AVIF, WebP and JPEG drops all EXIF, GPS included, by default; only `keepMetadata()` keeps it. A photo tagged orientation 6 comes out sideways when resized by default, and the right way up with `autoOrient()` first. 100 header reads took 20 ms. These replace the draft where they disagree:
+
+- **F2 (blockers 1, 2 and findings 7, 13).**
+  - Nothing reads images at copy time. `{{image}}` reads the header lazily, through one small synchronous parser in `lib/image-header.js` (size, orientation, GPS presence), memoised by path, mtime and size. Width and height are swapped for orientations 5–8.
+  - The hash is over the copied build file, not `src/`.
+  - Encoding is `autoOrient()`, then resize, then encode. Each source is decoded once and cloned per variant, with a bounded concurrency.
+  - A corrupt image or a `sharp` error is a `_failures` entry, `<images: img/x.jpg>`, naming the pages that asked for it.
+  - It sits after `_purgeAssets` and before `_writePackages`, the link scan and the audit, and is skipped on a failed build.
+  - A cold run is timed on a fleet site before the defaults are set.
+- **Dev.** `{{image}}` writes the original at its true size in a single `<img>`, with the same `alt`, `width`, `height` and loading attributes. Nothing is encoded, as the purge is skipped. This is decision D-F4 below.
+- **F3 (finding 4).**
+  - Variants are named `img/hero-960.<hash>.avif`, the hash before the extension as `hashedName` writes it, and always content-named (no `?v=`, whatever `assets.hash` and `assets.version` say).
+  - `hashedFiles` gets the variants as their own input, and `FIREBASE_HASHED` is extended to image extensions.
+- **Outputs (finding 5).** Each variant is claimed in the output registry (kind `generated`) and written to `_writeRoot`. A variant no page asks for any more is removed, as the asset copy reconciles. So packages contain them and the sweep removes old ones.
+- **Report (finding 6).** Variants stay out of the asset manifest's map. A separate image index feeds a new `images` report key (requested, encoded, cache hits), appended after `thirdParty`. `report().assets` and the `check` baseline do not move.
+- **Watch (finding 3).** The image index records which pages used which source. A source edit re-renders those pages, whatever `assets.hash` says, and the `urlRevision` comment is corrected. The latch `_imagesRun` and the requested set reset in `_replay` beside `_purgeRun`.
+- **F4 (finding 12).**
+  - The cache is keyed by the full digest. The recipe string includes `sharp.versions`, so an upgrade invalidates it.
+  - Each write goes to a temp file, then a rename. An `EPERM` on a concurrent rename counts as a hit, and an empty file is rejected.
+  - The root is the nearest `package.json` above the site, overridable by `KISS_CACHE_DIR`. An unwritable cache warns once and is skipped.
+  - GUIDE.md says a host or CI with no kept `node_modules` (GitHub Actions; `npm ci`) re-encodes, and that `check` writes this one folder outside the build.
+- **F5 (blocker 1, findings 9, 14).**
+  - Every `<source>` carries the same `sizes` as the `<img>`, `auto, …` when lazy. `sizes=` is required, because no default is right for every layout. A missing one fails the build like a missing `alt`.
+  - In dev, a missing `alt` or `sizes` warns, as an unknown asset does.
+  - The URL base is a `root=` hash argument, defaulting to `/`, so learning packages and nested `root` sites work.
+  - The source's own width is added when it falls between steps.
+  - The fallback `src` is the middle width.
+  - A `.webp` or `.avif` source falls back to JPEG, not to itself. An animated source is refused with a message.
+  - `.jpeg` is written as `.jpg`. JPEG quality is 80.
+  - `src`, `srcset`, `width`, `height`, `loading` and `fetchpriority` cannot be passed through, and `alt` is escaped.
+- **F7 (findings 10, 11).**
+  - Both checks read the first 64 KB of each file with the same synchronous parser, inside the existing synchronous audit. GPS is checked in the EXIF GPS IFD and in XMP.
+  - `image-location-metadata` says to strip the source in `src/`. The original is still copied, so `{{image}}` alone does not fix it.
+  - `image-oversized` counts only files a page references. CSS background images are a documented false negative.
+  - The checks are skipped in dev and under `cleanBuild: false`, and GUIDE.md lists them as the other folder-walk checks are listed.
+- **F9 (finding 15).** `SKILL.md` lines 24, 26 and 64 are rewritten, and each old sentence is added to the `CONTRADICTIONS` table. New: `lib/image-header.js` (it absorbs `lib/exif-gps.js`).
+- **Markdown copies (finding 17).** A test checks that turndown turns the `<picture>` into `![alt](fallback)` with the right base.
+
+### Decisions for the operator, revised
+
+- **D-F1.** `sharp` costs about 29 MB installed on Windows (measured), loaded only on the first encode. The header reader, the audit and dev never load it.
+- **D-F2.** Out of scope now. Later, a Remarkable image rule at render that calls the same markup function, not a rewrite of the written HTML.
+- **D-F3.** A migration. Added: an audit finding, `img-not-responsive`, that names each `<img>` pointing at a raster `{{image}}` could serve, as the agent's worklist.
+- **D-F4.** Dev serves the original, with no encoding.
+
+**Decided (the operator, 2026-11-05), all four as Claude recommended:**
+
+- `sharp` is a dependency;
+- dev serves the original;
+- Markdown images are out of scope;
+- existing `<img>` tags are migrated by an agent, with `img-not-responsive` as the worklist.
