@@ -226,6 +226,44 @@ describe('parseImageHeader — a hostile AVIF', () => {
     return Buffer.concat([ftyp, metaFor(dataAt), Buffer.alloc(region, 1)])
   }
 
+  it('does bounded work when extent records take no bytes at all', () => {
+    // offset, length and index sizes all 0: 10,000 items of 65,535 extents
+    // each fit in about 60 KB and cost 655 million loop turns read naively
+    // (about 2 s, Codex's measurement). A copied folder of them stalls the
+    // audit without sharp ever running.
+    const items = 10000
+    const infe = box(
+      'infe',
+      Buffer.concat([u32(0x02000000), u16(1), u16(0), Buffer.from('Exif\0')]),
+    )
+    const iinf = box('iinf', Buffer.concat([u32(0), u16(1), infe]))
+    const ispe = box('ispe', Buffer.concat([u32(0), u32(40), u32(20)]))
+    const iprp = box('iprp', box('ipco', ispe))
+    const iloc = box(
+      'iloc',
+      Buffer.concat([
+        u32(0),
+        Buffer.from([0x00, 0x00]), // offset 0, length 0, base 0
+        u16(items),
+        Buffer.concat(
+          Array.from({ length: items }, (_, i) =>
+            Buffer.concat([u16(i + 1), u16(0), u16(65535)]),
+          ),
+        ),
+      ]),
+    )
+    const file = Buffer.concat([
+      box('ftyp', Buffer.from('avifavif')),
+      box('meta', Buffer.concat([u32(0), iinf, iloc, iprp])),
+    ])
+    const started = performance.now()
+    const header = parse(file)
+    const elapsed = performance.now() - started
+    expect(header).toMatchObject({ format: 'avif', width: 40, height: 20 })
+    // Milliseconds once bounded; whole seconds unbounded.
+    expect(elapsed).toBeLessThan(250)
+  })
+
   it('reads a bounded number of bytes however many extents repeat', () => {
     const file = hostile(65535, 1024 * 1024)
     const inner = bufferReader(file)
