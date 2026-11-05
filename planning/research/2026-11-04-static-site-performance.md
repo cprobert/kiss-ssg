@@ -164,6 +164,20 @@ Both were found before the class-attribute check, which is the method above.
 
 **Conclusion:** the method's risk is template-only scanning, which breaks real styles. Scanning the written pages plus scripts never dropped a used style, and was as small as or smaller than the full template scan. The difference between methods (1–2.6 KB after Brotli) is small beside the gain from purging at all (8–10 KB here). One build each; diploma-msc's unpurged input is its `learna.css` of 2026-10-02.
 
+## Checked against the skill (2026-11-05)
+
+The operator asked for the research's top recommendations to be checked against the shipped skill before the close. Eight of the ten were covered. Two gaps are now in the skill:
+
+- **Redirects and the time to first byte.** Verified at web.dev/articles/optimize-ttfb (updated 2025-11-28). Most sites should aim for a TTFB of 0.8 s or less. A single redirect adds latency, and chained ones add more. Same-origin redirects are the ones a site controls, including the trailing slash and http to https.
+- **The back/forward cache.** Verified at web.dev/articles/bfcache (updated 2026-10-16):
+  - never use the `unload` event, since Firefox does not cache such a page except on iOS;
+  - `Cache-Control: no-store` has historically kept a page out of the cache, and `no-cache` and `max-age=0` do not;
+  - test it in DevTools → Application → Back-forward cache → Run test.
+
+  kiss's own scripts use neither `unload` nor `no-store` (grep of `lib/`).
+
+The other two additions come from earlier passes: domain sharding (pass 1) and `modulepreload` (pass 3).
+
 ## Caveats
 
 Mostly Google-authored sources — right for metric definitions, single-vendor framing elsewhere. Case-study numbers (Flights 0.7 s, critical CSS 0.2 s) are single tests, not typical effects. Lighthouse weights are v10's; connection figures 2021; Almanac 2024; fetchpriority defaults Chrome-specific.

@@ -108,7 +108,8 @@ Unused code is the largest saving after third parties, and it is the site's own 
 - **Minifying is kiss's.** Every copied `.css` and `.js` is minified outside dev (`assets.minify`, on by default). Add no minify step, and never turn it off to "fix" a file: name a vendor file `*.min.js` and it is left as it is.
 - **A framework stylesheet copied whole is purged** with `assets: { purge: { files: ['css/bootstrap.css'], safelist: [...] } }`. kiss removes every rule no written page or script uses, re-hashes the file and relinks the pages (GUIDE.md § Purged CSS). The safelist holds the classes its JavaScript builds at run time; open every interactive component after turning it on, in a production build served from the build folder, because `--dev` skips the purge. Bootstrap's full CSS on one measured site was 94% unused. Tailwind needs no purge, because it scans its content itself.
 - **A library is the last resort.** Replace jQuery and a framework's JavaScript with the platform when the page can do without them. A library the site needs is imported by name as an ES module and bundled with esbuild, which keeps only what is imported.
-- **Bundle for the import chain, not the request count.** Scripts that `import` each other are bundled, because each nested import is fetched only after its parent. A handful of separate files costs nothing measurable on HTTP/2 and HTTP/3, so never concatenate just to have fewer. Keep each bundle under about 100 kB, and split by page beyond that.
+- **Bundle for the import chain, not the request count.** Scripts that `import` each other are bundled, because each nested import is fetched only after its parent. Unbundled modules list their imports with `<link rel="modulepreload">`, which fetches them at once. A handful of separate files costs nothing measurable on HTTP/2 and HTTP/3, so never concatenate just to have fewer. Keep each bundle under about 100 kB, and split by page beyond that.
+- **Never spread the site's own files over extra domains** (domain sharding, an HTTP/1.1 trick). On HTTP/2 every domain is one more connection to open, and one connection carries them all.
 
 ### Third parties
 
@@ -118,6 +119,8 @@ Unused code is the largest saving after third parties, and it is the site's own 
 
 ### Moving between pages
 
+- **No redirect on the way to a page.** Each one is a round trip before the first byte arrives, and a chain is worse; aim for the first byte within 0.8 s. Link every page with `{{link}}`, which writes the URL the host serves, with its trailing slash or without (`links.trailingSlash`, GUIDE.md § The trailing slash on a directory index), and every absolute link with `https://`. A page's `aliases` are for old URLs other sites still link to, never for the site's own links.
+- **Keep the back/forward cache working**, so Back shows the page at once instead of loading it again. Never an `unload` listener (use `pagehide`), and never `Cache-Control: no-store` on a page with nothing private on it: either keeps the page out of the cache. `no-cache` and `max-age=0` do not. A lab run never restores from this cache, so it is checked in the browser, not by `speed`.
 - **Speculation rules are optional, and `prefetch` is the default.** One `<script type="speculationrules">` in the layout, document rules with `"eagerness": "moderate"` or `"conservative"`, never `immediate` for the whole site. `prerender` is only for a site with no third-party script, because a prerendered page runs its scripts for a visit that may never happen. Browsers that do not understand it ignore it.
 
 ```html
@@ -186,11 +189,13 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
    curl -sI https://example.com/css/site.a1b2c3d4.css
    ```
 
-   A hashed file is right at `max-age=31536000, immutable`; an unhashed one with a year, or with `immutable`, is a P1; HTML should revalidate (`max-age=0, must-revalidate`, or `no-cache`). No `br` or `gzip` on HTML, CSS or JS is a finding for the host, not the site.
+   A hashed file is right at `max-age=31536000, immutable`; an unhashed one with a year, or with `immutable`, is a P1; HTML should revalidate (`max-age=0, must-revalidate`, or `no-cache`), and `no-store` on a public page is a finding, because it keeps the page out of the back/forward cache. No `br` or `gzip` on HTML, CSS or JS is a finding for the host, not the site. A `301` or `302` on the home page, or on any URL the nav links to, is a finding: fix the link, not the redirect.
+
+7. **The back/forward cache, in the browser.** On each template, Chrome DevTools → Application → Back/forward cache → Run test. "Restored from back-forward cache" passes; a failure marked Actionable is a finding, named with the reason the panel gives.
 
 What each check can be read from:
 
 - **The build report:** check 1.
 - **The built folder, with `kiss-ssg css`:** check 2.
-- **The browser:** checks 3, 4 and 5.
+- **The browser:** checks 3, 4, 5 and 7.
 - **The live site:** check 6.

@@ -1039,6 +1039,17 @@ const COVERAGE = [
       /^(?=[\s\S]*\*\*A photo is `\{\{image\}\}`\*\*)(?=[\s\S]*\[the image recipes\]\(references\/images\.md\))(?=[\s\S]*`eager=true` does both)(?=[\s\S]*\*\*`sizes` says how wide the image shows\*\*)(?=[\s\S]*`\.kiss-cache\/images`, which the site commits)(?=[\s\S]*npx kiss-ssg images router\.js)/,
     skills: [skill('kiss-ssg', 'kiss-performance')],
   },
+  // 2026-11-05, the operator: the research's top recommendations checked
+  // against the skill. Redirects and the back/forward cache were missing
+  // (verified at web.dev's optimize-ttfb and bfcache articles), and so were
+  // domain sharding and modulepreload (research pass 1 and 3).
+  {
+    feature:
+      'kiss-performance: no redirect on the way to a page, the back/forward cache (no unload, no no-store) with its browser check, no domain sharding, modulepreload',
+    pattern:
+      /^(?=[\s\S]*\*\*No redirect on the way to a page\.\*\*)(?=[\s\S]*\*\*Keep the back\/forward cache working\*\*)(?=[\s\S]*Never an `unload` listener)(?=[\s\S]*`Cache-Control: no-store`)(?=[\s\S]*Back\/forward cache → Run test)(?=[\s\S]*domain sharding)(?=[\s\S]*rel="modulepreload")/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
   // 2026-11-05, the operator: CSS sprites asked about. A shared icon set is
   // one SVG of <symbol>s drawn in currentColor (measured in Chromium: an
   // external same-origin sprite renders and takes the text colour); never a
