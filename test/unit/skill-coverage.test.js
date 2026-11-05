@@ -1039,6 +1039,17 @@ const COVERAGE = [
       /^(?=[\s\S]*\*\*A photo is `\{\{image\}\}`\*\*)(?=[\s\S]*\[the image recipes\]\(references\/images\.md\))(?=[\s\S]*`eager=true` does both)(?=[\s\S]*\*\*`sizes` says how wide the image shows\*\*)(?=[\s\S]*`\.kiss-cache\/images`, which the site commits)(?=[\s\S]*npx kiss-ssg images router\.js)/,
     skills: [skill('kiss-ssg', 'kiss-performance')],
   },
+  // 2026-11-05, the operator: CSS sprites asked about. A shared icon set is
+  // one SVG of <symbol>s drawn in currentColor (measured in Chromium: an
+  // external same-origin sprite renders and takes the text colour); never a
+  // raster CSS sprite or an icon font.
+  {
+    feature:
+      'kiss-performance: an icon set is one SVG <symbol> sprite in currentColor, same origin; never a raster CSS sprite or an icon font',
+    pattern:
+      /^(?=[\s\S]*\*\*A set of icons used on most pages is one SVG of `<symbol>`s\*\*)(?=[\s\S]*fill="currentColor")(?=[\s\S]*<use href=)(?=[\s\S]*Never a CSS sprite of raster images)(?=[\s\S]*never an icon font)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
   {
     feature:
       'the image recipes: which images, alt and sizes required, eager once, commit the cache, the sweep then --write after asking, img-not-responsive one at a time',
