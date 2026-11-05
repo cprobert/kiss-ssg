@@ -32,6 +32,8 @@ opened: 2026-11-05
 
 ## Pulse log
 
+- **2026-11-05** — Criteria 1–4 and 6 met. Criterion 1: the new test was red first and is green now (`audit-consent.test.js` + `audit.test.js`, 169 passed). Criterion 2: the sweep found two `matchesHost` callers; the tracker one is fixed, and the ads one strips paths on purpose and is unchanged. Criterion 3: the reCAPTCHA and `{{embed 'google-maps'}}` cases are quiet. Criterion 4: a1k9training `master` (PR #57 now merged, no `audit.ignore`), `check --summary` with `node_modules/kiss-ssg` junctioned to this tree, gives "20 pages, 0 failed … audit consent-missing: 1 page (./docs/contact/index.html)"; the site's tree is clean before and after. Criterion 6: gates passed at `1021aa6`. Criterion 5 is partial: `AIKB/audit.md` is done, and the CHANGELOG entry comes with the bump at close. No drift: the optional `tracker` field appears in `types/audit.d.ts`, which is additive. **Eyeball: not looked by the operator.** Asked to look, the operator asked Claude to run it; Claude ran the site's check above. That is Claude's evidence, not a human look. **Offer:** the `tracker: true` flag on origin entries, rather than full URLs in the facts. Answer: keep. Decision: ready to close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
