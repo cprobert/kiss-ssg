@@ -127,7 +127,7 @@ describe('{{image}} in a build', () => {
     await build({ logger })
     expect(lines).toContainEqual([
       'warn',
-      `9 image variants were encoded that are not in the committed cache. Run \`npx kiss-ssg images\` and commit ${site.root}/.kiss-cache/images`,
+      `9 image variants were encoded that are not in the committed cache. Run \`npx kiss-ssg images <script>\` and commit ${site.root}/.kiss-cache/images`,
     ])
   })
 

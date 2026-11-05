@@ -25,7 +25,9 @@ kiss encodes a site's photos itself. `{{image}}` writes the `<picture>`, and the
   - full width of the screen: `100vw`;
   - a column that is half the page from 60rem up: `(min-width: 60rem) 50vw, 100vw`;
   - a fixed-width card or thumbnail: its width, `20rem`.
-    A `sizes` that is too large downloads a file twice the size needed; one that is too small sends a blurred image.
+
+  A `sizes` that is too large downloads a file twice the size needed; one that is too small sends a blurred image. Write the widths alone: `{{image}}` puts `auto` in front of them itself on a lazy image.
+
 - **`eager=true`** on the first image a visitor sees, and on no other. It writes `fetchpriority="high"` and no `loading`; every other image is lazy.
 - **`class`** and other attributes pass through to the `<img>`.
 
@@ -36,7 +38,7 @@ For the 3,800 px photo, the default recipe wrote AVIF, WebP and JPEG at 480, 960
 The first build after adding an image encodes it and keeps the files in `.kiss-cache/images`. That build took 1.8 seconds for the photo; the next took 0.7, copying from the cache. Commit the folder with the change, so a deploy copies rather than encodes. A build that encoded prints:
 
 ```text
-12 image variants were encoded that are not in the committed cache. Run `npx kiss-ssg images` and commit .kiss-cache/images
+12 image variants were encoded that are not in the committed cache. Run `npx kiss-ssg images <script>` and commit .kiss-cache/images
 ```
 
 Seen on a deploy, that line means someone added an image and did not commit the cache.

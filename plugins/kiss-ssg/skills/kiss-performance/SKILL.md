@@ -1,6 +1,6 @@
 ---
 name: kiss-performance
-description: Build and review how fast a kiss-ssg site loads and how still it stays — the first image, image sizes and lazy loading, fonts, blocking scripts, third parties and cache headers. Use for "performance", "speed", "Lighthouse", "Core Web Vitals", "LCP", "CLS", "layout shift", "caching", or when writing a layout. Not for markup behaviour (kiss-front-end), the look or the words.
+description: How fast a kiss-ssg site loads and how still it stays — the first image, {{image}} and AVIF/WebP, fonts, blocking scripts, unused CSS and JS, caching. Use for "speed", "slow", "Lighthouse", "PageSpeed", "Core Web Vitals", "LCP", "CLS", "optimise images", "Google Fonts", "unused CSS", or when adding a photo or writing a layout. Not for markup behaviour (kiss-front-end), the look or words.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -21,7 +21,7 @@ The targets, at the 75th percentile of real visits on phones:
 Most of these rules are one edit in one shared file:
 
 - the `<head>` (the stylesheet, fonts, scripts and hints) lives in the layout (`src/layouts/`);
-- a photo is written with `{{image}}`, which encodes it as AVIF and WebP at the widths it needs and reads `width` and `height` from the file (GUIDE.md § Responsive images); its `alt` and `sizes` come from the model or the view;
+- a photo is written with `{{image}}`, which encodes it as AVIF and WebP at the widths it needs and reads `width` and `height` from the file (`node_modules/kiss-ssg/GUIDE.md` § Responsive images); its `alt` and `sizes` come from the model or the view;
 - the encoded files are kept in `.kiss-cache/images`, which the site commits, so a deploy copies them rather than encoding again; `npx kiss-ssg images router.js` fills and prunes that cache;
 - a stylesheet or script gets a content-hashed name with `assets: { hash: true }` (`node_modules/kiss-ssg/GUIDE.md` § Assets), which is what lets the host cache it for a year;
 - the audit reports `img-dimensions-missing`, `img-not-responsive`, `image-oversized`, `image-location-metadata`, `img-first-lazy`, `fetchpriority-excess`, `font-preload-excess`, `script-blocking` and `host-unset`; `kiss-site-review` has the kiss fix for each.
@@ -63,7 +63,7 @@ The copyable steps are in [the image recipes](references/images.md). Open them b
 - **A photo is `{{image}}`**, never a hand-written `<img>`: `{{image "img/hero.jpg" alt="…" sizes="…"}}`. It writes the `<picture>`, the AVIF and WebP widths, a resized fallback, `width`, `height` and lazy loading, and the build strips the GPS and camera data from every file it encodes. A logo or icon is an SVG through `{{asset}}` in an `<img>`.
 - **`width` and `height` on every other `<img>` and `<video>`**, from the model, so the browser keeps the space before the file arrives. The values are the image's own pixel size; CSS still decides the displayed size (`max-width: 100%; height: auto`).
 - **Every candidate in a `srcset` has the same shape** (aspect ratio). An image that changes shape between phone and desktop is a `<picture>` with `width` and `height` on each `<source>` as well as on the `<img>`.
-- **`loading="lazy"` on images below the first screen**, and on iframes below it. A lazy image uses `sizes="auto, <your sizes>"` when it has a `srcset`: the browsers that understand `auto` work the size out from the layout, and the others read the value after it. Never a bare `sizes="auto"`, and never `auto` on an eager image.
+- **`loading="lazy"` on images below the first screen**, and on iframes below it. `{{image}}` does this, and the `auto` below, by itself, so its `sizes` holds the widths alone. A hand-written lazy image uses `sizes="auto, <your sizes>"` when it has a `srcset`: the browsers that understand `auto` work the size out from the layout, and the others read the value after it. Never a bare `sizes="auto"`, and never `auto` on an eager image.
 - **`sizes` says how wide the image shows**, at each layout width, from the CSS: `100vw` for a full-width image, `(min-width: 60rem) 50vw, 100vw` for one that takes half the page on a wide screen. The browser chooses the file from it, so a wrong `sizes` downloads the wrong width.
 - **The originals are kept small and clean.** `npx kiss-ssg images router.js` lists each original that is wider than any width kiss encodes, or that carries GPS coordinates. Its `--write` rewrites them in `src/`, after asking the owner.
 - **kiss's own consent banner logo** is kiss's markup, not the site's, and is outside these rules.
