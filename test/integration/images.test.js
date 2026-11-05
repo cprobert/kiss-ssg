@@ -323,6 +323,18 @@ describe('{{embed}} with poster=', () => {
     expect(html).toMatch(/kiss-embed__poster[\s\S]*fetchpriority="high"/)
   })
 
+  // Codex, slice 3: a site under a subpath or a learning package's page
+  // passes `root=`, as it does to {{image}}; the poster must follow it.
+  it('writes the poster against root=, as {{image}} does', async () => {
+    await makeImageSite({ 'src/pages/index.hbs': EMBED(' root="../"') })
+    await build()
+    const poster = (await site.read('public/index.html')).match(
+      /<div class="kiss-embed__poster"[^>]*>(<picture>.*?<\/picture>)<\/div>/,
+    )?.[1]
+    expect(poster).toMatch(/<img src="\.\.\/img\/hero/)
+    expect(poster).not.toMatch(/="\/img\//)
+  })
+
   it('refuses a poster from another site, saying why, and an unknown path', async () => {
     await makeImageSite({
       'src/pages/index.hbs': PAGE(
