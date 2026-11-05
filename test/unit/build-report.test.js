@@ -3,6 +3,7 @@ import {
   auditLines,
   buildReport,
   formatReport,
+  reportedPath,
 } from '../../lib/build-report.js'
 import { exitCodeFor } from '../../lib/check.js'
 import path from 'node:path'
@@ -16,6 +17,51 @@ const failure = (view, buildTo, message) => ({
   view,
   buildTo,
   error: new Error(message),
+})
+
+describe('reportedPath', () => {
+  it('maps a path under the staging folder joined with /', () => {
+    expect(
+      reportedPath(
+        'docs.kiss-staging-1-a/x/y.json',
+        './docs',
+        'docs.kiss-staging-1-a',
+      ),
+    ).toBe('./docs/x/y.json')
+  })
+
+  // The fleet check (2026-11-05): lib/cache-headers.js joins with path.join,
+  // so on Windows its file came out as `docs.kiss-staging-…\cache-headers.json`
+  // and the report named a staging folder a check had already discarded.
+  it.skipIf(process.platform !== 'win32')(
+    'maps a path joined with the platform separator, written with /',
+    () => {
+      expect(
+        reportedPath(
+          'docs.kiss-staging-57436-61hhep\\cache-headers.json',
+          './docs',
+          'docs.kiss-staging-57436-61hhep',
+        ),
+      ).toBe('./docs/cache-headers.json')
+      expect(
+        reportedPath(
+          'C:\\site\\public.kiss-staging-1\\a\\b.css',
+          'C:\\site\\public',
+          'C:\\site\\public.kiss-staging-1',
+        ),
+      ).toBe('C:\\site\\public/a/b.css')
+    },
+  )
+
+  it('leaves a path outside the staging folder alone', () => {
+    expect(
+      reportedPath(
+        'docs.kiss-staging-1-ab/x',
+        './docs',
+        'docs.kiss-staging-1-a',
+      ),
+    ).toBe('docs.kiss-staging-1-ab/x')
+  })
 })
 
 describe('buildReport', () => {

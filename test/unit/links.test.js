@@ -649,6 +649,42 @@ describe('checkLinks', () => {
     expect(result.broken).toEqual([])
   })
 
+  // The fleet check (2026-11-05): diploma-msc writes `../img/x` on
+  // `landing-pages/index.html`, which under `trailingSlash: false` is served at
+  // `/landing-pages`, so a browser requests `/img/x` and the file is there.
+  // The build's own files take the same clamp the host patterns do.
+  it('clamps a relative climb at the root for the build’s own files too', () => {
+    const pages = [
+      { buildTo: './public/index.html', links: ['../img/a.png', 'img/a.png'] },
+      {
+        buildTo: './public/landing-pages/index.html',
+        links: ['../img/a.png', '../../img/a.png'],
+      },
+    ]
+    const result = checkLinks({
+      pages,
+      buildDir: './public',
+      manifestTargets: ['img/a.png'],
+      exists: () => false,
+      trailingSlash: false,
+    })
+    expect(result.checked).toBe(4)
+    expect(result.broken).toEqual([])
+  })
+
+  it('still reports a climb above a siteUrl prefix, which leaves the site', () => {
+    const result = checkLinks({
+      pages: [{ buildTo: './public/index.html', links: ['../img/a.png'] }],
+      buildDir: './public',
+      siteUrl: 'https://example.com/docs/',
+      manifestTargets: ['img/a.png'],
+      exists: () => false,
+    })
+    expect(result.broken).toEqual([
+      { page: './public/index.html', href: '../img/a.png' },
+    ])
+  })
+
   it('matches a prefixed deployment by the full request path, written either way', () => {
     const result = checkLinks({
       pages: [
