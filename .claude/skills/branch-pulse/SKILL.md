@@ -13,7 +13,7 @@ This is supervised collaboration: the pulse is where the human steers and verifi
 
 ## When to use
 
-Run `/branch-pulse` mid-branch, as often as it earns its keep, while the branch is `status: open`, and always after an Amendment or a multi-round review: each moves the work away from the criteria the last pulse checked. Five logs found the big change verified only at the close because the pulse came before it (2026-09-21 to 2026-10-30, counted in the 2026-10-31 log); the two branches since that pulsed after each slice and amendment held it. Do **not** run it on the base branch, and it is **not** a substitute for `/branch-close` (it runs the cheap check subset, never the full gate battery).
+Run `/branch-pulse` mid-branch, as often as it earns its keep, while the branch is `status: open`, and always after an Amendment or a multi-round review: each moves the work away from the criteria the last pulse checked. **In a review loop that changes `lib/`, that means after each round's fixes, not once when the loop ends**: two loops ran 8 and 14 rounds with no pulse between them (2026-11-02, 2026-11-05). Five logs found the big change verified only at the close because the pulse came before it (2026-09-21 to 2026-10-30, counted in the 2026-10-31 log); the two branches since that pulsed after each slice and amendment held it. Do **not** run it on the base branch, and it is **not** a substitute for `/branch-close` (it runs the cheap check subset, never the full gate battery).
 
 ---
 

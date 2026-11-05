@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/hooks/shell-edit-guard.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Checking the shell command writes no file"
+          }
+        ]
+      }
+    ]
+  }
+}

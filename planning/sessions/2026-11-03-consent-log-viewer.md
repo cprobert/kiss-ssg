@@ -3,6 +3,7 @@ branch: feat/consent-log-viewer
 base: main
 status: closed
 opened: 2026-11-03
+consolidated: 2026-11-05
 ---
 
 # Session — 2026-11-03: Consent log and history viewer

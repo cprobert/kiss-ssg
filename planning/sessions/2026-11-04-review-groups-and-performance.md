@@ -3,6 +3,7 @@ branch: feat/review-groups-and-performance
 base: main
 status: closed
 opened: 2026-11-04
+consolidated: 2026-11-05
 ---
 
 # Session — 2026-11-04: Review groups, a performance skill, and the carried doc gaps

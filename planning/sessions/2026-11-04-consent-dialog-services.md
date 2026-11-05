@@ -3,6 +3,7 @@ branch: feat/consent-dialog-services
 base: main
 status: closed
 opened: 2026-11-04
+consolidated: 2026-11-05
 ---
 
 # Session — 2026-11-04: The consent dialog names each category's services, and kiss-branch-close opens the PR
