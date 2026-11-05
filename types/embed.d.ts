@@ -19,18 +19,20 @@ export function embedPresetNames(): string[];
  *
  * @param {string} name
  * @param {ConsentService} service
- * @param {{ consent: KissConsent|null, text: Record<string, string>, params: Record<string, string>, src?: string|null, title?: string|null }} opts
+ * @param {{ consent: KissConsent|null, text: Record<string, string>, params: Record<string, string>, src?: string|null, title?: string|null, poster?: string|null }} opts
  * `text` is the wording: the site's `ui.text` under `config.consent`, the
- * defaults otherwise
+ * defaults otherwise. `poster` is the still's markup, already written by the
+ * `{{image}}` pipeline, or null for none
  * @returns {string}
  * @throws on a missing title or src, or a missing placeholder value in the src
  */
-export function embedMarkup(name: string, service: ConsentService, { consent, text, params, src, title }: {
+export function embedMarkup(name: string, service: ConsentService, { consent, text, params, src, title, poster }: {
     consent: KissConsent | null;
     text: Record<string, string>;
     params: Record<string, string>;
     src?: string | null;
     title?: string | null;
+    poster?: string | null;
 }): string;
 /** The facade's script, one per facade embed. */
 export function facadeScript(): string;

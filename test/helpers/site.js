@@ -8,7 +8,12 @@ export async function makeSite(files = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-'))
   const root = dir.replace(/\\/g, '/')
   for (const [rel, content] of Object.entries(files)) {
-    const body = typeof content === 'string' ? content : JSON.stringify(content)
+    // A Buffer is written as its bytes (an image a browser test serves);
+    // any other non-string is JSON, as a model file is.
+    const body =
+      typeof content === 'string' || Buffer.isBuffer(content)
+        ? content
+        : JSON.stringify(content)
     await fs.outputFile(path.join(dir, rel), body)
   }
   return {

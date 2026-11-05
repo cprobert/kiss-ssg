@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import sharp from 'sharp'
 import { silentLogger } from '../../lib/logger.js'
 import { launchChromium, serveFolder } from '../../scripts/screenshot.mjs'
 import { makeSite } from '../helpers/site.js'
@@ -1088,3 +1089,82 @@ describe.skipIf(!browser)(
     })
   },
 )
+
+// `poster=` (a1k9training, 2026-11-05): a self-hosted still under a readable
+// strip. Measured here rather than asserted from the markup: the GUIDE says
+// nothing is fetched from the provider before the click and nothing moves
+// when the frame arrives.
+describe.skipIf(!browser)('{{embed}} with poster=, in Chromium', () => {
+  const PLAIN_LAYOUT = [
+    '<!doctype html><html lang="en"><head>',
+    '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<title>{{#block "name"}}{{/block}}</title>',
+    '</head><body><main>{{#block "body"}}{{/block}}<p id="after">After</p></main></body></html>',
+  ].join('')
+  /** @type {{ base: string, local: string, close: () => Promise<void> }} */
+  let site
+  beforeAll(async () => {
+    const still = await sharp({
+      create: { width: 1280, height: 720, channels: 3, background: '#7a5' },
+    })
+      .jpeg()
+      .toBuffer()
+    site = await serve(
+      {
+        'src/layouts/layout.hbs': PLAIN_LAYOUT,
+        'src/assets/img/still.jpg': still,
+        'src/pages/index.hbs': consentPage(
+          '<h1>Home</h1>{{embed "youtube" id="abc" title="Puppy class" poster="img/still.jpg"}}',
+          'Home',
+        ),
+      },
+      undefined,
+      undefined,
+      { assets: { images: { cache: false } } },
+    )
+  }, 60000)
+  afterAll(async () => {
+    await site?.close()
+  })
+
+  for (const width of [375, 1440])
+    it(`at ${width} px: shows the still under a readable strip, fetches nothing off the site, and does not move on Load`, async () => {
+      const { context, page, offHost } = await open({
+        viewport: { width, height: 900 },
+      })
+      await page.goto(`${site.base}/`)
+      await page.waitForLoadState('networkidle')
+      const img = page.locator('.kiss-embed__poster img')
+      await expect
+        .poll(() =>
+          img.evaluate((i) => /** @type {HTMLImageElement} */ (i).naturalWidth),
+        )
+        .toBeGreaterThan(0)
+      expect(offHost).toEqual([])
+      // The still covers the box, which keeps the frame's 16:9.
+      const box = await page
+        .locator('[data-kiss-embed="youtube"]')
+        .boundingBox()
+      const shot = await img.boundingBox()
+      expect(
+        Math.abs((box?.height ?? 0) - ((box?.width ?? 0) * 9) / 16),
+      ).toBeLessThan(1.5)
+      expect(Math.abs((shot?.width ?? 0) - (box?.width ?? 0))).toBeLessThan(1)
+      // The strip's colours, as computed: white on the dark scrim.
+      const strip = await page.locator('.kiss-embed__notice').evaluate((el) => {
+        const s = getComputedStyle(el)
+        return [s.backgroundColor, s.color]
+      })
+      expect(strip).toEqual(['rgba(0, 0, 0, 0.72)', 'rgb(255, 255, 255)'])
+      const after = () =>
+        page.locator('#after').evaluate((el) => el.getBoundingClientRect().top)
+      const afterBefore = await after()
+      await page.click('[data-kiss-embed-action="load"]')
+      await expect
+        .poll(() => page.locator('iframe[src*="youtube-nocookie"]').count())
+        .toBe(1)
+      expect(await page.locator('.kiss-embed__poster').isVisible()).toBe(false)
+      expect(Math.abs((await after()) - afterBefore)).toBeLessThan(1)
+      await context.close()
+    })
+})

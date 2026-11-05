@@ -40,6 +40,13 @@ const COVERAGE = [
       skill('kiss-ssg', 'kiss-page-add'),
     ],
   },
+  // 2.13.0: a video embed reads as a video with a self-hosted still, and the
+  // provider's thumbnail URL is the request the box exists to prevent.
+  {
+    feature: '{{embed}} poster= is a still from src/, never the provider URL',
+    pattern: /poster="img\/[\s\S]*\{\{image\}\}/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
   {
     feature: 'an id built from a slug uses utils.toSlug (id-slug-mismatch)',
     pattern: /utils\.toSlug\(slug\)[\s\S]*id-slug-mismatch/,

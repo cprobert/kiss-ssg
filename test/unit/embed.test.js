@@ -210,6 +210,70 @@ describe('embedMarkup with no config.consent (a facade)', () => {
   })
 })
 
+// a1k9training, 2026-11-05: a plain box with a sentence did not read as a
+// video on a phone. A poster is a self-hosted still under the notice, which
+// the operator chose to make readable by default (a scrim, white text, a play
+// mark on a video), overridable through custom properties.
+describe('embedMarkup with a poster', () => {
+  const POSTER = '<picture><img src="/img/still.jpg" alt=""></picture>'
+
+  it('draws the poster in the reserved box, under a readable notice, and hides it with the notice', () => {
+    const out = facade('youtube', {
+      hash: { id: 'abc' },
+      title: 'Puppy class',
+      poster: POSTER,
+    })
+    expect(out).toContain(
+      `<div class="kiss-embed kiss-embed--poster" data-kiss-embed="youtube" data-kiss-embed-facade style="${BOX_16_9};position:relative;justify-content:flex-end">`,
+    )
+    expect(out).toContain(
+      `<div class="kiss-embed__poster" data-kiss-embed-ui style="position:absolute;inset:0;overflow:hidden">${POSTER}</div>`,
+    )
+    expect(out).toContain(
+      '<div class="kiss-embed__notice" data-kiss-embed-ui style="position:relative;width:100%;box-sizing:border-box;background:var(--kiss-embed-poster-scrim,rgba(0,0,0,.72));color:var(--kiss-embed-poster-text,#fff)">',
+    )
+    // The watch link takes the strip's colour, over a site's own link colour.
+    expect(out).toContain(
+      '<a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc" style="color:inherit">',
+    )
+  })
+
+  it('marks a video’s Load button with a play symbol, hidden from screen readers', () => {
+    const out = facade('youtube', {
+      hash: { id: 'abc' },
+      title: 'T',
+      poster: POSTER,
+    })
+    expect(out).toMatch(
+      /data-kiss-embed-action="load"><svg aria-hidden="true" focusable="false"[^>]*><path[^>]*\/><\/svg>/,
+    )
+    const map = facade('google-maps', {
+      src: 'https://www.google.com/maps/embed?pb=x',
+      title: 'Map',
+      poster: POSTER,
+    })
+    expect(map).not.toContain('<svg')
+  })
+
+  it('poster the same way under config.consent, hidden by the consent client', () => {
+    const out = gated('youtube', {
+      hash: { id: 'abc' },
+      title: 'T',
+      poster: POSTER,
+    })
+    expect(out).toContain(
+      `<div class="kiss-embed__poster" data-kiss-consent-ui style="position:absolute;inset:0;overflow:hidden">${POSTER}</div>`,
+    )
+  })
+
+  it('writes nothing new without a poster', () => {
+    const out = facade('youtube', { hash: { id: 'abc' }, title: 'T' })
+    expect(out).not.toContain('kiss-embed--poster')
+    expect(out).not.toContain('<svg')
+    expect(out).toContain('<div class="kiss-embed__notice" data-kiss-embed-ui>')
+  })
+})
+
 describe('the instagram preset', () => {
   it('is Meta’s, in marketing, with the origins measured on 2026-11-04', () => {
     const service = /** @type {any} */ (presetService('instagram'))
@@ -279,6 +343,7 @@ describe('embed settings in config.consent', () => {
       width: null,
       height: null,
       measure: false,
+      video: false,
     })
   })
 

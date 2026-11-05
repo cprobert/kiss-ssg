@@ -299,6 +299,8 @@ export const STORAGE_KINDS: Readonly<{
  * when it has no `ratio`
  * @property {boolean} measure the frame reports its height (`MEASURE`
  * messages, as Instagram's does), and the page follows it
+ * @property {boolean} video the frame is a video player: a poster's Load
+ * button carries a play mark, and a click on Load asks the player to start
  */
 /**
  * The Google Consent Mode block.
@@ -503,6 +505,7 @@ export const PRESETS: Readonly<{
             src: string;
             title: any;
             watch: string;
+            video: boolean;
         };
         origins: string[];
         storage: ({
@@ -529,6 +532,7 @@ export const PRESETS: Readonly<{
             src: string;
             title: any;
             watch: string;
+            video: boolean;
         };
         origins: string[];
         cookies: {
@@ -736,6 +740,11 @@ export type ConsentEmbed = {
      * messages, as Instagram's does), and the page follows it
      */
     measure: boolean;
+    /**
+     * the frame is a video player: a poster's Load
+     * button carries a play mark, and a click on Load asks the player to start
+     */
+    video: boolean;
 };
 /**
  * The Google Consent Mode block.
