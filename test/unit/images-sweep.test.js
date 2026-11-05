@@ -313,6 +313,72 @@ describe('sweepImages', () => {
     )
   })
 
+  it('prunes one cache reached by two spellings against both instances', async () => {
+    // Two instances name one folder differently (a junction here; a case
+    // difference on Windows is the same): each must keep the other's entries.
+    write(`cache/${entry('a', 'avif')}`, 'a')
+    write(`cache/${entry('b', 'avif')}`, 'b')
+    write(`cache/${entry('c', 'avif')}`, 'c')
+    fs.symlinkSync(path.join(dir, 'cache'), path.join(dir, 'alias'), 'junction')
+    const result = await sweepImages({
+      lines: [
+        line({ keys: [entry('a', 'avif')] }),
+        line({ cache: path.join(dir, 'alias'), keys: [entry('b', 'avif')] }),
+      ],
+      reports: [{ ok: true }, { ok: true }],
+      cwd: dir,
+    })
+    expect(result.code).toBe(0)
+    expect(fs.readdirSync(path.join(dir, 'cache')).sort()).toEqual([
+      entry('a', 'avif'),
+      entry('b', 'avif'),
+    ])
+  })
+
+  it.skipIf(process.platform !== 'win32')(
+    'prunes one cache spelt in two letter cases against both instances',
+    async () => {
+      write(`cache/${entry('a', 'avif')}`, 'a')
+      write(`cache/${entry('b', 'avif')}`, 'b')
+      const result = await sweepImages({
+        lines: [
+          line({ keys: [entry('a', 'avif')] }),
+          line({ cache: path.join(dir, 'CACHE'), keys: [entry('b', 'avif')] }),
+        ],
+        reports: [{ ok: true }, { ok: true }],
+        cwd: dir,
+      })
+      expect(result.code).toBe(0)
+      expect(fs.readdirSync(path.join(dir, 'cache')).sort()).toEqual([
+        entry('a', 'avif'),
+        entry('b', 'avif'),
+      ])
+    },
+  )
+
+  it('judges an original by the widest recipe of every assets folder that holds it', async () => {
+    // Site one reads assets/ at 960; site two reads assets/photos at 1920. A
+    // 1500px photo in photos/ is fine for site two and must not be cut to 960.
+    await photo('assets/photos/kept.jpg', 1500, 100)
+    await photo('assets/wide.jpg', 1500, 100)
+    const result = await sweepImages({
+      lines: [
+        line({ assets: path.join(dir, 'assets'), maxWidth: 960 }),
+        line({ assets: path.join(dir, 'assets/photos'), maxWidth: 1920 }),
+      ],
+      reports: [{ ok: true }, { ok: true }],
+      write: true,
+      cwd: dir,
+    })
+    expect(result.code).toBe(0)
+    expect(result.out).toContain('Originals: 1 to fix in the source')
+    expect(result.out).toMatch(/rewrote assets\/wide\.jpg/)
+    expect(
+      readImageHeader(path.join(dir, 'assets/photos/kept.jpg')).width,
+    ).toBe(1500)
+    expect(readImageHeader(path.join(dir, 'assets/wide.jpg')).width).toBe(960)
+  })
+
   it('refuses when an instance could not write the cache', async () => {
     write(`cache/${entry('c', 'avif')}`, 'x')
     const result = await sweepImages({
