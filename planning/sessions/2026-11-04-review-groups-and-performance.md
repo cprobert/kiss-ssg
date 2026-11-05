@@ -178,7 +178,7 @@ opened: 2026-11-04
 
 _A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
 
-**What we shipped:** kiss-ssg 2.12.0, in 70 commits from `2f22acc` to `239cb79`.
+**What we shipped:** kiss-ssg 2.12.0, in 63 commits from `2f22acc` to `239cb79` (64 with this reflection).
 
 - **`kiss-site-review`** asks which review groups to run (`6b66d95`).
 - **A new domain skill, `kiss-performance`** (`11f416d` onward), now 3,381 words plus three reference files, measured with and without it (`e3ee8d8`).
