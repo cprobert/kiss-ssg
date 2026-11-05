@@ -1156,6 +1156,9 @@ describe.skipIf(!browser)('{{embed}} with poster=, in Chromium', () => {
         return [s.backgroundColor, s.color]
       })
       expect(strip).toEqual(['rgba(0, 0, 0, 0.72)', 'rgb(255, 255, 255)'])
+      // Every piece of text in it, not only the strip: a rule on the
+      // paragraph or the link would otherwise win (Codex, slice 3).
+      expect(await textColours(page)).toEqual(['rgb(255, 255, 255)'])
       const after = () =>
         page.locator('#after').evaluate((el) => el.getBoundingClientRect().top)
       const afterBefore = await after()
@@ -1167,4 +1170,51 @@ describe.skipIf(!browser)('{{embed}} with poster=, in Chromium', () => {
       expect(Math.abs((await after()) - afterBefore)).toBeLessThan(1)
       await context.close()
     })
+
+  // Under config.consent the default theme colours `.kiss-embed__notice p`
+  // muted, which on the dark strip read dark on dark (Codex, slice 3).
+  it('keeps the strip’s text white under the consent theme', async () => {
+    const still = await sharp({
+      create: { width: 1280, height: 720, channels: 3, background: '#7a5' },
+    })
+      .jpeg()
+      .toBuffer()
+    const themed = await serve(
+      {
+        ...CONSENT_FILES,
+        'src/assets/img/still.jpg': still,
+        'src/pages/index.hbs': consentPage(
+          '<h1>Home</h1>{{embed "youtube" id="abc" title="Puppy class" poster="img/still.jpg"}}',
+          'Home',
+        ),
+      },
+      CONSENT_CONFIG,
+      undefined,
+      { assets: { images: { cache: false } } },
+    )
+    try {
+      const { context, page } = await open()
+      await page.goto(`${themed.base}/`)
+      expect(await textColours(page)).toEqual(['rgb(255, 255, 255)'])
+      await context.close()
+    } finally {
+      await themed.close()
+    }
+  }, 60000)
 })
+
+/**
+ * The distinct computed colours of the poster strip's text: its paragraphs
+ * and its link.
+ *
+ * @param {import('playwright-core').Page} page
+ */
+async function textColours(page) {
+  return page
+    .locator('.kiss-embed--poster .kiss-embed__notice')
+    .evaluate((el) => [
+      ...new Set(
+        [...el.querySelectorAll('p, a')].map((n) => getComputedStyle(n).color),
+      ),
+    ])
+}
