@@ -313,6 +313,21 @@ describe('sweepImages', () => {
     )
   })
 
+  it('refuses when an instance could not write the cache', async () => {
+    write(`cache/${entry('c', 'avif')}`, 'x')
+    const result = await sweepImages({
+      lines: [line(), line({ cacheSkipped: true })],
+      reports: [{ ok: true }, { ok: true }],
+      cwd: dir,
+    })
+    expect(result.code).toBe(1)
+    expect(result.rerun).toBe(false)
+    expect(result.err).toMatch(/the encode cache could not be written/)
+    expect(fs.existsSync(path.join(dir, `cache/${entry('c', 'avif')}`))).toBe(
+      true,
+    )
+  })
+
   it('touches nothing when the script itself failed, even after every report it wrote was ok', async () => {
     // A script that settles one instance and then throws before the next has
     // written only passing reports; the next instance's entries would go.

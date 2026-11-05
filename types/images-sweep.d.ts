@@ -18,6 +18,9 @@ export function sweepRequest(env?: Record<string, string | undefined>): {
  * @property {string|null} assets its assets folder, absolute
  * @property {number} maxWidth the recipe's largest width
  * @property {boolean} failed some variant could not be encoded
+ * @property {boolean} cacheSkipped the cache could not be written, so this
+ * instance's misses were not kept: a build warns and carries on, the sweep
+ * refuses
  */
 /**
  * @param {Object} input
@@ -27,15 +30,17 @@ export function sweepRequest(env?: Record<string, string | undefined>): {
  * @param {string|null} input.assets
  * @param {number} input.maxWidth
  * @param {boolean} [input.failed]
+ * @param {boolean} [input.cacheSkipped]
  * @returns {SweepLine}
  */
-export function sweepLine({ cache, keys, encoded, assets, maxWidth, failed, }: {
+export function sweepLine({ cache, keys, encoded, assets, maxWidth, failed, cacheSkipped, }: {
     cache: string | null;
     keys: string[];
     encoded: string[];
     assets: string | null;
     maxWidth: number;
     failed?: boolean;
+    cacheSkipped?: boolean;
 }): SweepLine;
 /**
  * @param {string[]} [argv] everything after `images`
@@ -179,6 +184,12 @@ export type SweepLine = {
      * some variant could not be encoded
      */
     failed: boolean;
+    /**
+     * the cache could not be written, so this
+     * instance's misses were not kept: a build warns and carries on, the sweep
+     * refuses
+     */
+    cacheSkipped: boolean;
 };
 export type Tally = {
     count: number;

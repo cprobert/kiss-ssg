@@ -152,6 +152,20 @@ describe('kiss-ssg images', () => {
     ).toBe(true)
   }, 60000)
 
+  it('exits 1 when the cache cannot be written, and prunes nothing', async () => {
+    // A file where the cache folder should be: an ordinary build warns and
+    // carries on, but the command whose whole job is the cache must fail.
+    await makeImageSite()
+    fs.mkdirSync(path.join(site.root, '.kiss-cache'), { recursive: true })
+    fs.writeFileSync(path.join(site.root, '.kiss-cache/images'), 'not a folder')
+    const r = run('router.js')
+    expect(r.status).toBe(1)
+    expect(r.stderr).toMatch(/the encode cache could not be written/)
+    expect(
+      fs.readFileSync(path.join(site.root, '.kiss-cache/images'), 'utf8'),
+    ).toBe('not a folder')
+  }, 60000)
+
   it('exits 1 when the refresh after --write fails', async () => {
     // The first pass rewrites a.jpg and asks for a second; on that second run
     // the script leaves a sweep file that cannot be read, so the refresh
