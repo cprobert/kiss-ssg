@@ -19,6 +19,13 @@ export function cacheName(v: {
     path: string;
 }): string;
 /**
+ * Whether a file name is one the encode cache writes.
+ *
+ * @param {string} name a bare file name
+ * @returns {boolean}
+ */
+export function isCacheFileName(name: string): boolean;
+/**
  * Encode or copy every requested variant into the build at `root`.
  *
  * @param {Object} input

@@ -8,6 +8,7 @@ Encode the variants `{{image}}` asked for into the build, with `sharp`, or copy 
 
 - `encodeVariants({ variants, root, cache, refresh, concurrency, warn })` → `EncodeResult`: `{ requested, encoded, cached, keys, written, failures, cacheSkipped }`. `variants` are the index's (`lib/images.js`), each with the build-relative `source` it is made from. `cache` is an absolute folder or `null`. `refresh` ignores hits. `encoded` and `keys` are cache names; `written` the absolute files written to the build; `failures` one `{ source, error }` per source that could not be encoded.
 - `cacheName(variant)`: `<full digest><extension>`.
+- `isCacheFileName(name)`: whether a bare name is one the cache writes, an entry (64 hex characters and `.avif`, `.webp`, `.jpg`, `.jpeg` or `.png`) or `writeCacheEntry`'s temp file beside one. The sweep prunes only these.
 - The `EncodeResult` and `RequestedVariant` typedefs.
 
 ## Depends on

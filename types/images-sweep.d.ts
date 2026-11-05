@@ -60,7 +60,8 @@ export function readSweepLines(text?: string): SweepLine[];
  * @typedef {{ count: number, bytes: number }} Tally
  */
 /**
- * Remove every entry of one cache folder that is not kept, and count.
+ * Remove every entry of one cache folder that is not kept, and count. A
+ * file not named like a cache entry is neither removed nor counted.
  *
  * @param {Object} input
  * @param {string} input.dir
@@ -121,15 +122,23 @@ export function rewriteOriginals(originals: Original[], maxWidth: number): Promi
  * @param {Object} input
  * @param {SweepLine[]} input.lines
  * @param {{ ok?: boolean }[]} input.reports the run's build reports
+ * @param {{ status: number|null, signal?: string|null, error?: Error|null }} [input.script]
+ * how the site's script itself ended. A script that settled one instance and
+ * then threw has written only passing reports, so its exit decides too.
  * @param {boolean} [input.write]
  * @param {string} [input.cwd] what paths are printed relative to
  * @returns {Promise<{ out: string, err: string, code: 0|1 }>}
  */
-export function sweepImages({ lines, reports, write, cwd, }: {
+export function sweepImages({ lines, reports, script, write, cwd, }: {
     lines: SweepLine[];
     reports: {
         ok?: boolean;
     }[];
+    script?: {
+        status: number | null;
+        signal?: string | null;
+        error?: Error | null;
+    };
     write?: boolean;
     cwd?: string;
 }): Promise<{

@@ -35,6 +35,35 @@ it('names a working-directory inspection failure without blaming folders.src', (
   }
 })
 
+describe('assets.images.cache', () => {
+  // `kiss-ssg images` prunes the cache folder, so it has to be a folder of its
+  // own: never the project, never a folder kiss reads or writes for the site.
+  it.each([
+    ['.', /project root/],
+    ['./', /project root/],
+    ['src', /overlaps folders\./],
+    ['src/assets', /folders\.assets/],
+    ['src/assets/cache', /folders\.assets/],
+    ['public', /folders\.build/],
+    ['public/img-cache', /folders\.build/],
+  ])('refuses %s', (cache, message) => {
+    expect(() => resolveConfig({ assets: { images: { cache } } })).toThrow(
+      message,
+    )
+  })
+
+  it('takes a dedicated folder, and false', () => {
+    expect(
+      resolveConfig({ assets: { images: { cache: '.cache/img' } } }).assets
+        .images.cache,
+    ).toBe('.cache/img')
+    expect(
+      resolveConfig({ assets: { images: { cache: false } } }).assets.images
+        .cache,
+    ).toBe(false)
+  })
+})
+
 describe('resolveFolders', () => {
   it('returns the defaults when nothing is given', () => {
     expect(resolveFolders()).toEqual(DEFAULT_FOLDERS)

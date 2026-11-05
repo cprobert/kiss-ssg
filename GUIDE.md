@@ -302,7 +302,7 @@ const kiss = new Kiss({
     headers: { Authorization: `Bearer ${process.env.API_TOKEN}` },
     timeout: 15000,
     retries: 2,
-    cache: './.kiss-cache',
+    cache: './.kiss-cache/fetch',
   },
 })
 ```
@@ -310,10 +310,10 @@ const kiss = new Kiss({
 - **headers** — sent with every URL-model request. This is where an API token or an `Accept` header goes. Keep the token itself in an environment variable, not in the config you commit.
 - **timeout** — milliseconds. The request is aborted and that page fails, naming the URL and the timeout. It defaults to 10 seconds: an API that accepts your connection and then goes quiet no longer hangs your build for ever.
 - **retries** — extra attempts after a network error or a 5xx, with a short backoff. A 4xx is never retried: the server has already told you the request itself is wrong, so asking again only risks locking a key. If every attempt fails, the error says how many were made.
-- **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`:
+- **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`. Ignore that folder alone, never the whole of `.kiss-cache/`: the image encode cache beside it (`.kiss-cache/images`, under **Responsive images**) is committed.
 
 ```
-.kiss-cache/
+.kiss-cache/fetch/
 ```
 
 A cached model is a build input, exactly like a `.json` file in your models folder: what is in that directory is what your site is built from. A response with a non-2xx status fails that page: an error body is never used as the model, and never cached.
@@ -498,7 +498,7 @@ For a 1200×800 photo with the default recipe, that writes (one line in the page
 
 **Encoding** happens at the settle, after every page is written, with [`sharp`](https://sharp.pixelplumbing.com/): each source is decoded once, turned the right way up, resized and encoded per variant. **All metadata is stripped**, GPS included. A source that cannot be encoded fails the build as `<images: img/x.jpg>`, naming the pages that asked for it. A variant no page asks for any more is removed from the build. Images in a model's Markdown (`![](…)`) do not pass through `{{image}}`.
 
-**The encode cache is committed.** Every variant is also kept in `assets.images.cache` (`.kiss-cache/images`, beside the build script), keyed by the same digest as its name, and a hit is a copy. Commit that folder: encoding then happens once, on the machine where an image was added, and CI and the host copy. A build that had to encode logs one line saying how many variants were not in the committed cache. `kiss-ssg check` writes to this folder too, the one thing it writes outside the build. With `cache: false`, every build encodes everything. The cache key leaves out `sharp`'s version on purpose: an upgrade would otherwise re-encode and re-commit every image, and a variant from an older `sharp` is still a correct image of the same source and recipe.
+**The encode cache is committed.** Every variant is also kept in `assets.images.cache` (`.kiss-cache/images`, beside the build script), keyed by the same digest as its name, and a hit is a copy. Commit that folder: encoding then happens once, on the machine where an image was added, and CI and the host copy. A build that had to encode logs one line saying how many variants were not in the committed cache. `kiss-ssg check` writes to this folder too, the one thing it writes outside the build. With `cache: false`, every build encodes everything. The folder is the cache's alone: `new Kiss()` refuses one that is the project root, or that sits inside or around `src`, the assets, layouts, pages, partials, models, controllers, helpers, AIKB or build folder, and `kiss-ssg images` removes only files named like a cache entry. The cache key leaves out `sharp`'s version on purpose: an upgrade would otherwise re-encode and re-commit every image, and a variant from an older `sharp` is still a correct image of the same source and recipe.
 
 **`npx kiss-ssg images <script>`** is the cache's sweep. It runs the build staged and discarded, as `check` does, encodes every miss, removes the cache entries no page asked for, and prints how many were added, removed and kept, with their bytes. A build never prunes, because a cache shared by branches would lose what another branch's pages use; a failed build is never pruned against either. `--refresh` encodes everything again. It also lists each original under `folders.assets` that carries a GPS location or is wider than the recipe's largest width, and `--write` rewrites those in place: turned the right way up, metadata stripped, resized down to that width, a JPEG at quality 90 and a PNG losslessly (a WebP at 90, an AVIF at 75), and replaced only when the result is smaller or the file had GPS. Without `--write` nothing in `src/` changes; with it, read the diff in git before committing.
 

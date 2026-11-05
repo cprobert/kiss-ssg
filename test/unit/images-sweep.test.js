@@ -101,17 +101,25 @@ describe('sweepRequest', () => {
   })
 })
 
+// A cache entry's name: a 64-character digest and the variant's extension
+// (`lib/image-encode.js` `cacheName`). Only names of that shape are pruned.
+const entry = (seed, ext) => `${seed.repeat(64).slice(0, 64)}.${ext}`
+
 describe('pruneCache', () => {
   it('removes what no page asked for, an empty entry and a temp file, and counts', () => {
-    write('c/keep.avif', 'kk')
-    write('c/new.webp', 'nnn')
-    write('c/old.jpg', 'oooo')
-    write('c/empty.jpg', '')
-    write('c/keep.avif.123.tmp', 't')
+    write(`c/${entry('a', 'avif')}`, 'kk')
+    write(`c/${entry('b', 'webp')}`, 'nnn')
+    write(`c/${entry('c', 'jpg')}`, 'oooo')
+    write(`c/${entry('d', 'jpg')}`, '')
+    write(`c/${entry('a', 'avif')}.123.0a1b2c3d.tmp`, 't')
     const result = pruneCache({
       dir: path.join(dir, 'c'),
-      keep: new Set(['keep.avif', 'new.webp', 'empty.jpg']),
-      encoded: new Set(['new.webp']),
+      keep: new Set([
+        entry('a', 'avif'),
+        entry('b', 'webp'),
+        entry('d', 'jpg'),
+      ]),
+      encoded: new Set([entry('b', 'webp')]),
     })
     expect(result).toEqual({
       added: { count: 1, bytes: 3 },
@@ -119,20 +127,46 @@ describe('pruneCache', () => {
       kept: { count: 1, bytes: 2 },
     })
     expect(fs.readdirSync(path.join(dir, 'c')).sort()).toEqual([
-      'keep.avif',
-      'new.webp',
+      entry('a', 'avif'),
+      entry('b', 'webp'),
     ])
   })
 
+  it('never touches a file that is not named like a cache entry', () => {
+    // A cache folder pointed at the wrong place ('.', 'src/assets') must not
+    // cost the site its files: only the cache's own names are its to remove.
+    write(`c/${entry('c', 'jpg')}`, 'oooo')
+    write('c/package.json', '{}')
+    write('c/hero.jpg', 'photo')
+    write(`c/${'a'.repeat(63)}.jpg`, 'short digest')
+    write(`c/${entry('e', 'txt')}`, 'not an image')
+    write('c/notes.tmp', 'tmp')
+    const result = pruneCache({
+      dir: path.join(dir, 'c'),
+      keep: new Set(),
+      encoded: new Set(),
+    })
+    expect(result.removed).toEqual({ count: 1, bytes: 4 })
+    expect(fs.readdirSync(path.join(dir, 'c')).sort()).toEqual(
+      [
+        'package.json',
+        'hero.jpg',
+        `${'a'.repeat(63)}.jpg`,
+        entry('e', 'txt'),
+        'notes.tmp',
+      ].sort(),
+    )
+  })
+
   it('removes nothing on a dry run, and answers zero for a missing folder', () => {
-    write('c/old.jpg', 'o')
+    write(`c/${entry('c', 'jpg')}`, 'o')
     pruneCache({
       dir: path.join(dir, 'c'),
       keep: new Set(),
       encoded: new Set(),
       dryRun: true,
     })
-    expect(fs.existsSync(path.join(dir, 'c/old.jpg'))).toBe(true)
+    expect(fs.existsSync(path.join(dir, `c/${entry('c', 'jpg')}`))).toBe(true)
     expect(
       pruneCache({
         dir: path.join(dir, 'none'),
@@ -205,7 +239,7 @@ describe('sweepImages', () => {
   const line = (over = {}) =>
     sweepLine({
       cache: path.join(dir, 'cache'),
-      keys: ['a.avif'],
+      keys: [entry('a', 'avif')],
       encoded: [],
       assets: path.join(dir, 'assets'),
       maxWidth: 1920,
@@ -213,11 +247,14 @@ describe('sweepImages', () => {
     })
 
   it('prunes each cache against every line that names it', async () => {
-    write('cache/a.avif', 'a')
-    write('cache/b.avif', 'bb')
-    write('cache/gone.avif', 'ccc')
+    write(`cache/${entry('a', 'avif')}`, 'a')
+    write(`cache/${entry('b', 'avif')}`, 'bb')
+    write(`cache/${entry('c', 'avif')}`, 'ccc')
     const result = await sweepImages({
-      lines: [line(), line({ keys: ['b.avif'], encoded: ['b.avif'] })],
+      lines: [
+        line(),
+        line({ keys: [entry('b', 'avif')], encoded: [entry('b', 'avif')] }),
+      ],
       reports: [{ ok: true }, { ok: true }],
       cwd: dir,
     })
@@ -226,13 +263,13 @@ describe('sweepImages', () => {
       'cache: added 1 (0.0 KB), removed 1 (0.0 KB), kept 1 (0.0 KB)',
     )
     expect(fs.readdirSync(path.join(dir, 'cache')).sort()).toEqual([
-      'a.avif',
-      'b.avif',
+      entry('a', 'avif'),
+      entry('b', 'avif'),
     ])
   })
 
   it('refuses to prune after a failed build, or one that reported nothing', async () => {
-    write('cache/gone.avif', 'x')
+    write(`cache/${entry('c', 'avif')}`, 'x')
     for (const run of [
       { lines: [line()], reports: [{ ok: false }] },
       { lines: [line({ failed: true })], reports: [{ ok: true }] },
@@ -242,7 +279,38 @@ describe('sweepImages', () => {
       expect(result.code).toBe(1)
       expect(result.err).toMatch(/not pruned/)
     }
-    expect(fs.existsSync(path.join(dir, 'cache/gone.avif'))).toBe(true)
+    expect(fs.existsSync(path.join(dir, `cache/${entry('c', 'avif')}`))).toBe(
+      true,
+    )
+  })
+
+  it('touches nothing when the script itself failed, even after every report it wrote was ok', async () => {
+    // A script that settles one instance and then throws before the next has
+    // written only passing reports; the next instance's entries would go.
+    await photo('assets/img/located.jpg', 40, 20, { gps: true })
+    write(`cache/${entry('c', 'avif')}`, 'x')
+    for (const script of [
+      { status: 1, signal: null, error: null },
+      { status: null, signal: 'SIGTERM', error: null },
+      { status: null, signal: null, error: new Error('spawn ENOENT') },
+    ]) {
+      const result = await sweepImages({
+        lines: [line()],
+        reports: [{ ok: true }],
+        script,
+        write: true,
+        cwd: dir,
+      })
+      expect(result.code).toBe(1)
+      expect(result.out).toBe('')
+      expect(result.err).toMatch(/not pruned/)
+    }
+    expect(fs.existsSync(path.join(dir, `cache/${entry('c', 'avif')}`))).toBe(
+      true,
+    )
+    expect(readImageHeader(path.join(dir, 'assets/img/located.jpg')).gps).toBe(
+      true,
+    )
   })
 
   it('lists the originals, and rewrites them only under write', async () => {

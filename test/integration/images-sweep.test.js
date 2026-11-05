@@ -69,15 +69,20 @@ describe('kiss-ssg images', () => {
     fs.mkdirSync(path.join(site.root, '.kiss-cache/images'), {
       recursive: true,
     })
+    // An entry no page asks for any more (a cache-shaped name), and a file of
+    // the site's own that is not the cache's to remove.
+    const stale = `${'f'.repeat(64)}.avif`
+    fs.writeFileSync(path.join(site.root, '.kiss-cache/images', stale), 'old')
     fs.writeFileSync(
-      path.join(site.root, '.kiss-cache/images/stale.avif'),
-      'old',
+      path.join(site.root, '.kiss-cache/images/README.md'),
+      'kept',
     )
     const r = run('router.js')
     expect(r.status, r.stderr).toBe(0)
-    // Two sources at 480 and 600, in AVIF, WebP and JPEG.
-    expect(cacheFiles()).toHaveLength(12)
-    expect(cacheFiles()).not.toContain('stale.avif')
+    // Two sources at 480 and 600, in AVIF, WebP and JPEG, and the README.
+    expect(cacheFiles()).toHaveLength(13)
+    expect(cacheFiles()).not.toContain(stale)
+    expect(cacheFiles()).toContain('README.md')
     expect(r.stdout).toMatch(
       /^\.kiss-cache\/images: added 12 \([\d.]+ KB\), removed 1 \(0\.0 KB\), kept 0 \(0\.0 KB\)$/m,
     )
@@ -116,6 +121,35 @@ describe('kiss-ssg images', () => {
     expect(r.status).toBe(1)
     expect(r.stderr).toMatch(/the build failed, so the cache was not pruned/)
     expect(cacheFiles()).toHaveLength(12)
+  }, 60000)
+
+  it('touches nothing when the script throws after one site has settled', async () => {
+    // Site a settles and reports ok; the script throws before site b runs, so
+    // every report written is a pass and b's entries would be pruned.
+    await makeImageSite()
+    expect(run('router.js').status).toBe(0)
+    fs.writeFileSync(
+      path.join(site.root, 'router.js'),
+      ROUTER.replace(
+        "for (const name of ['a', 'b']) {",
+        "for (const name of ['a', 'b']) {\n  if (name === 'b') throw new Error('stopped before b')",
+      ),
+    )
+    await sharp({
+      create: { width: 600, height: 400, channels: 3, background: '#33a' },
+    })
+      .withExif({
+        IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '51/1 30/1 0/1' },
+      })
+      .jpeg()
+      .toFile(path.join(site.root, 'src/assets/img/located.jpg'))
+    const r = run('router.js', '--write')
+    expect(r.status).toBe(1)
+    expect(r.stderr).toMatch(/the build failed, so the cache was not pruned/)
+    expect(cacheFiles()).toHaveLength(12)
+    expect(
+      readImageHeader(path.join(site.root, 'src/assets/img/located.jpg')).gps,
+    ).toBe(true)
   }, 60000)
 
   it('lists an original with GPS, and rewrites it only under --write', async () => {

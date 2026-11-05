@@ -129,6 +129,11 @@ if (process.argv[2] === 'images') {
     const result = await sweepImages({
       lines: readSweepLines(read(sweepFile)),
       reports: readReports(read(reportFile)),
+      script: {
+        status: run.status,
+        signal: run.signal,
+        error: run.error ?? null,
+      },
       write: args.write,
       cwd: process.cwd(),
     })
