@@ -93,6 +93,27 @@ opened: 2026-11-04
 
   The review's remaining step was an eval. The operator then said "set that run up", which reverses the 2026-11-04 decision to replace criterion 6's arms with the fleet audit. The arms ran on swan-love at `c23a268`, with a 13-item key written before either run, and a blind marker scored them. With the skill: 8 hit, 4 partial, 1 missed. Without: 4, 5, 4. They cost $3.09. Write-up: `planning/reviews/2026-11-05-performance-arms.md`.
 
+- **2026-11-05: the Codex adversarial loop on the image work, 14 rounds, stopped by the operator.** The scope was `--base 72dc49e~1`; the whole branch overflowed the plugin's buffer (`ENOBUFS`). After round 3 the operator set the stop condition: fix high and medium, log anything lower, and stop at a round with neither. Codex found 17 problems (8 high, 9 medium, by its own rating), and every one was real and fixed with a test seen red first (`def5116` … `c8cd094`).
+  - **Rounds 1–5 were ordinary-use defects:**
+    - the sweep deleted any file in the cache folder, with no guard on where that folder was configured;
+    - it pruned after a failed script;
+    - the `--write` rewrite truncated originals in place;
+    - the cache was stale after `--write`;
+    - a cache copy that threw ended the encode with other workers still writing;
+    - a second-pass error exited 0;
+    - an unwritable cache exited 0.
+  - **From round 6 on, the scenarios narrowed:**
+    - folders shared across sites (aliases, overlapping roots, `.copyAssets()` sources);
+    - mixed engine versions (no inventory, a partial inventory);
+    - hostile or damaged AVIFs (a 1.5 MB file served 68.7 GB, measured; 655 million loop turns; a cache entry truncated at a box boundary);
+    - a corrupt or LFS cache entry;
+    - a `chdir` before `complete()` (measured: another site's committed cache entry deleted).
+  - **Why the loop was stopped.** Severity did not fall, because Codex rates its own findings, so "no high or medium" did not converge. The operator asked "Is this a doom loop?", and Claude said yes: it should have raised it around round 9, when the scenarios turned exotic. The operator chose to stop.
+  - **Lesson for the next adversarial loop:** its stop condition names a **threat model** (which scenarios count: one site or several, honest files or hostile ones), not only a severity, because the reviewer chooses the severity.
+  - **Still open, accepted:**
+    - a cache entry damaged in place behind an intact header and ending is not detected, because only a decode would see it;
+    - `{{image}}` reads its source relative to the working directory at render time, so a `chdir` before `complete()` fails such a build loudly.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
