@@ -120,6 +120,12 @@ export type PageOrigin = {
      * embed's frame. Fetched only after the visitor allows it
      */
     service?: string;
+    /**
+     * at least one URL the page fetches from this
+     * origin, as this kind, is on `TRACKER_ORIGINS`, matched on the whole URL so
+     * an entry's `path` counts. Absent when none is
+     */
+    tracker?: true;
 };
 /**
  * What a page carries of the consent manager.

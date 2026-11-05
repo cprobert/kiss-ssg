@@ -123,11 +123,13 @@ describe('consent facts', () => {
         origin: 'https://www.googletagmanager.com',
         kind: 'script',
         service: 'gtm',
+        tracker: true,
       },
       {
         origin: 'https://www.youtube-nocookie.com',
         kind: 'iframe',
         service: 'youtube',
+        tracker: true,
       },
     ])
   })
@@ -240,11 +242,13 @@ describe('thirdParty with gated origins', () => {
         origin: 'https://www.googletagmanager.com',
         kind: 'script',
         service: 'gtag',
+        tracker: true,
       },
       {
         origin: 'https://www.googletagmanager.com',
         kind: 'script',
         service: 'gtm',
+        tracker: true,
       },
     ])
   })
@@ -282,6 +286,44 @@ describe('consent-missing', () => {
   it('does not run when the site has a consent manager', () => {
     const result = run([at(doc(HEAD, BANNER + SETTINGS + GATED_GTM))], CONSENT)
     expect(only(result, 'consent-missing')).toEqual([])
+  })
+
+  // A tracker entry that names a path (`www.google.com` under `/maps`) is
+  // matched against the frame's whole URL, not its origin: an origin has no
+  // path, so it never matched, and a raw Google Maps frame went unreported
+  // (a1k9training's /contact/, 2026-11-05).
+  it('reports a raw Google Maps frame, matched on the path its entry names', () => {
+    const result = run([
+      at(
+        doc(
+          '',
+          '<iframe src="https://www.google.com/maps/embed?pb=!1m18" title="m"></iframe>',
+        ),
+      ),
+      at(
+        doc(
+          '',
+          '<iframe src="https://www.google.com/maps?q=Llys+Nini&amp;output=embed" title="m"></iframe>',
+        ),
+      ),
+      at(
+        doc(
+          '',
+          '<iframe src="https://www.google.com/recaptcha/api2/anchor?k=x" title="r"></iframe>',
+        ),
+      ),
+      at(
+        doc(
+          '',
+          '<div class="kiss-embed" data-kiss-embed="google-maps"><button data-kiss-consent-action="load">Load</button>' +
+            '<template data-kiss-embed-frame><iframe src="https://www.google.com/maps/embed?pb=!1m18" title="m"></iframe></template></div>',
+        ),
+      ),
+    ])
+    expect(only(result, 'consent-missing')).toEqual([
+      [`public/p${n - 3}.html`, 'https://www.google.com'],
+      [`public/p${n - 2}.html`, 'https://www.google.com'],
+    ])
   })
 })
 

@@ -1231,7 +1231,11 @@ describe('extractPageFacts — the privacy facts', () => {
       { origin: 'https://img.example.org', kind: 'img' },
       { origin: 'https://media.example.org', kind: 'media' },
       { origin: 'https://plausible.io', kind: 'script' },
-      { origin: 'https://www.youtube-nocookie.com', kind: 'iframe' },
+      {
+        origin: 'https://www.youtube-nocookie.com',
+        kind: 'iframe',
+        tracker: true,
+      },
     ])
   })
 
