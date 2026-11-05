@@ -3,6 +3,59 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.12.0 — 2026-11-05
+
+A release about speed. The new `kiss-performance` skill builds and reviews how fast a site loads,
+and the engine gained the mechanisms it relies on.
+
+- **`{{image}}` serves a photo responsively.** Write
+  `{{image 'img/hero.jpg' alt='…' sizes='(min-width: 60rem) 50vw, 100vw'}}` and kiss writes a
+  `<picture>` with AVIF and WebP at the widths the layout needs, plus a resized fallback, `width`
+  and `height` read from the file, and lazy loading. `eager=true` marks the first image a visitor
+  sees. The photo is turned the right way up, and its GPS and camera data are stripped. On a
+  3,800 px, 504 KB photo, a phone gets a 4.9 KB AVIF. The encoder is `sharp`, now a dependency.
+- **Encoded images are kept in a cache the site commits**, `.kiss-cache/images`, so a deploy
+  copies them rather than encoding them again. `npx kiss-ssg images router.js` fills and prunes that
+  cache, and lists original photos that carry a GPS location or are wider than kiss ever serves.
+  With `--write` it rewrites those originals in `src/`.
+- **Copied CSS and JS are minified** outside dev (`assets.minify`, on by default).
+- **`assets.purge` removes the CSS no written page uses** from a framework stylesheet you name,
+  such as Bootstrap's, and re-hashes and relinks it. On one site, 100 KB became 30 KB.
+- **`host` says where the site is deployed** (`'netlify'`, `'cloudflare'`, `'firebase'`,
+  `'vercel'` or `'github-pages'`). kiss then writes that host's redirects file and, on Netlify,
+  Cloudflare Pages and Firebase, its header file, so every content-hashed file is cached for a
+  year. GitHub Pages cannot be configured, and Vercel's headers are the site's to write.
+- **`npx kiss-ssg speed public`** measures a built site with Lighthouse, if the site installs it,
+  and compares one run with an earlier one. **`npx kiss-ssg css public`** reports where the site's
+  CSS goes: each stylesheet's size, which pages link it, and how much of it no page uses.
+- **`{{embed 'soundcloud' id='…'}}`** is a click-to-load SoundCloud player.
+- **The audit has nine new checks:** `img-dimensions-missing`, `img-first-lazy`,
+  `fetchpriority-excess`, `font-preload-excess`, `script-blocking`, `host-unset`,
+  `img-not-responsive`, `image-oversized` and `image-location-metadata`.
+- **The link check no longer reports `../` above the site's root as broken**, when the site is
+  served at the root. A browser stops there, so `../img/x` from the home page is `/img/x`.
+
+The `kiss-site-review` skill now asks which groups of reviews to run: content and discovery,
+interface and usability, legal and compliance, and speed and performance.
+
+### Upgrading
+
+- **Every site's CSS and JS change bytes, and their hashed names change**, because they are
+  minified now. Nothing else on the page moves. A file that must stay as it is can be named
+  `*.min.js` or `*.min.css`, or the site can set `assets: { minify: false }`.
+- **Expect new audit findings**, from the nine checks above. Most are one edit in the layout.
+  `kiss-site-review` has the fix for each.
+- **`sharp` is installed with kiss-ssg** (about 29 MB on Windows), whether or not the site uses
+  `{{image}}`.
+- **If you use `{{image}}`, commit `.kiss-cache/images`.** A build that had to encode prints a line
+  saying so. The cache folder must be a folder of its own: `new Kiss()` refuses one that is the
+  project root or overlaps the site's `src`, assets or build folder.
+- **If your `.gitignore` ignores the whole of `.kiss-cache/`**, as the old fetch-cache example
+  suggested, change it to `.kiss-cache/fetch/` and point `fetch.cache` there, or the image cache is
+  never committed.
+- **Set `host`** to where the site is deployed. Until you do, a site with hashed files is told so
+  once by `host-unset`.
+
 ## 2.11.3 — 2026-11-04
 
 `{{consentEmbed}}` is now `{{embed}}`, and it works on any site. On a site with no `config.consent`
