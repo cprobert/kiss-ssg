@@ -30,7 +30,7 @@ Keep build-script modules out of `src`: a module in an unrecognised folder under
 
 GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Other methods.
 
-- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route minus `.hbs`, so `menu/index.hbs` is `menu/index`, not `menu`), `aliases` (old paths → 301s), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `config` (per-page overrides, such as `extensionLess: false` for a literal `404.html`), and the per-output options `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod` and `package`, each in its output's GUIDE.md section.
+- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route minus `.hbs`), `aliases` (old paths → 301s), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `config` (per-page overrides, such as `extensionLess: false` for a literal `404.html`), and the per-output options `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod` and `package`, each in its output's GUIDE.md section.
 - `.pages(options)`: the same, fanned out over an array model; one bad item fails only its own page. An item's id is the registration's route (or `id` as a prefix) plus its slug; a record may carry its own `id` and `aliases`.
 - `.scan()`: `.page()` for every unregistered `.hbs` under `folders.pages`.
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
@@ -56,6 +56,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   verbose: false,
   cleanBuild: true,     // true empties folders.build first | false | 'atomic'
   extensionLess: false, // true: <path>/<slug>/index.html
+  ids: 'view',          // 'path': id = served path
   siteUrl: undefined,   // needed by sitemap, llms, feed, robots, canonical, absUrl
   sass: { includePaths: [] },
   fetch: { headers: {}, timeout: 10000, retries: 0, cache: false },

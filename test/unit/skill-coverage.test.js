@@ -29,6 +29,22 @@ const LEGAL_UK =
   'plugins/kiss-ssg/skills/kiss-legal-and-privacy/references/uk.md'
 
 const COVERAGE = [
+  // 2.13.0: `ids: 'path'` gives every page an id from where it is served, for
+  // a site whose pages share views (diploma-msc: 123 of 686 had none), and a
+  // controller's id built from a slug has to use the slug kiss writes.
+  {
+    feature: "ids: 'path' — a page's default id is where it is served",
+    pattern: /`ids: 'path'`[\s\S]*`c\/acute`/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+    ],
+  },
+  {
+    feature: 'an id built from a slug uses utils.toSlug (id-slug-mismatch)',
+    pattern: /utils\.toSlug\(slug\)[\s\S]*id-slug-mismatch/,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
+  },
   // 2.8.6: a Disallow: / under a training-only token no longer counts as the
   // site leaving search, so the skill that answers "stop AI scraping us" has
   // to tell the training tokens from the search crawlers, and a sitemap's

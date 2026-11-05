@@ -1,4 +1,16 @@
 export function defaultIdForView(view: any): string;
+/**
+ * The default identity of a page under `config.ids: 'path'`: where it is
+ * served, as a key. `.html` is removed, because it is the extension the served
+ * URL hides, and then a trailing `/index`, because a directory index is
+ * served at its folder. Every other extension stays, so `about.html` and
+ * `about.json` never compete for one id. The home page is `index`, as under
+ * `'view'`, because an empty string is not an id. Not `utils.toURLKey`: that
+ * removes any extension and reduces the home page to `''`.
+ * @param {string} pageURL `KissPage.pageURL()`, build-relative
+ * @returns {string}
+ */
+export function defaultIdForPath(pageURL: string): string;
 export function explicitIdOf(options: any): string;
 /**
  * Whether an explicit id was built from a slug as given rather than as

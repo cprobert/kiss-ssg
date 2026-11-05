@@ -194,6 +194,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {boolean} verbose log the resolved config, and write `debug.json` from `.viewStats()`
  * @property {boolean|'atomic'} cleanBuild `true` empties `folders.build` in the constructor, `'atomic'` builds into a staging sibling and swaps it in when `complete()` resolves
  * @property {boolean} extensionLess build non-index pages to `<path>/<slug>/index.html`
+ * @property {'view'|'path'} ids what a page's default id is: its view's route (`'view'`, the default) or where it is served, `.html` and a trailing `/index` removed (`'path'`); site-wide, never per page
  * @property {string} [siteUrl] required by `.sitemap()` and the `canonical`/`absUrl` helpers
  * @property {{ includePaths: string[] }} sass load paths handed to Sass (its `loadPaths`)
  * @property {KissFetch} fetch
@@ -334,6 +335,7 @@ export const DEFAULT_CONFIG: Readonly<{
     verbose: false;
     cleanBuild: true;
     extensionLess: false;
+    ids: "view";
     sass: {
         includePaths: any[];
     };
@@ -682,6 +684,10 @@ export type KissSettings = {
      * build non-index pages to `<path>/<slug>/index.html`
      */
     extensionLess: boolean;
+    /**
+     * what a page's default id is: its view's route (`'view'`, the default) or where it is served, `.html` and a trailing `/index` removed (`'path'`); site-wide, never per page
+     */
+    ids: "view" | "path";
     /**
      * required by `.sitemap()` and the `canonical`/`absUrl` helpers
      */

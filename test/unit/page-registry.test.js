@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
+  defaultIdForPath,
   defaultIdForView,
   explicitIdOf,
   idIndexFor,
@@ -7,6 +8,36 @@ import {
   lookupPage,
   stackForRecord,
 } from '../../lib/page-registry.js'
+
+describe('defaultIdForPath', () => {
+  it('is the served location as a key: .html and a trailing /index removed', () => {
+    expect(defaultIdForPath('about.html')).toBe('about')
+    expect(defaultIdForPath('about/index.html')).toBe('about')
+    expect(defaultIdForPath('courses/index.html')).toBe('courses')
+    expect(defaultIdForPath('c/acute-medicine-courses.html')).toBe(
+      'c/acute-medicine-courses',
+    )
+    expect(defaultIdForPath('/blog/post.html')).toBe('blog/post')
+  })
+
+  it('names the home page index, never the empty string', () => {
+    expect(defaultIdForPath('index.html')).toBe('index')
+    expect(defaultIdForPath('/index.html')).toBe('index')
+  })
+
+  it('keeps every extension but .html, so two formats never compete', () => {
+    expect(defaultIdForPath('feed.xml')).toBe('feed.xml')
+    expect(defaultIdForPath('data/index.json')).toBe('data/index.json')
+    // extensionLess writes a non-HTML page to <x>/index.<ext>, served there.
+    expect(defaultIdForPath('feed/index.xml')).toBe('feed/index.xml')
+    expect(defaultIdForPath('old.htm')).toBe('old.htm')
+  })
+
+  it('strips /index only as a whole segment', () => {
+    expect(defaultIdForPath('reindex.html')).toBe('reindex')
+    expect(defaultIdForPath('a/reindex.html')).toBe('a/reindex')
+  })
+})
 
 describe('idSlugMismatch', () => {
   it('names an id that ends in a slug toSlug changed', () => {
