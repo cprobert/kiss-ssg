@@ -64,9 +64,18 @@ Speed work is judged by numbers, so take them before the first edit and again af
 - **Encoded small, in a modern format.** AVIF or WebP, through a pipeline step, with a JPEG or PNG fallback in a `<picture>` only when the site has a reason to serve old browsers. An image is never wider than twice the widest it is shown at; list the widths it needs in `srcset`, from the model.
 - **kiss's own consent banner logo** is kiss's markup, not the site's, and is outside these rules.
 
-### The stylesheet
+### Where CSS goes
 
-- **One stylesheet, linked in `<head>`, and small.** It blocks the first paint until it arrives, so every unused rule is paid for on every page.
+Every stylesheet in `<head>` blocks the first paint until it arrives, so a page should download the rules it uses and few it does not. A second or third stylesheet costs nothing measurable on HTTP/2 and HTTP/3; an unused rule costs every page that downloads it. So CSS goes in three tiers, chosen by **who uses it**:
+
+1. **The site stylesheet**: the layout, type, nav, footer, and every component more than one page type uses. One file, linked from the layout, hashed, and cached for the whole visit.
+2. **A stylesheet per page type**, when a `.pages()` type (a blog post, a course, a product) has a substantial amount of styling of its own and many pages. The type's view links it through the layout's head slot: `{{#content "head"}}<link rel="stylesheet" href="/{{asset "css/types/course.css"}}">{{/content}}`. A type with a handful of rules keeps them in the site stylesheet. A component two types share moves up to the site stylesheet, never into both type files.
+3. **Inline, for one page's own styling**: a small `<style>` block in that page's view, written with `{{#sass}}…{{/sass}}` so it can use the site's variables and is compiled and compressed. No request, and only that page pays for it. It is downloaded again on every visit to the page, so it stays short. A block that appears on two pages moves up a tier.
+
+- **Never a stylesheet for one page**: it costs a request and is shared with nothing. That page's CSS is inline, or belongs in its type's file.
+- **Never `style=""` attributes** for this: a `<style>` block keeps the rules readable and in one place.
+- **A strict Content Security Policy blocks inline CSS.** When the site's `_headers` sets `style-src` (or `default-src`) without `'unsafe-inline'`, page CSS goes in the type stylesheet instead.
+- **`npx kiss-ssg css public` checks all of this**, from the built site, the same way every time: a stylesheet one page links, an inline block on several pages, a rule duplicated across stylesheets, inline CSS a CSP blocks, and how much of each stylesheet no page uses.
 - **No `@import` inside it.** Each one is a second request that starts only after the first file has arrived. Sass `@use` is compiled away; a plain-CSS `@import` is not.
 - **Inlining "critical CSS" and loading the rest later is not the default.** It is hard to keep right and breaks quietly; reach for it only when a measurement shows the stylesheet is what holds the first paint back.
 
@@ -129,7 +138,21 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
 **A browser run is a lab measurement, never the site's verdict.** It runs once, with an empty cache, on this machine. Report each number with how it was taken, and never say the site passes or fails the targets from it: that comes from the site's real-visitor data (Search Console's Core Web Vitals report, or the owner's analytics), if it has any.
 
 1. **The audit's performance checks** — from the build report, grouped by check. Each is one edit in the layout or the model.
-2. **The image seen first, in the browser.** On each distinct template, at 320 and 1440 wide, find the LCP element by running this in the page after it has loaded:
+2. **Where the CSS goes, from the build.** No browser needed, and the same answer every run:
+
+   ```bash
+   npx kiss-ssg css public --out <temp>/css-before.json
+   ```
+
+   It lists each stylesheet with its compressed size, how many pages link it, and how much of it no page uses (the same purge `assets.purge` runs). It also lists each inline `<style>` block and the pages it is on, and gives four findings:
+   - `stylesheet-one-page`: make it inline, or move it to its type's file;
+   - `inline-style-repeated`: move it to the type or site stylesheet;
+   - `rule-duplicated`: keep the rule once, in the tier every page that uses it shares;
+   - `inline-style-blocked-by-csp`: move the block to a stylesheet.
+
+   A stylesheet whose removable share is large is a framework to purge, or a type's rules sitting in the site file. Run it again after the fixes, and put the before and after in the report.
+
+3. **The image seen first, in the browser.** On each distinct template, at 320 and 1440 wide, find the LCP element by running this in the page after it has loaded:
 
    ```js
    new Promise((resolve) => {
@@ -146,9 +169,9 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
 
    It is right when the element is an `<img>` in the HTML, not lazy, with `fetchpriority="high"`, or is text. Report the time with the width and whether the network was throttled.
 
-3. **Layout shift, in the browser.** Load each template, scroll to the bottom slowly, and add up the `layout-shift` entries that had no recent input (`buffered: true`, as above, summing `value` where `hadRecentInput` is false). Anything over 0.1 is a finding; name what moved (`entry.sources[0].node`).
-4. **What each page downloads, and how much of it runs.** In the browser's network log: the stylesheet's size, every font file, every script, and every request to another origin, including the ones a script adds after load, which the build's `thirdParty` list cannot see. Then the browser's code coverage (DevTools Coverage, or Playwright's `page.coverage`) after a load and a scroll gives how much of each CSS and JS file the page used. A font over two weights, a script with no `defer`, a third party that is not an `{{embed}}`, or a whole framework mostly unused is a finding. Coverage counts code that runs only on a click as unused, so open the page's controls before calling a file dead.
-5. **The headers the live site sends**, when it is deployed. Fetch the home page, one hashed file and one unhashed image, and read `cache-control` and `content-encoding`:
+4. **Layout shift, in the browser.** Load each template, scroll to the bottom slowly, and add up the `layout-shift` entries that had no recent input (`buffered: true`, as above, summing `value` where `hadRecentInput` is false). Anything over 0.1 is a finding; name what moved (`entry.sources[0].node`).
+5. **What each page downloads, and how much of it runs.** In the browser's network log: the stylesheet's size, every font file, every script, and every request to another origin, including the ones a script adds after load, which the build's `thirdParty` list cannot see. Then the browser's code coverage (DevTools Coverage, or Playwright's `page.coverage`) after a load and a scroll gives how much of each CSS and JS file the page used. A font over two weights, a script with no `defer`, a third party that is not an `{{embed}}`, or a whole framework mostly unused is a finding. Coverage counts code that runs only on a click as unused, so open the page's controls before calling a file dead.
+6. **The headers the live site sends**, when it is deployed. Fetch the home page, one hashed file and one unhashed image, and read `cache-control` and `content-encoding`:
 
    ```bash
    curl -sI https://example.com/
@@ -160,5 +183,6 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
 What each check can be read from:
 
 - **The build report:** check 1.
-- **The browser:** checks 2, 3 and 4.
-- **The live site:** check 5.
+- **The built folder, with `kiss-ssg css`:** check 2.
+- **The browser:** checks 3, 4 and 5.
+- **The live site:** check 6.

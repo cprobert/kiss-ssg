@@ -78,6 +78,19 @@ if (process.argv[2] === 'speed') {
   process.exit(result.code)
 }
 
+// `css` audits how a built folder partitions its CSS. Every decision is
+// lib/css-audit.js's; this prints and exits. Imported here, not at the top,
+// so no other command loads PostCSS.
+if (process.argv[2] === 'css') {
+  const { runCss } = await import('../lib/css-audit.js')
+  const result = await runCss(process.argv.slice(3), {
+    cwd: process.cwd(),
+  }).catch((err) => ({ code: 1, out: '', err: `kiss-ssg css: ${err.message}` }))
+  if (result.err) console.error(result.err)
+  if (result.out) console.log(result.out)
+  process.exit(result.code)
+}
+
 // npm is npm.cmd on Windows, which Node will not spawn without a shell, and a
 // shell given an argument array prints DEP0190 on every run. One command
 // string instead: the only values in it are our own version and flags.

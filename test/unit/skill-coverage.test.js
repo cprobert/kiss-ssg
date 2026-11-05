@@ -1011,6 +1011,15 @@ const COVERAGE = [
       'plugins/kiss-ssg/skills/kiss-performance/references/pipeline-recipes.md',
     ],
   },
+  // 2026-11-05, the operator: a CSS partitioning strategy (site, page type,
+  // inline for one page), audited the same way every time by kiss-ssg css.
+  {
+    feature:
+      'kiss-performance: CSS in three tiers by who uses it, never a one-page stylesheet, the CSP caveat, audited by kiss-ssg css',
+    pattern:
+      /^(?=[\s\S]*### Where CSS goes)(?=[\s\S]*\*\*The site stylesheet\*\*)(?=[\s\S]*\*\*A stylesheet per page type\*\*)(?=[\s\S]*\*\*Inline, for one page's own styling\*\*)(?=[\s\S]*\*\*Never a stylesheet for one page\*\*)(?=[\s\S]*\*\*A strict Content Security Policy blocks inline CSS\.\*\*)(?=[\s\S]*npx kiss-ssg css public --out)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
   {
     feature:
       'the task skills send images, fonts and scripts to kiss-performance',
@@ -1044,6 +1053,10 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-11-05 (the operator): CSS goes in three tiers by who uses it (the site stylesheet, one per page type, inline for one page), so a sentence telling an agent to ship one stylesheet for everything is the rule that replaced',
+    patterns: [/\*\*One stylesheet, linked in `<head>`, and small\.\*\*/],
+  },
   {
     why: '2026-11-04: images, fonts, scripts and caching moved from kiss-front-end to kiss-performance, so speed has one home; a sentence that still sends image sizes or performance to kiss-front-end is the second copy that drifts',
     patterns: [

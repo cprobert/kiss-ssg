@@ -1806,6 +1806,25 @@ npx kiss-ssg speed public --page / --page /blog/ --against speed-before.json
 
 It exits 0 when every page was measured, 1 when a page failed to load or Lighthouse failed, and 2 on a usage error or a missing prerequisite, naming it (`npm install -D lighthouse`, the Node version, or `CHROME_PATH` when no Chrome is found). These are lab numbers from one machine with an empty cache, never the field verdict real visitors give: Search Console's Core Web Vitals report is that. `npx kiss-ssg speed --help` has every option.
 
+#### Auditing CSS
+
+`npx kiss-ssg css <build-folder>` reads a built site and says how its CSS is split, the same way every run, with no browser:
+
+```bash
+npm run build
+npx kiss-ssg css public --out css-before.json
+```
+
+- **Each stylesheet:** its Brotli size, how many pages link it, and how much of it is **removable**: the share of its compressed bytes no linking page uses, measured with the same PurgeCSS run as `assets.purge`.
+- **Each inline `<style>` block**, and the pages it is on. kiss's own consent CSS (`data-kiss-…`) is left out.
+- **Four findings:**
+  - `stylesheet-one-page`: a stylesheet only one page links.
+  - `inline-style-repeated`: one inline block on two or more pages.
+  - `rule-duplicated`: an identical rule in two stylesheets.
+  - `inline-style-blocked-by-csp`: inline CSS on a site whose `_headers` sets a `style-src-elem`, `style-src` or `default-src` without `'unsafe-inline'`. A policy that allows the block by hash or nonce is still reported.
+
+The rule they check: CSS goes where the pages that use it share it. That means the site stylesheet for what most pages use, a stylesheet per page type for one type's own styling, and inline `<style>` for one page's (the `kiss-performance` skill has the reasoning). `--out` writes the whole audit as JSON, byte-identical for the same folder, so a before and an after can be compared. A stylesheet the build links but did not write (one a separate tool produces) is listed as `missing`. Findings are advisory, and the command exits 0. It exits 2 on a usage error.
+
 ### Recording the knowledge base
 
 `npx kiss-ssg aikb <script>` writes the site's own knowledge base into `config.folders.aikb` (default `./AIKB`) — the map of the site as the build saw it, for the developer who comes back to it in two years and finds that every context window that held this is gone. It runs exactly the build `check` runs — staged and then discarded, publishing nothing — and the folder is the only thing it leaves behind.

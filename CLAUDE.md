@@ -50,6 +50,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | `kiss-ssg base` (the work's base branch)   | `lib/base.js`                | `AIKB/base.md`                |
 | `kiss-ssg upgrade` (install + notes)       | `lib/upgrade.js`             | `AIKB/upgrade.md`             |
 | `kiss-ssg speed` (Lighthouse KPIs)         | `lib/speed.js`               | `AIKB/speed.md`               |
+| `kiss-ssg css` (CSS partition audit)       | `lib/css-audit.js`           | `AIKB/css-audit.md`           |
 | Git, asked one way (exact refs)            | `lib/git.js`                 | `AIKB/git.md`                 |
 | `kiss-ssg init` plan                       | `lib/init.js`                | `AIKB/init.md`                |
 | Logger                                     | `lib/logger.js`              | `AIKB/logger.md`              |
