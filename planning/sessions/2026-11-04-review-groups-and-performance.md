@@ -146,6 +146,16 @@ opened: 2026-11-04
   - **Eyeball: looked.** The operator read the "Where CSS goes" and "Ship less CSS and JS" sections of `kiss-performance/SKILL.md`: "Looked, it's right".
   - **Offer: kept.** `assets.purge` is skipped under `--dev` (`lib/build-finish.js:541`). Claude's option text said the skill already told agents to check purged pages in a production build; it did not say where. Fixed in the skill on this pulse: open every interactive component "in a production build served from the build folder, because `--dev` skips the purge". The skill tests are green.
   - Decision: continue with the clean room (7), then the operator's deploy previews, then the close. Criterion 6's with/without run is still open, for the operator to decide at the close.
+- **2026-11-05**: after the image and font work, the skill-creator review, the arms, the 14-round Codex loop and the icon-sprite rule (`72dc49e`..`0b31a88`).
+  - **Met:** criteria 1–5 and 8. `npm run gates` at `0b31a88`: all five passed.
+  - **Criterion 6, now met in full.** Arms on swan-love (`planning/reviews/2026-11-05-performance-arms.md`): with the skill 8 hit / 4 partial / 1 missed, without 4 / 5 / 4. The operator has now read the shipped `SKILL.md` end to end (below).
+  - **Partial:** criterion 9. The gates are green, and the Codex adversarial review of the image work ran 14 rounds and was stopped. The whole-branch Codex review is the close's.
+  - **Not yet:** criterion 7, the clean room. The AVIF/WebP/JPEG quality defaults and the 200 KB `image-oversized` threshold are still provisional.
+  - **Drift:** no drift beyond the recorded Amendments. sharp and PurgeCSS against the "no new dependency" non-goal were operator decisions; the surface is still public API, and a minor is proposed.
+  - **Two inherited lessons were missed during the Codex loop:** "pulse after every Codex round that changes `lib/`" and "the operator reads one Codex fix diff per round". Neither happened across the 14 rounds.
+  - **Eyeball: looked.** The operator read `kiss-performance/SKILL.md` (3,101 words) end to end: "Read it, it's right".
+  - **Offer: kept.** A cache hit is checked structurally (format, width, the file running to the end its structure declares), never decoded. A body damaged in place behind an intact header and ending still ships; that gap is recorded in `AIKB/image-encode.md`.
+  - Decision: continue with the clean room (7), then the AVIF quality check, then `/branch-close`.
 
 ---
 
