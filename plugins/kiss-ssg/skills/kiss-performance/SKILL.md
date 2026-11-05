@@ -84,6 +84,15 @@ Speed work is judged by numbers, so take them before the first edit and again af
 - **A consent manager that insists on loading first** (a third-party banner such as Cookiebot's `uc.js`) blocks every page by design, so `defer` is not its fix. kiss's own consent manager loads nothing from another site before a choice. Whether to switch is the owner's decision with [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md), never a speed edit made alone.
 - **The platform before a script** (`kiss-front-end` has the order), and no script at all for anything the HTML and CSS can do.
 
+### Ship less CSS and JS
+
+Unused code is the largest saving after third parties, and it is the site's own to remove. The copyable steps are in [the pipeline recipes](references/pipeline-recipes.md). Open them before adding one.
+
+- **Minifying is kiss's.** Every copied `.css` and `.js` is minified outside dev (`assets.minify`, on by default). Add no minify step, and never turn it off to "fix" a file: name a vendor file `*.min.js` and it is left as it is.
+- **A framework stylesheet copied whole is purged** against the templates, models and scripts, with a safelist for the classes its JavaScript adds. Bootstrap's full CSS on one measured site was 94% unused. Tailwind needs no purge step, because it scans its content itself.
+- **A library is the last resort.** Replace jQuery and a framework's JavaScript with the platform when the page can do without them. A library the site needs is imported by name as an ES module and bundled with esbuild, which keeps only what is imported.
+- **Bundle for the import chain, not the request count.** Scripts that `import` each other are bundled, because each nested import is fetched only after its parent. A handful of separate files costs nothing measurable on HTTP/2 and HTTP/3, so never concatenate just to have fewer. Keep each bundle under about 100 kB, and split by page beyond that.
+
 ### Third parties
 
 - **Every other origin costs a connection and main-thread time.** Count them: the build report's `thirdParty` lists the origins each page's markup loads from.
@@ -138,7 +147,7 @@ Report to the [review protocol](../kiss-site-review/review-protocol.md): every f
    It is right when the element is an `<img>` in the HTML, not lazy, with `fetchpriority="high"`, or is text. Report the time with the width and whether the network was throttled.
 
 3. **Layout shift, in the browser.** Load each template, scroll to the bottom slowly, and add up the `layout-shift` entries that had no recent input (`buffered: true`, as above, summing `value` where `hadRecentInput` is false). Anything over 0.1 is a finding; name what moved (`entry.sources[0].node`).
-4. **What each page downloads.** In the browser's network log, or from the built files: the stylesheet's size, every font file, every script, and every request to another origin. A font over two weights, a script with no `defer`, or a third party that is not an `{{embed}}` is a finding.
+4. **What each page downloads, and how much of it runs.** In the browser's network log: the stylesheet's size, every font file, every script, and every request to another origin, including the ones a script adds after load, which the build's `thirdParty` list cannot see. Then the browser's code coverage (DevTools Coverage, or Playwright's `page.coverage`) after a load and a scroll gives how much of each CSS and JS file the page used. A font over two weights, a script with no `defer`, a third party that is not an `{{embed}}`, or a whole framework mostly unused is a finding. Coverage counts code that runs only on a click as unused, so open the page's controls before calling a file dead.
 5. **The headers the live site sends**, when it is deployed. Fetch the home page, one hashed file and one unhashed image, and read `cache-control` and `content-encoding`:
 
    ```bash

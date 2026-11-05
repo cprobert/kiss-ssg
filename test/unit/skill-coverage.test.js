@@ -991,6 +991,26 @@ const COVERAGE = [
       /^(?=[\s\S]*## Measure first, and last)(?=[\s\S]*npx kiss-ssg speed public[^\n]*--out )(?=[\s\S]*npx kiss-ssg speed public[^\n]*--against )(?=[\s\S]*ask the owner before installing it)/,
     skills: [skill('kiss-ssg', 'kiss-performance')],
   },
+  // 2026-11-04, the operator: the skill is about bundling, minification and
+  // tree shaking as much as images and caching, and a skill states the best
+  // practice whether or not kiss does it itself. Measured: Bootstrap's CSS
+  // 94% unused; PurgeCSS 13.4 KB → 3.4 KB br; one lodash function 3.4 KB.
+  {
+    feature:
+      'kiss-performance: kiss minifies; purge a framework; the platform before a library; bundle for the import chain; recipes linked',
+    pattern:
+      /^(?=[\s\S]*### Ship less CSS and JS)(?=[\s\S]*\*\*Minifying is kiss's\.\*\*)(?=[\s\S]*\*\*A framework stylesheet copied whole is purged\*\*)(?=[\s\S]*\*\*A library is the last resort\.\*\*)(?=[\s\S]*\*\*Bundle for the import chain, not the request count\.\*\*)(?=[\s\S]*\[the pipeline recipes\]\(references\/pipeline-recipes\.md\))/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  {
+    feature:
+      'the pipeline recipes: purgecss cwd and its exit-0 trap, the safelist, esbuild with no --minify',
+    pattern:
+      /^(?=[\s\S]*cwd: 'src\/vendor')(?=[\s\S]*\*\*still exits 0\*\*)(?=[\s\S]*--safelist)(?=[\s\S]*npx esbuild src\/scripts\/main\.js --bundle --format=esm)(?=[\s\S]*No `--minify` needed)/,
+    skills: [
+      'plugins/kiss-ssg/skills/kiss-performance/references/pipeline-recipes.md',
+    ],
+  },
   {
     feature:
       'the task skills send images, fonts and scripts to kiss-performance',
