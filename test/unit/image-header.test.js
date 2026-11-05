@@ -322,6 +322,22 @@ describe('isCompleteImage', () => {
       ).toBe(false)
   })
 
+  it('fails an AVIF cut exactly before its mdat box', async () => {
+    // Its remaining boxes still add up to the file, so only the item
+    // locations show the picture data is gone.
+    const whole = await base(64, 32).avif().toBuffer()
+    let off = 0
+    let mdat = -1
+    while (off < whole.length) {
+      if (whole.toString('latin1', off + 4, off + 8) === 'mdat') mdat = off
+      off += whole.readUInt32BE(off)
+    }
+    expect(mdat).toBeGreaterThan(0)
+    expect(isCompleteImage(bufferReader(whole.subarray(0, mdat)), 'avif')).toBe(
+      false,
+    )
+  })
+
   it('fails text standing in for an image', () => {
     const pointer = Buffer.from(
       'version https://git-lfs.github.com/spec/v1\noid sha256:00\nsize 1\n',

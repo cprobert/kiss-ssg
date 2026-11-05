@@ -111,6 +111,24 @@ describe('encodeVariants', () => {
     },
   )
 
+  it('treats an AVIF entry cut before its picture data as a miss', async () => {
+    const variants = await source()
+    await encodeVariants({ variants, root, cache })
+    const v = variants.find((x) => x.format === 'avif')
+    const entry = path.join(cache, cacheName(v))
+    const whole = fs.readFileSync(entry)
+    let off = 0
+    let mdat = -1
+    while (off < whole.length) {
+      if (whole.toString('latin1', off + 4, off + 8) === 'mdat') mdat = off
+      off += whole.readUInt32BE(off)
+    }
+    fs.writeFileSync(entry, whole.subarray(0, mdat))
+    const result = await encodeVariants({ variants, root, cache })
+    expect(result.encoded).toEqual([cacheName(v)])
+    expect(fs.statSync(entry).size).toBe(whole.length)
+  })
+
   it('treats a whole image of the wrong width as a miss', async () => {
     const variants = await source()
     await encodeVariants({ variants, root, cache })
