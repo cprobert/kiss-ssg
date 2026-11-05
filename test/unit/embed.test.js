@@ -91,7 +91,7 @@ describe('embedMarkup under config.consent', () => {
   it('holds the frame in a template behind a notice, with the provider’s link', () => {
     const out = gated('youtube', { hash: { id: 'abc' }, title: 'Our video' })
     expect(out).toContain(
-      `<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-consent="marketing" style="${BOX_16_9}">`,
+      `<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-consent="marketing" data-kiss-embed-autoplay style="${BOX_16_9}">`,
     )
     expect(out).toContain(
       '<div class="kiss-embed__notice" data-kiss-consent-ui>',
@@ -99,8 +99,9 @@ describe('embedMarkup under config.consent', () => {
     expect(out).toContain(
       'This content is hosted by Google, which may set cookies when it loads.',
     )
-    expect(out).toContain(
-      '<button type="button" data-kiss-consent-action="load">Load it</button>',
+    // A video: Play video, named with the title (2.13.0).
+    expect(out).toMatch(
+      /<button type="button" data-kiss-consent-action="load" aria-label="Play video: [^"]+">Play video<\/button>/,
     )
     expect(out).toContain(
       '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
@@ -172,11 +173,11 @@ describe('embedMarkup with no config.consent (a facade)', () => {
   it('writes a Load button and the provider’s link, and no Always allow', () => {
     const out = facade('youtube', { hash: { id: 'abc' }, title: 'Our video' })
     expect(out).toContain(
-      `<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade style="${BOX_16_9}">`,
+      `<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade data-kiss-embed-autoplay style="${BOX_16_9}">`,
     )
     expect(out).toContain('<div class="kiss-embed__notice" data-kiss-embed-ui>')
     expect(out).toContain(
-      '<button type="button" data-kiss-embed-action="load">Load it</button>',
+      '<button type="button" data-kiss-embed-action="load" aria-label="Play video: Our video">Play video</button>',
     )
     expect(out).not.toContain('data-kiss-consent')
     expect(out).not.toContain('Always allow')
@@ -224,7 +225,7 @@ describe('embedMarkup with a poster', () => {
       poster: POSTER,
     })
     expect(out).toContain(
-      `<div class="kiss-embed kiss-embed--poster" data-kiss-embed="youtube" data-kiss-embed-facade style="${BOX_16_9};position:relative;justify-content:flex-end">`,
+      `<div class="kiss-embed kiss-embed--poster" data-kiss-embed="youtube" data-kiss-embed-facade data-kiss-embed-autoplay style="${BOX_16_9};position:relative;justify-content:flex-end">`,
     )
     expect(out).toContain(
       `<div class="kiss-embed__poster" data-kiss-embed-ui style="position:absolute;inset:0;overflow:hidden">${POSTER}</div>`,
@@ -245,7 +246,7 @@ describe('embedMarkup with a poster', () => {
       poster: POSTER,
     })
     expect(out).toMatch(
-      /data-kiss-embed-action="load"><svg aria-hidden="true" focusable="false"[^>]*><path[^>]*\/><\/svg>/,
+      /data-kiss-embed-action="load" aria-label="[^"]+"><svg aria-hidden="true" focusable="false"[^>]*><path[^>]*\/><\/svg>/,
     )
     const map = facade('google-maps', {
       src: 'https://www.google.com/maps/embed?pb=x',
@@ -271,6 +272,107 @@ describe('embedMarkup with a poster', () => {
     expect(out).not.toContain('kiss-embed--poster')
     expect(out).not.toContain('<svg')
     expect(out).toContain('<div class="kiss-embed__notice" data-kiss-embed-ui>')
+  })
+})
+
+// a1k9training, 2026-11-05: "Load it" told a screen-reader user nothing, and
+// a site with no banner could not change it. A video's button says "Play
+// video", every Load button's name carries the title, and the wording can be
+// set per call.
+describe('embedMarkup wording', () => {
+  it('labels a video’s button Play video, and names it with the title', () => {
+    const out = facade('youtube', { hash: { id: 'abc' }, title: 'Puppy class' })
+    expect(out).toContain(
+      '<button type="button" data-kiss-embed-action="load" aria-label="Play video: Puppy class">Play video</button>',
+    )
+  })
+
+  it('keeps Load it for anything else, still named with the title', () => {
+    const out = facade('google-maps', {
+      src: 'https://www.google.com/maps/embed?pb=x',
+      title: 'Our shop',
+    })
+    expect(out).toContain(
+      '<button type="button" data-kiss-embed-action="load" aria-label="Load it: Our shop">Load it</button>',
+    )
+  })
+
+  it('takes load=, notice= and open= for one embed, filling {provider} and {service}', () => {
+    const out = facade('youtube', {
+      hash: { id: 'abc' },
+      title: 'Puppy class',
+      own: {
+        load: 'Watch the class',
+        notice: 'Hosted by {provider}.',
+        open: 'See it on {service}',
+      },
+    })
+    expect(out).toContain(
+      'aria-label="Watch the class: Puppy class">Watch the class</button>',
+    )
+    expect(out).toContain('<p>Hosted by Google.</p>')
+    expect(out).toContain('>See it on YouTube</a>')
+  })
+
+  it('uses ui.text.embedPlay under config.consent, and leaves Always allow alone', () => {
+    const out = gatedWith({ embedPlay: 'Chwarae fideo' }, 'youtube', {
+      hash: { id: 'abc' },
+      title: 'Dosbarth',
+    })
+    expect(out).toContain(
+      'data-kiss-consent-action="load" aria-label="Chwarae fideo: Dosbarth">Chwarae fideo</button>',
+    )
+    expect(out).toContain(
+      '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
+    )
+  })
+
+  it('gives a site that worded embedLoad and not embedPlay its own wording on videos too', () => {
+    const out = gatedWith({ embedLoad: 'Llwytho' }, 'youtube', {
+      hash: { id: 'abc' },
+      title: 'Dosbarth',
+    })
+    expect(out).toContain('aria-label="Llwytho: Dosbarth">Llwytho</button>')
+  })
+})
+
+// The click that reveals a video's frame is the request to play it, so a
+// video box asks for autoplay; only the Load click adds it, never a reveal
+// from a stored choice.
+describe('embedMarkup autoplay', () => {
+  // The box's own opening tag: the facade's script names the attribute too.
+  /** @param {string} html */
+  const boxTag = (html) => html.match(/^<div[^>]*>/)?.[0] ?? ''
+
+  it('marks a video box to autoplay on Load, unless autoplay=false', () => {
+    expect(facade('youtube', { hash: { id: 'abc' }, title: 'T' })).toMatch(
+      /<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade data-kiss-embed-autoplay style=/,
+    )
+    expect(gated('youtube', { hash: { id: 'abc' }, title: 'T' })).toContain(
+      'data-kiss-embed-autoplay',
+    )
+    expect(
+      boxTag(
+        facade('youtube', { hash: { id: 'abc' }, title: 'T', autoplay: false }),
+      ),
+    ).not.toContain('data-kiss-embed-autoplay')
+  })
+
+  it('never marks anything that is not a video', () => {
+    const map = facade('google-maps', {
+      src: 'https://www.google.com/maps/embed?pb=x',
+      title: 'Map',
+    })
+    expect(boxTag(map)).toMatch(/^<div class="kiss-embed"/)
+    expect(boxTag(map)).not.toContain('data-kiss-embed-autoplay')
+  })
+
+  it('leaves the frame’s own src alone: only the click adds autoplay=1', () => {
+    expect(facade('youtube', { hash: { id: 'abc' }, title: 'T' })).toContain(
+      '<iframe src="https://www.youtube-nocookie.com/embed/abc"',
+    )
+    expect(facadeScript()).toContain('data-kiss-embed-autoplay')
+    expect(facadeScript()).toContain("searchParams.set('autoplay', '1')")
   })
 })
 

@@ -207,6 +207,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
  * @property {KissMarkdownCopies} markdownCopies the `.md` copy written beside every HTML page, for agents
  * @property {import('./packages.js').KissPackages|false} packages the learning packages written for the pages that name one (`package`); `false` writes none
+ * @property {{ text: Record<string, string> }|null} embeds the `{{embed}}` wording of a site with no `consent`: `text` takes `embedNotice`, `embedLoad`, `embedPlay` and `embedWatch`, the keys `consent.ui.text` uses; `null` (the default) means the defaults
  * @property {import('./consent.js').KissConsent|null} consent the cookie consent manager: the services a site gates behind the visitor's choice, and the banner that asks; `null` (the default) means none
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
@@ -389,6 +390,7 @@ export const DEFAULT_CONFIG: Readonly<{
         schemas: false;
     }>;
     consent: any;
+    embeds: any;
     port: 3001;
     livereloadPort: 35729;
     devHost: "127.0.0.1";
@@ -729,6 +731,12 @@ export type KissSettings = {
      * the learning packages written for the pages that name one (`package`); `false` writes none
      */
     packages: import("./packages.js").KissPackages | false;
+    /**
+     * the `{{embed}}` wording of a site with no `consent`: `text` takes `embedNotice`, `embedLoad`, `embedPlay` and `embedWatch`, the keys `consent.ui.text` uses; `null` (the default) means the defaults
+     */
+    embeds: {
+        text: Record<string, string>;
+    } | null;
     /**
      * the cookie consent manager: the services a site gates behind the visitor's choice, and the banner that asks; `null` (the default) means none
      */

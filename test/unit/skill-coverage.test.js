@@ -48,6 +48,12 @@ const COVERAGE = [
     skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
   {
+    feature:
+      '{{embed}} wording (load=/notice=/open=, embeds.text) and autoplay on Load',
+    pattern: /`autoplay=false`[\s\S]*`load=`[\s\S]*`embeds: \{ text \}`/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
     feature: 'an id built from a slug uses utils.toSlug (id-slug-mismatch)',
     pattern: /utils\.toSlug\(slug\)[\s\S]*id-slug-mismatch/,
     skills: [skill('kiss-ssg', 'kiss-page-add')],
@@ -1133,6 +1139,10 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: "2.13.0: a site with no config.consent sets its embed wording with `embeds: { text }`, or one embed's with load=, notice= and open=, so a sentence saying the wording can only be changed through config.consent is the rule that replaced",
+    patterns: [/to change it, use `config\.consent`/],
+  },
   {
     why: '2026-11-05, the clean room: the protocol ranked the audit page checks P2 with three exceptions, so a clean-room agent put missing alt text (a WCAG failure, P1 by the rule above it) at P2; the exception list now names every WCAG and legal check',
     patterns: [

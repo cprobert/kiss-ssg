@@ -2,9 +2,9 @@
 
 > A small, dependency-driven static site generator for Node, built to be driven by a coding agent. MVC-style: Handlebars views, JSON/HTTP/function models, JS controllers. ESM (Node ≥22.12), no build step, no bundler.
 
-This file is the index: what exists, the shape to follow, and the traps nothing reports. Every rule's full statement is in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line below names. Read the section before relying on a behaviour this file only names.
+This file is the index: what exists, the shape to follow, and the traps nothing reports. Every rule's full statement is in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line below names.
 
-Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `Kiss` instance per build folder, built with `new Kiss(config)` and driven by a chainable API. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict.
+Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `new Kiss(config)` per build folder. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict.
 
 **Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-performance`, `kiss-design`, `kiss-legal-and-privacy`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands for Claude Code and Codex; a declaration alone installs nothing. Offer them to the site's owner before building without them.
 
@@ -71,6 +71,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
   consent: null, // { services: { gtm: { id } } } turns on the cookie consent manager
+  embeds: null,  // { text }: {{embed}} wording with no consent
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -119,7 +120,7 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
 - `scormBridge`: in `<head>`, gives a package page `window.kissScorm`. Trap: the page reports its own completion (`kissScorm.status('completed')`); `complete="seen"` on a bookmarking page makes Moodle reopen it in review mode, saving nothing.
-- `embed`: a click-to-load player, map or post (youtube, vimeo, google-maps, instagram, soundcloud), any site; `title=` required; `poster=` a still from src/.
+- `embed`: a click-to-load player, map or post (youtube, vimeo, google-maps, instagram, soundcloud), any site; `title=` required; `poster=` a still from src/; `load=`/`notice=`/`open=` words.
 - `consentHead`: in `<head>` after `<meta charset>`, before any script; needs `config.consent`.
 - `consentBanner`: first in `<body>`; the default banner, or the site's `consent-banner` partial.
 - `consentScript`: a service's scripts, held back until allowed (`{{consentScript "gtm" id=…}}`, or a block).

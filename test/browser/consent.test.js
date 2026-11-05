@@ -520,6 +520,35 @@ describe.skipIf(!browser)('consent in Chromium', () => {
     await context.close()
   })
 
+  // A video's Load click is the request to play it (2.13.0); a reveal from a
+  // stored choice, with no click, must never start a video.
+  it('asks a video to play on its own Load click, and never on a stored choice', async () => {
+    const { context, page } = await open()
+    await page.goto(`${site.base}/`)
+    await page.click('[data-kiss-embed] [data-kiss-consent-action="load"]')
+    await expect
+      .poll(() =>
+        page.locator('iframe[src*="youtube-nocookie"]').getAttribute('src'),
+      )
+      .toBe('https://www.youtube-nocookie.com/embed/abc123?autoplay=1')
+    await page.goto(`${site.base}/`)
+    await page.click(
+      '[data-kiss-consent-root] [data-kiss-consent-action="accept"]',
+    )
+    await expect
+      .poll(() =>
+        page.locator('iframe[src*="youtube-nocookie"]').getAttribute('src'),
+      )
+      .toBe('https://www.youtube-nocookie.com/embed/abc123')
+    await page.reload()
+    await expect
+      .poll(() =>
+        page.locator('iframe[src*="youtube-nocookie"]').getAttribute('src'),
+      )
+      .toBe('https://www.youtube-nocookie.com/embed/abc123')
+    await context.close()
+  })
+
   it('never hides the focused element under the bottom banner', async () => {
     const { context, page } = await open({
       viewport: { width: 800, height: 500 },
@@ -994,6 +1023,12 @@ describe.skipIf(!browser)(
       await expect
         .poll(() => page.locator('iframe[src*="youtube-nocookie"]').count())
         .toBe(1)
+      // The click is the request to play (2.13.0).
+      expect(
+        await page
+          .locator('iframe[src*="youtube-nocookie"]')
+          .getAttribute('src'),
+      ).toBe('https://www.youtube-nocookie.com/embed/abc?autoplay=1')
       expect(await page.locator('iframe[src*="instagram"]').count()).toBe(0)
       await expect
         .poll(() => [...new Set(offHost.map((r) => r.host))])
