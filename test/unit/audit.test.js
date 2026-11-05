@@ -66,6 +66,9 @@ describe('CHECKS', () => {
       'font-preload-excess',
       'script-blocking',
       'host-unset',
+      'image-oversized',
+      'image-location-metadata',
+      'img-not-responsive',
     ])
     expect(Object.isFrozen(CHECKS)).toBe(true)
   })
@@ -106,6 +109,8 @@ describe('extractPageFacts', () => {
       fetchpriorityHigh: 0,
       fontPreloads: 0,
       blockingScripts: [],
+      imageRefs: ['/a.jpg', '/b.jpg', '/d.jpg'],
+      imgPlain: ['/a.jpg', '/b.jpg', '/d.jpg'],
       consent: NO_CONSENT,
     })
   })
@@ -144,6 +149,8 @@ describe('extractPageFacts', () => {
       fetchpriorityHigh: 0,
       fontPreloads: 0,
       blockingScripts: [],
+      imageRefs: [],
+      imgPlain: [],
       consent: NO_CONSENT,
     })
   })
@@ -341,6 +348,8 @@ function facts(overrides = {}) {
     fetchpriorityHigh: 0,
     fontPreloads: 0,
     blockingScripts: [],
+    imageRefs: [],
+    imgPlain: [],
     ...overrides,
   }
 }
@@ -1033,7 +1042,7 @@ describe('auditBuild — site-level checks', () => {
 })
 
 describe('auditBuild — ownership, ignore and order', () => {
-  it('ownsFolder: false skips the three walk checks and says so', () => {
+  it('ownsFolder: false skips the five walk checks and says so', () => {
     const buildDir = buildFolder({
       'x.map': 'x',
       'app.js': 'console.log(1)',
@@ -1047,6 +1056,8 @@ describe('auditBuild — ownership, ignore and order', () => {
       'not-found-missing',
       'stray-file',
       'console-log',
+      'image-oversized',
+      'image-location-metadata',
     ])
     // The rest still run: the favicon check reads one fixed path, not the walk.
     expect(result.findings).toEqual([
@@ -1071,7 +1082,12 @@ describe('auditBuild — ownership, ignore and order', () => {
       ignore: ['stray-file'],
     })
     expect(result.ignored).toEqual(['stray-file'])
-    expect(result.skipped).toEqual(['not-found-missing', 'console-log'])
+    expect(result.skipped).toEqual([
+      'not-found-missing',
+      'console-log',
+      'image-oversized',
+      'image-location-metadata',
+    ])
   })
 
   it('sorts by check in CHECKS order, then page, then detail', () => {
@@ -1711,8 +1727,8 @@ const perf = (head, body) =>
   )
 
 describe('the speed checks are appended to CHECKS, in order', () => {
-  it('ends with the five, then host-unset', () => {
-    expect(CHECKS.slice(-6)).toEqual([
+  it('has the five, then host-unset, ahead of the image checks', () => {
+    expect(CHECKS.slice(-9, -3)).toEqual([
       'img-dimensions-missing',
       'img-first-lazy',
       'fetchpriority-excess',

@@ -176,6 +176,8 @@ describe('the launch-readiness audit', () => {
       'not-found-missing',
       'stray-file',
       'console-log',
+      'image-oversized',
+      'image-location-metadata',
     ])
     const fired = report.audit.findings.map((finding) => finding.check)
     for (const check of report.audit.skipped) expect(fired).not.toContain(check)
@@ -202,6 +204,8 @@ describe('the launch-readiness audit', () => {
       'not-found-missing',
       'stray-file',
       'console-log',
+      'image-oversized',
+      'image-location-metadata',
     ])
   })
 

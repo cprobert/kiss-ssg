@@ -91,6 +91,58 @@ if (process.argv[2] === 'css') {
   process.exit(result.code)
 }
 
+// `images` runs the site's build staged and discarded, as `check` does, so
+// every instance encodes its misses into the cache and says which entries its
+// pages asked for; lib/images-sweep.js then prunes, lists and rewrites.
+if (process.argv[2] === 'images') {
+  const { IMAGES_HELP, parseImagesArgs, readSweepLines, sweepImages } =
+    await import('../lib/images-sweep.js')
+  const args = parseImagesArgs(process.argv.slice(3))
+  if (args.error || args.help) {
+    if (args.error) console.error(`kiss-ssg: ${args.error}\n`)
+    ;(args.error ? console.error : console.log)(IMAGES_HELP)
+    process.exit(args.error ? 1 : 0)
+  }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-images-'))
+  const reportFile = path.join(dir, 'reports.jsonl')
+  const sweepFile = path.join(dir, 'images.jsonl')
+  let code = 1
+  try {
+    const run = spawnSync(
+      process.execPath,
+      [/** @type {string} */ (args.script), ...args.args],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          KISS_CHECK: '1',
+          KISS_REPORT: reportFile,
+          KISS_IMAGES: sweepFile,
+          ...(args.refresh ? { KISS_IMAGES_REFRESH: '1' } : {}),
+        },
+        stdio: [0, 2, 2],
+      },
+    )
+    if (run.error) console.error(`kiss-ssg: ${run.error.message}`)
+    const read = (file) =>
+      fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
+    const result = await sweepImages({
+      lines: readSweepLines(read(sweepFile)),
+      reports: readReports(read(reportFile)),
+      write: args.write,
+      cwd: process.cwd(),
+    })
+    if (result.err) console.error(result.err)
+    if (result.out) console.log(result.out)
+    code = run.status === 0 ? result.code : 1
+  } catch (err) {
+    console.error(`kiss-ssg images: ${err.message}`)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+  process.exit(code)
+}
+
 // npm is npm.cmd on Windows, which Node will not spawn without a shell, and a
 // shell given an argument array prints DEP0190 on every run. One command
 // string instead: the only values in it are our own version and flags.

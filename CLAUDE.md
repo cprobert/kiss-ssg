@@ -69,6 +69,10 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | The build's asset copies (queue, failures) | `lib/asset-copy.js`          | `AIKB/asset-copy.md`          |
 | Minified copied CSS and JS                 | `lib/asset-minify.js`        | `AIKB/asset-minify.md`        |
 | Purged CSS (`assets.purge`, at the settle) | `lib/css-purge.js`           | `AIKB/css-purge.md`           |
+| Image header reader (size, GPS)            | `lib/image-header.js`        | `AIKB/image-header.md`        |
+| Responsive images (`{{image}}`, names)     | `lib/images.js`              | `AIKB/images.md`              |
+| Image encode + committed cache             | `lib/image-encode.js`        | `AIKB/image-encode.md`        |
+| `kiss-ssg images` (cache sweep)            | `lib/images-sweep.js`        | `AIKB/images-sweep.md`        |
 | Markup decomposition (single-file → views) | `lib/html-split.js`          | `AIKB/html-split.md`          |
 | Asset pipeline (external tools)            | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
 | Asset manifest + cache busting             | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |

@@ -1,18 +1,21 @@
 /**
  * The build-relative paths of every file kiss content-hashed that is in the
  * build folder: the asset manifest's renamed `.css`/`.js` entries, and the
- * consent client when there is one. A manifest entry that is not on disk under
- * the build folder (a copy into a folder outside it) is left out, because no
- * host serves it from here.
+ * consent client when there is one, and `{{image}}`'s variants. A file that is
+ * not on disk under the build folder (a copy into a folder outside it, a
+ * variant whose encode failed) is left out, because no host serves it from
+ * here.
  *
- * @param {{ manifest: Record<string, string>, consentClient?: string|null, root: string }} input
- * `manifest` is `assetManifest.toObject()`; `root` is where the build is being
- * written (the staging folder under `'atomic'`)
+ * @param {{ manifest: Record<string, string>, consentClient?: string|null, images?: string[], root: string }} input
+ * `manifest` is `assetManifest.toObject()`; `images` the variants' build-relative
+ * paths; `root` is where the build is being written (the staging folder under
+ * `'atomic'`)
  * @returns {string[]} `/`-rooted, sorted, without duplicates
  */
-export function hashedFiles({ manifest, consentClient, root }: {
+export function hashedFiles({ manifest, consentClient, images, root, }: {
     manifest: Record<string, string>;
     consentClient?: string | null;
+    images?: string[];
     root: string;
 }): string[];
 /**
@@ -84,14 +87,16 @@ export function resolveCacheHeaderFormats(format: any): Array<string | Function>
  * @param {string} input.root where the build is being written
  * @param {Record<string, string>} input.manifest `assetManifest.toObject()`
  * @param {string|null} [input.consentClient] the consent client's name
+ * @param {string[]} [input.images] `{{image}}`'s variants, build-relative
  * @param {{ kind(file: string): string|null, claim(file: string, owner: string): void }} [input.outputs]
  * @returns {Promise<CacheHeadersWriteResult>}
  */
-export function writeCacheHeaders({ config, root, manifest, consentClient, outputs, }: {
+export function writeCacheHeaders({ config, root, manifest, consentClient, images, outputs, }: {
     config: import("./config.js").KissConfig;
     root: string;
     manifest: Record<string, string>;
     consentClient?: string | null;
+    images?: string[];
     outputs?: {
         kind(file: string): string | null;
         claim(file: string, owner: string): void;

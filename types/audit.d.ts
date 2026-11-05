@@ -71,7 +71,13 @@ export function thirdPartyOrigins({ pages, siteUrl }: {
  * are public vocabulary: `config.audit.ignore`, the report's `check` field and
  * the summary lines all use them, so renaming one is a breaking change.
  */
-export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing", "consent-history-missing", "img-dimensions-missing", "img-first-lazy", "fetchpriority-excess", "font-preload-excess", "script-blocking", "host-unset"];
+export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing", "consent-history-missing", "img-dimensions-missing", "img-first-lazy", "fetchpriority-excess", "font-preload-excess", "script-blocking", "host-unset", "image-oversized", "image-location-metadata", "img-not-responsive"];
+/**
+ * The size over which a shipped raster a page references is
+ * `image-oversized`. Provisional: 200 KB until it is measured on the fleet's
+ * images (planning/plans/2026-11-04-kiss-performance.md, F7).
+ */
+export const IMAGE_OVERSIZED_BYTES: number;
 /** @typedef {typeof CHECKS[number]} CheckId */
 /**
  * The words that make a pre-ticked checkbox a consent to marketing:
@@ -295,6 +301,17 @@ export type PageFacts = {
      * none is listed
      */
     blockingScripts: string[];
+    /**
+     * every URL an `<img>` `src` or an
+     * `<img>`/`<source>` `srcset` names, as written, sorted and deduplicated
+     */
+    imageRefs: string[];
+    /**
+     * the src of each `<img>` with no `srcset`
+     * outside any `<picture>`, in document order: one a browser fetches at one
+     * size whatever the screen
+     */
+    imgPlain: string[];
     /**
      * the consent manager's markup on the page;
      * absent from facts parked by an engine from before it existed

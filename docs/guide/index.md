@@ -67,6 +67,12 @@ The default config options are:
     version: null,
     minify: true,
     purge: null,
+    images: {
+      widths: [480, 960, 1440, 1920],
+      formats: ['avif', 'webp'],
+      quality: { avif: 50, webp: 75, jpeg: 80 },
+      cache: '.kiss-cache/images'
+    },
     pipeline: []
   },
   markdown: {

@@ -85,6 +85,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {string|null} version leave names alone; `{{asset}}` appends `?v=<version>`
  * @property {boolean} minify outside dev, minify every copied `.css`/`.js`/`.mjs` that is not `*.min.*` or a Sass compile, before hashing; `true` by default
  * @property {import('./css-purge.js').KissPurge|null} purge the stylesheets to purge against the written pages at the settle, outside dev; `null` (the default) purges none
+ * @property {import('./images.js').KissImages} images the recipe `{{image}}` serves a source by: widths, formats, quality per format, and the committed encode cache
  * @property {import('./pipeline.js').PipelineStep[]} pipeline ordered commands run before the asset copy
  */
 /**
@@ -267,6 +268,7 @@ export const DEFAULT_ASSETS: Readonly<{
     version: any;
     minify: true;
     purge: any;
+    images: any;
     pipeline: any[];
 }>;
 export const DEFAULT_MARKDOWN: Readonly<{
@@ -282,7 +284,7 @@ export const DEFAULT_LINKS: Readonly<{
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
-    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset")[];
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive")[];
     privacyPage: string | null;
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
@@ -346,6 +348,7 @@ export const DEFAULT_CONFIG: Readonly<{
         version: any;
         minify: true;
         purge: any;
+        images: any;
         pipeline: any[];
     }>;
     markdown: Readonly<{
@@ -368,7 +371,7 @@ export const DEFAULT_CONFIG: Readonly<{
     }>;
     audit: Readonly<{
         check: true;
-        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset")[];
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive")[];
         privacyPage: string | null;
     }>;
     markdownCopies: Readonly<{
@@ -488,6 +491,10 @@ export type KissAssets = {
      * the stylesheets to purge against the written pages at the settle, outside dev; `null` (the default) purges none
      */
     purge: import("./css-purge.js").KissPurge | null;
+    /**
+     * the recipe `{{image}}` serves a source by: widths, formats, quality per format, and the committed encode cache
+     */
+    images: import("./images.js").KissImages;
     /**
      * ordered commands run before the asset copy
      */

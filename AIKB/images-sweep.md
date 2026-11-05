@@ -1,0 +1,32 @@
+# images-sweep.js
+
+## Responsibility
+
+Every decision behind `npx kiss-ssg images <script>`, the encode cache's maintenance sweep: the argv, the environment protocol with the build, which cache entries to remove, which originals under the assets folder to list, and, under `--write`, rewriting them. `bin/kiss-ssg.js` only spawns the build and prints.
+
+## Public interface
+
+- `IMAGES_HELP`, `parseImagesArgs(argv)` → `{ script, args, refresh, write, help, error }`. Flags are read before the script, and `--write` and `--refresh` after it too, up to a `--`, as `check` reads `--summary`. Every other argument after the script, and everything after `--`, goes to the script. Until 2026-11-05 `--write` after the script went to the script: nothing was rewritten and the command exited 0.
+- `sweepRequest(env)` → `{ file, refresh } | null`, read by the build: `KISS_IMAGES` names the JSON Lines file to append to, `KISS_IMAGES_REFRESH` asks for every variant to be encoded again. Off by the `CHECK_MODE_OFF` rule `KISS_CHECK` uses.
+- `sweepLine({ cache, keys, encoded, assets, maxWidth, failed })` → `SweepLine`, the one line each instance appends; `readSweepLines(text)`.
+- `pruneCache({ dir, keep, encoded, dryRun })` → `{ added, removed, kept }`, each `{ count, bytes }`. Removes every file not in `keep`, an empty one included.
+- `findOriginals({ dir, maxWidth })` → `Original[]`: the rasters (not animated) under `dir` with a GPS location or wider than `maxWidth`, from their headers.
+- `rewriteOriginals(originals, maxWidth)`: `autoOrient()`, metadata stripped, resized down to `maxWidth`, JPEG at quality 90 (mozjpeg), PNG lossless, WebP at 90, AVIF at 75; a file is replaced only when the result is smaller or it had GPS.
+- `sweepImages({ lines, reports, write, cwd })` → `{ out, err, code }`, the whole sweep after the build.
+
+## Depends on
+
+`node:fs`, `node:path`, `./check.js` (`CHECK_MODE_OFF`), `./image-header.js`, `sharp` (dynamic import, only under `--write`).
+
+## Depended on by
+
+- `bin/kiss-ssg.js` `images`, covered by `test/integration/images-sweep.test.js`.
+- `lib/build-finish.js` `encodeImages`, for `sweepRequest` and `sweepLine`.
+
+## Non-obvious behavior
+
+- **The build reports, the sweep prunes.** Each instance's settle encodes its misses into the cache and appends the cache entries its pages asked for. Pruning waits until the whole script has run, because one script can build several sites into one cache (example 7's seasons), and pruning against one instance would delete what its sibling uses. A build never prunes either: a cache shared by branches would lose what another branch's pages use.
+- **Never after a failed build.** A page that failed asked for nothing, so pruning against its run would delete entries it needs. Any report that is not `ok`, a line with an encode failure, or a run that reported nothing at all refuses, exits 1, and leaves the cache alone.
+- **The run is `check`'s**: `KISS_CHECK=1`, so the build is staged and discarded and only the cache (and, under `--write`, `src/`) is written.
+- **The WebP and AVIF qualities for a rewritten original** (90 and 75) are Claude's choice; the operator's decision named only JPEG at 90 and PNG lossless. A WebP or AVIF original with GPS would otherwise have had no way to be stripped.
+- **`--write` changes the source**, so the person reads the diff in git before committing. A rewrite that came out larger and carried no GPS is reported as kept.

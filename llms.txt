@@ -35,7 +35,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - `.scan()`: `.page()` for every unregistered `.hbs` under `folders.pages`.
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
 - `.complete(callback)`: resolves when everything is written; rejects with an `AggregateError` (`err.failures`, `err.report`) on any failed page, controller, callback, Sass file, pipeline step or redirects write. A chain without it exits 0 on a broken build.
-- `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `assets`, `links`, `redirects`, `audit`, `thirdParty` and more). GUIDE.md § Checking a build has the shape.
+- `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `audit` and more). GUIDE.md § Checking a build has the shape.
 - `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
 - Learning packages: pages with `package: '<slug>'` zip into an IMS content package or SCORM 1.2 (`config.packages`). Give each an `id`: the LMS keeps learners' records by it. GUIDE.md § Learning packages; `examples/13-course-packages`.
 - Cookie consent: declare every service that stores anything in `config.consent`, and gate it with the consent helpers below. Trap: a gated script never sees `DOMContentLoaded`; site code that loads a third party itself waits with `window.kissConsent.when(name, fn)`. The build writes `kiss-consent.<hash>.js` (the cached client, which the inline part loads), and with an `endpoint` `consent-banners.json`. GUIDE.md § Cookie consent; `examples/14-consent`.
@@ -59,7 +59,8 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   siteUrl: undefined,   // needed by sitemap, llms, feed, robots, canonical, absUrl
   sass: { includePaths: [] },
   fetch: { headers: {}, timeout: 10000, retries: 0, cache: false },
-  assets: { hash: false, version: null, minify: true, purge: null, pipeline: [] }, // purge: { files, safelist }
+  assets: { hash: false, version: null, minify: true, purge: null, pipeline: [],
+    images: { widths: [480, 960, 1440, 1920], formats: ['avif', 'webp'], quality: { avif: 50, webp: 75, jpeg: 80 }, cache: '.kiss-cache/images' } },
   markdown: { html: true, xhtmlOut: true, breaks: false },
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   host: null, // 'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages' | a list
@@ -113,6 +114,7 @@ GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: 
 - `canonical`: the page's absolute URL, the same string as its `<loc>`.
 - `absUrl`: `siteUrl` joined to a path, extension kept.
 - `asset`: the emitted path under `config.assets` (hash or `?v=`); fails the build on a file not emitted.
+- `image`: a raster asset as a responsive `<picture>`; `alt=` and `sizes=` required. Trap: commit `.kiss-cache/images` (`npx kiss-ssg images <script>`), or every deploy re-encodes.
 - `link`: a page's served path by `id` (`{{link "blog/post" slug=post.slug}}`, `absolute=true`, `canonical=true`); fails the build on an unclaimed id. On a package page: relative to it (`relative=`).
 - `env`: `{{#env is="dev"}}…{{else}}…{{/env}}`.
 - `scormBridge`: in `<head>`, gives a package page `window.kissScorm`. Trap: the page reports its own completion (`kissScorm.status('completed')`); `complete="seen"` on a bookmarking page makes Moodle reopen it in review mode, saving nothing.
@@ -128,14 +130,14 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 ## Checking a build
 
-`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code; build the audit's checks in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. GUIDE.md § Checking a build (the report, the audit, `KISS_*` variables), § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell. `speed <build-folder>` gives Lighthouse KPIs (after `npm install -D lighthouse`), `css <build-folder>` audits where CSS goes: GUIDE.md § Measuring speed, § Auditing CSS.
+`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code; build the audit's checks in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. GUIDE.md § Checking a build, § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell. `speed <build-folder>` gives Lighthouse KPIs (after `npm install -D lighthouse`), `css <build-folder>` audits where CSS goes: GUIDE.md § Measuring speed, § Auditing CSS.
 
 `npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed (not a link, and pinned in package.json and the lockfile), and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
 
 ## Docs
 
-- [README.md](README.md): the agent quick start: `init`, the plugin install, prompts to copy.
+- [README.md](README.md): the agent quick start.
 - [GUIDE.md](GUIDE.md): the full reference, including § Migrating from v1.
-- [examples/](examples/): runnable sites, each run from its own folder; `examples/README.md` says what each shows.
-- [CHANGELOG.md](CHANGELOG.md): what changed between the version a site was written against and this one.
+- [examples/](examples/): runnable sites; `examples/README.md` says what each shows.
+- [CHANGELOG.md](CHANGELOG.md): what changed in each version.
 - [AIKB/](AIKB/): per-module engine notes.

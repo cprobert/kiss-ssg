@@ -12,6 +12,14 @@ import {
 } from '../../lib/config.js'
 import { CHECKS } from '../../lib/audit.js'
 
+// `{{image}}`'s recipe as `resolveConfig({})` fills it in (`lib/images.js`).
+const DEFAULT_IMAGES_RESOLVED = {
+  widths: [480, 960, 1440, 1920],
+  formats: ['avif', 'webp'],
+  quality: { avif: 50, webp: 75, jpeg: 80 },
+  cache: '.kiss-cache/images',
+}
+
 it('names a working-directory inspection failure without blaming folders.src', () => {
   const realpath = vi
     .spyOn(fs.realpathSync, 'native')
@@ -115,6 +123,7 @@ describe('resolveConfig', () => {
       version: null,
       minify: true,
       purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline: [],
     })
   })
@@ -125,6 +134,7 @@ describe('resolveConfig', () => {
       version: '1.2.3',
       minify: true,
       purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline: [],
     })
     expect(resolveConfig({ assets: { hash: true } }).assets).toEqual({
@@ -132,6 +142,7 @@ describe('resolveConfig', () => {
       version: null,
       minify: true,
       purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline: [],
     })
   })
@@ -434,6 +445,7 @@ describe('resolveConfig', () => {
       version: null,
       minify: true,
       purge: null,
+      images: DEFAULT_IMAGES_RESOLVED,
       pipeline,
     })
   })

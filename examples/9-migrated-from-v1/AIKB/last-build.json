@@ -173,5 +173,6 @@
     "origins": []
   },
   "consent": null,
-  "cacheHeaders": null
+  "cacheHeaders": null,
+  "images": null
 }

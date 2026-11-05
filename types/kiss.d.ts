@@ -615,6 +615,14 @@ declare class Kiss {
     /** @private @type {import('./css-purge.js').PurgeResult[]|null} */
     private _purgeResult;
     /** @private */
+    private _imageIndex;
+    /** @private */
+    private _imagesRun;
+    /** @private @type {import('./build-report.js').BuildImages|null} */
+    private _imagesResult;
+    /** @private @type {Set<string>} */
+    private _imageOutputs;
+    /** @private */
     private _cacheHeadersRun;
     /** @private @type {import('./build-report.js').BuildCacheHeaders|null} */
     private _cacheHeadersResult;
@@ -766,6 +774,8 @@ declare class Kiss {
     private _writeCacheHeaders;
     /** @private */
     private _purgeAssets;
+    /** @private */
+    private _encodeImages;
     /** @private */
     private _lastBuildRecord;
     /** @private */

@@ -127,7 +127,13 @@ describe('the Firebase fragment', () => {
     expect(pattern.test('/site.a1b2c3d4.js')).toBe(true)
     expect(pattern.test('/css/site.css')).toBe(false)
     expect(pattern.test('/css/site.a1b2c3d.css')).toBe(false)
-    expect(pattern.test('/img/photo.a1b2c3d4.jpg')).toBe(false)
+    // `{{image}}`'s variants are hashed by the same shape, in four formats.
+    expect(pattern.test('/img/hero-960.a1b2c3d4.avif')).toBe(true)
+    expect(pattern.test('/img/hero-960.a1b2c3d4.webp')).toBe(true)
+    expect(pattern.test('/img/hero-960.a1b2c3d4.jpg')).toBe(true)
+    expect(pattern.test('/img/hero-960.a1b2c3d4.png')).toBe(true)
+    expect(pattern.test('/img/photo.a1b2c3d4.gif')).toBe(false)
+    expect(pattern.test('/img/hero-960.avif')).toBe(false)
   })
 
   it('names an unhashed file the pattern would also match', () => {
