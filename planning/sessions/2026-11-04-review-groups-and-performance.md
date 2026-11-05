@@ -1,7 +1,7 @@
 ---
 branch: feat/review-groups-and-performance
 base: main
-status: open
+status: closed
 opened: 2026-11-04
 ---
 
@@ -173,3 +173,132 @@ opened: 2026-11-04
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-05: Review groups, a performance skill, and the engine under it
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** kiss-ssg 2.12.0, in 70 commits from `2f22acc` to `239cb79`.
+
+- **`kiss-site-review`** asks which review groups to run (`6b66d95`).
+- **A new domain skill, `kiss-performance`** (`11f416d` onward), now 3,381 words plus three reference files, measured with and without it (`e3ee8d8`).
+- **Engine work beneath it:**
+  - `config.host` and cache-header files (`04c3dd0`);
+  - nine audit checks (`c4483fa`, `72dc49e`);
+  - `kiss-ssg speed` (`a625d4a`) and `kiss-ssg css` (`14d43f7`);
+  - `assets.minify` on by default (`91255d1`) and `assets.purge` (`3cff78a`);
+  - the `soundcloud` embed preset (`6b6ac9f`);
+  - `{{image}}` with a committed encode cache and the `kiss-ssg images` sweep (`72dc49e`);
+  - `lib/integrity.js` (`81de35e`).
+- **Fixes from review:** 26 rounds of review fixes from Codex, the fleet check and the clean room.
+
+## Reflect — what the session was
+
+The open framed it as **between** planned and emergent, and that held. The review-group prompt and the contract were planned. The contract was critiqued by a fresh agent before anything was built (`6ec5e5d`), and the critique paid twice: on the contract, and on the image design (17 findings, `c22f626`).
+
+Everything after the first engine slice was **emergent**, steered by operator questions rather than by the plan:
+
+- whether the skill was really best practice and not just what kiss supports, which led to minify, purge and the CSS tiers;
+- how big a skill should be, and what to do about images and fonts, which led to `{{image}}` and Fontsource;
+- whether images should be optimised in the repo, which led to the committed cache and the sweep;
+- whether CSS sprites are still relevant;
+- whether the research's top ten were all covered.
+
+The shape served the work: each question widened the remit in a direction the success criteria could still hold. But the non-goal "no Lighthouse or other new dependency" did not survive. sharp and PurgeCSS are now dependencies, and Lighthouse is an optional peer. Each of those was the operator's recorded decision, as an Amendment, so it is good drift, honestly logged, not creep.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering was the decisive dimension, in both directions.**
+
+- **Strongest moment:** fourteen rounds into the Codex adversarial loop, the operator asked "Is this a doom loop?" That stopped a loop Claude was mechanically continuing under the operator's own earlier rule ("fix high and medium, stop at a round with neither").
+  - The 17 findings were all real, and several were measured as damage on the old code: 68.7 GB served from a 1.5 MB AVIF, another site's committed cache deleted, a photo cut to 960 px for good.
+  - But the reviewer rates its own findings, so the rule could not converge.
+  - Claude should have raised that around round 9, when the scenarios became multi-site, mixed-engine and hostile-file, and did not until asked.
+  - The lesson ("an adversarial loop needs an agreed threat model, not only a severity") was written to the session log and to memory, and applied at once: the close's Codex step agreed "ordinary use" before it started.
+- **Earlier steers of the same kind:**
+  - the operator's "we do what's best for the customer (not kiss)" turned a skill that omitted what kiss lacked into one with recipes and engine features;
+  - "is it a lot to optimise at build time?" produced the committed-cache design.
+
+**Verification & ownership was strong, and was shared out on purpose.**
+
+- **The operator's own looks:** five pulses each logged one, the last two being an end-to-end read of `kiss-performance/SKILL.md` and an image-quality page flicked against a lossless reference.
+- **Claude delegated the independent checks** to agents that had not written the code:
+  - a blind marker for the with/without arms;
+  - a fresh clean-room agent with only the tarball and the plugin;
+  - a fleet check over five real sites;
+  - Codex in three scoped ranges at the close.
+- **Each found something the gates had passed:**
+  - **The fleet check:** a staging path leaking into the report on Windows, and false broken links from `..` above the root.
+  - **The clean room:** a priority contradiction in `review-protocol.md`, which ranked missing `alt` text at P2.
+  - **Codex at the close:**
+    - minify silently deleting native CSS nesting (high, reproduced);
+    - integrity attributes broken by minify;
+    - purge ignoring copied pages;
+    - Claude's own `..` clamp, which walked through the build folder's real parents.
+- Every fix had a test seen red first.
+
+**Where the human intended to supervise, versus where they did.** The open carried two inherited lessons: pulse after every Codex round that changes `lib/`, and the operator reads one fix diff per round. Neither happened across the 14-round loop: Claude ran round after round, and the operator saw summaries, not diffs. That is the "approved, but I'll evaluate the result" pattern, with Claude closing each loop itself. It was caught by the operator's question, not by the ritual.
+
+**Learning engagement was good.** The operator asked why rather than accepting code: the optimal skill size, whether sprites still matter, whether to split the skill. Each got a reasoned answer with a recommendation. The operator chose Claude's recommended option in nearly every multiple-choice question. That reads as agreement after reading the reasons, and the answers carried notes when they disagreed, but a run of "(Recommended)" choices is worth watching. Claude's options should keep presenting the alternative honestly, as they did here.
+
+**Claude's own lapses, named:**
+
+- committed `f37c53d` through a red gate. The commit was chained with `;`, not `&&`; the failure was a known watch flake, checked afterwards (10 of 10 alone, two green suites);
+- `sed -i` on a scratch file early in the branch, against CLAUDE.md, and an inert `sed -i` on `/dev/null` left in a command at the close;
+- a pulse option that overclaimed the skill's text;
+- a test that passed `known` to `checkLinks`, which does not take it, caught before it misled;
+- an `AIKB/testing.md` claim ("every image test turns sharp's cache off"), caught by a grep before it was committed;
+- a mid-close `--help` passed to the Codex companion that launched a read-only task by mistake.
+
+**Harness leverage was high.**
+
+- `/branch-open` with a contract and a pre-build critique;
+- five `/branch-pulse`s;
+- `scripts/arms.mjs` for a with/without measurement and the clean room;
+- `/skill-creator` for a best-practice pass on the skills;
+- `/codex:adversarial-review`, `/security-review`;
+- the full `/branch-close` ritual.
+
+**Competency level: Active supervisor**, with Agentic engineering lead moments. The framing questions, the stop of the doom loop and the eyeballs at the artefacts are lead-level. Missing the per-round checkpoint during the loop, and leaning on recommended options, hold it at Active supervisor.
+
+## Feedback — recommendations for next session
+
+- **Claude — raise a loop's stop condition when the findings change kind, not when asked.** When an adversarial reviewer moves from ordinary-use defects to multi-site, mixed-version or hostile-input scenarios, stop and put the threat model to the operator with `AskUserQuestion`, as was finally done at round 14. (Memory: `codex-review-preference.md`.)
+- **Process — before any adversarial or "until clean" review loop starts, write its threat model into the session log**: one site or several, honest files or hostile ones, which severities are fixed. Severity alone does not converge, because the reviewer chooses it.
+- **Operator — during a multi-round review, ask to see one fix diff per round.** It was an inherited lesson this branch held at the open and lost in the loop. The cheapest form is to ask Claude to show the diff before each re-run.
+- **Claude — run the commit only on the gates' success, every time:** `npm run gates > out && git add … && git commit`. `f37c53d` landed through a red gate because of a `;`.
+- **Claude — no `sed` anywhere, including inert or scratch commands.** It recurred twice on this branch (11-04, and an inert `/dev/null` at the close). Text into files goes through Write and Edit; a probe that needs nothing written needs no `sed`.
+- **Process — a fleet check and a scoped Codex review belong earlier than the close.** The fleet check found a branch-made defect (Windows staging paths), and Codex at the close found a high (minify deleting nested CSS) in code that had shipped two days earlier on the branch. Run both at the pulse after each engine slice.
+- **Both — keep the evidence-first pattern that paid on this branch.** Measure a sentence before it ships: the Chromium sprite check, the bfcache and TTFB sources checked before writing, the encode costs. Blind-mark a with/without comparison. Check a delegated agent's risk claims locally before acting: the marker's two "risks" were measured and disproved.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** let `kiss-site-review` ask which groups to run; add `kiss-performance`, with engine checks, taking performance over from `kiss-front-end`; close the carried doc gaps; one branch.
+
+**Verdict: met, and the objective moved, for the good.** The remit grew to the engine mechanisms the skill needed. Each step was an operator decision recorded as an Amendment.
+
+- [x] **Review groups.** One multi-select question with four groups, recommended from the audit's findings; a numbered list without `AskUserQuestion`; a skill-coverage row (`6b66d95`). The clean room met it and recorded it.
+- [x] **The performance skill.** Build and review modes, reporting to the protocol and the browser pass, and linked from `kiss-site-new`, `kiss-page-add` and `kiss-site-review` with coverage rows.
+- [x] **One home for performance.** `kiss-front-end` and `kiss-accessibility` point to it, and the moved sentences are banned in `CONTRADICTIONS`.
+- [x] **Engine audit checks.** Nine checks, each seen red first, with GUIDE, `llms.txt`, fix rows, AIKB and types.
+- [x] **Contract first,** critiqued before build, twice.
+- [x] **Measured, not reviewed.** With the skill, 8 hit, 4 partial, 1 miss; without, 4, 5, 4 (`planning/reviews/2026-11-05-performance-arms.md`). The operator read the shipped `SKILL.md`.
+- [x] **Clean room** (`82162f9`). It met the group question and reported before changing anything. It listed nine guesses, one of which became the protocol fix.
+- [x] **Carried doc gaps** (pulse of 2026-11-04).
+- [x] **`npm run gates` green**, at every commit since the close began. **Codex review:** one round each on three ranges, and every finding fixed. **Still open:** `239cb79` (the integrity fixes) has had no independent review.
+
+**What is concretely better:**
+
+- A site's main image on swan-love went from 5.2 s to under 1 s in the measured run.
+- A 504 KB photo serves a phone 4.9 KB.
+- Copied CSS and JS are minified by default.
+- Framework CSS can be purged (100 KB to 30 KB on one site).
+- The audit names nine speed and host problems it was blind to.
+
+**Still open:**
+
+- **The cache headers on a live host:** the Netlify and Firebase deploy previews, and the Firebase HTML rule decision, wait on the operator.
+- **Still provisional:** the image widths and the 200 KB `image-oversized` threshold.
+- **`llms.txt` is at 15,998 of 16,000 characters,** so `speed` and `css` have no index line.
+- **"Not run, not chosen" is untested,** because the clean room chose all four groups.
+- **`/memory-consolidate` is due,** with five or more unconsolidated logs.
