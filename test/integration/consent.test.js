@@ -770,6 +770,21 @@ describe('{{embed}} on a site with no config.consent', () => {
     )
   })
 
+  // Codex, slice 4: `consent: false` is consent switched off, as
+  // `resolveConsent` reads it, so it is no second home for the words.
+  it('takes embeds beside consent: false or null, which are consent switched off', () => {
+    site = { cleanup: async () => {} }
+    for (const consent of [false, null]) {
+      const kiss = new Kiss({
+        logger,
+        consent,
+        embeds: { text: { embedLoad: 'Open' } },
+      })
+      expect(kiss.config.consent).toBeNull()
+      expect(kiss.config.embeds?.text.embedLoad).toBe('Open')
+    }
+  })
+
   it('fails a name with no embed preset', async () => {
     site = await makeSite({
       'src/layouts/layout.hbs': PLAIN_LAYOUT,

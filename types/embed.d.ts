@@ -16,7 +16,8 @@ export function embedService(name: string, consent: KissConsent | null): Consent
  * never has to ask which of the two wins.
  *
  * @param {unknown} input `config.embeds` as given
- * @param {unknown} consent `config.consent` as given
+ * @param {unknown} consent `config.consent` as resolved: `null` when it is
+ * off, which `consent: false` is
  * @returns {{ text: Record<string, string> }|null} `null` when not set
  * @throws on a key that is not embed wording, a value that is not a string,
  * or `embeds` beside `consent`
