@@ -978,7 +978,7 @@ const COVERAGE = [
     feature:
       'kiss-performance: first image never lazy, fetchpriority, sized images, self-hosted fonts, defer, immutable only when hashed, lab is not the verdict',
     pattern:
-      /^(?=[\s\S]*Never `loading="lazy"` on the first image)(?=[\s\S]*`fetchpriority="high"`)(?=[\s\S]*`width` and `height` on every `<img>`)(?=[\s\S]*\*\*Self-hosted\*\*)(?=[\s\S]*`defer` on every script)(?=[\s\S]*Never `immutable`, or a year, on a file that is not hashed)(?=[\s\S]*lab measurement, never the site's verdict)/,
+      /^(?=[\s\S]*Never `loading="lazy"` on the first image)(?=[\s\S]*`fetchpriority="high"`)(?=[\s\S]*`width` and `height` on every other `<img>`)(?=[\s\S]*\*\*Self-hosted\*\*)(?=[\s\S]*`defer` on every script)(?=[\s\S]*Never `immutable`, or a year, on a file that is not hashed)(?=[\s\S]*lab measurement, never the site's verdict)/,
     skills: [skill('kiss-ssg', 'kiss-performance')],
   },
   // 2026-11-04, the operator: run Lighthouse before any edit and after, so
@@ -1029,6 +1029,23 @@ const COVERAGE = [
       /^(?=[\s\S]*npm install @fontsource-variable\/inter)(?=[\s\S]*'\.\/node_modules\/@fontsource-variable\/inter\/files',\n\s*'\.\/public\/fonts\/inter-5\.3\.0')(?=[\s\S]*unicode-range:)(?=[\s\S]*Do not link the package's own `index\.css`)(?=[\s\S]*\/fonts\/\*\n\s*Cache-Control: public, max-age=31536000, immutable)(?=[\s\S]*createFontStack\(\[inter, arial\]\))/,
     skills: ['plugins/kiss-ssg/skills/kiss-performance/references/fonts.md'],
   },
+  // 2026-11-05, the operator: images are kiss's to encode, through {{image}}
+  // at build time into a committed cache, with `kiss-ssg images` as the
+  // sweep. Measured on a fleet photo: 504 KB original, 4.9 KB 480 px AVIF.
+  {
+    feature:
+      'kiss-performance: a photo is {{image}}, eager=true for the first, sizes from the CSS, the committed cache and the images sweep, recipes linked',
+    pattern:
+      /^(?=[\s\S]*\*\*A photo is `\{\{image\}\}`\*\*)(?=[\s\S]*\[the image recipes\]\(references\/images\.md\))(?=[\s\S]*`eager=true` does both)(?=[\s\S]*\*\*`sizes` says how wide the image shows\*\*)(?=[\s\S]*`\.kiss-cache\/images`, which the site commits)(?=[\s\S]*npx kiss-ssg images router\.js)/,
+    skills: [skill('kiss-ssg', 'kiss-performance')],
+  },
+  {
+    feature:
+      'the image recipes: which images, alt and sizes required, eager once, commit the cache, the sweep then --write after asking, img-not-responsive one at a time',
+    pattern:
+      /^(?=[\s\S]*## Which images)(?=[\s\S]*\*\*`sizes`\*\* is required)(?=[\s\S]*\*\*`eager=true`\*\* on the first image a visitor sees, and on no other)(?=[\s\S]*## Commit the cache)(?=[\s\S]*npx kiss-ssg images router\.js --write)(?=[\s\S]*show the list to the owner)(?=[\s\S]*one image at a time, never by search and replace)/,
+    skills: ['plugins/kiss-ssg/skills/kiss-performance/references/images.md'],
+  },
   // 2026-11-05, the operator: a CSS partitioning strategy (site, page type,
   // inline for one page), audited the same way every time by kiss-ssg css.
   {
@@ -1071,6 +1088,14 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-11-05 (the operator): kiss encodes images itself, through {{image}} at build time into a committed cache, so a sentence sending encoding to a pipeline step, or making the resized fallback optional, is the rule that replaced',
+    patterns: [
+      /image encoding is not kiss's/,
+      /AVIF or WebP, through a pipeline step/,
+      /with a JPEG or PNG fallback in a `<picture>` only when the site has a reason/,
+    ],
+  },
   {
     why: '2026-11-05 (the operator): CSS goes in three tiers by who uses it (the site stylesheet, one per page type, inline for one page), so a sentence telling an agent to ship one stylesheet for everything is the rule that replaced',
     patterns: [/\*\*One stylesheet, linked in `<head>`, and small\.\*\*/],

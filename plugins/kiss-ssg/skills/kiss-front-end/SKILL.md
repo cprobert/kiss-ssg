@@ -11,7 +11,7 @@ What a page ships should be small, stable and readable by the person who opens i
 ## In a kiss site
 
 - Markup lives in views, partials and the layout (`src/pages/`, `src/partials/`, `src/layouts/`), the stylesheet and scripts under `src/assets/` (`node_modules/kiss-ssg/GUIDE.md` § Assets).
-- An image's `src`, `alt`, `width` and `height` come from the model beside it, so a page never guesses them.
+- A photo is written with `{{image}}`, which reads its `width` and `height` from the file. Any other image's `src`, `alt`, `width` and `height` come from the model beside it, so a page never guesses them.
 - A link is written with `{{link}}`, never a typed path (`node_modules/kiss-ssg/llms.txt` § Building a site well).
 
 ## Build mode
