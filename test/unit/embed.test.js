@@ -231,11 +231,12 @@ describe('embedMarkup with a poster', () => {
       `<div class="kiss-embed__poster" data-kiss-embed-ui style="position:absolute;inset:0;overflow:hidden">${POSTER}</div>`,
     )
     expect(out).toContain(
-      '<div class="kiss-embed__notice" data-kiss-embed-ui style="position:relative;width:100%;box-sizing:border-box;background:var(--kiss-embed-poster-scrim,rgba(0,0,0,.72));color:var(--kiss-embed-poster-text,#fff)">',
+      '<div class="kiss-embed__notice" data-kiss-embed-ui style="position:relative;width:100%;box-sizing:border-box;padding:.5rem .75rem;font-size:.875em;line-height:1.35;background:var(--kiss-embed-poster-scrim,rgba(0,0,0,.72));color:var(--kiss-embed-poster-text,#fff)">',
     )
-    // The watch link takes the strip's colour, over a site's own link colour.
+    // The watch link takes the strip's colour, over a site's own link colour,
+    // and sits beside the button, so the strip is one line shorter.
     expect(out).toContain(
-      '<a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc" style="color:inherit">',
+      '<p style="color:inherit;display:inline-block;margin:.25rem 0 .25rem .75rem"><a class="kiss-embed__watch" href="https://www.youtube.com/watch?v=abc" style="color:inherit">',
     )
   })
 

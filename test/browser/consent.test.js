@@ -1194,6 +1194,17 @@ describe.skipIf(!browser)('{{embed}} with poster=, in Chromium', () => {
       // Every piece of text in it, not only the strip: a rule on the
       // paragraph or the link would otherwise win (Codex, slice 3).
       expect(await textColours(page)).toEqual(['rgb(255, 255, 255)'])
+      // The still shows: on a phone the strip once covered 69% of the box
+      // with its text against the edges (the operator's look, 2026-11-05).
+      const stripBox = await page.locator('.kiss-embed__notice').boundingBox()
+      const textBox = await page
+        .locator('.kiss-embed__notice p')
+        .first()
+        .boundingBox()
+      expect((stripBox?.height ?? 0) / (box?.height ?? 1)).toBeLessThan(
+        width <= 375 ? 0.5 : 0.15,
+      )
+      expect((textBox?.x ?? 0) - (stripBox?.x ?? 0)).toBeGreaterThanOrEqual(8)
       const after = () =>
         page.locator('#after').evaluate((el) => el.getBoundingClientRect().top)
       const afterBefore = await after()
