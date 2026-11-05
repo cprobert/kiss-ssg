@@ -83,6 +83,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @typedef {Object} KissAssets
  * @property {boolean} hash rename every emitted `.css`/`.js` to carry a content hash
  * @property {string|null} version leave names alone; `{{asset}}` appends `?v=<version>`
+ * @property {boolean} minify outside dev, minify every copied `.css`/`.js`/`.mjs` that is not `*.min.*` or a Sass compile, before hashing; `true` by default
  * @property {import('./pipeline.js').PipelineStep[]} pipeline ordered commands run before the asset copy
  */
 /**
@@ -263,6 +264,7 @@ export const DEFAULT_FETCH: Readonly<{
 export const DEFAULT_ASSETS: Readonly<{
     hash: false;
     version: any;
+    minify: true;
     pipeline: any[];
 }>;
 export const DEFAULT_MARKDOWN: Readonly<{
@@ -340,6 +342,7 @@ export const DEFAULT_CONFIG: Readonly<{
     assets: Readonly<{
         hash: false;
         version: any;
+        minify: true;
         pipeline: any[];
     }>;
     markdown: Readonly<{
@@ -474,6 +477,10 @@ export type KissAssets = {
      * leave names alone; `{{asset}}` appends `?v=<version>`
      */
     version: string | null;
+    /**
+     * outside dev, minify every copied `.css`/`.js`/`.mjs` that is not `*.min.*` or a Sass compile, before hashing; `true` by default
+     */
+    minify: boolean;
     /**
      * ordered commands run before the asset copy
      */

@@ -109,10 +109,11 @@ describe('resolveConfig', () => {
     })
   })
 
-  it('defaults the assets block: no cache busting, no pipeline', () => {
+  it('defaults the assets block: no cache busting, minified, no pipeline', () => {
     expect(resolveConfig({}).assets).toEqual({
       hash: false,
       version: null,
+      minify: true,
       pipeline: [],
     })
   })
@@ -121,13 +122,24 @@ describe('resolveConfig', () => {
     expect(resolveConfig({ assets: { version: '1.2.3' } }).assets).toEqual({
       hash: false,
       version: '1.2.3',
+      minify: true,
       pipeline: [],
     })
     expect(resolveConfig({ assets: { hash: true } }).assets).toEqual({
       hash: true,
       version: null,
+      minify: true,
       pipeline: [],
     })
+  })
+
+  it('takes assets.minify: false, and refuses anything but a boolean', () => {
+    expect(resolveConfig({ assets: { minify: false } }).assets.minify).toBe(
+      false,
+    )
+    expect(() => resolveConfig({ assets: { minify: 'yes' } })).toThrow(
+      /config\.assets\.minify must be true or false/,
+    )
   })
 
   it('defaults the links block: the broken-link scan is on', () => {
@@ -407,6 +419,7 @@ describe('resolveConfig', () => {
     expect(resolveConfig({ assets: { pipeline } }).assets).toEqual({
       hash: false,
       version: null,
+      minify: true,
       pipeline,
     })
   })

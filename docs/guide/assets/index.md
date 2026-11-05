@@ -6,6 +6,16 @@ Copying and compiling assets, cache-busting URLs, running an external asset pipe
 
 Any static files you have in the assets directory will be copied to the build directory
 
+### Minified assets
+
+Outside dev, every `.css`, `.js` and `.mjs` the copy writes is minified in place, with terser and clean-css, the same minifiers that already minify each page's inline CSS and JS. It happens before the file is hashed, so a hashed name changes exactly when the served bytes do. Three kinds of file are left as they are:
+
+-   a `*.min.css` or `*.min.js`, already minified;
+-   a Sass compile, which is already `compressed`;
+-   a file the minifier cannot read, which is copied unchanged with a warning naming it. The build does not fail.
+
+`assets: { minify: false }` turns it off. Minifying is cheap and never makes a file bigger: kiss keeps the original whenever the minified file is no smaller. What it saves depends on the file. On the fleet's sites, measured after Brotli, an unminified script or stylesheet came out about 17% smaller, and one already minified about 1–2%. Removing unused CSS and JavaScript saves far more. That needs the site's own judgement, so it is a pipeline step (§ An asset pipeline), and the `kiss-performance` skill has the recipes.
+
 ### Cache-busting asset URLs
 
 Link an asset with the `asset` helper and the caching policy stops living in your template:

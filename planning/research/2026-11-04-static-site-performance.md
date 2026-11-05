@@ -100,6 +100,38 @@ What follows from it:
 5. **GitHub Pages** sends `max-age=600` on everything, gzip only, and cannot be configured: hashing gains nothing there beyond ten minutes.
 6. `diploma-msc` loads Google Fonts (12 Roboto styles in one request: six weights, upright and italic) and Cookiebot from third-party origins.
 
+## Pass 3 — bundling, minification, unused code (run `wf_c778cb09-ae6`)
+
+The operator's subject from the start, which the first two briefs left out because kiss has no bundler. That was Claude's scoping error: the skills state what is best for the site, not what kiss supports (the operator, 2026-11-04). Verified:
+
+- **Bundling for request count no longer pays on a CDN.** Under 4% of CDN requests are HTTP/1.1, and 85% of all requests are HTTP/2 or later (Almanac 2024, high). In a lab test, 5–15 initial requests made no measurable difference to load, start-render or FCP. Overhead appeared only at hundreds of requests, and 20–25 balanced speed against caching (web.dev, Next.js, 2020; one lab test, medium).
+- **Bundling still matters for nested ES modules.** Each import is found only after its parent loads, so a deep graph is a chain of round trips that multiplexing cannot collapse; `modulepreload` is the partial fix. One or two standalone scripts are barely affected (Vite docs, a vendor, no measurement; medium).
+- **Split any single JS bundle over about 50–100 kB** so V8 can stream-parse it off the main thread. The cost of JS is download plus execution, not parsing (V8, 2019; medium).
+- **TBT:** a long task is one over 50 ms; good is under 200 ms on mobile (web.dev 2025, high).
+- **The median mobile page ships 558 KB of JS over 22–23 requests, and 44% (206 KB) is unused on load** (Almanac 2024, high). "Unused on load" includes code that runs later.
+- **Most of the web already minifies**: the median page has about 12 KB of minifiable JS, measured before compression, and 82.7% of the unminified bytes are first-party (Almanac 2024, high).
+- **Lighthouse's minify and unused-code audits are advice, never in the score.** "Reduce unused JavaScript" flags each file with more than 20 KiB unused (Chrome docs, high). The unused-CSS threshold is unconfirmed (a 2 KiB claim was refuted 1-2).
+- **Unused CSS slows the first render**: every external stylesheet is downloaded and parsed before paint (Chrome docs, high).
+- **Purging CSS removes classes that appear only at runtime** unless they are safelisted (`safelist`, or `/* purgecss ignore */`, written `/*! … */` if cssnano runs first). `@keyframes`, `@font-face` and variables are kept by default (PurgeCSS docs, high).
+- _Refuted:_ "a bundler need not limit its chunk count under HTTP/2" (0-3); the 2 KiB unused-CSS threshold (1-2).
+- _Not verified, so measured below:_ savings from minifying after compression; the cost of whole libraries; purge and tree-shaking gains.
+
+## Measured — CSS and JS on the three live fleet sites (2026-11-04)
+
+Chromium coverage on two pages per site: one load, a scroll to the bottom, a 412 px viewport (scratch `payload-probe.mjs`). Code that runs only on a click counts as unused, so "used" is a lower bound and the possible savings are upper bounds. Sizes are decoded bodies. "br" is Brotli quality 11 computed here; "min" is terser for JS and lightningcss for CSS.
+
+| Site         | Own CSS+JS (br) | …minified, then br | Own code used                  | Third-party CSS+JS (raw) |
+| ------------ | --------------- | ------------------ | ------------------------------ | ------------------------ |
+| k9-solutions | 6.9 KB          | 5.7 KB (−17%)      | 62%                            | 0                        |
+| diploma-msc  | 134.1 KB        | 132.8 KB (−1%)     | CSS 16–20%, JS 34–52% per file | 2,772 KB                 |
+| swan-love    | 51.6 KB         | 50.7 KB (−2%)      | 21%                            | 3,091 KB                 |
+
+- **Minifying an already-minified file saves about 1–2% after Brotli. An unminified one saves 17% here**, but on k9-solutions that is 1.2 KB.
+- **Whole libraries:** Bootstrap's CSS on swan-love is 100 KB raw (13.4 KB br), 6% used on the two pages. Bootstrap's JS is 22% used and jQuery 1.10 is 36% used. diploma-msc's stylesheet is 16% used **after** it was purged, and its `pretty-checkbox.min.css` is not used on either page.
+- **Third parties outweigh everything else**: SoundCloud's widget at 2.4 MB, and on swan-love a Facebook SDK (263 KB) that a script injects, so the build's `thirdParty` list never saw it. On diploma-msc, a Vimeo player loaded with the page (about 1.8 MB) and Cookiebot (about 590 KB).
+
+So the order of payoff here is: click-to-load third parties first, then remove unused CSS and JS, then minify whatever ships unminified. Bundling for request count comes last, and only for a chain of ES module imports.
+
 ## Caveats
 
 Mostly Google-authored sources — right for metric definitions, single-vendor framing elsewhere. Case-study numbers (Flights 0.7 s, critical CSS 0.2 s) are single tests, not typical effects. Lighthouse weights are v10's; connection figures 2021; Almanac 2024; fetchpriority defaults Chrome-specific.

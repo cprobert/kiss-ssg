@@ -3,6 +3,7 @@ import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import vm from 'node:vm'
+import { minifyText } from '../../lib/asset-minify.js'
 
 // This suite only ever runs against this repo's own examples/ — a consuming
 // project never gets this test file (it is under test/, outside package.json's
@@ -453,7 +454,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
       ])
     }, 60000)
 
-    it('12 · from a single file builds 2 pages and still looks like the artifact', () => {
+    it('12 · from a single file builds 2 pages and still looks like the artifact', async () => {
       cleanOutput('12-from-a-single-file')
       const r = runExample('12-from-a-single-file')
       expect(r.status).toBe(0)
@@ -463,14 +464,18 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(existsSync(path.join(dir, '404.html'))).toBe(true)
 
       // The stylesheet was copied in whole as plain CSS, so the build serves
-      // it unchanged and runs nothing through Sass.
+      // it minified (assets.minify, on by default) and runs nothing through
+      // Sass: the same bytes the minifier makes of the source.
       expect(readFileSync(path.join(dir, 'css/site.css'), 'utf8')).toBe(
-        readFileSync(
-          path.join(
-            examplesDir,
-            '12-from-a-single-file/src/assets/css/site.css',
+        await minifyText(
+          'css/site.css',
+          readFileSync(
+            path.join(
+              examplesDir,
+              '12-from-a-single-file/src/assets/css/site.css',
+            ),
+            'utf8',
           ),
-          'utf8',
         ),
       )
       expect(countMatching(dir, /\.scss$/)).toBe(0)

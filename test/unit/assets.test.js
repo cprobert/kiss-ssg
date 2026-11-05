@@ -396,7 +396,8 @@ describe('copyAssets manifest', () => {
   it('does not claim a skipped partial as a compiled source', async () => {
     site = await makeSite({
       'a/css/_theme.scss': '.t{}',
-      'a/css/_theme.css': '.served{}',
+      // A declaration, so the minifier (on by default) keeps the rule.
+      'a/css/_theme.css': '.served{color:red}',
     })
     const warn = vi.fn()
     await copyAssets(`${site.root}/a`, `${site.root}/out`, {
@@ -407,7 +408,9 @@ describe('copyAssets manifest', () => {
     expect(
       warn.mock.calls.filter(([m]) => /compiles to/.test(String(m))),
     ).toEqual([])
-    expect((await site.read('out/css/_theme.css')).trim()).toBe('.served{}')
+    expect((await site.read('out/css/_theme.css')).trim()).toBe(
+      '.served{color:red}',
+    )
   })
 
   it('does not warn when only a sass source emits that path', async () => {

@@ -78,6 +78,7 @@
   "dependencies": {
     "@mixmark-io/domino": "^2.2.0",
     "chokidar": "^5.0.0",
+    "clean-css": "^5.3.3",
     "colors": "^1.4.0",
     "connect": "^3.7.0",
     "fs-extra": "^11.4.0",
@@ -90,6 +91,7 @@
     "remarkable": "^2.0.1",
     "sass": "^1.104.0",
     "serve-static": "^2.2.1",
+    "terser": "^5.51.2",
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2"
   },

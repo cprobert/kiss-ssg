@@ -54,12 +54,12 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
 {
   dev: false,
   verbose: false,
-  cleanBuild: true,     // true empties folders.build in the constructor | false | 'atomic'
+  cleanBuild: true,     // true empties folders.build first | false | 'atomic'
   extensionLess: false, // true: <path>/<slug>/index.html
   siteUrl: undefined,   // needed by sitemap, llms, feed, robots, canonical, absUrl
   sass: { includePaths: [] },
   fetch: { headers: {}, timeout: 10000, retries: 0, cache: false },
-  assets: { hash: false, version: null, pipeline: [] },
+  assets: { hash: false, version: null, minify: true, pipeline: [] },
   markdown: { html: true, xhtmlOut: true, breaks: false },
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   host: null, // 'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages' | a list
