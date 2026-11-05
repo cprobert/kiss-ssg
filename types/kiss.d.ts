@@ -417,6 +417,35 @@ export type WatchOptions = {
  * build has settled (and rejects if any part of it failed).
  */
 declare class Kiss {
+    /** The string and path helpers (`toSlug`, `toTitleCase`, …), as `import { utils }` gives them. */
+    static utils: {
+        trimLines: typeof import("./utils.js").trimLines;
+        toSlug: typeof import("./utils.js").toSlug;
+        toTitleCase: typeof import("./utils.js").toTitleCase;
+        trimPath: typeof import("./utils.js").trimPath;
+        sanitizePath: typeof import("./utils.js").sanitizePath;
+        posixPath: typeof import("./utils.js").posixPath;
+        globFiles: typeof import("./utils.js").globFiles;
+        hashId: typeof import("./utils.js").hashId;
+        toURLKey: typeof import("./utils.js").toURLKey;
+        toAbsoluteUrl: typeof import("./utils.js").toAbsoluteUrl;
+        toCanonicalPath: typeof import("./utils.js").toCanonicalPath;
+        servedPathFor: typeof import("./utils.js").servedPathFor;
+        relativePathFor: typeof import("./utils.js").relativePathFor;
+    };
+    /** The redirect and cache-header renderers, for a `format` writer function. */
+    static renderRedirects: typeof renderRedirects;
+    static renderRedirectsJson: typeof renderRedirectsJson;
+    static renderFirebaseRedirects: typeof renderFirebaseRedirects;
+    static renderVercelRedirects: typeof renderVercelRedirects;
+    static renderHtaccessRedirects: typeof renderHtaccessRedirects;
+    static renderCacheHeadersJson: typeof renderCacheHeadersJson;
+    static renderHeadersBlock: typeof renderHeadersBlock;
+    static renderFirebaseCacheHeaders: typeof renderFirebaseCacheHeaders;
+    /** The markup decomposition, for converting a single-file site. */
+    static splitDocument: typeof splitDocument;
+    static parseHtml: typeof parseHtml;
+    static findTag: typeof findTag;
     /**
      * Resolves the config, sets up this instance's Handlebars environment,
      * Markdown renderer and asset manifest, creates the folders, queues the

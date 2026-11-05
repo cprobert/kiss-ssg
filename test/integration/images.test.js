@@ -285,6 +285,76 @@ describe('{{image}} in a build', () => {
   })
 })
 
+// `{{embed … poster=}}` draws its still through this pipeline: a self-hosted
+// image only, since fetching the provider's thumbnail would make the request
+// the click-to-load box exists to prevent (a1k9training, 2026-11-05).
+describe('{{embed}} with poster=', () => {
+  const EMBED = (extra = '') =>
+    PAGE(
+      `{{embed "youtube" id="abc" title="Puppy class" poster="img/hero.jpg"${extra}}}`,
+    )
+
+  it('writes the poster as the pipeline’s <picture>, lazy, decorative, cover-fitted, and encodes its variants', async () => {
+    await makeImageSite({ 'src/pages/index.hbs': EMBED() })
+    const report = await build()
+    const html = await site.read('public/index.html')
+    const poster = html.match(
+      /<div class="kiss-embed__poster"[^>]*>(<picture>.*?<\/picture>)<\/div>/,
+    )?.[1]
+    expect(poster).toMatch(/<source type="image\/avif"/)
+    expect(poster).toMatch(/ sizes="auto, 100vw"/)
+    expect(poster).toMatch(/ alt="" loading="lazy" decoding="async"/)
+    expect(poster).toContain(
+      'style="display:block;width:100%;height:100%;object-fit:cover"',
+    )
+    expect(report.images.requested).toBe(9)
+    expect(report.ok).toBe(true)
+  })
+
+  it('takes sizes= and eager=true for the poster', async () => {
+    await makeImageSite({
+      'src/pages/index.hbs': EMBED(
+        ' sizes="(min-width: 48rem) 48rem, 100vw" eager=true',
+      ),
+    })
+    await build()
+    const html = await site.read('public/index.html')
+    expect(html).toContain('sizes="(min-width: 48rem) 48rem, 100vw"')
+    expect(html).toMatch(/kiss-embed__poster[\s\S]*fetchpriority="high"/)
+  })
+
+  // Codex, slice 3: a site under a subpath or a learning package's page
+  // passes `root=`, as it does to {{image}}; the poster must follow it.
+  it('writes the poster against root=, as {{image}} does', async () => {
+    await makeImageSite({ 'src/pages/index.hbs': EMBED(' root="../"') })
+    await build()
+    const poster = (await site.read('public/index.html')).match(
+      /<div class="kiss-embed__poster"[^>]*>(<picture>.*?<\/picture>)<\/div>/,
+    )?.[1]
+    expect(poster).toMatch(/<img src="\.\.\/img\/hero/)
+    expect(poster).not.toMatch(/="\/img\//)
+  })
+
+  it('refuses a poster from another site, saying why, and an unknown path', async () => {
+    await makeImageSite({
+      'src/pages/index.hbs': PAGE(
+        '{{embed "youtube" id="abc" title="T" poster="https://i.ytimg.com/vi/abc/sddefault.jpg"}}',
+      ),
+      'src/pages/two.hbs': PAGE(
+        '{{embed "youtube" id="abc" title="T" poster="img/nope.jpg"}}',
+      ),
+    })
+    const err = await build().catch((e) => e)
+    const messages = err.failures.map((f) => f.error.message).join('\n')
+    expect(messages).toMatch(
+      /embed "youtube": poster= must be an image in your site, not 'https:\/\/i\.ytimg\.com\/vi\/abc\/sddefault\.jpg'/,
+    )
+    expect(messages).toMatch(
+      /embed "youtube" poster=: 'img\/nope\.jpg' is not in the build/,
+    )
+  })
+})
+
 describe('{{image}} in dev', () => {
   it('writes the original as one <img> at its own size, and encodes nothing', async () => {
     await makeImageSite()

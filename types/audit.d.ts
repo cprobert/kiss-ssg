@@ -71,7 +71,7 @@ export function thirdPartyOrigins({ pages, siteUrl }: {
  * are public vocabulary: `config.audit.ignore`, the report's `check` field and
  * the summary lines all use them, so renaming one is a breaking change.
  */
-export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing", "consent-history-missing", "img-dimensions-missing", "img-first-lazy", "fetchpriority-excess", "font-preload-excess", "script-blocking", "host-unset", "image-oversized", "image-location-metadata", "img-not-responsive"];
+export const CHECKS: readonly ["title-missing", "title-duplicate", "description-missing", "description-duplicate", "og-image-missing", "og-image-relative", "canonical-missing", "img-alt-missing", "h1-count", "heading-skip", "viewport-zoom-lock", "href-hash", "fragment-missing", "favicon-missing", "not-found-missing", "site-url-local", "debug-dump", "stray-file", "console-log", "privacy-link-missing", "placeholder-left", "checkbox-prechecked", "consent-missing", "consent-ungated", "consent-ads-cmp", "consent-objection-third-party", "consent-settings-missing", "consent-google-advanced", "consent-records-missing", "consent-history-missing", "img-dimensions-missing", "img-first-lazy", "fetchpriority-excess", "font-preload-excess", "script-blocking", "host-unset", "image-oversized", "image-location-metadata", "img-not-responsive", "id-slug-mismatch"];
 /**
  * The size over which a shipped raster a page references is
  * `image-oversized`. Provisional: 200 KB until it is measured on the fleet's
@@ -383,6 +383,12 @@ export type AuditPage = {
      * found by its id
      */
     id?: string | null;
+    /**
+     * `id-slug-mismatch`'s detail, decided by
+     * `page-registry.js` `idSlugMismatch`: an explicit id built from the slug as
+     * given rather than as written; `null` when there is nothing to say
+     */
+    idSlug?: string | null;
     /**
      * the learning package it belongs to: an LMS
      * opens it as its file, so no `trailingSlash` policy moves its folder

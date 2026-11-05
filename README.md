@@ -72,7 +72,7 @@ _Whoever opens the site in two years can follow what the agent wrote._
 - **[Markdown copies for agents](GUIDE.md#markdown-copies-for-agents) →** A build that calls `.llms()` gives every page a `.md` beside it, converted from its `<main>`, and `llms.txt` links them, so the next agent reads the site rather than parsing it.
 - **[Learning packages for an LMS](GUIDE.md#learning-packages) →** A page that names a `package` is zipped as an IMS content package or SCORM 1.2 for Moodle or any LMS, with every file it needs and nothing it does not. `{{scormBridge}}` lets a page record answers and completion, and does nothing off the LMS.
 - **[Cookie consent](GUIDE.md#cookie-consent) →** Declare the site's analytics, tags and embeds once in `config.consent`, and kiss makes the banner, the settings dialog, the cookie table, a page where visitors see their own choices, and the gating on every page. Nothing third-party loads until the visitor allows it, Google Consent Mode is set before any Google tag, and withdrawing deletes the site's own declared cookies.
-- **[Click-to-load embeds](GUIDE.md#embeds-embed) →** `{{embed "youtube" id=… title=…}}` puts a YouTube or Vimeo video, a Google map, an Instagram post or a SoundCloud track on a page so that nothing loads from the provider until the visitor presses its button. It works on any site, and a site with one video needs no banner.
+- **[Click-to-load embeds](GUIDE.md#embeds-embed) →** `{{embed "youtube" id=… title=…}}` puts a YouTube or Vimeo video, a Google map, an Instagram post or a SoundCloud track on a page so that nothing loads from the provider until the visitor presses its button. It works on any site, and a site with one video needs no banner. A video can show a still of your own (`poster=`), and plays on that one press.
 - **[Responsive images](GUIDE.md#responsive-images) →** `{{image "img/hero.jpg" alt=… sizes=…}}` serves a photo as AVIF and WebP at the widths the layout needs, turned the right way up and stripped of its location data. Variants are encoded once and kept in a committed cache, so CI and the host copy them; `npx kiss-ssg images` keeps that cache tidy.
 - **[Sass, assets and cache busting](GUIDE.md#assets) →** Styles compile from `src/assets`, an asset is keyed by the name a template asks for, and a content hash or version string is one config key away.
 - **[Smaller CSS and JS](GUIDE.md#minified-assets) →** Every copied stylesheet and script is minified outside dev, on by default, and a framework stylesheet named in `assets.purge` loses every rule no written page uses ([Purged CSS](GUIDE.md#purged-css)).
@@ -235,7 +235,7 @@ Everything above is in **[GUIDE.md](GUIDE.md)**, and the same guide is on the [w
 
 ## Requirements
 
-Node 22.12 or newer. kiss-ssg is an ES module (`import Kiss from 'kiss-ssg'`); `require('kiss-ssg')` also works on Node ≥22.12.
+Node 22.12 or newer. kiss-ssg is an ES module (`import Kiss from 'kiss-ssg'`); `require('kiss-ssg')` also works on Node ≥22.12, and returns the class, with the named exports as statics on it (`Kiss.utils.toSlug`).
 
 ## Development
 

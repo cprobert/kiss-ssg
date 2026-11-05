@@ -105,6 +105,7 @@ describe('resolveConsent: the minimum a site writes', () => {
       width: null,
       height: null,
       measure: false,
+      video: true,
     })
     expect(yt.storage.every((s) => s.party === 'third')).toBe(true)
   })

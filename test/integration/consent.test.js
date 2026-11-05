@@ -683,7 +683,7 @@ describe('{{embed}} on a site with no config.consent', () => {
     expect(report.ok).toBe(true)
     const home = await site.read('public/index.html')
     expect(home).toContain(
-      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade style="display:flex;',
+      '<div class="kiss-embed" data-kiss-embed="youtube" data-kiss-embed-facade data-kiss-embed-autoplay style="display:flex;',
     )
     expect(home).toContain('data-kiss-embed-action="load"')
     expect(home).not.toContain('data-kiss-consent')
@@ -703,6 +703,86 @@ describe('{{embed}} on a site with no config.consent', () => {
       'https://www.youtube-nocookie.com',
     ])
     expect(report.consent).toBeNull()
+  })
+
+  // a1k9training, 2026-11-05: the words could be changed only under
+  // config.consent, so a site with no banner was stuck with "Load it".
+  it('takes the site’s embeds.text with no config.consent, and one embed’s own load=, notice=, open= and autoplay=false', async () => {
+    site = await makeSite({
+      'src/layouts/layout.hbs': PLAIN_LAYOUT,
+      'src/pages/index.hbs': consentPage(
+        [
+          '<h1>Home</h1>',
+          '{{embed "youtube" id="a" title="Puppy class"}}',
+          '{{embed "vimeo" id="b" title="Recall" load="Watch recall" notice="On {provider}." open="See it on {service}" autoplay=false}}',
+        ].join(''),
+        'Home',
+      ),
+    })
+    const { report, errors } = await build(
+      config({
+        consent: undefined,
+        embeds: {
+          text: {
+            embedPlay: 'Play the video',
+            embedNotice: 'Hosted by {provider}.',
+          },
+        },
+      }),
+    )
+    expect(errors).toEqual([])
+    expect(report.ok).toBe(true)
+    const home = await site.read('public/index.html')
+    expect(home).toContain(
+      'aria-label="Play the video: Puppy class">Play the video</button>',
+    )
+    expect(home).toContain('<p>Hosted by Google.</p>')
+    expect(home).toContain(
+      'aria-label="Watch recall: Recall">Watch recall</button>',
+    )
+    expect(home).toContain('<p>On Vimeo.</p>')
+    expect(home).toContain('>See it on Vimeo</a>')
+    const boxes = [...home.matchAll(/<div class="kiss-embed"[^>]*>/g)].map(
+      (m) => m[0],
+    )
+    expect(boxes.map((b) => b.includes('data-kiss-embed-autoplay'))).toEqual([
+      true,
+      false,
+    ])
+  })
+
+  it('refuses embeds beside config.consent, and a key that is not embed wording', () => {
+    site = { cleanup: async () => {} }
+    expect(
+      () =>
+        new Kiss({
+          logger,
+          consent: CONSENT_CONFIG,
+          embeds: { text: { embedLoad: 'x' } },
+        }),
+    ).toThrow(
+      'config.embeds: this site has config.consent, so its embed wording is config.consent.ui.text — set the same keys there',
+    )
+    expect(
+      () => new Kiss({ logger, embeds: { text: { embedAllow: 'x' } } }),
+    ).toThrow(
+      'config.embeds.text.embedAllow is not embed wording — valid keys are embedNotice, embedLoad, embedPlay, embedWatch',
+    )
+  })
+
+  // Codex, slice 4: `consent: false` is consent switched off, as
+  // `resolveConsent` reads it, so it is no second home for the words.
+  it('takes embeds beside consent: false or null, which are consent switched off', () => {
+    site = { cleanup: async () => {} }
+    for (const consent of [false, null]) {
+      const kiss = new Kiss({
+        logger,
+        consent,
+        embeds: { text: { embedLoad: 'Open' } },
+      })
+      expect(kiss.config.consent).toBeNull()
+      expect(kiss.config.embeds?.text.embedLoad).toBe('Open')
+    }
   })
 
   it('fails a name with no embed preset', async () => {

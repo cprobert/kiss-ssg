@@ -46,6 +46,17 @@ export function matchesHost(url: string, list: readonly {
  */
 export function presetService(name: string): ConsentService | null;
 /**
+ * The wording with `embedPlay` settled: a site that worded `embedLoad` and
+ * not `embedPlay` (a Welsh site, say) keeps its own word on a video's button
+ * rather than gaining an English one when `embedPlay` arrived (2.13.0).
+ *
+ * @template {Record<string, string>} T
+ * @param {T} text the defaults with the site's own over them
+ * @param {Record<string, unknown>} own what the site set
+ * @returns {T}
+ */
+export function embedWording<T extends Record<string, string>>(text: T, own: Record<string, unknown>): T;
+/**
  * The categories at least one declared service belongs to, `necessary`
  * aside, in `CATEGORY_NAMES` order. Decided once per site, so every page's
  * banner, dialog and cookie hold the same set.
@@ -299,6 +310,8 @@ export const STORAGE_KINDS: Readonly<{
  * when it has no `ratio`
  * @property {boolean} measure the frame reports its height (`MEASURE`
  * messages, as Instagram's does), and the page follows it
+ * @property {boolean} video the frame is a video player: a poster's Load
+ * button carries a play mark, and a click on Load asks the player to start
  */
 /**
  * The Google Consent Mode block.
@@ -405,6 +418,7 @@ export const DEFAULT_TEXT: Readonly<{
     servicesLabel: "Services";
     embedNotice: "This content is hosted by {provider}, which may set cookies when it loads.";
     embedLoad: "Load it";
+    embedPlay: "Play video";
     embedAllow: "Always allow {service}";
     embedWatch: "Open it on {service}";
     historyLink: "See your consent history";
@@ -503,6 +517,7 @@ export const PRESETS: Readonly<{
             src: string;
             title: any;
             watch: string;
+            video: boolean;
         };
         origins: string[];
         storage: ({
@@ -529,6 +544,7 @@ export const PRESETS: Readonly<{
             src: string;
             title: any;
             watch: string;
+            video: boolean;
         };
         origins: string[];
         cookies: {
@@ -736,6 +752,11 @@ export type ConsentEmbed = {
      * messages, as Instagram's does), and the page follows it
      */
     measure: boolean;
+    /**
+     * the frame is a video player: a poster's Load
+     * button carries a play mark, and a click on Load asks the player to start
+     */
+    video: boolean;
 };
 /**
  * The Google Consent Mode block.

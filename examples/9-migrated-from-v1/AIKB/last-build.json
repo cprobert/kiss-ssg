@@ -174,5 +174,6 @@
   },
   "consent": null,
   "cacheHeaders": null,
-  "images": null
+  "images": null,
+  "ids": "view"
 }
