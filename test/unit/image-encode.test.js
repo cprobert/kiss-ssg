@@ -80,6 +80,52 @@ describe('encodeVariants', () => {
     expect(fs.existsSync(path.join(root, variants[0].path))).toBe(true)
   })
 
+  it.each([
+    ['cut short', (whole) => whole.subarray(0, Math.floor(whole.length / 2))],
+    ['one byte', () => Buffer.from('x')],
+    [
+      'a Git LFS pointer',
+      () =>
+        Buffer.from(
+          'version https://git-lfs.github.com/spec/v1\noid sha256:4d7a214614ab2935c943f9e0ff69d22eadbb8f32b1258daaa5e2ca24d17e2393\nsize 12345\n',
+        ),
+    ],
+  ])(
+    'treats a cache entry %s as a miss, and replaces it with the whole image',
+    async (_, damage) => {
+      const variants = await source()
+      await encodeVariants({ variants, root, cache })
+      const v = variants[0]
+      const entry = path.join(cache, cacheName(v))
+      const whole = fs.readFileSync(entry)
+      fs.writeFileSync(entry, damage(whole))
+      fs.rmSync(path.join(root, v.path), { force: true })
+      const result = await encodeVariants({ variants, root, cache })
+      expect(result.encoded).toEqual([cacheName(v)])
+      expect(result.cached).toBe(variants.length - 1)
+      expect(readImageHeader(path.join(root, v.path))).toMatchObject({
+        format: v.format,
+        width: v.width,
+      })
+      expect(fs.statSync(entry).size).toBe(whole.length)
+    },
+  )
+
+  it('treats a whole image of the wrong width as a miss', async () => {
+    const variants = await source()
+    await encodeVariants({ variants, root, cache })
+    const [narrow, wide] = variants.filter((v) => v.format === 'avif')
+    fs.copyFileSync(
+      path.join(cache, cacheName(wide)),
+      path.join(cache, cacheName(narrow)),
+    )
+    const result = await encodeVariants({ variants, root, cache })
+    expect(result.encoded).toEqual([cacheName(narrow)])
+    expect(readImageHeader(path.join(root, narrow.path)).width).toBe(
+      narrow.width,
+    )
+  })
+
   it('rejects an empty cache entry as a hit, and replaces it', async () => {
     const variants = await source()
     fs.mkdirSync(cache, { recursive: true })

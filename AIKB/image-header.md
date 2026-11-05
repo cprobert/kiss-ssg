@@ -9,6 +9,7 @@ Read what a raster image says about itself in its header, synchronously and with
 - `readImageHeader(file)` → `ImageHeader | null`: `{ format, width, height, orientation, gps, animated }`. Memoised by path, `mtimeMs` and size, so a layout that renders one image on every page reads it once and an edited file is read again. `null` for a file that cannot be read, a format it does not know, or one too damaged to give a size.
 - `parseImageHeader(reader)` → the same, over a `ByteReader` (`{ size, read(offset, length) }`). The unit tests hand it `bufferReader(buffer)`.
 - `bufferReader(buffer)`, `readTiff(tiff)` (`{ orientation, gps }` from a TIFF structure at its `II`/`MM` mark) and `RASTER_EXTENSION` (`.jpg .jpeg .png .webp .avif`, what `{{image}}` and the audit treat as rasters).
+- `isCompleteImage(reader, format)`: whether the bytes run to the end their own structure declares, from a few bytes and never a decode. A JPEG ends with `FF D9`, a PNG with an `IEND` chunk, a WebP's RIFF length plus 8 is the file's size, and an AVIF's top-level boxes add up to exactly the file. `isWholeImageFile(file, { format, width })` adds the header's format and width; `lib/image-encode.js` uses it to decide a cache hit.
 - The `ImageHeader`, `ImageFormat` and `ByteReader` typedefs.
 
 ## Depends on
@@ -20,6 +21,7 @@ Read what a raster image says about itself in its header, synchronously and with
 - `lib/handlebars-helpers.js` `image`: the size, the orientation swap, the animation refusal.
 - `lib/audit.js`: `image-location-metadata`, from the build-folder walk, and `RASTER_EXTENSION` for `image-oversized` and `img-not-responsive`.
 - `lib/images-sweep.js` `findOriginals`: the originals carrying GPS or wider than the recipe.
+- `lib/image-encode.js` `encodeVariants`: `isWholeImageFile`, whether a cache entry is a hit.
 
 ## Non-obvious behavior
 

@@ -20,6 +20,30 @@ export function readTiff(tiff: Buffer): {
  */
 export function parseImageHeader(reader: ByteReader): ImageHeader | null;
 /**
+ * Whether an image's bytes run to the end its own structure declares, read
+ * from a few bytes and never decoded: a JPEG ends with its EOI marker, a PNG
+ * with an `IEND` chunk, a WebP's RIFF length is the file's, and an AVIF's
+ * top-level boxes add up to exactly the file. A file cut short fails, and so
+ * does a Git LFS pointer or anything else standing in for the image.
+ *
+ * @param {ByteReader} reader
+ * @param {string} format `jpeg`, `png`, `webp` or `avif`
+ * @returns {boolean}
+ */
+export function isCompleteImage(reader: ByteReader, format: string): boolean;
+/**
+ * Whether a file holds a whole image of the given format and width: what a
+ * cache entry must be before a build copies it rather than encoding again.
+ *
+ * @param {string} file
+ * @param {{ format: string, width: number }} expected
+ * @returns {boolean}
+ */
+export function isWholeImageFile(file: string, expected: {
+    format: string;
+    width: number;
+}): boolean;
+/**
  * Read one file's header, memoised by path, modification time and size, so a
  * layout that asks for one image on every page reads it once.
  *

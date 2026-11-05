@@ -5,6 +5,7 @@ import path from 'node:path'
 import sharp from 'sharp'
 import {
   bufferReader,
+  isCompleteImage,
   parseImageHeader,
   readImageHeader,
   readTiff,
@@ -300,6 +301,33 @@ describe('parseImageHeader — animation', () => {
       height: 20,
     })
     expect(parse(await base().webp().toBuffer()).animated).toBe(false)
+  })
+})
+
+describe('isCompleteImage', () => {
+  it.each([
+    ['jpeg', () => base(64, 32).jpeg()],
+    ['png', () => base(64, 32).png()],
+    ['webp', () => base(64, 32).webp()],
+    ['avif', () => base(64, 32).avif()],
+  ])('passes a whole %s and fails one cut short', async (format, make) => {
+    const whole = await make().toBuffer()
+    expect(isCompleteImage(bufferReader(whole), format)).toBe(true)
+    for (const cut of [1, Math.floor(whole.length / 2)])
+      expect(
+        isCompleteImage(
+          bufferReader(whole.subarray(0, whole.length - cut)),
+          format,
+        ),
+      ).toBe(false)
+  })
+
+  it('fails text standing in for an image', () => {
+    const pointer = Buffer.from(
+      'version https://git-lfs.github.com/spec/v1\noid sha256:00\nsize 1\n',
+    )
+    for (const format of ['jpeg', 'png', 'webp', 'avif'])
+      expect(isCompleteImage(bufferReader(pointer), format)).toBe(false)
   })
 })
 
