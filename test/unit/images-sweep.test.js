@@ -379,6 +379,49 @@ describe('sweepImages', () => {
     expect(readImageHeader(path.join(dir, 'assets/wide.jpg')).width).toBe(960)
   })
 
+  it('protects the width a site needs from a folder it only copies', async () => {
+    // Site one reads assets/ as its own at 960. Site two's own folder is
+    // elsewhere, but it copies assets/ with .copyAssets() and serves it at
+    // 1920. The 1500px photo must keep its pixels for site two.
+    await photo('assets/shared.jpg', 1500, 100)
+    await photo('mine/own.jpg', 1500, 100)
+    const result = await sweepImages({
+      lines: [
+        line({ assets: path.join(dir, 'assets'), maxWidth: 960 }),
+        line({
+          assets: path.join(dir, 'mine'),
+          copies: [path.join(dir, 'assets')],
+          maxWidth: 1920,
+        }),
+        line({ assets: path.join(dir, 'third'), maxWidth: 960 }),
+      ],
+      reports: [{ ok: true }, { ok: true }, { ok: true }],
+      write: true,
+      cwd: dir,
+    })
+    expect(result.code).toBe(0)
+    expect(readImageHeader(path.join(dir, 'assets/shared.jpg')).width).toBe(
+      1500,
+    )
+    // A copied folder is protected, never scanned for rewrites of its own.
+    expect(result.out).toContain(
+      'Originals: none carries GPS or is wider than the recipe',
+    )
+  })
+
+  it('records every folder an instance copies in its sweep line', () => {
+    expect(
+      sweepLine({
+        cache: null,
+        keys: [],
+        encoded: [],
+        assets: 'src/assets',
+        copies: ['vendor/img', 'src/assets'],
+        maxWidth: 1920,
+      }).copies,
+    ).toEqual([path.resolve('src/assets'), path.resolve('vendor/img')])
+  })
+
   it('refuses passing builds that wrote no sweep line: an engine that predates it', async () => {
     // Every settled build appends a line, a site with no {{image}} included,
     // so passing reports with none mean the script's own kiss-ssg ignored

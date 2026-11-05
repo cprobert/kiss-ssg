@@ -15,7 +15,11 @@ export function sweepRequest(env?: Record<string, string | undefined>): {
  * @property {string|null} cache the cache folder, absolute, or `null` for none
  * @property {string[]} keys every cache entry its pages asked for
  * @property {string[]} encoded the entries it encoded now (the misses)
- * @property {string|null} assets its assets folder, absolute
+ * @property {string|null} assets its assets folder, absolute: the one folder
+ * the sweep looks in for originals to fix
+ * @property {string[]} copies every folder it copies into the build
+ * (`.copyAssets()` included), absolute: never scanned for rewrites, but a
+ * photo in one keeps the width this instance needs
  * @property {number} maxWidth the recipe's largest width
  * @property {boolean} failed some variant could not be encoded
  * @property {boolean} cacheSkipped the cache could not be written, so this
@@ -28,16 +32,18 @@ export function sweepRequest(env?: Record<string, string | undefined>): {
  * @param {string[]} input.keys
  * @param {string[]} input.encoded
  * @param {string|null} input.assets
+ * @param {string[]} [input.copies]
  * @param {number} input.maxWidth
  * @param {boolean} [input.failed]
  * @param {boolean} [input.cacheSkipped]
  * @returns {SweepLine}
  */
-export function sweepLine({ cache, keys, encoded, assets, maxWidth, failed, cacheSkipped, }: {
+export function sweepLine({ cache, keys, encoded, assets, copies, maxWidth, failed, cacheSkipped, }: {
     cache: string | null;
     keys: string[];
     encoded: string[];
     assets: string | null;
+    copies?: string[];
     maxWidth: number;
     failed?: boolean;
     cacheSkipped?: boolean;
@@ -173,9 +179,16 @@ export type SweepLine = {
      */
     encoded: string[];
     /**
-     * its assets folder, absolute
+     * its assets folder, absolute: the one folder
+     * the sweep looks in for originals to fix
      */
     assets: string | null;
+    /**
+     * every folder it copies into the build
+     * (`.copyAssets()` included), absolute: never scanned for rewrites, but a
+     * photo in one keeps the width this instance needs
+     */
+    copies: string[];
     /**
      * the recipe's largest width
      */

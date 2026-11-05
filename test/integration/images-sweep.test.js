@@ -152,6 +152,32 @@ describe('kiss-ssg images', () => {
     ).toBe(true)
   }, 60000)
 
+  it('records the folders a build copies with .copyAssets() in its sweep line', async () => {
+    await makeImageSite(
+      ROUTER.replace(
+        "kiss.page({ view: name + '.hbs' }).generate()",
+        "kiss.copyAssets('./extra', './public/' + name + '/extra')\n  kiss.page({ view: name + '.hbs' }).generate()",
+      ),
+    )
+    fs.mkdirSync(path.join(site.root, 'extra'), { recursive: true })
+    fs.writeFileSync(path.join(site.root, 'extra/note.txt'), 'x')
+    const sweepFile = path.join(site.root, 'sweep.jsonl')
+    const r = spawnSync(process.execPath, ['router.js'], {
+      cwd: site.root,
+      encoding: 'utf8',
+      env: { ...process.env, KISS_CHECK: '1', KISS_IMAGES: sweepFile },
+    })
+    expect(r.status, r.stderr).toBe(0)
+    const lines = fs
+      .readFileSync(sweepFile, 'utf8')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+    expect(lines).toHaveLength(2)
+    for (const line of lines)
+      expect(line.copies.map((d) => path.basename(d))).toContain('extra')
+  }, 60000)
+
   it('exits 1 when the cache cannot be written, and prunes nothing', async () => {
     // A file where the cache folder should be: an ordinary build warns and
     // carries on, but the command whose whole job is the cache must fail.

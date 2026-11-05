@@ -8,7 +8,8 @@ registrations a replay re-runs, and the copies a released page claim can restore
 is the copy itself and knows nothing of the instance; this module is what ties a copy to a build.
 
 `copyAssetFolder(kiss, …)` takes the `Kiss` instance and reads its state at call time. The state
-stays on `Kiss` — `_assetQueue`, `_sassFailures`, `_assetCopies`, `_restorableAssets`,
+stays on `Kiss` — `_assetQueue`, `_sassFailures`, `_assetCopies`, `_copySources` (every
+source folder asked for, resolved at the call, which `kiss-ssg images` reads), `_restorableAssets`,
 `_failures`, `_promises` — and `Kiss._copyAssets()` is a one-line delegator to it. Calls back
 into the instance go through it (`kiss._stagedPath()`, `kiss._carry()`, `kiss._refreshReport()`).
 
