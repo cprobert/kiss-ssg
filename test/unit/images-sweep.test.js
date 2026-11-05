@@ -445,6 +445,29 @@ describe('sweepImages', () => {
     )
   })
 
+  it('refuses when fewer builds sent an inventory than reported', async () => {
+    // Two instances on two installed engines: the older one reports ok and
+    // ignores KISS_IMAGES, so its folders and widths are missing from the
+    // sweep. Pruning or rewriting on half the inventory is not safe.
+    await photo('assets/img/located.jpg', 40, 20, { gps: true })
+    write(`cache/${entry('c', 'avif')}`, 'x')
+    const result = await sweepImages({
+      lines: [line()],
+      reports: [{ ok: true }, { ok: true }],
+      write: true,
+      cwd: dir,
+    })
+    expect(result.code).toBe(1)
+    expect(result.out).toBe('')
+    expect(result.err).toMatch(/2 builds reported, 1 sent its image inventory/)
+    expect(fs.existsSync(path.join(dir, `cache/${entry('c', 'avif')}`))).toBe(
+      true,
+    )
+    expect(readImageHeader(path.join(dir, 'assets/img/located.jpg')).gps).toBe(
+      true,
+    )
+  })
+
   it('refuses when an instance could not write the cache', async () => {
     write(`cache/${entry('c', 'avif')}`, 'x')
     const result = await sweepImages({
