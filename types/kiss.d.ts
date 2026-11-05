@@ -611,6 +611,10 @@ declare class Kiss {
     /** @private */
     private _consentClientRun;
     /** @private */
+    private _purgeRun;
+    /** @private @type {import('./css-purge.js').PurgeResult[]|null} */
+    private _purgeResult;
+    /** @private */
     private _cacheHeadersRun;
     /** @private @type {import('./build-report.js').BuildCacheHeaders|null} */
     private _cacheHeadersResult;
@@ -760,6 +764,8 @@ declare class Kiss {
     private _writeConsentClient;
     /** @private */
     private _writeCacheHeaders;
+    /** @private */
+    private _purgeAssets;
     /** @private */
     private _lastBuildRecord;
     /** @private */

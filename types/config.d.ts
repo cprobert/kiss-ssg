@@ -84,6 +84,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {boolean} hash rename every emitted `.css`/`.js` to carry a content hash
  * @property {string|null} version leave names alone; `{{asset}}` appends `?v=<version>`
  * @property {boolean} minify outside dev, minify every copied `.css`/`.js`/`.mjs` that is not `*.min.*` or a Sass compile, before hashing; `true` by default
+ * @property {import('./css-purge.js').KissPurge|null} purge the stylesheets to purge against the written pages at the settle, outside dev; `null` (the default) purges none
  * @property {import('./pipeline.js').PipelineStep[]} pipeline ordered commands run before the asset copy
  */
 /**
@@ -265,6 +266,7 @@ export const DEFAULT_ASSETS: Readonly<{
     hash: false;
     version: any;
     minify: true;
+    purge: any;
     pipeline: any[];
 }>;
 export const DEFAULT_MARKDOWN: Readonly<{
@@ -343,6 +345,7 @@ export const DEFAULT_CONFIG: Readonly<{
         hash: false;
         version: any;
         minify: true;
+        purge: any;
         pipeline: any[];
     }>;
     markdown: Readonly<{
@@ -481,6 +484,10 @@ export type KissAssets = {
      * outside dev, minify every copied `.css`/`.js`/`.mjs` that is not `*.min.*` or a Sass compile, before hashing; `true` by default
      */
     minify: boolean;
+    /**
+     * the stylesheets to purge against the written pages at the settle, outside dev; `null` (the default) purges none
+     */
+    purge: import("./css-purge.js").KissPurge | null;
     /**
      * ordered commands run before the asset copy
      */

@@ -12,6 +12,7 @@ Holds what an asset copy emitted — the path a template writes mapped to the fi
 - `hashedName(urlPath, hash)` → the same path with the hash inserted before the last extension (`css/site.css` → `css/site.a1b2c3d4.css`). A path whose last dot is in a folder name, or which has no dot at all, gets the hash appended instead (`css/site` → `css/site.a1b2c3d4`).
 - `createAssetManifest()` → `{ lookup, toObject, hasOwner, owns, previous, reconcile, reconcileSass, unrecorded, urlRevision }`, a fresh manifest.
   - `lookup(urlPath)` — the emitted path, or `null`.
+  - `retarget(name, output)` — points a name at a new output after the copy, and every copy's map that held the old output follows it, so the next reconcile deletes the old file rather than keeping it. It counts a URL change for a hashable name. The settle's CSS purge (`AIKB/css-purge.md`) is its only caller: a purged stylesheet is re-hashed, so its name moves.
   - `toObject()` — a plain object copy of the map, for debugging.
 
 - `hasOwner(owner)` — whether a source/target copy has an inventory, or has written outputs it never recorded (below).

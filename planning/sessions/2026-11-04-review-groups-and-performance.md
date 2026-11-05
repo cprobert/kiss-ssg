@@ -70,6 +70,13 @@ opened: 2026-11-04
   - the operator chose Claude's two recommendations: **`assets.minify`** built into kiss, on by default (`91255d1`), and **pipeline recipes** in the skill for removing unused CSS and JS;
   - the recipes were run through a real kiss build first. Running them found PurgeCSS's exit-0 trap, which `{{asset}}` catches. Measured: Bootstrap 13.4 KB → 3.4 KB after Brotli; one lodash function 3.4 KB;
   - `kiss-performance/SKILL.md` grows to 13.7k, past the contract's 12k budget, which Claude raised rather than cut the rules the operator wanted.
+- **2026-11-05: `assets.purge`, CSS purged against the written pages.** The operator asked whether PurgeCSS could scan the generated pages, and whether that should be a `.treeshake()` method after `.generate()`. Claude recommended against a method, for two reasons. First, a purge after the pages link a hashed name either breaks "the name is the bytes" or rewrites every page anyway. Second, "tree shaking" names JavaScript dead-code removal, which is esbuild's job. Claude proposed a config key run at the settle instead, and recommended measuring template against output scanning first. The operator chose to build it now; the comparison was not run. What was built:
+  - PurgeCSS against the written HTML and the build's scripts, first at the settle;
+  - re-hashed, with every page rewritten to the new name (`KissPage.replaceInOutput`, which re-derives the page's hash, links and facts), before the link scan, audit, cache headers and report;
+  - opt-in by naming the file, off in dev;
+  - a failure fails the build;
+  - PurgeCSS 8 as a direct dependency (about 136 KB, loaded only when a site purges);
+  - the skill's PurgeCSS pipeline recipe replaced by `assets.purge`.
 - **2026-11-04: a `soundcloud` embed preset.** The fleet audit's slowest page was a bare SoundCloud iframe, and `{{embed}}` had no preset for it. The operator chose Claude's recommendation to add one on this branch (`6b6ac9f`). Its origins and storage were measured, and its tests were seen red first.
 - **2026-11-04: `speed` takes a build folder, not a site script.** The sub-agent found no way to learn `folders.build` without running the build. Claude accepted the folder form rather than adding a config-only mode, and recorded it in the contract.
 

@@ -66,6 +66,7 @@ The default config options are:
     hash: false,
     version: null,
     minify: true,
+    purge: null,
     pipeline: []
   },
   markdown: {

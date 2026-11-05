@@ -1,43 +1,42 @@
 # Shipping less CSS and JS: pipeline recipes
 
-kiss already minifies every `.css` and `.js` it copies, outside dev (`assets.minify`, on by default). What it cannot judge for a site is which CSS and JS the site needs, so removing the rest is a `config.assets.pipeline` step. A step runs before the asset copy, so whatever it writes into `src/assets/` is then copied, minified and hashed like any other file. GUIDE.md § An asset pipeline has the step shape: `{ name, run, cwd?, watch?, outputs? }`.
+kiss does two of these itself:
 
-Install the tools as development dependencies of the site:
+- **It minifies** every `.css` and `.js` it copies, outside dev (`assets.minify`, on by default).
+- **It purges** the CSS no written page uses from the stylesheets a site names (`assets.purge`, below).
 
-```bash
-npm install -D purgecss esbuild
-```
+Bundling a site's own scripts is a `config.assets.pipeline` step. A step runs before the asset copy, so whatever it writes into `src/assets/` is then copied, minified and hashed like any other file. GUIDE.md § An asset pipeline has the step shape: `{ name, run, cwd?, watch?, outputs? }`.
 
 Each recipe was run as written through a kiss build. Measure before and after with `npx kiss-ssg speed`.
 
 ## Remove unused CSS from a framework (Bootstrap, Foundation, Bulma)
 
-Keep the framework's full stylesheet **outside** `src/assets/` (here `src/vendor/`), and let PurgeCSS write the trimmed copy into it:
+Name the stylesheet, as a template asks for it, and the classes its JavaScript builds at run time:
 
 ```js
 assets: {
-  pipeline: [
-    {
-      name: 'purge bootstrap',
-      cwd: 'src/vendor',
-      run: 'npx purgecss --css bootstrap.css --content "../pages/**/*.hbs" "../partials/**/*.hbs" "../layouts/**/*.hbs" "../models/**/*.json" "../scripts/**/*.js" --safelist show active in collapsing --output ../assets/css',
-    },
-  ],
+  hash: true,
+  purge: {
+    files: ['css/bootstrap.css'],
+    safelist: ['show', 'active', 'in', 'collapsing', 'fade', /^modal/, /^tooltip/, /^popover/],
+  },
 },
 ```
 
-- **Run it from the stylesheet's folder** (`cwd`). PurgeCSS writes the output under `--output` at the input's relative path, so `--css src/vendor/bootstrap.css --output src/assets/css` would aim for `src/assets/css/src/vendor/bootstrap.css`.
-- **The output folder must already exist.** When it does not, PurgeCSS writes nothing and **still exits 0**, so kiss logs the step as `ok`. The page's `{{asset "css/bootstrap.css"}}` then fails the build, which is the check that catches it. Keep `{{asset}}` on that link.
-- **Scan everything that writes a class:** views, partials, layouts, the models (a class name in JSON) and your own scripts (a class added with `classList`).
-- **Safelist the classes a library adds at run time.** Bootstrap's JavaScript adds `show`, `active`, `in` and `collapsing`, and others for its components (`modal-backdrop`, `fade`, `tooltip`, `popover`). A class missing from the safelist is removed, and the component breaks only when it opens. Open every interactive component in the browser after a purge.
-- **Ignore the generated file in git** (`src/assets/css/bootstrap.css`): the source is `src/vendor/bootstrap.css`, and the build writes the trimmed copy.
-- **Tailwind already does this.** It scans the content itself, so it needs no PurgeCSS step (GUIDE.md § An asset pipeline, the Tailwind trap).
+- **kiss purges against the pages it wrote**, so a class from a model, a helper or a partial counts as much as one in a template. It reads the build's own scripts too, for a class added with `classList`.
+- **Safelist the classes a library builds.** Bootstrap's JavaScript adds `show`, `active`, `in` and `collapsing`, and builds others for its components (`modal-backdrop`, `tooltip-inner`). A class that appears in no page and no script is removed, and the component breaks only when it opens. **Open every interactive component in the browser after turning this on.**
+- **The preview keeps the whole file.** `--dev` never purges, so check the purge on a real build (`npm run build`, then serve the build folder).
+- **Tailwind needs none of this.** It scans its content itself (GUIDE.md § An asset pipeline, the Tailwind trap).
 
 Measured on one Bootstrap 3 site's two pages: 100 KB down to 16 KB raw, and 13.4 KB down to 3.4 KB after Brotli.
 
 ## Bundle and tree-shake the site's own scripts
 
-When the site's scripts `import` each other or a library, bundle them. Each nested import is otherwise fetched only after its parent has loaded, one round trip after another. A bundle keeps only what is imported:
+When the site's scripts `import` each other or a library, bundle them. Each nested import is otherwise fetched only after its parent has loaded, one round trip after another. A bundle keeps only what is imported. Install esbuild as a development dependency of the site:
+
+```bash
+npm install -D esbuild
+```
 
 ```js
 assets: {

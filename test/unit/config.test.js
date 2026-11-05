@@ -109,11 +109,12 @@ describe('resolveConfig', () => {
     })
   })
 
-  it('defaults the assets block: no cache busting, minified, no pipeline', () => {
+  it('defaults the assets block: no cache busting, minified, nothing purged, no pipeline', () => {
     expect(resolveConfig({}).assets).toEqual({
       hash: false,
       version: null,
       minify: true,
+      purge: null,
       pipeline: [],
     })
   })
@@ -123,14 +124,26 @@ describe('resolveConfig', () => {
       hash: false,
       version: '1.2.3',
       minify: true,
+      purge: null,
       pipeline: [],
     })
     expect(resolveConfig({ assets: { hash: true } }).assets).toEqual({
       hash: true,
       version: null,
       minify: true,
+      purge: null,
       pipeline: [],
     })
+  })
+
+  it('resolves assets.purge, and refuses one with no files', () => {
+    expect(
+      resolveConfig({ assets: { purge: { files: ['css/b.css'] } } }).assets
+        .purge,
+    ).toEqual({ files: ['css/b.css'], safelist: [], scripts: true })
+    expect(() => resolveConfig({ assets: { purge: { files: [] } } })).toThrow(
+      /config\.assets\.purge\.files must be a non-empty list/,
+    )
   })
 
   it('takes assets.minify: false, and refuses anything but a boolean', () => {
@@ -420,6 +433,7 @@ describe('resolveConfig', () => {
       hash: false,
       version: null,
       minify: true,
+      purge: null,
       pipeline,
     })
   })

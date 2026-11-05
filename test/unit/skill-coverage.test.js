@@ -997,16 +997,16 @@ const COVERAGE = [
   // 94% unused; PurgeCSS 13.4 KB → 3.4 KB br; one lodash function 3.4 KB.
   {
     feature:
-      'kiss-performance: kiss minifies; purge a framework; the platform before a library; bundle for the import chain; recipes linked',
+      'kiss-performance: kiss minifies; purge a framework with assets.purge; the platform before a library; bundle for the import chain; recipes linked',
     pattern:
-      /^(?=[\s\S]*### Ship less CSS and JS)(?=[\s\S]*\*\*Minifying is kiss's\.\*\*)(?=[\s\S]*\*\*A framework stylesheet copied whole is purged\*\*)(?=[\s\S]*\*\*A library is the last resort\.\*\*)(?=[\s\S]*\*\*Bundle for the import chain, not the request count\.\*\*)(?=[\s\S]*\[the pipeline recipes\]\(references\/pipeline-recipes\.md\))/,
+      /^(?=[\s\S]*### Ship less CSS and JS)(?=[\s\S]*\*\*Minifying is kiss's\.\*\*)(?=[\s\S]*\*\*A framework stylesheet copied whole is purged\*\* with `assets: \{ purge:)(?=[\s\S]*\*\*A library is the last resort\.\*\*)(?=[\s\S]*\*\*Bundle for the import chain, not the request count\.\*\*)(?=[\s\S]*\[the pipeline recipes\]\(references\/pipeline-recipes\.md\))/,
     skills: [skill('kiss-ssg', 'kiss-performance')],
   },
   {
     feature:
-      'the pipeline recipes: purgecss cwd and its exit-0 trap, the safelist, esbuild with no --minify',
+      'the recipes: assets.purge with a safelist and the open-every-component check, esbuild with no --minify',
     pattern:
-      /^(?=[\s\S]*cwd: 'src\/vendor')(?=[\s\S]*\*\*still exits 0\*\*)(?=[\s\S]*--safelist)(?=[\s\S]*npx esbuild src\/scripts\/main\.js --bundle --format=esm)(?=[\s\S]*No `--minify` needed)/,
+      /^(?=[\s\S]*purge: \{\n\s*files: \['css\/bootstrap\.css'\])(?=[\s\S]*safelist:)(?=[\s\S]*\*\*Open every interactive component in the browser after turning this on\.\*\*)(?=[\s\S]*npx esbuild src\/scripts\/main\.js --bundle --format=esm)(?=[\s\S]*No `--minify` needed)/,
     skills: [
       'plugins/kiss-ssg/skills/kiss-performance/references/pipeline-recipes.md',
     ],

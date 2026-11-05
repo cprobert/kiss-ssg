@@ -72,6 +72,7 @@ The default config options are:
     hash: false,
     version: null,
     minify: true,
+    purge: null,
     pipeline: []
   },
   markdown: {
@@ -323,7 +324,30 @@ Outside dev, every `.css`, `.js` and `.mjs` the copy writes is minified in place
 - a Sass compile, which is already `compressed`;
 - a file the minifier cannot read, which is copied unchanged with a warning naming it. The build does not fail.
 
-`assets: { minify: false }` turns it off. Minifying is cheap and never makes a file bigger: kiss keeps the original whenever the minified file is no smaller. What it saves depends on the file. On the fleet's sites, measured after Brotli, an unminified script or stylesheet came out about 17% smaller, and one already minified about 1–2%. Removing unused CSS and JavaScript saves far more. That needs the site's own judgement, so it is a pipeline step (§ An asset pipeline), and the `kiss-performance` skill has the recipes.
+`assets: { minify: false }` turns it off. Minifying is cheap and never makes a file bigger: kiss keeps the original whenever the minified file is no smaller. What it saves depends on the file. On the fleet's sites, measured after Brotli, an unminified script or stylesheet came out about 17% smaller, and one already minified about 1–2%. Removing unused CSS and JavaScript saves far more: see **Purged CSS** below, and the `kiss-performance` skill's recipes for JavaScript.
+
+#### Purged CSS
+
+A framework's stylesheet copied whole (Bootstrap, Foundation, Bulma) is mostly rules no page uses. On one measured site, Bootstrap's CSS was 94% unused. Name it, and kiss removes those rules once every page is written:
+
+```js
+new Kiss({
+  assets: {
+    hash: true,
+    purge: {
+      files: ['css/bootstrap.css'], // as a template asks for it
+      safelist: ['show', 'active', 'in', 'collapsing', /^modal/], // classes a script adds
+    },
+  },
+})
+```
+
+At the settle, kiss runs [PurgeCSS](https://purgecss.com) over each named stylesheet against **the HTML this build wrote**, so every class a page carries counts, whether it came from a template, a model, a helper or a partial. It also reads the build's own `.js` files (`scripts: true`, the default), for the class names a script adds. A purged stylesheet is minified again (`assets.minify`). Under `assets.hash` it is re-hashed, and every page that linked the old name is rewritten to the new one, before the link scan, the audit, the cache headers and the report run. Nothing else in the build has to know.
+
+- **The safelist is the site's job.** A class that appears only when a script runs, and is spelled out neither in a page nor in a script (`'modal-' + name`), is removed, and its component breaks only when it opens. Open every interactive component in the browser after turning this on. A string or a regular expression in `safelist` keeps a selector whatever the pages say.
+- **Not in dev.** `--dev` serves the whole stylesheet while you edit, so the preview never hides a rule a page is about to use.
+- **A named file that is not in the build fails the build**, with its name. A purge that did nothing would ship the whole file in silence.
+- **Tailwind needs none of this**: it scans its content itself (§ An asset pipeline).
 
 #### Cache-busting asset URLs
 

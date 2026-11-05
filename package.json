@@ -88,6 +88,7 @@
     "html-minifier-terser": "^7.2.0",
     "htmlparser2": "^10.1.0",
     "livereload": "^0.10.3",
+    "purgecss": "^8.0.0",
     "remarkable": "^2.0.1",
     "sass": "^1.104.0",
     "serve-static": "^2.2.1",

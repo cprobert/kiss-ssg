@@ -59,7 +59,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   siteUrl: undefined,   // needed by sitemap, llms, feed, robots, canonical, absUrl
   sass: { includePaths: [] },
   fetch: { headers: {}, timeout: 10000, retries: 0, cache: false },
-  assets: { hash: false, version: null, minify: true, pipeline: [] },
+  assets: { hash: false, version: null, minify: true, purge: null, pipeline: [] }, // purge: { files, safelist }
   markdown: { html: true, xhtmlOut: true, breaks: false },
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   host: null, // 'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages' | a list
@@ -137,6 +137,5 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 - [README.md](README.md): the agent quick start: `init`, the plugin install, prompts to copy.
 - [GUIDE.md](GUIDE.md): the full reference, including § Migrating from v1.
 - [examples/](examples/): runnable sites, each run from its own folder; `examples/README.md` says what each shows.
-- [types/](types/): TypeScript declarations.
 - [CHANGELOG.md](CHANGELOG.md): what changed between the version a site was written against and this one.
 - [AIKB/](AIKB/): per-module engine notes.
