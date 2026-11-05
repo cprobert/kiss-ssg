@@ -63,6 +63,22 @@ describe('assets.purge', () => {
     expect(css).not.toContain('never-used')
   })
 
+  // Codex at the close (2026-11-05): a page kiss did not render, such as an
+  // HTML file copied from the assets folder, uses the stylesheet too. Its
+  // classes must survive, so the purge reads every .html in the build.
+  it('keeps the rules a copied HTML page uses, not only the rendered pages', async () => {
+    files['src/assets/legacy.html'] =
+      '<html><head><link rel="stylesheet" href="/css/vendor.css"></head><body><p class="never-used-one">old page</p></body></html>'
+    try {
+      await build({ assets: { purge } })
+      const css = await site.read(`public/${await linked()}`)
+      expect(css).toContain('.never-used-one')
+      expect(css).not.toContain('never-used-two')
+    } finally {
+      delete files['src/assets/legacy.html']
+    }
+  })
+
   it('re-hashes the purged file, rewrites the page to the new name, and removes the old file', async () => {
     const report = await build({ assets: { hash: true, purge } })
     const name = await linked()

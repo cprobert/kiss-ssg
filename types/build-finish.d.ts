@@ -51,6 +51,7 @@ export function runAudit(kiss: any, { quiet }?: {
 }): any;
 export function writeBannerRegistry(kiss: any): any;
 export function writeConsentClient(kiss: any): any;
+export function checkPageIntegrity(kiss: any): void;
 export function purgeAssets(kiss: any): any;
 export function encodeImages(kiss: any): any;
 export function writeHostCacheHeaders(kiss: any): any;

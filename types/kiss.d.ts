@@ -779,6 +779,8 @@ declare class Kiss {
     /** @private */
     private _purgeAssets;
     /** @private */
+    private _checkIntegrity;
+    /** @private */
     private _encodeImages;
     /** @private */
     private _lastBuildRecord;

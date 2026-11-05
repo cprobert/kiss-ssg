@@ -328,7 +328,9 @@ Outside dev, every `.css`, `.js` and `.mjs` the copy writes is minified in place
 
 - a `*.min.css` or `*.min.js`, already minified;
 - a Sass compile, which is already `compressed`;
-- a file the minifier cannot read, which is copied unchanged with a warning naming it. The build does not fail.
+- a file the minifier cannot read, which is copied unchanged with a warning naming it. The build does not fail. A stylesheet that uses native CSS nesting is one: clean-css does not understand nesting, so rather than drop the nested rules kiss ships that file as it was written.
+
+**A page that loads its own file with `integrity="sha384-…"`** names the hash of the bytes you wrote, and minifying (or purging) changes them, so a browser would refuse the file. The build checks each such reference against the file it wrote, and fails on a mismatch, naming the page. Name the file `*.min.js` or `*.min.css` so it is copied as written, set `assets: { minify: false }`, or take the hash of the file the build writes.
 
 `assets: { minify: false }` turns it off. Minifying is cheap and never makes a file bigger: kiss keeps the original whenever the minified file is no smaller. What it saves depends on the file. On the fleet's sites, measured after Brotli, an unminified script or stylesheet came out about 17% smaller, and one already minified about 1–2%. Removing unused CSS and JavaScript saves far more: see **Purged CSS** below, and the `kiss-performance` skill's recipes for JavaScript.
 

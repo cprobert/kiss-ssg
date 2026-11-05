@@ -42,7 +42,12 @@ interface and usability, legal and compliance, and speed and performance.
 
 - **Every site's CSS and JS change bytes, and their hashed names change**, because they are
   minified now. Nothing else on the page moves. A file that must stay as it is can be named
-  `*.min.js` or `*.min.css`, or the site can set `assets: { minify: false }`.
+  `*.min.js` or `*.min.css`, or the site can set `assets: { minify: false }`. A stylesheet that
+  uses native CSS nesting is left unminified, with a warning, because the minifier would drop
+  the nested rules.
+- **A page that loads its own CSS or JS with an `integrity` attribute now fails the build** if
+  minifying or purging changed that file, because a browser would refuse it. The message names the
+  page; rename the file `*.min.*`, turn minify off, or take the hash of the file the build writes.
 - **Expect new audit findings**, from the nine checks above. Most are one edit in the layout.
   `kiss-site-review` has the fix for each.
 - **`sharp` is installed with kiss-ssg** (about 29 MB on Windows), whether or not the site uses

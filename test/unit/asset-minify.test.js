@@ -53,6 +53,18 @@ describe('minifyText', () => {
     expect(out).toBe('.card{color:red;margin:0}')
   })
 
+  // Codex at the close (2026-11-05): clean-css 5 does not understand native
+  // CSS nesting. It dropped `.child` and the nested @media and hoisted
+  // `&:hover` out of its parent, with seven warnings and no errors, and kiss
+  // read only the errors. A stylesheet it warns about is not minified.
+  it('throws on a stylesheet the minifier warns about, such as native nesting', async () => {
+    const nested =
+      '.parent { color: red; .child { color: blue; } &:hover { color: green; } }\n'
+    await expect(minifyText('css/site.css', nested)).rejects.toThrow(
+      /Invalid property name|Unexpected/,
+    )
+  })
+
   it('throws on a script that does not parse', async () => {
     await expect(minifyText('js/bad.js', 'function (')).rejects.toThrow()
   })
@@ -73,6 +85,22 @@ describe('minifyFile', () => {
     expect(result.ok).toBe(false)
     expect(result.error).toMatch(/^bad\.js: /)
     expect(await site.read('bad.js')).toBe('function (')
+  })
+
+  it('leaves a stylesheet with native nesting exactly as it was', async () => {
+    site = await makeSite({
+      'site.css':
+        '.parent { color: red;\n  .child { color: blue; }\n  &:hover { color: green; }\n}\n',
+    })
+    const file = `${site.root}/site.css`
+    const before = await import('node:fs').then((fs) =>
+      fs.readFileSync(file, 'utf8'),
+    )
+    const result = await minifyFile(file, 'site.css')
+    expect(result.ok).toBe(false)
+    expect(
+      await import('node:fs').then((fs) => fs.readFileSync(file, 'utf8')),
+    ).toBe(before)
   })
 
   it('keeps the original when minifying would not make it smaller', async () => {

@@ -29,6 +29,7 @@ Remove the CSS no written page uses from the stylesheets a site names in `config
 
 ## Non-obvious behavior
 
+- **Every `.html` file in the build is read, not only the rendered pages.** An HTML file copied from the assets folder, or a page kept from an earlier build under `cleanBuild: false`, links the stylesheet too, and its classes were purged when only `kiss._stack` was read (Codex at the close, 2026-11-05; the integration test was red before). The rendered pages are still the only ones relinked to a re-hashed name: a copied page's own `<link>` is its author's.
 - **Purged first, minified once, after.** `lib/assets.js` skips the copy-time minify for a file `assets.purge` names, and this module minifies it after purging. Minifying first strips comments, PurgeCSS's `/* purgecss start ignore */` included, and the protected block would be purged. Measured: with the old order, `.kept-by-comment` was removed (`test/integration/css-purge.test.js`, red before the fix). The minify after the purge is also the one that matters: it clears what the purge leaves behind, and the hash is taken from those final bytes.
 
 - **Against the written HTML, not the templates.** Every class a page carries counts, wherever it came from: a model, a helper, a partial, a `{{#each}}` over data. A template scan cannot see classes that come from data, and it keeps classes from template branches that never render. This is why it is an engine feature and not only the pipeline recipe: the built pages exist only inside the build.

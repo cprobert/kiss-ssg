@@ -68,6 +68,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Assets + Sass                              | `lib/assets.js`              | `AIKB/assets.md`              |
 | The build's asset copies (queue, failures) | `lib/asset-copy.js`          | `AIKB/asset-copy.md`          |
 | Minified copied CSS and JS                 | `lib/asset-minify.js`        | `AIKB/asset-minify.md`        |
+| Integrity attributes vs the written files  | `lib/integrity.js`           | `AIKB/integrity.md`           |
 | Purged CSS (`assets.purge`, at the settle) | `lib/css-purge.js`           | `AIKB/css-purge.md`           |
 | Image header reader (size, GPS)            | `lib/image-header.js`        | `AIKB/image-header.md`        |
 | Responsive images (`{{image}}`, names)     | `lib/images.js`              | `AIKB/images.md`              |

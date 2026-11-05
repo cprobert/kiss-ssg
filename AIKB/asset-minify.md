@@ -21,6 +21,8 @@ Minify a stylesheet or script the asset copy wrote, in place, before it is hashe
 
 ## Non-obvious behavior
 
+- **A clean-css warning keeps the original.** clean-css 5 does not understand native CSS nesting: it dropped a nested `.child { … }` and a nested `@media`, and hoisted `&:hover` out of its parent, reporting seven warnings and no error, while this module read only the errors (Codex at the close, 2026-11-05, reproduced here). `minifyText` now throws on any warning, and `minifyFile` leaves the file as written and says why. The fleet's own stylesheets gave none (a1k9training, pro-plumbing, k9-solutions), so they are minified as before.
+- **The served bytes no longer match an author's `integrity` hash** once minified. `lib/integrity.js` turns that into a build failure (`AIKB/integrity.md`).
 - **Before the hash, never after.** The hash is the served bytes', so a minified file gets a new name exactly when its minified bytes change. Minifying after hashing would serve bytes the name does not describe.
 - **On by default, because it is cheap and never worse.** Measured on the fleet (2026-11-04, `planning/research/2026-11-04-static-site-performance.md` § Measured — CSS and JS): after Brotli, an unminified file was about 17% smaller once minified, and an already-minified one about 1–2%. A result no smaller than the input is discarded, so a tiny file with a licence banner is never grown.
 - **A failure never fails the build.** A minifier rejecting a file is either the file's bug, which the browser may tolerate, or the minifier's, which kiss should not turn into a broken deploy. The original is served and the warning names it, with the two ways out: `assets: { minify: false }`, or naming the file `*.min.*`.
