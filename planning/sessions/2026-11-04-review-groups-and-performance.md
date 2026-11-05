@@ -85,6 +85,13 @@ opened: 2026-11-04
   - Browser-support and speed claims (AVIF, a font CDN's lost cache benefit) are from knowledge. Each one is checked before it is written into the skill.
 - **2026-11-04: a `soundcloud` embed preset.** The fleet audit's slowest page was a bare SoundCloud iframe, and `{{embed}}` had no preset for it. The operator chose Claude's recommendation to add one on this branch (`6b6ac9f`). Its origins and storage were measured, and its tests were seen red first.
 - **2026-11-04: `speed` takes a build folder, not a site script.** The sub-agent found no way to learn `folders.build` without running the build. Claude accepted the folder form rather than adding a config-only mode, and recorded it in the contract.
+- **2026-11-05: a skill-creator review, then the with/without arms after all.** The operator ran `/skill-creator` to review the new and amended skills (`a519699`). It fixed:
+  - the `kiss-performance` description, which did not name the image and font work;
+  - a `sizes="auto, …"` line that would have doubled `{{image}}`'s own `auto`;
+  - the cache-miss line's command, which lacked the script (test seen red first);
+  - a misplaced paragraph.
+
+  The review's remaining step was an eval. The operator then said "set that run up", which reverses the 2026-11-04 decision to replace criterion 6's arms with the fleet audit. The arms ran on swan-love at `c23a268`, with a 13-item key written before either run, and a blind marker scored them. With the skill: 8 hit, 4 partial, 1 missed. Without: 4, 5, 4. They cost $3.09. Write-up: `planning/reviews/2026-11-05-performance-arms.md`.
 
 ## Pulse log
 

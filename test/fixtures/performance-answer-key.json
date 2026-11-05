@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "about": "The answer key for the kiss-performance arms (planning/sessions/2026-11-04-review-groups-and-performance.md, criterion 6). Bench: swan-love at c23a268 (C:/Code/kiss/swan-love), the fleet's one site with a real speed problem in planning/reviews/2026-11-04-fleet-performance-audit.md (home page LCP 4.7 s, CLS 0.091, 3,128 KiB). Every item was read from the site's source at that commit before either arm ran; `evidence` says where. `cues` are case-insensitive regular expressions scripts/arms.mjs summarise uses to gather candidate lines; they find lines for a person to read and decide nothing. A person marks each item hit, partial or missed.",
+  "howScored": ["fixed-on-site", "listed-as-question", "verified", "not-done"],
+  "items": [
+    {
+      "id": "perf-01",
+      "finding": "The SoundCloud player is a bare iframe on the home page with auto_play=true; it fetched about 2.6 MB from six origins on load. Make it click to load with {{embed \"soundcloud\" id=\"317030874\" …}}",
+      "howScored": "fixed-on-site",
+      "evidence": "src/pages/index.hbs:14, the w.soundcloud.com iframe",
+      "cues": ["soundcloud", "\\{\\{embed"]
+    },
+    {
+      "id": "perf-02",
+      "finding": "The hero src/assets/images/swan-love.jpg (504 KB, 3,800 px, no width/height) is the likely LCP element: {{image}} with eager=true (fetchpriority high, not lazy) and a full-width sizes",
+      "howScored": "fixed-on-site",
+      "evidence": "src/partials/home/carousel.hbs:6",
+      "cues": ["swan-love\\.jpg", "eager", "fetchpriority"]
+    },
+    {
+      "id": "perf-03",
+      "finding": "The other content photos (tim.jpg, love-charity.png, sponsors-mean-streets.png, the call-to-action badges, sponsor logos) become {{image}} with a sizes read from the layout, one at a time, lazy below the first screen; or, for one kept as <img>, width and height (img-dimensions-missing: 37 images on 5 pages)",
+      "howScored": "fixed-on-site",
+      "evidence": "src/partials/home/*.hbs, src/pages/sponsors.hbs",
+      "cues": [
+        "\\{\\{image",
+        "sizes=",
+        "img-not-responsive",
+        "img-dimensions-missing"
+      ]
+    },
+    {
+      "id": "perf-04",
+      "finding": "The encoded variants in .kiss-cache/images are to be committed (or the owner told to commit them), so GitHub Pages' build does not re-encode",
+      "howScored": "fixed-on-site",
+      "evidence": "follows from perf-02/03",
+      "cues": ["kiss-cache", "committed cache"]
+    },
+    {
+      "id": "perf-05",
+      "finding": "jQuery 1.10 is a blocking script in both layouts' <head> (script-blocking on all 11 pages): defer it with the scripts that depend on it, or move it, or remove it where nothing needs it; the inline $.cookie script must still run after it",
+      "howScored": "fixed-on-site",
+      "evidence": "src/layouts/home.hbs:23 and src/layouts/layout.hbs",
+      "cues": ["jquery", "defer", "script-blocking"]
+    },
+    {
+      "id": "perf-06",
+      "finding": "Bootstrap 3's whole bootstrap.min.css (102 KB) is linked on every page, mostly unused: assets.purge with a safelist for the classes its JavaScript adds (carousel: active, next, prev, left, right, item; collapse: in, collapsing), or the framework replaced",
+      "howScored": "fixed-on-site",
+      "evidence": "both layouts link css/bootstrap.min.css; router.js has no assets.purge",
+      "cues": ["purge", "safelist", "bootstrap\\.min\\.css"]
+    },
+    {
+      "id": "perf-07",
+      "finding": "After a purge or a script change, the carousel and the collapsing navbar are checked to still work, in a production build served from the build folder (not --dev, which skips the purge)",
+      "howScored": "verified",
+      "evidence": "src/partials/home/carousel.hbs, the navbar-toggle in both layouts",
+      "cues": ["carousel", "navbar", "collapse", "playwright", "browser"]
+    },
+    {
+      "id": "perf-08",
+      "finding": "Measured before the first edit and after the last, the same way (kiss-ssg speed or Lighthouse on the same pages), reported as a lab measurement on this machine, not as the site passing Core Web Vitals; or, if the measurement could not run, said so",
+      "howScored": "verified",
+      "evidence": "the skill's Measure first, and last",
+      "cues": ["kiss-ssg speed", "lighthouse", "\\bLCP\\b", "before", "lab"]
+    },
+    {
+      "id": "perf-09",
+      "finding": "GitHub Pages sends max-age=600 on everything and cannot be configured: no promise of year-long caching, and host: 'github-pages' set or named so the decision is recorded; hashing is optional here",
+      "howScored": "fixed-on-site",
+      "evidence": "router.js builds into ./docs for GitHub Pages; the audit's delivery table",
+      "cues": ["github-pages", "github pages", "max-age", "host:"]
+    },
+    {
+      "id": "perf-10",
+      "finding": "The oversized originals (swan-love.jpg 504 KB, sponsors/snowball.jpg 564 KB, swan-love-wm-v1.png 330 KB) are listed with `npx kiss-ssg images router.js`, and rewriting them in src/ (--write) is put to the owner rather than done unasked",
+      "howScored": "listed-as-question",
+      "evidence": "src/assets/images/",
+      "cues": ["kiss-ssg images", "--write", "image-oversized", "snowball"]
+    },
+    {
+      "id": "perf-11",
+      "finding": "Files the pages never ask for ship in the build: the two flipcountdown .psd files (726 KB and 671 KB) and the unused bootstrap.css / bootstrap-theme files; removed from the asset folder or listed",
+      "howScored": "fixed-on-site",
+      "evidence": "src/assets/images/flipcountdown/*.psd, src/assets/css/bootstrap*.css",
+      "cues": ["\\.psd", "bootstrap-theme", "unused"]
+    },
+    {
+      "id": "perf-12",
+      "finding": "The first-visit audio cue (jquery.cookie, an <audio> played on first visit) and keeping the SoundCloud player at all are the owner's decisions, listed as questions rather than removed silently",
+      "howScored": "listed-as-question",
+      "evidence": "src/layouts/home.hbs:76-90",
+      "cues": [
+        "audio",
+        "first.visit",
+        "jquery\\.cookie",
+        "autoplay",
+        "auto_play"
+      ]
+    },
+    {
+      "id": "perf-13",
+      "finding": "No harm: the site still passes `npx kiss-ssg check router.js` with no new failure, no critical-CSS inlining or prerender added, no third-party origin added, and no commit made",
+      "howScored": "verified",
+      "evidence": "the run's diff and a check run by the main session after it",
+      "cues": ["kiss-ssg check", "critical", "prerender"]
+    }
+  ]
+}
