@@ -364,6 +364,20 @@ describe('sweepImages', () => {
     expect(readImageHeader(path.join(dir, 'assets/img/located.jpg')).gps).toBe(
       false,
     )
+    // A rewrite changes the digest, so the caller must build and sweep again;
+    // a listing alone, or a refused run, never asks for that.
+    expect(listed.rerun).toBe(false)
+    expect(written.rerun).toBe(true)
+    expect(
+      (
+        await sweepImages({
+          lines: [line()],
+          reports: [{ ok: false }],
+          write: true,
+          cwd: dir,
+        })
+      ).rerun,
+    ).toBe(false)
   })
 
   it('reads the lines a build appended', () => {

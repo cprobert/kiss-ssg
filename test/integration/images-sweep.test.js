@@ -171,6 +171,14 @@ describe('kiss-ssg images', () => {
     expect(
       readImageHeader(path.join(site.root, 'src/assets/img/a.jpg')).gps,
     ).toBe(false)
+    // The rewrite changed a.jpg's digest, so the cache the sweep leaves must
+    // already hold the new variants and none of the old: the next run, the
+    // one a deploy makes, encodes nothing and prunes nothing.
+    const after = run('router.js')
+    expect(after.status, after.stderr).toBe(0)
+    expect(after.stdout).toMatch(
+      /added 0 \(0\.0 KB\), removed 0 \(0\.0 KB\), kept 12/,
+    )
   }, 60000)
 
   it('prints its help, and a usage error without a script', async () => {

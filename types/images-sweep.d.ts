@@ -127,7 +127,10 @@ export function rewriteOriginals(originals: Original[], maxWidth: number): Promi
  * then threw has written only passing reports, so its exit decides too.
  * @param {boolean} [input.write]
  * @param {string} [input.cwd] what paths are printed relative to
- * @returns {Promise<{ out: string, err: string, code: 0|1 }>}
+ * @returns {Promise<{ out: string, err: string, code: 0|1, rerun: boolean }>}
+ * `rerun` is true when an original was rewritten: its digest changed, so the
+ * cache this pass left holds its old variants and lacks its new ones, and the
+ * caller runs the build and this sweep once more, without `write`.
  */
 export function sweepImages({ lines, reports, script, write, cwd, }: {
     lines: SweepLine[];
@@ -145,6 +148,7 @@ export function sweepImages({ lines, reports, script, write, cwd, }: {
     out: string;
     err: string;
     code: 0 | 1;
+    rerun: boolean;
 }>;
 export const IMAGES_HELP: "kiss-ssg images <script> [--refresh] [--write] [-- args\u2026]\n\nRuns the site's build script staged and then discarded, as check does, so\nit knows exactly which image variants the pages ask for. It encodes every\nvariant missing from the encode cache (assets.images.cache, by default\n.kiss-cache/images, committed by the site) and removes cache entries no page\nasked for. It prints how many entries were added, removed and kept, and\ntheir bytes. Commit the cache afterwards.\n\nIt also lists each original under folders.assets that carries a GPS\nlocation in its metadata, or is wider than the recipe's largest width.\n\n  --refresh   encode every variant again, ignoring the cache\n  --write     rewrite those originals in place: turned the right way up,\n              metadata stripped, resized down to the largest width. A JPEG\n              is re-encoded at quality 90 and a PNG losslessly; a file is\n              replaced only when the result is smaller or it had GPS. Read\n              the diff in git before committing it.\n  --help      this text\n\nNothing in src/ changes without --write. Exits 1 if any site failed to\nbuild, in which case the cache is not pruned.";
 /**

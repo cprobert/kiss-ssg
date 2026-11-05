@@ -107,39 +107,46 @@ if (process.argv[2] === 'images') {
   const reportFile = path.join(dir, 'reports.jsonl')
   const sweepFile = path.join(dir, 'images.jsonl')
   let code = 1
+  const read = (file) =>
+    fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
   try {
-    const run = spawnSync(
-      process.execPath,
-      [/** @type {string} */ (args.script), ...args.args],
-      {
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          KISS_CHECK: '1',
-          KISS_REPORT: reportFile,
-          KISS_IMAGES: sweepFile,
-          ...(args.refresh ? { KISS_IMAGES_REFRESH: '1' } : {}),
+    // A second pass only when the first rewrote an original (`rerun`), and
+    // never with --write: the rewrite changed digests the cache is keyed by.
+    for (let pass = 0; pass < 2; pass++) {
+      fs.rmSync(reportFile, { force: true })
+      fs.rmSync(sweepFile, { force: true })
+      const run = spawnSync(
+        process.execPath,
+        [/** @type {string} */ (args.script), ...args.args],
+        {
+          cwd: process.cwd(),
+          env: {
+            ...process.env,
+            KISS_CHECK: '1',
+            KISS_REPORT: reportFile,
+            KISS_IMAGES: sweepFile,
+            ...(args.refresh ? { KISS_IMAGES_REFRESH: '1' } : {}),
+          },
+          stdio: [0, 2, 2],
         },
-        stdio: [0, 2, 2],
-      },
-    )
-    if (run.error) console.error(`kiss-ssg: ${run.error.message}`)
-    const read = (file) =>
-      fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
-    const result = await sweepImages({
-      lines: readSweepLines(read(sweepFile)),
-      reports: readReports(read(reportFile)),
-      script: {
-        status: run.status,
-        signal: run.signal,
-        error: run.error ?? null,
-      },
-      write: args.write,
-      cwd: process.cwd(),
-    })
-    if (result.err) console.error(result.err)
-    if (result.out) console.log(result.out)
-    code = run.status === 0 ? result.code : 1
+      )
+      if (run.error) console.error(`kiss-ssg: ${run.error.message}`)
+      const result = await sweepImages({
+        lines: readSweepLines(read(sweepFile)),
+        reports: readReports(read(reportFile)),
+        script: {
+          status: run.status,
+          signal: run.signal,
+          error: run.error ?? null,
+        },
+        write: args.write && pass === 0,
+        cwd: process.cwd(),
+      })
+      if (result.err) console.error(result.err)
+      if (result.out) console.log(result.out)
+      code = run.status === 0 ? result.code : 1
+      if (code !== 0 || !result.rerun) break
+    }
   } catch (err) {
     console.error(`kiss-ssg images: ${err.message}`)
   } finally {
