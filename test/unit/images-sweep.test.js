@@ -379,6 +379,29 @@ describe('sweepImages', () => {
     expect(readImageHeader(path.join(dir, 'assets/wide.jpg')).width).toBe(960)
   })
 
+  it('refuses passing builds that wrote no sweep line: an engine that predates it', async () => {
+    // Every settled build appends a line, a site with no {{image}} included,
+    // so passing reports with none mean the script's own kiss-ssg ignored
+    // KISS_IMAGES. Success there would be a --write that did nothing.
+    await photo('assets/img/located.jpg', 40, 20, { gps: true })
+    write(`cache/${entry('c', 'avif')}`, 'x')
+    const result = await sweepImages({
+      lines: [],
+      reports: [{ ok: true }],
+      write: true,
+      cwd: dir,
+    })
+    expect(result.code).toBe(1)
+    expect(result.out).toBe('')
+    expect(result.err).toMatch(/kiss-ssg the script uses is older/)
+    expect(fs.existsSync(path.join(dir, `cache/${entry('c', 'avif')}`))).toBe(
+      true,
+    )
+    expect(readImageHeader(path.join(dir, 'assets/img/located.jpg')).gps).toBe(
+      true,
+    )
+  })
+
   it('refuses when an instance could not write the cache', async () => {
     write(`cache/${entry('c', 'avif')}`, 'x')
     const result = await sweepImages({
