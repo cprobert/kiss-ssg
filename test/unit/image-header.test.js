@@ -172,6 +172,78 @@ describe('parseImageHeader — GPS', () => {
   })
 })
 
+describe('parseImageHeader — a hostile AVIF', () => {
+  // Hand-built, because no encoder writes it: one Exif item whose `iloc`
+  // lists 65,535 extents, every one the same 1 MB region. Read naively that
+  // is about 64 GB for a 1.5 MB file, in the audit of every copied AVIF.
+  const box = (type, payload) => {
+    const head = Buffer.alloc(8)
+    head.writeUInt32BE(8 + payload.length, 0)
+    head.write(type, 4, 'latin1')
+    return Buffer.concat([head, payload])
+  }
+  const u16 = (n) => {
+    const b = Buffer.alloc(2)
+    b.writeUInt16BE(n)
+    return b
+  }
+  const u32 = (n) => {
+    const b = Buffer.alloc(4)
+    b.writeUInt32BE(n)
+    return b
+  }
+  function hostile(extents, region) {
+    const infe = box(
+      'infe',
+      Buffer.concat([u32(0x02000000), u16(1), u16(0), Buffer.from('Exif\0')]),
+    )
+    const iinf = box('iinf', Buffer.concat([u32(0), u16(1), infe]))
+    const ispe = box('ispe', Buffer.concat([u32(0), u32(40), u32(20)]))
+    const iprp = box('iprp', box('ipco', ispe))
+    const ftyp = box('ftyp', Buffer.from('avifavif'))
+    // The data sits after everything else; its offset is known once the
+    // iloc's size is, which does not depend on the offset's value.
+    const ilocFor = (dataAt) =>
+      box(
+        'iloc',
+        Buffer.concat([
+          u32(0), // version 0, flags
+          Buffer.from([0x44, 0x00]), // offset 4, length 4, base 0
+          u16(1), // one item
+          u16(1), // item 1
+          u16(0), // data reference
+          u16(extents),
+          Buffer.concat(
+            Array.from({ length: extents }, () =>
+              Buffer.concat([u32(dataAt), u32(region)]),
+            ),
+          ),
+        ]),
+      )
+    const metaFor = (dataAt) =>
+      box('meta', Buffer.concat([u32(0), iinf, ilocFor(dataAt), iprp]))
+    const dataAt = ftyp.length + metaFor(0).length
+    return Buffer.concat([ftyp, metaFor(dataAt), Buffer.alloc(region, 1)])
+  }
+
+  it('reads a bounded number of bytes however many extents repeat', () => {
+    const file = hostile(65535, 1024 * 1024)
+    const inner = bufferReader(file)
+    let served = 0
+    const header = parseImageHeader({
+      size: inner.size,
+      read: (offset, length) => {
+        const out = inner.read(offset, length)
+        served += out.length
+        return out
+      },
+    })
+    expect(header).toMatchObject({ format: 'avif', width: 40, height: 20 })
+    // The metadata it may read: the boxes once, plus a few MB of item data.
+    expect(served).toBeLessThan(8 * 1024 * 1024)
+  })
+})
+
 describe('parseImageHeader — animation', () => {
   it('flags an animated WebP and a still one apart', async () => {
     // Two different frames: two identical ones are written as a still image.
