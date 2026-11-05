@@ -285,3 +285,80 @@ npx kiss-ssg speed <site-script | build-folder | https-url> [--page /path]… [-
 The arms measurement (§ Measurement) uses the same command, so the skill is judged the way a site would be.
 
 **Amendment 2026-11-04, from the build: a build folder, never a script.** kiss cannot learn a script's `folders.build` without running the build: `check` and `aikb` learn it from the report of a build they ran, and there is no config-only mode. `speed` never builds, so a script target exits 2 and names the folder form instead. The skill builds, then runs `npx kiss-ssg speed public …`. Claude accepted this deviation by the sub-agent rather than adding a config-only mode to `lib/kiss.js`: the build step was already in the skill, and the folder is one word the agent reads from `router.js`.
+
+## Amendment 2026-11-05: images and fonts (workstream F), draft for the critique
+
+The operator chose an engine feature for images, Fontsource for fonts, and `references/` files for the how-to (session file, Amendments, 2026-11-05). This section is a **draft**. It is critiqued by one fresh-context agent before anything is built, and the decisions marked **D** go to the operator after the critique.
+
+### F1. The constraint that shapes it
+
+Handlebars helpers are synchronous (`lib/handlebars-helpers.js`; `{{asset}}` is a lookup in the manifest the copy built). Encoding an AVIF takes seconds. So `{{image}}` cannot encode while a page renders. It can only write markup for files that already exist, or for files whose names it can know before they exist.
+
+### F2. Where encoding happens: at the settle, only what `{{image}}` asked for
+
+- **At copy time:** for every raster image the asset copy handles (`.jpg .jpeg .png .webp .avif`), kiss reads its pixel size and a hash of its bytes. Only the header is read, not the pixels. These go in the manifest beside the emitted name.
+- **At render:** `{{image "img/hero.jpg" …}}` looks the source up. It computes the variant names from the source hash, the recipe (format, width, quality) and the widths that do not exceed the source's own width, then writes the markup. It records each variant it named on the build, so the build knows what to encode.
+- **At the settle:** the requested variants are encoded with `sharp`, before the cache headers, the link scan and the audit run, so all of them see the files. This is the slot `purgeAssets` uses, and the two are independent. Variants nobody asked for are never encoded, so a site with 400 images and 10 `{{image}}` calls encodes 10 images' worth.
+- **The original** is still copied as it is today, so `{{asset "img/hero.jpg"}}` keeps working.
+
+### F3. Names, and what they are known from
+
+`img/hero.<hash>-<width>.<format>`. `<hash>` is `HASH_LENGTH` characters of a hash over the source bytes plus the recipe (format, width, quality, and kiss's encoder version string). The name depends only on inputs known at render, so the markup never waits for the encode. It changes exactly when the output would. The variants are written to the build and registered as hashed, so `cacheHeaders` gives them `immutable`. That has to be confirmed against `lib/cache-headers.js` `hashedFiles`, which reads the manifest.
+
+### F4. The encode cache
+
+Encoding is slow, and a deploy host rebuilds from scratch. So each encoded variant is kept, by its name, in `node_modules/.cache/kiss-ssg/images/` (the folder convention babel, eslint and terser-webpack use), and a hit is a file copy. Netlify keeps `node_modules` between builds (to be checked, as with the other host claims). Elsewhere a cold cache only costs time, never correctness. Under `KISS_CHECK=1` the cache is read but still written, since encoding is pure.
+
+### F5. The helper
+
+```handlebars
+{{image
+  'img/hero.jpg'
+  alt='A swan on the river at dawn'
+  sizes='(min-width: 60rem) 50vw, 100vw'
+  eager=true
+}}
+```
+
+It writes `<picture>`: one `<source type="image/avif" srcset>`, one `<source type="image/webp" srcset>`, then an `<img>`. The `<img>` carries a `src` and `srcset` in the source's own format, `width` and `height` from the source (the largest variant's size), `alt`, and `decoding="async"`. It also writes `loading="lazy"` with `sizes="auto, …"`, unless `eager=true`, which writes `fetchpriority="high"` and no `loading`.
+
+- **`alt` is required.** A missing `alt=` fails the build, like an unknown `{{link}}` id; `alt=""` is the explicit decorative image. Missing alt text is an accessibility failure nothing else reports at build time.
+- **An unknown path fails the build**, warning in dev, exactly as `{{asset}}` does.
+- **A source narrower than the smallest width** gets one variant at its own width. kiss never enlarges an image.
+- **SVG** is refused with a message: use `{{asset}}` in an `<img>`, because a vector needs no widths.
+- Other attributes (`class`, and the rest) pass through to the `<img>`.
+
+### F6. What is encoded
+
+- Orientation applied (`.rotate()` with no argument), then **all metadata stripped**, EXIF GPS included. Whether `sharp` strips by default, and whether `.rotate()` must come first, is measured before the docs say it.
+- The defaults, overridable as `assets.images: { widths, formats, quality }`: widths `[480, 960, 1440, 1920]`, formats `['avif', 'webp']`, quality AVIF 50 and WebP 75. The quality numbers are measured on the fleet's images (bytes against a visual check) before they become defaults.
+- The fallback `<img>` is the source re-encoded at each width in its own format, so the oldest browsers get a resized file rather than the full-size original.
+
+### F7. Audit checks (from the build folder walk, as today)
+
+- **`image-oversized`**: a shipped raster over a byte threshold, decided from the walk's sizes. The threshold is measured on the fleet before it is set, and the finding names the file and the pages that link it.
+- **`image-location-metadata`**: a shipped JPEG, PNG, WebP or AVIF whose EXIF carries GPS tags. It is a privacy finding too, and links `kiss-legal-and-privacy`. It needs an EXIF read: `sharp().metadata()` returns the raw `exif` buffer, and the GPS tag test is a small parser in `lib/`, unit-tested on fixtures. Cost is measured on diploma-msc's image count before it runs on every build.
+- Both are reported by `kiss-ssg check` and fixed through `{{image}}`.
+
+### F8. Fonts (skill and recipe, no engine work)
+
+`references/fonts.md`:
+
+- the Fontsource recipe: `npm i @fontsource-variable/<font>`, a `copyAssets` from its `files/` folder, and its `@font-face` CSS copied or `@use`d, with `unicode-range` kept;
+- variable against static (three or more weights means variable);
+- system font stacks as the zero-download option;
+- fallback metric overrides from a tool rather than guessed.
+
+The tool (fontaine, capsize, or Fontsource's own metrics) is chosen by trying each on one fleet font. Every claim (woff2 support, the per-site cache partition removing a CDN's cache benefit) is checked against a primary source before it is written.
+
+### F9. Files
+
+- **New:** `lib/images.js` (the recipe, names, encoding, cache; `sharp` loaded with a dynamic `import`), `lib/exif-gps.js` (the parser). Each gets a unit test and an AIKB doc.
+- **Changed:** `lib/assets.js` (the copy-time read), `lib/asset-manifest.js` (sizes and hashes), `lib/handlebars-helpers.js` (`image`), `lib/build-finish.js` (`encodeImages` at the settle), `lib/audit.js`, `lib/config.js` (`assets.images`), `lib/kiss.js` (the latch), `lib/rebuild.js` (its reset).
+- **Docs:** GUIDE.md § Responsive images, the defaults block, one `llms.txt` line, `types/`, README, and the skill (`SKILL.md` rules pointing at `references/images.md`).
+
+### Decisions for the operator (after the critique)
+
+- **D-F1. `sharp` as a dependency or an optional peer.** As a dependency, every install gets a native binary (about 1 MB plus the platform's libvips), and `{{image}}` just works. As an optional peer (like `lighthouse`), a site that uses `{{image}}` without it fails with `npm i sharp`. Claude leans to the dependency: every site has images, and the helper is meant to be the default way to write one.
+- **D-F2. Images in Markdown content.** `![](…)` in a model's Markdown never passes through `{{image}}`. Options: out of scope (the audit still reports dimensions and size), or a later render step that rewrites `<img>` in the written HTML, the way the purge rewrites links.
+- **D-F3. Existing `<img>` tags.** A migration (an agent rewrites `<img src="{{asset …}}">` to `{{image}}`, guided by the skill and the audit), never automatic.
