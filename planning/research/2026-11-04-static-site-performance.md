@@ -132,6 +132,38 @@ Chromium coverage on two pages per site: one load, a scroll to the bottom, a 412
 
 So the order of payoff here is: click-to-load third parties first, then remove unused CSS and JS, then minify whatever ships unminified. Bundling for request count comes last, and only for a chain of ES module imports.
 
+## Measured — purging against templates versus the written pages (2026-11-05)
+
+The operator asked for this comparison after choosing to build `assets.purge` first. Each site was built in a scratch copy, with its own `node_modules` linked in and its git tree clean before and after. Each stylesheet was purged with PurgeCSS 8 against four content sets (scratch scripts `purge-compare.mjs` and `purge-verify.mjs`). Each selector one set kept and another dropped was then checked against the `class="…"` attributes on the built pages. Only class names were matched, not attribute or context parts, so a row such as `fieldset[disabled] .btn` counts as "used" when `.btn` is used.
+
+**Brotli size of the purged stylesheet** (unpurged: swan-love 14.2 KB, diploma-msc 24.1 KB):
+
+| Scan                                                    | swan-love (Bootstrap 3.0.1, 11 pages) | diploma-msc (Bootstrap 4, 683 pages) |
+| ------------------------------------------------------- | ------------------------------------- | ------------------------------------ |
+| Templates only (diploma-msc's own grunt config)         | 4.0 KB                                | 14.9 KB                              |
+| Templates + models + scripts (the earlier recipe)       | 6.0 KB                                | 16.6 KB                              |
+| Written HTML only                                       | 4.3 KB                                | 14.0 KB                              |
+| Written HTML + built scripts (`assets.purge`'s default) | 6.0 KB                                | 15.6 KB                              |
+
+**Errors, checked against the classes on built elements:**
+
+- **Templates only drops styles a page uses, on both sites.**
+  - swan-love: the `.btn-danger` family. Those buttons' HTML lives in `src/models/about.json`, rendered on the about page.
+  - diploma-msc: 5 selectors, such as `.form-control[readonly]` and `.dropdown-menu[x-placement^=top]`. That attribute is set by Popper.js at run time.
+  - This is diploma-msc's production config. Separately, it keeps 118 selectors no page uses (e.g. `.col-xl-8`), from template branches that never render.
+- **Templates + models + scripts dropped nothing used** on either site. On diploma-msc it kept 126 selectors no page uses.
+- **Written HTML + scripts dropped nothing used** on either site. On swan-love it matched the template + models + scripts set exactly. On diploma-msc it was 1 KB smaller and kept 126 fewer dead selectors. What it keeps that no page uses comes from words in scripts and inline `<style>`: 140 selectors on swan-love, mostly from jQuery's source (`table`), and 150 on diploma-msc.
+- **Written HTML alone is the smallest, but it drops classes a script adds** (Popper's), so scanning scripts by default (`scripts: true`) is the safe choice, at about 1.6 KB on diploma-msc.
+
+**Two false leads, recorded so they are not repeated:**
+
+- `earlybird-banner` looked like a class only the output carried. In fact the templates write `earlybird-banner-2024`, and a script file is named `set-earlybird-banner.js`, so every scan saw the word only by coincidence.
+- `fs-lg-22px` looked used, but it appears in a page's inline `<style>`, not on any element.
+
+Both were found before the class-attribute check, which is the method above.
+
+**Conclusion:** the method's risk is template-only scanning, which breaks real styles. Scanning the written pages plus scripts never dropped a used style, and was as small as or smaller than the full template scan. The difference between methods (1–2.6 KB after Brotli) is small beside the gain from purging at all (8–10 KB here). One build each; diploma-msc's unpurged input is its `learna.css` of 2026-10-02.
+
 ## Caveats
 
 Mostly Google-authored sources — right for metric definitions, single-vendor framing elsewhere. Case-study numbers (Flights 0.7 s, critical CSS 0.2 s) are single tests, not typical effects. Lighthouse weights are v10's; connection figures 2021; Almanac 2024; fetchpriority defaults Chrome-specific.
