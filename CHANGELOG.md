@@ -3,6 +3,48 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.12.2 — 2026-11-05
+
+Page ids and `{{embed}}`, from what two sites on 2.12 asked for.
+
+- **A CommonJS build script can reach `toSlug`.** `require('kiss-ssg')` returns the `Kiss` class,
+  and every named export is now a static on it: `Kiss.utils.toSlug(slug)`, `Kiss.renderRedirects`
+  and the rest.
+- **The audit's new `id-slug-mismatch`** names a page whose explicit `id` was built from its slug
+  as the data gave it (`` id: `blog/${slug}` ``), when kiss cleaned that slug up before writing the
+  page (a trailing space, a leading `-`). The id is kept as written. Build it from
+  `utils.toSlug(slug)` instead.
+- **`ids: 'path'` makes a page's default id where it is served**: `c/acute.html` is `c/acute`,
+  `courses/index.html` is `courses`, and the home page is `index`. A site whose pages share views,
+  such as pagination or a catalog that picks the view per item, then needs no explicit ids. The
+  default is still `'view'`. The build report gains `ids`, and the rename finding `moved` pairs
+  pages only when the last record used the same setting.
+- **`{{embed … poster='img/still.jpg'}}`** shows a still from your own site, drawn by the
+  `{{image}}` pipeline, under a dark strip with white text and a play mark on a video, so the box
+  looks like a video. Restyle it with `--kiss-embed-poster-scrim` and `--kiss-embed-poster-text`.
+  A URL from another site is refused, since fetching it before the click is the request the box
+  exists to prevent.
+- **A video plays on Load.** A `youtube` or `vimeo` embed's button says "Play video", its
+  screen-reader name adds the `title=`, and pressing it starts the video (`autoplay=false` turns
+  that off). Measured in desktop Chromium; iOS Safari may still ask for a tap.
+- **Embed wording without `config.consent`**: `load=`, `notice=` and `open=` on one embed, or
+  `embeds: { text }` in the config for every embed, with the keys `ui.text` uses.
+
+### Upgrading: what a site may notice
+
+Nothing fails, and only an `{{embed 'youtube'}}` or `{{embed 'vimeo'}}` page changes:
+
+- its button now says **Play video** rather than **Load it**, and the video starts on that press.
+  Put `autoplay=false` on an embed to keep the old two-press behaviour. A site that translated
+  `ui.text.embedLoad` keeps its own word on videos too; set `ui.text.embedPlay` to word them apart.
+- Every Load button gains an `aria-label`, `<its words>: <title=>`, so check that each embed's
+  `title=` says what it is.
+- `AIKB/last-build.json` gains `"ids": "view"` at the next `npx kiss-ssg aikb`. Commit it.
+
+`ids: 'path'` is opt-in. Before switching an existing site to it, read the checklist in GUIDE.md
+§ .pages(): links by view route, the `cookies` and `privacy` page ids, and any learning-package
+page relying on a default id.
+
 ## 2.12.1 — 2026-11-05
 
 The audit's `consent-missing` now reports a Google Maps frame on a site without `config.consent`.
