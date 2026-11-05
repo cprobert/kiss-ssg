@@ -103,6 +103,30 @@ describe('assets.purge', () => {
     expect(await site.read('public/_headers')).toContain(`/${name}`)
   })
 
+  // Minifying before the purge strips these comments, so PurgeCSS never sees
+  // them: the named stylesheet is purged first and minified once, after.
+  it('honours /* purgecss ignore */ blocks, then minifies', async () => {
+    site = await makeSite({
+      ...files,
+      'src/assets/css/vendor.css':
+        VENDOR +
+        '\n/* purgecss start ignore */\n.kept-by-comment { color: teal }\n/* purgecss end ignore */\n',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      logger: silentLogger,
+      assets: { purge },
+    })
+      .page({ view: 'index.hbs', model: { kind: 'from-model' } })
+      .generate()
+    await kiss.complete()
+    const css = await site.read(`public/${await linked()}`)
+    expect(css).toContain('.kept-by-comment')
+    expect(css).not.toContain('never-used')
+    expect(css).not.toContain('purgecss')
+    expect(css).not.toMatch(/\n/)
+  })
+
   it('leaves the whole stylesheet in dev', async () => {
     await build({ dev: true, assets: { purge } })
     expect(await site.read(`public/${await linked()}`)).toContain('never-used')
