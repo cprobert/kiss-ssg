@@ -178,6 +178,31 @@ describe('kiss-ssg images', () => {
       expect(line.copies.map((d) => path.basename(d))).toContain('extra')
   }, 60000)
 
+  it('sweeps the cache the instance was made with when the script changes directory', async () => {
+    // Made in the site folder, completed after a chdir into another site.
+    // Its pages ask for no image, so the build passes; the cache it reports
+    // must be the one it was checked against at construction, or the sweep
+    // empties the other site's committed cache against this site's pages.
+    await makeImageSite(`import fs from 'node:fs'
+import Kiss from '${engine}'
+const kiss = new Kiss({ folders: { src: './src', build: './public/plain' } })
+kiss.page({ view: 'plain.hbs' }).generate()
+process.chdir('other')
+await kiss.complete()
+`)
+    fs.writeFileSync(
+      path.join(site.root, 'src/pages/plain.hbs'),
+      '<!doctype html><html><head><title>t</title></head><body><main><h1>h</h1></main></body></html>',
+    )
+    const theirs = path.join(site.root, 'other/.kiss-cache/images')
+    const entry = `${'e'.repeat(64)}.avif`
+    fs.mkdirSync(theirs, { recursive: true })
+    fs.writeFileSync(path.join(theirs, entry), 'committed')
+    const r = run('router.js')
+    expect(r.status, r.stderr).toBe(0)
+    expect(fs.existsSync(path.join(theirs, entry))).toBe(true)
+  }, 60000)
+
   it('exits 1 when the cache cannot be written, and prunes nothing', async () => {
     // A file where the cache folder should be: an ordinary build warns and
     // carries on, but the command whose whole job is the cache must fail.
