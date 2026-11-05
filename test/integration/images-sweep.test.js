@@ -152,6 +152,29 @@ describe('kiss-ssg images', () => {
     ).toBe(true)
   }, 60000)
 
+  it('exits 1 when the refresh after --write fails', async () => {
+    // The first pass rewrites a.jpg and asks for a second; on that second run
+    // the script leaves a sweep file that cannot be read, so the refresh
+    // throws. A 0 there would let automation commit a stale cache.
+    await makeImageSite(
+      ROUTER +
+        `import fs from 'node:fs'
+if (fs.existsSync('.second-run')) fs.writeFileSync(process.env.KISS_IMAGES, '{not json')
+else fs.writeFileSync('.second-run', '')
+`,
+    )
+    await sharp({
+      create: { width: 600, height: 400, channels: 3, background: '#33a' },
+    })
+      .jpeg()
+      .withExif({ IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '51/1 30/1 0/1' } })
+      .toFile(path.join(site.root, 'src/assets/img/a.jpg'))
+    const r = run('router.js', '--write')
+    expect(r.stdout).toMatch(/rewrote src\/assets\/img\/a\.jpg/)
+    expect(r.stderr).toMatch(/kiss-ssg images: /)
+    expect(r.status).toBe(1)
+  }, 60000)
+
   it('lists an original with GPS, and rewrites it only under --write', async () => {
     await makeImageSite()
     await sharp({

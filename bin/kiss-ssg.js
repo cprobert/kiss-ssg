@@ -113,6 +113,9 @@ if (process.argv[2] === 'images') {
     // A second pass only when the first rewrote an original (`rerun`), and
     // never with --write: the rewrite changed digests the cache is keyed by.
     for (let pass = 0; pass < 2; pass++) {
+      // Each pass starts failed: the first pass's 0 must not survive a
+      // second pass that throws before it sets its own.
+      code = 1
       fs.rmSync(reportFile, { force: true })
       fs.rmSync(sweepFile, { force: true })
       const run = spawnSync(
@@ -149,6 +152,7 @@ if (process.argv[2] === 'images') {
     }
   } catch (err) {
     console.error(`kiss-ssg images: ${err.message}`)
+    code = 1
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }
