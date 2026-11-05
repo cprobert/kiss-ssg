@@ -3,6 +3,22 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.12.1 — 2026-11-05
+
+The audit's `consent-missing` now reports a Google Maps frame on a site without `config.consent`.
+The guide always said it would, but kiss compared only the frame's origin
+(`https://www.google.com`) with its tracker list, and the Maps entry there is `www.google.com`
+under `/maps`, so it never matched. kiss now matches the frame's whole address. A `www.google.com`
+frame outside `/maps`, such as reCAPTCHA, is still not reported, and nor is `{{embed 'google-maps'}}`.
+
+### Upgrading: a raw Google Maps frame now raises `consent-missing`
+
+Only a site with no `config.consent` and an `<iframe>` from `www.google.com/maps` sees anything new:
+one advisory `consent-missing` finding per page, naming `https://www.google.com`. Nothing fails.
+The fix is to load the map when the visitor asks for it, with
+`{{embed 'google-maps' src='…' title='…'}}`, which needs no `config.consent`. A site that already
+has `config.consent` is unaffected: there, an ungated frame was already `consent-ungated`.
+
 ## 2.12.0 — 2026-11-05
 
 A release about speed. The new `kiss-performance` skill builds and reviews how fast a site loads,
