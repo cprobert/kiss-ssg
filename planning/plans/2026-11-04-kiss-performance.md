@@ -416,3 +416,24 @@ One fresh-context agent critiqued F1–F9 and found 17 issues, 2 of them blocker
 - dev serves the original;
 - Markdown images are out of scope;
 - existing `<img>` tags are migrated by an agent, with `img-not-responsive` as the worklist.
+
+## Amendment 2026-11-05: the encode cache is committed, and `kiss-ssg images` is the sweep
+
+The operator asked whether images should be optimised in the repo, as a maintenance sweep, rather than at build time. Claude measured a cold encode of the default recipe on 20 sampled images per site, on 16 cores:
+
+- swan-love: 0.10 s per image, about 6 s for its 74 images;
+- k9-solutions: 0.64 s per image, about 8 minutes for its 758, with variants twice the source bytes.
+
+A 2-core CI runner would be several times slower; that is inferred. The operator chose Claude's recommendation: keep encoding at build time, and **commit the cache**, the shape of Hugo's `resources/_gen` (recalled, not checked). Encoding then happens once, on the machine where an image was added, and CI and hosts copy. This replaces F4 where they disagree:
+
+- **Where:** `assets.images.cache`, default `.kiss-cache/images` beside the build script. It is outside `folders.assets`, so the asset copy never ships it, and it is committed. `KISS_CACHE_DIR` is dropped: the folder is a config key.
+- **The key:** the full digest of the source bytes plus the recipe (format, width, quality). **Not `sharp`'s version.** That overrules finding 12's suggestion: with a committed cache, an upgrade would re-encode every image and commit the whole cache again. A variant from an older `sharp` is still a correct image of the same source and recipe. `npx kiss-ssg images --refresh` re-encodes on purpose.
+- **A miss** is encoded, written to the cache and reported. In the `images` report key, `encoded` is the misses. A build with misses logs one line: "N image variants were encoded that are not in the committed cache. Run `npx kiss-ssg images` and commit `.kiss-cache/images`". A deploy therefore shows when someone forgot. Under `KISS_CHECK=1` misses are encoded and cached too, and the report says so.
+- **Pruning** is the sweep's job, never the build's. A build that removed entries could delete what another branch's pages use.
+
+### `npx kiss-ssg images <script>` (new command)
+
+- It runs the site's build staged and discarded, as `check` does, so it knows exactly which variants the pages ask for. It encodes every miss into the cache and removes entries no page asked for. It prints counts and bytes: added, removed, kept.
+- **Originals** (the operator: "yes, on request"): it lists each source under `folders.assets` that carries EXIF/GPS or is wider than the recipe's largest width. With `--write` it rewrites them: `autoOrient()`, metadata stripped, resized down to that width. A JPEG is re-encoded at quality 90, and a PNG losslessly. A file is replaced only if the result is smaller, or if it had GPS. The person sees the diff in git before committing. Without `--write` it changes nothing in `src/`.
+- Its decisions live in `lib/images-sweep.js`, unit-tested; `bin/kiss-ssg.js` gets a thin wrapper, covered in `test/integration/`. The `kiss-ssg check` help lists it.
+- The skill's maintenance step and `kiss-site-review` run `npx kiss-ssg images router.js`, then with `--write` after asking.
