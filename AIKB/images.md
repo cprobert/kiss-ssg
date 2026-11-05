@@ -7,7 +7,7 @@ Everything about a responsive image that is decided at render: the recipe (`conf
 ## Public interface
 
 - `resolveImages(images)` → `KissImages`: `{ widths, formats, quality, cache }`, filled from `DEFAULT_IMAGES` one level deep (`quality` merges per format). Throws, naming the key, on an unknown key, an empty or non-integer `widths`, a format other than `avif`/`webp` (or one twice), a quality outside 1–100, or a `cache` that is neither a non-empty string nor `false`. `widths` come back sorted and deduplicated. `lib/config.js` calls it.
-- `DEFAULT_IMAGES`: widths `[480, 960, 1440, 1920]`, formats `['avif', 'webp']`, quality AVIF 50, WebP 75, JPEG 80, cache `.kiss-cache/images`. The widths and qualities are provisional until measured on the fleet.
+- `DEFAULT_IMAGES`: widths `[480, 960, 1440, 1920]`, formats `['avif', 'webp']`, quality AVIF 50, WebP 75, JPEG 80, cache `.kiss-cache/images`. The qualities were checked by eye by the operator on 2026-11-05: four fleet images at 960 px (fur, dark fur, black-and-white artwork, a dark PNG), each flicked against a lossless reference and the qualities either side (AVIF 40/60, WebP 65/85, JPEG 70/90). The widths are still provisional.
 - `variantWidths(sourceWidth, widths)`: every width narrower than the source, plus the source's own width when it is not wider than the largest. Never enlarges.
 - `fallbackFormat(sourceFormat)`: `png` for a PNG, `jpeg` for the rest.
 - `recipeString({ format, width, quality })`: `kiss-image/1 <format> w<width> q<quality>`.

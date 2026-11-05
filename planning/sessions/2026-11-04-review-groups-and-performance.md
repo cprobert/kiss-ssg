@@ -114,6 +114,14 @@ opened: 2026-11-04
     - a cache entry damaged in place behind an intact header and ending is not detected, because only a decode would see it;
     - `{{image}}` reads its source relative to the working directory at render time, so a `chdir` before `complete()` fails such a build loudly.
 
+- **2026-11-05: before the close, the operator's three checks, and what they found.**
+  - **The research's top recommendations against the skill** (`0d43c2d`). Eight of ten were covered. Redirects and the back/forward cache were added after checking them against web.dev's TTFB and bfcache articles, and domain sharding and `modulepreload` from the earlier research passes. The operator asked whether to split the skill by area; Claude recommended not, and nothing was changed.
+  - **The image qualities, checked by eye.** Four fleet images at 960 px (fur, dark fur, black-and-white artwork, a dark PNG), each flicked against a lossless reference and the qualities either side. The operator: "Defaults look right". AVIF 50, WebP 75 and JPEG 80 are no longer provisional. The widths and the 200 KB `image-oversized` threshold still are.
+  - **The fleet check.** Five sites (a1k9training, pro-plumbing, swan-love, k9-solutions, diploma-msc) were built with the registry engine and then this branch. All passed, with the same page counts, and every site's tree was restored. Expected changes were the minified CSS/JS hashes and the new audit findings. Two real defects were fixed in `18b3445`, with tests seen red first:
+    - `cacheHeaders.files` named the discarded staging folder on Windows (this branch). Staged-path mapping is now one rule for both separators.
+    - A relative `..` above the root was reported broken: 4 false links on diploma-msc, from 2.11.1. It now stops at the root, as a browser's does, unless `siteUrl` has a path prefix. This was absorbed here under the one-branch rule.
+  - **The clean room (criterion 7).** A fresh agent with only the packed engine and the plugin ran `kiss-site-review` on swan-love ($2.15, 528 s, nothing changed). It recorded the group question as question 1 and assumed all four, so "not run, not chosen" was not exercised. It reported P0 to P3 before any change, named what did not run, and listed nine guesses. Guess 6 was a real contradiction: the protocol put the audit's page checks at P2, so missing `alt` text, a WCAG failure, landed at P2. The protocol now names every WCAG and legal audit check at P1, the old sentence is banned in `CONTRADICTIONS`, and both checks failed on the old text.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
@@ -156,6 +164,11 @@ opened: 2026-11-04
   - **Eyeball: looked.** The operator read `kiss-performance/SKILL.md` (3,101 words) end to end: "Read it, it's right".
   - **Offer: kept.** A cache hit is checked structurally (format, width, the file running to the end its structure declares), never decoded. A body damaged in place behind an intact header and ending still ships; that gap is recorded in `AIKB/image-encode.md`.
   - Decision: continue with the clean room (7), then the AVIF quality check, then `/branch-close`.
+- **2026-11-05**: after the research check, the quality check, the fleet check and the clean room (see the Amendment).
+  - **Met:** criteria 1–8. Criterion 7 is the clean room above; its one documentation gap is fixed.
+  - **Partial:** criterion 9. The gates are green after each commit. The whole-branch Codex review is the close's. It must be split by commit range or scoped to `lib/` and `bin/` (`ENOBUFS` on the whole diff), with a threat model agreed first.
+  - **Eyeball: looked.** The quality comparison page: "Defaults look right".
+  - Decision: ready to close.
 
 ---
 

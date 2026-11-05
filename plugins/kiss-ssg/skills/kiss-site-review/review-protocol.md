@@ -23,7 +23,7 @@ A dark band, a system font, an unusual colour role or a modest heading size that
 
 - **P0:** a visitor is blocked. Content is invisible or unreachable, there is a keyboard trap, or a form cannot be sent.
 - **P1:** it fails a WCAG 2.2 AA criterion or a legal duty, or it is broken on a common device. For example: overflow at 320px with the site's real content, focus hidden under a bar, `viewport-zoom-lock`, a skip link with no target, or a form that collects personal details with no line about them. The legal duties include a privacy notice missing an item the law lists, storage before consent, a pre-ticked marketing box, and no business address; [`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md) says how each is measured.
-- **P2:** a visible flaw that reads as unfinished. For example a word alone on a line, a hover stuck after a tap, a weight that does not render, overflow that only an injected long string causes, `href-hash`, or the audit's page checks, except `privacy-link-missing`, `checkbox-prechecked` and `placeholder-left`, which are P1.
+- **P2:** a visible flaw that reads as unfinished. For example a word alone on a line, a hover stuck after a tap, a weight that does not render, overflow that only an injected long string causes, `href-hash`, or one of the audit's page checks. The audit checks that are a WCAG failure or a legal duty are P1 by the rule above: `img-alt-missing`, `viewport-zoom-lock`, `privacy-link-missing`, `checkbox-prechecked`, `placeholder-left` and every `consent-*`.
 - **P3:** polish.
 
 **One row per cause, not per instance.** "`transition: all` in 7 rules of `site.scss`" is one row with the count in it, because it is one fix. Sort by priority.

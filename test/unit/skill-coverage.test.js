@@ -536,9 +536,9 @@ const COVERAGE = [
   },
   {
     feature:
-      'the protocol: legal P1 examples, the three privacy checks above P2, the accepted-risk record',
+      'the protocol: legal P1 examples, every audit check that is a WCAG failure or a legal duty at P1 (2026-11-05 clean room: missing alt was ranked P2), the accepted-risk record',
     pattern:
-      /^(?=[\s\S]*storage before consent)(?=[\s\S]*except `privacy-link-missing`, `checkbox-prechecked` and `placeholder-left`)(?=[\s\S]*## Accepted risks)/,
+      /^(?=[\s\S]*storage before consent)(?=[\s\S]*are P1 by the rule above: `img-alt-missing`, `viewport-zoom-lock`, `privacy-link-missing`, `checkbox-prechecked`, `placeholder-left` and every `consent-\*`)(?=[\s\S]*## Accepted risks)/,
     skills: [REVIEW_PROTOCOL],
   },
   // 2026-10-20, the six-repo design-skill evaluation: the lessons taken in, not
@@ -1110,6 +1110,12 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2026-11-05, the clean room: the protocol ranked the audit page checks P2 with three exceptions, so a clean-room agent put missing alt text (a WCAG failure, P1 by the rule above it) at P2; the exception list now names every WCAG and legal check',
+    patterns: [
+      /the audit's page checks, except `privacy-link-missing`, `checkbox-prechecked` and `placeholder-left`, which are P1/,
+    ],
+  },
   {
     why: '2026-11-05 (the operator): kiss encodes images itself, through {{image}} at build time into a committed cache, so a sentence sending encoding to a pipeline step, or making the resized fallback optional, is the rule that replaced',
     patterns: [

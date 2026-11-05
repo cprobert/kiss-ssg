@@ -502,7 +502,7 @@ For a 1200×800 photo with the default recipe, that writes (one line in the page
 
 **`npx kiss-ssg images <script>`** is the cache's sweep. It runs the build staged and discarded, as `check` does, encodes every miss, removes the cache entries no page asked for, and prints how many were added, removed and kept, with their bytes. A build never prunes, because a cache shared by branches would lose what another branch's pages use; a failed build is never pruned against either. `--refresh` encodes everything again. It also lists each original under `folders.assets` that carries a GPS location or is wider than the recipe's largest width, and `--write` rewrites those in place: turned the right way up, metadata stripped, resized down to that width, a JPEG at quality 90 and a PNG losslessly (a WebP at 90, an AVIF at 75), and replaced only when the result is smaller or the file had GPS. Without `--write` nothing in `src/` changes; with it, read the diff in git before committing.
 
-The recipe, with its provisional defaults (to be measured on real sites before they are relied on):
+The recipe and its defaults. The qualities were checked by eye on real sites' photos and artwork; the widths are a starting point:
 
 ```js
 new Kiss({
