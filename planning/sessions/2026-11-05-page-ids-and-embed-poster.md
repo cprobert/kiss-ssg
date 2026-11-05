@@ -1,7 +1,7 @@
 ---
 branch: feat/page-ids-and-embed-poster
 base: main
-status: open
+status: closed
 opened: 2026-11-05
 ---
 
@@ -59,3 +59,109 @@ opened: 2026-11-05
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-05: Page ids from CommonJS and served paths, and `{{embed}}` posters, wording and autoplay
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** six site-requested features as 2.12.2, in twelve commits from `bf6f366` to the close:
+
+- `Kiss.<named export>` statics for CommonJS (`cde4907`)
+- the audit check `id-slug-mismatch` (`cde4907`)
+- `config.ids: 'path'` (`a4b175d`)
+- `{{embed … poster=}}` (`d511534`, with Codex fixes `9f8c7ea` and `16f6fc6`, and the phone-layout fix `359e1a7`)
+- embed wording and autoplay on Load (`fcfb9ce`, with Codex fix `f11b162`)
+- clean-room doc fixes (`0a184be`), the docs sweep (`34ddc2f`) and the bump (`237cb08`).
+
+## Reflect — what the session was
+
+**Framing.** The work started as two roadmap requests relayed by peer sessions: diploma-msc's toSlug/ids message and a1k9training's embed note in `planning/ideas/`. Claude first checked each relayed claim against `lib/` before repeating it: `require` returning `[]`, and the verbatim id at `page-registry.js:190`. The operator chose to put all six on one branch, consistent with the one-branch-per-request preference. At `/branch-open` the operator answered four structured questions (autoplay default on, wording "both, one home", here, one session) and added one line of intent: "Even if autoplay doesn't work on the iPhone, it's better than not doing anything."
+
+**Shape.** It was **between planned and emergent**, as the intent predicted. Items #1, #2 and #4–#6 went as mapped. #3 was emergent by design: a design note, then a fresh-context critique, which returned eight findings that reshaped it (an engine-invented slug claims no id; the report records `ids`, so `moved` pairs only within one mode). The shape served the work. The `/loop` the operator set ("a Codex review after each loop, fix high and medium before the next") turned five slices into five review gates, and that cadence is what made it a planned branch rather than a long unverified run.
+
+## Evaluate — how the human supervised the AI
+
+**Iteration discipline — the strongest dimension, and the operator's design.** The operator structured the work as slices, each closed by a Codex review, with high and medium findings fixed before the next. Across the branch, Codex returned five P2 findings, every one a real ordinary-site defect, and each was fixed with a regression test seen red first:
+
+- a poster dropped `root=`
+- the consent theme turned the strip's text dark on dark, measured at `color(srgb .3 .3 .3)`
+- `consent: false` refused `embeds`
+- the other two were duplicates within a round.
+
+No round drifted into hostile-input findings, so the threat model written at the open held without being renegotiated. The largest fix diff was shown between rounds, which retires a recurring lesson. A fleet check ran on a1k9training after every slice, and once on diploma-msc. That is the "experts run longer chains but verify mid-run" pattern, set by the operator in one sentence.
+
+**Verification & ownership — strong on machines, late on the eye, and one look changed the product.** The machine verification was thorough:
+
+- browser measurements in real Chromium: the poster at 375 and 1440 px, nothing off-host before a click, no layout shift
+- a real YouTube video playing with sound after one click, with an `autoplay=false` control paused
+- a clean room from the packed tarball alone
+- diploma-msc checked through a module-resolution hook, without touching a tree its own session was using.
+
+But **no pulse asked the operator to look at anything**. Claude wrote the pulse entries straight into the log rather than running `/branch-pulse`, whose Step 4 asks for an eyeball. So the first human look was at `/branch-close` Step 5a. It was immediately decisive: the 375 px screenshot showed the dark strip covering 69% of the poster with text against the edges, a defect every test passed. The operator said "fix the phone layout now", and the strip went to 44% (52% at 320 px). Had the eye come at slice 3, that fix would have gone through the slice's own Codex loop instead of reopening the close.
+
+**Pushback & steering.** The operator overruled Claude three times:
+
+- **The version:** a patch, 2.12.2, against the proposed minor. Reason: "Small cleanups".
+- **The flake:** leave it recorded (Claude's recommendation).
+- **The phone layout:** fix it now.
+
+They also chose a readable poster default over the "geometry only" rule, a real design decision. A rule's premise had changed, and Claude raised it as a question rather than deciding it.
+
+**Learning engagement and architecture sense-making were thin.** The operator asked for no explanations. Their inputs were decisions on Claude's framing, not questions about how the code works. That is fine for a feature batch they had already shaped at the open, but it means the understanding of, say, why `moved` must not pair across `ids` modes lives in the plan and the commit messages rather than in a conversation.
+
+**Harness leverage — good, mostly at Claude's initiative:**
+
+- a fresh-context sub-agent critiqued the path-ids contract before code was built against it (the 2026-09-12 pattern, which paid again)
+- a clean-room agent built from the tarball
+- `AskUserQuestion` with previews for the poster look
+- `/loop` with Codex as the review gate, which was the operator's.
+
+One harness miss was Claude's: the skill that carries the eyeball step was never invoked.
+
+**Intended vs actual supervision.** The operator intended review after every slice, and got it, by Codex. They did not intend to skip looking at the product mid-branch. That happened because Claude's hand-written pulses left out the step that asks. The close's Step 5a fallback caught it, which is that step working as designed.
+
+**Competency level: Active supervisor.** Evidence:
+
+- the review cadence was designed up front
+- every override came with a stated reason
+- the operator looked at the artefact when shown it and redirected the product.
+
+It is not Agentic engineering lead, because the operator steered through Claude's questions rather than probing the work unprompted, and the first look came at the close.
+
+## Feedback — recommendations for next session
+
+- **Claude — run `/branch-pulse`; never hand-write a pulse entry.** The skill carries the eyeball (Step 4). Writing pulse lines directly dropped it on every slice of this branch, and the phone-layout defect waited until the close. After an engine slice, invoke the skill and let it ask.
+- **Claude — for a visual feature, put a screenshot in front of the operator in the slice that builds it.** The poster passed computed-colour and bounding-box assertions at 375 px and still covered 69% of the still. A test checks what you thought to measure; a look sees what you didn't. `npm run screenshot` takes seconds.
+- **Operator — a patch over a proposed minor has now been chosen twice with a precedent-setting reason** (2026-11-04: "still patching the 2.11 work"; here: "Small cleanups", for two config keys, a new audit check and a changed default). If "features that extend the current minor's work are patches" is the rule, say so for CLAUDE.md § Git workflow, so the next close proposes it rather than a minor. Until then, every close will propose the minor and the log will record an override.
+- **Process — the watch flake is now the gates' most common red.** It failed twice in gates runs and once in five solo runs. The operator chose to leave it recorded, which is the rule's default. But the register's own trigger ("fails twice, read the hashes") has fired, and it blocked two commits this session. If it recurs on the next branch, schedule it as that branch's objective rather than reading it back again.
+- **Both — keep slice-plus-Codex as the default shape for a multi-feature branch.** Five P2s were found while the code was warm, each fixed as a class with a red test, and the close's full-branch review found nothing new. That is the cheapest the review loop has been on any branch since the 14-round loop of 2026-11-05.
+- **Claude — measure before claiming, and run the control.** The autoplay claim was measured against an `autoplay=false` control, and the thumbnail URL against a real fetch. The diploma-msc "three changed pages" were run twice on 2.12.0 before being called the site's own nondeterminism. Each turned an inference into a stated measurement. Keep it.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** ship the two site requests as one release: page identity for diploma-msc (#1–#3) and a video-looking, worded, autoplaying `{{embed}}` for a1k9training (#4–#6).
+
+**Verdict: met.** The release is 2.12.2 rather than the intended 2.13.0, by the operator's choice, recorded with their reason.
+
+- [x] **#1 CommonJS reach.** `Kiss.utils.toSlug` and every named export are statics. The ESM-versus-CJS test was red first, listing all twelve exports.
+- [x] **#2 Explicit-id mismatch.** `id-slug-mismatch` in the audit, with the diploma case red first. Decision recorded: warn, never rewrite.
+- [x] **#3 Path ids.** `ids: 'path'`; the design was critiqued before code (8 findings, all taken); 12 tests red first; `moved` pairs only within one mode.
+- [x] **#4 `poster=`.** It goes through the `{{image}}` pipeline and refuses a remote URL. Measured in Chromium: nothing off-host before Load, no layout shift, readable under the consent theme. After the operator's look, the strip covers 44% of the box at 375 px.
+- [x] **#5 Wording.** `load=`/`notice=`/`open=` and `embeds: { text }`, with one home (refused beside an active consent). "Play video: <title>" as the name. The old GUIDE sentence is banned in `CONTRADICTIONS`.
+- [x] **#6 Autoplay.** On the Load click only, never on a stored choice. Measured: playing with sound in headless Chromium 156; the control paused. iOS unmeasured, as agreed.
+- [x] **Docs and contracts.** GUIDE, llms.txt (15,966/16,000), README, types, AIKB, skills with `skill-coverage` rows, and CHANGELOG 2.12.2 with `### Upgrading`.
+- [x] **Clean room.** CommonJS router, path ids, postered embeds from the tarball alone. `check` passed. Three doc gaps were found and fixed.
+- [x] **Fleet check.** a1k9training: only its embed page changed. diploma-msc: byte-identical bar three pages that differ between runs of 2.12.0 itself. Neither site adopted anything yet: diploma's `pageSlug()` copy and a1k9's `poster=` are their own sessions' work, which the criterion phrased as possible, not done.
+- [x] **Gates** green on the branch head. Codex reviewed the whole branch clean against `main`, and the close's range `0a184be..HEAD` clean.
+
+**Measurable impact:**
+
+- A CommonJS site no longer copies `toSlug`.
+- A site whose views are shared can drop every explicit id (123 of 686 on diploma-msc).
+- A video embed reads as a video, plays in one press, and tells a screen-reader user what it is.
+
+**Open:**
+
+- the watch flake (recorded)
+- the version rule the operator applied, which CLAUDE.md does not yet state
+- the two sites adopting the features on their own branches.
