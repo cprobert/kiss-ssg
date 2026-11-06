@@ -1,0 +1,26 @@
+# Dependabot version updates. Alerts and security-fix PRs are switched on in
+# the repository's settings, not here; this file adds the weekly routine bumps.
+# Minor and patch bumps are grouped into one PR per ecosystem; a major arrives
+# on its own, because it is the one that can change behaviour.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch
