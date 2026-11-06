@@ -64,13 +64,15 @@ describe('security headers', () => {
     expect(report.ok).toBe(true)
   })
 
-  it('turned off under cleanBuild: false, leave no block behind (Codex review, 2026-11-06)', async () => {
+  it('turned off under cleanBuild: false, warns about the block an earlier build left (Codex reviews, 2026-11-06)', async () => {
     // No site `_headers` and nothing hashed: nothing else rewrites the file.
+    // kiss warns rather than deletes: another instance may share the folder.
     site = await makeSite({ 'src/pages/index.hbs': '<p>Hi</p>' })
+    const warnings = []
     const run = async (securityHeaders) => {
       kiss = new Kiss({
         folders: site.folders,
-        logger: silentLogger,
+        logger: { ...silentLogger, warn: (m) => warnings.push(String(m)) },
         host: 'netlify',
         cleanBuild: false,
         securityHeaders,
@@ -82,9 +84,12 @@ describe('security headers', () => {
       kiss = null
     }
     await run(true)
-    expect(await site.read('public/_headers')).toContain('security headers')
+    expect(warnings.filter((w) => w.includes('earlier build'))).toEqual([])
     await run(false)
-    expect(await site.exists('public/_headers')).toBe(false)
-    expect(await site.exists('public/security-headers.json')).toBe(false)
+    expect(await site.read('public/_headers')).toContain('security headers')
+    const stale = warnings.filter((w) => w.includes('earlier build'))
+    expect(stale).toHaveLength(1)
+    expect(stale[0]).toContain('_headers')
+    expect(stale[0]).toContain('security-headers.json')
   })
 })

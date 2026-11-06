@@ -129,53 +129,64 @@ describe('writeSecurityHeaders', () => {
     expect(await fs.readdir(root)).toEqual([])
   })
 
-  it('turned off, takes back what an earlier build wrote and keeps the rest', async () => {
-    // cleanBuild: false keeps the folder, so a block an earlier build wrote
-    // would otherwise stay live after the site turned the option off.
+  it('turned off, deletes nothing and names what an earlier build left', async () => {
+    // cleanBuild: false keeps the folder, and several Kiss instances can
+    // share it, so a block this run did not write may be another's: kiss
+    // names it for the build to warn about, and never deletes it.
     const site = '/*\n  X-Frame-Options: SAMEORIGIN\n'
-    const cache = renderHeadersBlock([
-      { path: '/a.1234abcd.css', headers: { 'Cache-Control': 'immutable' } },
-    ])
     const before = mergeHeadersFile(
-      mergeHeadersFile(site, cache),
+      site,
       renderSecurityBlock(SECURITY_HEADERS),
       SECURITY_BLOCK,
     )
     await fs.outputFile(path.join(root, '_headers'), before)
     await fs.outputFile(path.join(root, 'security-headers.json'), '{}')
     await fs.outputFile(path.join(root, 'security-headers.firebase.json'), '{}')
-    await writeSecurityHeaders({ config: { host: ['netlify'] }, root })
-    expect(await fs.readFile(path.join(root, '_headers'), 'utf8')).toBe(
-      mergeHeadersFile(site, cache),
-    )
-    expect(await fs.readdir(root)).toEqual(['_headers'])
+    const result = await writeSecurityHeaders({
+      config: { host: ['netlify'] },
+      root,
+    })
+    expect(result.stale).toEqual([
+      '_headers',
+      'security-headers.json',
+      'security-headers.firebase.json',
+    ])
+    expect(await fs.readFile(path.join(root, '_headers'), 'utf8')).toBe(before)
+    expect((await fs.readdir(root)).sort()).toEqual([
+      '_headers',
+      'security-headers.firebase.json',
+      'security-headers.json',
+    ])
   })
 
-  it('removes a `_headers` that held nothing but its block', async () => {
-    await fs.outputFile(
-      path.join(root, '_headers'),
-      renderSecurityBlock(SECURITY_HEADERS),
-    )
-    await writeSecurityHeaders({
+  it('names a `_headers` block it did not write this run, and keeps it', async () => {
+    const block = renderSecurityBlock(SECURITY_HEADERS)
+    await fs.outputFile(path.join(root, '_headers'), block)
+    const result = await writeSecurityHeaders({
       config: { host: ['firebase'], securityHeaders: true },
       root,
     })
-    expect(await fs.pathExists(path.join(root, '_headers'))).toBe(false)
-    expect(
-      await fs.pathExists(path.join(root, 'security-headers.firebase.json')),
-    ).toBe(true)
+    expect(result.stale).toEqual(['_headers'])
+    expect(await fs.readFile(path.join(root, '_headers'), 'utf8')).toBe(block)
   })
 
-  it('leaves a file of the same name that another step made this build', async () => {
+  it('does not name a file of the same name that another step made this build', async () => {
     // An assets.pipeline step registers its output as `pipeline` (Codex review).
     const file = path.join(root, 'security-headers.firebase.json')
     await fs.outputFile(file, '{}')
-    await writeSecurityHeaders({
+    const result = await writeSecurityHeaders({
       config: { host: [] },
       root,
       outputs: { claim() {}, kind: (f) => (f === file ? 'pipeline' : null) },
     })
-    expect(await fs.pathExists(file)).toBe(true)
+    expect(result.stale).toEqual([])
+  })
+
+  it('a rebuild replaces its block without adding blank lines', () => {
+    const site = '/*\n  X-Frame-Options: SAMEORIGIN\n'
+    const block = renderSecurityBlock(SECURITY_HEADERS)
+    const once = mergeHeadersFile(site, block, SECURITY_BLOCK)
+    expect(mergeHeadersFile(once, block, SECURITY_BLOCK)).toBe(once)
   })
 
   it('merges into a `_headers` the site and the cache headers already wrote', async () => {

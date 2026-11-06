@@ -175,7 +175,7 @@ describe('writeCacheHeaders', () => {
     )
   })
 
-  it('with nothing hashed, takes back what an earlier build wrote and keeps the rest', async () => {
+  it('with nothing hashed, deletes nothing and names what an earlier build left', async () => {
     const site = '/*\n  X-Frame-Options: SAMEORIGIN\n'
     await fs.outputFile(
       path.join(root, '_headers'),
@@ -188,13 +188,19 @@ describe('writeCacheHeaders', () => {
     )
     await fs.outputFile(path.join(root, 'cache-headers.json'), '{}')
     await fs.outputFile(path.join(root, 'cache-headers.firebase.json'), '{}')
-    await writeCacheHeaders({
+    const before = await fs.readFile(path.join(root, '_headers'), 'utf8')
+    const result = await writeCacheHeaders({
       config: resolveConfig({ host: 'netlify' }),
       root,
       manifest: {},
     })
-    expect(await fs.readFile(path.join(root, '_headers'), 'utf8')).toBe(site)
-    expect(await fs.readdir(root)).toEqual(['_headers'])
+    expect(result.stale).toEqual([
+      '_headers',
+      'cache-headers.json',
+      'cache-headers.firebase.json',
+    ])
+    expect(await fs.readFile(path.join(root, '_headers'), 'utf8')).toBe(before)
+    expect((await fs.readdir(root)).length).toBe(3)
   })
 
   it("host: 'netlify' writes the list and _headers", async () => {

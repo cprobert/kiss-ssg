@@ -46,6 +46,7 @@ opened: 2026-11-05
 - **2026-11-06 — the plugin README was already behind `main`** (eleven skills, no `kiss-legal-and-privacy` row); fixed while adding `kiss-security`.
 - **2026-11-06 — release as 2.13.1, not 2.14.0 (operator's decision).** "2.13 is all about security. So I'd like to keep it in the 2.13x space." The new `securityHeaders` key would normally be a minor bump; it is opt-in and off by default, so nothing changes for a site that does not set it.
 - **2026-11-06 — turning headers off takes them back, cache headers too (operator agreed: "Let's do it").** Codex's adversarial review: under `cleanBuild: false`, a security block from an earlier build stayed live after the option was turned off. `retireHeaders` fixes it for both blocks; the cache headers had the same gap on `main` when nothing was hashed.
+- **2026-11-06 — warn, don't delete (operator's decision).** Codex's adversarial review of the whole branch: several `Kiss` instances can share one kept folder, so the clean-up could delete another instance's headers. `staleHeaders` now names what an earlier build left and the build warns; nothing is deleted. Also from that review: `Permissions-Policy` blocks location, camera and microphone, so `kiss-security` and `GUIDE.md` now say to check for them first.
 
 ## Pulse log
 

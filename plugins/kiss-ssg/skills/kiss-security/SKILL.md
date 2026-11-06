@@ -18,9 +18,10 @@ Every rule here traces to a verified finding in kiss's research (`planning/specs
 
 ## Build mode
 
-1. **Set `host` and `securityHeaders: true`.** That sends, on every page: `Strict-Transport-Security: max-age=63072000`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `Permissions-Policy: geolocation=(), camera=(), microphone=()`. Never add `X-XSS-Protection`: it is deprecated and can open holes in a safe site.
-2. **On Firebase,** merge the fragment into `firebase.json`, and tell the owner that Firebase replaces HSTS on `*.web.app`: only the custom domain serves it.
-3. **Stop there unless the site has a reason** for one of the optional steps below. Say which you left out and why, so the owner can choose later.
+1. **Check first for location, camera and microphone.** Search the views and embeds for `navigator.geolocation`, `getUserMedia`, a map with a "my location" button, or a video-call or recording widget. The baseline's `Permissions-Policy` turns these off for the page and every frame in it, and only on the live site, since the dev server sends no headers. If the site uses one, set its own `Permissions-Policy` in `src/assets/_headers` (for example `geolocation=(self)`, or the embed's origin), and kiss leaves that header to the site. Tell the owner: a widget added later that needs one of these needs the same change.
+2. **Set `host` and `securityHeaders: true`.** That sends, on every page: `Strict-Transport-Security: max-age=63072000`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `Permissions-Policy: geolocation=(), camera=(), microphone=()`. Never add `X-XSS-Protection`: it is deprecated and can open holes in a safe site.
+3. **On Firebase,** merge the fragment into `firebase.json`, and tell the owner that Firebase replaces HSTS on `*.web.app`: only the custom domain serves it.
+4. **Stop there unless the site has a reason** for one of the optional steps below. Say which you left out and why, so the owner can choose later.
 
 ## The optional steps, and what each costs
 
@@ -38,7 +39,7 @@ Offer these; never add one the owner has not chosen. Each goes in the site's own
 Report to the [review protocol](../kiss-site-review/review-protocol.md): every finding before anything is edited, one row per cause. A header the site records as a choice is not a finding.
 
 1. **Read the live site's headers**, not the files: `curl -sI https://<the site>/` and one inner page. On Firebase, check the custom domain, not `*.web.app`. A header in `_headers` that the response does not carry is a deploy finding.
-2. **Check against the baseline:** the four headers present; no `X-XSS-Protection`; HSTS without `includeSubDomains` unless every subdomain serves HTTPS (try each one the owner names).
+2. **Check against the baseline:** the four headers present; a location, camera or microphone feature that `Permissions-Policy` blocks; no `X-XSS-Protection`; HSTS without `includeSubDomains` unless every subdomain serves HTTPS (try each one the owner names).
 3. **Check each optional step the site has taken** against its cost above: a CSP that blocks a widget the owner uses, framing denied on a site that builds learning packages, `integrity` on a floating URL.
 4. **Read the build's audit** for `stray-file` and `debug-dump`.
 

@@ -68,11 +68,14 @@ export function removeHeadersBlock(existing: string, markers?: {
     end: string;
 }): string;
 /**
- * Take back what an earlier build wrote and this one did not: kiss's block in
- * `_headers`, and each generated file in `files`. Under `cleanBuild: false`
- * the folder is kept, so a header the site has since turned off would
- * otherwise stay live. A `_headers` left empty is removed; a generated name
- * that anything claimed this build (the asset copy, a pipeline step) is left.
+ * What is in the build folder that looks like this writer's output but that
+ * this run did not write: kiss's block in `_headers`, and each generated file
+ * in `files`. Under `cleanBuild: false` the folder is kept, so a header the
+ * site has since turned off would stay live; the build warns about each one.
+ * It never deletes them: several Kiss instances can share one folder, each
+ * with its own output registry, so another instance's headers look the same
+ * as an earlier build's (Codex adversarial review, 2026-11-06). A file that
+ * anything claimed this build (the asset copy, a pipeline step) is not named.
  *
  * @param {Object} input
  * @param {string} input.root
@@ -80,9 +83,9 @@ export function removeHeadersBlock(existing: string, markers?: {
  * @param {string[]} input.files generated file names, build-relative
  * @param {string[]} input.written every path this build wrote
  * @param {{ kind?(file: string): string|null }} [input.outputs]
- * @returns {Promise<void>}
+ * @returns {Promise<string[]>} the build-relative names, `_headers` first
  */
-export function retireHeaders({ root, markers, files, written, outputs, }: {
+export function staleHeaders({ root, markers, files, written, outputs }: {
     root: string;
     markers: {
         start: string;
@@ -93,7 +96,7 @@ export function retireHeaders({ root, markers, files, written, outputs, }: {
     outputs?: {
         kind?(file: string): string | null;
     };
-}): Promise<void>;
+}): Promise<string[]>;
 /**
  * The Firebase fragment: patterns, never paths, because a person merges it
  * into `firebase.json` once and a hashed name changes on every edit. One
@@ -225,4 +228,9 @@ export type CacheHeadersWriteResult = {
      * encoding yet (`vercel`)
      */
     uncovered: string[];
+    /**
+     * kiss's cache output in the folder that this run
+     * did not write (`staleHeaders`), for the build to warn about
+     */
+    stale: string[];
 };

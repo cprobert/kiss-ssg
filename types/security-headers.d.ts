@@ -8,6 +8,8 @@
  * @property {string[]} formats the formats that ran
  * @property {boolean} unset the headers are on and no host was set
  * @property {string[]} uncovered hosts kiss cannot write headers for
+ * @property {string[]} stale kiss's security output in the folder that this
+ * run did not write (`staleHeaders`), for the build to warn about
  */
 /**
  * The header names a `_headers` file sets, for any path, lower-cased. Any
@@ -106,4 +108,9 @@ export type SecurityHeadersWriteResult = {
      * hosts kiss cannot write headers for
      */
     uncovered: string[];
+    /**
+     * kiss's security output in the folder that this
+     * run did not write (`staleHeaders`), for the build to warn about
+     */
+    stale: string[];
 };
