@@ -3,6 +3,66 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.13.2 — 2026-11-06
+
+A security release, from a review of the whole engine. One fix matters to any site that
+uses `config.consent`; the rest keep an API token out of the places a build writes and
+prints, and hold two values to the form they are written in.
+
+- **The consent script only ever loads from your own site.** The script kiss puts in every
+  page's `<head>` works out where its cached file is from the page's address. On a "not
+  found" page, an address written for the purpose could point it at another site, and the
+  file it fetched from there ran as part of yours. It now loads from the page's own host
+  or not at all, and tries the site's root if the first address has no file.
+- **A token in `fetch.headers` stays out of what kiss writes.** Each page's copy of the
+  config now holds the header names with every value reading `[redacted]`, so
+  `{{{stringify this}}}` or a controller that copies `config` cannot put the token into a
+  page. The dev `.json` file beside each page and `.viewStats()`'s `debug.json` no longer
+  hold `config` at all, and the `verbose` log prints the header values as `[redacted]`.
+  The request for a URL model still sends the real headers.
+- **A model URL is recorded without its query values.** In the site map and
+  `last-build.json` that `kiss-ssg aikb` writes, in `kiss-ssg check`'s output, in the log
+  and in a failed fetch's message, `?access_token=SECRET&type=course` is shown as
+  `?access_token=[redacted]&type=[redacted]`, and any `user:pass@` and `#fragment` are
+  dropped. The request itself is unchanged. A token belongs in `fetch.headers`, not in
+  the URL (GUIDE.md § Remote models).
+- **`{{embed}}` takes only an http(s) address for its frame.** A `src=` from page data,
+  and a service's own `embed.src` and `embed.watch`, must be an `https://` or `http://`
+  URL, a path on your site, or `//host/…`. Anything else, such as `javascript:`, fails
+  the page in a build and is left out with a warning under `--dev`.
+- **A `{placeholder}` in a service's `inline` script cannot leave its string.** The value
+  is URL-encoded as before, and every character that could end the string or the
+  `<script>` element is then escaped.
+
+Measured: a real site of 20 pages, built from the packed 2.13.0 and from this release,
+gives the same 472 files, byte for byte.
+
+### Upgrading
+
+- **If your site uses `config.consent`, rebuild and redeploy it.** The script is written
+  into every page, so the fix reaches a visitor only from a new build. If you send a
+  Content-Security-Policy with a hash for that script, take the hash again.
+- **`{{embed … src=…}}` with an address that is not http(s) now fails the page.** So do a
+  service's `embed.src` and `embed.watch`. An `https://` URL, a root-relative path and
+  `//host/…` render as before.
+- **`config.fetch.headers` values read `[redacted]` in templates and controllers.** The
+  header names are still there, and kiss's own fetch is unaffected. A controller that
+  makes its own request reads the token from `process.env`, where it should be kept, not
+  from `config`.
+- **The dev `.json` file and `debug.json` no longer hold `config`.** Anything that read
+  it from there reads the build script instead.
+- **A placeholder in an `inline` script is data, never code.** Inside quotes nothing
+  changes. An unquoted placeholder whose value holds `'`, `(`, `)`, `!`, `~` or `*` is now
+  escaped and becomes a syntax error in the browser: put the placeholder in quotes.
+- **If a model URL has a query string and you commit your `AIKB/` folder,** run
+  `npx kiss-ssg aikb <script>` and commit the result: the URL's rows are rewritten with
+  `[redacted]` values, and no note file moves. If a token was in that URL, it is still in
+  your git history, so replace it with a new one at the service and move it to
+  `fetch.headers`.
+- **A failed model fetch's message** no longer carries the URL's query values. For a
+  network failure it now ends with the underlying cause, and the error object has no
+  `cause` property.
+
 ## 2.13.1 — 2026-11-06
 
 kiss can now write a light set of security headers for you, and a new `kiss-security`

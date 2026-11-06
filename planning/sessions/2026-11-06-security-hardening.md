@@ -150,6 +150,31 @@ parallel over one at a time (2026-11-06).
     site with a committed `AIKB/` and a URL model with a query string sees its `url:` rows and
     subject ids rewritten on the next `kiss-ssg aikb`; note paths do not move; a token already
     committed stays in git history and must be rotated.
+- **2026-11-06, at the close** — the operator's four answers, and what the close measured.
+  - **The base moved.** PR #75 merged to `origin/main` as 2.13.1 while this branch was open. A
+    dry-run merge was clean; the operator chose to merge `origin/main` in (`2c07d7d`). So the
+    version is **2.13.2**, not the 2.13.1 the Intent proposed. Local `main` also held `b2a926f`
+    (a memory consolidation, never pushed), which this branch was cut from and carries into the PR.
+  - **Eyeball: looked** — "it is right". The operator was shown real output from a scratch site
+    built with this branch, a token in `fetch.headers` and another in the model URL's query
+    string: the built page's `{{{stringify this}}}` reading `"Authorization": "[redacted]"`, the
+    `AIKB/site-map.md` row and a failed fetch's two log lines reading
+    `?access_token=[redacted]&type=[redacted]`, and 0 hits for either token. No pulse-time
+    eyeball had happened, so this was the close's one ask.
+  - **Review.** Codex is out of credits; the operator chose to skip it and to run one round of a
+    fresh-context Claude security review over `ca87fcd..7c527a3`, `lib/` only, under the plan's
+    threat model. Same model family as the author, so it is not an independent review.
+  - **Fleet, on the merged and bumped tree.** `a1k9training` built from the packed 2.13.0 and
+    from the packed 2.13.2, one after the other: 472 files each, none differing as bytes. The two
+    `kiss-ssg check` reports taken together agree on all 20 page hashes.
+  - **Not explained:** the same 2.13.0 tarball gives 20 different page hashes now than it did
+    when `base.json` was taken earlier in the day, in the same scratch clone. It is not the
+    engine, since one tarball disagrees with itself; the cause was not looked for. Reports are
+    comparable only when taken together.
+  - **Docs sweep.** The `AIKB/` notes match the code. `docs/` was regenerated for the changed
+    `GUIDE.md`. `llms.txt` is unchanged: it is 15,967 of its 16,000 characters, and the rules are
+    in `GUIDE.md` and the upgrade note. `/corpse-collector` was skipped: the branch renames and
+    removes nothing.
 
 ---
 
