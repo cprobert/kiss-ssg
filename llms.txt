@@ -6,7 +6,7 @@ This file is the index: what exists, the shape to follow, and the traps nothing 
 
 Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `Kiss` instance per build folder, built with `new Kiss(config)` and driven by a chainable API. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict.
 
-**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-performance`, `kiss-design`, `kiss-legal-and-privacy`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands for Claude Code and Codex; a declaration alone installs nothing. Offer them to the site's owner before building without them.
+**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-performance`, `kiss-design`, `kiss-legal-and-privacy`, `kiss-security`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands; a declaration alone installs nothing. Offer them to the site's owner before building without them.
 
 ## The build script
 
@@ -66,6 +66,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   host: null, // 'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages' | a list
   redirects: { format: null }, // null: follows host
   cacheHeaders: { format: null }, // null: follows host
+  securityHeaders: false, // true: HSTS and 3 more set-and-forget headers
   audit: { check: true, ignore: [], privacyPage: null },
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
@@ -130,7 +131,7 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 ## Checking a build
 
-`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code; build the audit's checks in rather than meeting them as findings. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. GUIDE.md § Checking a build, § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell. `speed <build-folder>` gives Lighthouse KPIs (after `npm install -D lighthouse`), `css <build-folder>` audits where CSS goes: GUIDE.md § Measuring speed, § Auditing CSS.
+`npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. GUIDE.md § Checking a build, § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell. `speed <build-folder>` gives Lighthouse KPIs (after `npm install -D lighthouse`), `css <build-folder>` audits where CSS goes: GUIDE.md § Measuring speed, § Auditing CSS.
 
 `npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed (not a link, and pinned in package.json and the lockfile), and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
 

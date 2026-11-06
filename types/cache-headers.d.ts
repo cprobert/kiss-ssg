@@ -42,13 +42,19 @@ export function renderHeadersBlock(rules: CacheHeaderRule[]): string;
 /**
  * The site's own `_headers` with kiss's block appended. A block an earlier
  * build left (under `cleanBuild: false`) is replaced, never repeated. With no
- * site file, kiss's block is the whole file.
+ * site file, kiss's block is the whole file. `markers` names the block's two
+ * lines, so the security headers (`lib/security-headers.js`) keep a block of
+ * their own beside this one.
  *
  * @param {string|null} existing the site's file, or `null` when it has none
  * @param {string} block from `renderHeadersBlock`
+ * @param {{ start: string, end: string }} [markers]
  * @returns {string}
  */
-export function mergeHeadersFile(existing: string | null, block: string): string;
+export function mergeHeadersFile(existing: string | null, block: string, markers?: {
+    start: string;
+    end: string;
+}): string;
 /**
  * The Firebase fragment: patterns, never paths, because a person merges it
  * into `firebase.json` once and a hashed name changes on every edit. One

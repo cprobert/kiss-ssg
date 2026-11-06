@@ -99,6 +99,7 @@ The default config options are:
   cacheHeaders: {
     format: null
   },
+  securityHeaders: false,
   audit: {
     check: true,
     ignore: [],
@@ -1033,6 +1034,30 @@ A file kiss content-hashed (`assets: { hash: true }`, and the consent client `ki
 On Firebase, a file kiss did not hash but whose name looks hashed (`vendor/lib.deadbeef.js`) matches the pattern too and would be cached for a year: the build names it in a warning, so you can rename it.
 
 **Not yet measured, so not stated here:** which wins on Netlify when `_headers` and `netlify.toml` both set `Cache-Control` for one path, and how Firebase orders a `regex` header rule against your own `source` globs. Check your deploy with `curl -sI` on one hashed file until this section says.
+
+### Security headers
+
+`securityHeaders: true` adds a short set of security headers to the same host files as the [cache headers](#cache-headers), in a marked block of its own after theirs. It is **off by default**: a header changes what a browser allows on a site that already works.
+
+```js
+new Kiss({ host: 'netlify', securityHeaders: true })
+```
+
+It writes only the headers a site sets once and never touches again, with the values in OWASP's HTTP Headers Cheat Sheet:
+
+| Header                      | Value                                      |
+| --------------------------- | ------------------------------------------ |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains`      |
+| `X-Content-Type-Options`    | `nosniff`                                  |
+| `Referrer-Policy`           | `strict-origin-when-cross-origin`          |
+| `Permissions-Policy`        | `geolocation=(), camera=(), microphone=()` |
+
+- **No `preload` on HSTS.** It is slow to undo and safe only once every subdomain serves HTTPS; add it in your own `_headers` when that is true.
+- **No Content-Security-Policy, framing header (`X-Frame-Options`, `frame-ancestors`) or `Cross-Origin-Opener-Policy`.** Each protects more and costs more: a CSP blocks every widget you add later until the policy changes, denying framing stops Moodle showing a [learning package](#learning-packages), and COOP can break pop-up payment and sign-in windows. Add one in your own `_headers` when the site has a reason; the `kiss-security` skill says how.
+- **Never `X-XSS-Protection`**: deprecated, and it can open holes in a site that is otherwise safe.
+- **Your own headers win.** A header your `src/assets/_headers` already sets for `/*` is not written again, and the build says which it left to you.
+
+[`host`](#where-the-site-is-deployed-host) picks the file: `_headers` for `'netlify'` and `'cloudflare'`; `security-headers.firebase.json`, a fragment to merge into `firebase.json`, for `'firebase'` (Firebase replaces HSTS on its own `*.web.app` subdomains, so only a custom domain serves it). `'vercel'` has no file yet and the build warns; `'github-pages'` cannot set headers. `security-headers.json` (`{ version: 1, rules: [{ path: '/*', headers }] }`) carries the list whatever the host. Nothing is written in dev, nor by a failed build.
 
 ### Learning packages
 

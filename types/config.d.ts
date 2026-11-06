@@ -203,6 +203,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissHost[]|null} host where the site is deployed, as a list; `null` (the default) when the site has not said
  * @property {KissRedirects} redirects how page `aliases` are encoded on a settled build
  * @property {KissCacheHeaders} cacheHeaders the host files that let the hashed files be cached for a year
+ * @property {boolean} securityHeaders write the light, set-and-forget security headers (HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy`) into the host's header files beside the cache headers (`lib/security-headers.js`); off by default
  * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
  * @property {KissMarkdownCopies} markdownCopies the `.md` copy written beside every HTML page, for agents
  * @property {import('./packages.js').KissPackages|false} packages the learning packages written for the pages that name one (`package`); `false` writes none
@@ -369,6 +370,7 @@ export const DEFAULT_CONFIG: Readonly<{
     cacheHeaders: Readonly<{
         format: any;
     }>;
+    securityHeaders: false;
     audit: Readonly<{
         check: true;
         ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive")[];
@@ -711,6 +713,10 @@ export type KissSettings = {
      * the host files that let the hashed files be cached for a year
      */
     cacheHeaders: KissCacheHeaders;
+    /**
+     * write the light, set-and-forget security headers (HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy`) into the host's header files beside the cache headers (`lib/security-headers.js`); off by default
+     */
+    securityHeaders: boolean;
     /**
      * gates the launch-readiness audit on a settled non-dev build
      */
