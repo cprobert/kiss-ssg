@@ -39,6 +39,8 @@ opened: 2026-11-06
 
 ## Pulse log
 
+- **2026-11-06** — Security criteria met. `npm ls` shows handlebars 4.7.10 and glob 14.0.4. `npm audit --omit=dev`: 0 vulnerabilities; the full audit has 4 moderate, all the one dev-only eslint → minimatch chain (amended). Gates green on `ce368b1`. Docs and 14 examples byte-identical across the dependency bump. Docs criteria met: `check docs.js --summary` gives `ok — 14 pages, 0 failed` with no audit finding and no third-party origin, and the Examples page lists 14. Not yet: the 2.12.3 bump and changelog (close), and 0 open alerts (after merge). Impact surface moved to engine internals plus the docs site through Amendments; still a patch, tarball unchanged at 411 files. **Eyeball: looked**: the operator opened the homepage screenshots at 1440 and 375 (self-hosted fonts, `{{image}}` cards) and they match. The production AVIF/WebP markup has been read but not loaded in a browser until the site is live. Offer: vendoring highlight.js 11.9.0 (invisible to Dependabot), **kept** by the operator. Decision: ready to close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
