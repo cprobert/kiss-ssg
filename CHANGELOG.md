@@ -3,6 +3,35 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.12.3 — 2026-11-06
+
+A security release: kiss-ssg's own dependencies, with nothing in the API changed.
+
+- **handlebars `^4.7.10`.** Two critical advisories ("JavaScript Injection via AST Type
+  Confusion in compile", a bypass of CVE-2026-33937, and "JavaScript Injection via Own Property
+  Check Bypass") and one moderate ("Unsafe Inline Embedding of Precompiled Templates") are
+  fixed in 4.7.10. kiss
+  compiles your templates with it on every build. kiss now requires that version, so a site
+  that installs kiss-ssg cannot resolve an older one.
+- **glob 14** (from 13), with the patched `minimatch` and `brace-expansion` under it. kiss
+  calls it in one place, with fixed patterns, so which files a build picks up is unchanged.
+- **`source-map-js` 1.2.2**, through postcss, for a denial-of-service advisory.
+
+Measured: this repository's docs site and all 14 examples build byte-identical before and
+after the update.
+
+### Upgrading
+
+Take this release, for the handlebars fix:
+
+```bash
+npx kiss-ssg@latest upgrade
+```
+
+Nothing in a site changes. `npx kiss-ssg check <script>` should report the same pages, with
+no diff against your last record. A site whose own `package.json` pins `handlebars` or `glob`
+directly can drop that pin, or raise it to these versions.
+
 ## 2.12.2 — 2026-11-05
 
 Page ids and `{{embed}}`, from what two sites on 2.12 asked for.
