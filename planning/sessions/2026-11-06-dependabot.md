@@ -1,7 +1,7 @@
 ---
 branch: chore/dependabot
 base: main
-status: open
+status: closed
 opened: 2026-11-06
 ---
 
@@ -26,6 +26,8 @@ opened: 2026-11-06
 **Expected shape:** planned. One config file.
 
 ### Amendments
+
+- 2026-11-06: the operator chose to push straight to `main` rather than run `/branch-close`, because the change is too small for the full ritual: one repository config file, gates green, nothing in the tarball. So there is no PR, no version bump and no reflection. The "GitHub accepts the file" criterion can only be checked once the file is on `main`.
 
 ## Pulse log
 
