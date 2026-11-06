@@ -94,6 +94,7 @@ The default config options are:
   cacheHeaders: {
     format: null
   },
+  securityHeaders: false,
   audit: {
     check: true,
     ignore: [],
