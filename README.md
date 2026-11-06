@@ -104,7 +104,7 @@ _The next session starts from facts, not guesses._
 
 ## Quick start
 
-You need [Node 22.12+](https://nodejs.org) and a coding agent: [Claude Code](https://claude.com/claude-code) or [Codex](https://github.com/openai/codex), each with its own account. Pick the block for the one you use.
+You need [Node 22.23.4+](https://nodejs.org) and a coding agent: [Claude Code](https://claude.com/claude-code) or [Codex](https://github.com/openai/codex), each with its own account. Pick the block for the one you use.
 
 **Claude Code**
 
@@ -235,7 +235,7 @@ Everything above is in **[GUIDE.md](GUIDE.md)**, and the same guide is on the [w
 
 ## Requirements
 
-Node 22.12 or newer. kiss-ssg is an ES module (`import Kiss from 'kiss-ssg'`); `require('kiss-ssg')` also works on Node ≥22.12, and returns the class, with the named exports as statics on it (`Kiss.utils.toSlug`).
+Node 22.23.4 or newer. kiss-ssg is an ES module (`import Kiss from 'kiss-ssg'`); `require('kiss-ssg')` also works, and returns the class, with the named exports as statics on it (`Kiss.utils.toSlug`).
 
 ## Development
 

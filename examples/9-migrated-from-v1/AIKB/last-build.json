@@ -7,7 +7,7 @@
       "view": "index.hbs",
       "buildTo": "./public/index.html",
       "ok": true,
-      "hash": "b9594d38096ab7e2d8d66894d42d548f79ed26ea",
+      "hash": "273b595edb3546f0013729992161910c15557e0f",
       "id": "index",
       "canonical": null,
       "markdown": null
@@ -70,7 +70,7 @@
       "view": "smaller-changes.hbs",
       "buildTo": "./public/smaller-changes.html",
       "ok": true,
-      "hash": "d65d71eabd8ea35f42a150c9a422078dee4db47b",
+      "hash": "d7b07025415c185a43d596faafdd1fdfb0d4c4ea",
       "id": "smaller-changes",
       "canonical": null,
       "markdown": null

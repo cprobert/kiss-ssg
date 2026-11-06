@@ -214,14 +214,12 @@ await `ready`, `fs.remove(dir)`, `fs.outputFile(dir/restored.txt)`, wait up to
 is current while it misses. The session scratchpad's `probe.mjs` was that
 script, run from the repo so its chokidar is the one under test.
 
-### `@eslint/js` requires a higher Node than kiss does
-
-**Observed:** `engines.node` is 22.12; `@eslint/js` needs 22.13. **Effect:** on
-22.12 exactly, `npm test` passes and `npm run lint` refuses to run. **What kiss
-does:** nothing — the floor is a promise to consumers and the linter is a
-development tool, so the split is stated in `CLAUDE.md` and `.nvmrc` pins the
-development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
-whether kiss's own floor has moved past it.
+**chokidar 6.0.0 (taken 2026-11-06) says it fixes this**: "a deleted watched
+path … is now awaited from its nearest existing parent", and "persistent
+watching stopping after a watched directory was removed" (#1463). That is
+chokidar's claim, not a measurement. The parent-watch above stays until the
+re-check passes on Linux with chokidar 6; if it does, watching the assets root
+directly is the simpler shape.
 
 ### eslint holds minimatch on 10, which a Dependabot advisory covers
 

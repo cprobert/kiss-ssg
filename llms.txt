@@ -1,6 +1,6 @@
 # kiss-ssg
 
-> A small, dependency-driven static site generator for Node, built to be driven by a coding agent. MVC-style: Handlebars views, JSON/HTTP/function models, JS controllers. ESM (Node ≥22.12), no build step, no bundler.
+> A small, dependency-driven static site generator for Node, built to be driven by a coding agent. MVC-style: Handlebars views, JSON/HTTP/function models, JS controllers. ESM (Node ≥22.23.4), no build step, no bundler.
 
 This file is the index: what exists, the shape to follow, and the traps nothing reports. Every rule's full statement is in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line below names.
 

@@ -9,7 +9,7 @@
         "url": "https://nodejs.org",
         "need": "Required",
         "level": "required",
-        "what": "Runs kiss and builds your site. Version 22.12 or later — the LTS download is fine."
+        "what": "Runs kiss and builds your site. Version 22.23.4 or later — the LTS download is fine."
       },
       {
         "icon": "icons/agent",

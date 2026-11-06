@@ -2296,8 +2296,8 @@ The development watcher handles asset additions, edits, renames and deletions, r
 
 ## Migrating from v1
 
-- **Node ≥22.12.0 first** (`package.json` `engines.node`) — check this before anything else here: v2 will not install or run below it. If your project pins a dev Node version the way this repo's own `.nvmrc` does, bump yours before touching any code.
-- v2 is ESM-only (`import Kiss from 'kiss-ssg'`). `require()` still works on Node ≥22.12, and returns the class: the named exports are statics on it (`Kiss.utils`).
+- **Node ≥22.23.4 first** (`package.json` `engines.node`) — check this before anything else here: v2 will not install or run below it. If your project pins a dev Node version the way this repo's own `.nvmrc` does, bump yours before touching any code.
+- v2 is ESM-only (`import Kiss from 'kiss-ssg'`). `require()` still works, and returns the class: the named exports are statics on it (`Kiss.utils`).
 - `folders.root` and `folders.static` are gone — no module in v1 ever read them, so a config still passing them gets nothing rather than a quiet no-op. Delete the keys; with `// @ts-check` on your build script they are now a typing error too. The six folders v2 derives from `folders.src` / `folders.build` unless you override them (`pages`, `assets`, `layouts`, `partials`, `models`, `controllers`) are listed under "Usage" above.
 - The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build. Failures don't surface through `.generate()`, though: v1 logged a page's render/write failure and resolved anyway, while v2's `.complete()` **rejects** with an `AggregateError` (`err.failures` = `[{ view, buildTo, error }]`). The v1 callback-style idiom — `kiss.generate(function () { this.complete(function () { ... }) })` — now leaves that rejection unhandled the first time a page fails, so give `.complete()` a `.catch`:
 
