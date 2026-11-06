@@ -212,7 +212,7 @@ kiss
     view: 'smaller-changes.hbs',
     title: 'The smaller changes',
     description:
-      'Node 22.12, ESM, the utils named export and the other one-line v2 changes.',
+      'Node 22.23.4, ESM, the utils named export and the other one-line v2 changes.',
   })
   .pages({
     view: 'shelf/item.hbs',

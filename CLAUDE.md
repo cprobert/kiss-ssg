@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`kiss-ssg` is a small, dependency-driven static site generator for Node (ESM, Node ≥22.12). The engine is the `lib/` folder — `lib/kiss.js` is the entry point and orchestrator; every other `lib/*.js` module has one responsibility. There is no build step, bundler, or transpilation.
+`kiss-ssg` is a small, dependency-driven static site generator for Node (ESM, Node ≥22.23.4). The engine is the `lib/` folder — `lib/kiss.js` is the entry point and orchestrator; every other `lib/*.js` module has one responsibility. There is no build step, bundler, or transpilation.
 
 `llms.txt` at the repo root is the LLM-oriented **index** of the API (per the [llmstxt.org](https://llmstxt.org) convention). It ships in the npm package, and `kiss-ssg init` `@`-imports it into every site's `CLAUDE.md`, so every character is loaded into every session of every consuming site. It names what exists, the shape to follow and the traps nothing reports, and points at the `GUIDE.md` section holding each rule. `test/aikb.test.js` caps it at 16,000 characters. It grew to 130k one API passage at a time, until a site's instruction files overran Claude Code's 150k budget (2026-10-06). Keep it in sync with `lib/kiss.js` when the public API changes, and raise the cap only by cutting something else.
 
@@ -196,7 +196,7 @@ npm run eg1 … eg12       # run an example (examples/<n>-<name>/router.js, run 
                          # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11, 12); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding; 12 also carries `tools/convert.mjs` (the one-off conversion, writes to the ignored .converted/) and `tools/compare.mjs` (did the conversion change the page)
 ```
 
-`.nvmrc` pins the Node line for development. Note the split: the package's runtime floor is Node 22.12 (`engines.node`), but `npm run lint`'s `@eslint/js` needs 22.13 — on 22.12 exactly, tests pass and lint refuses to run.
+`.nvmrc` holds the package's runtime floor, Node 22.23.4 (`engines.node`), and CI's `setup-node` reads it, so the gates run on the oldest Node a site may run. A local machine on a newer Node passes the gates without proving the floor.
 
 Prettier config is in `.prettierrc` (no semicolons, single quotes) and `.prettierignore`. `.hbs` templates are **not** prettier-formatted: its Handlebars parser rejects `{{> "partial"}}`, which every template here uses.
 

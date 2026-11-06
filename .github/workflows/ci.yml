@@ -25,11 +25,11 @@ jobs:
         # gates run on both rather than on whichever machine closed the branch.
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # The format gate diffs against the base branch, which needs history.
           fetch-depth: 0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm

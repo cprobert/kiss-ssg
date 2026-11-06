@@ -12,7 +12,7 @@ Install the first two before you start. The other two keep your work safe and pu
 
 -   [Node.js (opens in a new tab)](https://nodejs.org) Required
     
-    Runs kiss and builds your site. Version 22.12 or later — the LTS download is fine.
+    Runs kiss and builds your site. Version 22.23.4 or later — the LTS download is fine.
     
 -   Claude Code or Codex Required
     

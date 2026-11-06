@@ -105,8 +105,8 @@ keeps the documented window: the client is livereload-js's, not ours, and a huma
 it.
 
 **The watcher.** Chokidar is the Node norm. Eleventy uses it outright; Vite still uses chokidar 3.6 for files
-outside its module graph, with a WSL2 caveat that needs polling. kiss is on chokidar 5.0.0, the latest, and
-none of the three problems above is the watcher's.
+outside its module graph, with a WSL2 caveat that needs polling. kiss is on chokidar 6.0.0 (taken
+2026-11-06, the latest then), and none of the three problems above is the watcher's.
 
 Sources, as checked on 2026-09-23: Jekyll PR jekyll/jekyll#8459 and `docs/configuration/options` and
 `docs/configuration/incremental-regeneration`; Eleventy issue 11ty/eleventy#3001, discussion #2294,

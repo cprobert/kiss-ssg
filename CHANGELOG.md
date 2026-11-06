@@ -3,6 +3,41 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.13.0 — 2026-11-06
+
+kiss-ssg now needs **Node 22.23.4 or later**, the current Node 22 LTS release, and takes
+the first round of dependency updates since Dependabot was switched on.
+
+- **Node `>=22.23.4`** (`engines.node`). The dev watcher's new chokidar needs 22.22, and
+  22.23.4 is the Node 22 security release of 2026-10-20.
+- **chokidar 6**, under `--dev`. The rewritten watcher confirms each change against the
+  file system before reporting it, which its release notes say fixes missed and doubled
+  events on Windows. Nothing in your site changes, and a live reload still follows a save.
+- **htmlparser2 12**, which kiss uses to convert a page you import (`splitDocument`) and
+  to check consent and learning-package markup. Its HTML parsing now follows the browser
+  standard. No built page changed in this repository's examples or on a real site
+  rebuilt from this release.
+- **sass 1.108**, and smaller updates to fs-extra and kiss-ssg's development tools.
+
+Measured: this repository's docs site and all 14 examples build byte-identical before and
+after, apart from the pages that state the Node version. A real site built from the
+packed release gives the same 7 pages, the same audit and no broken links.
+
+### Upgrading
+
+Update Node first. Check with `node --version`: anything below `v22.23.4` needs the
+current Node 22 LTS, or Node 24, from nodejs.org or your version manager. If your
+project pins Node in `.nvmrc`, `.node-version` or your host's build settings (Netlify's
+`NODE_VERSION`, a GitHub Actions `node-version`), raise it there too, or the host builds
+on the old one. Then:
+
+```bash
+npx kiss-ssg@latest upgrade
+```
+
+On an older Node, npm warns that kiss-ssg needs a newer one and installs it anyway (unless
+your npm sets `engine-strict`), so take the warning as the reason to update.
+
 ## 2.12.3 — 2026-11-06
 
 A security release: kiss-ssg's own dependencies, with nothing in the API changed.

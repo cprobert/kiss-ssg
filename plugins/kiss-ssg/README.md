@@ -50,4 +50,4 @@ In Claude Code, skills are then available as `/kiss-ssg:<name>` — but you don'
 
 ## Requirements
 
-kiss-ssg installed in the project being worked on (`npm install kiss-ssg --save-dev`), on Node ≥22.12. The skills read the package's own docs from `node_modules/`, so an out-of-date install teaches out-of-date guidance — check the version first, which is the first step of `kiss-site-new`.
+kiss-ssg installed in the project being worked on (`npm install kiss-ssg --save-dev`), on Node ≥22.23.4. The skills read the package's own docs from `node_modules/`, so an out-of-date install teaches out-of-date guidance — check the version first, which is the first step of `kiss-site-new`.

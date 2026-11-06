@@ -9,6 +9,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # The Node types follow the Node floor (engines.node), not the newest Node:
+    # a newer major would type-check calls a site on the floor cannot make.
+    # Raise it by hand when the floor moves to a new major.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       npm-minor-and-patch:
         update-types:

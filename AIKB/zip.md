@@ -19,7 +19,7 @@ The module is pure: it takes entries and returns a `Buffer`. It reads no files, 
 
 ## Depends on
 
-`node:zlib` for `crc32` alone (in Node since 22.2; `engines` is `>=22.12`). Nothing else.
+`node:zlib` for `crc32` alone (in Node since 22.2; `engines` is `>=22.23.4`). Nothing else.
 
 ## Depended on by
 

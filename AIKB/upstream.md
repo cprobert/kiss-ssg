@@ -71,6 +71,12 @@ as `open`/`close`. A local guard in one function. **Re-check:** parse
 `Parser` and see whether every byte has an event and `<P>` is a sibling of
 `<IMG>`.
 
+**Re-checked 2026-11-06 on htmlparser2 12.0.0** (its HTML mode now follows the
+WHATWG spec): `</ x>` arrives as a comment, so that gap is closed. A stray
+`</span>` and an unfinished `<b` at the end still produce no event, and with
+`lowerCaseTags: false` an `<IMG>` still swallows the `<P>` after it (its close
+is reported as implied, at the end). The guard stays.
+
 ### handlebars renders a missing zero-argument helper as empty
 
 **Observed:** handlebars 4.7. **Effect:** `{{shout "hi"}}` on a helper that is
@@ -214,14 +220,12 @@ await `ready`, `fs.remove(dir)`, `fs.outputFile(dir/restored.txt)`, wait up to
 is current while it misses. The session scratchpad's `probe.mjs` was that
 script, run from the repo so its chokidar is the one under test.
 
-### `@eslint/js` requires a higher Node than kiss does
-
-**Observed:** `engines.node` is 22.12; `@eslint/js` needs 22.13. **Effect:** on
-22.12 exactly, `npm test` passes and `npm run lint` refuses to run. **What kiss
-does:** nothing — the floor is a promise to consumers and the linter is a
-development tool, so the split is stated in `CLAUDE.md` and `.nvmrc` pins the
-development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
-whether kiss's own floor has moved past it.
+**chokidar 6.0.0 (taken 2026-11-06) says it fixes this**: "a deleted watched
+path … is now awaited from its nearest existing parent", and "persistent
+watching stopping after a watched directory was removed" (#1463). That is
+chokidar's claim, not a measurement. The parent-watch above stays until the
+re-check passes on Linux with chokidar 6; if it does, watching the assets root
+directly is the simpler shape.
 
 ### eslint holds minimatch on 10, which a Dependabot advisory covers
 
