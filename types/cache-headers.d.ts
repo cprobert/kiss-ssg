@@ -42,13 +42,61 @@ export function renderHeadersBlock(rules: CacheHeaderRule[]): string;
 /**
  * The site's own `_headers` with kiss's block appended. A block an earlier
  * build left (under `cleanBuild: false`) is replaced, never repeated. With no
- * site file, kiss's block is the whole file.
+ * site file, kiss's block is the whole file. `markers` names the block's two
+ * lines, so the security headers (`lib/security-headers.js`) keep a block of
+ * their own beside this one.
  *
  * @param {string|null} existing the site's file, or `null` when it has none
  * @param {string} block from `renderHeadersBlock`
+ * @param {{ start: string, end: string }} [markers]
  * @returns {string}
  */
-export function mergeHeadersFile(existing: string | null, block: string): string;
+export function mergeHeadersFile(existing: string | null, block: string, markers?: {
+    start: string;
+    end: string;
+}): string;
+/**
+ * A `_headers` file with kiss's block taken out, and the blank line
+ * `mergeHeadersFile` put before it, so a merge and a removal undo each other.
+ *
+ * @param {string} existing
+ * @param {{ start: string, end: string }} [markers]
+ * @returns {string}
+ */
+export function removeHeadersBlock(existing: string, markers?: {
+    start: string;
+    end: string;
+}): string;
+/**
+ * What is in the build folder that looks like this writer's output but that
+ * this run did not write: kiss's block in `_headers`, and each generated file
+ * in `files`. Under `cleanBuild: false` the folder is kept, so a header the
+ * site has since turned off would stay live; the build warns about each one.
+ * It never deletes them: several Kiss instances can share one folder, each
+ * with its own output registry, so another instance's headers look the same
+ * as an earlier build's (Codex adversarial review, 2026-11-06). A file that
+ * anything claimed this build (the asset copy, a pipeline step) is not named.
+ *
+ * @param {Object} input
+ * @param {string} input.root
+ * @param {{ start: string, end: string }} input.markers kiss's block in `_headers`
+ * @param {string[]} input.files generated file names, build-relative
+ * @param {string[]} input.written every path this build wrote
+ * @param {{ kind?(file: string): string|null }} [input.outputs]
+ * @returns {Promise<string[]>} the build-relative names, `_headers` first
+ */
+export function staleHeaders({ root, markers, files, written, outputs }: {
+    root: string;
+    markers: {
+        start: string;
+        end: string;
+    };
+    files: string[];
+    written: string[];
+    outputs?: {
+        kind?(file: string): string | null;
+    };
+}): Promise<string[]>;
 /**
  * The Firebase fragment: patterns, never paths, because a person merges it
  * into `firebase.json` once and a hashed name changes on every edit. One
@@ -180,4 +228,9 @@ export type CacheHeadersWriteResult = {
      * encoding yet (`vercel`)
      */
     uncovered: string[];
+    /**
+     * kiss's cache output in the folder that this run
+     * did not write (`staleHeaders`), for the build to warn about
+     */
+    stale: string[];
 };

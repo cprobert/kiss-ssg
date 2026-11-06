@@ -59,6 +59,7 @@ _Three sentences and a host name. The agent takes it from there._
 - **[kiss-seo](plugins/kiss-ssg/skills/kiss-seo/SKILL.md) →** One purpose per page, a title and description for the person reading the search result, and the right way to keep a page out of search.
 - **[kiss-design](plugins/kiss-ssg/skills/kiss-design/SKILL.md) →** The craft under any look, and a design lift that keeps a site's content, URLs and recorded decisions.
 - **[kiss-legal-and-privacy](plugins/kiss-ssg/skills/kiss-legal-and-privacy/SKILL.md) →** A privacy page written from what the site actually does with people's details, storage measured in a browser before anyone consents, and a one-page list of habits for the owner. Dated UK and EU law, every fact sourced; not legal advice.
+- **[kiss-security](plugins/kiss-ssg/skills/kiss-security/SKILL.md) →** Security headers in proportion to a static site: the set-and-forget ones with `securityHeaders: true`, and the stronger ones only when the site has a reason, with what each costs to keep up.
 - **[Fourteen examples](examples/) →** Runnable sites the agent copies by shape, from one folder of views to a blog, a data-fed site, a converted single-file page, a course packaged for an LMS and a site with a cookie banner. They ship in the package.
 - **[Anthropic's `frontend-design` skill](#quick-start) →** kiss decides how a site is built, not what it looks like. Install this beside kiss's skills and it sets the visual direction while kiss keeps the structure.
 
