@@ -71,6 +71,12 @@ as `open`/`close`. A local guard in one function. **Re-check:** parse
 `Parser` and see whether every byte has an event and `<P>` is a sibling of
 `<IMG>`.
 
+**Re-checked 2026-11-06 on htmlparser2 12.0.0** (its HTML mode now follows the
+WHATWG spec): `</ x>` arrives as a comment, so that gap is closed. A stray
+`</span>` and an unfinished `<b` at the end still produce no event, and with
+`lowerCaseTags: false` an `<IMG>` still swallows the `<P>` after it (its close
+is reported as implied, at the end). The guard stays.
+
 ### handlebars renders a missing zero-argument helper as empty
 
 **Observed:** handlebars 4.7. **Effect:** `{{shout "hi"}}` on a helper that is
