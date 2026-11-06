@@ -166,6 +166,18 @@ describe('writeSecurityHeaders', () => {
     ).toBe(true)
   })
 
+  it('leaves a file of the same name that another step made this build', async () => {
+    // An assets.pipeline step registers its output as `pipeline` (Codex review).
+    const file = path.join(root, 'security-headers.firebase.json')
+    await fs.outputFile(file, '{}')
+    await writeSecurityHeaders({
+      config: { host: [] },
+      root,
+      outputs: { claim() {}, kind: (f) => (f === file ? 'pipeline' : null) },
+    })
+    expect(await fs.pathExists(file)).toBe(true)
+  })
+
   it('merges into a `_headers` the site and the cache headers already wrote', async () => {
     const site = '/*\n  X-Content-Type-Options: nosniff\n'
     await fs.outputFile(path.join(root, '_headers'), site)

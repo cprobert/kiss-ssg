@@ -72,7 +72,7 @@ export function removeHeadersBlock(existing: string, markers?: {
  * `_headers`, and each generated file in `files`. Under `cleanBuild: false`
  * the folder is kept, so a header the site has since turned off would
  * otherwise stay live. A `_headers` left empty is removed; a generated name
- * the asset copy made this build is the site's, and is left.
+ * that anything claimed this build (the asset copy, a pipeline step) is left.
  *
  * @param {Object} input
  * @param {string} input.root
