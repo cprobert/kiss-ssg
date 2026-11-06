@@ -223,6 +223,24 @@ development tool, so the split is stated in `CLAUDE.md` and `.nvmrc` pins the
 development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
 whether kiss's own floor has moved past it.
 
+### eslint holds minimatch on 10, which a Dependabot advisory covers
+
+**Observed** (2026-11-06, eslint 10.10.0, latest 10.14.0, `@eslint/config-array`
+0.23.5): eslint and `@eslint/config-array` both depend on `minimatch` `^10`.
+GHSA-g3hv-75wg-m249 (moderate, a denial of service through pattern
+amplification) covers minimatch 7.0.0 to 11.0.0 and is fixed only in 11.0.1.
+**Effect:** `npm audit` reports four moderate findings, all one chain
+(minimatch → `@eslint/config-array` → eslint → `@eslint/js`). Its suggested
+fix is a downgrade to eslint 9. **What kiss does:** nothing. eslint is a
+`devDependency`, it lints this repository's own files and never reaches a
+site's install. The runtime copy of minimatch, under glob 14, is 11.x. The
+Dependabot alert was dismissed as tolerable risk (dev-only, no upstream fix).
+An `overrides` entry was considered and rejected, because it would run eslint
+on a major version it does not declare. **Re-check:**
+`npm view eslint dependencies.minimatch` and
+`npm view @eslint/config-array dependencies.minimatch`. When either says `^11`,
+take that eslint and expect `npm audit` to report 0.
+
 ### npm redacts a UUID-like path segment in `npm prefix`, and `npm config` refuses a workspace member
 
 **Observed (npm 11.9.0, Windows, 2026-11-01):** run from a workspace member, `npm prefix`

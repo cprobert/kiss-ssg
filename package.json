@@ -82,8 +82,8 @@
     "colors": "^1.4.0",
     "connect": "^3.7.0",
     "fs-extra": "^11.4.0",
-    "glob": "^13.0.6",
-    "handlebars": "^4.7.7",
+    "glob": "^14.0.4",
+    "handlebars": "^4.7.10",
     "handlebars-layouts": "^3.1.4",
     "html-minifier-terser": "^7.2.0",
     "htmlparser2": "^10.1.0",
@@ -109,14 +109,14 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.1",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
     "playwright-core": "^1.64.0",
     "prettier": "^3.9.6",
     "typescript": "^5.9.3",
-    "vitest": "^5.0.0"
+    "vitest": "^5.1.0"
   },
   "keywords": [
     "generator",

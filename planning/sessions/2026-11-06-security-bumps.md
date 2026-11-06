@@ -32,6 +32,9 @@ opened: 2026-11-06
 
 ### Amendments
 
+- 2026-11-06: the criterion "`npm audit` reports 0" cannot be met. eslint (the latest, 10.14) and `@eslint/config-array` still require minimatch `^10`, which the advisory covers in full. The operator chose to document and dismiss: it is recorded in `AIKB/upstream.md`, and the Dependabot alert is dismissed after merge as tolerable risk (dev-only). The criterion now reads: 0 runtime findings, and the 4 dev-only findings are that one eslint → minimatch chain.
+- 2026-11-06: vitest and `@vitest/coverage-v8` move together (coverage pins vitest exactly), and `npm install` took them to 5.1.0, a dev-only minor. postcss moved 8.5.28 → 8.5.32 along with source-map-js. A first attempt that also updated sass and eslint was reverted as a general refresh, which is a non-goal.
+
 ## Pulse log
 
 ---
