@@ -77,7 +77,7 @@
   "homepage": "https://cprobert.github.io/kiss-ssg/",
   "dependencies": {
     "@mixmark-io/domino": "^2.2.0",
-    "chokidar": "^5.0.0",
+    "chokidar": "^6.0.0",
     "clean-css": "^5.3.3",
     "colors": "^1.4.0",
     "connect": "^3.7.0",
