@@ -267,3 +267,79 @@ describe('fetchModel: a token in the query string', () => {
     expect(text()).not.toContain(TOKEN)
   })
 })
+
+// Node's fetch refuses a header value holding a line break or a NUL, and the
+// error it raises quotes the value: `Headers.append: "<value>" is an invalid
+// header value.` The value is the token (review of 7c527a3, 2026-11-06).
+describe('fetchModel: a header value the fetch refuses', () => {
+  const SECRET = 'SECRET-HEADER-V'
+  const URL = 'http://127.0.0.1:1/model.json'
+  const caught = async (promise) => {
+    try {
+      await promise
+    } catch (error) {
+      return error
+    }
+    throw new Error('expected a rejection')
+  }
+  const printed = (error) => inspect(error, { depth: Infinity })
+  // The real fetch, counted: it is what quotes the value.
+  const countingFetch = () => {
+    const seen = []
+    const fetchImpl = (...args) => {
+      seen.push(args)
+      return globalThis.fetch(...args)
+    }
+    return { seen, fetchImpl }
+  }
+
+  it.each([
+    ['a second line', `Bearer ${SECRET}\nSECOND-LINE`],
+    ['a NUL', `Bearer ${SECRET}${String.fromCharCode(0)}tail`],
+    ['a character above 255', `Bearer ${SECRET}${String.fromCharCode(256)}`],
+  ])('names the header and never its value (%s)', async (_label, value) => {
+    const { seen, fetchImpl } = countingFetch()
+    const error = await caught(
+      fetchModel(URL, {
+        headers: { Accept: 'application/json', Authorization: value },
+        fetchImpl,
+        logger: silentLogger,
+      }),
+    )
+    expect(printed(error)).not.toContain(SECRET)
+    expect(printed(error)).not.toContain('SECOND-LINE')
+    expect(error.message).toContain('"Authorization"')
+    expect(error.message).not.toContain('"Accept"')
+    expect(seen).toEqual([])
+  })
+
+  it('does not retry it: the same headers cannot be accepted the second time', async () => {
+    const { seen, fetchImpl } = countingFetch()
+    const error = await caught(
+      fetchModel(URL, {
+        headers: { Authorization: `Bearer ${SECRET}\nSECOND-LINE` },
+        retries: 2,
+        fetchImpl,
+        logger: silentLogger,
+      }),
+    )
+    expect(error.message).not.toContain('attempts')
+    expect(seen).toEqual([])
+  })
+
+  it('still sends a value that only ends in a line break, which fetch trims', async () => {
+    const headers = { Authorization: `Bearer ${SECRET}\n` }
+    const seen = []
+    await expect(
+      fetchModel(URL, {
+        headers,
+        fetchImpl: async (url, init) => {
+          seen.push(init.headers)
+          return ok({ a: 1 })
+        },
+        logger: silentLogger,
+      }),
+    ).resolves.toEqual({ a: 1 })
+    expect(seen).toEqual([headers])
+  })
+})

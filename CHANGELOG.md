@@ -19,7 +19,9 @@ prints, and hold two values to the form they are written in.
   `{{{stringify this}}}` or a controller that copies `config` cannot put the token into a
   page. The dev `.json` file beside each page and `.viewStats()`'s `debug.json` no longer
   hold `config` at all, and the `verbose` log prints the header values as `[redacted]`.
-  The request for a URL model still sends the real headers.
+  The request for a URL model still sends the real headers. A header that cannot be sent,
+  such as a token with a line break in it, now fails with a message that names the header;
+  Node's own message printed the value.
 - **A model URL is recorded without its query values.** In the site map and
   `last-build.json` that `kiss-ssg aikb` writes, in `kiss-ssg check`'s output, in the log
   and in a failed fetch's message, `?access_token=SECRET&type=course` is shown as
