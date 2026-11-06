@@ -41,11 +41,17 @@ opened: 2026-11-05
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-11-05 — a light baseline (operator's decision).** "The security vulnerability footprint of a static site is reasonably low. We have to create a balance not to make the security so tight that it becomes unmanageable or too hard to update and use in day to day usage." The engine writes only the set-and-forget headers; no CSP, framing or COOP, so criterion 3's CSP hashes are dropped (`planning/plans/2026-11-05-headers.md`, amendment). Also decided: opt-in, and HSTS without `preload`.
+- **2026-11-06 — HSTS without `includeSubDomains` too (Claude).** Finding 2 says to add it only once every subdomain serves HTTPS; by default it would lock visitors out of a subdomain on plain HTTP for two years.
+- **2026-11-06 — the plugin README was already behind `main`** (eleven skills, no `kiss-legal-and-privacy` row); fixed while adding `kiss-security`.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+- **2026-11-06 — pulse 1, slices done.** Criterion 1: the research completed (24 claims confirmed, 1 refuted, 13 findings) and is recorded (`1c08310`). Criterion 2: `kiss-security` written from it, called by `kiss-site-new` and `kiss-site-review` (`0c0f53d`). Criterion 3, narrowed by amendment: `securityHeaders` in `lib/security-headers.js`, beside the cache headers, 11 unit and 2 integration tests, two seen red (`eae7372`, `01e997b`), GUIDE, AIKB, types and `llms.txt` (`8b70bf9`). Criterion 4: `llms.txt` 15,997. Criterion 5: `npm run gates` green; the Codex review is running. Criterion 6: not yet — the operator's read of `kiss-security` and a try on one example. One slip caught by the gates: Python edits had written `llms.txt` with CRLF endings, which broke a test's heading match. Decision: **continue** to the Codex review, then the operator's read. — Claude.
 
 ---
 
