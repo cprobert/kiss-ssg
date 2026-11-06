@@ -25,7 +25,11 @@ describe('the baseline', () => {
       'Referrer-Policy',
       'Permissions-Policy',
     ])
-    expect(SECURITY_HEADERS['Strict-Transport-Security']).not.toMatch(/preload/)
+    // includeSubDomains and preload only once every subdomain serves HTTPS
+    // (research, second pass, finding 2): the site adds them, kiss does not.
+    expect(SECURITY_HEADERS['Strict-Transport-Security']).toBe(
+      'max-age=63072000',
+    )
     const names = Object.keys(SECURITY_HEADERS).map((n) => n.toLowerCase())
     for (const costly of [
       'x-xss-protection',
@@ -130,9 +134,7 @@ describe('writeSecurityHeaders', () => {
     })
     const file = await fs.readFile(path.join(root, '_headers'), 'utf8')
     expect(file.startsWith(site)).toBe(true)
-    expect(file).toContain(
-      '  Strict-Transport-Security: max-age=63072000; includeSubDomains',
-    )
+    expect(file).toContain('  Strict-Transport-Security: max-age=63072000')
     expect(file).not.toContain('  X-Content-Type-Options: nosniff\n# kiss')
     expect(result.skipped).toEqual(['X-Content-Type-Options'])
     expect(result.formats).toEqual(['netlify'])

@@ -1047,12 +1047,12 @@ It writes only the headers a site sets once and never touches again, with the va
 
 | Header                      | Value                                      |
 | --------------------------- | ------------------------------------------ |
-| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains`      |
+| `Strict-Transport-Security` | `max-age=63072000`                         |
 | `X-Content-Type-Options`    | `nosniff`                                  |
 | `Referrer-Policy`           | `strict-origin-when-cross-origin`          |
 | `Permissions-Policy`        | `geolocation=(), camera=(), microphone=()` |
 
-- **No `preload` on HSTS.** It is slow to undo and safe only once every subdomain serves HTTPS; add it in your own `_headers` when that is true.
+- **No `includeSubDomains` or `preload` on HSTS.** Both are slow to undo and safe only once every subdomain serves HTTPS (a `mail.` or `old.` subdomain on plain HTTP would be unreachable for two years); add them in your own `_headers` when that is true.
 - **No Content-Security-Policy, framing header (`X-Frame-Options`, `frame-ancestors`) or `Cross-Origin-Opener-Policy`.** Each protects more and costs more: a CSP blocks every widget you add later until the policy changes, denying framing stops Moodle showing a [learning package](#learning-packages), and COOP can break pop-up payment and sign-in windows. Add one in your own `_headers` when the site has a reason; the `kiss-security` skill says how.
 - **Never `X-XSS-Protection`**: deprecated, and it can open holes in a site that is otherwise safe.
 - **Your own headers win.** A header your `src/assets/_headers` already sets for `/*` is not written again, and the build says which it left to you.

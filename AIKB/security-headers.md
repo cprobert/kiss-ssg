@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-A light, opt-in set of security headers, in the encoding the site's host reads: `Strict-Transport-Security` (without `preload`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a `Permissions-Policy` turning off geolocation, camera and microphone. Pure functions plus one writer (`writeSecurityHeaders`), the shape of `lib/cache-headers.js`, whose files it writes into.
+A light, opt-in set of security headers, in the encoding the site's host reads: `Strict-Transport-Security` (`max-age` only: without `includeSubDomains` or `preload`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a `Permissions-Policy` turning off geolocation, camera and microphone. Pure functions plus one writer (`writeSecurityHeaders`), the shape of `lib/cache-headers.js`, whose files it writes into.
 
 **Light on purpose.** A static site's attack surface is small, and the operator weighed protection against day-to-day upkeep (`planning/plans/2026-11-05-headers.md`, amendment of 2026-11-05). These four are set once and never touched again. A Content-Security-Policy, a framing header and `Cross-Origin-Opener-Policy` are left out: a CSP blocks every widget an owner adds later until the policy changes, framing breaks Moodle showing a learning package, and COOP can break pop-up payment and sign-in windows. The `kiss-security` skill covers them as choices a site makes. `X-XSS-Protection` is never sent. The values and their sources are `planning/specs/2026-10-30-privacy-and-security-research.md`, second pass.
 

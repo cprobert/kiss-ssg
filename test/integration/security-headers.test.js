@@ -57,9 +57,7 @@ describe('security headers', () => {
     const security = headers.indexOf('# kiss-ssg: security headers')
     expect(cache).toBeGreaterThan(-1)
     expect(security).toBeGreaterThan(cache)
-    expect(headers).toContain(
-      '  Strict-Transport-Security: max-age=63072000; includeSubDomains',
-    )
+    expect(headers).toContain('  Strict-Transport-Security: max-age=63072000\n')
     // The site already sets nosniff, so kiss does not set it again.
     expect(headers.split('X-Content-Type-Options').length).toBe(2)
     expect(report.outputs.collisions).toEqual([])
