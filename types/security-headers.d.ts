@@ -10,17 +10,20 @@
  * @property {string[]} uncovered hosts kiss cannot write headers for
  */
 /**
- * The header names a `_headers` file sets for every page (`/*`), lower-cased.
- * kiss's own blocks are left out: they are rewritten on every build.
+ * The header names a `_headers` file sets, for any path, lower-cased. Any
+ * path, not only `/*`: a header the site sets on `/private/*` would otherwise
+ * be joined by kiss's `/*` value, which the host combines with it and a
+ * browser may read last (Codex review, 2026-11-06). kiss's own blocks are left
+ * out: they are rewritten on every build.
  *
  * @param {string|null} file the `_headers` text
  * @returns {Set<string>}
  */
-export function siteWideHeaderNames(file: string | null): Set<string>;
+export function siteHeaderNames(file: string | null): Set<string>;
 /**
- * The baseline less every header the site already sets for every page.
+ * The baseline less every header the site's `_headers` already sets.
  *
- * @param {Set<string>} siteNames from `siteWideHeaderNames`
+ * @param {Set<string>} siteNames from `siteHeaderNames`
  * @returns {{ headers: Record<string, string>, skipped: string[] }}
  */
 export function securityHeaders(siteNames: Set<string>): {

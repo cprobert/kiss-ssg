@@ -13,7 +13,7 @@ Every rule here traces to a verified finding in kiss's research (`planning/specs
 ## In a kiss site
 
 - **`securityHeaders: true`** writes the baseline below into the host's header file, beside kiss's cache headers, chosen by `host` (`node_modules/kiss-ssg/GUIDE.md` § Security headers). Off by default.
-- **The site's own headers live in `src/assets/_headers`** (Netlify, Cloudflare Pages), copied into the build. kiss appends its marked blocks after the site's lines and never sets a header the site already sets for `/*`. On Firebase, kiss writes `security-headers.firebase.json` for the owner to merge into `firebase.json` once; on Vercel, the headers go in `vercel.json`'s `headers` property by hand; GitHub Pages cannot set headers.
+- **The site's own headers live in `src/assets/_headers`** (Netlify, Cloudflare Pages), copied into the build. kiss appends its marked blocks after the site's lines and never adds a header the site's `_headers` already sets, for any path. On Firebase, kiss writes `security-headers.firebase.json` for the owner to merge into `firebase.json` once; on Vercel, the headers go in `vercel.json`'s `headers` property by hand; GitHub Pages cannot set headers.
 - **The build's audit already catches what a static build leaks:** `stray-file` (a source map, a log, a dotfile in the build) and `debug-dump` (a `debug.json` of every page's models). `kiss-site-review` says the fix for each.
 
 ## Build mode

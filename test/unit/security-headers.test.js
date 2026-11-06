@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   SECURITY_HEADERS,
   SECURITY_BLOCK,
-  siteWideHeaderNames,
+  siteHeaderNames,
   securityHeaders,
   renderSecurityBlock,
   renderFirebaseSecurityHeaders,
@@ -55,20 +55,24 @@ describe('the site’s own headers win', () => {
     '',
   ].join('\n')
 
-  it('reads only the site’s `/*` rule, case-insensitively, outside kiss’s blocks', () => {
-    expect([...siteWideHeaderNames(site)].sort()).toEqual([
+  // Codex review, 2026-11-06: a header the site sets on a narrower path
+  // (`/admin/*`) counts too, or kiss's `/*` value would join and override it.
+  it('reads every path the site sets, case-insensitively, outside kiss’s blocks', () => {
+    expect([...siteHeaderNames(site)].sort()).toEqual([
+      'permissions-policy',
       'referrer-policy',
       'x-content-type-options',
     ])
   })
 
   it('leaves a header the site sets to the site, and names it', () => {
-    const { headers, skipped } = securityHeaders(siteWideHeaderNames(site))
-    expect(skipped).toEqual(['X-Content-Type-Options', 'Referrer-Policy'])
-    expect(Object.keys(headers)).toEqual([
-      'Strict-Transport-Security',
+    const { headers, skipped } = securityHeaders(siteHeaderNames(site))
+    expect(skipped).toEqual([
+      'X-Content-Type-Options',
+      'Referrer-Policy',
       'Permissions-Policy',
     ])
+    expect(Object.keys(headers)).toEqual(['Strict-Transport-Security'])
   })
 })
 
@@ -150,6 +154,28 @@ describe('writeSecurityHeaders', () => {
     expect(
       await fs.pathExists(path.join(root, 'security-headers.firebase.json')),
     ).toBe(true)
+  })
+
+  // Codex review, 2026-11-06: Firebase never reads `_headers`, so a header
+  // the site sets there must not be dropped from the Firebase fragment.
+  it('keeps the full baseline in the Firebase fragment whatever _headers sets', async () => {
+    await fs.outputFile(
+      path.join(root, '_headers'),
+      '/*\n  X-Content-Type-Options: nosniff\n',
+    )
+    await writeSecurityHeaders({
+      config: config({ host: ['netlify', 'firebase'] }),
+      root,
+    })
+    const fragment = JSON.parse(
+      await fs.readFile(
+        path.join(root, 'security-headers.firebase.json'),
+        'utf8',
+      ),
+    )
+    expect(fragment.headers[0].headers.map((h) => h.key)).toEqual(
+      Object.keys(SECURITY_HEADERS),
+    )
   })
 
   it('with no host, writes the portable list alone and says so', async () => {
