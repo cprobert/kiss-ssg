@@ -1,7 +1,7 @@
 ---
 branch: feat/kiss-security-and-headers
 base: main
-status: open
+status: closed
 opened: 2026-11-05
 ---
 
@@ -60,3 +60,50 @@ opened: 2026-11-05
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-06: kiss-security, and opt-in security headers
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.13.1. The research recorded (`1c08310`); the `kiss-security` domain skill (`0c0f53d`), called by `kiss-site-new` and `kiss-site-review`; `securityHeaders: true` in `lib/security-headers.js`, four set-and-forget headers beside the cache headers (`eae7372`, `01e997b`, `d331012`); a warning, never a deletion, for header output an earlier build left in a kept folder (`12d85ec`); the cache writer merging into any `_headers` (`2d8b02f`); docs and version (`28522b3`, `4a5d2e2`).
+
+## Reflect — what the session was
+
+Between planned and emergent, as the intent said. The research and the skill went to plan. The engine moved twice. First, the operator narrowed it before code: "the security vulnerability footprint of a static site is reasonably low … not to make the security so tight that it becomes unmanageable", which dropped the hash-based CSP that criterion 3 was built around. Then three Codex rounds reshaped the clean-up behaviour, from "keep the stale block" to "delete it" to "warn, don't delete". The shape served the work: the narrowing came before the code, so nothing was thrown away, and the clean-up design converged in three small commits rather than a rewrite.
+
+The session also ran across a context compaction and a long gap (the work stalled on a spend limit, then `main` moved to 2.13.0 underneath it), and picked up from the session file rather than from memory.
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing** was the strongest dimension, and it was the operator's. The proportion constraint above is a design decision Claude would not have made: the original intent asked for a CSP generated from inline script hashes, a real feature with real upkeep. The operator's one paragraph turned a security feature into a maintainable one. The version call ("2.13 is all about security. So id like to keep it in the 2.13x space") was the same kind of judgment, and it is recorded with its reason.
+
+**Harness leverage** was strong and operator-driven. The operator asked for an adversarial Codex review on top of the standard one, and then, at the point of wanting to ship ("I just want to get this final kiss branch up and out"), asked for a good Codex review first rather than skipping it. That paid off three times: the stale block under `cleanBuild: false`, the shared-folder deletion that Claude's own fix introduced, and the cache writer wiping another instance's security block. None of these were caught by the gates or by Claude's self-review; two of them were in Claude's fixes to earlier findings.
+
+**Pushback & steering** showed at the design fork: offered "warn, don't delete" against "delete security only" and "revert", the operator chose the option that trades automation for safety, in line with the proportion constraint. Claude's first fix (`3719f3f`, delete the stale block) was the over-automated answer; the adversarial review and the operator's choice corrected it.
+
+**Verification & ownership:** the operator confirmed at the close that they looked at `kiss-security` and the headers ("Looked — fine"). Claude's own verification was test-first throughout (each fix's tests seen red), and every round ended with the gates. One miss on Claude's side: a `/code-review` the operator typed ran in the internal-medicine checkout, not kiss-ssg, for the second time in this session.
+
+**Iteration discipline** was good but uneven: one pulse, mid-branch, then the close. The three Codex rounds acted as the later checkpoints.
+
+**Competency level: Agentic engineering lead.** The operator designed and used a reproducible loop (`/branch-open`, a pulse, independent review by a second model, standard and adversarial, repeated until clean), set the constraint that shaped the design, made the trade-off calls, and held the release until the review approved.
+
+## Feedback — recommendations for next session
+
+- **Claude — prefer the non-destructive fix first.** `3719f3f` deleted files to fix a stale-output gap; the adversarial review showed kiss cannot tell its own old output from another instance's. In a folder kiss does not own outright, warn and let the owner act. Ask "whose else could this be?" before deleting anything in a build folder.
+- **Claude — when fixing a review finding, look for the same pattern next door.** The cache writer's "replace when not asset-owned" was the same bug as the security clean-up, and it took a third Codex round to find it.
+- **Claude — use the Edit tool for any JS or Markdown text with escapes.** Python heredocs turned `\n` into real newlines twice in this session, and once wrote CRLF into `llms.txt` earlier on the branch. The gates caught all three, but each cost a round.
+- **Operator — run `/code-review` from the repository you want reviewed.** It reviews the session's working folder; opened from internal-medicine, it reviewed internal-medicine's `main` twice. Open the session in `C:\code\kiss-ssg`, or ask Claude to run the review there.
+- **Process — `/secrets-scan` should diff against `origin/<base>`, not the local base.** The local `main` was 7 commits behind, so the first secrets-scan diff listed other branches' `lib/` files. `/branch-close` Step 1's freshness count already uses `origin/`; the scans do not.
+
+## Verdict — did we achieve the objective?
+
+The brief: finish the security half of the privacy-and-security work — record the research, write `kiss-security`, and have the engine write a host's headers file. **Met, with the objective narrowed on purpose** (good drift, recorded as amendments): a light, opt-in baseline instead of a generated CSP.
+
+- [x] The research resumed and recorded, every verified claim with source and vote, the unverified named (`1c08310`; "Not yet researched" in the skill).
+- [x] `kiss-security` to the domain-skill contract, every rule traced to a finding, called by `kiss-site-new` and `kiss-site-review` (`0c0f53d`; the Permissions-Policy check added from Codex, `12d85ec`, `2d8b02f`).
+- [x] The engine writes the headers: a portable list (`security-headers.json`) and each host's encoding, never a deploy manifest; the CSP hashes dropped by amendment. Design note first (`7927d71`), tests red first, GUIDE, `llms.txt`, README, types and AIKB in the same changes.
+- [x] `llms.txt` names `kiss-security` within its cap (15,997); the READMEs and plugin descriptions list it.
+- [x] `npm run gates` green; Codex reviews of the `lib/` change — standard and adversarial over the whole branch, the last approving with no findings, and the two closing commits reviewed separately.
+- [x] The operator read `kiss-security` and the headers before the close ("Looked — fine").
+
+**Impact:** a kiss site gets HSTS, nosniff, a referrer policy and a permissions policy with one config line, without a policy it has to maintain; the stronger options are documented with their costs. **Open:** the topics the research never verified (form spam and CAPTCHA, embeds, supply chain, `security.txt`, `noopener`), and `kiss-site-deploy`.
