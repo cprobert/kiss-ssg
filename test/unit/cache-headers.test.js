@@ -16,6 +16,7 @@ import {
   resolveCacheHeaderFormats,
   writeCacheHeaders,
 } from '../../lib/cache-headers.js'
+import { SECURITY_BLOCK } from '../../lib/security-headers.js'
 import { resolveConfig } from '../../lib/config.js'
 
 let root
@@ -250,6 +251,30 @@ describe('writeCacheHeaders', () => {
     expect(written).toContain('/css/site.a1b2c3d4.css')
     expect(result.merged).toBe(true)
     expect(claimed).not.toContain('_headers')
+  })
+
+  it('keeps a security block another instance left in a shared folder (Codex review, 2026-11-06)', async () => {
+    // cleanBuild: false, two Kiss instances, one folder: this instance's
+    // registry does not own the file, but replacing it would drop the other's
+    // security headers. Only kiss's cache block is replaced.
+    await touch('css/site.a1b2c3d4.css')
+    const other = `${SECURITY_BLOCK.start}\n/*\n  X-Content-Type-Options: nosniff\n${SECURITY_BLOCK.end}\n`
+    await touch('_headers', other)
+    const claimed = []
+    const result = await writeCacheHeaders({
+      config: resolveConfig({ host: 'netlify' }),
+      root,
+      manifest,
+      outputs: {
+        kind: () => null,
+        claim: (file) => claimed.push(path.basename(file)),
+      },
+    })
+    const written = await fs.readFile(path.join(root, '_headers'), 'utf8')
+    expect(written.startsWith(other)).toBe(true)
+    expect(written).toContain('/css/site.a1b2c3d4.css')
+    expect(result.merged).toBe(false)
+    expect(claimed).toContain('_headers')
   })
 
   it("host: 'firebase' writes the fragment, never firebase.json", async () => {
