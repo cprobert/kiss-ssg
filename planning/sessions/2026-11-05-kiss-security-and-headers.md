@@ -44,6 +44,7 @@ opened: 2026-11-05
 - **2026-11-05 — a light baseline (operator's decision).** "The security vulnerability footprint of a static site is reasonably low. We have to create a balance not to make the security so tight that it becomes unmanageable or too hard to update and use in day to day usage." The engine writes only the set-and-forget headers; no CSP, framing or COOP, so criterion 3's CSP hashes are dropped (`planning/plans/2026-11-05-headers.md`, amendment). Also decided: opt-in, and HSTS without `preload`.
 - **2026-11-06 — HSTS without `includeSubDomains` too (Claude).** Finding 2 says to add it only once every subdomain serves HTTPS; by default it would lock visitors out of a subdomain on plain HTTP for two years.
 - **2026-11-06 — the plugin README was already behind `main`** (eleven skills, no `kiss-legal-and-privacy` row); fixed while adding `kiss-security`.
+- **2026-11-06 — release as 2.13.1, not 2.14.0 (operator's decision).** "2.13 is all about security. So I'd like to keep it in the 2.13x space." The new `securityHeaders` key would normally be a minor bump; it is opt-in and off by default, so nothing changes for a site that does not set it.
 
 ## Pulse log
 
