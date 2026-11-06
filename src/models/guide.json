@@ -51,7 +51,12 @@
     "slug": "urls",
     "title": "URLs and redirects",
     "description": "Telling kiss where the site is deployed and how its host serves URLs, keeping old addresses alive with redirect files, and letting the host cache hashed files for a year.",
-    "sections": ["Host URL policy", "Redirects", "Cache headers"]
+    "sections": [
+      "Host URL policy",
+      "Redirects",
+      "Cache headers",
+      "Security headers"
+    ]
   },
   {
     "slug": "packages",

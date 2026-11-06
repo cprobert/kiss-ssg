@@ -38,72 +38,73 @@ Three consequences, because they settle arguments rather than decorate them:
 
 Detailed per-module notes live in `AIKB/` — read the relevant doc before changing that module, and update it in the same commit. `test/aikb.test.js` fails if a module has no doc, a doc is orphaned (its `lib/` module no longer exists), a doc is missing from this table, or a doc drops a template heading.
 
-| Module                                     | File                         | AIKB doc                      |
-| ------------------------------------------ | ---------------------------- | ----------------------------- |
-| Orchestrator / public API                  | `lib/kiss.js`                | `AIKB/kiss.md`                |
-| Page renderer                              | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
-| Page registration + identity (the stack)   | `lib/page-registry.js`       | `AIKB/page-registry.md`       |
-| Build report (the machine verdict)         | `lib/build-report.js`        | `AIKB/build-report.md`        |
-| Settled build (report, links, redirects)   | `lib/build-finish.js`        | `AIKB/build-finish.md`        |
-| `kiss-ssg check` decision core             | `lib/check.js`               | `AIKB/check.md`               |
-| `kiss-ssg session` (session logs)          | `lib/sessions.js`            | `AIKB/sessions.md`            |
-| `kiss-ssg base` (the work's base branch)   | `lib/base.js`                | `AIKB/base.md`                |
-| `kiss-ssg upgrade` (install + notes)       | `lib/upgrade.js`             | `AIKB/upgrade.md`             |
-| `kiss-ssg speed` (Lighthouse KPIs)         | `lib/speed.js`               | `AIKB/speed.md`               |
-| `kiss-ssg css` (CSS partition audit)       | `lib/css-audit.js`           | `AIKB/css-audit.md`           |
-| Git, asked one way (exact refs)            | `lib/git.js`                 | `AIKB/git.md`                 |
-| `kiss-ssg init` plan                       | `lib/init.js`                | `AIKB/init.md`                |
-| Logger                                     | `lib/logger.js`              | `AIKB/logger.md`              |
-| Config + folder derivation                 | `lib/config.js`              | `AIKB/config.md`              |
-| Consent config + decisions                 | `lib/consent.js`             | `AIKB/consent.md`             |
-| Consent default UI (banner, dialog, table) | `lib/consent-ui.js`          | `AIKB/consent-ui.md`          |
-| Consent browser client (inlined)           | `lib/consent-client.js`      | `AIKB/consent-client.md`      |
-| Consent gating markup + wiring check       | `lib/consent-gate.js`        | `AIKB/consent-gate.md`        |
-| Click-to-load embeds (`{{embed}}`)         | `lib/embed.js`               | `AIKB/embed.md`               |
-| Consent history viewer (`consentRecord`)   | `lib/consent-record.js`      | `AIKB/consent-record.md`      |
-| Built-in Handlebars helpers                | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
-| Site's own helpers (auto-registered)       | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
-| Partials / layouts registration            | `lib/partials.js`            | `AIKB/partials.md`            |
-| Dependency graph (partial → page)          | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
-| Assets + Sass                              | `lib/assets.js`              | `AIKB/assets.md`              |
-| The build's asset copies (queue, failures) | `lib/asset-copy.js`          | `AIKB/asset-copy.md`          |
-| Minified copied CSS and JS                 | `lib/asset-minify.js`        | `AIKB/asset-minify.md`        |
-| Integrity attributes vs the written files  | `lib/integrity.js`           | `AIKB/integrity.md`           |
-| Purged CSS (`assets.purge`, at the settle) | `lib/css-purge.js`           | `AIKB/css-purge.md`           |
-| Image header reader (size, GPS)            | `lib/image-header.js`        | `AIKB/image-header.md`        |
-| Responsive images (`{{image}}`, names)     | `lib/images.js`              | `AIKB/images.md`              |
-| Image encode + committed cache             | `lib/image-encode.js`        | `AIKB/image-encode.md`        |
-| `kiss-ssg images` (cache sweep)            | `lib/images-sweep.js`        | `AIKB/images-sweep.md`        |
-| Markup decomposition (single-file → views) | `lib/html-split.js`          | `AIKB/html-split.md`          |
-| Asset pipeline (external tools)            | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
-| Asset manifest + cache busting             | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
-| Output ownership                           | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
-| Staging folder + atomic promotion          | `lib/staging.js`             | `AIKB/staging.md`             |
-| Sass binding                               | `lib/sass.js`                | `AIKB/sass.md`                |
-| Model resolution                           | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
-| URL-model fetch policy                     | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
-| Controller resolution                      | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
-| Sitemap                                    | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
-| llms.txt (the AI-facing index)             | `lib/llms.js`                | `AIKB/llms.md`                |
-| Markdown copy of each page (for agents)    | `lib/markdown-copy.js`       | `AIKB/markdown-copy.md`       |
-| RSS feed (from the registry)               | `lib/feed.js`                | `AIKB/feed.md`                |
-| robots.txt (`.robots()`)                   | `lib/robots.js`              | `AIKB/robots.md`              |
-| Site knowledge base (`kiss-ssg aikb`)      | `lib/aikb.js`                | `AIKB/aikb.md`                |
-| Broken internal links                      | `lib/links.js`               | `AIKB/links.md`               |
-| Launch-readiness audit                     | `lib/audit.js`               | `AIKB/audit.md`               |
-| Redirects (`aliases` → `_redirects`)       | `lib/redirects.js`           | `AIKB/redirects.md`           |
-| Cache headers for hashed files             | `lib/cache-headers.js`       | `AIKB/cache-headers.md`       |
-| Deterministic zip (learning packages)      | `lib/zip.js`                 | `AIKB/zip.md`                 |
-| Learning package manifest (IMS CP, SCORM)  | `lib/package-manifest.js`    | `AIKB/package-manifest.md`    |
-| Learning packages (`package`, the writer)  | `lib/packages.js`            | `AIKB/packages.md`            |
-| SCORM 1.2 bridge (`{{scormBridge}}`)       | `lib/scorm-bridge.js`        | `AIKB/scorm-bridge.md`        |
-| Dev server                                 | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
-| File watcher                               | `lib/watcher.js`             | `AIKB/watcher.md`             |
-| Watch session (dispatch, rebuild queue)    | `lib/rebuild.js`             | `AIKB/rebuild.md`             |
-| String/path utils                          | `lib/utils.js`               | `AIKB/utils.md`               |
-| Cross-cutting: design & lineage            | —                            | `AIKB/design.md`              |
-| Cross-cutting: testing conventions         | `test/`                      | `AIKB/testing.md`             |
-| Cross-cutting: upstream constraints        | —                            | `AIKB/upstream.md`            |
+| Module                                              | File                         | AIKB doc                      |
+| --------------------------------------------------- | ---------------------------- | ----------------------------- |
+| Orchestrator / public API                           | `lib/kiss.js`                | `AIKB/kiss.md`                |
+| Page renderer                                       | `lib/kiss-page.js`           | `AIKB/kiss-page.md`           |
+| Page registration + identity (the stack)            | `lib/page-registry.js`       | `AIKB/page-registry.md`       |
+| Build report (the machine verdict)                  | `lib/build-report.js`        | `AIKB/build-report.md`        |
+| Settled build (report, links, redirects)            | `lib/build-finish.js`        | `AIKB/build-finish.md`        |
+| `kiss-ssg check` decision core                      | `lib/check.js`               | `AIKB/check.md`               |
+| `kiss-ssg session` (session logs)                   | `lib/sessions.js`            | `AIKB/sessions.md`            |
+| `kiss-ssg base` (the work's base branch)            | `lib/base.js`                | `AIKB/base.md`                |
+| `kiss-ssg upgrade` (install + notes)                | `lib/upgrade.js`             | `AIKB/upgrade.md`             |
+| `kiss-ssg speed` (Lighthouse KPIs)                  | `lib/speed.js`               | `AIKB/speed.md`               |
+| `kiss-ssg css` (CSS partition audit)                | `lib/css-audit.js`           | `AIKB/css-audit.md`           |
+| Git, asked one way (exact refs)                     | `lib/git.js`                 | `AIKB/git.md`                 |
+| `kiss-ssg init` plan                                | `lib/init.js`                | `AIKB/init.md`                |
+| Logger                                              | `lib/logger.js`              | `AIKB/logger.md`              |
+| Config + folder derivation                          | `lib/config.js`              | `AIKB/config.md`              |
+| Consent config + decisions                          | `lib/consent.js`             | `AIKB/consent.md`             |
+| Consent default UI (banner, dialog, table)          | `lib/consent-ui.js`          | `AIKB/consent-ui.md`          |
+| Consent browser client (inlined)                    | `lib/consent-client.js`      | `AIKB/consent-client.md`      |
+| Consent gating markup + wiring check                | `lib/consent-gate.js`        | `AIKB/consent-gate.md`        |
+| Click-to-load embeds (`{{embed}}`)                  | `lib/embed.js`               | `AIKB/embed.md`               |
+| Consent history viewer (`consentRecord`)            | `lib/consent-record.js`      | `AIKB/consent-record.md`      |
+| Built-in Handlebars helpers                         | `lib/handlebars-helpers.js`  | `AIKB/handlebars-helpers.md`  |
+| Site's own helpers (auto-registered)                | `lib/site-helpers.js`        | `AIKB/site-helpers.md`        |
+| Partials / layouts registration                     | `lib/partials.js`            | `AIKB/partials.md`            |
+| Dependency graph (partial → page)                   | `lib/dependency-graph.js`    | `AIKB/dependency-graph.md`    |
+| Assets + Sass                                       | `lib/assets.js`              | `AIKB/assets.md`              |
+| The build's asset copies (queue, failures)          | `lib/asset-copy.js`          | `AIKB/asset-copy.md`          |
+| Minified copied CSS and JS                          | `lib/asset-minify.js`        | `AIKB/asset-minify.md`        |
+| Integrity attributes vs the written files           | `lib/integrity.js`           | `AIKB/integrity.md`           |
+| Purged CSS (`assets.purge`, at the settle)          | `lib/css-purge.js`           | `AIKB/css-purge.md`           |
+| Image header reader (size, GPS)                     | `lib/image-header.js`        | `AIKB/image-header.md`        |
+| Responsive images (`{{image}}`, names)              | `lib/images.js`              | `AIKB/images.md`              |
+| Image encode + committed cache                      | `lib/image-encode.js`        | `AIKB/image-encode.md`        |
+| `kiss-ssg images` (cache sweep)                     | `lib/images-sweep.js`        | `AIKB/images-sweep.md`        |
+| Markup decomposition (single-file → views)          | `lib/html-split.js`          | `AIKB/html-split.md`          |
+| Asset pipeline (external tools)                     | `lib/pipeline.js`            | `AIKB/pipeline.md`            |
+| Asset manifest + cache busting                      | `lib/asset-manifest.js`      | `AIKB/asset-manifest.md`      |
+| Output ownership                                    | `lib/output-registry.js`     | `AIKB/output-registry.md`     |
+| Staging folder + atomic promotion                   | `lib/staging.js`             | `AIKB/staging.md`             |
+| Sass binding                                        | `lib/sass.js`                | `AIKB/sass.md`                |
+| Model resolution                                    | `lib/model-resolver.js`      | `AIKB/model-resolver.md`      |
+| URL-model fetch policy                              | `lib/fetch-policy.js`        | `AIKB/fetch-policy.md`        |
+| Controller resolution                               | `lib/controller-resolver.js` | `AIKB/controller-resolver.md` |
+| Sitemap                                             | `lib/sitemap.js`             | `AIKB/sitemap.md`             |
+| llms.txt (the AI-facing index)                      | `lib/llms.js`                | `AIKB/llms.md`                |
+| Markdown copy of each page (for agents)             | `lib/markdown-copy.js`       | `AIKB/markdown-copy.md`       |
+| RSS feed (from the registry)                        | `lib/feed.js`                | `AIKB/feed.md`                |
+| robots.txt (`.robots()`)                            | `lib/robots.js`              | `AIKB/robots.md`              |
+| Site knowledge base (`kiss-ssg aikb`)               | `lib/aikb.js`                | `AIKB/aikb.md`                |
+| Broken internal links                               | `lib/links.js`               | `AIKB/links.md`               |
+| Launch-readiness audit                              | `lib/audit.js`               | `AIKB/audit.md`               |
+| Redirects (`aliases` → `_redirects`)                | `lib/redirects.js`           | `AIKB/redirects.md`           |
+| Cache headers for hashed files                      | `lib/cache-headers.js`       | `AIKB/cache-headers.md`       |
+| Security headers (opt-in, beside the cache headers) | `lib/security-headers.js`    | `AIKB/security-headers.md`    |
+| Deterministic zip (learning packages)               | `lib/zip.js`                 | `AIKB/zip.md`                 |
+| Learning package manifest (IMS CP, SCORM)           | `lib/package-manifest.js`    | `AIKB/package-manifest.md`    |
+| Learning packages (`package`, the writer)           | `lib/packages.js`            | `AIKB/packages.md`            |
+| SCORM 1.2 bridge (`{{scormBridge}}`)                | `lib/scorm-bridge.js`        | `AIKB/scorm-bridge.md`        |
+| Dev server                                          | `lib/dev-server.js`          | `AIKB/dev-server.md`          |
+| File watcher                                        | `lib/watcher.js`             | `AIKB/watcher.md`             |
+| Watch session (dispatch, rebuild queue)             | `lib/rebuild.js`             | `AIKB/rebuild.md`             |
+| String/path utils                                   | `lib/utils.js`               | `AIKB/utils.md`               |
+| Cross-cutting: design & lineage                     | —                            | `AIKB/design.md`              |
+| Cross-cutting: testing conventions                  | `test/`                      | `AIKB/testing.md`             |
+| Cross-cutting: upstream constraints                 | —                            | `AIKB/upstream.md`            |
 
 ## Commands
 

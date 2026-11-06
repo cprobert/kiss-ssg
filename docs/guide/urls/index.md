@@ -180,3 +180,28 @@ A file kiss content-hashed (`assets: { hash: true }`, and the consent client `ki
 On Firebase, a file kiss did not hash but whose name looks hashed (`vendor/lib.deadbeef.js`) matches the pattern too and would be cached for a year: the build names it in a warning, so you can rename it.
 
 **Not yet measured, so not stated here:** which wins on Netlify when `_headers` and `netlify.toml` both set `Cache-Control` for one path, and how Firebase orders a `regex` header rule against your own `source` globs. Check your deploy with `curl -sI` on one hashed file until this section says.
+
+## Security headers
+
+`securityHeaders: true` adds a short set of security headers to the same host files as the [cache headers](#cache-headers), in a marked block of its own after theirs. It is **off by default**: a header changes what a browser allows on a site that already works.
+
+```js
+new Kiss({ host: 'netlify', securityHeaders: true })
+```
+
+It writes only the headers a site sets once and never touches again, with the values in OWASP's HTTP Headers Cheat Sheet:
+
+| Header | Value |
+| --- | --- |
+| `Strict-Transport-Security` | `max-age=63072000` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `geolocation=(), camera=(), microphone=()` |
+
+-   **No `includeSubDomains` or `preload` on HSTS.** Both are slow to undo and safe only once every subdomain serves HTTPS (a `mail.` or `old.` subdomain on plain HTTP would be unreachable for two years); add them in your own `_headers` when that is true.
+-   **No Content-Security-Policy, framing header (`X-Frame-Options`, `frame-ancestors`) or `Cross-Origin-Opener-Policy`.** Each protects more and costs more: a CSP blocks every widget you add later until the policy changes, denying framing stops Moodle showing a [learning package](../packages/#learning-packages), and COOP can break pop-up payment and sign-in windows. Add one in your own `_headers` when the site has a reason; the `kiss-security` skill says how.
+-   **Check for location, camera and microphone first.** `Permissions-Policy` turns them off for the page and every frame in it, so a map's "my location" button or a video-call embed stops working, on the live site only (the dev server sends no headers). If the site uses one, set your own `Permissions-Policy`, such as `geolocation=(self)`: in `_headers`, and kiss then leaves that header to you; on Firebase, in `firebase.json` after you merge kiss's fragment, which always carries all four.
+-   **Never `X-XSS-Protection`**: deprecated, and it can open holes in a site that is otherwise safe.
+-   **Your own headers win.** A header your `src/assets/_headers` already sets, for any path, is left out of kiss's `_headers` block, and the build says which it left to you. The Firebase fragment always carries all four, since Firebase never reads `_headers`.
+
+[`host`](#where-the-site-is-deployed-host) picks the file: `_headers` for `'netlify'` and `'cloudflare'`; `security-headers.firebase.json`, a fragment to merge into `firebase.json`, for `'firebase'` (Firebase replaces HSTS on its own `*.web.app` subdomains, so only a custom domain serves it). `'vercel'` has no file yet and the build warns; `'github-pages'` cannot set headers. `security-headers.json` (`{ version: 1, rules: [{ path: '/*', headers }] }`) carries the list whatever the host. Nothing is written in dev, nor by a failed build. **Turning it off with `cleanBuild: false`**, where the build folder is kept, leaves an earlier build's block and files in it, still live: the build warns and names them, and you delete them. kiss never deletes them itself, because several `Kiss` instances can share one folder and another one's headers look the same. The cache headers warn the same way when nothing is hashed.
