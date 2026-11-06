@@ -69,6 +69,7 @@ describe('CHECKS', () => {
       'image-oversized',
       'image-location-metadata',
       'img-not-responsive',
+      'id-slug-mismatch',
     ])
     expect(Object.isFrozen(CHECKS)).toBe(true)
   })
@@ -424,6 +425,22 @@ describe('auditBuild — host-unset', () => {
     })
     expect(only(result, 'host-unset')).toEqual([])
     expect(result.ignored).toEqual(['host-unset'])
+  })
+})
+
+describe('auditBuild — id-slug-mismatch', () => {
+  it('reports the detail page-registry decided, on any written page, HTML or not', () => {
+    const detail =
+      "id 'feed/x ' ends in the slug as given; the page was written as 'x'"
+    const result = audit({
+      pages: [
+        { buildTo: 'public/feed/x.json', facts: null, idSlug: detail },
+        { buildTo: 'public/feed/y.json', facts: null, idSlug: null },
+      ],
+    })
+    expect(only(result, 'id-slug-mismatch')).toEqual([
+      { check: 'id-slug-mismatch', page: 'public/feed/x.json', detail },
+    ])
   })
 })
 
@@ -1231,7 +1248,11 @@ describe('extractPageFacts — the privacy facts', () => {
       { origin: 'https://img.example.org', kind: 'img' },
       { origin: 'https://media.example.org', kind: 'media' },
       { origin: 'https://plausible.io', kind: 'script' },
-      { origin: 'https://www.youtube-nocookie.com', kind: 'iframe' },
+      {
+        origin: 'https://www.youtube-nocookie.com',
+        kind: 'iframe',
+        tracker: true,
+      },
     ])
   })
 
@@ -1728,7 +1749,7 @@ const perf = (head, body) =>
 
 describe('the speed checks are appended to CHECKS, in order', () => {
   it('has the five, then host-unset, ahead of the image checks', () => {
-    expect(CHECKS.slice(-9, -3)).toEqual([
+    expect(CHECKS.slice(-10, -4)).toEqual([
       'img-dimensions-missing',
       'img-first-lazy',
       'fetchpriority-excess',

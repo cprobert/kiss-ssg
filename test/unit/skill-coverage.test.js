@@ -29,6 +29,35 @@ const LEGAL_UK =
   'plugins/kiss-ssg/skills/kiss-legal-and-privacy/references/uk.md'
 
 const COVERAGE = [
+  // 2.13.0: `ids: 'path'` gives every page an id from where it is served, for
+  // a site whose pages share views (diploma-msc: 123 of 686 had none), and a
+  // controller's id built from a slug has to use the slug kiss writes.
+  {
+    feature: "ids: 'path' — a page's default id is where it is served",
+    pattern: /`ids: 'path'`[\s\S]*`c\/acute`/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+    ],
+  },
+  // 2.13.0: a video embed reads as a video with a self-hosted still, and the
+  // provider's thumbnail URL is the request the box exists to prevent.
+  {
+    feature: '{{embed}} poster= is a still from src/, never the provider URL',
+    pattern: /poster="img\/[\s\S]*\{\{image\}\}/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature:
+      '{{embed}} wording (load=/notice=/open=, embeds.text) and autoplay on Load',
+    pattern: /`autoplay=false`[\s\S]*`load=`[\s\S]*`embeds: \{ text \}`/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
+  {
+    feature: 'an id built from a slug uses utils.toSlug (id-slug-mismatch)',
+    pattern: /utils\.toSlug\(slug\)[\s\S]*id-slug-mismatch/,
+    skills: [skill('kiss-ssg', 'kiss-page-add')],
+  },
   // 2.8.6: a Disallow: / under a training-only token no longer counts as the
   // site leaving search, so the skill that answers "stop AI scraping us" has
   // to tell the training tokens from the search crawlers, and a sitemap's
@@ -1110,6 +1139,10 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: "2.13.0: a site with no config.consent sets its embed wording with `embeds: { text }`, or one embed's with load=, notice= and open=, so a sentence saying the wording can only be changed through config.consent is the rule that replaced",
+    patterns: [/to change it, use `config\.consent`/],
+  },
   {
     why: '2026-11-05, the clean room: the protocol ranked the audit page checks P2 with three exceptions, so a clean-room agent put missing alt text (a WCAG failure, P1 by the rule above it) at P2; the exception list now names every WCAG and legal check',
     patterns: [

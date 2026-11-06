@@ -355,6 +355,27 @@ describe('redirectFindings — moved', () => {
     expect(removed).toEqual([])
   })
 
+  // A switch of `config.ids` changes what an id means, so the same string can
+  // name a different page on either side: pairing across it reports a move of
+  // two pages that are both still live (the path-ids critique, 2026-11-05).
+  it('pairs only within one ids mode, and degrades to the path comparison across a switch', () => {
+    const across = findings([], {
+      ids: 'path',
+      previousPages: { ...previousPages, ids: 'view' },
+    })
+    expect(across.moved).toEqual([])
+    expect(across.removed).toEqual(['/about.html'])
+    // A record from before the field is a 'view' record.
+    expect(findings([], { ids: 'path' }).moved).toEqual([])
+    expect(findings([], { ids: 'view' }).moved).toHaveLength(1)
+    expect(
+      findings([], {
+        ids: 'path',
+        previousPages: { ...previousPages, ids: 'path' },
+      }).moved,
+    ).toHaveLength(1)
+  })
+
   it('says nothing once an alias covers the old path', () => {
     expect(findings([{ from: '/about', to: '/company/about' }])).toEqual({
       removed: [],

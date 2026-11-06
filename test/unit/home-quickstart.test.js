@@ -248,17 +248,19 @@ describe('the home page carries the whole quick start', () => {
     }
   })
 
-  it('gives every screenshot its dimensions, so the card holds its shape', () => {
-    // The audit checks only that alt is present; this is the only guard on
-    // width/height. The files are 768x480.
+  it('draws every screenshot with {{image}}, lazy, with its alt and a sizes', () => {
+    // {{image}} writes width/height from the file, so the card holds its
+    // shape before the image loads (lib/images.js and its tests own that).
+    // What the page owns: the shots go through it, carry the model's alt,
+    // say how wide the card is, and stay lazy (no eager=true).
     const view = read('src/pages/index.hbs')
-    const imgs = view.match(/<img\b[^>]*>/g) ?? []
-    const shot = imgs.find((tag) => tag.includes('(asset image)'))
+    const calls = view.match(/\{\{image\b[^}]*\}\}/g) ?? []
+    const shot = calls.find((tag) => /\{\{image image\b/.test(tag))
     expect(shot).toBeDefined()
-    expect(shot).toMatch(/\bwidth="768"/)
-    expect(shot).toMatch(/\bheight="480"/)
-    expect(shot).toMatch(/\bloading="lazy"/)
-    expect(shot).toMatch(/\balt="\{\{alt\}\}"/)
+    expect(shot).toMatch(/\balt=alt\b/)
+    expect(shot).toMatch(/\bsizes="[^"]+"/)
+    expect(shot).not.toMatch(/\beager=/)
+    expect(view).not.toMatch(/<img\b[^>]*\(asset image\)/)
   })
 
   it('offers a prompt for a new site and one for a page you already have, naming real skills', () => {

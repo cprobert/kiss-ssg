@@ -243,7 +243,7 @@ export function coveredByAlias(rel: string, fromSet: Set<string>, { trailingSlas
  * @param {Object} context
  * @param {RedirectRule[]} [context.rules] this build's rules, from `collectAliases`
  * @param {{ buildTo: string, id?: string|null }[]} [context.currentPages] the pages this build writes, with their identities
- * @param {{ buildDir?: string, pages?: { buildTo?: string, hash?: string|null, id?: string|null }[] }|null} [context.previousPages]
+ * @param {{ buildDir?: string, ids?: string, pages?: { buildTo?: string, hash?: string|null, id?: string|null }[] }|null} [context.previousPages]
  * the last record — its own `buildDir` and `pages[]`. `null`, or anything
  * unreadable, means there is no baseline and `removed` and `moved` are empty;
  * a record written before ids existed carries none, and degrades to the path
@@ -251,9 +251,11 @@ export function coveredByAlias(rel: string, fromSet: Set<string>, { trailingSlas
  * @param {string} [context.buildDir] this build's folder
  * @param {boolean} [context.trailingSlash] `config.links.trailingSlash`, so a
  * finding names the URL this site actually serves
+ * @param {'view'|'path'} [context.ids] `config.ids`: `moved` pairs by id only
+ * when the record's `ids` (absent: `'view'`) is the same
  * @returns {RedirectFindings}
  */
-export function redirectFindings({ rules, currentPages, previousPages, buildDir, trailingSlash, }?: {
+export function redirectFindings({ rules, currentPages, previousPages, buildDir, trailingSlash, ids, }?: {
     rules?: RedirectRule[];
     currentPages?: {
         buildTo: string;
@@ -261,6 +263,7 @@ export function redirectFindings({ rules, currentPages, previousPages, buildDir,
     }[];
     previousPages?: {
         buildDir?: string;
+        ids?: string;
         pages?: {
             buildTo?: string;
             hash?: string | null;
@@ -269,6 +272,7 @@ export function redirectFindings({ rules, currentPages, previousPages, buildDir,
     } | null;
     buildDir?: string;
     trailingSlash?: boolean;
+    ids?: "view" | "path";
 }): RedirectFindings;
 /**
  * @typedef {Object} RedirectWriteResult

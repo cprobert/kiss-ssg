@@ -360,3 +360,63 @@ describe('the launch-readiness audit', () => {
       expect(CHECKS).toContain(check)
   })
 })
+
+// diploma-msc, 2026-11-05: a controller built `id` from a slug as the data
+// gave it, and kiss wrote the page under `toSlug` of that slug. The id is
+// kept as written (a `{{link}}` built from the same data must still find
+// it); the audit says the two disagree.
+describe('id-slug-mismatch', () => {
+  const posts = [
+    { slug: 'trailing-space ', title: 'One' },
+    { slug: '-leading-dash', title: 'Two' },
+    { slug: 'clean', title: 'Three' },
+  ]
+  const SITE = {
+    ...CLEAN,
+    'src/pages/post.hbs': page('<h1>{{model.title}}</h1>', '{{model.title}}'),
+  }
+  const register = (k, controller) =>
+    k.pages({ view: 'post.hbs', model: posts, path: 'blog', controller })
+
+  it('names a page whose explicit id ends in the slug as given, not as written', async () => {
+    site = await makeSite(SITE)
+    kiss = new Kiss(siteConfig(site)).scan()
+    register(kiss, ({ model }) => ({
+      slug: model.slug,
+      id: `blog/${model.slug}`,
+    }))
+    kiss.generate()
+    await kiss.complete()
+    const findings = kiss
+      .report()
+      .audit.findings.filter((f) => f.check === 'id-slug-mismatch')
+    expect(findings).toEqual([
+      {
+        check: 'id-slug-mismatch',
+        page: `${site.build}/blog/leading-dash.html`,
+        detail: `id 'blog/-leading-dash' ends in the slug as given; the page was written as 'leading-dash'`,
+      },
+      {
+        check: 'id-slug-mismatch',
+        page: `${site.build}/blog/trailing-space.html`,
+        detail: `id 'blog/trailing-space ' ends in the slug as given; the page was written as 'trailing-space'`,
+      },
+    ])
+  })
+
+  it('is silent when the id is built from the slug kiss writes', async () => {
+    site = await makeSite(SITE)
+    kiss = new Kiss(siteConfig(site)).scan()
+    register(kiss, ({ model }) => ({
+      slug: model.slug,
+      id: `blog/${Kiss.utils.toSlug(model.slug)}`,
+    }))
+    kiss.generate()
+    await kiss.complete()
+    expect(
+      kiss
+        .report()
+        .audit.findings.filter((f) => f.check === 'id-slug-mismatch'),
+    ).toEqual([])
+  })
+})

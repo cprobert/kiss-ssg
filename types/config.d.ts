@@ -194,6 +194,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {boolean} verbose log the resolved config, and write `debug.json` from `.viewStats()`
  * @property {boolean|'atomic'} cleanBuild `true` empties `folders.build` in the constructor, `'atomic'` builds into a staging sibling and swaps it in when `complete()` resolves
  * @property {boolean} extensionLess build non-index pages to `<path>/<slug>/index.html`
+ * @property {'view'|'path'} ids what a page's default id is: its view's route (`'view'`, the default) or where it is served, `.html` and a trailing `/index` removed (`'path'`); site-wide, never per page
  * @property {string} [siteUrl] required by `.sitemap()` and the `canonical`/`absUrl` helpers
  * @property {{ includePaths: string[] }} sass load paths handed to Sass (its `loadPaths`)
  * @property {KissFetch} fetch
@@ -207,6 +208,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  * @property {KissAudit} audit gates the launch-readiness audit on a settled non-dev build
  * @property {KissMarkdownCopies} markdownCopies the `.md` copy written beside every HTML page, for agents
  * @property {import('./packages.js').KissPackages|false} packages the learning packages written for the pages that name one (`package`); `false` writes none
+ * @property {{ text: Record<string, string> }|null} embeds the `{{embed}}` wording of a site with no `consent`: `text` takes `embedNotice`, `embedLoad`, `embedPlay` and `embedWatch`, the keys `consent.ui.text` uses; `null` (the default) means the defaults
  * @property {import('./consent.js').KissConsent|null} consent the cookie consent manager: the services a site gates behind the visitor's choice, and the banner that asks; `null` (the default) means none
  * @property {number} port dev server port
  * @property {number} livereloadPort live reload port, also injected into the dev-mode reload script
@@ -285,7 +287,7 @@ export const DEFAULT_LINKS: Readonly<{
 }>;
 export const DEFAULT_AUDIT: Readonly<{
     check: true;
-    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive")[];
+    ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive" | "id-slug-mismatch")[];
     privacyPage: string | null;
 }>;
 export const DEFAULT_MARKDOWN_COPIES: Readonly<{
@@ -335,6 +337,7 @@ export const DEFAULT_CONFIG: Readonly<{
     verbose: false;
     cleanBuild: true;
     extensionLess: false;
+    ids: "view";
     sass: {
         includePaths: any[];
     };
@@ -373,7 +376,7 @@ export const DEFAULT_CONFIG: Readonly<{
     securityHeaders: false;
     audit: Readonly<{
         check: true;
-        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive")[];
+        ignore: readonly ("title-missing" | "title-duplicate" | "description-missing" | "description-duplicate" | "og-image-missing" | "og-image-relative" | "canonical-missing" | "img-alt-missing" | "h1-count" | "heading-skip" | "viewport-zoom-lock" | "href-hash" | "fragment-missing" | "favicon-missing" | "not-found-missing" | "site-url-local" | "debug-dump" | "stray-file" | "console-log" | "privacy-link-missing" | "placeholder-left" | "checkbox-prechecked" | "consent-missing" | "consent-ungated" | "consent-ads-cmp" | "consent-objection-third-party" | "consent-settings-missing" | "consent-google-advanced" | "consent-records-missing" | "consent-history-missing" | "img-dimensions-missing" | "img-first-lazy" | "fetchpriority-excess" | "font-preload-excess" | "script-blocking" | "host-unset" | "image-oversized" | "image-location-metadata" | "img-not-responsive" | "id-slug-mismatch")[];
         privacyPage: string | null;
     }>;
     markdownCopies: Readonly<{
@@ -389,6 +392,7 @@ export const DEFAULT_CONFIG: Readonly<{
         schemas: false;
     }>;
     consent: any;
+    embeds: any;
     port: 3001;
     livereloadPort: 35729;
     devHost: "127.0.0.1";
@@ -685,6 +689,10 @@ export type KissSettings = {
      */
     extensionLess: boolean;
     /**
+     * what a page's default id is: its view's route (`'view'`, the default) or where it is served, `.html` and a trailing `/index` removed (`'path'`); site-wide, never per page
+     */
+    ids: "view" | "path";
+    /**
      * required by `.sitemap()` and the `canonical`/`absUrl` helpers
      */
     siteUrl?: string;
@@ -729,6 +737,12 @@ export type KissSettings = {
      * the learning packages written for the pages that name one (`package`); `false` writes none
      */
     packages: import("./packages.js").KissPackages | false;
+    /**
+     * the `{{embed}}` wording of a site with no `consent`: `text` takes `embedNotice`, `embedLoad`, `embedPlay` and `embedWatch`, the keys `consent.ui.text` uses; `null` (the default) means the defaults
+     */
+    embeds: {
+        text: Record<string, string>;
+    } | null;
     /**
      * the cookie consent manager: the services a site gates behind the visitor's choice, and the banner that asks; `null` (the default) means none
      */

@@ -9,7 +9,7 @@
 - `SPEED_HELP` — the command's help text.
 - `parseSpeedArgs(argv)` → `{ target, pages, runs, out, against, help, error }`. `--page` repeats and must start with `/`; `pages` is `null` when none was given. `--runs` is a whole number from `MIN_RUNS` (1) to `MAX_RUNS` (9), `DEFAULT_RUNS` (3) when absent. One target.
 - `resolveTarget(target, { cwd, isDirectory, isFile })` → `{ kind: 'url', base, page }` (an `http(s)` URL: `base` its origin, `page` its path and query, the default page), `{ kind: 'folder', folder }` (resolved against `cwd`), or `{ kind: 'error', error }` — a file (a site's build script) or a path that does not exist.
-- `nodeAtLeast(version, floor = MIN_NODE)` — `MIN_NODE` is `22.19.0`, Lighthouse 13's own `engines.node`. kiss-ssg's floor stays 22.12.
+- `nodeAtLeast(version, floor = MIN_NODE)` — `MIN_NODE` is `22.19.0`, Lighthouse 13's own `engines.node`. kiss-ssg's own floor (22.23.4) is above it, so on a supported Node the check passes; it stays for a site run on an older Node regardless.
 - `kpisFrom(lhr)` → `{ version, values }` or `{ error }`. `values` has one entry per `METRICS` key: `score` (the performance category ×100, rounded, as Lighthouse prints it), the `numericValue` of `largest-contentful-paint`, `cumulative-layout-shift`, `total-blocking-time`, `first-contentful-paint`, `speed-index` and `total-byte-weight`, and `requests` (the length of `network-requests`' `details.items`).
 - `METRICS` — `{ key, label, unit }` per KPI, in table order. The keys are Lighthouse's audit ids, so the JSON can be looked up against Lighthouse's docs.
 - `median(values)`, `summarise(runs)` → `{ median, spread }`, a `{ min, max }` spread for every metric.

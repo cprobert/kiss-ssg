@@ -1,7 +1,7 @@
 <header class="site-header">
   <div class="wrap site-header__inner">
     <a class="brand" href="{{link "index" absolute=true}}">
-      <img class="brand__mark" src="{{absUrl (asset "img/logo-mark.png")}}" width="240" height="134" alt="">
+      {{image "img/logo-mark.png" alt="" sizes="6.1rem" eager=true root=(absUrl "/") class="brand__mark"}}
       <span class="brand__word">kiss-<span class="brand__ssg">ssg</span></span>
     </a>
     <nav aria-label="Main">

@@ -162,6 +162,129 @@ describe('page identity', () => {
   })
 })
 
+// `config.ids: 'path'` (planning/plans/2026-11-05-path-ids.md): a page's
+// default id is where it is served, so pages that share a view (pagination,
+// a catalog that picks the view per item) each have one. diploma-msc gave
+// 123 of 686 pages an explicit id to get this.
+describe("ids: 'path'", () => {
+  it('gives pages that share a view, and a catalog picking views, an id each, and {{link}} finds them', async () => {
+    site = await makeSite({
+      'src/pages/blog/listing.hbs': '<p>page {{model.number}}</p>',
+      'src/pages/search/course.hbs': '<p>{{model.title}}</p>',
+      'src/pages/search/static-courses.hbs': '<p>{{model.title}}</p>',
+      'src/pages/index.hbs':
+        '<a href="{{link "blog"}}">1</a><a href="{{link "blog/page/2"}}">2</a><a href="{{link "c/acute"}}">c</a><a href="{{link "p/one"}}">p</a>',
+    })
+    kiss = new Kiss(config({ ids: 'path' }))
+      .page({ view: 'blog/listing.hbs', path: 'blog', slug: 'index' })
+      .page({ view: 'blog/listing.hbs', path: 'blog/page', slug: '2' })
+      .page({ view: 'search/static-courses.hbs', path: 'c', slug: 'acute' })
+      .page({ view: 'search/static-courses.hbs', path: 'p', slug: 'one' })
+      .page({ view: 'index.hbs' })
+      .generate()
+    await kiss.complete()
+
+    expect(idsOf(kiss.report())).toEqual({
+      [`${site.build}/blog/index.html`]: 'blog',
+      [`${site.build}/blog/page/2.html`]: 'blog/page/2',
+      [`${site.build}/c/acute.html`]: 'c/acute',
+      [`${site.build}/p/one.html`]: 'p/one',
+      [`${site.build}/index.html`]: 'index',
+    })
+    expect(notices).toEqual([])
+    expect(await site.read('public/index.html')).toBe(
+      '<a href="/blog/">1</a><a href="/blog/page/2.html">2</a><a href="/c/acute.html">c</a><a href="/p/one.html">p</a>',
+    )
+    expect(kiss.report().ids).toBe('path')
+  })
+
+  it("gives a fan-out item its path, ignores a registration id with one notice, and lets a record's id win", async () => {
+    site = await makeSite({
+      'src/pages/blog/post.hbs': '<p>post</p>',
+      // The GUIDE's claim: the `slug=` sugar's first argument is the path
+      // prefix under 'path', so it reaches the item written under blog/.
+      'src/pages/index.hbs':
+        '<a href="{{link "blog" slug="Hello World"}}">h</a>',
+    })
+    kiss = new Kiss(config({ ids: 'path' }))
+      .pages({
+        view: 'blog/post.hbs',
+        model: [{ title: 'Hello World' }, { title: 'Two', id: 'second' }],
+        path: 'blog',
+        id: 'posts',
+        controller: ({ model }) => ({ slug: model.title }),
+      })
+      .page({ view: 'index.hbs' })
+      .generate()
+    await kiss.complete()
+
+    expect(idsOf(kiss.report())).toEqual({
+      [`${site.build}/blog/hello-world.html`]: 'blog/hello-world',
+      [`${site.build}/blog/two.html`]: 'second',
+      [`${site.build}/index.html`]: 'index',
+    })
+    expect(await site.read('public/index.html')).toBe(
+      '<a href="/blog/hello-world.html">h</a>',
+    )
+    expect(notices).toEqual([
+      `ids: 'path' gives each page of blog/post.hbs its own path as its id, so the registration's id "posts" is not used as a prefix`,
+    ])
+  })
+
+  it('withdraws both ids when two outputs reduce to one key, with no extensionLess anywhere', async () => {
+    site = await makeSite({ 'src/pages/a.hbs': 'a', 'src/pages/b.hbs': 'b' })
+    kiss = new Kiss(config({ ids: 'path' }))
+      .page({ view: 'a.hbs', path: 'courses', slug: 'index' })
+      .page({ view: 'b.hbs', slug: 'courses' })
+      .generate()
+    await kiss.complete()
+
+    expect(kiss.report().pages.map((p) => p.id)).toEqual([null, null])
+    expect(notices).toEqual([
+      'Two pages share the default id "courses" (a.hbs, b.hbs): neither can be linked — set an explicit id on each',
+    ])
+  })
+
+  it('keeps a non-HTML extension, as extensionLess writes it', async () => {
+    site = await makeSite({ 'src/pages/feed.hbs': '<rss/>' })
+    kiss = new Kiss(config({ ids: 'path', extensionLess: true }))
+      .page({ view: 'feed.hbs', ext: 'xml' })
+      .generate()
+    await kiss.complete()
+    expect(kiss.report().pages.map((p) => p.id)).toEqual(['feed/index.xml'])
+  })
+
+  it('gives an inline template the id of its given slug, and none to a slug the engine invented', async () => {
+    site = await makeSite({})
+    kiss = new Kiss(config({ ids: 'path' }))
+      .page({ view: '<p>given</p>', slug: 'given' })
+      .page({ view: '<p>invented</p>' })
+      .generate()
+    await kiss.complete()
+    expect(kiss.report().pages.map((p) => p.id)).toEqual(['given', null])
+  })
+
+  it('is site-wide: a per-page config ids is ignored', async () => {
+    site = await makeSite({
+      'src/blog/x.hbs': 'x',
+      'src/pages/blog/x.hbs': 'x',
+    })
+    kiss = new Kiss(config())
+      .page({ view: 'blog/x.hbs', slug: 'y', config: { ids: 'path' } })
+      .generate()
+    await kiss.complete()
+    expect(kiss.report().pages.map((p) => p.id)).toEqual(['blog/x'])
+    expect(kiss.report().ids).toBe('view')
+  })
+
+  it('refuses an unknown value, naming the two it takes', () => {
+    site = { cleanup: async () => {} }
+    expect(() => new Kiss({ ids: 'paths', logger: silentLogger })).toThrow(
+      `config.ids must be 'view' or 'path' (received "paths")`,
+    )
+  })
+})
+
 describe('id collisions', () => {
   it('fails the build when two pages claim one explicit id', async () => {
     site = await makeSite({

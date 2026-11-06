@@ -3,6 +3,128 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.13.0 — 2026-11-06
+
+kiss-ssg now needs **Node 22.23.4 or later**, the current Node 22 LTS release, and takes
+the first round of dependency updates since Dependabot was switched on.
+
+- **Node `>=22.23.4`** (`engines.node`). The dev watcher's new chokidar needs 22.22, and
+  22.23.4 is the Node 22 security release of 2026-10-20.
+- **chokidar 6**, under `--dev`. The rewritten watcher confirms each change against the
+  file system before reporting it, which its release notes say fixes missed and doubled
+  events on Windows. Nothing in your site changes, and a live reload still follows a save.
+- **htmlparser2 12**, which kiss uses to convert a page you import (`splitDocument`) and
+  to check consent and learning-package markup. Its HTML parsing now follows the browser
+  standard. No built page changed in this repository's examples or on a real site
+  rebuilt from this release.
+- **sass 1.108**, and smaller updates to fs-extra and kiss-ssg's development tools.
+
+Measured: this repository's docs site and all 14 examples build byte-identical before and
+after, apart from the pages that state the Node version. A real site built from the
+packed release gives the same 7 pages, the same audit and no broken links.
+
+### Upgrading
+
+Update Node first. Check with `node --version`: anything below `v22.23.4` needs the
+current Node 22 LTS, or Node 24, from nodejs.org or your version manager. If your
+project pins Node in `.nvmrc`, `.node-version` or your host's build settings (Netlify's
+`NODE_VERSION`, a GitHub Actions `node-version`), raise it there too, or the host builds
+on the old one. Then:
+
+```bash
+npx kiss-ssg@latest upgrade
+```
+
+On an older Node, npm warns that kiss-ssg needs a newer one and installs it anyway (unless
+your npm sets `engine-strict`), so take the warning as the reason to update.
+
+## 2.12.3 — 2026-11-06
+
+A security release: kiss-ssg's own dependencies, with nothing in the API changed.
+
+- **handlebars `^4.7.10`.** Two critical advisories ("JavaScript Injection via AST Type
+  Confusion in compile", a bypass of CVE-2026-33937, and "JavaScript Injection via Own Property
+  Check Bypass") and one moderate ("Unsafe Inline Embedding of Precompiled Templates") are
+  fixed in 4.7.10. kiss
+  compiles your templates with it on every build. kiss now requires that version, so a site
+  that installs kiss-ssg cannot resolve an older one.
+- **glob 14** (from 13), with the patched `minimatch` and `brace-expansion` under it. kiss
+  calls it in one place, with fixed patterns, so which files a build picks up is unchanged.
+- **`source-map-js` 1.2.2**, through postcss, for a denial-of-service advisory.
+
+Measured: this repository's docs site and all 14 examples build byte-identical before and
+after the update.
+
+### Upgrading
+
+Take this release, for the handlebars fix:
+
+```bash
+npx kiss-ssg@latest upgrade
+```
+
+Nothing in a site changes. `npx kiss-ssg check <script>` should report the same pages, with
+no diff against your last record. A site whose own `package.json` pins `handlebars` or `glob`
+directly can drop that pin, or raise it to these versions.
+
+## 2.12.2 — 2026-11-05
+
+Page ids and `{{embed}}`, from what two sites on 2.12 asked for.
+
+- **A CommonJS build script can reach `toSlug`.** `require('kiss-ssg')` returns the `Kiss` class,
+  and every named export is now a static on it: `Kiss.utils.toSlug(slug)`, `Kiss.renderRedirects`
+  and the rest.
+- **The audit's new `id-slug-mismatch`** names a page whose explicit `id` was built from its slug
+  as the data gave it (`` id: `blog/${slug}` ``), when kiss cleaned that slug up before writing the
+  page (a trailing space, a leading `-`). The id is kept as written. Build it from
+  `utils.toSlug(slug)` instead.
+- **`ids: 'path'` makes a page's default id where it is served**: `c/acute.html` is `c/acute`,
+  `courses/index.html` is `courses`, and the home page is `index`. A site whose pages share views,
+  such as pagination or a catalog that picks the view per item, then needs no explicit ids. The
+  default is still `'view'`. The build report gains `ids`, and the rename finding `moved` pairs
+  pages only when the last record used the same setting.
+- **`{{embed … poster='img/still.jpg'}}`** shows a still from your own site, drawn by the
+  `{{image}}` pipeline, under a dark strip with white text and a play mark on a video, so the box
+  looks like a video. Restyle it with `--kiss-embed-poster-scrim` and `--kiss-embed-poster-text`.
+  A URL from another site is refused, since fetching it before the click is the request the box
+  exists to prevent.
+- **A video plays on Load.** A `youtube` or `vimeo` embed's button says "Play video", its
+  screen-reader name adds the `title=`, and pressing it starts the video (`autoplay=false` turns
+  that off). Measured in desktop Chromium; iOS Safari may still ask for a tap.
+- **Embed wording without `config.consent`**: `load=`, `notice=` and `open=` on one embed, or
+  `embeds: { text }` in the config for every embed, with the keys `ui.text` uses.
+
+### Upgrading: what a site may notice
+
+Nothing fails, and only an `{{embed 'youtube'}}` or `{{embed 'vimeo'}}` page changes:
+
+- its button now says **Play video** rather than **Load it**, and the video starts on that press.
+  Put `autoplay=false` on an embed to keep the old two-press behaviour. A site that translated
+  `ui.text.embedLoad` keeps its own word on videos too; set `ui.text.embedPlay` to word them apart.
+- Every Load button gains an `aria-label`, `<its words>: <title=>`, so check that each embed's
+  `title=` says what it is.
+- `AIKB/last-build.json` gains `"ids": "view"` at the next `npx kiss-ssg aikb`. Commit it.
+
+`ids: 'path'` is opt-in. Before switching an existing site to it, read the checklist in GUIDE.md
+§ .pages(): links by view route, the `cookies` and `privacy` page ids, and any learning-package
+page relying on a default id.
+
+## 2.12.1 — 2026-11-05
+
+The audit's `consent-missing` now reports a Google Maps frame on a site without `config.consent`.
+The guide always said it would, but kiss compared only the frame's origin
+(`https://www.google.com`) with its tracker list, and the Maps entry there is `www.google.com`
+under `/maps`, so it never matched. kiss now matches the frame's whole address. A `www.google.com`
+frame outside `/maps`, such as reCAPTCHA, is still not reported, and nor is `{{embed 'google-maps'}}`.
+
+### Upgrading: a raw Google Maps frame now raises `consent-missing`
+
+Only a site with no `config.consent` and an `<iframe>` from `www.google.com/maps` sees anything new:
+one advisory `consent-missing` finding per page, naming `https://www.google.com`. Nothing fails.
+The fix is to load the map when the visitor asks for it, with
+`{{embed 'google-maps' src='…' title='…'}}`, which needs no `config.consent`. A site that already
+has `config.consent` is unaffected: there, an ungated frame was already `consent-ungated`.
+
 ## 2.12.0 — 2026-11-05
 
 A release about speed. The new `kiss-performance` skill builds and reviews how fast a site loads,

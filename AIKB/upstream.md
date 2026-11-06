@@ -71,6 +71,12 @@ as `open`/`close`. A local guard in one function. **Re-check:** parse
 `Parser` and see whether every byte has an event and `<P>` is a sibling of
 `<IMG>`.
 
+**Re-checked 2026-11-06 on htmlparser2 12.0.0** (its HTML mode now follows the
+WHATWG spec): `</ x>` arrives as a comment, so that gap is closed. A stray
+`</span>` and an unfinished `<b` at the end still produce no event, and with
+`lowerCaseTags: false` an `<IMG>` still swallows the `<P>` after it (its close
+is reported as implied, at the end). The guard stays.
+
 ### handlebars renders a missing zero-argument helper as empty
 
 **Observed:** handlebars 4.7. **Effect:** `{{shout "hi"}}` on a helper that is
@@ -214,14 +220,30 @@ await `ready`, `fs.remove(dir)`, `fs.outputFile(dir/restored.txt)`, wait up to
 is current while it misses. The session scratchpad's `probe.mjs` was that
 script, run from the repo so its chokidar is the one under test.
 
-### `@eslint/js` requires a higher Node than kiss does
+**chokidar 6.0.0 (taken 2026-11-06) says it fixes this**: "a deleted watched
+path … is now awaited from its nearest existing parent", and "persistent
+watching stopping after a watched directory was removed" (#1463). That is
+chokidar's claim, not a measurement. The parent-watch above stays until the
+re-check passes on Linux with chokidar 6; if it does, watching the assets root
+directly is the simpler shape.
 
-**Observed:** `engines.node` is 22.12; `@eslint/js` needs 22.13. **Effect:** on
-22.12 exactly, `npm test` passes and `npm run lint` refuses to run. **What kiss
-does:** nothing — the floor is a promise to consumers and the linter is a
-development tool, so the split is stated in `CLAUDE.md` and `.nvmrc` pins the
-development line. **Re-check:** whether `@eslint/js` has lowered its floor, or
-whether kiss's own floor has moved past it.
+### eslint holds minimatch on 10, which a Dependabot advisory covers
+
+**Observed** (2026-11-06, eslint 10.10.0, latest 10.14.0, `@eslint/config-array`
+0.23.5): eslint and `@eslint/config-array` both depend on `minimatch` `^10`.
+GHSA-g3hv-75wg-m249 (moderate, a denial of service through pattern
+amplification) covers minimatch 7.0.0 to 11.0.0 and is fixed only in 11.0.1.
+**Effect:** `npm audit` reports four moderate findings, all one chain
+(minimatch → `@eslint/config-array` → eslint → `@eslint/js`). Its suggested
+fix is a downgrade to eslint 9. **What kiss does:** nothing. eslint is a
+`devDependency`, it lints this repository's own files and never reaches a
+site's install. The runtime copy of minimatch, under glob 14, is 11.x. The
+Dependabot alert was dismissed as tolerable risk (dev-only, no upstream fix).
+An `overrides` entry was considered and rejected, because it would run eslint
+on a major version it does not declare. **Re-check:**
+`npm view eslint dependencies.minimatch` and
+`npm view @eslint/config-array dependencies.minimatch`. When either says `^11`,
+take that eslint and expect `npm audit` to report 0.
 
 ### npm redacts a UUID-like path segment in `npm prefix`, and `npm config` refuses a workspace member
 

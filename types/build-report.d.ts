@@ -145,6 +145,7 @@
  * @property {import('./consent.js').BuildConsent|null} consent the consent manager's record: the version, the banner hash each page carries, the categories and the services; `null` without `config.consent` and when the build failed
  * @property {BuildCacheHeaders|null} cacheHeaders the cache-header files written for the hashed files; `null` when nothing was written: no hashed file, a dev build, or a failed build
  * @property {BuildImages|null} images what `{{image}}` asked for and how it was served; `null` when no page rendered one, in a dev build, and when the build failed
+ * @property {'view'|'path'} ids `config.ids`: what the pages' default ids were derived from
  */
 /**
  * The image variants of one build (`lib/image-encode.js`).
@@ -234,9 +235,10 @@ export function reportedView(view: string): string;
  * @param {import('./consent.js').BuildConsent|null} [input.consent] the consent record, with each page where it was written
  * @param {BuildCacheHeaders|null} [input.cacheHeaders] the cache-header files, as written
  * @param {BuildImages|null} [input.images] what the image encode did
+ * @param {'view'|'path'} [input.ids] `config.ids`
  * @returns {BuildReport}
  */
-export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, thirdParty, consent, cacheHeaders, images, }: {
+export function buildReport({ stack, failures, manifest, buildDir, stagingDir, mode, startedAt, finishedAt, sitemap, pipeline, llms, aikb, links, redirects, robots, feed, outputs, audit, packages, thirdParty, consent, cacheHeaders, images, ids, }: {
     stack?: {
         view: string;
         buildTo: string | null;
@@ -273,6 +275,7 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
     consent?: import("./consent.js").BuildConsent | null;
     cacheHeaders?: BuildCacheHeaders | null;
     images?: BuildImages | null;
+    ids?: "view" | "path";
 }): BuildReport;
 /**
  * The audit's summary lines, unindented: one per check that fired, naming up
@@ -653,6 +656,10 @@ export type BuildReport = {
      * what `{{image}}` asked for and how it was served; `null` when no page rendered one, in a dev build, and when the build failed
      */
     images: BuildImages | null;
+    /**
+     * `config.ids`: what the pages' default ids were derived from
+     */
+    ids: "view" | "path";
 };
 /**
  * The image variants of one build (`lib/image-encode.js`).

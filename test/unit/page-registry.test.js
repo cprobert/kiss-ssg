@@ -1,11 +1,68 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
+  defaultIdForPath,
   defaultIdForView,
   explicitIdOf,
   idIndexFor,
+  idSlugMismatch,
   lookupPage,
   stackForRecord,
 } from '../../lib/page-registry.js'
+
+describe('defaultIdForPath', () => {
+  it('is the served location as a key: .html and a trailing /index removed', () => {
+    expect(defaultIdForPath('about.html')).toBe('about')
+    expect(defaultIdForPath('about/index.html')).toBe('about')
+    expect(defaultIdForPath('courses/index.html')).toBe('courses')
+    expect(defaultIdForPath('c/acute-medicine-courses.html')).toBe(
+      'c/acute-medicine-courses',
+    )
+    expect(defaultIdForPath('/blog/post.html')).toBe('blog/post')
+  })
+
+  it('names the home page index, never the empty string', () => {
+    expect(defaultIdForPath('index.html')).toBe('index')
+    expect(defaultIdForPath('/index.html')).toBe('index')
+  })
+
+  it('keeps every extension but .html, so two formats never compete', () => {
+    expect(defaultIdForPath('feed.xml')).toBe('feed.xml')
+    expect(defaultIdForPath('data/index.json')).toBe('data/index.json')
+    // extensionLess writes a non-HTML page to <x>/index.<ext>, served there.
+    expect(defaultIdForPath('feed/index.xml')).toBe('feed/index.xml')
+    expect(defaultIdForPath('old.htm')).toBe('old.htm')
+  })
+
+  it('strips /index only as a whole segment', () => {
+    expect(defaultIdForPath('reindex.html')).toBe('reindex')
+    expect(defaultIdForPath('a/reindex.html')).toBe('a/reindex')
+  })
+})
+
+describe('idSlugMismatch', () => {
+  it('names an id that ends in a slug toSlug changed', () => {
+    expect(idSlugMismatch('blog/a/foo ', 'foo ', 'foo')).toBe(
+      "id 'blog/a/foo ' ends in the slug as given; the page was written as 'foo'",
+    )
+    expect(idSlugMismatch('-foo', '-foo', 'foo')).toMatch(/^id '-foo'/)
+  })
+
+  it('says nothing when the slug was already clean, or the id was built from the written one', () => {
+    expect(idSlugMismatch('blog/foo', 'foo', 'foo')).toBeNull()
+    expect(idSlugMismatch('blog/foo', 'Foo', 'foo')).toBeNull()
+  })
+
+  it('says nothing about an id that is a choice, not a slug', () => {
+    expect(idSlugMismatch('home', 'Index Page', 'index-page')).toBeNull()
+    // "ends in" means a whole segment: `xfoo ` is not built from `foo `.
+    expect(idSlugMismatch('blog/xfoo ', 'foo ', 'foo')).toBeNull()
+  })
+
+  it('says nothing without an explicit id or a given slug', () => {
+    expect(idSlugMismatch(null, 'foo ', 'foo')).toBeNull()
+    expect(idSlugMismatch('foo', undefined, 'foo')).toBeNull()
+  })
+})
 
 // The identity state these functions read on a Kiss instance. `_idIndexFor`
 // is wired the way Kiss wires it, so `lookupPage` and `stackForRecord` reach
