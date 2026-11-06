@@ -63,4 +63,28 @@ describe('security headers', () => {
     expect(report.outputs.collisions).toEqual([])
     expect(report.ok).toBe(true)
   })
+
+  it('turned off under cleanBuild: false, leave no block behind (Codex review, 2026-11-06)', async () => {
+    // No site `_headers` and nothing hashed: nothing else rewrites the file.
+    site = await makeSite({ 'src/pages/index.hbs': '<p>Hi</p>' })
+    const run = async (securityHeaders) => {
+      kiss = new Kiss({
+        folders: site.folders,
+        logger: silentLogger,
+        host: 'netlify',
+        cleanBuild: false,
+        securityHeaders,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      await kiss.close()
+      kiss = null
+    }
+    await run(true)
+    expect(await site.read('public/_headers')).toContain('security headers')
+    await run(false)
+    expect(await site.exists('public/_headers')).toBe(false)
+    expect(await site.exists('public/security-headers.json')).toBe(false)
+  })
 })

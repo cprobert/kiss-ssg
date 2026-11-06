@@ -17,7 +17,9 @@ Cache headers for the files kiss content-hashed: say, in the encoding the site's
 - `cacheHeaderRules(files)` → `[{ path, headers: { 'Cache-Control': IMMUTABLE } }]`.
 - `renderCacheHeadersJson(rules)` → the list, pretty-printed and newline-terminated.
 - `renderHeadersBlock(rules)` → kiss's block for a `_headers` file (Netlify, Cloudflare Pages), between the markers.
-- `mergeHeadersFile(existing, block)` → the site's file with the block appended. A block an earlier build left is replaced, never repeated. `existing` of `null` returns the block alone.
+- `mergeHeadersFile(existing, block, markers?)` → the site's file with the block appended. A block an earlier build left is replaced, never repeated. `existing` of `null` returns the block alone. `markers` defaults to the cache block's; the security headers pass their own.
+- `removeHeadersBlock(existing, markers?)` → the file with kiss's block, and the blank line before it, taken out: the inverse of `mergeHeadersFile`, which uses it.
+- `retireHeaders({ root, markers, files, written, outputs })` → takes back what an earlier build wrote and this one did not: the marked block in `_headers` (the file removed if nothing else is left) and each named generated file, unless the asset copy made it. `writeCacheHeaders` and `writeSecurityHeaders` call it on every run. Under `cleanBuild: false` the folder is kept, so without it a block from a build where the feature was on stays live after it is turned off (Codex adversarial review, 2026-11-06).
 - `renderFirebaseCacheHeaders({ consent })` → a fragment to merge into `firebase.json`: `{ headers: [{ regex, headers: [{ key, value }] }] }`, one pattern for kiss's hash shape (`.<8 hex>.css|js`) and one for the consent client.
 - `firebaseLookalikes(built, hashed)` → the files in the build the hash pattern matches that kiss did not hash.
 - `CACHE_HEADER_FORMATS` — `netlify` and `cloudflare` (both `_headers`), `firebase` (`cache-headers.firebase.json`). The single table of which formats exist; `lib/config.js` derives its accepted names from it.

@@ -53,7 +53,7 @@ export function renderFirebaseSecurityHeaders(headers: Record<string, string>): 
  * @param {Object} input
  * @param {import('./config.js').KissConfig} input.config
  * @param {string} input.root where the build is being written
- * @param {{ claim(file: string, owner: string): void }} [input.outputs]
+ * @param {{ claim(file: string, owner: string): void, kind?(file: string): string|null }} [input.outputs]
  * @returns {Promise<SecurityHeadersWriteResult>}
  */
 export function writeSecurityHeaders({ config, root, outputs }: {
@@ -61,6 +61,7 @@ export function writeSecurityHeaders({ config, root, outputs }: {
     root: string;
     outputs?: {
         claim(file: string, owner: string): void;
+        kind?(file: string): string | null;
     };
 }): Promise<SecurityHeadersWriteResult>;
 /** The baseline, in the order it is written. */

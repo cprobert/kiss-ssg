@@ -56,6 +56,45 @@ export function mergeHeadersFile(existing: string | null, block: string, markers
     end: string;
 }): string;
 /**
+ * A `_headers` file with kiss's block taken out, and the blank line
+ * `mergeHeadersFile` put before it, so a merge and a removal undo each other.
+ *
+ * @param {string} existing
+ * @param {{ start: string, end: string }} [markers]
+ * @returns {string}
+ */
+export function removeHeadersBlock(existing: string, markers?: {
+    start: string;
+    end: string;
+}): string;
+/**
+ * Take back what an earlier build wrote and this one did not: kiss's block in
+ * `_headers`, and each generated file in `files`. Under `cleanBuild: false`
+ * the folder is kept, so a header the site has since turned off would
+ * otherwise stay live. A `_headers` left empty is removed; a generated name
+ * the asset copy made this build is the site's, and is left.
+ *
+ * @param {Object} input
+ * @param {string} input.root
+ * @param {{ start: string, end: string }} input.markers kiss's block in `_headers`
+ * @param {string[]} input.files generated file names, build-relative
+ * @param {string[]} input.written every path this build wrote
+ * @param {{ kind?(file: string): string|null }} [input.outputs]
+ * @returns {Promise<void>}
+ */
+export function retireHeaders({ root, markers, files, written, outputs, }: {
+    root: string;
+    markers: {
+        start: string;
+        end: string;
+    };
+    files: string[];
+    written: string[];
+    outputs?: {
+        kind?(file: string): string | null;
+    };
+}): Promise<void>;
+/**
  * The Firebase fragment: patterns, never paths, because a person merges it
  * into `firebase.json` once and a hashed name changes on every edit. One
  * pattern for kiss's hash shape, one for the consent client when the site has

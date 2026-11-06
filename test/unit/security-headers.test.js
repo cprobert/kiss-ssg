@@ -129,6 +129,43 @@ describe('writeSecurityHeaders', () => {
     expect(await fs.readdir(root)).toEqual([])
   })
 
+  it('turned off, takes back what an earlier build wrote and keeps the rest', async () => {
+    // cleanBuild: false keeps the folder, so a block an earlier build wrote
+    // would otherwise stay live after the site turned the option off.
+    const site = '/*\n  X-Frame-Options: SAMEORIGIN\n'
+    const cache = renderHeadersBlock([
+      { path: '/a.1234abcd.css', headers: { 'Cache-Control': 'immutable' } },
+    ])
+    const before = mergeHeadersFile(
+      mergeHeadersFile(site, cache),
+      renderSecurityBlock(SECURITY_HEADERS),
+      SECURITY_BLOCK,
+    )
+    await fs.outputFile(path.join(root, '_headers'), before)
+    await fs.outputFile(path.join(root, 'security-headers.json'), '{}')
+    await fs.outputFile(path.join(root, 'security-headers.firebase.json'), '{}')
+    await writeSecurityHeaders({ config: { host: ['netlify'] }, root })
+    expect(await fs.readFile(path.join(root, '_headers'), 'utf8')).toBe(
+      mergeHeadersFile(site, cache),
+    )
+    expect(await fs.readdir(root)).toEqual(['_headers'])
+  })
+
+  it('removes a `_headers` that held nothing but its block', async () => {
+    await fs.outputFile(
+      path.join(root, '_headers'),
+      renderSecurityBlock(SECURITY_HEADERS),
+    )
+    await writeSecurityHeaders({
+      config: { host: ['firebase'], securityHeaders: true },
+      root,
+    })
+    expect(await fs.pathExists(path.join(root, '_headers'))).toBe(false)
+    expect(
+      await fs.pathExists(path.join(root, 'security-headers.firebase.json')),
+    ).toBe(true)
+  })
+
   it('merges into a `_headers` the site and the cache headers already wrote', async () => {
     const site = '/*\n  X-Content-Type-Options: nosniff\n'
     await fs.outputFile(path.join(root, '_headers'), site)

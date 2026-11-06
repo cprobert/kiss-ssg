@@ -175,6 +175,28 @@ describe('writeCacheHeaders', () => {
     )
   })
 
+  it('with nothing hashed, takes back what an earlier build wrote and keeps the rest', async () => {
+    const site = '/*\n  X-Frame-Options: SAMEORIGIN\n'
+    await fs.outputFile(
+      path.join(root, '_headers'),
+      mergeHeadersFile(
+        site,
+        renderHeadersBlock([
+          { path: '/a.1234abcd.css', headers: { 'Cache-Control': IMMUTABLE } },
+        ]),
+      ),
+    )
+    await fs.outputFile(path.join(root, 'cache-headers.json'), '{}')
+    await fs.outputFile(path.join(root, 'cache-headers.firebase.json'), '{}')
+    await writeCacheHeaders({
+      config: resolveConfig({ host: 'netlify' }),
+      root,
+      manifest: {},
+    })
+    expect(await fs.readFile(path.join(root, '_headers'), 'utf8')).toBe(site)
+    expect(await fs.readdir(root)).toEqual(['_headers'])
+  })
+
   it("host: 'netlify' writes the list and _headers", async () => {
     await touch('css/site.a1b2c3d4.css')
     const result = await writeCacheHeaders({
