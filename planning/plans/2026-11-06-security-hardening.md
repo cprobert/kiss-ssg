@@ -49,8 +49,8 @@ measures it.
 
 ## Workstream A — the consent client's root
 
-**Owns:** `lib/consent-client.js`, `test/unit/consent-client.test.js`, `AIKB/consent-client.md`,
-and one new browser test (below). May read anything.
+**Owns:** `lib/consent-client.js`, `test/unit/consent-client.test.js`,
+`test/browser/consent.test.js`, `AIKB/consent-client.md`. May read anything.
 
 **What the code promised.** The comment at `lib/consent-client.js:303-310` says the root is derived
 from the address because a page is reached at more than one address, under any prefix, on any
@@ -64,17 +64,45 @@ the root is `/\evil.example/`, and a browser reads `/\` as `//`.
 
 **The fix.**
 
-1. **The origin guard.** After the root is derived, resolve `root + client.name` against the page's
-   address with `new URL(…, location.href)`. Use the derived root only when the result's
-   `protocol` and `host` equal the page's. Otherwise use `client.root`. Compare `protocol` and
-   `host`, not `origin`: on `file://` every origin is the string `null`, and two different hosts
-   would compare equal. The guard is the browser's own URL algorithm, not a list of bad
-   characters, so it covers the backslash, the double slash, a stripped tab or newline, and any
-   spelling not thought of yet.
+1. **The origin guard.** After the root is derived, resolve both the page's address and the
+   script's, and keep the derived root only when they are on the same host:
+
+   ```js
+   try {
+     var here = new win.URL(win.location.href)
+     var to = new win.URL(root + client.name, here)
+     if (to.protocol !== here.protocol || to.host !== here.host)
+       root = client.root
+   } catch {
+     root = client.root
+   }
+   ```
+
+   - It is `win.URL`, as line 1017 of the same file already writes it: the unit harness runs the
+     script in a context with no global `URL`.
+   - It reads `protocol` and `host` from the parsed `here`, never from `win.location`: the
+     harness's `location` has `protocol`, `hostname`, `pathname` and `href`, and no `host`. No
+     harness change is needed. Do not compare `hostname`, which lets another port through.
+   - It is not `origin`: on `file://` every origin is the string `null`, and two different hosts
+     would compare equal.
+   - The `catch` covers a base that cannot be resolved against (`about:srcdoc`).
+   - The guard is the browser's own URL algorithm, not a list of bad characters, so it covers the
+     backslash, the double slash, a stripped tab or newline, and any spelling not thought of yet.
+
 2. **The wrong-but-harmless root.** A benign `/missing/404` derives `/missing/`, the client 404s
-   and every consent control on that page is dead. Give the tag an `error` handler that, when the
-   derived root was not `client.root`, appends the script once more from `client.root`. Once
-   only. This is the functional sibling of the same cause, so it is fixed here.
+   and every consent control on that page is dead. Give the tag an `error` listener
+   (`addEventListener`, as lines 726-727 do, so the harness can fire it) that, when the derived
+   root was not `client.root`, appends the script once more from `client.root`. Once only. This
+   is the functional sibling of the same cause, so it is fixed here. Two limits, to be written
+   into the AIKB doc and not engineered around: a host that answers an unknown path with status
+   200 and HTML fires `load`, not `error`, so the fallback does not run there; and a 404 page
+   still loads the client from whatever same-origin folder its address names when that address
+   happens to end in the page's own file name.
+
+**The size ceiling.** `test/unit/consent-client.test.js` holds the inline script to
+`INLINE_CEILING` (6,144 at line 253) and says moving it is a decision, not a fix. Report the
+minified size before and after. If the change crosses the ceiling, stop and report: do not raise
+it.
 
 **Regression tests, each seen red on the unfixed code first:**
 
@@ -84,25 +112,33 @@ the root is `/\evil.example/`, and a browser reads `/\` as `//`.
   `/%5Cevil.example/`. Each asserts the script's resolved URL is on the page's own host.
 - A unit row for `/missing/404`: the fallback fires and the second tag is at `client.root`.
 - The rows that already pass (`/guide`, `/guide/`, `/guide/index.html`, a prefix, `file://`) must
-  still pass untouched. If the existing harness fakes `location` in a way that cannot resolve a
-  URL, say so in the report before changing the harness.
-- **One real-browser test.** Build example 14 (`examples/14-consent`), serve it with
-  `scripts/screenshot.mjs`'s `serveFolder` (it answers an unknown path with the site's
-  `404.html`), open `/%5Cevil.example/404` in Chromium through `playwright-core`, and record every
-  request. Assert no request left the served origin and that the consent banner's client started.
-  Put it where the suite's other Playwright-backed tests live; if there are none, in
-  `test/integration/`, skipped with a clear message when Chromium is not installed. Run it against
-  the unfixed client first and paste what it requested.
+  still pass untouched.
+- **One real-browser test, in `test/browser/consent.test.js`.** That suite already has what the
+  test needs: `serve()` builds a temporary site and serves it with `serveFolder` (which answers
+  an unknown path with the site's `404.html`), `open()` records every off-host request in
+  `offHost`, and there is a 404 fixture near line 863. Add a case that opens
+  `/%5Cevil.example/404` on a site whose `404.hbs` carries the consent head, and asserts
+  `offHost` is empty and that a Reject click is stored (the client started). Follow the suite's
+  own convention when Chromium is missing (`if (!browser && process.env.CI) throw launchError`).
+  Run it against the unfixed client first and quote the off-host request it made. Do not build
+  `examples/14-consent`: `test/integration/examples.test.js` deletes and rebuilds that folder.
 
-**Docs.** `AIKB/consent-client.md`: the guard, the fallback, and why `protocol` + `host`. If that
-doc states a byte size for the inline script, re-measure it and write the measured number.
+**Docs.** `AIKB/consent-client.md`: the guard, the fallback and its two limits, and why
+`protocol` + `host`. Re-measure every byte size that doc states and write the measured numbers.
+Its line 95 gives ceilings of 5,376 and 9,728 where the test holds 6,144 and 10,752: correct the
+doc to what the test holds.
 
 ## Workstream B — config out of the debug files, and out of the log
 
 **Owns:** `lib/kiss-page.js`, `lib/page-registry.js`, `lib/kiss.js` (the `logger.debug('config: ', …)`
-line at 762 only), `test/unit/kiss-page.test.js`, `test/unit/page-registry.test.js`,
-`test/integration/view-stats.test.js`, `AIKB/kiss-page.md`, `AIKB/page-registry.md`, `AIKB/kiss.md`,
-and in `GUIDE.md` only the passages about the dev `.json` sibling, `debug.json` and `viewStats()`.
+line at 762 and the comment near line 344 only), `test/unit/kiss-page.test.js`,
+`test/unit/page-registry.test.js`, `test/integration/view-stats.test.js`, `AIKB/kiss-page.md`,
+`AIKB/page-registry.md`, `AIKB/kiss.md`, and in `GUIDE.md` only the passages about the dev `.json`
+sibling, `debug.json`, `viewStats()` and `verbose`. It also owns one sentence in each place that
+says every own key of a page's options reaches the dev sibling, which stops being true for
+`config`: the comments at `lib/page-registry.js:81`, `:276` and `:285`,
+`test/integration/replay-equivalence.test.js:89-90`, and `AIKB/aikb.md:51`, `AIKB/build-report.md:54`,
+`AIKB/redirects.md:52` and `AIKB/rebuild.md:70`. Check each before changing it.
 
 **The defect.** `options.config` is the whole resolved config (`lib/page-registry.js:507`), and
 `GUIDE.md` names `config.fetch.headers` as where an API token goes. Two writers serialise the
@@ -119,7 +155,11 @@ in CI logs as well.
    list can. One shared function does it, so the two writers cannot drift.
 2. `options.config` itself is untouched: templates and controllers still read it.
 3. The verbose log line prints the config with each value under `fetch.headers` replaced by
-   `'[redacted]'`, keeping the header names.
+   `'[redacted]'`, keeping the header names. This one is a redaction of a single key, and that is
+   a decision: the two files are served or deployed, so they get the allow-list; the log goes to
+   the developer's own terminal or CI log, `fetch.headers` is the one place kiss documents for a
+   secret, and anything else a site puts in its config is the site's to keep out of it. `GUIDE.md`
+   says so in one sentence where `verbose` is documented.
 4. The model stays in both files. It is what they are for, and the audit's `debug-dump` finding
    already speaks for `debug.json`.
 
@@ -133,9 +173,13 @@ main session, below).
 
 - A dev build whose config has `fetch: { headers: { Authorization: 'Bearer SECRET-TOKEN-1' } }`:
   no file under the build folder contains `SECRET-TOKEN-1`. Walk the whole folder; do not check
-  one file.
+  one file. It goes in `test/integration/view-stats.test.js`. A dev build starts the server and
+  live reload, so pass `port: 0, livereloadPort: 0` and `await kiss.close()`, as
+  `test/integration/aikb.test.js:284-286` does.
 - The same with `verbose: true` and `.viewStats()` on a non-dev build: `debug.json` does not
-  contain it, and neither does anything the logger was handed.
+  contain it, and neither does anything the logger was handed. `logger.debug` is gated on
+  `verbose` inside `createLogger`, so an injected logger is handed the config either way: inject
+  one that records every argument of every call, and search what it recorded.
 - The sibling still carries the model and the page's other options.
 
 **Docs.** The two AIKB docs and `AIKB/kiss.md`; the `GUIDE.md` passages. Say what the files hold
@@ -143,10 +187,12 @@ now. Run any snippet you change.
 
 ## Workstream C — the embed URL, and placeholders in inline scripts
 
-**Owns:** `lib/embed.js`, `lib/consent.js`, `lib/consent-gate.js`, `lib/handlebars-helpers.js` (the
-`embed` helper only), `test/unit/embed.test.js`, `test/unit/consent.test.js`,
-`test/unit/consent-gate.test.js`, `AIKB/embed.md`, `AIKB/consent.md`, `AIKB/consent-gate.md`, and in
-`GUIDE.md` only the `{{embed}}` and `{{consentScript}}` passages.
+**Owns:** `lib/embed.js`, `lib/consent.js`, `lib/consent-gate.js`, `test/unit/embed.test.js`,
+`test/unit/consent.test.js`, `test/unit/consent-gate.test.js`, `AIKB/embed.md`, `AIKB/consent.md`,
+`AIKB/consent-gate.md`, and in `GUIDE.md` only the `{{embed}}` and `{{consentScript}}` passages.
+The check belongs in `embedMarkup` in `lib/embed.js`, so `lib/handlebars-helpers.js` should not
+need a change. If it does, the `embed` helper, `test/unit/handlebars-helpers.test.js` and
+`AIKB/handlebars-helpers.md` are this workstream's too: say so in the report.
 
 ### C1 — the frame's URL
 
@@ -164,8 +210,24 @@ and `data:`/`vbscript:`/`blob:` are all refused without being listed. A root-rel
 `//host/…` URL still pass, because they resolve to http(s). A refusal throws, which the helper
 already turns into a failed page naming the embed.
 
+Where the check sits matters:
+
+- It runs **after** `fill`, never before: a `{placeholder}` in a template's host position does
+  not parse.
+- The frame's check runs **before** line 262, which returns the bare iframe for a `necessary`
+  service.
+- The `watch` check runs **outside** the `try { … } catch { watch = null }` at lines 264-269. Put
+  inside it, a refused URL becomes a silently missing link.
+- In dev, the helper's `consentFail` warns and writes no markup
+  (`lib/handlebars-helpers.js:602-609`). So "fails the page" is a non-dev test, and the dev
+  behaviour is a warning and nothing emitted: test both.
+- `policyUrl` (`lib/consent.js:669-680`) keeps its own, stricter rule (an absolute http(s) URL):
+  it is an `href` to another site's policy and a relative path is wrong there. Do not merge them.
+
 Not in scope: comparing the frame's origin with the service's declared `origins`. That is content
-injection, not script execution, and it changes what a site may embed.
+injection, not script execution, and it changes what a site may embed. Also not in scope:
+`{{consentScript … src=}}`. A script URL from model data is code whatever its scheme, so a scheme
+check there would promise something it cannot keep.
 
 **Regression tests, each seen red first:** `src=` of `javascript:alert(1)//`, ` javascript:alert(1)`
 (leading space), `java\tscript:alert(1)`, `JAVASCRIPT:alert(1)`, `data:text/html,<script>…`,
@@ -183,15 +245,24 @@ wrong for a script body. The `gtag` preset's `inline` ends `window.gtag('config'
 string. The id can come from the helper's hash (`{{consentScript "gtag" id=model.gaId}}`).
 
 **The fix.** `fill` stays as it is for URLs. A second function fills a script body: every
-character of a value outside `[A-Za-z0-9_-]` is written as a `\uXXXX` escape, one per UTF-16 code
+character of a value outside `[A-Za-z0-9_.-]` is written as a `\uXXXX` escape, one per UTF-16 code
 unit. Inside any string literal that reads back as the original text; outside one it cannot form
-an operator, a call or a tag. `lib/consent-gate.js:204` uses it for `service.inline`. An ordinary
+a call, an assignment or a tag. `lib/consent-gate.js:204` uses it for `service.inline`. An ordinary
 id (`G-ABC123`, `AW-123`, `1234567890`) must come out byte for byte as it does today.
+
+The dot is in the safe set on purpose. A site's own `inline` may use a placeholder outside quotes
+for a number (`{rate}` as `0.5`), which works today because `encodeURIComponent` leaves the dot
+alone; escaping it would turn that into a syntax error that only a browser reports. With letters,
+digits, `_`, `-` and `.` nothing can be called or assigned. An unquoted placeholder holding any
+other character was already wrong under URL-encoding (`%3A` is not JavaScript), so nothing that
+works today stops working.
 
 **Regression tests, each seen red first:** the payload above, a value holding `"`, a backtick,
 `\`, a newline, `</script>` and U+2028, each parsed back out of the emitted script as the original
-string (evaluate the emitted literal; do not compare text). `G-ABC123` is byte-identical to the
-current output.
+string (evaluate the emitted literal; do not compare text). `G-ABC123` and `0.5` are
+byte-identical to the current output. `findDocumentWrite` runs on the filled text
+(`lib/consent-gate.js:205`): a value that itself holds `document.write(` is now inert and no
+longer trips it, which is correct; pin it with a row.
 
 **Docs.** The three AIKB docs; in `GUIDE.md`, one sentence where `src=` is documented (what is
 refused) and one where `inline` is (a placeholder belongs inside a string literal, and how its
@@ -203,7 +274,9 @@ Nothing below is touched by a workstream. Report anything that needs changing in
 
 - `CHANGELOG.md`, `package.json` (the version), `types/` (`npm run types`), `llms.txt`, `README.md`.
 - Every skill under `plugins/` and `.claude/skills/`, and `test/unit/skill-coverage.test.js`.
-- `examples/` and `starter/`.
+- `examples/` and `starter/`. `examples/14-consent/router.js:84` ships `verbose: true`, which a
+  site copied from it inherits: decide at review whether an example should.
+- `npx prettier --write` on `GUIDE.md`, once, after every workstream has finished.
 - The full gates, the fleet check, and every commit.
 
 ## Rules for every workstream
@@ -213,11 +286,20 @@ Nothing below is touched by a workstream. Report anything that needs changing in
   first and run it before you write the fix.
 - **Other agents are editing this checkout at the same time.** Stay inside the files you own. Two
   workstreams edit different passages of `GUIDE.md`: read it again immediately before each edit,
-  and touch only your passages.
+  and touch only your passages. Never run prettier on `GUIDE.md` (it holds hand-aligned tables
+  another workstream may be editing), and never add a `##` or `###` heading to it (a new heading
+  fails the docs build). You may run `npx prettier --write` on a file you own outright.
 - **Run only your own test files:** `npx vitest run <file> <file>`. Do not run `npm test`,
-  `npm run gates`, `node docs`, an example's dev server, or `npm run types`. They build into
-  shared folders and collide with the other workstreams. The one exception is workstream A's
-  build of example 14, which no other workstream touches.
+  `npm run gates`, `node docs`, any example, or `npm run types`. They build into shared folders
+  and collide with the other workstreams.
+- **Your tests load the other workstreams' files while they are half-edited.**
+  `lib/kiss-page.js` imports `lib/consent-gate.js` and `lib/consent.js`; the consent unit test
+  imports `lib/consent.js`; the browser suite builds whole sites with an embed on the page. A
+  failure whose stack is in a file you do not own is run again a minute later and reported, never
+  fixed. Red evidence quotes the specific assertion that failed (the off-host request, the token
+  that was found), not only that a run failed.
+- **`test/unit/types.test.js` will be red** once a workstream exports a new function. That is
+  expected: the main session regenerates `types/` at the end.
 - **Text reaches a file through the Write or Edit tool only.** Never through `sed -i`, a heredoc,
   `echo >`, `tee` or `node -e`. A hook refuses those, and the refusal is the rule.
 - **Read the module's `AIKB/` doc before changing the module, and update it with the change.**
@@ -269,10 +351,40 @@ compared with `lib/check.js`'s `diffReports`. Expected: no difference. Each diff
 The entry needs an `### Upgrading` note:
 
 - **Rebuild and redeploy** a site that uses `config.consent`: the head script is inlined into every
-  page, so the fix reaches a visitor only from a new build.
+  page, so the fix reaches a visitor only from a new build. A site that pins a
+  Content-Security-Policy hash for the consent head script must re-hash it.
 - **The dev `.json` sibling and `debug.json` no longer hold `config`.** Anything that read it from
   there reads the build script instead.
 - **`{{embed … src=}}` now fails the page** for a URL that is not http(s). So do a service's
   `embed.src` and `embed.watch`.
 - **A placeholder value in a service's `inline` script** is written as a JavaScript string's
-  content, not URL-encoded. A value of letters, digits, `_` and `-` is unchanged.
+  content, not URL-encoded. A value of letters, digits, `_`, `-` and `.` is unchanged.
+
+## Amended 2026-11-06 — after the contract critique, before any code
+
+A fresh reviewer read this document against the code. The sections above already carry the
+changes; this is the list of what moved, and why.
+
+- **A, the guard's exact shape.** The unit harness has no global `URL` and its `location` has no
+  `host`, so the guard as first written could not run there and the plan told the implementer to
+  stop. The code shape is now given, and it needs no harness change.
+- **A, the browser test.** It moved from a build of example 14 into `test/browser/consent.test.js`,
+  which already has the server, the off-host request log and a 404 fixture. Another test file
+  deletes and rebuilds example 14's output, so the first version raced it.
+- **A, the size ceiling** on the inline script, which the first version did not mention.
+- **A, the fallback's two limits**, to be documented.
+- **B, the test's shape:** ports, `close()`, a recording logger.
+- **B, the log line's single-key redaction** is now a stated decision with its reason, where the
+  first version argued against redaction lists and then used one.
+- **B, the stale sentences** in comments and four AIKB docs, now owned.
+- **C1, where the check sits:** after `fill`, before the early return, outside the `watch` `try`;
+  the dev behaviour; `policyUrl` left alone; `{{consentScript … src=}}` out of scope.
+- **C2, the dot joins the safe set.** Escaping it would have broken an unquoted numeric
+  placeholder that works today, with an error only a browser reports.
+- **All, isolation.** "Run only your own tests" does not isolate the workstreams, because the
+  modules import each other. The rule for a failure in a file you do not own is new.
+- **All, `GUIDE.md`:** no prettier, no new headings.
+
+Not checked by the critique, and so still inferred: what Chromium does with `/\host/…` as a script
+`src` (workstream A's browser test measures it), and whether the page minifier rewrites `\uXXXX`
+escapes in an ungated inline script (the main session reads one built page).
