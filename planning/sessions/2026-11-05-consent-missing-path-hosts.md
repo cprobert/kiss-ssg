@@ -3,6 +3,7 @@ branch: fix/consent-missing-path-hosts
 base: main
 status: closed
 opened: 2026-11-05
+consolidated: 2026-11-06
 ---
 
 # Session — 2026-11-05: consent-missing misses path-qualified tracker hosts
