@@ -192,8 +192,10 @@ describe('gatedScript', () => {
 // A placeholder in a service's `inline` script is a script body, not a URL
 // (security hardening, 2026-11-06). `encodeURIComponent` leaves `'`, `(` and
 // `)` alone, so an id from a model closed the gtag preset's string literal.
-// Each row evaluates the emitted script and compares the VALUE gtag was handed
-// with the original: the text is not the claim, what a browser reads is.
+// The value is still URL-encoded, as it always was, and then what that leaves
+// alone is escaped. Each row evaluates the emitted script and compares the
+// VALUE the script holds with `encodeURIComponent` of the original: the text
+// is not the claim, what a browser reads is.
 describe('gatedScript placeholders in an inline script', () => {
   // Built from its code point, so no formatter can turn it into an invisible
   // character in this file.
@@ -256,10 +258,10 @@ describe('gatedScript placeholders in an inline script', () => {
   ]
 
   for (const [label, value] of HOSTILE)
-    it(`reads back ${label} as the original string, and runs nothing`, () => {
+    it(`reads back ${label} URL-encoded, and runs nothing`, () => {
       const out = gtag(value)
       const { id, calls } = configId(out)
-      expect(id).toBe(value)
+      expect(id).toBe(encodeURIComponent(value))
       expect(calls).toEqual([])
       // One inline script and one loader: the value opened no tag of its own.
       expect(out.match(/<\/script/gi)).toHaveLength(2)
@@ -320,7 +322,84 @@ describe('gatedScript placeholders in an inline script', () => {
       },
     )
     const { id, calls } = configId(min)
-    expect(id).toBe(value)
+    expect(id).toBe(encodeURIComponent(value))
+    expect(calls).toEqual([])
+  })
+
+  /**
+   * One statistics service whose `inline` is the given body, filled with
+   * `value` for `{site}`, then run with `el` and `window` in scope.
+   *
+   * @param {string} inline
+   * @param {string} value
+   */
+  const runOwn = (inline, value) => {
+    const own = resolved({
+      services: { own: { category: 'statistics', inline, site: value } },
+    })
+    const out = gatedScript('own', own.services.own, {
+      consent: own,
+      params: serviceParams(own.services.own),
+    })
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/.exec(out)?.[1] ?? ''
+    const calls = []
+    const el = {}
+    const window = {}
+    vm.runInNewContext(body, {
+      el,
+      window,
+      alert: (...a) => calls.push(a),
+      init: (...a) => calls.push(a),
+    })
+    return { out, body, el, window, calls }
+  }
+
+  it('keeps a placeholder inside an HTML string inert, as it was before', () => {
+    // The code review's case: a value that ends the attribute and opens a tag.
+    const value = 'a&b=c"><img src=x onerror=alert(1)>'
+    const { el } = runOwn(`el.innerHTML='<a href="/x?id={site}">x</a>';`, value)
+    expect(el.innerHTML).toBe(
+      `<a href="/x?id=${encodeURIComponent(value)}">x</a>`,
+    )
+    // Only the template's own markup characters are there.
+    const count = (s, c) => s.split(c).length - 1
+    for (const c of ['<', '>', '"'])
+      expect(count(el.innerHTML, c)).toBe(count('<a href="/x?id=">x</a>', c))
+  })
+
+  it('keeps a placeholder inside a URL one parameter, as it was before', () => {
+    const { window } = runOwn(
+      "window.u='https://t.example/p?site={site}';",
+      'a&b=c',
+    )
+    const url = new URL(window.u)
+    expect([...url.searchParams.keys()]).toEqual(['site'])
+    expect(url.searchParams.get('site')).toBe('a&b=c')
+  })
+
+  it('writes an unquoted placeholder holding a call escaped, so it calls nothing', () => {
+    // `encodeURIComponent` leaves `(` and `)` alone: before the hardening
+    // `window.q={q};` with `init()` ran `init`. Now it is a syntax error.
+    const own = resolved({
+      services: {
+        own: { category: 'statistics', inline: 'window.q={q};', q: 'init()' },
+      },
+    })
+    const out = gatedScript('own', own.services.own, {
+      consent: own,
+      params: serviceParams(own.services.own),
+    })
+    expect(out).toContain('window.q=init\\u0028\\u0029;')
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/.exec(out)?.[1] ?? ''
+    const calls = []
+    let error
+    try {
+      vm.runInNewContext(body, { window: {}, init: () => calls.push(1) })
+    } catch (err) {
+      error = err
+    }
+    // The error comes from the context's realm, so it is named, not instanceof.
+    expect(error?.name).toBe('SyntaxError')
     expect(calls).toEqual([])
   })
 })

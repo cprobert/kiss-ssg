@@ -84,6 +84,50 @@ describe('classifyModel', () => {
       'url:https://e.com/a.json',
     )
   })
+
+  it('writes a URL with every query value redacted, and no credentials', () => {
+    // The map is committed: a token in a model URL's query string would be in
+    // git history the moment the knowledge base was recorded.
+    expect(
+      classifyModel(
+        'https://u:p@cdn.example.com/entries?access_token=SECRET&type=course#f',
+      ),
+    ).toBe(
+      'url:https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
+    )
+    // Not a URL the platform parses, but classified as one all the same.
+    expect(classifyModel('http://[bad?token=SECRET')).toBe(
+      'url:http://[bad?[redacted]',
+    )
+  })
+})
+
+describe('buildSiteMap: URL models that differ only in a query value', () => {
+  it('share one models row and one subject, listing both pages once', () => {
+    const result = map({
+      stack: [
+        entry('./public/a.html', {
+          model: classifyModel('https://cdn.example.com/e?token=ONE&page=1'),
+        }),
+        entry('./public/b.html', {
+          model: classifyModel('https://cdn.example.com/e?token=TWO&page=2'),
+        }),
+      ],
+    })
+    const shown = 'https://cdn.example.com/e?token=[redacted]&page=[redacted]'
+    expect(result.models).toEqual([
+      { source: `url:${shown}`, pages: ['./public/a.html', './public/b.html'] },
+    ])
+    expect(result.subjects).toEqual([
+      {
+        kind: 'models',
+        id: shown,
+        note: 'notes/models/cdn.example.com-e.md',
+        hash: null,
+      },
+    ])
+    expect(JSON.stringify(result)).not.toMatch(/ONE|TWO/)
+  })
 })
 
 describe('classifyController', () => {
@@ -386,6 +430,19 @@ describe('notePathFor', () => {
         id: 'https://API.Example.com:8443/v2/Events~List?key=a%20b&p=2#frag',
       }),
     ).toBe('notes/models/api.example.com-8443-v2-events-list.md')
+  })
+
+  it.each([
+    'https://API.Example.com:8443/v2/Events~List?key=a%20b&p=2#frag',
+    'https://u:p@cdn.example.com/entries?access_token=SECRET&type=course',
+    'https://cdn.example.com/a%20b/../c?x',
+  ])('gives a redacted id the note path the real URL would get (%s)', (url) => {
+    // The map records the redacted id, so a note written against the real
+    // URL's derivation must still be found.
+    const id = classifyModel(url).slice('url:'.length)
+    expect(notePathFor({ kind: 'models', id })).toBe(
+      notePathFor({ kind: 'models', id: url }),
+    )
   })
 
   it('falls back to a stable hash for an id with no filename in it', () => {

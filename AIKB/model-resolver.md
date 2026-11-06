@@ -18,7 +18,7 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 
 ## Depends on
 
-`fs-extra`, `node:path` (the relative-filename arithmetic below); `./utils.js` (`globFiles`, `posixPath`, `hashId`); `./fetch-policy.js` (`fetchModel`).
+`fs-extra`, `node:path` (the relative-filename arithmetic below); `./utils.js` (`globFiles`, `posixPath`, `hashId`, `redactUrl`); `./fetch-policy.js` (`fetchModel`).
 
 ## Depended on by
 
@@ -29,8 +29,9 @@ Resolves `options.model` (in any of its four accepted shapes) into `{ id, data }
 - The four model shapes and the `id` each produces: filename (`id` = filename), URL (`id` = URL), plain object (`id` = `hashId(object)`), folder name (`id` = folder name, `data` is an array — this is the shape `.pages()` fan-out expects).
 - **The relative model filename is `path.posix.relative(root, file)`, not `file.slice(root.length + 1)`.** The slice assumed `modelsDir` had no trailing slash; with one, every filename lost its first characters (`blog/a.json` → `log/a.json`), `readModelFile` logged "Can not find model on file system", every model was filtered out and `resolveModel` threw `Invalid model <folder>` — an error blaming the folder name for a path-arithmetic bug (review finding C4). `resolveFolders` normalises `folders.models` as well; this is the second line of defence for a caller passing `modelsDir` directly.
 - **The URL branch owns dispatch, not policy.** Headers, timeout, retries and the on-disk cache all live in `lib/fetch-policy.js`; this module passes `fetchConfig` and the injected `fetchImpl` through and keeps its one job (model shape → `{ id, data }`). The order the policy applies is cache read → fetch → non-2xx guard → retry → cache write; see `AIKB/fetch-policy.md`.
-- **A non-2xx response rejects before the body is parsed** (`Model fetch failed: <url> → <status> <statusText>`). Without that guard an error envelope — the normal shape an API returns with a 500 — parsed as JSON and became the page's model, so the page rendered empty or garbage content and the build reported success (review finding C2). Only an error body that is not JSON failed, and by accident: `response.json()` threw.
+- **A non-2xx response rejects before the body is parsed** (`Model fetch failed: <url> → <status> <statusText>`, the URL redacted — `AIKB/fetch-policy.md`). Without that guard an error envelope — the normal shape an API returns with a 500 — parsed as JSON and became the page's model, so the page rendered empty or garbage content and the build reported success (review finding C2). Only an error body that is not JSON failed, and by accident: `response.json()` threw.
 - A cached URL model never reaches `fetchImpl` at all (`config.fetch.cache`), which is what stops a watch rebuild paying a network round trip per remote model — a cached model is a build input like a `.json` file on disk.
 - Uses the _global_ `fetch` by default (`globalThis.fetch`, Node's built-in) rather than importing a fetch library.
 - `fetchImpl` is an injectable dependency specifically so tests can stub network calls without mocking global `fetch`.
 - Every failure path rejects with an `Error` (not a plain string/object) whose `.message` `Kiss.page()`'s `.catch()` logs; the HTTP failure path additionally attaches the original `error` as `err.error` so both messages get logged.
+- **The URL is the real one in `id` and redacted in everything printed.** `id` is the author's own handle — `.getModelByID(<the URL they wrote>)` must find it — so it is the URL as written. The `Error getting model from <url>` line goes through `redactUrl` (`lib/utils.js`: no credentials, no fragment, each query value `[redacted]`), and the rejection's message and attached `err.error` are the ones `fetchModel` built, already redacted, with no `cause` hanging off them. `lib/page-registry.js`'s catch prints both, so neither may carry a token from the query string.

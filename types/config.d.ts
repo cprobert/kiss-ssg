@@ -40,6 +40,26 @@ export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
  */
 export function foldersToEnsure(folders: KissFolders): string[];
 /**
+ * A copy of a config whose `fetch.headers` keeps every header name and has
+ * every value replaced by `'[redacted]'`. `fetch.headers` is where `GUIDE.md`
+ * tells a site to put an API token, and this is the copy anything other than
+ * the fetch itself is handed: each page's `options.config` (so a template, a
+ * controller and `{{{stringify this}}}` see the names and never the values)
+ * and the `verbose` log line. Fetching reads the instance's own
+ * `config.fetch`, which this never touches.
+ *
+ * Only `fetch.headers` is redacted: it is the one place kiss documents for a
+ * secret, and anything else a site puts in its config is the site's to keep
+ * out of its templates. Shallow: the top level and `fetch` are new objects,
+ * every other nested value is shared with the input.
+ * @template {Record<string, any>} T
+ * @param {T} config a resolved config, or a page's merged copy of one
+ * @returns {T} a new object with the same keys; `fetch` and `fetch.headers`
+ * are new objects when `fetch.headers` is an object, and are carried as they
+ * stand otherwise
+ */
+export function redactFetchHeaders<T extends Record<string, any>>(config: T): T;
+/**
  * Where the engine reads and writes. Every key is present once `resolveConfig`
  * has run; `null` is a real value — it switches a folder off, so nothing is
  * created, scanned or copied for it.

@@ -9,8 +9,37 @@ import {
   DEFAULT_AUDIT,
   DEFAULT_MARKDOWN_COPIES,
   resolveMarkdownCopies,
+  redactFetchHeaders,
 } from '../../lib/config.js'
 import { CHECKS } from '../../lib/audit.js'
+
+describe('redactFetchHeaders', () => {
+  it('keeps every header name, redacts every value, and leaves the input alone', () => {
+    const config = resolveConfig({
+      siteUrl: 'https://e.com',
+      fetch: { headers: { Authorization: 'Bearer T', 'X-Key': 'K' } },
+    })
+    const copy = redactFetchHeaders(config)
+    expect(copy.fetch.headers).toEqual({
+      Authorization: '[redacted]',
+      'X-Key': '[redacted]',
+    })
+    expect(copy.fetch.timeout).toBe(config.fetch.timeout)
+    expect(copy.siteUrl).toBe('https://e.com')
+    expect(copy).not.toBe(config)
+    expect(config.fetch.headers).toEqual({
+      Authorization: 'Bearer T',
+      'X-Key': 'K',
+    })
+  })
+
+  it('copies a config with no fetch, or no headers, as it stands', () => {
+    expect(redactFetchHeaders({ siteUrl: 'x' })).toEqual({ siteUrl: 'x' })
+    const noHeaders = { fetch: { timeout: 5 } }
+    expect(redactFetchHeaders(noHeaders)).toEqual(noHeaders)
+    expect(redactFetchHeaders({ fetch: null })).toEqual({ fetch: null })
+  })
+})
 
 // `{{image}}`'s recipe as `resolveConfig({})` fills it in (`lib/images.js`).
 const DEFAULT_IMAGES_RESOLVED = {

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { isInside } from '../../lib/utils.js'
+import { isInside, redactUrl } from '../../lib/utils.js'
 import { describe, it, expect, afterEach } from 'vitest'
 import utils from '../../lib/utils.js'
 import { makeSite } from '../helpers/site.js'
@@ -320,5 +320,52 @@ describe('isInside', () => {
     const windows = process.platform === 'win32'
     expect(inAssets('src\\assets\\x.txt')).toBe(windows)
     expect(isInside('src\\assets')('src/assets/x.txt')).toBe(windows)
+  })
+})
+
+describe('redactUrl', () => {
+  it.each([
+    [
+      'https://cdn.example.com/entries?access_token=SECRET&type=course',
+      'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
+    ],
+    // No credentials, no fragment.
+    [
+      'https://user:pass@cdn.example.com/x?k=v#frag',
+      'https://cdn.example.com/x?k=[redacted]',
+    ],
+    // A parameter with no `=` is itself a value.
+    [
+      'https://cdn.example.com/x?justavalue',
+      'https://cdn.example.com/x?[redacted]',
+    ],
+    ['https://cdn.example.com/x', 'https://cdn.example.com/x'],
+    // Every parameter keeps its place, repeats included.
+    [
+      'https://cdn.example.com/x?a=1&a=2&b',
+      'https://cdn.example.com/x?a=[redacted]&a=[redacted]&[redacted]',
+    ],
+    // An empty query, and empty pieces between `&`, say nothing.
+    ['https://cdn.example.com/x?', 'https://cdn.example.com/x'],
+    [
+      'https://cdn.example.com/x?a=1&&b=2',
+      'https://cdn.example.com/x?a=[redacted]&b=[redacted]',
+    ],
+    ['https://cdn.example.com/x#only-a-fragment', 'https://cdn.example.com/x'],
+    // Port and path kept; the host as the URL parser writes it.
+    [
+      'http://API.Example.com:8443/v2/events?page=2',
+      'http://api.example.com:8443/v2/events?page=[redacted]',
+    ],
+    // Not a URL the platform parses: cut at the first `?` or `#`.
+    ['http://[bad url?token=SECRET', 'http://[bad url?[redacted]'],
+    ['http://[bad url#token=SECRET', 'http://[bad url'],
+    ['http://user:pass@[bad/x?token=SECRET', 'http://[bad/x?[redacted]'],
+  ])('writes %s as %s', (url, shown) => {
+    expect(redactUrl(url)).toBe(shown)
+  })
+
+  it('is not on the public utils object', () => {
+    expect(utils).not.toHaveProperty('redactUrl')
   })
 })

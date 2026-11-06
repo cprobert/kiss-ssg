@@ -482,3 +482,65 @@ session has read its report.
    only in their query string look like today.
 3. **Propose one rule** for how a URL is written anywhere kiss records or prints it, with what it
    costs: what collides, what baseline moves, what a site sees on upgrade. Report, and stop.
+
+### Workstream F, part two — the rule, and building it (2026-11-06)
+
+**What the investigation measured.** With a model URL carrying
+`?access_token=SECRET-TOKEN-2&type=course`:
+
+- `kiss-ssg aikb` writes the token into the committed `AIKB/` folder: `site-map.json` and
+  `site-map.md` (the page's model, the models table, the subject's id) and `last-build.json`
+  (`aikb.subjects[].id`). From there it reaches `kiss-ssg check`'s JSON and `--subjects`, the
+  `aikb` command's output, and a recorded site's `KISS_REPORT` line.
+- Any fetch failure prints it on stderr (`Error getting model from …`, `Model fetch failed: … →
+404`, and the original error with its stack). A cache hit prints it under `verbose`.
+- It does **not** reach the build folder, nor the report's `failures`: a failed model fetch is
+  logged and the page skipped, and the report says `ok: true`. (That a model outage gives a green
+  report with a page missing is a separate matter, listed for the operator and not touched here.)
+- The note path a URL model gets already drops the query string, with a comment saying the query
+  "is where … the api key" lives. The id beside it kept the whole URL, so the redaction stopped
+  halfway. Nothing is keyed on the id's spelling: note findings follow the note path, and
+  `check`'s diff never compares subjects.
+
+**The rule.** Wherever kiss records or prints a model URL, as distinct from fetching it, the URL
+is written with:
+
+- its scheme, host, port and path as given;
+- no `user:pass@`;
+- no fragment;
+- each query parameter's **name** kept and its **value** replaced by `[redacted]`, the same word
+  `fetch.headers` values get: `https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]`.
+  A parameter with no `=` is itself a value: `?[redacted]`.
+
+Every value is redacted, because kiss cannot know which one is the secret, and a rule that guesses
+is a deny-list. A URL that does not parse but starts with `http` is cut at its first `?` or `#`
+and given `?[redacted]` when it had a query. What kiss fetches, the cache key, and the `{ id }`
+that `.generate()`, `.complete()` and `.getModelByID()` hand the author keep the real URL.
+
+It is a convention with no config key. Two models that differ only in a query value become one
+row in the models table and one subject; they already share one note today. A secret in the path
+is not caught: the guide says a credential belongs in `fetch.headers`.
+
+**Owns:** `lib/aikb.js` (`classifyModel` and the text that describes it), `lib/fetch-policy.js`,
+`lib/model-resolver.js`, `lib/utils.js` (the one new function), `lib/page-registry.js` (the
+model-failure `catch` only, and only if a message there still carries the URL),
+`test/unit/aikb.test.js`, `test/unit/fetch-policy.test.js`, `test/unit/model-resolver.test.js`,
+`test/unit/utils.test.js`, `test/integration/aikb.test.js`, `AIKB/aikb.md`,
+`AIKB/fetch-policy.md`, `AIKB/model-resolver.md`, `AIKB/utils.md`, and in `GUIDE.md` only the
+passage on URL models and `fetch`.
+
+1. One exported function holds the rule, with its own unit rows. Every place that records or
+   prints a model URL goes through it: `classifyModel`, the three messages in
+   `lib/fetch-policy.js` (timeout, cache hit, fetch failed), and `Error getting model from …` in
+   `lib/model-resolver.js`. The error **message** is built redacted, because the catch that logs
+   it also prints the original error and its stack.
+2. Regression tests, each seen red first: a site map and a `last-build.json` recorded from a URL
+   model with a token hold no token anywhere under `AIKB/` (walk the folder); a 404, a timeout
+   and a cache hit under `verbose` put no token in anything the logger is handed or in the thrown
+   error's message or stack; the fetch is still made to the real URL; `.getModelByID(<the real
+URL>)` still finds the model.
+3. Sweep the suite before changing a message: every test, fixture and committed record that
+   holds a URL model's spelling or a fetch message (`examples/*/AIKB`, the docs site, test
+   fixtures). Report what moves.
+4. Docs, and for the changelog: what a site with a committed `AIKB/` sees on its next
+   `kiss-ssg aikb`, and that a token already committed stays in git history and must be rotated.

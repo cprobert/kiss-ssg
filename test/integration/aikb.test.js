@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createHash } from 'node:crypto'
+import { inspect } from 'node:util'
+import fs from 'fs-extra'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -18,6 +20,8 @@ afterEach(async () => {
 const node = `"${process.execPath}"`
 const sha1 = (text) => createHash('sha1').update(text).digest('hex')
 const EVENTS = 'https://api.example.com/v2/events?page=1'
+// How the map and the report name it: every query value redacted.
+const EVENTS_SHOWN = 'https://api.example.com/v2/events?page=[redacted]'
 
 // One site with every kind of subject in it: a `.json` file model, a models
 // folder fanned out through a controller **file**, a URL model, and one asset
@@ -165,7 +169,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
       },
       {
         kind: 'models',
-        id: EVENTS,
+        id: EVENTS_SHOWN,
         note: 'notes/models/api.example.com-v2-events.md',
         hash: null,
       },
@@ -185,7 +189,7 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
         buildTo: `${site.build}/events.html`,
         id: 'events',
         view: 'events.hbs',
-        model: `url:${EVENTS}`,
+        model: `url:${EVENTS_SHOWN}`,
         controller: 'none',
         partials: [],
       },
@@ -428,5 +432,111 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
     // The report agrees, and neither names the staging sibling.
     const text = await site.read('AIKB/last-build.json')
     expect(text).not.toContain('kiss-staging')
+  })
+})
+
+// A model URL with a token in its query string. The knowledge base is
+// committed and the log is read by people other than the author, so both name
+// the URL with every query value redacted; the fetch, and the id the author
+// gets back, keep the real one.
+describe('a token in a URL model’s query string', () => {
+  const TOKEN = 'SECRET-TOKEN-F'
+  const REAL = `https://cdn.example.com/entries?access_token=${TOKEN}&type=course`
+  const SHOWN =
+    'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]'
+
+  const tokenSite = () =>
+    makeSite({
+      'src/pages/entries.hbs': '<p>{{model.count}}</p>',
+    })
+
+  // Every file under a folder, as text, with its path relative to the site.
+  const walk = async (dir) => {
+    const out = []
+    for (const name of await fs.readdir(dir)) {
+      const file = `${dir}/${name}`
+      if ((await fs.stat(file)).isDirectory()) out.push(...(await walk(file)))
+      else out.push([file, await fs.readFile(file, 'utf8')])
+    }
+    return out
+  }
+
+  // Every call on every logger level, printed the way `console.*` would print
+  // it: an Error with its stack, its `cause` and its own properties.
+  const recordingLogger = () => {
+    const lines = []
+    const logger = { ...silentLogger, verbose: true }
+    for (const level of Object.keys(silentLogger))
+      if (typeof silentLogger[level] === 'function')
+        logger[level] = (...args) =>
+          lines.push(
+            [level, ...args.map((a) => inspect(a, { depth: Infinity }))].join(
+              ' ',
+            ),
+          )
+    return { logger, lines }
+  }
+
+  it('records no token anywhere under AIKB, fetches the real URL, and hands back the real id', async () => {
+    site = await tokenSite()
+    const requested = []
+    vi.stubGlobal('fetch', async (url) => {
+      requested.push(url)
+      return { ok: true, status: 200, json: async () => ({ count: 2 }) }
+    })
+    record()
+    kiss = new Kiss({
+      logger: silentLogger,
+      folders: { ...site.folders, aikb: `${site.root}/AIKB` },
+    })
+    kiss.page({ view: 'entries.hbs', model: REAL }).generate()
+    const data = await kiss.complete()
+
+    expect(requested).toEqual([REAL])
+    expect(kiss.getModelByID(REAL, data)).toEqual({ count: 2 })
+
+    const files = await walk(`${site.root}/AIKB`)
+    expect(
+      files.map(([file]) => file.slice(site.root.length + 1)).sort(),
+    ).toEqual([
+      'AIKB/README.md',
+      'AIKB/last-build.json',
+      'AIKB/site-map.json',
+      'AIKB/site-map.md',
+    ])
+    const holding = files.filter(([, text]) => text.includes(TOKEN))
+    expect(holding.map(([file]) => file)).toEqual([])
+
+    // What the map says instead: the endpoint, and the names of its parameters.
+    const map = JSON.parse(await site.read('AIKB/site-map.json'))
+    expect(map.pages[0].model).toBe(`url:${SHOWN}`)
+    expect(map.subjects).toEqual([
+      {
+        kind: 'models',
+        id: SHOWN,
+        note: 'notes/models/cdn.example.com-entries.md',
+        hash: null,
+      },
+    ])
+    expect(kiss.report().aikb.subjects[0].id).toBe(SHOWN)
+  })
+
+  it('logs a failing fetch with no token in anything the logger is handed', async () => {
+    site = await tokenSite()
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+    }))
+    const { logger, lines } = recordingLogger()
+    kiss = new Kiss({ logger, folders: site.folders })
+    kiss.page({ view: 'entries.hbs', model: REAL }).generate()
+    const data = await kiss.complete().catch((error) => error)
+
+    const text = lines.join('\n')
+    expect(text).toContain(`Model fetch failed: ${SHOWN} → 404 Not Found`)
+    expect(text).not.toContain(TOKEN)
+    // The author's own handle on the failure still names the real URL.
+    expect(data.find((d) => d.error)?.id).toBe(REAL)
   })
 })

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import path from 'node:path'
 import { inspect } from 'node:util'
@@ -13,6 +13,7 @@ afterEach(async () => {
   if (site) await site.cleanup()
   site = null
   kiss = null
+  vi.unstubAllGlobals()
 })
 
 // `viewStats()` does not await its write, so poll for the file. Poll on it
@@ -204,5 +205,147 @@ describe('the config stays out of the debug files and the log', () => {
     expect(kiss._stack[0].page.options.config.siteUrl).toBe(
       'https://example.com',
     )
+  })
+
+  // Leaving `config` out of the two debug files is not enough: the guide's own
+  // "take a peek" idiom, `{{{stringify this}}}`, prints the whole render
+  // context into the page, and a controller can copy the config under another
+  // name past `withoutConfig`. So the copy each page gets carries the header
+  // names with every value redacted, and fetching reads the instance's own.
+  describe('the token never reaches the render context', () => {
+    const peek = {
+      'src/pages/index.hbs': '<pre>{{{stringify this}}}</pre>',
+    }
+
+    it('{{{stringify this}}} writes no token into the page, in a production build', async () => {
+      site = await makeSite(peek)
+      kiss = new Kiss(config({ logger: silentLogger })).scan().generate()
+      await kiss.complete()
+
+      const html = await site.read('public/index.html')
+      // The dump really is there, so an absent token is not an absent dump.
+      expect(html).toContain('https://example.com')
+      expect(html).toContain('Authorization')
+      expect(await filesHolding(TOKEN)).toEqual([])
+    })
+
+    it('{{{stringify this}}} writes no token into any file, in a dev build', async () => {
+      site = await makeSite(peek)
+      kiss = new Kiss(
+        config({ dev: true, port: 0, livereloadPort: 0, logger: silentLogger }),
+      )
+        .scan()
+        .generate()
+      await kiss.complete()
+
+      expect(await site.read('public/index.html')).toContain('Authorization')
+      expect(await filesHolding(TOKEN)).toEqual([])
+    })
+
+    it('a controller that copies config under another name writes no token into the page, the dev sibling or debug.json', async () => {
+      site = await makeSite({
+        'src/pages/index.hbs': '<pre>{{{stringify site}}}</pre>',
+      })
+      kiss = new Kiss(
+        config({
+          dev: true,
+          port: 0,
+          livereloadPort: 0,
+          verbose: true,
+          logger: silentLogger,
+        }),
+      )
+        .page({
+          view: 'index.hbs',
+          controller: (options) => ({ ...options, site: options.config }),
+        })
+        .generate()
+      await kiss.complete()
+      kiss.viewStats()
+      await readDebug()
+
+      // The copy is in all three files, so an absent token is not an absent copy.
+      expect(await site.read('public/index.html')).toContain('Authorization')
+      expect(JSON.parse(await site.read('public/index.json')).site).toBeTruthy()
+      expect(await site.exists('public/debug.json')).toBe(true)
+      expect(await filesHolding(TOKEN)).toEqual([])
+    })
+
+    it('{{{stringify this}}} writes no token into any page of a fan-out', async () => {
+      site = await makeSite(peek)
+      kiss = new Kiss(config({ logger: silentLogger }))
+        .page({
+          view: 'index.hbs',
+          dynamic: true,
+          model: [{ slug: 'one' }, { slug: 'two' }],
+        })
+        .generate()
+      await kiss.complete()
+
+      expect(kiss._stack).toHaveLength(2)
+      for (const { page } of kiss._stack)
+        expect(page.options.config.fetch.headers).toEqual({
+          Authorization: '[redacted]',
+        })
+      expect(await filesHolding(TOKEN)).toEqual([])
+    })
+
+    it('a page’s own config override that supplies fetch.headers is redacted too', async () => {
+      site = await makeSite(peek)
+      kiss = new Kiss({
+        folders: site.folders,
+        siteUrl: 'https://example.com',
+        logger: silentLogger,
+      })
+        .page({
+          view: 'index.hbs',
+          config: { fetch: { headers: { 'X-Api-Key': TOKEN } } },
+        })
+        .generate()
+      await kiss.complete()
+
+      expect(await site.read('public/index.html')).toContain('X-Api-Key')
+      expect(await filesHolding(TOKEN)).toEqual([])
+    })
+
+    it('a template still reads config, and a header value reads [redacted]', async () => {
+      site = await makeSite({
+        'src/pages/index.hbs':
+          '<p>{{config.siteUrl}}|{{config.fetch.headers.Authorization}}</p>',
+      })
+      kiss = new Kiss(config({ logger: silentLogger })).scan().generate()
+      await kiss.complete()
+
+      expect(await site.read('public/index.html')).toContain(
+        '<p>https://example.com|[redacted]</p>',
+      )
+    })
+
+    it('a URL model is still fetched with the real header, and the instance’s config keeps it', async () => {
+      const sent = []
+      vi.stubGlobal('fetch', async (url, init) => {
+        sent.push({ url, headers: init?.headers })
+        return { ok: true, status: 200, json: async () => ({ heading: 'Hi' }) }
+      })
+      site = await makeSite({
+        'src/pages/index.hbs': '<h1>{{model.heading}}</h1>',
+      })
+      kiss = new Kiss(config({ logger: silentLogger }))
+        .page({ view: 'index.hbs', model: 'https://api.example/home' })
+        .generate()
+      await kiss.complete()
+
+      expect(await site.read('public/index.html')).toContain('<h1>Hi</h1>')
+      expect(sent).toEqual([
+        {
+          url: 'https://api.example/home',
+          headers: { Authorization: `Bearer ${TOKEN}` },
+        },
+      ])
+      expect(kiss.config.fetch.headers.Authorization).toBe(`Bearer ${TOKEN}`)
+      expect(kiss._stack[0].page.options.config.fetch.headers).toEqual({
+        Authorization: '[redacted]',
+      })
+    })
   })
 })

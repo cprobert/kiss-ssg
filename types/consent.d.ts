@@ -120,13 +120,18 @@ export function serviceParams(service: ConsentService, hash?: Record<string, any
 export function fill(template: string, params: Record<string, string>, where: string): string;
 /**
  * Fill `{param}` placeholders in a script body (a service's `inline`). A
- * value is written as a JavaScript string's content, not URL-encoded: every
- * UTF-16 code unit outside `[A-Za-z0-9_.-]` becomes a `\uXXXX` escape. Inside
- * a string literal that reads back as the original text; outside one it cannot
- * close the literal, call, assign or close the `<script>` tag. The dot is kept,
- * so an unquoted number (`{rate}` as `0.5`) still works, and an ordinary id
- * (`G-ABC123`) comes out as it did under `fill` (security hardening,
- * 2026-11-06).
+ * value is URL-encoded exactly as `fill` encodes it, and then every character
+ * of that result outside `[A-Za-z0-9_.-]` is written as a `\uXXXX` escape.
+ * Inside a string literal the script therefore reads
+ * `encodeURIComponent(value)`, as it did when `inline` went through `fill`,
+ * so a placeholder inside a URL or an HTML string stays encoded; and the
+ * characters URL-encoding leaves alone (`'`, `(`, `)`, `!`, `~`, `*`) can no
+ * longer end the literal. Outside a literal a value cannot close one, call a
+ * function or close the `<script>` element, though it is still code: a value
+ * made of safe characters (`x--`, a name) is read as an expression. The dot is
+ * kept, so an unquoted number (`{rate}` as `0.5`) still works, and an ordinary
+ * id (`G-ABC123`) comes out byte for byte as `fill` writes it (security
+ * hardening, 2026-11-06).
  *
  * @param {string} template
  * @param {Record<string, string>} params

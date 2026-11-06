@@ -117,6 +117,39 @@ parallel over one at a time (2026-11-06).
       unknown path with 200 and HTML does not fire the fallback.
   - **For the upgrade note, beyond the plan's list:** a placeholder inside a URL inside a string
     in a site's own `inline` (`'https://x/?q={q}'`) was URL-encoded and is now the raw text.
+- **2026-11-06, round two** — after the operator's `/code-review` (Amendment above). Decision:
+  ready for the operator's diff review, then the close. The last line of the entry above no
+  longer holds: the inline fill URL-encodes again, so that upgrade-note item is gone.
+  - **Inline fill.** For the `gtag` preset, `G-ABC123`, `AW-123`, `1234567890` and `0.5` are byte
+    for byte what `main` writes (compared against `main`'s own `fill`). The review's `innerHTML`
+    and URL cases evaluate to what `main` gave; both were red on `afb1da4`.
+  - **Token at the source.** A page whose view is `{{{stringify this}}}`, and a controller that
+    copies `config` under another name, write no token into any file; a URL model is still
+    fetched with the real header.
+  - **URL models.** Measured before: `kiss-ssg aikb` wrote a query-string token into three files
+    of the committed `AIKB/` folder, and a failed fetch printed it. After, real runs of
+    `kiss-ssg aikb`, `check --subjects` under `verbose`, a 404 `check` and a plain build, on a
+    scratch site with one token in `fetch.headers` and another in the model URL: 0 hits for
+    either across everything written and printed; the built page's `stringify` shows
+    `"Authorization": "[redacted]"`.
+  - **A sibling the implementer reported, fixed by the main session:** `registerPage`'s
+    `No view specified` line logged the options whole. Seen red first.
+  - **Red, re-derived by the main session:** round two's fixes switched off by ten one-line
+    mutations in two passes: 18 tests fail, then 14; files restored byte for byte each time.
+  - **Listed, not fixed:**
+    - A failed model fetch is logged and the page skipped, and the report says `ok: true` with
+      the page missing (measured by the investigation). Documented behaviour; the operator's
+      call.
+    - `scrubbed()` in `lib/fetch-policy.js` cleans the fetch's own error messages by text
+      replacement, measured against Node v24.14.0's messages only. A network error's message
+      gains `: <cause>` and the attached error no longer carries a `cause`.
+    - A page's own `config` overrides no longer show in the two debug files.
+    - A secret in a URL's path is not caught; the guide says a credential belongs in
+      `fetch.headers`.
+  - **For the upgrade note:** the list is in the plan's "For the changelog" section, plus: a
+    site with a committed `AIKB/` and a URL model with a query string sees its `url:` rows and
+    subject ids rewritten on the next `kiss-ssg aikb`; note paths do not move; a token already
+    committed stays in git history and must be rotated.
 
 ---
 

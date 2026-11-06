@@ -92,6 +92,21 @@ export function relativePathFor(fromPageURL: string, toPageURL: string): string;
  * @returns {string} MD5 hex digest of the string, or of its JSON if it is not one
  */
 export function hashId(input: unknown): string;
+/**
+ * A URL as kiss shows it, never as it fetches it.
+ *
+ * @param {unknown} url a model URL, as the author wrote it
+ * @returns {string} the URL with no `user:pass@` and no fragment, and each
+ * query parameter's name kept and its value replaced by `[redacted]`
+ * (`?access_token=[redacted]&type=[redacted]`); a parameter with no `=` is
+ * itself a value and becomes `[redacted]`, and an empty query is dropped.
+ * Scheme, host, port and path are kept, in the form the WHATWG URL parser
+ * gives them (host lowercased, a default port dropped, the path
+ * percent-encoded). A string the parser rejects is cut at its first `?` or
+ * `#`, any `user:pass@` dropped, and given `?[redacted]` when what was cut
+ * began with `?`.
+ */
+export function redactUrl(url: unknown): string;
 export function isInside(directory: string): (file: string) => boolean;
 export default utils;
 declare namespace utils {

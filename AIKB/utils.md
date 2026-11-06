@@ -19,6 +19,7 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 - `servedPathFor(pageURL)` → the root-relative path a static host serves that page at: `/` + the page's build-relative URL, with a trailing `index.html` collapsed to a trailing `/` (`index.html` → `/`, `about.html` → `/about.html`, `about/index.html` → `/about/`, `courses/index.html` → `/courses/`, `data/index.json` → `/data/index.json`). The one derivation behind `{{link}}`.
 - `relativePathFor(fromPageURL, toPageURL)` → one page's file as a reference from another's (`tab-2.html`, `../l2/index.html`; a page linking itself gets its own file name). No policy and no collapse: it names the file, because it is `{{link}}`'s href on a learning-package page, which an LMS serves file by file from wherever it unpacks it, and a folder link is exactly what an LMS does not resolve. Not a fifth URL policy beside the four below: it carries no host and no site-wide shape at all.
 - `hashId(input)` → MD5 hex digest of `input` if it's a string, else of `JSON.stringify(input)`.
+- `redactUrl(url)` → a URL as kiss **shows** it, never as it fetches it: scheme, host, port and path kept (as the WHATWG parser writes them: host lowercased, a default port dropped), no `user:pass@`, no fragment, each query parameter's name kept and its value replaced by `[redacted]` (`?access_token=[redacted]&type=[redacted]`), a parameter with no `=` replaced whole (`?[redacted]`), an empty query dropped. A string the parser rejects is cut at its first `?` or `#`, any `user:pass@` dropped, and given `?[redacted]` when it had a query. **Named export only, not on the default object** — it is engine-internal, and the default object is the public `utils` a site imports.
 - `export default { trimLines, toSlug, toTitleCase, trimPath, sanitizePath, posixPath, globFiles, hashId, toURLKey, toAbsoluteUrl, toCanonicalPath, servedPathFor, relativePathFor }` (also each function is a named export).
 
 ## Depends on
@@ -27,7 +28,7 @@ Small string/path helpers shared across the engine: slugification, title-casing,
 
 ## Depended on by
 
-`lib/assets.js`, `lib/fetch-policy.js`, `lib/handlebars-helpers.js`, `lib/kiss.js`, `lib/asset-copy.js`, `lib/build-finish.js`, `lib/page-registry.js`, `lib/rebuild.js`, `lib/kiss-page.js`, `lib/model-resolver.js`, `lib/partials.js`, `lib/sitemap.js`, `lib/watcher.js`.
+`lib/aikb.js` (`redactUrl` and others), `lib/assets.js`, `lib/fetch-policy.js`, `lib/handlebars-helpers.js`, `lib/kiss.js`, `lib/asset-copy.js`, `lib/build-finish.js`, `lib/page-registry.js`, `lib/rebuild.js`, `lib/kiss-page.js`, `lib/model-resolver.js`, `lib/partials.js`, `lib/sitemap.js`, `lib/watcher.js`.
 
 ## Non-obvious behavior
 
