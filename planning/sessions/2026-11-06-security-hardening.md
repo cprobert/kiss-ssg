@@ -62,6 +62,22 @@ parallel over one at a time (2026-11-06).
 
 ### Amendments
 
+- **2026-11-06 — after the operator's `/code-review` of `afb1da4`.** Six findings, none in the
+  origin guard or the embed URL check. The operator decided three:
+  - **The inline fill** URL-encodes and then escapes, so a quoted placeholder yields the value it
+    did before the branch. The first version wrote the raw value and opened an injection through
+    a placeholder inside an HTML or URL string.
+  - **The token is stripped at the source:** each page's copy of the config carries
+    `fetch.headers` with its values redacted, so `{{{stringify this}}}` and a controller that
+    copies `config` cannot write it into a page. The first version covered the two debug files
+    and the log only.
+  - **Scope grows by one item:** a token in a URL model's query string, recorded by
+    `kiss-ssg aikb` and printed in logs. It predates the branch and was outside the plan. The
+    operator chose to verify it and, if it is real, fix it here.
+  - A Codex adversarial review ran twice. The first approved in 68 seconds having opened three
+    files; the second read about twenty and stopped when the workspace ran out of credits, with
+    no verdict. The branch's independent review is the `/code-review` above.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;

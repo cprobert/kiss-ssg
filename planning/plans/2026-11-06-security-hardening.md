@@ -153,7 +153,9 @@ in CI logs as well.
    key. The config is the site's own file and is not what these dumps are for, and an allow-list
    ("the page's own options") cannot be beaten by the next secret-bearing key the way a redaction
    list can. One shared function does it, so the two writers cannot drift.
-2. `options.config` itself is untouched: templates and controllers still read it.
+2. `options.config` stays on the page for templates and controllers, but since the code review
+   (workstream E, below) the copy each page gets carries `fetch.headers` with every value
+   replaced by `'[redacted]'`. Fetching reads the instance's own config, never the page's copy.
 3. The verbose log line prints the config with each value under `fetch.headers` replaced by
    `'[redacted]'`, keeping the header names. This one is a redaction of a single key, and that is
    a decision: the two files are served or deployed, so they get the allow-list; the log goes to
@@ -244,23 +246,34 @@ wrong for a script body. The `gtag` preset's `inline` ends `window.gtag('config'
 `encodeURIComponent` leaves `'`, `(` and `)` alone, so an id of `G-X'-alert(1)-'` closes the
 string. The id can come from the helper's hash (`{{consentScript "gtag" id=model.gaId}}`).
 
-**The fix.** `fill` stays as it is for URLs. A second function fills a script body: every
-character of a value outside `[A-Za-z0-9_.-]` is written as a `\uXXXX` escape, one per UTF-16 code
-unit. Inside any string literal that reads back as the original text; outside one it cannot form
-a call, an assignment or a tag. `lib/consent-gate.js:204` uses it for `service.inline`. An ordinary
-id (`G-ABC123`, `AW-123`, `1234567890`) must come out byte for byte as it does today.
+**The fix (as revised after the code review; workstream D below has the detail).** `fill` stays
+as it is for URLs. A second function fills a script body in two steps: the value is URL-encoded
+exactly as `fill` encodes it, and then every character of that result outside `[A-Za-z0-9_.-]` is
+written as a `\uXXXX` escape. Inside a string literal the script therefore sees the same value it
+saw before this branch, `encodeURIComponent(value)`, and the characters URL-encoding leaves alone
+(`'`, `(`, `)`, `!`, `~`, `*`) can no longer end the string. `lib/consent-gate.js:204` uses it for
+`service.inline`. An ordinary id (`G-ABC123`, `AW-123`, `1234567890`) comes out byte for byte as it
+does on `main`.
+
+The first version of this fix wrote the raw value, escaped, with no URL-encoding. That closed the
+breakout and opened another hole: a site's `inline` that puts a placeholder inside a URL or an
+HTML string (`new Image().src='https://t.example/p?site={site}'`,
+`el.innerHTML='<a href="/x?id={site}">'`) had been getting an encoded, inert value and now got the
+raw one (the code review measured an injection through `innerHTML`).
 
 The dot is in the safe set on purpose. A site's own `inline` may use a placeholder outside quotes
-for a number (`{rate}` as `0.5`), which works today because `encodeURIComponent` leaves the dot
-alone; escaping it would turn that into a syntax error that only a browser reports. With letters,
-digits, `_`, `-` and `.` nothing can be called or assigned. An unquoted placeholder holding any
-other character was already wrong under URL-encoding (`%3A` is not JavaScript), so nothing that
-works today stops working.
+for a number (`{rate}` as `0.5`), which works on `main` because `encodeURIComponent` leaves the dot
+alone; escaping it would turn that into a syntax error that only a browser reports.
+
+What does stop working, and has to: an unquoted placeholder whose value holds `'`, `(`, `)`, `!`,
+`~` or `*`. `encodeURIComponent` passed those through, so `{q}` as `init()` ran as code on `main`.
+That is the injection this fix closes, so it becomes a syntax error in the browser, and the
+upgrade note says a placeholder is data, never code.
 
 **Regression tests, each seen red first:** the payload above, a value holding `"`, a backtick,
-`\`, a newline, `</script>` and U+2028, each parsed back out of the emitted script as the original
-string (evaluate the emitted literal; do not compare text). `G-ABC123` and `0.5` are
-byte-identical to the current output. `findDocumentWrite` runs on the filled text
+`\`, a newline, `</script>` and U+2028, each parsed back out of the emitted script (evaluate the
+emitted literal; do not compare text) as `encodeURIComponent` of the original. `G-ABC123` and `0.5`
+are byte-identical to `main`'s output. `findDocumentWrite` runs on the filled text
 (`lib/consent-gate.js:205`): a value that itself holds `document.write(` is now inert and no
 longer trips it, which is correct; pin it with a row.
 
@@ -357,8 +370,15 @@ The entry needs an `### Upgrading` note:
   there reads the build script instead.
 - **`{{embed … src=}}` now fails the page** for a URL that is not http(s). So do a service's
   `embed.src` and `embed.watch`.
-- **A placeholder value in a service's `inline` script** is written as a JavaScript string's
-  content, not URL-encoded. A value of letters, digits, `_`, `-` and `.` is unchanged.
+- **A placeholder in a service's `inline` script is data, never code.** Inside quotes nothing
+  changes: the script sees the same URL-encoded value as before. An unquoted placeholder whose
+  value holds `'`, `(`, `)`, `!`, `~` or `*` used to be written as it stood and is now escaped, so
+  it is a syntax error in the browser: put the placeholder in quotes, or move the code into the
+  `inline` itself.
+- **A page's `config.fetch.headers` values read `'[redacted]'`** in templates and controllers. The
+  header names are still there, and fetching is unaffected.
+- **(If workstream F lands.)** How a URL model with a query string is named in the site map, the
+  log and a failure message.
 
 ## Amended 2026-11-06 — after the contract critique, before any code
 
@@ -388,3 +408,77 @@ changes; this is the list of what moved, and why.
 Not checked by the critique, and so still inferred: what Chromium does with `/\host/…` as a script
 `src` (workstream A's browser test measures it), and whether the page minifier rewrites `\uXXXX`
 escapes in an ungated inline script (the main session reads one built page).
+
+## Amended 2026-11-06 — round two, after the code review of `afb1da4`
+
+The operator ran `/code-review` on the branch. It found nothing in the origin guard or in
+`isHttpUrl`, and six things elsewhere. The operator decided the three that were decisions. This
+is the one round of fixes the stop condition allows; workstream F is outside the first scope and
+is here because the operator put it here.
+
+The rules for every workstream, and what each reports, are unchanged.
+
+### Workstream D — the inline fill, revised (findings 1, 2 and 6)
+
+**Owns:** `lib/consent.js` (`fill`, `fillScript` and what they share), `lib/consent-gate.js` (the
+one call), `test/unit/consent.test.js`, `test/unit/consent-gate.test.js`, `AIKB/consent.md`,
+`AIKB/consent-gate.md`, and in `GUIDE.md` only the sentence about a placeholder in `inline`.
+
+1. `fillScript` URL-encodes the value as `fill` does and then escapes the result, as section C2
+   now describes. The value a quoted placeholder yields is `encodeURIComponent(value)`, as on
+   `main`.
+2. `fill` and `fillScript` share one placeholder loop (the regex, the own-key check, the "no
+   value" error), differing only in the encoder they pass, so the placeholder syntax cannot drift
+   between URL templates and script bodies.
+3. The tests that asserted the raw value read back now assert `encodeURIComponent` of it. Add the
+   code review's two cases, each seen red against the branch as it stands: the `innerHTML` case
+   (a placeholder inside an HTML string, evaluated, must hold no `<` or `"` from the value) and
+   the URL case (`'https://t.example/p?site={site}'` with a value holding `&b=c` must not gain a
+   parameter). Add a row that pins the unquoted `init()` case as escaped.
+4. The docs say what the code does. `AIKB/consent.md` (near line 82) says an unquoted placeholder
+   holding other characters "was already broken under URL-encoding": false for `! ~ * ' ( )`, so
+   correct it. `fillScript`'s JSDoc says a value outside a literal cannot "assign": `x--` is made
+   of safe characters and mutates, so say what is actually true. The `GUIDE.md` sentence says the
+   value is URL-encoded and then escaped.
+
+### Workstream E — the token out of the render context (findings 3 and 5)
+
+**Owns:** `lib/page-registry.js`, `lib/kiss-page.js` (`withoutConfig`'s JSDoc only),
+`test/unit/page-registry.test.js`, `test/integration/view-stats.test.js`,
+`AIKB/page-registry.md`, `AIKB/kiss-page.md`, `AIKB/config.md`, and in `GUIDE.md` only the
+`fetch.headers` passage (near line 305) and the `{{{stringify this}}}` passage (near line 2123).
+
+1. Where each page gets its copy of the config (`lib/page-registry.js`, the
+   `options.config = { ...kiss.config, … }` line, and the fan-out copy near line 421), the copy's
+   `fetch.headers` has every value replaced by `'[redacted]'`, names kept. A page-level `config`
+   override that itself supplies `fetch.headers` is redacted the same way. `kiss.config` is not
+   touched: `fetchConfig: kiss.config.fetch` (near line 549) is what fetching reads, and a test
+   proves a URL model is still fetched with the real header.
+2. One function does the redaction, and `lib/kiss.js`'s verbose log line should use the same one
+   if that needs no more than an import; if it needs more, leave the log line and say so.
+3. `withoutConfig` stays, as the second line of defence for the two debug files. Its JSDoc says
+   "the next secret-bearing config key cannot slip through": it drops one key by name, and a
+   controller that copies `config` under another name defeats it. Say what it does.
+4. Regression tests, each seen red first: with a token in `config.fetch.headers`, a page whose
+   view is `{{{stringify this}}}` writes no token into its HTML; a controller returning
+   `{ ...options, site: options.config }` writes none into the page, the dev sibling or
+   `debug.json`; a template still reads `{{config.siteUrl}}`; the fetch still sends the header.
+5. Not fixed, listed: a page's own `config` overrides no longer show in the two debug files.
+
+### Workstream F — a token in a URL model's query string (finding 4): verify, then propose
+
+This one starts as an investigation. **It changes no file in the repository** until the main
+session has read its report.
+
+1. **Verify with a real run.** In the scratchpad: a small site with one URL model served by a
+   local server on `127.0.0.1` (port 0), the URL carrying `?access_token=SECRET-TOKEN-2`. Run
+   `kiss-ssg aikb` on it with the working tree's engine and search everything it writes, and
+   everything it prints, for the token. Then make the fetch fail (a 404, and a refused
+   connection) and search the output, the `KISS_REPORT` line and `kiss-ssg check`'s JSON.
+2. **Trace every reader** of the string `classifyModel` returns (`lib/aikb.js`), of a URL model's
+   `id`, and of every message that names the URL (`lib/model-resolver.js`, `lib/fetch-policy.js`):
+   what is keyed on it, what a changed spelling would move (a site's committed `AIKB/` record,
+   note subjects and their hashes, `kiss-ssg check`'s diff), and what two models that differ
+   only in their query string look like today.
+3. **Propose one rule** for how a URL is written anywhere kiss records or prints it, with what it
+   costs: what collides, what baseline moves, what a site sees on upgrade. Report, and stop.
