@@ -21,9 +21,9 @@
 
   <link rel="icon" href="{{absUrl (asset "img/icon-64.png")}}" type="image/png">
   <link rel="apple-touch-icon" href="{{absUrl (asset "img/icon-180.png")}}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+  {{!-- The body font is preloaded: site.css names it, so without this the
+        browser finds it only after the stylesheet has arrived. --}}
+  <link rel="preload" href="{{absUrl (asset "fonts/atkinson-hyperlegible-next-normal-latin.woff2")}}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{absUrl (asset "css/site.css")}}">
 </head>
 <body>
@@ -39,8 +39,9 @@
   {{!-- Says out loud what a Copy button did; a button's own changed text is not announced. --}}
   <p class="visually-hidden" aria-live="polite" data-copy-status></p>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/handlebars.min.js"></script>
+  {{!-- highlight.js 11.9.0 (BSD-3-Clause), served from this site. --}}
+  <script src="{{absUrl (asset "js/vendor/highlight-11.9.0.min.js")}}"></script>
+  <script src="{{absUrl (asset "js/vendor/highlight-handlebars-11.9.0.min.js")}}"></script>
   <script src="{{absUrl (asset "js/site.js")}}"></script>
 </body>
 </html>

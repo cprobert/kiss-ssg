@@ -1,6 +1,6 @@
 # Examples
 
-Twelve runnable sites ship inside the package, in `node_modules/kiss-ssg/examples/`. Each is a standalone project: copy the folder, run it, change it.
+Fourteen runnable sites ship inside the package, in `node_modules/kiss-ssg/examples/`. Each is a standalone project: copy the folder, run it, change it.
 
 ## Whole sites to copy
 
@@ -78,3 +78,11 @@ Short scripts that answer a narrower question: which call, which option, which h
 -   ### [Asset pipeline (opens in a new tab)](https://github.com/cprobert/kiss-ssg/tree/main/examples/10-asset-pipeline)
     
     An external tool run before the asset copy, kept watching in dev mode, and the four shapes {{asset}} takes.
+    
+-   ### [Course packages (opens in a new tab)](https://github.com/cprobert/kiss-ssg/tree/main/examples/13-course-packages)
+    
+    Pages that name a package, zipped as IMS content packages and SCORM 1.2 for an LMS: one SCO per page, and one SCO with many views and a recorded question.
+    
+-   ### [Cookie consent (opens in a new tab)](https://github.com/cprobert/kiss-ssg/tree/main/examples/14-consent)
+    
+    config.consent and the six consent helpers: GTM, a first-party counter and a YouTube embed held back until allowed, a themed banner, and the cookie table.

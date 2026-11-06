@@ -55,6 +55,7 @@ The default config options are:
   verbose: false,
   cleanBuild: true,
   extensionLess: false,
+  ids: 'view',
   sass: { includePaths: [] },
   fetch: {
     headers: {},
@@ -110,6 +111,7 @@ The default config options are:
     schemas: false
   },
   consent: null,
+  embeds: null,
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',
@@ -138,6 +140,7 @@ Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compi
 | verbose | false | Enables additional output on the terminal, when set to true |
 | cleanBuild | true | `true`, `false` or `'atomic'`. `true` empties the build dir — in the constructor, before anything is rendered. `'atomic'` builds into a staging folder and swaps it in only when `complete()` resolves. See **Cleaning the build folder** below. |
 | extensionLess | false | When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`. |
+| ids | 'view' | What a page's default `id` is: its view's route (`'view'`), or where it is served (`'path'`): `.html` and a trailing `/index` removed, so `c/acute.html` is `c/acute` and the home page is `index`. Site-wide, never per page ([.pages()](pages/#pages)) |
 | sass | `{ includePaths: [] }` | `includePaths` is passed to sass as `loadPaths`, so `@use`/`@import` can resolve from those directories too. |
 | fetch | see below | The policy for `http(s)` models: `headers` sent with every request, `timeout` in ms, `retries` after a network error or a 5xx, and `cache` (`false`, or a directory to cache successful bodies in). See **Remote models** below. |
 | assets | `{ hash: false, version: null, pipeline: [] }` | Cache busting for the files copied into the build, plus the external commands run before the copy. `hash: true` renames every emitted `.css`/`.js` to carry a content hash; `version: '1.4.5'` renames nothing and makes `{{asset}}` append `?v=1.4.5`; `minify: true` (the default) minifies every copied `.css`/`.js` outside dev (see **Minified assets**); `pipeline` is an ordered list of `{ name?, run, watch?, cwd?, outputs? }` steps. All off is today's build, unchanged. See **Cache-busting asset URLs** and **An asset pipeline** below. |
@@ -215,4 +218,4 @@ const kiss = new Kiss(config)
 
 The same applies to `PageOptions`, `PagesOptions`, `KissController` (a controller function), `BuildError` (the error `complete()` rejects with, carrying `err.failures`) and `BuildReport` (what `.report()` returns).
 
-The package's `exports` map has one `.` entry, resolving `types` → `./types/kiss.d.ts` and both `import` and `require` → `./lib/kiss.js`. Also exported: `KissConfig` (the resolved config a view sees), `KissFolders`, `PageOptionsPatch` (what a controller returns), `BuildData`, `BuildFailure`, `BuildPage`, `BuildAsset`, `BuildReportFailure`, `SitemapOptions`, `SitemapUrl`, `LlmsOptions` and `WatchOptions`. Arbitrary keys are allowed on the config and on page options — they reach the template — so only the documented keys are checked; `folders` is closed, so a misspelled folder name is an error.
+The package's `exports` map has one `.` entry, resolving `types` → `./types/kiss.d.ts` and both `import` and `require` → `./lib/kiss.js`. `require('kiss-ssg')` returns the `Kiss` class itself, so each named export (`utils`, the redirect and cache-header renderers, `splitDocument`, `parseHtml`, `findTag`) is also a static on the class: a CommonJS build script writes `Kiss.utils.toSlug(slug)` where an ES module imports `{ utils }`. Also exported: `KissConfig` (the resolved config a view sees), `KissFolders`, `PageOptionsPatch` (what a controller returns), `BuildData`, `BuildFailure`, `BuildPage`, `BuildAsset`, `BuildReportFailure`, `SitemapOptions`, `SitemapUrl`, `LlmsOptions` and `WatchOptions`. Arbitrary keys are allowed on the config and on page options — they reach the template — so only the documented keys are checked; `folders` is closed, so a misspelled folder name is an error.

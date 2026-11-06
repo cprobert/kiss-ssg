@@ -140,12 +140,13 @@
     <h2 id="built-with">Websites built with kiss-ssg</h2>
     {{!-- Full width, under the heading. The image sits outside the link, so the
           site's name is the only link and the alt text says what the screenshot
-          shows. width/height are the files' own (768×480), so the card keeps its
-          shape before the image loads; CSS scales it to the card. --}}
+          shows. {{image}} writes width/height from the file (768×480), so the
+          card keeps its shape before the image loads; CSS scales it to the
+          card. sizes is the card: a third of the 74rem wrap, or the screen. --}}
     <ul class="sites">
       {{#each model.sites}}
       <li class="site-card">
-        <img class="site-card__shot" src="{{absUrl (asset image)}}" width="768" height="480" loading="lazy" alt="{{alt}}">
+        {{image image alt=alt sizes="(min-width: 40rem) 24rem, 100vw" root=(absUrl "/") class="site-card__shot"}}
         <div class="site-card__body">
           <h3 class="site-card__name"><a href="{{url}}" target="_blank" rel="noopener noreferrer">{{name}}<span class="visually-hidden"> (opens in a new tab)</span></a></h3>
           <p class="site-card__what">{{description}}</p>
