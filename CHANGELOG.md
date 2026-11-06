@@ -3,6 +3,36 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.13.1 — 2026-11-06
+
+kiss can now write a light set of security headers for you, and a new `kiss-security`
+skill helps you decide on the stronger ones. Both are opt-in: nothing changes for a site
+that does not turn them on.
+
+- **`securityHeaders: true`** adds four set-and-forget headers to the host's header
+  file, beside kiss's cache headers: `Strict-Transport-Security: max-age=63072000`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`
+  and `Permissions-Policy: geolocation=(), camera=(), microphone=()`. `host` picks the
+  file: `_headers` for Netlify and Cloudflare Pages, `security-headers.firebase.json`
+  to merge into `firebase.json` for Firebase. Off by default (GUIDE.md § Security
+  headers).
+- **Check for location, camera and microphone first.** `Permissions-Policy` turns them
+  off, on the live site only. If your site uses one, set your own `Permissions-Policy`:
+  in `src/assets/_headers`, which kiss then leaves alone, or in `firebase.json` on
+  Firebase.
+- **Your own headers win.** A header your `_headers` sets, on any path, is left out of
+  kiss's block, and the build says so.
+- **No Content-Security-Policy, framing header or `includeSubDomains`** by default: each
+  costs upkeep or can lock visitors out. The `kiss-security` skill explains when to add
+  them and what each costs.
+- **With `cleanBuild: false`**, the build now warns when the folder still holds kiss's
+  header output that this build did not write, such as after you turn
+  `securityHeaders` off. Delete it by hand; kiss never deletes it, since another `Kiss`
+  instance may share the folder. kiss's cache headers now merge into an existing
+  `_headers` rather than replacing it.
+
+### Nothing for a site to change
+
 ## 2.13.0 — 2026-11-06
 
 kiss-ssg now needs **Node 22.23.4 or later**, the current Node 22 LTS release, and takes
