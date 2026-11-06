@@ -12,6 +12,7 @@ import {
   consentModeState,
   consentReport,
   fill,
+  fillScript,
   gatingOf,
   matchesHost,
   originOf,
@@ -726,6 +727,32 @@ describe('placeholders', () => {
     expect(() =>
       fill('https://x.example/{id}', {}, 'consentScript "gtm"'),
     ).toThrow('consentScript "gtm": no value for {id}')
+  })
+})
+
+// A script body's placeholders (security hardening, 2026-11-06): string
+// content, one `\uXXXX` per UTF-16 code unit outside [A-Za-z0-9_.-].
+describe('fillScript', () => {
+  it('keeps letters, digits, _, - and . as they are', () => {
+    expect(fillScript("f('{a}',{b})", { a: 'G-AB_c.9', b: '0.5' }, 'w')).toBe(
+      "f('G-AB_c.9',0.5)",
+    )
+  })
+
+  it('escapes everything else, one code unit at a time', () => {
+    expect(fillScript("'{a}'", { a: "x'(" }, 'w')).toBe("'x\\u0027\\u0028'")
+    // U+2028 built from its code point, so no formatter can turn it into an
+    // invisible character in this file.
+    const a = `\u{1F600} ${String.fromCharCode(0x2028)}`
+    expect(fillScript("'{a}'", { a }, 'w')).toBe(
+      "'\\ud83d\\ude00\\u0020\\u2028'",
+    )
+  })
+
+  it('throws, naming the helper, on a missing value', () => {
+    expect(() => fillScript("f('{id}')", {}, 'consentScript "gtag"')).toThrow(
+      'consentScript "gtag": no value for {id}',
+    )
   })
 })
 

@@ -877,6 +877,9 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
         '/guide/',
         '/guide/index.html',
         '/missing/deep/page',
+        // Ends in the 404 page's own name, so the root it derives is
+        // /missing/, where the file 404s: it is tried again from the root.
+        '/missing/404',
       ]) {
         const { context, page } = await open()
         await page.goto(`${site.base}${at}`)
@@ -890,6 +893,74 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
           .toEqual({ statistics: false, marketing: false })
         await context.close()
       }
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // The security review (2026-11-06): the address is the visitor's. A 404
+  // page is served at any address, and `/%5Cevil.example/404` ends in its own
+  // name, so the root it derived was `/\evil.example/`, which a browser reads
+  // as another host: that host's script ran in the site's origin. Each
+  // spelling's off-host requests and outcome are gathered first and compared
+  // once, so a failure shows every spelling's evidence.
+  it('never loads the cached client from another host, whatever the address says', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/404.hbs': consentPage('<h1>Not found</h1>', 'Not found'),
+      },
+      CONSENT_CONFIG,
+    )
+    const spellings = [
+      '/%5Cevil.example/404',
+      '/%5C%5Cevil.example/404',
+      '//evil.example/404',
+      '/%09/evil.example/404',
+      '/%5Cevil.example/404.html',
+    ]
+    try {
+      /** @type {Record<string, any>} */
+      const seen = {}
+      for (const at of spellings) {
+        const { context, page, offHost } = await open()
+        await page.goto(`${site.base}${at}`)
+        const client = await page.$$eval(
+          'script[data-kiss-consent-client]',
+          (tags) => tags.map((t) => /** @type {HTMLScriptElement} */ (t).src),
+        )
+        await page.click(
+          '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+        )
+        const choice = await expect
+          .poll(async () => (await stored(context))?.c ?? null)
+          .toEqual({ statistics: false, marketing: false })
+          .then(
+            () => 'stored',
+            () => 'not stored',
+          )
+        seen[at] = {
+          offHost: offHost.map((r) => `${r.method} ${r.host}${r.path}`),
+          client,
+          choice,
+        }
+        await context.close()
+      }
+      const own = new RegExp(
+        `^${site.base.replace(/[.]/g, '\\.')}/kiss-consent\\.[0-9a-f]+\\.js$`,
+      )
+      expect(seen).toEqual(
+        Object.fromEntries(
+          spellings.map((at) => [
+            at,
+            {
+              offHost: [],
+              client: [expect.stringMatching(own)],
+              choice: 'stored',
+            },
+          ]),
+        ),
+      )
     } finally {
       await site.close()
     }

@@ -73,6 +73,35 @@ parallel over one at a time (2026-11-06).
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-06** — All three workstreams in; every criterion has evidence. Decision: ready for the
+  operator's diff review, then the close.
+  - **Consent root.** Measured in Chromium before the fix: each of the five hostile spellings made
+    one request, `GET evil.example/kiss-consent.<hash>.js`. After it: none, and a Reject is stored.
+    `/missing/404` loads through the fallback. The inline script is 5,698 bytes minified (was
+    5,483; ceiling 6,144).
+  - **Debug files and log.** A whole-folder walk finds the token in no file, dev or verbose
+    non-dev, and in nothing the logger was handed.
+  - **Embed and inline.** Two real production builds with the working tree's engine: a hostile
+    placeholder value reads back whole from the minified page and runs nothing; a `javascript:`
+    `src=` from page data fails the build and writes no page.
+  - **Red, re-derived by the main session.** With each fix switched off by a one-line mutation
+    (seven in all), 55 of the new tests fail across seven test files; the files were restored
+    byte for byte.
+  - **Fleet.** `a1k9training` cloned into the scratchpad, built from packed tarballs of `main` and
+    of the branch: 20 pages, 0 changed, 0 broken links and 1 audit finding on both.
+  - **Gates.** `npm run gates` green after `npm run types`.
+  - **Listed, not fixed (below the stop condition, or the operator's call):**
+    - `{{markdown model.x}}` passes raw HTML through by default (`markdown.html: true`). By design
+      for author-written Markdown; it is the same class for Markdown from a CMS.
+    - Every example sets `verbose: true`, and `GUIDE.md` now says to leave it off where the log is
+      shared.
+    - The verbose log's redaction is written inline in `lib/kiss.js` and is covered by the
+      integration test only.
+    - Inferred, not measured: the guard on `file://` in a browser, and that a host answering an
+      unknown path with 200 and HTML does not fire the fallback.
+  - **For the upgrade note, beyond the plan's list:** a placeholder inside a URL inside a string
+    in a site's own `inline` (`'https://x/?q={q}'`) was URL-encoded and is now the raw text.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->

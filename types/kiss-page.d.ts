@@ -1,3 +1,16 @@
+/**
+ * A page's options as the two debug files write them — the dev-mode `.json`
+ * sibling and `viewStats()`'s `debug.json`: every own key but `config`. Both
+ * files land in the build folder, which is served and can be deployed, and
+ * `config` is the site's whole resolved config, `fetch.headers` (where an API
+ * token goes) included. Left out whole rather than redacted key by key: what
+ * is kept is the page's own options, so the next secret-bearing config key
+ * cannot slip through. A shallow copy, so `options.config` itself is untouched
+ * for the templates and controllers that read it.
+ * @param {Record<string, any>} options a page's options
+ * @returns {Record<string, any>} the same keys without `config`
+ */
+export function withoutConfig(options: Record<string, any>): Record<string, any>;
 export function loadMinifier(): Promise<any>;
 export function preloadMinifier(): void;
 export class KissPage {

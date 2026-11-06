@@ -108,7 +108,8 @@ export function resolveConsent(input: any): KissConsent | null;
  */
 export function serviceParams(service: ConsentService, hash?: Record<string, any>): Record<string, string>;
 /**
- * Fill `{param}` placeholders, URL-encoding each value.
+ * Fill `{param}` placeholders, URL-encoding each value: for a URL template
+ * (a `src`, an `embed.src` or `embed.watch`). A script body is `fillScript`'s.
  *
  * @param {string} template
  * @param {Record<string, string>} params
@@ -117,6 +118,23 @@ export function serviceParams(service: ConsentService, hash?: Record<string, any
  * @throws if a placeholder has no value
  */
 export function fill(template: string, params: Record<string, string>, where: string): string;
+/**
+ * Fill `{param}` placeholders in a script body (a service's `inline`). A
+ * value is written as a JavaScript string's content, not URL-encoded: every
+ * UTF-16 code unit outside `[A-Za-z0-9_.-]` becomes a `\uXXXX` escape. Inside
+ * a string literal that reads back as the original text; outside one it cannot
+ * close the literal, call, assign or close the `<script>` tag. The dot is kept,
+ * so an unquoted number (`{rate}` as `0.5`) still works, and an ordinary id
+ * (`G-ABC123`) comes out as it did under `fill` (security hardening,
+ * 2026-11-06).
+ *
+ * @param {string} template
+ * @param {Record<string, string>} params
+ * @param {string} where named in the error, e.g. `consentScript "gtag"`
+ * @returns {string}
+ * @throws if a placeholder has no value
+ */
+export function fillScript(template: string, params: Record<string, string>, where: string): string;
 /**
  * The Consent Mode `default` command's argument: every mapped type denied,
  * except the types of an `objection` category, which start granted;

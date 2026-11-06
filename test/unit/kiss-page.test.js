@@ -281,6 +281,66 @@ describe('generate', () => {
     expect(sibling.partials).toEqual(['p'])
   })
 
+  // The sibling is written into the served build folder, and `config` is the
+  // site's whole resolved config, `fetch.headers` (an API token) included.
+  it('writes the dev sibling without config, keeping the model and every other option', async () => {
+    site = await makeSite({})
+    const config = {
+      siteUrl: 'https://example.com',
+      fetch: { headers: { Authorization: 'Bearer SECRET-TOKEN-1' } },
+    }
+    const p = make('<body><p>{{config.siteUrl}}</p></body>', {
+      buildDir: site.build,
+      slug: 'c',
+      dev: true,
+      options: { model: { a: 1 }, title: 'T', aliases: ['old'], config },
+    })
+    await p.generate()
+
+    const text = await site.read('public/c.json')
+    expect(text).not.toContain('SECRET-TOKEN-1')
+    const sibling = JSON.parse(text)
+    expect(sibling).not.toHaveProperty('config')
+    expect(sibling).toMatchObject({
+      model: { a: 1 },
+      title: 'T',
+      aliases: ['old'],
+      slug: 'c',
+    })
+    // The render read it, and the page still holds it: only the dump omits it.
+    expect(await site.read('public/c.html')).toContain(
+      '<p>https://example.com</p>',
+    )
+    expect(p.options.config).toBe(config)
+  })
+
+  it('writes the dev sibling without config when it lists the partials too', async () => {
+    site = await makeSite({})
+    const page = new KissPage('<i>x</i>', {
+      hbs: Handlebars.create(),
+      logger: silentLogger,
+      graph: { clearPage: () => {}, usesOf: () => ['p'] },
+    })
+    page.buildDir = site.build
+    page.slug = 'g'
+    page.isDev = true
+    page.options = {
+      model: { a: 1 },
+      config: {
+        fetch: { headers: { Authorization: 'Bearer SECRET-TOKEN-1' } },
+      },
+    }
+    page.prepare()
+    await page.generate()
+
+    const text = await site.read('public/g.json')
+    expect(text).not.toContain('SECRET-TOKEN-1')
+    const sibling = JSON.parse(text)
+    expect(sibling).not.toHaveProperty('config')
+    expect(sibling.partials).toEqual(['p'])
+    expect(sibling.model).toEqual({ a: 1 })
+  })
+
   it('renders identically with no graph injected', async () => {
     site = await makeSite({})
     const p = make('<i>{{title}}</i>', {

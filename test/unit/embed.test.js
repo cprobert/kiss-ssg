@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest'
+import Handlebars from 'handlebars'
+import { Remarkable } from 'remarkable'
+import { registerHandlebarsHelpers } from '../../lib/handlebars-helpers.js'
+import { silentLogger } from '../../lib/logger.js'
 import {
   embedMarkup,
   embedPresetNames,
   embedService,
   facadeScript,
+  isHttpUrl,
   measureScript,
 } from '../../lib/embed.js'
 import {
@@ -555,5 +560,213 @@ describe('the youtube preset’s storage', () => {
     expect(purposesVersion(resolved({ services: { youtube: {} } }))).toBe(
       '1588eaa503a3',
     )
+  })
+})
+
+// The frame's URL (security hardening, 2026-11-06). A call-site `src=` was
+// written into `<iframe src>` with attribute escaping alone, and the frame
+// has no sandbox, so a `javascript:` URL from model data ran in the page's
+// origin. Each row returns what embedMarkup gave back, so a red run prints
+// the markup the hostile URL reached.
+describe('embedMarkup refuses a frame URL that is not http(s)', () => {
+  /** @param {() => string} make */
+  const attempt = (make) => {
+    try {
+      return make()
+    } catch (err) {
+      return err
+    }
+  }
+
+  const HOSTILE = [
+    'javascript:alert(1)//',
+    ' javascript:alert(1)',
+    'java\tscript:alert(1)',
+    'JAVASCRIPT:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'vbscript:x',
+  ]
+
+  // Every branch the frame takes: no config.consent (a facade, a video
+  // preset), a gated service, a necessary service (the bare iframe).
+  const BRANCHES = [
+    [
+      'a facade (google-maps)',
+      (src) => facade('google-maps', { src, title: 'T' }),
+    ],
+    [
+      'a facade video (youtube)',
+      (src) => facade('youtube', { src, title: 'T' }),
+    ],
+    ['a gated service (maps)', (src) => gated('maps', { src, title: 'T' })],
+    [
+      'a necessary service (bare iframe)',
+      (src) => gated('lib', { src, title: 'T' }),
+    ],
+  ]
+
+  for (const [branch, make] of BRANCHES)
+    for (const src of HOSTILE)
+      it(`refuses src=${JSON.stringify(src)} on ${branch}`, () => {
+        const out = attempt(() => make(src))
+        expect(out).toBeInstanceOf(Error)
+        expect(String(out.message)).toMatch(
+          /: the frame's src .* is not an http\(s\) URL/,
+        )
+      })
+
+  const SAFE = [
+    'https://www.google.com/maps/embed?pb=x',
+    '/map/',
+    '//www.example.com/x',
+  ]
+  for (const [branch, make] of BRANCHES)
+    for (const src of SAFE)
+      it(`renders src=${JSON.stringify(src)} on ${branch}, as written`, () => {
+        expect(make(src)).toContain(`<iframe src="${src}"`)
+      })
+
+  const own = resolved({
+    services: {
+      frame: {
+        category: 'marketing',
+        embed: { src: 'javascript:alert({id})' },
+      },
+      bare: {
+        category: 'necessary',
+        embed: { src: 'javascript:alert({id})' },
+      },
+      link: {
+        category: 'marketing',
+        embed: {
+          src: 'https://player.example/{id}',
+          watch: 'javascript:alert({id})',
+        },
+      },
+      held: {
+        category: 'marketing',
+        embed: { src: '{id}', watch: 'https://player.example/{id}' },
+      },
+    },
+  })
+  /**
+   * @param {string} name
+   * @param {Record<string, string>} hash
+   */
+  const configured = (name, hash) =>
+    attempt(() =>
+      embedMarkup(name, own.services[name], {
+        consent: own,
+        text: own.ui.text,
+        params: serviceParams(own.services[name], hash),
+        title: 'T',
+      }),
+    )
+
+  it('refuses a config embed.src that fills to a javascript: URL', () => {
+    const out = configured('frame', { id: '1' })
+    expect(out).toBeInstanceOf(Error)
+    expect(String(out.message)).toMatch(/not an http\(s\) URL/)
+  })
+
+  it('refuses it on a necessary service, before the bare iframe is returned', () => {
+    const out = configured('bare', { id: '1' })
+    expect(out).toBeInstanceOf(Error)
+    expect(String(out.message)).toMatch(/not an http\(s\) URL/)
+  })
+
+  it('refuses a config embed.watch that fills to a javascript: URL, rather than dropping the link', () => {
+    const out = configured('link', { id: '1' })
+    expect(out).toBeInstanceOf(Error)
+    expect(String(out.message)).toMatch(
+      /embed\.watch .* is not an http\(s\) URL/,
+    )
+  })
+
+  it('cannot be given a scheme through a placeholder, which fill URL-encodes', () => {
+    // `javascript%3Aalert(1)` is a relative path: it resolves to http(s).
+    const out = configured('held', { id: 'javascript:alert(1)' })
+    expect(out).toContain('<iframe src="javascript%3Aalert(1)"')
+  })
+})
+
+describe('isHttpUrl', () => {
+  it('decides by the scheme the URL algorithm resolves', () => {
+    const table = {
+      'javascript:alert(1)//': false,
+      ' javascript:alert(1)': false,
+      'java\tscript:alert(1)': false,
+      'JAVASCRIPT:alert(1)': false,
+      'data:text/html,<script>alert(1)</script>': false,
+      'vbscript:x': false,
+      'blob:https://www.example.com/0a1b': false,
+      'https://www.google.com/maps/embed?pb=x': true,
+      'HTTP://www.example.com/': true,
+      '/map/': true,
+      '//www.example.com/x': true,
+      'map.html': true,
+      '': true,
+    }
+    const got = Object.fromEntries(
+      Object.keys(table).map((url) => [url, isHttpUrl(url)]),
+    )
+    expect(got).toEqual(table)
+    expect(isHttpUrl(null)).toBe(false)
+    expect(isHttpUrl('http://[')).toBe(false)
+  })
+})
+
+describe('the embed helper with a frame URL that is not http(s)', () => {
+  /**
+   * @param {boolean} dev
+   * @param {any} [consentConfig]
+   */
+  const helperEnv = (dev, consentConfig = null) => {
+    const warnings = []
+    const env = Handlebars.create()
+    registerHandlebarsHelpers(
+      env,
+      {
+        dev,
+        sass: { includePaths: [] },
+        consent: consentConfig,
+      },
+      {
+        markdown: new Remarkable(),
+        logger: { ...silentLogger, warn: (...a) => warnings.push(a.join(' ')) },
+      },
+    )
+    return {
+      warnings,
+      render: (/** @type {string} */ src, /** @type {any} */ ctx) =>
+        env.compile(src)(ctx),
+    }
+  }
+  const PAGE = '{{embed "google-maps" title="Map" src=model.map}}'
+  const MODEL = {
+    view: 'pages/index.hbs',
+    model: { map: 'javascript:alert(1)//' },
+  }
+
+  it('fails the page in a production build, naming the embed', () => {
+    const { render } = helperEnv(false)
+    expect(() => render(PAGE, MODEL)).toThrow(
+      /embed "google-maps": the frame's src "javascript:alert\(1\)\/\/" is not an http\(s\) URL/,
+    )
+  })
+
+  it('fails the page under config.consent too', () => {
+    const { render } = helperEnv(false, consent)
+    expect(() =>
+      render('{{embed "maps" title="Map" src=model.map}}', MODEL),
+    ).toThrow(/embed "maps": the frame's src .* is not an http\(s\) URL/)
+  })
+
+  it('warns in dev and writes no markup', () => {
+    const { render, warnings } = helperEnv(true)
+    const out = render(PAGE, MODEL)
+    expect(out).toBe('')
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toMatch(/the frame's src .* is not an http\(s\) URL/)
   })
 })

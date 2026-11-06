@@ -86,8 +86,10 @@ const register = (kiss) =>
 
 // The build dir as one comparable value: relative posix paths, sorted, with
 // each file's text. The site root is normalised out because the two fixtures
-// live in different temp dirs and dev mode writes `options` (which carries
-// `config.folders`) to the `.json` sibling. Nothing else in a build is
+// live in different temp dirs and dev mode writes `options` to the `.json`
+// sibling, so an absolute path a page option holds would differ between them
+// (`config`, with its absolute `folders`, is left out of the sibling since the
+// 2026-11-06 security hardening). Nothing else in a build is
 // site-specific — no timestamps are written anywhere, which is why the `.json`
 // siblings can be compared at all.
 const snapshot = async (site) => {

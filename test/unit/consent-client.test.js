@@ -250,6 +250,8 @@ const CLIENT = { name: CLIENT_NAME, page: 'a/index.html', root: '/' }
 // browser's address, because no URL written at build time was right at every
 // address a page is reached by (Codex at the close). That took it from 4,887
 // to 5,483 (2,389 gzipped), on every page; 6,144 is about 12% over that.
+// The origin guard and the fallback load (the security review, 2026-11-06)
+// took it to 5,698 (2,488 gzipped), under the same ceiling.
 const INLINE_CEILING = 6144
 const FILE_CEILING = 10752
 
@@ -308,6 +310,73 @@ describe('consentHeadScript', () => {
     const tag = p.find('script[data-kiss-consent-client]')
     expect(tag?.getAttribute('src')).toBe(src)
     expect(tag?.parentNode).toBe(p.doc.head)
+  })
+
+  // The address is the visitor's, not the site's. Decoded, `/%5Cevil.example/`
+  // is `/\evil.example/`, which a browser reads as `//evil.example/`: a 404
+  // page (served at any address) or a root index.html reached that way would
+  // load its client from another host, into the site's origin (the security
+  // review, 2026-11-06). The derived root counts only on the page's own host.
+  it.each([
+    ['404.html', '/%5Cevil.example/404'],
+    ['404.html', '/%5C%5Cevil.example/404'],
+    ['404.html', '//evil.example/404'],
+    ['404.html', '/%09/evil.example/404'],
+    ['404.html', '/%5Cevil.example/404.html'],
+    ['index.html', '/%5Cevil.example/'],
+  ])(
+    'never loads the cached file for %s from another host, reached at %s',
+    (file, at) => {
+      const html = consentHeadScript(configFor(SITE), {
+        name: CLIENT_NAME,
+        page: file,
+        root: '/root/',
+      })
+      const p = page(scriptOf(html), { pathname: at })
+      const tags = p.doc.querySelectorAll('script[data-kiss-consent-client]')
+      expect(tags.length).toBe(1)
+      const here = new URL(p.win.location.href)
+      const to = new URL(tags[0].getAttribute('src') ?? '', here)
+      expect(to.host).toBe(here.host)
+      expect(tags[0].getAttribute('src')).toBe(`/root/${CLIENT_NAME}`)
+    },
+  )
+
+  // A 404 page at /missing/404 ends in its own name, so the root it derives
+  // is /missing/, where there is no client: every consent control on the page
+  // would be dead. A derived root that fails is tried once from the fallback.
+  it('loads the cached file once more from the fallback root when the derived one fails', () => {
+    const html = consentHeadScript(configFor(SITE), {
+      name: CLIENT_NAME,
+      page: '404.html',
+      root: '/root/',
+    })
+    const p = page(scriptOf(html), { pathname: '/missing/404' })
+    const tags = () => [
+      ...p.doc.querySelectorAll('script[data-kiss-consent-client]'),
+    ]
+    const srcs = () => tags().map((t) => t.getAttribute('src'))
+    expect(srcs()).toEqual([`/missing/${CLIENT_NAME}`])
+    p.fire(tags()[0], 'error')
+    expect(srcs()).toEqual([`/missing/${CLIENT_NAME}`, `/root/${CLIENT_NAME}`])
+    expect(tags()[1].parentNode).toBe(p.doc.head)
+    // Once only: the fallback failing too is the end of it.
+    p.fire(tags()[1], 'error')
+    expect(srcs()).toEqual([`/missing/${CLIENT_NAME}`, `/root/${CLIENT_NAME}`])
+  })
+
+  it('does not try again when the root that failed was the fallback', () => {
+    const html = consentHeadScript(configFor(SITE), {
+      name: CLIENT_NAME,
+      page: '404.html',
+      root: '/root/',
+    })
+    const p = page(scriptOf(html), { pathname: '/missing/deep/page' })
+    const tag = p.find('script[data-kiss-consent-client]')
+    p.fire(tag, 'error')
+    expect(
+      p.doc.querySelectorAll('script[data-kiss-consent-client]').length,
+    ).toBe(1)
   })
 
   it('escapes < and line separators in the config, so no site text can end the script', () => {
