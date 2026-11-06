@@ -82,7 +82,7 @@
     "colors": "^1.4.0",
     "connect": "^3.7.0",
     "fs-extra": "^11.4.0",
-    "glob": "^13.0.6",
+    "glob": "^14.0.3",
     "handlebars": "^4.7.7",
     "handlebars-layouts": "^3.1.4",
     "html-minifier-terser": "^7.2.0",
