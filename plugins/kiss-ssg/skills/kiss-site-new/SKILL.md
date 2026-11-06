@@ -120,6 +120,7 @@ Build every page to the domain skills, each in its build mode. They own the rule
 - **[`kiss-seo`](../kiss-seo/SKILL.md)**: every page's own title and description, one purpose per page, and when to keep a page out of search.
 - **[`kiss-design`](../kiss-design/SKILL.md)**: the look, and the craft checks under it.
 - **[`kiss-legal-and-privacy`](../kiss-legal-and-privacy/SKILL.md)**, as soon as the site has a form, an embed, analytics or any third-party script: a site with a form ships from day one with a privacy page, a link to it in the footer and beside the form, and the form's line, every claim marked to confirm until the owner gives it, and an owner handout at the hand-over.
+- **[`kiss-security`](../kiss-security/SKILL.md)**, once `host` is set: `securityHeaders: true` for the set-and-forget headers, and nothing stricter unless the owner chooses it.
 
 **A video, a map, an Instagram post or a SoundCloud track is `{{embed}}`** (`{{embed "youtube" id="…" title="…"}}`; `vimeo`, `instagram`, `soundcloud`, `google-maps` with `src=`), never a bare `<iframe>`. A brief whose only third parties are embeds needs nothing more: no `config.consent` and no banner.
 

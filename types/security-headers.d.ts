@@ -62,7 +62,7 @@ export function writeSecurityHeaders({ config, root, outputs }: {
 }): Promise<SecurityHeadersWriteResult>;
 /** The baseline, in the order it is written. */
 export const SECURITY_HEADERS: Readonly<{
-    'Strict-Transport-Security': "max-age=63072000; includeSubDomains";
+    'Strict-Transport-Security': "max-age=63072000";
     'X-Content-Type-Options': "nosniff";
     'Referrer-Policy': "strict-origin-when-cross-origin";
     'Permissions-Policy': "geolocation=(), camera=(), microphone=()";
