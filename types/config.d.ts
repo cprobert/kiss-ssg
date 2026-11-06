@@ -40,6 +40,29 @@ export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
  */
 export function foldersToEnsure(folders: KissFolders): string[];
 /**
+ * A copy of a config whose `fetch.headers` keeps every header name and has
+ * every value replaced by `'[redacted]'`, except a value that is `undefined`,
+ * `null` or `''`, which is shown as it is: that is what an unset environment
+ * variable gives, and `'[redacted]'` would say a token is there when it is
+ * not. Any other value is redacted, `'Bearer undefined'` included.
+ * `fetch.headers` is where `GUIDE.md` tells a site to put an API token, and this is the copy anything other than
+ * the fetch itself is handed: each page's `options.config` (so a template, a
+ * controller and `{{{stringify this}}}` see the names and never the values)
+ * and the `verbose` log line. Fetching reads the instance's own
+ * `config.fetch`, which this never touches.
+ *
+ * Only `fetch.headers` is redacted: it is the one place kiss documents for a
+ * secret, and anything else a site puts in its config is the site's to keep
+ * out of its templates. Shallow: the top level and `fetch` are new objects,
+ * every other nested value is shared with the input.
+ * @template {Record<string, any>} T
+ * @param {T} config a resolved config, or a page's merged copy of one
+ * @returns {T} a new object with the same keys; `fetch` and `fetch.headers`
+ * are new objects when `fetch.headers` is an object, and are carried as they
+ * stand otherwise
+ */
+export function redactFetchHeaders<T extends Record<string, any>>(config: T): T;
+/**
  * Where the engine reads and writes. Every key is present once `resolveConfig`
  * has run; `null` is a real value — it switches a folder off, so nothing is
  * created, scanned or copied for it.
@@ -191,7 +214,7 @@ export function foldersToEnsure(folders: KissFolders): string[];
  *
  * @typedef {Object} KissSettings
  * @property {boolean} dev start a livereload dev server and file watcher; skip minification
- * @property {boolean} verbose log the resolved config, and write `debug.json` from `.viewStats()`
+ * @property {boolean} verbose log the resolved config (each `fetch.headers` value shown as `'[redacted]'`, or as it is when `undefined`, `null` or `''`), and write `debug.json` from `.viewStats()`
  * @property {boolean|'atomic'} cleanBuild `true` empties `folders.build` in the constructor, `'atomic'` builds into a staging sibling and swaps it in when `complete()` resolves
  * @property {boolean} extensionLess build non-index pages to `<path>/<slug>/index.html`
  * @property {'view'|'path'} ids what a page's default id is: its view's route (`'view'`, the default) or where it is served, `.html` and a trailing `/index` removed (`'path'`); site-wide, never per page
@@ -677,7 +700,7 @@ export type KissSettings = {
      */
     dev: boolean;
     /**
-     * log the resolved config, and write `debug.json` from `.viewStats()`
+     * log the resolved config (each `fetch.headers` value shown as `'[redacted]'`, or as it is when `undefined`, `null` or `''`), and write `debug.json` from `.viewStats()`
      */
     verbose: boolean;
     /**

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import vm from 'node:vm'
 import { minify } from 'html-minifier-terser'
 import {
   consentWiringProblems,
@@ -185,6 +186,221 @@ describe('gatedScript', () => {
         ),
       ),
     ).toEqual([])
+  })
+})
+
+// A placeholder in a service's `inline` script is a script body, not a URL
+// (security hardening, 2026-11-06). `encodeURIComponent` leaves `'`, `(` and
+// `)` alone, so an id from a model closed the gtag preset's string literal.
+// The value is still URL-encoded, as it always was, and then what that leaves
+// alone is escaped. Each row evaluates the emitted script and compares the
+// VALUE the script holds with `encodeURIComponent` of the original: the text
+// is not the claim, what a browser reads is.
+describe('gatedScript placeholders in an inline script', () => {
+  // Built from its code point, so no formatter can turn it into an invisible
+  // character in this file.
+  const LINE_SEPARATOR = String.fromCharCode(0x2028)
+  const site = resolved({
+    services: {
+      gtag: { id: 'G-ABC123' },
+      rate: { category: 'statistics', inline: 'window.r={rate};', rate: '0.5' },
+    },
+  })
+  const advanced = resolved({
+    services: { gtag: { id: 'G-ABC123' } },
+    google: { mode: 'advanced' },
+  })
+
+  /**
+   * The gtag preset's markup for one id.
+   *
+   * @param {string} id
+   * @param {any} [on] the resolved consent
+   */
+  const gtag = (id, on = site) =>
+    gatedScript('gtag', on.services.gtag, {
+      consent: on,
+      params: serviceParams(on.services.gtag, { id }),
+    })
+
+  /**
+   * Runs the first script's body and returns the id handed to
+   * `gtag('config', …)`, and whether anything else was called.
+   *
+   * @param {string} html
+   */
+  const configId = (html) => {
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? ''
+    const calls = []
+    const window = { dataLayer: [] }
+    vm.runInNewContext(body, {
+      window,
+      alert: (...a) => calls.push(a),
+    })
+    const config = window.dataLayer
+      .map((args) => [...args])
+      .find((args) => args[0] === 'config')
+    return { id: config?.[1], calls }
+  }
+
+  const HOSTILE = [
+    [
+      "a quote that closes the string, then a call: G-X'-alert(1)-'",
+      "G-X'-alert(1)-'",
+    ],
+    ['a double quote', 'G-"X"'],
+    ['a backtick', 'G-`X`'],
+    ['a backslash', 'G-\\X'],
+    ['a newline', 'G-\nX'],
+    ['a closing script tag', 'G-</script><script>alert(1)</script>'],
+    ['U+2028', `G-${LINE_SEPARATOR}X`],
+    ['a non-BMP character', 'G-\u{1F600}'],
+  ]
+
+  for (const [label, value] of HOSTILE)
+    it(`reads back ${label} URL-encoded, and runs nothing`, () => {
+      const out = gtag(value)
+      const { id, calls } = configId(out)
+      expect(id).toBe(encodeURIComponent(value))
+      expect(calls).toEqual([])
+      // One inline script and one loader: the value opened no tag of its own.
+      expect(out.match(/<\/script/gi)).toHaveLength(2)
+    })
+
+  it('writes an ordinary id byte for byte as before', () => {
+    const tail = (id) =>
+      `window.gtag('config','${id}');</script><script type="text/plain" data-kiss-service="gtag" data-kiss-consent="statistics" data-src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>`
+    for (const id of ['G-ABC123', 'AW-123', '1234567890', '0.5'])
+      expect(gtag(id)).toBe(
+        '<script type="text/plain" data-kiss-service="gtag" data-kiss-consent="statistics">' +
+          "window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag('js',new Date());" +
+          tail(id),
+      )
+  })
+
+  it('leaves an unquoted number working, because the dot is safe', () => {
+    const out = gatedScript('rate', site.services.rate, {
+      consent: site,
+      params: serviceParams(site.services.rate),
+    })
+    expect(out).toBe(
+      '<script type="text/plain" data-kiss-service="rate" data-kiss-consent="statistics">window.r=0.5;</script>',
+    )
+  })
+
+  it('writes a value holding document.write( inert, so it no longer trips the check', () => {
+    // The check runs on the filled text. The value is now string content
+    // (its parenthesis is a `\u` escape), so there is no call for it to find.
+    const out = gtag('document.write(1)')
+    expect(configId(out).id).toBe('document.write(1)')
+    // A service's own inline script that calls it is still refused.
+    const own = resolved({
+      services: {
+        w: { category: 'statistics', inline: 'document.write({x})', x: '1' },
+      },
+    })
+    expect(() =>
+      gatedScript('w', own.services.w, {
+        consent: own,
+        params: serviceParams(own.services.w),
+      }),
+    ).toThrow(/document\.write in a script that runs after consent/)
+  })
+
+  it('keeps the value through the production minifier on an ungated script', async () => {
+    // Under advanced mode a Google tag is written plainly, so the page
+    // minifier's terser pass rewrites it.
+    const value = `G-X'-alert(1)-'</script>${LINE_SEPARATOR}`
+    const out = gtag(value, advanced)
+    expect(out).not.toContain('text/plain')
+    const min = await minify(
+      `<!doctype html><html><head>${out}</head></html>`,
+      {
+        collapseWhitespace: true,
+        removeComments: true,
+        minifyJS: true,
+      },
+    )
+    const { id, calls } = configId(min)
+    expect(id).toBe(encodeURIComponent(value))
+    expect(calls).toEqual([])
+  })
+
+  /**
+   * One statistics service whose `inline` is the given body, filled with
+   * `value` for `{site}`, then run with `el` and `window` in scope.
+   *
+   * @param {string} inline
+   * @param {string} value
+   */
+  const runOwn = (inline, value) => {
+    const own = resolved({
+      services: { own: { category: 'statistics', inline, site: value } },
+    })
+    const out = gatedScript('own', own.services.own, {
+      consent: own,
+      params: serviceParams(own.services.own),
+    })
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/.exec(out)?.[1] ?? ''
+    const calls = []
+    const el = {}
+    const window = {}
+    vm.runInNewContext(body, {
+      el,
+      window,
+      alert: (...a) => calls.push(a),
+      init: (...a) => calls.push(a),
+    })
+    return { out, body, el, window, calls }
+  }
+
+  it('keeps a placeholder inside an HTML string inert, as it was before', () => {
+    // The code review's case: a value that ends the attribute and opens a tag.
+    const value = 'a&b=c"><img src=x onerror=alert(1)>'
+    const { el } = runOwn(`el.innerHTML='<a href="/x?id={site}">x</a>';`, value)
+    expect(el.innerHTML).toBe(
+      `<a href="/x?id=${encodeURIComponent(value)}">x</a>`,
+    )
+    // Only the template's own markup characters are there.
+    const count = (s, c) => s.split(c).length - 1
+    for (const c of ['<', '>', '"'])
+      expect(count(el.innerHTML, c)).toBe(count('<a href="/x?id=">x</a>', c))
+  })
+
+  it('keeps a placeholder inside a URL one parameter, as it was before', () => {
+    const { window } = runOwn(
+      "window.u='https://t.example/p?site={site}';",
+      'a&b=c',
+    )
+    const url = new URL(window.u)
+    expect([...url.searchParams.keys()]).toEqual(['site'])
+    expect(url.searchParams.get('site')).toBe('a&b=c')
+  })
+
+  it('writes an unquoted placeholder holding a call escaped, so it calls nothing', () => {
+    // `encodeURIComponent` leaves `(` and `)` alone: before the hardening
+    // `window.q={q};` with `init()` ran `init`. Now it is a syntax error.
+    const own = resolved({
+      services: {
+        own: { category: 'statistics', inline: 'window.q={q};', q: 'init()' },
+      },
+    })
+    const out = gatedScript('own', own.services.own, {
+      consent: own,
+      params: serviceParams(own.services.own),
+    })
+    expect(out).toContain('window.q=init\\u0028\\u0029;')
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/.exec(out)?.[1] ?? ''
+    const calls = []
+    let error
+    try {
+      vm.runInNewContext(body, { window: {}, init: () => calls.push(1) })
+    } catch (err) {
+      error = err
+    }
+    // The error comes from the context's realm, so it is named, not instanceof.
+    expect(error?.name).toBe('SyntaxError')
+    expect(calls).toEqual([])
   })
 })
 

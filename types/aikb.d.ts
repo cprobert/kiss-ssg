@@ -18,8 +18,13 @@ export function isRecorded(folder: string | null | undefined): boolean;
  * has been replaced by the resolved data, so a map built from the stack alone
  * would say `inline` for every page in the site.
  *
+ * A URL is recorded as `redactUrl` (`lib/utils.js`) writes it — each query
+ * parameter's name kept and its value replaced by `[redacted]`, credentials
+ * and fragment dropped — so two models that differ only in a query value are
+ * one source and one subject.
+ *
  * @param {unknown} model the *registered* model option
- * @returns {string} `file:<name>`, `folder:<name>`, `url:<url>`, `inline` or `none`
+ * @returns {string} `file:<name>`, `folder:<name>`, `url:<redacted url>`, `inline` or `none`
  */
 export function classifyModel(model: unknown): string;
 /**
@@ -86,7 +91,7 @@ export function noteSubjects(map: SiteMap): NoteSubject[];
  * Where a subject's note lives — a mechanical derivation from the subject's
  * id, so a person can work out the path without running anything:
  * `stockist.js` → `notes/controllers/stockist.md`,
- * `https://api.example.com/v2/events?x=1` → `notes/models/api.example.com-v2-events.md`,
+ * `https://api.example.com/v2/events?x=[redacted]` → `notes/models/api.example.com-v2-events.md`,
  * `tailwind` → `notes/pipeline/tailwind.md`.
  *
  * @param {NoteSubject} subject
@@ -214,7 +219,7 @@ export type SiteMapPage = {
      */
     view: string;
     /**
-     * `file:<name>`, `folder:<name>`, `url:<url>`, `inline` or `none`
+     * `file:<name>`, `folder:<name>`, `url:<url>` (every query value `[redacted]`, see `classifyModel`), `inline` or `none`
      */
     model: string;
     /**
@@ -262,7 +267,7 @@ export type SiteMapSubject = {
      */
     kind: "controllers" | "models" | "pipeline";
     /**
-     * the controller filename, the model URL, or the step name
+     * the controller filename, the model URL with every query value `[redacted]`, or the step name
      */
     id: string;
     /**
@@ -330,7 +335,7 @@ export type NoteSubject = {
      */
     kind: "controllers" | "models" | "pipeline";
     /**
-     * the controller filename, the model URL, or the step name
+     * the controller filename, the model URL with every query value `[redacted]`, or the step name
      */
     id: string;
 };

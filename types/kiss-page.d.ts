@@ -1,3 +1,21 @@
+/**
+ * A page's options as the two debug files write them — the dev-mode `.json`
+ * sibling and `viewStats()`'s `debug.json`: every own key but `config`. Both
+ * files land in the build folder, which is served and can be deployed, and
+ * `config` is the site's whole resolved config, which is not what these dumps
+ * are for. It drops that one key by name and nothing else: a controller that
+ * copies the config under another name (`{ ...options, site: options.config }`)
+ * gets it into both files. What keeps the API token out of that copy, and out
+ * of the page itself, is the redaction at the source — each page's
+ * `options.config` already carries `fetch.headers` with every value
+ * `'[redacted]'` (`redactFetchHeaders`, where `lib/page-registry.js` makes the
+ * copy); this is the second line of defence. A shallow copy, so
+ * `options.config` itself is untouched for the templates and controllers that
+ * read it.
+ * @param {Record<string, any>} options a page's options
+ * @returns {Record<string, any>} the same keys without `config`
+ */
+export function withoutConfig(options: Record<string, any>): Record<string, any>;
 export function loadMinifier(): Promise<any>;
 export function preloadMinifier(): void;
 export class KissPage {

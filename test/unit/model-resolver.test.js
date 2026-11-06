@@ -1,4 +1,5 @@
 import fs from 'fs-extra'
+import { inspect } from 'node:util'
 import { describe, it, expect, afterEach } from 'vitest'
 import { resolveModel } from '../../lib/model-resolver.js'
 import { silentLogger } from '../../lib/logger.js'
@@ -70,7 +71,11 @@ describe('resolveModel', () => {
     }
     await expect(
       resolveModel('http://x', deps('m', { fetchImpl })),
-    ).rejects.toMatchObject({ message: 'boom' })
+    ).rejects.toMatchObject({
+      // The fetch's own text (`boom`) is never shown: kiss writes the message
+      // from the redacted URL and the error's name.
+      message: 'Model fetch failed: http://x/ → Error',
+    })
   })
 
   it('rejects an error response instead of using its JSON body as the model', async () => {
@@ -241,5 +246,104 @@ describe('resolveModel fetch policy', () => {
     await expect(
       resolveModel('https://api.example/posts', fresh),
     ).resolves.toEqual({ id: 'https://api.example/posts', data: { n: 7 } })
+  })
+})
+
+describe('resolveModel: a token in the query string', () => {
+  const TOKEN = 'SECRET-TOKEN-F'
+  const URL_WITH_TOKEN = `https://cdn.example.com/entries?access_token=${TOKEN}&type=course`
+  const SHOWN =
+    'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]'
+
+  it('hands back the real URL as the id, and fetched the real URL', async () => {
+    const { calls, fetchImpl } = recorder(() => okResponse({ n: 1 }))
+    await expect(
+      resolveModel(URL_WITH_TOKEN, deps('m', { fetchImpl })),
+    ).resolves.toEqual({ id: URL_WITH_TOKEN, data: { n: 1 } })
+    expect(calls.map((c) => c.url)).toEqual([URL_WITH_TOKEN])
+  })
+
+  it('logs and rejects with the URL redacted, the attached error too', async () => {
+    const logged = []
+    const logger = {
+      ...silentLogger,
+      error: (...args) => logged.push(args),
+      debug: (...args) => logged.push(args),
+    }
+    const { fetchImpl } = recorder(() => errorResponse(404, 'Not Found'))
+    let error
+    try {
+      await resolveModel(URL_WITH_TOKEN, { modelsDir: 'm', logger, fetchImpl })
+    } catch (e) {
+      error = e
+    }
+    expect(logged).toEqual([[`Error getting model from ${SHOWN}`]])
+    expect(error.message).toBe(`Model fetch failed: ${SHOWN} → 404 Not Found`)
+    // What the page registry's catch prints: the message, then the attached
+    // original error — with its stack and anything hanging off it.
+    const printed = inspect(error, { depth: Infinity })
+    expect(printed).not.toContain(TOKEN)
+    expect(inspect(error.error, { depth: Infinity })).not.toContain(TOKEN)
+  })
+
+  // A scheme is not case-sensitive and a leading space is a typo: fetch takes
+  // both. Taken for a folder, such a model was never fetched and its whole
+  // spelling went into `Invalid model …` (code review of b8be845, 2026-11-06).
+  it.each([
+    ['an upper-case scheme', `HTTPS://cdn.example.com/entries?token=${TOKEN}`],
+    ['a leading space', ` https://cdn.example.com/entries?token=${TOKEN}`],
+  ])('fetches a URL written with %s', async (_label, url) => {
+    const { calls, fetchImpl } = recorder(() => okResponse({ n: 1 }))
+    await expect(resolveModel(url, deps('m', { fetchImpl }))).resolves.toEqual({
+      id: url,
+      data: { n: 1 },
+    })
+    expect(calls.map((c) => c.url)).toEqual([url])
+  })
+
+  // A string with a scheme kiss does not fetch is not a model at all, and its
+  // spelling is shown the way a URL's is: no credentials, no query value.
+  it.each([
+    [
+      'a folder',
+      `ftp://user:${TOKEN}@files.example.com/data?key=${TOKEN}`,
+      'Invalid model ftp://files.example.com/data?[redacted]',
+    ],
+    [
+      'a file',
+      `ftp://user:${TOKEN}@files.example.com/data.json`,
+      'Skipping: ftp://files.example.com/data.json',
+    ],
+  ])(
+    'shows a model with another scheme, read as %s, without its credentials',
+    async (_label, model, message) => {
+      site = await makeSite({})
+      const logged = []
+      const logger = {
+        ...silentLogger,
+        error: (...args) => logged.push(args),
+        debug: (...args) => logged.push(args),
+      }
+      let error
+      try {
+        await resolveModel(model, { modelsDir: `${site.root}/m`, logger })
+      } catch (e) {
+        error = e
+      }
+      expect(error.message).toBe(message)
+      expect(inspect(error, { depth: Infinity })).not.toContain(TOKEN)
+      expect(inspect(logged, { depth: Infinity })).not.toContain(TOKEN)
+    },
+  )
+
+  it('still names a missing file and an unknown folder as written', async () => {
+    site = await makeSite({})
+    const dir = `${site.root}/m`
+    await expect(resolveModel('team/a b.json', deps(dir))).rejects.toThrow(
+      'Skipping: team/a b.json',
+    )
+    await expect(resolveModel('who?', deps(dir))).rejects.toThrow(
+      'Invalid model who?',
+    )
   })
 })

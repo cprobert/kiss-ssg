@@ -45,6 +45,8 @@ If you want to take a peek at whats properties you have available to to in a han
 {{{stringify this}}}
 ```
 
+It prints the page's whole context, the config included (with each `fetch.headers` value shown as `'[redacted]'`, or as it is when `undefined`, `null` or empty), into the built page, so it is for a look while you develop, not something to leave in a template.
+
 You can put a YouTube or Vimeo video, a Google map or an Instagram post on a page so that nothing loads from the provider until the visitor clicks, on any site, with or without a cookie banner:
 
 ```handlebars

@@ -138,7 +138,7 @@ Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compi
 | Option | Default | Purpose |
 | --- | --- | --- |
 | dev | false | Dev mode will start a local live-reload server and rebuild on file change. Model and controller changes are picked up too: a rebuild re-runs models and controllers, and edited controller files are reloaded from disk. |
-| verbose | false | Enables additional output on the terminal, when set to true |
+| verbose | false | Enables additional output on the terminal, when set to true. The resolved config is printed too, with each `fetch.headers` value shown as `'[redacted]'` (or as it is when `undefined`, `null` or empty, so an unset environment variable shows) and the header names kept; any other secret you put in the config is printed as it is, so leave `verbose` off where the log is shared, such as CI. |
 | cleanBuild | true | `true`, `false` or `'atomic'`. `true` empties the build dir — in the constructor, before anything is rendered. `'atomic'` builds into a staging folder and swaps it in only when `complete()` resolves. See **Cleaning the build folder** below. |
 | extensionLess | false | When `true`, a non-index page builds to `<path>/<slug>/index.html` instead of `<path>/<slug>.html` — a URL like `/about/` instead of `/about.html`. |
 | ids | 'view' | What a page's default `id` is: its view's route (`'view'`), or where it is served (`'path'`): `.html` and a trailing `/index` removed, so `c/acute.html` is `c/acute` and the home page is `index`. Site-wide, never per page ([.pages()](pages/#pages)) |

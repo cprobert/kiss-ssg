@@ -3,6 +3,7 @@ branch: fix/security-bumps
 base: main
 status: closed
 opened: 2026-11-06
+consolidated: 2026-11-06
 ---
 
 # Session — 2026-11-06: Clear the Dependabot security alerts

@@ -12,6 +12,7 @@ import {
   consentModeState,
   consentReport,
   fill,
+  fillScript,
   gatingOf,
   matchesHost,
   originOf,
@@ -726,6 +727,67 @@ describe('placeholders', () => {
     expect(() =>
       fill('https://x.example/{id}', {}, 'consentScript "gtm"'),
     ).toThrow('consentScript "gtm": no value for {id}')
+  })
+})
+
+// A script body's placeholders (security hardening, 2026-11-06): the value is
+// URL-encoded as `fill` encodes it, then every character of that outside
+// [A-Za-z0-9_.-] is a `\uXXXX` escape. Inside a string literal the script
+// reads `encodeURIComponent(value)`, what it read before the hardening.
+describe('fillScript', () => {
+  /**
+   * Evaluates a filled string literal and returns the string it holds.
+   *
+   * @param {string} literal
+   */
+  const read = (literal) => new Function(`return ${literal}`)()
+
+  it('keeps letters, digits, _, - and . as they are', () => {
+    expect(fillScript("f('{a}',{b})", { a: 'G-AB_c.9', b: '0.5' }, 'w')).toBe(
+      "f('G-AB_c.9',0.5)",
+    )
+  })
+
+  it('writes an ordinary id byte for byte as fill does', () => {
+    const template = PRESETS.gtag.inline
+    for (const id of ['G-ABC123', 'AW-123', '1234567890', '0.5'])
+      expect(fillScript(template, { id }, 'w')).toBe(
+        fill(template, { id }, 'w'),
+      )
+  })
+
+  it('escapes what URL-encoding leaves alone, so it cannot end the string', () => {
+    expect(fillScript("'{a}'", { a: "x'(" }, 'w')).toBe("'x\\u0027\\u0028'")
+    for (const a of ["'", '(', ')', '!', '~', '*'])
+      expect(fillScript("'{a}'", { a }, 'w')).toMatch(/^'\\u00[0-9a-f]{2}'$/)
+  })
+
+  it('reads back inside a string literal as encodeURIComponent of the value', () => {
+    // U+2028 built from its code point, so no formatter can turn it into an
+    // invisible character in this file.
+    const LINE_SEPARATOR = String.fromCharCode(0x2028)
+    for (const a of [
+      `\u{1F600} ${LINE_SEPARATOR}`,
+      "G-X'-alert(1)-'",
+      'a&b=c"><img src=x onerror=alert(1)>',
+      'G-\\X\n`',
+    ]) {
+      const out = fillScript("'{a}'", { a }, 'w')
+      expect(read(out)).toBe(encodeURIComponent(a))
+    }
+  })
+
+  it('shares the placeholder syntax of fill', () => {
+    // A brace pair that is not a placeholder is left alone by both.
+    const template = "'{a}{1a}{ a}{a-b}{a_b}'"
+    const params = { a: 'x', 'a-b': 'y', a_b: 'z' }
+    expect(fillScript(template, params, 'w')).toBe(fill(template, params, 'w'))
+  })
+
+  it('throws, naming the helper, on a missing value', () => {
+    expect(() => fillScript("f('{id}')", {}, 'consentScript "gtag"')).toThrow(
+      'consentScript "gtag": no value for {id}',
+    )
   })
 })
 

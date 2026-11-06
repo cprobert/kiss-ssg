@@ -79,7 +79,8 @@ export function scanPages(kiss: any): void;
 /**
  * @param {any} kiss
  * Logs the queued-promise and prepared-page counts, and — with
- * `verbose: true` — writes `debug.json` into the build folder.
+ * `verbose: true` — writes `debug.json` into the build folder: each page's
+ * view, output path, run count and options, the options without `config`.
  *
  */
 export function logViewStats(kiss: any): void;

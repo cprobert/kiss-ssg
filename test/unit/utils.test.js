@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { isInside } from '../../lib/utils.js'
+import { isInside, isUrlModel, redactUrl, REDACTED } from '../../lib/utils.js'
 import { describe, it, expect, afterEach } from 'vitest'
 import utils from '../../lib/utils.js'
 import { makeSite } from '../helpers/site.js'
@@ -320,5 +320,130 @@ describe('isInside', () => {
     const windows = process.platform === 'win32'
     expect(inAssets('src\\assets\\x.txt')).toBe(windows)
     expect(isInside('src\\assets')('src/assets/x.txt')).toBe(windows)
+  })
+})
+
+describe('redactUrl', () => {
+  it.each([
+    [
+      'https://cdn.example.com/entries?access_token=SECRET&type=course',
+      'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
+    ],
+    // No credentials, no fragment.
+    [
+      'https://user:pass@cdn.example.com/x?k=v#frag',
+      'https://cdn.example.com/x?k=[redacted]',
+    ],
+    // A parameter with no `=` is itself a value.
+    [
+      'https://cdn.example.com/x?justavalue',
+      'https://cdn.example.com/x?[redacted]',
+    ],
+    ['https://cdn.example.com/x', 'https://cdn.example.com/x'],
+    // Every parameter keeps its place, repeats included.
+    [
+      'https://cdn.example.com/x?a=1&a=2&b',
+      'https://cdn.example.com/x?a=[redacted]&a=[redacted]&[redacted]',
+    ],
+    // An empty query, and empty pieces between `&`, say nothing.
+    ['https://cdn.example.com/x?', 'https://cdn.example.com/x'],
+    [
+      'https://cdn.example.com/x?a=1&&b=2',
+      'https://cdn.example.com/x?a=[redacted]&b=[redacted]',
+    ],
+    ['https://cdn.example.com/x#only-a-fragment', 'https://cdn.example.com/x'],
+    // Port and path kept; the host as the URL parser writes it.
+    [
+      'http://API.Example.com:8443/v2/events?page=2',
+      'http://api.example.com:8443/v2/events?page=[redacted]',
+    ],
+    // Not a URL the platform parses: cut at the first `?` or `#`.
+    ['http://[bad url?token=SECRET', 'http://[bad url?[redacted]'],
+    ['http://[bad url#token=SECRET', 'http://[bad url'],
+    ['http://user:pass@[bad/x?token=SECRET', 'http://[bad/x?[redacted]'],
+  ])('writes %s as %s', (url, shown) => {
+    expect(redactUrl(url)).toBe(shown)
+  })
+
+  // A string the parser rejects cannot be split into credentials, path and
+  // query, so the rule is by the position of its last `@` against its first
+  // `?` or `#`: before it, everything from `://` to that `@` goes; after it,
+  // nothing past the scheme is shown.
+  it.each([
+    // A password holding a raw `/`: the credentials end at the last `@`,
+    // not at the first `/`.
+    [
+      'https://user:abc/def==@api.example.com/data?x=1',
+      'https://api.example.com/data?[redacted]',
+    ],
+    // A password holding a raw `?` or `#`: the `@` lies past the cut.
+    ['https://user:pa?ss@api.example.com/data', 'https://[redacted]'],
+    ['https://user:pa#ss@api.example.com/data', 'https://[redacted]'],
+    // A password holding an `@` and a `/`.
+    [
+      'https://user:p@ss word/x@api.example.com/data?k=v',
+      'https://api.example.com/data?[redacted]',
+    ],
+    // The parser takes `http:`, `http:/` and `http:\\` as the start of an
+    // authority too, so the credentials follow whatever slashes there are.
+    ['http:user:SECRET-TOKEN-H@[bad/data', 'http:[bad/data'],
+    ['https:/user:SECRET-TOKEN-H@[bad/data', 'https:/[bad/data'],
+    ['https:\\\\user:SECRET-TOKEN-H@[bad/data', 'https:\\\\[bad/data'],
+    ['https:/user:pa?ss@[bad/data', 'https:/[redacted]'],
+    // An `@` in the query or the fragment of a string with no credentials.
+    ['http://[bad/x?mail=SECRET@example.com', 'http://[redacted]'],
+    ['http://[bad/x#SECRET@frag', 'http://[redacted]'],
+  ])('writes the unparseable %s as %s', (url, shown) => {
+    expect(redactUrl(url)).toBe(shown)
+  })
+
+  // The parser reads a scheme that is not http(s) without an authority: the
+  // whole of `user:pass@host/x` is its path, credentials and all. Only an
+  // http(s) URL is split the way its author meant, so anything else that
+  // parses goes by the last `@`, as a string that does not parse does.
+  it.each([
+    ['httpx:user:SECRET-TOKEN-H@host/x?a=1', 'httpx:host/x?[redacted]'],
+    ['http-internal:SECRET-TOKEN-H@host/x', 'http-internal:host/x'],
+    ['httpx://user:SECRET-TOKEN-H@host/x?a=1', 'httpx://host/x?[redacted]'],
+  ])(
+    'writes %s, which parses with a scheme kiss cannot fetch, as %s',
+    (url, shown) => {
+      expect(redactUrl(url)).toBe(shown)
+    },
+  )
+
+  it('is not on the public utils object', () => {
+    expect(utils).not.toHaveProperty('redactUrl')
+  })
+})
+
+describe('REDACTED and isUrlModel', () => {
+  it('names the one word redacted values become', () => {
+    expect(REDACTED).toBe('[redacted]')
+    expect(utils).not.toHaveProperty('REDACTED')
+  })
+
+  it.each([
+    ['https://cdn.example.com/x', true],
+    ['http://localhost:3000/x.json', true],
+    // The scheme, in any case, after any leading space: what fetch takes.
+    ['HTTPS://cdn.example.com/x', true],
+    [' https://cdn.example.com/x', true],
+    // A name that only begins with the letters is a file or a folder.
+    ['httpdata.json', false],
+    ['http-archive', false],
+    ['httpx://cdn.example.com/x', false],
+    ['data/page.json', false],
+    ['', false],
+    [undefined, false],
+    [null, false],
+    [{ title: 'inline' }, false],
+    [['https://cdn.example.com/x'], false],
+  ])('says %j is a URL model: %s', (model, expected) => {
+    expect(isUrlModel(model)).toBe(expected)
+  })
+
+  it('is not on the public utils object', () => {
+    expect(utils).not.toHaveProperty('isUrlModel')
   })
 })

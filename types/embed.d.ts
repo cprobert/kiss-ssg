@@ -1,4 +1,17 @@
 /**
+ * Whether a URL is safe to frame or link: it resolves, the way a browser
+ * resolves it, to `http:` or `https:`. The URL algorithm decides, not a list
+ * of bad spellings, so leading whitespace, a tab inside the scheme, mixed
+ * case, `javascript:`, `data:`, `vbscript:` and `blob:` are all refused
+ * without being named. A relative path, a root-relative one and a
+ * `//host/…` one pass, because they resolve to the page's own scheme
+ * (security hardening, 2026-11-06).
+ *
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isHttpUrl(value: unknown): boolean;
+/**
  * The service `{{embed "<name>"}}` loads: the site's declared service under
  * `config.consent`, otherwise the preset of that name.
  *
@@ -42,7 +55,9 @@ export function embedPresetNames(): string[];
  * already written by the `{{image}}` pipeline, or null for none. `autoplay`
  * (default true) lets a video's Load click ask the player to start
  * @returns {string}
- * @throws on a missing title or src, or a missing placeholder value in the src
+ * @throws on a missing title or src, a missing placeholder value in the src,
+ * or a frame src or a filled `embed.watch` that is not an http(s) URL
+ * (`isHttpUrl`)
  */
 export function embedMarkup(name: string, service: ConsentService, { consent, text, params, src, title, poster, own, autoplay, }: {
     consent: KissConsent | null;

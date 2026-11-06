@@ -3,6 +3,7 @@ branch: chore/dependabot-round-1
 base: main
 status: closed
 opened: 2026-11-06
+consolidated: 2026-11-06
 ---
 
 # Session — 2026-11-06: Dependabot's first round, and Node 22.23.4

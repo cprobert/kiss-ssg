@@ -2,7 +2,7 @@
 
 > A small, dependency-driven static site generator for Node, built to be driven by a coding agent. MVC-style: Handlebars views, JSON/HTTP/function models, JS controllers. ESM (Node ≥22.23.4), no build step, no bundler.
 
-This file is the index: what exists, the shape to follow, and the traps nothing reports. Every rule's full statement is in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line below names.
+This file is the index: what exists, the shape to follow, and the traps nothing reports. The rules are in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line below names.
 
 Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `new Kiss(config)` per build folder. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict.
 
@@ -91,7 +91,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
 }
 ```
 
-Each key's prose is in GUIDE.md: § Cleaning the build folder, § Building more than one site from one source tree, § Remote models, § Assets, § Markdown options, § Host URL policy, § Redirects, § Cache headers, § Checking a build.
+Prose: GUIDE.md § Cleaning the build folder, § Building more than one site from one source tree, § Remote models, § Assets, § Markdown options, § Host URL policy, § Redirects, § Cache headers, § Checking a build.
 
 ## Traps nothing reports
 
@@ -103,10 +103,11 @@ Each key's prose is in GUIDE.md: § Cleaning the build folder, § Building more 
 - Tailwind in `assets.pipeline`: keep `-i` (without it the CLI exits 0 and drops everything you authored), and use `@import 'tailwindcss' source(none)` plus explicit `@source` paths, or words in your docs change the hashed stylesheet name on every page. `examples/10-asset-pipeline`.
 - A layout with no `<main>` around the page's own content puts its header, footer and menus (any not in a `<nav>`) into every page's `.md` copy. Wrap the content in `<main>`, or set `markdownCopies.selector`.
 - `<lastmod>` is a page's `sitemapLastmod`, `updated` or `date`, else omitted. Change the date with the content, never on a rebuild.
+- A token goes in `fetch.headers`, never a model URL. Views and controllers see `[redacted]` there: your own request reads `process.env`.
 
 ## Helpers
 
-GUIDE.md § Helpers has the full rules. Layouts come from `handlebars-layouts`: a layout declares `{{#block "body"}}…{{/block}}`, and a page fills it with `{{#extend "layout"}}{{#content "body"}}…{{/content}}{{/extend}}` (`mode="append"` adds to a slot).
+Rules: GUIDE.md § Helpers. Layouts come from `handlebars-layouts`: a layout declares `{{#block "body"}}…{{/block}}`, and a page fills it with `{{#extend "layout"}}{{#content "body"}}…{{/content}}{{/extend}}` (`mode="append"` adds to a slot).
 
 - `markdown`: block or value, rendered through `kiss.remarkable`.
 - `sass`: a file path (resolved against `process.cwd()`) and/or an inline block.
@@ -135,12 +136,12 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called wit
 
 `npx kiss-ssg check <script> [args…]` runs the build staged and discarded, prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the launch-readiness audit are advisory and never change the exit code. `npx kiss-ssg aikb <script>` is the same run, and records `AIKB/` when it passes. GUIDE.md § Checking a build, § Recording the knowledge base; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills' git questions: call them, never shell. `speed <build-folder>` gives Lighthouse KPIs (after `npm install -D lighthouse`), `css <build-folder>` audits where CSS goes: GUIDE.md § Measuring speed, § Auditing CSS.
 
-`npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed (not a link, and pinned in package.json and the lockfile), and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
+`npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed, and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
 
 ## Docs
 
 - [README.md](README.md): the agent quick start.
 - [GUIDE.md](GUIDE.md): the full reference, including § Migrating from v1.
 - [examples/](examples/): runnable sites; `examples/README.md` says what each shows.
-- [CHANGELOG.md](CHANGELOG.md): what changed in each version.
+- [CHANGELOG.md](CHANGELOG.md): changes by version.
 - [AIKB/](AIKB/): per-module engine notes.

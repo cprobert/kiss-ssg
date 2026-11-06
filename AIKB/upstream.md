@@ -491,6 +491,16 @@ first launch's place.
 
 **Re-check:** load a GTM container with the Consent Mode default denied, grant `analytics_storage` alone, and list the hosts it requests.
 
+### Node's fetch quotes the URL and a header value in its errors, and says a network failure only in its cause
+
+**Observed:** Node 24.14.0 on Windows, 2026-11-06, through the real `fetch` against a local server. CI ran the same tests on Node 22.23.4, on Ubuntu and Windows, and they passed once (run 42295436638).
+
+**Effect:** `fetch` raises `Failed to parse URL from <url>` and `Request cannot be constructed from a URL that includes credentials: <url>`, with the URL again in the cause's `input`; `Headers.append: "<value>" is an invalid header value.` for a header holding a line break or a NUL; and `response.json()` quotes the start of a body that is not JSON. A network failure is a bare `fetch failed` whose detail is in `cause`: a `code`, `address` and `port` (`ECONNREFUSED`), a `hostname` (`ENOTFOUND`), an `AggregateError` with an empty message and one entry per address for a host with several (`localhost`), or a message with no code at all (`redirect count exceeded`, `bad port`, `unknown scheme`; `other side closed` carries `UND_ERR_SOCKET`).
+
+**What kiss does:** `lib/fetch-policy.js` passes none of that text on. It refuses a header the fetch would refuse before the fetch can quote it, and writes each failure's message from the redacted URL, the status, and the cause's code and address. The four cause messages above are shown only by exact equality with `CONSTANT_CAUSES`. So a Node that rewords one, or adds a cause with no code, loses nothing but detail: the message ends with the error's name (`→ TypeError`).
+
+**Re-check:** on a new Node, run `npx vitest run test/unit/fetch-policy.test.js`. The block "a failure's message is written by kiss" drives each shape through the real `fetch` and asserts the exact message, so a reworded cause turns its row red and says what the new text is. A message ending `→ TypeError` in a real build's log is the same signal: measure that failure's `error.cause` and add its message to the list if it is a constant.
+
 ## Supported alternatives not used
 
 ### Codex project skills in `.agents/skills/`

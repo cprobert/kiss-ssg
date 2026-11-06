@@ -3,6 +3,7 @@ branch: feat/page-ids-and-embed-poster
 base: main
 status: closed
 opened: 2026-11-05
+consolidated: 2026-11-06
 ---
 
 # Session — 2026-11-05: Page ids from CommonJS and served paths, and `{{embed}}` posters, wording and autoplay

@@ -1,13 +1,16 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   defaultIdForPath,
   defaultIdForView,
   explicitIdOf,
   idIndexFor,
   idSlugMismatch,
+  logViewStats,
   lookupPage,
+  registerPage,
   stackForRecord,
 } from '../../lib/page-registry.js'
+import { makeSite, waitFor } from '../helpers/site.js'
 
 describe('defaultIdForPath', () => {
   it('is the served location as a key: .html and a trailing /index removed', () => {
@@ -146,6 +149,109 @@ describe('lookupPage', () => {
     })
     expect(lookupPage(kiss, 'nowhere')).toBe(null)
     expect(lookupPage(kiss, '')).toBe(null)
+  })
+})
+
+// The one log line that printed a page's options whole: a registration with no
+// view. Those options are the author's as written, so a URL model still has its
+// query values and a page-level `config` still has its header values.
+describe('registerPage', () => {
+  it('logs a page with no view without its model URL’s query values or a header value', () => {
+    const error = vi.fn()
+    registerPage(
+      { logger: { error } },
+      {
+        title: 'T',
+        model:
+          'https://cdn.example.com/entries?access_token=SECRET-TOKEN-3&type=course',
+        config: {
+          siteUrl: 'https://example.com',
+          fetch: { headers: { Authorization: 'Bearer SECRET-TOKEN-4' } },
+        },
+      },
+      '.',
+    )
+    expect(error).toHaveBeenCalledTimes(1)
+    const [message, shown] = error.mock.calls[0]
+    expect(message).toBe('No view specified')
+    expect(JSON.stringify(shown)).not.toContain('SECRET-TOKEN-3')
+    expect(JSON.stringify(shown)).not.toContain('SECRET-TOKEN-4')
+    // Still enough to find the registration by.
+    expect(shown).toEqual({
+      title: 'T',
+      model:
+        'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
+      config: {
+        siteUrl: 'https://example.com',
+        fetch: { headers: { Authorization: '[redacted]' } },
+      },
+    })
+  })
+
+  it('logs a page with no view and a model that is not a URL as it was given', () => {
+    const error = vi.fn()
+    const model = { rows: [1, 2] }
+    registerPage({ logger: { error } }, { title: 'T', model }, '.')
+    expect(error.mock.calls[0][1]).toEqual({ title: 'T', model })
+  })
+})
+
+// `debug.json` is not gated on dev, so it can be deployed; `config` carries the
+// site's `fetch.headers`, where an API token goes.
+describe('logViewStats', () => {
+  let site
+  afterEach(async () => {
+    if (site) await site.cleanup()
+    site = null
+  })
+
+  it('writes debug.json under verbose without each page’s config, keeping the model and other options', async () => {
+    site = await makeSite({})
+    const config = {
+      siteUrl: 'https://example.com',
+      fetch: { headers: { Authorization: 'Bearer SECRET-TOKEN-1' } },
+    }
+    const options = { view: 'a.hbs', slug: 'a', model: { a: 1 }, config }
+    const claim = vi.fn()
+    const kiss = {
+      verbose: true,
+      _stack: [
+        {
+          view: 'a.hbs',
+          buildTo: 'public/a.html',
+          runCount: 1,
+          page: { options },
+        },
+      ],
+      _promises: [],
+      _writeRoot: site.build,
+      _outputs: { claim },
+      logger: { plain: vi.fn() },
+    }
+    logViewStats(kiss)
+
+    // The write is not awaited: poll until it parses, as the integration test does.
+    let text
+    await waitFor(async () => {
+      try {
+        text = await site.read('public/debug.json')
+        JSON.parse(text)
+        return true
+      } catch {
+        return false
+      }
+    })
+    expect(text).not.toContain('SECRET-TOKEN-1')
+    const [row] = JSON.parse(text)
+    expect(row).toMatchObject({
+      view: 'a.hbs',
+      buildTo: 'public/a.html',
+      runCount: 1,
+    })
+    expect(row.options).not.toHaveProperty('config')
+    expect(row.options).toEqual({ view: 'a.hbs', slug: 'a', model: { a: 1 } })
+    // The page keeps it: only the dump leaves it out.
+    expect(options.config).toBe(config)
   })
 })
 

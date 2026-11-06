@@ -123,7 +123,16 @@ Never use `--force`. If `git worktree remove` or `git branch -D` refuses, report
 
 ### 5. Report
 
-Short, decision first if there is one:
+First, ask npm whether the version that just merged has shipped:
+
+```bash
+npm view kiss-ssg version
+npm pkg get version
+```
+
+The first is what a site installs today; the second is what the base now says, after step 3's pull. When npm's is older, that is the report's opening line: the release has merged and no site can install it until the operator runs `npm publish` (its `prepublishOnly` runs the gates, and `postpublish` tags the commit). Give the command on its own line. Never publish from here. Merged-but-unpublished releases have piled up unremarked: 2.12.1's fix waited as an "open" line in its log (2026-11-05), and 2.12.3's handlebars security fix and 2.13.0 merged with npm still on 2.12.0 (2026-11-06).
+
+Then, short, decision first if there is one:
 
 - the commit the base is at now (`git log --oneline -1`), and the pull request the merge came from;
 - what was deleted: the local branch, and the worktree if there was one;
