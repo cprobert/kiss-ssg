@@ -96,8 +96,10 @@ export function hashId(input: unknown): string;
  * Whether a model is a URL kiss fetches.
  *
  * @param {unknown} model a page's `model`, as the author wrote it
- * @returns {boolean} true for a string that begins `http` (so `https://…`,
- * and also any other string with that prefix), false for anything else
+ * @returns {boolean} true for a string whose scheme is `http:` or `https:`,
+ * in any case and after any leading space (both of which fetch takes), false
+ * for anything else: `httpdata.json` and `http-archive` are a file and a
+ * folder, and `httpx://…` is not fetched
  */
 export function isUrlModel(model: unknown): boolean;
 /**

@@ -458,3 +458,28 @@ only running it against real failures shows what it left out.
 **Status:** round three is committed and pushed. By the stop rule agreed for it, the operator
 runs `/code-review` once more over the round's commit; only a secret reaching a file or a log,
 or a regression against `main`, is fixed, and the rest is listed in the pull request.
+
+### The last review, and the stop rule applied
+
+The operator asked the main session to run that review (`/code-review high 991ca05..b8be845`,
+in a forked agent). Ten findings. Read against the rule:
+
+- **Fixed, one: a secret reaching a log.** A model written `HTTPS://…?token=…`, or with a
+  leading space, was taken for a folder, never fetched, and printed whole by `Invalid model …`.
+  It had been on the deferred list since the close's review, rated below that review's bar; under
+  this round's rule it counts. `isUrlModel` now goes by the scheme in any case, and the three
+  lines that print a model kiss does not fetch show a `scheme://` string through `redactUrl`.
+  Nine tests red first, four of them on the token in the message.
+- **Checked, not a regression:** the worry that the new real-fetch tests pin Node 24's wording.
+  CI ran them on Node 22.23.4 on Ubuntu and on Windows for `b8be845` and both passed. One run;
+  the risk of a flaky socket test stays on the list.
+- **Docs, two, because they were false or missing whatever the rule says:** the comment and note
+  that said a safe part "cannot carry a secret" now say the shape is checked, not the value;
+  `AIKB/upstream.md` has the entry for what Node's fetch puts in its errors, with a re-check.
+- **Listed in the pull request, seven:** the timeout does not cover the body; a non-numeric
+  `retries` rejects with `undefined`; a credentialed or unparseable URL is blamed whatever the
+  error was, and still retried; a token-shaped `code` from a replaced fetch is shown; a cache
+  write that fails still fails the page; a non-numeric `status` from a stubbed fetch reads
+  `STATUS_CODES` unguarded; two dead markings and a duplicated prefix.
+
+The loop ends here by the rule. The fix for the one finding has been read by no reviewer.

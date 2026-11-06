@@ -33,8 +33,10 @@ prints, and hold two values to the form they are written in.
   and in a failed fetch's message, `?access_token=SECRET&type=course` is shown as
   `?access_token=[redacted]&type=[redacted]`, and any `user:pass@` and `#fragment` are
   dropped. A URL that cannot be read as one is shown with nothing before its last `@`,
-  or as `https://[redacted]` when a password in it cannot be told from its query. The
-  request itself is unchanged. A token belongs in `fetch.headers`, not in the URL
+  or as `https://[redacted]` when a password in it cannot be told from its query. A URL
+  is known by its scheme in any case, so `HTTPS://…` is fetched and shown like any
+  other, and a file or folder whose name only begins with `http` is no longer taken for
+  one. The request itself is unchanged. A token belongs in `fetch.headers`, not in the URL
   (GUIDE.md § Remote models).
 - **`{{embed}}` takes only an http(s) address for its frame.** A `src=` from page data,
   and a service's own `embed.src` and `embed.watch`, must be an `https://` or `http://`

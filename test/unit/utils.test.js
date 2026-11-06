@@ -426,9 +426,13 @@ describe('REDACTED and isUrlModel', () => {
   it.each([
     ['https://cdn.example.com/x', true],
     ['http://localhost:3000/x.json', true],
-    // The test is the prefix, as it has always been.
-    ['httpdata.json', true],
-    ['HTTPS://cdn.example.com/x', false],
+    // The scheme, in any case, after any leading space: what fetch takes.
+    ['HTTPS://cdn.example.com/x', true],
+    [' https://cdn.example.com/x', true],
+    // A name that only begins with the letters is a file or a folder.
+    ['httpdata.json', false],
+    ['http-archive', false],
+    ['httpx://cdn.example.com/x', false],
     ['data/page.json', false],
     ['', false],
     [undefined, false],
