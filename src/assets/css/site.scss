@@ -3,6 +3,8 @@
 // --pass and --fail appear only where something passed or failed, so green on
 // this site always means "ok", and the rose is kept for the logo and selection.
 
+@use 'fonts';
+
 :root {
   --paper: #f6f7fc;
   --surface: #ffffff;

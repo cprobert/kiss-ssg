@@ -66,6 +66,16 @@
       "folder": "10-asset-pipeline",
       "name": "Asset pipeline",
       "summary": "An external tool run before the asset copy, kept watching in dev mode, and the four shapes {{asset}} takes."
+    },
+    {
+      "folder": "13-course-packages",
+      "name": "Course packages",
+      "summary": "Pages that name a package, zipped as IMS content packages and SCORM 1.2 for an LMS: one SCO per page, and one SCO with many views and a recorded question."
+    },
+    {
+      "folder": "14-consent",
+      "name": "Cookie consent",
+      "summary": "config.consent and the six consent helpers: GTM, a first-party counter and a YouTube embed held back until allowed, a themed banner, and the cookie table."
     }
   ]
 }

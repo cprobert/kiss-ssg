@@ -23,7 +23,38 @@ The name is a preset (`youtube`, `vimeo`, `google-maps`, `instagram`, `soundclou
 
 kiss writes a notice saying who hosts the content, a **Load it** button, a link to the content on the provider's own site, and the frame held in a `<template>`, so the browser fetches nothing from the provider before the click. The frame is sized for its provider: 16:9 for a video, and for Instagram, a frame at most 540 px wide whose height follows what the post reports. The box around the notice takes the frame's size before the click, so a video's frame arrives without moving anything on the page. An Instagram post's height is known only once it loads, so its box starts at 600 px and then takes the height the post reports: measured on one post, 568 px at a phone's width and 883 px at 540 px wide. kiss sets only that geometry; the colours, border and spacing are your CSS's (`.kiss-embed`, `.kiss-embed__notice`, `.kiss-embed__watch`), or the consent theme's under `config.consent`.
 
--   **With no `config.consent`,** each embed carries its own small script, so nothing goes in `<head>` and no banner is needed. Nothing is remembered: the next page asks again. The wording is the default `ui.text` (below); to change it, use `config.consent`.
+**The words.** A video's button says **Play video**, anything else's **Load it**, and every Load button's accessible name adds the frame's `title=` ("Play video: Puppy class"), so a screen reader tells several embeds on one page apart. One embed's words are `load=` (the button), `notice=` (the sentence) and `open=` (the link to the provider), and each can say `{provider}` or `{service}`:
+
+```hbs
+{{embed
+  'youtube'
+  id='VIDEO_ID'
+  title='Puppy class'
+  load='Watch the class'
+  notice='This video is on {provider}.'
+}}
+```
+
+A site's own words for every embed go in one place. Under `config.consent` that is `ui.text` (§ Customising the banner). Without it, it is `embeds: { text }` in the config, with the same four keys, `embedNotice`, `embedLoad`, `embedPlay` and `embedWatch`. `embeds` beside `consent` fails the build rather than leaving you to wonder which wins. A site that set `embedLoad` and not `embedPlay` (a site in Welsh, say) gets its own `embedLoad` on videos too.
+
+**A video plays on Load.** Pressing Load is asking for the video, so a `youtube` or `vimeo` embed asks the player to start (`autoplay=1`) as the click reveals it: one press, not two. `autoplay=false` on the call turns that off. A frame revealed by a stored choice under `config.consent`, with no click, never autoplays. Measured in desktop Chromium 156 with a real YouTube video (2026-11-05): playing, with sound, after the one click, and paused with `autoplay=false`. Not measured on iOS Safari, which may still ask for a tap on the player.
+
+**A poster: `poster=`.** A plain box with a sentence does not look like a video, so give it a still:
+
+```hbs
+{{embed
+  'youtube'
+  id='VIDEO_ID'
+  title='Puppy class: the first week'
+  poster='img/puppy-class.jpg'
+}}
+```
+
+The poster is an image in your site's assets, drawn by the `{{image}}` pipeline (§ Responsive images): AVIF and WebP widths, lazy unless `eager=true`, cover-fitted to the box the frame will take, so nothing moves when it loads. It is decoration (`alt=""`), because `title=` already names the embed. `sizes=` is the width the box takes in your layout, and defaults to `100vw`. `root=` is passed on as `{{image}}` takes it, for a learning package's page or a site under a path prefix. A URL from another site (`https://i.ytimg.com/…`) fails the page: fetching the provider's thumbnail before the click is the request the box exists to prevent. Save the thumbnail into `src/` once instead (YouTube's is at `https://i.ytimg.com/vi/VIDEO_ID/sddefault.jpg`).
+
+Text on a photo needs a backing, so with a poster, and only then, kiss also writes colour: the notice becomes a compact dark strip along the bottom with white text, the link beside the button, and a video's Load button gets a play mark. On a phone the strip covers under half the box (44% at 375 px, measured), so the still shows. Change the colours with two custom properties on the box, `--kiss-embed-poster-scrim` (the strip, `rgba(0,0,0,.72)`) and `--kiss-embed-poster-text` (`#fff`). The box also carries the class `kiss-embed--poster`, and the still is in `.kiss-embed__poster`. The poster goes with the notice when the frame loads.
+
+-   **With no `config.consent`,** each embed carries its own small script, so nothing goes in `<head>` and no banner is needed. Nothing is remembered: the next page asks again. The wording is the default `ui.text` (below), or your own (§ The words, below).
 -   **Under `config.consent`,** the embed is one of the site's services, and it must be declared there (`youtube: {}` is enough), or the page fails: an undeclared embed would be missing from the banner and the cookie table. The notice also offers **Always allow**, the visitor's stored choice reveals it, and withdrawing that choice puts the notice back.
 -   **On a learning package's page** `{{embed}}` is always the facade, even under `config.consent`: the LMS deals with consent for a course, and a facade stores and remembers nothing. An LMS may serve packages under a Content-Security-Policy that refuses frames from other sites, so press Load in the LMS itself before the course goes live; the link to the provider works either way.
 
@@ -87,7 +118,7 @@ The banner links the page whose id is `cookies`, and a build with no such page f
 -   A page's id is its view's path under `src/pages` without `.hbs`, so `src/pages/cookies.hbs` is the page `cookies`, which is the default `ui.policy`. Give a page another id with `id` in its `.page()` call (§ .page()).
 -   The cookie table and the consent history can share one page: put `{{consentTable}}` and `{{consentRecord}}` on it and set `ui.history` to the same id. The dialog then links `/cookies.html` and `/cookies.html#kiss-consent-history` (measured, 2026-11-04).
 -   The links are the page's served URL, which `{{link}}` gives too: `/cookies.html` by default, `/cookies/` under `extensionLess: true`. `links.trailingSlash` changes only a directory index (`/` or `/courses/`), never a page like this one (§ Host URL policy).
--   A helper's hash, and a service's own keys, fill `{placeholder}`s in its URLs, except the keys that are settings. In a service's config those are `preset`, `category`, `label`, `provider`, `description`, `policy`, `src`, `inline`, `partial`, `embed`, `origins`, `cookies`, `storage` and `google`. In a helper's hash they are `src=` (`{{consentScript}}` and `{{embed}}`) and `title=` (`{{embed}}`). Any other key, such as `id` or `key`, is a placeholder value.
+-   A helper's hash, and a service's own keys, fill `{placeholder}`s in its URLs, except the keys that are settings. In a service's config those are `preset`, `category`, `label`, `provider`, `description`, `policy`, `src`, `inline`, `partial`, `embed`, `origins`, `cookies`, `storage` and `google`. In a helper's hash they are `src=` (`{{consentScript}}` and `{{embed}}`), and `title=`, `poster=`, `sizes=`, `eager=`, `root=`, `load=`, `notice=`, `open=` and `autoplay=` (`{{embed}}`). Any other key, such as `id` or `key`, is a placeholder value.
 
 ## Services and presets
 
@@ -132,7 +163,7 @@ consent: {
 ```
 
 -   **`cookies` and `storage`** list what a service writes: `{ name, duration, description, domain }`, or a bare name. A name ending `*` is a prefix (`_ga_*`). An entry with a `domain` is another site's (third-party) unless it says `party: 'first'`. A `storage` entry is a `localStorage` key unless its `kind` says `'session'` or `'indexeddb'`; the cookie table names the kind, and withdrawal deletes only the site's own cookies and `localStorage` keys. A site's own `cookies` and `storage` are added to the preset's, as `origins` are, and an entry with the same name as a preset's replaces it: a `gtm` that declares its container's own cookies (`_fbp`, `_clck`) keeps `_ga`, `_ga_*` and `_gcl_au`.
--   **`src`**, **`inline`** and **`partial`** say what `{{consentScript}}` loads: a URL, a script body run before it, or the name of a site partial whose `<script>` tags are gated as this service. **`embed`** (`{ src, title, watch, ratio, width, height, measure }`) is what `{{embed}}` loads. `watch` is the provider's own page for it. `ratio` is the frame's CSS aspect ratio (`'16/9'` by default), or `null` for a frame whose content decides its height, starting at `height` pixels; `width` caps it in pixels; and `measure: true` follows the height the frame reports to the page, as Instagram's does.
+-   **`src`**, **`inline`** and **`partial`** say what `{{consentScript}}` loads: a URL, a script body run before it, or the name of a site partial whose `<script>` tags are gated as this service. **`embed`** (`{ src, title, watch, ratio, width, height, measure, video }`) is what `{{embed}}` loads. `watch` is the provider's own page for it. `ratio` is the frame's CSS aspect ratio (`'16/9'` by default), or `null` for a frame whose content decides its height, starting at `height` pixels; `width` caps it in pixels; `measure: true` follows the height the frame reports to the page, as Instagram's does; and `video: true` (set by `youtube` and `vimeo`) marks a video player, whose postered Load button carries a play mark.
 -   **`origins`** names the other sites a service loads from, beyond its `src`: for the audit and the version (below).
 -   **`label`**, **`provider`** and **`policy`** are how the service is named to the visitor. The dialog lists it as "label (provider)", and the cookie table gives both. `policy` is the provider's own privacy policy, an `http://` or `https://` URL, which links the provider's name in the dialog and the table. The presets carry Google's, Vimeo's and Meta's. Anything else, such as a page id or a `javascript:` URL, fails the build. `null`, or no `policy`, leaves the name unlinked.
 -   **`category: 'necessary'`** is a service the site cannot work without: it is never gated and never asked about. A library from a CDN is one, and naming its origin is how the audit's `consent-ungated` stops reporting it.
@@ -285,7 +316,7 @@ consent: {
 
 The policy link and the logo are root-relative (`/cookies/`), unless `siteUrl` carries a path prefix (`https://example.com/site/`): then they are absolute and carry it (`https://example.com/site/cookies/`), as `{{link absolute=true}}` would write them.
 
--   **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, `servicesLabel` (the accessible name of each category's service list, "Services"), and the embed's `embedNotice`, `embedLoad`, `embedAllow` and `embedWatch` (`{service}` is filled with the service's label and `{provider}` with its provider: the defaults say "hosted by {provider}", then "Always allow {service}" and "Open it on {service}", because the grant is for that one service), and the history page's `history…` keys (above).
+-   **`text`** replaces any of the wording: `title`, `body`, `accept`, `reject`, `choose`, `save`, `close`, `settings`, `policy`, `confirmation`, `hide`, `necessaryLabel`, `necessaryDescription`, `servicesLabel` (the accessible name of each category's service list, "Services"), and the embed's `embedNotice`, `embedLoad`, `embedPlay` (a video's button, "Play video"; it follows your `embedLoad` when you set that and not this), `embedAllow` and `embedWatch` (`{service}` is filled with the service's label and `{provider}` with its provider: the defaults say "hosted by {provider}", then "Always allow {service}" and "Open it on {service}", because the grant is for that one service), and the history page's `history…` keys (above).
 -   **`history`** is the id of the page with `{{consentRecord}}`, linked from the dialog; `null` (the default) links none.
 -   **`theme`** sets `background`, `text`, `accent`, `accentText`, `border`, `radius` and `font`. A value is any CSS value without `;`, `{`, `}`, `<` or `>`, so `var(--surface)` uses your site's own custom properties and the banner follows its dark scheme. `theme: false` drops kiss's stylesheet altogether.
 

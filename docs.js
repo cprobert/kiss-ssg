@@ -16,6 +16,8 @@ const kiss = new Kiss({
   dev,
   verbose: true,
   extensionLess: true,
+  // GitHub Pages reads no redirect or header file, so kiss writes none.
+  host: 'github-pages',
   siteUrl: dev
     ? 'http://127.0.0.1:3001'
     : 'https://cprobert.github.io/kiss-ssg',
@@ -59,7 +61,7 @@ kiss
     model: 'examples.json',
     title: 'Examples',
     description:
-      'Eleven runnable kiss-ssg sites that ship inside the package: whole sites to copy by situation, and short scripts that show one feature each.',
+      'Fourteen runnable kiss-ssg sites that ship inside the package: whole sites to copy by situation, and short scripts that show one feature each.',
     version,
   })
   .page({

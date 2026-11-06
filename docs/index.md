@@ -198,31 +198,31 @@ kiss is the upgrade path for a site you made in Claude or ChatGPT: converting ke
 
 ## Websites built with kiss-ssg
 
--   ![Diploma MSc's home page: a banner reading Online Postgraduate Qualifications For Healthcare Professionals with a course search, above the University of South Wales and University of Buckingham logos.](https://cprobert.github.io/kiss-ssg/img/sites/diploma-msc.webp)
+-   ![Diploma MSc's home page: a banner reading Online Postgraduate Qualifications For Healthcare Professionals with a course search, above the University of South Wales and University of Buckingham logos.](https://cprobert.github.io/kiss-ssg/img/sites/diploma-msc-480.97db17b7.jpg)
     
     ### [Diploma MSc (opens in a new tab)](https://www.diploma-msc.com/)
     
     Online postgraduate certificates, diplomas, MScs and MBAs for healthcare professionals, delivered with university partners including the University of Buckingham.
     
--   ![A1K9 Training's home page: a woman hugging a pale dog behind the heading A well behaved dog is a joy to live with, under a dark green navigation bar.](https://cprobert.github.io/kiss-ssg/img/sites/a1k9-training.webp)
+-   ![A1K9 Training's home page: a woman hugging a pale dog behind the heading A well behaved dog is a joy to live with, under a dark green navigation bar.](https://cprobert.github.io/kiss-ssg/img/sites/a1k9-training-480.6f643dfa.jpg)
     
     ### [A1K9 Training (opens in a new tab)](https://www.a1k9training.co.uk/)
     
     Gaynor Probert's dog behaviour and training academy: weekend group courses at Pontarddulais, and behaviour consultations at the academy or at home.
     
--   ![Pro Plumbing's home page: the heading Local plumber in Aberdare with a WhatsApp Greg button and Google reviews, beside a photo of a fitted grey bathroom with a lit round mirror.](https://cprobert.github.io/kiss-ssg/img/sites/pro-plumbing.webp)
+-   ![Pro Plumbing's home page: the heading Local plumber in Aberdare with a WhatsApp Greg button and Google reviews, beside a photo of a fitted grey bathroom with a lit round mirror.](https://cprobert.github.io/kiss-ssg/img/sites/pro-plumbing-480.efc5b780.jpg)
     
     ### [Pro Plumbing (opens in a new tab)](https://pro-plumbing.trade/)
     
     Greg Probert's plumbing business in Aberdare and the Cynon Valley: small jobs and bigger installs, booked by WhatsApp or a call-back.
     
--   ![K9 Solutions' home page: the heading Better walks start here in white on black, beside a photo of two German Shepherds lying in front of Cyfarthfa Castle.](https://cprobert.github.io/kiss-ssg/img/sites/k9-solutions.webp)
+-   ![K9 Solutions' home page: the heading Better walks start here in white on black, beside a photo of two German Shepherds lying in front of Cyfarthfa Castle.](https://cprobert.github.io/kiss-ssg/img/sites/k9-solutions-480.cd366515.jpg)
     
     ### [K9 Solutions (opens in a new tab)](https://k9solutions.uk/)
     
     One-to-one dog training in Merthyr Tydfil: practical coaching for puppies, family dogs and problem behaviour, at Cyfarthfa Park, at home or remotely.
     
--   ![Learna's home page: a navy banner reading Welcome to Learna with a course search box, above Medical School and Business School course tiles.](https://cprobert.github.io/kiss-ssg/img/sites/learna.webp)
+-   ![Learna's home page: a navy banner reading Welcome to Learna with a course search box, above Medical School and Business School course tiles.](https://cprobert.github.io/kiss-ssg/img/sites/learna-480.65c46355.jpg)
     
     ### [Learna (opens in a new tab)](https://www.learna.ac.uk/)
     
