@@ -78,6 +78,17 @@ parallel over one at a time (2026-11-06).
     files; the second read about twenty and stopped when the workspace ran out of credits, with
     no verdict. The branch's independent review is the `/code-review` above.
 
+- **2026-11-06 — after the close, the operator's `/code-review` of PR #76.** Eight findings; the
+  four measured ones were re-run and reproduce. The operator decided three things:
+  - **All eight are fixed on this pull request, implemented by Opus agents.** The operator typed
+    this answer in place of the three options offered, which were all eight, six of them, or
+    none.
+  - **A fetch failure's message is rebuilt from safe parts,** not patched. `scrubbed()` edited
+    Node's error text, and three reviews had each found something it missed.
+  - **The loop ends with one more `/code-review`,** scoped to the fix commit: only a secret
+    reaching a file or a log, or a regression against `main`, gets fixed; the rest is listed.
+  - The contract's round-three section names the two workstreams.
+
 <!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
      mid-branch, append a dated note here and stay on the branch — a new branch is
      the operator's call, never spawned on initiative. Good drift gets recorded;
@@ -183,6 +194,45 @@ parallel over one at a time (2026-11-06).
     quoted in Node's error and printed. Re-derived by the main session, then `checkHeaders` in
     `lib/fetch-policy.js`, four tests seen red. Findings below the bar are listed under the
     Verdict.
+- **2026-11-06, round three** — after the operator's `/code-review` of PR #76 (Amendment above).
+  Decision: ready for the operator's one scoped review, then the merge.
+  - **Re-derived first.** The review's four measured findings reproduced in the main session's
+    probe before any brief was written: a bare `fetch failed` for `localhost`, a password shown
+    for two unparseable URLs, `https://api.example.com//` in a timeout, a raw query passed
+    through.
+  - **After.** The same probe: `→ ECONNREFUSED [::1]:<port>, ECONNREFUSED 127.0.0.1:<port>`;
+    `https://api.example.com/data?[redacted]` and `https://[redacted]`; the two timeout URLs as
+    `redactUrl` gives them; `→ Error` for the raw query.
+  - **Whole build.** The close review's script, twelve failing URL models through the real
+    fetch: 0 lines with a token in the log, the six built files, the four `AIKB/` files and the
+    report; the server saw the real header and query on all 56 requests.
+  - **Found by that run, fixed by the main session:** a port fetch refuses (`:1`) and a scheme it
+    does not know (`httpx://`) came out as `→ TypeError`, where the old code said `bad port`.
+    Both constants were measured on Node 24.14.0 and added to the short list; two tests red
+    first. Any cause not on the list and without a code still shows as the error's name.
+  - **Red, re-derived by the main session:** ten one-line mutations, each applied alone, on the
+    final code: 5, 10, 1, 5, 2, 2, 1, 1, 2 and 10 tests fail; the tree was byte for byte the same afterwards (one
+    hash of `git diff`, before and after). This shows the tests notice each fix being removed.
+    It does not show the fixes are right; the main session read both diffs whole for that, and
+    the operator's scoped review is the check.
+  - **Finding 5, measured where it had been inferred.** In Chromium 158, a script whose `src`
+    is answered `200` with HTML gets `load` and a syntax error on `window`, so the consent
+    fallback does not run; with `X-Content-Type-Options: nosniff` it gets `error` and the
+    fallback runs. The changelog and `AIKB/consent-client.md` now say so.
+  - **Finding 7.** `llms.txt` has the trap line, at 15,991 of 16,000 characters after five
+    wording trims.
+  - **Accepted from the implementers, beyond the contract:** an unparseable URL's scheme is kept
+    with whatever slashes follow it, because `http:user:pass@…` and `https:/user:pass@…` kept the
+    password under the literal `://` rule; a cache write that fails is reported once as
+    `Model cache write failed`, where it used to be retried as if the fetch had failed; a body
+    that fails to arrive after a 2xx says so from the error's code.
+  - **Found while writing this entry, fixed by the main session:** `httpx:user:pass@host` parses
+    (the parser gives a scheme that is not http(s) no authority) and was shown whole, password
+    included. A parsed URL whose scheme is not `http:` or `https:` now goes by its last `@`, as a
+    string that does not parse does. Three test rows, two red on the password.
+  - **Listed, not fixed:** a URL kiss cannot fetch (unparseable, or holding credentials) is
+    still attempted once per allowed retry, as before; an http(s) URL that parses with `@` in
+    its password is shown as the parser split it.
 
 ---
 
@@ -367,3 +417,44 @@ committed `AIKB/` folder or the log.
   secret in a URL's path is not caught; `scrubbed()` is text replacement measured on Node
   v24.14.0 only; the guard on `file://` and on a host that answers an unknown path with 200 are
   inferred.
+
+## Addendum — 2026-11-06, after the close: round three
+
+The reflection above was written before the operator ran `/code-review` on the open pull
+request. That review changes three of its sentences, and they are corrected here, not edited
+in place.
+
+- **"Every answer was the recommended option" stopped being true.** Asked which of eight
+  findings to fix, the operator typed an answer of their own: all eight, implemented by Opus.
+  That set the delegation for the round, where the main session had been about to do it itself.
+- **"`scrubbed()` is text replacement" is no longer open.** The function is gone. The review
+  found three more things it missed, the operator chose to rebuild a failure's message from safe
+  parts, and no text from Node, a server or a body reaches a message now.
+- **"A host that answers an unknown path with 200" is no longer inferred.** It was measured in
+  Chromium, and the measurement found the remedy as well: `nosniff`.
+
+**What the round shows about the lesson above.** The reflection's first recommendation was to
+review a security fix for what it opens. The header check written at the close was reviewed by
+nobody, and the operator's review soon after found three defects in the function next to it,
+which the close's own fresh-context review had passed, and raised a fourth that the close's
+review had seen and rated below its bar. Two of them were regressions in
+what a developer is told when a fetch fails, a kind of defect a review briefed to hunt leaks does
+not look for. And the main session's whole-build run of the rebuilt code found a fifth of the
+same kind (`→ TypeError` for a refused port) that the implementing agent's twenty measured shapes
+had not included: the allow-list is safe by construction and incomplete by construction, and
+only running it against real failures shows what it left out.
+
+- **Claude — brief a review for regressions as well as for the thing being fixed.** The close's
+  review was asked whether three claims held and whether anything leaked. It was not asked what a
+  developer now sees for each failure that used to say something useful. A brief for a fix names
+  both.
+- **Claude — after an allow-list replaces a deny-list, run the old outputs through it.** Every
+  message the old code produced is a row: for each, what does the new code say? The refused
+  port would have been on that list.
+- **Operator — typing your own answer worked.** The three options offered were all about scope;
+  the choice that mattered to you was who implements. A fourth option was missing, and the
+  free-text answer supplied it.
+
+**Status:** round three is committed and pushed. By the stop rule agreed for it, the operator
+runs `/code-review` once more over the round's commit; only a secret reaching a file or a log,
+or a regression against `main`, is fixed, and the rest is listed in the pull request.

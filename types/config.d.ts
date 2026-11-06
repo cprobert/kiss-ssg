@@ -41,8 +41,11 @@ export function resolveConfig(userConfig?: KissConfigInput): KissConfig;
 export function foldersToEnsure(folders: KissFolders): string[];
 /**
  * A copy of a config whose `fetch.headers` keeps every header name and has
- * every value replaced by `'[redacted]'`. `fetch.headers` is where `GUIDE.md`
- * tells a site to put an API token, and this is the copy anything other than
+ * every value replaced by `'[redacted]'`, except a value that is `undefined`,
+ * `null` or `''`, which is shown as it is: that is what an unset environment
+ * variable gives, and `'[redacted]'` would say a token is there when it is
+ * not. Any other value is redacted, `'Bearer undefined'` included.
+ * `fetch.headers` is where `GUIDE.md` tells a site to put an API token, and this is the copy anything other than
  * the fetch itself is handed: each page's `options.config` (so a template, a
  * controller and `{{{stringify this}}}` see the names and never the values)
  * and the `verbose` log line. Fetching reads the instance's own
@@ -211,7 +214,7 @@ export function redactFetchHeaders<T extends Record<string, any>>(config: T): T;
  *
  * @typedef {Object} KissSettings
  * @property {boolean} dev start a livereload dev server and file watcher; skip minification
- * @property {boolean} verbose log the resolved config (each `fetch.headers` value shown as `'[redacted]'`), and write `debug.json` from `.viewStats()`
+ * @property {boolean} verbose log the resolved config (each `fetch.headers` value shown as `'[redacted]'`, or as it is when `undefined`, `null` or `''`), and write `debug.json` from `.viewStats()`
  * @property {boolean|'atomic'} cleanBuild `true` empties `folders.build` in the constructor, `'atomic'` builds into a staging sibling and swaps it in when `complete()` resolves
  * @property {boolean} extensionLess build non-index pages to `<path>/<slug>/index.html`
  * @property {'view'|'path'} ids what a page's default id is: its view's route (`'view'`, the default) or where it is served, `.html` and a trailing `/index` removed (`'path'`); site-wide, never per page
@@ -697,7 +700,7 @@ export type KissSettings = {
      */
     dev: boolean;
     /**
-     * log the resolved config (each `fetch.headers` value shown as `'[redacted]'`), and write `debug.json` from `.viewStats()`
+     * log the resolved config (each `fetch.headers` value shown as `'[redacted]'`, or as it is when `undefined`, `null` or `''`), and write `debug.json` from `.viewStats()`
      */
     verbose: boolean;
     /**

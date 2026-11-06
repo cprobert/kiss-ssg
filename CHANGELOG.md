@@ -13,11 +13,17 @@ prints, and hold two values to the form they are written in.
   page's `<head>` works out where its cached file is from the page's address. On a "not
   found" page, an address written for the purpose could point it at another site, and the
   file it fetched from there ran as part of yours. It now loads from the page's own host
-  or not at all, and tries the site's root if the first address has no file.
+  or not at all. When the host answers "not found" for the address it worked out, it
+  tries the site's root. A host that answers every unknown address with a page and
+  status 200, as a single-page-app rewrite does, gives it no error to act on, so on a
+  wrong address there the consent controls do nothing; sending
+  `X-Content-Type-Options: nosniff`, which `securityHeaders: true` does, makes the
+  browser refuse that answer and the fallback runs (measured in Chromium 158).
 - **A token in `fetch.headers` stays out of what kiss writes.** Each page's copy of the
   config now holds the header names with every value reading `[redacted]`, so
   `{{{stringify this}}}` or a controller that copies `config` cannot put the token into a
-  page. The dev `.json` file beside each page and `.viewStats()`'s `debug.json` no longer
+  page. A value that is unset or empty is shown as it is, so a missing environment
+  variable is visible. The dev `.json` file beside each page and `.viewStats()`'s `debug.json` no longer
   hold `config` at all, and the `verbose` log prints the header values as `[redacted]`.
   The request for a URL model still sends the real headers. A header that cannot be sent,
   such as a token with a line break in it, now fails with a message that names the header;
@@ -26,8 +32,10 @@ prints, and hold two values to the form they are written in.
   `last-build.json` that `kiss-ssg aikb` writes, in `kiss-ssg check`'s output, in the log
   and in a failed fetch's message, `?access_token=SECRET&type=course` is shown as
   `?access_token=[redacted]&type=[redacted]`, and any `user:pass@` and `#fragment` are
-  dropped. The request itself is unchanged. A token belongs in `fetch.headers`, not in
-  the URL (GUIDE.md § Remote models).
+  dropped. A URL that cannot be read as one is shown with nothing before its last `@`,
+  or as `https://[redacted]` when a password in it cannot be told from its query. The
+  request itself is unchanged. A token belongs in `fetch.headers`, not in the URL
+  (GUIDE.md § Remote models).
 - **`{{embed}}` takes only an http(s) address for its frame.** A `src=` from page data,
   and a service's own `embed.src` and `embed.watch`, must be an `https://` or `http://`
   URL, a path on your site, or `//host/…`. Anything else, such as `javascript:`, fails
@@ -61,9 +69,13 @@ gives the same 472 files, byte for byte.
   `[redacted]` values, and no note file moves. If a token was in that URL, it is still in
   your git history, so replace it with a new one at the service and move it to
   `fetch.headers`.
-- **A failed model fetch's message** no longer carries the URL's query values. For a
-  network failure it now ends with the underlying cause, and the error object has no
-  `cause` property.
+- **A failed model fetch's message is now written by kiss.** Each begins
+  `Model fetch failed: <the URL, redacted> →` and then says what happened:
+  `404 Not Found`, `ECONNREFUSED 127.0.0.1:8080`,
+  `200, but the body is not JSON (text/html)`. Nothing of the server's own status text
+  or body, or of Node's error text, is shown, and the error object has no `cause`
+  property. A timeout keeps its own sentence. If a script of yours matches the old text
+  (`fetch failed`, `Unexpected token`), change it.
 
 ## 2.13.1 — 2026-11-06
 

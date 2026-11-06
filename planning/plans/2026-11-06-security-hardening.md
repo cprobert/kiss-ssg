@@ -544,3 +544,98 @@ URL>)` still finds the model.
    fixtures). Report what moves.
 4. Docs, and for the changelog: what a site with a committed `AIKB/` sees on its next
    `kiss-ssg aikb`, and that a token already committed stays in git history and must be rotated.
+
+## Amended 2026-11-06 — round three, after the code review of PR #76
+
+The operator ran `/code-review` on the open pull request (`origin/main...HEAD`). Eight findings;
+the four measured ones were re-run by the main session and reproduce. The operator decided: fix
+all eight, implemented by Opus agents; rebuild the fetch error from safe parts, not patch it; and
+one more scoped `/code-review` ends the loop.
+
+**The stop rule for the round after this one.** Scope: the files this round's commit touches.
+What counts: a secret reaching a file or a log, or a regression against `main`. Anything else is
+listed in the pull request and the branch merges.
+
+Two workstreams, in parallel, with no file in common. Agents never commit, never run
+`npm run gates` or the whole suite, and run only the test files named for them. Every new
+regression test is seen red on the unfixed code first, and the report says so with the failing
+assertion. Text reaches a file through Write or Edit only; a hook refuses a shell command that
+writes one. The Edit tool turns a `\uXXXX` sequence in its input into the character: build such
+a character with `String.fromCharCode`.
+
+### Workstream G — a fetch failure's message is written by kiss (findings 1, 3 and 4)
+
+Owns `lib/fetch-policy.js`, `test/unit/fetch-policy.test.js`, `AIKB/fetch-policy.md`, and message
+assertions only in `test/unit/model-resolver.test.js` and `test/integration/aikb.test.js`.
+
+`scrubbed()` edits Node's error text, which is a deny-list of URL spellings: three reviews have
+each found a spelling or a shape it missed (an `AggregateError` cause with an empty message; its
+own timeout message corrupted by a second pass; a raw query). It goes. **No text that came from
+outside kiss reaches a message**: not an error's `message`, not a cause's, not a response's
+`statusText`, not a body. A message is built from these parts only:
+
+- `redactUrl(url)`.
+- Numbers and codes: `response.status`; an error's or a cause's `code`, `syscall`, `address`,
+  `port` and `hostname` when each is the type Node gives it (a string of `[A-Za-z0-9_.:-]`, or a
+  number), and nothing else from the object.
+- For an `AggregateError` cause (a host with several addresses, such as `localhost`), the same
+  parts of each entry of its `errors`.
+- The status's standard reason phrase from `node:http`'s `STATUS_CODES`, never the response's
+  own `statusText`.
+- A response's media type, only when it matches `type/subtype` in `[\w.+-]` characters.
+- A cause's message only when it is exactly one of a short list of constant strings measured on
+  the Node in use (for example `redirect count exceeded`). Exact equality cannot carry a secret.
+- An error's `name`, only when it is one word of letters.
+
+The shapes, all beginning `Model fetch failed: <redacted url> → `:
+
+| Failure                         | After the arrow                                             |
+| ------------------------------- | ----------------------------------------------------------- |
+| Non-2xx                         | `404 Not Found` (status and its standard phrase)            |
+| Network, one address            | `ECONNREFUSED 127.0.0.1:62198`                              |
+| Network, several addresses      | each one, comma-separated                                   |
+| Network, a known constant cause | that constant                                               |
+| The URL does not parse          | `not a URL that can be fetched`                             |
+| The URL holds `user:pass@`      | says so, and that the credential belongs in `fetch.headers` |
+| 2xx, body not JSON              | `200, but the body is not JSON (text/html)`                 |
+| Anything else                   | the error's name                                            |
+
+The timeout keeps its own sentence (`Model fetch timed out after <n>ms: <redacted url>`) and
+`checkHeaders` keeps its own. An error kiss built itself is passed on as it is, never rebuilt
+(finding 3: `https://api.example.com` was shown as `https://api.example.com//`). `(after N
+attempts)` stays. The thrown error is still a fresh `Error` with no `cause`.
+
+Classification reads facts kiss already has (does the URL parse, does it hold credentials, did
+the response arrive, which call threw), never the text of the error.
+
+Tests, red first: the review's four measured cases (`localhost` with nothing listening names
+each address tried; the two timeout URLs are shown as `redactUrl` gives them; an error quoting a
+raw query; a server whose status text and body carry a token); the twelve failure shapes of the
+close's review still put no token in the message, the stack or anything a logger is handed.
+
+### Workstream H — the rest (findings 2, 6 and 8)
+
+Owns `lib/utils.js`, `lib/config.js`, `lib/model-resolver.js`, `lib/aikb.js`,
+`lib/page-registry.js`, their unit tests except the two files G owns, their `AIKB/` docs,
+`GUIDE.md`, and `types/` through `npm run types`.
+
+- **2, an unparseable URL.** `redactUrl`'s fallback strips credentials with `[^/]*@`, so a
+  password holding a raw `/`, `?` or `#` is kept (`https://user:abc/def==@host/data?x=1`, and
+  `https://user:pa?ss@host/data` shows `pa`). A string the parser rejects cannot be told apart
+  into credentials, path and query, so the rule is by position of its last `@`. No `@`: as now.
+  The last `@` before the first `?` or `#`: everything between `://` and that `@` goes, then the
+  query rule as now. The last `@` after the first `?` or `#`: nothing after the scheme is safe to
+  show, and the result is `<scheme>://[redacted]`.
+- **6, an unset header.** `redactFetchHeaders` shows a value that is `undefined`, `null` or `''`
+  as it is, so a missing environment variable is visible under `verbose`. Any other value is
+  `[redacted]`, including the string `Bearer undefined`.
+- **8, one word and one test.** `REDACTED` becomes a named export of `lib/utils.js` (not on the
+  default `utils` object) and `lib/config.js` uses it. One `isUrlModel(model)` in `lib/utils.js`
+  replaces the three copies of `startsWith('http')`, with exactly today's meaning; if the three
+  differ, report it and change no behaviour.
+
+### The main session
+
+Findings 5 and 7 (the changelog's sentence on the fallback; the `llms.txt` line for the redacted
+header values, with something cut to stay under its cap), the changelog, `docs/`, this document,
+the session file, the mutation check, the gates and the commit.

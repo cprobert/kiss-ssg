@@ -71,7 +71,11 @@ describe('resolveModel', () => {
     }
     await expect(
       resolveModel('http://x', deps('m', { fetchImpl })),
-    ).rejects.toMatchObject({ message: 'boom' })
+    ).rejects.toMatchObject({
+      // The fetch's own text (`boom`) is never shown: kiss writes the message
+      // from the redacted URL and the error's name.
+      message: 'Model fetch failed: http://x/ → Error',
+    })
   })
 
   it('rejects an error response instead of using its JSON body as the model', async () => {

@@ -17,7 +17,7 @@
   {{markdown model.introduction}}
 &lt;/div&gt;
 </code></pre><p>If you want to take a peek at whats properties you have available to to in a handlebars file you can use this helper:</p><pre><code class="language-handlebars">{{{stringify this}}}
-</code></pre><p>It prints the page's whole context, the config included (with each <code>fetch.headers</code> value shown as <code>'[redacted]'</code>), into the built page, so it is for a look while you develop, not something to leave in a template.</p><p>You can put a YouTube or Vimeo video, a Google map or an Instagram post on a page so that nothing loads from the provider until the visitor clicks, on any site, with or without a cookie banner:</p><pre><code class="language-handlebars">{{embed 'youtube' id='VIDEO_ID' title='What the video shows'}}
+</code></pre><p>It prints the page's whole context, the config included (with each <code>fetch.headers</code> value shown as <code>'[redacted]'</code>, or as it is when <code>undefined</code>, <code>null</code> or empty), into the built page, so it is for a look while you develop, not something to leave in a template.</p><p>You can put a YouTube or Vimeo video, a Google map or an Instagram post on a page so that nothing loads from the provider until the visitor clicks, on any site, with or without a cookie banner:</p><pre><code class="language-handlebars">{{embed 'youtube' id='VIDEO_ID' title='What the video shows'}}
 </code></pre><p>The presets, the sizing and what changes under <code>config.consent</code> are in § Cookie consent, under Embeds.</p><p>You can compile Sass, either from a file or an inline block:</p><pre><code class="language-handlebars">{{{sass 'src/assets/main.scss'}}}
 
 {{#sass}}

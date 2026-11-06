@@ -33,6 +33,34 @@ describe('redactFetchHeaders', () => {
     })
   })
 
+  // An unset environment variable gives `undefined`; showing it as
+  // `[redacted]` would tell the author a token is there when it is not.
+  it('shows a value that is undefined, null or empty as it is', () => {
+    const copy = redactFetchHeaders({
+      fetch: {
+        headers: {
+          Authorization: undefined,
+          'X-Null': null,
+          'X-Empty': '',
+          'X-Set': 'SECRET-TOKEN-H',
+          'X-Bearer': 'Bearer undefined',
+          'X-Zero': 0,
+          'X-False': false,
+        },
+      },
+    })
+    expect(copy.fetch.headers).toEqual({
+      Authorization: undefined,
+      'X-Null': null,
+      'X-Empty': '',
+      'X-Set': '[redacted]',
+      'X-Bearer': '[redacted]',
+      'X-Zero': '[redacted]',
+      'X-False': '[redacted]',
+    })
+    expect('Authorization' in copy.fetch.headers).toBe(true)
+  })
+
   it('copies a config with no fetch, or no headers, as it stands', () => {
     expect(redactFetchHeaders({ siteUrl: 'x' })).toEqual({ siteUrl: 'x' })
     const noHeaders = { fetch: { timeout: 5 } }

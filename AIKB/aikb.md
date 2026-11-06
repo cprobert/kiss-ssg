@@ -15,7 +15,7 @@ Everything but the two writers is pure, and nothing anywhere reads a clock: two 
 ## Public interface
 
 - `isRecorded(folder)` → whether `<folder>/site-map.json` exists. The opt-in test, and synchronous: `lib/kiss.js` asks it once per settled build.
-- `classifyModel(model)` → `file:<name>` / `folder:<name>` / `url:<url>` / `inline` / `none`, from the **registered** model option. The same three string tests `resolveModel` makes, in the same order. The `<url>` is written by `redactUrl` (`lib/utils.js`): no credentials, no fragment, each query value `[redacted]` — `https://cdn.example.com/entries?access_token=SECRET&type=course` is recorded as `url:https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]`.
+- `classifyModel(model)` → `file:<name>` / `folder:<name>` / `url:<url>` / `inline` / `none`, from the **registered** model option. The same three string tests `resolveModel` makes, in the same order; the URL test is the one both import, `isUrlModel` (`lib/utils.js`). The `<url>` is written by `redactUrl` (`lib/utils.js`): no credentials, no fragment, each query value `[redacted]` — `https://cdn.example.com/entries?access_token=SECRET&type=course` is recorded as `url:https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]`.
 - `classifyController(controller)` → `file:<name>` / `inline` / `none`, from the registered controller option.
 - `pageOrigin(options)` → `{ model, controller }`. What `lib/kiss.js` calls in `page()`, before the chain replaces `options.model` with the resolved data.
 - `buildSiteMap({ stack, graph, config, pipeline, buildDir, stagingDir, readSubject })` → `SiteMap`: `{ site, pages[], partials{}, models[], controllers[], pipeline[], subjects[] }`, every list sorted. `pipeline` defaults to `config.assets.pipeline`; `readSubject(kind, id)` defaults to a reader that reads `folders.controllers/<id>` off disk.
@@ -31,7 +31,7 @@ Everything but the two writers is pure, and nothing anywhere reads a clock: two 
 
 ## Depends on
 
-`fs-extra`; `./utils.js` (`globFiles`, `hashId`, `posixPath`, `redactUrl`); `./build-report.js` (`reportedPath`, `reportedView` — both exported for this module).
+`fs-extra`; `./utils.js` (`globFiles`, `hashId`, `isUrlModel`, `posixPath`, `redactUrl`); `./build-report.js` (`reportedPath`, `reportedView` — both exported for this module).
 
 ## Depended on by
 

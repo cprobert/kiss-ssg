@@ -93,6 +93,14 @@ export function relativePathFor(fromPageURL: string, toPageURL: string): string;
  */
 export function hashId(input: unknown): string;
 /**
+ * Whether a model is a URL kiss fetches.
+ *
+ * @param {unknown} model a page's `model`, as the author wrote it
+ * @returns {boolean} true for a string that begins `http` (so `https://…`,
+ * and also any other string with that prefix), false for anything else
+ */
+export function isUrlModel(model: unknown): boolean;
+/**
  * A URL as kiss shows it, never as it fetches it.
  *
  * @param {unknown} url a model URL, as the author wrote it
@@ -102,12 +110,22 @@ export function hashId(input: unknown): string;
  * itself a value and becomes `[redacted]`, and an empty query is dropped.
  * Scheme, host, port and path are kept, in the form the WHATWG URL parser
  * gives them (host lowercased, a default port dropped, the path
- * percent-encoded). A string the parser rejects is cut at its first `?` or
- * `#`, any `user:pass@` dropped, and given `?[redacted]` when what was cut
- * began with `?`.
+ * percent-encoded). A string the parser rejects, or one whose scheme is not
+ * `http:` or `https:`, goes by its last `@`: when
+ * that `@` comes after the string's first `?` or `#`, only the scheme is
+ * kept (`https://[redacted]`); otherwise everything between the scheme and
+ * that `@` is dropped, the rest is cut at its first `?` or `#`, and given
+ * `?[redacted]` when what was cut began with `?`. The scheme is kept with
+ * the slashes or backslashes that follow it, as written.
  */
 export function redactUrl(url: unknown): string;
 export function isInside(directory: string): (file: string) => boolean;
+/**
+ * The word every redacted value is replaced with: a model URL's query values
+ * (`redactUrl`) and `fetch.headers` values (`lib/config.js`,
+ * `redactFetchHeaders`).
+ */
+export const REDACTED: "[redacted]";
 export default utils;
 declare namespace utils {
     export { trimLines };
