@@ -79,3 +79,41 @@ One fresh-context review of the whole branch diff at the close, scoped to `lib/`
 ## Version
 
 2.14.0, with `### Upgrading`: a failed model fails the build; the site map's pipeline step records `program` not `run`; a model URL's query is now recorded as `?[redacted]` whole.
+
+## Amended 2026-11-07 — after the fresh-context critique
+
+A fresh-context agent read this contract against the code before anything was built (eighteen findings; each re-checked in the main session against the lines it cited). What changes:
+
+**Order.** C lands first, alone: item 10 changes the `?name=[redacted]` expectations in `test/unit/fetch-policy.test.js`, `test/unit/model-resolver.test.js`, `test/unit/page-registry.test.js` and `test/integration/aikb.test.js`, which A and B own or nobody owns. C sweeps every one of those rows (grep `[redacted]`), the JSDoc in `lib/aikb.js` and `lib/utils.js`, `AIKB/aikb.md`, `AIKB/fetch-policy.md` and `GUIDE.md`'s sentence on what is recorded. A and B start from C's commit. D's example sweep still follows B. E is independent.
+
+**Workstream A.**
+
+- Item 1: measured on Node 24.14.0, `controller.abort()` after the headers rejects `response.json()` with an `AbortError` whose `code` is the number `20`. Today `part()` accepts a finite number, so that error would print `→ 20`. Item 4's code shape is string-only, which closes it; the floor (22.23.4) is measured by CI. After item 1, the timeout error's `own` marking is live and load-bearing: a timeout during the body read reaches `failureOf` with `arrived` set.
+- Item 2: `{ ...DEFAULT_FETCH, ...options }` lets an explicit `retries: undefined` override the default, so the guard in `fetchModel` handles `undefined` as well as `NaN`, and does not rely on `resolveConfig` having stripped it.
+- Item 4 gains a fifth field: a status is an integer from 100 to 599, read at `statusLine` and in `failureOf`. `part()` today prints a stub's `status: 'TOKENX'`.
+- Item 6 is not closed: `response.status < 500` is compared unguarded, so a stub's non-numeric status is retried. The status shape above guards both reads.
+- Item 5: the existing row asserting the cache-write throw is inverted, not added to.
+- Item 8 is narrower than written: the drop and redirect rows already run against the local server, and `bad port` and `unknown scheme` need none. The one timing-dependent row is `/drop`, where a socket destroyed before the headers can yield `ECONNRESET` rather than `other side closed`. That row is the whole item.
+- `npm run types` is run by the main session before each commit that changes a JSDoc type (`KissFetch`, `redactUrl`, `SiteMapPipelineStep`): `test/unit/types.test.js` is byte-identity and fails the gates otherwise.
+
+**Workstream B.**
+
+- Item 9's push must not double-count: the inner `try/catch` at the controller already pushes `{ view, buildTo: null, error }` and rethrows into the same `.catch`. The `.catch` pushes only for a rejection that did not pass through the inner block (mark the rethrown error, or move `resolveModel` inside the `try`). One push per failure, asserted.
+- B now owns the row "a bad model is logged and skipped" in `test/integration/lifecycle.test.js` (lines 15 to 33), which is inverted: `complete()` rejects, the page is named. The rename covers both messages: `Skipping: <file>` and `Invalid model <folder>`.
+- B owns the doc sentence and its contradiction: `GUIDE.md` § Waiting for the build ("A bad model is not a build failure") and `AIKB/kiss.md`'s two lines saying the same. The old sentence goes into `test/unit/skill-coverage.test.js`'s `CONTRADICTIONS` as one row (B's row in a file D also adds one row to: the main session merges).
+- Watch: `replaySession` keeps only `_carriedFailures`, so a model failure clears on the next rebuild without new code provided B does not carry it. B owns one new row in `test/unit/rebuild.test.js` proving a model file restored after a failed build clears the failure.
+
+**Workstream C.**
+
+- Item 10: the two credential rows (`@` and `/` in a password) already pass today and are pinning rows, not regression tests; only the whole-query row is seen red. The site map's model identity coarsens: two URL models differing only in a parameter name now merge into one source and one subject. `AIKB/aikb.md` says so.
+- Item 11's readers were wrong in the plan: `lib/check.js` and the skills never read `run`. The readers are `lib/aikb.js` line 793 (the committed `AIKB/README.md`'s "Asset pipeline" table renders `step.run`, a second committed home of a token), line 876 (README prose), `subjectsOf` at line 338 (the hash reads `map.pipeline[].run`, so with `run` gone the hash is taken from the config's pipeline, handed in), `types/aikb.d.ts`, and `test/integration/aikb.test.js` line 229. The subject hash stays the hash of the whole command, because change detection needs it; `AIKB/aikb.md` says a sha1 of a command is committed, and a token belongs in the environment, not the command line. Examples 9 and 11 have byte-identical committed `AIKB/` folders under test: C re-records them with `kiss-ssg aikb` after the shape change.
+
+**Workstream D.**
+
+- `verbose: true` is in 12 of the 14 routers (12 and 13 lack it); the scripts run `eg1` to `eg14`. `CLAUDE.md` § Commands says `eg12`: D corrects it.
+- `llms.txt` has 9 characters of headroom (15,991). Items 10 and 13 each add a trap line, so D cuts elsewhere for both; C hands its line to D through the main session.
+- Item 14: `AIKB/consent-client.md` does not contain the word "inferred". The claim is bullet 44 of that doc and the comments at `lib/consent-client.js` lines 305 and 317: those are what change to the measured sentence. `kiss-security` has no `skill-coverage` row today; D adds the first.
+
+**Workstream E.** `scripts/bench.mjs` exports `resolveSiteEntry`, pure and tested: reuse that, not `benchSite`, whose file check rejects a1k9training's `node router` (no extension). Zeroing pipeline durations is a no-op for `diffReports` and is kept only for the printed comparison.
+
+**Review.** Skipping Codex is a choice against the standing preference that credit is not a reason to skip it. The operator's reason, given 2026-11-06: no credits remain. Recorded, not inferred.
