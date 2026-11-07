@@ -69,7 +69,7 @@ token in every query and header writes no token anywhere.
   `err.failures`, as the examples do, needs nothing else.
 - **`config.fetch` is validated.** A `retries` or `timeout` read from an environment
   variable that is not set now stops the build at `new Kiss` with the setting's name;
-  one that is set to digits is read as the number, as before. `headers` must be a plain
+  one that is set to digits is read as the number. `headers` must be a plain
   object (not a `Headers` instance or pairs) and `cache` a folder or `false` (not
   `null` or `''`). Give each its shape, or the default by leaving the key out.
 - **An unnamed pipeline step whose command starts with a quoted path has a new name**,
