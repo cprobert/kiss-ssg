@@ -3,6 +3,7 @@ branch: fix/deferred-security-items
 base: main
 status: closed
 opened: 2026-11-07
+consolidated: 2026-11-07
 ---
 
 # Session — 2026-11-07: The fourteen items deferred from the security release

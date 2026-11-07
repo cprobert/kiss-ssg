@@ -3,6 +3,7 @@ branch: feat/kiss-security-and-headers
 base: main
 status: closed
 opened: 2026-11-05
+consolidated: 2026-11-07
 ---
 
 # Session — 2026-11-05: kiss-security, and kiss writes the host's headers file

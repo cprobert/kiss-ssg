@@ -3,6 +3,7 @@ branch: fix/security-hardening
 base: main
 status: closed
 opened: 2026-11-06
+consolidated: 2026-11-07
 ---
 
 # Session — 2026-11-06: Security hardening from the whole-codebase review
