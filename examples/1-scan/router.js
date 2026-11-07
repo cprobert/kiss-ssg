@@ -35,7 +35,6 @@ const kiss = new Kiss({
   ],
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
-  verbose: true,
   dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404
   // page, so the audit's checks for those three are turned off here, by name.

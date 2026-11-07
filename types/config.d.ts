@@ -22,9 +22,37 @@ export function formatsForHosts(hosts: KissHost[], concern: "redirects" | "cache
  */
 export function resolveMarkdownCopies(markdownCopies: any): KissMarkdownCopies;
 /**
+ * The fetch block with each key in the form the engine reads: `retries` and
+ * `timeout` given as a string of digits become numbers (2.13.2 took them that
+ * way, through `setTimeout`'s and `Math.max`'s coercion), and every key is
+ * then held to its shape by `assertFetchIsValid`. Both callers go through
+ * here, so a caller of `fetchModel` that never saw `resolveConfig` reads a
+ * string the same way.
+ *
+ * @param {Record<string, any>} fetch the fetch block over `DEFAULT_FETCH`
+ * @returns {KissFetch} the same block, numbers read
+ * @throws what `assertFetchIsValid` throws
+ */
+export function resolveFetch(fetch: Record<string, any>): KissFetch;
+/**
+ * Each key of a merged fetch block has its shape, or this throws. The message
+ * names the key and never the value: a value can be read from the
+ * environment, and `fetch.headers` is where a token goes. `resolveFetch` is
+ * the caller, from `resolveConfig` and from `lib/fetch-policy.js` for a
+ * caller that never went through `resolveConfig`.
+ *
+ * @param {Record<string, any>} fetch the fetch block over `DEFAULT_FETCH`
+ * @returns {void}
+ * @throws if `retries` is not a whole number of 0 or more, `timeout` is not a
+ * finite number of 0 or more, `headers` is not a plain object, or `cache` is
+ * not a non-empty string or `false`
+ */
+export function assertFetchIsValid(fetch: Record<string, any>): void;
+/**
  * @param {KissConfigInput} [userConfig]
  * @returns {KissConfig} the defaults with `userConfig` merged over them
- * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if
+ * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if a key of
+ * `fetch` is not its shape (`assertFetchIsValid`), if
  * `assets.pipeline` is not an array of `{ run: string }` steps, if
  * `links.hostServed` is not an array of `/`-rooted patterns, if `audit` is
  * malformed or ignores a check that does not exist, if `packages` is
@@ -93,9 +121,9 @@ export function redactFetchHeaders<T extends Record<string, any>>(config: T): T;
  * page, and merged exactly one level deep.
  *
  * @typedef {Object} KissFetch
- * @property {Record<string, string>} headers sent with every URL-model request
- * @property {number} timeout ms before the request is aborted and the page fails
- * @property {number} retries extra attempts after a network error or a 5xx
+ * @property {Record<string, string>} headers sent with every URL-model request; a plain object
+ * @property {number} timeout ms, 0 or more, before an attempt (its headers and its body) is aborted and the page fails; `0` waits for ever
+ * @property {number} retries extra attempts, a whole number of 0 or more, after a network error or a 5xx
  * @property {string|false} cache a directory to cache successful bodies in, or `false`
  */
 /**
@@ -482,15 +510,15 @@ export type KissFoldersInput = Partial<KissFolders>;
  */
 export type KissFetch = {
     /**
-     * sent with every URL-model request
+     * sent with every URL-model request; a plain object
      */
     headers: Record<string, string>;
     /**
-     * ms before the request is aborted and the page fails
+     * ms, 0 or more, before an attempt (its headers and its body) is aborted and the page fails; `0` waits for ever
      */
     timeout: number;
     /**
-     * extra attempts after a network error or a 5xx
+     * extra attempts, a whole number of 0 or more, after a network error or a 5xx
      */
     retries: number;
     /**

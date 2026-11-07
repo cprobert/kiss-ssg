@@ -156,7 +156,7 @@ describe('lookupPage', () => {
 // view. Those options are the author's as written, so a URL model still has its
 // query values and a page-level `config` still has its header values.
 describe('registerPage', () => {
-  it('logs a page with no view without its model URL’s query values or a header value', () => {
+  it('logs a page with no view without its model URL’s query or a header value', () => {
     const error = vi.fn()
     registerPage(
       { logger: { error } },
@@ -194,6 +194,68 @@ describe('registerPage', () => {
     registerPage({ logger: { error } }, { title: 'T', model }, '.')
     expect(error.mock.calls[0][1]).toEqual({ title: 'T', model })
   })
+})
+
+// A model that cannot be resolved is a build failure like a controller that
+// throws, and each failed page is ONE entry on `_failures`: the model and the
+// controller fail inside one chain, and two catches that each pushed would
+// count a controller failure twice.
+describe('registerPage: a page that fails before it is prepared', () => {
+  let site
+  afterEach(async () => {
+    if (site) await site.cleanup()
+    site = null
+  })
+
+  const fakeKiss = (root) => ({
+    config: {
+      folders: { models: `${root}/models`, controllers: `${root}/controllers` },
+      fetch: {},
+    },
+    logger: { error: vi.fn(), debug: vi.fn(), info: vi.fn() },
+    _replaying: false,
+    _scanning: false,
+    _scanned: new Set(),
+    _registrations: [],
+    _registrationDirectories: new Map(),
+    _registrationSeq: 0,
+    _promises: [],
+    _failures: [],
+    _preparePage: vi.fn(),
+    _prepareMultiplePages: vi.fn(),
+  })
+
+  it.each([
+    ['a missing .json model', { model: 'missing.json' }],
+    ['an empty model folder', { model: 'empty', dynamic: true }],
+    [
+      'a controller that throws',
+      {
+        model: { a: 1 },
+        controller: () => {
+          throw new Error('controller broke')
+        },
+      },
+    ],
+  ])(
+    'records %s once, by its view, and never rejects',
+    async (_label, extra) => {
+      site = await makeSite({ 'models/empty/readme.txt': 'no json' })
+      const kiss = fakeKiss(site.root)
+      registerPage(kiss, { view: 'page.hbs', ...extra }, '.')
+      expect(kiss._promises).toHaveLength(1)
+      const settled = await kiss._promises[0]
+      expect(settled.data).toBeNull()
+      expect(kiss._failures).toHaveLength(1)
+      expect(kiss._failures[0]).toEqual({
+        view: 'page.hbs',
+        buildTo: null,
+        error: settled.error,
+      })
+      expect(kiss._preparePage).not.toHaveBeenCalled()
+      expect(kiss._prepareMultiplePages).not.toHaveBeenCalled()
+    },
+  )
 })
 
 // `debug.json` is not gated on dev, so it can be deployed; `config` carries the

@@ -53,15 +53,20 @@ If no intent file (the harness auto-created the branch, or it wasn't opened with
 BASE=$(node scripts/base-branch.mjs) || exit 1
 git diff "$BASE...HEAD" --stat
 git status --short
+git fetch origin
+git rev-list --count "HEAD..refs/remotes/origin/<base name>"
 ```
 
 Establish what has changed since the last pulse, and **of what kind** — engine logic, public API, docs, or tooling. This decides which checks Step 3 runs: there is no value smoke-running an example on a docs-only change, or running the suite on a `planning/` edit.
+
+**The last two lines are the freshness check the close runs, run here too.** `<base name>` is what `node scripts/base-branch.mjs --name` prints. `git fetch` never moves a local branch, so the local base can sit behind GitHub's while the branch works on; a count of 0 is a silent pass, and a count above it is said in the pulse entry ("N commits behind `origin/<base name>`") with the recommendation to merge the base in now rather than at the close. Another session merged a release into the base mid-branch and the version number in this branch's Intent was already taken by the time the close looked (2026-11-06). If `git fetch` fails, or origin has no `<base name>`, say so and continue; never block a pulse on the network.
 
 ### Step 3 — Assess each success criterion, with evidence
 
 Go through the success criteria one at a time. For each, state **met / partial / not yet / drifted** and the **evidence** — never a vibe. Run only the checks the change warrants:
 
 - **Engine changed** (`lib/**`) → `npm test` (the cheap subset — **not** `npm run gates`; the full battery is the close's job). Narrow it while iterating: `npx vitest run test/unit/<module>.test.js`.
+- **The first engine slice of the branch has landed** (`lib/` changed since the base, and no review of it has run) → the independent review belongs **here**, not only at the close's Step 7. Ask the operator to run `/code-review` on the slice now, or run a fresh-context agent over `git diff <base>...HEAD -- lib bin` under a stop rule agreed first, and put its findings in this pulse's entry. A review at the close reads code that has been built on for days: the fleet check and the review that ran mid-branch each found a branch-made defect (2026-11-04), the operator's `/code-review` of the first fix commit was the only check all session that found the regression (2026-11-06), and the close's review is still owed either way.
 - **New module added** → `/test-coverage-check` (advisory, no flag) to surface logic lacking a `test/unit/` sibling early, so the close's `--gate` mode never surprises. If a `lib/` module was added or removed, also run `npx vitest run test/aikb.test.js` — it fails on a missing or unlisted `AIKB/` doc.
 - **Public API or generated output changed** → smoke-run the example that exercises it and look at what it wrote:
 
@@ -71,6 +76,13 @@ Go through the success criteria one at a time. For each, state **met / partial /
   ```
 
   **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Naming the artefact is this step's job; getting a human to look at it is **Step 4**, which is a stop rather than a bullet.
+
+- **The intent has a fleet criterion** (a real site built from the base and from the branch, `/branch-open` Step 3) → run it through the script, after committing, because it packs refs and never the working tree. It prints lines to paste into Step 7's entry and exits 1 when anything differs; each difference gets explained there. Name the site the criterion names:
+
+  ```bash
+  BASE=$(node scripts/base-branch.mjs) || exit 1
+  node scripts/fleet-check.mjs C:/Code/kiss/a1k9training --base "$BASE"
+  ```
 
 Speak in the supervision rubric's vocabulary (`.claude/skills/session-reflect/rubric.md`) — this beat exercises **Verification & ownership** and **Pushback & steering** above all.
 

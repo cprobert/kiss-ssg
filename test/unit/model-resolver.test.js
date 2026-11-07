@@ -23,11 +23,14 @@ describe('resolveModel', () => {
     ).resolves.toEqual({ id: 'a.json', data: { x: 1 } })
   })
 
-  it('rejects a missing json file with a Skipping message', async () => {
+  // The page is not skipped: a model that cannot be resolved fails the build
+  // (`lib/page-registry.js`), so the message says what is wrong, not what kiss
+  // did about it.
+  it('rejects a missing json file, naming it as not found', async () => {
     site = await makeSite({})
     await expect(
       resolveModel('nope.json', deps(`${site.root}/m`)),
-    ).rejects.toThrow('Skipping: nope.json')
+    ).rejects.toThrow('Model not found: nope.json')
   })
 
   it('loads every json in a folder as an array', async () => {
@@ -51,7 +54,14 @@ describe('resolveModel', () => {
   it('rejects an unknown folder', async () => {
     site = await makeSite({})
     await expect(resolveModel('ghost', deps(`${site.root}/m`))).rejects.toThrow(
-      'Invalid model ghost',
+      'Model folder empty or missing: ghost',
+    )
+  })
+
+  it('rejects a folder with no json in it, with the same message', async () => {
+    site = await makeSite({ 'm/empty/readme.txt': 'not a model' })
+    await expect(resolveModel('empty', deps(`${site.root}/m`))).rejects.toThrow(
+      'Model folder empty or missing: empty',
     )
   })
 
@@ -73,8 +83,10 @@ describe('resolveModel', () => {
       resolveModel('http://x', deps('m', { fetchImpl })),
     ).rejects.toMatchObject({
       // The fetch's own text (`boom`) is never shown: kiss writes the message
-      // from the redacted URL and the error's name.
-      message: 'Model fetch failed: http://x/ → Error',
+      // from the redacted URL and the error's name, and says the name is all
+      // it has.
+      message:
+        'Model fetch failed: http://x/ → an error kiss cannot describe (Error)',
     })
   })
 
@@ -288,7 +300,7 @@ describe('resolveModel: a token in the query string', () => {
 
   // A scheme is not case-sensitive and a leading space is a typo: fetch takes
   // both. Taken for a folder, such a model was never fetched and its whole
-  // spelling went into `Invalid model …` (code review of b8be845, 2026-11-06).
+  // spelling went into the folder message (code review of b8be845, 2026-11-06).
   it.each([
     ['an upper-case scheme', `HTTPS://cdn.example.com/entries?token=${TOKEN}`],
     ['a leading space', ` https://cdn.example.com/entries?token=${TOKEN}`],
@@ -302,17 +314,17 @@ describe('resolveModel: a token in the query string', () => {
   })
 
   // A string with a scheme kiss does not fetch is not a model at all, and its
-  // spelling is shown the way a URL's is: no credentials, no query value.
+  // spelling is shown the way a URL's is: no credentials, no query.
   it.each([
     [
       'a folder',
       `ftp://user:${TOKEN}@files.example.com/data?key=${TOKEN}`,
-      'Invalid model ftp://files.example.com/data?[redacted]',
+      'Model folder empty or missing: ftp://files.example.com/data?[redacted]',
     ],
     [
       'a file',
       `ftp://user:${TOKEN}@files.example.com/data.json`,
-      'Skipping: ftp://files.example.com/data.json',
+      'Model not found: ftp://files.example.com/data.json',
     ],
   ])(
     'shows a model with another scheme, read as %s, without its credentials',
@@ -340,10 +352,10 @@ describe('resolveModel: a token in the query string', () => {
     site = await makeSite({})
     const dir = `${site.root}/m`
     await expect(resolveModel('team/a b.json', deps(dir))).rejects.toThrow(
-      'Skipping: team/a b.json',
+      'Model not found: team/a b.json',
     )
     await expect(resolveModel('who?', deps(dir))).rejects.toThrow(
-      'Invalid model who?',
+      'Model folder empty or missing: who?',
     )
   })
 })

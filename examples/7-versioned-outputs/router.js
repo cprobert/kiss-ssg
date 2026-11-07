@@ -61,7 +61,6 @@ const kiss = new Kiss({
   // README "Building more than one site from one source tree".
   cleanBuild: 'atomic',
   dev: false,
-  verbose: true,
   // A teaching example, not a site: it publishes no share card, favicon or 404
   // page, so the audit's checks for those three are turned off here, by name.
   audit: {

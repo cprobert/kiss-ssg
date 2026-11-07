@@ -80,7 +80,6 @@ const kiss = new Kiss({
   // build with `aliases` writes only the IR and warns: kiss will
   // not guess a host and quietly emit a file yours does not read.
   redirects: { format: 'netlify' },
-  verbose: true,
   dev,
   port: 3011,
   livereloadPort: 35741,
@@ -233,8 +232,8 @@ kiss
     model: { latest: cards.slice(0, 3) },
   })
   .generate(function () {
-    // Dev only: under `verbose` it writes debug.json — every page's options
-    // and model — into the build, which a published site should not carry.
+    // Dev only: logs how many pages were queued and prepared. With
+    // `verbose: true` it also writes debug.json (example 2 shows it).
     if (dev) this.viewStats()
   })
   .sitemap()

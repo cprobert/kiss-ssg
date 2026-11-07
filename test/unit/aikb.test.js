@@ -102,8 +102,10 @@ describe('classifyModel', () => {
   })
 })
 
-describe('buildSiteMap: URL models that differ only in a query value', () => {
-  it('share one models row and one subject, listing both pages once', () => {
+// Every value is redacted and every name kept, so a value is no part of a URL
+// model's identity and a parameter's name is.
+describe('buildSiteMap: URL models that differ in their query', () => {
+  it('share one models row and one subject when only a value differs', () => {
     const result = map({
       stack: [
         entry('./public/a.html', {
@@ -127,6 +129,26 @@ describe('buildSiteMap: URL models that differ only in a query value', () => {
       },
     ])
     expect(JSON.stringify(result)).not.toMatch(/ONE|TWO/)
+  })
+
+  it('are two models rows and two subjects when a name differs', () => {
+    const result = map({
+      stack: [
+        entry('./public/a.html', {
+          model: classifyModel('https://cdn.example.com/e?page=1'),
+        }),
+        entry('./public/b.html', {
+          model: classifyModel('https://cdn.example.com/e?offset=1'),
+        }),
+      ],
+    })
+    const page = 'https://cdn.example.com/e?page=[redacted]'
+    const offset = 'https://cdn.example.com/e?offset=[redacted]'
+    expect(result.models).toEqual([
+      { source: `url:${offset}`, pages: ['./public/b.html'] },
+      { source: `url:${page}`, pages: ['./public/a.html'] },
+    ])
+    expect(result.subjects.map((subject) => subject.id)).toEqual([offset, page])
   })
 })
 
@@ -248,8 +270,28 @@ describe('buildSiteMap', () => {
       ],
     })
     expect(result.pipeline).toEqual([
-      { name: 'tailwind', run: 'npx tailwindcss -i a -o b' },
-      { name: 'sprite', run: '  sprite  --out x' },
+      { name: 'tailwind', program: 'npx' },
+      { name: 'sprite', program: 'sprite' },
+    ])
+  })
+
+  // The map is committed, and a command's arguments are where a token typed
+  // on the command line sits. The map records the program; the subject hash
+  // is still taken over the whole command, so a changed argument still
+  // restamps the step's note.
+  it('records a step’s program, never its command, and hashes the whole command', () => {
+    const run = 'node deploy.js --token SECRET-TOKEN-P'
+    const result = map({ pipeline: [{ name: 'deploy', run }] })
+    expect(result.pipeline).toEqual([{ name: 'deploy', program: 'node' }])
+    expect(JSON.stringify(result)).not.toContain('SECRET-TOKEN-P')
+    expect(renderSiteMap(result)).not.toContain('SECRET-TOKEN-P')
+    expect(result.subjects).toEqual([
+      {
+        kind: 'pipeline',
+        id: 'deploy',
+        note: 'notes/pipeline/deploy.md',
+        hash: sha1(run),
+      },
     ])
   })
 
@@ -944,9 +986,12 @@ describe('renderSiteMap', () => {
     expect(text).toContain('| models')
   })
 
-  it('escapes a pipe so a command cannot break out of its cell', () => {
-    const text = renderSiteMap(map({ pipeline: [{ name: 'x', run: 'a | b' }] }))
-    expect(text).toContain('`a \\| b`')
+  it('escapes a pipe so a program cannot break out of its cell', () => {
+    const text = renderSiteMap(
+      map({ pipeline: [{ name: 'x', run: 'a|b --flag' }] }),
+    )
+    expect(text).toContain('`a\\|b`')
+    expect(text).not.toContain('--flag')
   })
 })
 

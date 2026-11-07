@@ -21,7 +21,8 @@ export function isRecorded(folder: string | null | undefined): boolean;
  * A URL is recorded as `redactUrl` (`lib/utils.js`) writes it — each query
  * parameter's name kept and its value replaced by `[redacted]`, credentials
  * and fragment dropped — so two models that differ only in a query value are
- * one source and one subject.
+ * one source and one subject, and two that differ in a parameter's name are
+ * two.
  *
  * @param {unknown} model the *registered* model option
  * @returns {string} `file:<name>`, `folder:<name>`, `url:<redacted url>`, `inline` or `none`
@@ -91,7 +92,7 @@ export function noteSubjects(map: SiteMap): NoteSubject[];
  * Where a subject's note lives — a mechanical derivation from the subject's
  * id, so a person can work out the path without running anything:
  * `stockist.js` → `notes/controllers/stockist.md`,
- * `https://api.example.com/v2/events?x=[redacted]` → `notes/models/api.example.com-v2-events.md`,
+ * `https://api.example.com/v2/events?x=[redacted]` →`notes/models/api.example.com-v2-events.md`,
  * `tailwind` → `notes/pipeline/tailwind.md`.
  *
  * @param {NoteSubject} subject
@@ -253,9 +254,10 @@ export type SiteMapPipelineStep = {
      */
     name: string;
     /**
-     * the command
+     * the first word of its `run`: the program, never
+     * the command, whose arguments may carry a token into a committed file
      */
-    run: string;
+    program: string;
 };
 /**
  * A subject as the map records it: what it is, where its note goes, and what
@@ -275,7 +277,7 @@ export type SiteMapSubject = {
      */
     note: string;
     /**
-     * sha1 hex of what the subject *is* — the controller file's bytes with CRLF normalised to LF (so a Windows clone hashes the same), or the step's command — and `null` when there is nothing to hash (a URL model) or nothing to read (a controller file that is not there)
+     * sha1 hex of what the subject *is* — the controller file's bytes with CRLF normalised to LF (so a Windows clone hashes the same), or the step's whole command (from the config, not the map, which holds only the program) — and `null` when there is nothing to hash (a URL model) or nothing to read (a controller file that is not there)
      */
     hash: string | null;
 };

@@ -55,7 +55,6 @@ const kiss = new Kiss({
   // absolute URL — a scraper never resolves a relative one — and this is what
   // `absUrl` joins it onto; `{{canonical}}` reads it too.
   siteUrl: 'https://asterandoak.example',
-  verbose: true,
   dev,
   port: 3009,
   livereloadPort: 35739,
@@ -240,8 +239,8 @@ kiss
     console.log(
       `generate: index.html on disk when the callback ran: ${written}`,
     )
-    // Dev only: under `verbose` it writes debug.json — every page's options
-    // and model — into the build, which a published site should not carry.
+    // Dev only: logs how many pages were queued and prepared. With
+    // `verbose: true` it also writes debug.json (example 2 shows it).
     if (dev) this.viewStats()
   })
 

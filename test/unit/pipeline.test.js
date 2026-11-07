@@ -110,6 +110,37 @@ describe('createPipeline().run()', () => {
     expect(logger.error).toHaveBeenCalledWith(result.error.message)
   })
 
+  it('names a step by its name and program, never its command, in the log and the failure', async () => {
+    // A token typed into a command would otherwise reach the log and the
+    // report's failure text. The command is the author's own config; the
+    // program is enough to say which step.
+    const token = 'SECRET-TOKEN-1'
+    pipeline = createPipeline({
+      steps: [
+        { name: 'stamp', run: run(`process.exit(0) // ${token}`) },
+        { run: `${run(`process.exit(3) // ${token}`)}` },
+      ],
+      logger,
+    })
+
+    const [ok, broken] = await pipeline.run()
+
+    expect(ok.ok).toBe(true)
+    expect(broken.ok).toBe(false)
+    expect(broken.error.message).toContain('exit code 3')
+    const everything = [
+      ...lines(logger.info),
+      ...lines(logger.warn),
+      ...lines(logger.error),
+      broken.error.message,
+    ].join('\n')
+    expect(everything).not.toContain(token)
+    // The program is the quoted path, whole: a path with a space in it is
+    // one token, not two.
+    expect(lines(logger.info)).toContain(`pipeline: stamp — ${node}`)
+    expect(broken.name).toBe(node)
+  })
+
   it('attempts every step, so a report names each failure and not only the first', async () => {
     pipeline = createPipeline({
       steps: [

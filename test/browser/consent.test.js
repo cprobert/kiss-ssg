@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import sharp from 'sharp'
 import { silentLogger } from '../../lib/logger.js'
@@ -963,6 +964,133 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
       )
     } finally {
       await site.close()
+    }
+  }, 60000)
+
+  // Item 16 of the deferred security items (2026-11-07): a host that answers
+  // every unknown address with status 200 and a page. The root derived on
+  // /missing/404 is /missing/, and the file asked for there comes back as
+  // HTML with a 200, which fires the tag's `load`, not `error` (measured in
+  // Chromium 158 on 2026-11-06), so an `error` listener alone never falls
+  // back. The head part now also checks that the file ran, and falls back
+  // when it did not.
+  it('falls back to the root when a wrong path answers 200 with a page instead of the file', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/404.hbs': consentPage('<h1>Not found</h1>', 'Not found'),
+      },
+      CONSENT_CONFIG,
+    )
+    try {
+      const { context, page } = await open()
+      /** @type {string[]} */
+      const answered = []
+      // The catch-all host: the file at the wrong root is a page, status 200,
+      // no nosniff. A page route runs before the context's.
+      await page.route('**/missing/kiss-consent.*.js', (route) => {
+        answered.push(new URL(route.request().url()).pathname)
+        return route.fulfill({
+          status: 200,
+          contentType: 'text/html',
+          body: '<!doctype html><title>Not found</title><p>Not found</p>',
+        })
+      })
+      await page.goto(`${site.base}/missing/404`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await expect
+        .poll(async () => (await stored(context))?.c ?? null)
+        .toEqual({ statistics: false, marketing: false })
+      const client = await page.$$eval(
+        'script[data-kiss-consent-client]',
+        (tags) => tags.map((t) => /** @type {HTMLScriptElement} */ (t).src),
+      )
+      await context.close()
+      // The wrong path was asked once and answered with the page; the root
+      // was asked next, and the client ran from there.
+      expect(answered).toEqual([
+        expect.stringMatching(/^\/missing\/kiss-consent\./),
+      ])
+      expect(client).toEqual([
+        expect.stringMatching(/\/missing\/kiss-consent\.[0-9a-f]+\.js$/),
+        expect.stringMatching(
+          new RegExp(
+            `^${site.base.replace(/[.]/g, '\\.')}/kiss-consent\\.[0-9a-f]+\\.js$`,
+          ),
+        ),
+      ])
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
+  // Item 14 of the deferred security items (2026-11-07): the origin guard
+  // compares `protocol` and `host` because every file: URL has one origin
+  // whatever its host (Chromium serialises it as `file://`). Measured here
+  // rather than inferred: a built page opened from the disk, every request it
+  // makes recorded (no route, so nothing is stubbed).
+  it('on a page opened by file://, loads the cached client from the page’s own folder and requests nothing else', async () => {
+    if (!browser) throw new Error('no browser')
+    const site = await makeSite(FILES)
+    try {
+      const kiss = new Kiss({
+        folders: site.folders,
+        siteUrl: `https://${HOST}`,
+        logger: silentLogger,
+        consent: CONSENT_CONFIG,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      await kiss.close()
+      const folder = pathToFileURL(site.build).href
+      const context = await browser.newContext()
+      /** @type {string[]} */
+      const requests = []
+      context.on('request', (req) => requests.push(req.url()))
+      const page = await context.newPage()
+      await page.goto(`${folder}/index.html`)
+      await expect
+        .poll(() => page.evaluate(() => Boolean(window.__kissConsent?.ready)))
+        .toBe(true)
+      // Why the guard compares `protocol` + `host` and not `origin`: this
+      // page and a file on another host (`file://evil/`) have one origin.
+      const seen = await page.evaluate(() => ({
+        origin: new URL(window.location.href).origin,
+        otherHost: new URL('file://evil/kiss-consent.js').origin,
+        host: new URL(window.location.href).host,
+        otherHostHost: new URL('file://evil/kiss-consent.js').host,
+        client: Array.from(
+          document.querySelectorAll('script[data-kiss-consent-client]'),
+          (t) => /** @type {HTMLScriptElement} */ (t).src,
+        ),
+      }))
+      await context.close()
+      // Compared decoded: `pathToFileURL` writes a `~` in the path as `%7E`
+      // (the Windows runner's temp folder is the short name `RUNNER~1`) and
+      // Chromium reports the script's `src` with the `~` itself.
+      const plain = (/** @type {string} */ url) => decodeURIComponent(url)
+      const own = new RegExp(
+        `^${plain(folder).replace(/[.]/g, '\\.')}/kiss-consent\\.[0-9a-f]+\\.js$`,
+      )
+      expect({ ...seen, client: seen.client.map(plain) }).toEqual({
+        // Chromium serialises a file: origin as `file://`, not the spec's
+        // `null`; either way the two hosts compare equal.
+        origin: 'file://',
+        otherHost: 'file://',
+        host: '',
+        otherHostHost: 'evil',
+        client: [expect.stringMatching(own)],
+      })
+      const made = requests.map(plain)
+      expect(
+        made.filter((url) => !url.startsWith(`${plain(folder)}/`)),
+      ).toEqual([])
+      expect(made).toContain(plain(seen.client[0]))
+    } finally {
+      await site.cleanup()
     }
   }, 60000)
 

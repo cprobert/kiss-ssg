@@ -6,7 +6,8 @@ Runs the external commands of `config.assets.pipeline` — a CSS toolchain, an i
 
 ## Public interface
 
-- `stepName(step)` → the name a step is logged and reported under: its own `name`, or the first word of its `run` (`npx`, `node`, `sass`), or `'pipeline'` if there is neither.
+- `programOf(run)` → the program a command runs: its first token, whole when it is quoted (`"C:\Program Files\nodejs\node.exe" -e …` is one program). The one part of a command kiss prints or records: the log line (`pipeline: <name> — <program>`), the failure message (`pipeline step "<name>" failed (<how>): <program>`) and the site map's `program` (`lib/aikb.js`) all use it, never `run` itself, because a command's arguments are where a token typed on the command line sits, and the log and the report are not the place for it.
+- `stepName(step)` → the name a step is logged and reported under: its own `name`, or `programOf(step.run)` (`npx`, `node`, `sass`), or `'pipeline'` if there is neither.
 - `createPipeline({ steps, logger, dev })` → `{ run, close, watching }`. One per `Kiss` instance, created in the constructor and closed in `close()`.
   - `run(env)` → `Promise<PipelineResult[]>`, one `{ name, ok, duration, error? }` per step, in order. Each step's `run` is spawned with `shell: true` in `step.cwd` (default `process.cwd()`) with `{ ...process.env, ...env }`, and awaited before the next starts. **Never rejects**; a failed step is a result carrying its `error`. In `dev` mode a step that has a `watch` command and whose `run` succeeded also gets that watch process started, once.
   - `close()` → `Promise<void>`: SIGTERM to every watch process's process group, SIGKILL after `KILL_GRACE` (2s), resolving once they have all gone. On Windows, where there are no process groups, both phases are a `taskkill /T /F` of the child's tree instead. A closed pipeline stays closed — a later `run()` runs its steps but starts no watch process.
@@ -19,7 +20,7 @@ Runs the external commands of `config.assets.pipeline` — a CSS toolchain, an i
 
 ## Depended on by
 
-`lib/kiss.js` (creates one per instance, runs it at construction and on every whole-site replay, closes it in `close()`); `lib/config.js` and `lib/build-report.js` for the two typedefs.
+`lib/kiss.js` (creates one per instance, runs it at construction and on every whole-site replay, closes it in `close()`); `lib/aikb.js` (`stepName`, `programOf`, for the site map's pipeline rows); `lib/config.js` and `lib/build-report.js` for the two typedefs.
 
 ## Non-obvious behavior
 

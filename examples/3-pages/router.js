@@ -31,7 +31,6 @@ const kiss = new Kiss({
     { href: 'index.html', label: 'Home' },
     { href: 'roasts/index.html', label: 'Roasts', folderMatch: true },
   ],
-  verbose: true,
   dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404
   // page, so the audit's checks for those three are turned off here, by name.
@@ -76,8 +75,8 @@ kiss
         })),
       }),
     }).generate(function () {
-      // Dev only: under `verbose` it writes debug.json — every page's options
-      // and model — into the build, which a published site should not carry.
+      // Dev only: logs how many pages were queued and prepared. With
+      // `verbose: true` it also writes debug.json (example 2 shows it).
       if (dev) this.viewStats()
     })
   })

@@ -1,6 +1,16 @@
 /**
- * The name a step is logged and reported under: its own `name`, or the first
- * word of its command (`npx`, `node`, `sass`), which is what an operator
+ * The program a command runs: its first token, whole when it is quoted
+ * (`"C:\Program Files\nodejs\node.exe" -e …` is one program, not two words).
+ * The one thing of a command kiss prints or records (`lib/aikb.js`): the
+ * rest is its arguments, which is where a token typed into a command sits.
+ *
+ * @param {unknown} run the command, as the author wrote it
+ * @returns {string} the program, or `''` for an empty command
+ */
+export function programOf(run: unknown): string;
+/**
+ * The name a step is logged and reported under: its own `name`, or the
+ * program its command runs (`npx`, `node`, `sass`), which is what an operator
  * reading a log would call it anyway.
  *
  * @param {PipelineStep} step

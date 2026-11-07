@@ -37,8 +37,8 @@ Two operations, always in this order:
 Scan only committed diff lines (lines beginning with `+`) — not the working tree. Exclude known-safe paths:
 
 ```bash
-BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff "$BASE...HEAD" \
+git fetch origin
+git diff "refs/remotes/origin/<base name>...HEAD" \
   -- ':(exclude).env*' \
   -- ':(exclude)*.example' \
   -- ':(exclude)*.md' \
@@ -47,6 +47,8 @@ git diff "$BASE...HEAD" \
   -- ':(exclude)test/' \
   -- ':(exclude)examples/'
 ```
+
+`<base name>` is what `node scripts/base-branch.mjs --name` prints, and the diff is against **origin's** copy of it, after a fetch: `git fetch` never moves a local branch, so a local base that was never pulled shows every file other branches merged since as "added by this branch" (seven commits' worth of other work was scanned as this branch's on 2026-11-05). If `git fetch` fails, or origin has no `<base name>`, say so and diff against the local base (`$(node scripts/base-branch.mjs)`) instead. The same applies to the two blocks in Step 2.
 
 In the output, look for added lines (`+`) that match any of:
 
@@ -71,8 +73,7 @@ If hits are found: surface them and ask the operator to confirm each is not a re
 An SSG's attack surface is not authentication — it is what the engine reads, executes, and writes, on a developer's machine. Check whether the diff touches it:
 
 ```bash
-BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only "$BASE...HEAD" -- lib/model-resolver.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js lib/image-header.js lib/image-encode.js lib/images-sweep.js lib/css-purge.js lib/cache-headers.js lib/speed.js package.json
+git diff --name-only "refs/remotes/origin/<base name>...HEAD" -- lib/model-resolver.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js lib/image-header.js lib/image-encode.js lib/images-sweep.js lib/css-purge.js lib/cache-headers.js lib/speed.js package.json
 ```
 
 It lists the files in the table below that the branch changed, and nothing else; no output means none. A row added to the table is added to this command in the same commit. Why each one:
@@ -98,8 +99,7 @@ It lists the files in the table below that the branch changed, and nothing else;
 **The table names files, so it cannot see a new one.** Code that reaches this surface can move into a module the table has never heard of — twice now: two new parsers of untrusted input (2026-10-01), then `lib/page-registry.js` and `lib/staging.js`, which took over the calls into the model and controller resolvers and the renames beside the build folder (2026-10-03). Neither matched, and the review happened only because Claude read past the grep. So also list every `lib/` module the branch **adds**, and every changed one that **imports** a module in the table:
 
 ```bash
-BASE=$(node scripts/base-branch.mjs) || exit 1
-git diff --name-only --diff-filter=A "$BASE...HEAD" -- ':(glob)lib/*.js'
+git diff --name-only --diff-filter=A "refs/remotes/origin/<base name>...HEAD" -- ':(glob)lib/*.js'
 grep -l -E "from '\./(model-resolver|controller-resolver|dev-server|watcher|assets|kiss-page)\.js'" lib/*.js
 ```
 

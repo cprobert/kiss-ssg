@@ -1040,6 +1040,16 @@ const COVERAGE = [
       'plugins/kiss-ssg/skills/kiss-performance/references/pipeline-recipes.md',
     ],
   },
+  // 2026-11-07, item 13 of the deferred security items: `markdown.html` is
+  // true by default, so a `<script>` in Markdown a CMS serves is written into
+  // the page as the site's script. `html: false` is the opt-out, and the
+  // security skill is where an agent building a CMS-fed site meets it.
+  {
+    feature:
+      'kiss-security: Markdown a CMS serves renders its HTML; markdown: { html: false }',
+    pattern: /`markdown\.html`[\s\S]*`markdown: \{ html: false \}`/,
+    skills: [skill('kiss-ssg', 'kiss-security')],
+  },
   // 2026-11-05, the operator: fonts self-hosted through Fontsource, which
   // gives a font service's per-script split without the third party. Run as
   // written through a kiss build and loaded in Chromium: one Latin file
@@ -1139,6 +1149,14 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '2.14.0: a model that cannot be resolved fails the build, named by its view, once per page; a sentence saying it is logged and the page skipped is the behaviour that replaced',
+    patterns: [
+      /A bad model is not a build failure/,
+      /Model failures are _not_ build failures/,
+      /keep(s)? (the documented |its )?log-and-skip behaviour/,
+    ],
+  },
   {
     why: "2.13.0: a site with no config.consent sets its embed wording with `embeds: { text }`, or one embed's with load=, notice= and open=, so a sentence saying the wording can only be changed through config.consent is the rule that replaced",
     patterns: [/to change it, use `config\.consent`/],

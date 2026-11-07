@@ -86,7 +86,6 @@ const kiss = new Kiss({
       },
     ],
   },
-  verbose: true,
   dev,
   port: 3010,
   livereloadPort: 35740,
@@ -120,9 +119,9 @@ kiss
   })
   .generate(function () {
     // `report()` is null until complete() settles; the pipeline is reported
-    // there as `[{ name, ok, duration }]`. Dev only: under `verbose` this
-    // writes debug.json — every page's options and model — into the build,
-    // which a published site should not carry.
+    // there as `[{ name, ok, duration }]`. Dev only: this logs how many pages
+    // were queued and prepared (with `verbose: true` it would also write
+    // debug.json, as example 2 shows).
     if (dev) this.viewStats()
   })
 

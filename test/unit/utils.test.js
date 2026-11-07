@@ -324,11 +324,20 @@ describe('isInside', () => {
 })
 
 describe('redactUrl', () => {
-  it.each([
-    [
+  // kiss cannot know which value is the secret, so every value is redacted;
+  // a parameter's name is kept, because it is what tells one model from
+  // another in a log line or a site-map row (`?page=` against `?type=`).
+  it("keeps each parameter's name and replaces its value", () => {
+    const shown = redactUrl(
       'https://cdn.example.com/entries?access_token=SECRET&type=course',
+    )
+    expect(shown).toBe(
       'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
-    ],
+    )
+    expect(shown).not.toContain('SECRET')
+  })
+
+  it.each([
     // No credentials, no fragment.
     [
       'https://user:pass@cdn.example.com/x?k=v#frag',
@@ -411,6 +420,18 @@ describe('redactUrl', () => {
       expect(redactUrl(url)).toBe(shown)
     },
   )
+
+  // Pinning rows, not regression tests: these passed before they were
+  // written, and hold what the parser does with a password that holds an
+  // `@` (it takes the last `@` as the end of the credentials, so username and
+  // password are dropped whole) or a `/` (it ends the authority there and
+  // refuses the port, so the string goes by its last `@`).
+  it.each([
+    ['https://user:p@ss@api.example.com/data', 'https://api.example.com/data'],
+    ['https://user:pa/ss@api.example.com/data', 'https://api.example.com/data'],
+  ])('pinning: writes %s, a password holding @ or /, as %s', (url, shown) => {
+    expect(redactUrl(url)).toBe(shown)
+  })
 
   it('is not on the public utils object', () => {
     expect(utils).not.toHaveProperty('redactUrl')

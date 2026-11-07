@@ -226,7 +226,9 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
         `${site.build}/team/bo.html`,
       ],
     })
-    expect(map.pipeline).toEqual([{ name: 'stamp', run: `${node} -e "0"` }])
+    // The program, not the command: the quoted node path whole, as the step's
+    // name falls back to. The subject's hash above is the whole command's.
+    expect(map.pipeline).toEqual([{ name: 'stamp', program: node }])
     // The same rows are the last key of the map on disk — which is what a
     // note is stamped from once the record has been made.
     expect(Object.keys(map).at(-1)).toBe('subjects')
@@ -435,6 +437,51 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
   })
 })
 
+// Every file under a folder, as text, with its path relative to the site.
+const walk = async (dir) => {
+  const out = []
+  for (const name of await fs.readdir(dir)) {
+    const file = `${dir}/${name}`
+    if ((await fs.stat(file)).isDirectory()) out.push(...(await walk(file)))
+    else out.push([file, await fs.readFile(file, 'utf8')])
+  }
+  return out
+}
+
+// A pipeline step's command is where a token typed on the command line sits.
+// The knowledge base is committed, so it records the step's program and the
+// sha1 of the whole command, never the command itself.
+describe('a token in a pipeline step’s command', () => {
+  it('records no token anywhere under AIKB, and hashes the whole command', async () => {
+    const TOKEN = 'SECRET-TOKEN-P'
+    const run = `${node} -e "0" ${TOKEN}`
+    site = await makeSite({ 'src/pages/index.hbs': '<h1>x</h1>' })
+    record()
+    kiss = new Kiss({
+      logger: silentLogger,
+      folders: { ...site.folders, aikb: `${site.root}/AIKB` },
+      assets: { pipeline: [{ name: 'stamp', run }] },
+    })
+    kiss.page({ view: 'index.hbs' }).generate()
+    await kiss.complete()
+
+    const files = await walk(`${site.root}/AIKB`)
+    expect(files.length).toBeGreaterThan(0)
+    for (const [file, text] of files)
+      expect(text, `${file} names the token`).not.toContain(TOKEN)
+    const map = JSON.parse(await site.read('AIKB/site-map.json'))
+    expect(map.pipeline).toEqual([{ name: 'stamp', program: node }])
+    expect(map.subjects).toEqual([
+      {
+        kind: 'pipeline',
+        id: 'stamp',
+        note: 'notes/pipeline/stamp.md',
+        hash: sha1(run),
+      },
+    ])
+  })
+})
+
 // A model URL with a token in its query string. The knowledge base is
 // committed and the log is read by people other than the author, so both name
 // the URL with every query value redacted; the fetch, and the id the author
@@ -449,17 +496,6 @@ describe('a token in a URL model’s query string', () => {
     makeSite({
       'src/pages/entries.hbs': '<p>{{model.count}}</p>',
     })
-
-  // Every file under a folder, as text, with its path relative to the site.
-  const walk = async (dir) => {
-    const out = []
-    for (const name of await fs.readdir(dir)) {
-      const file = `${dir}/${name}`
-      if ((await fs.stat(file)).isDirectory()) out.push(...(await walk(file)))
-      else out.push([file, await fs.readFile(file, 'utf8')])
-    }
-    return out
-  }
 
   // Every call on every logger level, printed the way `console.*` would print
   // it: an Error with its stack, its `cause` and its own properties.
@@ -531,12 +567,20 @@ describe('a token in a URL model’s query string', () => {
     const { logger, lines } = recordingLogger()
     kiss = new Kiss({ logger, folders: site.folders })
     kiss.page({ view: 'entries.hbs', model: REAL }).generate()
-    const data = await kiss.complete().catch((error) => error)
+    const err = await kiss.complete().then(
+      () => null,
+      (error) => error,
+    )
 
     const text = lines.join('\n')
     expect(text).toContain(`Model fetch failed: ${SHOWN} → 404 Not Found`)
     expect(text).not.toContain(TOKEN)
-    // The author's own handle on the failure still names the real URL.
-    expect(data.find((d) => d.error)?.id).toBe(REAL)
+    // A model that cannot be fetched fails the build, named by its view, and
+    // the failure the author is handed carries no token either.
+    expect(err).toBeInstanceOf(AggregateError)
+    expect(err.failures.map((f) => f.view)).toEqual(['entries.hbs'])
+    expect(kiss.report().ok).toBe(false)
+    expect(inspect(err.failures, { depth: Infinity })).not.toContain(TOKEN)
+    expect(JSON.stringify(kiss.report())).not.toContain(TOKEN)
   })
 })

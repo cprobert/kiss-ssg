@@ -396,7 +396,24 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
         )
       if (path === '/text') return send(200, TOKEN, 'text/plain')
       if (path === '/odd-type') return send(200, TOKEN, TOKEN)
-      if (path === '/drop') return req.socket.destroy()
+      // `end()`, a FIN, rather than `destroy()`: a destroy can reach the
+      // client as a reset (ECONNRESET) instead of a close, depending on what
+      // the socket still holds. Measured on Node 24.14.0, 200 rounds each:
+      // both gave `other side closed` every time; `end()` is the one with no
+      // reset in its path.
+      if (path === '/drop') return req.socket.end()
+      if (path === '/midbody') {
+        res.writeHead(200, {
+          'content-type': 'application/json',
+          'content-length': '100',
+        })
+        return res.write('{"a":', () => req.socket.end())
+      }
+      // The headers, and then nothing: the body never arrives.
+      if (path === '/silent-body') {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        return res.flushHeaders()
+      }
       if (path === '/redirect') {
         res.writeHead(302, { location: req.url })
         return res.end()
@@ -464,6 +481,11 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
       'a dropped socket',
       () => `${base}/drop${q}`,
       'other side closed (UND_ERR_SOCKET)',
+    ],
+    [
+      'a socket closed in the middle of the body',
+      () => `${base}/midbody${q}`,
+      '200, but the body could not be read: other side closed (UND_ERR_SOCKET)',
     ],
     [
       'a redirect loop',
@@ -593,7 +615,9 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
         throw new Error('bad thing at ?q=sec ret here')
       },
     })
-    expect(error.message).toBe(`Model fetch failed: ${redactUrl(url)} → Error`)
+    expect(error.message).toBe(
+      `Model fetch failed: ${redactUrl(url)} → an error kiss cannot describe (Error)`,
+    )
     expect(everything).not.toContain('sec ret')
   })
 
@@ -652,27 +676,204 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
     expect(everything).not.toContain(TOKEN)
   })
 
-  // A disk that refuses the cache write is not a reason to fetch again, and
-  // its message names the hashed cache file, never the URL.
-  it('fails a cache write once, without fetching again', async () => {
+  // A disk that refuses the cache write is not a reason to fetch again, nor to
+  // lose a model that arrived: the build uses it uncached and says so. The
+  // warning names the hashed cache file, never the URL.
+  it('warns on a failed cache write and returns the model, without fetching again', async () => {
     site = await makeSite({})
     const cache = `${site.root}/not-a-folder`
     await fs.writeFile(cache, 'a file where the cache folder should be')
     let calls = 0
     const url = `https://api.example.com/x${q}`
-    const { error, everything } = await failure(url, {
+    const warned = []
+    const data = await fetchModel(url, {
       fetchImpl: async () => {
         calls++
         return ok({ a: 1 })
       },
       cache,
       retries: 2,
+      logger: { ...silentLogger, warn: (...args) => warned.push(args) },
     })
+    expect(data).toEqual({ a: 1 })
     expect(calls).toBe(1)
-    expect(error.message).toMatch(
-      /^Model cache write failed: .*not-a-folder\/[0-9a-f]+\.json → [A-Z]+$/,
+    expect(warned).toHaveLength(1)
+    expect(warned[0].join(' ')).toMatch(
+      /^Model cache write failed: .*not-a-folder\/[0-9a-f]+\.json → [A-Z]+/,
     )
+    expect(inspect(warned, { depth: Infinity })).not.toContain(TOKEN)
+    expect(inspect(warned, { depth: Infinity })).not.toContain('api.example')
+  })
+
+  // One timer per attempt covers the headers and the body. Before, the race
+  // ended when the headers arrived, and a body that never came hung the build.
+  it('times out a body that never arrives', async () => {
+    const url = `${base}/silent-body${q}`
+    const started = Date.now()
+    const { error, everything } = await failure(url, { timeout: 300 })
+    expect(error.message).toBe(
+      `Model fetch timed out after 300ms: ${redactUrl(url)}`,
+    )
+    expect(Date.now() - started).toBeLessThan(1500)
     expect(everything).not.toContain(TOKEN)
+  }, 3000)
+
+  // Refused before the first attempt: no fetch, so no Node error to describe
+  // and no attempt count.
+  it.each([
+    [`http://exa mple.invalid/x${q}`, 'not a URL that can be fetched'],
+    [
+      `http://USER-G:${PASSWORD}@127.0.0.1:${1}/x${q}`,
+      'the URL holds a user name or password',
+    ],
+  ])('refuses %s before any attempt', async (url, said) => {
+    let calls = 0
+    const { error, everything } = await failure(url, {
+      fetchImpl: async () => {
+        calls++
+        throw new TypeError('fetch failed')
+      },
+      retries: 2,
+    })
+    expect(calls).toBe(0)
+    expect(error.message).toContain(said)
+    expect(error.message).not.toContain('attempts')
+    expect(everything).not.toContain(TOKEN)
+    expect(everything).not.toContain(PASSWORD)
+  })
+
+  // Each part has the shape Node's own value has, and only that shape is
+  // shown: a replaced `fetch` can put a secret in a field only as a value of
+  // that field's shape.
+  const causing = (cause) => async () => {
+    throw new TypeError('fetch failed', { cause })
+  }
+  it.each([
+    ['a code that is not upper case', { code: 'tok3n-SECRET' }],
+    ['a code that is a number', { code: 20 }],
+    ['an address that is not an IP', { address: 'SECRET.not.an.ip' }],
+    [
+      'a port that is not a number',
+      { code: 'ECONNREFUSED', address: '127.0.0.1', port: 'SECRET' },
+    ],
+    ['a port out of range', { address: '127.0.0.1', port: 70000 }],
+    ['a host name with an underscore', { hostname: 'SECRET_host' }],
+  ])('does not show %s', async (_label, fields) => {
+    const url = `https://api.example.com/x${q}`
+    const { error, everything } = await failure(url, {
+      fetchImpl: causing(Object.assign(new Error('x'), fields)),
+    })
+    expect(everything).not.toContain('SECRET')
+    expect(everything).not.toContain('70000')
+    expect(error.message).not.toMatch(/→ .*20/)
+  })
+
+  it('reads a status that is not a number as one kiss cannot read, and does not retry it', async () => {
+    let calls = 0
+    const url = `https://api.example.com/x${q}`
+    const { error, everything } = await failure(url, {
+      fetchImpl: async () => {
+        calls++
+        return { ok: false, status: 'TOKENX', statusText: 'TOKENX' }
+      },
+      retries: 2,
+    })
+    expect(error.message).toBe(
+      `Model fetch failed: ${redactUrl(url)} → a status kiss cannot read`,
+    )
+    expect(everything).not.toContain('TOKENX')
+    expect(calls).toBe(1)
+  })
+
+  it('does not show a 2xx status that is not a number', async () => {
+    const url = `https://api.example.com/x${q}`
+    const { error, everything } = await failure(url, {
+      fetchImpl: async () => ({
+        ok: true,
+        status: 'TOKENX',
+        json: async () => {
+          throw new SyntaxError('TOKENX')
+        },
+      }),
+    })
+    expect(error.message).toBe(
+      `Model fetch failed: ${redactUrl(url)} → a status kiss cannot read, but the body is not JSON`,
+    )
+    expect(everything).not.toContain('TOKENX')
+  })
+
+  // Measured on Node 24.14.0 (2026-11-07) against a local https server with a
+  // self-signed certificate: a constant message, with a code.
+  it('says a self-signed certificate, from the short list', async () => {
+    const url = `https://api.example.com/x${q}`
+    const { error } = await failure(url, {
+      fetchImpl: causing(
+        Object.assign(
+          new Error(
+            'self-signed certificate; if the root CA is installed locally, try running Node.js with --use-system-ca',
+          ),
+          { code: 'DEPTH_ZERO_SELF_SIGNED_CERT' },
+        ),
+      ),
+    })
+    expect(error.message).toBe(
+      `Model fetch failed: ${redactUrl(url)} → self-signed certificate; if the root CA is installed locally, try running Node.js with --use-system-ca (DEPTH_ZERO_SELF_SIGNED_CERT)`,
+    )
+  })
+
+  // `{ ...DEFAULT_FETCH, ...options }` let an explicit `undefined` replace the
+  // default, and `Math.max(0, NaN)` ran the loop no times: the fetch rejected
+  // with `undefined`.
+  it('takes the default for a policy key passed as undefined', async () => {
+    await expect(
+      fetchModel('https://api.example.com/x', {
+        fetchImpl: async () => ok({ a: 1 }),
+        retries: undefined,
+        timeout: undefined,
+        logger: silentLogger,
+      }),
+    ).resolves.toEqual({ a: 1 })
+  })
+
+  it('reads retries and timeout given as strings of digits, like resolveConfig', async () => {
+    // A caller that never went through `resolveConfig`, with the values an
+    // environment variable gives: `'1'` retries means two attempts.
+    let calls = 0
+    await expect(
+      fetchModel('https://api.example.com/x', {
+        fetchImpl: async () => {
+          calls++
+          return calls === 1
+            ? { ok: false, status: 503, headers: new Headers() }
+            : ok({ a: 1 })
+        },
+        retries: '1',
+        timeout: '5000',
+        logger: silentLogger,
+      }),
+    ).resolves.toEqual({ a: 1 })
+    expect(calls).toBe(2)
+  })
+
+  it.each([
+    ['retries', Number(undefined)],
+    ['retries', -1],
+    ['retries', 1.5],
+    ['timeout', Number.NaN],
+    ['timeout', -5],
+    ['timeout', Infinity],
+  ])('refuses fetch.%s of %s with its own error', async (key, value) => {
+    let calls = 0
+    const { error } = await failure('https://api.example.com/x', {
+      fetchImpl: async () => {
+        calls++
+        return ok({ a: 1 })
+      },
+      [key]: value,
+    })
+    expect(error).toBeInstanceOf(Error)
+    expect(error.message).toContain(`fetch.${key}`)
+    expect(calls).toBe(0)
   })
 
   it('is a fresh Error with no cause', async () => {

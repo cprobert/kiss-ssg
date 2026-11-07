@@ -81,7 +81,6 @@ const kiss = new Kiss({
       },
     },
   },
-  verbose: true,
   dev,
 })
   .page({
