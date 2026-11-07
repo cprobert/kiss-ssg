@@ -66,6 +66,8 @@ Decisions taken at the open (operator, 2026-11-07, each the recommended option):
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-11-07 — a finding outside the fourteen, from workstream C.** `lib/pipeline.js` prints a step's whole `run` at info (`pipeline: <name> — <run>`) and in its failure message (`pipeline step "<name>" failed (<how>): <run>`), so a token typed into a command reaches the log and the report's failure text, though item 11 keeps it out of `AIKB/`. The threat model says no secret reaches a log line. Put to the operator: fix on this branch (print the program and the step's name; the command is the author's own config), or record as a known limit. Decision (operator, 2026-11-07): fix on this branch, as item 15; the log and the failure message name the step and its program.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

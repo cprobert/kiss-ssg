@@ -31,7 +31,7 @@ Everything but the two writers is pure, and nothing anywhere reads a clock: two 
 
 ## Depends on
 
-`fs-extra`; `./utils.js` (`globFiles`, `hashId`, `isUrlModel`, `posixPath`, `redactUrl`); `./build-report.js` (`reportedPath`, `reportedView` — both exported for this module).
+`fs-extra`; `./utils.js` (`globFiles`, `hashId`, `isUrlModel`, `posixPath`, `redactUrl`); `./build-report.js` (`reportedPath`, `reportedView` — both exported for this module); `./pipeline.js` (`stepName`, `programOf`: the map's pipeline rows carry the same name the report and the log use, and the same program).
 
 ## Depended on by
 

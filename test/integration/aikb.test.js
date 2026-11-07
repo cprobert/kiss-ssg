@@ -226,11 +226,9 @@ describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
         `${site.build}/team/bo.html`,
       ],
     })
-    // The program, not the command: the first word of `run`, as the step's
+    // The program, not the command: the quoted node path whole, as the step's
     // name falls back to. The subject's hash above is the whole command's.
-    expect(map.pipeline).toEqual([
-      { name: 'stamp', program: node.trim().split(/\s+/)[0] },
-    ])
+    expect(map.pipeline).toEqual([{ name: 'stamp', program: node }])
     // The same rows are the last key of the map on disk — which is what a
     // note is stamped from once the record has been made.
     expect(Object.keys(map).at(-1)).toBe('subjects')
@@ -472,9 +470,7 @@ describe('a token in a pipeline step’s command', () => {
     for (const [file, text] of files)
       expect(text, `${file} names the token`).not.toContain(TOKEN)
     const map = JSON.parse(await site.read('AIKB/site-map.json'))
-    expect(map.pipeline).toEqual([
-      { name: 'stamp', program: node.trim().split(/\s+/)[0] },
-    ])
+    expect(map.pipeline).toEqual([{ name: 'stamp', program: node }])
     expect(map.subjects).toEqual([
       {
         kind: 'pipeline',
