@@ -179,7 +179,8 @@ describe('registerPage', () => {
     // Still enough to find the registration by.
     expect(shown).toEqual({
       title: 'T',
-      model: 'https://cdn.example.com/entries?[redacted]',
+      model:
+        'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
       config: {
         siteUrl: 'https://example.com',
         fetch: { headers: { Authorization: '[redacted]' } },

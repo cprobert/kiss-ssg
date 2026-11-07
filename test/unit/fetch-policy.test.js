@@ -102,13 +102,14 @@ describe('fetchModel', () => {
   })
 })
 
-// A model URL is fetched as written and printed with its whole query
+// A model URL is fetched as written and printed with every query value
 // replaced: the query is where an access token sits, and a message lands on
 // stderr, in a CI log and in a pasted bug report.
 describe('fetchModel: a token in the query string', () => {
   const TOKEN = 'SECRET-TOKEN-F'
   const URL_WITH_TOKEN = `https://cdn.example.com/entries?access_token=${TOKEN}&type=course`
-  const SHOWN = 'https://cdn.example.com/entries?[redacted]'
+  const SHOWN =
+    'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]'
 
   // Everything a logger was handed, as `console.*` would print it: an Error
   // argument is printed with its stack, its `cause` and its own properties.
@@ -535,7 +536,7 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
     [
       'a port fetch will not use',
       'http://127.0.0.1:1/x',
-      'http://127.0.0.1:1/x?[redacted] → bad port',
+      'http://127.0.0.1:1/x?token=[redacted] → bad port',
     ],
     [
       'a scheme fetch does not know',

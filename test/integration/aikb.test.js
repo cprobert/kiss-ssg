@@ -20,8 +20,8 @@ afterEach(async () => {
 const node = `"${process.execPath}"`
 const sha1 = (text) => createHash('sha1').update(text).digest('hex')
 const EVENTS = 'https://api.example.com/v2/events?page=1'
-// How the map and the report name it: the whole query redacted.
-const EVENTS_SHOWN = 'https://api.example.com/v2/events?[redacted]'
+// How the map and the report name it: every query value redacted.
+const EVENTS_SHOWN = 'https://api.example.com/v2/events?page=[redacted]'
 
 // One site with every kind of subject in it: a `.json` file model, a models
 // folder fanned out through a controller **file**, a URL model, and one asset
@@ -484,12 +484,13 @@ describe('a token in a pipeline step’s command', () => {
 
 // A model URL with a token in its query string. The knowledge base is
 // committed and the log is read by people other than the author, so both name
-// the URL with its whole query redacted; the fetch, and the id the author
+// the URL with every query value redacted; the fetch, and the id the author
 // gets back, keep the real one.
 describe('a token in a URL model’s query string', () => {
   const TOKEN = 'SECRET-TOKEN-F'
   const REAL = `https://cdn.example.com/entries?access_token=${TOKEN}&type=course`
-  const SHOWN = 'https://cdn.example.com/entries?[redacted]'
+  const SHOWN =
+    'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]'
 
   const tokenSite = () =>
     makeSite({

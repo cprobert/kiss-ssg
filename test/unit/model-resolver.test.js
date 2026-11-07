@@ -264,7 +264,8 @@ describe('resolveModel fetch policy', () => {
 describe('resolveModel: a token in the query string', () => {
   const TOKEN = 'SECRET-TOKEN-F'
   const URL_WITH_TOKEN = `https://cdn.example.com/entries?access_token=${TOKEN}&type=course`
-  const SHOWN = 'https://cdn.example.com/entries?[redacted]'
+  const SHOWN =
+    'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]'
 
   it('hands back the real URL as the id, and fetched the real URL', async () => {
     const { calls, fetchImpl } = recorder(() => okResponse({ n: 1 }))

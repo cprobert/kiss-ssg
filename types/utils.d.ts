@@ -107,9 +107,11 @@ export function isUrlModel(model: unknown): boolean;
  *
  * @param {unknown} url a model URL, as the author wrote it
  * @returns {string} the URL with no `user:pass@` and no fragment, and its
- * whole query, parameter names included, replaced by `?[redacted]`
- * (`?access_token=SECRET&type=course` → `?[redacted]`); an empty query is
- * dropped. Scheme, host, port and path are kept, in the form the WHATWG URL
+ * query reduced to its parameters' names, each value replaced by `[redacted]`
+ * (`?access_token=SECRET&type=course` →
+ * `?access_token=[redacted]&type=[redacted]`); a parameter with no `=` becomes
+ * `[redacted]`, and an empty query is dropped. Scheme, host, port and path
+ * are kept, in the form the WHATWG URL
  * parser gives them (host lowercased, a default port dropped, the path
  * percent-encoded); a secret in the path cannot be told from a path segment
  * and is shown as written. A string the parser rejects, or one whose scheme

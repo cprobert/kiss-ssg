@@ -85,14 +85,16 @@ describe('classifyModel', () => {
     )
   })
 
-  it('writes a URL with its whole query redacted, and no credentials', () => {
+  it('writes a URL with every query value redacted, and no credentials', () => {
     // The map is committed: a token in a model URL's query string would be in
     // git history the moment the knowledge base was recorded.
     expect(
       classifyModel(
         'https://u:p@cdn.example.com/entries?access_token=SECRET&type=course#f',
       ),
-    ).toBe('url:https://cdn.example.com/entries?[redacted]')
+    ).toBe(
+      'url:https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
+    )
     // Not a URL the platform parses, but classified as one all the same.
     expect(classifyModel('http://[bad?token=SECRET')).toBe(
       'url:http://[bad?[redacted]',
@@ -100,21 +102,21 @@ describe('classifyModel', () => {
   })
 })
 
-// The whole query is redacted, so a parameter's name is no more a part of
-// the identity than its value is.
-describe('buildSiteMap: URL models that differ only in their query', () => {
-  it('share one models row and one subject, listing both pages once', () => {
+// Every value is redacted and every name kept, so a value is no part of a URL
+// model's identity and a parameter's name is.
+describe('buildSiteMap: URL models that differ in their query', () => {
+  it('share one models row and one subject when only a value differs', () => {
     const result = map({
       stack: [
         entry('./public/a.html', {
           model: classifyModel('https://cdn.example.com/e?token=ONE&page=1'),
         }),
         entry('./public/b.html', {
-          model: classifyModel('https://cdn.example.com/e?key=TWO&offset=2'),
+          model: classifyModel('https://cdn.example.com/e?token=TWO&page=2'),
         }),
       ],
     })
-    const shown = 'https://cdn.example.com/e?[redacted]'
+    const shown = 'https://cdn.example.com/e?token=[redacted]&page=[redacted]'
     expect(result.models).toEqual([
       { source: `url:${shown}`, pages: ['./public/a.html', './public/b.html'] },
     ])
@@ -127,6 +129,26 @@ describe('buildSiteMap: URL models that differ only in their query', () => {
       },
     ])
     expect(JSON.stringify(result)).not.toMatch(/ONE|TWO/)
+  })
+
+  it('are two models rows and two subjects when a name differs', () => {
+    const result = map({
+      stack: [
+        entry('./public/a.html', {
+          model: classifyModel('https://cdn.example.com/e?page=1'),
+        }),
+        entry('./public/b.html', {
+          model: classifyModel('https://cdn.example.com/e?offset=1'),
+        }),
+      ],
+    })
+    const page = 'https://cdn.example.com/e?page=[redacted]'
+    const offset = 'https://cdn.example.com/e?offset=[redacted]'
+    expect(result.models).toEqual([
+      { source: `url:${offset}`, pages: ['./public/b.html'] },
+      { source: `url:${page}`, pages: ['./public/a.html'] },
+    ])
+    expect(result.subjects.map((subject) => subject.id)).toEqual([offset, page])
   })
 })
 

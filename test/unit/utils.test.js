@@ -324,43 +324,47 @@ describe('isInside', () => {
 })
 
 describe('redactUrl', () => {
-  // The whole query is one secret-shaped thing: a parameter's name can be the
-  // token (`?SECRET-TOKEN=1`, `?SECRET-TOKEN`), so no part of it is shown.
-  it('replaces the whole query, names included, with ?[redacted]', () => {
+  // kiss cannot know which value is the secret, so every value is redacted;
+  // a parameter's name is kept, because it is what tells one model from
+  // another in a log line or a site-map row (`?page=` against `?type=`).
+  it("keeps each parameter's name and replaces its value", () => {
     const shown = redactUrl(
-      'https://cdn.example.com/entries?SECRET-NAME=1&access_token=SECRET-VALUE',
+      'https://cdn.example.com/entries?access_token=SECRET&type=course',
     )
-    expect(shown).toBe('https://cdn.example.com/entries?[redacted]')
+    expect(shown).toBe(
+      'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
+    )
     expect(shown).not.toContain('SECRET')
-    expect(shown).not.toContain('access_token')
   })
 
   it.each([
-    [
-      'https://cdn.example.com/entries?access_token=SECRET&type=course',
-      'https://cdn.example.com/entries?[redacted]',
-    ],
     // No credentials, no fragment.
     [
       'https://user:pass@cdn.example.com/x?k=v#frag',
-      'https://cdn.example.com/x?[redacted]',
+      'https://cdn.example.com/x?k=[redacted]',
     ],
+    // A parameter with no `=` is itself a value.
     [
       'https://cdn.example.com/x?justavalue',
       'https://cdn.example.com/x?[redacted]',
     ],
     ['https://cdn.example.com/x', 'https://cdn.example.com/x'],
+    // Every parameter keeps its place, repeats included.
     [
       'https://cdn.example.com/x?a=1&a=2&b',
-      'https://cdn.example.com/x?[redacted]',
+      'https://cdn.example.com/x?a=[redacted]&a=[redacted]&[redacted]',
     ],
-    // An empty query says nothing.
+    // An empty query, and empty pieces between `&`, say nothing.
     ['https://cdn.example.com/x?', 'https://cdn.example.com/x'],
+    [
+      'https://cdn.example.com/x?a=1&&b=2',
+      'https://cdn.example.com/x?a=[redacted]&b=[redacted]',
+    ],
     ['https://cdn.example.com/x#only-a-fragment', 'https://cdn.example.com/x'],
     // Port and path kept; the host as the URL parser writes it.
     [
       'http://API.Example.com:8443/v2/events?page=2',
-      'http://api.example.com:8443/v2/events?[redacted]',
+      'http://api.example.com:8443/v2/events?page=[redacted]',
     ],
     // Not a URL the platform parses: cut at the first `?` or `#`.
     ['http://[bad url?token=SECRET', 'http://[bad url?[redacted]'],
@@ -417,8 +421,8 @@ describe('redactUrl', () => {
     },
   )
 
-  // Pinning rows, not regression tests: these passed before the whole query
-  // was redacted, and hold what the parser does with a password that holds an
+  // Pinning rows, not regression tests: these passed before they were
+  // written, and hold what the parser does with a password that holds an
   // `@` (it takes the last `@` as the end of the credentials, so username and
   // password are dropped whole) or a `/` (it ends the authority there and
   // refuses the port, so the string goes by its last `@`).
