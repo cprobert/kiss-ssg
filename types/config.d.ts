@@ -30,10 +30,10 @@ export function resolveMarkdownCopies(markdownCopies: any): KissMarkdownCopies;
  * string the same way.
  *
  * @param {Record<string, any>} fetch the fetch block over `DEFAULT_FETCH`
- * @returns {Record<string, any>} the same block, numbers read
+ * @returns {KissFetch} the same block, numbers read
  * @throws what `assertFetchIsValid` throws
  */
-export function resolveFetch(fetch: Record<string, any>): Record<string, any>;
+export function resolveFetch(fetch: Record<string, any>): KissFetch;
 /**
  * Each key of a merged fetch block has its shape, or this throws. The message
  * names the key and never the value: a value can be read from the
