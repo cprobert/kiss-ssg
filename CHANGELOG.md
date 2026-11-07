@@ -3,6 +3,74 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.13.3 — 2026-11-07
+
+The rest of the 2.13.2 security review: every finding its reviews listed and left is now
+fixed. One of them changes what a build reports, so read the upgrading note.
+
+- **A model that cannot be resolved fails the build.** A `.json` model that is not
+  there, a model folder with no `.json` in it, or a URL model whose fetch fails now fails
+  that page the way a failing controller does: `.complete()` rejects, the page is named
+  in `err.failures` by its view, the report says `ok: false` and `kiss-ssg check` exits
+  1, while the rest of the site still builds. Before, the page was logged, skipped, and
+  the build reported success without it. The messages are `Model not found: <file>` and
+  `Model folder empty or missing: <folder>`.
+- **The fetch timeout covers the whole response.** `fetch.timeout` used to end only the
+  wait for a server's headers; a server that answered `200` and then sent nothing hung
+  the build. One timer now covers the headers and the body, per attempt.
+- **Every fetch setting is checked when `new Kiss` runs.** A `retries` that is not a
+  whole number of 0 or more (`Number(process.env.RETRIES)` with the variable unset is
+  `NaN`), a `timeout` that is not a number of milliseconds, `headers` that is not an
+  object, or a `cache` that is neither a folder nor `false` stops the build with a
+  message naming the setting, never its value. Before, a bad `retries` failed every URL
+  model with the message `undefined`.
+- **A failed fetch says more, and still nothing from the server.** A URL that cannot be
+  parsed, or that holds `user:pass@`, is refused before any request. Each part of a
+  failure message has its own shape (a code, an IP address, a port, a host name, a
+  status), so a replaced `fetch` cannot slip a value of another shape into it. A
+  self-signed certificate is named. What kiss cannot describe ends
+  `→ an error kiss cannot describe (<name>)`, with the error's name and none of its text.
+- **A cache folder that cannot be written is a warning.** The model is used and the
+  next build fetches again; before, the page failed though the fetch had succeeded.
+- **The site map records a pipeline step's program, not its command.** `site-map.json`'s
+  `pipeline` rows carry `name` and `program` (the command's first token; a quoted path
+  stays whole) instead of `name` and `run`, and `site-map.md`'s table shows the program.
+  The subject hash is still of the whole command, so a changed argument still marks a
+  note stale. A token typed into a command no longer reaches a committed file, the log
+  line (`pipeline: <name> — <program>`) or a failure message.
+- **The consent script falls back on a host that answers every address with a page.**
+  On a wrong address, a host that answers `200` with HTML instead of the cached file
+  gave the browser no error to act on, so the consent controls on that page did nothing
+  unless the answer carried `nosniff`. The script now also checks that the file it loaded
+  ran, and tries the site's root when it did not (measured in Chromium 158).
+- **Markdown from a CMS: the opt-out is documented.** `{{markdown}}` and `.md` partials
+  render HTML in Markdown as written, which is right for your own files and wrong for
+  content you did not write. `markdown: { html: false }` escapes it; GUIDE.md § Markdown
+  options says what each setting writes.
+- **The examples no longer set `verbose: true`.** It stays in example 2, whose comment
+  says what it writes and that it is a debugging aid for a dev build, not a line for a
+  real site's router.
+
+Measured: a real site of 20 pages, built from the packed 2.13.2 and from this release,
+gives the same 472 files, byte for byte; a build with twelve failing URL models and a
+token in every query and header writes no token anywhere.
+
+### Upgrading
+
+- **A build with a missing or unfetchable model is now red.** If a page of yours was
+  silently absent from the last build, this release says so: `.complete()` rejects and
+  `kiss-ssg check` exits 1 naming the page by its view. Add the model, fix the URL, or
+  stop registering the page. A build script that catches the rejection and prints
+  `err.failures`, as the examples do, needs nothing else.
+- **`config.fetch` is validated.** A `retries` or `timeout` read from an environment
+  variable that is not set now stops the build at `new Kiss` with the setting's name.
+  Give it a number, or the default by leaving the key out.
+- **`site-map.json`'s pipeline rows changed shape.** `run` is gone and `program` is
+  there; the next `kiss-ssg aikb` rewrites the file. Nothing in kiss reads the old key.
+- **If your site uses `config.consent` on a host with a catch-all page**, rebuild and
+  redeploy it: the script is written into every page. If you send a
+  Content-Security-Policy with a hash for that script, take the hash again.
+
 ## 2.13.2 — 2026-11-06
 
 A security release, from a review of the whole engine. One fix matters to any site that
