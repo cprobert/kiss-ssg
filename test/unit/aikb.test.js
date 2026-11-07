@@ -85,16 +85,14 @@ describe('classifyModel', () => {
     )
   })
 
-  it('writes a URL with every query value redacted, and no credentials', () => {
+  it('writes a URL with its whole query redacted, and no credentials', () => {
     // The map is committed: a token in a model URL's query string would be in
     // git history the moment the knowledge base was recorded.
     expect(
       classifyModel(
         'https://u:p@cdn.example.com/entries?access_token=SECRET&type=course#f',
       ),
-    ).toBe(
-      'url:https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
-    )
+    ).toBe('url:https://cdn.example.com/entries?[redacted]')
     // Not a URL the platform parses, but classified as one all the same.
     expect(classifyModel('http://[bad?token=SECRET')).toBe(
       'url:http://[bad?[redacted]',
@@ -102,7 +100,9 @@ describe('classifyModel', () => {
   })
 })
 
-describe('buildSiteMap: URL models that differ only in a query value', () => {
+// The whole query is redacted, so a parameter's name is no more a part of
+// the identity than its value is.
+describe('buildSiteMap: URL models that differ only in their query', () => {
   it('share one models row and one subject, listing both pages once', () => {
     const result = map({
       stack: [
@@ -110,11 +110,11 @@ describe('buildSiteMap: URL models that differ only in a query value', () => {
           model: classifyModel('https://cdn.example.com/e?token=ONE&page=1'),
         }),
         entry('./public/b.html', {
-          model: classifyModel('https://cdn.example.com/e?token=TWO&page=2'),
+          model: classifyModel('https://cdn.example.com/e?key=TWO&offset=2'),
         }),
       ],
     })
-    const shown = 'https://cdn.example.com/e?token=[redacted]&page=[redacted]'
+    const shown = 'https://cdn.example.com/e?[redacted]'
     expect(result.models).toEqual([
       { source: `url:${shown}`, pages: ['./public/a.html', './public/b.html'] },
     ])
@@ -248,8 +248,28 @@ describe('buildSiteMap', () => {
       ],
     })
     expect(result.pipeline).toEqual([
-      { name: 'tailwind', run: 'npx tailwindcss -i a -o b' },
-      { name: 'sprite', run: '  sprite  --out x' },
+      { name: 'tailwind', program: 'npx' },
+      { name: 'sprite', program: 'sprite' },
+    ])
+  })
+
+  // The map is committed, and a command's arguments are where a token typed
+  // on the command line sits. The map records the program; the subject hash
+  // is still taken over the whole command, so a changed argument still
+  // restamps the step's note.
+  it('records a step’s program, never its command, and hashes the whole command', () => {
+    const run = 'node deploy.js --token SECRET-TOKEN-P'
+    const result = map({ pipeline: [{ name: 'deploy', run }] })
+    expect(result.pipeline).toEqual([{ name: 'deploy', program: 'node' }])
+    expect(JSON.stringify(result)).not.toContain('SECRET-TOKEN-P')
+    expect(renderSiteMap(result)).not.toContain('SECRET-TOKEN-P')
+    expect(result.subjects).toEqual([
+      {
+        kind: 'pipeline',
+        id: 'deploy',
+        note: 'notes/pipeline/deploy.md',
+        hash: sha1(run),
+      },
     ])
   })
 
@@ -944,9 +964,12 @@ describe('renderSiteMap', () => {
     expect(text).toContain('| models')
   })
 
-  it('escapes a pipe so a command cannot break out of its cell', () => {
-    const text = renderSiteMap(map({ pipeline: [{ name: 'x', run: 'a | b' }] }))
-    expect(text).toContain('`a \\| b`')
+  it('escapes a pipe so a program cannot break out of its cell', () => {
+    const text = renderSiteMap(
+      map({ pipeline: [{ name: 'x', run: 'a|b --flag' }] }),
+    )
+    expect(text).toContain('`a\\|b`')
+    expect(text).not.toContain('--flag')
   })
 })
 

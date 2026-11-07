@@ -106,16 +106,16 @@ export function isUrlModel(model: unknown): boolean;
  * A URL as kiss shows it, never as it fetches it.
  *
  * @param {unknown} url a model URL, as the author wrote it
- * @returns {string} the URL with no `user:pass@` and no fragment, and each
- * query parameter's name kept and its value replaced by `[redacted]`
- * (`?access_token=[redacted]&type=[redacted]`); a parameter with no `=` is
- * itself a value and becomes `[redacted]`, and an empty query is dropped.
- * Scheme, host, port and path are kept, in the form the WHATWG URL parser
- * gives them (host lowercased, a default port dropped, the path
- * percent-encoded). A string the parser rejects, or one whose scheme is not
- * `http:` or `https:`, goes by its last `@`: when
- * that `@` comes after the string's first `?` or `#`, only the scheme is
- * kept (`https://[redacted]`); otherwise everything between the scheme and
+ * @returns {string} the URL with no `user:pass@` and no fragment, and its
+ * whole query, parameter names included, replaced by `?[redacted]`
+ * (`?access_token=SECRET&type=course` → `?[redacted]`); an empty query is
+ * dropped. Scheme, host, port and path are kept, in the form the WHATWG URL
+ * parser gives them (host lowercased, a default port dropped, the path
+ * percent-encoded); a secret in the path cannot be told from a path segment
+ * and is shown as written. A string the parser rejects, or one whose scheme
+ * is not `http:` or `https:`, goes by its last `@`: when that `@` comes after
+ * the string's first `?` or `#`, only the scheme is kept
+ * (`https://[redacted]`); otherwise everything between the scheme and
  * that `@` is dropped, the rest is cut at its first `?` or `#`, and given
  * `?[redacted]` when what was cut began with `?`. The scheme is kept with
  * the slashes or backslashes that follow it, as written.
@@ -123,7 +123,7 @@ export function isUrlModel(model: unknown): boolean;
 export function redactUrl(url: unknown): string;
 export function isInside(directory: string): (file: string) => boolean;
 /**
- * The word every redacted value is replaced with: a model URL's query values
+ * The word every redacted value is replaced with: a model URL's query
  * (`redactUrl`) and `fetch.headers` values (`lib/config.js`,
  * `redactFetchHeaders`).
  */

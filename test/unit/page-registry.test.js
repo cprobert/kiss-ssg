@@ -156,7 +156,7 @@ describe('lookupPage', () => {
 // view. Those options are the author's as written, so a URL model still has its
 // query values and a page-level `config` still has its header values.
 describe('registerPage', () => {
-  it('logs a page with no view without its model URL’s query values or a header value', () => {
+  it('logs a page with no view without its model URL’s query or a header value', () => {
     const error = vi.fn()
     registerPage(
       { logger: { error } },
@@ -179,8 +179,7 @@ describe('registerPage', () => {
     // Still enough to find the registration by.
     expect(shown).toEqual({
       title: 'T',
-      model:
-        'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]',
+      model: 'https://cdn.example.com/entries?[redacted]',
       config: {
         siteUrl: 'https://example.com',
         fetch: { headers: { Authorization: '[redacted]' } },

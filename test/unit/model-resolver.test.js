@@ -252,8 +252,7 @@ describe('resolveModel fetch policy', () => {
 describe('resolveModel: a token in the query string', () => {
   const TOKEN = 'SECRET-TOKEN-F'
   const URL_WITH_TOKEN = `https://cdn.example.com/entries?access_token=${TOKEN}&type=course`
-  const SHOWN =
-    'https://cdn.example.com/entries?access_token=[redacted]&type=[redacted]'
+  const SHOWN = 'https://cdn.example.com/entries?[redacted]'
 
   it('hands back the real URL as the id, and fetched the real URL', async () => {
     const { calls, fetchImpl } = recorder(() => okResponse({ n: 1 }))
@@ -302,7 +301,7 @@ describe('resolveModel: a token in the query string', () => {
   })
 
   // A string with a scheme kiss does not fetch is not a model at all, and its
-  // spelling is shown the way a URL's is: no credentials, no query value.
+  // spelling is shown the way a URL's is: no credentials, no query.
   it.each([
     [
       'a folder',
