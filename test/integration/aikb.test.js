@@ -566,12 +566,20 @@ describe('a token in a URL model’s query string', () => {
     const { logger, lines } = recordingLogger()
     kiss = new Kiss({ logger, folders: site.folders })
     kiss.page({ view: 'entries.hbs', model: REAL }).generate()
-    const data = await kiss.complete().catch((error) => error)
+    const err = await kiss.complete().then(
+      () => null,
+      (error) => error,
+    )
 
     const text = lines.join('\n')
     expect(text).toContain(`Model fetch failed: ${SHOWN} → 404 Not Found`)
     expect(text).not.toContain(TOKEN)
-    // The author's own handle on the failure still names the real URL.
-    expect(data.find((d) => d.error)?.id).toBe(REAL)
+    // A model that cannot be fetched fails the build, named by its view, and
+    // the failure the author is handed carries no token either.
+    expect(err).toBeInstanceOf(AggregateError)
+    expect(err.failures.map((f) => f.view)).toEqual(['entries.hbs'])
+    expect(kiss.report().ok).toBe(false)
+    expect(inspect(err.failures, { depth: Infinity })).not.toContain(TOKEN)
+    expect(JSON.stringify(kiss.report())).not.toContain(TOKEN)
   })
 })

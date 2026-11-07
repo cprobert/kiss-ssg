@@ -1,5 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import path from 'node:path'
+import Kiss from '../helpers/kiss.js'
+import { silentLogger } from '../../lib/logger.js'
+import { makeSite } from '../helpers/site.js'
 import {
   builtAssetPath,
   handleChange,
@@ -159,6 +162,41 @@ describe('builtAssetPath', () => {
     expect(
       builtAssetPath({ _defaultAssetCopy: { sourceDir: null } }, 'x.css'),
     ).toBe('/')
+  })
+})
+
+// A model that cannot be resolved is a build failure, and a replay drops every
+// failure it does not carry (`_carriedFailures`: a stylesheet, the helpers, the
+// dev server). So a model file missing on the first build and saved before the
+// next replay clears the failure with no code of its own; carrying it would
+// leave the build red with the page built.
+describe('replaySession and a model failure', () => {
+  let site
+  afterEach(async () => {
+    if (site) await site.cleanup()
+    site = null
+  })
+
+  it('clears once the missing model file is restored', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/pages/about.hbs': '{{model.title}}',
+    })
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: { ...silentLogger, error: vi.fn() },
+    })
+      .page({ view: 'index.hbs', model: {} })
+      .page({ view: 'about.hbs', model: 'about.json' })
+      .generate()
+    await expect(kiss.complete()).rejects.toThrow('1 build failure: about.hbs')
+    expect(kiss.report().ok).toBe(false)
+
+    await site.touch('src/models/about.json', '{ "title": "About us" }')
+    await kiss._replay()
+    expect(kiss._failures).toEqual([])
+    expect(kiss.report().ok).toBe(true)
+    expect(await site.read('public/about.html')).toBe('About us')
   })
 })
 

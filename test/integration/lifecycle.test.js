@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import http from 'node:http'
 import net from 'node:net'
+import { inspect } from 'node:util'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -12,23 +13,97 @@ afterEach(async () => {
   site = null
 })
 
+// A model that cannot be resolved used to be logged and skipped: the page was
+// missing and the report said `ok: true`. It is a build failure now, named by
+// its view like a failed controller, once per page, and the rest of the site
+// still builds.
 describe('a bad model', () => {
-  it('is logged and skipped; the rest of the site still builds and nothing rejects', async () => {
+  const quiet = () => ({ ...silentLogger, error: vi.fn(), warn: vi.fn() })
+
+  // `complete()`'s rejection, the failures naming `view`, and the report.
+  const failedBuild = async (kiss) => {
+    const err = await kiss.complete().then(
+      () => null,
+      (e) => e,
+    )
+    expect(err).toBeInstanceOf(AggregateError)
+    expect(kiss.report().ok).toBe(false)
+    return err
+  }
+
+  it('fails the build when its .json file is missing; the rest still builds', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'ok',
       'src/pages/broken.hbs': 'never',
       'src/models/index.json': { title: 'Home' },
     })
-    const kiss = new Kiss({ folders: site.folders })
+    const kiss = new Kiss({ folders: site.folders, logger: quiet() })
       .page({ view: 'index.hbs' })
       .page({ view: 'broken.hbs', model: 'missing.json' })
       .generate()
-    const data = await kiss.complete()
+    const err = await failedBuild(kiss)
+    expect(err.failures.map((f) => f.view)).toEqual(['broken.hbs'])
+    expect(err.failures[0].error.message).toBe('Model not found: missing.json')
+    expect(err.message).toBe('1 build failure: broken.hbs')
     expect(await site.exists('public/index.html')).toBe(true)
     expect(await site.exists('public/broken.html')).toBe(false)
-    const failed = data.find((d) => d.id === 'missing.json')
-    expect(failed.data).toBeNull()
-    expect(failed.error.message).toBe('Skipping: missing.json')
+  })
+
+  it('fails the build when a .pages() model folder is empty', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'ok',
+      'src/pages/item.hbs': '{{model.n}}',
+      'src/models/items/readme.txt': 'no json here',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: quiet() })
+      .page({ view: 'index.hbs', model: {} })
+      .pages({ view: 'item.hbs', model: 'items' })
+      .generate()
+    const err = await failedBuild(kiss)
+    expect(err.failures.map((f) => f.view)).toEqual(['item.hbs'])
+    expect(err.failures[0].error.message).toBe(
+      'Model folder empty or missing: items',
+    )
+    expect(kiss.report().failures).toHaveLength(1)
+    expect(await site.exists('public/index.html')).toBe(true)
+  })
+
+  it('fails the build when a URL model answers 500, without printing its query', async () => {
+    const TOKEN = 'QUERYSECRET42'
+    const server = http.createServer((req, res) => {
+      res.statusCode = 500
+      res.setHeader('content-type', 'application/json')
+      res.end('{"error":"down"}')
+    })
+    await new Promise((r) => server.listen(0, '127.0.0.1', r))
+    const url = `http://127.0.0.1:${server.address().port}/entries?key=${TOKEN}`
+    try {
+      site = await makeSite({
+        'src/pages/index.hbs': 'ok',
+        'src/pages/remote.hbs': '{{model.title}}',
+      })
+      const logger = quiet()
+      const kiss = new Kiss({ folders: site.folders, logger })
+        .page({ view: 'index.hbs', model: {} })
+        .page({ view: 'remote.hbs', model: url })
+        .generate()
+      const err = await failedBuild(kiss)
+      expect(err.failures.map((f) => f.view)).toEqual(['remote.hbs'])
+      expect(err.failures[0].error.message).toMatch(/^Model fetch failed: /)
+      expect(err.failures[0].error.message).toMatch(/500/)
+      const report = kiss.report()
+      expect(report.failures).toHaveLength(1)
+      expect(JSON.stringify(report)).not.toContain(TOKEN)
+      expect(err.message).not.toContain(TOKEN)
+      expect(inspect(err.failures, { depth: Infinity })).not.toContain(TOKEN)
+      expect(
+        inspect(logger.error.mock.calls, { depth: Infinity }),
+      ).not.toContain(TOKEN)
+      expect(await site.exists('public/index.html')).toBe(true)
+      expect(await site.exists('public/remote.html')).toBe(false)
+    } finally {
+      await new Promise((r) => server.close(r))
+    }
   })
 })
 

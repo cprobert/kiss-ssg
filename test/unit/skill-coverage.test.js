@@ -1140,6 +1140,14 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: '2.14.0: a model that cannot be resolved fails the build, named by its view, once per page; a sentence saying it is logged and the page skipped is the behaviour that replaced',
+    patterns: [
+      /A bad model is not a build failure/,
+      /Model failures are _not_ build failures/,
+      /keep(s)? (the documented |its )?log-and-skip behaviour/,
+    ],
+  },
+  {
     why: "2.13.0: a site with no config.consent sets its embed wording with `embeds: { text }`, or one embed's with load=, notice= and open=, so a sentence saying the wording can only be changed through config.consent is the rule that replaced",
     patterns: [/to change it, use `config\.consent`/],
   },
