@@ -967,6 +967,65 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
     }
   }, 60000)
 
+  // Item 16 of the deferred security items (2026-11-07): a host that answers
+  // every unknown address with status 200 and a page. The root derived on
+  // /missing/404 is /missing/, and the file asked for there comes back as
+  // HTML with a 200, which fires the tag's `load`, not `error` (measured in
+  // Chromium 158 on 2026-11-06), so an `error` listener alone never falls
+  // back. The head part now also checks that the file ran, and falls back
+  // when it did not.
+  it('falls back to the root when a wrong path answers 200 with a page instead of the file', async () => {
+    const site = await serve(
+      {
+        ...FILES,
+        'src/pages/404.hbs': consentPage('<h1>Not found</h1>', 'Not found'),
+      },
+      CONSENT_CONFIG,
+    )
+    try {
+      const { context, page } = await open()
+      /** @type {string[]} */
+      const answered = []
+      // The catch-all host: the file at the wrong root is a page, status 200,
+      // no nosniff. A page route runs before the context's.
+      await page.route('**/missing/kiss-consent.*.js', (route) => {
+        answered.push(new URL(route.request().url()).pathname)
+        return route.fulfill({
+          status: 200,
+          contentType: 'text/html',
+          body: '<!doctype html><title>Not found</title><p>Not found</p>',
+        })
+      })
+      await page.goto(`${site.base}/missing/404`)
+      await page.click(
+        '[data-kiss-consent-root] [data-kiss-consent-action="reject"]',
+      )
+      await expect
+        .poll(async () => (await stored(context))?.c ?? null)
+        .toEqual({ statistics: false, marketing: false })
+      const client = await page.$$eval(
+        'script[data-kiss-consent-client]',
+        (tags) => tags.map((t) => /** @type {HTMLScriptElement} */ (t).src),
+      )
+      await context.close()
+      // The wrong path was asked once and answered with the page; the root
+      // was asked next, and the client ran from there.
+      expect(answered).toEqual([
+        expect.stringMatching(/^\/missing\/kiss-consent\./),
+      ])
+      expect(client).toEqual([
+        expect.stringMatching(/\/missing\/kiss-consent\.[0-9a-f]+\.js$/),
+        expect.stringMatching(
+          new RegExp(
+            `^${site.base.replace(/[.]/g, '\\.')}/kiss-consent\\.[0-9a-f]+\\.js$`,
+          ),
+        ),
+      ])
+    } finally {
+      await site.close()
+    }
+  }, 60000)
+
   // Item 14 of the deferred security items (2026-11-07): the origin guard
   // compares `protocol` and `host` because every file: URL has one origin
   // whatever its host (Chromium serialises it as `file://`). Measured here
