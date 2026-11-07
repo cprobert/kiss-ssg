@@ -1,7 +1,7 @@
 ---
 branch: fix/deferred-security-items
 base: main
-status: open
+status: closed
 opened: 2026-11-07
 ---
 
@@ -82,3 +82,50 @@ Decisions taken at the open (operator, 2026-11-07, each the recommended option):
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-07: The fourteen items deferred from the security release
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.13.3, sixteen commits over `main` (`1cda2d8` to `b14c48b`): every item pull request #76 deferred, fixed; two more found on the way (a token in a pipeline command reaching the log, and the consent fallback on a catch-all host) fixed by amendment; the fleet check as `scripts/fleet-check.mjs`; one decision overturned at the pulse and one review finding loosened by the operator's choice.
+
+## Reflect — what the session was
+
+The goal was framed before the branch existed: the operator asked, after the last merge, why fourteen findings had been left and whether wanting to secure the codebase was over-engineering. The honest answer to the first ("the stop rule I proposed, which cut against your standing preference not to defer small fixes") became the brief: fix all fourteen. The shape was **planned** and stayed planned: a contract enumerated each item with its fix, a fresh-context critique found eighteen flaws in it before any code (the double-counted controller failure, the pipeline command's second committed home, three workstreams' tests crossing on one redaction change), and the amended contract held through five workstreams run in parallel. Two things were emergent and both were handled through the one channel for it: workstream C's agent noticed `lib/pipeline.js` still printed a token (item 15, an amendment the operator decided), and the operator's question about the 200-host "limit" exposed that it had been Claude's call recorded as the operator's (item 16, an amendment the operator decided, and the misattribution written down).
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering** is the dimension that discriminated this session, and it was strong in a way the earlier branches were not. Four times the operator went against the recommendation, each time with a reason that was asked for and written down: "Fix all eight using opus" came before the branch; at the pulse's explain-or-overturn offer the operator overturned item 10 ("names help identify the model"), a change that would have gone through unquestioned on any earlier branch; at the close the operator chose a patch over the proposed minor ("2.13 is all about security"); and when the review found that strict fetch validation refused a numeric string, the operator chose the middle option, read digits, refuse the rest, rather than the recommended "document only". Each of those changed the code or the record. The sum beat the parts on item 16: Claude had recorded a limitation as unfixable, the operator asked what it meant, the explanation showed the fix (trust `load` only when the file announced itself), and the operator chose it.
+
+**Verification & ownership**: the eyeball happened at the pulse, warm, on the GUIDE paragraph a site author reads, and was answered "Looked, it is right". Every regression test was seen red: by the agents as reported, and six of them re-done in the main session by one-line mutation before each commit. The whole-build leak harness, the fleet check through the new script (twice), a clean-room read of the shipped docs and two close reviews under a stop rule written before any code all ran because they were criteria from the open. Codex was not available; the independent reviews were same-family fresh contexts, named as such.
+
+**Iteration discipline** was the weak seam, and it was Claude's. The five workstreams landed in parallel and the first pulse came only after all of them, two hours in; the contract said "after each of A, B, C lands". The pulse found nothing wrong, and the overturn it produced would have been cheaper mid-branch than after every test file had been swept to the whole-query shape.
+
+**Harness leverage** was high: a fresh-context critique of the contract, one Opus agent per workstream with named file ownership, a clean-room agent, two scoped reviews, and the skills run as skills (the pulse by `/branch-pulse`, not by hand, the lesson three logs had asked for). One miss: the agents wrote into one shared working tree, so a review of workstream C's diff had workstream E's files beside it, and committing item 15 needed a hand-made patch to stage two hunks of a file workstream B was editing. Worktrees per agent would have cost nothing and removed that.
+
+**Competency level: agentic engineering lead.** The operator set the brief from Claude's own admission, took every structured decision with a reason, overturned a recommendation on the evidence offered, caught a misattributed decision, and chose a narrower fix than the one recommended twice. The level is earned by the four reasoned departures, not by the volume of work.
+
+## Feedback — recommendations for next session
+
+- **Claude — pulse after the first engine workstream lands, not after the last.** The contract said so and the session did not do it. The item-10 overturn cost a second sweep of five test files; at the first pulse it would have cost one.
+- **Claude — give parallel agents their own worktrees.** Four agents in one tree meant one agent's uncommitted edits in another's review and a hand-staged patch for a shared test file. `git worktree add` per workstream, merged by the main session, is the cost of nothing.
+- **Claude — never attribute a non-goal to the operator unless the operator chose it.** The 200-host item was written into the plan's non-goals by Claude and reported as "your decision". The operator caught it. A non-goal the operator did not choose says "Claude's call" in the plan.
+- **Operator — keep asking what a recorded limit means.** The question about `nosniff` turned a documented limitation into a nine-line fix with a browser test. The same question is worth asking of any "recorded rather than fixed" line in a pull request.
+- **Process — the fleet criterion now has a command; put the whole-build leak harness beside it.** `scripts/fleet-check.mjs` took the fleet check out of the scratchpad on its third request. The leak harness (`review-r2/run-e2e.mjs`) ran from the scratchpad for the second branch running and is the only check that proves no token reaches a file; it deserves the same promotion when it is asked for again.
+- **Both — a stop rule that ends in a documented behaviour change needs the changelog read against the code before the round closes.** Round one's two findings were both "the entry does not say this"; a reviewer reading the changelog against the diff is a cheaper first round than one reading the diff alone.
+
+## Verdict — did we achieve the objective?
+
+**Met.** The brief was to close every item pull request #76 deferred, so the model-fetch path, the redaction rules and the consent docs carry no known gap that was found and left.
+
+- [x] Each of the fourteen has a closing commit or a recorded reason: items 1 to 8 and 12 in `22365af` and `cfcf419`; 9 in `9b30abf`; 10 in `ed4eb42` then `67c38a5` (overturned to names shown, values redacted, the operator's reason recorded); 11 in `ed4eb42` and `fd09f38`; 13 and 14 in `dbb8841`; 14's 200-host half, first recorded, then fixed as item 16 in `51aa435`; item 15 in `fd09f38`. Nothing left recorded rather than fixed.
+- [x] Every fix's regression test seen red: each agent's red run reported with its mutation, six re-done in the main session (body read outside the race; `checkUrl` dropped; a doubled push; the query dropped; `run` put back in the map; the command printed), the pipeline row, the consent fallback row and the four digit-string rows seen red by hand.
+- [x] A failed model fails the build: three lifecycle rows (`ok: false`, one failure per page, the rest built); example 8 still exits 1 for its controller reason only.
+- [x] The timeout covers a stalled body: a real server sends 200 and nothing; the fetch rejects inside the 3 s cap.
+- [x] Whole-build leak test on `dbb8841`: 0 marker lines across log, built files, report and failures in both modes; 56 of 56 real requests; the build now fails (13 failures) where 2.13.2 said `ok: true`.
+- [x] Fleet through the script: `scripts/fleet-check.mjs` with 31 unit rows; a1k9training, `main` against `22365af` and against `67c38a5`, 20 pages, 472 files, nothing differing.
+- [x] Clean-room: both answers found in the shipped docs, no contradiction; one mislocated pointer fixed.
+- [x] Two independent reviews at the close under the stop rule (plus a security-focused review, no findings): round one found two changed behaviours the changelog did not say, both fixed (`cfcf419`, `26b8912`); round two, scoped to those fixes, found nothing above the bar; one overstated sentence corrected (`b14c48b`). Codex unavailable, no credits, recorded as the operator's reason against the standing preference.
+- [x] Gates green locally four times on the final shapes; `CHANGELOG.md` 2.13.3 with `### Upgrading`; `llms.txt` at 15,976 characters.
+
+**Measurable impact:** a site with a missing or unfetchable model now gets a red build instead of a silent gap; a stalled API no longer hangs a build; a token typed into a pipeline command reaches no committed file, log line or message; a consent page on a catch-all host gets its controls; and the fleet check is one command. **Open:** `npm publish` (npm is on 2.13.0; `main` will be 2.13.3 after the merge); rebuild and redeploy any site using `config.consent`; `/memory-consolidate` for the pulse-by-hand lesson (three logs) and now the per-workstream pulse; the below-the-bar list in the pull request.
