@@ -244,6 +244,34 @@ describe('resolveConfig', () => {
     expect(() => resolveConfig({ fetch })).not.toThrow()
   })
 
+  // An environment variable is a string: `timeout: process.env.TIMEOUT` is
+  // `'5000'`, which 2.13.2 accepted (setTimeout coerces it). A string of
+  // digits, with an optional fraction for the timeout, is read as the number
+  // and resolved as one; any other string is still refused above.
+  it.each([
+    ['retries', '2', 2],
+    ['retries', ' 0 ', 0],
+    ['timeout', '5000', 5000],
+    ['timeout', '1.5', 1.5],
+  ])(
+    'reads fetch.%s given as the string %s as the number %s',
+    (key, given, read) => {
+      expect(resolveConfig({ fetch: { [key]: given } }).fetch[key]).toBe(read)
+    },
+  )
+
+  it.each([
+    ['retries', '1.5'],
+    ['retries', '2px'],
+    ['retries', ''],
+    ['timeout', '5,000'],
+    ['timeout', ' '],
+  ])('still refuses fetch.%s given as the string %s', (key, given) => {
+    expect(() => resolveConfig({ fetch: { [key]: given } })).toThrow(
+      `config.fetch.${key}`,
+    )
+  })
+
   it('defaults the assets block: no cache busting, minified, nothing purged, no pipeline', () => {
     expect(resolveConfig({}).assets).toEqual({
       hash: false,

@@ -835,6 +835,26 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
     ).resolves.toEqual({ a: 1 })
   })
 
+  it('reads retries and timeout given as strings of digits, like resolveConfig', async () => {
+    // A caller that never went through `resolveConfig`, with the values an
+    // environment variable gives: `'1'` retries means two attempts.
+    let calls = 0
+    await expect(
+      fetchModel('https://api.example.com/x', {
+        fetchImpl: async () => {
+          calls++
+          return calls === 1
+            ? { ok: false, status: 503, headers: new Headers() }
+            : ok({ a: 1 })
+        },
+        retries: '1',
+        timeout: '5000',
+        logger: silentLogger,
+      }),
+    ).resolves.toEqual({ a: 1 })
+    expect(calls).toBe(2)
+  })
+
   it.each([
     ['retries', Number(undefined)],
     ['retries', -1],

@@ -6,11 +6,11 @@ Applies `config.fetch` — headers, timeout, retries and an on-disk cache — to
 
 ## Public interface
 
-- `async fetchModel(url, { fetchImpl = globalThis.fetch, logger, headers, timeout, retries, cache })` → `Promise<data>` — the parsed JSON body of a 2xx response. Every policy key is optional and falls back to `DEFAULT_FETCH` from `config.js`; a key passed as `undefined` takes its default too, as `resolveConfig` does (a spread let it replace the default, and `retries: undefined` ran the loop no times and rejected with `undefined`). The merged policy goes through `config.js`'s `assertFetchIsValid` before anything else, for a caller that never went through `resolveConfig`, so a `retries` or `timeout` that is not its shape is kiss's own error naming the key. Rejects with a fresh `Error` (no `cause`, no own properties) on a URL that cannot be fetched, a non-2xx response, a network failure, a 2xx body that is not JSON or a timeout, whose message kiss writes from parts that cannot carry a secret (below), and on a header the fetch would refuse, whose message names the header and never its value (below). A failed cache write does not reject: it warns and the data is returned.
+- `async fetchModel(url, { fetchImpl = globalThis.fetch, logger, headers, timeout, retries, cache })` → `Promise<data>` — the parsed JSON body of a 2xx response. Every policy key is optional and falls back to `DEFAULT_FETCH` from `config.js`; a key passed as `undefined` takes its default too, as `resolveConfig` does (a spread let it replace the default, and `retries: undefined` ran the loop no times and rejected with `undefined`). The merged policy goes through `config.js`'s `resolveFetch` before anything else (a `retries` or `timeout` given as a string of digits is read as the number, then every key is held to its shape), for a caller that never went through `resolveConfig`, so a `retries` or `timeout` that is not its shape is kiss's own error naming the key. Rejects with a fresh `Error` (no `cause`, no own properties) on a URL that cannot be fetched, a non-2xx response, a network failure, a 2xx body that is not JSON or a timeout, whose message kiss writes from parts that cannot carry a secret (below), and on a header the fetch would refuse, whose message names the header and never its value (below). A failed cache write does not reject: it warns and the data is returned.
 
 ## Depends on
 
-`fs-extra`; `node:http` (`STATUS_CODES`); `node:net` (`isIP`); `./utils.js` (`hashId`, `posixPath`, `redactUrl`); `./config.js` (`DEFAULT_FETCH`, `assertFetchIsValid`).
+`fs-extra`; `node:http` (`STATUS_CODES`); `node:net` (`isIP`); `./utils.js` (`hashId`, `posixPath`, `redactUrl`); `./config.js` (`DEFAULT_FETCH`, `resolveFetch`).
 
 ## Depended on by
 

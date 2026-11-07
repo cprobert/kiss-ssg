@@ -18,12 +18,15 @@ fixed. One of them changes what a build reports, so read the upgrading note.
 - **The fetch timeout covers the whole response.** `fetch.timeout` used to end only the
   wait for a server's headers; a server that answered `200` and then sent nothing hung
   the build. One timer now covers the headers and the body, per attempt.
-- **Every fetch setting is checked when `new Kiss` runs.** A `retries` that is not a
-  whole number of 0 or more (`Number(process.env.RETRIES)` with the variable unset is
-  `NaN`), a `timeout` that is not a number of milliseconds, `headers` that is not an
-  object, or a `cache` that is neither a folder nor `false` stops the build with a
-  message naming the setting, never its value. Before, a bad `retries` failed every URL
-  model with the message `undefined`.
+- **Every fetch setting is checked when `new Kiss` runs.** A `retries` or `timeout`
+  given as a string of digits, as an environment variable is (`timeout:
+process.env.TIMEOUT`), is read as the number. A `retries` that is not a whole number
+  of 0 or more (`Number(process.env.RETRIES)` with the variable unset is `NaN`), a
+  `timeout` that is not a number of milliseconds, `headers` that is not a plain object
+  (a `Headers` instance or a list of pairs is refused), or a `cache` that is neither a
+  folder nor `false` (`null` and `''` are refused) stops the build with a message
+  naming the setting, never its value. Before, a bad `retries` failed every URL model
+  with the message `undefined`, and the other shapes were taken as they came.
 - **A failed fetch says more, and still nothing from the server.** A URL that cannot be
   parsed, or that holds `user:pass@`, is refused before any request. Each part of a
   failure message has its own shape (a code, an IP address, a port, a host name, a
@@ -37,7 +40,9 @@ fixed. One of them changes what a build reports, so read the upgrading note.
   stays whole) instead of `name` and `run`, and `site-map.md`'s table shows the program.
   The subject hash is still of the whole command, so a changed argument still marks a
   note stale. A token typed into a command no longer reaches a committed file, the log
-  line (`pipeline: <name> — <program>`) or a failure message.
+  line (`pipeline: <name> — <program>`) or a failure message. An unnamed step whose
+  command starts with a quoted path (`"C:\Program Files\nodejs\node.exe" build.mjs`)
+  is now named by the whole quoted path; before, by `"C:\Program`.
 - **The consent script falls back on a host that answers every address with a page.**
   On a wrong address, a host that answers `200` with HTML instead of the cached file
   gave the browser no error to act on, so the consent controls on that page did nothing
@@ -63,8 +68,13 @@ token in every query and header writes no token anywhere.
   stop registering the page. A build script that catches the rejection and prints
   `err.failures`, as the examples do, needs nothing else.
 - **`config.fetch` is validated.** A `retries` or `timeout` read from an environment
-  variable that is not set now stops the build at `new Kiss` with the setting's name.
-  Give it a number, or the default by leaving the key out.
+  variable that is not set now stops the build at `new Kiss` with the setting's name;
+  one that is set to digits is read as the number, as before. `headers` must be a plain
+  object (not a `Headers` instance or pairs) and `cache` a folder or `false` (not
+  `null` or `''`). Give each its shape, or the default by leaving the key out.
+- **An unnamed pipeline step whose command starts with a quoted path has a new name**,
+  the whole quoted path. Its note under `AIKB/notes/pipeline/` moves with it: give the
+  step a `name`, or rename the note after the next `kiss-ssg aikb`.
 - **`site-map.json`'s pipeline rows changed shape.** `run` is gone and `program` is
   there; the next `kiss-ssg aikb` rewrites the file. Nothing in kiss reads the old key.
 - **If your site uses `config.consent` on a host with a catch-all page**, rebuild and

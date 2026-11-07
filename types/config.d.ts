@@ -22,11 +22,24 @@ export function formatsForHosts(hosts: KissHost[], concern: "redirects" | "cache
  */
 export function resolveMarkdownCopies(markdownCopies: any): KissMarkdownCopies;
 /**
+ * The fetch block with each key in the form the engine reads: `retries` and
+ * `timeout` given as a string of digits become numbers (2.13.2 took them that
+ * way, through `setTimeout`'s and `Math.max`'s coercion), and every key is
+ * then held to its shape by `assertFetchIsValid`. Both callers go through
+ * here, so a caller of `fetchModel` that never saw `resolveConfig` reads a
+ * string the same way.
+ *
+ * @param {Record<string, any>} fetch the fetch block over `DEFAULT_FETCH`
+ * @returns {Record<string, any>} the same block, numbers read
+ * @throws what `assertFetchIsValid` throws
+ */
+export function resolveFetch(fetch: Record<string, any>): Record<string, any>;
+/**
  * Each key of a merged fetch block has its shape, or this throws. The message
  * names the key and never the value: a value can be read from the
- * environment, and `fetch.headers` is where a token goes. `lib/fetch-policy.js`
- * asks the same of the policy it is handed, for a caller that never went
- * through `resolveConfig`.
+ * environment, and `fetch.headers` is where a token goes. `resolveFetch` is
+ * the caller, from `resolveConfig` and from `lib/fetch-policy.js` for a
+ * caller that never went through `resolveConfig`.
  *
  * @param {Record<string, any>} fetch the fetch block over `DEFAULT_FETCH`
  * @returns {void}
