@@ -1068,10 +1068,14 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
         ),
       }))
       await context.close()
+      // Compared decoded: `pathToFileURL` writes a `~` in the path as `%7E`
+      // (the Windows runner's temp folder is the short name `RUNNER~1`) and
+      // Chromium reports the script's `src` with the `~` itself.
+      const plain = (/** @type {string} */ url) => decodeURIComponent(url)
       const own = new RegExp(
-        `^${folder.replace(/[.]/g, '\\.')}/kiss-consent\\.[0-9a-f]+\\.js$`,
+        `^${plain(folder).replace(/[.]/g, '\\.')}/kiss-consent\\.[0-9a-f]+\\.js$`,
       )
-      expect(seen).toEqual({
+      expect({ ...seen, client: seen.client.map(plain) }).toEqual({
         // Chromium serialises a file: origin as `file://`, not the spec's
         // `null`; either way the two hosts compare equal.
         origin: 'file://',
@@ -1080,10 +1084,11 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
         otherHostHost: 'evil',
         client: [expect.stringMatching(own)],
       })
-      expect(requests.filter((url) => !url.startsWith(`${folder}/`))).toEqual(
-        [],
-      )
-      expect(requests).toContain(seen.client[0])
+      const made = requests.map(plain)
+      expect(
+        made.filter((url) => !url.startsWith(`${plain(folder)}/`)),
+      ).toEqual([])
+      expect(made).toContain(plain(seen.client[0]))
     } finally {
       await site.cleanup()
     }
