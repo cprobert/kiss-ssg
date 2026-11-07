@@ -72,6 +72,13 @@ Go through the success criteria one at a time. For each, state **met / partial /
 
   **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Naming the artefact is this step's job; getting a human to look at it is **Step 4**, which is a stop rather than a bullet.
 
+- **The intent has a fleet criterion** (a real site built from the base and from the branch, `/branch-open` Step 3) → run it through the script, after committing, because it packs refs and never the working tree. It prints lines to paste into Step 7's entry and exits 1 when anything differs; each difference gets explained there. Name the site the criterion names:
+
+  ```bash
+  BASE=$(node scripts/base-branch.mjs) || exit 1
+  node scripts/fleet-check.mjs C:/Code/kiss/a1k9training --base "$BASE"
+  ```
+
 Speak in the supervision rubric's vocabulary (`.claude/skills/session-reflect/rubric.md`) — this beat exercises **Verification & ownership** and **Pushback & steering** above all.
 
 ### Step 4 — The operator's own eyes, while the artefact is warm

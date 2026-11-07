@@ -172,6 +172,14 @@ node scripts/arms.mjs setup|run|summarise   # measure a skill: copy a site from 
                                # answer-key item for a person or a blind agent to mark). `run
                                # --print-only` prints the command when the session refuses to
                                # launch it. First used: planning/reviews/2026-11-02-legal-arms.md
+node scripts/fleet-check.mjs <site folder> --base <ref> [--branch <ref>] [--out <folder>]
+                               # the fleet criterion: copy a real site (git clone --local) into
+                               # the OS temp, pack <ref> and the branch (default HEAD, committed
+                               # content only) by git archive + npm pack, install each in turn,
+                               # run `kiss-ssg check` and the plain build back to back, compare
+                               # the reports (diffReports, page hashes) and the build folders
+                               # byte for byte, version string set aside. Exit 0 same, 1 differs,
+                               # 2 could not run; ends with lines to paste into a pulse log
 node scripts/tag-release.mjs   # tag the current commit `v<package.json version>` and push the
                                # tag. Wired to npm's `postpublish`, so `npm publish` already ran
                                # it — the tag names the commit a version shipped from, which is
