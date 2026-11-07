@@ -2,44 +2,44 @@
 
 > A small, dependency-driven static site generator for Node, built to be driven by a coding agent. MVC-style: Handlebars views, JSON/HTTP/function models, JS controllers. ESM (Node ≥22.23.4), no build step, no bundler.
 
-This file is the index: what exists, the shape to follow, and the traps nothing reports. The rules are in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line below names.
+This file is the index: what exists, the shape to follow, the traps nothing reports. The rules are in [GUIDE.md](GUIDE.md) (`node_modules/kiss-ssg/GUIDE.md`), under the heading each line names.
 
 Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `new Kiss(config)` per build folder. `.page()`/`.pages()`/`.scan()` queue pages; `.generate()` renders and writes them; `await kiss.complete()` is the verdict.
 
-**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-performance`, `kiss-design`, `kiss-legal-and-privacy`, `kiss-security`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands; a declaration alone installs nothing. Offer them to the site's owner before building without them.
+**Skills.** Two plugins carry the recipes, from this repo's marketplace, not npm. `kiss-ssg` has the task skills `kiss-site-new`, `kiss-site-import`, `kiss-page-add`, `kiss-build-check`, `kiss-site-review`, `kiss-site-migrate`, calling the domain skills `kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-performance`, `kiss-design`, `kiss-legal-and-privacy`, `kiss-security`; `kiss-memory` has `kiss-site-brief` and the branch rituals. `npx kiss-ssg init` declares both and prints the install commands; a declaration alone installs nothing. Offer them to the owner before building without them.
 
 ## The build script
 
-Name it `router.js` at the project root, with `"type": "module"`, `main` pointing at it, and `build`/`dev`/`check`/`aikb` scripts (`"check": "kiss-ssg check router.js"`, `"aikb": "kiss-ssg aikb router.js"`). It is a router: `new Kiss(config)`, the `.page()`/`.pages()`/`.scan()` table, the `.generate()`/`.sitemap()`/`.llms()`/`.feed()`/`.robots()` chain, and `await kiss.complete().catch(reportBuildFailure)`. Anything else goes in a module beside it. Each extraction has one yes/no trigger, independent of the others (GUIDE.md § The build script):
+Name it `router.js` at the project root, with `"type": "module"`, `main` pointing at it, and `build`/`dev`/`check`/`aikb` scripts (`"check": "kiss-ssg check router.js"`, `"aikb": "kiss-ssg aikb router.js"`). It is a router: `new Kiss(config)`, the `.page()`/`.pages()`/`.scan()` table, the `.generate()`/`.sitemap()`/`.llms()`/`.feed()`/`.robots()` chain, and `await kiss.complete().catch(reportBuildFailure)`. Anything else goes in a module beside it. Each extraction has its own yes/no trigger (GUIDE.md § The build script):
 
 - **Tier 0, one file:** no custom helpers, no fact stated twice. File length is never a trigger.
 - **Tier 1, `helpers/`:** at the **first** custom helper. Its `index.js` exports `registerHelpers(kiss)` and **kiss calls it** from `config.folders.helpers` (default `./helpers`): never register it in the router. Export the pure function; register a thin adapter over it.
-- **Tier 2, `config/`:** when one fact (a phone number, an address) appears both in visible markup and in JSON-LD or feed metadata, spread it into `new Kiss()` as a config key. A `complete()` callback that reads `this` stays a `function`, not an arrow.
+- **Tier 2, `config/`:** when one fact (a phone number, an address) appears in visible markup and in JSON-LD or feed metadata, spread it into `new Kiss()` as a config key. A `complete()` callback that reads `this` stays a `function`, not an arrow.
 
-Keep build-script modules out of `src`: a module in an unrecognised folder under `src` makes every save a rebuild that cannot pick the edit up. Helpers are registered once per process, so read data at render time, not at registration. Renaming a build script breaks Tailwind `@source` globs, `package.json` and CI silently: grep for the old name.
+Keep build-script modules out of `src`: a module in an unrecognised folder there makes every save a rebuild that cannot pick the edit up. Helpers register once per process: read data at render time. Renaming a build script breaks Tailwind `@source` globs, `package.json` and CI silently: grep for the old name.
 
 ## Building a site well
 
 - **Never hand-write an internal URL.** `{{link "about"}}` for a page and `{{asset "css/site.css"}}` for a file both fail the build when wrong (in dev they warn and carry on). The exceptions: a build opened off the file system (`{{root}}` plus a relative path, `examples/11-blog`), and a file another method writes (`/feed.xml`, `/sitemap.xml`), which has no `{{link}}` — write its path; the link scan still checks it.
 - **Content that repeats is data:** one JSON model and one partial, not N copies.
 - **Never invent a fact about the business:** mark what is missing.
-- **`npx kiss-ssg check <script> --summary` is the bar, and the bar is zero broken links.**
+- **`npx kiss-ssg check <script> --summary` is the bar: zero broken links.**
 - **Record the knowledge base when work closes** (`npx kiss-ssg aikb <script>`), commit it, and write `AIKB/site.md`'s retired-feedback entries while you remember why.
 
 ## API
 
 GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Other methods.
 
-- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route minus `.hbs`), `aliases` (old paths → 301s), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `config` (per-page overrides, such as `extensionLess: false` for a literal `404.html`), and the per-output options `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod` and `package`, each in its output's GUIDE.md section.
+- `.page(options)`: one page. `view` (`.hbs` under `folders.pages`, or a template string), `model` (`.json` file, models folder → array, `http(s)://` URL, or object), `controller` (function or `.js` file; return new values, never mutate), `title`, `description`, `path`, `slug`, `ext`, `id` (default: the view's route minus `.hbs`), `aliases` (old paths → 301s), `canonical` (an absolute URL elsewhere: leaves sitemap, `llms.txt` and feed), `generate: false`, `config` (per-page overrides, e.g. `extensionLess: false` for a literal `404.html`), and the per-output options `ignoreSitemap`/`ignoreLlms`/`ignoreFeed`, `sitemapLastmod` and `package`, each in its output's GUIDE.md section.
 - `.pages(options)`: the same, fanned out over an array model; one bad item fails only its own page. An item's id is the registration's route (or `id` as a prefix) plus its slug; a record may carry its own `id` and `aliases`.
 - `.scan()`: `.page()` for every unregistered `.hbs` under `folders.pages`.
 - `.generate(callback)`: render and write every queued page once. HTML is minified (inline JS/CSS too) except under `dev`.
-- `.complete(callback)`: resolves when everything is written; rejects with an `AggregateError` (`err.failures`, `err.report`) on any failed page, controller, callback, Sass file, pipeline step or redirects write. A chain without it exits 0 on a broken build.
+- `.complete(callback)`: resolves when everything is written; rejects with an `AggregateError` (`err.failures`, `err.report`) on any failed page, model (named by its view, never skipped), controller, callback, Sass file, pipeline step or redirects write. A chain without it exits 0 on a broken build.
 - `.report()`: the last settled build as data (`ok`, `pages`, `failures`, `audit` and more). GUIDE.md § Checking a build has the shape.
-- `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, all from one page registry, so every page URL is the page's `{{canonical}}` (`llms.txt` links each page's `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
+- `.sitemap(options, callback)`, `.llms(options, callback)`, `.feed(options, callback)`, `.robots(options, callback)`: `sitemap.xml`, the llmstxt.org index, RSS and `robots.txt`, from one registry, so each page URL is its `{{canonical}}` (`llms.txt` links the `.md` copy instead). They need `config.siteUrl`; `.llms()` needs `title` and `summary`; `.feed()` lists pages with a `date`. GUIDE.md § .sitemap(), § .llms(), § .feed(), § .robots().
 - Learning packages: pages with `package: '<slug>'` zip into an IMS content package or SCORM 1.2 (`config.packages`). Give each an `id`: the LMS keeps learners' records by it. GUIDE.md § Learning packages; `examples/13-course-packages`.
-- Cookie consent: declare every service that stores anything in `config.consent`, and gate it with the consent helpers below. Trap: a gated script never sees `DOMContentLoaded`; site code that loads a third party itself waits with `window.kissConsent.when(name, fn)`. The build writes `kiss-consent.<hash>.js` (the cached client, which the inline part loads), and with an `endpoint` `consent-banners.json`. GUIDE.md § Cookie consent; `examples/14-consent`.
-- Markdown copies (`config.markdownCopies`, written when the build calls `.llms()`): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its written `<main>`, and the report names it as `pages[].markdown`. GUIDE.md § Markdown copies for agents.
+- Cookie consent: declare every service that stores anything in `config.consent`, and gate it with the consent helpers. Trap: a gated script never sees `DOMContentLoaded`; site code that loads a third party itself waits with `window.kissConsent.when(name, fn)`. The build writes `kiss-consent.<hash>.js` (the cached client, which the inline part loads), and with an `endpoint` `consent-banners.json`. GUIDE.md § Cookie consent; `examples/14-consent`.
+- Markdown copies (`config.markdownCopies`, written when the build calls `.llms()`): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its `<main>`; the report names it `pages[].markdown`. GUIDE.md § Markdown copies for agents.
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
 - `kiss.handlebars` and `kiss.remarkable`: this instance's own environments. Partials are `.hbs`, `.md` (Markdown first, so `"` args and `{{>` break it), `.html` (compiled, so `{{ }}` interpolates) and `.txt` (escaped, never compiled).
@@ -95,21 +95,21 @@ Prose: GUIDE.md § Cleaning the build folder, § Building more than one site fro
 
 ## Traps nothing reports
 
-- `cleanBuild: true` empties the build folder **before** anything renders, so a failed build leaves it empty. Use `'atomic'` for published output. A `dev` run writes a dev build into `folders.build`, so point dev at a git-ignored folder if that folder is published.
-- `links.trailingSlash` and `host` are statements about your host, not defaults kiss can get right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `host` (or a `format`) names one. kiss marks only hashed files `immutable`; never give an unhashed one a year.
+- `cleanBuild: true` empties the build folder **before** anything renders, so a failed build leaves it empty. Use `'atomic'` for published output. A `dev` run writes into `folders.build`: point dev at a git-ignored folder if that one is published.
+- `links.trailingSlash` and `host` describe your host, so kiss cannot default them right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `host` (or a `format`) names one. kiss marks only hashed files `immutable`; never give an unhashed one a year.
 - `{{asset}}` renders **no leading slash**: write `href="/{{asset "css/site.css"}}"`. `{{root}}` is a value your page supplies, not a helper.
 - `{{#isActive this href="/about"}}{{active}}{{/isActive}}`: the positional argument is the page context (`this`, or `..` in an `{{#each}}`), and the block **always** renders, so the match is `{{active}}`.
-- A pipeline step writes into your assets folder, so the copy claims and hashes it. One that can only write into the build folder lists those files in its `outputs` (`['img/icons.svg']`): kiss deletes them first, checks them after, claims them for `{{asset}}` and packages, and never hashes them.
+- A pipeline step writes into your assets folder, so the copy claims and hashes it. One writing only into the build folder lists those files in its `outputs` (`['img/icons.svg']`): kiss deletes them first, checks them after, claims them for `{{asset}}` and packages, and never hashes them.
 - Tailwind in `assets.pipeline`: keep `-i` (without it the CLI exits 0 and drops everything you authored), and use `@import 'tailwindcss' source(none)` plus explicit `@source` paths, or words in your docs change the hashed stylesheet name on every page. `examples/10-asset-pipeline`.
-- A layout with no `<main>` around the page's own content puts its header, footer and menus (any not in a `<nav>`) into every page's `.md` copy. Wrap the content in `<main>`, or set `markdownCopies.selector`.
+- A layout with no `<main>` around the page's content puts its header, footer and menus (any not in a `<nav>`) into every `.md` copy. Wrap the content in `<main>`, or set `markdownCopies.selector`.
 - `<lastmod>` is a page's `sitemapLastmod`, `updated` or `date`, else omitted. Change the date with the content, never on a rebuild.
-- A token goes in `fetch.headers`, never a model URL. Views and controllers see `[redacted]` there: your own request reads `process.env`.
+- A token goes in `fetch.headers`, never a model URL: kiss redacts a URL's query, but records its path as written. Views and controllers see `[redacted]` there: your own request reads `process.env`.
 
 ## Helpers
 
 Rules: GUIDE.md § Helpers. Layouts come from `handlebars-layouts`: a layout declares `{{#block "body"}}…{{/block}}`, and a page fills it with `{{#extend "layout"}}{{#content "body"}}…{{/content}}{{/extend}}` (`mode="append"` adds to a slot).
 
-- `markdown`: block or value, rendered through `kiss.remarkable`.
+- `markdown`: block or value, rendered through `kiss.remarkable`. Trap: its HTML renders as written (`markdown.html` is `true`); Markdown from a CMS needs `markdown: { html: false }`.
 - `sass`: a file path (resolved against `process.cwd()`) and/or an inline block.
 - `offset`: `index + 1`.
 - `stringify`: `{{{stringify this}}}` to inspect scope.
@@ -130,7 +130,7 @@ Rules: GUIDE.md § Helpers. Layouts come from `handlebars-layouts`: a layout dec
 - `consentTable`: the cookie declaration, for the cookie page.
 - `consentRecord`: the visitor's consent history, for the privacy page; `ui.history: '<its page id>'` links it from the settings dialog.
 
-Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`, called with the instance; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
+Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`; read config at render time from `options.data.root.config`. GUIDE.md § Helpers has a JSON-LD recipe that escapes `</script>`.
 
 ## Checking a build
 

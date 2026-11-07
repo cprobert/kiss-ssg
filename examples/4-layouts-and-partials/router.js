@@ -25,7 +25,6 @@ const kiss = new Kiss({
     { href: 'index.html', label: 'The bar' },
     { href: 'stockists.html', label: 'Stockists' },
   ],
-  verbose: true,
   dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404
   // page, so the audit's checks for those three are turned off here, by name.

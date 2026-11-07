@@ -31,6 +31,12 @@ const kiss = new Kiss({
     { href: 'index.html', label: 'Today on the shelf' },
     { href: 'about.html', label: 'The roastery' },
   ],
+  // A debugging aid, and not for a real site's router: the other examples
+  // leave it out. `verbose` logs the resolved config and kiss's debug lines,
+  // and makes `viewStats()` below write debug.json (every page's options and
+  // model) into the build folder; with --dev it also writes
+  // dependency-graph.json there. Both land only under --dev here: the graph
+  // is dev-only, and `viewStats()` is called only then.
   verbose: true,
   dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404
@@ -87,8 +93,9 @@ const kiss = new Kiss({
   })
 
   .generate(function () {
-    // Dev only: under `verbose` it writes debug.json — every page's options
-    // and model — into the build, which a published site should not carry.
+    // Dev only: logs the page counts, and under `verbose` writes debug.json
+    // (every page's options and model) into the build, which a published
+    // site should not carry.
     if (dev) this.viewStats()
   })
 

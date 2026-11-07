@@ -43,7 +43,6 @@ const kiss = new Kiss({
   // css/site.<hash>.css. No template changes when the policy does.
   assets: { hash: true },
   cleanBuild,
-  verbose: true,
   dev,
   port: 3008,
   livereloadPort: 35738,

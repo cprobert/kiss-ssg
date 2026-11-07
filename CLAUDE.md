@@ -201,8 +201,8 @@ npm run screenshot -- <build-folder> [--page=/,/blog/] [--width=320,768,1440] [-
 node docs                # regenerate docs/, minified, and exit; --dev is the live preview, built into the ignored .preview/ so it never touches docs/ (does not exit, Ctrl-C to stop)
 npm run dev              # the same live preview (node docs --dev): watches src/, serves
                          # http://127.0.0.1:3001 with live reload; does not exit, Ctrl-C to stop
-npm run eg1 … eg12       # run an example (examples/<n>-<name>/router.js, run from its own
-                         # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8, 9, 10, 11, 12); 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding; 12 also carries `tools/convert.mjs` (the one-off conversion, writes to the ignored .converted/) and `tools/compare.mjs` (did the conversion change the page)
+npm run eg1 … eg14       # run an example (examples/<n>-<name>/router.js, run from its own
+                         # folder the way a real site is); builds and exits by default, --dev for a live preview (1-6, 8-12, 14); 13 has no --dev and always builds and exits, writing its learning packages (IMS and SCORM 1.2 zips); 14 is the cookie consent manager; 7 takes a season slug instead and always builds and exits; 8 exits 1 by design; 11 takes --broken to show one broken-link finding; 12 also carries `tools/convert.mjs` (the one-off conversion, writes to the ignored .converted/) and `tools/compare.mjs` (did the conversion change the page)
 ```
 
 `.nvmrc` holds the package's runtime floor, Node 22.23.4 (`engines.node`), and CI's `setup-node` reads it, so the gates run on the oldest Node a site may run. A local machine on a newer Node passes the gates without proving the floor.

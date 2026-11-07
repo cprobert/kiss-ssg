@@ -43,7 +43,6 @@ const kiss = new Kiss({
   // `{{asset 'css/site.css'}}` renders a hashed filename here and the plain
   // path in the other five, from the same line.
   assets: { hash: true },
-  verbose: true,
   dev,
 })
   .page({ view: 'index.hbs' })

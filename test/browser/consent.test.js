@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import sharp from 'sharp'
 import { silentLogger } from '../../lib/logger.js'
@@ -963,6 +964,69 @@ describe.skipIf(!browser)('consent in Chromium: other configurations', () => {
       )
     } finally {
       await site.close()
+    }
+  }, 60000)
+
+  // Item 14 of the deferred security items (2026-11-07): the origin guard
+  // compares `protocol` and `host` because every file: URL has one origin
+  // whatever its host (Chromium serialises it as `file://`). Measured here
+  // rather than inferred: a built page opened from the disk, every request it
+  // makes recorded (no route, so nothing is stubbed).
+  it('on a page opened by file://, loads the cached client from the page’s own folder and requests nothing else', async () => {
+    if (!browser) throw new Error('no browser')
+    const site = await makeSite(FILES)
+    try {
+      const kiss = new Kiss({
+        folders: site.folders,
+        siteUrl: `https://${HOST}`,
+        logger: silentLogger,
+        consent: CONSENT_CONFIG,
+      })
+        .scan()
+        .generate()
+      await kiss.complete()
+      await kiss.close()
+      const folder = pathToFileURL(site.build).href
+      const context = await browser.newContext()
+      /** @type {string[]} */
+      const requests = []
+      context.on('request', (req) => requests.push(req.url()))
+      const page = await context.newPage()
+      await page.goto(`${folder}/index.html`)
+      await expect
+        .poll(() => page.evaluate(() => Boolean(window.__kissConsent?.ready)))
+        .toBe(true)
+      // Why the guard compares `protocol` + `host` and not `origin`: this
+      // page and a file on another host (`file://evil/`) have one origin.
+      const seen = await page.evaluate(() => ({
+        origin: new URL(window.location.href).origin,
+        otherHost: new URL('file://evil/kiss-consent.js').origin,
+        host: new URL(window.location.href).host,
+        otherHostHost: new URL('file://evil/kiss-consent.js').host,
+        client: Array.from(
+          document.querySelectorAll('script[data-kiss-consent-client]'),
+          (t) => /** @type {HTMLScriptElement} */ (t).src,
+        ),
+      }))
+      await context.close()
+      const own = new RegExp(
+        `^${folder.replace(/[.]/g, '\\.')}/kiss-consent\\.[0-9a-f]+\\.js$`,
+      )
+      expect(seen).toEqual({
+        // Chromium serialises a file: origin as `file://`, not the spec's
+        // `null`; either way the two hosts compare equal.
+        origin: 'file://',
+        otherHost: 'file://',
+        host: '',
+        otherHostHost: 'evil',
+        client: [expect.stringMatching(own)],
+      })
+      expect(requests.filter((url) => !url.startsWith(`${folder}/`))).toEqual(
+        [],
+      )
+      expect(requests).toContain(seen.client[0])
+    } finally {
+      await site.cleanup()
     }
   }, 60000)
 

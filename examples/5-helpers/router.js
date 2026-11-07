@@ -35,7 +35,6 @@ const kiss = new Kiss({
   ],
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
-  verbose: true,
   dev,
   // A second site can run alongside the others as long as both ports differ.
   port: 8080,
