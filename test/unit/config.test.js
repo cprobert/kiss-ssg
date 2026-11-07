@@ -203,6 +203,47 @@ describe('resolveConfig', () => {
     })
   })
 
+  // Every key of the fetch block has a shape. `retries: NaN` ran the attempt
+  // loop no times and the model failed with `undefined`. The message names
+  // the key and never the value, which may be read from the environment.
+  it.each([
+    ['retries', -1],
+    ['retries', 1.5],
+    ['retries', Number.NaN],
+    ['retries', 'SECRET-TOKEN-1'],
+    ['timeout', -1],
+    ['timeout', Number.NaN],
+    ['timeout', Infinity],
+    ['timeout', 'SECRET-TOKEN-1'],
+    ['headers', null],
+    ['headers', 'SECRET-TOKEN-1'],
+    ['headers', [['Authorization', 'SECRET-TOKEN-1']]],
+    ['cache', true],
+    ['cache', ''],
+    ['cache', 7],
+  ])(
+    'refuses fetch.%s of %s, naming the key and not the value',
+    (key, value) => {
+      let message = ''
+      try {
+        resolveConfig({ fetch: { [key]: value } })
+      } catch (error) {
+        message = error.message
+      }
+      expect(message).toContain(`config.fetch.${key}`)
+      expect(message).not.toContain('SECRET-TOKEN-1')
+    },
+  )
+
+  it.each([
+    [{ retries: 0, timeout: 0 }],
+    [{ retries: 3, timeout: 1.5 }],
+    [{ headers: { Authorization: undefined }, cache: '.kiss-cache' }],
+    [{ headers: Object.create(null), cache: false }],
+  ])('accepts a fetch block of the documented shapes (%o)', (fetch) => {
+    expect(() => resolveConfig({ fetch })).not.toThrow()
+  })
+
   it('defaults the assets block: no cache busting, minified, nothing purged, no pipeline', () => {
     expect(resolveConfig({}).assets).toEqual({
       hash: false,

@@ -83,8 +83,10 @@ describe('resolveModel', () => {
       resolveModel('http://x', deps('m', { fetchImpl })),
     ).rejects.toMatchObject({
       // The fetch's own text (`boom`) is never shown: kiss writes the message
-      // from the redacted URL and the error's name.
-      message: 'Model fetch failed: http://x/ → Error',
+      // from the redacted URL and the error's name, and says the name is all
+      // it has.
+      message:
+        'Model fetch failed: http://x/ → an error kiss cannot describe (Error)',
     })
   })
 
