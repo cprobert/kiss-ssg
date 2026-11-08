@@ -80,6 +80,24 @@ opened: 2026-11-08
 
 **Version.** With a default changed for every site and a new API, this is no longer a plain bug-fix patch. Revisit the proposed 2.13.4 at the close; the operator decides.
 
+**2026-11-08 — operator decisions, and the feedback loop absorbed.** Items 4 (768 default width) and 6 (poster words) are approved. Item 5's rule goes to the operator before it is built ("Ok").
+
+The operator wants client sites to report issues and feature requests to GitHub, so that a session improving kiss and the sessions using it keep a two-way loop. **Why:** the cross-session exchange on #78 proved useful. Four a1k9training reflections had said "file it against kiss-ssg" and none did: there was no step at the decision point and no tool. Absorbed onto this branch, extending the issue-process criterion. Decisions:
+
+- **Site named by default:** the draft includes the site's name and public URL. Copy and file contents stay out, and a token-shaped value is refused (the repo is public).
+- **Draft and printed command:** `kiss-ssg issue` never posts. It writes the body to a file and prints the `gh issue create` command for the operator to read and run.
+
+Criteria added:
+
+- [ ] **Mechanism.** A `kiss-ssg issue` command, whose decisions live in a tested `lib/` module with an AIKB doc and a `bin/` integration test. It drafts a body with kiss version, Node, OS, site name and URL, the relevant config keys and the last build report's summary. It searches for duplicates (`gh issue list --search`) and reports any. It writes the body to a file and prints the command. It refuses a token-shaped value, a test shows the refusal, and it never runs `gh issue create` itself.
+- [ ] **Capture, on the site side.** The site's `kiss-branch-close` (kiss-memory) turns every reflection item about kiss into an issue draft at the close and puts it to the operator: file, or skip with a reason recorded. The site instructions `kiss-ssg init` writes, and `llms.txt`, say that working around kiss means drafting an issue. Feature requests are welcome.
+- [ ] **Templates.** `.github/ISSUE_TEMPLATE/` has a bug form and a feature-request form, matched to what `kiss-ssg issue` drafts.
+- [ ] **Triage, on the kiss side.** This repo's `/branch-open` lists open issues beside the feedback read-back and accepts an issue URL; the session file records `issue:`.
+- [ ] **Return.** `/branch-close` writes `Fixes #N`, and the CHANGELOG entry links the issue, so `kiss-ssg upgrade` shows the reporting site its fix. A site's `kiss-branch-open` read-back retires a gotcha whose issue has shipped. A comment on the issue at release, approved by the operator, closes the loop publicly.
+- [ ] **Clean-room.** The clean-room agent, meeting a kiss limitation, finds the instruction and drafts an issue with `kiss-ssg issue` without being told to.
+
+**Version.** With a changed default, a new helper API and a new CLI command, propose a minor (2.14.0) at the close.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
