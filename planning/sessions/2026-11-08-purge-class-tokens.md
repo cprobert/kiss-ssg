@@ -65,7 +65,20 @@ opened: 2026-11-08
 - **Criteria added:**
   - [ ] A red-first test: `folders.build: './site'` under `cleanBuild: 'atomic'` (and `KISS_AIKB`). No report field and no `last-build.json` value contains `.kiss-staging-` or `.kiss-old-`, on either platform.
   - [ ] Running `aikb` twice in a row on the fleet clone of a1k9training leaves `AIKB/last-build.json` byte-identical between the runs.
+- **The reporter's specifics:**
+  - `redirects.files` in the same record is already right, as `./docs/_redirects`. Expected for cache headers: `./docs/cache-headers.json` and `./docs/_headers`, in the same form.
+  - The build log's lines also print the staging name (`./docs.kiss-staging-…/_redirects`, `/robots.txt`, `/sitemap.xml`, `/llms.txt`). Same class, so the sweep covers the log lines too.
+  - It reproduces under the default `cleanBuild: true` as well, because `aikb` stages regardless.
+  - Once released, a1k9training retires its `AIKB/site.md` gotcha ("discard it when it's the only diff").
 - **Also checked, nothing to do:** the earlier a1k9training upstream notes. `consent-missing` on `/maps/embed` was fixed by `fix/consent-missing-path-hosts`, and the embed poster by `{{embed poster=…}}`. Script-injected iframes are beyond a static audit, by design. The site's `qa:dev-watch` (`node generate dev`, `pgrep`) is the site's own script, not kiss.
+
+**2026-11-08 — absorbed: three improvements a1k9training raised (operator chose all three).** The reporter says the site carries no other workaround, pinned setting or hand-edit because of kiss. These three are deliberate settings in its `router.js` today, raised as worth considering:
+
+- [ ] **768 in the default image widths.** The defaults are 480/960/1440/1920. Lighthouse's mobile device (412px at 1.75x) wants about 721px, so full-width images get the 960; a 720 missed by one pixel on a1k9training. Measure before changing: one example's Lighthouse image KPI and its cache growth, with and without 768. Every site's encoded variants change, so the `### Upgrading` note says so (cache growth, `kiss-ssg images` to prune).
+- [ ] **image-oversized and a `<picture>`'s fallback.** Today a fallback JPEG/WebP is judged by the same 200 KB limit as the format browsers load first, and that pushed a1k9training to cap widths at 1440. Settle the rule with the operator before building it: what a browser actually downloads, so judge the first `<source>` it would pick, with a test of the 1600-wide hero case.
+- [ ] **The poster's button words, exposed.** `{{embed … poster=…}}`'s words reach a site's CSS through a data attribute or a custom property, so a restyle does not hard-code `'Play video'` and a `load=` change needs no CSS edit. Public API: GUIDE, `llms.txt` line, `README.md`, `types/`, and the skill that restyles embeds.
+
+**Version.** With a default changed for every site and a new API, this is no longer a plain bug-fix patch. Revisit the proposed 2.13.4 at the close; the operator decides.
 
 ## Pulse log
 
