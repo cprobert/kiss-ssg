@@ -280,6 +280,22 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Offer:** the fallback `src` stays the lower-middle width, so a 960–1440 px source now gets a 768 `src` — **kept**.
   - **Decision: continue.** The feedback-loop contract (`planning/plans/`), its adversarial critique, then the build. Then the clean-room agent.
 
+- **2026-11-08 (sixth pulse, after round 4, the feedback loop and round 5)** — at `3ca1b98`; all five gates green at `f8f70f6`; 0 commits behind `origin/main`.
+  - **Feedback loop: met except its clean-room line.**
+    - **Mechanism:** `kiss-ssg issue` (`abbb2e6`, `f8f70f6`). Tests were seen red by three mutations, the old bin and the round-5 regressions. It was also run for real from a scratch site: it drafted, searched through the real `gh`, and `--status` said "#78: not in the installed kiss-ssg (2.13.3), open on GitHub".
+    - **Templates:** the bug and feature forms, each held to the draft's headings (seen red).
+    - **Capture:** a step in `kiss-branch-close`. **Retire:** `--filed` in `kiss-branch-open`, and consolidation carrying `filed:` lines. Coverage rows seen red.
+    - **Triage and return:** `/branch-open` gets `issue:`, `/branch-close` writes `Fixes #n` and the CHANGELOG link (a changelog test holds the form), and `/branch-merged` prints the comment.
+  - **Issue-process criterion: met**, the same work.
+  - **Review:** rounds 4 and 5 fixed; the stop rule ends rounds here. Codex has not run (no credits).
+  - **Not yet:**
+    - the clean-room agent (Tailwind with purge, and finding `kiss-ssg issue` unprompted);
+    - at the close: the CHANGELOG with `Fixes [#78](…)` and `### Upgrading` (the safelist, greedy matching, 768 and `kiss-ssg images`), and the version (proposal 2.14.0).
+  - **Drift:** none. `kiss-ssg issue` is new public API, inside the amended remit and the minor already proposed.
+  - **Eyeball: looked.** `plugins/kiss-memory/skills/kiss-branch-close/SKILL.md`, step 5's new part, sent to the operator. "Reads right."
+  - **Offer:** apostrophes in a filed title become ʼ (U+02BC) so one command works in bash and PowerShell — **kept**.
+  - **Decision: continue.** The clean-room agent next, then `/branch-close` when the operator asks for it.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
