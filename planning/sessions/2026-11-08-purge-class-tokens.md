@@ -238,6 +238,12 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
 - **The clean-room purge, re-run** with a tarball of `71307c2` in `%TEMP%\cleanroom-a1k9`: `head-full` 73,560 bytes, `head-nosafe` 54,747 bytes. The purged sheet is **byte-identical** to `branch2-nosafe`, which gave 0 computed-style differences over 69,428 elements. The only page difference is the same embed label. So the browser comparison was not re-run: it would compare the same CSS.
 - **Codex:** still out of credits, so the close's Codex step stays a known gap.
 
+**2026-11-08 — the close's security review (operator chose `/security-review`).** The secrets scan was clean. `lib/issue.js` was added to `/secrets-scan`'s table (`140f705`). A fresh agent reviewed `lib`, `bin` and `.github`. **No finding at confidence 8 or above.** A test title `a'’“$(id)`x\` stayed inside its quotes. Of its eleven candidates:
+
+- **Fixed** (operator: "Add the three shapes"): `findTokens` did not know Stripe keys, Google API keys or JWTs. Tests red first.
+- **Recorded:** a token split across lines still gets through, which the operator's read of the draft covers. Issue titles from the duplicate search are untrusted text the agent reads, the same as any `gh` output (confidence 4).
+- **Dropped:** the other candidates (quoting break-out, argument injection into `gh`, the draft path, PII, the temp-file symlink, the embed attribute, staging paths), each 1–2.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
