@@ -102,14 +102,15 @@ session:
 ! gh issue create --repo cprobert/kiss-ssg --title '<title>' --body-file '<draft path>'
 ```
 
-with the title single-quoted for a POSIX shell (`'` written as `'\''`), and the same line for
-PowerShell on Windows (single quotes doubled), and says that `gh` prints the new issue's URL, which
-is what to record as `filed: <URL>`. No `--label`: labels may not exist, and creating them is
+with the title and path single-quoted in one form that bash and PowerShell read alike: every
+quote-like character becomes ʼ (U+02BC) (amended after the fifth review, below). It says that `gh`
+prints the new issue's URL, which is what to record as `filed: <URL>`. No `--label`: labels may not exist, and creating them is
 outward.
 
 **Issue references, one shape.** `lib/issue.js` owns one pattern for a kiss-ssg issue reference,
-`issues/<n>` followed by a non-digit or the end (so `issues/7` never matches `issues/78`), and one
-parser for a `filed: <URL or #n>` line. A CHANGELOG entry ships an issue when it contains
+`https://github.com/cprobert/kiss-ssg/issues/<n>` followed by a non-digit or the end (so
+`issues/7` never matches `issues/78`, and another project's URL is not one), and one parser for a
+`filed: <URL>` line, which counts only a URL into this repository. A CHANGELOG entry ships an issue when it contains
 `Fixes [#<n>](https://github.com/cprobert/kiss-ssg/issues/<n>)`; a bare mention does not count.
 
 **`--status <n>`** reads the installed kiss's `CHANGELOG.md` (the one `node_modules/kiss-ssg`
@@ -213,3 +214,16 @@ A fresh-context agent read the first draft against the code and found nine flaws
 8. The close step left an uncommitted change: it sits inside step 5, before its commit.
 9. A comment at merge said "shipped" before publish: worded "ships in <version>", and `Fixes`
    closing only on the default branch is stated.
+
+## Amended 2026-11-08, after the fifth code review (the built command)
+
+- **One quoting form for every shell.** PowerShell also reads U+2018–U+201B as single quotes, so an
+  agent's ’ ended the title early, and on Windows the `!` line may run in Git Bash, where `''` is no
+  escape. Every quote-like character in the title becomes ʼ (U+02BC); the platform no longer
+  changes the command.
+- **`filed:` counts only a URL into this repository.** Another project's issue URL and a bare number
+  ("Bugs filed: 2") were read as kiss-ssg issues. `--status` still takes `#n` or `n`, given
+  explicitly.
+- **`--anonymous` leaves the failing views out**, since their paths can name a client.
+- **Nothing throws out of the command**: a missing `--out` folder or a `--report` that is not a
+  report is exit 2 with a sentence; a broken site `package.json` costs only the name.

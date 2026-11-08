@@ -23,13 +23,14 @@ export function findTokens(text: string): {
     kind: string;
 }[];
 /**
- * An issue reference: a URL into this repository's issues, `#78` or `78`.
- * `issues/7` is never `issues/78`: the number ends at a non-digit.
+ * An issue reference given to `--status`: a URL into this repository's
+ * issues, `#78` or `78`.
  *
  * @param {string} ref
+ * @param {string} repo `owner/name`
  * @returns {number|null}
  */
-export function issueNumber(ref: string): number | null;
+export function issueNumber(ref: string, repo: string): number | null;
 /**
  * The CHANGELOG's one form for a shipped issue, `Fixes [#n](…/issues/n)`.
  * A bare mention does not count. Shared with `test/unit/changelog.test.js`.
@@ -49,13 +50,16 @@ export function fixesLink(repo: string): RegExp;
  */
 export function shippedIn(changelog: string, number: number, repo: string): string | null;
 /**
- * The `filed: <URL or #n>` lines in a text: what a site's session log or
- * `AIKB/site.md` records for an issue it filed.
+ * The `filed: <URL>` lines in a text that name an issue in this
+ * repository: what a site's session log or `AIKB/site.md` records for an
+ * issue it filed. A URL into another project, or a bare number ("Bugs
+ * filed: 2"), is not one.
  *
  * @param {string} text
+ * @param {string} repo `owner/name`
  * @returns {{ number: number, ref: string }[]}
  */
-export function parseFiled(text: string): {
+export function parseFiled(text: string, repo: string): {
     number: number;
     ref: string;
 }[];
@@ -65,9 +69,13 @@ export function parseFiled(text: string): {
  *
  * @param {any[]} reports
  * @param {string} source how the reports were found
+ * @param {{ anonymous?: boolean }} [options] `anonymous` leaves the failing
+ *   views out, since a view's path can name the site or its client
  * @returns {string}
  */
-export function buildSummary(reports: any[], source: string): string;
+export function buildSummary(reports: any[], source: string, { anonymous }?: {
+    anonymous?: boolean;
+}): string;
 /**
  * @typedef {Object} IssueFacts
  * @property {string} version the installed kiss-ssg's
@@ -95,9 +103,11 @@ export function draftIssue({ kind, notes, facts, anonymous }: {
  * `gh`'s output (the new issue's URL) lands in it. Never run here.
  *
  * @param {{ repo: string, title: string, file: string, platform?: string }} input
+ *   `platform` is accepted for callers, and changes nothing: one form serves
+ *   every shell
  * @returns {string}
  */
-export function createCommand({ repo, title, file, platform, }: {
+export function createCommand({ repo, title, file }: {
     repo: string;
     title: string;
     file: string;

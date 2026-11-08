@@ -9,13 +9,13 @@
 - `issueRepo(root?)` — `owner/name` from this package's own `bugs.url`, never the site's.
 - `BUG_HEADINGS`, `FEATURE_HEADINGS` — a draft's `###` headings, in order. `.github/ISSUE_TEMPLATE/bug.yml` and `feature.yml` are held to them by `test/unit/changelog.test.js`.
 - `findTokens(text)` — `[{ line, kind }]` for every token-shaped value, never the value.
-- `issueNumber(ref)` — a number from an issue URL, `#n` or `n`; `null` otherwise.
+- `issueNumber(ref, repo)` — a number from a URL into `repo`'s issues, `#n` or `n` (what `--status` takes); `null` otherwise, including another repository's URL.
 - `fixesLink(repo)` — the one CHANGELOG form of a shipped issue, `Fixes [#n](https://github.com/<repo>/issues/n)`, as a global RegExp (both numbers captured). `test/unit/changelog.test.js` holds every issue link in `CHANGELOG.md` to it.
 - `shippedIn(changelog, n, repo)` — the version whose entry carries that link with `n` twice, or `null`.
-- `parseFiled(text)` — the `filed: <URL or #n>` lines a site's logs or `AIKB/site.md` carry.
+- `parseFiled(text, repo)` — the `filed: <URL>` lines a site's logs or `AIKB/site.md` carry that name an issue in `repo`. Another project's URL, or a bare number ("Bugs filed: 2"), is not one (fifth review, 2026-11-08: both were read as kiss-ssg issues).
 - `buildSummary(reports, source)` — a draft's "The build": per report `ok`, mode, page and failure counts, up to ten failed views, and the audit's check ids each with a count derived from `findings[]`.
 - `draftIssue({ kind, notes, facts, anonymous })` — the draft's Markdown.
-- `createCommand({ repo, title, file, platform })` — `! gh issue create …`, single-quoted for POSIX (`'\''`) or PowerShell (`''`).
+- `createCommand({ repo, title, file })` — `! gh issue create …`, one single-quoted form for bash and PowerShell alike: every quote-like character (`'` and U+2018–U+201B, which PowerShell also reads as a quote) becomes ʼ (U+02BC). On Windows the `!` line may run in Git Bash or PowerShell, which escape a quote differently, and an agent's ’ ended a PowerShell string early (fifth review). The title on GitHub shows ʼ where it had an apostrophe.
 - `parseIssueArgs(argv)`, `runIssue(argv, { cwd, gh, platform, tmpdir, repo, write })` — the whole command, `{ out, err, code }`; `bin/kiss-ssg.js` only prints it. `runGh(args, cwd)` is the default `gh`. `ISSUE_HELP` is the help text.
 
 ## Depends on
@@ -34,4 +34,5 @@
 - **The build is described from `--report` first.** `AIKB/last-build.json` is written only by a passing `kiss-ssg aikb`, so it can never show the failure being reported; it is the fallback and labelled "the last recorded passing build". The config is never read (that would run the build script).
 - **`--status` needs no network for its answer**: it reads the installed `node_modules/kiss-ssg/CHANGELOG.md` (else this package's) for the `Fixes` link. `gh`, when signed in, only adds the issue's state. A bare mention, or a link whose text and URL numbers differ, is not a shipment.
 - **`--filed` reads every log**, not the three a read-back reads, and `AIKB/site.md`, because a fix usually ships several sessions after it was filed, and consolidation moves Feedback into `site.md`.
-- **The site URL** comes from the report's `thirdParty.siteUrl`, which is `null` when `siteUrl` is unset or local, or the build failed; then it is left out. `--anonymous` leaves the name and URL out.
+- **The site URL** comes from the report's `thirdParty.siteUrl`, which is `null` when `siteUrl` is unset or local, or the build failed; then it is left out. `--anonymous` leaves the name and URL out, and the failing views too (their paths can name a client), keeping the counts.
+- **Nothing throws out of `runIssue`.** A site `package.json` that is not JSON costs the draft its name (the folder's is used); an `--out` folder that is not there, or a `--report` that is not a report, is exit 2 with a sentence. The bin has no try/catch, so an escape would print a stack and exit 1, which means "refused" (fifth review).

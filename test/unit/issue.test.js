@@ -63,20 +63,33 @@ describe('findTokens', () => {
 
 describe('issueNumber and parseFiled', () => {
   it('reads a URL, #n or n, and never takes 78 for 7', () => {
-    expect(issueNumber(`https://github.com/${REPO}/issues/78`)).toBe(78)
-    expect(issueNumber(`https://github.com/${REPO}/issues/7`)).toBe(7)
-    expect(issueNumber('#12')).toBe(12)
-    expect(issueNumber('12')).toBe(12)
-    expect(issueNumber('soon')).toBe(null)
+    expect(issueNumber(`https://github.com/${REPO}/issues/78`, REPO)).toBe(78)
+    expect(issueNumber(`https://github.com/${REPO}/issues/7`, REPO)).toBe(7)
+    expect(issueNumber('#12', REPO)).toBe(12)
+    expect(issueNumber('12', REPO)).toBe(12)
+    expect(issueNumber('soon', REPO)).toBe(null)
   })
 
-  it('finds every filed: line, trailing punctuation dropped', () => {
+  // The fifth review (2026-11-08): another project's issue URL was read as a
+  // kiss-ssg issue, so --status answered for an unrelated number.
+  it('takes a URL only into this repository', () => {
+    expect(
+      issueNumber(
+        'https://github.com/handlebars-lang/handlebars.js/issues/1234',
+        REPO,
+      ),
+    ).toBe(null)
+  })
+
+  it('finds every filed: URL into this repository, trailing punctuation dropped, and nothing else', () => {
     const text = [
       '- The purge removed Tailwind classes. filed: https://github.com/cprobert/kiss-ssg/issues/78.',
-      '- Widths. Filed: #80',
+      '- Widths. Filed: https://github.com/cprobert/kiss-ssg/issues/80',
+      '- Partials. filed: https://github.com/handlebars-lang/handlebars.js/issues/1234',
+      '- Bugs filed: 2',
       '- skipped: not kiss',
     ].join('\n')
-    expect(parseFiled(text).map((f) => f.number)).toEqual([78, 80])
+    expect(parseFiled(text, REPO).map((f) => f.number)).toEqual([78, 80])
   })
 })
 
@@ -184,29 +197,25 @@ describe('draftIssue', () => {
   })
 })
 
-describe('createCommand', () => {
-  it('quotes the title for the shell it is printed for, and starts with !', () => {
-    expect(
-      createCommand({
+describe('createCommand, in any shell', () => {
+  // The fifth review: an agent's curly apostrophe (’) ends a PowerShell
+  // single-quoted string, and on Windows `!` may run in Git Bash, where ''
+  // is no escape. Every quote-like character in the title becomes ʼ
+  // (U+02BC), a letter, so one single-quoted form is safe in both shells.
+  it.each(['linux', 'win32'])(
+    'on %s, quotes nothing a shell reads as a quote',
+    (platform) => {
+      const command = createCommand({
         repo: REPO,
-        title: "Purge's bug",
+        title: "Purge drops a site’s and a page's ‘classes’ ‚x‛",
         file: '/t/x.md',
-        platform: 'linux',
-      }),
-    ).toBe(
-      `! gh issue create --repo ${REPO} --title 'Purge'\\''s bug' --body-file '/t/x.md'`,
-    )
-    expect(
-      createCommand({
-        repo: REPO,
-        title: "Purge's bug",
-        file: 'C:\\t\\x.md',
-        platform: 'win32',
-      }),
-    ).toBe(
-      `! gh issue create --repo ${REPO} --title 'Purge''s bug' --body-file 'C:\\t\\x.md'`,
-    )
-  })
+        platform,
+      })
+      expect(command).toBe(
+        `! gh issue create --repo ${REPO} --title 'Purge drops a siteʼs and a pageʼs ʼclassesʼ ʼxʼ' --body-file '/t/x.md'`,
+      )
+    },
+  )
 })
 
 describe('parseIssueArgs', () => {
@@ -377,7 +386,7 @@ describe('runIssue', () => {
     fs.mkdirSync(logs, { recursive: true })
     fs.writeFileSync(
       path.join(logs, '2026-11-01-a.md'),
-      '---\nbranch: a\n---\n- x. filed: #78\n',
+      `---\nbranch: a\n---\n- x. filed: https://github.com/${REPO}/issues/78\n- y. filed: #79, which is not a URL\n`,
     )
     fs.mkdirSync(path.join(site, 'AIKB'))
     fs.writeFileSync(
@@ -395,5 +404,54 @@ describe('runIssue', () => {
   it('exits 2 on usage', () => {
     expect(run(['bug']).code).toBe(2)
     expect(run(['--status', 'soon']).code).toBe(2)
+  })
+
+  // The fifth review: these threw, and the bin printed a stack trace and
+  // exited 1, which means "refused for a token".
+  it('says what it could not do, with exit 2, for an --out folder that is not there or a broken package.json', () => {
+    const missing = run(
+      ['bug', '--title', 'x', '--no-search', '--out', 'no/such/d.md'],
+      {
+        write: (f) => fs.writeFileSync(f, ''),
+      },
+    )
+    expect(missing.code).toBe(2)
+    expect(missing.err).toMatch(/could not write the draft/)
+    fs.writeFileSync(path.join(site, 'package.json'), '{ "name": "x", }')
+    const broken = run(['bug', '--title', 'x', '--no-search', '--out', 'd.md'])
+    expect(broken.code).toBe(0)
+    expect(fs.readFileSync(path.join(site, 'd.md'), 'utf8')).toMatch(
+      new RegExp(`### Site\\n\\n${path.basename(site)}`),
+    )
+  })
+
+  // The fifth review: --anonymous left the failing views' paths, which can
+  // name the client, in the build summary.
+  it('leaves the failing views out under --anonymous, keeping the counts', () => {
+    fs.writeFileSync(
+      path.join(site, 'report.json'),
+      JSON.stringify([
+        {
+          ok: false,
+          mode: 'check',
+          pages: [],
+          failures: [{ view: 'views/clients/acme/pricing.hbs' }],
+        },
+      ]),
+    )
+    run([
+      'bug',
+      '--title',
+      'x',
+      '--report',
+      'report.json',
+      '--anonymous',
+      '--no-search',
+      '--out',
+      'a.md',
+    ])
+    const body = fs.readFileSync(path.join(site, 'a.md'), 'utf8')
+    expect(body).not.toContain('acme')
+    expect(body).toContain('1 failure')
   })
 })
