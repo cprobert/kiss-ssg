@@ -431,6 +431,14 @@ const COVERAGE = [
     pattern: /^(?=[\s\S]*`font-weight`)(?=[\s\S]*text-wrap: balance)/,
     skills: [skill('kiss-ssg', 'kiss-design')],
   },
+  // 2026-11-08, #78's reporter: a poster restyle repeated 'Play video' in CSS,
+  // which a load= change would silently contradict.
+  {
+    feature:
+      'a restyled embed button reads its words from data-kiss-embed-label',
+    pattern: /attr\(data-kiss-embed-label\)/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
+  },
   {
     feature: 'the front-end checks: 100dvh is for an app shell',
     pattern: /100dvh/,

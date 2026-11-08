@@ -201,7 +201,7 @@ The recipe and its defaults. The qualities were checked by eye on real sites' ph
 new Kiss({
   assets: {
     images: {
-      widths: [480, 960, 1440, 1920],
+      widths: [480, 768, 960, 1440, 1920], // 768: a full-width image on a phone
       formats: ['avif', 'webp'], // the <source>s, in order; [] for the fallback alone
       quality: { avif: 50, webp: 75, jpeg: 80 },
       cache: '.kiss-cache/images', // or false

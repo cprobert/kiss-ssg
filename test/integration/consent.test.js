@@ -734,11 +734,11 @@ describe('{{embed}} on a site with no config.consent', () => {
     expect(report.ok).toBe(true)
     const home = await site.read('public/index.html')
     expect(home).toContain(
-      'aria-label="Play the video: Puppy class">Play the video</button>',
+      'aria-label="Play the video: Puppy class" data-kiss-embed-label="Play the video">Play the video</button>',
     )
     expect(home).toContain('<p>Hosted by Google.</p>')
     expect(home).toContain(
-      'aria-label="Watch recall: Recall">Watch recall</button>',
+      'aria-label="Watch recall: Recall" data-kiss-embed-label="Watch recall">Watch recall</button>',
     )
     expect(home).toContain('<p>On Vimeo.</p>')
     expect(home).toContain('>See it on Vimeo</a>')

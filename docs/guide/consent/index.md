@@ -54,6 +54,21 @@ The poster is an image in your site's assets, drawn by the `{{image}}` pipeline 
 
 Text on a photo needs a backing, so with a poster, and only then, kiss also writes colour: the notice becomes a compact dark strip along the bottom with white text, the link beside the button, and a video's Load button gets a play mark. On a phone the strip covers under half the box (44% at 375 px, measured), so the still shows. Change the colours with two custom properties on the box, `--kiss-embed-poster-scrim` (the strip, `rgba(0,0,0,.72)`) and `--kiss-embed-poster-text` (`#fff`). The box also carries the class `kiss-embed--poster`, and the still is in `.kiss-embed__poster`. The poster goes with the notice when the frame loads.
 
+The Load button carries its words in `data-kiss-embed-label`, whatever `load=` or `ui.text` made them. A restyle that redraws the words, for example on a backing of their own, reads them from there rather than repeating them, so changing the wording never needs a CSS edit:
+
+```css
+.kiss-embed--poster .kiss-embed__notice button {
+  font-size: 0; /* the text node; its accessible name is unchanged */
+}
+.kiss-embed--poster .kiss-embed__notice button::after {
+  content: attr(data-kiss-embed-label);
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.72);
+}
+```
+
 -   **With no `config.consent`,** each embed carries its own small script, so nothing goes in `<head>` and no banner is needed. Nothing is remembered: the next page asks again. The wording is the default `ui.text` (below), or your own (§ The words, below).
 -   **Under `config.consent`,** the embed is one of the site's services, and it must be declared there (`youtube: {}` is enough), or the page fails: an undeclared embed would be missing from the banner and the cookie table. The notice also offers **Always allow**, the visitor's stored choice reveals it, and withdrawing that choice puts the notice back.
 -   **On a learning package's page** `{{embed}}` is always the facade, even under `config.consent`: the LMS deals with consent for a course, and a facade stores and remembers nothing. An LMS may serve packages under a Content-Security-Policy that refuses frames from other sites, so press Load in the LMS itself before the course goes live; the link to the provider works either way.

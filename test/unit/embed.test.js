@@ -106,7 +106,7 @@ describe('embedMarkup under config.consent', () => {
     )
     // A video: Play video, named with the title (2.13.0).
     expect(out).toMatch(
-      /<button type="button" data-kiss-consent-action="load" aria-label="Play video: [^"]+">Play video<\/button>/,
+      /<button type="button" data-kiss-consent-action="load" aria-label="Play video: [^"]+" data-kiss-embed-label="Play video">Play video<\/button>/,
     )
     expect(out).toContain(
       '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
@@ -182,7 +182,7 @@ describe('embedMarkup with no config.consent (a facade)', () => {
     )
     expect(out).toContain('<div class="kiss-embed__notice" data-kiss-embed-ui>')
     expect(out).toContain(
-      '<button type="button" data-kiss-embed-action="load" aria-label="Play video: Our video">Play video</button>',
+      '<button type="button" data-kiss-embed-action="load" aria-label="Play video: Our video" data-kiss-embed-label="Play video">Play video</button>',
     )
     expect(out).not.toContain('data-kiss-consent')
     expect(out).not.toContain('Always allow')
@@ -252,7 +252,7 @@ describe('embedMarkup with a poster', () => {
       poster: POSTER,
     })
     expect(out).toMatch(
-      /data-kiss-embed-action="load" aria-label="[^"]+"><svg aria-hidden="true" focusable="false"[^>]*><path[^>]*\/><\/svg>/,
+      /data-kiss-embed-action="load" aria-label="[^"]+" data-kiss-embed-label="[^"]+"><svg aria-hidden="true" focusable="false"[^>]*><path[^>]*\/><\/svg>/,
     )
     const map = facade('google-maps', {
       src: 'https://www.google.com/maps/embed?pb=x',
@@ -289,7 +289,7 @@ describe('embedMarkup wording', () => {
   it('labels a video’s button Play video, and names it with the title', () => {
     const out = facade('youtube', { hash: { id: 'abc' }, title: 'Puppy class' })
     expect(out).toContain(
-      '<button type="button" data-kiss-embed-action="load" aria-label="Play video: Puppy class">Play video</button>',
+      '<button type="button" data-kiss-embed-action="load" aria-label="Play video: Puppy class" data-kiss-embed-label="Play video">Play video</button>',
     )
   })
 
@@ -299,7 +299,7 @@ describe('embedMarkup wording', () => {
       title: 'Our shop',
     })
     expect(out).toContain(
-      '<button type="button" data-kiss-embed-action="load" aria-label="Load it: Our shop">Load it</button>',
+      '<button type="button" data-kiss-embed-action="load" aria-label="Load it: Our shop" data-kiss-embed-label="Load it">Load it</button>',
     )
   })
 
@@ -314,7 +314,7 @@ describe('embedMarkup wording', () => {
       },
     })
     expect(out).toContain(
-      'aria-label="Watch the class: Puppy class">Watch the class</button>',
+      'aria-label="Watch the class: Puppy class" data-kiss-embed-label="Watch the class">Watch the class</button>',
     )
     expect(out).toContain('<p>Hosted by Google.</p>')
     expect(out).toContain('>See it on YouTube</a>')
@@ -326,7 +326,7 @@ describe('embedMarkup wording', () => {
       title: 'Dosbarth',
     })
     expect(out).toContain(
-      'data-kiss-consent-action="load" aria-label="Chwarae fideo: Dosbarth">Chwarae fideo</button>',
+      'data-kiss-consent-action="load" aria-label="Chwarae fideo: Dosbarth" data-kiss-embed-label="Chwarae fideo">Chwarae fideo</button>',
     )
     expect(out).toContain(
       '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
@@ -338,7 +338,66 @@ describe('embedMarkup wording', () => {
       hash: { id: 'abc' },
       title: 'Dosbarth',
     })
-    expect(out).toContain('aria-label="Llwytho: Dosbarth">Llwytho</button>')
+    expect(out).toContain(
+      'aria-label="Llwytho: Dosbarth" data-kiss-embed-label="Llwytho">Llwytho</button>',
+    )
+  })
+})
+
+// A site that redraws the button's words (a poster restyle sets the text node
+// to nothing and draws a backed label in ::after, #78's reporter) reads them
+// from data-kiss-embed-label, so CSS never repeats 'Play video', and load=
+// or ui.text needs no CSS edit.
+describe('the Load button’s words, for CSS', () => {
+  const label = (out) =>
+    out.match(
+      /data-kiss-(?:embed|consent)-action="load"[^>]*?data-kiss-embed-label="([^"]*)"/,
+    )?.[1]
+
+  it('carries the words a facade’s button shows', () => {
+    expect(label(facade('youtube', { hash: { id: 'abc' }, title: 'T' }))).toBe(
+      'Play video',
+    )
+    expect(
+      label(
+        facade('google-maps', {
+          src: 'https://www.google.com/maps/embed?pb=x',
+          title: 'T',
+        }),
+      ),
+    ).toBe('Load it')
+  })
+
+  it('follows load= and ui.text, under config.consent too', () => {
+    expect(
+      label(
+        facade('youtube', {
+          hash: { id: 'abc' },
+          title: 'T',
+          own: { load: 'Watch {service}' },
+        }),
+      ),
+    ).toBe('Watch YouTube')
+    expect(
+      label(
+        gatedWith({ embedPlay: 'Chwarae fideo' }, 'youtube', {
+          hash: { id: 'abc' },
+          title: 'T',
+        }),
+      ),
+    ).toBe('Chwarae fideo')
+  })
+
+  it('escapes the words as an attribute', () => {
+    expect(
+      label(
+        facade('youtube', {
+          hash: { id: 'abc' },
+          title: 'T',
+          own: { load: 'Say "go" & <play>' },
+        }),
+      ),
+    ).toBe('Say &quot;go&quot; &amp; &lt;play&gt;')
   })
 })
 
