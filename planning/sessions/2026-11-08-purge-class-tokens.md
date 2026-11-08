@@ -158,6 +158,21 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Also fixed:** the `./` spelling, Always allow's label, GUIDE's safelist sentence (pseudo-classes and attributes match too), and two stale comments.
   - **Recorded, not fixed:** the one-slot cache under two concurrent instances; mixed separators on Windows; the audit's per-stylesheet page lists missing the joined-classes cache; AVIF counted as decoded everywhere (the operator's accepted cost).
 - **The stop rule (operator, 2026-11-08: "Ordinary sites only").** One site per build script, honest files, current browsers. A finding outside that is recorded, not fixed. One more round only if it reads new code (the feedback loop), then the close's review. The branch still has no Codex review.
+- **The feedback loop** (`abbb2e6`): built to the contract `planning/plans/2026-11-08-feedback-loop.md`, which a fresh-context critique read before any code (nine flaws, all folded in; the operator chose `!` for how the issue URL comes back).
+- **Round 5** (the operator's `/code-review`, over the whole branch; the round the stop rule allowed for the new code): 10 findings.
+  - **Fixed in `f8f70f6`:**
+    - one quoting form for bash and PowerShell (curly apostrophes, and `!` on Windows running in either shell);
+    - `filed:` counts only a URL into this repository;
+    - `--anonymous` drops the failing views;
+    - nothing throws out of the command;
+    - one `escapeRegExp` for this branch's three copies.
+  - **Recorded:**
+    - the 768 `### Upgrading` note, at the close: tell sites to run `npx kiss-ssg images <script>` and commit the cache, or CI encodes every 768 variant on each deploy;
+    - staged and plain builds spell page paths differently: `main` does the same, not a regression;
+    - the greedy-regex wording, already fixed in round 4;
+    - the logger's altitude, kept by the operator at pulse 1;
+    - the older regex-escape copies in `audit.js` and `links.js`, where `links.js` lacks `*`.
+  - **Rounds stop here under the rule.** The close's review is next.
 
 **2026-11-08 — the branch's remit, restated (operator: "Can we make this branch a bug fix and feature feedback branch. Is there need for multiple branches").** One branch, no split. Its remit is the client feedback from the #78 exchange:
 
