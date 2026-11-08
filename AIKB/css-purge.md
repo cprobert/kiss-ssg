@@ -7,15 +7,16 @@ Remove the CSS no written page uses from the stylesheets a site names in `config
 ## Public interface
 
 - `resolvePurge(purge)` → `KissPurge | null`. `null`, `false` and absent purge nothing. An object needs a non-empty `files` list (the paths a template asks for; a leading `/` is dropped). `safelist` is strings and RegExps, default `[]`. `scripts` is a boolean, default `true`. Anything else throws, naming the key. `lib/config.js` calls it, so a typo fails at `new Kiss()`.
-- `purgeCss(css, { html, scripts, safelist })` → the purged CSS. It calls `new PurgeCSS().purge()` over:
+- `purgeCss(css, { html, scripts, safelist, reads })` → the purged CSS. It calls `new PurgeCSS().purge()` over:
   - the raw HTML and JS;
   - **one more content item, holding the pages' exact `class` attribute values** (`attributeClasses`, one per line, extension `kiss-classes`), read by an extractor that only splits lines.
 
-  The options: `classTokens` (cached per content string for one `html` list) as the `defaultExtractor`, `DYNAMIC_ATTRIBUTES` as `dynamicAttributes`, and `safelist` as both PurgeCSS's `standard` and `greedy` lists (a string becomes the exact-name RegExp). PurgeCSS is **imported when this runs**, not at module load: `lib/config.js` imports this module on every build, and PurgeCSS brings PostCSS with it.
+  The options: `classTokens` as the `defaultExtractor`, `DYNAMIC_ATTRIBUTES` as `dynamicAttributes`, and `safelist` as PurgeCSS's **`greedy`** list only (a string becomes the exact-name RegExp; `greedy` keeps everything `standard` would). PurgeCSS is **imported when this runs**, not at module load: `lib/config.js` imports this module on every build, and PurgeCSS brings PostCSS with it.
 
+- `purgeReads()` → a fresh `PurgeReads` (`{ tokens, classes }`, two `Map`s keyed by page or script text) for one run of purges: `purgeStylesheets` makes one per build and `lib/css-audit.js` `auditCss` one per audit. Passed to every `purgeCss` of the run as `reads`, so each page and script is tokenised and parsed once however many stylesheets it meets. PurgeCSS runs its extractor over every content string for every stylesheet. Keyed by text, not by list: the audit hands each stylesheet a different list. The first version kept a module-level `WeakMap` on the list's identity, which the audit never hit (review, 2026-11-08).
 - `attributeClasses(html)` → the classes in real `class` attributes, parsed with htmlparser2 (decoded, never matched in text), each once.
 - `classTokens(content)` → every candidate class a script, or text, might name. It is the union of three sets:
-  - whole tokens: up to whitespace, quotes, backticks or `<>`, except inside `[…]`, where quotes and `>` are allowed; not ending in `:`;
+  - whole tokens: up to whitespace, quotes, backticks or `<>`, except inside `[…]`, where quotes and `>` are allowed (one nested group, `[&[open]]`); a trailing `:` is trimmed;
   - the value after the first `=` of an unquoted attribute;
   - the `[A-Za-z0-9_-]+` pieces PurgeCSS's default found.
 
@@ -50,6 +51,7 @@ Remove the CSS no written page uses from the stylesheets a site names in `config
 
   The operator chose to make the failure impossible rather than detect it. The one hole left, a class a script assembles from pieces (`'modal-' + name`), was never visible to any check, which is why the safelist exists.
 
+- **`classTokens` is linear on any input, and the shape of `WHOLE_TOKEN` is why.** A bracket group never runs past whitespace or the next `[` and holds at most one nested group, and the trailing `:` is trimmed by a loop after the match. The first version refused a trailing `:` inside the pattern and let a group run to any `]`. Measured on this branch: 50 to 53 s on 200,000 characters of `:`, of `[`, or of `a[` repeated. `/:+$/` as the trim cost 21 s on 200,000 `:` followed by a letter. A minified bundle can hold such a run. `test/unit/css-purge.test.js` times all four at 200,000 characters against a 250 ms budget.
 - **A safelist entry keeps every rule that names it.** `standard` alone only exempts the matching selector part. The rest is still checked, so `safelist: ['btn']` lost `.btn[data-size=xl]` on a page with no `data-size="xl"`. `greedy` keeps a rule when any part matches (the operator's decision, 2026-11-08). A site with a safelist may keep more CSS than it did before.
 - **ARIA state selectors are kept whatever the markup holds.** A disclosure button written `aria-expanded="false"` lost its `aria-expanded:rotate-180` rule (`[aria-expanded=true]`), because PurgeCSS also wants the attribute's value in the content and a script supplies it.
 

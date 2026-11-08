@@ -570,6 +570,7 @@ describe('auditCss and runCss over a folder', () => {
         html: ['<link rel=stylesheet href=/a.css><p class=used>'],
         scripts: ["el.classList.add('fromscript')"],
         safelist: [],
+        reads: { tokens: expect.any(Map), classes: expect.any(Map) },
       },
     ])
     expect(audit.stylesheets.map((s) => s.path)).toEqual(['a.css'])

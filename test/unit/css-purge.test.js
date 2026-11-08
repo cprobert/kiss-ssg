@@ -3,6 +3,7 @@ import {
   attributeClasses,
   classTokens,
   purgeCss,
+  purgeReads,
   resolvePurge,
 } from '../../lib/css-purge.js'
 import { createAssetManifest } from '../../lib/asset-manifest.js'
@@ -259,9 +260,53 @@ describe('purgeCss after the review', () => {
   })
 })
 
+describe('purgeReads', () => {
+  it('reads each page once across the purges of one run, whatever list it arrives in', async () => {
+    const reads = purgeReads()
+    const a = '<p class="a">x</p>'
+    const b = '<p class="b">y</p>'
+    await purgeCss('.a{color:red}', {
+      html: [a, b],
+      scripts: [],
+      safelist: [],
+      reads,
+    })
+    const tokensAfterFirst = reads.tokens.get(a)
+    await purgeCss('.b{color:red}', {
+      html: [b, a],
+      scripts: [],
+      safelist: [],
+      reads,
+    })
+    expect(reads.classes.size).toBe(2)
+    expect(reads.tokens.get(a)).toBe(tokensAfterFirst)
+  })
+})
+
 describe('classTokens, safely', () => {
   it('reads a token that looks like a prototype property as text', () => {
     expect(classTokens('&constructor;').join(' ')).not.toMatch(/native code/)
+  })
+
+  // The second review (2026-11-08): 20,000 `:` or `[` in a row took half a
+  // second, and a run ten times longer about fifty. Linear now: 200,000
+  // characters of each well inside the budget a page of text gets.
+  it.each([
+    ['colons', ':'.repeat(200_000)],
+    ['open brackets', '['.repeat(200_000)],
+    ['a[ repeated', 'a['.repeat(100_000)],
+    ['colons then a letter', `${':'.repeat(200_000)}a`],
+  ])('reads a long run of %s in linear time', (_label, text) => {
+    const start = performance.now()
+    classTokens(text)
+    expect(performance.now() - start).toBeLessThan(250)
+  })
+
+  it('still trims a trailing : and keeps one nested bracket group', () => {
+    const tokens = classTokens('hover: [&[open]]:bg-white')
+    expect(tokens).toContain('hover')
+    expect(tokens).not.toContain('hover:')
+    expect(tokens).toContain('[&[open]]:bg-white')
   })
 
   it('splits only at the first = of an unquoted attribute, so a long bundle stays linear', () => {

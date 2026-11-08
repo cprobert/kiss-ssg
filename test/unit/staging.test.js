@@ -15,6 +15,7 @@ import {
   writeConfig,
   writeRoot,
 } from '../../lib/staging.js'
+import { reportedPath } from '../../lib/build-report.js'
 
 // a1k9training's build log printed `./docs.kiss-staging-41508-olwws7/_redirects`:
 // every writer logs the file it wrote, and under staging that is the sibling.
@@ -46,9 +47,33 @@ describe('unstageText and stagingLogger', () => {
     const odd = './$&-$$'
     const { stagingDir: oddStaging } = stagingSiblings(odd)
     expect(unstageText(path.join(oddStaging, 'css'), oddStaging, odd)).toBe(
-      `${odd}${path.sep}css`,
+      `${odd}/css`,
     )
   })
+
+  // The second review (2026-11-08): the log and the report named one file
+  // two ways (`./docs\x\y.html` against `./docs/x/y.html`).
+  it('names a file exactly as the report does, in every spelling', () => {
+    for (const file of [
+      path.join(stagingDir, 'x', 'y.html'),
+      path.resolve(stagingDir, 'x', 'y.html'),
+      `${stagingDir}/x/y.html`,
+    ])
+      expect(unstageText(`wrote ${file}`, stagingDir, build)).toBe(
+        `wrote ${reportedPath(file, build, stagingDir)}`,
+      )
+    expect(
+      unstageText(path.join(stagingDir, 'x', 'y.html'), stagingDir, build),
+    ).toBe('./docs/x/y.html')
+  })
+
+  it.skipIf(process.platform === 'win32')(
+    'leaves a \\ after the folder alone where it is a file name character',
+    () => {
+      const text = `${stagingDir}\\notes`
+      expect(unstageText(text, stagingDir, build)).toBe(text)
+    },
+  )
 
   it('maps success and info only: warn, error and debug keep the real path', () => {
     const base = { info: vi.fn(), warn: vi.fn(), debug: vi.fn() }
@@ -58,10 +83,34 @@ describe('unstageText and stagingLogger', () => {
     log.info(file)
     log.warn(`could not remove ${file}`)
     log.debug(`ENOTEMPTY ${file}`)
-    expect(base.info).toHaveBeenLastCalledWith(`./docs${path.sep}images`)
+    expect(base.info).toHaveBeenLastCalledWith('./docs/images')
     expect(base.warn).toHaveBeenLastCalledWith(`could not remove ${file}`)
     expect(base.debug).toHaveBeenLastCalledWith(`ENOTEMPTY ${file}`)
     expect(log.info).toBe(log.info)
+    expect(log.warn).toBe(log.warn)
+  })
+
+  it('runs every method on the site logger itself, so private fields work', () => {
+    class Logger {
+      #lines = []
+      warn(m) {
+        this.#lines.push(m)
+      }
+      info(m) {
+        this.#lines.push(m)
+      }
+      get lines() {
+        return this.#lines
+      }
+    }
+    const site = new Logger()
+    const log = stagingLogger(site, {
+      _stagingDir: stagingDir,
+      _buildTarget: build,
+    })
+    log.warn('w')
+    log.info(path.join(stagingDir, 'a'))
+    expect(site.lines).toEqual(['w', './docs/a'])
   })
 
   it('maps strings only while a build is staged', () => {
@@ -69,10 +118,7 @@ describe('unstageText and stagingLogger', () => {
     const kiss = { _stagingDir: stagingDir, _buildTarget: build }
     const log = stagingLogger(base, kiss)
     log.success(path.join(stagingDir, '_redirects'), 42)
-    expect(base.success).toHaveBeenLastCalledWith(
-      `./docs${path.sep}_redirects`,
-      42,
-    )
+    expect(base.success).toHaveBeenLastCalledWith('./docs/_redirects', 42)
     expect(log.level).toBe(3)
     kiss._stagingDir = null
     log.success(path.join(stagingDir, '_redirects'))

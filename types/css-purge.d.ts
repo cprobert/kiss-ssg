@@ -67,16 +67,37 @@ export function classTokens(content: string): string[];
  */
 export function attributeClasses(html: string[]): string[];
 /**
+ * What `purgeCss` reads from content, remembered for one run.
+ *
+ * @typedef {Object} PurgeReads
+ * @property {Map<string, string[]>} tokens `classTokens` per page or script
+ * @property {Map<string, string[]>} classes `attributeClasses` per page
+ */
+/**
+ * A fresh memory for one run of purges: one build's `purgeStylesheets`, or
+ * one `kiss-ssg css` audit. PurgeCSS runs its extractor over every content
+ * string for every stylesheet, so without it a build that purges three files
+ * read every page four times. Keyed by the text, so a page is read once
+ * whatever list it arrives in (the audit hands each stylesheet only the pages
+ * that link it), and an edited page is simply new text. It lives as long as
+ * its run, which is why it is passed in rather than kept here.
+ *
+ * @returns {PurgeReads}
+ */
+export function purgeReads(): PurgeReads;
+/**
  * Purge one stylesheet's CSS against the given HTML and scripts.
  *
  * @param {string} css
- * @param {{ html: string[], scripts: string[], safelist: (string|RegExp)[] }} content
+ * @param {{ html: string[], scripts: string[], safelist: (string|RegExp)[], reads?: PurgeReads }} content
+ * `reads` from `purgeReads()`, shared by every purge of one run
  * @returns {Promise<string>}
  */
-export function purgeCss(css: string, { html, scripts, safelist }: {
+export function purgeCss(css: string, { html, scripts, safelist, reads }: {
     html: string[];
     scripts: string[];
     safelist: (string | RegExp)[];
+    reads?: PurgeReads;
 }): Promise<string>;
 /**
  * Purge every stylesheet `purge.files` names, in the build at `root`.
@@ -157,4 +178,17 @@ export type PurgeResult = {
      * bytes
      */
     after: number;
+};
+/**
+ * What `purgeCss` reads from content, remembered for one run.
+ */
+export type PurgeReads = {
+    /**
+     * `classTokens` per page or script
+     */
+    tokens: Map<string, string[]>;
+    /**
+     * `attributeClasses` per page
+     */
+    classes: Map<string, string[]>;
 };

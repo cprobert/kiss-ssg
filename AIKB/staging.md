@@ -30,10 +30,14 @@ direct call would step around the patch.
   a `\`-joined path on Windows until 2026-11-05).
 - `stagingLogger(logger, kiss)` → the logger `Kiss` keeps as `this.logger`: the site's own,
   behind a Proxy. While `_stagingDir` is set, it passes the string arguments of **`success` and
-  `info` only** through `unstageText`. `unstageText(text, stagingDir, buildDir)` rewrites a path
+  `info` only** through `unstageText`. `unstageText(text, stagingDir, buildDir)` finds each path
   **under** the staging folder, in any of its spellings (as made, as `path.join` writes it,
-  absolute, either separator), to the build folder; the build folder is inserted as text, so a
-  `$&` in its name is not a replacement pattern. Every writer logs the file it wrote through
+  absolute), and hands the whole path to `build-report.js`'s `reportedPath`. So the log and the
+  report name a file by **one rule** (`./docs/x/y.html`, with `/`). The first version swapped the
+  prefix by text and kept `\`, and the second review (2026-11-08) measured the two disagreeing.
+  `\` is a separator in the pattern only on Windows, as in `reportedPath`. The pattern is compiled
+  once per staging folder, and the replacement is a function, so a `$&` in the build folder's name
+  is text. Every writer logs the file it wrote through
   `success`, and under staging that named the sibling (`./docs.kiss-staging-…/_redirects`,
   `sitemap.xml`; a1k9training, 2.13.3). The mapping sits at the logger so that a writer added
   later cannot bring the leak back.
@@ -43,8 +47,15 @@ direct call would step around the patch.
     user to delete a locked file in the live site.
   - The folder named on its own is never rewritten either: "could not remove the staging folder …,
     delete it by hand" has to name it (`test/integration/staging.test.js`).
-  - The wrappers are cached per method, so `kiss.logger.info === kiss.logger.info`. `kiss.logger`
-    is not `config.logger`.
+  - **Every method runs on the site's logger, never on the Proxy.** The mapped ones are applied to it
+    and the rest are bound to it, so a logger class whose methods read private fields (`this.#out`)
+    still works; the first version returned them unbound. One function per method while the method is
+    the same one, so `kiss.logger.warn === kiss.logger.warn` holds and a spy installed later is still
+    reached. `kiss.logger` is not `config.logger`.
+  - **Recorded, not changed:** a writer's own `error` line under staging (`Error writing
+./public.kiss-staging-…/consent-banners.json`) names a folder the failed build then discards. It
+    read the same way before this logger existed, and changing it was outside the branch that added
+    the logger (second review, 2026-11-08).
 - `renameForPromote(from, to, folder)` — `_renameForPromote()`.
 - `restorePrevious`, `promote`, `swapIn`, `discardStaging`, `abandonStaging`, `removeStaging` —
   the `_`-prefixed method of the same name on `Kiss`.

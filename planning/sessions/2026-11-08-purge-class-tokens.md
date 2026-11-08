@@ -123,6 +123,20 @@ Every fix was seen red, against `a4b8752` or under a mutation:
 
 Stop rule for any further round: same scope (this branch's `lib/` diff), ordinary sites (one site per script, honest files), correctness only.
 
+**2026-11-08 — second review round (operator's `/code-review`, high), on `951548e`.** Nine findings. Dispositions:
+
+1. **`WHOLE_TOKEN` quadratic**: **fixed**. Bounded bracket groups, and the trailing `:` trimmed by a loop. Measured red: 50–53 s on 200k characters for the old regex, 21 s for `/:+$/` (my own first draft of the trim). Now under the 250 ms test budget.
+2. **The log and the report used two path rules**: **fixed**. `unstageText` hands each matched path to `reportedPath`.
+3. **Unbound logger methods** (a class with private fields throws): **fixed**, every method is bound. A regression this branch had introduced.
+4. **Patterns rebuilt per call**: **fixed**, compiled once per staging folder.
+5. **`WeakMap` cache on list identity, never hit by the audit**: **fixed**. `purgeReads()` is made per run and keyed by text.
+6. **Unmapped `error` lines name a discarded staging folder**: **recorded, not fixed**. They read the same way on `main`, so the change is outside the scope. Noted in `AIKB/staging.md`.
+7. **`standard` redundant beside `greedy`**: **fixed**, `greedy` only. The greedy meaning for RegExps goes into GUIDE in the docs step.
+8. **`\` treated as a separator on POSIX**: **fixed** with 2, and tested on POSIX only.
+9. **GUIDE.md does not mention `DYNAMIC_ATTRIBUTES`**: the docs criterion, still open.
+
+Each fix was seen red against `951548e` or under a mutation. No finding changed kind: all are ordinary-site cases.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
