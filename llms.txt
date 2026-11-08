@@ -10,7 +10,7 @@ Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `
 
 ## The build script
 
-Name it `router.js` at the project root, with `"type": "module"`, `main` pointing at it, and `build`/`dev`/`check`/`aikb` scripts (`"check": "kiss-ssg check router.js"`, `"aikb": "kiss-ssg aikb router.js"`). It is a router: `new Kiss(config)`, the `.page()`/`.pages()`/`.scan()` table, the `.generate()`/`.sitemap()`/`.llms()`/`.feed()`/`.robots()` chain, and `await kiss.complete().catch(reportBuildFailure)`. Anything else goes in a module beside it. Each extraction has its own yes/no trigger (GUIDE.md § The build script):
+Name it `router.js` at the project root, with `"type": "module"`, `main` pointing at it, and `build`/`dev`/`check`/`aikb` scripts (`kiss-ssg init` writes them). It is a router: `new Kiss(config)`, the `.page()`/`.pages()`/`.scan()` table, the `.generate()`/`.sitemap()`/`.llms()`/`.feed()`/`.robots()` chain, and `await kiss.complete().catch(reportBuildFailure)`. Anything else goes in a module beside it. Each extraction has its own yes/no trigger (GUIDE.md § The build script):
 
 - **Tier 0, one file:** no custom helpers, no fact stated twice. File length is never a trigger.
 - **Tier 1, `helpers/`:** at the **first** custom helper. Its `index.js` exports `registerHelpers(kiss)` and **kiss calls it** from `config.folders.helpers` (default `./helpers`): never register it in the router. Export the pure function; register a thin adapter over it.
@@ -95,6 +95,7 @@ Prose: GUIDE.md § Cleaning the build folder, § Building more than one site fro
 
 ## Traps nothing reports
 
+- Never work round a kiss bug, gap or missing or wrong doc quietly: `npx kiss-ssg issue bug|feature --title …` drafts a report (never posts); tell the user. GUIDE.md § Reporting to kiss-ssg.
 - `cleanBuild: true` empties the build folder **before** anything renders, so a failed build leaves it empty. Use `'atomic'` for published output. A `dev` run writes into `folders.build`: point dev at a git-ignored folder if that one is published.
 - `links.trailingSlash` and `host` describe your host, so kiss cannot default them right: Netlify serves `/courses/`, Firebase with `trailingSlash: false` serves `/courses`, and no host file is written until `host` (or a `format`) names one. kiss marks only hashed files `immutable`; never give an unhashed one a year.
 - `{{asset}}` renders **no leading slash**: write `href="/{{asset "css/site.css"}}"`. `{{root}}` is a value your page supplies, not a helper.
@@ -134,8 +135,7 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`; read confi
 
 ## Checking a build
 
-`npx kiss-ssg check <script> [args…]` dry-runs the build (staged, discarded), prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the audit are advisory. `aikb <script>` is the same run, recording `AIKB/` when it passes (§ Recording the knowledge base). GUIDE.md § Checking a build; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills: call them, never shell. `speed <folder>` (Lighthouse KPIs) and `css <folder>`: GUIDE.md § Measuring speed, § Auditing CSS. Report a kiss bug or gap, never work around it quietly: `issue bug|feature --title …` drafts it, never posts (§ Reporting to kiss-ssg).
-
+`npx kiss-ssg check <script> [args…]` dry-runs the build (staged, discarded), prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the audit are advisory. `aikb <script>` is the same run, recording `AIKB/` when it passes (§ Recording the knowledge base). GUIDE.md § Checking a build; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills: call them, never shell. `speed <folder>` (Lighthouse KPIs) and `css <folder>`: GUIDE.md § Measuring speed, § Auditing CSS.
 `npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed, and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
 
 ## Docs
