@@ -149,6 +149,19 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Fixed in `2caac60`:** `PSEUDO_PART` in PurgeCSS's `standard` safelist, red-first test, recorded in `AIKB/upstream.md`.
   - **Branch at `2caac60`: 0 differences** over 69,428 elements and 246 state checks. The 2 skips are the reporter's expected `/courses/` formFocus. Purged CSS 54,747 bytes, against the reporter's 54,833 with the safelist. The only focus rule still removed, `.focus-visible\:outline-none`, appears in no page or script.
 
+**2026-11-08 — the branch's remit, restated (operator: "Can we make this branch a bug fix and feature feedback branch. Is there need for multiple branches").** One branch, no split. Its remit is the client feedback from the #78 exchange:
+
+- **Bug fixes:** #78 (the purge and the audit), the `kiss-ssg aikb` staging-name leak, and the `:focus-visible` loss the clean room found.
+- **Feature feedback:**
+  - item 4, the 768 default image width;
+  - item 5, the `image-oversized` `<picture>` fallback rule, to be brought to the operator before it is built;
+  - item 6, the poster button words exposed to CSS;
+  - the issue process and the client feedback loop (`kiss-ssg issue`, the issue forms, `/branch-open` taking an issue URL, `/branch-close` writing `Fixes #N`).
+- **Consequences:**
+  - **Impact surface:** public API with new features. The Intent's proposed patch (2.13.4) no longer fits; the proposal at the close becomes a minor, 2.14.0, with `### Upgrading`. The operator decides.
+  - **The #78 fix ships with the rest**, not ahead of it.
+  - **The branch name stays `fix/purge-class-tokens`.** It is not pushed, so a rename is still cheap if the operator wants one. The PR title will name both halves.
+
 **2026-11-08 — the purge proven on diploma-msc in a clean room (operator: "Approved to implement a clean room run with diploma-msc").**
 
 - **The clean room:** a robocopy of diploma-msc's working tree into `%TEMP%\cleanroom-dmsc`, then `npm ci`. Its models are gitignored, so fleet-check's committed-state clone cannot build it. The copy's `config/assets.js` turns the purge off when `CR_PURGE=none`. The site's own folder was not written to. Three builds of 683 pages (`node router production`):
