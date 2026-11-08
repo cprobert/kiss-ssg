@@ -53,6 +53,20 @@ opened: 2026-11-08
 
 **Out of scope, noted.** The reporter has a second, unfiled bug: `kiss-ssg aikb` names its staging folder wrongly. It stays off this branch unless the operator says otherwise.
 
+**2026-11-08 — absorbed: the staging folder's name in the report (operator: "verify the second bug … what needs to change to ensure kiss is robust and works for this client").** This supersedes the line above.
+
+- **Verified, measured.** a1k9training's committed `AIKB/last-build.json` (kiss-ssg 2.13.3) lists `cacheHeaders.files` as `docs.kiss-staging-20908-5k2eal\cache-headers.json` and `…\_headers`. Every `aikb` run writes a fresh random suffix, so the committed record churns on every run. Four of that site's session logs asked for it to be filed (2026-11-05 ×2, 11-07 ×2), and it never was.
+- **Cause, reproduced against the engine** (scratch script calling `reportedPath` from `lib/build-report.js`):
+  - The 2026-11-05 fix compares strings. With `folders.build: './docs'` the staging folder is `./docs.kiss-staging-…`, but `writeCacheHeaders` builds paths with `path.join`, which drops the `./`. The prefix test misses, and the staging path is reported unchanged.
+  - An absolute path under staging is missed too.
+  - This is not Windows-only: on POSIX, `path.join` also drops `./`.
+- **The class:** a path is compared by its string, not by where it points. The fix compares resolved paths and reports them build-relative with `/`.
+- **Siblings to sweep before the commit:** every other `reportedPath` and `stagingDir` comparison (`lib/staging.js` `reportedPath`/`stagedPath`, `lib/aikb.js`), and every writer that hands back `path.join`ed paths.
+- **Criteria added:**
+  - [ ] A red-first test: `folders.build: './site'` under `cleanBuild: 'atomic'` (and `KISS_AIKB`). No report field and no `last-build.json` value contains `.kiss-staging-` or `.kiss-old-`, on either platform.
+  - [ ] Running `aikb` twice in a row on the fleet clone of a1k9training leaves `AIKB/last-build.json` byte-identical between the runs.
+- **Also checked, nothing to do:** the earlier a1k9training upstream notes. `consent-missing` on `/maps/embed` was fixed by `fix/consent-missing-path-hosts`, and the embed poster by `{{embed poster=…}}`. Script-injected iframes are beyond a static audit, by design. The site's `qa:dev-watch` (`node generate dev`, `pgrep`) is the site's own script, not kiss.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
