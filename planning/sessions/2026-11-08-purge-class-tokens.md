@@ -137,6 +137,18 @@ Stop rule for any further round: same scope (this branch's `lib/` diff), ordinar
 
 Each fix was seen red against `951548e` or under a mutation. No finding changed kind: all are ordinary-site cases.
 
+**2026-11-08 — the purge proven on a1k9training in a clean room (operator: "Prove the purge on a1k9training in a fresh clean room"), and one more defect fixed.**
+
+- **The clean room:** a robocopy of a1k9training's _working_ state (its uncommitted `router.js` holds the purge config) into `%TEMP%\cleanroom-a1k9`, without `node_modules`, `docs` or `.git`, then `npm ci` from its lockfile.
+  - Its `router.js` copy chooses the purge by `CR_PURGE`. The site's own folder was not written to.
+  - Engines: the published 2.13.3 from the lockfile, and tarballs of committed HEADs (`git archive` + `npm pack`), each checked for its exports before use.
+  - Comparison: the reporter's harness, its paths pointed at the clean room, plus an `ariaExpanded` state (every `[aria-expanded]` set to `true`). Computed style of every element and its `::before`/`::after`, 20 pages, 375 and 1440 wide.
+- **Results, full stylesheet (73,560 bytes, the issue's figure) against each purge, no safelist:**
+  - **2.13.3: 35,217 differences** over 63,935 elements, plus 22 count or skip lines. The breakage reproduces: hero height, nav border, `p-1.5`.
+  - **Branch at `9ed8b8b`: 62 differences**, every one a missing keyboard focus ring (`outline`/`box-shadow` on the nav button and form inputs). PurgeCSS 8.0.0 removes `:focus-visible { … }`, a selector made of pseudo-classes alone. The site's catch-all safelist had been keeping it by accident.
+  - **Fixed in `2caac60`:** `PSEUDO_PART` in PurgeCSS's `standard` safelist, red-first test, recorded in `AIKB/upstream.md`.
+  - **Branch at `2caac60`: 0 differences** over 69,428 elements and 246 state checks. The 2 skips are the reporter's expected `/courses/` formFocus. Purged CSS 54,747 bytes, against the reporter's 54,833 with the safelist. The only focus rule still removed, `.focus-visible\:outline-none`, appears in no page or script.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
