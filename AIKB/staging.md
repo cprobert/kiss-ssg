@@ -61,9 +61,18 @@ direct call would step around the patch.
     still works; the first version returned them unbound. One function per method while the method is
     the same one, so `kiss.logger.warn === kiss.logger.warn` holds and a spy installed later is still
     reached. `kiss.logger` is not `config.logger`.
-  - **The Proxy stands over an empty object**, forwarding `get`, `has` and `set` to the logger. A
-    Proxy's `get` must return a read-only, non-configurable property's own value, so over a frozen
-    logger the first `info` threw (third review, 2026-11-08).
+  - **The Proxy stands over the logger itself**, so `kiss.logger` has the logger's keys and class,
+    and a spy or override defined on it (`vi.spyOn(kiss.logger, 'warn')`) is reached. A Proxy's
+    `get` must return a read-only, non-configurable property as it is, so a **frozen** logger's
+    methods pass through unmapped and unbound: it works, but its write lines keep the staging name.
+    The third review found the first version threw on a frozen logger; the fix put the Proxy over
+    an empty object, which the fourth review found lost spies, `Object.keys` and `instanceof`.
+    This version keeps the common case whole and gives up the mapping only for the rare one.
+  - **The pattern also matches a `./` spelling** of a folder configured without one (`docs` →
+    `./docs.kiss-staging-…`), for a writer that logs `./<path>` (fourth review).
+  - **Recorded, not changed:** the pattern cache is one slot, so two instances staging at once in
+    one process rebuild it on alternate lines (a cost, never a wrong result); a path that mixes `\`
+    and `/` on Windows is not matched.
   - **Under check and aikb the write lines name the build folder too** (`./docs/sitemap.xml`), though
     nothing is written there; the closing line says so. The operator chose this over a
     `(not written)` marker or the staging name (2026-11-08): stable, and the same as the record.

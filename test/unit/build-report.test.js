@@ -132,6 +132,22 @@ describe('buildReport', () => {
     expect(formatReport(report)).toContain('winner: robots; refused: assets')
     expect(exitCodeFor([JSON.parse(JSON.stringify(report))], 0)).toBe(0)
   })
+  // The fourth review (2026-11-08): the pass that maps an absolute path under
+  // the build folder rewrote a plain build's relative paths too
+  // (`docs/x.html` → `./docs/x.html`), so a site's first `kiss-ssg check`
+  // after upgrading would have seen every page move against its record.
+  it('keeps a plain build’s relative page paths as they were written', () => {
+    const written = path.join('docs', 'x.html')
+    const report = buildReport({
+      stack: [page('x.hbs', written)],
+      failures: [],
+      buildDir: './docs',
+      mode: 'build',
+      startedAt: Date.now(),
+    })
+    expect(report.pages[0].buildTo).toBe(written)
+  })
+
   it('reports a clean build as ok, in a fixed key order', () => {
     const report = buildReport({
       stack: [page('index.hbs', './public/index.html')],

@@ -109,7 +109,7 @@ describe('embedMarkup under config.consent', () => {
       /<button type="button" data-kiss-consent-action="load" aria-label="Play video: [^"]+" data-kiss-embed-label="Play video">Play video<\/button>/,
     )
     expect(out).toContain(
-      '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
+      '<button type="button" data-kiss-consent-action="allow" data-kiss-embed-label="Always allow YouTube">Always allow YouTube</button>',
     )
     // Inside the notice, so it goes with it when the frame comes.
     expect(out).toContain(
@@ -329,7 +329,7 @@ describe('embedMarkup wording', () => {
       'data-kiss-consent-action="load" aria-label="Chwarae fideo: Dosbarth" data-kiss-embed-label="Chwarae fideo">Chwarae fideo</button>',
     )
     expect(out).toContain(
-      '<button type="button" data-kiss-consent-action="allow">Always allow YouTube</button>',
+      '<button type="button" data-kiss-consent-action="allow" data-kiss-embed-label="Always allow YouTube">Always allow YouTube</button>',
     )
   })
 
@@ -386,6 +386,18 @@ describe('the Load button’s words, for CSS', () => {
         }),
       ),
     ).toBe('Chwarae fideo')
+  })
+
+  // The fourth review: the consent box's Always allow button had no label,
+  // so a restyle of it still had to repeat its words.
+  it('puts the Always allow button’s words on it too', () => {
+    const out = gatedWith({ embedAllow: 'Caniatáu {service}' }, 'youtube', {
+      hash: { id: 'abc' },
+      title: 'T',
+    })
+    expect(out).toMatch(
+      /data-kiss-consent-action="allow" data-kiss-embed-label="Caniatáu YouTube">Caniatáu YouTube<\/button>/,
+    )
   })
 
   it('escapes the words as an attribute', () => {

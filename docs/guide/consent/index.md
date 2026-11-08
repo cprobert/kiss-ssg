@@ -54,7 +54,7 @@ The poster is an image in your site's assets, drawn by the `{{image}}` pipeline 
 
 Text on a photo needs a backing, so with a poster, and only then, kiss also writes colour: the notice becomes a compact dark strip along the bottom with white text, the link beside the button, and a video's Load button gets a play mark. On a phone the strip covers under half the box (44% at 375 px, measured), so the still shows. Change the colours with two custom properties on the box, `--kiss-embed-poster-scrim` (the strip, `rgba(0,0,0,.72)`) and `--kiss-embed-poster-text` (`#fff`). The box also carries the class `kiss-embed--poster`, and the still is in `.kiss-embed__poster`. The poster goes with the notice when the frame loads.
 
-The Load button carries its words in `data-kiss-embed-label`, whatever `load=` or `ui.text` made them. A restyle that redraws the words, for example on a backing of their own, reads them from there rather than repeating them, so changing the wording never needs a CSS edit:
+Each button carries its words in `data-kiss-embed-label`, whatever `load=` or `ui.text` made them: Load, and under `config.consent` Always allow. A restyle that redraws the words, for example on a backing of their own, reads them from there rather than repeating them, so changing the wording never needs a CSS edit:
 
 ```css
 .kiss-embed--poster .kiss-embed__notice button {

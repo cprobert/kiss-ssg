@@ -116,7 +116,10 @@ describe('unstageText and stagingLogger', () => {
   // The third review (2026-11-08): a Proxy's get must return a read-only,
   // non-configurable property's own value, so a frozen logger threw on its
   // first call.
-  it('works with a frozen logger', () => {
+  // A Proxy must return a frozen method as it is, so a frozen logger works
+  // but is not mapped: the cost of keeping the Proxy over the logger itself,
+  // which the fourth review showed spies and Object.keys depend on.
+  it('works with a frozen logger, passing its lines through as written', () => {
     const lines = []
     const site = Object.freeze({
       info: (m) => lines.push(m),
@@ -128,7 +131,27 @@ describe('unstageText and stagingLogger', () => {
     })
     log.info(path.join(stagingDir, 'a'))
     log.warn('w')
-    expect(lines).toEqual(['./docs/a', 'w'])
+    expect(lines).toEqual([path.join(stagingDir, 'a'), 'w'])
+  })
+
+  // The fourth review: over an empty object, the Proxy ignored a spy and
+  // hid the logger's own keys and class.
+  it('looks like the site logger: a spy is reached, keys and class are its own', () => {
+    class SiteLogger {
+      info() {}
+      warn() {}
+    }
+    const site = new SiteLogger()
+    const log = stagingLogger(site, {
+      _stagingDir: stagingDir,
+      _buildTarget: build,
+    })
+    const spy = vi.spyOn(log, 'warn')
+    log.warn('w')
+    expect(spy).toHaveBeenCalledWith('w')
+    expect(log instanceof SiteLogger).toBe(true)
+    const plain = { info() {}, warn() {} }
+    expect(Object.keys(stagingLogger(plain, {}))).toEqual(['info', 'warn'])
   })
 
   it('leaves the staging folder named with a trailing separator alone', () => {
@@ -136,6 +159,15 @@ describe('unstageText and stagingLogger', () => {
       const text = `could not remove ${stagingDir}${sep}, delete it by hand`
       expect(unstageText(text, stagingDir, build)).toBe(text)
     }
+  })
+
+  // The fourth review: a build folder configured as `docs` (no `./`) and a
+  // writer that logs `./<path>` left the staging name in the log.
+  it('maps a ./ spelling of a folder configured without one', () => {
+    const { stagingDir: bare } = stagingSiblings('docs')
+    expect(unstageText(`wrote ./${bare}/x.html`, bare, 'docs')).toBe(
+      'wrote docs/x.html',
+    )
   })
 
   it('never maps a match that starts partway through a longer path', () => {
