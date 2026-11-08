@@ -227,6 +227,17 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **2.13.3 against branch** on four of those pages (16 state checks): only the load-to-load kinds, and no others.
 - **Scratch tools:** in the session scratchpad, `cleanroom/`: `build-dmsc.sh`, `purge-compare-cr.mjs` (now with `SAMPLE`, `ONLY`, `PAGES` and `ALL`, a 5 s action timeout, both sides printed, and zero positions and the origin normalised), `rule-diff.mjs`, `probe-icon.mjs`, `time-purge.mjs`.
 
+**2026-11-08 — before the close: review round 6 and the fleet re-check (operator: "implement 1 and 2 before the close").**
+
+- **Review round 6:** a fresh-context agent over `3ca1b98..HEAD`, under the stop rule (ordinary sites only). Every claim was run against `compactCss`/`minifyText`. **No finding at the counting severity.** It checked selector whitespace, at-rule params (`@media`, `@supports`, `@container`, `@scope`, `@import … layer() supports()`, `@layer`, `@page`), `@charset`, custom properties, `!important`, nesting semicolons, `/*!` placement and the error path, and found them fine. The minor findings:
+  1. The doc said every comment but `/*!` is removed, but only comment nodes are. **Fixed** in the JSDoc and the AIKB doc (`9a58691`).
+  2. `@media(x)` grew by a byte, and the purge keeps the output with no size check. **Fixed:** no space when the params open with `(`. The test was seen red first (`9a58691`).
+  3. The last statement at-rule of a file loses its semicolon. Valid by the CSS Syntax end-of-file rule, and checked in Chromium only by the reviewer. **Recorded** in the AIKB doc.
+  4. and 5., outside the threat model: an escaped trailing space in a selector (clean-css writes the identical wrong output), and the IE `*zoom` hack. **Recorded, not fixed.**
+- **Fleet check** (`scripts/fleet-check.mjs C:/Code/kiss/a1k9training --base main`, at `71307c2`): 20 pages on each side, 0 failures, 0 broken links, 0 audit findings. 498 of 499 files are byte-identical, the CSS among them. The one difference is `courses/puppy-socialisation.html`, which gains `data-kiss-embed-label="Play video"` (item 6, intended).
+- **The clean-room purge, re-run** with a tarball of `71307c2` in `%TEMP%\cleanroom-a1k9`: `head-full` 73,560 bytes, `head-nosafe` 54,747 bytes. The purged sheet is **byte-identical** to `branch2-nosafe`, which gave 0 computed-style differences over 69,428 elements. The only page difference is the same embed label. So the browser comparison was not re-run: it would compare the same CSS.
+- **Codex:** still out of credits, so the close's Codex step stays a known gap.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
