@@ -305,6 +305,19 @@ describe('purgeReads', () => {
     expect(reads.classes.size).toBe(2)
     expect(reads.tokens.get(a)).toBe(tokensAfterFirst)
   })
+
+  // The third review (2026-11-08): a build hands every stylesheet the same
+  // page list, and each purge flattened and joined its classes again.
+  it('joins one page list’s exact classes once, for every stylesheet it purges', async () => {
+    const reads = purgeReads()
+    const html = ['<p class="a">x</p>', '<p class="b">y</p>']
+    const options = { html, scripts: [], safelist: [], reads }
+    await purgeCss('.a{color:red}', options)
+    const joined = reads.exact.get(html)
+    expect(joined).toBe('a\nb')
+    await purgeCss('.b{color:red}', options)
+    expect(reads.exact.get(html)).toBe(joined)
+  })
 })
 
 describe('classTokens, safely', () => {

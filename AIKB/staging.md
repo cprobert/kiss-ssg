@@ -24,7 +24,11 @@ direct call would step around the patch.
   getters: the folder this build writes into, and `config` with `folders.build` pointed at it (the
   same object as `config` when nothing is staged).
 - `sweepStaleSiblings(kiss)` — `_sweepStaleSiblings()`.
-- `stagedPath(kiss, target)` — `_stagedPath()`. `toReportedPath(kiss, target)` —
+- `stagedPath(kiss, target)` — `_stagedPath()`. It decides "inside the build folder" by
+  `path.relative`, as `reportedPath` does, so on Windows a target in another case still follows
+  the build into staging; until the third review (2026-11-08) it was a case-sensitive text prefix,
+  and such a copy landed in the live folder, which the promotion then replaced.
+  `toReportedPath(kiss, target)` —
   `_reportedPath()`, which delegates to `build-report.js`'s `reportedPath` so the report and
   the failure messages map a staged path by one rule (they were two copies, and both missed
   a `\`-joined path on Windows until 2026-11-05).
@@ -36,8 +40,13 @@ direct call would step around the patch.
   report name a file by **one rule** (`./docs/x/y.html`, with `/`). The first version swapped the
   prefix by text and kept `\`, and the second review (2026-11-08) measured the two disagreeing.
   `\` is a separator in the pattern only on Windows, as in `reportedPath`. The pattern is compiled
-  once per staging folder, and the replacement is a function, so a `$&` in the build folder's name
-  is text. Every writer logs the file it wrote through
+  once per staging folder and kept in one slot (a map gained a pattern per build, each folder
+  having a new suffix), and the replacement is a function, so a `$&` in the build folder's name
+  is text. After the third review (2026-11-08) a match starts only where a path can start (not
+  after a word character, `.`, `~`, `-` or a separator), so the shorter relative spelling is never
+  matched partway through a longer path. It needs a name character after the separator, so
+  `…staging/,` in a sentence is the folder, not a file (it was rewritten to `./docs`). On Windows it
+  ignores case, as `path.relative` does (a lowercase drive letter was spliced into `c:\…\./docs/x`). Every writer logs the file it wrote through
   `success`, and under staging that named the sibling (`./docs.kiss-staging-…/_redirects`,
   `sitemap.xml`; a1k9training, 2.13.3). The mapping sits at the logger so that a writer added
   later cannot bring the leak back.
@@ -52,6 +61,12 @@ direct call would step around the patch.
     still works; the first version returned them unbound. One function per method while the method is
     the same one, so `kiss.logger.warn === kiss.logger.warn` holds and a spy installed later is still
     reached. `kiss.logger` is not `config.logger`.
+  - **The Proxy stands over an empty object**, forwarding `get`, `has` and `set` to the logger. A
+    Proxy's `get` must return a read-only, non-configurable property's own value, so over a frozen
+    logger the first `info` threw (third review, 2026-11-08).
+  - **Under check and aikb the write lines name the build folder too** (`./docs/sitemap.xml`), though
+    nothing is written there; the closing line says so. The operator chose this over a
+    `(not written)` marker or the staging name (2026-11-08): stable, and the same as the record.
   - **Recorded, not changed:** a writer's own `error` line under staging (`Error writing
 ./public.kiss-staging-…/consent-banners.json`) names a folder the failed build then discards. It
     read the same way before this logger existed, and changing it was outside the branch that added

@@ -99,6 +99,26 @@ describe('image facts', () => {
     )
     expect(facts.imageRefs).toEqual(['/narrow.jpg', '/wide.avif'])
   })
+
+  // The third review (2026-11-08): a browser skips a <source> whose type it
+  // cannot decode, or that names no srcset, and loads what follows, so the
+  // rule holds only for a source every current browser would take.
+  it.each([
+    [
+      'a type browsers do not all decode',
+      '<source type="image/jxl" srcset="/h.jxl">',
+    ],
+    ['no srcset', '<source type="image/webp">'],
+  ])(
+    'takes the whole <picture> when the first <source> has %s',
+    (_label, source) => {
+      const facts = extractPageFacts(
+        doc(`<picture>${source}<img src="/h.jpg" alt=""></picture>`),
+        'x.html',
+      )
+      expect(facts.imageRefs).toContain('/h.jpg')
+    },
+  )
 })
 
 describe('image-oversized', () => {

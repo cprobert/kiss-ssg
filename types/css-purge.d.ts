@@ -72,6 +72,9 @@ export function attributeClasses(html: string[]): string[];
  * @typedef {Object} PurgeReads
  * @property {Map<string, string[]>} tokens `classTokens` per page or script
  * @property {Map<string, string[]>} classes `attributeClasses` per page
+ * @property {WeakMap<readonly string[], string>} exact every page's exact
+ * classes, deduplicated and joined, per page list: a build purges each of its
+ * stylesheets against the same list
  */
 /**
  * A fresh memory for one run of purges: one build's `purgeStylesheets`, or
@@ -191,4 +194,10 @@ export type PurgeReads = {
      * `attributeClasses` per page
      */
     classes: Map<string, string[]>;
+    /**
+     * every page's exact
+     * classes, deduplicated and joined, per page list: a build purges each of its
+     * stylesheets against the same list
+     */
+    exact: WeakMap<readonly string[], string>;
 };

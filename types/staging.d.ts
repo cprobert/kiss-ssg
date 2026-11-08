@@ -51,8 +51,11 @@ export function toReportedPath(kiss: any, target: any): any;
  * the one rule for a staged path, so the log and the report name a file the
  * same way (`./docs/x/y.html`). `\` is a separator only where it is one:
  * elsewhere it is a legal character in a file name, as `reportedPath` holds.
- * The folder named on its own is left alone: a message about the staging
- * folder itself ("could not remove …, delete it by hand") has to name it.
+ * The folder named on its own is left alone, with or without a trailing
+ * separator: a message about the staging folder itself ("could not remove …,
+ * delete it by hand") has to name it. A match starts only where a path can
+ * start, never partway through a longer one (`/elsewhere/docs.kiss-staging-…`),
+ * and on Windows a path in another case is the same path.
  *
  * @param {string} text
  * @param {string} stagingDir

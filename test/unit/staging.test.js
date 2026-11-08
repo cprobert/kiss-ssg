@@ -113,6 +113,47 @@ describe('unstageText and stagingLogger', () => {
     expect(site.lines).toEqual(['w', './docs/a'])
   })
 
+  // The third review (2026-11-08): a Proxy's get must return a read-only,
+  // non-configurable property's own value, so a frozen logger threw on its
+  // first call.
+  it('works with a frozen logger', () => {
+    const lines = []
+    const site = Object.freeze({
+      info: (m) => lines.push(m),
+      warn: (m) => lines.push(m),
+    })
+    const log = stagingLogger(site, {
+      _stagingDir: stagingDir,
+      _buildTarget: build,
+    })
+    log.info(path.join(stagingDir, 'a'))
+    log.warn('w')
+    expect(lines).toEqual(['./docs/a', 'w'])
+  })
+
+  it('leaves the staging folder named with a trailing separator alone', () => {
+    for (const sep of ['/', path.sep]) {
+      const text = `could not remove ${stagingDir}${sep}, delete it by hand`
+      expect(unstageText(text, stagingDir, build)).toBe(text)
+    }
+  })
+
+  it('never maps a match that starts partway through a longer path', () => {
+    const text = `/elsewhere/${path.basename(stagingDir)}/x.html`
+    expect(unstageText(text, stagingDir, build)).toBe(text)
+  })
+
+  it.runIf(process.platform === 'win32')(
+    'reads a Windows path in any case, as Windows does',
+    () => {
+      const abs = path.resolve(stagingDir, 'x.html')
+      const lower = abs[0].toLowerCase() + abs.slice(1)
+      expect(unstageText(`wrote ${lower}`, stagingDir, build)).toBe(
+        'wrote ./docs/x.html',
+      )
+    },
+  )
+
   it('maps strings only while a build is staged', () => {
     const base = { success: vi.fn(), level: 3 }
     const kiss = { _stagingDir: stagingDir, _buildTarget: build }
@@ -191,6 +232,22 @@ describe('stagedPath', () => {
     expect(stagedPath(kiss, '/site/elsewhere')).toBe('/site/elsewhere')
     expect(stagedPath(kiss, '/site/public-old/x')).toBe('/site/public-old/x')
   })
+
+  // The third review: one rule for "inside the build folder", the one
+  // reportedPath uses, so on Windows a target in another case still follows
+  // the build into staging rather than being lost at the promotion.
+  it.runIf(process.platform === 'win32')(
+    'moves a target spelled in another case on Windows',
+    () => {
+      const win = {
+        _stagingDir: 'C:\\site\\public.kiss-staging',
+        _buildTarget: 'C:\\site\\public',
+      }
+      expect(stagedPath(win, 'c:\\SITE\\public\\css')).toBe(
+        path.join('C:\\site\\public.kiss-staging', 'css'),
+      )
+    },
+  )
 
   it('changes nothing when no build is staged', () => {
     expect(stagedPath({ _stagingDir: null }, '/site/public/css')).toBe(
