@@ -149,6 +149,28 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Fixed in `2caac60`:** `PSEUDO_PART` in PurgeCSS's `standard` safelist, red-first test, recorded in `AIKB/upstream.md`.
   - **Branch at `2caac60`: 0 differences** over 69,428 elements and 246 state checks. The 2 skips are the reporter's expected `/courses/` formFocus. Purged CSS 54,747 bytes, against the reporter's 54,833 with the safelist. The only focus rule still removed, `.focus-visible\:outline-none`, appears in no page or script.
 
+**2026-11-08 — the purge proven on diploma-msc in a clean room (operator: "Approved to implement a clean room run with diploma-msc").**
+
+- **The clean room:** a robocopy of diploma-msc's working tree into `%TEMP%\cleanroom-dmsc`, then `npm ci`. Its models are gitignored, so fleet-check's committed-state clone cannot build it. The copy's `config/assets.js` turns the purge off when `CR_PURGE=none`. The site's own folder was not written to. Three builds of 683 pages (`node router production`):
+  - `full`: no purge;
+  - `base-site`: 2.13.3 with the site's safelist;
+  - `branch-site`: the `2caac60` tarball with the same safelist.
+- **Sizes of `learna.css`:**
+  - full: 195,874 bytes, 24.4 KB Brotli;
+  - 2.13.3 purged: 97,454 bytes, 15.8 KB Brotli;
+  - branch purged: 104,479 bytes, 16.5 KB Brotli.
+  - `kiss-ssg css` reports Removable as 35% on the full build; the real saving is 32%.
+- **Rules:** the branch removes **0** selectors that 2.13.3 kept, and keeps 73 more. All 73 are greedy-safelist Bootstrap compounds named by `/^show$/` and `/^dropdown/` (e.g. `.show>.btn-success.dropdown-toggle`).
+- **Purge time:** the branch's `purgeCss` over all 683 pages, 39 scripts and the 191 KB sheet took 1.9–2.1 s in three runs, with a browser check running beside it.
+- **Computed style, full against branch:** a sample of 51 pages (every root page, plus the first page of each folder) at 375 and 1440 wide, 251,940 elements. The states were rest, focusNav, openDetails and ariaExpanded. a1k9training's `menu` state was dropped: diploma-msc has no `site-menu`, and each miss cost two 30 s timeouts (the first run took more than 90 minutes for nothing).
+  - 9,005 differences, **none from the purge**, sorted into:
+    - **7,904 from the harness itself.** A computed `url()` is absolute, and the two builds are served on different ports (the `iti__*` flag sprites, the `LI` ticks). Normalised in the harness afterwards.
+    - **Zero spelled two ways.** The minifier writes `0%` as `0`, so a background position or gradient stop computes as `0px` instead of `0%`, with the same rendering. It writes `outline:none` as `outline:0`: the style is `none` on both sides, so no outline is drawn, but Chrome reports the width as `medium` (3px) under the first spelling and 0px under the second (`#search-bar:focus`). Both rewrites are present under 2.13.3 too.
+    - **Content that changes between loads.** The `/c/` images and the `/find-your-fit-quiz` card heights differ in both directions. Full against full on those pages gives the same kinds (272 differences).
+    - **Time-driven.** The last 113: a countdown clock (`#clockdiv` and its `col-6` cells), a loading spinner, Vue fades caught halfway, and a testimonial carousel.
+  - **2.13.3 against branch** on four of those pages (16 state checks): only the load-to-load kinds, and no others.
+- **Scratch tools:** in the session scratchpad, `cleanroom/`: `build-dmsc.sh`, `purge-compare-cr.mjs` (now with `SAMPLE`, `ONLY`, `PAGES` and `ALL`, a 5 s action timeout, both sides printed, and zero positions and the origin normalised), `rule-diff.mjs`, `probe-icon.mjs`, `time-purge.mjs`.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
