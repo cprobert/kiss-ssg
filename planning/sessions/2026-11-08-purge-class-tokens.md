@@ -240,6 +240,21 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Offer:** sampling 51 of 683 pages for the browser check, with the rule comparison covering all 683 — **kept**.
   - **Decision: continue.** The docs next.
 
+- **2026-11-08 (fifth pulse, after the docs, items 4–6 and review round 3)** — at `08336d1`; all five gates green at `08336d1` before its AIKB edits, `test/aikb.test.js` and prettier green after; 0 commits behind `origin/main`.
+  - **Docs: met, except the CHANGELOG** (at the close, with the version). `7d333c4`:
+    - GUIDE § Purged CSS says what counts as used, the hole and the greedy safelist; each of its 14 claims was run through `purgeCss`.
+    - "Tailwind needs no purge" is replaced by measured numbers (9.4 → 8.4 KB Brotli) and banned in `CONTRADICTIONS`, seen red.
+    - No `llms.txt` line for the purge: 24 characters to spare, and the trap is in GUIDE and the skill an agent turns the purge on from.
+  - **Item 4: met** (`05751c4`). 768 in the default widths. a1k9training, 20 pages at 412 px and 1.75x: −19.9% image bytes to a phone, +16% cached.
+  - **Item 5: met** (`2700b6e`). The operator chose "first `<source>` only"; a1k9training at 1600 wide: 10 findings → 0.
+  - **Item 6: met** (`aad5f5b`). `data-kiss-embed-label`, checked in Chromium. The reporter session was told of 4–6.
+  - **Review round 3** (the operator's `/code-review`, over `main...HEAD`, so it covers `2caac60` too): 10 findings, all fixed red-first in `08336d1`. The operator's call on one: check-mode write lines keep naming the build folder. The largest fix (`lib/staging.js`) was shown to the operator.
+  - **Not started:** the issue process and feedback loop (contract first), the clean-room agent.
+  - **Drift:** none beyond the remit amended at `075dc3c`. The proposed version is a minor (2.14.0). GUIDE's "Before 2.14" and "wider than 2.13" follow that proposal and change if the operator chooses another number.
+  - **Eyeball: looked.** GUIDE § Purged CSS rendered from `docs/guide/assets/`, sent as an image. "Reads right."
+  - **Offer:** the fallback `src` stays the lower-middle width, so a 960–1440 px source now gets a 768 `src` — **kept**.
+  - **Decision: continue.** The feedback-loop contract (`planning/plans/`), its adversarial critique, then the build. Then the clean-room agent.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
