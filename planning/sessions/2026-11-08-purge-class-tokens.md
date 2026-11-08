@@ -104,6 +104,23 @@ Criteria added:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-08** — First slice `a4b8752`, all five gates green, 0 commits behind `origin/main`.
+  - **#78 extractor and audit: met for the engine.** Each test was seen red first:
+    - 9 Tailwind classes plus the script-string case, red on `main`;
+    - the unquoted attribute, red under a mutation;
+    - the audit going 100% → 0% removable;
+    - the safelist `greedy` change, red before the fix.
+  - **Guard: met.** With 2.13.3's extractor put back, the Tailwind fixture build fails and names all 5 classes. The `.card .title`, partly-used component, `@property`/`@layer`/`@keyframes`/pseudo-element-only and safelist cases are silent.
+  - **Staging leak: met in tests.** The integration build from a `./`-relative folder was red on the record (`public.kiss-staging-69272-y3nete\_headers`) and, separately, red on the log (`_redirects`, `sitemap.xml`). It is green and byte-stable across two records.
+  - **Fleet: partial.**
+    - a1k9training: identical (499 files, 0 differ). Its committed `router.js` has no purge, though, so this shows only that nothing else moved.
+    - diploma-msc: both builds fail in the clone, 68 failures each, because its Orchard models are gitignored. The folders are byte-identical. The branch's check log names no staging folder; base's names it on 7 lines (`public.kiss-staging-39020-qw41ss/css/…`). All 36 page entries differ; inferred, not measured, to be the same mapping.
+  - **Not started:** criteria 4–6, the feedback loop, docs, the clean-room check.
+  - **Eyeball: looked** — the guard's failure message for 5 Tailwind classes. "Reads right."
+  - **Review:** the operator runs `/code-review` on the slice. Pending.
+  - **Offer:** the staging logger Proxy — **kept**.
+  - **Decision: adjust course, then continue.** `scripts/fleet-check.mjs` gets a way to copy named site paths (uncommitted or gitignored) into its clone, with a `test/unit/` test. Then diploma-msc reruns with its models, and a1k9training with its working `router.js`, with and without the safelist, through the reporter's harness. Before the docs and the feedback loop.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
