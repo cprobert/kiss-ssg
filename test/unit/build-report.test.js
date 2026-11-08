@@ -6,6 +6,7 @@ import {
   reportedPath,
 } from '../../lib/build-report.js'
 import { exitCodeFor } from '../../lib/check.js'
+import { stagingSiblings } from '../../lib/staging.js'
 import path from 'node:path'
 
 const manifest = (entries) => ({ toObject: () => entries })
@@ -52,6 +53,47 @@ describe('reportedPath', () => {
       ).toBe('C:\\site\\public/a/b.css')
     },
   )
+
+  // a1k9training (2.13.3): `folders.build: './docs'` makes the staging folder
+  // `./docs.kiss-staging-…` (stagingSiblings), but path.join drops the `./`,
+  // so the string prefix test above never matched and `last-build.json`
+  // carried a new random folder name on every `aikb` run. The two tests above
+  // passed a staging folder with no `./`, which the engine never builds.
+  describe('with the staging folder stagingSiblings really makes', () => {
+    const build = './docs'
+    const { stagingDir } = stagingSiblings(build)
+
+    it('maps a path.join under it, on every platform', () => {
+      expect(
+        reportedPath(path.join(stagingDir, '_headers'), build, stagingDir),
+      ).toBe('./docs/_headers')
+      expect(
+        reportedPath(
+          path.join(stagingDir, 'cache', 'headers.json'),
+          build,
+          stagingDir,
+        ),
+      ).toBe('./docs/cache/headers.json')
+    })
+
+    it('maps an absolute path under it', () => {
+      expect(
+        reportedPath(path.resolve(stagingDir, '_headers'), build, stagingDir),
+      ).toBe('./docs/_headers')
+    })
+
+    it('maps the folder itself, however it is written', () => {
+      expect(reportedPath(path.resolve(stagingDir), build, stagingDir)).toBe(
+        build,
+      )
+      expect(reportedPath(path.join(stagingDir), build, stagingDir)).toBe(build)
+    })
+
+    it('still leaves a sibling with a longer name alone', () => {
+      const sibling = path.join(`${stagingDir}x`, 'a')
+      expect(reportedPath(sibling, build, stagingDir)).toBe(sibling)
+    })
+  })
 
   it('leaves a path outside the staging folder alone', () => {
     expect(

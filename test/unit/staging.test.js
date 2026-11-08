@@ -7,12 +7,58 @@ import {
   removeStaging,
   renameForPromote,
   stagedPath,
+  stagingLogger,
   stagingSiblings,
   sweepStaleSiblings,
   toReportedPath,
+  unstageText,
   writeConfig,
   writeRoot,
 } from '../../lib/staging.js'
+
+// a1k9training's build log printed `./docs.kiss-staging-41508-olwws7/_redirects`:
+// every writer logs the file it wrote, and under staging that is the sibling.
+describe('unstageText and stagingLogger', () => {
+  const build = './docs'
+  const { stagingDir } = stagingSiblings(build)
+
+  it.each([
+    ['as stagingSiblings made it', `${stagingDir}/_redirects`],
+    ['as path.join writes it', path.join(stagingDir, 'sitemap.xml')],
+    ['absolute', path.resolve(stagingDir, 'robots.txt')],
+  ])('writes the build folder back, %s', (_label, file) => {
+    const out = unstageText(`wrote ${file}`, stagingDir, build)
+    expect(out).not.toContain('kiss-staging')
+    expect(out.startsWith('wrote ./docs')).toBe(true)
+  })
+
+  it('leaves a longer sibling name and other text alone', () => {
+    const text = `${stagingDir}x/a and docs/b`
+    expect(unstageText(text, stagingDir, build)).toBe(text)
+  })
+
+  it('leaves the staging folder named on its own, for a message about it', () => {
+    const text = `Could not remove ${path.resolve(stagingDir)} (EBUSY) — delete it by hand`
+    expect(unstageText(text, stagingDir, build)).toBe(text)
+  })
+
+  it('maps strings only while a build is staged', () => {
+    const base = { success: vi.fn(), level: 3 }
+    const kiss = { _stagingDir: stagingDir, _buildTarget: build }
+    const log = stagingLogger(base, kiss)
+    log.success(path.join(stagingDir, '_redirects'), 42)
+    expect(base.success).toHaveBeenLastCalledWith(
+      `./docs${path.sep}_redirects`,
+      42,
+    )
+    expect(log.level).toBe(3)
+    kiss._stagingDir = null
+    log.success(path.join(stagingDir, '_redirects'))
+    expect(base.success).toHaveBeenLastCalledWith(
+      path.join(stagingDir, '_redirects'),
+    )
+  })
+})
 
 const logger = () => ({
   error: vi.fn(),

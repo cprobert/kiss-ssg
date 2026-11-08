@@ -575,6 +575,27 @@ describe('auditCss and runCss over a folder', () => {
     expect(audit.stylesheets.map((s) => s.path)).toEqual(['a.css'])
   })
 
+  // Issue #78: the audit purges with the same `purgeCss`, so PurgeCSS's
+  // default extractor counted every Tailwind class holding `/ [ ] . :` as
+  // removable, and "Removable" read 29% on a site whose real saving was 11%.
+  it('counts nothing removable when the page uses every class, / [ ] . : included', async () => {
+    temp = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-css-unit-'))
+    write(
+      'index.html',
+      '<link rel=stylesheet href=/site.css>' +
+        '<button aria-expanded="false" class="bg-ink-900/80 min-h-[60vh] p-1.5 hover:bg-brand-700 aria-expanded:rotate-180">x</button>',
+    )
+    write(
+      'site.css',
+      String.raw`.bg-ink-900\/80{color:red}.min-h-\[60vh\]{min-height:60vh}.p-1\.5{padding:.375rem}.hover\:bg-brand-700:hover{color:blue}.aria-expanded\:rotate-180[aria-expanded=true]{rotate:180deg}`,
+    )
+    const audit = await auditCss(temp)
+    const [sheet] = audit.stylesheets
+    expect(sheet.error).toBeNull()
+    expect(sheet.purged.bytes).toBe(sheet.bytes)
+    expect(sheet.removable).toBe(0)
+  })
+
   it('reports a link to a missing file without failing', async () => {
     temp = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-css-unit-'))
     write('index.html', '<link rel=stylesheet href=/gone.css>')

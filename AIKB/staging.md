@@ -28,6 +28,16 @@ direct call would step around the patch.
   `_reportedPath()`, which delegates to `build-report.js`'s `reportedPath` so the report and
   the failure messages map a staged path by one rule (they were two copies, and both missed
   a `\`-joined path on Windows until 2026-11-05).
+- `stagingLogger(logger, kiss)` → the logger `Kiss` keeps as `this.logger`: the site's own,
+  behind a Proxy that passes every string argument through `unstageText` while `_stagingDir` is
+  set. `unstageText(text, stagingDir, buildDir)` rewrites a path **under** the staging folder,
+  in any of its spellings (as made, as `path.join` writes it, absolute, either separator), to the
+  build folder. Every writer logs the file it wrote, and under staging that named the sibling
+  (`./docs.kiss-staging-…/_redirects`, `sitemap.xml`; a1k9training, 2.13.3). The mapping sits at
+  the logger so that a writer added later cannot bring the leak back. The folder named on its own
+  is left alone: "could not remove the staging folder …, delete it by hand" has to name it
+  (`test/integration/staging.test.js`). `Error` objects pass through untouched, because they
+  are diagnostics of the real path.
 - `renameForPromote(from, to, folder)` — `_renameForPromote()`.
 - `restorePrevious`, `promote`, `swapIn`, `discardStaging`, `abandonStaging`, `removeStaging` —
   the `_`-prefixed method of the same name on `Kiss`.

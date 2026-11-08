@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import { inspect } from 'node:util'
 import fs from 'fs-extra'
+import path from 'node:path'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
@@ -100,6 +101,67 @@ const present = async () =>
   )
 const none = Object.fromEntries(generated.map((file) => [file, false]))
 const all = Object.fromEntries(generated.map((file) => [file, true]))
+
+// a1k9training (2.13.3, `folders.build: './docs'`): every `aikb` run wrote
+// `docs.kiss-staging-<pid>-<rand>\_headers` into `last-build.json`'s
+// `cacheHeaders.files`, so the committed record changed with nothing changed,
+// and the build log named the staging folder too. A build folder written with
+// a leading `./`, as a real site writes it, is what the earlier fix missed.
+describe('a record taken from a ./-relative build folder', () => {
+  it('names no staging folder, in the record or the log, and is byte-stable', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs':
+        '<html><head><link rel="stylesheet" href="/{{asset "css/site.css"}}"></head><body><main><p>{{title}}</p></main></body></html>',
+      'src/assets/css/site.css': 'p{color:red}',
+    })
+    const rel = path.relative(process.cwd(), site.root)
+    if (path.isAbsolute(rel)) return // the temp folder is on another drive
+    const build = `./${rel.replaceAll('\\', '/')}/public`
+    const lines = []
+    const logger = Object.fromEntries(
+      Object.keys(silentLogger).map((key) => [
+        key,
+        typeof silentLogger[key] === 'function'
+          ? (...args) => lines.push(args.map(String).join(' '))
+          : silentLogger[key],
+      ]),
+    )
+    const once = async () => {
+      record()
+      vi.stubEnv('KISS_CHECK', '1')
+      kiss = new Kiss({
+        logger,
+        siteUrl: 'https://e.com',
+        host: 'netlify',
+        folders: { src: site.src, build, aikb: `${site.root}/AIKB` },
+        assets: { hash: true },
+      })
+      kiss
+        .page({
+          view: 'index.hbs',
+          model: { title: 'Home' },
+          aliases: ['/old/'],
+        })
+        .generate()
+        .sitemap()
+      await kiss.complete()
+      const last = await site.read('AIKB/last-build.json')
+      await kiss.close()
+      kiss = null
+      return last
+    }
+    const first = await once()
+    expect(JSON.parse(first).cacheHeaders.files).toEqual([
+      `${build}/cache-headers.json`,
+      `${build}/_headers`,
+    ])
+    expect(first).not.toMatch(/\.kiss-(staging|old)-/)
+    expect(lines.filter((line) => /\.kiss-(staging|old)-/.test(line))).toEqual(
+      [],
+    )
+    expect(await once()).toBe(first)
+  })
+})
 
 describe('the knowledge base, recorded by KISS_AIKB and nothing else', () => {
   it('is absent from a build of a site nobody has recorded', async () => {
