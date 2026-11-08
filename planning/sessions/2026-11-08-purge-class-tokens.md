@@ -38,6 +38,21 @@ opened: 2026-11-08
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+**2026-11-08 — the reporter's reply (session `a1k9training-8b`).** The reporter confirmed the plan covers #78 and asked for three additions to the existing criteria (not new scope):
+
+- **Variant fixtures.** The purge and audit tests include an attribute/data variant (`aria-expanded:rotate-180`), a group variant (`group-open:…`) and an arbitrary-selector variant (`[&[open]]:…`).
+- **One token rule for every content source.** Classes in `<noscript>`, in inline `<script>` strings and in the site's `.js` string literals are read by the same whole-token rule as the HTML, and a test shows it.
+- **Guard noise cases.** The guard does not fire on Tailwind's `@property`/`@layer` blocks or on pseudo-element-only selectors (`::backdrop`, `::file-selector-button`). This is the reporter's expectation, untested, so a test settles it.
+
+**Fleet criterion's comparison.** The fleet criterion reuses the reporter's computed-style harness, not only screenshots. It is an uncommitted scratch script at `C:\Users\court\AppData\Local\Temp\claude\c8935314931056d0\218640d2-9923-4d85-b13d-0815f3aaaca7\scratchpad\purge-compare2.mjs` (`CHROME_PATH=… node purge-compare2.mjs <full> <purged>`). Its a1k9training paths (`createRequire` on the site's `package.json`, `qa/serve.mjs`, `qa/pages.mjs`) are pointed at the temp clone. It has 2 expected skips (formFocus on `/courses/`), and the home hero video is not covered.
+
+- **Baselines:** no safelist gave 25,360 differences; the workaround safelist gave 0 across 206 states and 58,442 elements. The target with the safelist removed on the branch is 0.
+- **Known gap:** the aria-expanded chevron is a state the harness does not exercise, which the variant fixture above covers.
+
+**Safelist after release.** The reporter recommends the operator drop it only after the harness shows 0 differences without it and `kiss-ssg check` exits 0 with the guard: a catch-all safelist hides what the guard exists to catch. The operator's decision; no change to the site on this branch.
+
+**Out of scope, noted.** The reporter has a second, unfiled bug: `kiss-ssg aikb` names its staging folder wrongly. It stays off this branch unless the operator says otherwise.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
