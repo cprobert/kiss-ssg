@@ -29,15 +29,22 @@ direct call would step around the patch.
   the failure messages map a staged path by one rule (they were two copies, and both missed
   a `\`-joined path on Windows until 2026-11-05).
 - `stagingLogger(logger, kiss)` → the logger `Kiss` keeps as `this.logger`: the site's own,
-  behind a Proxy that passes every string argument through `unstageText` while `_stagingDir` is
-  set. `unstageText(text, stagingDir, buildDir)` rewrites a path **under** the staging folder,
-  in any of its spellings (as made, as `path.join` writes it, absolute, either separator), to the
-  build folder. Every writer logs the file it wrote, and under staging that named the sibling
-  (`./docs.kiss-staging-…/_redirects`, `sitemap.xml`; a1k9training, 2.13.3). The mapping sits at
-  the logger so that a writer added later cannot bring the leak back. The folder named on its own
-  is left alone: "could not remove the staging folder …, delete it by hand" has to name it
-  (`test/integration/staging.test.js`). `Error` objects pass through untouched, because they
-  are diagnostics of the real path.
+  behind a Proxy. While `_stagingDir` is set, it passes the string arguments of **`success` and
+  `info` only** through `unstageText`. `unstageText(text, stagingDir, buildDir)` rewrites a path
+  **under** the staging folder, in any of its spellings (as made, as `path.join` writes it,
+  absolute, either separator), to the build folder; the build folder is inserted as text, so a
+  `$&` in its name is not a replacement pattern. Every writer logs the file it wrote through
+  `success`, and under staging that named the sibling (`./docs.kiss-staging-…/_redirects`,
+  `sitemap.xml`; a1k9training, 2.13.3). The mapping sits at the logger so that a writer added
+  later cannot bring the leak back.
+  - **`warn`, `error` and `debug` are passed through untouched.** They carry diagnostics, an
+    `err.stack` or a file the staging folder could not remove, whose real path is the one to act
+    on. The first version mapped every method, and the code review (2026-11-08) showed it telling a
+    user to delete a locked file in the live site.
+  - The folder named on its own is never rewritten either: "could not remove the staging folder …,
+    delete it by hand" has to name it (`test/integration/staging.test.js`).
+  - The wrappers are cached per method, so `kiss.logger.info === kiss.logger.info`. `kiss.logger`
+    is not `config.logger`.
 - `renameForPromote(from, to, folder)` — `_renameForPromote()`.
 - `restorePrevious`, `promote`, `swapIn`, `discardStaging`, `abandonStaging`, `removeStaging` —
   the `_`-prefixed method of the same name on `Kiss`.

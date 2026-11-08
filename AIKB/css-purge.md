@@ -7,12 +7,21 @@ Remove the CSS no written page uses from the stylesheets a site names in `config
 ## Public interface
 
 - `resolvePurge(purge)` → `KissPurge | null`. `null`, `false` and absent purge nothing. An object needs a non-empty `files` list (the paths a template asks for; a leading `/` is dropped). `safelist` is strings and RegExps, default `[]`. `scripts` is a boolean, default `true`. Anything else throws, naming the key. `lib/config.js` calls it, so a typo fails at `new Kiss()`.
-- `purgeCss(css, { html, scripts, safelist })` → the purged CSS: `new PurgeCSS().purge()` over raw HTML and JS content, with `classTokens` as its `defaultExtractor`, `DYNAMIC_ATTRIBUTES` as its `dynamicAttributes`, and `safelist` as both PurgeCSS's `standard` and `greedy` lists (a string becomes the exact-name RegExp). PurgeCSS is **imported when this runs**, not at module load: `lib/config.js` imports this module on every build, and PurgeCSS brings PostCSS with it. PostCSS, which the guard uses, is loaded the same way.
-- `classTokens(content)` → every candidate class in a page or a script. It is the union of three sets: whole tokens (Tailwind's rule: up to whitespace, quotes, backticks or `<>`, not ending in `:`); what follows each `=` in a token (an unquoted attribute); and the `[A-Za-z0-9_-]+` pieces PurgeCSS's default found. Entity-encoded tokens are added decoded.
+- `purgeCss(css, { html, scripts, safelist })` → the purged CSS. It calls `new PurgeCSS().purge()` over:
+  - the raw HTML and JS;
+  - **one more content item, holding the pages' exact `class` attribute values** (`attributeClasses`, one per line, extension `kiss-classes`), read by an extractor that only splits lines.
+
+  The options: `classTokens` (cached per content string for one `html` list) as the `defaultExtractor`, `DYNAMIC_ATTRIBUTES` as `dynamicAttributes`, and `safelist` as both PurgeCSS's `standard` and `greedy` lists (a string becomes the exact-name RegExp). PurgeCSS is **imported when this runs**, not at module load: `lib/config.js` imports this module on every build, and PurgeCSS brings PostCSS with it.
+
+- `attributeClasses(html)` → the classes in real `class` attributes, parsed with htmlparser2 (decoded, never matched in text), each once.
+- `classTokens(content)` → every candidate class a script, or text, might name. It is the union of three sets:
+  - whole tokens: up to whitespace, quotes, backticks or `<>`, except inside `[…]`, where quotes and `>` are allowed; not ending in `:`;
+  - the value after the first `=` of an unquoted attribute;
+  - the `[A-Za-z0-9_-]+` pieces PurgeCSS's default found.
+
+  A token holding a character reference is read again decoded, with `lib/links.js` `decodeEntities`.
+
 - `DYNAMIC_ATTRIBUTES`: the ARIA states plus `disabled`, `hidden` and `inert`. Attribute selectors on these are kept whatever value the markup holds, as PurgeCSS already does for `value`, `checked`, `selected` and `open`.
-- `pageClasses(pages)` → `Map<class, first page>`: the classes in real `class` attributes, parsed with htmlparser2 (decoded, never matched in text).
-- `selectorClasses(selector)` → the class names in one selector, CSS escapes decoded. Strings and attribute selectors are skipped.
-- `purgeLosses({ before, after, used, tokens })` → `PurgeLoss[]`, **the guard**: a class a page carries, for which the stylesheet had a selector whose every class appears in the content, and the purged stylesheet has no selector at all.
 - `purgeStylesheets({ purge, root, manifest, pages, hash, minify, outputs })` → `PurgeResult[]`, one per file: `{ name, from, to, before, after }`. It:
   - reads every written page and, under `scripts`, every `.js`/`.mjs` in the build;
   - purges each file, then minifies it again when `minify` is on (a minifier failure keeps the purged text);
@@ -25,7 +34,7 @@ Remove the CSS no written page uses from the stylesheets a site names in `config
 
 ## Depends on
 
-`fs-extra`, `node:path`, `htmlparser2` (`Parser`, for `pageClasses`), `purgecss` and `postcss` (dynamic imports), `./asset-manifest.js` (`contentHash`, `hashedName`), `./asset-minify.js` (`minifyText`), `./utils.js` (`posixPath`).
+`fs-extra`, `node:path`, `htmlparser2` (`Parser`, for `attributeClasses`), `purgecss` (dynamic import), `./links.js` (`decodeEntities`), `./asset-manifest.js` (`contentHash`, `hashedName`), `./asset-minify.js` (`minifyText`), `./utils.js` (`posixPath`).
 
 ## Depended on by
 
@@ -35,8 +44,13 @@ Remove the CSS no written page uses from the stylesheets a site names in `config
 ## Non-obvious behavior
 
 - **Whole class tokens, and nothing the old extractor kept is lost** (issue #78, 2.13.3). PurgeCSS's default extractor, `/[A-Za-z0-9_-]+/g`, split `bg-ink-900/80`, `min-h-[60vh]`, `p-1.5`, `hover:bg-brand-700` and every variant into pieces that are not the class. Every such rule was removed from a site that used it: a1k9training lost its hero height and nav padding, with 25,360 computed-style differences across 20 pages. Nothing reported it, and `kiss-ssg css` overstated "Removable" (29% against a real 11%) for the same reason. `classTokens` adds the whole tokens and keeps the old pieces, so the new candidate set is a superset of the old one. An extra candidate can only keep a rule that is not needed.
-- **The guard fails the build; it does not repair.** `purgeStylesheets` purges and checks every named stylesheet before writing any. When `purgeLosses` finds a class that lost every rule, it throws, naming the class, the stylesheet and a page, and saying to safelist it or report it. The build fails as `<purge>` with the copied stylesheets whole. Two cases are exempt. A selector that names a class on no page is not counted (`.card .title` with no `.card` was rightly removed). A class that keeps any rule is not a loss either: a framework component with unused variants is the purge working. With 2.13.3's extractor put back, the guard fails the Tailwind fixture build and names all five classes (`test/integration/css-purge.test.js`; mutation run on this branch). It cannot see a class a script assembles from pieces, because no page carries it.
-- **A safelist entry keeps every rule that names it.** `standard` alone only exempts the matching selector part. The rest is still checked, so `safelist: ['btn']` lost `.btn[data-size=xl]` on a page with no `data-size="xl"`, and the guard's own advice would not have worked. `greedy` keeps a rule when any part matches (the operator's decision, 2026-11-08).
+- **A class in the markup cannot be lost: it reaches PurgeCSS exactly, as htmlparser2 read it.** `classTokens` stays a heuristic for scripts and text, and it still cuts some legal classes (`a>b`). Each rule a page could match is still PurgeCSS's decision, ids, tags and attributes included. **There is no guard.** A first version checked the purged CSS afterwards and failed the build when a used class lost every rule. The code review of that slice (2026-11-08) showed it was unsound in both directions:
+  - it judged a selector by its classes alone, so `#sidebar .card` with no `#sidebar`, `ul.menu` with no `<ul>`, and `.btn[data-size=xl]` failed builds whose purge was right;
+  - it judged by the same tokens that had missed a class, so it could never report a miss.
+
+  The operator chose to make the failure impossible rather than detect it. The one hole left, a class a script assembles from pieces (`'modal-' + name`), was never visible to any check, which is why the safelist exists.
+
+- **A safelist entry keeps every rule that names it.** `standard` alone only exempts the matching selector part. The rest is still checked, so `safelist: ['btn']` lost `.btn[data-size=xl]` on a page with no `data-size="xl"`. `greedy` keeps a rule when any part matches (the operator's decision, 2026-11-08). A site with a safelist may keep more CSS than it did before.
 - **ARIA state selectors are kept whatever the markup holds.** A disclosure button written `aria-expanded="false"` lost its `aria-expanded:rotate-180` rule (`[aria-expanded=true]`), because PurgeCSS also wants the attribute's value in the content and a script supplies it.
 
 - **Every `.html` file in the build is read, not only the rendered pages.** An HTML file copied from the assets folder, or a page kept from an earlier build under `cleanBuild: false`, links the stylesheet too, and its classes were purged when only `kiss._stack` was read (Codex at the close, 2026-11-05; the integration test was red before). The rendered pages are still the only ones relinked to a re-hashed name: a copied page's own `<link>` is its author's.

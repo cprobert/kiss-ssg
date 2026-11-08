@@ -98,6 +98,31 @@ Criteria added:
 
 **Version.** With a changed default, a new helper API and a new CLI command, propose a minor (2.14.0) at the close.
 
+**2026-11-08 — code review of the first slice (operator's `/code-review`, high), and the guard dropped.** Ten findings. Claude reproduced findings 1 and 3 in a scratch probe against the engine before acting; the reviewer's own probe covered 1, 2, 3, 5 and 8. Dispositions:
+
+1. **Quote or `>` inside brackets** (`before:content-['']`, `[&>svg]:size-4`) still cut: **fixed**. Bracket groups are part of a token.
+2. **Guard judged by the extractor that missed**: **moot**, guard removed.
+3. **Guard ignored ids, tags and attributes**, so `#sidebar .card` and `ul.menu` failed correct builds: **fixed by removing the guard**. The operator chose "make it impossible, drop guard": the pages' exact `class` attribute classes are a second PurgeCSS content item, so a markup class cannot be lost, and PurgeCSS still judges every selector in full. This **supersedes the Intent's guard criterion**. The `.btn[data-size=xl]` "guard fires" test had encoded the wrong behaviour; it is now a build that passes.
+4. **Message names a missing `kiss-ssg issue`**: **moot**, the message went with the guard.
+5. **`$&` in the build folder's name**: **fixed**, the replacement is a function.
+6. **Logger rewrote diagnostics** (`err.stack`): **fixed**. Only `success` and `info` are mapped.
+7. **Entity-encoded JSON not re-split**: **fixed**.
+8. **Second entity decoder, prototype lookup**: **fixed**, it reuses `lib/links.js` `decodeEntities`.
+9. **Tokenised N+1 times; quadratic `=` split**: **fixed**. Reads are cached per `html` list, and only the first `=` of an attribute-like token splits.
+10. **`AIKB/kiss.md` not updated**: **fixed**.
+
+Every fix was seen red, against `a4b8752` or under a mutation:
+
+- the bracket regex (script string);
+- the exact feed (`class="a>b"`);
+- the decoded re-split;
+- the first-`=` split;
+- the correct-removal build;
+- `$&`;
+- the `warn`/`debug` passthrough.
+
+Stop rule for any further round: same scope (this branch's `lib/` diff), ordinary sites (one site per script, honest files), correctness only.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:

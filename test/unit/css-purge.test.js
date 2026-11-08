@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
+  attributeClasses,
   classTokens,
-  pageClasses,
   purgeCss,
-  purgeLosses,
   resolvePurge,
-  selectorClasses,
 } from '../../lib/css-purge.js'
 import { createAssetManifest } from '../../lib/asset-manifest.js'
 
@@ -179,113 +177,97 @@ describe('classTokens', () => {
   })
 })
 
-describe('pageClasses', () => {
-  it('reads quoted, unquoted and entity-encoded class attributes, first page wins', () => {
-    const used = pageClasses([
-      { page: 'index.html', html: `<p class="a  b"><i class='c'><b class=d>` },
-      { page: 'about/index.html', html: '<p class="a [&amp;_p]:mb-6">' },
-    ])
-    expect([...used]).toEqual([
-      ['a', 'index.html'],
-      ['b', 'index.html'],
-      ['c', 'index.html'],
-      ['d', 'index.html'],
-      ['[&_p]:mb-6', 'about/index.html'],
-    ])
+describe('attributeClasses', () => {
+  it('reads quoted, unquoted and entity-encoded class attributes, once each', () => {
+    expect(
+      attributeClasses([
+        `<p class="a  b"><i class='c'><b class=d>`,
+        '<p class="a [&amp;_p]:mb-6 [&>svg]:size-4">',
+      ]),
+    ).toEqual(['a', 'b', 'c', 'd', '[&_p]:mb-6', '[&>svg]:size-4'])
   })
 
   it('does not take data-class or a class word in text', () => {
-    const used = pageClasses([
-      { page: 'i.html', html: '<p data-class="x">the class = y</p>' },
-    ])
-    expect([...used.keys()]).toEqual([])
-  })
-})
-
-describe('selectorClasses', () => {
-  it.each([
-    ['.a .b:hover', ['a', 'b']],
-    [String.raw`.bg-ink-900\/80`, ['bg-ink-900/80']],
-    [String.raw`.min-h-\[60vh\]`, ['min-h-[60vh]']],
-    [String.raw`.p-1\.5`, ['p-1.5']],
-    [String.raw`.hover\:bg-brand-700:hover`, ['hover:bg-brand-700']],
-    [String.raw`.\31 0`, ['10']],
-    ['a[href$=".pdf"].doc', ['doc']],
-    ['[data-x="a.b"] .c', ['c']],
-    ['::backdrop', []],
-    [':root', []],
-  ])('%s → %j', (selector, classes) => {
-    expect(selectorClasses(selector)).toEqual(classes)
-  })
-})
-
-describe('purgeLosses (the guard)', () => {
-  const run = async (css, html, scripts = []) => {
-    const after = await purgeCss(css, { html: [html], scripts, safelist: [] })
-    return purgeLosses({
-      before: css,
-      after,
-      used: pageClasses([{ page: 'index.html', html }]),
-      tokens: new Set([html, ...scripts].flatMap(classTokens)),
-    })
-  }
-
-  it('names a class the page carries whose only rule was removed', async () => {
-    // The page has `btn` but never `data-size="xl"`, so PurgeCSS removes it.
-    const losses = await run(
-      '.btn[data-size=xl]{padding:2rem}',
-      '<p class="btn" data-size="l">x</p>',
+    expect(attributeClasses(['<p data-class="x">the class = y</p>'])).toEqual(
+      [],
     )
-    expect(losses).toEqual([{ class: 'btn', page: 'index.html' }])
+  })
+})
+
+// The code review of the first slice (2026-11-08): classes the first
+// tokeniser still cut, and rules the purge rightly removes.
+describe('purgeCss after the review', () => {
+  const purge = (css, html, scripts = []) =>
+    purgeCss(css, { html: [html], scripts, safelist: [] })
+
+  it("keeps a class with a quote or > inside its brackets: before:content-[''], [&>svg]:size-4", async () => {
+    const css = String.raw`.before\:content-\[\'\'\]::before{content:''}.\[\&\>svg\]\:size-4>svg{width:1rem}`
+    const out = await purge(
+      css,
+      `<div class="before:content-[''] [&>svg]:size-4"><svg></svg></div>`,
+    )
+    expect(out).toContain(String.raw`.before\:content-\[\'\'\]`)
+    expect(out).toContain(String.raw`.\[\&\>svg\]\:size-4`)
   })
 
-  it('names the Tailwind classes the old extractor lost, if it ever returns', async () => {
-    const css = String.raw`.bg-ink-900\/80{color:red}.p-1\.5{padding:1px}`
-    const html = '<p class="bg-ink-900/80 p-1.5">x</p>'
-    // `after` as PurgeCSS 8's default extractor left it: empty.
-    const losses = await purgeLosses({
-      before: css,
-      after: '',
-      used: pageClasses([{ page: 'index.html', html }]),
-      tokens: new Set(classTokens(html)),
-    })
-    expect(losses.map((l) => l.class)).toEqual(['bg-ink-900/80', 'p-1.5'])
+  it('reads the same bracketed classes in a script string', async () => {
+    const out = await purge(
+      String.raw`.\[\&\>svg\]\:size-4>svg{width:1rem}`,
+      '<svg></svg>',
+      ['el.classList.add("[&>svg]:size-4")'],
+    )
+    expect(out).toContain(String.raw`.\[\&\>svg\]\:size-4`)
   })
 
-  it('is silent for a selector rightly removed because another class is on no page', async () => {
-    expect(
-      await run('.card .title{color:red}', '<h2 class="title">x</h2>'),
-    ).toEqual([])
+  it('keeps a class inside entity-encoded JSON in an attribute', async () => {
+    const out = await purge(
+      String.raw`.bg-ink-900\/80{color:red}`,
+      '<div data-classes="{&quot;open&quot;:&quot;bg-ink-900/80&quot;}"></div>',
+    )
+    expect(out).toContain(String.raw`.bg-ink-900\/80`)
   })
 
-  it('is silent for a component that keeps any rule', async () => {
-    expect(
-      await run(
-        '.btn{color:red}.btn[data-size=xl]{padding:2rem}',
-        '<p class="btn">x</p>',
-      ),
-    ).toEqual([])
+  // The markup's classes reach PurgeCSS exactly, so how classTokens cuts the
+  // text cannot lose one. A `>` outside brackets ends a token, and is inside
+  // this class: legal in HTML and CSS, whatever framework wrote it.
+  it('keeps any class written in a class attribute, however classTokens cuts it', async () => {
+    const out = await purge(
+      String.raw`.a\>b{color:red}`,
+      '<p class="a>b">x</p>',
+    )
+    expect(out).toContain(String.raw`.a\>b`)
   })
 
-  it('is silent for @property, @layer, @keyframes and pseudo-element-only rules', async () => {
-    const css = [
-      '@property --tw-rotate{syntax:"*";inherits:false}',
-      '@layer theme{:root{--c:red}}',
-      '@layer utilities{.p-4{padding:1rem}}',
-      '@keyframes spin{from{rotate:0}to{rotate:1turn}}',
-      '::backdrop{--tw-x:0}',
-      '::file-selector-button{border:0}',
-    ].join('\n')
-    expect(await run(css, '<p class="p-4 spin">x</p>')).toEqual([])
+  it.each([
+    [
+      '#sidebar .card, with no #sidebar',
+      '#sidebar .card{color:red}',
+      '<p class="card">x</p>',
+    ],
+    [
+      'ul.menu, with no <ul>',
+      'ul.menu{color:red}',
+      '<div class="menu">x</div>',
+    ],
+    [
+      '.card .title, with no .card',
+      '.card .title{color:red}',
+      '<h2 class="title">x</h2>',
+    ],
+  ])('still removes a rule no page matches: %s', async (_label, css, html) => {
+    expect(await purge(css, html)).toBe('')
+  })
+})
+
+describe('classTokens, safely', () => {
+  it('reads a token that looks like a prototype property as text', () => {
+    expect(classTokens('&constructor;').join(' ')).not.toMatch(/native code/)
   })
 
-  it('is silent when the class is used and kept', async () => {
-    expect(
-      await run(
-        String.raw`.aria-expanded\:rotate-180[aria-expanded=true]{rotate:180deg}`,
-        '<button aria-expanded="false" class="aria-expanded:rotate-180">x</button>',
-      ),
-    ).toEqual([])
+  it('splits only at the first = of an unquoted attribute, so a long bundle stays linear', () => {
+    const tokens = classTokens('class=a=b=c x=1,y=2,z=3')
+    expect(tokens).toContain('a=b=c')
+    expect(tokens).not.toContain('b=c')
   })
 })
 

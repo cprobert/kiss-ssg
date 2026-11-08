@@ -42,6 +42,28 @@ describe('unstageText and stagingLogger', () => {
     expect(unstageText(text, stagingDir, build)).toBe(text)
   })
 
+  it('writes a build folder holding $& or $$ as text', () => {
+    const odd = './$&-$$'
+    const { stagingDir: oddStaging } = stagingSiblings(odd)
+    expect(unstageText(path.join(oddStaging, 'css'), oddStaging, odd)).toBe(
+      `${odd}${path.sep}css`,
+    )
+  })
+
+  it('maps success and info only: warn, error and debug keep the real path', () => {
+    const base = { info: vi.fn(), warn: vi.fn(), debug: vi.fn() }
+    const kiss = { _stagingDir: stagingDir, _buildTarget: build }
+    const log = stagingLogger(base, kiss)
+    const file = path.join(stagingDir, 'images')
+    log.info(file)
+    log.warn(`could not remove ${file}`)
+    log.debug(`ENOTEMPTY ${file}`)
+    expect(base.info).toHaveBeenLastCalledWith(`./docs${path.sep}images`)
+    expect(base.warn).toHaveBeenLastCalledWith(`could not remove ${file}`)
+    expect(base.debug).toHaveBeenLastCalledWith(`ENOTEMPTY ${file}`)
+    expect(log.info).toBe(log.info)
+  })
+
   it('maps strings only while a build is staged', () => {
     const base = { success: vi.fn(), level: 3 }
     const kiss = { _stagingDir: stagingDir, _buildTarget: build }

@@ -58,12 +58,15 @@ export function toReportedPath(kiss: any, target: any): any;
  */
 export function unstageText(text: string, stagingDir: string, buildDir: string): string;
 /**
- * The logger a build writes through: the site's own, with every string it is
- * handed passed through `unstageText` while a staging folder is active. Each
+ * The logger a build writes through: the site's own, with the strings its
+ * `success` and `info` lines are handed passed through `unstageText` while a
+ * staging folder is active. Those are the "wrote this file" channels: each
  * writer logs the file it wrote (`sitemap.xml`, `_redirects`, the consent
  * files…), and under staging that is a folder with a random suffix that is
  * about to be renamed or deleted. Mapped here once, so a writer added later
- * cannot reintroduce it.
+ * cannot reintroduce it. `warn`, `error` and `debug` are left as they are:
+ * they carry diagnostics (an `err.stack`, a file the staging folder could not
+ * remove) whose real path is the one to act on.
  *
  * @template {object} L
  * @param {L} logger

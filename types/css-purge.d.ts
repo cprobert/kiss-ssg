@@ -34,13 +34,19 @@ export function resolvePurge(purge: any): KissPurge | null;
 /**
  * Every candidate class name in a page or a script, for PurgeCSS.
  *
- * Three sets, joined:
+ * It is a heuristic for the classes a script names. The classes a page's
+ * markup carries do not depend on it: `purgeCss` hands PurgeCSS those
+ * exactly (`attributeClasses`). Three sets, joined:
  * - **The whole tokens.** These keep the classes that hold `/ [ ] . :`.
- * - **What follows each `=` in a token.** An unquoted attribute
- *   (`class=bg-ink-900/80`) is one token with its name in front.
+ * - **The value of an unquoted attribute** (`class=bg-ink-900/80`).
  * - **The pieces PurgeCSS's default extractor finds.** With these, nothing
- *   the old extractor kept is ever removed now: a script's
- *   `{active:true}` still keeps `.active`.
+ *   the old extractor kept is ever removed now: a script's `{active:true}`
+ *   still keeps `.active`.
+ *
+ * A token holding a character reference is read again decoded: Handlebars
+ * writes `{"open":"bg-ink-900/80"}` into an attribute as
+ * `{&quot;open&quot;:&quot;bg-ink-900/80&quot;}`, which is one token until
+ * the quotes come back.
  *
  * Extra candidates can only keep a rule that is not needed. A missing one
  * breaks a page, so the set errs towards keeping.
@@ -50,56 +56,16 @@ export function resolvePurge(purge: any): KissPurge | null;
  */
 export function classTokens(content: string): string[];
 /**
- * The classes written into `class` attributes, decoded, each with its first
- * page. These are classes an element really carries, unlike `classTokens`,
- * which is every word that might be one. Parsed, not matched, so `class = y`
- * in a sentence is not an attribute.
+ * The classes written into the pages' `class` attributes, decoded. These are
+ * the classes an element really carries, unlike `classTokens`, which is every
+ * word that might be one. Parsed with htmlparser2, never matched, so
+ * `class = y` in a sentence is not an attribute and `[&>svg]:size-4` is one
+ * class.
  *
- * @param {{ page: string, html: string }[]} pages
- * @returns {Map<string, string>} class → the first page that uses it
- */
-export function pageClasses(pages: {
-    page: string;
-    html: string;
-}[]): Map<string, string>;
-/**
- * The class names in one selector, unescaped. Strings and attribute
- * selectors are skipped, so `[href$=".pdf"]` names no class.
- *
- * @param {string} selector
+ * @param {string[]} html
  * @returns {string[]}
  */
-export function selectorClasses(selector: string): string[];
-/**
- * A class a page carries whose every rule the purge removed.
- *
- * @typedef {Object} PurgeLoss
- * @property {string} class the class, as the page writes it
- * @property {string} page the first page that carries it
- */
-/**
- * The classes the purge took from the pages that carry them: a class written
- * in a page's `class` attribute, for which the stylesheet had at least one
- * selector the pages could match, and the purged stylesheet has no selector
- * at all. "Could match" means every class in that selector appears somewhere
- * in the content, so `.card .title` on a site with no `.card` was rightly
- * removed and is not a loss. A class that keeps any rule is not one either:
- * a framework component whose unused variants were removed is the purge
- * working.
- *
- * @param {Object} input
- * @param {string} input.before the stylesheet before the purge
- * @param {string} input.after the stylesheet after it
- * @param {Map<string, string>} input.used from `pageClasses`
- * @param {Set<string>} input.tokens `classTokens` over every page and script
- * @returns {Promise<PurgeLoss[]>}
- */
-export function purgeLosses({ before, after, used, tokens }: {
-    before: string;
-    after: string;
-    used: Map<string, string>;
-    tokens: Set<string>;
-}): Promise<PurgeLoss[]>;
+export function attributeClasses(html: string[]): string[];
 /**
  * Purge one stylesheet's CSS against the given HTML and scripts.
  *
@@ -191,17 +157,4 @@ export type PurgeResult = {
      * bytes
      */
     after: number;
-};
-/**
- * A class a page carries whose every rule the purge removed.
- */
-export type PurgeLoss = {
-    /**
-     * the class, as the page writes it
-     */
-    class: string;
-    /**
-     * the first page that carries it
-     */
-    page: string;
 };

@@ -197,12 +197,15 @@ describe('assets.purge', () => {
     expect(css).not.toContain('never-used')
   })
 
-  it('fails the build when the purge would remove every rule for a class a page uses, and writes nothing', async () => {
-    const vendor = '.btn[data-size=xl]{padding:2rem}.unused{margin:0}'
+  // The review of the first slice: a guard that judged selectors by their
+  // classes alone failed this build, though PurgeCSS was right to remove both
+  // rules (no #sidebar, no data-size="xl" on any page).
+  it('passes a build whose purge rightly removes a rule for a class a page uses', async () => {
     site = await makeSite({
       'src/pages/index.hbs':
-        '<html><head><link rel="stylesheet" href="/{{asset "css/vendor.css"}}"></head><body><main><p class="btn" data-size="l">x</p></main></body></html>',
-      'src/assets/css/vendor.css': vendor,
+        '<html><head><link rel="stylesheet" href="/{{asset "css/vendor.css"}}"></head><body><main><p class="card btn" data-size="l">x</p></main></body></html>',
+      'src/assets/css/vendor.css':
+        '#sidebar .card{color:red}.btn[data-size=xl]{padding:2rem}',
     })
     kiss = new Kiss({
       folders: site.folders,
@@ -211,14 +214,8 @@ describe('assets.purge', () => {
     })
       .page({ view: 'index.hbs' })
       .generate()
-    const error = await kiss.complete().catch((e) => e)
-    expect(error).toBeInstanceOf(AggregateError)
-    const failure = kiss.report().failures.find((f) => f.view === '<purge>')
-    expect(failure.message).toMatch(
-      /removed every rule for 1 class the pages use.*btn \(css\/vendor\.css, used on index\.html\).*assets\.purge\.safelist/s,
-    )
-    // Checked before anything was written: the copied stylesheet is whole.
-    expect(await site.read('public/css/vendor.css')).toBe(vendor)
+    await kiss.complete()
+    expect(await site.read('public/css/vendor.css')).toBe('')
   })
 
   it('passes the same build once the safelist keeps the class', async () => {
