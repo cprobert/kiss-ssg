@@ -117,6 +117,8 @@ Go through the unconsolidated sessions' **Feedback**, **Amendments** and **Verdi
 
 A single line under the right heading beats a paragraph under a new one. Do not invent a sixth section.
 
+**A `filed: <URL>` line is carried, never folded away.** An item that ends `filed: <issue URL>` was reported to kiss-ssg and is waiting on its fix. Whether it is promoted or stays episodic, keep its `filed:` URL: the line goes into `site.md` with the URL at its end (under Standing gotchas, as the workaround in force until the fix ships). `npx kiss-ssg issue --filed`, which `kiss-branch-open` runs, reads `site.md` too, and that is how a later session learns the fix shipped and the workaround can come out.
+
 ### 6. Retire the feedback that keeps coming back
 
 Use the tally from step 2. **A Feedback item that recurs in two or more sessions is a lesson that never stuck** — nobody is going to learn it by being told a fourth time, so promote it out of the loop:

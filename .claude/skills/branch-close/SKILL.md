@@ -136,7 +136,13 @@ npm version <patch, minor, major, or prerelease --preid alpha> --no-git-tag-vers
 
 This version is carried by `package.json`, the marketplace manifest (`.claude-plugin/marketplace.json`) and every plugin's own `plugins/<name>/.claude-plugin/plugin.json`, and `test/unit/plugin-manifests.test.js` fails if they disagree. You do not have to edit them: npm's `version` lifecycle hook runs `scripts/sync-plugin-versions.mjs` as part of the command above — including under `--no-git-tag-version` — so the manifests move with the bump. `git add` them along with the manifest below.
 
-User-visible changes also get an entry in `CHANGELOG.md` at the repo root, written for someone building a site with kiss-ssg, not for someone maintaining it. Create the file if it does not exist yet (newest version first, `## <version> — <date>` headings). `test/unit/changelog.test.js` fails the gates if the first heading is not the version `package.json` declares, so a bump without an entry — or an entry without a bump — cannot reach the PR. Write it alongside the bump, then commit both:
+User-visible changes also get an entry in `CHANGELOG.md` at the repo root, written for someone building a site with kiss-ssg, not for someone maintaining it. Create the file if it does not exist yet (newest version first, `## <version> — <date>` headings). **When the work fixes a reported issue**, the entry says so in the one form `kiss-ssg issue --status` reads as shipped, `Fixes [#<n>](https://github.com/cprobert/kiss-ssg/issues/<n>)`, which `test/unit/changelog.test.js` holds every issue link to. The session file names the issue:
+
+```bash
+node bin/kiss-ssg.js session --get issue
+```
+
+An empty answer means the work started from no issue; one it fixes anyway is still linked. `test/unit/changelog.test.js` fails the gates if the first heading is not the version `package.json` declares, so a bump without an entry — or an entry without a bump — cannot reach the PR. Write it alongside the bump, then commit both:
 
 ```bash
 git add package.json package-lock.json CHANGELOG.md \
@@ -230,6 +236,8 @@ The PR body is the same in every case:
 
 <1-3 bullet points — seed from the intent's Objective if present>
 
+Fixes #<n> <one line per issue this work fixes: the session file's `issue:`, and any other the CHANGELOG entry links; omit when none>
+
 ## What's deferred
 
 <if nothing, omit this section>
@@ -252,6 +260,8 @@ The PR body is the same in every case:
    ```
 
    The body goes in on stdin through `--body-file -`, as CLAUDE.md asks of every PR body: a quoted heredoc, never a double-quoted argument.
+
+   `Fixes #<n>` closes the issue when the PR merges into the repository's **default** branch (`main`). Against a base that is not the default (a `v2`-style line), it closes nothing: say so in the report, and close the issue by hand when that line is released.
 
    `--name` prints the base branch's own name, which `--base` needs. If it says the base is not a branch (an override naming a tag or a commit), the block stops before `gh` runs: ask which branch the PR goes to.
 

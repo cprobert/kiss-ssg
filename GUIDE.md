@@ -2099,6 +2099,28 @@ npx kiss-ssg@latest upgrade --json          # the same as JSON on stdout; npm's 
 
 After it, run `npx kiss-ssg check <script> --summary` before changing anything, and work the notes. The `kiss-site-migrate` skill is that method.
 
+### Reporting to kiss-ssg
+
+When kiss-ssg gets something wrong, or a site has to work around something it lacks, report it: a workaround kept quietly is one every other site re-learns. Feature requests are as welcome as bugs. `kiss-ssg issue` drafts the report from the site's folder and **never posts it**: it writes the draft outside the site and prints the command that files it, for you to read and run.
+
+```bash
+npx kiss-ssg check router.js > report.json       # the build to describe, when it is a build problem
+npx kiss-ssg issue bug --title "Purge drops md:hover:bg-ink-900/80" --notes notes.md --report report.json
+npx kiss-ssg issue feature --title "A 768 px image width" --notes notes.md
+npx kiss-ssg issue --status https://github.com/cprobert/kiss-ssg/issues/78
+npx kiss-ssg issue --filed                       # every issue the site's session logs say they filed
+```
+
+**The draft** has the issue form's headings, in its order. kiss fills the kiss-ssg version the site resolves, Node and the OS, the site's `package.json` name and its public URL (`--anonymous` leaves both out), and, for a bug, the build: from `--report` (what `kiss-ssg check` printed, or a `KISS_REPORT` file), otherwise from `AIKB/last-build.json`, which is the last recorded _passing_ build and is labelled so. Your words come from `--notes`, a Markdown file whose `###` headings are the form's (What happened, What was expected, Reproduction, Config excerpt; or What you were trying to do, What kiss does now, What would help, Workaround in use); text before any heading goes under the first. The config is not read: copy the keys involved into the notes, naming a secret by its variable (`process.env.API_TOKEN`), never its value.
+
+**A token is refused.** The repository is public, so a draft or title holding something shaped like a token (GitHub, npm, Slack, AWS, an `sk-` key, a private key, or a long letters-and-digits value after `token`, `secret`, `password`, `apikey` or `authorization`) is not written: exit 1, naming the line and the kind, never the value.
+
+**Before filing** it searches for issues with a similar title (with `gh`, when it is installed and signed in) and lists them, open first: comment on one instead if it is the same. Then it prints `! gh issue create --repo cprobert/kiss-ssg --title '…' --body-file '…'`. The `!` runs it inside a Claude Code session, so the URL `gh` prints lands in the conversation; record it in the session log as `filed: <URL>`.
+
+**Hearing back.** A fix ships with `Fixes [#<n>](…/issues/<n>)` in its `CHANGELOG.md` entry, which `kiss-ssg upgrade` prints with the upgrade notes. `--status` reads the installed kiss-ssg's own `CHANGELOG.md` and says `shipped in <version>` or `not in the installed kiss-ssg (<version>)`, with no network needed; `--filed` does that for every `filed:` line in `planning/sessions/` and `AIKB/site.md`. The `kiss-memory` skills run both: `kiss-branch-close` turns each Feedback item about kiss into a draft for you to file or skip, and `kiss-branch-open` says which filed issues have shipped, so a workaround can come out.
+
+Exit codes: 0 drafted or answered, 1 refused, 2 a usage error. A site whose kiss-ssg predates this command answers `unknown command`: upgrade first.
+
 ### Other methods
 
 - `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is Markdown rendered to HTML and then compiled, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only. That is what makes a code sample work without hand-escaping:

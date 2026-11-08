@@ -28,6 +28,7 @@ import {
 import { formatReport } from '../lib/build-report.js'
 import { runSession } from '../lib/sessions.js'
 import { runBase } from '../lib/base.js'
+import { runIssue } from '../lib/issue.js'
 import { runSpeed } from '../lib/speed.js'
 import { GitError, git, tryGit } from '../lib/git.js'
 import {
@@ -54,8 +55,19 @@ import {
 
 // `session` and `base` answer the kiss-memory skills' questions about a
 // site's git and its session logs. Every decision is in lib/; this prints.
-if (process.argv[2] === 'session' || process.argv[2] === 'base') {
-  const run = process.argv[2] === 'session' ? runSession : runBase
+// `issue` drafts an issue for kiss-ssg and prints the command that files it;
+// it never posts. Every decision is lib/issue.js's.
+if (
+  process.argv[2] === 'session' ||
+  process.argv[2] === 'base' ||
+  process.argv[2] === 'issue'
+) {
+  const run =
+    process.argv[2] === 'session'
+      ? runSession
+      : process.argv[2] === 'issue'
+        ? runIssue
+        : runBase
   const result = run(process.argv.slice(3), { cwd: process.cwd() })
   if (result.err) console.error(result.err)
   if (result.out) console.log(result.out)

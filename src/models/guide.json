@@ -73,13 +73,14 @@
   {
     "slug": "checking",
     "title": "Checking a build",
-    "description": "Waiting for a build, dry-running it with kiss-ssg check, reading the report, recording a site's knowledge base with kiss-ssg aikb, and upgrading a site with kiss-ssg upgrade.",
+    "description": "Waiting for a build, dry-running it with kiss-ssg check, reading the report, recording a site's knowledge base with kiss-ssg aikb, upgrading a site with kiss-ssg upgrade, and reporting a bug or a feature request with kiss-ssg issue.",
     "sections": [
       "Waiting for the build",
       "Checking a build",
       "Recording the knowledge base",
       "Branches and session logs",
       "Upgrading a site",
+      "Reporting to kiss-ssg",
       "Other methods"
     ]
   },

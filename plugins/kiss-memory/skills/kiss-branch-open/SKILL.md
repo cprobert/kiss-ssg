@@ -38,6 +38,14 @@ The three-session read-back is the briefing; the count is the diagnosis, and it 
 
 It is a recommendation, not a gate: the user may open the branch anyway. Do not run `kiss-memory-consolidate` from inside this skill — it is a separate beat, and its commit does not belong in this branch's first diff. An item that already appears under **Retired feedback** in `AIKB/site.md` has been dealt with: it is a convention now, so do not re-surface it as inherited feedback.
 
+**Then ask which reported issues have shipped.** A Feedback item that ends `filed: <URL>` was reported to kiss-ssg; once the installed kiss-ssg ships the fix, the workaround it describes can come out.
+
+```bash
+npx kiss-ssg issue --filed
+```
+
+It reads every session log and `AIKB/site.md`, not just the three above, and prints one line per filed issue: `shipped in <version>` or `not in the installed kiss-ssg (<version>)`. Say each shipped one to the user, with the workaround it can retire, as a candidate for this branch. `unknown command: issue` means the site's kiss-ssg is older than this step: skip it.
+
 **Also list possibly abandoned work.** A row whose `status` is `open`, on a branch that is not this one, is a piece of work somebody walked away from. Name each one with its branch and its opened date, and ask the user what it is — finished but never closed, genuinely still in flight elsewhere, or abandoned. Their call, not yours: do not close, delete or adopt any of them. If one of them is the branch you are about to adopt in step 2, that is not abandoned work — that is this piece of work, and step 2 handles it.
 
 ### 2. Confirm the starting state

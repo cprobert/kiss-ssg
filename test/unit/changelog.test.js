@@ -6,8 +6,55 @@ import {
   compareVersions,
   parseVersion,
 } from '../../lib/upgrade.js'
+import { fixesLink, issueRepo } from '../../lib/issue.js'
 
 const root = path.resolve(import.meta.dirname, '../..')
+
+// `kiss-ssg issue --status` says an issue shipped when an entry carries
+// `Fixes [#n](…/issues/n)`, and nothing else (the feedback-loop contract).
+// So every link to an issue in the changelog has that one form, with the
+// same number twice, or a site would be told a fix shipped that did not.
+function strayIssueLinks(text, repo) {
+  const fixed = [...text.matchAll(fixesLink(repo))]
+    .filter(([, a, b]) => a === b)
+    .map((m) => m.index)
+  const links = [...text.matchAll(/\/issues\/\d+/g)]
+  return links.length - fixed.length
+}
+
+describe('issue links in the changelog', () => {
+  const repo = issueRepo()
+  it('accepts only Fixes [#n](…/issues/n)', () => {
+    const url = (n) => `https://github.com/${repo}/issues/${n}`
+    expect(strayIssueLinks(`Fixes [#78](${url(78)}).`, repo)).toBe(0)
+    expect(strayIssueLinks(`See [#78](${url(78)}).`, repo)).toBe(1)
+    expect(strayIssueLinks(`Fixes [#7](${url(78)}).`, repo)).toBe(1)
+  })
+
+  it('holds CHANGELOG.md to it', () => {
+    const text = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8')
+    expect(strayIssueLinks(text, repo)).toBe(0)
+  })
+})
+
+// The issue forms and `kiss-ssg issue`'s drafts carry the same headings, in
+// the same order, so a drafted issue and a form-filed one read alike.
+describe('the issue forms', () => {
+  it.each([
+    ['bug.yml', 'BUG_HEADINGS'],
+    ['feature.yml', 'FEATURE_HEADINGS'],
+  ])('%s has the draft’s headings, in order', async (form, list) => {
+    const headings = (await import('../../lib/issue.js'))[list]
+    const yml = fs.readFileSync(
+      path.join(root, '.github', 'ISSUE_TEMPLATE', form),
+      'utf8',
+    )
+    const labels = [...yml.matchAll(/^\s+label: (.+)$/gm)].map((m) =>
+      m[1].trim(),
+    )
+    expect(labels).toEqual([...headings])
+  })
+})
 
 // The version the newest entry announces: the first `## <semver> — <date>`
 // heading. Nothing before it counts — the file opens with a title and a note
