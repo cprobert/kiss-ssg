@@ -39,6 +39,15 @@ describe('findTokens', () => {
     ['an AWS access key', 'AKIAIOSFODNN7EXAMPLE'],
     ['an API key (sk-)', `sk-ant-${'c3'.repeat(15)}`],
     ['a private key', '-----BEGIN OPENSSH PRIVATE KEY-----'],
+    // The security review at the close (2026-11-08): three common shapes
+    // the list missed. A Google key is the likeliest on a static site.
+    ['a Stripe key', `sk_live_${'d4'.repeat(12)}`],
+    ['a Stripe key', `rk_test_${'d4'.repeat(12)}`],
+    ['a Google API key', `key=AIza${'e5F'.repeat(11)}x2`],
+    [
+      'a JSON Web Token',
+      `eyJ${'hb'.repeat(8)}.eyJ${'pl'.repeat(8)}.${'sg'.repeat(10)}`,
+    ],
     [
       'a secret assigned to a name',
       'Authorization: "Bearer abc123def456ghi789jkl012"',

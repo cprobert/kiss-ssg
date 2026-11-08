@@ -8,7 +8,7 @@
 
 - `issueRepo(root?)` — `owner/name` from this package's own `bugs.url`, never the site's.
 - `BUG_HEADINGS`, `FEATURE_HEADINGS` — a draft's `###` headings, in order. `.github/ISSUE_TEMPLATE/bug.yml` and `feature.yml` are held to them by `test/unit/changelog.test.js`.
-- `findTokens(text)` — `[{ line, kind }]` for every token-shaped value, never the value.
+- `findTokens(text)` — `[{ line, kind }]` for every token-shaped value, never the value. The shapes: GitHub, npm, Slack, AWS, Stripe (`sk_`/`rk_` live or test), Google API keys (`AIza` plus 35), JSON Web Tokens, `sk-` keys and private-key headers, plus a long value assigned to a secret's name. The security review at the close (2026-11-08) added Stripe, Google and JWT. It is a pattern list, so a token split across lines still gets through; the operator reads the draft before posting it.
 - `issueNumber(ref, repo)` — a number from a URL into `repo`'s issues, `#n` or `n` (what `--status` takes); `null` otherwise, including another repository's URL.
 - `fixesLink(repo)` — the one CHANGELOG form of a shipped issue, `Fixes [#n](https://github.com/<repo>/issues/n)`, as a global RegExp (both numbers captured). `test/unit/changelog.test.js` holds every issue link in `CHANGELOG.md` to it.
 - `shippedIn(changelog, n, repo)` — the version whose entry carries that link with `n` twice, or `null`.
