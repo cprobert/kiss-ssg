@@ -158,7 +158,17 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Eyeball: looked** — the guard's failure message for 5 Tailwind classes. "Reads right."
   - **Review:** the operator runs `/code-review` on the slice. Pending.
   - **Offer:** the staging logger Proxy — **kept**.
-  - **Decision: adjust course, then continue.** `scripts/fleet-check.mjs` gets a way to copy named site paths (uncommitted or gitignored) into its clone, with a `test/unit/` test. Then diploma-msc reruns with its models, and a1k9training with its working `router.js`, with and without the safelist, through the reporter's harness. Before the docs and the feedback loop.
+  - **Decision: adjust course, then continue.** `scripts/fleet-check.mjs` gets a way to copy named site paths (uncommitted or gitignored) into its clone, with a `test/unit/` test. (The second pulse below supersedes the "guard" lines above: the guard was removed after review round 1.) Then diploma-msc reruns with its models, and a1k9training with its working `router.js`, with and without the safelist, through the reporter's harness. Before the docs and the feedback loop.
+
+- **2026-11-08 (second pulse, after review rounds 1 and 2)** — at `9ed8b8b`, all five gates green, 0 commits behind `origin/main`.
+  - **#78 engine: met in tests.** Markup classes reach PurgeCSS exactly. `classTokens` is linear (the old pattern took 50–53 s on 200k characters). The audit uses the same purge.
+  - **Guard: superseded** by the operator's decision after round 1. Failure is impossible for markup classes. A correct removal (`#sidebar .card`) passes; it failed at `a4b8752`.
+  - **Staging leak: met in tests and on a real site.** a1k9training fleet check: identical (499 files, 0 differ). The base check log names `kiss-staging` on 7 lines, the branch's on 0.
+  - **Fleet purge comparison: not yet.** It needs the overlay.
+  - **Not started:** criteria 4–6, docs, the feedback loop, clean-room.
+  - **Eyeball: looked.** The operator could not see the terminal. Claude rendered both check logs verbatim side by side with Playwright (webapp-testing skill) and sent the image to the operator's device. "Reads right."
+  - **Offer:** `DYNAMIC_ATTRIBUTES` (ARIA states kept whatever the markup holds) — **kept**.
+  - **Decision: continue.** The fleet-check overlay, then the real-site purge proof, before the docs.
 
 ---
 
