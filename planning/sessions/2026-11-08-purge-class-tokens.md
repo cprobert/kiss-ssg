@@ -1,0 +1,49 @@
+---
+branch: fix/purge-class-tokens
+base: main
+status: open
+opened: 2026-11-08
+---
+
+# Session — 2026-11-08: Purge keeps whole class tokens, and a reported bug has a path
+
+## Intent (captured at /branch-open)
+
+**Objective:** Fix the first reported bug, [#78](https://github.com/cprobert/kiss-ssg/issues/78). `assets.purge` and `kiss-ssg css` split class names on `/ [ ] . :`, so they remove Tailwind classes a page uses (and the audit overstates "Removable"), and nothing reports it. Make the build fail when a purge removes a class a page uses, and give reported bugs a path from issue to release.
+
+**Success criteria:**
+
+- [ ] `purgeCss()` passes PurgeCSS an extractor that keeps whole class tokens. Classes holding `/`, `[ ]`, `.`, `:` and variants (`bg-ink-900/80`, `min-h-[60vh]`, `p-1.5`, `hover:bg-brand-700`, `[&_p]:mb-6`, `max-h-[calc(100dvh-4.25rem)]`) survive the purge when a page uses them, and are removed when no page or script does.
+- [ ] `kiss-ssg css`'s Removable figure comes from the same extractor. A test shows that figure for those class names, with no safelist.
+- [ ] **The guard:** a build whose purge removes every rule for a class used on a built page fails (rejects, so `kiss-ssg check` exits 1). The failure names the class, a page that uses it and the stylesheet, and says how to resolve it (safelist, or a narrower purge). It does not fire on a selector correctly removed because another of its parts appears on no page (`.card .title` when no page has `.card`). It is seen to fail against the unfixed extractor before the extractor fix lands.
+- [ ] Regression tests for the purge and the audit, each seen red against the current code first.
+- [ ] Docs: GUIDE.md § Purged CSS, `kiss-performance`'s purge line and GUIDE's "Tailwind needs none of this" agree with the new behaviour. The script-built-class hole is stated as the guard's limit. `llms.txt` gets an index line for the guard if it is a trap worth one. AIKB `css-purge.md` and `css-audit.md` are updated. Every snippet changed is run against the engine.
+- [ ] **Fleet criterion:** `node scripts/fleet-check.mjs` on `C:\Code\kiss\a1k9training` and `C:\Code\kiss\diploma-msc` (both purge) with `--base main`, and every difference explained. Also a1k9training **with its workaround safelist removed** (in the temp clone, never the site's folder): the guard passes, and the purged build matches the full build at 375 and 1440 wide for the hero and the nav, the regions the report names.
+- [ ] **Clean-room criterion:** a fresh sub-agent with only the packed tarball and the shipped docs builds a small Tailwind v4 site with `assets.purge` and no safelist. Its build passes `kiss-ssg check`, the purged CSS keeps the `/ [ ] . :` classes the pages use, and it reports every place it had to guess.
+- [ ] **Issue process:** `.github/ISSUE_TEMPLATE/` holds a bug-report form asking for the kiss-ssg version, Node and OS, the config excerpt, what happened against what was expected, and a reproduction, plus a `config.yml`. A reported issue has a recorded path into a branch: `/branch-open` accepts an issue URL and the session file records `issue:`; `/branch-close` puts `Fixes #N` in the PR body; the CHANGELOG entry links the issue. Skill code blocks stay within `test/unit/skill-code-blocks.test.js`'s allow-list.
+- [ ] The #78 PR closes the issue (`Fixes #78`), and the CHANGELOG entry carries an `### Upgrading` note: a site that set the workaround safelist can drop it.
+
+**Non-goals / out of scope:** replacing PurgeCSS. Detecting classes a script assembles from pieces: the guard cannot see them, and the docs say so. GitHub Projects, Discussions, bots or auto-triage. Creating GitHub labels or replying on #78 without the operator's go-ahead, since both are outward-facing. Any change to the a1k9training site itself: the operator decides whether it drops its safelist after release.
+
+**Impact surface:** public API. A build that passed can now fail on the new guard, purged output changes for every site whose class names hold those characters, and GUIDE, llms.txt and the skills change. Proposed bump: patch 2.13.4 with an `### Upgrading` note (a bug fix). The operator decides at the close.
+
+**Expected shape:** between. The extractor fix and its tests are planned. The guard's precise rule (what counts as a selector "for" a used class) and the issue-process wiring will be settled as they are built.
+
+**Delegation convention:** none: one session. The operator reviews the diff at each pulse. Sub-agents only for the clean-room run and an independent review, and they never commit.
+
+### Amendments
+
+<!-- Where adjacent scope drift is absorbed: if the remit legitimately expands
+     mid-branch, append a dated note here and stay on the branch — a new branch is
+     the operator's call, never spawned on initiative. Good drift gets recorded;
+     it is not silent scope creep. -->
+
+## Pulse log
+
+<!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
+     criteria status + evidence + the continue/adjust/amend/close decision.
+     Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+---
+
+<!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
