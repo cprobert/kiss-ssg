@@ -149,6 +149,16 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Fixed in `2caac60`:** `PSEUDO_PART` in PurgeCSS's `standard` safelist, red-first test, recorded in `AIKB/upstream.md`.
   - **Branch at `2caac60`: 0 differences** over 69,428 elements and 246 state checks. The 2 skips are the reporter's expected `/courses/` formFocus. Purged CSS 54,747 bytes, against the reporter's 54,833 with the safelist. The only focus rule still removed, `.focus-visible\:outline-none`, appears in no page or script.
 
+**2026-11-08 — review rounds 3 and 4, and the stop rule for the rest of the branch.**
+
+- **Round 3** (the operator's `/code-review`, `main...HEAD`): 10 findings, all fixed in `08336d1`. The operator's call: check-mode write lines keep naming the build folder.
+- **Round 4** (the operator's `/code-review` again; `/codex:review` did not run, "Your workspace is out of credits"): 10 findings, fixed in `e6bf1d1`.
+  - **The headline:** the report had started rewriting a plain build's relative page paths (`docs/x.html` → `./docs/x.html`), so every page would have moved against a site's last record.
+  - **A regression my round-3 fix made, found here:** the logger Proxy over an empty object lost spies, `Object.keys` and `instanceof`. Now back over the logger; a frozen logger passes through unmapped.
+  - **Also fixed:** the `./` spelling, Always allow's label, GUIDE's safelist sentence (pseudo-classes and attributes match too), and two stale comments.
+  - **Recorded, not fixed:** the one-slot cache under two concurrent instances; mixed separators on Windows; the audit's per-stylesheet page lists missing the joined-classes cache; AVIF counted as decoded everywhere (the operator's accepted cost).
+- **The stop rule (operator, 2026-11-08: "Ordinary sites only").** One site per build script, honest files, current browsers. A finding outside that is recorded, not fixed. One more round only if it reads new code (the feedback loop), then the close's review. The branch still has no Codex review.
+
 **2026-11-08 — the branch's remit, restated (operator: "Can we make this branch a bug fix and feature feedback branch. Is there need for multiple branches").** One branch, no split. Its remit is the client feedback from the #78 exchange:
 
 - **Bug fixes:** #78 (the purge and the audit), the `kiss-ssg aikb` staging-name leak, and the `:focus-visible` loss the clean room found.
