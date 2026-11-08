@@ -1,0 +1,36 @@
+name: Feature request
+description: Something kiss-ssg could do, or do better, for your site. Requests are welcome.
+title: '[feature] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A coding agent can draft this for you: `npx kiss-ssg issue feature --title "…"`.
+        A workaround your site carries today is the most useful thing to tell us.
+  - type: input
+    attributes:
+      label: kiss-ssg version
+      description: '`npm ls kiss-ssg`, or the version in node_modules/kiss-ssg/package.json.'
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Site
+      description: Optional. The site's name and public URL, if you are happy to share them.
+  - type: textarea
+    attributes:
+      label: What you were trying to do
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What kiss does now
+  - type: textarea
+    attributes:
+      label: What would help
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Workaround in use
+      description: What the site does instead today, if anything.

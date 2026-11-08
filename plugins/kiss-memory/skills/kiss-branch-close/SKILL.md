@@ -150,6 +150,17 @@ Four sections:
 
 Be specific — name the pages, the partial, the controller, the failure mode. A reflection that could describe any session has no value to the person who reads it in two years.
 
+**Then report what was kiss's, before the commit.** A Feedback or Verdict item about kiss-ssg itself (a defect, a limit the site worked around, a feature it had to build by hand) is reported to kiss-ssg, or it is re-learned by every site: four reflections on one site said "file it against kiss-ssg" and none did. For each such item, write your notes (What happened and the rest, as `###` headings, a secret named by its variable, never its value) with your Write tool, then draft it:
+
+```bash
+npx kiss-ssg issue --help
+npx kiss-ssg issue bug --title "<one line>" --notes <notes file>
+```
+
+The first prints usage when the site's kiss-ssg has the command; `unknown command: issue` means it is older than this skill: upgrade it first (`kiss-site-migrate`), or record the item as not yet filed. Use `feature` instead of `bug` for something kiss lacks, and add `--report <file>` with a `npx kiss-ssg check` output when the build showed it. The command never posts: it checks for tokens and for an existing issue with that title, writes the draft, and prints a `! gh issue create …` line.
+
+Put each draft to the user with `AskUserQuestion`: **file it** (they run the printed `!` line, `gh` prints the issue URL into the session, and you write `filed: <URL>` at the end of the item) or **skip it** (write `not filed: <their reason>` at the end of the item). A similar issue the command found is a comment on that issue rather than a new one. Both lines land in this step's commit.
+
 Commit it:
 
 ```bash

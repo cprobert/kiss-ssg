@@ -123,6 +123,15 @@ export function isUrlModel(model: unknown): boolean;
  * the slashes or backslashes that follow it, as written.
  */
 export function redactUrl(url: unknown): string;
+/**
+ * A string as a RegExp that matches it literally: every character a RegExp
+ * reads specially is escaped. One rule for the engine's modules (named
+ * export only, not part of the public `utils` object).
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function escapeRegExp(text: string): string;
 export function isInside(directory: string): (file: string) => boolean;
 /**
  * The word every redacted value is replaced with: a model URL's query

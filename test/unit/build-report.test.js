@@ -6,6 +6,7 @@ import {
   reportedPath,
 } from '../../lib/build-report.js'
 import { exitCodeFor } from '../../lib/check.js'
+import { stagingSiblings } from '../../lib/staging.js'
 import path from 'node:path'
 
 const manifest = (entries) => ({ toObject: () => entries })
@@ -53,6 +54,47 @@ describe('reportedPath', () => {
     },
   )
 
+  // a1k9training (2.13.3): `folders.build: './docs'` makes the staging folder
+  // `./docs.kiss-staging-…` (stagingSiblings), but path.join drops the `./`,
+  // so the string prefix test above never matched and `last-build.json`
+  // carried a new random folder name on every `aikb` run. The two tests above
+  // passed a staging folder with no `./`, which the engine never builds.
+  describe('with the staging folder stagingSiblings really makes', () => {
+    const build = './docs'
+    const { stagingDir } = stagingSiblings(build)
+
+    it('maps a path.join under it, on every platform', () => {
+      expect(
+        reportedPath(path.join(stagingDir, '_headers'), build, stagingDir),
+      ).toBe('./docs/_headers')
+      expect(
+        reportedPath(
+          path.join(stagingDir, 'cache', 'headers.json'),
+          build,
+          stagingDir,
+        ),
+      ).toBe('./docs/cache/headers.json')
+    })
+
+    it('maps an absolute path under it', () => {
+      expect(
+        reportedPath(path.resolve(stagingDir, '_headers'), build, stagingDir),
+      ).toBe('./docs/_headers')
+    })
+
+    it('maps the folder itself, however it is written', () => {
+      expect(reportedPath(path.resolve(stagingDir), build, stagingDir)).toBe(
+        build,
+      )
+      expect(reportedPath(path.join(stagingDir), build, stagingDir)).toBe(build)
+    })
+
+    it('still leaves a sibling with a longer name alone', () => {
+      const sibling = path.join(`${stagingDir}x`, 'a')
+      expect(reportedPath(sibling, build, stagingDir)).toBe(sibling)
+    })
+  })
+
   it('leaves a path outside the staging folder alone', () => {
     expect(
       reportedPath(
@@ -90,6 +132,22 @@ describe('buildReport', () => {
     expect(formatReport(report)).toContain('winner: robots; refused: assets')
     expect(exitCodeFor([JSON.parse(JSON.stringify(report))], 0)).toBe(0)
   })
+  // The fourth review (2026-11-08): the pass that maps an absolute path under
+  // the build folder rewrote a plain build's relative paths too
+  // (`docs/x.html` → `./docs/x.html`), so a site's first `kiss-ssg check`
+  // after upgrading would have seen every page move against its record.
+  it('keeps a plain build’s relative page paths as they were written', () => {
+    const written = path.join('docs', 'x.html')
+    const report = buildReport({
+      stack: [page('x.hbs', written)],
+      failures: [],
+      buildDir: './docs',
+      mode: 'build',
+      startedAt: Date.now(),
+    })
+    expect(report.pages[0].buildTo).toBe(written)
+  })
+
   it('reports a clean build as ok, in a fixed key order', () => {
     const report = buildReport({
       stack: [page('index.hbs', './public/index.html')],

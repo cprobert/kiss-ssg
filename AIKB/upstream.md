@@ -278,6 +278,21 @@ shim `.d.ts`. **Re-check:** `head node_modules/@mixmark-io/domino/lib/index.d.ts
 after an upgrade — if it exports rather than declares, import the string
 literal again and run `npm run typecheck`.
 
+### PurgeCSS removes a selector made of pseudo-classes alone, and splits Tailwind class names
+
+**Observed:** `purgecss` 8.0.0 (2026-11-08, issue #78 and the a1k9training clean room).
+
+**Effect, part 1:** `shouldKeepSelector` keeps a selector whose only parts are pseudo-classes when it is `:where`, `:is`, `:has` or `:not` (`isPseudoClassAtRootLevel`). Any other pseudo-class part falls through to `continue`, so the selector counts as absent and is removed. That includes `:focus-visible { outline: … }` and `:-moz-focusring:where(…)`. Such a selector means `*:focus-visible` and matches every element. On a1k9training, purged with no safelist, every keyboard focus ring went: 62 computed-style differences in focus states. A catch-all safelist (`/[^a-zA-Z0-9_-]/`) had kept it by accident.
+
+**Effect, part 2:** its default extractor, `/[A-Za-z0-9_-]+/g`, cuts every class holding `/ [ ] . :` into pieces that are not the class, so Tailwind sites lost every such rule (#78).
+
+**What kiss does:** two cheap guards in `lib/css-purge.js` `purgeCss`.
+
+- For part 1, `PSEUDO_PART` in PurgeCSS's own `standard` safelist: a pseudo part counts as present, and every tag, class, id and attribute part is still checked, so `.unused:focus-visible` still goes.
+- For part 2, its own extractor, plus the pages' exact `class` values as a content item.
+
+Both use PurgeCSS options, not patches. **Re-check:** after a PurgeCSS upgrade, comment out `standard: [PSEUDO_PART]` and run `npx vitest run test/unit/css-purge.test.js -t "every element"`. If it stays green, PurgeCSS keeps these itself and the guard can go. The extractor is kiss's for good: Tailwind's own class syntax is not PurgeCSS's to follow.
+
 ### Remarkable never starts an HTML block with `<h1>`–`<h6>`
 
 **Observed:** `remarkable` 2.0.1 (2026-10-31). Its HTML-block rule matches an

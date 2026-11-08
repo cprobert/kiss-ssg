@@ -29,6 +29,25 @@ const LEGAL_UK =
   'plugins/kiss-ssg/skills/kiss-legal-and-privacy/references/uk.md'
 
 const COVERAGE = [
+  // The feedback loop (planning/plans/2026-11-08-feedback-loop.md): four
+  // a1k9training reflections said "file it against kiss-ssg" and none did,
+  // because no step at the close drafted it and no tool existed.
+  {
+    feature:
+      'a kiss item at the close is drafted as an issue and put to the user',
+    pattern: /npx kiss-ssg issue (bug|feature)[\s\S]*filed: <URL>/,
+    skills: [skill('kiss-memory', 'kiss-branch-close')],
+  },
+  {
+    feature: 'the read-back says which filed issues have shipped',
+    pattern: /npx kiss-ssg issue --filed/,
+    skills: [skill('kiss-memory', 'kiss-branch-open')],
+  },
+  {
+    feature: 'consolidation carries a filed: line into site.md',
+    pattern: /`filed: <URL>` line is carried/,
+    skills: [skill('kiss-memory', 'kiss-memory-consolidate')],
+  },
   // 2.13.0: `ids: 'path'` gives every page an id from where it is served, for
   // a site whose pages share views (diploma-msc: 123 of 686 had none), and a
   // controller's id built from a slug has to use the slug kiss writes.
@@ -430,6 +449,14 @@ const COVERAGE = [
     feature: 'the design checks: weights that render, balanced headings',
     pattern: /^(?=[\s\S]*`font-weight`)(?=[\s\S]*text-wrap: balance)/,
     skills: [skill('kiss-ssg', 'kiss-design')],
+  },
+  // 2026-11-08, #78's reporter: a poster restyle repeated 'Play video' in CSS,
+  // which a load= change would silently contradict.
+  {
+    feature:
+      'a restyled embed button reads its words from data-kiss-embed-label',
+    pattern: /attr\(data-kiss-embed-label\)/,
+    skills: [skill('kiss-ssg', 'kiss-front-end')],
   },
   {
     feature: 'the front-end checks: 100dvh is for an app shell',
@@ -1149,6 +1176,10 @@ describe('every skill names the features an agent following it should use', () =
 // be caught by banning the sentence. Each entry below was a real defect in a
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
+  {
+    why: '#78: a purge of a Tailwind stylesheet keeps its classes whole and still removes what its own scan over-included (11% after Brotli on one site), so a sentence saying Tailwind needs no purge is the advice that replaced',
+    patterns: [/Tailwind needs none of this/, /Tailwind needs no purge/],
+  },
   {
     why: '2.14.0: a model that cannot be resolved fails the build, named by its view, once per page; a sentence saying it is logged and the page skipped is the behaviour that replaced',
     patterns: [

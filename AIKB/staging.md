@@ -24,10 +24,62 @@ direct call would step around the patch.
   getters: the folder this build writes into, and `config` with `folders.build` pointed at it (the
   same object as `config` when nothing is staged).
 - `sweepStaleSiblings(kiss)` — `_sweepStaleSiblings()`.
-- `stagedPath(kiss, target)` — `_stagedPath()`. `toReportedPath(kiss, target)` —
+- `stagedPath(kiss, target)` — `_stagedPath()`. It decides "inside the build folder" by
+  `path.relative`, as `reportedPath` does, so on Windows a target in another case still follows
+  the build into staging; until the third review (2026-11-08) it was a case-sensitive text prefix,
+  and such a copy landed in the live folder, which the promotion then replaced.
+  `toReportedPath(kiss, target)` —
   `_reportedPath()`, which delegates to `build-report.js`'s `reportedPath` so the report and
   the failure messages map a staged path by one rule (they were two copies, and both missed
   a `\`-joined path on Windows until 2026-11-05).
+- `stagingLogger(logger, kiss)` → the logger `Kiss` keeps as `this.logger`: the site's own,
+  behind a Proxy. While `_stagingDir` is set, it passes the string arguments of **`success` and
+  `info` only** through `unstageText`. `unstageText(text, stagingDir, buildDir)` finds each path
+  **under** the staging folder, in any of its spellings (as made, as `path.join` writes it,
+  absolute), and hands the whole path to `build-report.js`'s `reportedPath`. So the log and the
+  report name a file by **one rule** (`./docs/x/y.html`, with `/`). The first version swapped the
+  prefix by text and kept `\`, and the second review (2026-11-08) measured the two disagreeing.
+  `\` is a separator in the pattern only on Windows, as in `reportedPath`. The pattern is compiled
+  once per staging folder and kept in one slot (a map gained a pattern per build, each folder
+  having a new suffix), and the replacement is a function, so a `$&` in the build folder's name
+  is text. After the third review (2026-11-08) a match starts only where a path can start (not
+  after a word character, `.`, `~`, `-` or a separator), so the shorter relative spelling is never
+  matched partway through a longer path. It needs a name character after the separator, so
+  `…staging/,` in a sentence is the folder, not a file (it was rewritten to `./docs`). On Windows it
+  ignores case, as `path.relative` does (a lowercase drive letter was spliced into `c:\…\./docs/x`). Every writer logs the file it wrote through
+  `success`, and under staging that named the sibling (`./docs.kiss-staging-…/_redirects`,
+  `sitemap.xml`; a1k9training, 2.13.3). The mapping sits at the logger so that a writer added
+  later cannot bring the leak back.
+  - **`warn`, `error` and `debug` are passed through untouched.** They carry diagnostics, an
+    `err.stack` or a file the staging folder could not remove, whose real path is the one to act
+    on. The first version mapped every method, and the code review (2026-11-08) showed it telling a
+    user to delete a locked file in the live site.
+  - The folder named on its own is never rewritten either: "could not remove the staging folder …,
+    delete it by hand" has to name it (`test/integration/staging.test.js`).
+  - **Every method runs on the site's logger, never on the Proxy.** The mapped ones are applied to it
+    and the rest are bound to it, so a logger class whose methods read private fields (`this.#out`)
+    still works; the first version returned them unbound. One function per method while the method is
+    the same one, so `kiss.logger.warn === kiss.logger.warn` holds and a spy installed later is still
+    reached. `kiss.logger` is not `config.logger`.
+  - **The Proxy stands over the logger itself**, so `kiss.logger` has the logger's keys and class,
+    and a spy or override defined on it (`vi.spyOn(kiss.logger, 'warn')`) is reached. A Proxy's
+    `get` must return a read-only, non-configurable property as it is, so a **frozen** logger's
+    methods pass through unmapped and unbound: it works, but its write lines keep the staging name.
+    The third review found the first version threw on a frozen logger; the fix put the Proxy over
+    an empty object, which the fourth review found lost spies, `Object.keys` and `instanceof`.
+    This version keeps the common case whole and gives up the mapping only for the rare one.
+  - **The pattern also matches a `./` spelling** of a folder configured without one (`docs` →
+    `./docs.kiss-staging-…`), for a writer that logs `./<path>` (fourth review).
+  - **Recorded, not changed:** the pattern cache is one slot, so two instances staging at once in
+    one process rebuild it on alternate lines (a cost, never a wrong result); a path that mixes `\`
+    and `/` on Windows is not matched.
+  - **Under check and aikb the write lines name the build folder too** (`./docs/sitemap.xml`), though
+    nothing is written there; the closing line says so. The operator chose this over a
+    `(not written)` marker or the staging name (2026-11-08): stable, and the same as the record.
+  - **Recorded, not changed:** a writer's own `error` line under staging (`Error writing
+./public.kiss-staging-…/consent-banners.json`) names a folder the failed build then discards. It
+    read the same way before this logger existed, and changing it was outside the branch that added
+    the logger (second review, 2026-11-08).
 - `renameForPromote(from, to, folder)` — `_renameForPromote()`.
 - `restorePrevious`, `promote`, `swapIn`, `discardStaging`, `abandonStaging`, `removeStaging` —
   the `_`-prefixed method of the same name on `Kiss`.

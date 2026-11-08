@@ -71,6 +71,54 @@ describe('image facts', () => {
     ])
     expect(facts.imgPlain).toEqual(['/a.jpg'])
   })
+
+  // Item 5 (2026-11-08, the operator's rule): in a <picture> whose first
+  // <source> switches format (a type, no media), every current browser loads
+  // that source, so its later sources and the <img> are fallbacks it never
+  // fetches. On a1k9training at 1600 wide, all 10 image-oversized findings
+  // were WebP or JPEG fallbacks (202-251 KB) beside AVIFs of 103-147 KB.
+  it('takes only the first <source> of a format-switching <picture>', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<picture><source type="image/avif" srcset="/h-960.avif 960w, /h-1600.avif 1600w">' +
+          '<source type="image/webp" srcset="/h-1600.webp 1600w">' +
+          '<img src="/h-960.jpg" srcset="/h-1600.jpg 1600w" alt=""></picture>',
+      ),
+      'x.html',
+    )
+    expect(facts.imageRefs).toEqual(['/h-1600.avif', '/h-960.avif'])
+  })
+
+  it('takes every candidate of an art-directed <picture>, whose <img> a narrow screen loads', () => {
+    const facts = extractPageFacts(
+      doc(
+        '<picture><source media="(min-width: 800px)" type="image/avif" srcset="/wide.avif">' +
+          '<img src="/narrow.jpg" alt=""></picture>',
+      ),
+      'x.html',
+    )
+    expect(facts.imageRefs).toEqual(['/narrow.jpg', '/wide.avif'])
+  })
+
+  // The third review (2026-11-08): a browser skips a <source> whose type it
+  // cannot decode, or that names no srcset, and loads what follows, so the
+  // rule holds only for a source every current browser would take.
+  it.each([
+    [
+      'a type browsers do not all decode',
+      '<source type="image/jxl" srcset="/h.jxl">',
+    ],
+    ['no srcset', '<source type="image/webp">'],
+  ])(
+    'takes the whole <picture> when the first <source> has %s',
+    (_label, source) => {
+      const facts = extractPageFacts(
+        doc(`<picture>${source}<img src="/h.jpg" alt=""></picture>`),
+        'x.html',
+      )
+      expect(facts.imageRefs).toContain('/h.jpg')
+    },
+  )
 })
 
 describe('image-oversized', () => {
@@ -98,6 +146,23 @@ describe('image-oversized', () => {
         detail: `img/big.png (${big} KB)`,
       },
     ])
+  })
+
+  it('judges what a current browser loads from a <picture>, never its fallback', () => {
+    const oversized = (body) =>
+      run([page(body)]).filter((f) => f.check === 'image-oversized').length
+    expect(
+      oversized(
+        '<picture><source type="image/avif" srcset="/img/small.jpg 40w">' +
+          '<img src="/img/big.png" alt=""></picture>',
+      ),
+    ).toBe(0)
+    expect(
+      oversized(
+        '<picture><source type="image/avif" srcset="/img/big.png 400w">' +
+          '<img src="/img/small.jpg" alt=""></picture>',
+      ),
+    ).toBe(1)
   })
 
   it('ignores a file no page references, a small one, an SVG and an external URL', () => {

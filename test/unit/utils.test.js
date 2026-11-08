@@ -1,5 +1,11 @@
 import path from 'node:path'
-import { isInside, isUrlModel, redactUrl, REDACTED } from '../../lib/utils.js'
+import {
+  escapeRegExp,
+  isInside,
+  isUrlModel,
+  redactUrl,
+  REDACTED,
+} from '../../lib/utils.js'
 import { describe, it, expect, afterEach } from 'vitest'
 import utils from '../../lib/utils.js'
 import { makeSite } from '../helpers/site.js'
@@ -8,6 +14,16 @@ let site
 afterEach(async () => {
   if (site) await site.cleanup()
   site = null
+})
+
+// The fifth review (2026-11-08): the escape was hand-copied into five
+// modules, and one copy had already lost `*`.
+describe('escapeRegExp', () => {
+  it('makes every character a RegExp reads specially match itself', () => {
+    const text = String.raw`a.b*c+d?e^f$g{h}i(j)k|l[m]n\o/p-q`
+    expect(new RegExp(`^${escapeRegExp(text)}$`).test(text)).toBe(true)
+    expect(new RegExp(escapeRegExp('a*')).test('aaa')).toBe(false)
+  })
 })
 
 describe('utils.toSlug', () => {

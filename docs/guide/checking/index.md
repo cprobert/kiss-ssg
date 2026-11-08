@@ -1,6 +1,6 @@
 # Checking a build
 
-Waiting for a build, dry-running it with kiss-ssg check, reading the report, recording a site's knowledge base with kiss-ssg aikb, and upgrading a site with kiss-ssg upgrade.
+Waiting for a build, dry-running it with kiss-ssg check, reading the report, recording a site's knowledge base with kiss-ssg aikb, upgrading a site with kiss-ssg upgrade, and reporting a bug or a feature request with kiss-ssg issue.
 
 ## Waiting for the build
 
@@ -166,7 +166,7 @@ The checks, by the id `check` carries:
 | `fetchpriority-excess`, `font-preload-excess` | more than two elements with `fetchpriority="high"`, or more than two `<link rel="preload" as="font">`: when everything is first, nothing is |
 | `script-blocking` | a `<script src>` in the head (before `</head>` or `<body>`) that runs as a classic script with neither `defer` nor `async`. A module, a consent-gated script and a data block (JSON-LD, speculation rules, an import map) never fire |
 | `host-unset` | once for the site: the build wrote hashed files or has aliases, and neither `host` nor that concern's `format` chose a host file ([Cache headers](../urls/#cache-headers), [Redirects](../urls/#redirects)) |
-| `image-oversized` | a JPEG, PNG, WebP or AVIF in the build over 200 KB that a page's `<img src>` or an `<img>`/`<source>` `srcset` names, once per file per page, the detail naming the file and its size. A CSS background image is not read. The threshold is provisional ([Responsive images](../assets/#responsive-images)) |
+| `image-oversized` | a JPEG, PNG, WebP or AVIF in the build over 200 KB that a page's `<img src>` or an `<img>`/`<source>` `srcset` names, once per file per page, the detail naming the file and its size. In a `<picture>` whose first `<source>` has a `type` and no `media` (what `{{image}}` writes), only that source counts: every current browser loads it, and the later formats and the `<img>` are fallbacks. A CSS background image is not read. The threshold is provisional ([Responsive images](../assets/#responsive-images)) |
 | `image-location-metadata` | a shipped JPEG, PNG, WebP or AVIF whose EXIF GPS block or XMP packet names a latitude or longitude, referenced or not. Strip it from the file in `src/` (`npx kiss-ssg images <script> --write`): the original is still copied, so `{{image}}` alone does not remove it |
 | `img-not-responsive` | an `<img>` with no `srcset`, outside any `<picture>`, whose `src` is a raster in the build: one browsers fetch at one size on every screen. The worklist for moving it to `{{image}}` |
 | `id-slug-mismatch` | a page whose explicit `id` ends in its slug as the page or its controller gave it, where `toSlug` changed that slug before the page was written (a trailing space, a leading `-`, a capital). Build the id from `utils.toSlug(slug)` ([.pages()](../pages/#pages)) |
@@ -351,6 +351,28 @@ npx kiss-ssg@latest upgrade --json          # the same as JSON on stdout; npm's 
 **When it refuses**, it writes nothing and exits 1: no `package.json`, or an installed registry release newer than itself. **When it will not install**, `--plan` still prints the notes and says why: uncommitted changes to `package.json` or the lockfile (so the upgrade is the only change in them), a git failure other than "not a repository", a registry npm cannot name (it is never assumed to be npmjs), an npm workspace member (install from the workspace's root with `-w`), or a pnpm, yarn or `npm-shrinkwrap.json` lockfile, which it does not drive or verify; install by hand, then read the notes with `--plan --from <old version>`. The lockfile it reads is the one in the folder it runs in, never a parent's.
 
 After it, run `npx kiss-ssg check <script> --summary` before changing anything, and work the notes. The `kiss-site-migrate` skill is that method.
+
+## Reporting to kiss-ssg
+
+When kiss-ssg gets something wrong, or a site has to work around something it lacks, report it: a workaround kept quietly is one every other site re-learns. Feature requests are as welcome as bugs. `kiss-ssg issue` drafts the report from the site's folder and **never posts it**: it writes the draft outside the site and prints the command that files it, for you to read and run.
+
+```bash
+npx kiss-ssg check router.js > report.json       # the build to describe, when it is a build problem
+npx kiss-ssg issue bug --title "Purge drops md:hover:bg-ink-900/80" --notes notes.md --report report.json
+npx kiss-ssg issue feature --title "A 768 px image width" --notes notes.md
+npx kiss-ssg issue --status https://github.com/cprobert/kiss-ssg/issues/78
+npx kiss-ssg issue --filed                       # every issue the site's session logs say they filed
+```
+
+**The draft** has the issue form's headings, in its order. kiss fills the kiss-ssg version the site resolves, Node and the OS, the site's `package.json` name and its public URL (`--anonymous` leaves both out), and, for a bug, the build: from `--report` (what `kiss-ssg check` printed, or a `KISS_REPORT` file), otherwise from `AIKB/last-build.json`, which is the last recorded _passing_ build and is labelled so. Your words come from `--notes`, a Markdown file whose `###` headings are the form's (What happened, What was expected, Reproduction, Config excerpt; or What you were trying to do, What kiss does now, What would help, Workaround in use); text before any heading goes under the first. The config is not read: copy the keys involved into the notes, naming a secret by its variable (`process.env.API_TOKEN`), never its value.
+
+**A token is refused.** The repository is public, so a draft or title holding something shaped like a token (GitHub, npm, Slack, AWS, Stripe, a Google API key, a JSON Web Token, an `sk-` key, a private key, or a long letters-and-digits value after `token`, `secret`, `password`, `apikey` or `authorization`) is not written: exit 1, naming the line and the kind, never the value.
+
+**Before filing** it searches for issues with a similar title (with `gh`, when it is installed and signed in) and lists them, open first: comment on one instead if it is the same. Then it prints `! gh issue create --repo cprobert/kiss-ssg --title '…' --body-file '…'`. The `!` runs it inside a Claude Code session, so the URL `gh` prints lands in the conversation; record it in the session log as `filed: <URL>`.
+
+**Hearing back.** A fix ships with `Fixes [#<n>](…/issues/<n>)` in its `CHANGELOG.md` entry, which `kiss-ssg upgrade` prints with the upgrade notes. `--status` reads the installed kiss-ssg's own `CHANGELOG.md` and says `shipped in <version>` or `not in the installed kiss-ssg (<version>)`, with no network needed; `--filed` does that for every `filed:` line in `planning/sessions/` and `AIKB/site.md`. The `kiss-memory` skills run both: `kiss-branch-close` turns each Feedback item about kiss into a draft for you to file or skip, and `kiss-branch-open` says which filed issues have shipped, so a workaround can come out.
+
+Exit codes: 0 drafted or answered, 1 refused, 2 a usage error. A site whose kiss-ssg predates this command answers `unknown command`: upgrade first.
 
 ## Other methods
 

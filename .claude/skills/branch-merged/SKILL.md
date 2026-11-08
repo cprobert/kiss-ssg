@@ -132,6 +132,22 @@ npm pkg get version
 
 The first is what a site installs today; the second is what the base now says, after step 3's pull. When npm's is older, that is the report's opening line: the release has merged and no site can install it until the operator runs `npm publish` (its `prepublishOnly` runs the gates, and `postpublish` tags the commit). Give the command on its own line. Never publish from here. Merged-but-unpublished releases have piled up unremarked: 2.12.1's fix waited as an "open" line in its log (2026-11-05), and 2.12.3's handlebars security fix and 2.13.0 merged with npm still on 2.12.0 (2026-11-06).
 
+**When the work fixed a reported issue**, the site that reported it should hear so. The session file names it:
+
+```bash
+node bin/kiss-ssg.js session <branch> --from-branch --get issue
+```
+
+For each issue it names (and any other the CHANGELOG entry links with `Fixes`), give the operator a comment to post, on its own lines, worded for what is true now: merged, and shipping in the version the base declares, not shipped, unless npm already has it.
+
+```bash
+gh issue comment <n> --body-file - <<'EOF'
+Merged in #<the pull request>; ships in kiss-ssg <version> (CHANGELOG entry: <its heading>). A site can check with `npx kiss-ssg issue --status <n>` after upgrading. Thank you for the report.
+EOF
+```
+
+Print it for the operator; never post it from here.
+
 Then, short, decision first if there is one:
 
 - the commit the base is at now (`git log --oneline -1`), and the pull request the merge came from;

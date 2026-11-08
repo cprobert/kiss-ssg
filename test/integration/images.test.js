@@ -90,7 +90,7 @@ describe('{{image}} in a build', () => {
     const named = [
       ...html.matchAll(/\/(img\/hero-\d+\.[0-9a-f]{8}\.\w+)/g),
     ].map((m) => m[1])
-    expect(new Set(named).size).toBe(9)
+    expect(new Set(named).size).toBe(12)
     for (const file of new Set(named)) {
       expect(await site.exists(`public/${file}`)).toBe(true)
       expect(kiss._outputs.kind(`${site.build}/${file}`)).toBe('generated')
@@ -99,8 +99,8 @@ describe('{{image}} in a build', () => {
       [...new Set(named)].map((f) => f.slice(4)).sort(),
     )
     expect(report.images).toEqual({
-      requested: 9,
-      encoded: 9,
+      requested: 12,
+      encoded: 12,
       cached: 0,
       cache: `${site.root}/.kiss-cache/images`,
     })
@@ -115,7 +115,7 @@ describe('{{image}} in a build', () => {
     const { logger, lines } = recording()
     const report = await build({ logger })
     expect(await site.read('public/index.html')).toBe(first)
-    expect(report.images).toMatchObject({ encoded: 0, cached: 9 })
+    expect(report.images).toMatchObject({ encoded: 0, cached: 12 })
     expect(
       lines.filter(([, l]) => /not in the committed cache/.test(l)),
     ).toEqual([])
@@ -127,7 +127,7 @@ describe('{{image}} in a build', () => {
     await build({ logger })
     expect(lines).toContainEqual([
       'warn',
-      `9 image variants were encoded that are not in the committed cache. Run \`npx kiss-ssg images <script>\` and commit ${site.root}/.kiss-cache/images`,
+      `12 image variants were encoded that are not in the committed cache. Run \`npx kiss-ssg images <script>\` and commit ${site.root}/.kiss-cache/images`,
     ])
   })
 
@@ -178,7 +178,7 @@ describe('{{image}} in a build', () => {
     await makeImageSite()
     await build()
     const before = variantsOnDisk()
-    expect(before).toHaveLength(9)
+    expect(before).toHaveLength(12)
     await site.touch('src/pages/index.hbs', PAGE('<p>no image</p>'))
     await kiss._replay()
     expect(variantsOnDisk()).toEqual([])
@@ -266,7 +266,7 @@ describe('{{image}} in a build', () => {
     const fallback = (await site.read('public/index.html')).match(
       /<img src="([^"]+)"/,
     )[1]
-    expect(fallback).toMatch(/^\/img\/hero-960\.[0-9a-f]{8}\.jpg$/)
+    expect(fallback).toMatch(/^\/img\/hero-768\.[0-9a-f]{8}\.jpg$/)
     expect(md).toContain(`![A swan](${fallback})`)
   })
 
@@ -276,12 +276,12 @@ describe('{{image}} in a build', () => {
     try {
       const report = await build()
       expect(report.mode).toBe('check')
-      expect(report.images).toMatchObject({ requested: 9, encoded: 9 })
+      expect(report.images).toMatchObject({ requested: 12, encoded: 12 })
     } finally {
       delete process.env.KISS_CHECK
     }
     expect(fs.existsSync(site.build)).toBe(false)
-    expect(fs.readdirSync(`${site.root}/.kiss-cache/images`)).toHaveLength(9)
+    expect(fs.readdirSync(`${site.root}/.kiss-cache/images`)).toHaveLength(12)
   })
 })
 
@@ -307,7 +307,7 @@ describe('{{embed}} with poster=', () => {
     expect(poster).toContain(
       'style="display:block;width:100%;height:100%;object-fit:cover"',
     )
-    expect(report.images.requested).toBe(9)
+    expect(report.images.requested).toBe(12)
     expect(report.ok).toBe(true)
   })
 

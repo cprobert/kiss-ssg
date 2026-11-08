@@ -31,7 +31,7 @@ kiss encodes a site's photos itself. `{{image}}` writes the `<picture>`, and the
 - **`eager=true`** on the first image a visitor sees, and on no other. It writes `fetchpriority="high"` and no `loading`; every other image is lazy.
 - **`class`** and other attributes pass through to the `<img>`.
 
-For the 3,800 px photo, the default recipe wrote AVIF, WebP and JPEG at 480, 960, 1440 and 1920 px. The 480 px AVIF is 4.9 KB, and the 1920 px AVIF 22.6 KB.
+For the 3,800 px photo, the recipe wrote AVIF, WebP and JPEG at 480, 960, 1440 and 1920 px (2.14 added 768 to the default, for phones). The 480 px AVIF is 4.9 KB, and the 1920 px AVIF 22.6 KB.
 
 ## Commit the cache
 

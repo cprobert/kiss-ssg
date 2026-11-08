@@ -1,0 +1,49 @@
+name: Bug report
+description: kiss-ssg did something wrong, or something a site needs does not work.
+title: '[bug] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A coding agent can draft this for you: `npx kiss-ssg issue bug --title "…"`
+        fills in the version, Node, OS and the build, and never posts. Leave out page copy,
+        file contents you would not publish, and any token or password: this repository is public.
+  - type: input
+    attributes:
+      label: kiss-ssg version
+      description: '`npm ls kiss-ssg`, or the version in node_modules/kiss-ssg/package.json.'
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Node and OS
+      placeholder: Node v22.23.4, win32 10.0.26200
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Site
+      description: Optional. The site's name and public URL, if you are happy to share them.
+  - type: textarea
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What was expected
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Reproduction
+      description: The smallest build script, page or config that shows it.
+  - type: textarea
+    attributes:
+      label: Config excerpt
+      description: The keys involved. Name a secret by its variable (`process.env.X`), never its value.
+      render: js
+  - type: textarea
+    attributes:
+      label: The build
+      description: Optional. What `npx kiss-ssg check router.js` reported.

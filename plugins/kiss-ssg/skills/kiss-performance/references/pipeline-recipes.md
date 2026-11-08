@@ -23,10 +23,10 @@ assets: {
 },
 ```
 
-- **kiss purges against the pages it wrote**, so a class from a model, a helper or a partial counts as much as one in a template. It reads the build's own scripts too, for a class added with `classList`.
-- **Safelist the classes a library builds.** Bootstrap's JavaScript adds `show`, `active`, `in` and `collapsing`, and builds others for its components (`modal-backdrop`, `tooltip-inner`). A class that appears in no page and no script is removed, and the component breaks only when it opens. **Open every interactive component in the browser after turning this on.**
+- **kiss purges against the pages it wrote**, so a class from a model, a helper or a partial counts as much as one in a template. It reads the build's own scripts too, for a class added with `classList`. Rules for ARIA states, `hidden`, `disabled` and `inert`, and pseudo-class-only rules such as `:focus-visible`, are always kept (GUIDE.md § Purged CSS).
+- **Safelist the classes a library builds.** Bootstrap's JavaScript adds `show`, `active`, `in` and `collapsing`, and builds others for its components (`modal-backdrop`, `tooltip-inner`). A class that appears in no page and no script is removed, and the component breaks only when it opens. A safelist entry keeps every rule that names it anywhere in its selector, so keep the patterns narrow (`/^show$/`, not `/show/`). **Open every interactive component in the browser after turning this on.**
 - **The preview keeps the whole file.** `--dev` never purges, so check the purge on a real build (`npm run build`, then serve the build folder).
-- **Tailwind needs none of this.** It scans its content itself (GUIDE.md § An asset pipeline, the Tailwind trap).
+- **Tailwind saves less, and needs no safelist.** It already writes only the utilities its scan finds, so the purge removes less: 9.4 KB to 8.4 KB after Brotli on one site. Its class names (`md:hover:bg-ink-900/80`, `min-h-[60vh]`) are kept whole.
 
 Measured on one Bootstrap 3 site's two pages: 100 KB down to 16 KB raw, and 13.4 KB down to 3.4 KB after Brotli.
 

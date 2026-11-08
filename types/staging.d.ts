@@ -44,6 +44,43 @@ export function stagedPath(kiss: any, target: string): string;
  */
 export function toReportedPath(kiss: any, target: any): any;
 /**
+ * A log message with every file under the staging folder written as the
+ * report writes it: each path is found in any spelling a writer can produce
+ * (as `stagingSiblings` made it, `./docs.kiss-staging-…`; as `path.join`
+ * writes it, `docs.kiss-staging-…`; absolute) and handed to `reportedPath`,
+ * the one rule for a staged path, so the log and the report name a file the
+ * same way (`./docs/x/y.html`). `\` is a separator only where it is one:
+ * elsewhere it is a legal character in a file name, as `reportedPath` holds.
+ * The folder named on its own is left alone, with or without a trailing
+ * separator: a message about the staging folder itself ("could not remove …,
+ * delete it by hand") has to name it. A match starts only where a path can
+ * start, never partway through a longer one (`/elsewhere/docs.kiss-staging-…`),
+ * and on Windows a path in another case is the same path.
+ *
+ * @param {string} text
+ * @param {string} stagingDir
+ * @param {string} buildDir
+ * @returns {string}
+ */
+export function unstageText(text: string, stagingDir: string, buildDir: string): string;
+/**
+ * The logger a build writes through: the site's own, with the strings its
+ * `success` and `info` lines are handed passed through `unstageText` while a
+ * staging folder is active. Those are the "wrote this file" channels: each
+ * writer logs the file it wrote (`sitemap.xml`, `_redirects`, the consent
+ * files…), and under staging that is a folder with a random suffix that is
+ * about to be renamed or deleted. Mapped here once, so a writer added later
+ * cannot reintroduce it. `warn`, `error` and `debug` are left as they are:
+ * they carry diagnostics (an `err.stack`, a file the staging folder could not
+ * remove) whose real path is the one to act on.
+ *
+ * @template {object} L
+ * @param {L} logger
+ * @param {any} kiss
+ * @returns {L}
+ */
+export function stagingLogger<L extends unknown>(logger: L, kiss: any): L;
+/**
  * @param {string} from
  * @param {string} to
  * @param {string} folder the build folder the operator named, for the message

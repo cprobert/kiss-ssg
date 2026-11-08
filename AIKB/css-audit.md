@@ -17,7 +17,7 @@
 - `buildFindings({ pages, stylesheets, inline, duplicates, blockers })` → the findings, sorted by check then detail.
 - `formatCssAudit(audit)` — the stdout text.
 - `auditCss(root, { purge })` → the `CssAudit` record, `{ version: 1, pages, stylesheets, thirdParty, inline, findings }` — what `--out` writes.
-- `runCss(argv, { cwd, purge })` → `{ code, out, err }`, the whole command. `purge` is injectable for tests (default `purgeCss`).
+- `runCss(argv, { cwd, purge })` → `{ code, out, err }`, the whole command. `purge` is injectable for tests (default `purgeCss`). `auditCss` makes one `purgeReads()` and passes it to every purge as `reads`, so a page linked by several stylesheets is read once (`AIKB/css-purge.md`). The "Removable" share therefore comes from the same purge a build runs, exact markup classes included (issue #78: it read 29% on a site whose real saving was 11%).
 - `PAGE_SAMPLE` (3, the page paths an inline entry or a finding names) and `QUOTE_LENGTH` (60, the characters of a block a finding quotes).
 
 ## Depends on

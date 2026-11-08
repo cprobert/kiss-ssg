@@ -55,14 +55,33 @@ describe('minifyText', () => {
 
   // Codex at the close (2026-11-05): clean-css 5 does not understand native
   // CSS nesting. It dropped `.child` and the nested @media and hoisted
-  // `&:hover` out of its parent, with seven warnings and no errors, and kiss
-  // read only the errors. A stylesheet it warns about is not minified.
-  it('throws on a stylesheet the minifier warns about, such as native nesting', async () => {
+  // `&:hover` out of its parent, with seven warnings and no errors, so a
+  // stylesheet it warns about is never handed its output. The clean room
+  // (2026-11-08) showed what that cost: Tailwind v4 nests, so a Tailwind
+  // sheet built without `--minify`, and the purge's output of one, shipped
+  // with every space. PostCSS reads nesting, so it compacts those instead.
+  it('compacts a stylesheet clean-css cannot read, keeping its nesting', async () => {
     const nested =
-      '.parent { color: red; .child { color: blue; } &:hover { color: green; } }\n'
-    await expect(minifyText('css/site.css', nested)).rejects.toThrow(
-      /Invalid property name|Unexpected/,
+      '/* note */\n.parent {\n  color: red;\n  .child { color: blue; }\n  &:hover { color: green; }\n  @supports (display: grid) {\n    display: grid;\n  }\n}\n'
+    expect(await minifyText('css/site.css', nested)).toBe(
+      '.parent{color:red;.child{color:blue}&:hover{color:green}@supports(display: grid){display:grid}}',
     )
+  })
+
+  it('never changes a selector, a value or a licence comment while compacting', async () => {
+    const nested =
+      '/*! licence */\n[title="a  b"] {\n  content: "x  y";\n  & .c { margin: 0  auto; }\n}\n'
+    expect(await minifyText('css/site.css', nested)).toBe(
+      '/*! licence */[title="a  b"]{content:"x  y";& .c{margin:0  auto}}',
+    )
+  })
+
+  // Review at the close (2026-11-08): the space after an at-rule's name was
+  // always written, so `@media(x)` grew by a byte, and the purge keeps
+  // whatever minifyText returns without a size check.
+  it('never adds a space before at-rule params that open with a bracket', async () => {
+    const nested = '@media(min-width:1px){.a{color:red;&:hover{color:blue}}}'
+    expect(await minifyText('css/site.css', nested)).toBe(nested)
   })
 
   it('throws on a script that does not parse', async () => {
@@ -87,20 +106,17 @@ describe('minifyFile', () => {
     expect(await site.read('bad.js')).toBe('function (')
   })
 
-  it('leaves a stylesheet with native nesting exactly as it was', async () => {
+  it('compacts a stylesheet with native nesting, nesting kept', async () => {
     site = await makeSite({
       'site.css':
         '.parent { color: red;\n  .child { color: blue; }\n  &:hover { color: green; }\n}\n',
     })
     const file = `${site.root}/site.css`
-    const before = await import('node:fs').then((fs) =>
-      fs.readFileSync(file, 'utf8'),
-    )
     const result = await minifyFile(file, 'site.css')
-    expect(result.ok).toBe(false)
+    expect(result.ok).toBe(true)
     expect(
       await import('node:fs').then((fs) => fs.readFileSync(file, 'utf8')),
-    ).toBe(before)
+    ).toBe('.parent{color:red;.child{color:blue}&:hover{color:green}}')
   })
 
   it('keeps the original when minifying would not make it smaller', async () => {

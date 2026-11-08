@@ -150,7 +150,7 @@ export function createImageIndex(): {
  *
  * @typedef {Object} KissImages
  * @property {number[]} widths the variant widths, ascending (default `[480,
- * 960, 1440, 1920]`)
+ * 768, 960, 1440, 1920]`)
  * @property {('avif'|'webp')[]} formats the `<source>` formats, in the order
  * they are offered (default `['avif', 'webp']`)
  * @property {{ avif: number, webp: number, jpeg: number }} quality 1–100 per
@@ -200,7 +200,7 @@ export const IMAGE_OWN_ATTRIBUTES: readonly string[];
 export type KissImages = {
     /**
      * the variant widths, ascending (default `[480,
-     * 960, 1440, 1920]`)
+     * 768, 960, 1440, 1920]`)
      */
     widths: number[];
     /**

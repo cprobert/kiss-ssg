@@ -309,7 +309,10 @@ export type PageFacts = {
     blockingScripts: string[];
     /**
      * every URL an `<img>` `src` or an
-     * `<img>`/`<source>` `srcset` names, as written, sorted and deduplicated
+     * `<img>`/`<source>` `srcset` names, as written, sorted and deduplicated,
+     * except a format-switching `<picture>`'s fallbacks: where its first
+     * `<source>` has a type every current browser decodes, a `srcset` and no
+     * `media`, only that source's URLs are listed
      */
     imageRefs: string[];
     /**

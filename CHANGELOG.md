@@ -3,6 +3,87 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.14.0 — 2026-11-08
+
+The purge keeps Tailwind's classes, and three changes a client site asked for. A site
+can now report a kiss bug or gap from its own folder. Read the upgrading notes: the
+default image widths and two audit and CSS outputs change.
+
+- **`assets.purge` keeps every class a page carries, exactly as written.** Fixes
+  [#78](https://github.com/cprobert/kiss-ssg/issues/78). PurgeCSS's default reading split
+  `md:hover:bg-ink-900/80`, `min-h-[60vh]` and `p-1.5` on `/ [ ] . :`, so a Tailwind site
+  lost used rules with nothing reported. Each class in a page's `class` attribute now
+  reaches the purge whole, and `kiss-ssg css` reads through the same purge. Rules on ARIA
+  and other script-flipped state attributes are kept. So is a selector made only of
+  pseudo-classes, `:focus-visible { … }`, which PurgeCSS 8 removed (every keyboard focus
+  ring went). GUIDE.md § Purged CSS says what counts as used, and the one hole: a class a
+  script builds from pieces.
+- **A safelist entry matches every name in a selector.** Classes, ids, tags, attributes
+  and pseudo-classes all count, so `'active'` keeps `.btn:active` as well as `.active`.
+  Anchor a pattern (`/^modal-/`) to keep only what you mean.
+- **The build report names no staging folder.** A build folder written `./docs` under
+  `cleanBuild: 'atomic'` put `docs.kiss-staging-…` paths into `AIKB/last-build.json`,
+  the report and the log. Every path is now named in the build folder.
+- **768 joins the default image widths**: `[480, 768, 960, 1440, 1920]`. A full-width
+  image on a phone (412 px at 1.75x wants 721 px) was sent the 960. Measured on a real
+  site of 20 pages at that size, a phone downloads 19.9% fewer image bytes. The cost is
+  three more variants per image in the cache and the deploy. The fallback `src` is the
+  lower middle width: 960 for a source wider than 1440, 768 for one between 960 and 1440.
+- **`image-oversized` judges the file a browser loads from a `<picture>`.** In a
+  `<picture>` whose first `<source>` switches format (a `type`, no `media`, a `srcset`,
+  which is what `{{image}}` writes), every current browser takes that source, so only it
+  counts. The fallbacks are no longer reported. An art-directed `<picture>` (`media`) is
+  still judged whole.
+- **The embed Load button carries its words in `data-kiss-embed-label`.** The facade,
+  the consent box and Always allow all have it, so a restyle can draw the label with
+  `content: attr(data-kiss-embed-label)`. A `load=` or `ui.text` change then reaches the
+  page with no CSS edit.
+- **A stylesheet clean-css cannot read is compacted, not shipped as written.** clean-css 5
+  does not understand native CSS nesting, which Tailwind v4 writes. kiss already threw its
+  output away for such a sheet, rightly, and copied the file with every space. PostCSS now
+  takes the formatting out and touches no selector, value or at-rule parameter. Measured:
+  a purged Tailwind sheet went from 10,613 to 8,492 bytes, with no computed-style
+  difference.
+- **`npx kiss-ssg issue bug|feature --title …` drafts a report to this repository.** It
+  fills in the version, Node, OS, site and the last build's summary (`--anonymous` drops
+  the site's name, URL and failing views). It adds the agent's `--notes` under the issue
+  form's headings, and searches for a similar open issue. It refuses a draft holding a
+  token-shaped value, writes the draft outside the site, and prints the `gh issue create`
+  command for you to run. It never posts. `--status <n>` says whether the installed
+  kiss-ssg ships a fix for an issue, and `--filed` does that for every `filed:` line in
+  your session logs. GUIDE.md § Reporting to kiss-ssg. `llms.txt` now tells an agent to
+  report a kiss bug, gap or wrong doc rather than work round it quietly. The kiss-memory
+  branch skills draft one at a close and check filed ones at the next open.
+
+Measured: a real Tailwind site purged with no safelist gave 35,217 computed-style
+differences under 2.13.3, and 0 under this release over 69,428 elements and 246 states.
+A second site of 683 pages lost no selector 2.13.3 kept. Built from the packed 2.13.3
+and from this release, the first site gives the same 499 files, byte for byte, except
+the one page with an embed, which gains its `data-kiss-embed-label`.
+
+### Upgrading
+
+- **A safelist you added because the purge split Tailwind's classes can go.** Build
+  without it and open each interactive component. Keep entries for classes a script
+  builds from pieces.
+- **Check your safelist patterns.** An unanchored pattern now keeps every rule naming a
+  match anywhere in the selector. That keeps more than before and never less, but
+  `/^…/` says what you mean.
+- **Run `npx kiss-ssg images <script>` and commit `.kiss-cache/images`.** The 768
+  variants are new, so the first build after upgrading encodes them, and a deploy that
+  does not have them in the committed cache encodes them too. A site that sets
+  `images.widths` is unaffected.
+- **Hashed stylesheet names change once** where the compaction applies, a sheet with
+  native nesting (an unminified Tailwind v4 build, or its purged copy). The pages link
+  the new names themselves. Nothing changes for a sheet clean-css already read.
+- **`image-oversized` may report fewer findings.** If you capped `images.widths` to
+  silence findings about WebP or JPEG fallbacks, the cap can go.
+- **An embed restyle that hides the button's text and writes the words in CSS** can
+  read `attr(data-kiss-embed-label)` instead. Nothing changes for a site that does not
+  restyle the button.
+- **`kiss-ssg issue` needs `gh` only to search and to file.** Without `gh`, the draft
+  and the printed command still come out.
+
 ## 2.13.3 — 2026-11-07
 
 The rest of the 2.13.2 security review: every finding its reviews listed and left is now
