@@ -215,6 +215,18 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Offer:** `PSEUDO_PART` in PurgeCSS's `standard` safelist — **kept**.
   - **Decision: continue.** diploma-msc next, by the same clean-room method (copy its `src/models`), then the docs.
 
+- **2026-11-08 (fourth pulse, after diploma-msc)** — at `b95c15c`; no `lib/` change since `2caac60`, when the gates were green; 0 commits behind `origin/main`.
+  - **#78 on real sites: met for both.**
+    - a1k9training: 0 differences.
+    - diploma-msc: no difference from the purge; the 9,005 found are all traced (the Amendment above). The branch keeps every rule 2.13.3 kept, plus 73 greedy. The purge takes ~2 s over 683 pages.
+  - **Fleet: met by the clean rooms**, built by hand. The fleet-check overlay was not built and is now optional.
+  - **Not started:** docs, Upgrading/`Fixes #78`, the clean-room agent, the issue process and feedback loop, items 4–6.
+  - **Review:** `2caac60` still has no independent review; the close's is owed.
+  - **Drift:** none. The first harness run stalled for 90+ minutes on a1k9training's `menu` selectors. The operator caught it ("I suspect this has stalled"), and it was rerun with a state filter and a 5 s timeout.
+  - **Eyeball: looked.** A rendered image sent to the operator: diploma-msc's home page, unpurged against the branch purge, at 375 and 1440. "Reads right."
+  - **Offer:** sampling 51 of 683 pages for the browser check, with the rule comparison covering all 683 — **kept**.
+  - **Decision: continue.** The docs next.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
