@@ -1,7 +1,7 @@
 ---
 branch: fix/purge-class-tokens
 base: main
-status: open
+status: closed
 opened: 2026-11-08
 ---
 
@@ -334,3 +334,99 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-08: The first reported bug, fixed and given a way home
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.14.0, in 43 commits on `fix/purge-class-tokens` (`6c6df8a` to `e40fc88`).
+
+- **The #78 fix:** `assets.purge` and `kiss-ssg css` read every markup class whole (`951548e`, `9ed8b8b`), and keep a pseudo-class-only selector (`2caac60`).
+- **The staging-name leak** in the report and log, fixed (`a4b8752` to `e6bf1d1`).
+- **The client's three requests:** 768 in the default widths (`05751c4`), the `<picture>` audit rule (`2700b6e`) and `data-kiss-embed-label` (`aad5f5b`).
+- **The feedback loop:** `kiss-ssg issue`, the issue forms and both sides' rituals (`abbb2e6`, `f8f70f6`).
+- **Compaction** of a stylesheet clean-css cannot read (`1bd398a`, `9a58691`).
+- **The close's own fixes:** three more token shapes (`79cec25`), and `Fixes` links that prettier wraps (`a0c59b9`).
+
+## Reflect — what the session was
+
+**Framing.** The objective was framed tightly at `/branch-open`: one reported bug (#78), with a fleet criterion, a clean-room criterion and an issue-process criterion. It was also framed with a design that turned out wrong. The "guard" criterion, failing a build when a used class loses every rule, was written before anyone had tested the idea. The first `/code-review` showed it judged selectors by classes alone. So `#sidebar .card` and `ul.menu` failed correct builds, and it could not see the very misses it existed for. The operator chose "make it impossible, drop guard" (Amendment, finding 3). The fix that replaced it, feeding each page's exact `class` attributes to PurgeCSS as a second content item, removes the failure class the guard only reported.
+
+**Shape.** From there the shape was **emergent, and it served the work**. The reporter's session (`a1k9training-8b`) answered and asked for three additions. A second bug turned up in the same report: the staging folder's name leaking into `last-build.json`. The client named three settings it carried as workarounds. Then the operator turned the branch into "a bug fix and feature feedback branch", one branch, no split (`075dc3c`). Each widening was recorded as an Amendment before work started on it. The final scope is roughly four times the opening one, and none of it arrived silently. The proposed version moved with it: 2.13.4 at the open, 2.14.0 from the sixth pulse on. That's what the operator chose at the close.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering: strong, and decisive at the moments it fired.**
+
+- **"I suspect this has stalled", then "Why is it taking 30 mins? Would each deploy take 30 mins to run the CSS purge?"** The operator noticed the diploma-msc computed-style run had hung before Claude did. The second question did two jobs. It separated a harness cost (two 30 s timeouts per missing selector, over 90 minutes for nothing) from a product cost (the purge itself takes about 2 s for 683 pages, measured afterwards). And it got that measurement written into the log rather than left as a worry.
+- **The review threat model was set when it was put to them:** "Ordinary sites only." After that, rounds 4 and 5 recorded multi-site and hostile-input findings and fixed none of them. That stop rule is why the branch reached a close and didn't loop.
+- **The operator overruled nothing Claude recommended this session.** Every `AskUserQuestion` went the recommended way, or was answered with a reason ("I didn't want the bug left unaddressed", for fixing the minify gap here). That reads as agreement, not passivity, because the questions were real forks. Still, a session with no overrule has also had no test of whether the recommendations were wrong.
+
+**Verification & ownership: the strongest dimension.**
+
+- **Six pulses, six eyeballs, each "Reads right".** When the operator couldn't see the terminal, Claude rendered what they needed and sent it to their device: both check logs side by side, the focus ring before and after the fix, the diploma-msc home page at two widths, GUIDE § Purged CSS, and the `kiss-branch-close` step. So the look happened at the pulse, while the work was fresh, every time.
+- **`! git show 08336d1 -- lib/staging.js`:** the operator read a review fix's diff themselves, between rounds, which is exactly what CLAUDE.md's review-loop rule asks for. It was the round whose logger fix (a Proxy over `{}`) round 4 then found had broken spies, `Object.keys` and `instanceof`. Reading the diff did not catch that. Round 4's reviewer did. The rule still did its job, though, because the fix had a human reader.
+- **The proofs were measured, not argued:**
+  - a1k9training in a clean room with no safelist: 35,217 computed-style differences under 2.13.3, 0 at `2caac60`;
+  - diploma-msc: 683 pages, 9,005 differences, every one traced to the harness, the minifier's zero spellings, load-to-load content or animation, and none to the purge;
+  - a fleet re-check before the close;
+  - a byte-identity check that made a second 30-minute browser run unnecessary.
+
+**Iteration discipline: punctuated, with one costly exception.**
+
+- **Six pulses at slice boundaries**, plus a review round after each engine slice, with each fix seen red first. The clean-room agent ran twice. Its first run found the report rule buried in `llms.txt`, its second found the minify gap. Each finding was fixed before the next run.
+- **The exception was the diploma-msc harness.** It ran for over 90 minutes with no progress line and no action timeout, and it was the operator who noticed. A harness that goes quiet for minutes needs a progress line and a short timeout before it starts, not after someone asks.
+
+**Harness leverage: good, with Claude doing most of the reaching.**
+
+- **Fresh-context agents** for the clean rooms, the plan critique (nine flaws found before any code), review round 6 and the security review.
+- **A peer session** (the reporter's) consulted on the plan rather than guessed at.
+- **Rendered images sent to the operator's device** for every eyeball.
+- **The miss was Codex.** It was out of credits at round 4 and again at the close. The operator chose "Proceed, record the gap" at the close, so 2.14.0 merges with no second-model-family review. Every reviewer on this branch was Claude. That's one model's blind spots, checked several times.
+
+**Intended against actual supervision.** The operator intended to supervise at the pulses and the review rounds, and did, at every one. The one checkpoint carried by Claude's momentum came at the close, and the ritual caught it. The secrets-scan table had never named `lib/issue.js`, a module that spawns a process, though it existed since `abbb2e6`. That was the scan's own "modules the branch adds" step working (`140f705`), at the last moment it could.
+
+**Competency level: Active supervisor**, with agentic-lead moments: the remit restated as one branch, the stop rule, and the decision to fix the minify gap here with its reason given. It stops short of agentic engineering lead for two reasons. The threat model was set when asked, not before the rounds began. And the Codex gap was accepted at the close rather than settled at the open.
+
+## Feedback — recommendations for next session
+
+- **Claude — a run that can go quiet gets a progress line and a timeout before it starts.** The diploma-msc harness ran 90 minutes before the operator asked. The fix (a 5 s action timeout, a state filter, one line per page) went in afterwards. Next time it goes in the first run, and any run expected to take over five minutes says so, with an estimate, when it starts.
+- **Claude — a fix that changes an object's identity gets a test of identity.** Round 3's Proxy over `{}` passed every test, because no test asked whether `instanceof`, spies and `Object.keys` still saw the site's logger. Round 4 found it. When a change wraps or replaces an object a caller holds, the commit adds a test that the caller's view is unchanged.
+- **Claude — a number in a doc is measured from the code that ships, not from a probe.** The AIKB note gave 8,428 bytes from a scratch probe, while the shipped `compactCss` gives 8,492. Likewise "a1k9training's sheet shouldn't change" was an inference until the fleet check measured it. Run the shipped function for the number, and say "inferred" until then.
+- **Process — a parser of a file a formatter writes is tested on the formatter's output.** `fixesLink` wanted exactly one space after `Fixes`. Prettier wraps `CHANGELOG.md` and broke the 2.14.0 entry right there, so `--status` would have reported #78 as not shipped. The changelog test caught it only because the first real `Fixes` link was written at this close. Fixed in `a0c59b9`, test red first. Generally: when kiss reads a file prettier owns, the test feeds it prettier's output.
+- **Process — a test fixture owns its data.** The `--filed` test read this repository's real CHANGELOG as "the installed kiss-ssg", and assumed #78 unfixed. It failed the moment #78 shipped. It now uses issue numbers that will never be fixed. The same check belongs in review: a test that reads a live repo file is a test of that file's current contents.
+- **Process — a pulse after a new `lib/` module runs the secrets-scan "modules the branch adds" step.** `lib/issue.js` spawns `gh`, reads caller-named files and writes outside the build folder. It reached the close without a row in `/secrets-scan`'s table. The close caught it, but the security review then ran on a module eight commits old.
+- **Operator — settle the Codex question when the branch opens.** It was out of credits twice on this branch. Your standing preference is not to merge with a review gap, and this branch merges with one, by your choice at the close. Either top up when a branch with `lib/` work opens, or record at the open that the branch will close without Codex. Then the close isn't where the call gets made.
+- **Both — keep the threat model with the stop rule from round one.** "Ordinary sites only" ended five rounds of review cleanly. It was set after round 3, when the findings changed kind. Putting it in the Intent at `/branch-open`, for any branch with a review loop, would have saved round 3's multi-site findings.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** fix #78 so the purge stops removing Tailwind classes a page uses, make that failure impossible to miss, and give a reported bug a path from issue to release. **Verdict: met, and the objective moved, as good drift.** The guard was replaced by a design that makes the failure impossible rather than reported. The remit grew into a client-feedback branch by the operator's decision, recorded at each step.
+
+- [x] **Whole class tokens survive the purge.** Every markup class reaches PurgeCSS exactly. `classTokens` covers scripts. The Intent's class list, plus quotes and `>` in brackets, is in `test/unit/css-purge.test.js`, red first.
+- [x] **`kiss-ssg css` Removable comes from the same purge** (`a4b8752`), with a test using those class names and no safelist.
+- [x] **The guard: superseded** by the operator's choice "make it impossible, drop guard" (Amendment, finding 3). A markup class can't be lost, so nothing needs to report losing one. The script-built-class hole is stated in GUIDE § Purged CSS.
+- [x] **Regression tests for the purge and the audit, each red first.** Recorded per commit.
+- [x] **Docs agree.** GUIDE § Purged CSS, `kiss-performance`, and "Tailwind needs none of this" removed and banned in `CONTRADICTIONS` (`7d333c4`). AIKB `css-purge.md` and `css-audit.md` are updated. Snippets were run against the engine.
+- [x] **Fleet criterion**, with one route changed:
+  - a1k9training through `scripts/fleet-check.mjs` at the close: 498 of 499 files byte-identical, the one difference the embed label;
+  - a1k9training in a clean room without its safelist: 0 differences over 69,428 elements and 246 states;
+  - diploma-msc by a clean-room copy, not fleet-check, because its models are gitignored and a committed-state clone can't build it: 0 differences from the purge over 251,940 elements.
+- [x] **Clean-room criterion**, on the second run (Amendment, 2026-11-08). The run found the minify gap, fixed in `1bd398a`. It also drafted a `kiss-ssg issue` report unprompted.
+- [x] **Issue process.** The issue forms and `config.yml`; `/branch-open` records `issue:`; `/branch-close` writes `Fixes #n` and the CHANGELOG link; `/branch-merged` prints the comment. Skill code blocks are within the allow-list.
+- [x] **The CHANGELOG** carries `Fixes [#78](…)` and an `### Upgrading` note, with dropping the workaround safelist first. **`Fixes #78` in the PR body** is written at the push. The issue closes when the PR merges into `main`.
+
+**Measurable impact:**
+
+- a Tailwind site purged with no safelist keeps every rule it uses (35,217 differences → 0);
+- a phone downloads 19.9% fewer image bytes on a real site;
+- a purged Tailwind v4 sheet ships 20% smaller (10,613 → 8,492 bytes);
+- a client site's agent now has a drafted, token-checked way to report a kiss bug instead of working round it, plus a way to hear that it shipped.
+
+**Still open:**
+
+- no Codex review of `main..HEAD`, the operator's recorded choice;
+- the two older `escapeRegExp` copies in `lib/audit.js` and `lib/links.js`;
+- the doc gaps the clean-room agent recorded: where the Tailwind entry file lives, `isActive` with `{{link}}`, and whether to gitignore the generated CSS;
+- the corpse scanner's built-in list lacking `/code-review`;
+- a1k9training dropping its safelist, which is the operator's call after release.
