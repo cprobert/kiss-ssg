@@ -339,7 +339,7 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
 
 _A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
 
-**What we shipped:** 2.14.0, in 43 commits on `fix/purge-class-tokens` (`6c6df8a` to `e40fc88`).
+**What we shipped:** 2.14.0, in 41 commits on `fix/purge-class-tokens` (`6c6df8a` to `e40fc88`).
 
 - **The #78 fix:** `assets.purge` and `kiss-ssg css` read every markup class whole (`951548e`, `9ed8b8b`), and keep a pseudo-class-only selector (`2caac60`).
 - **The staging-name leak** in the report and log, fixed (`a4b8752` to `e6bf1d1`).
