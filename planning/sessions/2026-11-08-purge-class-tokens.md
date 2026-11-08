@@ -174,6 +174,24 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
     - the older regex-escape copies in `audit.js` and `links.js`, where `links.js` lacks `*`.
   - **Rounds stop here under the rule.** The close's review is next.
 
+**2026-11-08 — the clean-room agent criterion, run twice, and one engine fix from it.**
+
+- **Run 1** (a fresh agent, only the tarball of `0967f72`, a client-style brief for a Tailwind v4 site with purge and no safelist):
+  - The purge criterion: `kiss-ssg check` exit 0 (re-run by Claude on its build: 4 pages). Every Tailwind class it used kept its rule (variants, opacity, arbitrary values, fractions, `[&_p]`). 12,587 → 11,226 bytes.
+  - The feedback-loop criterion **failed**. It met four doc gaps, worked round each quietly, and said no shipped instruction asked it to report: the rule sat at the end of `llms.txt`'s CLI paragraph.
+  - The operator chose to move the rule and rerun. It is now the first bullet of "Traps nothing reports", and names a missing or wrong doc as a gap (`71f1500`). README's placeholder sentence was corrected the same commit: the audit flags only a bracket that opens `[to confirm`.
+- **Run 2** (same brief, word for word, tarball of `71f1500`):
+  - The purge passed again (9,825 → 8,478 bytes with Tailwind `--minify`).
+  - The feedback loop **met**. Unprompted, it followed the new trap line. It ran `kiss-ssg issue --status 78`, captured a `check` report, and drafted a bug with `--notes` and `--report`, the draft good and under the form's headings. It never ran `gh`.
+  - Its draft's finding (AIKB said the fix was "2.13.3") was fixed in `1bd398a`.
+  - A second finding it worked round without reporting: a purged Tailwind sheet came out larger than Tailwind's own `--minify` output.
+- **That finding, traced.** clean-css 5 cannot read native nesting, which Tailwind v4 writes, so kiss kept every unminified Tailwind sheet, and every purge of one, as written.
+  - Claude recommended drafting an issue. The operator chose to fix it on this branch: "I didn't want the bug left unaddressed."
+  - Fixed in `1bd398a`: `compactCss`, a PostCSS fallback that clears only formatting.
+  - Measured: 12,072 → 9,666 bytes unpurged, and 10,613 → 8,492 purged, with 0 computed-style differences in Chromium (3 pages, 2 widths, 4 states, 600 elements).
+  - **For the close's `### Upgrading` note:** a site whose CSS clean-css used to refuse now gets compacted CSS, so its hashed file names change once.
+  - This is new `lib/` code after round 5: the close's review covers it.
+
 **2026-11-08 — the branch's remit, restated (operator: "Can we make this branch a bug fix and feature feedback branch. Is there need for multiple branches").** One branch, no split. Its remit is the client feedback from the #78 exchange:
 
 - **Bug fixes:** #78 (the purge and the audit), the `kiss-ssg aikb` staging-name leak, and the `:focus-visible` loss the clean room found.
