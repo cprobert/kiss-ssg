@@ -8,12 +8,13 @@
 export function shouldMinify(relative: string): boolean;
 /**
  * A stylesheet with its formatting taken out: the whitespace PostCSS keeps
- * between nodes, and every comment but a `/*!` licence one. No selector,
+ * between nodes, and every comment between rules and declarations but a `/*!`
+ * licence one (a comment inside a selector, value or params stays). No selector,
  * at-rule parameter or value is touched, so nothing a browser reads changes.
  * It is what a stylesheet clean-css cannot read gets instead: clean-css 5
  * does not understand native nesting, which Tailwind v4 writes, and PostCSS
  * does (the clean room, 2026-11-08: a purged Tailwind sheet shipped at
- * 10,613 bytes; compacted, 8,428).
+ * 10,613 bytes; compacted, 8,492, with no computed-style difference).
  *
  * @param {string} text
  * @returns {string}

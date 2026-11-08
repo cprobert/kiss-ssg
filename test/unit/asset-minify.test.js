@@ -64,7 +64,7 @@ describe('minifyText', () => {
     const nested =
       '/* note */\n.parent {\n  color: red;\n  .child { color: blue; }\n  &:hover { color: green; }\n  @supports (display: grid) {\n    display: grid;\n  }\n}\n'
     expect(await minifyText('css/site.css', nested)).toBe(
-      '.parent{color:red;.child{color:blue}&:hover{color:green}@supports (display: grid){display:grid}}',
+      '.parent{color:red;.child{color:blue}&:hover{color:green}@supports(display: grid){display:grid}}',
     )
   })
 
@@ -74,6 +74,14 @@ describe('minifyText', () => {
     expect(await minifyText('css/site.css', nested)).toBe(
       '/*! licence */[title="a  b"]{content:"x  y";& .c{margin:0  auto}}',
     )
+  })
+
+  // Review at the close (2026-11-08): the space after an at-rule's name was
+  // always written, so `@media(x)` grew by a byte, and the purge keeps
+  // whatever minifyText returns without a size check.
+  it('never adds a space before at-rule params that open with a bracket', async () => {
+    const nested = '@media(min-width:1px){.a{color:red;&:hover{color:blue}}}'
+    expect(await minifyText('css/site.css', nested)).toBe(nested)
   })
 
   it('throws on a script that does not parse', async () => {
