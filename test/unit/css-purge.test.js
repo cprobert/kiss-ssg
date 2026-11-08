@@ -260,6 +260,30 @@ describe('purgeCss after the review', () => {
   })
 })
 
+// The a1k9training clean room (2026-11-08): purged with no safelist, every
+// keyboard focus ring went, because PurgeCSS 8.0.0 removes a selector made of
+// pseudo-classes alone, though `:focus-visible` means `*:focus-visible`. The
+// site's old catch-all safelist kept it by accident (its `:` matched).
+describe('purgeCss keeps a selector that matches every element', () => {
+  const purge = (css, html = '<p class="a">x</p>') =>
+    purgeCss(css, { html: [html], scripts: [], safelist: [] })
+
+  it.each([
+    [':focus-visible{outline:3px solid red}', ':focus-visible'],
+    [':-moz-focusring:where(:not(iframe)){outline:auto}', ':-moz-focusring'],
+    ['::selection{color:red}', '::selection'],
+    [':focus-visible:not(:hover){outline:0}', ':focus-visible:not'],
+  ])('keeps %s', async (css, kept) => {
+    expect(await purge(css)).toContain(kept)
+  })
+
+  it('still removes a pseudo-class rule whose class or tag no page has', async () => {
+    expect(
+      await purge('.unused:focus-visible{outline:0}table:hover{color:red}'),
+    ).toBe('')
+  })
+})
+
 describe('purgeReads', () => {
   it('reads each page once across the purges of one run, whatever list it arrives in', async () => {
     const reads = purgeReads()
