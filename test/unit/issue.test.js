@@ -133,6 +133,18 @@ describe('shippedIn', () => {
     ).toBe(null)
   })
 
+  // The 2.14.0 close: prettier wraps CHANGELOG.md, and put the line break
+  // between `Fixes` and its link, so --status would have said not shipped.
+  it('reads a Fixes link that prettier wrapped after the word', () => {
+    expect(
+      shippedIn(
+        `## 2.14.0\n\n- **Purge.** Fixes\n  [#78](https://github.com/${REPO}/issues/78).`,
+        78,
+        REPO,
+      ),
+    ).toBe('2.14.0')
+  })
+
   it('exposes the one link shape', () => {
     expect([
       ...`Fixes [#3](https://github.com/${REPO}/issues/3)`.matchAll(
@@ -391,23 +403,26 @@ describe('runIssue', () => {
   })
 
   it('lists every filed issue in the logs and site.md with --filed', () => {
+    // With no kiss-ssg installed in the site, the installed changelog is
+    // this repository's own, so the numbers are ones it will never fix:
+    // #78 shipped in 2.14.0 and made this test fail at that close.
     const logs = path.join(site, 'planning', 'sessions')
     fs.mkdirSync(logs, { recursive: true })
     fs.writeFileSync(
       path.join(logs, '2026-11-01-a.md'),
-      `---\nbranch: a\n---\n- x. filed: https://github.com/${REPO}/issues/78\n- y. filed: #79, which is not a URL\n`,
+      `---\nbranch: a\n---\n- x. filed: https://github.com/${REPO}/issues/900078\n- y. filed: #79, which is not a URL\n`,
     )
     fs.mkdirSync(path.join(site, 'AIKB'))
     fs.writeFileSync(
       path.join(site, 'AIKB', 'site.md'),
-      `- y. filed: https://github.com/${REPO}/issues/80\n`,
+      `- y. filed: https://github.com/${REPO}/issues/900080\n`,
     )
     const out = run(['--filed']).out.split('\n')
     expect(out).toHaveLength(2)
     expect(out[0]).toMatch(
-      /^#78: not in the installed kiss-ssg .* \(filed in planning\/sessions\/2026-11-01-a\.md\)$/,
+      /^#900078: not in the installed kiss-ssg .* \(filed in planning\/sessions\/2026-11-01-a\.md\)$/,
     )
-    expect(out[1]).toMatch(/^#80: .*\(filed in AIKB\/site\.md\)$/)
+    expect(out[1]).toMatch(/^#900080: .*\(filed in AIKB\/site\.md\)$/)
   })
 
   it('exits 2 on usage', () => {

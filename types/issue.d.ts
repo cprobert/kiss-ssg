@@ -34,6 +34,8 @@ export function issueNumber(ref: string, repo: string): number | null;
 /**
  * The CHANGELOG's one form for a shipped issue, `Fixes [#n](…/issues/n)`.
  * A bare mention does not count. Shared with `test/unit/changelog.test.js`.
+ * Any whitespace after `Fixes`: prettier wraps the changelog, and can break
+ * the line there.
  *
  * @param {string} repo `owner/name`
  * @returns {RegExp} global; groups: the number in the text, the number in the URL
