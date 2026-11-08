@@ -182,6 +182,17 @@ Each fix was seen red against `951548e` or under a mutation. No finding changed 
   - **Offer:** `DYNAMIC_ATTRIBUTES` (ARIA states kept whatever the markup holds) — **kept**.
   - **Decision: continue.** The fleet-check overlay, then the real-site purge proof, before the docs.
 
+- **2026-11-08 (third pulse, after the clean room)** — at `a6d09e2`; the gates were green at `2caac60`; 0 commits behind `origin/main`.
+  - **#78 on a real site: met for a1k9training.** Clean room, no safelist:
+    - 2.13.3: 35,217 computed-style differences;
+    - branch: 0 over 69,428 elements and 246 states (the Amendment above).
+  - **The `:focus-visible` loss the clean room found:** fixed red-first (`2caac60`), recorded in `AIKB/upstream.md`. This engine change came after both review rounds and has no independent review yet; the close's review is owed.
+  - **Fleet: partial.** a1k9training has the stronger clean-room proof. diploma-msc is still unproven (its Orchard models are not in the clone). The fleet-check overlay is still not built: the clean room did the job by hand.
+  - **Not started:** docs, criteria 4–6, the feedback loop, clean-room agent.
+  - **Eyeball: looked.** A rendered image sent to the operator: keyboard focus on a1k9training's Menu button, from the unpurged build, the branch before the fix, and the branch now. "Reads right."
+  - **Offer:** `PSEUDO_PART` in PurgeCSS's `standard` safelist — **kept**.
+  - **Decision: continue.** diploma-msc next, by the same clean-room method (copy its `src/models`), then the docs.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
