@@ -29,7 +29,10 @@ const OK = { alt: 'A swan', sizes: '100vw', eager: false, root: '/', attrs: [] }
 describe('resolveImages', () => {
   it('fills the provisional defaults', () => {
     expect(resolveImages(undefined)).toEqual({
-      widths: [480, 960, 1440, 1920],
+      // 768: a full-width image on Lighthouse's phone (412 px at 1.75x) wants
+      // 721 px and was sent the 960. On a1k9training, 768 cut the image bytes
+      // a phone downloads by 19.9% over 20 pages (2026-11-08).
+      widths: [480, 768, 960, 1440, 1920],
       formats: ['avif', 'webp'],
       quality: { avif: 50, webp: 75, jpeg: 80 },
       cache: '.kiss-cache/images',
@@ -103,7 +106,7 @@ describe('names', () => {
   it('is stable for the same bytes and recipe, and moves with either', () => {
     const a = plan({ width: 1200, height: 800 })
     expect(plan({ width: 1200, height: 800 }).src.path).toBe(a.src.path)
-    expect(a.src.path).toMatch(/^img\/hero-960\.[0-9a-f]{8}\.jpg$/)
+    expect(a.src.path).toMatch(/^img\/hero-768\.[0-9a-f]{8}\.jpg$/)
     const otherBytes = plan(
       { width: 1200, height: 800 },
       { digest: 'b'.repeat(64) },
@@ -136,11 +139,18 @@ describe('planImage', () => {
     expect(
       p.sources.map((s) => [s.type, s.variants.map((v) => v.width)]),
     ).toEqual([
-      ['image/avif', [480, 960, 1200]],
-      ['image/webp', [480, 960, 1200]],
+      ['image/avif', [480, 768, 960, 1200]],
+      ['image/webp', [480, 768, 960, 1200]],
     ])
-    expect(p.fallback.map((v) => v.format)).toEqual(['jpeg', 'jpeg', 'jpeg'])
-    expect(p.src.width).toBe(960)
+    expect(p.fallback.map((v) => v.format)).toEqual([
+      'jpeg',
+      'jpeg',
+      'jpeg',
+      'jpeg',
+    ])
+    // The lower middle of four: a source wider than 1440 still gets 960.
+    expect(p.src.width).toBe(768)
+    expect(plan({ width: 2400, height: 1600 }).src.width).toBe(960)
     expect([p.width, p.height]).toEqual([1200, 800])
     expect(p.fallback[0].height).toBe(320)
   })

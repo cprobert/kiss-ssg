@@ -61,7 +61,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   sass: { includePaths: [] },
   fetch: { headers: {}, timeout: 10000, retries: 0, cache: false },
   assets: { hash: false, version: null, minify: true, purge: null, pipeline: [],
-    images: { widths: [480, 960, 1440, 1920], formats: ['avif', 'webp'], quality: { avif: 50, webp: 75, jpeg: 80 }, cache: '.kiss-cache/images' } },
+    images: { widths: [480, 768, 960, 1440, 1920], formats: ['avif', 'webp'], quality: { avif: 50, webp: 75, jpeg: 80 }, cache: '.kiss-cache/images' } },
   markdown: { html: true, xhtmlOut: true, breaks: false },
   links: { check: true, canonical: false, trailingSlash: true, hostServed: [] },
   host: null, // 'netlify' | 'cloudflare' | 'firebase' | 'vercel' | 'github-pages' | a list
