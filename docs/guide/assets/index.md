@@ -36,11 +36,20 @@ new Kiss({
 
 At the settle, kiss runs [PurgeCSS (opens in a new tab)](https://purgecss.com) over each named stylesheet against **the HTML this build wrote**, so every class a page carries counts, whether it came from a template, a model, a helper or a partial. It also reads the build's own `.js` files (`scripts: true`, the default), for the class names a script adds. A purged stylesheet is minified again (`assets.minify`). Under `assets.hash` it is re-hashed, and every page that linked the old name is rewritten to the new one, before the link scan, the audit, the cache headers and the report run. Nothing else in the build has to know.
 
--   **The safelist is the site's job.** A class that appears only when a script runs, and is spelled out neither in a page nor in a script (`'modal-' + name`), is removed, and its component breaks only when it opens. Open every interactive component in the browser after turning this on. A string or a regular expression in `safelist` keeps a selector whatever the pages say.
+What counts as used:
+
+-   **Every class a page's `class` attribute holds, exactly as written.** Tailwind's names survive whole: `md:hover:bg-ink-900/80`, `min-h-[60vh]`, `[&_p]:mb-6`, `p-1.5`. Before 2.14 they were split on `/ [ ] . :` and removed ([#78 (opens in a new tab)](https://github.com/cprobert/kiss-ssg/issues/78)).
+-   **Every word in the pages and scripts**, with any bracketed part kept whole, for a class a script adds by name (`classList.add('open')`).
+-   **A rule on a state a script flips is always kept**, whatever the markup holds now: `[aria-expanded="true"] .chevron` stays on a page whose button says `false`. The attributes are `aria-busy`, `aria-checked`, `aria-current`, `aria-disabled`, `aria-expanded`, `aria-hidden`, `aria-invalid`, `aria-pressed`, `aria-selected`, `disabled`, `hidden` and `inert`.
+-   **A rule whose selector is pseudo-classes or pseudo-elements alone is always kept**: `:focus-visible { outline: … }`, `::selection`. PurgeCSS removes these on its own (`AIKB/upstream.md`), which took every keyboard focus ring off one site.
+
+A selector goes when any part of it names something no page or script has: `.card .title` is removed from a site with no `.card`.
+
+-   **The safelist is the site's job.** A class a script builds from pieces (`'modal-' + name`, `'tab-panel-' + state`) is in no page and no script, so it is removed, and its component breaks only when it opens. Open every interactive component in the browser after turning this on. A string in `safelist` names a class, id or element exactly, and a regular expression matches them. Either keeps **every rule whose selector names a match anywhere**: `'show'` keeps `.show > .btn.dropdown-toggle` even on a site with no `.btn`. That is wider than 2.13, which kept such a rule only when the rest of its selector was on a page as well. A broad pattern now keeps more CSS.
 -   **Purged first, minified once, after.** The copy does not minify a named stylesheet, so PurgeCSS still reads its comments: `/* purgecss start ignore */ … /* purgecss end ignore */` keeps a block whatever the pages say.
 -   **Not in dev.** `--dev` serves the whole stylesheet while you edit, so the preview never hides a rule a page is about to use.
 -   **A named file that is not in the build fails the build**, with its name. A purge that did nothing would ship the whole file in silence.
--   **Tailwind needs none of this**: it scans its content itself (§ An asset pipeline).
+-   **Tailwind saves less, and needs no safelist.** It writes only the utilities its own scan finds (§ An asset pipeline), so there is less to remove. On one Tailwind v4 site, 73.6 KB became 54.7 KB, or 9.4 KB to 8.4 KB after Brotli. The classes a page holds are kept as written, so no safelist is needed for them.
 
 ### Cache-busting asset URLs
 

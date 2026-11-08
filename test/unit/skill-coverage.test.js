@@ -1150,6 +1150,10 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: '#78: a purge of a Tailwind stylesheet keeps its classes whole and still removes what its own scan over-included (11% after Brotli on one site), so a sentence saying Tailwind needs no purge is the advice that replaced',
+    patterns: [/Tailwind needs none of this/, /Tailwind needs no purge/],
+  },
+  {
     why: '2.14.0: a model that cannot be resolved fails the build, named by its view, once per page; a sentence saying it is logged and the page skipped is the behaviour that replaced',
     patterns: [
       /A bad model is not a build failure/,
