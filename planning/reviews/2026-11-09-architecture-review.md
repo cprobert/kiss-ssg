@@ -354,7 +354,53 @@ right idea; its pattern for `echo` into a file is wider than its rule.
 
 ### Clean-room test A: a new developer
 
-_Pending: the agent had not reported when this file was first written. See the end of the file._
+Given a fresh clone and told to start from `README.md`, the agent reached a green suite in about
+two minutes and scored getting up and running **4 out of 5**, dropping to about **3 for landing a
+conforming change**. All timings and outputs below are its measurements.
+
+**Getting to green.** `README.md § Development` (line 242 of 263) gave the commands. `npm install`
+took 4.3 seconds and `npm test` 1 minute 57 seconds: 4,803 tests passed, 49 skipped, green first
+time, and no flaky test across four full runs. There is no CONTRIBUTING file; the README points a
+developer at `CLAUDE.md`.
+
+**A first change.** It added a built-in `shout` helper with a unit test. The gates went green after
+three runs. How it learned each obligation:
+
+| Obligation                               | How it found out                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| An entry in `llms.txt`                   | A failing test, with a clear message                                               |
+| A bullet in `AIKB/handlebars-helpers.md` | A failing test, with a clear message                                               |
+| Regenerated `types/`                     | A failing test that names the command to run                                       |
+| `llms.txt` under 16,000 characters       | A failing test. The one new line forced rewording four neighbouring entries        |
+| Renaming `shout` in `watch.test.js`      | Two failing tests whose messages do not hint at the cause (see below)              |
+| A section in `GUIDE.md`                  | Only `CLAUDE.md`'s Rules. No check enforces it                                     |
+| `CHANGELOG.md` and a version bump        | Never found out what a human should do; the changelog says `/branch-close` does it |
+
+**Where it got stuck or was misled:**
+
+- **The contributor process exists only as agent instructions.** `CLAUDE.md` describes slash
+  commands and "the operator". A person without Claude Code is not told what to do instead, or
+  whether outside pull requests are wanted.
+- **A name collision cost a gate round.** `test/integration/watch.test.js` uses `shout` as its
+  example site-helper name, so adding a built-in of that name failed two watch tests with
+  "expected [Function] to be undefined" and a timeout. Nothing points at the cause. (The agent
+  inferred the cause; the failures went away on renaming.)
+- **The `llms.txt` budget is spent.** `CLAUDE.md` says the cap is raised only by cutting something
+  else, but not that four characters remain.
+- **`AIKB/handlebars-helpers.md`'s opening roster is already stale**: it omits `image` and `embed`,
+  and the test checks only the bullet list.
+- **`node docs` rewrote 15 tracked files, 13 of them unrelated to the change.** The agent reverted
+  them and did not investigate why. Worth checking: a docs build that is not reproducible from a
+  clean checkout makes every docs diff noisy.
+- **The README never says how to run one test file.** One file runs in 0.6 seconds against two
+  minutes for the suite.
+
+**What helped a human newcomer:** the README's Development section, `package.json` scripts, the
+`CLAUDE.md` Rules and Commands sections, and above all the failing-test messages, which the agent
+called the best documentation in the repo. **What was noise for that purpose:** the README's first
+240 lines, `CLAUDE.md`'s pipeline paragraph and incident history, the changelog and `planning/`.
+
+The conclusion matches section 10: the mechanisms teach well, and the prose does not.
 
 ### Clean-room test B: an agent building a site
 
