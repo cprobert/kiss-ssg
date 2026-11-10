@@ -125,6 +125,8 @@ Elicit the fields below. Use AskUserQuestion for the structured choices (impact 
   - **Engine internals** — a `lib/` module's implementation with the API unchanged. Obliges that module's `AIKB/` doc, and a patch bump.
   - **Tooling & docs** — tests, skills, `scripts/`, the docs site under `src/`, `planning/`. Patch bump, or none.
 - **Expected shape** — planned (the destination known up front, the route largely mapped) or emergent (the goal and route revealed as we go). Both are valid; naming it sets expectations and lets the reflection's Reflect section compare actual vs expected.
+- **Assumptions** — what the brief takes as true about the code and the world, each marked **measured** (a command run or a line read, and when) or **inferred** (reasoned, not checked). A substantial brief with no assumptions is not opened: ask until there are some, because an unstated assumption is the one nobody checks.
+- **Scope** — the paths the branch may change, as glob patterns on one line separated by commas (the `scope:` key in the template). Optional: a trivial chore may omit it, and `node scripts/scope-check.mjs` then says it checked nothing.
 
 Two more fields, **asked only for a substantial branch** — a chore does not need either, and asking anyway is the interrogation theatre this step warns against:
 
@@ -198,6 +200,7 @@ status: open
 opened: <YYYY-MM-DD>
 worktree: <the worktree's absolute path, as `git worktree list` shows it, only when Step 4 made one; else omit the line>
 issue: <the GitHub issue number this work fixes, only when there is one; else omit the line>
+scope: <the paths the branch may change: glob patterns on one line, separated by commas, e.g. `lib/a.js, test/unit/a.test.js, docs/**`; else omit the line>
 ---
 
 # Session — <YYYY-MM-DD>: <Descriptive Title>
@@ -216,6 +219,8 @@ issue: <the GitHub issue number this work fixes, only when there is one; else om
 **Impact surface:** public API | engine internals | tooling & docs — <one line why>
 
 **Expected shape:** planned | emergent | between — <one line why>
+
+**Assumptions:** <each a claim about the code or the world, marked measured (what was run or read, and when) or inferred; substantial branches only>
 
 **Delegation convention:** <who briefs, who implements, what the agents may not do — or "none: one session"; substantial branches only>
 

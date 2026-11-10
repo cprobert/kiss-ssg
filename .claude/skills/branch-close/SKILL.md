@@ -179,6 +179,14 @@ A branch that reaches this step with a `looked` entry has had the check done at 
 
 Either way the ritual continues: this is a stop for an answer, not a gate that blocks the close.
 
+### Step 5b — Scope check
+
+```bash
+node scripts/scope-check.mjs
+```
+
+Show its result to the operator. It lists every changed file the session file's `scope:` line does not cover, exiting 1 when there is one; with no `scope:` line it says it checked nothing and exits 0; it exits 2 when it could not run. Each listed file is drift to undo or a widening of the scope: widen the `scope:` line and record the widening as an Amendment in the session file, then continue. Like Step 5a, a stop for an answer, not a gate that blocks the close.
+
 ### Step 6 — Run the gates
 
 **Stop any preview or watcher over the repo first** — VS Code's Live Server, an example's `--dev`, `node docs --dev` (`npm run dev`). It holds build folders open on Windows, so example 7's atomic promote fails inside the test run (2026-09-27), and a build can overwrite the folder it is serving (2026-10-01). If one is running, ask before stopping it.
