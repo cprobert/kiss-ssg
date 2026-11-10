@@ -107,7 +107,9 @@ dist
 # examples/public/ had its output committed, and examples/ ships in the tarball.
 public/
 deploy.md
-docs/*.json
+# The docs site's build output (node docs). Built by .github/workflows/static.yml
+# on every deploy, never committed.
+docs/
 # `node docs --dev` builds the docs site's live preview here, never into docs/.
 .preview/
 

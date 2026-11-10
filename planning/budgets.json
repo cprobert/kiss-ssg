@@ -1,0 +1,11 @@
+{
+  "coreLines": 33569,
+  "privateReach": 115,
+  "anyAnnotations": 95,
+  "runtimeDeps": 21,
+  "testPrivateReach": 288,
+  "claudeMdBytes": 63053,
+  "llmsTxtChars": 15996,
+  "msPerPage": null,
+  "failureBoilerplate": 14
+}
