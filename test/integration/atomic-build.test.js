@@ -410,9 +410,11 @@ describe("cleanBuild: 'atomic'", () => {
     site = await makeSite({
       'src/pages/index.hbs': 'i',
       'public/published.html': 'old',
-      // Another process's pid: neither of these can belong to a live build.
-      'public.kiss-staging-999999-abcdef/half.html': 'half-written',
-      'public.kiss-old-999999-abcdef/published.html': 'stranded',
+      // A pid no system hands out (above Linux's 2^22 pid_max and Windows'
+      // range): since the sweep spares a live process's folders, a pid that
+      // could be running would keep these, and the test would fail by chance.
+      'public.kiss-staging-2147483646-abcdef/half.html': 'half-written',
+      'public.kiss-old-2147483646-abcdef/published.html': 'stranded',
     })
     const notices = []
     kiss = new Kiss({
@@ -426,13 +428,13 @@ describe("cleanBuild: 'atomic'", () => {
 
     // This build's own staging sibling is live; the crashed run's are gone.
     const leftovers = staging(site.root)
-    expect(leftovers).not.toContain('public.kiss-staging-999999-abcdef')
-    expect(leftovers).not.toContain('public.kiss-old-999999-abcdef')
+    expect(leftovers).not.toContain('public.kiss-staging-2147483646-abcdef')
+    expect(leftovers).not.toContain('public.kiss-old-2147483646-abcdef')
     expect(leftovers.every((name) => name.includes(`-${process.pid}-`))).toBe(
       true,
     )
-    expect(notices.join('\n')).toMatch(/kiss-staging-999999-abcdef/)
-    expect(notices.join('\n')).toMatch(/kiss-old-999999-abcdef/)
+    expect(notices.join('\n')).toMatch(/kiss-staging-2147483646-abcdef/)
+    expect(notices.join('\n')).toMatch(/kiss-old-2147483646-abcdef/)
     // The build itself is unaffected.
     expect(await site.read('public/published.html')).toBe('old')
     kiss.scan().generate()

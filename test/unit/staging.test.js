@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import fsp from 'node:fs/promises'
+import { spawn } from 'node:child_process'
 import os from 'node:os'
 import path from 'node:path'
 import {
@@ -204,6 +205,7 @@ describe('unstageText and stagingLogger', () => {
 const logger = () => ({
   error: vi.fn(),
   notice: vi.fn(),
+  info: vi.fn(),
   warn: vi.fn(),
   debug: vi.fn(),
 })
@@ -350,9 +352,10 @@ describe('sweepStaleSiblings', () => {
   it("removes a crashed run's siblings and keeps this process's own", async () => {
     temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-staging-'))
     const target = path.join(temp, 'public')
+    // A pid no system hands out (pid 1 is a live process on Linux).
     const names = [
-      'public.kiss-staging-1-dead',
-      'public.kiss-old-1-dead',
+      'public.kiss-staging-2147483646-dead',
+      'public.kiss-old-2147483646-dead',
       `public.kiss-staging-${process.pid}-live`,
       'public-unrelated',
     ]
@@ -368,8 +371,8 @@ describe('sweepStaleSiblings', () => {
     expect(kiss.logger.notice).toHaveBeenCalledTimes(1)
     const [notice] = kiss.logger.notice.mock.calls[0]
     expect(notice).toMatch(/^Removed leftovers of an interrupted build: /)
-    expect(notice).toContain('public.kiss-staging-1-dead')
-    expect(notice).toContain('public.kiss-old-1-dead')
+    expect(notice).toContain('public.kiss-staging-2147483646-dead')
+    expect(notice).toContain('public.kiss-old-2147483646-dead')
   })
 
   it('says nothing when the parent folder does not exist yet', () => {
@@ -379,6 +382,63 @@ describe('sweepStaleSiblings', () => {
     }
     sweepStaleSiblings(kiss)
     expect(kiss.logger.notice).not.toHaveBeenCalled()
+  })
+
+  // Reproduced 2026-11-09: `kiss-ssg check` removed the staging folder of a
+  // build that was still running, because only this process's pid was spared.
+  describe('a sibling named for another process', () => {
+    /** @type {import('node:child_process').ChildProcess|null} */
+    let child = null
+    afterEach(() => {
+      child?.kill()
+      child = null
+    })
+
+    it('is kept while that process is running, and said so', async () => {
+      child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], {
+        stdio: 'ignore',
+      })
+      const live = `public.kiss-staging-${child.pid}-zzzzzz`
+      const liveOld = `public.kiss-old-${child.pid}-zzzzzz`
+      temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-staging-'))
+      for (const name of [live, liveOld])
+        await fs.ensureDir(path.join(temp, name))
+      const kiss = { _buildTarget: path.join(temp, 'public'), logger: logger() }
+
+      sweepStaleSiblings(kiss)
+
+      expect((await fs.readdir(temp)).sort()).toEqual([liveOld, live].sort())
+      expect(kiss.logger.notice).not.toHaveBeenCalled()
+      expect(kiss.logger.info).toHaveBeenCalledTimes(2)
+      expect(kiss.logger.info.mock.calls.map(([m]) => m).join('\n')).toContain(
+        live,
+      )
+    })
+
+    it('is removed when that process is not running', async () => {
+      // A pid that has ended: start a process, wait for it to exit.
+      const done = spawn(process.execPath, ['-e', ''], { stdio: 'ignore' })
+      await new Promise((resolve) => done.on('exit', resolve))
+      temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-staging-'))
+      const dead = `public.kiss-staging-${done.pid}-zzzzzz`
+      await fs.ensureDir(path.join(temp, dead))
+      const kiss = { _buildTarget: path.join(temp, 'public'), logger: logger() }
+
+      sweepStaleSiblings(kiss)
+
+      expect(await fs.readdir(temp)).toEqual([])
+      expect(kiss.logger.notice).toHaveBeenCalledTimes(1)
+    })
+
+    it('is removed when no pid can be read from its name', async () => {
+      temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-staging-'))
+      await fs.ensureDir(path.join(temp, 'public.kiss-staging-odd'))
+      const kiss = { _buildTarget: path.join(temp, 'public'), logger: logger() }
+
+      sweepStaleSiblings(kiss)
+
+      expect(await fs.readdir(temp)).toEqual([])
+    })
   })
 })
 

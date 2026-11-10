@@ -135,9 +135,13 @@ direct call would step around the patch.
   written into it afterwards.
 - **A crashed run's siblings are swept at construction.** `sweepStaleSiblings` (atomic, non-dev
   only) removes any `<build>.kiss-staging-*` / `<build>.kiss-old-*` beside the target and logs one
-  `notice` naming them. Siblings carrying **this** process's pid are skipped: those belong to a
-  live instance, which is the case a second `Kiss` building the same target in one process would
-  hit. The names are built (`stagingSiblings`) and matched (`sweepStaleSiblings`) in this one file
+  `notice` naming them. A sibling is kept when the pid in its name is **running**: this process's
+  own (a second `Kiss` building the same target in one process) or another's (a `kiss-ssg check`
+  run beside a build still in progress, which used to delete the live build's staging folder,
+  reproduced 2026-11-09). Liveness is `process.kill(pid, 0)`: `ESRCH` is dead, `EPERM` is alive
+  under another user. One `info` line names each folder left for that reason. A name whose pid
+  cannot be read is treated as stale. **Known limit:** a pid the system has recycled for an
+  unrelated process keeps a dead build's leftovers until that process ends. The names are built (`stagingSiblings`) and matched (`sweepStaleSiblings`) in this one file
   on purpose: they are two halves of one invariant.
 - **After a promotion the instance is an ordinary one.** `promote` clears `_stagingDir`, so
   `_writeRoot` is the real folder again, and re-points every stack entry's `buildDir`/`buildTo`, so
