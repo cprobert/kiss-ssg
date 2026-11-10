@@ -621,7 +621,25 @@ What the option list above leaves implicit:
 
 ### .pages()
 
-In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:
+`.pages()` takes the options `.page()` does, but its `model` is an array and it builds one page per record. The array can be one JSON file holding it (`models/bakes.json`, `[{ "slug": "sourdough", "name": "Sourdough" }, …]`) or a models folder of one file per record. Each page's view sees its own record as `model`:
+
+```js
+import Kiss from 'kiss-ssg'
+
+const kiss = new Kiss()
+kiss
+  .pages({
+    view: 'bakes/bake.hbs',
+    model: 'bakes.json',
+    path: 'bakes',
+    controller: ({ model }) => ({ slug: model.slug, title: model.name }),
+  })
+  .generate()
+```
+
+That writes `bakes/sourdough.html` and `bakes/rye.html`. **A record's own `slug` is ignored unless a controller returns it.** Without the `controller` line the same call writes `bakes/bakes-bake-1.html` and `bakes/bakes-bake-2.html` (the view's folder and name, then `-N`), and the build still passes. `title` follows the same rule: a record's `name` is not read, and without a `title` of its own the page is titled from its slug (`Bakes Bake 1`). And `.pages()` writes to the folder `path` names, and to the build root when there is none; it does not take the view's folder as `.page()` does.
+
+You can also pass a option mapper to act as a controller to the .page() and .pages() methods:
 
 ```js
 import Kiss from 'kiss-ssg'
@@ -2238,16 +2256,20 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 ```handlebars
 <nav>
-  <a class='{{#isActive this href="/about"}}{{active}}{{/isActive}}' href='/about'
-    >About</a
-  >
+  {{#isActive this href=(link "about")}}<a
+      class='{{active}}'
+      href='{{href}}'
+    >About</a>{{/isActive}}
   {{#each config.nav}}
-    <a class='{{#isActive .. href=href}}{{active}}{{/isActive}}' href='{{href}}'
-      >{{label}}</a
-    >
+    {{#isActive .. href=(link id)}}<a
+        class='{{active}}'
+        href='{{href}}'
+      >{{label}}</a>{{/isActive}}
   {{/each}}
 </nav>
 ```
+
+Name the pages by id and let `link` turn each into the served path once: `isActive` compares that path with the page's own and hands it back as `{{href}}`, so the anchor goes inside the block and never carries a typed path (`config.nav` here is `[{ id: 'blog', label: 'Blog' }, …]`). A literal `href="/about"` is a guess about `extensionLess`, `path` and `slug`, and nothing checks it.
 
 Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
 
@@ -2255,12 +2277,11 @@ Beside `{{active}}`, the block has `{{@current}}`: `true` only when the page is 
 
 ```handlebars
 {{#each config.nav}}
-  <a
-    href='{{href}}'
-    {{#isActive .. href=href folderMatch=true}}{{#if active}}
-        class='{{active}}'{{/if}}{{#if @current}}
-        aria-current='page'{{/if}}{{/isActive}}
-  >{{label}}</a>
+  {{#isActive .. href=(link id) folderMatch=true}}<a
+      href='{{href}}'
+      {{#if active}}class='{{active}}'{{/if}}
+      {{#if @current}}aria-current='page'{{/if}}
+    >{{label}}</a>{{/isActive}}
 {{/each}}
 ```
 
