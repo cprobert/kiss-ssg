@@ -7,12 +7,12 @@ Builds `sitemap.xml` entries from the page stack and writes the file to the buil
 ## Public interface
 
 - `buildSitemapEntries(stack, { siteUrl, buildDir, trailingSlash = true, logger })` → array of `{ loc, lastmod?, changefreq?, priority? }`. Skips entries where `entry.page.options.ignoreSitemap` is truthy, where `entry.page.options.canonical` is set (the page has named another URL as the real one, and a sitemap that listed it would advertise a duplicate), and where `entry.page.options.generate === false`. `loc` = `siteUrl` joined to the page's URL path (derived from `buildTo`) by `toAbsoluteUrl` from `utils.js`. `lastmod` is the page's `sitemapLastmod` as given, else its `updated`, else its `date` (each read from the options, then the resolved model, by `feed.js`'s `rawDate`), and is absent when the page has none. `priority` and `changefreq` are present only when the page sets `sitemapPriority` / `sitemapChangefreq`.
-- `renderSitemapXml(urls)` → the `sitemap.xml` string (standard `<urlset>`/`<url>` schema; `<lastmod>`, `<changefreq>` and `<priority>` each emitted only when the entry has it).
+- `renderSitemapXml(urls)` → the `sitemap.xml` string (standard `<urlset>`/`<url>` schema; `<lastmod>`, `<changefreq>` and `<priority>` each emitted only when the entry has it). Every value goes through `escapeXml` (`utils.js`), so a `siteUrl` with `&` or a `sitemapLastmod` with `<` still writes well-formed XML; the others (`sitemapChangefreq`, `sitemapPriority`) are the author's words and are escaped, not validated.
 - `async writeSitemap(stack, { config, logger, overwrite = true })` → `Promise<{ status, urls }>`. `status` is `'no-site-url'` (no `config.siteUrl`, nothing written), `'skipped'` (`overwrite: false` and a `sitemap.xml` already exists), or `'written'` (file written, `urls` populated).
 
 ## Depends on
 
-`fs-extra`; `./utils.js` (`toCanonicalPath`, `toAbsoluteUrl`); `./feed.js` (`rawDate`, `toDate`), so a page's date is read by one rule in both files.
+`fs-extra`; `./utils.js` (`toCanonicalPath`, `toAbsoluteUrl`, `escapeXml`); `./feed.js` (`rawDate`, `toDate`), so a page's date is read by one rule in both files.
 
 ## Depended on by
 

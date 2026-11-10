@@ -139,6 +139,7 @@ export function isInside(directory: string): (file: string) => boolean;
  * `redactFetchHeaders`).
  */
 export const REDACTED: "[redacted]";
+export function escapeXml(value: unknown): string;
 export default utils;
 declare namespace utils {
     export { trimLines };
