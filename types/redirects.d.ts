@@ -60,6 +60,7 @@ export function normaliseAlias(alias: unknown): string | null;
  * @param {Object} [context]
  * @param {string} [context.buildDir] the folder the pages were written into
  * @param {boolean} [context.trailingSlash] `config.links.trailingSlash`: keep a directory index's trailing `/` in the emitted URL
+ * @param {(alias: string, entry: any) => void} [context.onDrop] called for each non-empty alias `normaliseAlias` refused
  * @returns {RedirectRule[]} sorted by `from`, then `to`
  */
 export function collectAliases(stack?: {
@@ -67,9 +68,10 @@ export function collectAliases(stack?: {
     page: {
         options: Record<string, any>;
     };
-}[], { buildDir, trailingSlash }?: {
+}[], { buildDir, trailingSlash, onDrop }?: {
     buildDir?: string;
     trailingSlash?: boolean;
+    onDrop?: (alias: string, entry: any) => void;
 }): RedirectRule[];
 /**
  * The `_redirects` file's text — the Netlify and Cloudflare Pages format, one

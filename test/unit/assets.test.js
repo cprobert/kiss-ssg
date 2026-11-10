@@ -77,12 +77,13 @@ describe('copyAssets', () => {
         expect((await copy()).sass[0].changed).toBe(false)
         await site.touch('a/site.scss', 'b { color: blue }')
         expect((await copy()).sass[0].changed).toBe(true)
-        // Only the hashing post-pass reads emitted CSS, once per copy.
+        // Only the hashing passes read emitted CSS: the import scan and the
+        // hash itself, once each per copy. The Sass fingerprint reads nothing.
         expect(
           read.mock.calls.filter(([file]) =>
             String(file).endsWith('/out/site.css'),
           ),
-        ).toHaveLength(hash ? 3 : 0)
+        ).toHaveLength(hash ? 6 : 0)
       } finally {
         read.mockRestore()
       }
@@ -919,5 +920,146 @@ describe('copyAssets that fails partway', () => {
     expect((await copy()).error).toBeUndefined()
     expect(await site.exists('out/old.txt')).toBe(false)
     expect(await site.exists('out/keep.txt')).toBe(true)
+  })
+})
+
+// A file another hashed asset imports by path keeps its plain name: the
+// import in the importer's bytes is not rewritten, so a renamed target would
+// 404 on a green build (`planning/reviews/2026-11-10-js-hash-imports.md`).
+describe('copyAssets imports under assets.hash', () => {
+  const run = async (files, logger = silentLogger) => {
+    site = await makeSite(files)
+    const manifest = createAssetManifest()
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      config: { ...deps.config, assets: { hash: true } },
+      logger,
+      manifest,
+    })
+    return manifest
+  }
+  const hashed = (name) =>
+    new RegExp(`^${name.replace(/\.(\w+)$/, '\\.[0-9a-f]{8}\\.$1')}$`)
+
+  it('leaves a file imported with import-from unrenamed', async () => {
+    const manifest = await run({
+      'a/js/app.js': "import { hello } from './util.js'\nhello()\n",
+      'a/js/util.js': 'export const hello = () => 1\n',
+    })
+    expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
+    expect(manifest.lookup('js/util.js')).toBe('js/util.js')
+    expect(await site.exists('out/js/util.js')).toBe(true)
+  })
+
+  it('reads the forms a browser resolves: export-from, a bare side-effect import, a dynamic import, a root-relative path', async () => {
+    const manifest = await run({
+      'a/js/app.js': [
+        "export * from './re.js'",
+        "import './side.js'",
+        "const m = import('./lazy.js')",
+        "import { z } from '/js/root.js'",
+      ].join('\n'),
+      'a/js/re.js': 'export const a = 1\n',
+      'a/js/side.js': 'globalThis.s = 1\n',
+      'a/js/lazy.js': 'export const l = 1\n',
+      'a/js/root.js': 'export const z = 1\n',
+    })
+    for (const name of ['re', 'side', 'lazy', 'root'])
+      expect(manifest.lookup(`js/${name}.js`)).toBe(`js/${name}.js`)
+    expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
+  })
+
+  it('reads minified imports, where the spaces are gone', async () => {
+    const manifest = await run({
+      'a/js/app.js': 'import{hello}from"./util.js";hello();',
+      'a/js/util.js': 'export const hello = () => 1\n',
+    })
+    expect(manifest.lookup('js/util.js')).toBe('js/util.js')
+  })
+
+  it('resolves a parent-folder specifier against the importer', async () => {
+    const manifest = await run({
+      'a/js/pages/app.js': "import { u } from '../util.js'\n",
+      'a/js/util.js': 'export const u = 1\n',
+    })
+    expect(manifest.lookup('js/util.js')).toBe('js/util.js')
+  })
+
+  it('leaves a stylesheet imported with @import unrenamed, in both forms', async () => {
+    const manifest = await run({
+      'a/css/site.css': '@import "one.css";\n@import url("two.css");\nb{a:b}\n',
+      'a/css/one.css': 'h1{color:red}\n',
+      'a/css/two.css': 'h2{color:red}\n',
+      'a/css/three.css': '@import url(four.css);\n',
+      'a/css/four.css': 'h4{color:red}\n',
+    })
+    expect(manifest.lookup('css/one.css')).toBe('css/one.css')
+    expect(manifest.lookup('css/two.css')).toBe('css/two.css')
+    expect(manifest.lookup('css/four.css')).toBe('css/four.css')
+    expect(manifest.lookup('css/site.css')).toMatch(hashed('css/site.css'))
+    expect(manifest.lookup('css/three.css')).toMatch(hashed('css/three.css'))
+  })
+
+  it('keeps every link of a chain: a imports b, b imports c', async () => {
+    const manifest = await run({
+      'a/js/a.js': "import './b.js'\n",
+      'a/js/b.js': "import './c.js'\n",
+      'a/js/c.js': 'globalThis.c = 1\n',
+    })
+    expect(manifest.lookup('js/a.js')).toMatch(hashed('js/a.js'))
+    expect(manifest.lookup('js/b.js')).toBe('js/b.js')
+    expect(manifest.lookup('js/c.js')).toBe('js/c.js')
+  })
+
+  it('changes nothing for a bare specifier or an import of a file that does not exist', async () => {
+    const manifest = await run({
+      'a/js/app.js': "import 'lit'\nimport './missing.js'\n",
+      'a/js/lit.js': 'export const lit = 1\n',
+    })
+    expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
+    // `lit` is a bare specifier (an import map's business), not `./lit.js`.
+    expect(manifest.lookup('js/lit.js')).toMatch(hashed('js/lit.js'))
+  })
+
+  it('still hashes a file nothing imports', async () => {
+    const manifest = await run({
+      'a/js/app.js': 'globalThis.x = 1\n',
+      'a/css/site.css': 'b{a:b}\n',
+    })
+    expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
+    expect(manifest.lookup('css/site.css')).toMatch(hashed('css/site.css'))
+  })
+
+  it('says once which files it left unhashed, and why', async () => {
+    const logger = { ...silentLogger, info: vi.fn() }
+    await run(
+      {
+        'a/js/app.js': "import './util.js'\n",
+        'a/js/util.js': 'globalThis.u = 1\n',
+      },
+      logger,
+    )
+    const said = logger.info.mock.calls
+      .map((c) => c.join(' '))
+      .filter((line) => line.includes('imports'))
+    expect(said).toHaveLength(1)
+    expect(said[0]).toContain('js/util.js')
+    expect(said[0]).not.toContain('js/app.js')
+  })
+
+  it('says nothing when assets.hash is off', async () => {
+    site = await makeSite({
+      'a/js/app.js': "import './util.js'\n",
+      'a/js/util.js': 'globalThis.u = 1\n',
+    })
+    const logger = { ...silentLogger, info: vi.fn() }
+    await copyAssets(`${site.root}/a`, `${site.root}/out`, {
+      ...deps,
+      logger,
+      manifest: createAssetManifest(),
+    })
+    expect(
+      logger.info.mock.calls.filter((c) => c.join(' ').includes('imports')),
+    ).toHaveLength(0)
   })
 })

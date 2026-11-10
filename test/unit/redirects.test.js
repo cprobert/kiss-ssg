@@ -102,6 +102,39 @@ describe('normaliseAlias', () => {
     ).toBe('')
   })
 
+  it('drops an alias a host would read as a pattern, and keeps the look-alikes', () => {
+    // An alias is one old path. Netlify reads `*` and a `:name` segment as
+    // patterns, Firebase reads `*` and `**` as globs, so a fetched record
+    // carrying one would write a site-wide rule.
+    for (const alias of ['/*', '/**', '/old/*', '/:x', '/blog/:slug']) {
+      expect(normaliseAlias(alias), alias).toBeNull()
+    }
+    expect(normaliseAlias('/old-page')).toBe('/old-page')
+    expect(normaliseAlias('/a:b')).toBe('/a:b')
+    expect(normaliseAlias('/caf%C3%A9')).toBe('/caf%C3%A9')
+  })
+
+  it('names a dropped alias and its page in one warning from writeRedirects', async () => {
+    temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-redirects-'))
+    const buildDir = temp.replace(/\\/g, '/')
+    const warnings = []
+    const logger = { ...silentLogger, warn: (m) => warnings.push(m) }
+    const result = await writeRedirects(
+      [
+        entry(`${buildDir}/about.html`, {
+          view: 'about.hbs',
+          aliases: ['/old', '/team/*', '/a b', ''],
+        }),
+      ],
+      { config: { folders: { build: buildDir } }, logger },
+    )
+    expect(result.rules).toEqual([{ from: '/old', to: '/about' }])
+    expect(warnings).toEqual([
+      'Alias "/team/*" on about.hbs dropped: an alias is one old path, not a pattern or a line with whitespace in it',
+      'Alias "/a b" on about.hbs dropped: an alias is one old path, not a pattern or a line with whitespace in it',
+    ])
+  })
+
   it('drops an alias with no path in it at all', () => {
     expect(normaliseAlias('')).toBeNull()
     expect(normaliseAlias('   ')).toBeNull()
