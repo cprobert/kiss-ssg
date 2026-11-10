@@ -239,6 +239,15 @@ A branch runs as four beats, all reading one committed artefact — `planning/se
 
 Supporting skills, all invocable on their own: `/docs-sweep` (holistic doc staleness for the branch's diff), `/corpse-collector` (dead references repo-wide), `/test-coverage-check` (modules with no `test/unit/` sibling), `/secrets-scan`, `/session-reflect`, `/memory-consolidate` (housekeeping **between** branches: folds the recurring lessons out of `planning/sessions/` into a rule here or a step in a ritual skill, and stamps each log `consolidated:`). The supervision rubric the reflections score against is `.claude/skills/session-reflect/rubric.md`; the lessons already promoted out of the logs are listed in `.claude/skills/memory-consolidate/retired.md`.
 
+## Working practice
+
+Four practices for every change, whichever model is making it. Adapted from the [Karpathy guidelines](https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md) (MIT licence). They are written here and not in a skill because a skill has to be invoked and this file is always read (the operator's decision, 2026-11-10).
+
+1. **Think before coding.** State your assumptions and check each one against `lib/`. Where a task can be read two ways, ask; do not pick one silently. If something is unclear, stop and name it.
+2. **Simplicity first.** Write the least code that does what was asked. Add no feature, option, abstraction or error handling the task did not call for.
+3. **Surgical changes.** Every changed line traces to the task. Do not tidy, reformat or refactor the code beside it; mention an unrelated problem instead of fixing it. Remove only what your own change made unused. This sits with "fix the class, not the case" in the Rules below, not against it: sweep every sibling of the defect you are fixing, and touch nothing unrelated to it.
+4. **Goal-driven execution.** Turn the task into a check before starting: a test that fails now and passes when the work is done, or a command whose output shows it. State a short plan with a verify step for each item, and keep going until each one passes.
+
 ## Rules
 
 - Engine code goes in `lib/`, one responsibility per file, with a unit test in `test/unit/` (the orchestrator `lib/kiss.js` is covered by `test/integration/` instead) and an `AIKB/` doc.

@@ -9,6 +9,13 @@ link the session log from its spec.
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------- |
 | 2026-10-24 | **Partial transforms.** Partials processed through a table keyed by extension; `.md` renders after Handlebars, which fixes `{{link "x"}}` failing to parse in a `.md` partial. | Public API (minor + upgrade note) | [specs/2026-10-24-partial-transforms-design.md](specs/2026-10-24-partial-transforms-design.md) |
 
+## The road to 3.0
+
+[plans/2026-11-10-roadmap-to-3.0.md](plans/2026-11-10-roadmap-to-3.0.md) sequences the work from
+here to 3.0: partial transforms above first, then a feature freeze while the core is given an
+extension contract and the instruction system is cut down. Agreed in outline by the operator on
+2026-11-10; five decisions are still open at the end of that document.
+
 ## Considered and declined
 
 - **Alternative view engines** (Liquid, Nunjucks, EJS behind an adapter),
