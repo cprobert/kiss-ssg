@@ -20,17 +20,17 @@ Out of scope: `scripts/gates.mjs`, `lib/`.
 
 Each is a pure function over file contents, so it can be tested on a small fixture.
 
-| Key                  | Definition                                                                                          | 2026-11-09 |
-| -------------------- | --------------------------------------------------------------------------------------------------- | ---------- |
-| `coreLines`          | Total lines of every `lib/*.js`                                                                     | 33,569     |
-| `privateReach`       | Distinct matches of `kiss\._[A-Za-z]+` across `lib/*.js` except `lib/kiss.js`                       | 115        |
-| `anyAnnotations`     | Occurrences of `{any}` across `lib/*.js`                                                            | 95         |
-| `runtimeDeps`        | Number of keys in `package.json` `dependencies`                                                     | 21         |
-| `testPrivateReach`   | Matches of `\b(kiss                                                                                 | site       | k   | instance | app)\._[A-Za-z]`across`test/**/*.js` | 288 |
-| `claudeMdBytes`      | Size of `CLAUDE.md` in bytes                                                                        | 62,149     |
-| `llmsTxtChars`       | Length of `llms.txt` in characters                                                                  | 15,996     |
-| `msPerPage`          | Not computed here. Read from a bench JSON file when `--bench <file>` is given, else reported absent | 2.3        |
-| `failureBoilerplate` | Files under `examples/`, `starter/` and the repo root that contain `function reportBuildFailure`    | 14         |
+| Key                  | Definition                                                                                           | 2026-11-09 |
+| -------------------- | ---------------------------------------------------------------------------------------------------- | ---------- |
+| `coreLines`          | Total lines of every `lib/*.js`                                                                      | 33,569     |
+| `privateReach`       | Distinct matches of `kiss\._[A-Za-z]+` across `lib/*.js` except `lib/kiss.js`                        | 115        |
+| `anyAnnotations`     | Occurrences of `{any}` across `lib/*.js`                                                             | 95         |
+| `runtimeDeps`        | Number of keys in `package.json` `dependencies`                                                      | 21         |
+| `testPrivateReach`   | Matches of `._` plus a letter after any of `kiss`, `site`, `k`, `instance`, `app`, in `test/**/*.js` | 288        |
+| `claudeMdBytes`      | Size of `CLAUDE.md` in bytes                                                                         | 62,149     |
+| `llmsTxtChars`       | Length of `llms.txt` in characters                                                                   | 15,996     |
+| `msPerPage`          | Not computed here. Read from a bench JSON file when `--bench <file>` is given, else reported absent  | 2.3        |
+| `failureBoilerplate` | Files under `examples/`, `starter/` and the repo root that contain `function reportBuildFailure`     | 14         |
 
 The figures are Fable's measurements. `testPrivateReach` came from a subagent's grep and its
 exact pattern was not recorded, so the first run of this script sets the true baseline: if a

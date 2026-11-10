@@ -48,8 +48,9 @@ without losing a guard, keep the guard and report the size reached.
    - The Commands block keeps one line per command; the long comments move to
      `CONTRIBUTING.md` or the history file.
    - The Pipeline paragraph becomes five sentences and a pointer to `AIKB/kiss.md`.
-     verify: after each section, `npx vitest run test/aikb.test.js test/unit/skill-coverage.test.js
-test/unit/corpse-collector.test.js test/unit/markdown-links.test.js`.
+
+   verify: after each section, run the command under Fast feedback below.
+
 4. Make a table in the session log: every rule in the old file, and where it is in the new one.
    verify: no row is empty. A rule deliberately dropped is listed with the reason, for the
    operator to accept or refuse.
@@ -65,5 +66,5 @@ test/unit/corpse-collector.test.js test/unit/markdown-links.test.js`.
 ## Fast feedback
 
 ```sh
-npx vitest run test/aikb.test.js test/unit/skill-coverage.test.js
+npx vitest run test/aikb.test.js test/unit/skill-coverage.test.js test/unit/corpse-collector.test.js test/unit/markdown-links.test.js
 ```

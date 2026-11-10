@@ -30,8 +30,9 @@ Out of scope: `lib/`, the gates, any existing test.
 1. By hand, on a scratch branch: add a deliberately failing test, create a worktree at the base
    with `git worktree add`, copy the test file into it, link `node_modules`, run the test there.
    verify: the run fails in the worktree and the main checkout is untouched. Remove the worktree.
-2. Write the test first for the pure parts: argument parsing, and `recordLine({ test, base,
-commit, failed })`, which returns one Markdown line such as
+2. Write the test first for the pure parts: argument parsing, and a `recordLine` function that
+   takes the test path, the base, its commit and whether the test failed, and returns one
+   Markdown line such as
    `- red-first: test/unit/x.test.js failed at <base> (<short sha>), <date>`.
    verify: `npx vitest run test/unit/red-first.test.js` fails.
 3. Write `scripts/red-first.mjs <test file> [-t <name>]`. It resolves the base with
