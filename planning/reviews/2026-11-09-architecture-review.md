@@ -23,7 +23,7 @@ It is no longer small, and the name and the README still say it is. `lib/` is 63
 33,569 lines. About 44% of that is not page rendering: a cookie-consent manager, SCORM packaging,
 a launch audit, and ten CLI commands. Two months of work produced 58 releases, 33 of them with
 upgrade notes. There is no extension point, so every new capability has landed in core, and the
-orchestrator is one class spread over six files that share 86 private fields.
+orchestrator is one class spread over six files: five of them reach 115 of its private members.
 
 The documentation is larger than the code and is written for an agent with a full context window.
 `CLAUDE.md` is 60 KB and loads on every session. `AIKB/` is 941 KB. `planning/` is 3.1 MB. Much of
@@ -146,7 +146,8 @@ modularity, versioning discipline and contributor readiness.
    environment variables (`KISS_CHECK`, `KISS_AIKB`, `KISS_REPORT`), not an API.
 
 **The orchestrator is one class in six files** (measured). The five satellite modules take the
-instance as `@param {any} kiss` and read or write 86 distinct `kiss._…` fields between them;
+instance as `@param {any} kiss` and reach 115 distinct `kiss._…` members between them, 35 of them
+methods and the other 80 fields (the class declares about 86 private fields in all);
 `build-finish.js` alone has 157 such references and `rebuild.js` 148. The split moved lines out of
 `kiss.js` without creating a boundary. Three consequences:
 
@@ -349,8 +350,10 @@ Spot checks, all measured:
 
 It refused a command of mine that captured the gates' output and appended the exit code to the
 same scratch file, which is the capture pattern `CLAUDE.md` recommends
-(`cmd > out.txt 2>&1; echo $?`). One false positive in one session (measured). The hook is the
-right idea; its pattern for `echo` into a file is wider than its rule.
+(`cmd > out.txt 2>&1; echo $?`). I first recorded this as a false positive. It was not: my
+command redirected an `echo` into the file, which is exactly what the rule bans, where the
+recommended pattern prints the exit code to the terminal. The hook worked as written (corrected
+2026-11-10).
 
 ### Clean-room test A: a new developer
 
@@ -390,8 +393,9 @@ three runs. How it learned each obligation:
 - **`AIKB/handlebars-helpers.md`'s opening roster is already stale**: it omits `image` and `embed`,
   and the test checks only the bullet list.
 - **`node docs` rewrote 15 tracked files, 13 of them unrelated to the change.** The agent reverted
-  them and did not investigate why. Worth checking: a docs build that is not reproducible from a
-  clean checkout makes every docs diff noisy.
+  them and did not investigate why. Checked on 2026-11-10: a clean checkout rebuilds 14 files, and
+  the difference is the version in each page's `generator` tag. The committed `docs/` was built
+  by 2.13.3 and never rebuilt for 2.14.0. The build is reproducible; the committed copy is stale.
 - **The README never says how to run one test file.** One file runs in 0.6 seconds against two
   minutes for the suite.
 
@@ -461,18 +465,18 @@ Keep these through any refactor.
 
 ## Top ten opportunities
 
-| #   | Opportunity                                                                                                                                                                                        | Severity | Effort | Evidence                                                                                     | What it buys                                                                           |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| 1   | Stop `sweepStaleSiblings` removing a live process's staging folder: test the pid for liveness, or hold a lock file                                                                                 | High     | S      | Reproduced; `lib/staging.js:72-102`; open in `TODO.md` since 2026-09-21                      | `check` becomes safe to run beside a build, as documented                              |
-| 2   | Give the orchestrator a boundary: an explicit, typed build-state object, and the settle sequence as an ordered list of named steps                                                                 | High     | L      | 86 private fields shared by six files; `lib/kiss.js:1519-1600`; 288 private reaches in tests | Type checking over the core, tests that stop patching privates, and an extension point |
-| 3   | Freeze core. Move consent and embeds, learning packages, and the session, base, issue and speed commands into separate packages on that extension point                                            | High     | L      | 44% of `lib/` is outside page rendering                                                      | A core a person can hold in their head; features that release on their own clock       |
-| 4   | Cut `CLAUDE.md` to rules, about a third of its size. Move incident history to `planning/`. Split each `AIKB` "Non-obvious behavior" section into invariants and history, and stop shipping history | Medium   | M      | 60 KB per session; 58 dated references; `AIKB/kiss.md` 54 KB in one section                  | About 10,000 tokens back per session, and docs a human can read                        |
-| 5   | Make failure loud by default: export the failure reporter, or offer a wrapper that awaits `complete()` and sets the exit code; warn at exit if a build was never completed                         | Medium   | S      | 14 copies of `reportBuildFailure`; the `llms.txt` warning                                    | Removes boilerplate and the "exits 0 on a broken build" trap                           |
-| 6   | Add two gates: install the packed tarball into a temp project and build with it; build 2,000 pages under a time budget                                                                             | Medium   | S      | `scripts/gates.mjs:20-30`; largest fixture is 300 items                                      | Catches a broken package and a quadratic regression before publish                     |
-| 7   | Publish from CI with npm provenance on a tag. Pin actions by commit SHA. Add `permissions: contents: read` to `ci.yml`                                                                             | Medium   | S      | Manual publish, no attestations                                                              | A tarball that provably came from a commit                                             |
-| 8   | Harden fetched data: refuse cross-origin redirects when custom headers are set, cap response size, reject `*` and `:` in aliases that come from records, escape sitemap values                     | Medium   | S      | `lib/fetch-policy.js:207-215`; `lib/redirects.js:58-73`; `lib/sitemap.js:75-88`              | Closes the only untrusted-input paths found                                            |
-| 9   | Write the human path in: a `CONTRIBUTING.md`, a one-page architecture map, and a stated versioning policy. Delete `TODO.md` and `to-verify.md` or move their live items to issues                  | Medium   | S      | No CONTRIBUTING file; stale root files; zero issues                                          | The precondition for a second maintainer                                               |
-| 10  | One pass over each written page that yields references and audit facts for links, audit and packages; one `extractReferences`                                                                      | Low      | M      | `lib/links.js:152`; `lib/packages.js:176`; `lib/audit.js:916`                                | One definition of "what this page references"; fewer scans per page                    |
+| #   | Opportunity                                                                                                                                                                                        | Severity | Effort | Evidence                                                                                           | What it buys                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1   | Stop `sweepStaleSiblings` removing a live process's staging folder: test the pid for liveness, or hold a lock file                                                                                 | High     | S      | Reproduced; `lib/staging.js:72-102`; open in `TODO.md` since 2026-09-21                            | `check` becomes safe to run beside a build, as documented                              |
+| 2   | Give the orchestrator a boundary: an explicit, typed build-state object, and the settle sequence as an ordered list of named steps                                                                 | High     | L      | 115 private members reached from five files; `lib/kiss.js:1519-1600`; 288 private reaches in tests | Type checking over the core, tests that stop patching privates, and an extension point |
+| 3   | Freeze core. Move consent and embeds, learning packages, and the session, base, issue and speed commands into separate packages on that extension point                                            | High     | L      | 44% of `lib/` is outside page rendering                                                            | A core a person can hold in their head; features that release on their own clock       |
+| 4   | Cut `CLAUDE.md` to rules, about a third of its size. Move incident history to `planning/`. Split each `AIKB` "Non-obvious behavior" section into invariants and history, and stop shipping history | Medium   | M      | 60 KB per session; 58 dated references; `AIKB/kiss.md` 54 KB in one section                        | About 10,000 tokens back per session, and docs a human can read                        |
+| 5   | Make failure loud by default: export the failure reporter, or offer a wrapper that awaits `complete()` and sets the exit code; warn at exit if a build was never completed                         | Medium   | S      | 14 copies of `reportBuildFailure`; the `llms.txt` warning                                          | Removes boilerplate and the "exits 0 on a broken build" trap                           |
+| 6   | Add two gates: install the packed tarball into a temp project and build with it; build 2,000 pages under a time budget                                                                             | Medium   | S      | `scripts/gates.mjs:20-30`; largest fixture is 300 items                                            | Catches a broken package and a quadratic regression before publish                     |
+| 7   | Publish from CI with npm provenance on a tag. Pin actions by commit SHA. Add `permissions: contents: read` to `ci.yml`                                                                             | Medium   | S      | Manual publish, no attestations                                                                    | A tarball that provably came from a commit                                             |
+| 8   | Harden fetched data: refuse cross-origin redirects when custom headers are set, cap response size, reject `*` and `:` in aliases that come from records, escape sitemap values                     | Medium   | S      | `lib/fetch-policy.js:207-215`; `lib/redirects.js:58-73`; `lib/sitemap.js:75-88`                    | Closes the only untrusted-input paths found                                            |
+| 9   | Write the human path in: a `CONTRIBUTING.md`, a one-page architecture map, and a stated versioning policy. Delete `TODO.md` and `to-verify.md` or move their live items to issues                  | Medium   | S      | No CONTRIBUTING file; stale root files; zero issues                                                | The precondition for a second maintainer                                               |
+| 10  | One pass over each written page that yields references and audit facts for links, audit and packages; one `extractReferences`                                                                      | Low      | M      | `lib/links.js:152`; `lib/packages.js:176`; `lib/audit.js:916`                                      | One definition of "what this page references"; fewer scans per page                    |
 
 Items 2 and 3 are one piece of work in two stages, and item 3 should not start before item 2.
 
