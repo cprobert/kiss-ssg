@@ -129,7 +129,7 @@ node scripts/fleet-check.mjs <site> --base <ref>   # build a real site from the 
 node scripts/budgets.mjs [--record|--check] [--bench <file>]   # the roadmap's budgets against planning/budgets.json
 node scripts/arms.mjs setup|run|summarise  # measure a skill: one headless arm on a site at a commit
 node scripts/sync-plugin-versions.mjs      # carry package.json's version into every plugin manifest (npm version runs it)
-node scripts/tag-release.mjs               # tag and push v<version> (a local publish's postpublish runs it); --check: the pushed tag (GITHUB_REF_NAME) is v<version>, which publish.yml runs first
+node scripts/tag-release.mjs               # tag and push v<version> (a local publish's postpublish runs it); --check: the pushed tag (GITHUB_REF_NAME) is v<version>, which publish.yml runs first; --dist-tag: latest, or next for a prerelease
 npm run bench                              # the benchmark harness; the /bench skill says how to read it
 npm run screenshot -- <build folder>       # shoot pages with Playwright; from Git Bash, run it from PowerShell
 node docs                                  # build the docs site into docs/ and exit

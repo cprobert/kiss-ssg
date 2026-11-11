@@ -68,5 +68,7 @@ jobs:
       # No `npm ci`: packing needs no dependencies, so no dependency code runs
       # beside the token. --ignore-scripts skips prepublishOnly (the gates job
       # ran them on this commit) and postpublish (which tags from a laptop).
+      # --tag is `latest`, or `next` for a prerelease, which npm will not
+      # publish without one (scripts/tag-release.mjs --dist-tag decides).
       - name: Stage the version
-        run: npm stage publish --ignore-scripts
+        run: npm stage publish --ignore-scripts --tag "$(node scripts/tag-release.mjs --dist-tag)"

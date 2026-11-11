@@ -752,6 +752,19 @@ describe('the redirect formats', () => {
       { source: '/team', destination: '/about', permanent: true },
     ])
   })
+
+  it('escapes a colon in a Vercel source, which path-to-regexp reads as a parameter anywhere', () => {
+    // `/wiki/Category:News` is a plain path to Netlify, Firebase and Apache, but
+    // Vercel's matcher reads `:News` as a parameter, so the rule would also
+    // catch `/wiki/Category:Sports`. `\:` is its literal colon.
+    const payload = JSON.parse(
+      renderVercelRedirects([{ from: '/wiki/Category:News', to: '/news/' }]),
+    )
+    expect(payload.redirects[0].source).toBe('/wiki/Category\\:News')
+    expect(
+      renderRedirects([{ from: '/wiki/Category:News', to: '/news/' }]),
+    ).toContain('/wiki/Category:News /news/')
+  })
 })
 
 describe('resolveRedirectFormats', () => {

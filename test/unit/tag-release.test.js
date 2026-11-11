@@ -4,10 +4,27 @@ import {
   planRelease,
   tagRelease,
   checkReleaseTag,
+  distTag,
 } from '../../scripts/tag-release.mjs'
 
 // The publish workflow runs this before it stages anything: a tag that is not
 // `v` plus package.json's version must stop the run.
+describe('distTag', () => {
+  it('stages a release under latest', () => {
+    expect(distTag('2.15.0')).toBe('latest')
+  })
+
+  // npm refuses to publish a prerelease without an explicit --tag, so the
+  // workflow always passes one, and a prerelease must never become latest.
+  it('stages a prerelease under next', () => {
+    expect(distTag('2.16.0-alpha.0')).toBe('next')
+  })
+
+  it('refuses something that is not a version', () => {
+    expect(() => distTag('banana')).toThrow(/not a version/)
+  })
+})
+
 describe('checkReleaseTag', () => {
   it('passes when the pushed tag is v plus the version', () => {
     expect(checkReleaseTag({ ref: 'v2.2.1', version: '2.2.1' })).toBe('v2.2.1')

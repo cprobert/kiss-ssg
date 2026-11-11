@@ -30,7 +30,9 @@ and reported. Read the upgrading notes: a build that passes today can fail on th
   alias carrying one (from a fetched record, say) could write a site-wide rule. A dropped
   alias is now listed in `report().redirects.dropped` with its page and a reason
   (`whitespace`, `pattern`, `query-only`), shown by `check --summary` and recorded in
-  `last-build.json`; before, it was dropped with no word.
+  `last-build.json`; before, it was dropped with no word. A colon inside a segment
+  (`/wiki/Category:News`) is still a plain path, and `redirects.vercel.json` now escapes it
+  (`\:`), because Vercel reads `:News` as a parameter anywhere in a path.
 - **A URL model fetched with `fetch.headers` never sends them to another origin.** A
   redirect to the same origin is followed (at most five); a redirect to another origin
   fails that model, naming both origins, and is not retried. With no custom headers,

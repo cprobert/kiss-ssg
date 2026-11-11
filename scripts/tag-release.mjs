@@ -39,6 +39,19 @@ export function releaseTag(version) {
 }
 
 /**
+ * The npm dist-tag a version is staged under: `latest` for a release, `next`
+ * for a prerelease. npm refuses to publish a prerelease without an explicit
+ * `--tag`, so the workflow always passes this, and a prerelease never becomes
+ * what `npm install kiss-ssg` resolves to.
+ *
+ * @param {unknown} version
+ * @returns {'latest'|'next'}
+ */
+export function distTag(version) {
+  return releaseTag(version).includes('-') ? 'next' : 'latest'
+}
+
+/**
  * The publish workflow's first check: the tag that was pushed is `v` plus
  * `package.json`'s version, so a tag on the wrong commit cannot stage another
  * version's tarball. Returns the tag; throws, naming both, when they differ.
@@ -108,6 +121,9 @@ if (isMain(import.meta.filename)) {
     // The tag name arrives in the environment, never on a command line.
     const tag = checkReleaseTag({ ref: process.env.GITHUB_REF_NAME, version })
     console.log(`${tag} matches package.json`)
+  } else if (process.argv[2] === '--dist-tag') {
+    // Printed alone, for `npm stage publish --tag "$(…)"` in publish.yml.
+    console.log(distTag(version))
   } else {
     const { tag, skip } = tagRelease({ version })
     console.log(skip ? `release tag ${skip}` : `tagged and pushed ${tag}`)
