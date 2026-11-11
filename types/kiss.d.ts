@@ -200,8 +200,8 @@ export type SitemapOptions = {
 };
 /**
  * The options `.llms()` takes. `title` and `summary` are required — without
- * either, kiss logs an error and writes nothing, exactly as it does for a
- * sitemap with no `siteUrl`.
+ * either, the build fails with that named, exactly as it does for a sitemap
+ * with no `siteUrl`.
  */
 export type LlmsOptions = {
     /**
@@ -226,8 +226,8 @@ export type LlmsOptions = {
     overwrite?: boolean;
 };
 /**
- * The options `.feed()` takes. `title` is required — without it, kiss logs an
- * error and writes nothing, exactly as it does for a sitemap with no `siteUrl`.
+ * The options `.feed()` takes. `title` is required — without it the build
+ * fails with that named, exactly as it does for a sitemap with no `siteUrl`.
  */
 export type FeedOptions = {
     /**
@@ -384,8 +384,8 @@ export type WatchOptions = {
  */
 /**
  * The options `.llms()` takes. `title` and `summary` are required — without
- * either, kiss logs an error and writes nothing, exactly as it does for a
- * sitemap with no `siteUrl`.
+ * either, the build fails with that named, exactly as it does for a sitemap
+ * with no `siteUrl`.
  *
  * @typedef {Object} LlmsOptions
  * @property {string} title the site's name — the file's `# ` heading
@@ -395,8 +395,8 @@ export type WatchOptions = {
  * @property {boolean} [overwrite] default `true`; `false` leaves an existing `llms.txt` alone
  */
 /**
- * The options `.feed()` takes. `title` is required — without it, kiss logs an
- * error and writes nothing, exactly as it does for a sitemap with no `siteUrl`.
+ * The options `.feed()` takes. `title` is required — without it the build
+ * fails with that named, exactly as it does for a sitemap with no `siteUrl`.
  *
  * @typedef {Object} FeedOptions
  * @property {string} title the feed's `<title>` — the site's name, or the section's
@@ -763,6 +763,19 @@ declare class Kiss {
      * @private
      */
     private _carry;
+    /**
+     * Records an output the build asked for (`.sitemap()`, `.llms()`,
+     * `.robots()`, `.feed()`) that could not be written, or was skipped for a
+     * missing input, as a build failure. Not carried across a replay: the
+     * replay re-issues the request, which fails again if it still must. Like a
+     * callback's failure it can land after a build settled, so the report is
+     * re-derived in place.
+     *
+     * @param {string} view the pseudo-view naming the output, e.g. `<sitemap>`
+     * @param {Error} error
+     * @private
+     */
+    private _recordOutputFailure;
     /** @private */
     private _sweepStaleSiblings;
     /** @private */
@@ -922,11 +935,12 @@ declare class Kiss {
     report(): BuildReport | null;
     /**
      * Writes `sitemap.xml` into the build folder, one `<url>` per registered page.
-     * Requires `config.siteUrl` — without it this logs an error and skips.
+     * Requires `config.siteUrl` — without it the build fails, as it does when
+     * the file cannot be written.
      *
      * @param {SitemapOptions|null} [options]
      * @param {(urls: SitemapUrl[]) => void|Promise<void>} [callback] not fired
-     * when the sitemap was skipped for want of a `siteUrl`
+     * when the sitemap failed for want of a `siteUrl`
      * @returns {this}
      */
     sitemap(options?: SitemapOptions | null, callback?: (urls: SitemapUrl[]) => void | Promise<void>): this;
@@ -943,13 +957,14 @@ declare class Kiss {
      * Writes `llms.txt` into the build folder — the llmstxt.org index an answer
      * engine reads first — from the same registry, titles and URLs the sitemap is
      * built from, so the two can never disagree. Requires `config.siteUrl`, and
-     * `options.title`/`options.summary`; without any of them this logs an error
-     * and skips. Like `.sitemap()`, it can be called before or after
-     * `.generate()`, and it is re-run by a whole-site watch rebuild.
+     * `options.title`/`options.summary`; without any of them, or when the file
+     * cannot be written, the build fails. Like `.sitemap()`, it can be called
+     * before or after `.generate()`, and it is re-run by a whole-site watch
+     * rebuild.
      *
      * @param {LlmsOptions} options
      * @param {(text: string) => void|Promise<void>} [callback] receives the
-     * rendered file; not fired when llms.txt was skipped for want of an option
+     * rendered file; not fired when llms.txt failed for want of an option
      * @returns {this}
      */
     llms(options: LlmsOptions, callback?: (text: string) => void | Promise<void>): this;
@@ -979,9 +994,8 @@ declare class Kiss {
      *
      * Like `.sitemap()`, `.llms()` and `.feed()` it can be called before or
      * after `.generate()`, in any order relative to `.sitemap()`, and it is
-     * re-run by a whole-site watch rebuild. A write failure is logged, not
-     * fatal — this is discovery, like the sitemap, not the redirects case where
-     * a missing file 404s traffic a reader already has a link to.
+     * re-run by a whole-site watch rebuild. A write failure fails the build
+     * (`<robots>`), as it does for the sitemap, the feed and `llms.txt`.
      *
      * @param {import('./robots.js').RobotsOptions} [options]
      * @param {(text: string) => void|Promise<void>} [callback] receives the
@@ -994,13 +1008,13 @@ declare class Kiss {
      * the same registry as `sitemap.xml` and `llms.txt`, so an item can never
      * name a URL the site does not serve. One `<item>` per page that carries a
      * date, newest first. Requires `config.siteUrl` and `options.title`; without
-     * either this logs an error and skips. Like `.sitemap()` and `.llms()`, it
-     * can be called before or after `.generate()`, and it is re-run by a
-     * whole-site watch rebuild.
+     * either, or when the file cannot be written, the build fails. Like
+     * `.sitemap()` and `.llms()`, it can be called before or after
+     * `.generate()`, and it is re-run by a whole-site watch rebuild.
      *
      * @param {FeedOptions} options
      * @param {(text: string) => void|Promise<void>} [callback] receives the
-     * rendered document; not fired when the feed was skipped for want of an option
+     * rendered document; not fired when the feed failed for want of an option
      * @returns {this}
      */
     feed(options: FeedOptions, callback?: (text: string) => void | Promise<void>): this;

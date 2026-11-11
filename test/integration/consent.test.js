@@ -58,7 +58,9 @@ const config = (extra = {}) => ({
 /** Build, and hand back the report, or the failure's messages. */
 const build = async (cfg, { llms = false } = {}) => {
   kiss = new Kiss(cfg).scan().generate()
-  if (llms) kiss.llms()
+  // `.llms()` is here only to turn the Markdown copies on; it needs the two
+  // options it would otherwise fail the build for.
+  if (llms) kiss.llms({ title: 'Consent site', summary: 'A consent site.' })
   try {
     await kiss.complete()
     return { report: kiss.report(), errors: [] }
