@@ -1,7 +1,7 @@
 ---
 branch: fix/publish-base-env
 base: main
-status: open
+status: closed
 opened: 2026-11-11
 scope: planning/sessions/2026-11-11-publish-base-env.md, .github/workflows/publish.yml, test/unit/base-branch.test.js, test/unit/docs-sweep-scope.test.js, test/**, CHANGELOG.md, planning/reviews/2026-11-11-phase-0-exit.md
 ---
@@ -44,3 +44,23 @@ scope: planning/sessions/2026-11-11-publish-base-env.md, .github/workflows/publi
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-11-11: The release gates fail on publish.yml's KISS_BASE_BRANCH
+
+**What we shipped:** `48022df` — `publish.yml` sets no `KISS_BASE_BRANCH`, and `test/unit/base-branch.test.js` and `test/unit/docs-sweep-scope.test.js` drop it from the sealed environment they give their child processes; `main` merged in (`3a609ac`, Dependabot's `@types/node` bump). The defect was Claude's, from Phase 0's close: a hardening it proposed and the operator accepted (`7640f6d`) set the variable on the gates step, where it reached the suite and failed four tests in the first real release run, `v2.15.0`. Nothing was staged.
+
+**Supervision:** planned, trivial weight. The operator chose both the release path (re-tag 2.15.0 rather than bump) and to open a branch for a two-line fix rather than skip the ritual, and merged `main` in when the close found the branch behind. Eyeball: **unanswered — proceeding on the ritual's defaults** (`publish.yml`'s gates step, "Not now"). Level for this branch: Assisted operator — the decisions were the operator's, the verification Claude's (the four failures reproduced locally with the variable set, red before and green after, and the whole suite passing with it set).
+
+**Feedback for next time:**
+
+- **Claude — a hardening is a change, and it gets the same proof as a fix.** `KISS_BASE_BRANCH: main` was proposed as defence in depth, justified by reading `base-branch.mjs`, and never run with the suite under it; the first run was the release. Before proposing an environment variable for a step that runs the tests, run the tests with it set (`KISS_BASE_BRANCH=main npx vitest run`).
+- **Claude — "nothing I could prove locally" is a reason to change less, not more.** The detached-checkout concern behind the variable was already answered by `ci.yml`'s pull-request runs, which pass on a detached checkout with no override; the evidence was there and was not consulted.
+- **Process — a test that seals its child processes' environment seals all of the inputs to what it asserts.** Both files already dropped `GIT_*`; the override was the input they missed. When a test filters the environment, list every variable the code under test reads.
+
+**Did we achieve the objective?** Met, pending the operator's acts after the merge.
+
+- [x] Four tests fail with `KISS_BASE_BRANCH=main` before the fix and pass after.
+- [x] The full suite passes with the variable set (146 files) and without it.
+- [x] `publish.yml` sets no `KISS_BASE_BRANCH`.
+- [ ] `npm run gates` passes (yes, on the merged state) and both CI legs pass on the PR — the PR's CI is the second half.
+- [ ] After the merge: `v2.15.0` moves to the merged commit and the publish run stages 2.15.0 — the operator's acts.
