@@ -38,11 +38,11 @@ jobs:
       # browser fails that suite.
       - name: Install Chromium
         run: npx playwright-core install --with-deps chromium
-      # A tag checkout is a detached HEAD, so the base the format gate diffs
-      # against is named rather than worked out.
+      # A tag checkout is a detached HEAD; with the full history fetched,
+      # base-branch.mjs finds main through origin/main, as it does for ci.yml's
+      # pull-request checkout. No KISS_BASE_BRANCH: it reaches the test suite
+      # too, and the v2.15.0 run failed four tests on it.
       - run: npm run gates
-        env:
-          KISS_BASE_BRANCH: main
 
   stage:
     needs: gates
