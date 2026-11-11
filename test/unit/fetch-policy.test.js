@@ -980,6 +980,17 @@ describe('fetchModel: a redirect and custom headers', () => {
     expect(error.message).not.toContain(TOKEN)
   })
 
+  it('does not retry a redirect policy refusal, and names no attempts', async () => {
+    const cross = await run('/cross', { headers, retries: 3 })
+    expect(cross.error.message).toContain('fetch the final URL directly')
+    expect(cross.error.message).not.toContain('attempts')
+    expect(received.map((r) => r.path)).toEqual(['/cross'])
+    const hops = await run('/hop/0?end=6', { headers, retries: 3 })
+    expect(hops.error.message).toContain('more than 5 redirects')
+    expect(hops.error.message).not.toContain('attempts')
+    expect(received).toHaveLength(6)
+  })
+
   it('still follows a cross-origin redirect when there are no headers', async () => {
     const { data } = await run('/cross')
     expect(data).toEqual({ ok: true })

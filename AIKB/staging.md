@@ -139,9 +139,14 @@ direct call would step around the patch.
   own (a second `Kiss` building the same target in one process) or another's (a `kiss-ssg check`
   run beside a build still in progress, which used to delete the live build's staging folder,
   reproduced 2026-11-09). Liveness is `process.kill(pid, 0)`: `ESRCH` is dead, `EPERM` is alive
-  under another user. One `info` line names each folder left for that reason. A name whose pid
-  cannot be read is treated as stale. **Known limit:** a pid the system has recycled for an
-  unrelated process keeps a dead build's leftovers until that process ends. The names are built (`stagingSiblings`) and matched (`sweepStaleSiblings`) in this one file
+  under another user. One `info` line per folder left for that reason names it and the pid parsed after the
+  prefix (never re-read from the whole name, which a build folder like `site-2026-out` would
+  poison), says only that a process is running with that pid so it _may_ be a build in progress, and
+  says to delete the folder when no build of this site is running. A name whose pid cannot be read
+  is treated as stale. **Known limit (work order 03's, kept by decision):** liveness is all there is
+  to go on, so a pid the system has recycled for an unrelated process keeps a dead build's
+  leftovers until that process ends, or until someone deletes the folder as the line says; there is
+  no lock file, timestamp or age guard. The names are built (`stagingSiblings`) and matched (`sweepStaleSiblings`) in this one file
   on purpose: they are two halves of one invariant.
 - **After a promotion the instance is an ordinary one.** `promote` clears `_stagingDir`, so
   `_writeRoot` is the real folder again, and re-points every stack entry's `buildDir`/`buildTo`, so

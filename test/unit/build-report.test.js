@@ -557,6 +557,28 @@ describe('buildReport', () => {
 })
 
 describe('formatReport', () => {
+  it('names each dropped alias with its page and reason', () => {
+    const report = buildReport({
+      stack: [page('index.hbs', './public/index.html')],
+      buildDir: './public',
+      startedAt: Date.now(),
+      redirects: {
+        file: null,
+        aliases: 0,
+        removed: [],
+        collisions: [],
+        moved: [],
+        dropped: [{ alias: '/team/*', page: 'about.hbs', reason: 'pattern' }],
+      },
+    })
+    expect(report.redirects.dropped).toEqual([
+      { alias: '/team/*', page: 'about.hbs', reason: 'pattern' },
+    ])
+    expect(formatReport(report)).toContain(
+      '  alias dropped: /team/* on about.hbs (pattern)',
+    )
+  })
+
   it('summarises a clean build in one line', () => {
     const report = buildReport({
       stack: [page('index.hbs', './public/index.html')],

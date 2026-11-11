@@ -20,7 +20,7 @@ The module is pure: it takes a package's description and returns a string. It kn
 
 ## Depends on
 
-Nothing.
+`node:crypto`; `./utils.js` (`escapeXml`, the one shared escape, which this module carried a private copy of until 2026-11-11; a test holds the manifest's escaping of the five characters).
 
 ## Depended on by
 

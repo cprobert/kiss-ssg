@@ -114,6 +114,47 @@ describe('normaliseAlias', () => {
     expect(normaliseAlias('/caf%C3%A9')).toBe('/caf%C3%A9')
   })
 
+  // The class, not the case: the alias reaches four host formats unchanged and
+  // each reads more characters as pattern syntax than `*` and `:x` — Firebase
+  // globs, Vercel path-to-regexp, Netlify. So the guard is an allow-list of the
+  // characters no host reads as a pattern, and everything else is refused.
+  it('keeps only plain path characters: every other shape is refused', () => {
+    for (const alias of [
+      '/{a,b}',
+      '/[a-z]',
+      '/(x)',
+      '/a+',
+      '/a!',
+      '/@x',
+      '/a^',
+      '/a|b',
+      '/a\\b',
+      '/a"b',
+      '/a\u0000b',
+      '/a`b',
+      '/a<b>',
+      '/a%zz',
+      '/a%',
+      '/@(a|b)',
+      '/+(a)',
+      '/!(a)',
+    ]) {
+      expect(normaliseAlias(alias), JSON.stringify(alias)).toBeNull()
+    }
+    for (const alias of [
+      '/old-page',
+      '/a:b',
+      '/a.b_c~d',
+      '/caf%C3%A9',
+      '/café',
+      '/日本',
+      "/a$b&c'd,e;f=g",
+      '/a/b/',
+    ]) {
+      expect(normaliseAlias(alias), alias).toBe(alias)
+    }
+  })
+
   it('names a dropped alias and its page in one warning from writeRedirects', async () => {
     temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-redirects-'))
     const buildDir = temp.replace(/\\/g, '/')
@@ -123,15 +164,39 @@ describe('normaliseAlias', () => {
       [
         entry(`${buildDir}/about.html`, {
           view: 'about.hbs',
-          aliases: ['/old', '/team/*', '/a b', ''],
+          aliases: ['/old', '/team/*', '/a b', '?utm=1', ''],
         }),
       ],
       { config: { folders: { build: buildDir } }, logger },
     )
     expect(result.rules).toEqual([{ from: '/old', to: '/about' }])
+    // The wording follows the reason, so a query-only alias is not told it was
+    // a pattern or had whitespace in it.
     expect(warnings).toEqual([
-      'Alias "/team/*" on about.hbs dropped: an alias is one old path, not a pattern or a line with whitespace in it',
-      'Alias "/a b" on about.hbs dropped: an alias is one old path, not a pattern or a line with whitespace in it',
+      'Alias "/team/*" on about.hbs dropped: an alias is one old path, and this one has characters a host reads as a pattern',
+      'Alias "/a b" on about.hbs dropped: an alias is one old path, and this one has whitespace in it',
+      'Alias "?utm=1" on about.hbs dropped: an alias is a path, and this one is only a query or a fragment',
+    ])
+  })
+
+  it('hands onDrop the reason, as one of a fixed set of codes', () => {
+    const dropped = []
+    collectAliases(
+      [
+        entry('./public/x.html', {
+          view: 'x.hbs',
+          aliases: ['/a b', '/{a,b}', '#top', '', '/ok'],
+        }),
+      ],
+      {
+        buildDir: './public',
+        onDrop: (alias, e, reason) => dropped.push([alias, reason]),
+      },
+    )
+    expect(dropped).toEqual([
+      ['/a b', 'whitespace'],
+      ['/{a,b}', 'pattern'],
+      ['#top', 'query-only'],
     ])
   })
 

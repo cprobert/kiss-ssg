@@ -415,6 +415,45 @@ describe('sweepStaleSiblings', () => {
       )
     })
 
+    it("names the sibling's own pid when the build folder's name holds -digits-", async () => {
+      child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], {
+        stdio: 'ignore',
+      })
+      temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-staging-'))
+      const live = `site-2026-out.kiss-staging-${child.pid}-zzzzzz`
+      await fs.ensureDir(path.join(temp, live))
+      const kiss = {
+        _buildTarget: path.join(temp, 'site-2026-out'),
+        logger: logger(),
+      }
+
+      sweepStaleSiblings(kiss)
+
+      expect(kiss.logger.info).toHaveBeenCalledTimes(1)
+      const [line] = kiss.logger.info.mock.calls[0]
+      expect(line).toContain(`with pid ${child.pid},`)
+      expect(line).not.toContain('2026,')
+    })
+
+    it('says only what is known, and how to clear a kept folder', async () => {
+      child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], {
+        stdio: 'ignore',
+      })
+      temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-staging-'))
+      const live = `public.kiss-staging-${child.pid}-zzzzzz`
+      await fs.ensureDir(path.join(temp, live))
+      const kiss = { _buildTarget: path.join(temp, 'public'), logger: logger() }
+
+      sweepStaleSiblings(kiss)
+
+      const [line] = kiss.logger.info.mock.calls[0]
+      expect(line).toContain(live)
+      expect(line).toContain(`a process is running with pid ${child.pid}`)
+      expect(line).toContain('may be a build in progress')
+      expect(line).toMatch(/[Dd]elete the folder .*no build of this site/)
+      expect(line).not.toContain('is still running')
+    })
+
     it('is removed when that process is not running', async () => {
       // A pid that has ended: start a process, wait for it to exit.
       const done = spawn(process.execPath, ['-e', ''], { stdio: 'ignore' })

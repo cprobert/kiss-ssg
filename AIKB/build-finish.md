@@ -29,6 +29,10 @@ Each is the body of the `Kiss` private method named beside it:
 - `runLinkCheck(kiss, { quiet })` — `_checkLinks()`; `runAudit(kiss, { quiet })` — `_runAudit()`.
 - `writeAliasRedirects(kiss)` — `_writeRedirects()`; `findRedirectChanges(kiss)` —
   `_redirectFindings()`; `lastBuildRecord(kiss)` — `_lastBuildRecord()`.
+  `findRedirectChanges` also records every alias `normaliseAlias` refused, from
+  its own `collectAliases` call (the warning is `writeRedirects`', said once),
+  as `dropped: [{ alias, page, reason }]`, and a site whose only news is a
+  dropped alias reports a `redirects` block rather than `null`.
 - `writeBannerRegistry(kiss)` — `_writeBannerRegistry()`: `<build>/consent-banners.json`.
 - `purgeAssets(kiss)` — `_purgeAssets()`: the CSS purge of `assets.purge` (`lib/css-purge.js`, `AIKB/css-purge.md`), **first** at the settle, before the redirects. It is latched as `_purgeRun`, reset by the replay, and skipped in dev and on a failed build. It purges against every written HTML page and, when a stylesheet was re-hashed, rewrites each page to the new name (`KissPage.replaceInOutput`), so the link scan, the audit, the cache headers and the report all describe the purged file. The result is `_purgeResult`, logged as `Purged <name>: <before> KB → <after> KB`. A failure fails the build (`<purge>`): the site named the file, so a purge that silently did nothing would ship the whole stylesheet. It reads every `.html` in the build folder, a copied or retained page included, and relinks only the rendered ones.
 - `checkPageIntegrity(kiss)` — `_checkIntegrity()`: after the cache headers and before the packages, each rendered page's local `<script>`/`<link>` with an `integrity` attribute is checked against the file the build wrote (`lib/integrity.js`, `AIKB/integrity.md`). A mismatch is a `<integrity>` failure naming the page and the fix. Skipped in dev and on a failed build.
