@@ -3,7 +3,37 @@ import {
   releaseTag,
   planRelease,
   tagRelease,
+  checkReleaseTag,
 } from '../../scripts/tag-release.mjs'
+
+// The publish workflow runs this before it stages anything: a tag that is not
+// `v` plus package.json's version must stop the run.
+describe('checkReleaseTag', () => {
+  it('passes when the pushed tag is v plus the version', () => {
+    expect(checkReleaseTag({ ref: 'v2.2.1', version: '2.2.1' })).toBe('v2.2.1')
+  })
+
+  it('refuses a tag for a different version', () => {
+    expect(() => checkReleaseTag({ ref: 'v2.2.0', version: '2.2.1' })).toThrow(
+      /v2\.2\.0.*v2\.2\.1/,
+    )
+  })
+
+  it('refuses a missing ref and a ref with no v', () => {
+    expect(() => checkReleaseTag({ ref: undefined, version: '2.2.1' })).toThrow(
+      /tag/,
+    )
+    expect(() => checkReleaseTag({ ref: '2.2.1', version: '2.2.1' })).toThrow(
+      /2\.2\.1/,
+    )
+  })
+
+  it('refuses a version that is not one', () => {
+    expect(() => checkReleaseTag({ ref: 'vx', version: 'x' })).toThrow(
+      /version/,
+    )
+  })
+})
 
 describe('releaseTag', () => {
   it('is the version under a v, prerelease included', () => {

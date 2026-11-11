@@ -129,7 +129,7 @@ node scripts/fleet-check.mjs <site> --base <ref>   # build a real site from the 
 node scripts/budgets.mjs [--record|--check] [--bench <file>]   # the roadmap's budgets against planning/budgets.json
 node scripts/arms.mjs setup|run|summarise  # measure a skill: one headless arm on a site at a commit
 node scripts/sync-plugin-versions.mjs      # carry package.json's version into every plugin manifest (npm version runs it)
-node scripts/tag-release.mjs               # tag and push v<version> (postpublish runs it)
+node scripts/tag-release.mjs               # tag and push v<version> (a local publish's postpublish runs it); --check: the pushed tag (GITHUB_REF_NAME) is v<version>, which publish.yml runs first
 npm run bench                              # the benchmark harness; the /bench skill says how to read it
 npm run screenshot -- <build folder>       # shoot pages with Playwright; from Git Bash, run it from PowerShell
 node docs                                  # build the docs site into docs/ and exit
@@ -145,7 +145,9 @@ npm run eg1 … eg14                         # run an example from its own folde
 
 ## Git workflow
 
-Two automated nets run the same script: a **pre-commit hook** (`.githooks/pre-commit`, set up by npm's `prepare`) blocks a commit whose staged files fail Prettier, and **CI** (`.github/workflows/ci.yml`) runs `npm run gates` on every PR and push to `main` and `v2`, on Ubuntu and Windows, so a `skipIf(process.platform !== 'win32')` test is a real gate. `prepublishOnly` runs the gates before `npm publish`. Neither replaces the ritual below.
+Two automated nets run the same script: a **pre-commit hook** (`.githooks/pre-commit`, set up by npm's `prepare`) blocks a commit whose staged files fail Prettier, and **CI** (`.github/workflows/ci.yml`) runs `npm run gates` on every PR and push to `main` and `v2`, on Ubuntu and Windows, so a `skipIf(process.platform !== 'win32')` test is a real gate. `prepublishOnly` runs the gates before a local `npm publish`. Neither replaces the ritual below.
+
+**A release is the operator's two acts, and CI does the rest.** Push the tag `v<version>` on the merged commit, which runs `.github/workflows/publish.yml` (environment `npm`, tags `v*` only): it checks the tag against `package.json`, runs the gates and runs `npm stage publish` under npm trusted publishing, with provenance. Nothing is public until the operator approves the staged version with 2FA on npmjs.com. Before the first tag under the workflow, create the connection on npmjs.com (GitHub Actions, `cprobert` / `kiss-ssg`, `publish.yml`, environment `npm`, no allowed action): npm expires one that no publish has validated within 48 hours of its creation. Never tag or push a tag from a session; the tag is the release decision.
 
 **The base branch is resolved, not assumed.** `node scripts/base-branch.mjs` prints the branch this work merges into (`main`, or a major line in development). Override it with `git config kiss.baseBranch <name>` or `KISS_BASE_BRANCH`; a bare name that is only a tag counts as none (write `refs/tags/<name>` for the tag).
 

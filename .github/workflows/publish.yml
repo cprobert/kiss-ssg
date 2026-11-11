@@ -1,0 +1,48 @@
+name: publish
+
+# A release is the operator pushing the tag v<version> on the merged commit.
+# This workflow checks the tag names package.json's version, runs the gates,
+# and STAGES the version with npm trusted publishing. Staging is all the
+# connection may do (no allowed action is ticked on npmjs.com): nothing is
+# public until the operator approves the staged version with 2FA, which OIDC
+# cannot do. The attestation is automatic for a public repository.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    # The trusted-publishing connection names this environment, and the
+    # environment's deployment rule allows only tags v*.
+    environment: npm
+    permissions:
+      contents: read
+      # The OIDC token npm exchanges for a short-lived publish credential.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The format gate diffs against the base branch, which needs history.
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # Trusted publishing needs npm 11.5.1 and staged publishing 11.15.0;
+      # Node 22 bundles npm 10. 11.21.2 is the newest 11.x (npm view, 2026-11-11).
+      - name: Install npm 11.21.2
+        run: npm install -g npm@11.21.2
+      - run: npm ci
+      - name: Tag matches package.json
+        run: node scripts/tag-release.mjs --check
+      # Chromium for the browser suite, as in ci.yml: under CI a missing
+      # browser fails that suite.
+      - name: Install Chromium
+        run: npx playwright-core install --with-deps chromium
+      - run: npm run gates
+      - name: Stage the version
+        run: npm stage publish
