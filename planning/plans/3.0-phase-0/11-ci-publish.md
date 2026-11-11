@@ -68,3 +68,13 @@ operator's.
 ```sh
 npx vitest run test/unit/tag-release.test.js
 ```
+
+## Amended 2026-11-11: the operator's choices
+
+These replace the parts of the design above that they contradict.
+
+- **Trusted publishing, stage only.** The operator chose npm trusted publishing, with no allowed action ticked: the connection may only `npm stage publish`. The workflow stages the version; nothing is public until the operator approves it with 2FA on npmjs.com or the CLI, which OIDC cannot do. A release is therefore two of the operator's actions: push the tag `v<version>`, then approve the staged version. Step 1's `npm publish --provenance --access public` becomes the stage command (read npm's current docs for its exact form and flags). Provenance is automatic for a public repository under trusted publishing, so no flag is needed for it; check this against the docs too.
+- **A GitHub environment named `npm`.** The connection names it, so `publish.yml`'s job declares `environment: npm`. The operator creates the environment in the repository's settings with a deployment rule allowing only tags `v*`. A run from any other ref cannot enter it.
+- **npm itself.** Node 22's bundled npm is 10.x; trusted publishing needs npm 11.5.1 or later, and staged publishing a later 11.x (11.15.0 per secondary sources; npm's page does not say). The workflow installs a pinned npm version that meets both, before staging, and the step names the version.
+- **The connection is a release-day step.** npm expires a trusted-publishing connection that no publish has validated within 48 hours of its creation (secondary sources; the npm page showed the deadline). The one made on 2026-11-11 will lapse. The release instructions (step 3) say: before pushing the first tag under this workflow, create the connection on npmjs.com (GitHub Actions, `cprobert` / `kiss-ssg`, `publish.yml`, environment `npm`, no allowed action), then push the tag, then approve the staged version; once a publish has validated it, it no longer expires.
+- **`postpublish`.** Under staging the CI run never runs `npm publish`, so `postpublish` does not run there. Keep `prepublishOnly`; keep `postpublish` tagging a local publish, which remains possible from the operator's machine.
