@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "description": "A small static site generator for Node: Handlebars views, JSON models, Markdown, Sass, responsive images, sitemap and checked internal links. Built to be driven by an AI agent.",
   "main": "lib/kiss.js",
   "types": "./types/kiss.d.ts",
