@@ -98,6 +98,14 @@ describe('testPrivateReach', () => {
     expect(testPrivateReach([`${priv('a')} ${priv('a')}`, priv('b')])).toBe(3)
   })
 
+  it('does not count an owner that only ends in one of the five', () => {
+    const text = ['mock', 'task', 'webapp', 'my_k']
+      .map((o) => priv('x', o))
+      .join(' ')
+    expect(testPrivateReach([text])).toBe(0)
+    expect(testPrivateReach([`(${priv('x')}) ${priv('y', 'k')}`])).toBe(2)
+  })
+
   it('does not count another owner, a bare underscore or a digit', () => {
     expect(
       testPrivateReach([`other._x ${KISS}._ ${KISS}._1 ${KISS}.public`]),
@@ -224,6 +232,26 @@ describe('measure and the command line, over a small repository', () => {
     expect(again.status).toBe(0)
     const rows = again.stdout.split('\n').filter((l) => /^coreLines/.test(l))
     expect(rows[0]).toMatch(/same/)
+  })
+
+  it('keeps the recorded msPerPage when --record runs without --bench', () => {
+    repo()
+    const bench = path.join(dir, 'bench.json')
+    fs.writeFileSync(
+      bench,
+      JSON.stringify({
+        scenarios: {
+          'scan@4000': { pages: 4000, phases: { build: { median: 8000 } } },
+        },
+      }),
+    )
+    run(['--record', '--bench', bench])
+    const file = path.join(dir, 'planning', 'budgets.json')
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).msPerPage).toBe(2)
+    run(['--record'])
+    const kept = JSON.parse(fs.readFileSync(file, 'utf8'))
+    expect(kept.msPerPage).toBe(2)
+    expect(kept.coreLines).toBe(3)
   })
 
   it('exits 1 on --check only when a number is worse', () => {

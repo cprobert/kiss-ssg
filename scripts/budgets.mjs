@@ -57,7 +57,7 @@ export const runtimeDeps = (packageJsonText) =>
 
 /** Occurrences of a private member after kiss, site, k, instance or app. */
 export const testPrivateReach = (texts) =>
-  countMatches(texts, /(?:kiss|site|k|instance|app)\._[A-Za-z]/g)
+  countMatches(texts, /\b(?:kiss|site|k|instance|app)\._[A-Za-z]/g)
 
 /** Size in bytes of the given file contents (a Buffer). */
 export const claudeMdBytes = (buffer) => buffer.length
@@ -193,8 +193,17 @@ function main(argv) {
   const now = measure(root, { bench, ...MS_PER_PAGE })
   const file = path.join(root, 'planning', 'budgets.json')
   if (opts.record) {
+    // A number this run did not measure (msPerPage without --bench) keeps its
+    // recorded value, or --check could never call that row worse again.
+    const previous = fs.existsSync(file) ? JSON.parse(read(file)) : {}
+    const recorded = Object.fromEntries(
+      Object.entries(now).map(([key, value]) => [
+        key,
+        value ?? previous[key] ?? null,
+      ]),
+    )
     fs.mkdirSync(path.dirname(file), { recursive: true })
-    fs.writeFileSync(file, `${JSON.stringify(now, null, 2)}\n`)
+    fs.writeFileSync(file, `${JSON.stringify(recorded, null, 2)}\n`)
     console.log(`recorded -> ${path.relative(root, file)}`)
   }
   const baseline = fs.existsSync(file) ? JSON.parse(read(file)) : null

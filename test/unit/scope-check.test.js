@@ -1,4 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
+import { execFileSync, spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   outOfScope,
   parseScope,
@@ -58,6 +63,67 @@ describe('outOfScope', () => {
       declared: true,
       files: ['lib/a.js'],
     })
+  })
+})
+
+describe('the command, over a branch that deletes a file outside its scope', () => {
+  const script = fileURLToPath(
+    new URL('../../scripts/scope-check.mjs', import.meta.url),
+  )
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-scope-'))
+  afterAll(() => fs.rmSync(root, { recursive: true, force: true }))
+
+  it('names the deleted file and exits 1', () => {
+    const emptyConfig = path.join(root, 'empty.gitconfig')
+    fs.writeFileSync(emptyConfig, '')
+    const env = {
+      ...Object.fromEntries(
+        Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+      ),
+      GIT_CONFIG_GLOBAL: emptyConfig,
+      GIT_CONFIG_NOSYSTEM: '1',
+      KISS_BASE_BRANCH: 'main',
+    }
+    const repo = path.join(root, 'repo')
+    fs.mkdirSync(path.join(repo, 'planning/sessions'), { recursive: true })
+    const git = (...args) =>
+      execFileSync('git', args, { cwd: repo, env, stdio: 'ignore' })
+    const put = (file, text) => {
+      fs.mkdirSync(path.dirname(path.join(repo, file)), { recursive: true })
+      fs.writeFileSync(path.join(repo, file), text)
+    }
+    const commit = (message) =>
+      git(
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.com',
+        'commit',
+        '-q',
+        '-m',
+        message,
+      )
+    git('init', '-q', '-b', 'main')
+    put('keep.js', 'x\n')
+    put('victim.js', 'x\n')
+    git('add', '.')
+    commit('base')
+    git('checkout', '-q', '-b', 'feat')
+    put(
+      'planning/sessions/2026-11-11-x.md',
+      '---\nbranch: feat\nscope: lib/**\n---\n',
+    )
+    put('lib/a.js', 'x\n')
+    git('rm', '-q', 'victim.js')
+    git('add', '.')
+    commit('work')
+    const result = spawnSync(process.execPath, [script], {
+      cwd: repo,
+      env,
+      encoding: 'utf8',
+    })
+    expect(result.stdout.trim()).toBe('victim.js')
+    expect(result.status).toBe(1)
   })
 })
 

@@ -123,7 +123,8 @@ function main(args) {
       )
       return 2
     }
-    const diff = changedFiles(resolveBaseBranch(cwd), cwd)
+    // ACMRD: a deletion outside the scope is a change this check most needs.
+    const diff = changedFiles(resolveBaseBranch(cwd), cwd, process.env, 'ACMRD')
     if (diff.error) {
       console.error(`scope-check: ${diff.error}`)
       return 2

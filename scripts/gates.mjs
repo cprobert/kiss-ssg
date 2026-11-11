@@ -130,7 +130,15 @@ export function prettierBin(resolve = require.resolve) {
 // a deleted one is not listed at all, and a new one not yet added is. A list taken from the commits named
 // files the working tree no longer had, and failed the gate on them twice on
 // 2026-10-31.
-export function changedFiles(base, cwd = process.cwd(), env = process.env) {
+// `filter` is git's --diff-filter letters for the committed-and-edited list:
+// the default leaves deletions out (prettier cannot read a deleted file), and a
+// caller that wants to see them, as scope-check does, adds `D`.
+export function changedFiles(
+  base,
+  cwd = process.cwd(),
+  env = process.env,
+  filter = 'ACMR',
+) {
   const gitOut = (args) =>
     execFileSync('git', args, {
       cwd,
@@ -152,7 +160,12 @@ export function changedFiles(base, cwd = process.cwd(), env = process.env) {
       'diff',
       '--name-only',
       '-z',
-      '--diff-filter=ACMR',
+      // A rename is listed as its new name only, so a deleted file whose
+      // content moved into a new one would never be seen as deleted. With
+      // renames off the old name is a D and the new one an A: the default
+      // filter lists the same files as before, `D` callers see both.
+      '--no-renames',
+      `--diff-filter=${filter}`,
       mergeBase,
     ])
     // A file made on the branch and not yet added is about to be committed
