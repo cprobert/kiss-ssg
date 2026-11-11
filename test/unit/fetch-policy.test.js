@@ -883,3 +883,117 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
     expect(Object.keys(error)).toEqual([])
   })
 })
+
+// A redirect must not carry fetch.headers to another origin: the headers are
+// where the token is. Two real servers on two ports (a port is an origin).
+describe('fetchModel: a redirect and custom headers', () => {
+  const TOKEN = 'SECRET-TOKEN-R'
+  const headers = { Authorization: `Bearer ${TOKEN}` }
+  let first
+  let second
+  let firstBase
+  let secondBase
+  let received
+
+  beforeAll(async () => {
+    second = http.createServer((req, res) => {
+      received.push({ path: req.url, authorization: req.headers.authorization })
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end('{"ok":true}')
+    })
+    await new Promise((resolve) => second.listen(0, '127.0.0.1', resolve))
+    secondBase = `http://127.0.0.1:${second.address().port}`
+    first = http.createServer((req, res) => {
+      received.push({ path: req.url, authorization: req.headers.authorization })
+      const path = new URL(req.url, 'http://x').pathname
+      const hop = path.match(/^\/hop\/(\d+)$/)
+      if (path === '/cross') {
+        res.writeHead(302, { location: `${secondBase}/landed` })
+        return res.end()
+      }
+      if (path === '/same') {
+        res.writeHead(301, { location: '/landed' })
+        return res.end()
+      }
+      if (hop) {
+        const end = new URL(req.url, 'http://x').searchParams.get('end')
+        if (Number(hop[1]) < Number(end)) {
+          res.writeHead(302, {
+            location: `/hop/${Number(hop[1]) + 1}?end=${end}`,
+          })
+          return res.end()
+        }
+      }
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end('{"same":true}')
+    })
+    await new Promise((resolve) => first.listen(0, '127.0.0.1', resolve))
+    firstBase = `http://127.0.0.1:${first.address().port}`
+  })
+  afterAll(async () => {
+    for (const server of [first, second]) {
+      server.closeAllConnections()
+      await new Promise((resolve) => server.close(resolve))
+    }
+  })
+
+  const run = async (path, options = {}) => {
+    received = []
+    try {
+      return {
+        data: await fetchModel(`${firstBase}${path}`, {
+          logger: silentLogger,
+          timeout: 5000,
+          ...options,
+        }),
+      }
+    } catch (error) {
+      return { error }
+    }
+  }
+
+  it('fails a redirect to another origin, naming both, and the other origin never sees the header', async () => {
+    const { data, error } = await run('/cross', { headers })
+    expect(data).toBeUndefined()
+    expect(error.message).toContain(firstBase)
+    expect(error.message).toContain(secondBase)
+    expect(error.message).toContain('fetch the final URL directly')
+    expect(error.message).not.toContain(TOKEN)
+    expect(received.map((r) => r.path)).toEqual(['/cross'])
+  })
+
+  it('follows a same-origin redirect and sends the headers on each hop', async () => {
+    const { data } = await run('/same', { headers })
+    expect(data).toEqual({ same: true })
+    expect(received.map((r) => r.authorization)).toEqual([
+      `Bearer ${TOKEN}`,
+      `Bearer ${TOKEN}`,
+    ])
+  })
+
+  it('follows five same-origin redirects and fails the sixth', async () => {
+    const five = await run('/hop/0?end=5', { headers })
+    expect(five.error).toBeUndefined()
+    expect(received).toHaveLength(6)
+    const { error } = await run('/hop/0?end=6', { headers })
+    expect(error.message).toContain('more than 5 redirects')
+    expect(error.message).not.toContain(TOKEN)
+  })
+
+  it('does not retry a redirect policy refusal, and names no attempts', async () => {
+    const cross = await run('/cross', { headers, retries: 3 })
+    expect(cross.error.message).toContain('fetch the final URL directly')
+    expect(cross.error.message).not.toContain('attempts')
+    expect(received.map((r) => r.path)).toEqual(['/cross'])
+    const hops = await run('/hop/0?end=6', { headers, retries: 3 })
+    expect(hops.error.message).toContain('more than 5 redirects')
+    expect(hops.error.message).not.toContain('attempts')
+    expect(received).toHaveLength(6)
+  })
+
+  it('still follows a cross-origin redirect when there are no headers', async () => {
+    const { data } = await run('/cross')
+    expect(data).toEqual({ ok: true })
+    expect(received.map((r) => r.path)).toEqual(['/cross', '/landed'])
+  })
+})

@@ -72,4 +72,9 @@ export function findRedirectChanges(kiss: any): {
         from: string;
         to: string;
     }[];
+    dropped: {
+        alias: string;
+        page: string;
+        reason: string;
+    }[];
 };

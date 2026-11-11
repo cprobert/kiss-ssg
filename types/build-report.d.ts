@@ -97,6 +97,7 @@
  * @property {string[]} removed sorted; pages in the last record that this build does not build and no alias covers
  * @property {string[]} collisions sorted; aliases equal to a path this build actually writes
  * @property {{ id: string, from: string, to: string }[]} moved sorted by `from`; pages the last record and this build share an `id` with, whose path changed and whose old path no alias covers
+ * @property {{ alias: string, page: string, reason: 'whitespace'|'pattern'|'query-only' }[]} dropped aliases refused, in the order the pages declare them: `page` is the view (else the output path) the build's warning names, `reason` one of `whitespace`, `pattern` (a character a host reads as pattern syntax) or `query-only` (nothing but a query or fragment); `[]` when none
  */
 /**
  * One launch-readiness finding, as the report carries it.
@@ -524,6 +525,14 @@ export type BuildRedirects = {
         id: string;
         from: string;
         to: string;
+    }[];
+    /**
+     * aliases refused, in the order the pages declare them: `page` is the view (else the output path) the build's warning names, `reason` one of `whitespace`, `pattern` (a character a host reads as pattern syntax) or `query-only` (nothing but a query or fragment); `[]` when none
+     */
+    dropped: {
+        alias: string;
+        page: string;
+        reason: "whitespace" | "pattern" | "query-only";
     }[];
 };
 /**

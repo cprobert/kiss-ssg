@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { parseDocument, DomUtils } from 'htmlparser2'
 import { renderManifest, xmlId } from '../../lib/package-manifest.js'
+import { escapeXml } from '../../lib/utils.js'
 
 const members = () => [
   {
@@ -204,6 +205,15 @@ describe('renderManifest', () => {
       renderManifest(pkg({ format: 'imscp', schemas: true })),
     ])
       expect(xml).not.toContain('schemaLocation')
+  })
+
+  it('escapes the five XML characters in a title as the shared escapeXml does', () => {
+    const title = `A&B <C> "D" 'E'`
+    const xml = renderManifest(pkg({ title }))
+    expect(xml).toContain(`<title>${escapeXml(title)}</title>`)
+    expect(xml).toContain(
+      '<title>A&amp;B &lt;C&gt; &quot;D&quot; &apos;E&apos;</title>',
+    )
   })
 
   it('refuses a format it does not know', () => {

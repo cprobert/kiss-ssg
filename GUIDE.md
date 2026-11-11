@@ -311,7 +311,7 @@ const kiss = new Kiss({
 })
 ```
 
-- **headers** — sent with every URL-model request. This is where an API token or an `Accept` header goes. Keep the token itself in an environment variable, not in the config you commit. Templates and controllers see the header names with every value reading `'[redacted]'` (`{{config.fetch.headers.Authorization}}` renders `[redacted]`), except one that is `undefined`, `null` or empty, which reads as it is; only the fetch itself sends the real values.
+- **headers** — sent with every URL-model request. This is where an API token or an `Accept` header goes. Keep the token itself in an environment variable, not in the config you commit. Templates and controllers see the header names with every value reading `'[redacted]'` (`{{config.fetch.headers.Authorization}}` renders `[redacted]`), except one that is `undefined`, `null` or empty, which reads as it is; only the fetch itself sends the real values. With any header set, a redirect to the same origin is followed (at most 5 times) and a redirect to another origin fails that model, so a token never reaches a host you did not name: fetch the final URL directly, or remove the header. With no headers, redirects are followed as the fetch does.
 - **timeout** — milliseconds, per attempt, covering the response's headers and its body; `0` turns the timeout off. The attempt is aborted and that page fails, naming the URL and the timeout. It defaults to 10 seconds: an API that accepts your connection and then goes quiet, before or after its headers, no longer hangs your build for ever.
 - **retries** — extra attempts, a whole number of 0 or more, after a network error or a 5xx, with a short backoff. A 4xx is never retried: the server has already told you the request itself is wrong, so asking again only risks locking a key. If every attempt fails, the error says how many were made.
 - **cache** — `false`, or a directory. A successful body is written there under a hash of the URL **and** the headers you sent (a different token is a different entry), and every later build reads the file instead of fetching: later in the same build, on the next `dev`/`.watch()` rebuild, and in tomorrow's build in a new process. That is what stops a watch rebuild paying a network round trip for every remote model, and it lets you build offline. An error response is never cached. A cache folder that cannot be written is a warning, not a failure: the model is used and the next build fetches again. There is no expiry — delete the directory (or one file inside it) when you want fresh data — and it is build output, so add it to `.gitignore`. Ignore that folder alone, never the whole of `.kiss-cache/`: the image encode cache beside it (`.kiss-cache/images`, under **Responsive images**) is committed.
@@ -391,6 +391,8 @@ Link an asset with the `asset` helper and the caching policy stops living in you
 
 Setting both `hash` and `version` is a misconfiguration: the hashed filename wins and a warning says so.
 Ask for the path the file has when nothing is renaming it — a `.scss` source by its compiled `.css` name — and the same template line works under all three. The helper renders no leading slash, so the base is yours: `/{{asset …}}` for a root-relative link, or `{{root}}{{asset …}}` if your layout already climbs back to the build root (which is what makes a nested page work opened straight off the file system — see **`root` is yours** below). The hash is taken over the bytes that were emitted (a stylesheet after sass compiled it), so the URL changes when, and only when, the file a browser downloads changes; the file it replaces is deleted as it is written, so a `dev` session leaves one stylesheet in the build rather than one per save. Only `.css` and `.js` are renamed: an image, a font or `robots.txt` is reached by URLs kiss does not rewrite — the ones inside a stylesheet, and the ones a host asks for by a fixed name — so those keep their names, and `{{asset}}` still resolves them.
+
+**A file another asset imports keeps its name too.** kiss rewrites no import, so under `hash: true` a `.js` or `.css` that a hashed asset reaches by path (`import './util.js'`, `export … from`, `import('./x.js')`, `@import "other.css"`) is copied under its own name, and the build says which ones in one `info` line. It gets no immutable cache header (`lib/cache-headers.js` marks only renamed files), so a changed `util.js` is fetched fresh while the `app.<hash>.js` that imports it stays cached. A bare specifier (`import 'lit'`) needs an import map, which kiss does not write. Only an import of a file the same asset copy emits is seen: an import of a file another `assets` source writes (a vendor folder copied separately), and a root-relative import on a site served under a path prefix (`import '/docs/js/util.js'` under a `siteUrl` of `https://example.com/docs/`, which is not read as `js/util.js`), still leave the target hashed and the import broken. Import relatively, within one assets folder.
 
 The other two forms, for a layout that climbs back to the build root and for an absolute URL — the hashed extension and the `?v=` query both survive the wrap:
 
@@ -621,7 +623,25 @@ What the option list above leaves implicit:
 
 ### .pages()
 
-In addition to passing page options you can also pass a option mapper to act as a controllers to the .page() and .pages() methods:
+`.pages()` takes the options `.page()` does, but its `model` is an array and it builds one page per record. The array can be one JSON file holding it (`models/bakes.json`, `[{ "slug": "sourdough", "name": "Sourdough" }, …]`) or a models folder of one file per record. Each page's view sees its own record as `model`:
+
+```js
+import Kiss from 'kiss-ssg'
+
+const kiss = new Kiss()
+kiss
+  .pages({
+    view: 'bakes/bake.hbs',
+    model: 'bakes.json',
+    path: 'bakes',
+    controller: ({ model }) => ({ slug: model.slug, title: model.name }),
+  })
+  .generate()
+```
+
+That writes `bakes/sourdough.html` and `bakes/rye.html`. **A record's own `slug` is ignored unless a controller returns it.** Without the `controller` line the same call writes `bakes/bakes-bake-1.html` and `bakes/bakes-bake-2.html` (the view's folder and name, then `-N`), and the build still passes. `title` follows the same rule: a record's `name` is not read, and without a `title` of its own the page is titled from its slug (`Bakes Bake 1`). And `.pages()` writes to the folder `path` names, and to the build root when there is none; it does not take the view's folder as `.page()` does.
+
+You can also pass a option mapper to act as a controller to the .page() and .pages() methods:
 
 ```js
 import Kiss from 'kiss-ssg'
@@ -688,7 +708,7 @@ kiss
 
 ### .sitemap()
 
-Generates a `sitemap.xml` in the root of the build folder from every page you've registered, so you don't need to hand-roll one yourself. Requires `siteUrl` to be set on the Kiss config; it logs an error and skips writing if it isn't.
+Generates a `sitemap.xml` in the root of the build folder from every page you've registered, so you don't need to hand-roll one yourself. Requires `siteUrl` to be set on the Kiss config; without it, or if the file cannot be written, the build fails (`<sitemap>` in `err.failures`).
 
 ```js
 import Kiss from 'kiss-ssg'
@@ -731,7 +751,7 @@ kiss.sitemap({ overwrite: false })
 
 ### .llms()
 
-Writes an [`llms.txt`](https://llmstxt.org) into the root of the build folder: the curated index of your site for an agent or a tool pointed at it, such as a coding agent or an MCP server reading your docs. It is not search optimisation. No search or answer engine documents reading the file, Google says its AI features need no "AI text files", and studies of hundreds of thousands of sites found no link between having one and being cited (2026). AI search finds a kiss site the way search does, through its indexable HTML. It is `.sitemap()`'s sibling — same registry, same titles, a different reader — so the two can never drift apart. Where the sitemap lists each page, `llms.txt` links each page's Markdown copy (see **Markdown copies for agents** below), which is what the llmstxt.org spec asks its links to point at. It needs `siteUrl`, a `title` and a `summary`; without any of them it logs an error and skips the file rather than throwing.
+Writes an [`llms.txt`](https://llmstxt.org) into the root of the build folder: the curated index of your site for an agent or a tool pointed at it, such as a coding agent or an MCP server reading your docs. It is not search optimisation. No search or answer engine documents reading the file, Google says its AI features need no "AI text files", and studies of hundreds of thousands of sites found no link between having one and being cited (2026). AI search finds a kiss site the way search does, through its indexable HTML. It is `.sitemap()`'s sibling — same registry, same titles, a different reader — so the two can never drift apart. Where the sitemap lists each page, `llms.txt` links each page's Markdown copy (see **Markdown copies for agents** below), which is what the llmstxt.org spec asks its links to point at. It needs `siteUrl`, a `title` and a `summary`; without any of them, or if the file cannot be written, the build fails (`<llms>` in `err.failures`).
 
 ```js
 kiss
@@ -799,7 +819,7 @@ kiss.page({ view: 'thanks.hbs', config: { markdownCopies: false } }) // none for
 
 ### .feed()
 
-Writes an RSS 2.0 feed into the root of the build folder: the third file derived from the same registry as `sitemap.xml` and `llms.txt`, so an item can never name a URL your site does not serve. One `<item>` per page that carries a date, newest first. It needs `siteUrl` and a `title`; without either it logs an error and skips the file rather than throwing.
+Writes an RSS 2.0 feed into the root of the build folder: the third file derived from the same registry as `sitemap.xml` and `llms.txt`, so an item can never name a URL your site does not serve. One `<item>` per page that carries a date, newest first. It needs `siteUrl` and a `title`; without either, or if the file cannot be written, the build fails (`<feed>` in `err.failures`).
 
 ```js
 kiss
@@ -866,7 +886,7 @@ Sitemap: https://example.com/sitemap.xml
 
 **That last line is the point.** The block above it is boilerplate you can hand-write — and probably have. What a hand-written `robots.txt` cannot do is stay in step with the build: this one is produced by the same `toAbsoluteUrl` join as every `<loc>`, so the sitemap a crawler is pointed at is character-for-character the one `.sitemap()` wrote, and it moves with [`links.trailingSlash`](#host-url-policy). It is emitted **only when this build calls `.sitemap()`** — advertising a `sitemap.xml` that was never written is a fetch error in every crawler that reads the line.
 
-Same lifecycle as `.sitemap()`, `.llms()` and `.feed()`: chainable, callable before or after `.generate()`, callable on either side of `.sitemap()` (both give the same file), re-run by a watch rebuild. A write failure is logged and skipped — this is discovery, like the sitemap, not the redirects case where a missing file 404s a reader who already has the link.
+Same lifecycle as `.sitemap()`, `.llms()` and `.feed()`: chainable, callable before or after `.generate()`, callable on either side of `.sitemap()` (both give the same file), re-run by a watch rebuild. A `robots.txt` that cannot be written fails the build (`<robots>` in `err.failures`), like the other three.
 
 ```js
 kiss.robots({
@@ -1031,7 +1051,7 @@ The target is the page's canonical path — `/`, `/courses/`, `/about` — the s
 
 On a `.pages()` fan-out the aliases belong to **each record**, never to the registration: `.pages({ aliases: [...] })` is not broadcast over the fan-out, because one source path redirecting to N different pages is not a redirect. Put them in the model item. A page with `generate: false` contributes none — there would be nothing at the other end.
 
-A site with no aliases writes **no file at all**, not an empty one and not an empty IR, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone. An alias is one path: one with a space or a line break inside it is dropped, because the file is space-separated columns and one rule per line. And if the file cannot be written the build fails, the way a page that cannot be written fails it — a site published without its redirects is a site whose old URLs 404.
+A site with no aliases writes **no file at all**, not an empty one and not an empty IR, so a hand-written `_redirects` you keep in `src/assets/` is copied into the build and left alone. An alias is one plain path, and a character kiss does not know to be plain is refused: letters, digits, `- . _ ~`, a `%XX` escape, `/`, `$ & ' , ; =`, a `:` inside a segment (`/a:b`) and any non-ASCII letter (`/café`) are kept. A space or a line break is dropped, because the file is space-separated columns and one rule per line; so is anything a host reads as pattern syntax (`*`, `{a,b}`, `[a-z]`, `(x)`, `+`, `!`, `@`, `?` and a segment starting with `:` such as `/blog/:slug`), and a bare query or fragment (`?utm=1`). The build warns, naming the alias and the page, and `report().redirects.dropped` lists each as `{ alias, page, reason }` with `reason` one of `whitespace`, `pattern` or `query-only` (`kiss-ssg check --summary` prints one `alias dropped:` line for each). And if the file cannot be written the build fails, the way a page that cannot be written fails it — a site published without its redirects is a site whose old URLs 404.
 
 **Three findings ride along**, all advisory and all in `report().redirects` (`{ file, aliases, removed, collisions, moved, rules, json, formats, files }` — `formats` is the list that ran, `file` is the first host file, `files` is the complete and authoritative list, or `null` when there is nothing to say — no alias anywhere in the site, no removal and no move):
 
@@ -1675,7 +1695,7 @@ try {
 
 A bad model is a build failure too: a `.json` file that is not there (`Model not found: <file>`), a model folder with no `.json` in it (`Model folder empty or missing: <folder>`, which fails a whole `.pages()` registration) and a URL model that cannot be fetched each fail that page, named by its view in `err.failures`, one failure per page, while the rest of the site still builds. A bad controller is a build failure as well: a controller that throws, one whose file is missing, one whose module does not export a function, and a `controller` option of an unrecognised type all fail that page and reject `.complete()`, rather than shipping a page built from un-controlled options. In a `.pages()` fan-out that failure is scoped to the one bad item: the rest of the items are still built, and each bad one is reported separately as `<view> [item N: <slug>]` (there is no output path to name it by). A missing or misspelled view file is a build failure too. So is an error thrown by a `.generate()` or `.sitemap()` callback — it is reported as `<generate callback>` / `<sitemap callback>` in `err.failures`. In `dev: true`, so is a dev server that cannot bind `config.port` (`Dev server could not bind 127.0.0.1:3001 (EADDRINUSE): the site is not being served`) — reported once, as `<dev server>` in `err.failures`; the watcher and live reload are stopped with it, so the process can exit once you have handled the rejection. A clash on `livereloadPort` is different: live reload is optional, so it is logged and switched off while the site keeps being served. `.complete()` reports a build's failures once: a second call in the same build resolves rather than rejecting again.
 
-The rejection's message is `N build failure(s): <buildTo paths>`: output paths, not views, since a `.pages()` fan-out gives every failed entry the same view. An entry with no output path, such as a failing model, controller or callback, is named by `view` instead, and so is any `<pseudo-view>` even when it has a path. Two more pseudo-views: a stylesheet that will not compile is `<sass: <file>>` (it used to be logged in red and dropped, so a site shipped with no CSS on a green build and a passing `check`), and a redirects file that cannot be written is `<redirects>`, a custom `redirects.format` writer that throws included, because a site published without its redirects is a site whose old URLs 404. A `sitemap.xml`, `llms.txt` or feed write failure is only logged.
+The rejection's message is `N build failure(s): <buildTo paths>`: output paths, not views, since a `.pages()` fan-out gives every failed entry the same view. An entry with no output path, such as a failing model, controller or callback, is named by `view` instead, and so is any `<pseudo-view>` even when it has a path. Two more pseudo-views: a stylesheet that will not compile is `<sass: <file>>` (it used to be logged in red and dropped, so a site shipped with no CSS on a green build and a passing `check`), and a redirects file that cannot be written is `<redirects>`, a custom `redirects.format` writer that throws included, because a site published without its redirects is a site whose old URLs 404. An output the build asked for (`.sitemap()`, `.llms()`, `.feed()`, `.robots()`) that cannot be written, or is missing `siteUrl`, `title` or `summary`, is `<sitemap>`, `<llms>`, `<feed>` or `<robots>`.
 
 In a normal build `.generate()` minifies HTML with `html-minifier-terser`, which also runs **Terser over every inline `<script>` and clean-css over every inline `<style>`** and drops empty attributes, so `class=""` is not in the output and a syntax error in an inline script surfaces at build time rather than in the browser. Comments go too. Under `dev: true` minification is skipped altogether, so dev output keeps its comments and whitespace and a dev build never loads the minifier. **So a kiss build will never diff clean against output from a generator that does not minify**: when migrating a site onto kiss, normalise both sides (drop comments, collapse inter-tag whitespace) before comparing, or every page reads as dozens of changed lines that are all `style="margin-top: 25px;"` becoming `style="margin-top:25px"`.
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server. It waits for a rebuild that is already running to finish, so once it resolves nothing more is written and it is safe to clean or deploy the build folder.
@@ -2238,16 +2258,20 @@ A relative file path is resolved against `process.cwd()` — not the assets fold
 
 ```handlebars
 <nav>
-  <a class='{{#isActive this href="/about"}}{{active}}{{/isActive}}' href='/about'
-    >About</a
-  >
+  {{#isActive this href=(link "about")}}<a
+      class='{{active}}'
+      href='{{href}}'
+    >About</a>{{/isActive}}
   {{#each config.nav}}
-    <a class='{{#isActive .. href=href}}{{active}}{{/isActive}}' href='{{href}}'
-      >{{label}}</a
-    >
+    {{#isActive .. href=(link id)}}<a
+        class='{{active}}'
+        href='{{href}}'
+      >{{label}}</a>{{/isActive}}
   {{/each}}
 </nav>
 ```
+
+Name the pages by id and let `link` turn each into the served path once: `isActive` compares that path with the page's own and hands it back as `{{href}}`, so the anchor goes inside the block and never carries a typed path (`config.nav` here is `[{ id: 'blog', label: 'Blog' }, …]`). A literal `href="/about"` is a guess about `extensionLess`, `path` and `slug`, and nothing checks it.
 
 Hash options: `href` (the link's path), `active` (the class name rendered as `{{active}}` inside the block on a match — default `'active'`), `folderMatch` (default `false` — when `true`, also matches pages below `href`, so `href="/blog"` matches `/blog/post-1` too). `href` and the page's own URL are both reduced to the same key first (no leading/trailing slash, no extension, no trailing `index` segment), so the same `href="/about"` matches whether the page built to `about.html` or, with `extensionLess: true`, `about/index.html` — and `/about` and `/about/` are always equivalent. An empty `href` under `folderMatch` matches the home page only.
 
@@ -2255,12 +2279,11 @@ Beside `{{active}}`, the block has `{{@current}}`: `true` only when the page is 
 
 ```handlebars
 {{#each config.nav}}
-  <a
-    href='{{href}}'
-    {{#isActive .. href=href folderMatch=true}}{{#if active}}
-        class='{{active}}'{{/if}}{{#if @current}}
-        aria-current='page'{{/if}}{{/isActive}}
-  >{{label}}</a>
+  {{#isActive .. href=(link id) folderMatch=true}}<a
+      href='{{href}}'
+      {{#if active}}class='{{active}}'{{/if}}
+      {{#if @current}}aria-current='page'{{/if}}
+    >{{label}}</a>{{/isActive}}
 {{/each}}
 ```
 

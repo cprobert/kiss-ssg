@@ -102,6 +102,104 @@ describe('normaliseAlias', () => {
     ).toBe('')
   })
 
+  it('drops an alias a host would read as a pattern, and keeps the look-alikes', () => {
+    // An alias is one old path. Netlify reads `*` and a `:name` segment as
+    // patterns, Firebase reads `*` and `**` as globs, so a fetched record
+    // carrying one would write a site-wide rule.
+    for (const alias of ['/*', '/**', '/old/*', '/:x', '/blog/:slug']) {
+      expect(normaliseAlias(alias), alias).toBeNull()
+    }
+    expect(normaliseAlias('/old-page')).toBe('/old-page')
+    expect(normaliseAlias('/a:b')).toBe('/a:b')
+    expect(normaliseAlias('/caf%C3%A9')).toBe('/caf%C3%A9')
+  })
+
+  // The class, not the case: the alias reaches four host formats unchanged and
+  // each reads more characters as pattern syntax than `*` and `:x` — Firebase
+  // globs, Vercel path-to-regexp, Netlify. So the guard is an allow-list of the
+  // characters no host reads as a pattern, and everything else is refused.
+  it('keeps only plain path characters: every other shape is refused', () => {
+    for (const alias of [
+      '/{a,b}',
+      '/[a-z]',
+      '/(x)',
+      '/a+',
+      '/a!',
+      '/@x',
+      '/a^',
+      '/a|b',
+      '/a\\b',
+      '/a"b',
+      '/a\u0000b',
+      '/a`b',
+      '/a<b>',
+      '/a%zz',
+      '/a%',
+      '/@(a|b)',
+      '/+(a)',
+      '/!(a)',
+    ]) {
+      expect(normaliseAlias(alias), JSON.stringify(alias)).toBeNull()
+    }
+    for (const alias of [
+      '/old-page',
+      '/a:b',
+      '/a.b_c~d',
+      '/caf%C3%A9',
+      '/café',
+      '/日本',
+      "/a$b&c'd,e;f=g",
+      '/a/b/',
+    ]) {
+      expect(normaliseAlias(alias), alias).toBe(alias)
+    }
+  })
+
+  it('names a dropped alias and its page in one warning from writeRedirects', async () => {
+    temp = await fs.mkdtemp(path.join(os.tmpdir(), 'kiss-redirects-'))
+    const buildDir = temp.replace(/\\/g, '/')
+    const warnings = []
+    const logger = { ...silentLogger, warn: (m) => warnings.push(m) }
+    const result = await writeRedirects(
+      [
+        entry(`${buildDir}/about.html`, {
+          view: 'about.hbs',
+          aliases: ['/old', '/team/*', '/a b', '?utm=1', ''],
+        }),
+      ],
+      { config: { folders: { build: buildDir } }, logger },
+    )
+    expect(result.rules).toEqual([{ from: '/old', to: '/about' }])
+    // The wording follows the reason, so a query-only alias is not told it was
+    // a pattern or had whitespace in it.
+    expect(warnings).toEqual([
+      'Alias "/team/*" on about.hbs dropped: an alias is one old path, and this one has characters a host reads as a pattern',
+      'Alias "/a b" on about.hbs dropped: an alias is one old path, and this one has whitespace in it',
+      'Alias "?utm=1" on about.hbs dropped: an alias is a path, and this one is only a query or a fragment',
+    ])
+  })
+
+  it('hands onDrop the reason, as one of a fixed set of codes', () => {
+    const dropped = []
+    collectAliases(
+      [
+        entry('./public/x.html', {
+          view: 'x.hbs',
+          aliases: ['/a b', '/{a,b}', '#top', '', '/ok'],
+        }),
+      ],
+      {
+        buildDir: './public',
+        onDrop: (alias, e, reason) => dropped.push([alias, reason]),
+      },
+    )
+    expect(dropped).toEqual([
+      ['/a b', 'whitespace'],
+      ['/{a,b}', 'pattern'],
+      ['#top', 'query-only'],
+    ])
+  })
+
   it('drops an alias with no path in it at all', () => {
     expect(normaliseAlias('')).toBeNull()
     expect(normaliseAlias('   ')).toBeNull()
@@ -653,6 +751,19 @@ describe('the redirect formats', () => {
       { source: '/old', destination: '/courses/', permanent: true },
       { source: '/team', destination: '/about', permanent: true },
     ])
+  })
+
+  it('escapes a colon in a Vercel source, which path-to-regexp reads as a parameter anywhere', () => {
+    // `/wiki/Category:News` is a plain path to Netlify, Firebase and Apache, but
+    // Vercel's matcher reads `:News` as a parameter, so the rule would also
+    // catch `/wiki/Category:Sports`. `\:` is its literal colon.
+    const payload = JSON.parse(
+      renderVercelRedirects([{ from: '/wiki/Category:News', to: '/news/' }]),
+    )
+    expect(payload.redirects[0].source).toBe('/wiki/Category\\:News')
+    expect(
+      renderRedirects([{ from: '/wiki/Category:News', to: '/news/' }]),
+    ).toContain('/wiki/Category:News /news/')
   })
 })
 

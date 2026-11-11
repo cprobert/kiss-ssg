@@ -362,6 +362,29 @@ describe('createPipeline() watch processes', () => {
     ).toHaveLength(1)
   })
 
+  it('logs the program a watch command runs, never its arguments', async () => {
+    pipeline = createPipeline({
+      steps: [
+        {
+          name: 'w',
+          run: run('1'),
+          watch: `${forever} --token=ghp_SECRET123`,
+        },
+      ],
+      logger,
+      dev: true,
+    })
+
+    await pipeline.run()
+
+    const line = lines(logger.info).find((l) =>
+      l.startsWith('pipeline: watching'),
+    )
+    expect(line).toBe(`pipeline: watching with ${node} [w]`)
+    expect(line).not.toContain('SECRET')
+    expect(line).not.toContain('--token')
+  })
+
   it('logs a watch process that exits by itself, without failing anything', async () => {
     pipeline = createPipeline({
       steps: [{ name: 'w', run: run('1'), watch: run('process.exit(4)') }],

@@ -3,6 +3,69 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.15.0 — 2026-11-11
+
+Clearing the ground for 3.0. A build that asked for a sitemap, feed, `robots.txt` or
+`llms.txt` and did not get one now fails instead of passing. Hashed JavaScript and CSS
+that import each other keep working. An alias a host would read as a pattern is refused
+and reported. Read the upgrading notes: a build that passes today can fail on the first.
+
+- **An output the build asked for that cannot be written fails the build.** A build that
+  called `.sitemap()`, `.feed()`, `.robots()` or `.llms()` reported `ok: true` when the
+  file could not be written, or when it was skipped for a missing `siteUrl`, feed `title`
+  or `llms` `summary`: one red log line, and `report()` showed the output as `null`, as if
+  it had never been asked for. Each now goes into the build's failures (`<sitemap>`,
+  `<feed>`, `<robots>`, `<llms>`), so `complete()` rejects, `report().ok` is false and
+  `kiss-ssg check` exits 1, with a message naming what is missing and how to fix it.
+- **A hashed file that another asset imports keeps its name.** Under `assets.hash`, a
+  `.js` file's `import './util.js'` and a stylesheet's `@import "other.css"` named files
+  the build had renamed, so the module or the imported rules 404'd, and no check noticed.
+  A `.js` or `.css` file another hashed asset imports by path (`import … from`,
+  `export … from`, `import()`, `@import`) is now copied under its own name, so the import
+  resolves; one info line names them. GUIDE.md § Assets says which imports are seen: within
+  one assets folder, relative or from the site root.
+- **An alias is one old path, never a pattern.** An alias is kept only if every character
+  is a plain path character. `*`, `:name` at the start of a segment, `{a,b}`, `[…]`, `(…)`,
+  `+`, `!` and `@` are read as patterns by Netlify, Firebase, Vercel or `.htaccess`, and an
+  alias carrying one (from a fetched record, say) could write a site-wide rule. A dropped
+  alias is now listed in `report().redirects.dropped` with its page and a reason
+  (`whitespace`, `pattern`, `query-only`), shown by `check --summary` and recorded in
+  `last-build.json`; before, it was dropped with no word. A colon inside a segment
+  (`/wiki/Category:News`) is still a plain path, and `redirects.vercel.json` now escapes it
+  (`\:`), because Vercel reads `:News` as a parameter anywhere in a path.
+- **A URL model fetched with `fetch.headers` never sends them to another origin.** A
+  redirect to the same origin is followed (at most five); a redirect to another origin
+  fails that model, naming both origins, and is not retried. With no custom headers,
+  redirects are followed as before.
+- **`kiss-ssg check` beside a running build no longer deletes that build's staging
+  folder.** The sweep of leftover `<build>.kiss-staging-…` folders spares one whose
+  process is still running, and says so.
+- **`sitemap.xml` escapes its values**, so a `siteUrl` with `&` writes valid XML.
+- **An asset pipeline's `watch` line names the program, never its arguments**, where a
+  token might sit.
+- **Releases are staged by CI with npm provenance.** From this version, a release is built
+  from its tagged commit by a workflow, staged on npm, and approved by the maintainer with
+  2FA; npm attaches a provenance attestation.
+
+Measured: three real sites (20, 7 and 11 pages) built from the packed 2.14.0 and from
+this release give the same files, byte for byte; none relied on a silently skipped output.
+
+### Upgrading
+
+- **If your build calls `.sitemap()`, `.feed()` or `.llms()`, check it still passes.**
+  One without `siteUrl` in the Kiss config, a `.feed()` without `title`, or a `.llms()`
+  without `title` or `summary` now fails the build where it passed with an error line.
+  Set the missing value, or remove the call if you did not want the file.
+- **Run `npx kiss-ssg check <script> --summary` and look for `alias dropped:`.** An alias
+  with a pattern character, whitespace or only a query in it is now listed there. Each one
+  was already dropped before, without a word: replace it with the plain old path, one per
+  alias, or remove it.
+- **A file your hashed JavaScript or CSS imports is now served under its plain name**, with
+  ordinary cache headers rather than a year's. Imports that were broken now work; nothing
+  to change. Keep a module graph inside one assets folder, imported relatively.
+- **A URL model with `fetch.headers` whose endpoint redirects to another origin now
+  fails.** Fetch the final URL directly, or remove the header.
+
 ## 2.14.0 — 2026-11-08
 
 The purge keeps Tailwind's classes, and three changes a client site asked for. A site

@@ -146,7 +146,7 @@ describe('.llms()', () => {
     expect(keys.indexOf('llms')).toBe(keys.indexOf('pipeline') + 1)
   })
 
-  it('logs an error and skips without a siteUrl, leaving the build ok', async () => {
+  it('logs an error and fails the build without a siteUrl', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'x' })
     const errors = []
     kiss = new Kiss({
@@ -156,9 +156,9 @@ describe('.llms()', () => {
       .scan()
       .generate()
       .llms({ title: 'T', summary: 'S' })
-    await kiss.complete()
+    await expect(kiss.complete()).rejects.toThrow('<llms>')
     expect(await site.exists('public/llms.txt')).toBe(false)
-    expect(kiss.report().ok).toBe(true)
+    expect(kiss.report().ok).toBe(false)
     expect(kiss.report().llms).toBeNull()
     expect(errors.join('\n')).toContain('config.siteUrl is not set')
   })

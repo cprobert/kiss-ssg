@@ -245,11 +245,12 @@ Node 22.23.4 or newer. kiss-ssg is an ES module (`import Kiss from 'kiss-ssg'`);
 git clone https://github.com/cprobert/kiss-ssg.git && cd kiss-ssg
 npm install
 npm test             # Vitest, single run
+npx vitest run test/unit/audit.test.js   # one test file, about a second; add -t <name> for one test
 npm run gates        # test, lint, typecheck, format and pack: what CI runs
 npm run dev          # the docs site, live at http://127.0.0.1:3001 (Ctrl-C to stop)
 ```
 
-The engine is `lib/`, one responsibility per file, each with a unit test and a note in `AIKB/`. [`CLAUDE.md`](CLAUDE.md) is how the repo is run: the design philosophy, the branch ritual, and the rules the gates enforce.
+The engine is `lib/`, one responsibility per file, each with a unit test and a note in `AIKB/`. [`CLAUDE.md`](CLAUDE.md) is how the repo is run: the design philosophy, the branch ritual, and the rules the gates enforce. [`CONTRIBUTING.md`](CONTRIBUTING.md) is what a change must carry: a checklist each for a built-in helper, a config key and an audit check.
 
 ## Why kiss?
 

@@ -103,6 +103,7 @@ describe('_redirects, written from page aliases', () => {
       json: `${site.build}/redirects.json`,
       formats: ['netlify'],
       files: [`${site.build}/redirects.json`, `${site.build}/_redirects`],
+      dropped: [],
     })
   })
 
@@ -488,6 +489,7 @@ describe('the removed-without-a-redirect finding', () => {
       json: null,
       formats: ['netlify'],
       files: [],
+      dropped: [],
     })
     // The record is read, not `isRecorded()` — which `_buildAikb()` has just
     // made true one line earlier on a site's very first record.
@@ -508,6 +510,7 @@ describe('the removed-without-a-redirect finding', () => {
       json: `${site.build}/redirects.json`,
       formats: ['netlify'],
       files: [`${site.build}/redirects.json`, `${site.build}/_redirects`],
+      dropped: [],
     })
     expect(await site.read('public/_redirects')).toBe(
       '/old-post /new-post 301\n',
@@ -605,6 +608,7 @@ describe('the moved-without-a-redirect finding', () => {
       json: null,
       formats: ['netlify'],
       files: [],
+      dropped: [],
     })
     // The notice carries the fix, because the fix is one line of the page's
     // own registration.
@@ -624,6 +628,32 @@ describe('the moved-without-a-redirect finding', () => {
     expect(await site.read('public/_redirects')).toBe(
       '/about /company/about 301\n',
     )
+  })
+
+  it('lists a dropped alias in the report, with its page and a reason, even when no rule survives', async () => {
+    site = await makeSite({ 'src/pages/about.hbs': 'about' })
+    const warns = []
+    const kiss = track(
+      new Kiss({
+        folders: site.folders,
+        logger: { ...silentLogger, warn: (m) => warns.push(String(m)) },
+        redirects: { format: 'netlify' },
+      }),
+    )
+    kiss.page({
+      view: 'about.hbs',
+      aliases: ['/team/*', '/a b', '?utm=1', ''],
+    })
+    await kiss.generate().complete()
+
+    // Not `null`: the dropped aliases are the only thing the block has to say.
+    expect(kiss.report().redirects.aliases).toBe(0)
+    expect(kiss.report().redirects.dropped).toEqual([
+      { alias: '/team/*', page: 'about.hbs', reason: 'pattern' },
+      { alias: '/a b', page: 'about.hbs', reason: 'whitespace' },
+      { alias: '?utm=1', page: 'about.hbs', reason: 'query-only' },
+    ])
+    expect(warns).toHaveLength(3)
   })
 
   it('reports a move even when the site has no aliases at all', async () => {

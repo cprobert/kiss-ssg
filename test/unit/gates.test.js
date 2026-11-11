@@ -241,6 +241,15 @@ describe('changedFiles', () => {
     })
   })
 
+  it('lists a deleted file only when the caller asks for deletions in its filter', () => {
+    // base.js is on main, so deleting it is a deletion against the merge base.
+    git('rm', '-q', 'base.js')
+    expect(changedFiles('main', repo, env).files).not.toContain('base.js')
+    expect(changedFiles('main', repo, env, 'ACMRD').files).toContain('base.js')
+    git('reset', '-q', 'HEAD', 'base.js')
+    git('checkout', '--', 'base.js')
+  })
+
   // Round 8: a worktree nested inside the checkout (Claude Code puts them in
   // .claude/worktrees/) is another repository, and git lists it as one
   // directory, so prettier checked every file of the other worktree. And

@@ -77,6 +77,12 @@ Go through the success criteria one at a time. For each, state **met / partial /
 
   **Always bound an example with `timeout`.** Dev-mode examples and `node docs` start a livereload server and never exit on their own — running one bare hangs the session (`AIKB/testing.md` § Gotchas). Naming the artefact is this step's job; getting a human to look at it is **Step 4**, which is a stop rather than a bullet.
 
+- **A regression test was added** → run it against the base, once per new test file, and paste the line it prints into this pulse's entry. Exit 0 means it failed there, which is what "seen to fail" requires; exit 1 means it passed at the base and proves nothing:
+
+  ```bash
+  node scripts/red-first.mjs test/unit/<new test>.test.js
+  ```
+
 - **The intent has a fleet criterion** (a real site built from the base and from the branch, `/branch-open` Step 3) → run it through the script, after committing, because it packs refs and never the working tree. It prints lines to paste into Step 7's entry and exits 1 when anything differs; each difference gets explained there. Name the site the criterion names:
 
   ```bash
@@ -112,6 +118,14 @@ The pulse continues either way. This is a stop for an answer, not a gate that bl
 ### Step 5 — Drift check
 
 Compare the trajectory against the **Non-goals**, the **Objective**, and the declared **Impact surface**. A branch opened as "engine internals" that has started editing `llms.txt` has moved surface — that is a real signal, not a formality, because it changes the version bump at close.
+
+Then run the scope check, which lists every file the branch changed that the session file's `scope:` line does not cover:
+
+```bash
+node scripts/scope-check.mjs
+```
+
+Show its result to the operator, whatever it says. It exits 0 with nothing listed when everything is in scope, or when the file declares no `scope:` (it says so on stderr), 1 with the files outside the scope listed, and 2 when it could not run (no session file for the branch, or more than one). A listed file is either drift to undo or a widening of the scope to record: widen the `scope:` line and write the widening as an Amendment, never silently.
 
 If the remit has _legitimately_ expanded (adjacent, shares the theme), append a dated entry to the intent file's `### Amendments` list — the one sanctioned channel for scope drift. If it looks like scope **creep** (a genuinely different subsystem or objective), say so and recommend stopping or deferring; never absorb it silently, and never spawn a new branch on initiative (the operator's call).
 

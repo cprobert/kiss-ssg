@@ -167,7 +167,7 @@ describe('.feed()', () => {
     expect(seen[0]).toBe(await site.read('public/feed.xml'))
   })
 
-  it('logs an error and skips without a siteUrl, leaving the build ok', async () => {
+  it('logs an error and fails the build without a siteUrl', async () => {
     site = await makeSite({ 'src/pages/index.hbs': 'x' })
     const errors = []
     kiss = new Kiss({
@@ -177,10 +177,10 @@ describe('.feed()', () => {
       .scan()
       .generate()
       .feed({ title: 'T' })
-    await kiss.complete()
+    await expect(kiss.complete()).rejects.toThrow('<feed>')
 
     expect(await site.exists('public/feed.xml')).toBe(false)
-    expect(kiss.report().ok).toBe(true)
+    expect(kiss.report().ok).toBe(false)
     expect(kiss.report().feed).toBeNull()
     expect(errors.join('\n')).toContain('config.siteUrl is not set')
   })

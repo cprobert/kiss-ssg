@@ -42,9 +42,31 @@ export function canonicalPathFor(buildTo: string, buildDir: string, { trailingSl
  * is the one who knows which one used to be linked.
  *
  * @param {unknown} alias
- * @returns {string|null} the normalised path, or `null` for an empty one
+ * @returns {string|null} the normalised path, or `null` for an empty one or one
+ * a host could read as anything but one old path
  */
 export function normaliseAlias(alias: unknown): string | null;
+/**
+ * The sentence a dropped alias gets, derived from its reason.
+ *
+ * @param {string} alias
+ * @param {string} page how the build names the page (`droppedAliasPage`)
+ * @param {AliasDropReason} reason
+ * @returns {string}
+ */
+export function describeDroppedAlias(alias: string, page: string, reason: AliasDropReason): string;
+/**
+ * How a dropped alias names its page: the view, else the output path.
+ *
+ * @param {{ buildTo: string, page: { options: Record<string, any> } }} entry
+ * @returns {string}
+ */
+export function droppedAliasPage(entry: {
+    buildTo: string;
+    page: {
+        options: Record<string, any>;
+    };
+}): string;
 /**
  * Every alias the site declares, as rules, sorted and deduplicated.
  *
@@ -60,6 +82,7 @@ export function normaliseAlias(alias: unknown): string | null;
  * @param {Object} [context]
  * @param {string} [context.buildDir] the folder the pages were written into
  * @param {boolean} [context.trailingSlash] `config.links.trailingSlash`: keep a directory index's trailing `/` in the emitted URL
+ * @param {(alias: string, entry: any, reason: AliasDropReason) => void} [context.onDrop] called for each non-empty alias `normaliseAlias` refused, with why
  * @returns {RedirectRule[]} sorted by `from`, then `to`
  */
 export function collectAliases(stack?: {
@@ -67,9 +90,10 @@ export function collectAliases(stack?: {
     page: {
         options: Record<string, any>;
     };
-}[], { buildDir, trailingSlash }?: {
+}[], { buildDir, trailingSlash, onDrop }?: {
     buildDir?: string;
     trailingSlash?: boolean;
+    onDrop?: (alias: string, entry: any, reason: AliasDropReason) => void;
 }): RedirectRule[];
 /**
  * The `_redirects` file's text — the Netlify and Cloudflare Pages format, one
@@ -388,3 +412,8 @@ export type RedirectWriteResult = {
      */
     unset: boolean;
 };
+/**
+ * Why an alias was refused. A fixed set, because the report carries the code
+ * and the warning's wording is derived from it.
+ */
+export type AliasDropReason = "whitespace" | "pattern" | "query-only";

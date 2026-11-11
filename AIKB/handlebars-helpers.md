@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `env`, `scormBridge`, and the six consent helpers) onto a given Handlebars environment. `lookup` deliberately overrides Handlebars' own helper of that name. The roster is checked, not trusted: `test/aikb.test.js` reads every `registerHelper('<name>'` out of the module and fails unless that name is documented here and in `llms.txt`.
+Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`, `stringify`, `lookup`, `isActive`, `canonical`, `absUrl`, `asset`, `link`, `image`, `embed`, `env`, `scormBridge`, and the six consent helpers) onto a given Handlebars environment. `lookup` deliberately overrides Handlebars' own helper of that name. The roster is checked, not trusted: `test/aikb.test.js` reads every `registerHelper('<name>'` out of the module and fails unless that name is documented here and in `llms.txt`.
 
 ## Public interface
 

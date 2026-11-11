@@ -1,6 +1,7 @@
 import path from 'node:path'
 import {
   escapeRegExp,
+  escapeXml,
   isInside,
   isUrlModel,
   redactUrl,
@@ -23,6 +24,14 @@ describe('escapeRegExp', () => {
     const text = String.raw`a.b*c+d?e^f$g{h}i(j)k|l[m]n\o/p-q`
     expect(new RegExp(`^${escapeRegExp(text)}$`).test(text)).toBe(true)
     expect(new RegExp(escapeRegExp('a*')).test('aaa')).toBe(false)
+  })
+})
+
+describe('escapeXml', () => {
+  it('escapes the five XML special characters, & first', () => {
+    expect(escapeXml(`a&b<c>d"e'f`)).toBe('a&amp;b&lt;c&gt;d&quot;e&apos;f')
+    expect(escapeXml('&lt;')).toBe('&amp;lt;')
+    expect(escapeXml(12)).toBe('12')
   })
 })
 

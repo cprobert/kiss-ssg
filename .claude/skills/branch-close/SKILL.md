@@ -132,7 +132,7 @@ State the proposed bump type and the reason, then confirm with the operator befo
 npm version <patch, minor, major, or prerelease --preid alpha> --no-git-tag-version
 ```
 
-`--no-git-tag-version` edits `package.json` and `package-lock.json` without creating a git tag — the PR merge is the version event, and publishing is a separate deliberate act. The tag comes with that act: `npm publish`'s `postpublish` hook runs `scripts/tag-release.mjs`, which tags the published commit `v<version>` and pushes the tag, so git can say which commit a version on npm (and a plugin install of that version) came from. Never tag by hand.
+`--no-git-tag-version` edits `package.json` and `package-lock.json` without creating a git tag — the PR merge is the version event, and the release is a separate deliberate act of the operator's, after the merge: pushing the tag `v<version>` on the merged commit runs `.github/workflows/publish.yml`, which stages the version on npm for the operator to approve (`/branch-merged` gives the commands). The tag names the commit a version on npm (and a plugin install of that version) came from. Never tag or push a tag from this ritual.
 
 This version is carried by `package.json`, the marketplace manifest (`.claude-plugin/marketplace.json`) and every plugin's own `plugins/<name>/.claude-plugin/plugin.json`, and `test/unit/plugin-manifests.test.js` fails if they disagree. You do not have to edit them: npm's `version` lifecycle hook runs `scripts/sync-plugin-versions.mjs` as part of the command above — including under `--no-git-tag-version` — so the manifests move with the bump. `git add` them along with the manifest below.
 
@@ -178,6 +178,14 @@ grep -n "Eyeball:" planning/sessions/<this-branch's-file>.md
 A branch that reaches this step with a `looked` entry has had the check done at the moment it was cheap. A branch that reaches it with nothing has skipped a beat, and the report should say which.
 
 Either way the ritual continues: this is a stop for an answer, not a gate that blocks the close.
+
+### Step 5b — Scope check
+
+```bash
+node scripts/scope-check.mjs
+```
+
+Show its result to the operator. It lists every changed file the session file's `scope:` line does not cover, exiting 1 when there is one; with no `scope:` line it says it checked nothing and exits 0; it exits 2 when it could not run. Each listed file is drift to undo or a widening of the scope: widen the `scope:` line and record the widening as an Amendment in the session file, then continue. Like Step 5a, a stop for an answer, not a gate that blocks the close.
 
 ### Step 6 — Run the gates
 

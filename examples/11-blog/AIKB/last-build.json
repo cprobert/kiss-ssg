@@ -258,7 +258,8 @@
     "files": [
       "./public/redirects.json",
       "./public/_redirects"
-    ]
+    ],
+    "dropped": []
   },
   "feed": "./public/feed.xml",
   "robots": {

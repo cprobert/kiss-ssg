@@ -192,6 +192,22 @@ describe('renderSitemapXml', () => {
     expect(xml.match(/<priority>/g)).toHaveLength(1)
     expect(xml).toContain('<url>\n    <loc>a</loc>\n  </url>')
   })
+
+  it('escapes every value it writes, so a siteUrl with & stays well-formed', () => {
+    const xml = renderSitemapXml([
+      {
+        loc: 'https://example.com/a?x=1&y=2',
+        lastmod: '2026<01',
+        changefreq: 'weekly&daily',
+        priority: '0.5>',
+      },
+    ])
+    expect(xml).toContain('<loc>https://example.com/a?x=1&amp;y=2</loc>')
+    expect(xml).toContain('<lastmod>2026&lt;01</lastmod>')
+    expect(xml).toContain('<changefreq>weekly&amp;daily</changefreq>')
+    expect(xml).toContain('<priority>0.5&gt;</priority>')
+    expect(xml).not.toMatch(/&(?!amp;|lt;|gt;|quot;|apos;)/)
+  })
 })
 
 describe('writeSitemap', () => {
