@@ -18,9 +18,13 @@ describe('docs-sweep scope', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-scope-'))
   const emptyConfig = path.join(root, 'empty.gitconfig')
   fs.writeFileSync(emptyConfig, '')
+  // KISS_BASE_BRANCH too: the scope script resolves the base, and a caller
+  // that sets it would name a base these repositories do not have.
   const env = {
     ...Object.fromEntries(
-      Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+      Object.entries(process.env).filter(
+        ([key]) => !key.startsWith('GIT_') && key !== 'KISS_BASE_BRANCH',
+      ),
     ),
     GIT_CONFIG_GLOBAL: emptyConfig,
     GIT_CONFIG_NOSYSTEM: '1',

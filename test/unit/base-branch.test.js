@@ -141,9 +141,14 @@ describe('the command line', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-base-'))
   const emptyConfig = path.join(root, 'empty.gitconfig')
   fs.writeFileSync(emptyConfig, '')
+  // KISS_BASE_BRANCH too: it is the other input to the resolution these tests
+  // assert on, and a caller that sets it (publish.yml's gates did) would put
+  // an override line in front of every message checked below.
   const env = {
     ...Object.fromEntries(
-      Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+      Object.entries(process.env).filter(
+        ([key]) => !key.startsWith('GIT_') && key !== 'KISS_BASE_BRANCH',
+      ),
     ),
     GIT_CONFIG_GLOBAL: emptyConfig,
     GIT_CONFIG_NOSYSTEM: '1',
