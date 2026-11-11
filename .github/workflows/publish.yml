@@ -6,6 +6,11 @@ name: publish
 # connection may do (no allowed action is ticked on npmjs.com): nothing is
 # public until the operator approves the staged version with 2FA, which OIDC
 # cannot do. The attestation is automatic for a public repository.
+#
+# Two jobs, so the OIDC token exists only where nothing but npm runs: the
+# gates job installs the dependencies and runs their code with no id-token;
+# the stage job installs nothing and holds the token for one command.
+# Neither uses a dependency cache, which other workflows could have written.
 on:
   push:
     tags: ['v*']
@@ -14,7 +19,33 @@ permissions:
   contents: read
 
 jobs:
+  gates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The format gate diffs against the base branch, which needs history.
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Tag matches package.json
+        run: node scripts/tag-release.mjs --check
+      - run: npm ci
+      # Chromium for the browser suite, as in ci.yml: under CI a missing
+      # browser fails that suite.
+      - name: Install Chromium
+        run: npx playwright-core install --with-deps chromium
+      # A tag checkout is a detached HEAD, so the base the format gate diffs
+      # against is named rather than worked out.
+      - run: npm run gates
+        env:
+          KISS_BASE_BRANCH: main
+
   stage:
+    needs: gates
     runs-on: ubuntu-latest
     # The trusted-publishing connection names this environment, and the
     # environment's deployment rule allows only tags v*.
@@ -25,24 +56,17 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # The format gate diffs against the base branch, which needs history.
-          fetch-depth: 0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-          cache: npm
       # Trusted publishing needs npm 11.5.1 and staged publishing 11.15.0;
       # Node 22 bundles npm 10. 11.21.2 is the newest 11.x (npm view, 2026-11-11).
       - name: Install npm 11.21.2
         run: npm install -g npm@11.21.2
-      - run: npm ci
       - name: Tag matches package.json
         run: node scripts/tag-release.mjs --check
-      # Chromium for the browser suite, as in ci.yml: under CI a missing
-      # browser fails that suite.
-      - name: Install Chromium
-        run: npx playwright-core install --with-deps chromium
-      - run: npm run gates
+      # No `npm ci`: packing needs no dependencies, so no dependency code runs
+      # beside the token. --ignore-scripts skips prepublishOnly (the gates job
+      # ran them on this commit) and postpublish (which tags from a laptop).
       - name: Stage the version
-        run: npm stage publish
+        run: npm stage publish --ignore-scripts
