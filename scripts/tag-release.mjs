@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Tags the commit a version was published from, and pushes the tag.
+// Tags the commit a version was published from, and pushes the tag. Since
+// the release moved to `publish.yml`, the push is what starts it, and
+// `/kiss-publish` runs this once `release-check.mjs` has passed.
 //
 // The bump does not tag (`npm version … --no-git-tag-version` in
 // `/branch-close`: the PR merge is the version event) and nothing else did, so
@@ -68,41 +70,54 @@ export function checkReleaseTag({ ref, version }) {
 }
 
 /**
- * The git commands that publish this version's tag, or none when the tag
- * already exists — a retried `postpublish` after a failed push must not fail
- * on the tag it created the first time.
+ * The git commands that publish this version's tag on HEAD. A tag made here
+ * whose push failed is pushed, not skipped: the retry (`/kiss-publish`'s
+ * fallback, or a retried `postpublish`) must finish the release, and the old
+ * plan, which looked only at local tags, called it done. A tag on another
+ * commit, or on origin and not here, is refused: pushing it would stage
+ * whatever commit it names.
  *
- * @param {{ version: string, existingTags: string[] }} input
+ * @param {{ version: string, head: string, localTag: string|null, remoteTag: boolean }} input
+ *   `localTag` is the commit the local tag points at, or null for none.
  * @returns {{ tag: string, skip: string|null, commands: string[][] }}
  */
-export function planRelease({ version, existingTags }) {
+export function planRelease({ version, head, localTag, remoteTag }) {
   const tag = releaseTag(version)
-  if (existingTags.includes(tag))
-    return { tag, skip: `${tag} already exists`, commands: [] }
-  return {
-    tag,
-    skip: null,
-    commands: [
-      ['tag', '-a', tag, '-m', tag],
-      ['push', 'origin', tag],
-    ],
-  }
+  if (localTag && localTag !== head)
+    throw new Error(
+      `${tag} already points at ${localTag.slice(0, 7)} here, not HEAD (${head.slice(0, 7)})`,
+    )
+  if (remoteTag && !localTag)
+    throw new Error(
+      `${tag} is on origin but not here: fetch the tags and check which commit it names`,
+    )
+  if (remoteTag)
+    return {
+      tag,
+      skip: `${tag} already exists here and on origin`,
+      commands: [],
+    }
+  const push = ['push', 'origin', tag]
+  if (localTag) return { tag, skip: null, commands: [push] }
+  return { tag, skip: null, commands: [['tag', '-a', tag, '-m', tag], push] }
 }
 
 /**
- * Lists the tag, then runs the plan. `run` is handed git's arguments and
- * returns its stdout; the default runs the real thing in the repo root.
+ * Asks git where HEAD is, where a local tag points and whether origin has
+ * it, then runs the plan. `run` is handed git's arguments and returns its
+ * stdout; the default runs the real thing in the repo root.
  *
  * @param {{ version: string, run?: (args: string[]) => string }} input
  * @returns {{ tag: string, skip: string|null }}
  */
 export function tagRelease({ version, run = git }) {
   const tag = releaseTag(version)
-  const existingTags = run(['tag', '-l', tag])
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-  const plan = planRelease({ version, existingTags })
+  const head = run(['rev-parse', 'HEAD']).trim()
+  const local = run(['tag', '-l', tag]).trim() !== ''
+  const localTag = local ? run(['rev-parse', `${tag}^{commit}`]).trim() : null
+  const remoteTag =
+    run(['ls-remote', '--tags', 'origin', `refs/tags/${tag}`]).trim() !== ''
+  const plan = planRelease({ version, head, localTag, remoteTag })
   for (const args of plan.commands) run(args)
   return { tag: plan.tag, skip: plan.skip }
 }
