@@ -55,6 +55,8 @@ scope: planning/sessions/2026-11-12-kiss-publish.md, .claude/skills/kiss-publish
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-12** — criteria 1–5 met: `release-check`, `tag-release` and `skill-code-blocks` tests green (3 files, 41 tests); `red-first: test/unit/release-check.test.js failed at main (6d4fed1), 2026-11-12`; `red-first: test/unit/tag-release.test.js failed at main (6d4fed1), 2026-11-12` (8 of 17 fail there, the new planRelease/tagRelease cases); a grep of `CLAUDE.md` and every skill for `git tag -a` / `git push origin v` finds only `/kiss-publish`'s printed re-tag; the preflight on `main` refused (`tag`, `npm`, `clean`, per the Amendment). Criterion 6 partial: gates green at `0819d85`, CI on the PR not yet (no PR). That `disable-model-invocation` takes effect stays inferred. No drift: `scope-check.mjs` exit 0, nothing listed; 0 commits behind `origin/main`. **Eyeball: declined** (`.claude/skills/kiss-publish/SKILL.md`). Offer: the preflight's branch check accepts any integration branch (main, master, vN), not only the resolved base — operator: keep. Decision: ready to close.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
