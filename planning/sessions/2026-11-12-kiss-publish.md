@@ -1,7 +1,7 @@
 ---
 branch: feat/kiss-publish
 base: main
-status: open
+status: closed
 opened: 2026-11-12
 scope: planning/sessions/2026-11-12-kiss-publish.md, .claude/skills/kiss-publish/**, scripts/release-check.mjs, scripts/tag-release.mjs, test/unit/release-check.test.js, test/unit/tag-release.test.js, test/unit/skill-code-blocks.test.js, .claude/skills/branch-merged/SKILL.md, .claude/skills/branch-close/SKILL.md, CLAUDE.md, planning/history/claude-md-rules.md, package.json, package-lock.json, CHANGELOG.md, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json
 ---
@@ -60,3 +60,47 @@ scope: planning/sessions/2026-11-12-kiss-publish.md, .claude/skills/kiss-publish
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-12: /kiss-publish, the release as one operator command
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** `d0d6e8b` (`scripts/release-check.mjs`, the seven-check preflight plus `--run` for the publish run and its staging id; `scripts/tag-release.mjs` now pushes a local tag on HEAD that origin lacks), `0819d85` (`.claude/skills/kiss-publish/SKILL.md`; `CLAUDE.md`, `/branch-close` and `/branch-merged` changed to "only `/kiss-publish`, typed by the operator, pushes a release tag"). No version bump: nothing here ships in the tarball.
+
+## Reflect — what the session was
+
+**Planned**, and the shape held. The release had been done by hand twice in two days (2.15.0's failed first run on 2026-11-11, then the operator's re-tag and approval), so every step the skill encodes had been watched once, and the staging-id line `release-check --run` parses was read from a real log (run 43174286036) before the parser was written. The branch grew out of a single operator question ("Would it be possible to wrap up publishing kiss in a skill?"), named in the next message, and opened before any edit. Two things emerged rather than being planned. One was the `tag-release.mjs` retry bug: it checked only local tags, so after a failed push a re-run said "already exists" and never pushed. It was found by reading the script against the skill's "the push failed, run it again" instruction, and absorbed because the skill's promise depended on it. The other was that 2.15.0 was approved mid-branch, which changed what the preflight against `main` should say (an Amendment records it).
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing — strong.** The operator made the one decision that defined the branch, and made it against the recommendation, with a reason: Claude proposed that the skill print the tag command for the operator to run; the operator chose "Typing /kiss-publish is the release decision, so one step (fall back to ! if it doesn't work)." That changed a standing rule of the repository (no session pushes a tag) into a narrower one, and the reason is recorded in the Amendments verbatim. The `!` fallback the operator named became Step 2's refusal branch.
+
+**Verification & ownership — delegated.** The evidence is all machine evidence: red-first on both test files, the preflight run against `main` in a temporary worktree (refused on `tag`, `npm` and `clean`, as it should), `--run` reproducing the staging id read by hand, the gates, and a Codex pass over the whole branch with no findings (Codex says itself: inspection only). The one artefact no gate can judge, the skill a future session will follow when the operator types `/kiss-publish`, was offered at the pulse and **declined**. That matters more here than on a docs branch: the skill is the first instruction in this repository that tells a session to push a release tag, and its text is the only guard on that.
+
+**Claude's own verification had one miss.** The Intent recorded "`disable-model-invocation` is already used by `/branch-close` — measured, grep". It was not: the grep matched a sentence in `/branch-close`'s prose, not a frontmatter key. Claude caught it while writing the skill and corrected it in an Amendment, downgraded to **inferred**. A "measured" label on an unanchored grep is the failure CLAUDE.md's "a doc is a claim" rule exists for, and it happened in the Intent block, the one part of the file that cannot be edited afterwards.
+
+**Iteration discipline — adequate.** One pulse, after both slices had landed, rather than one per slice; for a two-commit planned branch that cost nothing. The pulse's offer, the preflight accepting any integration branch rather than only the resolved base, was put to the operator and kept.
+
+**Competency level: Assisted operator.** The framing and the against-recommendation decision were active supervision of a high order. But nothing the operator checked was an artefact: the tests, the preflight run and the review were Claude's and Codex's, and the skill that will push tags was not read. The level rises to Active supervisor once a human has read that skill, or watched its first real run.
+
+## Feedback — recommendations for next session
+
+- **Operator — read `.claude/skills/kiss-publish/SKILL.md` before the first real `/kiss-publish`, or watch that run step by step.** The real tag push and the `!` fallback have never run; the first release is the test. Read Step 2 (the refusal and failed-push branches) and Step 3 (the failure branch's printed re-tag) at least.
+- **Claude — anchor a grep that is recorded as "measured".** Search for a frontmatter key as `^disable-model-invocation:` across `*/SKILL.md`, not the bare word: an unanchored match in prose was written up as measured in an immutable Intent.
+- **Claude — don't `git stash` a branch whose new files a check needs.** The first preflight run on `main` failed with `MODULE_NOT_FOUND` because the stash had taken the untracked script with it. Commit first, then use a temporary worktree at the base and copy the scripts in; that is what worked.
+- **Process — the first `/kiss-publish` writes down what it saw.** Whether auto mode refused the push (the assumption is inferred), whether `disable-model-invocation` kept the skill out of model reach, and how long the run took to stage. Record that in that release's session log, so the inferred assumptions here become measured.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** one repo-only, operator-only skill that preflights the merged commit, pushes `v<version>` (falling back to a printed `!` command), watches `publish.yml` to the staging id, waits for the 2FA approval, and confirms the version is live.
+
+**Met in code; unproven in a live release.**
+
+- [x] `release-check.mjs` decides the preflight in tested code, every failing check named, exit 0/1/2 — `test/unit/release-check.test.js` green; `red-first: … failed at main (6d4fed1), 2026-11-12`.
+- [x] The skill exists, operator-only, code blocks pass `skill-code-blocks.test.js` — test green; that the frontmatter key takes effect is **inferred** (the body says operator-only too).
+- [x] A refused tag push prints the exact `!` command and carries on — the skill's Step 2.
+- [x] `CLAUDE.md`, `/branch-close` and `/branch-merged` agree; `/branch-merged` names `/kiss-publish` and carries no tag commands — a grep for `git tag -a` / `git push origin v` across `CLAUDE.md` and every skill finds only `/kiss-publish`'s printed re-tag.
+- [x] The preflight ran against `main` and refused — `tag` and `npm` (2.15.0 already tagged and published) and `clean` (the two copied scripts).
+- [ ] `npm run gates` passes; both CI legs pass on the PR — gates green at the close; CI on the PR runs after this commit is pushed.
+
+**What is better:** a release is one command whose checks are tested code, a failed tag push can be retried safely, and the release steps have one home instead of a copy in `/branch-merged`. **Open:** the live run, the `disable-model-invocation` effect, the unread skill, and the long `&&` re-tag line the skill prints for the operator (not checked by the code-block test, since the operator pastes it).
