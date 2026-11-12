@@ -3,6 +3,7 @@ branch: fix/publish-base-env
 base: main
 status: closed
 opened: 2026-11-11
+consolidated: 2026-11-12
 scope: planning/sessions/2026-11-11-publish-base-env.md, .github/workflows/publish.yml, test/unit/base-branch.test.js, test/unit/docs-sweep-scope.test.js, test/**, CHANGELOG.md, planning/reviews/2026-11-11-phase-0-exit.md
 ---
 

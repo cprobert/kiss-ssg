@@ -3,6 +3,7 @@ branch: fix/purge-class-tokens
 base: main
 status: closed
 opened: 2026-11-08
+consolidated: 2026-11-12
 ---
 
 # Session — 2026-11-08: Purge keeps whole class tokens, and a reported bug has a path

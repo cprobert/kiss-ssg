@@ -3,7 +3,8 @@ branch: feat/kiss-publish
 base: main
 status: closed
 opened: 2026-11-12
-scope: planning/sessions/2026-11-12-kiss-publish.md, .claude/skills/kiss-publish/**, scripts/release-check.mjs, scripts/tag-release.mjs, test/unit/release-check.test.js, test/unit/tag-release.test.js, test/unit/skill-code-blocks.test.js, .claude/skills/branch-merged/SKILL.md, .claude/skills/branch-close/SKILL.md, CLAUDE.md, planning/history/claude-md-rules.md, package.json, package-lock.json, CHANGELOG.md, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json
+consolidated: 2026-11-12
+scope: planning/sessions/2026-11-12-kiss-publish.md, .claude/skills/kiss-publish/**, scripts/release-check.mjs, scripts/tag-release.mjs, test/unit/release-check.test.js, test/unit/tag-release.test.js, test/unit/skill-code-blocks.test.js, .claude/skills/branch-merged/SKILL.md, .claude/skills/branch-close/SKILL.md, CLAUDE.md, planning/history/claude-md-rules.md, package.json, package-lock.json, CHANGELOG.md, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json, .claude/skills/branch-open/SKILL.md, .claude/skills/memory-consolidate/retired.md, AIKB/testing.md, planning/sessions/*.md
 ---
 
 # Session — 2026-11-12: /kiss-publish, the release as one operator command
@@ -48,6 +49,7 @@ scope: planning/sessions/2026-11-12-kiss-publish.md, .claude/skills/kiss-publish
 - 2026-11-12 — Correction to an assumption: "`disable-model-invocation` is already used by `/branch-close`" was wrong. The grep matched a sentence in its prose, not its frontmatter, so no repository skill used the key before this one. That the key exists comes from Claude Code's skill documentation as Claude recalls it: **inferred, not measured**. `/kiss-publish` also says in its body that it is operator-only, so the rule holds even if the key does nothing.
 - 2026-11-12 — `planning/history/claude-md-rules.md` was not edited although it is in scope: it says it is `CLAUDE.md` "copied unedited" on 2026-11-11. The new rule's link points to this session file instead.
 - 2026-11-12 — 2.15.0 was approved on npm during the branch (`npm view kiss-ssg version` → 2.15.0, `latest`), so the preflight's run on `main` failed three checks: `tag`, `npm`, and `clean`, the last for the two scripts copied into the temporary worktree.
+- 2026-11-12 — **`/memory-consolidate`, on this branch by the operator's choice** ("To the current pr"), after the close. Five logs read and stamped (2026-11-08 to 2026-11-12); three lessons retired (an independent-review field in `/branch-open` Step 3, the measured-claim sentence in `CLAUDE.md` § Rules sharpened, a test-inputs convention in `AIKB/testing.md`) and the look-at-it-yourself recurrence kept as is (operator: "Keep as is"). `scope:` widened for `.claude/skills/branch-open/SKILL.md`, `.claude/skills/memory-consolidate/retired.md`, `AIKB/testing.md` and `planning/sessions/*.md`.
 
 ## Pulse log
 
