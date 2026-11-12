@@ -132,7 +132,7 @@ State the proposed bump type and the reason, then confirm with the operator befo
 npm version <patch, minor, major, or prerelease --preid alpha> --no-git-tag-version
 ```
 
-`--no-git-tag-version` edits `package.json` and `package-lock.json` without creating a git tag — the PR merge is the version event, and the release is a separate deliberate act of the operator's, after the merge: pushing the tag `v<version>` on the merged commit runs `.github/workflows/publish.yml`, which stages the version on npm for the operator to approve (`/branch-merged` gives the commands). The tag names the commit a version on npm (and a plugin install of that version) came from. Never tag or push a tag from this ritual.
+`--no-git-tag-version` edits `package.json` and `package-lock.json` without creating a git tag — the PR merge is the version event, and the release is a separate deliberate act of the operator's, after the merge: typing `/kiss-publish`, which pushes the tag `v<version>` on the merged commit and so runs `.github/workflows/publish.yml`, which stages the version on npm for the operator to approve. The tag names the commit a version on npm (and a plugin install of that version) came from. Never tag or push a tag from this ritual: only `/kiss-publish` does.
 
 This version is carried by `package.json`, the marketplace manifest (`.claude-plugin/marketplace.json`) and every plugin's own `plugins/<name>/.claude-plugin/plugin.json`, and `test/unit/plugin-manifests.test.js` fails if they disagree. You do not have to edit them: npm's `version` lifecycle hook runs `scripts/sync-plugin-versions.mjs` as part of the command above — including under `--no-git-tag-version` — so the manifests move with the bump. `git add` them along with the manifest below.
 

@@ -130,14 +130,7 @@ npm view kiss-ssg version
 npm pkg get version
 ```
 
-The first is what a site installs today; the second is what the base now says, after step 3's pull. When npm's is older, that is the report's opening line: the release has merged and no site can install it until the operator releases it, which is two acts of the operator's: push the tag, which makes `.github/workflows/publish.yml` stage the version, then approve the staged version on npmjs.com with 2FA. Give the tag command on its own line, with the version from `npm pkg get version`:
-
-```bash
-git tag -a v<version> -m v<version> <the merged commit>
-git push origin v<version>
-```
-
-Before the first tag under that workflow, say that the operator creates the trusted-publishing connection on npmjs.com first (GitHub Actions, `cprobert` / `kiss-ssg`, `publish.yml`, environment `npm`, no allowed action), because npm expires one that no publish has validated within 48 hours of its creation. Never tag, push a tag, stage or publish from here. Merged-but-unpublished releases have piled up unremarked: 2.12.1's fix waited as an "open" line in its log (2026-11-05), and 2.12.3's handlebars security fix and 2.13.0 merged with npm still on 2.12.0 (2026-11-06).
+The first is what a site installs today; the second is what the base now says, after step 3's pull. When npm's is older, that is the report's opening line: the release has merged, and no site can install it until the operator releases it. Releasing is the operator typing `/kiss-publish` on the base: it preflights the merged commit, pushes the tag `v<version>`, and watches `.github/workflows/publish.yml` stage the version for the operator's 2FA approval on npmjs.com. Name it; do not run it. It is operator-only, and the release decision is theirs. This skill never tags, pushes a tag, stages or publishes, and gives no tag command of its own: `/kiss-publish` is the one home of the release steps. Merged-but-unpublished releases have piled up unremarked: 2.12.1's fix waited as an "open" line in its log (2026-11-05), and 2.12.3's handlebars security fix and 2.13.0 merged with npm still on 2.12.0 (2026-11-06).
 
 **When the work fixed a reported issue**, the site that reported it should hear so. The session file names it:
 
@@ -168,4 +161,4 @@ Then, short, decision first if there is one:
 - Remove a worktree the session file does not name.
 - Switch the branch of a checkout another session is using.
 - Delete the remote branch, reset or rebase the base, or force-push.
-- Merge a pull request, or publish a version: both are the operator's acts.
+- Merge a pull request, or publish a version: both are the operator's acts. A release is `/kiss-publish`, which the operator types.

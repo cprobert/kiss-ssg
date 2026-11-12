@@ -45,6 +45,9 @@ scope: planning/sessions/2026-11-12-kiss-publish.md, .claude/skills/kiss-publish
      it is not silent scope creep. -->
 
 - 2026-11-12 — At the open, the operator chose against the recommendation (the skill prints the tag and the operator runs it): typing `/kiss-publish` pushes the tag. The operator's reason: "Typing /kiss-publish is the release decision, so one step (fall back to ! if it doesn't work)." This changes the standing rule "never tag or push a tag from a session" to "only `/kiss-publish`, invoked by the operator, pushes the tag".
+- 2026-11-12 — Correction to an assumption: "`disable-model-invocation` is already used by `/branch-close`" was wrong. The grep matched a sentence in its prose, not its frontmatter, so no repository skill used the key before this one. That the key exists comes from Claude Code's skill documentation as Claude recalls it: **inferred, not measured**. `/kiss-publish` also says in its body that it is operator-only, so the rule holds even if the key does nothing.
+- 2026-11-12 — `planning/history/claude-md-rules.md` was not edited although it is in scope: it says it is `CLAUDE.md` "copied unedited" on 2026-11-11. The new rule's link points to this session file instead.
+- 2026-11-12 — 2.15.0 was approved on npm during the branch (`npm view kiss-ssg version` → 2.15.0, `latest`), so the preflight's run on `main` failed three checks: `tag`, `npm`, and `clean`, the last for the two scripts copied into the temporary worktree.
 
 ## Pulse log
 

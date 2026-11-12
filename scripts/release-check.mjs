@@ -265,9 +265,15 @@ async function gather(version) {
   }
 }
 
+/**
+ * @typedef {{ databaseId: number, headBranch: string, event: string,
+ *   status: string, conclusion: string, createdAt: string, url: string }} PublishRun
+ */
+
 /** @param {string} version */
 function gatherRun(version) {
   const tag = releaseTag(version)
+  /** @type {PublishRun[]} */
   const runs = JSON.parse(
     run('gh', [
       'run',
