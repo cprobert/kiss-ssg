@@ -52,6 +52,9 @@ Any `lib/` fix also gets a Codex round at `/branch-close`.
 
 ### Amendments
 
+- 2026-11-13 — **The Codex loop is capped at three rounds** (operator: "if it goes more than three loops you can ask me"). After round three, Claude asks before running a fourth. The operator also asked for no work beyond what firm foundations for Phase 1 need.
+- 2026-11-13 — **The Phase 0 review is a review of the phase, not a second read of the same diff.** Codex already reviewed Phase 0's code diff once, at that branch's close (`planning/sessions/2026-11-10-phase-0.md`, line 91), and the closing summary says "Codex covered the code diff, not the phase". This branch's round therefore asks two things: the threat model over `v2.14.0..v2.15.0 -- lib bin`, read afresh; and whether each Phase 0 bullet in the roadmap was done. Found while writing the brief: review item 8's "cap response size" on fetched data appears nowhere in `lib/` (grep for size/maxBytes/content-length in `lib/fetch-policy.js` and `lib/model-resolver.js`: no match).
+
 ## Pulse log
 
 ---

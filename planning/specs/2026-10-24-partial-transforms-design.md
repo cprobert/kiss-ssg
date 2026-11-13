@@ -1,7 +1,9 @@
 # Partial transforms (design)
 
 Status: **ROADMAP — not started.** Written 2026-10-24 from a feasibility
-conversation; listed in [`planning/ROADMAP.md`](../ROADMAP.md). Whoever picks it
+conversation; listed in [`planning/ROADMAP.md`](../ROADMAP.md). It is the first
+release of Phase 1 (2.16) of
+[the roadmap to 3.0](../plans/2026-11-10-roadmap-to-3.0.md). Whoever picks it
 up should run `/branch-open` against this document and re-check every claim
 about current behaviour below against `lib/` first — they describe the engine
 at `db164de` (2.8.0).
