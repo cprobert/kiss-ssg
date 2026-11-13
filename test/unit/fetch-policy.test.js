@@ -884,6 +884,83 @@ describe('fetchModel: a failure’s message is written by kiss', () => {
   })
 })
 
+// A body larger than fetch.maxBytes fails the model rather than filling the
+// build's memory, and is not retried: the same URL sends the same body.
+// Real `Response`s, so the body is a stream as it is from Node's fetch.
+describe('fetchModel: fetch.maxBytes', () => {
+  const body = JSON.stringify({ text: 'x'.repeat(100) })
+  const streamed = () =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(body))
+          controller.close()
+        },
+      }),
+    )
+
+  it('reads a body at the limit', async () => {
+    await expect(
+      fetchModel('https://api.example/x', {
+        fetchImpl: async () => streamed(),
+        maxBytes: Buffer.byteLength(body),
+        logger: silentLogger,
+      }),
+    ).resolves.toEqual({ text: 'x'.repeat(100) })
+  })
+
+  it('fails a streamed body over the limit, once, naming the key', async () => {
+    let calls = 0
+    const error = await fetchModel('https://api.example/x', {
+      fetchImpl: async () => {
+        calls++
+        return streamed()
+      },
+      maxBytes: 50,
+      retries: 2,
+      logger: silentLogger,
+    }).catch((e) => e)
+    expect(error).toBeInstanceOf(Error)
+    expect(error.message).toContain('fetch.maxBytes')
+    expect(error.message).toContain('https://api.example/x')
+    expect(calls).toBe(1)
+  })
+
+  it('fails on a Content-Length over the limit before reading the body', async () => {
+    let pulled = 0
+    const response = new Response(
+      new ReadableStream(
+        {
+          pull(controller) {
+            pulled++
+            controller.enqueue(new TextEncoder().encode(body))
+            controller.close()
+          },
+        },
+        { highWaterMark: 0 },
+      ),
+      { headers: { 'content-length': String(Buffer.byteLength(body)) } },
+    )
+    const error = await fetchModel('https://api.example/x', {
+      fetchImpl: async () => response,
+      maxBytes: 50,
+      logger: silentLogger,
+    }).catch((e) => e)
+    expect(error.message).toContain('fetch.maxBytes')
+    expect(pulled).toBe(0)
+  })
+
+  it('reads any size when maxBytes is 0', async () => {
+    await expect(
+      fetchModel('https://api.example/x', {
+        fetchImpl: async () => streamed(),
+        maxBytes: 0,
+        logger: silentLogger,
+      }),
+    ).resolves.toEqual({ text: 'x'.repeat(100) })
+  })
+})
+
 // A redirect must not carry fetch.headers to another origin: the headers are
 // where the token is. Two real servers on two ports (a port is an origin).
 describe('fetchModel: a redirect and custom headers', () => {
