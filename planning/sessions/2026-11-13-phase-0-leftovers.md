@@ -3,7 +3,7 @@ branch: chore/phase-0-leftovers
 base: main
 status: open
 opened: 2026-11-13
-scope: planning/**, test/**, AIKB/**, lib/**, bin/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json
+scope: planning/**, test/**, AIKB/**, lib/**, bin/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json, scripts/base-branch.mjs, CONTRIBUTING.md
 ---
 
 # Session — 2026-11-13: Phase 0 leftovers, and a current roadmap
@@ -59,6 +59,8 @@ Any `lib/` fix also gets a Codex round at `/branch-close`.
 - 2026-11-13 — **Scope widened** to `scripts/base-branch.mjs` and `CONTRIBUTING.md`, for two of the Sonnet clean room's guesses. The base-branch error now says what value to give. CONTRIBUTING now says Prettier has no parser for `llms.txt`.
 
 ## Pulse log
+
+- **2026-11-13** — All eight criteria met with evidence. Fleet: 9 sites in the exit report, no output difference. Clean rooms: both green; 2 guesses fixed in `99ed9f2`, the convention ones filed as #90. Codex: 4 rounds, round 4 "No findings in the threat model". #81 and #82 closed with findings posted. #83: shown failing twice on a stale record while the base self-healed, by hand, because `red-first.mjs` cannot fit a fix that lives in the test itself; closes on merge. Roadmap current. `npm run gates` exit 0 at `8c0875c`. Red-first lines: `assets.test.js`, `fetch-policy.test.js`, `config.test.js` and `base-branch.test.js` each "failed at main (727870f), 2026-11-13". **Drift:** impact surface moved to public API (`fetch.maxBytes`); proposed bump 2.15.1. Scope check was exit 1 on `CONTRIBUTING.md` and `scripts/base-branch.mjs`, already in an Amendment; the `scope:` line is now widened, exit 0. 0 commits behind `origin/main`. **Eyeball: looked** — the operator, on mobile, read the `maxBytes` GUIDE bullet, the error text and the setting from a file sent to the phone: "Reads right". **Offer:** the Phase 6 exit bar moved to the Sonnet 2.15.0 baseline; operator: keep. Decision: ready to close.
 
 ---
 
