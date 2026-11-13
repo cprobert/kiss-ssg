@@ -352,8 +352,10 @@ describe('the command line', () => {
     })
     expect(result.status).toBe(1)
     expect(result.stdout).toBe('')
+    // The value to give is in the message: a Sonnet clean room (2026-11-13),
+    // on a shallow clone with no `main`, had to guess it.
     expect(result.stderr.trim()).toBe(
-      'base-branch: no integration branch (main, master or vN) here or on origin; name the base with KISS_BASE_BRANCH or git config kiss.baseBranch',
+      'base-branch: no integration branch (main, master or vN) here or on origin; name the branch this work merges into with KISS_BASE_BRANCH=<branch> or git config kiss.baseBranch <branch> (a shallow clone may need git fetch origin <branch> first)',
     )
   })
 

@@ -969,6 +969,50 @@ describe('copyAssets imports under assets.hash', () => {
     expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
   })
 
+  // A list of import shapes always misses one the grammar allows, so any
+  // quoted relative or root-relative string naming a copied file keeps it
+  // (Codex, 2026-11-13: a comment before the specifier, import options).
+  it('reads every quoted path that names a copied file, whatever surrounds it', async () => {
+    const manifest = await run({
+      'a/js/app.js': [
+        "import /* side effect */ './side.js'",
+        "const m = import('./lazy.js', { with: {} })",
+        'const t = import(`./tpl.js`)',
+        "new Worker(new URL('./worker.js', import.meta.url))",
+      ].join('\n'),
+      'a/js/side.js': 'globalThis.s = 1\n',
+      'a/js/lazy.js': 'export const l = 1\n',
+      'a/js/tpl.js': 'export const t = 1\n',
+      'a/js/worker.js': 'onmessage = () => {}\n',
+    })
+    for (const name of ['side', 'lazy', 'tpl', 'worker'])
+      expect(manifest.lookup(`js/${name}.js`)).toBe(`js/${name}.js`)
+    expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
+  })
+
+  // Only the opening quote closes the string: the 2.15.0 patterns read a
+  // backtick or the other quote inside a specifier (Codex, round 2).
+  it('reads a specifier holding the other quote characters', async () => {
+    const manifest = await run({
+      'a/js/app.js': "import './util`v1.js'\nimport \"./it's.js\"\n",
+      'a/js/util`v1.js': 'export const u = 1\n',
+      "a/js/it's.js": 'export const i = 1\n',
+    })
+    expect(manifest.lookup('js/util`v1.js')).toBe('js/util`v1.js')
+    expect(manifest.lookup("js/it's.js")).toBe("js/it's.js")
+  })
+
+  // A quote that opens no string (in a regex literal) must not swallow the
+  // import after it: every quote is tried, and no match hides another
+  // (Codex, round 3).
+  it('reads an import that follows a stray quote', async () => {
+    const manifest = await run({
+      'a/js/app.js': 'const r=/"/;import \'./util.js\';const s="x";\n',
+      'a/js/util.js': 'export const u = 1\n',
+    })
+    expect(manifest.lookup('js/util.js')).toBe('js/util.js')
+  })
+
   it('reads minified imports, where the spaces are gone', async () => {
     const manifest = await run({
       'a/js/app.js': 'import{hello}from"./util.js";hello();',

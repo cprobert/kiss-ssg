@@ -14,7 +14,8 @@ link the session log from its spec.
 [plans/2026-11-10-roadmap-to-3.0.md](plans/2026-11-10-roadmap-to-3.0.md) sequences the work from
 here to 3.0: partial transforms above first, then a feature freeze while the core is given an
 extension contract and the instruction system is cut down. Agreed in outline by the operator on
-2026-11-10; five decisions are still open at the end of that document.
+2026-11-10, with every decision it asked for now taken. Phase 0 shipped as 2.15.0; partial
+transforms, above, is Phase 1 and the next piece of work.
 
 ## Considered and declined
 

@@ -44,8 +44,9 @@ export function resolveFetch(fetch: Record<string, any>): KissFetch;
  * @param {Record<string, any>} fetch the fetch block over `DEFAULT_FETCH`
  * @returns {void}
  * @throws if `retries` is not a whole number of 0 or more, `timeout` is not a
- * finite number of 0 or more, `headers` is not a plain object, or `cache` is
- * not a non-empty string or `false`
+ * finite number of 0 or more, `headers` is not a plain object, `cache` is
+ * not a non-empty string or `false`, or `maxBytes` is not a whole number of 0
+ * or more
  */
 export function assertFetchIsValid(fetch: Record<string, any>): void;
 /**
@@ -125,6 +126,7 @@ export function redactFetchHeaders<T extends Record<string, any>>(config: T): T;
  * @property {number} timeout ms, 0 or more, before an attempt (its headers and its body) is aborted and the page fails; `0` waits for ever
  * @property {number} retries extra attempts, a whole number of 0 or more, after a network error or a 5xx
  * @property {string|false} cache a directory to cache successful bodies in, or `false`
+ * @property {number} maxBytes the largest body read, in bytes, a whole number of 0 or more; a larger one fails the page; `0` reads any size
  */
 /**
  * The asset block (`config.assets`): the cache-busting policy for the files
@@ -316,6 +318,7 @@ export const DEFAULT_FETCH: Readonly<{
     timeout: 10000;
     retries: 0;
     cache: false;
+    maxBytes: 50000000;
 }>;
 export const DEFAULT_ASSETS: Readonly<{
     hash: false;
@@ -397,6 +400,7 @@ export const DEFAULT_CONFIG: Readonly<{
         timeout: 10000;
         retries: 0;
         cache: false;
+        maxBytes: 50000000;
     }>;
     assets: Readonly<{
         hash: false;
@@ -525,6 +529,10 @@ export type KissFetch = {
      * a directory to cache successful bodies in, or `false`
      */
     cache: string | false;
+    /**
+     * the largest body read, in bytes, a whole number of 0 or more; a larger one fails the page; `0` reads any size
+     */
+    maxBytes: number;
 };
 /**
  * The asset block (`config.assets`): the cache-busting policy for the files

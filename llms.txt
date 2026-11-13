@@ -54,12 +54,12 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
 {
   dev: false,
   verbose: false,
-  cleanBuild: true,     // true empties folders.build first | false | 'atomic'
+  cleanBuild: true, // true empties folders.build first | false | 'atomic'
   extensionLess: false, // true: <path>/<slug>/index.html
-  ids: 'view',          // 'path': id = served path
-  siteUrl: undefined,   // needed by sitemap, llms, feed, robots, canonical, absUrl
+  ids: 'view', // 'path': id = served path
+  siteUrl: undefined, // needed by sitemap, llms, feed, robots, canonical, absUrl
   sass: { includePaths: [] },
-  fetch: { headers: {}, timeout: 10000, retries: 0, cache: false },
+  fetch: { headers: {}, timeout: 10000, retries: 0, cache: false, maxBytes: 5e7 },
   assets: { hash: false, version: null, minify: true, purge: null, pipeline: [],
     images: { widths: [480, 768, 960, 1440, 1920], formats: ['avif', 'webp'], quality: { avif: 50, webp: 75, jpeg: 80 }, cache: '.kiss-cache/images' } },
   markdown: { html: true, xhtmlOut: true, breaks: false },
@@ -72,7 +72,7 @@ Passed to `new Kiss(config)`. Nested blocks merge one level deep; `undefined` ta
   markdownCopies: { write: 'llms', selector: 'main' }, // true: always; false: never
   packages: { format: 'imscp', dir: 'packages', title: null, only: null, schemas: false }, // zips for pages with `package`; false: none
   consent: null, // { services: { gtm: { id } } } turns on the cookie consent manager
-  embeds: null,  // { text }: {{embed}} wording with no consent
+  embeds: null, // { text }: {{embed}} wording with no consent
   port: 3001,
   livereloadPort: 35729,
   devHost: '127.0.0.1',

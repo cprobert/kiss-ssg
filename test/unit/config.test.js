@@ -190,6 +190,7 @@ describe('resolveConfig', () => {
       timeout: 10000,
       retries: 0,
       cache: false,
+      maxBytes: 5e7,
     })
   })
 
@@ -200,6 +201,7 @@ describe('resolveConfig', () => {
       timeout: 1,
       retries: 0,
       cache: false,
+      maxBytes: 5e7,
     })
   })
 
@@ -221,6 +223,10 @@ describe('resolveConfig', () => {
     ['cache', true],
     ['cache', ''],
     ['cache', 7],
+    ['maxBytes', -1],
+    ['maxBytes', 1.5],
+    ['maxBytes', Number.NaN],
+    ['maxBytes', 'SECRET-TOKEN-1'],
   ])(
     'refuses fetch.%s of %s, naming the key and not the value',
     (key, value) => {
@@ -236,7 +242,8 @@ describe('resolveConfig', () => {
   )
 
   it.each([
-    [{ retries: 0, timeout: 0 }],
+    [{ retries: 0, timeout: 0, maxBytes: 0 }],
+    [{ maxBytes: 1024 }],
     [{ retries: 3, timeout: 1.5 }],
     [{ headers: { Authorization: undefined }, cache: '.kiss-cache' }],
     [{ headers: Object.create(null), cache: false }],
