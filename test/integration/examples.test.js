@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import vm from 'node:vm'
@@ -84,6 +90,24 @@ const runBin = (name, args) =>
 const blogAikbDir = path.join(examplesDir, '11-blog/AIKB')
 const readBlogAikb = (file) =>
   readFileSync(path.join(blogAikbDir, file), 'utf8')
+
+// Record an example's knowledge base through the bin and compare it with the
+// committed one. The record writes in place, so the committed bytes are put
+// back afterwards whatever it wrote: a stale committed record then fails every
+// run, not only the first, and the fix is to re-record and commit it.
+function recordAikb(name, dir) {
+  const files = AIKB_FILES.map((file) => path.join(dir, file))
+  const committed = files.map((file) => readFileSync(file))
+  const r = runBin(name, ['aikb', 'router.js', '--summary'])
+  const fresh = files.map((file) => readFileSync(file, 'utf8'))
+  files.forEach((file, i) => writeFileSync(file, committed[i]))
+  return {
+    r,
+    fresh,
+    committed: committed.map((bytes) => bytes.toString('utf8')),
+    stale: `examples/${name}/AIKB differs from a fresh record: run \`npx kiss-ssg aikb router.js\` in examples/${name}/ and commit the result`,
+  }
+}
 
 // One `check` through the published bin, as data. stdout is `{ reports, diff }`
 // once a site has a recorded baseline and a bare array before that, which is
@@ -275,13 +299,14 @@ describe.skipIf(!hasExamples)('example builds', () => {
       // leave `git status` clean, or every diff in the folder is noise. Run
       // through the published command line, because that is the only writer —
       // the build above wrote none of this.
-      const before = AIKB_FILES.map(readAikb)
-
-      const r = runBin('9-migrated-from-v1', ['aikb', 'router.js', '--summary'])
+      const { r, fresh, committed, stale } = recordAikb(
+        '9-migrated-from-v1',
+        aikbDir,
+      )
 
       expect(r.status).toBe(0)
       expect(r.stdout).toContain('recorded AIKB')
-      expect(AIKB_FILES.map(readAikb)).toEqual(before)
+      expect(fresh, stale).toEqual(committed)
       // A record publishes nothing, so nothing in it names the staging sibling
       // it was built through, and the authored half is untouched.
       expect(readAikb('last-build.json')).not.toContain('kiss-staging')
@@ -637,13 +662,11 @@ describe.skipIf(!hasExamples)('example builds', () => {
     }, 60000)
 
     it('11 · records a byte-identical knowledge base with two stamped notes', () => {
-      const before = AIKB_FILES.map(readBlogAikb)
-
-      const r = runBin('11-blog', ['aikb', 'router.js', '--summary'])
+      const { r, fresh, committed, stale } = recordAikb('11-blog', blogAikbDir)
 
       expect(r.status).toBe(0)
       expect(r.stdout).toContain('recorded AIKB')
-      expect(AIKB_FILES.map(readBlogAikb)).toEqual(before)
+      expect(fresh, stale).toEqual(committed)
       expect(readBlogAikb('last-build.json')).not.toContain('kiss-staging')
 
       // Two controller files, two notes, and nothing left to say about either:
