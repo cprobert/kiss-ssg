@@ -181,7 +181,7 @@ export function resolveBaseBranch(cwd = process.cwd(), warn = console.error) {
   // answer for it (docs-sweep) reported nothing to do (round 13).
   if (base === null)
     throw new BaseBranchError(
-      'base-branch: no integration branch (main, master or vN) here or on origin; name the base with KISS_BASE_BRANCH or git config kiss.baseBranch',
+      'base-branch: no integration branch (main, master or vN) here or on origin; name the branch this work merges into with KISS_BASE_BRANCH=<branch> or git config kiss.baseBranch <branch> (a shallow clone may need git fetch origin <branch> first)',
     )
   // `pickBaseBranch` returns a candidate `distanceTo` found a ref for, or the
   // current branch, which has none before its first commit.

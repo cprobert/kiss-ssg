@@ -4,7 +4,7 @@ Work arrives here as a work order or a request, and an agent or a person does it
 
 A single test file runs in about a second: `npx vitest run <file>`, and one test with `-t <name>`.
 
-Each recipe below lists what a change of that kind has to carry. Every item names the file to change and a command whose output shows it landed. A table row in a Markdown file is padded by Prettier: after editing one, run `npx prettier --write <file>`.
+Each recipe below lists what a change of that kind has to carry. Every item names the file to change and a command whose output shows it landed. A table row in a Markdown file is padded by Prettier: after editing one, run `npx prettier --write <file>`. Prettier has no parser for `llms.txt`; leave that file out of the command.
 
 ## Add a built-in helper
 
