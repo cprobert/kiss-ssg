@@ -969,6 +969,27 @@ describe('copyAssets imports under assets.hash', () => {
     expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
   })
 
+  // A list of import shapes always misses one the grammar allows, so any
+  // quoted relative or root-relative string naming a copied file keeps it
+  // (Codex, 2026-11-13: a comment before the specifier, import options).
+  it('reads every quoted path that names a copied file, whatever surrounds it', async () => {
+    const manifest = await run({
+      'a/js/app.js': [
+        "import /* side effect */ './side.js'",
+        "const m = import('./lazy.js', { with: {} })",
+        'const t = import(`./tpl.js`)',
+        "new Worker(new URL('./worker.js', import.meta.url))",
+      ].join('\n'),
+      'a/js/side.js': 'globalThis.s = 1\n',
+      'a/js/lazy.js': 'export const l = 1\n',
+      'a/js/tpl.js': 'export const t = 1\n',
+      'a/js/worker.js': 'onmessage = () => {}\n',
+    })
+    for (const name of ['side', 'lazy', 'tpl', 'worker'])
+      expect(manifest.lookup(`js/${name}.js`)).toBe(`js/${name}.js`)
+    expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
+  })
+
   it('reads minified imports, where the spaces are gone', async () => {
     const manifest = await run({
       'a/js/app.js': 'import{hello}from"./util.js";hello();',
