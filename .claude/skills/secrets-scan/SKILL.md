@@ -73,7 +73,7 @@ If hits are found: surface them and ask the operator to confirm each is not a re
 An SSG's attack surface is not authentication — it is what the engine reads, executes, and writes, on a developer's machine. Check whether the diff touches it:
 
 ```bash
-git diff --name-only "refs/remotes/origin/<base name>...HEAD" -- lib/model-resolver.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js lib/image-header.js lib/image-encode.js lib/images-sweep.js lib/css-purge.js lib/cache-headers.js lib/speed.js lib/issue.js package.json
+git diff --name-only "refs/remotes/origin/<base name>...HEAD" -- lib/model-resolver.js lib/fetch-policy.js lib/controller-resolver.js lib/dev-server.js lib/watcher.js lib/assets.js lib/kiss-page.js lib/utils.js lib/page-registry.js lib/staging.js lib/asset-copy.js lib/packages.js lib/zip.js lib/image-header.js lib/image-encode.js lib/images-sweep.js lib/css-purge.js lib/cache-headers.js lib/speed.js lib/issue.js package.json
 ```
 
 It lists the files in the table below that the branch changed, and nothing else; no output means none. A row added to the table is added to this command in the same commit. Why each one:
@@ -81,6 +81,7 @@ It lists the files in the table below that the branch changed, and nothing else;
 | Path                                                | The concern                                                                                                                                                       |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `lib/model-resolver.js`                             | Fetches models over `http(s)` and reads arbitrary JSON off disk — remote input reaching the render path                                                           |
+| `lib/fetch-policy.js`                               | Makes the request and reads the remote body: redirects that carry `fetch.headers`, the `fetch.maxBytes` cap, and the error text that must never hold a secret     |
 | `lib/controller-resolver.js`                        | Imports and executes a JS file resolved from page options — arbitrary code execution by path                                                                      |
 | `lib/dev-server.js`                                 | Binds a port and serves the build directory                                                                                                                       |
 | `lib/watcher.js`                                    | Watches and re-reads files, and re-imports controllers on change                                                                                                  |
