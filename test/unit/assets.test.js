@@ -1002,6 +1002,17 @@ describe('copyAssets imports under assets.hash', () => {
     expect(manifest.lookup("js/it's.js")).toBe("js/it's.js")
   })
 
+  // A quote that opens no string (in a regex literal) must not swallow the
+  // import after it: every quote is tried, and no match hides another
+  // (Codex, round 3).
+  it('reads an import that follows a stray quote', async () => {
+    const manifest = await run({
+      'a/js/app.js': 'const r=/"/;import \'./util.js\';const s="x";\n',
+      'a/js/util.js': 'export const u = 1\n',
+    })
+    expect(manifest.lookup('js/util.js')).toBe('js/util.js')
+  })
+
   it('reads minified imports, where the spaces are gone', async () => {
     const manifest = await run({
       'a/js/app.js': 'import{hello}from"./util.js";hello();',
