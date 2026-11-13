@@ -1,0 +1,59 @@
+---
+branch: chore/phase-0-leftovers
+base: main
+status: open
+opened: 2026-11-13
+scope: planning/**, test/**, AIKB/**, lib/**, bin/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json
+---
+
+# Session — 2026-11-13: Phase 0 leftovers, and a current roadmap
+
+## Intent (captured at /branch-open)
+
+**Objective:** Close everything Phase 0 left open — the exit report's three operator items and issues #81, #82 and #83 — and bring `planning/ROADMAP.md` and the roadmap to 3.0 up to date, so Phase 1 starts from a fleet baseline, a reviewed Phase 0 and a plan that matches what shipped.
+
+**Success criteria:**
+
+- [ ] **Fleet baseline.** `node scripts/fleet-check.mjs <site> --base v2.14.0 --branch v2.15.0` has run on every v2 fleet site under `C:\Code\kiss` that can build (a1k9training, pro-plumbing, swan-love, k9-solutions, learna-kiss, diploma-msc, oxford-medical, codex, metacarpus), with each exit code recorded. Every difference is explained, and every site that cannot run says why. The exit report's item 1 is filled in.
+- [ ] **Sonnet clean rooms.** The review's two briefs (a new helper from a fresh clone; the bakery site from the packed tarball) have run through `scripts/arms.mjs` on Sonnet. Attempts to green and every place it guessed are recorded in exit-report item 2, and each guess is either fixed in what ships or filed as an issue.
+- [ ] **Independent review of Phase 0.** Codex reviews the `lib/` and `bin/` changes in `v2.14.0..v2.15.0` against the threat model below and loops until a round finds nothing in it. Each counted finding is fixed with a red-first regression test, or decided by the operator. Exit-report item 3 is filled in.
+- [ ] **#81.** On a throwaway copy of learna-kiss (never its own folder): `links.trailingSlash: false` + `redirects.format: 'firebase'` built; `<loc>` entries checked for trailing slashes; `{{canonical}}` and `{{link}}` checked to agree on the same page; the site's hand-rolled `canonical` helper removed and `kiss-ssg check` compared before and after. Findings reported on the issue and to the operator; the issue is closed, or stays open with what is left for the site.
+- [ ] **#82.** Example 12 built (`npm run eg12`), the original and the conversion screenshotted side by side, and the structure and region names put in front of the operator. Their verdict is recorded on the issue.
+- [ ] **#83.** `test/integration/examples.test.js` fails when a committed `examples/*/AIKB/` record differs from a fresh one, and names the command that re-records it, instead of rewriting the tracked file. Seen to fail against the base with `node scripts/red-first.mjs`. `AIKB/testing.md` is updated to match.
+- [ ] **Roadmap current.** `planning/plans/2026-11-10-roadmap-to-3.0.md`: phase version labels shifted by one minor (Phase 0 shipped as 2.15.0; Phase 1 is 2.16 partial transforms + 2.17 markdown-it, and the later phases follow), Phase 0's line says what shipped, and "Decisions still needed" is true. `planning/ROADMAP.md`'s "road to 3.0" paragraph no longer says five decisions are open. The partial-transforms spec's status line points at Phase 1.
+- [ ] `npm run gates` passes on the final commit.
+
+**Non-goals / out of scope:** Starting Phase 1 (partial transforms, markdown-it, the freeze). Changing learna-kiss or any fleet site's own repository. Fixing review findings outside the threat model below: those become issues. Re-recording the budgets baseline. Running `/kiss-publish` or tagging anything.
+
+**Impact surface:** engine internals, if the Phase 0 review finds anything in `lib/`; otherwise tooling & docs. That means a patch (2.15.1) if `lib/` changes, and no version bump otherwise.
+
+**Expected shape:** between. The roadmap edit and #83 are planned. The fleet, clean-room, review and #81 results are measurements whose follow-up work can't be known yet.
+
+**Assumptions:**
+
+- learna-kiss is now on this machine, at `C:\Code\kiss\learna-kiss` — measured, `ls /c/Code/kiss` (2026-11-13). #81 says it was not.
+- The fleet sites pin these kiss-ssg versions: a1k9training ^2.14.0, pro-plumbing ^2.13.3, swan-love ^2.6.2, k9-solutions ^2.13.3, learna-kiss ^2.12.0, diploma-msc ^2.12.0, oxford-medical ^2.9.0, metacarpus ^2.13.3, codex the GitHub `main` tarball — measured, each site's `package.json` read (2026-11-13). fleet-check installs packed tarballs, so the site's pin does not decide which engine gets built.
+- `fleet-check.mjs` takes `--branch <ref>`, so it can compare v2.14.0 against v2.15.0 — measured, `node scripts/fleet-check.mjs --help` (2026-11-13).
+- Phase 0's engine diff is 13 files under `lib/` and `bin/`, +416/−89 — measured, `git diff --stat v2.14.0 v2.15.0 -- lib bin` (2026-11-13).
+- `examples.test.js` checks that the knowledge base is byte-identical at tests 9 and 11 (lines 272, 639) — measured, by grep (2026-11-13). Whether the test rewrites files before it compares is inferred from #83's text and has not been read yet.
+- metacarpus builds 0 pages because its CMS data is not on disk, so its fleet check proves little; medulla is still on 1.x and is left out — inferred from memory (2026-10-03), to re-check.
+- Codex has credit — not yet checked.
+
+**Delegation convention:** Claude (Opus) briefs and reviews. Sonnet subagents run the fleet checks and the clean-room arms. The arms are the experiment and run headless by design. Claude writes the #83 fix, the review fixes and the roadmap edits. Agents never commit, and they never write into a fleet site's own folder.
+
+**Independent review:** this branch's purpose includes one, of Phase 0 itself. It is Codex, looping until clean, with this stop condition written before the first round:
+
+- **Scope:** the `lib/` and `bin/` changes in `v2.14.0..v2.15.0`, plus any fix this branch makes to them.
+- **Threat model (what counts):** a wrong build output; a failure the build swallows or reports as `ok`; a security hole in the fetch, alias or staging changes, reachable through a site author's own config and data, or through data fetched from a URL model.
+- **Below it:** style, naming, docs wording, and hypothetical misuse by a hostile site author become issues or are dropped, never fixes on this branch.
+- **Loop:** fix, then re-run Codex. Stop when a round finds nothing in the threat model. Between rounds, the largest fix diff goes in front of the operator. If the findings change kind, the threat model goes back to the operator before the next round.
+
+Any `lib/` fix also gets a Codex round at `/branch-close`.
+
+### Amendments
+
+## Pulse log
+
+---
+
+<!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
