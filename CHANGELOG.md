@@ -3,6 +3,30 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.15.1 — 2026-11-13
+
+Two fixes to what 2.15.0 shipped, found by an independent review of that release.
+
+- **Every import of a hashed asset is seen, whatever form it takes.** 2.15.0 kept a file's
+  name when another asset imported it, but it recognised only four import forms. A
+  comment before the path (`import /* x */ './util.js'`), import options
+  (`import('./x.js', { with: … })`), a template literal, or
+  `new URL('./worker.js', import.meta.url)` still left the target renamed and the import
+  broken. Now any quoted path in a `.js` file starting `./`, `../` or `/` that names a file
+  in the same asset copy keeps that file's name. A path that is not an import (in a string,
+  a comment) can only leave one more file unhashed.
+- **A URL model's body is read no further than 50 MB.** New `fetch.maxBytes` (default
+  50,000,000; `0` reads any size). A larger body fails that page, naming the URL and the
+  setting, and is not retried. A `Content-Length` over the limit is refused before the body
+  is read. Before, the timeout was the only bound, and a fast server can send a great deal
+  inside it.
+
+### Upgrading
+
+Only a site whose URL models return more than 50 MB has to act: set
+`fetch: { maxBytes: <bytes> }`, or `0` for no limit. Under `assets.hash`, a few more `.js`
+files may now keep their plain names; the build's info line lists them.
+
 ## 2.15.0 — 2026-11-11
 
 Clearing the ground for 3.0. A build that asked for a sitemap, feed, `robots.txt` or
