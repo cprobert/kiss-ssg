@@ -990,6 +990,18 @@ describe('copyAssets imports under assets.hash', () => {
     expect(manifest.lookup('js/app.js')).toMatch(hashed('js/app.js'))
   })
 
+  // Only the opening quote closes the string: the 2.15.0 patterns read a
+  // backtick or the other quote inside a specifier (Codex, round 2).
+  it('reads a specifier holding the other quote characters', async () => {
+    const manifest = await run({
+      'a/js/app.js': "import './util`v1.js'\nimport \"./it's.js\"\n",
+      'a/js/util`v1.js': 'export const u = 1\n',
+      "a/js/it's.js": 'export const i = 1\n',
+    })
+    expect(manifest.lookup('js/util`v1.js')).toBe('js/util`v1.js')
+    expect(manifest.lookup("js/it's.js")).toBe("js/it's.js")
+  })
+
   it('reads minified imports, where the spaces are gone', async () => {
     const manifest = await run({
       'a/js/app.js': 'import{hello}from"./util.js";hello();',
