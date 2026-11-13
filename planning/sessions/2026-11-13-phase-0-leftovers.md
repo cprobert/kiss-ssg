@@ -1,7 +1,7 @@
 ---
 branch: chore/phase-0-leftovers
 base: main
-status: open
+status: closed
 opened: 2026-11-13
 scope: planning/**, test/**, AIKB/**, lib/**, bin/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json, scripts/base-branch.mjs, CONTRIBUTING.md, .claude/skills/secrets-scan/SKILL.md
 ---
@@ -66,3 +66,71 @@ Any `lib/` fix also gets a Codex round at `/branch-close`.
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-13: Phase 0 leftovers, and a current roadmap
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.15.1 on `chore/phase-0-leftovers`. The engine changes: JS hashing reads every quoted relative path (`fcb70fe`, `3f38caf`, `8c0875c`) and the new `fetch.maxBytes` (`80dc747`). Also #83's examples test (`dca5583`), two clean-room fixes (`99ed9f2`), the roadmap and exit report brought current (`da49339`, `81e9a2f`), and #81 and #82 closed with findings posted, #90 filed.
+
+## Reflect — what the session was
+
+**Between planned and emergent, and the shape served the work.** The brief was a list of leftovers whose follow-up could not be known in advance, and the Intent said so. The planned half (the roadmap labels, #83) landed in the first hour, exactly as framed. The emergent half came from the Codex phase review. It found that two things Phase 0 claimed were not done: the response-size cap (never built) and the JS hashing fix (four forms, not every form). The operator settled each gap in one `AskUserQuestion` round: implement the cap, leave the budgets wiring to Phase 1, record the packed-test boundary.
+
+The operator's framing was short and decisive: "do the job properly so that we can move on … don't take on work that isn't needed … if it goes more than three loops you can ask me". That gave the session a scope rule and a review stop condition in two sentences, and both held.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering — sparse in words, decisive at each fork.** The operator answered about ten structured decisions without hesitating: which leftovers, delegation, learna-kiss by throwaway copy, the review stop rule, the three phase gaps, the version, round 4, the security review. Twice they chose differently from the recommendation: "Codex, loop until clean" over one round, and "Both on this branch" for the clean rooms and #82. Neither choice was wrong in hindsight. The loop found two more defects, and both were in Claude's own fix. One discipline slipped: CLAUDE.md asks for a one-sentence reason when the operator chooses against a recommendation, and Claude did not ask for it either time.
+
+**Verification & ownership — real, through the phone.** The operator was on mobile for the second half and said so ("I can't read those paths from here"). Claude sent the artefact instead: the `maxBytes` passage as a rendered file, which the operator read and judged "Reads right". The operator also saw the example-12 screenshots before giving #82's verdict. Those are the two artefacts a gate cannot judge, and both were looked at by a person. What the operator did not see was the largest fix diff of the review loop until the round-4 question, which carried it as a preview. Rounds 2 and 3 were fixed and committed without a human read in between. CLAUDE.md asks for that read between rounds, and Claude did not stop for it until the cap.
+
+**Iteration discipline — the review loop's shape is the lesson.** Each Codex round found an edge in the fix to the round before: four forms, then a backtick in a specifier, then a stray quote whose false match hid an import. All three were the same class, a regex standing in for a JavaScript lexer. Claude fixed each as a class (an allow-list of the safe shape, then only the opening quote closes, then a lookahead), with a red-first test every time. But Claude did not stop after round 2 to say what round 3 showed: every fix to this detector creates the next edge. Round 4 came back clean, and the session log says so honestly: the loop ended because a round was clean, not because the class is proven closed.
+
+**Harness leverage — high.**
+
+- Four background agents ran at once (the fleet check, the learna-kiss trial, the clean rooms, Codex) while Claude wrote #83 and the roadmap.
+- The arms harness ran Sonnet headless.
+- `SendUserFile` put artefacts on the operator's phone.
+- The pulse ran as the skill, with the scope check and the eyeball.
+
+**One relayed claim went to the operator unchecked.** The packed-test question repeated Codex's claim that a dependency left in `devDependencies` would pass. Claude read `AIKB/testing.md` afterwards and found it wrong: the test links only `dependencies`, and it had been seen red that way. Claude corrected it to the operator unprompted, and the operator's choice still stood. CLAUDE.md asks for a relayed finding to be re-derived before acting on it, and here the re-derivation came after the question, not before.
+
+**Competency level: Active supervisor.** Every material decision was the operator's. The stop rule and the scope rule were set up front and held, and the two artefacts a gate cannot judge were looked at by a person. Not Agentic engineering lead: the framing and the decomposition of the leftovers were Claude's, and the operator did not read a review-round fix diff until the cap.
+
+## Feedback — recommendations for next session
+
+- **Claude — re-derive a reviewer's claim before it goes into an `AskUserQuestion`, not after.** The packed-test option relayed Codex's "a devDependency would pass" verbatim. One `grep` of `AIKB/testing.md` disproved it, and that grep belonged before the question went out.
+- **Claude — after the second review round that finds an edge in your own fix, name the class to the operator before the next round.** Rounds 2 and 3 were both "the regex is not a lexer". The question to put after round 2: keep the regex and accept that edges recur, or read imports with a real lexer (`es-module-lexer`, one runtime dependency against a budget of 10). The operator would have decided that, not the loop.
+- **Claude — ask for the one-sentence reason when the operator chooses against a recommendation.** It was skipped twice this session (the review loop, the clean rooms). The rule is in CLAUDE.md § Rules; the habit is not.
+- **Operator — when a review loop's fix commits land, read the largest one at the round, or say "not now".** The round-4 preview carried the whole detector's diff. Rounds 2 and 3's fixes were committed without a human read. A phone can take a diff as a file, and `SendUserFile` will send one.
+- **Process — `red-first.mjs` cannot prove a fix that lives in the test.** #83's demonstration was done by hand (stale record, two runs each side). If test-only fixes recur, the script wants a mode that runs the base's test file against a planted condition. Until then, write the by-hand evidence into the commit message, as `dca5583` did.
+- **Process — the first real `/kiss-publish` is 2.15.1.** The 2026-11-12 log asked that run to write down what it saw: whether auto mode refused the push, whether `disable-model-invocation` held, and how long the stage took. Do that in this release's record.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** close everything Phase 0 left open — the exit report's three items and #81–#83 — and bring the roadmap up to date, so Phase 1 starts from firm ground. **Met**, with one piece of good drift. The review found that Phase 0 was not quite what it claimed, so the branch fixed two engine gaps. That was what "firm foundations" required, and the operator decided each gap.
+
+- [x] **Fleet baseline** — 9 v2 sites, `--base v2.14.0 --branch v2.15.0`, no output difference (exit report item 1). diploma-msc's exit 1 is a build that fails on both sides from missing CMS data, with build folders byte-identical.
+- [x] **Sonnet clean rooms** — both green (A: two gate rounds; B: third `check`). Two guesses fixed (`99ed9f2`), the convention ones filed (#90).
+- [x] **Independent review of Phase 0** — Codex, four rounds, the threat model written first; round 4 clean. Every counted finding was fixed red-first; the phase gaps were decided by the operator.
+- [x] **#81** — no engine defect; findings posted, closed.
+- [x] **#82** — operator's verdict from the screenshots; closed.
+- [x] **#83** — fails every run on a stale record. Shown by hand, not by `red-first.mjs` (see Feedback). Closes on merge.
+- [x] **Roadmap current** — labels shifted, the Phase 0 close-out recorded, the budgets wiring named in Phase 1, the Phase 6 bar set to the Sonnet baseline (operator: keep).
+- [x] **`npm run gates`** — exit 0 at `10ec7ab`, after the bump.
+
+**What is concretely better:**
+
+- A fetched model can no longer fill the build's memory.
+- An import of a hashed asset is seen in every form the grammar allows. The cost is linear: adversarial 1–4 MB lines took 3–165 ms.
+- A stale committed knowledge-base record fails every run.
+- Every v2 site has a measured baseline for Phase 1's fleet checks.
+- The 3.0 clean-room bar is measured on the weaker model.
+
+**Open:**
+
+- #90 (a record's `slug` as the convention) for the 3.0 work.
+- The hashing detector is still a regex, with whatever edges a lexer would not have.
+- Publishing 2.15.1 with `/kiss-publish`.
+- Phase 1, partial transforms, is next.
