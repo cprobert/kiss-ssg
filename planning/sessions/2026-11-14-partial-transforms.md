@@ -3,7 +3,7 @@ branch: feat/partial-transforms
 base: main
 status: open
 opened: 2026-11-14
-scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, planning/**, src/**, .claude-plugin/**
+scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, planning/**, src/**, .claude-plugin/**
 ---
 
 # Session — 2026-11-14: Partial transforms (2.16)
@@ -89,11 +89,45 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, t
      the operator's call, never spawned on initiative. Good drift gets recorded;
      it is not silent scope creep. -->
 
+- **2026-11-14 — The collision rule covers a partial and a layout too.** The spec named `foo.md` + `foo.hbs`. A same-named partial and layout used to resolve silently (the layout won), which is the same class: two files, one name, one silently wins. Now it is a `<partials>` failure as well. Offered at the pulse; the operator chose **keep**. The upgrade note must say so, and the fleet check will show whether any site has such a pair.
+- **2026-11-14 — `lib/rebuild.js` added to `scope:`.** Codex round 3 found that the scoped watch re-render (`rebuildEntries`) awaited the helpers but not the transforms' setups. The fix is one line in `lib/rebuild.js`, which mirrors the existing `_helpersReady` await. It is the same feature's readiness, not a new subsystem.
+
 ## Pulse log
 
 <!-- Appended by /branch-pulse, one dated line per mid-branch checkpoint:
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
+
+- **2026-11-14** — **Slice 1 (engine) landed:** `3621097`, `d04fea2`, then the review fixes `05f401d`, `69968d4` and `075d130`. The branch is level with `origin/main`.
+  - **The `.md` defect is fixed — met.**
+    - `test/integration/partial-transforms.test.js` covers `{{link "id"}}`, `{{> "nav"}}` and hash arguments inside a `.md` partial.
+    - red-first: test/integration/partial-transforms.test.js failed at main (68633b4), 2026-11-14. All nine failed; the `.md` case failed with the original `Parse error … {{link &quot;about&quot;}}`.
+  - **Collisions fail the build — met.**
+    - red-first: test/unit/partials.test.js -t "reports a collision" failed at main (68633b4), 2026-11-14. Honest note: it failed there on the return shape (`first.names` undefined), so the behavioural evidence is the integration collision test, which was red at main.
+  - **A site transform works — met.** An integration test covers an async `setup`, a `render` receiving `{ name, file, page, context, hash }`, and `compile: false`.
+  - **A failed `setup` is reported — met.** It is a carried `<transform .adoc>` failure; the page calling the partial fails and the plain page is still written.
+  - **`.txt` and layouts are unchanged — met.** The existing `.txt` and layout tests pass unchanged.
+  - **Scoped rebuilds still work — met.**
+    - The watch test for an `.adoc` edit shows it re-renders only its own page, in three runs out of three.
+    - Inferred assumption now measured: `lib/watcher.js` ignores only the assets, helpers and build folders, never an extension.
+  - **Measured before memoising — met.**
+    - The first after-run overlapped the test runs and is discarded.
+    - Re-run on a quiet machine, `fanout@500` with 7 runs each: base `68633b4` against branch `d04fea2` gives total −7.4% and build −7.9%.
+    - **Decision: no memoisation.** Rendering per call costs less than the registration-time path did.
+    - One unexplained regression: `construct` is +14% (about 13 ms), named here and not chased.
+  - **Docs — partial.** The default-config blocks in `llms.txt` and GUIDE are done. `llms.txt`'s partials line is rewritten at 15,994 characters; `main` had only 5 characters of headroom. GUIDE, AIKB, the examples and the changelog are slice 2.
+  - **Fleet, clean room — not yet.**
+  - **Codex — the slice-1 loop is done.** Four rounds; the threat model was "correctness + contract".
+    - **R1 (P2):** a file reached through both folders collided with itself.
+    - **R2 (P2):** an edge in R1's fix, comparing path strings rather than files. The class was named to the operator before R3.
+    - **R3 (P2):** a new class, readiness: `rebuildEntries` did not await `_transformsReady`. That was the cap; the operator chose to fix it and run a fourth round.
+    - **R4:** no findings in scope.
+    - Each fix was seen red on the branch first.
+  - **Gates:** `npm test` passes, 148 files and 5,008 tests. Typecheck is clean.
+  - **Drift:** the two Amendments above (the collision rule widened to partial vs layout; `lib/rebuild.js` added to scope). `scope-check` listed `lib/rebuild.js` before the widening.
+  - **Eyeball: deferred** to `/branch-close` Step 5a (the close's eyeball). The artefact is `examples/4-layouts-and-partials/public/index.html`, the `.md` partial's "run by **Tom**" line.
+  - **Offer:** the partial-vs-layout collision. Operator: **keep**.
+  - **Decision: continue** to slice 2 (docs, examples, changelog).
 
 ---
 
