@@ -108,6 +108,23 @@ describe('registerPartials', () => {
     expect(() => hbs.partials['foo']({})).toThrow(/more than one file/)
   })
 
+  // One file is not a collision: a site whose partials and layouts folders are
+  // the same directory discovers each .hbs twice, under the same name, and that
+  // registered fine before the table (Codex, slice 1, round 1).
+  it('does not report a file found through both folders as a collision', async () => {
+    site = await makeSite({ 'src/shared/main.hbs': '<main/>' })
+    const hbs = Handlebars.create()
+    const shared = `${site.src}/shared`
+    const result = registerPartials(
+      hbs,
+      { folders: { partials: shared, layouts: shared } },
+      deps,
+    )
+    expect(result.collisions).toEqual([])
+    expect(result.names).toEqual(['main'])
+    expect(hbs.partials['main']({})).toBe('<main/>')
+  })
+
   it('skips null folders', () => {
     const hbs = Handlebars.create()
     const { names } = registerPartials(
