@@ -21,9 +21,11 @@ const site = {
 
 const kiss = new Kiss({
   site,
+  // Pages named by id, never by path: the header turns each into a URL with
+  // `{{link}}`, which fails the build if no page has that id.
   nav: [
-    { href: 'index.html', label: 'The bar' },
-    { href: 'stockists.html', label: 'Stockists' },
+    { id: 'index', label: 'The bar' },
+    { id: 'stockists', label: 'Stockists' },
   ],
   dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404

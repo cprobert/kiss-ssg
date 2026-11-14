@@ -3,7 +3,7 @@ branch: feat/partial-transforms
 base: main
 status: open
 opened: 2026-11-14
-scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/src/pages/index.hbs, examples/9-migrated-from-v1/AIKB/last-build.json, planning/**, src/**, .claude-plugin/**
+scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/router.js, examples/4-layouts-and-partials/src/**, examples/9-migrated-from-v1/AIKB/last-build.json, planning/**, src/**, .claude-plugin/**
 ---
 
 # Session — 2026-11-14: Partial transforms (2.16)
@@ -94,6 +94,10 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
 - **2026-11-14 — Two example files added to `scope:` (slice 2).**
   - **`examples/4-layouts-and-partials/src/pages/index.hbs`** carries the same retired sentence as the partials ("Markdown that kiss renders as it registers it"). It is a page, not a partial, so the original glob missed it.
   - **`examples/9-migrated-from-v1/AIKB/last-build.json`** is example 9's committed knowledge base. It records each page's hash, so correcting that example's `sourcing-note.md` changed one hash, and `test/integration/examples.test.js` requires the record to match. It was re-recorded with `npx kiss-ssg aikb router.js`, the one writer of that folder, and the diff is that one hash.
+- **2026-11-14 — Example 4 absorbed (slice 3, from the clean room).** The operator chose both of these, on the clean room's findings.
+  - **Hand-written URLs (operator: absorb it here).** Example 4 hand-wrote its internal URLs: nav `href: 'index.html'`, `<a href="stockists.html">`, and `{{root}}` prefixes that the example never supplies, so they rendered empty. That contradicts llms.txt's "Never hand-write an internal URL", in the example GUIDE names as the one to read. It predates this branch. The nav now names pages by `id`, and the header uses `{{#isActive .. href=(link id)}}`, GUIDE's recipe. The aside uses `{{link "stockists"}}`, and the stylesheet uses `/{{asset …}}` (llms.txt). `scope:` is widened to `examples/4-layouts-and-partials/router.js` and `src/**`, replacing the single `index.hbs` entry.
+  - **A shipped `.md` partial that calls a helper (operator: add it here).** No shipped example showed one; `sourcing.md` now carries a `{{link "stockists"}}`.
+  - **Checked:** `npm run eg4` builds; the nav marks the active page on both pages; `npx kiss-ssg check router.js` from the example's folder exits 0, with 6 internal references and none broken.
 
 ## Pulse log
 

@@ -6,4 +6,4 @@ We buy in whole containers with two other roasters, which is the only way a shop
 - One buying trip a year, paid for out of the bag price
 - Prices published on the shelf edge, next to the roast date
 
-Green buying this season is run by **{{model.buyer}}**, so a Markdown partial can read the page's model like any other template.
+Green buying this season is run by **{{model.buyer}}**, so a Markdown partial can read the page's model like any other template. It can call helpers too: the bags end up on [our stockists' shelves]({{link "stockists"}}), and that link fails the build if the page ever goes.
