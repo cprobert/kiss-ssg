@@ -34,12 +34,14 @@ Read the build script — `router.js` on a site that follows the convention in `
 
 ### 3. Update an existing page
 
-| What's changing               | Edit                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| Copy / markup / layout usage  | the `.hbs` view                                                         |
-| Data shown on the page        | the `.json` model, or the source the model reads from                   |
-| Sorting, derived fields, slug | the controller                                                          |
-| Shared markup (nav, footer)   | the partial/layout it comes from — this changes every page that uses it |
+| What's changing                                                                     | Edit                                                                               |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Copy / markup / layout usage                                                        | the `.hbs` view                                                                    |
+| Data shown on the page                                                              | the `.json` model, or the source the model reads from                              |
+| Sorting, derived fields, slug                                                       | the controller                                                                     |
+| Shared markup (nav, footer)                                                         | the partial/layout it comes from — this changes every page that uses it            |
+| Prose kept in a `.md` partial                                                       | that partial; it is a template first, so its links are `{{link "id"}}`             |
+| A table or card kept as its own file (`.csv`, any extension in `config.transforms`) | that file, never the HTML it becomes; the transform in the build script renders it |
 
 If the site runs a dev server (`dev: true`, started via `.watch()`), edit and watch it reload rather than rebuilding by hand: a page-view edit re-renders just that page; a partial or layout edit re-renders every page that rendered it; anything else — an edited model, a controller, a new or deleted page file — triggers a whole-site rebuild that replays `.page()`/`.pages()`/`.scan()` from scratch, so the change actually takes effect. See `node_modules/kiss-ssg/llms.txt` `.watch()` for the exact scoping rules and `node_modules/kiss-ssg/AIKB/watcher.md` / `AIKB/dependency-graph.md` for how the scoping is decided.
 
@@ -52,6 +54,8 @@ If the site runs a dev server (`dev: true`, started via `.watch()`), edit and wa
 ### 4a. Link to other pages by identity, not by path
 
 Write `href="{{link "about"}}"`, `{{link "blog/post" slug=post.slug}}`, `{{link "contact" absolute=true}}` — never a hand-typed `/about.html` or `/about/`. The URL of a page is derived from `extensionLess`, `path` and `slug`, so a typed path is a guess that breaks the day any of them changes; `{{link}}` renders the path the build actually writes, and an id that resolves to nothing fails the build with the id and the page that asked, which is what you want. A hand-written internal path is still checked (`broken link:` in the check report), but a fixed one costs a rebuild; a `{{link}}` never needs fixing. Reach for the site's `AIKB/site-map.md` **Id** column to see every valid target — that is the autocomplete. The page you are adding gets an id of its own the same way: its view's route without the extension (`contact.hbs` → `contact`, a fan-out record → `<registration route or id>/<slug>`), and that is the name the rest of the site links it by — it appears in that `Id` column the next time somebody runs `npx kiss-ssg aikb`.
+
+The same holds inside a `.md` partial: it is compiled as a template before it is rendered as Markdown, so `[the about page]({{link "about"}})` is a checked link and `{{> "callout"}}` works there too (with a blank line before and after the call). Before kiss-ssg 2.16 neither worked in a `.md` partial, so an older site's Markdown may carry typed paths: a new page you replicate from it still uses `{{link}}`, and the typed paths go in the hand-over for `kiss-site-review`.
 
 ### 4b. A new helper does not go in the router
 

@@ -76,6 +76,11 @@
       "folder": "14-consent",
       "name": "Cookie consent",
       "summary": "config.consent and the six consent helpers: GTM, a first-party counter and a YouTube embed held back until allowed, a themed banner, and the cookie table."
+    },
+    {
+      "folder": "15-partial-transforms",
+      "name": "Partial transforms",
+      "summary": "A .md partial that links with {{link}} and calls another partial, and two file types the site teaches kiss in config.transforms: a CSV price list rendered as tables, and recipe cards."
     }
   ]
 }

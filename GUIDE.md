@@ -606,7 +606,9 @@ With that, `src/partials/install.code` is a partial, and `{{> "install" lang="sh
 
 - **`render(output, ctx)`** is required. It is called each time a page uses the partial, with the compiled template's output, and returns the string inserted into the page as it is. `ctx` is `{ name, file, page, context, hash }`: the partial's name and file, the output path of the page rendering it, the partial's context, and the call's hash arguments (`{}` when there are none). It is synchronous; anything async goes in `setup`.
 - **`compile`** is `true` by default. `false` hands `render` the file's own characters, so `{{ }}` in it is not interpolated.
-- **`setup()`** is optional and awaited once, before the first page renders. If it throws, the build reports `<transform .adoc>` and every page that calls an `.adoc` partial fails, naming it; the rest of the site still builds.
+- **`setup()`** is optional and awaited once, before the first page renders: the place to load a library that starts asynchronously. If it throws, the build reports `<transform .adoc>` and every page that calls an `.adoc` partial fails, naming it; the rest of the site still builds. It runs once per process and a watch rebuild does not run it again, so do not read the site's content in it: under `--dev` an edit to that file would not be seen.
+
+`examples/15-partial-transforms` is a whole site built this way: a `.md` partial that links with `{{link}}` and calls a partial, a `csv` transform that renders a spreadsheet export as a price table (`compile: false`, its caption from `hash`), and a `recipe` transform for brew-recipe cards that is compiled first, so a step can use `{{link}}`. Its transforms live in `transforms.js` beside the router, because a function written inside `router.js` cannot be imported or tested.
 
 `html` and `hbs` are templates, and a transform for either is refused. A file whose extension is in neither list is not a partial. Two files that give one name (`note.md` and `note.hbs`, or a partial and a layout) fail the build as `<partials>`, naming both files, and every page that calls the name fails too: rename all but one.
 

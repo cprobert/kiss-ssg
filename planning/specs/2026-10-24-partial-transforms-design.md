@@ -228,4 +228,26 @@ fails the build.
   the `{{#markdown}}` block (GUIDE.md § Markdown options).
 - **Drop a `kiss.registerPartials()` that only followed a `kiss.remarkable` change.** It
   is no longer needed, and it is harmless if left.
+
+### Upgrading: worth adopting
+
+Nothing here is needed for the upgrade. Once the site builds the way it did, run these and
+offer what they find to the owner as a change of its own.
+
+- **A `.hbs` partial that only wrapped Markdown can be a `.md` partial again.** It was the
+  workaround for helpers and partial calls in Markdown, which now work in a `.md` file:
+  `grep -rln "{{#markdown}}" src/partials`. Where the whole file is one `{{#markdown}}`
+  block, rename it to `.md` and delete the block tags. Keep it as it is under
+  `markdown: { html: false }` if it inserts HTML (GUIDE.md § Markdown options).
+- **Typed links in Markdown can be `{{link}}`.** A `.md` partial could not use `{{link "id"}}`
+  before, so its links were typed by hand and nothing checked them:
+  `grep -rnE '\]\((/|\./|[^):]*\.html)|href="(/|\./|[^":]*\.html)' src/partials --include=*.md`.
+  Write each as `[text]({{link "id"}})` or `href="{{link "id"}}"`, with the id from
+  `AIKB/site-map.md`, and the build fails if the page ever goes.
+- **Content kept somewhere else can be a partial of its own type.** A table retyped from a
+  spreadsheet, or a recipe or code sample pasted into a view, can live in its own file
+  (`prices.csv`) and be rendered by a transform in `config.transforms`, so the owner edits the
+  source and the page follows. `grep -rln "<table" src` finds the tables. GUIDE.md § Partial
+  transforms, and `examples/15-partial-transforms`, which renders a CSV price list and recipe
+  cards.
 ```

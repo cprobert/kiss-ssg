@@ -51,6 +51,8 @@ The upgrade is done when the site builds the way it did, not when it builds bett
 
 New audit findings, broken-link lines a release has just started reporting, and anything else that makes the site _better_ are not the upgrade. Offer them as their own piece of work, with the `kiss-site-review` skill.
 
+**A note headed `Upgrading: worth adopting` is that kind of work, named by the release.** It is the one note that asks for nothing during the upgrade: it says what the new version makes possible and what to grep the site for. Run its greps once the site builds the way it did, list what they find, and offer the adoption to the owner as its own change after the upgrade commit, never inside it. Each change it leads to is checked with `check` like any other edit.
+
 ### 5. Record, and keep the upgrade in a commit of its own
 
 ```bash

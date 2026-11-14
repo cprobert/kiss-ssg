@@ -1,0 +1,37 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 15 &middot; partial transforms</p>
+    <h1>Prices</h1>
+    <p>Everything we pour at the bar, and every coffee we sell by the bag.</p>
+  </section>
+
+  <div class="stack">
+    <section class="card">
+      {{> "prices/bar" caption="At the bar"}}
+    </section>
+    <section class="card">
+      {{> "prices/beans" caption="Beans to take home"}}
+    </section>
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <strong>Both tables are spreadsheets.</strong> <code>src/partials/prices/bar.csv</code>
+    and <code>beans.csv</code> are plain CSV, the kind any spreadsheet exports, so whoever
+    sets the prices edits a spreadsheet and never touches the markup. The page calls each one
+    like any partial, with a caption as an argument.
+  </p>
+  <p>
+    <strong>The site taught kiss the <code>.csv</code> extension.</strong> In
+    <code>router.js</code>, <code>transforms: &#123; csv &#125;</code> says what to do with one,
+    and <code>transforms.js</code> holds it. Its <code>render</code> gets the file and the
+    call's arguments and returns the table, escaping every cell. It sets
+    <code>compile: false</code>, because a price list is data and not a template: the file
+    reaches <code>render</code> exactly as written.
+  </p>
+  {{/content}}
+
+{{/extend}}

@@ -1,0 +1,35 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 15 &middot; partial transforms</p>
+    <h1>Brew guide</h1>
+    <p>
+      The two ways we brew at home. Jump to the <a href="#recipe-v60">V60</a> or the
+      <a href="#recipe-cafetiere">cafetiere</a>.
+    </p>
+  </section>
+
+  <div class="grid">
+    {{> "recipes/v60"}}
+    {{> "recipes/cafetiere"}}
+  </div>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <strong>Each card is a short text file.</strong> <code>src/partials/recipes/v60.recipe</code>
+    is a few <code>name: value</code> lines, a blank line, and one step per line. The
+    <code>recipe</code> transform in <code>transforms.js</code> turns that into the card, and
+    takes the card's id from the partial's name, so <code>recipes/v60</code> can be linked to
+    as <code>#recipe-v60</code>.
+  </p>
+  <p>
+    <strong>Unlike the price list, a recipe is compiled first.</strong> Its transform sets no
+    <code>compile</code>, so the file is a template, as an <code>.html</code> partial is: the
+    last step of each recipe links to the <a href="{{link 'prices'}}">price list</a> with
+    <code>link</code>, and that link is checked like every other.
+  </p>
+  {{/content}}
+
+{{/extend}}

@@ -29,6 +29,39 @@ const LEGAL_UK =
   'plugins/kiss-ssg/skills/kiss-legal-and-privacy/references/uk.md'
 
 const COVERAGE = [
+  // 2.16.0, partial transforms: the operator asked for the release to be
+  // promoted, to new sites through the skills that build them and to
+  // existing ones through the upgrade routine.
+  {
+    feature:
+      'a .md partial is a template first, so {{link}} and partial calls work in it',
+    pattern: /`\.md` partial[^\n]*compiled as a template/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+    ],
+  },
+  {
+    feature:
+      'content with a shape of its own gets a file type of its own, through config.transforms',
+    pattern: /config\.transforms/,
+    skills: [
+      skill('kiss-ssg', 'kiss-site-new'),
+      skill('kiss-ssg', 'kiss-page-add'),
+    ],
+  },
+  {
+    feature:
+      'example 15 is the exemplar for a site teaching kiss its own file types',
+    pattern: /examples\/15-partial-transforms/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature:
+      'an "Upgrading: worth adopting" note is offered after the upgrade, as its own change',
+    pattern: /Upgrading: worth adopting[\s\S]*after the upgrade commit/,
+    skills: [skill('kiss-ssg', 'kiss-site-migrate')],
+  },
   // The feedback loop (planning/plans/2026-11-08-feedback-loop.md): four
   // a1k9training reflections said "file it against kiss-ssg" and none did,
   // because no step at the close drafted it and no tool existed.

@@ -3,7 +3,7 @@ branch: feat/partial-transforms
 base: main
 status: open
 opened: 2026-11-14
-scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/router.js, examples/4-layouts-and-partials/src/**, examples/9-migrated-from-v1/AIKB/last-build.json, planning/**, src/**, .claude-plugin/**
+scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/router.js, examples/4-layouts-and-partials/src/**, examples/9-migrated-from-v1/AIKB/last-build.json, examples/15-partial-transforms/**, examples/README.md, docs.js, CLAUDE.md, planning/**, src/**, .claude-plugin/**
 ---
 
 # Session — 2026-11-14: Partial transforms (2.16)
@@ -98,6 +98,12 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
   - **Hand-written URLs (operator: absorb it here).** Example 4 hand-wrote its internal URLs: nav `href: 'index.html'`, `<a href="stockists.html">`, and `{{root}}` prefixes that the example never supplies, so they rendered empty. That contradicts llms.txt's "Never hand-write an internal URL", in the example GUIDE names as the one to read. It predates this branch. The nav now names pages by `id`, and the header uses `{{#isActive .. href=(link id)}}`, GUIDE's recipe. The aside uses `{{link "stockists"}}`, and the stylesheet uses `/{{asset …}}` (llms.txt). `scope:` is widened to `examples/4-layouts-and-partials/router.js` and `src/**`, replacing the single `index.hbs` entry.
   - **A shipped `.md` partial that calls a helper (operator: add it here).** No shipped example showed one; `sourcing.md` now carries a `{{link "stockists"}}`.
   - **Checked:** `npm run eg4` builds; the nav marks the active page on both pages; `npx kiss-ssg check router.js` from the example's folder exits 0, with 6 internal references and none broken.
+- **2026-11-14 — Promote the features (slice 4, the operator's request).** The operator asked for the new features to be promoted, so existing sites pick them up through the upgrade routine and new sites see them demonstrated: "This is our chance to promote the new features… So let's do a good job."
+  - **Upgrade path (operator: adoption note, one step).** The 2.16.0 entry gets a `### Upgrading: worth adopting` note, which `kiss-ssg upgrade` already prints (`lib/upgrade.js`). `kiss-site-migrate` offers such a note as its own commit, after the upgrade builds the way it did. There is no engine change.
+  - **Examples (operator: a new example 15).** A feature-reference example for partial transforms, and a `{{> }}` call in example 4's `.md` partial. Every list that counts the examples follows: `package.json`, `CLAUDE.md`'s command line, `docs.js`, README, `examples/README.md`, `src/models/examples.json` and `test/integration/examples.test.js`.
+  - **Skills (operator: kiss-site-new, kiss-page-add, kiss-site-migrate)**, each with a skill-coverage row.
+  - **A second clean room**, asked to write a `config.transforms` entry from the shipped docs alone.
+  - **`scope:`** is widened to `examples/15-partial-transforms/**`, `examples/README.md`, `docs.js` and `CLAUDE.md`. The impact surface is unchanged: still the public API this branch already ships, now demonstrated.
 
 ## Pulse log
 

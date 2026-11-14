@@ -1,0 +1,38 @@
+{{#extend "layout" showSource=true}}
+
+  {{#content "main"}}
+  <section class="hero">
+    <p class="eyebrow">Example 15 &middot; partial transforms</p>
+    <h1>This week at the bar</h1>
+    <p>What is on the grinder, when we roast, and where to look next.</p>
+  </section>
+
+  <section class="card">
+    {{> "this-week"}}
+  </section>
+  {{/content}}
+
+  {{#content "demo"}}
+  <p>
+    <strong>The card above is one Markdown file.</strong>
+    <code>src/partials/this-week.md</code> is a template before it is Markdown, so it does
+    three things a template does: it reads the page's model (the guest coffee and its notes,
+    from <code>router.js</code>), it links to the other two pages with <code>link</code>,
+    and it calls the <code>callout</code> partial with three arguments. Then the result
+    is rendered as Markdown. A link to a page that does not exist fails the build, here as
+    anywhere.
+  </p>
+  <p>
+    <strong>Two things to know when Handlebars runs first.</strong> What it writes is
+    Markdown's input, so a value with a <code>*</code> or <code>_</code> in it can turn into
+    emphasis. And a partial call alone on its line takes that line's newline with it: give
+    it a blank line before and after, as this file does.
+  </p>
+  <p>
+    The <a href="{{link 'prices'}}">price list</a> and the
+    <a href="{{link 'brewing'}}">brew guide</a> are made from two file types kiss does not
+    know, which the site teaches it in <code>config.transforms</code>.
+  </p>
+  {{/content}}
+
+{{/extend}}

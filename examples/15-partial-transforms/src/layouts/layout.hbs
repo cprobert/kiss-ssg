@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}} · {{config.site.name}}</title>
+  <meta name="description" content="{{#if description}}{{description}}{{else}}{{config.site.tagline}}{{/if}}">
+  <meta name="generator" content="kiss-ssg">
+  {{!-- One link style, root-relative, on every page: a page by its id with
+        `link`, a file the build wrote with "/" plus `asset`. So the site is
+        previewed served from its build folder (`--dev`, or any static server
+        rooted at public/), never opened off the file system. --}}
+  <link rel="stylesheet" href="/{{asset 'css/site.css'}}">
+  {{#block "head"}}{{/block}}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a class="brand" href="{{link 'index'}}">
+        <span class="brand__mark" aria-hidden="true">A&amp;O</span>
+        <span class="brand__text">
+          <strong>{{config.site.name}}</strong>
+          <small>{{config.site.tagline}}</small>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Site">
+        {{#each config.nav}}
+        {{#isActive .. href=(link id)}}<a href="{{href}}" class="nav__link{{#if active}} is-active{{/if}}"{{#if @current}} aria-current="page"{{/if}}>{{label}}</a>{{/isActive}}
+        {{/each}}
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    {{#block "main"}}{{/block}}
+
+    {{#if showSource}}
+    <section class="source-panel">
+      <h2>How this example works</h2>
+      {{#block "demo"}}{{/block}}
+    </section>
+    {{/if}}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap site-footer__inner">
+      <p>&copy; {{config.site.name}} — a fictional roastery, built with&nbsp;<strong>kiss-ssg</strong>.</p>
+    </div>
+  </footer>
+</body>
+</html>
