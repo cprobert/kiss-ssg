@@ -220,7 +220,9 @@ fails the build.
 - **Read the output of any `.md` partial that interpolates.** What Handlebars inserts is
   now Markdown's input: a `*` or `_` in a value can become emphasis, and a partial called
   on a line indented four spaces becomes a code block. Un-indent the call, or move the
-  value out of the Markdown.
+  value out of the Markdown. A partial call alone on its line swallows that line's
+  newline: leave a blank line after it, and a second one if the called file has no
+  final newline, or the paragraph after it loses its `<p>`.
 - **Under `markdown: { html: false }`, a `.md` partial escapes the HTML its own helpers
   and partials insert.** Make such a partial a `.hbs` partial and keep the call outside
   the `{{#markdown}}` block (GUIDE.md § Markdown options).

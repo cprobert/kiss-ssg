@@ -52,6 +52,10 @@ which would change every existing site's output. `lib/html-split.js`'s
 `LineWriter` writes the calls it generates so the rule adds and removes
 nothing: column 0 when a call starts a line, a line break written twice after
 one (Codex review, 2026-10-01 and 10-02). A local guard at one call site.
+Since 2.16 the swallowed newline also reaches Markdown: in a `.md` partial,
+`{{> "x"}}` then one blank line, where `x` has no final newline, leaves no
+blank line, and the paragraph after the call loses its `<p>`. Documented in
+GUIDE § Partial transforms, not guarded.
 **Re-check:** render `{{> "p"}}` indented two spaces, with `p` registered as
 `<pre>a\nb</pre>`, and see whether `b` gains the indent; render
 `{{> "p"}}\nx` and see whether the newline survives.

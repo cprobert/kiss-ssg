@@ -580,6 +580,7 @@ Because Handlebars runs before Markdown, what it inserts is Markdown's input:
 
 - a `*` or `_` in an inserted value can become emphasis;
 - a partial called on a line indented four spaces becomes a code block;
+- a partial call alone on its line swallows that line's newline (Handlebars' "standalone" rule), so give it a blank line before and after; if the called file has no final newline, the paragraph after the call loses its `<p>`, and a second blank line puts it back;
 - under `markdown.html: false` inserted HTML is escaped (see [Markdown options](#markdown-options)).
 
 `config.transforms` adds an extension, or replaces the `md` or `txt` built-in. Each key is an extension without the dot:
