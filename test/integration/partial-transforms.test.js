@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import Kiss from '../helpers/kiss.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite } from '../helpers/site.js'
+import { rebuildEntries } from '../../lib/rebuild.js'
 
 let site
 afterEach(async () => {
@@ -169,6 +170,45 @@ describe('config.transforms', () => {
     const page = err.failures.find((f) => f.view === 'index.hbs')
     expect(page.error.message).toMatch(/\.adoc transform's setup failed/)
     expect(await site.read('public/plain.html')).toContain('plain page')
+  })
+
+  // A scoped watch rebuild is the other path that renders, and it used to
+  // await only the helpers: a page edited while a slow setup was pending
+  // rendered before its transform could (Codex, slice 1, round 3).
+  it('holds a scoped rebuild until every setup has settled', async () => {
+    site = await makeSite({
+      'src/partials/note.adoc': 'text',
+      'src/pages/index.hbs': '{{> "note"}}',
+    })
+    let open
+    const gate = new Promise((resolve) => {
+      open = resolve
+    })
+    let ready = false
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: silentLogger,
+      transforms: {
+        adoc: {
+          setup: async () => {
+            await gate
+            ready = true
+          },
+          render: (output) => {
+            if (!ready) throw new Error('rendered before setup')
+            return `<adoc>${output}</adoc>`
+          },
+        },
+      },
+    }).scan()
+    await Promise.all(kiss._promises)
+    const rebuilt = rebuildEntries(kiss, kiss._stack)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(await site.exists('public/index.html')).toBe(false)
+    open()
+    await rebuilt
+    expect(kiss._failures).toEqual([])
+    expect(await site.read('public/index.html')).toContain('<adoc>text</adoc>')
   })
 
   it('refuses a transform for .hbs or .html, and a render that is not a function', () => {
