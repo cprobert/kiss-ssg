@@ -198,6 +198,16 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
   - **Offer:** example 4's stylesheet moved to `/{{asset …}}`, past the approved link fix. The cost is that the page no longer opens from disk with its CSS. Operator: **keep**.
   - **Open:** Codex at the close; `npm run gates`; the version bump to 2.16.0, with the changelog entry from the spec.
   - **Decision: ready to close.** Every criterion is met except the ones only the close can meet: Codex at the close, the gates, and the changelog with the bump. `/branch-close` runs only when the operator asks.
+- **2026-11-14** — **Slice 4 (promotion) landed:** `fd9c9c7` (example 15, three skills, the worth-adopting note) and `34b50c6` (clean room 2's llms.txt pointer and blank-line trap). No `lib/` change since the last pulse. 0 commits behind `origin/main`.
+  - **Checks:** `aikb`, `skill-coverage`, `skill-code-blocks`, `examples` and `changelog` tests: 5 files, 720 tests, exit 0. The full suite last ran at `fd9c9c7` (5,021 passed). `scope-check` exits 0.
+  - **Independent review:** `/codex:review` of the whole branch against `main` found no actionable defects. That is not the close's Codex, which is still owed.
+  - **Eyeball: looked, by Claude, at the operator's direction** ("use /webapp-testing to see for yourself"). Playwright on example 15's three pages at 1100px and 375px: tables, captions, recipe cards and links render; no console errors or failed requests; 375px has no sideways scroll. It found two faults, both fixed in this pulse's commit:
+    - `.callout` had no bottom margin, so the paragraph after it sat flush. Example 14 defines the rule but never uses it; example 15 is the first to put a callout mid-card.
+    - The cafetiere card said "Time 4:00", but its steps take nine minutes. It now says 9:00.
+    - Not an operator's own look: example 4's eyeball is still deferred to `/branch-close` Step 5a.
+  - **Offer:** the layout-collision clause was dropped from the `llms.txt` index line to stay under the cap (15,998 characters); the build failure teaches it. Operator: **keep**.
+  - **Drift:** none. The promotion is the Amendment recorded above, and the surface is unchanged.
+  - **Decision: ready to close.** `/branch-close` runs only when the operator asks.
 
 ---
 

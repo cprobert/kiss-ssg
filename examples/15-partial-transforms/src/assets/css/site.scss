@@ -397,6 +397,7 @@ main :is(p, li, blockquote) {
 
 .callout {
   @include panel;
+  margin: 0 0 1rem;
   padding: 1rem 1.25rem;
   border-left: 4px solid var(--accent);
 
