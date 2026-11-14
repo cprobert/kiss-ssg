@@ -3,6 +3,7 @@ branch: chore/phase-0-leftovers
 base: main
 status: closed
 opened: 2026-11-13
+consolidated: 2026-11-14
 scope: planning/**, test/**, AIKB/**, lib/**, bin/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json, scripts/base-branch.mjs, CONTRIBUTING.md, .claude/skills/secrets-scan/SKILL.md
 ---
 

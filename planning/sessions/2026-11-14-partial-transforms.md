@@ -3,6 +3,7 @@ branch: feat/partial-transforms
 base: main
 status: closed
 opened: 2026-11-14
+consolidated: 2026-11-14
 scope: lib/partials.js, lib/config.js, lib/assets.js, lib/asset-copy.js, lib/build-finish.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/router.js, examples/4-layouts-and-partials/src/**, examples/9-migrated-from-v1/AIKB/last-build.json, examples/15-partial-transforms/**, examples/README.md, docs.js, CLAUDE.md, planning/**, src/**, .claude-plugin/**
 ---
 

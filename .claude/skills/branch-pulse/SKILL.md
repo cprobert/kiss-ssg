@@ -107,6 +107,8 @@ Name **one** artefact this branch has changed that a gate structurally cannot ju
 
 Then **stop and ask** with AskUserQuestion: did you look, and what did you see? Do not answer it for them, and do not accept your own summary as the answer — Claude reporting that Claude's output looks right is the loop this step breaks.
 
+**If the operator hands the look back** ("I can't see it, check it yourself"), run the look, then send what it produced (the screenshot, the file) with `SendUserFile` and ask again. It is **looked** only once the operator has seen that file; otherwise record **looked, by Claude**, never plain looked. Both rendered-page looks on 2026-11-14 were handed back this way, and Claude's look found two faults the operator never saw.
+
 Record the answer verbatim in Step 7's pulse line, in one of three shapes, because `/branch-close` Step 5a reads this log rather than asking again:
 
 - **looked** — what they saw, and whether it matched;
