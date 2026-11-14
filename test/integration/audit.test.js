@@ -240,7 +240,9 @@ describe('the launch-readiness audit', () => {
     // Each page misses title, description, og:image and canonical (4 + 4),
     // index has two h1s and about an image with no alt and no size (3), and
     // the site has no favicon, no 404 page, a source map and a console.log (4).
-    expect(info).toContain('Audit: 2 pages, 15 findings')
+    // The lines below are one per check, so the count names the checks too:
+    // eleven, each fired once per page or once for the site.
+    expect(info).toContain('Audit: 2 pages, 15 findings from 11 checks')
     expect(notices).toContain(
       `audit stray-file: 1 file (${site.build}/css/site.css.map)`,
     )

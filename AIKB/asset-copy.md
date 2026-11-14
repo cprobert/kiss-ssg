@@ -53,6 +53,13 @@ into the instance go through it (`kiss._stagedPath()`, `kiss._carry()`, `kiss._r
   set it recorded last time before recording this time, which is also what lets a deleted or
   renamed broken stylesheet lose its entry. Failures are `kiss._carry()`-marked: a replay keeps
   them, because an asset re-copy is the only thing that can re-check one.
+- **A source folder that is not there is an `<assets: …>` failure**, owned and cleared the same way
+  as a Sass failure, so the copy that finds the folder clears it. `copyAssets` returns
+  `missing: true` and this module decides; the only decision is "fail", because the derived
+  `config.folders.assets` copy never gets here (the constructor creates that folder,
+  `foldersToEnsure`), and an explicit `.copyAssets()` naming a missing folder is an author's
+  mistake. Until 2.16 that call did nothing and logged "Copied assets"
+  (`test/integration/assets-missing.test.js`).
 - **The key is computed after the copy has run**, not at registration: canonicalising needs the
   path to exist, and two spellings of a destination that does not exist yet could not canonicalise
   and each kept its own key — a failure stranded under the one nothing would reach again.

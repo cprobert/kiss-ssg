@@ -631,19 +631,19 @@ kiss
 
 **Note**: The file locations of the models, views, and controllers are relative to the folder locations defined in the kiss configuration. Alternatively, instead of passing a file location you can pass a native object for that setting.
 
-Views: can se a .hbs file or a string
-Models: can be a .json file, a http api endpoint, or a JSON object
-Controllers: can be a .js file or a function that returns a page option JSON to be merged into the page options
+- Views: a `.hbs` file or a template string.
+- Models: a `.json` file, an HTTP API endpoint, or an object.
+- Controllers: a `.js` file, or a function that returns page options to merge into the page's options.
 
 The options that you can pass to .page() & pages() are:
 
 ```js
   {
     view: 'index.hbs',
-    model: {}
+    model: {},
     controller: ({model})=>{return {model: model}},
     title: 'Page Title',
-    description: 'A description of the page (useful for meta data)'
+    description: 'A description of the page (useful for meta data)',
     path: '/',
     slug: 'index',
   }
@@ -661,7 +661,7 @@ These options are both used internally by kiss and are available in view.
 - slug = the name of the file without the extension
 - generate = whether to build this page at all (default `true`); set to `false` to skip it entirely — e.g. a fanned-out `.pages()` item that fails a check in its controller. Nothing is written for that page, and `.generate()`/`.complete()` still resolve normally.
 
-page and path create the url, i.e. /{path}/{slug}.html
+`path` and `slug` make the URL: `/{path}/{slug}.html`.
 
 _Note:_ If you don't pass a path or a slug they will be inferred from the view — but only when the view is a `.hbs` filename. A view passed as a template string has no file path to infer from, so it gets a generated `snippet-N` slug and no folder; pass a `slug` (and a `path`, if you want one) yourself.
 
@@ -670,7 +670,6 @@ _Note:_ Slugs and path segments are slugified: accented Latin letters are transl
 What the option list above leaves implicit:
 
 - A `model` given as a folder name loads every `*.json` in it as an array. A URL model whose response is not 2xx fails that page.
-- `title` defaults to the page's own slug, title-cased with hyphens as spaces (`about-us` → `About Us`).
 - `ext` defaults to `html`. A leading `.` is stripped and the rest slugified, so an `ext` derived from model data cannot steer the output path (`'.xml'` → `xml`, `'../x'` → `x`).
 - `aliases` lists old URL paths this page now answers, each emitted as a `301` (see **Redirects**). On a `.pages()` fan-out the aliases belong to each **record**, never to the registration.
 - `config` overrides settings for this page only, including `extensionLess`: on an `extensionLess` site, `config: { extensionLess: false }` with `slug: '404'` writes `404.html` rather than `404/index.html`, which is the filename Netlify and Cloudflare Pages look for and will not fall back from.
@@ -1948,7 +1947,7 @@ The finding is advisory: it never changes `ok` and never changes the exit code. 
 
 **Orphan pages.** The same scan lists, as `links.orphans`, every HTML page no other page links to by any spelling, which only a search engine or a URL someone was given can reach. `--summary` names the first five on one line, `orphan pages (N, no other page links to them): …`. The home page and `404.html` are never orphans, and neither is a page in a learning package, which an LMS opens from the package's manifest. A page that links only to itself is still one. It is advisory, like a broken link: a campaign landing page may be unlinked on purpose. The `kiss-information-architecture` skill reads it.
 
-**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on. Five checks get one line per value instead, because the value is what you change: the two duplicate checks, `viewport-zoom-lock`, `fragment-missing` and `checkbox-prechecked` (whose value is the box's label).
+**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings from K checks` line, each check that fired gets one line naming up to three of the paths it fired on. Five checks get one line per value instead, because the value is what you change: the two duplicate checks, `viewport-zoom-lock`, `fragment-missing` and `checkbox-prechecked` (whose value is the box's label).
 
 ```
   audit description-missing: 12 pages (./public/about.html, ./public/contact.html, ./public/index.html, …)
@@ -2046,7 +2045,7 @@ It reads `<script src>`, `<iframe src>`, `<img>` and `<source>` `src` and `srcse
 
 **Redirects and renames.** The same report carries `redirects` — the redirect files this build wrote from your pages' `aliases`, the resolved `rules` as data, and three more advisory findings: a page the last record had that this build no longer writes and no alias covers (`  removed without redirect: <path>`), a page the record and this build share an `id` with that is now written somewhere else with nothing answering its old URL (`  moved without redirect: <from> -> <to> (<id>)`), and an alias a live page already answers, which the host will silently ignore (`  alias collides with a page: <path>`). See [Redirects](#redirects).
 
-Under check, the site's own build log **counts** broken links and audit findings (`3 broken links (listed in the check report)`, `Audit: 8 pages, 5 findings (listed in the check report)`) instead of listing them, because a terminal shows stderr beside the summary and every finding would be printed twice; the report is the list. Under `--summary`, `  audit skipped (cleanBuild: false): <ids>` names the audit checks a `cleanBuild: false` build did not run, and `N pages canonical elsewhere` counts the pages whose `canonical` option names another URL.
+Under check, the site's own build log **counts** broken links and audit findings (`3 broken links (listed in the check report)`, `Audit: 8 pages, 5 findings from 3 checks (listed in the check report)`) instead of listing them, because a terminal shows stderr beside the summary and every finding would be printed twice; the report is the list. Under `--summary`, `  audit skipped (cleanBuild: false): <ids>` names the audit checks a `cleanBuild: false` build did not run, and `N pages canonical elsewhere` counts the pages whose `canonical` option names another URL.
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance; `KISS_AIKB=1` (same rule again) is the one thing `kiss-ssg aikb` adds on top of those two. Any value counts as set except `0`, `false` and the empty string. None of them changes your script's exit code — that stays yours.
 
 Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
@@ -2208,7 +2207,7 @@ Exit codes: 0 drafted or answered, 1 refused, 2 a usage error. A site whose kiss
 
 **Every entry of `kiss.handlebars.partials` is a function** — a compiled template that also records which page invoked it, which is what scopes a watch-mode partial edit to the pages that used it. `handlebars-layouts` recompiles a string layout on every page render and never caches it, so compiling at registration is also what stops a layout being recompiled once per page. Code of yours that renders an entry by name must accept a function, and must pass its own `options.data` through: `const p = kiss.handlebars.partials[name]; typeof p === 'function' ? p(ctx, { data: options.data }) : kiss.handlebars.compile(p)(ctx, { data: options.data })`. That data frame is how the page is recorded as using the partial: a bare `p(ctx)` renders correctly, but under `.watch()` that page is not re-rendered when the partial changes (unless no page recorded it at all, when every page is).
 
-- `.copyAssets(sourceDir, targetDir)` — compiles every `*.scss`/`*.sass` under `sourceDir` to a sibling `.css` and copies everything else straight through to `targetDir`. Runs automatically once at construction time for `config.folders.assets` → `config.folders.build`; callable again for extra asset directories. Calls run one after another in registration order, not concurrently. Every emitted file is recorded in the instance's asset manifest — that is what `{{asset}}` reads, and what `config.assets` renames (see the config table).
+- `.copyAssets(sourceDir, targetDir)` — compiles every `*.scss`/`*.sass` under `sourceDir` to a sibling `.css` and copies everything else straight through to `targetDir`. Runs automatically once at construction time for `config.folders.assets` → `config.folders.build`; callable again for extra asset directories. A `sourceDir` that does not exist fails the build, named `<assets: …>` (until 2.16 the call did nothing and logged a copy); the `config.folders.assets` copy never does, because the constructor creates that folder. Calls run one after another in registration order, not concurrently. Every emitted file is recorded in the instance's asset manifest — that is what `{{asset}}` reads, and what `config.assets` renames (see the config table).
 - `kiss.handlebars` — this instance's own Handlebars environment (`Handlebars.create()`, created per `Kiss`, so helpers and partials never leak between instances, and helpers registered on the global `handlebars` module are not seen); register custom helpers on it directly.
 - `import { utils } from 'kiss-ssg'` — `toSlug`, `sanitizePath`, `toTitleCase`, `trimLines`, `trimPath`, `posixPath`, `globFiles(dir, pattern)`, `hashId`, `toURLKey`, `toAbsoluteUrl(siteUrl, path, { trailingSlash })`, `toCanonicalPath`, `servedPathFor(pageURL, { trailingSlash })`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }` — the page's options, its model included, without `config`, which carries your `fetch.headers` and is left out because this file is written whether or not you are in dev and so can be deployed. Chainable; handy from a `.generate()` callback to see what the build actually produced.

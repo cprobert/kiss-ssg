@@ -138,15 +138,18 @@ describe('copyAssets', () => {
     expect(written).not.toMatch(/deprecated/i)
   })
 
-  it('resolves (does not reject or hang) when the source is missing', async () => {
+  it('resolves (does not reject or hang) when the source is missing, and says so', async () => {
     site = await makeSite({})
     const result = await copyAssets(
       `${site.root}/nope`,
       `${site.root}/out`,
       deps,
     )
+    // `missing`, not an error: the caller (lib/asset-copy.js) decides what a
+    // missing folder means, and claims no copy.
     expect(result.data).toBeNull()
-    expect(result.error).toBeTruthy()
+    expect(result.missing).toBe(true)
+    expect(await fs.pathExists(`${site.root}/out`)).toBe(false)
   })
 
   it('resolves with null data when a folder is not given', async () => {

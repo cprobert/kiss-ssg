@@ -228,6 +228,11 @@ fails the build.
   the `{{#markdown}}` block (GUIDE.md § Markdown options).
 - **Drop a `kiss.registerPartials()` that only followed a `kiss.remarkable` change.** It
   is no longer needed, and it is harmless if left.
+- **A `.copyAssets()` that names a folder that is not there now fails the build**, named
+  `<assets: …>`. It used to do nothing and log "Copied assets", so a mistyped path, or
+  an instance name with no folder, passed silently. Run `kiss-ssg check`: a failure
+  names the folder to create or the path to correct. The `config.folders.assets` copy is
+  unaffected.
 
 ### Upgrading: worth adopting
 

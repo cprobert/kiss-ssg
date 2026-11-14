@@ -3,7 +3,7 @@ branch: feat/partial-transforms
 base: main
 status: open
 opened: 2026-11-14
-scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/router.js, examples/4-layouts-and-partials/src/**, examples/9-migrated-from-v1/AIKB/last-build.json, examples/15-partial-transforms/**, examples/README.md, docs.js, CLAUDE.md, planning/**, src/**, .claude-plugin/**
+scope: lib/partials.js, lib/config.js, lib/assets.js, lib/asset-copy.js, lib/build-finish.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/router.js, examples/4-layouts-and-partials/src/**, examples/9-migrated-from-v1/AIKB/last-build.json, examples/15-partial-transforms/**, examples/README.md, docs.js, CLAUDE.md, planning/**, src/**, .claude-plugin/**
 ---
 
 # Session — 2026-11-14: Partial transforms (2.16)
@@ -111,6 +111,14 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
     4. GUIDE § .page() has old prose ("can se a .hbs file", "page and path create the url"), and describes the default title twice, differently.
     5. `kiss-ssg init` writes `CLAUDE.md`, `AGENTS.md`, `.claude/settings.json` and `.codex/config.toml`, where `llms.txt` says only that it writes the scripts.
     6. `llms.txt` does not show the `{{#isActive .. href=(link id)}}` nav form, or that `href` is readable inside the block.
+- **2026-11-14 — The six findings, here (the operator's call).** Asked whether to take the six findings above before the close, the operator chose **all six here** over "only 4 and 6" and "none: post to #90". So the docs-backlog branch no longer owns them. #90's two 3.0 design questions stay out.
+  - **`scope:`** is widened to `lib/assets.js` and `lib/build-finish.js` (findings 1 and 2), and then to `lib/asset-copy.js`, where finding 1's failure is recorded. Both change log lines only, not built output, so the fleet result stands. Codex at the close now covers both modules.
+  - **`llms.txt`** is 2 characters under its cap, so findings 3, 5 and 6 need cuts. Each cut is put to the operator before it lands.
+  - **What was done:**
+    1. **Finding 1 was wrong as stated; the defect beside it was real.** The constructor creates `src/assets` (`foldersToEnsure`, `lib/kiss.js:923`), so "Copied assets" described an empty folder truthfully. Measured: an explicit `.copyAssets()` naming a missing folder also logged "Copied assets" and passed, because fs-extra runs the filter before checking the source and the filter refused the root. The operator chose **"default quiet, explicit fails"** over a quiet note for both and a wording-only fix. It is now an `<assets: …>` build failure (`lib/assets.js` returns `missing: true`, `lib/asset-copy.js` records it), with a 2.16.0 upgrade bullet in the spec's draft. The "quiet" half needs no code, because the derived folder always exists; a "No assets folder" branch was written, found unreachable and removed. The fleet's five `.copyAssets()` calls all name folders that exist. `red-first: test/integration/assets-missing.test.js failed at main (68633b4), 2026-11-14`.
+    2. The summary is now `Audit: N pages, M findings from K checks`, since the lines below it are one per check. `red-first: test/integration/audit.test.js failed at main (68633b4), 2026-11-14`.
+       3, 5, 6. `llms.txt` lines 13, 103 and 139, measured against `lib/init.js`'s help, `lib/handlebars-helpers.js:532` and a fresh three-page build. The operator approved three cuts, all pointers (the config section list, and the README and CHANGELOG lines under Docs), plus mine of "see the trap above". Result: 15,994 characters.
+    3. GUIDE § .page(): the typo, the three unformatted lines, "page and path", the duplicate `title` default (the surviving one matches `lib/controller-resolver.js:129`), and two missing commas in the options example.
 
 ## Pulse log
 
