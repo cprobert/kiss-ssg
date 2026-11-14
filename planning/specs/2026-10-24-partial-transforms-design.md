@@ -1,10 +1,10 @@
 # Partial transforms (design)
 
-Status: **In progress** on `feat/partial-transforms`, opened 2026-11-13:
-[the session log](../sessions/2026-11-14-partial-transforms.md). The engine and
-the docs have landed; the draft 2.16.0 changelog entry is at the
-[end of this document](#changelog-entry-draft-for-2160), for `/branch-close` to
-carry into `CHANGELOG.md` with the version bump. Written 2026-10-24 from a
+Status: **Shipped as 2.16.0**, closed 2026-11-14 on `feat/partial-transforms`:
+[the session log](../sessions/2026-11-14-partial-transforms.md). The changelog
+draft at the [end of this document](#changelog-entry-draft-for-2160) went into
+`CHANGELOG.md` with the bump, plus the audit-line note from the session's six
+findings. Written 2026-10-24 from a
 feasibility conversation. It is the first release of Phase 1 (2.16) of
 [the roadmap to 3.0](../plans/2026-11-10-roadmap-to-3.0.md). The claims about
 current behaviour below describe the engine at `db164de` (2.8.0), and were
