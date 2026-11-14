@@ -1,7 +1,7 @@
 ---
 branch: feat/markdown-it
 base: main
-status: open
+status: closed
 opened: 2026-11-14
 scope: lib/**, types/**, test/**, package.json, package-lock.json, GUIDE.md, llms.txt, README.md, AIKB/**, CHANGELOG.md, CLAUDE.md, src/**, scripts/budgets.mjs, scripts/gates.mjs, scripts/markdown-links.mjs, scripts/bench.mjs, .github/pull_request_template.md, .claude-plugin/marketplace.json, planning/**, plugins/**, examples/**, .claude/skills/**
 ---
@@ -60,3 +60,121 @@ scope: lib/**, types/**, test/**, package.json, package-lock.json, GUIDE.md, llm
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-14: markdown-it in place of remarkable, and the freeze
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:**
+
+- The renderer swap: markdown-it 15 is the renderer behind `.md` partials and `{{markdown}}`, as `kiss.markdown`, and `kiss.remarkable` is removed (`940b61f`).
+- The feature freeze: `budgets` is the sixth gate, with the baseline recorded at the freeze (`f689d83`).
+- Ten renderer behaviours pinned in `test/integration/markdown.test.js`, each seen failing on `main` (`940b61f`, `19a8ae6`, `452e8f4`).
+- 2.17.0, with an upgrade note (`19591fc`).
+- Phase 1 of the road to 3.0 is closed.
+
+## Reflect — what the session was
+
+**Framing.** The brief was framed well before any code. The roadmap had already named the work, and the open turned it into eleven checkable criteria. The read-back turned a three-times-recurring item (the publish record) into a criterion, not a fourth read-back. Two design forks surfaced once the code met reality: footnotes and `<s>`. Both were put to the operator as questions before any code depended on them.
+
+**Shape.** The work was planned for most of its length: swap, freeze, pulse, review, clean room. It turned emergent at the operator's request to fetch live CMS data for learna-kiss and diploma-msc. The planned route had reached "fleet identical on three sites", which was true and would have been the release claim. The emergent leg found what that claim had missed:
+
+- 71 of 1,953 files changed on the two sites the operator cares most about;
+- one live broken link, fixed as a side effect;
+- three renderer behaviours with no test and no line in the changelog.
+
+The plan served the swap. The emergent leg served the release.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering: the session's decisive moment was the operator's.** After a fleet check and a browser comparison that both came back clean, the operator said: "Run get data on learna and diploma MSc. They're the ones I really want to know are safe." Claude had treated learna-kiss (failing without CMS data) and diploma-msc (non-deterministic, main against main) as limits of the measurement, and reported them as such. The operator treated them as the sites that mattered and asked for the measurement to be made possible.
+
+That exchange produced something neither side held alone. The operator knew which sites carry real content. Claude worked out how to fetch it without touching the real folders:
+
+- a throwaway clone for each site;
+- an install with `--ignore-scripts`, so the global `firebase-tools` postinstall didn't run;
+- `core.longpaths` passed through `GIT_CONFIG_*` for the 190-character filenames;
+- the fetched content committed in the clone only.
+
+Claude then traced every one of the 71 files to its CMS source. The diploma-msc control, main against main, gave 0 bytes changed. So the earlier "inconclusive" verdict on that site had been a side effect of missing data, not a property of the site.
+
+**Verification & ownership: the human decided, and handed back the looking.** The operator decided every fork with a reason or a recommendation:
+
+- footnotes as a recipe, not a bundled plugin;
+- `<s>`, not `<del>`;
+- the minor bump;
+- keeping the re-recorded baseline;
+- skipping `/security-review`;
+- reviewing the first slice now, not only at the close.
+
+The operator also typed `/codex:review` mid-branch. But the eyeball was handed back. Asked whether § Markdown options read right, the operator answered "What do you think". That makes it **looked, by Claude**: Claude's own look found and fixed one fault (the code comment overflowing its box, `16f5dc5`). The three side-by-sides sent later have no answer on record, so it is unknown whether the operator saw the Max Healthcare spacing change. The operator meant to supervise the look at the pulse; in fact Claude judged it.
+
+**Iteration discipline: strong.**
+
+- One pulse after the first two slices, with the scope widening recorded at it.
+- Two Codex passes: the operator's at `e83a0b8`, and the close's over the whole branch.
+- Three fleet runs, the last on live data.
+- A clean room whose result Claude re-ran before accepting.
+- Every new test run red-first.
+
+One red-first was hollow at first. After `npm uninstall remarkable`, `main`'s `lib/kiss.js` failed on import, so the whole file "failed at main" without any test running. Claude caught it from the output (`(0 test)`) and re-ran with remarkable installed via `--no-save` until the run proved each test.
+
+**Where Claude over-reached, three times, each caught within a turn or two:**
+
+- It told the operator that 2.16.0's `/kiss-publish` had not run. It had, and was waiting on 2FA: an unchecked inference from `npm view` alone.
+- In a security question, it said that "a test pins" the `data:image` allowance. None did. It corrected this the next turn and wrote the test (`452e8f4`).
+- The first CHANGELOG draft claimed `&nbsp;` entities and `<iframe>` were affected. A probe showed neither was, and both lines were corrected before the bump.
+
+Each was a claim stated before its measurement, which is exactly what `CLAUDE.md` § Rules forbids. Each was caught by Claude, but only after it had been written down, and in one case after it had gone into a question.
+
+**Harness leverage: high.**
+
+- A Sonnet clean room, in the background, on the packed tarball.
+- Background fleet runs, while the freeze slice was written in the foreground.
+- Codex twice.
+- Python Playwright through `/webapp-testing`, with servers started by `Start-Process` and stopped by PID, as the last log recommended over `with_server.py`.
+- A token-level diff script once the character-level one proved quadratic.
+
+The shell-edit hook refused one PowerShell `Out-File`, and the PIDs were printed instead. The rule held.
+
+**Competency level: Active supervisor.** The operator framed, steered at the decisive moment, decided every fork and asked for the review mid-branch. The look was handed back, and the visual results have no recorded answer, which keeps it short of Agentic engineering lead.
+
+## Feedback — recommendations for next session
+
+- **Operator — give the verdict on an artefact you asked to see.** "What do you think" handed the look back twice in two days (2026-11-14 partial transforms, and here). Nobody has yet said whether the Max Healthcare spacing change is acceptable. Next time, answer the eyeball question with what you saw ("fine", or "the logo spacing matters"), even from a phone.
+- **Operator — keep naming the sites you care about.** "They're the ones I really want to know are safe" found more than every planned check combined. Say it at `/branch-open` next time, as the fleet criterion's named sites, so it is planned and not a late emergent leg.
+- **Claude — measure a claim before it goes into a question, not after.** The `data:image` claim went into a security `AskUserQuestion` unchecked. It is the same rule as retired row 83 (a relayed finding re-derived first), applied to Claude's own claims. Before an option's description states a fact, run the grep that shows it.
+- **Claude — do not report a site as "inconclusive" and stop.** learna-kiss and diploma-msc were written up as limits of the measurement. The operator had to ask for the data fetch that made them measurable. When a fleet site can't be measured, name what would make it measurable (here, `get-data` into a clone) and offer it.
+- **Process — `red-first.mjs` cannot prove a test after a dependency the base needs has been removed.** Every red-first after the uninstall failed on import at `main`. The workaround (`npm install --no-save <dep>`, run, `npm prune`) should go in `AIKB/testing.md`, or become a red-first flag that installs the base's dependencies.
+- **Process — a CMS-driven fleet site needs its data to be checked at all.** The recipe that worked: a clone, `.env` copied in, `npm install --no-package-lock --ignore-scripts`, `get-data`, the data force-added under `GIT_CONFIG_*` `core.longpaths`, then `fleet-check` on the clone, then the copied `.env` deleted. It belongs in the fleet memory, or as a `fleet-check` option, so the next phase exit starts from it.
+
+## Verdict — did we achieve the objective?
+
+**The brief:** replace remarkable with markdown-it as `kiss.markdown`, and declare the freeze by making the budget check a gate, closing Phase 1 as 2.17.0.
+
+**Verdict: met.** The objective grew once, into the live-data fleet check, and that was good drift.
+
+- [x] **remarkable out, markdown-it in, runtimeDeps not grown.** `package.json` has no remarkable. `budgets --check` shows runtimeDeps at 21, the same as before.
+- [x] **`kiss.markdown`, no `kiss.remarkable`, `config.markdown` passthrough.** Integration tests. An unknown option is ignored, which was probed.
+- [x] **Every changed byte explained and pinned.** Ten tests in "the renderer is markdown-it", all failing on `main`, with remarkable installed for the red-first run. All 71 live-data differences were traced to source. The CHANGELOG names each change, and two of its claims were corrected by measurement.
+- [x] **Fleet.** a1k9training, swan-love and learna-kiss are byte-identical without CMS data. With CMS data, diploma-msc and learna-kiss show 71 of 1,953 files changed, all explained, against a deterministic control. The browser comparison found two visible changes, both in the upgrade note.
+- [x] **Upstream entry and guide.js workaround removed.** Round 21's test passes without the unwrap.
+- [x] **`node docs`.** 336 links, none broken, the audit clean, no `<p></p>`.
+- [x] **Public API docs in the same commit.** GUIDE.md, llms.txt (15,997 characters), README.md, types, the AIKB docs, and a CONTRADICTIONS entry. The docs sweep fixed the CLAUDE.md pipeline paragraph at the close (`164fa8f`).
+- [x] **Freeze.** `budgets` is the sixth gate, `test/unit/gates.test.js` sees it fail on growth, and CLAUDE.md has one sentence on the freeze.
+- [x] **Clean room.** Sonnet built a site from the shipped docs alone, with a footnote plugin, curly quotes and `{{link}}`. Claude re-ran `check` (exit 0) and read the HTML. Its guesses were older traps, or the packing happening before the version bump.
+- [x] **Publish record.** The 2.16.0 run went from tag to staged in 2m40s and was public at 18:46:16. `disable-model-invocation` held. Whether auto mode refused the tag push is unknown, because the operator doesn't remember.
+- [x] **CHANGELOG 2.17.0 with `### Upgrading`, and the gates pass.** All six passed at `cbca292`. Codex reviewed the whole branch at the close and found no actionable regressions.
+
+**What is better:**
+
+- The renderer is maintained and follows CommonMark.
+- A broken Google Scholar link on diploma-msc will be fixed at that site's next build.
+- Budget growth now fails a gate.
+
+**Still open:**
+
+- Whether the Max Healthcare logo spacing needs a `<p>` in the CMS.
+- Publishing 2.17.0 with `/kiss-publish`, and the fleet's upgrade to it, which Phase 1's exit needs.
+- #90's clean-room traps.
+- The red-first and CMS-fleet recipes named above.
