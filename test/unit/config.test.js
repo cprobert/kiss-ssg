@@ -9,6 +9,7 @@ import {
   DEFAULT_AUDIT,
   DEFAULT_MARKDOWN_COPIES,
   resolveMarkdownCopies,
+  resolveTransforms,
   redactFetchHeaders,
 } from '../../lib/config.js'
 import { CHECKS } from '../../lib/audit.js'
@@ -781,6 +782,46 @@ describe('host', () => {
   it('refuses a cache-header format it does not know', () => {
     expect(() => resolveConfig({ cacheHeaders: { format: 'vercel' } })).toThrow(
       /config\.cacheHeaders\.format must be one of/,
+    )
+  })
+})
+
+describe('transforms', () => {
+  const render = (o) => o
+
+  it('is an empty table by default', () => {
+    expect(resolveConfig({}).transforms).toEqual({})
+    expect(resolveTransforms(null)).toEqual({})
+  })
+
+  it('keeps a site transform as given', () => {
+    const adoc = { render, compile: false, setup: async () => {} }
+    expect(resolveConfig({ transforms: { adoc } }).transforms).toEqual({ adoc })
+  })
+
+  it('refuses a non-object, a dotted key, and the template extensions', () => {
+    expect(() => resolveTransforms([])).toThrow(/keyed by extension/)
+    expect(() => resolveTransforms({ '.adoc': { render } })).toThrow(
+      /without the dot/,
+    )
+    expect(() => resolveTransforms({ hbs: { render } })).toThrow(
+      /take no transform/,
+    )
+    expect(() => resolveTransforms({ HTML: { render } })).toThrow(
+      /take no transform/,
+    )
+  })
+
+  it('refuses an entry whose render, compile or setup has the wrong type', () => {
+    expect(() => resolveTransforms({ adoc: null })).toThrow(/must be an object/)
+    expect(() => resolveTransforms({ adoc: {} })).toThrow(
+      /render must be a function/,
+    )
+    expect(() =>
+      resolveTransforms({ adoc: { render, compile: 'no' } }),
+    ).toThrow(/compile must be true or false/)
+    expect(() => resolveTransforms({ adoc: { render, setup: 1 } })).toThrow(
+      /setup must be a function/,
     )
   })
 })

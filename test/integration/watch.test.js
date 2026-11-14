@@ -1676,6 +1676,42 @@ describe('watch()', () => {
     )
   })
 
+  // The watcher and the partial branch of the rebuild filter nothing by
+  // extension, so a site's own transform rebuilds like the built-ins do —
+  // scoped to the page that rendered it, not the whole stack.
+  it('edit of a config.transforms partial re-renders only the pages that use it', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '[{{> foo}}]',
+      'src/pages/other.hbs': 'other',
+      'src/partials/foo.adoc': 'V1',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      logger: tracing,
+      transforms: { adoc: { render: (output) => `<adoc>${output}</adoc>` } },
+    })
+      .scan()
+      .generate()
+    await kiss.complete()
+    expect(await site.read('public/index.html')).toBe('[<adoc>V1</adoc>]')
+    const before = (await fs.stat(`${site.build}/other.html`)).mtimeMs
+    kiss.watch({ entry: null })
+    await kiss._watcher.ready
+    await site.touch('src/partials/foo.adoc', 'V2')
+    await waitFor(
+      async () =>
+        (await site.read('public/index.html')) === '[<adoc>V2</adoc>]',
+    )
+    await waitFor(
+      () =>
+        !kiss._rebuildInFlight &&
+        !kiss._pendingReplay &&
+        kiss._pendingTargets.size === 0,
+    )
+    await sleep(300)
+    expect((await fs.stat(`${site.build}/other.html`)).mtimeMs).toBe(before)
+  })
+
   it('edit of a layout re-renders pages that extend it', async () => {
     site = await makeSite({
       'src/pages/index.hbs':

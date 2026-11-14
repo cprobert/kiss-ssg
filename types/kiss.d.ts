@@ -492,6 +492,10 @@ declare class Kiss {
     private _idNoticed;
     /** @private @type {Promise<void>} */
     private _helpersReady;
+    /** @private @type {Promise<void>} */
+    private _transformsReady;
+    /** @private @type {Map<string, Error>} */
+    private _transformFailures;
     /**
      * What the site's own registrar registered on its last load, as
      * `{ name, prior }` pairs, so a reload can undo exactly what that load did
@@ -694,6 +698,16 @@ declare class Kiss {
      * @returns {string[]} the names now registered
      */
     registerPartials(): string[];
+    /**
+     * Runs every partial transform's `setup` once (`config.transforms`). A
+     * failure is recorded as `<transform .ext>` and carried across a replay —
+     * a setup is never re-run, so it stays true — and every page that calls a
+     * partial of that extension fails, naming it.
+     *
+     * @returns {Promise<void>}
+     * @private
+     */
+    private _setupTransforms;
     /**
      * Imports `config.folders.helpers`' entry and registers what it exports.
      * A folder that is not there is the ordinary case and says nothing; a

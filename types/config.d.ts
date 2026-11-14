@@ -50,6 +50,18 @@ export function resolveFetch(fetch: Record<string, any>): KissFetch;
  */
 export function assertFetchIsValid(fetch: Record<string, any>): void;
 /**
+ * `config.transforms`, checked: an object keyed by extension without the dot,
+ * each entry `{ render, compile?, setup? }`. Unknown keys of the config pass
+ * through to views, so without this a misspelt block would silently do
+ * nothing.
+ *
+ * @param {*} transforms the `transforms` key as supplied
+ * @returns {Record<string, import('./partials.js').KissTransform>}
+ * @throws if it is not an object, if a key is not a bare extension or is
+ * `html`/`hbs`, or if an entry's `render`, `compile` or `setup` has the wrong type
+ */
+export function resolveTransforms(transforms: any): Record<string, import("./partials.js").KissTransform>;
+/**
  * @param {KissConfigInput} [userConfig]
  * @returns {KissConfig} the defaults with `userConfig` merged over them
  * @throws if `cleanBuild` is not `true`, `false` or `'atomic'`, if a key of
@@ -253,6 +265,7 @@ export function redactFetchHeaders<T extends Record<string, any>>(config: T): T;
  * @property {KissFetch} fetch
  * @property {KissAssets} assets
  * @property {KissMarkdown & Record<string, any>} markdown
+ * @property {Record<string, import('./partials.js').KissTransform>} transforms a site's own partial transforms, keyed by extension without the dot (`adoc`), laid over the built-in `md` and `txt`; `{}` by default
  * @property {KissLinks} links gates the broken-internal-link scan on a settled non-dev build
  * @property {KissHost[]|null} host where the site is deployed, as a list; `null` (the default) when the site has not said
  * @property {KissRedirects} redirects how page `aliases` are encoded on a settled build
@@ -415,6 +428,7 @@ export const DEFAULT_CONFIG: Readonly<{
         xhtmlOut: true;
         breaks: false;
     }>;
+    transforms: Readonly<{}>;
     links: Readonly<{
         check: true;
         canonical: false;
@@ -764,6 +778,10 @@ export type KissSettings = {
     fetch: KissFetch;
     assets: KissAssets;
     markdown: KissMarkdown & Record<string, any>;
+    /**
+     * a site's own partial transforms, keyed by extension without the dot (`adoc`), laid over the built-in `md` and `txt`; `{}` by default
+     */
+    transforms: Record<string, import("./partials.js").KissTransform>;
     /**
      * gates the broken-internal-link scan on a settled non-dev build
      */

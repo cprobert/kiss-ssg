@@ -383,7 +383,7 @@ describe('kiss-ssg check', () => {
       .filter((line) => /^\s*audit [a-z-]+/.test(line))
     expect(listed.length).toBeGreaterThan(0)
     expect(run.stderr).toMatch(
-      /Audit: 1 page, \d+ findings? \(listed in the check report\)/,
+      /Audit: 1 page, \d+ findings? from \d+ checks? \(listed in the check report\)/,
     )
     expect(run.stderr).not.toMatch(/^\s*audit [a-z-]+/m)
   }, 60000)

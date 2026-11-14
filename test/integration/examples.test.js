@@ -123,7 +123,7 @@ describe.skipIf(!hasExamples)('example builds', () => {
   // `public/`, so two builds racing would corrupt each other's page counts.
   // Vitest runs a plain `describe`'s tests in declaration order by default,
   // which is all sequencing this needs.
-  describe('the fourteen examples, built in place', () => {
+  describe('the fifteen examples, built in place', () => {
     it('1 · scan builds 2 pages', () => {
       cleanOutput('1-scan')
       const r = runExample('1-scan')
@@ -627,6 +627,42 @@ describe.skipIf(!hasExamples)('example builds', () => {
       expect(cookies).toContain('kiss-consent-table')
       expect(cookies).toContain('ao_visits')
       expect(cookies).toContain('kiss_consent')
+    }, 60000)
+
+    it('15 · partial transforms builds 3 pages: a .md template, CSV tables and recipe cards', () => {
+      cleanOutput('15-partial-transforms')
+      const r = runExample('15-partial-transforms')
+      expect(r.status, output(r)).toBe(0)
+      const dir = outputDir('15-partial-transforms')
+      expect(countHtmlFiles(dir)).toBe(3)
+      const read = (file) => readFileSync(path.join(dir, file), 'utf8')
+
+      // The .md partial is a template first: the model, a {{link}} inside a
+      // Markdown link, and a partial call with hash arguments, then Markdown.
+      const home = read('index.html')
+      expect(home).toMatch(/<strong>Guji Uraga<\/strong> is on the grinder/)
+      expect(home).toMatch(/<a href="?\/prices\.html"?>the price list<\/a>/)
+      expect(home).toMatch(
+        /<aside class="?callout"?><p><strong class="?tone-good"?>Roast day<\/strong>/,
+      )
+      // The blank line after the call survived, so the next paragraph is one.
+      expect(home).toMatch(/<\/aside><p>We weigh every shot/)
+
+      // .csv: the caption from the call's hash, quoted cells kept whole, and
+      // every row headed by its first cell.
+      const prices = read('prices.html')
+      expect(prices).toMatch(/<table><caption>At the bar<\/caption>/)
+      expect(prices).toMatch(
+        /<th scope="?row"?>Decaf Huila, sugarcane process<\/th><td>Red apple, panela<\/td>/,
+      )
+
+      // .recipe: compiled first, so a step's {{link}} resolved, and the card's
+      // id came from the partial's name.
+      const brewing = read('brewing.html')
+      expect(brewing).toMatch(/<article class="?card"? id="?recipe-v60"?>/)
+      expect(brewing).toMatch(
+        /<li>Any of the <a href="?\/prices\.html"?>coffees on the price list<\/a>/,
+      )
     }, 60000)
 
     it('11 · gives every page an id, explicitly where the default withdraws', () => {

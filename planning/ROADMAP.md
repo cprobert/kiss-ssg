@@ -5,17 +5,16 @@ links the document that holds its design; nothing here is in progress until it
 has a `/branch-open` session log. Remove an entry when its branch closes, and
 link the session log from its spec.
 
-| Added      | Item                                                                                                                                                                           | Impact surface                    | Spec                                                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 2026-10-24 | **Partial transforms.** Partials processed through a table keyed by extension; `.md` renders after Handlebars, which fixes `{{link "x"}}` failing to parse in a `.md` partial. | Public API (minor + upgrade note) | [specs/2026-10-24-partial-transforms-design.md](specs/2026-10-24-partial-transforms-design.md) |
+Nothing is waiting outside the road to 3.0, below.
 
 ## The road to 3.0
 
 [plans/2026-11-10-roadmap-to-3.0.md](plans/2026-11-10-roadmap-to-3.0.md) sequences the work from
-here to 3.0: partial transforms above first, then a feature freeze while the core is given an
-extension contract and the instruction system is cut down. Agreed in outline by the operator on
-2026-11-10, with every decision it asked for now taken. Phase 0 shipped as 2.15.0; partial
-transforms, above, is Phase 1 and the next piece of work.
+here to 3.0: partial transforms first, then a feature freeze while the core is given an extension
+contract and the instruction system is cut down. Agreed in outline by the operator on 2026-11-10,
+with every decision it asked for now taken. Phase 0 shipped as 2.15.0. Phase 1's partial
+transforms closed as 2.16.0 on 2026-11-14 (its spec links the session log); next in Phase 1 is
+markdown-it in place of remarkable (2.17), then the freeze.
 
 ## Considered and declined
 

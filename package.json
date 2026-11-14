@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.15.1",
+  "version": "2.16.0",
   "description": "A small static site generator for Node: Handlebars views, JSON models, Markdown, Sass, responsive images, sitemap and checked internal links. Built to be driven by an AI agent.",
   "main": "lib/kiss.js",
   "types": "./types/kiss.d.ts",
@@ -63,7 +63,8 @@
     "eg11": "cd examples/11-blog && node router",
     "eg12": "cd examples/12-from-a-single-file && node router",
     "eg13": "cd examples/13-course-packages && node router",
-    "eg14": "cd examples/14-consent && node router"
+    "eg14": "cd examples/14-consent && node router",
+    "eg15": "cd examples/15-partial-transforms && node router"
   },
   "repository": {
     "type": "git",

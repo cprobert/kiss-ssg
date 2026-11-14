@@ -41,7 +41,15 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
 }): Promise<{
     id: string;
     data: any;
+    missing?: undefined;
     sass?: undefined;
+    refused?: undefined;
+    error?: undefined;
+} | {
+    id: string;
+    data: any;
+    missing: boolean;
+    sass: SassResult[];
     refused?: undefined;
     error?: undefined;
 } | {
@@ -49,12 +57,14 @@ export function copyAssets(sourceDir: any, targetDir: any, { config, logger, man
     data: string;
     sass: SassResult[];
     refused: string[];
+    missing?: undefined;
     error?: undefined;
 } | {
     id: string;
     data: any;
     error: any;
     sass: SassResult[];
+    missing?: undefined;
     refused?: undefined;
 }>;
 export function assetCopyOwner(sourceDir: string, targetDir: string): string;

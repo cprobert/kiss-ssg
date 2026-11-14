@@ -88,6 +88,7 @@ The default config options are:
     xhtmlOut: true,
     breaks: false
   },
+  transforms: {},
   links: {
     check: true,
     canonical: false,
@@ -138,9 +139,7 @@ The default config options are:
 }
 ```
 
-Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compiled as templates, or `.txt`, which is shown as text and never compiled. See `.registerPartials()` under **Other methods**.
-
-**Because a `.md` partial is Markdown before it is a template, Markdown escapes `"` and `>` before Handlebars reads them.** A double-quoted argument (`{{link "courses/intro"}}`) or any partial call (`{{> "nav"}}`, `{{> nav}}`) fails the build with a parse error. `{{title}}` and single-quoted arguments (`{{link 'courses/intro'}}`) survive, but a Markdown link whose URL is an expression (`[the course]({{link 'courses/intro'}})`) is left as literal text, not a link. When a `.md` partial needs helpers or partials, make it a `.hbs` partial and wrap the prose in `{{#markdown}}…{{/markdown}}`.
+Partials can be `.hbs` or `.html`, both compiled as templates; `.md`, compiled as a template and then rendered as Markdown; or `.txt`, which is shown as text and never compiled. A site can add its own extensions (see [Partial transforms](#partial-transforms)). Two files that give one name, such as `nav.md` and `nav.hbs`, fail the build. See `.registerPartials()` under **Other methods**.
 
 | Option         |                                     Default                                     |                                                                                                                                                                                                                                                                                                                                                            Purpose                                                                                                                                                                                                                                                                                                                                                            |
 | -------------- | :-----------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -558,7 +557,60 @@ The three defaults (`html: true`, `xhtmlOut: true`, `breaks: false`) are the key
 
 **`html: true` renders HTML in Markdown as written.** That is right for your own files and wrong for Markdown a CMS or a feed serves: a model string holding `<script>alert(1)</script>` passed to `{{markdown}}` is written into the page as that `<script>`. A site that renders Markdown it did not write sets `markdown: { html: false }`, and the same string is written as the text `&lt;script&gt;alert(1)&lt;/script&gt;`. Every tag is escaped then, harmless ones such as `<b>` too, while the Markdown itself (`**bold**`, links) still renders.
 
-Set it in config rather than reaching for `kiss.remarkable` afterwards: `.md` partials are rendered to HTML **when they are registered**, which happens in the constructor, so a later mutation would change the `{{markdown}}` helper but silently miss every partial unless you also called `kiss.registerPartials()`.
+**Under `html: false`, a `.md` partial escapes the HTML its own helpers insert.** Handlebars runs first, so the markup a `{{> "nav"}}` or a helper writes is part of what Markdown reads, and it is escaped with the rest. The same is true inside a `{{#markdown}}` block. Where a partial needs both, make it a `.hbs` partial and keep the call outside the block:
+
+```handlebars
+{{#markdown}}Some **prose**.{{/markdown}}
+{{> "nav"}}
+```
+
+Set the options in config. Mutating `kiss.remarkable` afterwards (`kiss.remarkable.use(plugin)`) also works: `.md` partials and the `{{markdown}}` helper both render with it per page.
+
+### Partial transforms
+
+A partial's extension says what happens to it. `.hbs` and `.html` are compiled as templates; `.md` is compiled and then rendered as Markdown; `.txt` is escaped and shown, never compiled. **A `.md` partial is a template first**, so `{{link "about"}}`, `{{> "nav"}}` and hash arguments work in it:
+
+```md
+See [the about page]({{link "about"}}).
+
+{{> "callout" tone="warn"}}
+```
+
+Because Handlebars runs before Markdown, what it inserts is Markdown's input:
+
+- a `*` or `_` in an inserted value can become emphasis;
+- a partial called on a line indented four spaces becomes a code block;
+- a partial call alone on its line swallows that line's newline (Handlebars' "standalone" rule), so give it a blank line before and after; if the called file has no final newline, the paragraph after the call loses its `<p>`, and a second blank line puts it back;
+- under `markdown.html: false` inserted HTML is escaped (see [Markdown options](#markdown-options)).
+
+`config.transforms` adds an extension, or replaces the `md` or `txt` built-in. Each key is an extension without the dot:
+
+```js
+let highlight
+new Kiss({
+  transforms: {
+    code: {
+      compile: false,
+      setup: async () => {
+        const highlighter = await import('./lib/highlight.js')
+        highlight = highlighter.highlight
+      },
+      render: (output, { hash }) =>
+        `<pre><code>${highlight(output, hash.lang)}</code></pre>`,
+    },
+  },
+})
+```
+
+With that, `src/partials/install.code` is a partial, and `{{> "install" lang="sh"}}` shows it highlighted. A partial's name drops its extension whatever the type, so `install.code` is `"install"`, and it must not share that name with another partial or a layout.
+
+- **`render(output, ctx)`** is required. It is called each time a page uses the partial, with the compiled template's output, and returns the string inserted into the page as it is. `ctx` is `{ name, file, page, context, hash }`: the partial's name and file, the output path of the page rendering it, the partial's context, and the call's hash arguments (`{}` when there are none). It is synchronous; anything async goes in `setup`.
+- **`compile`** is `true` by default. `false` hands `render` the file's own characters, so `{{ }}` in it is not interpolated.
+- **`setup()`** is optional and awaited once, before the first page renders: the place to load a library that starts asynchronously. If it throws, the build reports `<transform .code>` and every page that calls a `.code` partial fails, naming it; the rest of the site still builds. It runs once per process and a watch rebuild does not run it again, so do not read the site's content in it: under `--dev` an edit to that file would not be seen.
+
+`examples/15-partial-transforms` is a whole site built this way: a `.md` partial that links with `{{link}}` and calls a partial, a `csv` transform that renders a spreadsheet export as a price table (`compile: false`, its caption from `hash`), and a `recipe` transform for brew-recipe cards that is compiled first, so a step can use `{{link}}`. Its transforms live in `transforms.js` beside the router, because a function written inside `router.js` cannot be imported or tested.
+
+`html` and `hbs` are templates, and a transform for either is refused. A file whose extension is in neither list is not a partial. Two files that give one name (`note.md` and `note.hbs`, or a partial and a layout) fail the build as `<partials>`, naming both files, and every page that calls the name fails too: rename all but one.
 
 ### .page()
 
@@ -579,19 +631,19 @@ kiss
 
 **Note**: The file locations of the models, views, and controllers are relative to the folder locations defined in the kiss configuration. Alternatively, instead of passing a file location you can pass a native object for that setting.
 
-Views: can se a .hbs file or a string
-Models: can be a .json file, a http api endpoint, or a JSON object
-Controllers: can be a .js file or a function that returns a page option JSON to be merged into the page options
+- Views: a `.hbs` file or a template string.
+- Models: a `.json` file, an HTTP API endpoint, or an object.
+- Controllers: a `.js` file, or a function that returns page options to merge into the page's options.
 
 The options that you can pass to .page() & pages() are:
 
 ```js
   {
     view: 'index.hbs',
-    model: {}
+    model: {},
     controller: ({model})=>{return {model: model}},
     title: 'Page Title',
-    description: 'A description of the page (useful for meta data)'
+    description: 'A description of the page (useful for meta data)',
     path: '/',
     slug: 'index',
   }
@@ -609,7 +661,7 @@ These options are both used internally by kiss and are available in view.
 - slug = the name of the file without the extension
 - generate = whether to build this page at all (default `true`); set to `false` to skip it entirely — e.g. a fanned-out `.pages()` item that fails a check in its controller. Nothing is written for that page, and `.generate()`/`.complete()` still resolve normally.
 
-page and path create the url, i.e. /{path}/{slug}.html
+`path` and `slug` make the URL: `/{path}/{slug}.html`.
 
 _Note:_ If you don't pass a path or a slug they will be inferred from the view — but only when the view is a `.hbs` filename. A view passed as a template string has no file path to infer from, so it gets a generated `snippet-N` slug and no folder; pass a `slug` (and a `path`, if you want one) yourself.
 
@@ -618,7 +670,6 @@ _Note:_ Slugs and path segments are slugified: accented Latin letters are transl
 What the option list above leaves implicit:
 
 - A `model` given as a folder name loads every `*.json` in it as an array. A URL model whose response is not 2xx fails that page.
-- `title` defaults to the page's own slug, title-cased with hyphens as spaces (`about-us` → `About Us`).
 - `ext` defaults to `html`. A leading `.` is stripped and the rest slugified, so an `ext` derived from model data cannot steer the output path (`'.xml'` → `xml`, `'../x'` → `x`).
 - `aliases` lists old URL paths this page now answers, each emitted as a `301` (see **Redirects**). On a `.pages()` fan-out the aliases belong to each **record**, never to the registration.
 - `config` overrides settings for this page only, including `extensionLess`: on an `extensionLess` site, `config: { extensionLess: false }` with `slug: '404'` writes `404.html` rather than `404/index.html`, which is the filename Netlify and Cloudflare Pages look for and will not fall back from.
@@ -1697,7 +1748,7 @@ try {
 
 A bad model is a build failure too: a `.json` file that is not there (`Model not found: <file>`), a model folder with no `.json` in it (`Model folder empty or missing: <folder>`, which fails a whole `.pages()` registration) and a URL model that cannot be fetched each fail that page, named by its view in `err.failures`, one failure per page, while the rest of the site still builds. A bad controller is a build failure as well: a controller that throws, one whose file is missing, one whose module does not export a function, and a `controller` option of an unrecognised type all fail that page and reject `.complete()`, rather than shipping a page built from un-controlled options. In a `.pages()` fan-out that failure is scoped to the one bad item: the rest of the items are still built, and each bad one is reported separately as `<view> [item N: <slug>]` (there is no output path to name it by). A missing or misspelled view file is a build failure too. So is an error thrown by a `.generate()` or `.sitemap()` callback — it is reported as `<generate callback>` / `<sitemap callback>` in `err.failures`. In `dev: true`, so is a dev server that cannot bind `config.port` (`Dev server could not bind 127.0.0.1:3001 (EADDRINUSE): the site is not being served`) — reported once, as `<dev server>` in `err.failures`; the watcher and live reload are stopped with it, so the process can exit once you have handled the rejection. A clash on `livereloadPort` is different: live reload is optional, so it is logged and switched off while the site keeps being served. `.complete()` reports a build's failures once: a second call in the same build resolves rather than rejecting again.
 
-The rejection's message is `N build failure(s): <buildTo paths>`: output paths, not views, since a `.pages()` fan-out gives every failed entry the same view. An entry with no output path, such as a failing model, controller or callback, is named by `view` instead, and so is any `<pseudo-view>` even when it has a path. Two more pseudo-views: a stylesheet that will not compile is `<sass: <file>>` (it used to be logged in red and dropped, so a site shipped with no CSS on a green build and a passing `check`), and a redirects file that cannot be written is `<redirects>`, a custom `redirects.format` writer that throws included, because a site published without its redirects is a site whose old URLs 404. An output the build asked for (`.sitemap()`, `.llms()`, `.feed()`, `.robots()`) that cannot be written, or is missing `siteUrl`, `title` or `summary`, is `<sitemap>`, `<llms>`, `<feed>` or `<robots>`.
+The rejection's message is `N build failure(s): <buildTo paths>`: output paths, not views, since a `.pages()` fan-out gives every failed entry the same view. An entry with no output path, such as a failing model, controller or callback, is named by `view` instead, and so is any `<pseudo-view>` even when it has a path. Three more pseudo-views: a `.copyAssets()` source folder that is not there is `<assets: <folder>>`, a stylesheet that will not compile is `<sass: <file>>` (it used to be logged in red and dropped, so a site shipped with no CSS on a green build and a passing `check`), and a redirects file that cannot be written is `<redirects>`, a custom `redirects.format` writer that throws included, because a site published without its redirects is a site whose old URLs 404. An output the build asked for (`.sitemap()`, `.llms()`, `.feed()`, `.robots()`) that cannot be written, or is missing `siteUrl`, `title` or `summary`, is `<sitemap>`, `<llms>`, `<feed>` or `<robots>`.
 
 In a normal build `.generate()` minifies HTML with `html-minifier-terser`, which also runs **Terser over every inline `<script>` and clean-css over every inline `<style>`** and drops empty attributes, so `class=""` is not in the output and a syntax error in an inline script surfaces at build time rather than in the browser. Comments go too. Under `dev: true` minification is skipped altogether, so dev output keeps its comments and whitespace and a dev build never loads the minifier. **So a kiss build will never diff clean against output from a generator that does not minify**: when migrating a site onto kiss, normalise both sides (drop comments, collapse inter-tag whitespace) before comparing, or every page reads as dozens of changed lines that are all `style="margin-top: 25px;"` becoming `style="margin-top:25px"`.
 In dev mode, or after calling `.watch()`, call `await kiss.close()` to stop the watcher and server. It waits for a rebuild that is already running to finish, so once it resolves nothing more is written and it is safe to clean or deploy the build folder.
@@ -1896,7 +1947,7 @@ The finding is advisory: it never changes `ok` and never changes the exit code. 
 
 **Orphan pages.** The same scan lists, as `links.orphans`, every HTML page no other page links to by any spelling, which only a search engine or a URL someone was given can reach. `--summary` names the first five on one line, `orphan pages (N, no other page links to them): …`. The home page and `404.html` are never orphans, and neither is a page in a learning package, which an LMS opens from the package's manifest. A page that links only to itself is still one. It is advisory, like a broken link: a campaign landing page may be unlinked on purpose. The `kiss-information-architecture` skill reads it.
 
-**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings` line, each check that fired gets one line naming up to three of the paths it fired on. Five checks get one line per value instead, because the value is what you change: the two duplicate checks, `viewport-zoom-lock`, `fragment-missing` and `checkbox-prechecked` (whose value is the box's label).
+**Launch-readiness audit.** Every settled non-dev build whose pages all succeeded also asks whether the site looks finished — from the HTML it wrote, the files in its build folder and its own state — and reports it as `report().audit`: `{ checked, ignored, skipped, findings: [{ check, page, detail }] }`. It runs under `check` too, and every `page` names the folder you asked for. Under `--summary`, and in the build log after an `Audit: N pages, M findings from K checks` line, each check that fired gets one line naming up to three of the paths it fired on. Five checks get one line per value instead, because the value is what you change: the two duplicate checks, `viewport-zoom-lock`, `fragment-missing` and `checkbox-prechecked` (whose value is the box's label).
 
 ```
   audit description-missing: 12 pages (./public/about.html, ./public/contact.html, ./public/index.html, …)
@@ -1994,7 +2045,7 @@ It reads `<script src>`, `<iframe src>`, `<img>` and `<source>` `src` and `srcse
 
 **Redirects and renames.** The same report carries `redirects` — the redirect files this build wrote from your pages' `aliases`, the resolved `rules` as data, and three more advisory findings: a page the last record had that this build no longer writes and no alias covers (`  removed without redirect: <path>`), a page the record and this build share an `id` with that is now written somewhere else with nothing answering its old URL (`  moved without redirect: <from> -> <to> (<id>)`), and an alias a live page already answers, which the host will silently ignore (`  alias collides with a page: <path>`). See [Redirects](#redirects).
 
-Under check, the site's own build log **counts** broken links and audit findings (`3 broken links (listed in the check report)`, `Audit: 8 pages, 5 findings (listed in the check report)`) instead of listing them, because a terminal shows stderr beside the summary and every finding would be printed twice; the report is the list. Under `--summary`, `  audit skipped (cleanBuild: false): <ids>` names the audit checks a `cleanBuild: false` build did not run, and `N pages canonical elsewhere` counts the pages whose `canonical` option names another URL.
+Under check, the site's own build log **counts** broken links and audit findings (`3 broken links (listed in the check report)`, `Audit: 8 pages, 5 findings from 3 checks (listed in the check report)`) instead of listing them, because a terminal shows stderr beside the summary and every finding would be printed twice; the report is the list. Under `--summary`, `  audit skipped (cleanBuild: false): <ids>` names the audit checks a `cleanBuild: false` build did not run, and `N pages canonical elsewhere` counts the pages whose `canonical` option names another URL.
 You can drive the same thing yourself, without the command: `KISS_CHECK=1` turns any build into a check (`cleanBuild` becomes `'atomic'`, `dev` becomes `false`, and the staging folder is discarded when `.complete()` settles whether the build passed or failed), and `KISS_REPORT=<file>` appends each settled build's report to a file as JSON Lines, one line per `Kiss` instance; `KISS_AIKB=1` (same rule again) is the one thing `kiss-ssg aikb` adds on top of those two. Any value counts as set except `0`, `false` and the empty string. None of them changes your script's exit code — that stays yours.
 
 Two things a check cannot make true. A site that reads its own build folder back after `.complete()` — an index listing the version folders on disk — sees a folder nothing was published into. And a site with `cleanBuild: false` that relies on files an earlier build left behind starts from an empty staging folder, because a check stages everything.
@@ -2145,18 +2196,18 @@ Exit codes: 0 drafted or answered, 1 refused, 2 a usage error. A site whose kiss
 
 ### Other methods
 
-- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is Markdown rendered to HTML and then compiled, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only. That is what makes a code sample work without hand-escaping:
+- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is compiled and then rendered as Markdown, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only, and `config.transforms` adds extensions ([Partial transforms](#partial-transforms)). The `.txt` rule is what makes a code sample work without hand-escaping:
 
 ```hbs
 <!-- src/partials/snippet.txt holds:  <div class="card">{{title}}</div>  -->
 <pre>{{> "snippet"}}</pre>
 ```
 
-…renders that line verbatim, tags and braces included. Partial names are path-derived and extension-less, so `note.txt` and `note.hbs` collide and the template wins.
+…renders that line verbatim, tags and braces included. Partial names are path-derived and extension-less, so `note.txt` and `note.hbs` give one name, and the build fails, naming both files.
 
 **Every entry of `kiss.handlebars.partials` is a function** — a compiled template that also records which page invoked it, which is what scopes a watch-mode partial edit to the pages that used it. `handlebars-layouts` recompiles a string layout on every page render and never caches it, so compiling at registration is also what stops a layout being recompiled once per page. Code of yours that renders an entry by name must accept a function, and must pass its own `options.data` through: `const p = kiss.handlebars.partials[name]; typeof p === 'function' ? p(ctx, { data: options.data }) : kiss.handlebars.compile(p)(ctx, { data: options.data })`. That data frame is how the page is recorded as using the partial: a bare `p(ctx)` renders correctly, but under `.watch()` that page is not re-rendered when the partial changes (unless no page recorded it at all, when every page is).
 
-- `.copyAssets(sourceDir, targetDir)` — compiles every `*.scss`/`*.sass` under `sourceDir` to a sibling `.css` and copies everything else straight through to `targetDir`. Runs automatically once at construction time for `config.folders.assets` → `config.folders.build`; callable again for extra asset directories. Calls run one after another in registration order, not concurrently. Every emitted file is recorded in the instance's asset manifest — that is what `{{asset}}` reads, and what `config.assets` renames (see the config table).
+- `.copyAssets(sourceDir, targetDir)` — compiles every `*.scss`/`*.sass` under `sourceDir` to a sibling `.css` and copies everything else straight through to `targetDir`. Runs automatically once at construction time for `config.folders.assets` → `config.folders.build`; callable again for extra asset directories. A `sourceDir` that does not exist fails the build, named `<assets: …>` (until 2.16 the call did nothing and logged a copy); the `config.folders.assets` copy never does, because the constructor creates that folder. Calls run one after another in registration order, not concurrently. Every emitted file is recorded in the instance's asset manifest — that is what `{{asset}}` reads, and what `config.assets` renames (see the config table).
 - `kiss.handlebars` — this instance's own Handlebars environment (`Handlebars.create()`, created per `Kiss`, so helpers and partials never leak between instances, and helpers registered on the global `handlebars` module are not seen); register custom helpers on it directly.
 - `import { utils } from 'kiss-ssg'` — `toSlug`, `sanitizePath`, `toTitleCase`, `trimLines`, `trimPath`, `posixPath`, `globFiles(dir, pattern)`, `hashId`, `toURLKey`, `toAbsoluteUrl(siteUrl, path, { trailingSlash })`, `toCanonicalPath`, `servedPathFor(pageURL, { trailingSlash })`.
 - `.viewStats()` — logs how many pages are queued and prepared, and with `verbose: true` writes a `debug.json` into the build folder listing every page as `{ view, buildTo, runCount, options }` — the page's options, its model included, without `config`, which carries your `fetch.headers` and is left out because this file is written whether or not you are in dev and so can be deployed. Chainable; handy from a `.generate()` callback to see what the build actually produced.
@@ -2433,5 +2484,5 @@ The development watcher handles asset additions, edits, renames and deletions, r
   ```
 
 - New: `kiss.close()` stops the dev server and file watcher.
-- **Upgrading from a v2 _prerelease_ rather than v1: `markdown.breaks` flipped.** It was hard-coded `true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`, where the option set became the configurable `DEFAULT_MARKDOWN` block; `2.0.0`, `2.1.0` and `2.2.x` all match beta.1. A project pinned to an alpha may carry a workaround for the old default — `kiss.remarkable.set({ breaks: false })` followed by `kiss.registerPartials()`, often with a comment asserting that v2 defaults to `breaks: true`. That comment was correct when written and has been wrong since beta.1: delete both calls, and set `markdown: { breaks: true }` in config if you actually want the old behaviour. The `registerPartials()` half is why the pair survives upgrades unnoticed — it does not look redundant, because `.md` partials are rendered to HTML at registration, so a later mutation of `kiss.remarkable` really would need a re-register to reach them.
+- **Upgrading from a v2 _prerelease_ rather than v1: `markdown.breaks` flipped.** It was hard-coded `true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`, where the option set became the configurable `DEFAULT_MARKDOWN` block; `2.0.0`, `2.1.0` and `2.2.x` all match beta.1. A project pinned to an alpha may carry a workaround for the old default — `kiss.remarkable.set({ breaks: false })` followed by `kiss.registerPartials()`, often with a comment asserting that v2 defaults to `breaks: true`. That comment was correct when written and has been wrong since beta.1: delete both calls, and set `markdown: { breaks: true }` in config if you actually want the old behaviour. The `registerPartials()` half is why the pair survives upgrades unnoticed: it did not look redundant, because until 2.16 `.md` partials were rendered to HTML at registration. Since 2.16 they render per page, so a later mutation of `kiss.remarkable` reaches them with no re-register.
 - **Unchanged in v2**, so there is nothing to migrate even though it looks load-bearing: the per-page `generate: false` option (default `true`, see `.page()`'s options above) still skips building one page; `callback.call(this, ...)` still binds the `Kiss` instance inside `.generate()`/`.complete()`/`.sitemap()` callbacks; the per-page `ext` option; `copyAssets(sourceDir, targetDir)` to a second directory; `.viewStats()`/`.getModelByID()`. Anything under `this._stack` is internal and unversioned — code reading `_stack[].buildTo`/`_stack[].page.options` for a hand-rolled sitemap works today by accident; `.sitemap()` is the supported way to enumerate registered pages.
