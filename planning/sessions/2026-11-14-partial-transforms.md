@@ -104,6 +104,13 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
   - **Skills (operator: kiss-site-new, kiss-page-add, kiss-site-migrate)**, each with a skill-coverage row.
   - **A second clean room**, asked to write a `config.transforms` entry from the shipped docs alone.
   - **`scope:`** is widened to `examples/15-partial-transforms/**`, `examples/README.md`, `docs.js` and `CLAUDE.md`. The impact surface is unchanged: still the public API this branch already ships, now demonstrated.
+  - **For the docs-backlog branch (not this one):** the second clean room, which passed, also reported six things outside this feature, recorded here so that branch picks them up.
+    1. "Copied assets: ./src/assets to ./public" is logged when `src/assets` does not exist.
+    2. The audit summary ("3 pages, 5 findings" over three lines) reads as inconsistent.
+    3. A fresh site always shows the three teaching findings (`og-image-missing`, `favicon-missing`, `not-found-missing`), and `llms.txt` does not say so.
+    4. GUIDE § .page() has old prose ("can se a .hbs file", "page and path create the url"), and describes the default title twice, differently.
+    5. `kiss-ssg init` writes `CLAUDE.md`, `AGENTS.md`, `.claude/settings.json` and `.codex/config.toml`, where `llms.txt` says only that it writes the scripts.
+    6. `llms.txt` does not show the `{{#isActive .. href=(link id)}}` nav form, or that `href` is readable inside the block.
 
 ## Pulse log
 
