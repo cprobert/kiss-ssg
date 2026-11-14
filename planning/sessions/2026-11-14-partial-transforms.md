@@ -1,7 +1,7 @@
 ---
 branch: feat/partial-transforms
 base: main
-status: open
+status: closed
 opened: 2026-11-14
 scope: lib/partials.js, lib/config.js, lib/assets.js, lib/asset-copy.js, lib/build-finish.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/router.js, examples/4-layouts-and-partials/src/**, examples/9-migrated-from-v1/AIKB/last-build.json, examples/15-partial-transforms/**, examples/README.md, docs.js, CLAUDE.md, planning/**, src/**, .claude-plugin/**
 ---
@@ -229,3 +229,106 @@ scope: lib/partials.js, lib/config.js, lib/assets.js, lib/asset-copy.js, lib/bui
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-14: Partial transforms (2.16.0)
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.16.0 on `feat/partial-transforms`, 22 commits from `b0b646a` to `b4d5f56`.
+
+- **The feature:** `registerPartials`' fixed passes became a table of transforms keyed by extension (`3621097`). `.md` partials now compile as Handlebars and then render as Markdown, so `{{link}}` and `{{> }}` work in them. `config.transforms` lets a site add its own partial types, and a partial-name collision now fails the build.
+- **The promotion:** example 15, three skills and an adoption note in the upgrade notes (`fd9c9c7`).
+- **Six clean-room findings, absorbed** (`5cd0566`). They included a real defect: an explicit `.copyAssets()` of a folder that does not exist passed silently.
+
+## Reflect — what the session was
+
+**Planned, then deliberately widened.** The spec and a re-check against 2.15.1 mapped the engine route, and slices 1–3 (engine, docs, verify) followed it closely.
+
+**The widening was the operator's.** At what was meant to be the close, they said: "This is our chance to promote the new features for both the existing sites … and to demonstrate the rich features for new sites. So let's do a good job." That turned a feature branch into a release-quality one: example 15, three skills, and an adoption note that `kiss-ssg upgrade` prints. Two more widenings followed:
+
+- "should we take these on before close?", about the six findings parked for the docs-backlog branch;
+- "is there anything else? I don't want to open a new branch for your tiny little cleaner bits".
+
+All three are recorded as Amendments. Each came from the operator re-reading the remit, not from Claude drifting. The shape served the work: the planned core was verified before the widening began, so the widening built on green.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering: strong, in the way that mattered here.** The operator pushed on _scope_ rather than on code, three times, as above. Each push asked a question Claude had not asked itself:
+
+- "Give me 10 examples of how we could use this", then "have you used the above examples in the example sites?" exposed that the feature was documented but not demonstrated.
+- "Anything else?" exposed an Amendment promise (a `{{> }}` call in example 4) that had sat undone through two pulses.
+
+Most of the operator's `AskUserQuestion` answers took the recommended option. That is acceptance, not pushback, but the questions where it mattered were decided rather than defaulted:
+
+- finding 1's behaviour: "default quiet, explicit fails";
+- the three `llms.txt` cuts, picked from four measured options;
+- striking the example 4 promise.
+
+**Verification & ownership: the intended human checkpoint became Claude's, twice, by explicit hand-off.** The pulse eyeball exists so the operator looks with their own eyes. Twice the operator said they could not see the page ("use /webapp-testing to see for yourself", then "I can't see it use /webapp-testing to check for yourself"), and Claude looked through Playwright. That is Claude judging Claude's output, the loop the step exists to break, and the log records it as such.
+
+It still paid off: the first Playwright pass found two faults in example 15 that no gate could see. A callout had no bottom margin, and the cafetiere card said "4:00" for nine minutes of steps. The operator did look with their own eyes at two artefacts, GUIDE § Partial transforms and the `llms.txt` diff, both "reads right".
+
+**Intended versus actual:** the human look was intended at every pulse. It happened for the docs and was handed to Claude for the rendered pages.
+
+**Iteration discipline: strong.** Five pulses, one after each slice and after each Amendment. Seven red-first lines, each test seen failing on `main`. Four Codex rounds on the engine slice. Two `/codex:review` passes of the whole branch, plus a range review at the close. The fleet check was re-run after the late `lib/` change rather than trusted from earlier. Nothing large went unverified for long.
+
+**Harness leverage: high, and mostly the operator's design.**
+
+- Plan mode at the open.
+- Two clean-room sub-agents: the first found the standalone-call blank-line trap, the second found the six findings.
+- Codex as an independent reviewer.
+- `/webapp-testing` for the rendered pages.
+- The fleet script against a real site.
+
+Claude missed one thing here. It reached for the skill's `with_server.py` helper, which leaked server child processes on Windows three times before Claude switched to `Start-Process` with redirected output and a PID stop.
+
+**Where Claude needed steering, plainly:**
+
+- **Finding 1 was coded before it was reproduced.** Claude wrote a "No assets folder" branch for the clean room's claim, then found the constructor creates `src/assets` (`foldersToEnsure`), so the branch was unreachable, and removed it. CLAUDE.md already says to re-derive a relayed finding before acting on it. The real defect beside it was found only because a second test was written alongside.
+- **An offer framed the operator's own decision as Claude's.** Example 15 as a separate example was the operator's choice. The operator stopped the question.
+- **A later offer misstated a mechanism.** It said a replay does not re-run explicit copies, but one with a recorded failure is re-run. That was corrected in the log after the operator answered.
+- **A shell redirect was refused by the hook.** An `echo >>` appended to a gates capture, which is the rule the hook enforces.
+
+**Competency level: Active supervisor.** The framing, slicing, independent review and scope judgment are lead-level, and the ritual system itself is the operator's designed workflow. But the two rendered-page looks were delegated back to the agent, and the offers drew "keep" each time without a request to explain. That holds the session below **Agentic engineering lead** on Verification & ownership.
+
+## Feedback — recommendations for next session
+
+- **Operator — when you cannot see a served page, ask for the screenshot rather than the verdict.** "Send me the screenshot" keeps the look yours, even on a phone. Claude can put the PNG in front of you with `SendUserFile`, and a pulse eyeball answered from a picture you looked at is a `looked`. Claude's own Playwright pass is still worth running; it found two faults here. It is just not the same check.
+- **Claude — reproduce a relayed finding before writing a line for it.** Finding 1 ("Copied assets is logged when src/assets does not exist") was coded against as stated. A probe of a site with no `src/assets` would have shown that kiss creates the folder. Next time, the first command for a clean-room or reviewer finding is the reproduction, and its output goes in the log before any edit.
+- **Claude — read the code path before stating a mechanism in an offer.** The replay claim was written from memory of the comment, not of `_assetCopies`. An offer's "cost if wrong" is the operator's basis for keep/overturn, so measure it first.
+- **Process — `/branch-pulse` should list an Amendment's promises that are not yet done.** The example 4 `{{> }}` call was promised in the slice-4 Amendment and missed by two pulses, which read the criteria and not the Amendments. A step that greps the Amendments for promised work and marks each done, struck or open would have caught it at the first pulse after it.
+- **Process — on Windows, serve a build folder with `Start-Process` and redirected output, and stop it by PID.** The webapp-testing `with_server.py` helper leaked its `http.server` child three times, and a hidden server with nowhere to log answered every request empty. Note this in the skill's own guidance or a memory, so the next session does not rediscover it.
+- **Operator — use "Explain more" on an offer once in a while.** Every offer this branch drew "Keep". One of them (the replay claim) was wrong in its reasoning, and an explanation would have surfaced that before the answer rather than after.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** turn `registerPartials`' fixed passes into a table of transforms keyed by extension. `.md` renders after Handlebars, so `{{link}}` and `{{> }}` work in a `.md` partial, and sites can add transforms through `config.transforms`. This is 2.16, Phase 1's first release.
+
+**Verdict: met, and the objective moved, as good drift.** The engine shipped to spec. The operator then widened the remit to promotion and the clean-room findings, recorded as three Amendments. That is good drift: same theme, operator-directed, and verified before closing.
+
+- [x] **The `.md` defect is fixed.** Measured by `test/integration/partial-transforms.test.js`: `red-first … failed at main (68633b4)`, with all nine failing there and the `.md` case on the original `Parse error … {{link &quot;about&quot;}}`.
+- [x] **Collisions fail the build, naming both files.** Measured by the flipped unit test (red-first logged; it failed at the base on the return shape) and the integration test. The `.txt` + `.hbs` pair is a collision too.
+- [x] **A site transform works.** An integration test covers an async `setup`, `render` receiving `{ name, file, page, context, hash }`, and `compile: false`. Clean room 2 wrote its own transform from the docs alone, and it passed.
+- [x] **A failed `setup` is reported.** It is a carried `<transform .adoc>` failure: the calling page fails, the plain page is written, and nothing hangs.
+- [x] **`.txt` and layouts are unchanged.** The existing tests pass unchanged.
+- [x] **Scoped rebuilds still work.** The `.adoc` watch test re-renders only its page, three runs out of three. Codex round 3 found that the scoped re-render did not await setups, and `075d130` fixed it.
+- [x] **Measured before memoising.** `fanout@500`, 7 runs each: total −7.4%, build −7.9%. Decision: no memoisation. `construct` is +14% (about 13 ms), named in the log and not chased.
+- [x] **The docs are current.** GUIDE, `llms.txt` (15,994 of 16,000 characters), AIKB, README, `types/`, the examples' prose, and a `CONTRADICTIONS` row banning six sentences, seen red on eight files. The docs sweep at the close found nothing stale.
+- [x] **Fleet.** a1k9training was identical to `main` twice, at `c7d454e` and at `5cd0566` after the late `lib/` change: 20 page hashes and 571 files, 0 differing.
+- [x] **Clean room.** The first found the blank-line trap and passed. The second wrote a `config.transforms` entry, passed, and reported the six findings, all absorbed.
+- [x] **Codex.** Four rounds on slice 1, under the threat model "correctness + contract". `/codex:review` of the branch at two points, and a range review of `f4c93d5..b4d5f56`'s runtime-free commits at the close. No open finding.
+- [x] **Gates.** `npm run gates` passed at `9d2b00a`, the bump commit: test, lint, typecheck, format (76 files), pack (431 files). The one later commit, `b4d5f56`, is `planning/` only and passes Prettier.
+
+**Measurable impact:**
+
+- `.md` partials are templates. Six of the fifteen examples now use `{{link}}` or `{{> }}` in Markdown.
+- A site can teach kiss a file type. Example 15 renders CSV price lists and recipe cards.
+- A mistyped `.copyAssets()` folder fails the build instead of passing.
+- The audit line no longer reads as a miscount.
+
+**Open:**
+
+- Publishing 2.16.0 with `/kiss-publish` after the merge. 2.15.1 was never published, so this is the first release under the new workflow.
+- The fleet's upgrade to 2.16.0, which Phase 1's exit needs.
+- #90's two 3.0 design questions.
+- The next branch: markdown-it (2.17), the watch-test flake, or the docs backlog, in the operator's order.
