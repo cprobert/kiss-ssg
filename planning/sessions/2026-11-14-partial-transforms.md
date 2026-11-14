@@ -131,6 +131,33 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
   - **Eyeball: deferred** to `/branch-close` Step 5a (the close's eyeball). The artefact is `examples/4-layouts-and-partials/public/index.html`, the `.md` partial's "run by **Tom**" line.
   - **Offer:** the partial-vs-layout collision. Operator: **keep**.
   - **Decision: continue** to slice 2 (docs, examples, changelog).
+- **2026-11-14** — **Slice 2 (docs) landed:** `4befac1`, with no `lib/` change. The branch is level with `origin/main` (0 behind).
+  - **The docs are current — met, except the changelog, which lands at the close.**
+    - **GUIDE:**
+      - the partials paragraph has lost the trap;
+      - Markdown options covers `html: false` and a later `kiss.remarkable` change;
+      - a new "Partial transforms" section has its own entry in `src/models/guide.json`, and `node docs` builds (exit 0).
+    - **AIKB:** `partials.md` is rewritten; `config.md`, `kiss.md`, `rebuild.md` and `upstream.md` are updated.
+    - **README:** one line added.
+    - **Examples:** nine partials and example 4's page are corrected.
+    - **Ban:** the `CONTRADICTIONS` row bans six sentences. It was seen red on the eight example files before they were fixed.
+    - **Changelog:** the 2.16.0 entry is drafted at the end of the spec. `test/unit/changelog.test.js` requires the newest entry to match `package.json`, so `/branch-close` carries it in with the bump.
+  - **Measured before writing:** each new GUIDE claim was probed against the branch's engine (`scratchpad/probe-docs.mjs`):
+    - inserted `*` becomes emphasis;
+    - a call indented four spaces becomes a code block;
+    - `kiss.remarkable.set` after construction reaches `.md` partials;
+    - the `.txt` + `.hbs` pair is a collision;
+    - a call outside `{{#markdown}}` keeps its markup under `html: false`, and one inside is escaped. **This corrects the open decision's ".hbs with {{#markdown}}" wording**: the call must sit outside the block.
+
+    The GUIDE's `config.transforms` snippet also ran.
+
+  - **Gates:** the full `npm test` failed once (1 of 5,023 tests), on example 9's knowledge base. `sourcing-note.md` changed one page hash; the base was re-recorded with `npx kiss-ssg aikb router.js`, and `examples`, `skill-coverage`, `aikb`, `changelog` and `partial-transforms` then passed (706 tests). Typecheck and Prettier are clean.
+  - **No skill-coverage row:** no skill has a reason to reach for `config.transforms` yet.
+  - **Drift:** one Amendment, adding two example files to `scope:`. `scope-check` exits 0. Docs only; the impact surface is unchanged.
+  - **Eyeball: looked.** The operator read GUIDE § Partial transforms: "reads right". The example-4 eyeball is still deferred to `/branch-close` Step 5a.
+  - **Offer:** the changelog draft in the spec rather than `CHANGELOG.md`. Operator: **keep**.
+  - **Fleet, clean room, Codex at the close — not yet.**
+  - **Decision: continue** to slice 3 (fleet check, clean room).
 
 ---
 
