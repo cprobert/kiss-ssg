@@ -10,6 +10,7 @@ import {
 import { DependencyGraph } from '../../lib/dependency-graph.js'
 import { silentLogger } from '../../lib/logger.js'
 import fs from 'fs-extra'
+import path from 'node:path'
 import { makeSite } from '../helpers/site.js'
 
 const deps = { markdown: new Remarkable(), logger: silentLogger }
@@ -123,6 +124,23 @@ describe('registerPartials', () => {
     expect(result.collisions).toEqual([])
     expect(result.names).toEqual(['main'])
     expect(hbs.partials['main']({})).toBe('<main/>')
+  })
+
+  // The same file, whatever the folder's spelling: identity is the file on
+  // disk, not the path string (Codex, slice 1, round 2).
+  // A folder inside the working directory, read only: glob keeps a relative
+  // spelling relative (it normalises only a `..` one), which is how a site
+  // writes `./src/layouts`, so a temp folder cannot reproduce this.
+  it('does not report one file reached by two spellings of its folder', () => {
+    const relative = './examples/4-layouts-and-partials/src/layouts'
+    const hbs = Handlebars.create()
+    const result = registerPartials(
+      hbs,
+      { folders: { partials: relative, layouts: path.resolve(relative) } },
+      deps,
+    )
+    expect(result.collisions).toEqual([])
+    expect(result.names).toEqual(['layout'])
   })
 
   it('skips null folders', () => {
