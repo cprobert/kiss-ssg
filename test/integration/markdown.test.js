@@ -21,7 +21,7 @@ is how prose is written in a file.`
 // rewrites the self-closed `<br />` to `<br>` whatever `xhtmlOut` said. The
 // typographer's substitutions are text, so they survive it. It is also an
 // option kiss has no opinion about, which is the point — the block is handed to
-// Remarkable as-is rather than being a fixed list of keys kiss knows.
+// markdown-it as-is rather than being a fixed list of keys kiss knows.
 const TYPOGRAPHY = '(c) 2026'
 
 const siteWith = (partial) => ({
@@ -116,5 +116,69 @@ describe('config.markdown', () => {
     const html = await site.read('public/index.html')
     expect(html).not.toContain('<span class="raw">')
     expect(html).toContain('&lt;span')
+  })
+})
+
+// 2.17 replaced Remarkable with markdown-it. Each test here pins one thing a
+// site can see change, and each is named in CHANGELOG.md's upgrade note.
+describe('the renderer is markdown-it', () => {
+  const build = async (files, config = {}, setup = () => {}) => {
+    site = await makeSite(files)
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: silentLogger,
+      ...config,
+    })
+    setup(kiss)
+    await kiss.scan().generate().complete()
+    return { kiss, html: await site.read('public/index.html') }
+  }
+
+  it('is kiss.markdown, and kiss.remarkable is gone', async () => {
+    const { kiss } = await build(siteWith('x'))
+    expect(typeof kiss.markdown.use).toBe('function')
+    expect(typeof kiss.markdown.render).toBe('function')
+    expect(kiss.remarkable).toBeUndefined()
+  })
+
+  it('takes a plugin with kiss.markdown.use(), in .md partials and the helper', async () => {
+    const plugin = (md) => {
+      md.renderer.rules.hr = () => '<hr class="from-plugin">'
+    }
+    const { html } = await build(
+      {
+        'src/partials/prose.md': '***',
+        'src/pages/index.hbs': '{{> "prose"}}{{{markdown "***"}}}',
+      },
+      {},
+      (kiss) => kiss.markdown.use(plugin),
+    )
+    expect(html.match(/<hr class="?from-plugin"?>/g)).toHaveLength(2)
+  })
+
+  it('starts an HTML block with a raw <h1>–<h6>, unwrapped', async () => {
+    const { html } = await build(siteWith('<h3 id="a">Heading</h3>\n\nText'))
+    expect(html).toContain('<h3 id="a">Heading</h3>')
+    // Remarkable wrapped it in a <p>, which the minifier left as an empty
+    // `<p></p>` before the heading.
+    expect(html).not.toMatch(/<p>\s*(<\/p>)?\s*<h3/)
+  })
+
+  it('writes strikethrough as <s>', async () => {
+    const { html } = await build(siteWith('~~gone~~'))
+    expect(html).toContain('<s>gone</s>')
+  })
+
+  it('renders no footnotes without a plugin', async () => {
+    const { html } = await build(siteWith('Text[^1].\n\n[^1]: The note.'))
+    expect(html).toContain('[^1]: The note.')
+    expect(html).not.toContain('footnote')
+  })
+
+  it('links a bare URL under linkify: true', async () => {
+    const { html } = await build(siteWith('Visit https://example.com today.'), {
+      markdown: { linkify: true },
+    })
+    expect(html).toMatch(/<a href="?https:\/\/example\.com"?>/)
   })
 })

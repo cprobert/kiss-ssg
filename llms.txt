@@ -42,7 +42,7 @@ GUIDE.md § .page(), § .pages(), § Controller, § Waiting for the build, § Ot
 - Markdown copies (`config.markdownCopies`, written when the build calls `.llms()`): every HTML page gets `page.md` (`index.md` for a directory index) beside it, converted from its `<main>`; the report names it `pages[].markdown`. GUIDE.md § Markdown copies for agents.
 - `.watch(options)` / `.close()`: dev server and live reload (`dev: true`). A partial edit re-renders the pages that used it; anything else replays the build. Edits to the build script, or to a module a helper entry imports, need a restart.
 - `.copyAssets(src, target)`, `.registerPartials()`, `.viewStats()`, `.getModelByID(id, data)`: GUIDE.md § Assets, § Other methods.
-- `kiss.handlebars`, `kiss.remarkable`: this instance's own. Partials compile (`.md`, then Markdown) except `.txt`; `config.transforms` adds types (GUIDE.md § Partial transforms). `.md`: blank line after a lone `{{> }}`.
+- `kiss.handlebars`, `kiss.markdown` (markdown-it): per instance. Partials compile (`.md`, then Markdown) except `.txt`; `config.transforms` adds types (GUIDE.md § Partial transforms). `.md`: blank line after a lone `{{> }}`.
 - Named exports, also statics for `require`: `utils`, the redirect and cache-header encoders (`renderRedirects`, `renderHeadersBlock`, …) and `splitDocument`/`parseHtml`/`findTag` (GUIDE.md § Converting an existing page). Deep imports into `kiss-ssg/lib/…` fail by design.
 - Types ship in `types/`: `// @ts-check` plus `/** @type {import('kiss-ssg').KissConfigInput} */` gives a plain-JS site full checking.
 
@@ -111,7 +111,7 @@ Prose: each block has its own GUIDE.md section (`cleanBuild`: § Cleaning the bu
 
 Rules: GUIDE.md § Helpers. Layouts come from `handlebars-layouts`: a layout declares `{{#block "body"}}…{{/block}}`, and a page fills it with `{{#extend "layout"}}{{#content "body"}}…{{/content}}{{/extend}}` (`mode="append"` adds to a slot).
 
-- `markdown`: block or value, rendered through `kiss.remarkable`. Trap: its HTML renders as written; Markdown from a CMS needs `markdown: { html: false }` (GUIDE.md § Markdown options).
+- `markdown`: block or value, rendered through `kiss.markdown`. Trap: its HTML renders as written; Markdown from a CMS needs `markdown: { html: false }` (GUIDE.md § Markdown options).
 - `sass`: a file path (resolved against `process.cwd()`) and/or an inline block.
 - `offset`: `index + 1`.
 - `stringify`: `{{{stringify this}}}` to inspect scope.

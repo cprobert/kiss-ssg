@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import Handlebars from 'handlebars'
-import { Remarkable } from 'remarkable'
+import MarkdownIt from 'markdown-it'
 import { registerHandlebarsHelpers } from '../../lib/handlebars-helpers.js'
 import { silentLogger } from '../../lib/logger.js'
 import {
@@ -803,7 +803,7 @@ describe('the embed helper with a frame URL that is not http(s)', () => {
         consent: consentConfig,
       },
       {
-        markdown: new Remarkable(),
+        markdown: new MarkdownIt(),
         logger: { ...silentLogger, warn: (...a) => warnings.push(a.join(' ')) },
       },
     )

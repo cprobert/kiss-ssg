@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { FORBIDDEN_PACKED } from '../../scripts/gates.mjs'
-import { Remarkable } from 'remarkable'
+import MarkdownIt from 'markdown-it'
 import { linkTokens, targetPath } from '../../scripts/markdown-links.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
@@ -125,11 +125,11 @@ function isPacked(relative) {
 // Two hand-written readers each guessed where code ends and guessed wrong
 // (2026-10-30, 2026-10-31): Markdown makes no link inside code, and a code
 // span never crosses into a heading, a list item or a table row. So this asks
-// Remarkable, which the docs site already renders with, and gets those rules
+// markdown-it, which the docs site already renders with, and gets those rules
 // with it.
 // `scripts/markdown-links.mjs` holds the walk, shared with the docs site's
 // guide pages, and decodes each target to the file name it points at.
-const markdown = new Remarkable({ html: true })
+const markdown = new MarkdownIt({ html: true })
 const markdownLinks = (text) =>
   linkTokens(markdown.parse(text, {})).map(targetPath)
 

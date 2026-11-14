@@ -4,8 +4,8 @@
 // line and so flattens the indentation inside fenced code blocks.
 import fs from 'node:fs'
 import path from 'node:path'
-import { Remarkable } from 'remarkable'
-import { linkTokens } from '../../scripts/markdown-links.mjs'
+import MarkdownIt from 'markdown-it'
+import { linkTokens, targetAttr } from '../../scripts/markdown-links.mjs'
 
 const REPO = 'https://github.com/cprobert/kiss-ssg/blob/main/'
 const GUIDE = new URL('../../GUIDE.md', import.meta.url)
@@ -33,13 +33,13 @@ const escapeHtml = (text) =>
 // inline Markdown, a heading's raw HTML became a tag and its link skipped the
 // anchor rewrite and nested inside the contents' own link (round 16); a
 // hand-rolled backtick match misread ``a`b`` and an escaped \` (round 17). So
-// Remarkable reads it, with raw HTML off and every inline rule off but text,
+// markdown-it reads it, with raw HTML off and every inline rule off but text,
 // escapes and code spans.
-const headingMarkdown = new Remarkable({ html: false })
-headingMarkdown.inline.ruler.enable(
-  ['text', 'newline', 'escape', 'backticks'],
-  true,
-)
+const headingMarkdown = new MarkdownIt('zero', { html: false }).enable([
+  'newline',
+  'escape',
+  'backticks',
+])
 export const headingHtml = (text) =>
   /^\.[a-zA-Z]+\(\)$/.test(text)
     ? `<code>${escapeHtml(text)}</code>`
@@ -55,16 +55,16 @@ const openExternalInNewTab = (html) =>
     '<a href="$1"$2 target="_blank" rel="noopener noreferrer">$3<span class="visually-hidden"> (opens in a new tab)</span></a>',
   )
 
-const markdown = new Remarkable({ html: true, xhtmlOut: true, breaks: false })
+const markdown = new MarkdownIt({ html: true, xhtmlOut: true, breaks: false })
 
 // Splits GUIDE.md into its `##`/`###` sections, each with its `####`–`######`
 // sub-headings. `## Usage` is only a container for the `###` sections under
-// it. The headings come from Remarkable's own parse, the same one that renders
+// it. The headings come from markdown-it's own parse, the same one that renders
 // the page, so a `#` line inside a code block is never taken for one: two
 // hand-written guesses at where code ends both got it wrong (2026-10-31).
 // Only a top-level heading counts (`level` 0): one inside a blockquote or a
-// list item belongs to that block. A heading runs from `lines[0]` up to
-// `lines[1]`, two lines for a setext heading's text and underline.
+// list item belongs to that block. A heading runs from `map[0]` up to
+// `map[1]`, two lines for a setext heading's text and underline.
 // Parsed once per version of the file, not once per guide page.
 // The cache is keyed on the text itself, not the file's modification time:
 // an edit can keep the time (a checkout, a tool that preserves it, two saves
@@ -77,10 +77,10 @@ function readSections() {
   return parsed.sections
 }
 
-// Remarkable's own set of line breaks (`NEWLINES_RE` in remarkable 2): its
-// `token.lines` count these, so the lines here are split on the same set, or
-// one U+2028 in GUIDE.md would put every later heading a line off.
-const LINE_BREAKS = /\r[\n\u0085]|[\u2424\u2028\u0085]/g
+// markdown-it's own set of line breaks (`NEWLINES_RE` in its normalize rule):
+// its `token.map` counts these, so the lines here are split on the same set,
+// or one bare `\r` in GUIDE.md would put every later heading a line off.
+const LINE_BREAKS = /\r\n?/g
 
 export function splitSections(source) {
   const text = source.replace(LINE_BREAKS, '\n')
@@ -90,11 +90,10 @@ export function splitSections(source) {
     token.type === 'heading_open' && token.level === 0
       ? [
           {
-            level: token.hLevel,
-            // An empty heading has no inline token after it.
-            title: tokens[i + 1].type === 'inline' ? tokens[i + 1].content : '',
-            start: token.lines[0],
-            end: token.lines[1],
+            level: Number(token.tag.slice(1)),
+            title: tokens[i + 1].content,
+            start: token.map[0],
+            end: token.map[1],
           },
         ]
       : [],
@@ -180,23 +179,19 @@ export const subHeadingLines = (anchor, level, title) => [
 ]
 
 // Renders a page's Markdown with every link and image target passed through
-// `rewrite`. It changes the tokens Remarkable parsed, not the text, so a link
+// `rewrite`. It changes the tokens markdown-it parsed, not the text, so a link
 // shown inside code (`- [title](url): description`) or written as raw HTML is
 // left exactly as GUIDE.md has it.
 export function renderWithTargets(source, rewrite) {
   const env = {}
   const tokens = markdown.parse(source, env)
   // The targets stay as the parser encoded them: they are URLs, not files.
-  for (const token of linkTokens(tokens))
-    if (token.type === 'image') token.src = rewrite(token.src, 'image')
-    else token.href = rewrite(token.href, 'link')
-  // Remarkable 2.0.1 never starts an HTML block with <h1>–<h6>: its opening
-  // tag pattern, /^<([a-zA-Z]{1,15})[\s\/>]/, allows no digit, though h1–h6
-  // are on its block list (AIKB/upstream.md). So a heading put in as raw HTML
-  // comes back as a paragraph; this unwraps exactly that shape (round 21).
-  return markdown.renderer
-    .render(tokens, markdown.options, env)
-    .replace(/<p>(<(h[1-6])\b[^>]*>[\s\S]*?<\/\2>)<\/p>/g, '$1')
+  for (const token of linkTokens(tokens)) {
+    const attr = targetAttr(token)
+    const kind = token.type === 'image' ? 'image' : 'link'
+    token.attrSet(attr, rewrite(token.attrGet(attr), kind))
+  }
+  return markdown.renderer.render(tokens, markdown.options, env)
 }
 
 // Where a target that is not one of GUIDE.md's own anchors points: a URL

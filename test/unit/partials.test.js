@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import Handlebars from 'handlebars'
-import { Remarkable } from 'remarkable'
+import MarkdownIt from 'markdown-it'
 import layouts from 'handlebars-layouts'
 import {
   registerPartials,
@@ -13,7 +13,7 @@ import fs from 'fs-extra'
 import path from 'node:path'
 import { makeSite } from '../helpers/site.js'
 
-const deps = { markdown: new Remarkable(), logger: silentLogger }
+const deps = { markdown: new MarkdownIt(), logger: silentLogger }
 
 let site
 afterEach(async () => {

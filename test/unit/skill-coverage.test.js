@@ -1210,6 +1210,15 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: "2.17.0: the Markdown renderer is markdown-it, as kiss.markdown, and kiss.remarkable is gone; a sentence sending a site to kiss.remarkable or to Remarkable's options is the API that replaced",
+    patterns: [
+      /kiss\.remarkable\.use\(/,
+      /rendered through `kiss\.remarkable`/,
+      /github\.com\/jonschlinkert\/remarkable/,
+    ],
+    allowedIn: ['CHANGELOG.md'],
+  },
+  {
     why: '2.16.0: a .md partial is compiled as a template and then rendered as Markdown, per page, so {{link "x"}} and {{> "nav"}} work in it; a sentence saying kiss renders it to HTML at registration, or that Markdown escapes the quotes Handlebars needs, is the behaviour that replaced',
     patterns: [
       /renders `\.md` partials to HTML as it registers them/,
