@@ -3,7 +3,7 @@ branch: feat/markdown-it
 base: main
 status: open
 opened: 2026-11-14
-scope: lib/**, types/**, test/**, package.json, package-lock.json, GUIDE.md, llms.txt, README.md, AIKB/**, CHANGELOG.md, CLAUDE.md, src/**, scripts/budgets.mjs, scripts/gates.mjs, scripts/markdown-links.mjs, scripts/bench.mjs, .github/pull_request_template.md, planning/**, plugins/**, examples/**, .claude/skills/**
+scope: lib/**, types/**, test/**, package.json, package-lock.json, GUIDE.md, llms.txt, README.md, AIKB/**, CHANGELOG.md, CLAUDE.md, src/**, scripts/budgets.mjs, scripts/gates.mjs, scripts/markdown-links.mjs, scripts/bench.mjs, .github/pull_request_template.md, .claude-plugin/marketplace.json, planning/**, plugins/**, examples/**, .claude/skills/**
 ---
 
 # Session — 2026-11-14: markdown-it in place of remarkable, and the freeze (Phase 1's close)
@@ -50,6 +50,8 @@ scope: lib/**, types/**, test/**, package.json, package-lock.json, GUIDE.md, llm
 
 - **2026-11-14 — two rendering decisions, both the operator's, both as recommended.** Footnotes (`[^1]`), which Remarkable rendered by default, are not bundled: GUIDE.md gets a `markdown-it-footnote` recipe, and the upgrade note names the loss (runtimeDeps stays 21). Strikethrough renders markdown-it's `<s>` rather than Remarkable's `<del>`, with no override. Evidence: a probe of 47 syntax cases through both renderers with kiss's defaults found 8 that differ (whitespace in tables, lists and indented code; raw `<hN>` no longer wrapped in `<p>`; `data:` images; `~~` → `<s>`; footnotes). With `linkify: true`, bare URLs now link; under Remarkable 2 that option did nothing. No fleet site uses footnotes or `~~` (grep over `C:\Code\kiss`, examples and src).
 - **2026-11-14 — scope widened** to `scripts/markdown-links.mjs` and `scripts/bench.mjs`, both readers of Remarkable's token shape or name, and `.github/pull_request_template.md`, which lists the gates. Each is a sibling of the class this branch changes, found by `node scripts/scope-check.mjs` at the first pulse.
+- **2026-11-14 — scope widened** to `.claude-plugin/marketplace.json`, which `npm version minor` synced at the close's bump to 2.17.0 (`scripts/sync-plugin-versions.mjs`), found by the close's Step 5b.
+- **2026-11-14 — the fleet check run on live CMS data, at the operator's request.** learna-kiss and diploma-msc were cloned into the scratchpad, `get-data` fetched their Orchard content there (diploma-msc: 799 items in 18 types), and `fleet-check` built each clone from `main` and from the branch. 71 of 1,953 files differed; a diploma-msc control (main against main) differed in 0 bytes. Each difference traced to its CMS source: literal U+00A0 kept where Remarkable wrote a space (68 files); a link destination's `&amp;` decoded once, which fixes a broken Google Scholar link Remarkable published (1 page and its Markdown copy); a lone `<img>` line no longer wrapped in `<p>` (1 page, ~16px less space under the Max Healthcare logo). A browser comparison of the 38 differing pages, with third parties blocked and a base-against-base control, found no other visible change (the live countdown banner accounts for the rest). Three tests were added for these (`19a8ae6`) and one for the `data:image` allowance (`452e8f4`), each seen failing on main with remarkable installed unsaved for the red-first run. The CHANGELOG draft was corrected twice by measurement: `&nbsp;` entities and `<iframe>` were never affected.
 
 ## Pulse log
 
