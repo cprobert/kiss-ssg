@@ -139,9 +139,7 @@ The default config options are:
 }
 ```
 
-Partials can be `.hbs`, `.html` or `.md` (rendered as Markdown first), all compiled as templates, or `.txt`, which is shown as text and never compiled. See `.registerPartials()` under **Other methods**.
-
-**Because a `.md` partial is Markdown before it is a template, Markdown escapes `"` and `>` before Handlebars reads them.** A double-quoted argument (`{{link "courses/intro"}}`) or any partial call (`{{> "nav"}}`, `{{> nav}}`) fails the build with a parse error. `{{title}}` and single-quoted arguments (`{{link 'courses/intro'}}`) survive, but a Markdown link whose URL is an expression (`[the course]({{link 'courses/intro'}})`) is left as literal text, not a link. When a `.md` partial needs helpers or partials, make it a `.hbs` partial and wrap the prose in `{{#markdown}}…{{/markdown}}`.
+Partials can be `.hbs` or `.html`, both compiled as templates; `.md`, compiled as a template and then rendered as Markdown; or `.txt`, which is shown as text and never compiled. A site can add its own extensions (see [Partial transforms](#partial-transforms)). Two files that give one name, such as `nav.md` and `nav.hbs`, fail the build. See `.registerPartials()` under **Other methods**.
 
 | Option         |                                     Default                                     |                                                                                                                                                                                                                                                                                                                                                            Purpose                                                                                                                                                                                                                                                                                                                                                            |
 | -------------- | :-----------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -559,7 +557,57 @@ The three defaults (`html: true`, `xhtmlOut: true`, `breaks: false`) are the key
 
 **`html: true` renders HTML in Markdown as written.** That is right for your own files and wrong for Markdown a CMS or a feed serves: a model string holding `<script>alert(1)</script>` passed to `{{markdown}}` is written into the page as that `<script>`. A site that renders Markdown it did not write sets `markdown: { html: false }`, and the same string is written as the text `&lt;script&gt;alert(1)&lt;/script&gt;`. Every tag is escaped then, harmless ones such as `<b>` too, while the Markdown itself (`**bold**`, links) still renders.
 
-Set it in config rather than reaching for `kiss.remarkable` afterwards: `.md` partials are rendered to HTML **when they are registered**, which happens in the constructor, so a later mutation would change the `{{markdown}}` helper but silently miss every partial unless you also called `kiss.registerPartials()`.
+**Under `html: false`, a `.md` partial escapes the HTML its own helpers insert.** Handlebars runs first, so the markup a `{{> "nav"}}` or a helper writes is part of what Markdown reads, and it is escaped with the rest. The same is true inside a `{{#markdown}}` block. Where a partial needs both, make it a `.hbs` partial and keep the call outside the block:
+
+```handlebars
+{{#markdown}}Some **prose**.{{/markdown}}
+{{> "nav"}}
+```
+
+Set the options in config. Mutating `kiss.remarkable` afterwards (`kiss.remarkable.use(plugin)`) also works: `.md` partials and the `{{markdown}}` helper both render with it per page.
+
+### Partial transforms
+
+A partial's extension says what happens to it. `.hbs` and `.html` are compiled as templates; `.md` is compiled and then rendered as Markdown; `.txt` is escaped and shown, never compiled. **A `.md` partial is a template first**, so `{{link "about"}}`, `{{> "nav"}}` and hash arguments work in it:
+
+```md
+See [the about page]({{link "about"}}).
+
+{{> "callout" tone="warn"}}
+```
+
+Because Handlebars runs before Markdown, what it inserts is Markdown's input:
+
+- a `*` or `_` in an inserted value can become emphasis;
+- a partial called on a line indented four spaces becomes a code block;
+- under `markdown.html: false` inserted HTML is escaped (see [Markdown options](#markdown-options)).
+
+`config.transforms` adds an extension, or replaces the `md` or `txt` built-in. Each key is an extension without the dot:
+
+```js
+let highlight
+new Kiss({
+  transforms: {
+    code: {
+      compile: false,
+      setup: async () => {
+        const highlighter = await import('./lib/highlight.js')
+        highlight = highlighter.highlight
+      },
+      render: (output, { hash }) =>
+        `<pre><code>${highlight(output, hash.lang)}</code></pre>`,
+    },
+  },
+})
+```
+
+With that, `src/partials/install.code` is a partial, and `{{> "install" lang="sh"}}` shows it highlighted.
+
+- **`render(output, ctx)`** is required. It is called each time a page uses the partial, with the compiled template's output, and returns the string inserted into the page as it is. `ctx` is `{ name, file, page, context, hash }`: the partial's name and file, the output path of the page rendering it, the partial's context, and the call's hash arguments (`{}` when there are none). It is synchronous; anything async goes in `setup`.
+- **`compile`** is `true` by default. `false` hands `render` the file's own characters, so `{{ }}` in it is not interpolated.
+- **`setup()`** is optional and awaited once, before the first page renders. If it throws, the build reports `<transform .adoc>` and every page that calls an `.adoc` partial fails, naming it; the rest of the site still builds.
+
+`html` and `hbs` are templates, and a transform for either is refused. A file whose extension is in neither list is not a partial. Two files that give one name (`note.md` and `note.hbs`, or a partial and a layout) fail the build as `<partials>`, naming both files, and every page that calls the name fails too: rename all but one.
 
 ### .page()
 
@@ -2146,14 +2194,14 @@ Exit codes: 0 drafted or answered, 1 refused, 2 a usage error. A site whose kiss
 
 ### Other methods
 
-- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is Markdown rendered to HTML and then compiled, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only. That is what makes a code sample work without hand-escaping:
+- `.registerPartials()` — re-registers every partial and layout from disk, unregistering any whose file has gone, and returns the registered names. Kiss runs it for you at start-up and on every watch rebuild; call it yourself if you add or remove partial files at runtime without `.watch()`. **The extension says what happens to the file**: under `folders.partials`, `.hbs` is a template, `.md` is compiled and then rendered as Markdown, `.html` is **compiled as a Handlebars template like any other** — "as-is" only in the sense that nothing renders its body first, so `{{ }}` inside it _is_ interpolated and the helpers run, and `.txt` is text — escaped and **not compiled**, so its markup is shown rather than rendered and `{{name}}` inside it is printed rather than interpolated. `folders.layouts` takes `.hbs` only, and `config.transforms` adds extensions ([Partial transforms](#partial-transforms)). The `.txt` rule is what makes a code sample work without hand-escaping:
 
 ```hbs
 <!-- src/partials/snippet.txt holds:  <div class="card">{{title}}</div>  -->
 <pre>{{> "snippet"}}</pre>
 ```
 
-…renders that line verbatim, tags and braces included. Partial names are path-derived and extension-less, so `note.txt` and `note.hbs` collide and the template wins.
+…renders that line verbatim, tags and braces included. Partial names are path-derived and extension-less, so `note.txt` and `note.hbs` give one name, and the build fails, naming both files.
 
 **Every entry of `kiss.handlebars.partials` is a function** — a compiled template that also records which page invoked it, which is what scopes a watch-mode partial edit to the pages that used it. `handlebars-layouts` recompiles a string layout on every page render and never caches it, so compiling at registration is also what stops a layout being recompiled once per page. Code of yours that renders an entry by name must accept a function, and must pass its own `options.data` through: `const p = kiss.handlebars.partials[name]; typeof p === 'function' ? p(ctx, { data: options.data }) : kiss.handlebars.compile(p)(ctx, { data: options.data })`. That data frame is how the page is recorded as using the partial: a bare `p(ctx)` renders correctly, but under `.watch()` that page is not re-rendered when the partial changes (unless no page recorded it at all, when every page is).
 
@@ -2434,5 +2482,5 @@ The development watcher handles asset additions, edits, renames and deletions, r
   ```
 
 - New: `kiss.close()` stops the dev server and file watcher.
-- **Upgrading from a v2 _prerelease_ rather than v1: `markdown.breaks` flipped.** It was hard-coded `true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`, where the option set became the configurable `DEFAULT_MARKDOWN` block; `2.0.0`, `2.1.0` and `2.2.x` all match beta.1. A project pinned to an alpha may carry a workaround for the old default — `kiss.remarkable.set({ breaks: false })` followed by `kiss.registerPartials()`, often with a comment asserting that v2 defaults to `breaks: true`. That comment was correct when written and has been wrong since beta.1: delete both calls, and set `markdown: { breaks: true }` in config if you actually want the old behaviour. The `registerPartials()` half is why the pair survives upgrades unnoticed — it does not look redundant, because `.md` partials are rendered to HTML at registration, so a later mutation of `kiss.remarkable` really would need a re-register to reach them.
+- **Upgrading from a v2 _prerelease_ rather than v1: `markdown.breaks` flipped.** It was hard-coded `true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`, where the option set became the configurable `DEFAULT_MARKDOWN` block; `2.0.0`, `2.1.0` and `2.2.x` all match beta.1. A project pinned to an alpha may carry a workaround for the old default — `kiss.remarkable.set({ breaks: false })` followed by `kiss.registerPartials()`, often with a comment asserting that v2 defaults to `breaks: true`. That comment was correct when written and has been wrong since beta.1: delete both calls, and set `markdown: { breaks: true }` in config if you actually want the old behaviour. The `registerPartials()` half is why the pair survives upgrades unnoticed: it did not look redundant, because until 2.16 `.md` partials were rendered to HTML at registration. Since 2.16 they render per page, so a later mutation of `kiss.remarkable` reaches them with no re-register.
 - **Unchanged in v2**, so there is nothing to migrate even though it looks load-bearing: the per-page `generate: false` option (default `true`, see `.page()`'s options above) still skips building one page; `callback.call(this, ...)` still binds the `Kiss` instance inside `.generate()`/`.complete()`/`.sitemap()` callbacks; the per-page `ext` option; `copyAssets(sourceDir, targetDir)` to a second directory; `.viewStats()`/`.getModelByID()`. Anything under `this._stack` is internal and unversioned — code reading `_stack[].buildTo`/`_stack[].page.options` for a hand-rolled sitemap works today by accident; `.sitemap()` is the supported way to enumerate registered pages.

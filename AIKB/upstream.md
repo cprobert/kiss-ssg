@@ -31,9 +31,11 @@ one of them is a decision.
 
 **Observed:** handlebars 4.7. **Effect:** an indented `{{> "x"}}` throws and the
 page writes nothing, because the indentation path calls `result.split('\n')` and
-a `SafeString` has no `split`. **What kiss does:** `literalPartial`
-(`lib/partials.js`) returns the escaped **string** rather than a `SafeString`.
-This is a local guard, not a mechanism — one return type, at one call site.
+a `SafeString` has no `split`. **What kiss does:** `transformingPartial`
+(`lib/partials.js`) returns a plain **string**, and so does every transform's
+`render` (the built-in `.txt` one returns the escaped string rather than a
+`SafeString`). This is a local guard, not a mechanism — one return type, at one
+call site.
 **Re-check:** register a `.txt` partial, render `<pre>\n  {{> snippet}}\n</pre>`,
 and see whether returning a `SafeString` still throws.
 

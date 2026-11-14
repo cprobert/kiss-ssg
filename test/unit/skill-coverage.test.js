@@ -1177,6 +1177,17 @@ describe('every skill names the features an agent following it should use', () =
 // real consumer-facing file, not a hypothetical.
 const CONTRADICTIONS = [
   {
+    why: '2.16.0: a .md partial is compiled as a template and then rendered as Markdown, per page, so {{link "x"}} and {{> "nav"}} work in it; a sentence saying kiss renders it to HTML at registration, or that Markdown escapes the quotes Handlebars needs, is the behaviour that replaced',
+    patterns: [
+      /renders `\.md` partials to HTML as it registers them/,
+      /Markdown that kiss renders as it registers it/,
+      /kiss renders it to HTML when it registers it/,
+      /rendered to HTML \*\*when they are registered\*\*/,
+      /Markdown escapes `"` and `>` before Handlebars reads them/,
+      /`\.md` files are rendered to HTML _at registration time_/,
+    ],
+  },
+  {
     why: '#78: a purge of a Tailwind stylesheet keeps its classes whole and still removes what its own scan over-included (11% after Brotli on one site), so a sentence saying Tailwind needs no purge is the advice that replaced',
     patterns: [/Tailwind needs none of this/, /Tailwind needs no purge/],
   },

@@ -1,12 +1,14 @@
 # Partial transforms (design)
 
-Status: **ROADMAP — not started.** Written 2026-10-24 from a feasibility
-conversation; listed in [`planning/ROADMAP.md`](../ROADMAP.md). It is the first
-release of Phase 1 (2.16) of
-[the roadmap to 3.0](../plans/2026-11-10-roadmap-to-3.0.md). Whoever picks it
-up should run `/branch-open` against this document and re-check every claim
-about current behaviour below against `lib/` first — they describe the engine
-at `db164de` (2.8.0).
+Status: **In progress** on `feat/partial-transforms`, opened 2026-11-13:
+[the session log](../sessions/2026-11-14-partial-transforms.md). The engine and
+the docs have landed; the draft 2.16.0 changelog entry is at the
+[end of this document](#changelog-entry-draft-for-2160), for `/branch-close` to
+carry into `CHANGELOG.md` with the version bump. Written 2026-10-24 from a
+feasibility conversation. It is the first release of Phase 1 (2.16) of
+[the roadmap to 3.0](../plans/2026-11-10-roadmap-to-3.0.md). The claims about
+current behaviour below describe the engine at `db164de` (2.8.0), and were
+re-checked against 2.15.1 at the open.
 
 ## Background
 
@@ -173,3 +175,55 @@ any registered transform. Not required for the first cut; decide at
 - Alternative view engines (decided against, above).
 - A page-level output-transform chain.
 - Changing the `{{markdown}}` helper's behaviour.
+
+## Changelog entry (draft for 2.16.0)
+
+Written in slice 2 (2026-11-14). `CHANGELOG.md`'s newest entry must match
+`package.json`'s version (`test/unit/changelog.test.js`), so `/branch-close`
+carries this in with the bump, dated that day. Every behaviour it states was
+measured against the branch's engine on 2026-11-14.
+
+```md
+## 2.16.0 — <date>
+
+`.md` partials are templates first. `{{link "x"}}`, `{{> "nav"}}` and hash arguments now
+work in them, and a site can add its own partial types with `config.transforms`. Read the
+upgrading notes: a `.md` partial's output can change, and a name two files share now
+fails the build.
+
+- **A `.md` partial is compiled and then rendered as Markdown.** Markdown used to run
+  first, when the partial was registered, and it escaped the `"` and `>` Handlebars
+  needs: `{{link "about"}}` and every `{{> "partial"}}` call in a `.md` partial failed
+  the page with a parse error, and a Markdown link whose URL was an expression shipped as
+  text. Now Handlebars runs first, on each page that uses the partial, and Markdown reads
+  its output. The trap GUIDE.md described, and its `.hbs` + `{{#markdown}}` workaround,
+  are gone.
+- **`config.transforms` adds a partial type.** Each key is an extension without the dot,
+  and each value is `{ render, compile?, setup? }`: `render(output, ctx)` is called per
+  use with the compiled output and returns the HTML; `compile: false` hands it the file
+  as written; `setup()` is awaited once before the first page renders, and a failure is
+  reported as `<transform .ext>` and fails the pages that use that type. An entry for
+  `md` or `txt` replaces the built-in; `html` and `hbs` are refused. GUIDE.md § Partial
+  transforms.
+- **Two files that give one partial name fail the build.** `nav.md` and `nav.hbs`, or a
+  partial and a layout with one name, used to resolve silently: a fixed order picked the
+  winner (the layout, or `.hbs` over `.md`, `.txt` and `.html`). Now the build reports a
+  `<partials>` failure naming both files, and every page that calls the name fails.
+- **A change to `kiss.remarkable` reaches `.md` partials.** They render per page now, so
+  `kiss.remarkable.use(plugin)` after `new Kiss()` reaches them as it reaches the
+  `{{markdown}}` helper, with no `kiss.registerPartials()`.
+
+### Upgrading
+
+- **Rename one file of any pair that shares a partial name**, including a partial and a
+  layout. `kiss-ssg check` lists each pair as a `<partials>` failure.
+- **Read the output of any `.md` partial that interpolates.** What Handlebars inserts is
+  now Markdown's input: a `*` or `_` in a value can become emphasis, and a partial called
+  on a line indented four spaces becomes a code block. Un-indent the call, or move the
+  value out of the Markdown.
+- **Under `markdown: { html: false }`, a `.md` partial escapes the HTML its own helpers
+  and partials insert.** Make such a partial a `.hbs` partial and keep the call outside
+  the `{{#markdown}}` block (GUIDE.md § Markdown options).
+- **Drop a `kiss.registerPartials()` that only followed a `kiss.remarkable` change.** It
+  is no longer needed, and it is harmless if left.
+```

@@ -14,13 +14,14 @@
   {
     "slug": "pages",
     "title": "Pages and data",
-    "description": "Registering pages with .page() and .pages(), shaping their data with controllers, fetching remote models, and Markdown options.",
+    "description": "Registering pages with .page() and .pages(), shaping their data with controllers, fetching remote models, Markdown options and partial transforms.",
     "sections": [
       ".page()",
       ".pages()",
       "Controller",
       "Remote models",
-      "Markdown options"
+      "Markdown options",
+      "Partial transforms"
     ]
   },
   {

@@ -35,8 +35,8 @@
       Partials come in three flavours and all three are on this page:
       <code>partials/site/header.hbs</code> and <code>site/footer.hbs</code> are Handlebars,
       <code>partials/hours.html</code> is plain HTML, and <code>partials/sourcing.md</code>
-      is Markdown that kiss renders as it registers it — and which still reads the page's
-      model. The price board is a <em>dynamic</em> partial: the template does not name it,
+      is Markdown: kiss runs it as a template against the page's model first, then
+      renders the Markdown. The price board is a <em>dynamic</em> partial: the template does not name it,
       the model does.
     </p>
   </section>

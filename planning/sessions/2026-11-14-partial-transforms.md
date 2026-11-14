@@ -3,7 +3,7 @@ branch: feat/partial-transforms
 base: main
 status: open
 opened: 2026-11-14
-scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, planning/**, src/**, .claude-plugin/**
+scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, lib/rebuild.js, test/**, AIKB/**, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/**, examples/*/src/partials/**, examples/4-layouts-and-partials/src/pages/index.hbs, examples/9-migrated-from-v1/AIKB/last-build.json, planning/**, src/**, .claude-plugin/**
 ---
 
 # Session — 2026-11-14: Partial transforms (2.16)
@@ -91,6 +91,9 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
 
 - **2026-11-14 — The collision rule covers a partial and a layout too.** The spec named `foo.md` + `foo.hbs`. A same-named partial and layout used to resolve silently (the layout won), which is the same class: two files, one name, one silently wins. Now it is a `<partials>` failure as well. Offered at the pulse; the operator chose **keep**. The upgrade note must say so, and the fleet check will show whether any site has such a pair.
 - **2026-11-14 — `lib/rebuild.js` added to `scope:`.** Codex round 3 found that the scoped watch re-render (`rebuildEntries`) awaited the helpers but not the transforms' setups. The fix is one line in `lib/rebuild.js`, which mirrors the existing `_helpersReady` await. It is the same feature's readiness, not a new subsystem.
+- **2026-11-14 — Two example files added to `scope:` (slice 2).**
+  - **`examples/4-layouts-and-partials/src/pages/index.hbs`** carries the same retired sentence as the partials ("Markdown that kiss renders as it registers it"). It is a page, not a partial, so the original glob missed it.
+  - **`examples/9-migrated-from-v1/AIKB/last-build.json`** is example 9's committed knowledge base. It records each page's hash, so correcting that example's `sourcing-note.md` changed one hash, and `test/integration/examples.test.js` requires the record to match. It was re-recorded with `npx kiss-ssg aikb router.js`, the one writer of that folder, and the diff is that one hash.
 
 ## Pulse log
 
