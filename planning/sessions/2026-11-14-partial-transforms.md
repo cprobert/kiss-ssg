@@ -162,6 +162,29 @@ scope: lib/partials.js, lib/config.js, lib/kiss.js, lib/handlebars-helpers.js, l
   - **Offer:** the changelog draft in the spec rather than `CHANGELOG.md`. Operator: **keep**.
   - **Fleet, clean room, Codex at the close — not yet.**
   - **Decision: continue** to slice 3 (fleet check, clean room).
+- **2026-11-14** — **Slice 3 (verify) done:** `206cf94` and `0fb9f74`. The branch is 0 commits behind `origin/main`.
+  - **Fleet — met.** `a1k9training` is the only fleet site under `C:\Code\kiss` with `.md` partials. It has 19, five of which interpolate: three start with `{{image …}}`, two put `{{config.business.telephone}}` in a `tel:` href, and one inserts `{{experienceYears}}`.
+    - Its `.md` partials carry no collisions, of either kind.
+    - Result: `Fleet check: C:\Code\kiss\a1k9training, main (68633b4, 2.15.1) against HEAD (c7d454e, 2.15.1): identical.` That covers 20 page hashes (0 changed) and 571 build files (0 differ as bytes), with `fleet-check` exit 0. The site's tree was clean afterwards.
+    - The inferred assumption "flipping the order changes no fleet site's bytes" is now measured, on this one site.
+    - The other v2 fleet sites have no `.md` partials and were not built.
+  - **Clean room — met.** A fresh agent, given only the packed tarball (`kiss-ssg-2.15.1.tgz` at `c7d454e`) and the shipped docs, built a three-page site in an empty folder.
+    - **The result.** Its `.md` partial used `{{link "about"}}` and `{{> "callout" tone="warn"}}`, which worked first time, and `kiss-ssg check` exited 0.
+    - **The built page** has `<a href="/about.html">` and the callout markup unescaped.
+    - **Its guesses, re-derived before acting on any:**
+      - **The standalone-call blank line — a new trap, measured.** A call alone on its line loses its newline; when the called file has no final newline, the next paragraph loses its `<p>`. Documented in `206cf94`.
+      - **A wrong reference.** `AIKB/partials.md` cited a GUIDE section that does not exist. Fixed in `206cf94`.
+      - **Example 4.** It hand-wrote its URLs, and no shipped `.md` partial called a helper. Absorbed in `0fb9f74`, on the operator's call (Amendment above).
+    - **Not acted on:**
+      - CHANGELOG 2.8.1 still states the old trap, and the changelog is history, so it stays.
+      - "2.16" appears in the docs before the bump, which `/branch-close` resolves.
+  - **Docs — met, apart from the changelog**, which `/branch-close` carries in from the spec's draft. The draft now includes the blank-line note.
+  - **Gates:** `npm test` passes, 148 files and 5,014 tests. `scope-check` exits 0.
+  - **Drift:** one Amendment, example 4 absorbed, which widens `scope:`. It is still examples and docs; the impact surface is unchanged.
+  - **Eyeball: deferred** to `/branch-close` Step 5a. The artefact is `examples/4-layouts-and-partials/public/index.html`: "run by **Tom**", a working "our stockists' shelves" link, and "The bar" marked active.
+  - **Offer:** example 4's stylesheet moved to `/{{asset …}}`, past the approved link fix. The cost is that the page no longer opens from disk with its CSS. Operator: **keep**.
+  - **Open:** Codex at the close; `npm run gates`; the version bump to 2.16.0, with the changelog entry from the spec.
+  - **Decision: ready to close.** Every criterion is met except the ones only the close can meet: Codex at the close, the gates, and the changelog with the bump. `/branch-close` runs only when the operator asks.
 
 ---
 
