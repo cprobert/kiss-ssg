@@ -246,7 +246,7 @@ git clone https://github.com/cprobert/kiss-ssg.git && cd kiss-ssg
 npm install
 npm test             # Vitest, single run
 npx vitest run test/unit/audit.test.js   # one test file, about a second; add -t <name> for one test
-npm run gates        # test, lint, typecheck, format and pack: what CI runs
+npm run gates        # test, lint, typecheck, format, pack and budgets: what CI runs
 npm run dev          # the docs site, live at http://127.0.0.1:3001 (Ctrl-C to stop)
 ```
 

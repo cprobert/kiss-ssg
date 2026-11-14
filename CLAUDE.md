@@ -113,7 +113,7 @@ npm test                                   # Vitest, single run; one file: npx v
 npm run lint                               # ESLint (eslint.config.js)
 npm run typecheck                          # tsc --checkJs over lib/, scripts/, bin/; never emits
 npm run format                             # Prettier, write; format:check to verify
-npm run gates                              # the five pre-PR gates: test, lint, typecheck, format, pack
+npm run gates                              # the six pre-PR gates: test, lint, typecheck, format, pack, budgets
 npm run types                              # regenerate types/ from lib/'s JSDoc (never hand-edit types/)
 npx kiss-ssg init                          # set a folder up for an agent; never overwrites
 npx kiss-ssg check <script>                # dry-run a site's build: report it, publish nothing
@@ -183,6 +183,8 @@ Four practices for every change, whichever model is making it. Adapted from the 
 ## Rules
 
 Each rule's incidents are in [the history's Rules section](planning/history/claude-md-rules.md#rules).
+
+- **Feature freeze, from 2.17 until 3.0:** no new feature lands outside [the roadmap](planning/plans/2026-11-10-roadmap-to-3.0.md)'s phases, and the `budgets` gate fails any number in `planning/budgets.json` that grows, so growth a branch earns is re-recorded (`node scripts/budgets.mjs --record`) in its own commit that says why.
 
 - Engine code goes in `lib/`, one responsibility per file, with a unit test in `test/unit/` (`lib/kiss.js` is covered by `test/integration/`) and an `AIKB/` doc.
 - **A skill holds knowledge and judgement; the engine and the `kiss-ssg` CLI hold mechanism.** Anything a skill needs done exactly right every time is a `kiss-ssg` command with its decision in a tested `lib/` module. A skill's code block is a list of commands to run, never a program: no pipe into a filter, no loop or condition, no `&&` chain, no `awk`, `sed` or `node -e`, no logic copied into a second skill; `test/unit/skill-code-blocks.test.js` holds every skill to that allow-list. If getting it wrong would need a regression test, it belongs in `lib/`. A skill that needs a command an older installed kiss-ssg lacks says so, and how to check (`npx kiss-ssg session --help` answering `unknown command` means upgrade first). The repository's own skills follow the same rule against `scripts/`.
