@@ -193,6 +193,18 @@ describe('the renderer is markdown-it', () => {
     expect(html).not.toContain('&amp;amp;')
   })
 
+  // markdown-it allows a data: URL for an image of these four types only, and
+  // still refuses one for a link; Remarkable wrote the image as text.
+  it('renders a data:image source, and no data: link', async () => {
+    const { html } = await build(
+      siteWith(
+        '![dot](data:image/png;base64,AAAA)\n\n[x](data:text/html;base64,AAAA)',
+      ),
+    )
+    expect(html).toMatch(/<img src="?data:image\/png;base64,AAAA"?/)
+    expect(html).not.toContain('href="data:')
+  })
+
   it('writes strikethrough as <s>', async () => {
     const { html } = await build(siteWith('~~gone~~'))
     expect(html).toContain('<s>gone</s>')
