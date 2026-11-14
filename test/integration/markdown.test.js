@@ -164,6 +164,35 @@ describe('the renderer is markdown-it', () => {
     expect(html).not.toMatch(/<p>\s*(<\/p>)?\s*<h3/)
   })
 
+  // Found by the fleet check on diploma-msc with its CMS data (2026-11-14):
+  // Remarkable wrapped a lone <img> line in a <p>, as it did a heading.
+  it('starts an HTML block with any complete tag alone on its line', async () => {
+    const { html } = await build(
+      siteWith(
+        'Before.\n\n<img src="/logo.png" alt="Logo" width="150">\n\nAfter.',
+      ),
+    )
+    expect(html).toMatch(/<\/p>\s*<img src="?\/logo\.png"?/)
+  })
+
+  // The same fleet run: the CMS text held U+00A0, and Remarkable wrote a
+  // plain space in its place.
+  it('keeps a non-breaking space as written', async () => {
+    const { html } = await build(siteWith('Ophthalmology MSc is designed'))
+    expect(html).toContain('MSc is designed')
+  })
+
+  // The same fleet run: Remarkable left `&amp;` in a link's destination
+  // undecoded and escaped it again, so the published link carried
+  // `&amp;amp;` and pointed at the wrong URL.
+  it('decodes an entity in a link destination once', async () => {
+    const { html } = await build(
+      siteWith('[papers](https://scholar.example/c?user=1&amp;hl=en)'),
+    )
+    expect(html).toContain('href="https://scholar.example/c?user=1&amp;hl=en"')
+    expect(html).not.toContain('&amp;amp;')
+  })
+
   it('writes strikethrough as <s>', async () => {
     const { html } = await build(siteWith('~~gone~~'))
     expect(html).toContain('<s>gone</s>')
