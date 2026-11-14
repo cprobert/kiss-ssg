@@ -216,6 +216,15 @@ scope: lib/partials.js, lib/config.js, lib/assets.js, lib/asset-copy.js, lib/bui
   - **Offer:** the layout-collision clause was dropped from the `llms.txt` index line to stay under the cap (15,998 characters); the build failure teaches it. Operator: **keep**.
   - **Drift:** none. The promotion is the Amendment recorded above, and the surface is unchanged.
   - **Decision: ready to close.** `/branch-close` runs only when the operator asks.
+- **2026-11-14** — **The six findings landed** (Amendment "The six findings, here"): `5cd0566`. 0 commits behind `origin/main`.
+  - **Checks:** `npm test` at `5cd0566`: 149 files, 5,022 passed, 9 skipped. Typecheck, lint on the changed modules, Prettier and `scope-check` all exit 0. `types/assets.d.ts` was regenerated for `missing`.
+  - **Red first:** `red-first: test/integration/assets-missing.test.js failed at main (68633b4), 2026-11-14`; `red-first: test/integration/audit.test.js failed at main (68633b4), 2026-11-14`.
+  - **Fleet, re-run because `lib/` changed:** `Fleet check: C:\Code\kiss\a1k9training, main (68633b4, 2.15.1) against HEAD (5cd0566, 2.15.1): identical.` 20 page hashes (0 changed), 571 files (0 differ). The fleet's five `.copyAssets()` calls name folders that exist.
+  - **Independent review:** none of `5cd0566` yet. Codex at the close covers `lib/assets.js`, `lib/asset-copy.js` and `lib/build-finish.js`.
+  - **Eyeball: deferred** to `/branch-close` Step 5a, beside example 4's. The artefact is `git diff 99f5c10 5cd0566 -- llms.txt`: lines 13, 103 and 139, and the three cuts.
+  - **Offer:** the `<assets: …>` failure is `_carry`-marked and owned by its copy, like a Sass failure. Operator: **keep**. Correction after the answer: the offer said a replay does not re-run explicit copies. It does, for a copy with a recorded failure (`_assetCopies`), so in `--dev` a created folder clears the failure at the next replay. The cost stated was worse than the real one.
+  - **Drift:** none beyond the Amendment. Scope widened to `lib/asset-copy.js` there. Surface unchanged: still a minor, now with one more upgrade bullet.
+  - **Decision: ready to close.**
 
 ---
 
