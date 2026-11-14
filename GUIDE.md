@@ -567,7 +567,8 @@ The three defaults (`html: true`, `xhtmlOut: true`, `breaks: false`) are the key
 Set the options in config. A [markdown-it plugin](https://www.npmjs.com/search?q=keywords:markdown-it-plugin) goes on with `kiss.markdown.use(plugin)` after construction: `.md` partials and the `{{markdown}}` helper both render with it per page. Footnotes, for example, are a plugin rather than a default:
 
 ```js
-import footnote from 'markdown-it-footnote' // npm install markdown-it-footnote
+// npm install markdown-it-footnote
+import footnote from 'markdown-it-footnote'
 
 const kiss = new Kiss()
 kiss.markdown.use(footnote)
