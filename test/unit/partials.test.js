@@ -2,7 +2,11 @@ import { describe, it, expect, afterEach } from 'vitest'
 import Handlebars from 'handlebars'
 import { Remarkable } from 'remarkable'
 import layouts from 'handlebars-layouts'
-import { registerPartials, partialNameFor } from '../../lib/partials.js'
+import {
+  registerPartials,
+  partialNameFor,
+  setupTransforms,
+} from '../../lib/partials.js'
 import { DependencyGraph } from '../../lib/dependency-graph.js'
 import { silentLogger } from '../../lib/logger.js'
 import fs from 'fs-extra'
@@ -24,7 +28,7 @@ describe('registerPartials', () => {
       'src/layouts/main.hbs': '<main/>',
     })
     const hbs = Handlebars.create()
-    const names = registerPartials(
+    const { names } = registerPartials(
       hbs,
       {
         folders: {
@@ -47,11 +51,11 @@ describe('registerPartials', () => {
     const config = {
       folders: { partials: `${site.src}/partials`, layouts: null },
     }
-    const first = registerPartials(hbs, config, deps)
+    const first = registerPartials(hbs, config, deps).names
     expect(first.sort()).toEqual(['gone', 'keep'])
 
     await fs.remove(`${site.src}/partials/gone.hbs`)
-    const second = registerPartials(hbs, config, deps, first)
+    const second = registerPartials(hbs, config, deps, first).names
     expect(second).toEqual(['keep'])
     expect(Object.keys(hbs.partials)).toEqual(['keep'])
   })
@@ -69,15 +73,18 @@ describe('registerPartials', () => {
         layouts: `${site.src}/layouts`,
       },
     }
-    const first = registerPartials(hbs, config, deps)
-    const second = registerPartials(hbs, config, deps, first)
+    const first = registerPartials(hbs, config, deps).names
+    const second = registerPartials(hbs, config, deps, first).names
     expect(second.sort()).toEqual(['main', 'nav', 'note'])
     expect(Object.keys(hbs.partials).sort()).toEqual(['main', 'nav', 'note'])
   })
 
-  it('keeps the same collision winner when re-run', async () => {
-    // foo.md and foo.hbs derive the same name; the hbs pass runs last and wins.
-    // A re-run must not let the unregister sweep drop the surviving winner.
+  // foo.md and foo.hbs derive the same name. The fixed order of the passes used
+  // to make the .hbs one win, silently; with a table a site can extend, any
+  // order is arbitrary, so neither wins: the collision is returned, naming both
+  // files, and the name throws when a page calls it. A re-run reports it again
+  // and keeps the name registered, so the unregister sweep drops nothing.
+  it('reports a collision, naming both files, and registers neither file', async () => {
     site = await makeSite({
       'src/partials/foo.md': '# Markdown',
       'src/partials/foo.hbs': 'HBS',
@@ -87,17 +94,23 @@ describe('registerPartials', () => {
       folders: { partials: `${site.src}/partials`, layouts: null },
     }
     const first = registerPartials(hbs, config, deps)
-    expect(first).toEqual(['foo', 'foo'])
-    expect(hbs.partials['foo']({})).toBe('HBS')
+    expect(first.names).toEqual(['foo'])
+    expect(first.collisions).toHaveLength(1)
+    expect(first.collisions[0].files).toEqual([
+      `${site.src}/partials/foo.hbs`,
+      `${site.src}/partials/foo.md`,
+    ])
+    expect(() => hbs.partials['foo']({})).toThrow(/foo\.hbs.*foo\.md/)
 
-    const second = registerPartials(hbs, config, deps, first)
-    expect(second).toEqual(['foo', 'foo'])
-    expect(hbs.partials['foo']({})).toBe('HBS')
+    const second = registerPartials(hbs, config, deps, first.names)
+    expect(second.names).toEqual(['foo'])
+    expect(second.collisions).toHaveLength(1)
+    expect(() => hbs.partials['foo']({})).toThrow(/more than one file/)
   })
 
   it('skips null folders', () => {
     const hbs = Handlebars.create()
-    const names = registerPartials(
+    const { names } = registerPartials(
       hbs,
       { folders: { partials: null, layouts: null } },
       deps,
@@ -121,7 +134,7 @@ describe('.txt partials are literal text', () => {
         },
       },
       { ...deps, graph },
-    )
+    ).names
 
   // The extension is a statement about processing: .hbs is a template, .md is
   // rendered Markdown, .html is HTML — and all three are compiled — while .txt
@@ -349,6 +362,83 @@ describe('tracing', () => {
     expect(hbs.compile('{{> nav}}')({}, { data: { kissPage: 'x.html' } })).toBe(
       '<nav/>',
     )
+  })
+})
+
+describe('transforms', () => {
+  const config = (site, transforms) => ({
+    folders: { partials: `${site.src}/partials`, layouts: null },
+    transforms,
+  })
+
+  it('renders .md after Handlebars, so an inserted value is read as Markdown', async () => {
+    site = await makeSite({ 'src/partials/note.md': '{{word}}' })
+    const hbs = Handlebars.create()
+    registerPartials(hbs, config(site), deps)
+    expect(hbs.partials['note']({ word: '*stressed*' })).toBe(
+      '<p><em>stressed</em></p>\n',
+    )
+  })
+
+  it('ignores a file whose extension is neither a template nor in the table', async () => {
+    site = await makeSite({ 'src/partials/notes.adoc': 'x' })
+    const hbs = Handlebars.create()
+    expect(registerPartials(hbs, config(site), deps).names).toEqual([])
+    expect(
+      registerPartials(hbs, config(site, { adoc: { render: (o) => o } }), deps)
+        .names,
+    ).toEqual(['notes'])
+  })
+
+  it('lets a site transform replace a built-in', async () => {
+    site = await makeSite({ 'src/partials/note.md': '# {{t}}' })
+    const hbs = Handlebars.create()
+    registerPartials(
+      hbs,
+      config(site, { md: { render: (o) => `[${o}]` } }),
+      deps,
+    )
+    expect(hbs.partials['note']({ t: 'x' })).toBe('[# x]')
+  })
+
+  it('fails a partial whose transform setup failed, read when it renders', async () => {
+    site = await makeSite({ 'src/partials/note.adoc': 'x' })
+    const hbs = Handlebars.create()
+    const failed = new Map()
+    registerPartials(hbs, config(site, { adoc: { render: (o) => o } }), {
+      ...deps,
+      failed,
+    })
+    expect(hbs.partials['note']({})).toBe('x')
+    failed.set('adoc', new Error('no converter'))
+    expect(() => hbs.partials['note']({})).toThrow(
+      /\.adoc transform's setup failed: no converter/,
+    )
+  })
+})
+
+describe('setupTransforms', () => {
+  it('awaits every setup and returns the failures by extension, never rejecting', async () => {
+    let ran = false
+    const failed = await setupTransforms({
+      ok: {
+        render: String,
+        setup: async () => {
+          ran = true
+        },
+      },
+      bad: {
+        render: String,
+        setup: () => {
+          throw 'not an Error'
+        },
+      },
+      none: { render: String },
+    })
+    expect(ran).toBe(true)
+    expect([...failed.keys()]).toEqual(['bad'])
+    expect(failed.get('bad')).toBeInstanceOf(Error)
+    expect(failed.get('bad').message).toBe('not an Error')
   })
 })
 

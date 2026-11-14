@@ -88,6 +88,7 @@ The default config options are:
     xhtmlOut: true,
     breaks: false
   },
+  transforms: {},
   links: {
     check: true,
     canonical: false,
