@@ -198,6 +198,18 @@ describe('compareHashes', () => {
       'docs/failed.html',
     ])
   })
+
+  it('never lets a skipped page hide the written page that shares its path', () => {
+    const at = (hash) => ({
+      pages: [
+        { buildTo: 'docs/about.html', hash, skipped: false },
+        { buildTo: 'docs/about.html', hash: null, skipped: true },
+      ],
+    })
+    expect(compareHashes([at('aaa')], [at('bbb')]).changed).toEqual([
+      'docs/about.html',
+    ])
+  })
 })
 
 describe('compareReports', () => {

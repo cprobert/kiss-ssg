@@ -40,7 +40,7 @@ import { resolveSiteEntry, splitEntry } from './bench.mjs'
 import {
   diffReports,
   formatDiff,
-  pageIdentity,
+  identitiesByPath,
   readReportsFile,
 } from '../lib/check.js'
 
@@ -201,7 +201,8 @@ function diffIsEmpty(diff) {
 
 /**
  * The page hashes of every report, compared one by one by output path, by
- * `pageIdentity`, the rule `diffReports` uses: a null hash on either side
+ * `identitiesByPath`, the rule `diffReports` uses (a skipped page never
+ * stands in for a written one at the same path): a null hash on either side
  * counts as changed, because a page with no bytes is never "the same", and a
  * page skipped with `generate: false` on both sides is.
  *
@@ -209,16 +210,8 @@ function diffIsEmpty(diff) {
  * @param {any[]} after
  */
 export function compareHashes(before = [], after = []) {
-  const hashes = (/** @type {any[]} */ reports) => {
-    const map = new Map()
-    for (const report of reports)
-      for (const page of report?.pages ?? [])
-        if (typeof page?.buildTo === 'string')
-          map.set(page.buildTo, pageIdentity(page))
-    return map
-  }
-  const a = hashes(before)
-  const b = hashes(after)
+  const a = identitiesByPath(before)
+  const b = identitiesByPath(after)
   const changed = []
   for (const [page, hash] of a)
     if (b.has(page) && (hash === null || hash !== b.get(page)))

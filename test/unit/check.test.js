@@ -538,6 +538,51 @@ describe('diffReports', () => {
     expect(diff.unchanged).toBe(1)
   })
 
+  // A skipped page claims no output path, so a written page can share its
+  // `buildTo` (registered before or after it). The skipped entry wrote
+  // nothing there: it must never stand in for the page that did (Codex,
+  // slice-one review, 2026-11-15).
+  it.each([
+    ['before', 'written first'],
+    ['after', 'skipped first'],
+  ])(
+    'never lets a skipped page hide the written page that shares its path (%s)',
+    (_, order) => {
+      const written = (hash) => ({
+        view: 'real.hbs',
+        buildTo: './public/about.html',
+        ok: true,
+        hash,
+        skipped: false,
+      })
+      const skipped = {
+        view: 'skipped.hbs',
+        buildTo: './public/about.html',
+        ok: true,
+        hash: null,
+        skipped: true,
+      }
+      const pages = (hash) =>
+        order === 'written first'
+          ? [written(hash), skipped]
+          : [skipped, written(hash)]
+      const report = (list) => ({ buildDir: './public', pages: list })
+
+      const [bytes] = diffReports(
+        [report(pages('aaa'))],
+        [report(pages('bbb'))],
+      )
+      expect(bytes.changed).toEqual(['./public/about.html'])
+
+      const [gone] = diffReports([report(pages('aaa'))], [report([skipped])])
+      expect(gone.changed).toEqual(['./public/about.html'])
+
+      const [same] = diffReports([report(pages('aaa'))], [report(pages('aaa'))])
+      expect(same.changed).toEqual([])
+      expect(same.unchanged).toBe(1)
+    },
+  )
+
   it('diffs a build folder the old file never saw as all added', () => {
     const before = built('./public/a', { './public/a/index.html': 'aaa' })
     const after = built('./public/b', { './public/b/index.html': 'bbb' })

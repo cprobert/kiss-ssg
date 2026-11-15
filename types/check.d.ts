@@ -148,6 +148,19 @@ export function defaultBaseline(reports?: import("./build-report.js").BuildRepor
  */
 export function recordedLine(report: import("./build-report.js").BuildReport): string;
 /**
+ * Every output path the reports' pages name, and what each is compared by
+ * (`pageIdentity`). A page with no output path (a `.pages()` item that failed
+ * before it had one) is not a row: there is no file to have added, removed or
+ * changed. Later entries win, the way the last write to a path does, with one
+ * exception: a skipped page wrote nothing, and claims no path, so a written
+ * page can share its `buildTo`. It never replaces an entry already there, or
+ * a change to the written page would read as unchanged.
+ *
+ * @param {any[]} reports
+ * @returns {Map<string, string|null>}
+ */
+export function identitiesByPath(reports?: any[]): Map<string, string | null>;
+/**
  * What a report's page is compared by: its hash, `'skipped'` for a page
  * registered with `generate: false` (no sha1 is that word, so two skipped
  * pages are equal and a skipped page never equals a written one), or `null`
