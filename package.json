@@ -91,7 +91,7 @@
     "livereload": "^0.10.3",
     "markdown-it": "^15.0.3",
     "postcss": "^8.5.28",
-    "purgecss": "^8.0.0",
+    "purgecss": "^9.1.0",
     "sass": "^1.108.0",
     "serve-static": "^2.2.1",
     "sharp": "^0.35.5",
