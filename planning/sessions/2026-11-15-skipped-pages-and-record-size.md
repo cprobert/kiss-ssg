@@ -1,7 +1,7 @@
 ---
 branch: fix/skipped-pages-and-record-size
 base: main
-status: open
+status: closed
 opened: 2026-11-15
 scope: lib/build-report.js, lib/check.js, lib/aikb.js, lib/issue.js, lib/kiss.js, lib/kiss-page.js, lib/build-finish.js, lib/page-registry.js, AIKB/page-registry.md, bin/kiss-ssg.js, scripts/red-first.mjs, scripts/fleet-check.mjs, examples/*/AIKB/**, test/**, AIKB/build-report.md, AIKB/check.md, AIKB/aikb.md, AIKB/issue.md, AIKB/kiss.md, AIKB/kiss-page.md, AIKB/build-finish.md, AIKB/testing.md, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/*/.claude-plugin/plugin.json, .claude-plugin/marketplace.json, planning/**
 ---
@@ -82,3 +82,56 @@ scope: lib/build-report.js, lib/check.js, lib/aikb.js, lib/issue.js, lib/kiss.js
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-15: Skipped pages, a small record, and red-first's two gaps
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.17.1 on `fix/skipped-pages-and-record-size`. The skipped-page fix and `generate` validation (`6a5a941`, plus `25f4acd` for the Codex finding). The record summaries (`0d7974e`). red-first on the base's own dependencies (`1ad8005`). A docs-sweep fix (`10f062c`), the bump (`ced8f0c`), an `{any}` removed (`629a5d1`) and the budget re-record (`515e8f7`).
+
+## Reflect — what the session was
+
+This branch grew out of the fleet migration earlier in the same conversation. All nine sites moved to 2.17.0, each checked before and after on live CMS data where a site needed it. Five merged, and four Learna PRs are still open. Two things came out of that migration that the library should not do. metacarpus's three `generate: false` handbooks showed as `~ changed` in every diff. And oxford-medical's committed record grew by 51,000 lines. The operator named the priority plainly: "anything that we need to do with kiss to ensure that the library is solid… This is the primary concern."
+
+The shape was **planned, with one emergent turn that served it.** The open turned three known defects into eleven criteria. The emergent turn came from the "never rendered" criterion. A probe of the real engine found that `generate: 0` (or `''`, `null`, a CMS string, a spread `undefined`) skipped the render while the page kept its id. The cause: `lib/kiss-page.js` rendered on truthiness, while every other reader tests `!== false`. That was a worse defect than the one the branch opened for. It was absorbed as a dated Amendment, with the scope widened to `lib/page-registry.js` and `scripts/fleet-check.mjs`. Before any of it, Claude corrected two of its own earlier claims. It had said fleet-check's metacarpus build "wrote nothing" (it had read the head of a log whose end showed the build). It had said the three handbooks "differ between engines" (they were `null` on both sides). Both came out on re-measurement, and PR #8's body and the fleet memory were corrected.
+
+## Evaluate — how the human supervised the AI
+
+**Problem framing was the operator's strongest move.** "The main thing is: is there anything we need to do with kiss to ensure that the library is solid? … Any inconsistencies in the fleet then follows." That reset the session from tidying sites to fixing the engine. Then "I'm concerned that Records can grow very large… can we address this in next" added the second defect at the moment it was measured. Both were the operator's framing, not Claude's offer. At the open, three structured choices were made in one round: one branch, counts per check, 2.17.1. The red-first gaps joined this branch, against an unmarked option set. Since no option was recommended, there was no reason to ask for.
+
+**Pushback & steering held where it was asked for.** On the `generate` decision the operator chose "Explain more" rather than keep. That was the first use of "explain" on an offer in several branches, and it was the right one to spend it on: failing a site's build is the costliest kind of rule. The four-option table made the trade-off concrete before "keep". The operator also chose against the recommendation once (red-first on this branch), and kept every other recommendation: skip the security review, leave assets as they are, re-record the budget.
+
+**Verification & ownership: strong mechanically, delegated by eye.** The mechanical record is thorough. Every new test was seen failing, by name. That includes the two precedence tests, run against the slice commit `6a5a941` because they pass at `main`. The fleet check ran `main` against the branch on four sites, two of them on live CMS data. diploma-msc's three-page report difference was traced to `pages/internal-tools.js` by parsing both kept reports. The sizes were measured on 2.17.0 and on the branch, side by side. The independent review caught the one defect the gates could not: a skipped page registered after a written one at the same path took its identity, so a real change read as unchanged. This was the branch's own regression, since `main` over-reported instead. It was reproduced before it was fixed, and the fix diff was shown. **Both eyeballs were handed back to Claude.** The first was deferred at the pulse, then at the close: "Hand it to Claude". The second: "Is a bit too much AIKB is your domain. Does it make sense to you. It's for you!" That is a reasonable call on an artefact written for an agent. The record is the AIKB, and the operator is right that its reader is Claude. Still, every human check on this branch was a structured answer, never a look at an output.
+
+**Iteration discipline:** two pulses, at the slice boundaries, each with a Codex or eyeball step. The Codex round on slice one came before the record slice was built on the comparator. The `/loop` the operator started ran the remaining work and stopped itself at the close, because CLAUDE.md reserves `/branch-close` for the operator. That was the checkpoint the operator meant to hold, and it held.
+
+**Where the human intended to supervise, and where they did.** The operator supervised the decisions closely: framing, the `generate` trade-off, record shape, budget growth. They delegated the looks. The supervision that mattered most here was a choice nobody else could make: whether failing a build on `generate: 0` is acceptable. It was made by the operator, with the alternatives in front of them.
+
+**Competency level: Active supervisor.** Decisions were framed and owned, with an explanation asked for at the costliest one. Verification of outputs was delegated, deliberately and with a stated reason, rather than skipped.
+
+## Feedback — recommendations for next session
+
+- **Claude — read the end of a log before stating what a build did.** "fleet-check's plain build wrote nothing" came from `head -40` of a file that holds stdout, then stderr. It went into a memory note and an explanation before the build's own "Handbooks generated" line was read. A claim about a run's outcome comes from its exit code and its last lines, or a grep for the success line, never its first screen. (Same class as the three-log lesson the open read back: a claim stated before it was measured.)
+- **Claude — a comparator change needs the "two entries, one key" case.** The first cut of `pageIdentity` kept "later entries win", which was safe while the loser was `null` and unsafe once it was `'skipped'`. When a change makes one value compare equal where it never did before, test every map that can hold two of them: here, a skipped and a written page sharing a `buildTo`.
+- **Operator — when you hand a look back, say what you'd want checked.** "It's for you" is a fair answer for AIKB. "Check that a diff of it shows a new tracker" would have made Claude's look test something specific, not offer a general verdict.
+- **Process — `KISS_BASE_BRANCH=<commit>` makes red-first prove a branch-made defect.** It worked here without a change to the script. If it recurs, a `--base <ref>` flag would make it visible in `--help` rather than in `AIKB/testing.md` alone.
+- **Process — the fleet's CMS recipe needs no `git add -f`.** `git archive` into a folder, `get-data` there, and fleet-check copies a non-git folder with its data. It is in the fleet memory now. Use it at the next phase exit.
+- **Operator — the four Learna PRs (diploma-msc #504, learna-kiss #196, medulla #127, metacarpus #8) are Phase 1's exit.** diploma-msc still needs its Max Healthcare logo spacing looked at. 2.17.1 can follow them, or replace 2.17.0 in them before they merge.
+
+## Verdict — did we achieve the objective?
+
+The brief: ship 2.17.1 so that a `generate: false` page stops reading as changed, `last-build.json` stops growing with every finding, and red-first covers its two gaps. **Met, with one target missed and recorded.** The objective grew once, into the `generate` validation, and that was good drift: a worse member of the same class, found by the criterion written to look for it.
+
+- [x] **Skipped pages.** `skipped` on each report page. `pageIdentity` and `identitiesByPath` in `lib/check.js`, also used by fleet-check. Red-first by name at `main`, and at `6a5a941` for the precedence fix.
+- [x] **"Never rendered".** Found by a probe of the real engine and fixed: `generate` must be a boolean or left out, and the render tests `!== false`.
+- [x] **The record's audit.** One row per check, `{ check, findings, pages }`.
+- [x] **The record's third parties.** `{ origin, pages }`.
+- [x] **Readers.** `issue` reads both shapes. `check` and the redirect findings read keys the record keeps. The one fleet script that reads the record uses only `buildDir` and `buildTo`.
+- [ ] **Size under 15% on all three.** medulla 11.2%, diploma-msc 9.8%, oxford-medical **26.1%**. What is left on oxford is 2,826 same-name asset rows. The operator chose to keep them, because `check` reads them to explain renames.
+- [x] **Fleet.** Identical on a1k9training, oxford-medical and medulla. diploma-msc's 1,521 files are byte-identical, and its reports differ only by the three pages now marked skipped.
+- [x] **red-first, removed dependency.** `dependencyPlan` with `npm ci`, proved against `5b0644a`.
+- [x] **red-first, test-only fix.** The by-hand method is in `AIKB/testing.md`, with why it isn't mechanised.
+- [x] **Docs.** GUIDE, seven AIKB docs, types and the CHANGELOG 2.17.1 upgrading note. `llms.txt` needs no line.
+- [x] **Gates and review.** `npm run gates` green (all six, with the budget re-recorded at +117 core lines by the operator's choice). Codex on slice one found one finding, fixed. Codex at the close, over `ad7e137..515e8f7`: "No actionable regressions."
+
+**What is better now:** `kiss-ssg check` stops crying wolf on skipped pages. A page whose `generate` isn't a boolean fails, naming its view, instead of disappearing behind a working link. The Learna sites' committed records drop from about 3 MB to about 330 KB at their next `aikb`. **Still open:** publishing 2.17.1 (`/kiss-publish`), the four Learna PRs, and `/memory-consolidate`, whose three-log trigger fired at the open.
