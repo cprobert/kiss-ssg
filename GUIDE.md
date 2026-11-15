@@ -543,7 +543,7 @@ The audit's `image-oversized`, `image-location-metadata` and `img-not-responsive
 
 ### Markdown options
 
-`config.markdown` is handed to this instance's [Remarkable](https://github.com/jonschlinkert/remarkable) — the renderer behind both `.md` partials and the `{{markdown}}` helper, so the two can never disagree:
+`config.markdown` is handed to this instance's [markdown-it](https://github.com/markdown-it/markdown-it), `kiss.markdown` — the renderer behind both `.md` partials and the `{{markdown}}` helper, so the two can never disagree:
 
 ```js
 new Kiss({
@@ -551,7 +551,7 @@ new Kiss({
 })
 ```
 
-The three defaults (`html: true`, `xhtmlOut: true`, `breaks: false`) are the keys kiss has an opinion about, **not** the keys it accepts — the block is passed through as-is, so any other Remarkable option reaches the renderer without kiss knowing its name. It is merged one level deep, like `sass`, `fetch` and `assets`, so setting one key keeps the rest at their defaults.
+The three defaults (`html: true`, `xhtmlOut: true`, `breaks: false`) are the keys kiss has an opinion about, **not** the keys it accepts — the block is passed through as-is, so any other [markdown-it option](https://github.com/markdown-it/markdown-it#init-with-presets-and-options) (`typographer`, `linkify`, `quotes`, `highlight`) reaches the renderer without kiss knowing its name. It is merged one level deep, like `sass`, `fetch` and `assets`, so setting one key keeps the rest at their defaults.
 
 **`breaks: false` is deliberate.** With `breaks: true`, every newline inside a paragraph becomes a `<br />` — so a paragraph you hard-wrapped in your editor renders with a line break at each of the source's wrap points, mid-sentence. Turn it on only if your `.md` sources genuinely treat a newline as a line break.
 
@@ -564,7 +564,15 @@ The three defaults (`html: true`, `xhtmlOut: true`, `breaks: false`) are the key
 {{> "nav"}}
 ```
 
-Set the options in config. Mutating `kiss.remarkable` afterwards (`kiss.remarkable.use(plugin)`) also works: `.md` partials and the `{{markdown}}` helper both render with it per page.
+Set the options in config. A [markdown-it plugin](https://www.npmjs.com/search?q=keywords:markdown-it-plugin) goes on with `kiss.markdown.use(plugin)` after construction: `.md` partials and the `{{markdown}}` helper both render with it per page. Footnotes, for example, are a plugin rather than a default:
+
+```js
+// npm install markdown-it-footnote
+import footnote from 'markdown-it-footnote'
+
+const kiss = new Kiss()
+kiss.markdown.use(footnote)
+```
 
 ### Partial transforms
 
@@ -2003,7 +2011,7 @@ Like the link scan, the findings are advisory: they never change `ok` and never 
 Two cases come up often:
 
 - **An `id` your script adds at runtime** is not in the written HTML, so the link to it is reported. `audit.ignore` turns off a whole check, so ignoring `fragment-missing` for that reason turns off its coverage of your skip link too. `href-hash` is a separate id so that the commonest deliberate case, a `href="#"` toggle, can be ignored on its own.
-- **A heading in Markdown has no `id`:** Remarkable writes `# Team` as `<h1>Team</h1>`. So a Markdown link to `#team` is reported until the target carries one. Write that heading as HTML (`<h2 id="team">Team</h2>`), which Markdown allows.
+- **A heading in Markdown has no `id`:** markdown-it writes `# Team` as `<h1>Team</h1>`. So a Markdown link to `#team` is reported until the target carries one. Add the ids with a plugin such as `markdown-it-anchor` (`kiss.markdown.use(anchor)`, [Markdown options](#markdown-options)), or write that heading as HTML (`<h2 id="team">Team</h2>`), which Markdown allows.
 
 The `.md` copies beside each page are not audited. Only `.html` output is.
 
@@ -2484,5 +2492,5 @@ The development watcher handles asset additions, edits, renames and deletions, r
   ```
 
 - New: `kiss.close()` stops the dev server and file watcher.
-- **Upgrading from a v2 _prerelease_ rather than v1: `markdown.breaks` flipped.** It was hard-coded `true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`, where the option set became the configurable `DEFAULT_MARKDOWN` block; `2.0.0`, `2.1.0` and `2.2.x` all match beta.1. A project pinned to an alpha may carry a workaround for the old default — `kiss.remarkable.set({ breaks: false })` followed by `kiss.registerPartials()`, often with a comment asserting that v2 defaults to `breaks: true`. That comment was correct when written and has been wrong since beta.1: delete both calls, and set `markdown: { breaks: true }` in config if you actually want the old behaviour. The `registerPartials()` half is why the pair survives upgrades unnoticed: it did not look redundant, because until 2.16 `.md` partials were rendered to HTML at registration. Since 2.16 they render per page, so a later mutation of `kiss.remarkable` reaches them with no re-register.
+- **Upgrading from a v2 _prerelease_ rather than v1: `markdown.breaks` flipped.** It was hard-coded `true` in `2.0.0-alpha.5` and has been `false` since `2.0.0-beta.1`, where the option set became the configurable `DEFAULT_MARKDOWN` block; `2.0.0`, `2.1.0` and `2.2.x` all match beta.1. A project pinned to an alpha may carry a workaround for the old default — `kiss.remarkable.set({ breaks: false })` followed by `kiss.registerPartials()`, often with a comment asserting that v2 defaults to `breaks: true`. That comment was correct when written and has been wrong since beta.1: delete both calls, and set `markdown: { breaks: true }` in config if you actually want the old behaviour. The `registerPartials()` half is why the pair survives upgrades unnoticed: it did not look redundant, because until 2.16 `.md` partials were rendered to HTML at registration. Since 2.17 `kiss.remarkable` does not exist, so the pair throws a `TypeError` at start-up instead of surviving.
 - **Unchanged in v2**, so there is nothing to migrate even though it looks load-bearing: the per-page `generate: false` option (default `true`, see `.page()`'s options above) still skips building one page; `callback.call(this, ...)` still binds the `Kiss` instance inside `.generate()`/`.complete()`/`.sitemap()` callbacks; the per-page `ext` option; `copyAssets(sourceDir, targetDir)` to a second directory; `.viewStats()`/`.getModelByID()`. Anything under `this._stack` is internal and unversioned — code reading `_stack[].buildTo`/`_stack[].page.options` for a hand-rolled sitemap works today by accident; `.sitemap()` is the supported way to enumerate registered pages.

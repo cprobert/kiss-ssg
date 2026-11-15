@@ -79,13 +79,14 @@ describe('splitSections', () => {
     expect([...sections[0].subs.values()]).toEqual([])
   })
 
-  // Remarkable counts U+2028, U+2424 and U+0085 as line breaks; a split on
-  // \n alone put every later heading one line off (2026-10-31, round 4).
+  // The lines must break where the parser's do, or every later heading is a
+  // line off (2026-10-31, round 4, under Remarkable, whose set was wider).
+  // markdown-it breaks on \r\n, \r and \n only, so U+2028 is not a break.
   it.each([
+    ['\\r', '\r'],
+    ['\\r\\n', '\r\n'],
     ['U+2028', '\u2028'],
-    ['U+0085', '\u0085'],
-    ['U+2424', '\u2424'],
-  ])('keeps heading lines aligned past a %s line break', (_, br) => {
+  ])('keeps heading lines aligned past a %s', (_, br) => {
     const [section] = splitSections(`## One\na${br}b\n\n#### Four\nx`)
     const [[at, sub]] = [...section.subs.entries()]
     expect(sub.title).toBe('Four')
@@ -251,10 +252,9 @@ describe('subHeadingLines', () => {
     },
   )
 
-  // Round 21: Remarkable 2.0.1 never starts an HTML block with <h1>–<h6> (its
-  // tag pattern has no digits; AIKB/upstream.md), so every heading the guide
-  // put in was wrapped in a <p>, and the built pages carried `<p></p>`
-  // before each one.
+  // Round 21: Remarkable 2.0.1 never started an HTML block with <h1>–<h6>, so
+  // every heading the guide put in was wrapped in a <p>, and the built pages
+  // carried `<p></p>` before each one. markdown-it does, with no workaround.
   it('leaves no injected heading inside a <p>, on any guide page', () => {
     for (const page of pages)
       expect(render(page.slug), page.slug).not.toMatch(/<p>\s*<h[1-6]/)

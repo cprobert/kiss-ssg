@@ -579,9 +579,9 @@ describe('resolveConfig', () => {
     })
   })
 
-  it('carries an arbitrary remarkable option through untouched', () => {
-    // The block is passed to Remarkable as-is, so an option kiss has no opinion
-    // about (typographer, langPrefix) reaches it without kiss knowing the name.
+  it('carries an arbitrary markdown-it option through untouched', () => {
+    // The block is passed to markdown-it as-is, so an option kiss has no opinion
+    // about (typographer, linkify) reaches it without kiss knowing the name.
     expect(resolveConfig({ markdown: { typographer: true } }).markdown).toEqual(
       {
         html: true,

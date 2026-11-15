@@ -247,7 +247,7 @@ const FOOTER = `<footer>
 </footer>
 `
 
-const NOTE = `A **markdown** partial, so the Remarkable render path is on the
+const NOTE = `A **markdown** partial, so the markdown-it render path is on the
 clock too — it is not free and real sites use it.
 `
 

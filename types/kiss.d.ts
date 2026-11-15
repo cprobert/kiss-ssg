@@ -685,10 +685,11 @@ declare class Kiss {
     private _assetManifest;
     /**
      * This instance's own Markdown renderer, behind `.md` partials and the
-     * `markdown` helper. Typed `any` because `remarkable` ships no types.
+     * `markdown` helper: a markdown-it instance. Typed `any` because
+     * `markdown-it` ships no types.
      * @type {any}
      */
-    remarkable: any;
+    markdown: any;
     /** @private */
     private _setupFolders;
     /**

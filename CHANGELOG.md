@@ -3,6 +3,64 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.17.0 — 2026-11-14
+
+Markdown is rendered by [markdown-it](https://github.com/markdown-it/markdown-it) in place of
+Remarkable, which has not been updated since 2022. The instance is `kiss.markdown`, and
+`kiss.remarkable` is gone. Most Markdown renders as it did: three of the operator's sites built
+byte for byte the same, and on two CMS-driven sites 71 of 1,953 files changed, all of them for
+the reasons below. Read the upgrading notes if a site uses `kiss.remarkable`, footnotes,
+`~~strikethrough~~` or raw HTML on a line of its own.
+
+- **`kiss.markdown` is the renderer behind `.md` partials and the `{{markdown}}` helper**, a
+  markdown-it instance. `config.markdown` keeps its shape and its three defaults (`html: true`,
+  `xhtmlOut: true`, `breaks: false`), and every other key still goes straight to the renderer,
+  now as a markdown-it option. A markdown-it plugin goes on with `kiss.markdown.use(plugin)`
+  (GUIDE.md § Markdown options).
+- **A complete HTML tag alone on its line starts an HTML block**, as CommonMark says. Remarkable
+  wrapped a line such as `<img src="/logo.png" alt="Logo">` in a `<p>`, and a
+  `<h2 id="team">Team</h2>` in one that the minifier left as an empty `<p></p>` before the
+  heading. Both are written as they stand now, with no paragraph margin around them.
+- **A link's URL is decoded once.** Remarkable left an entity in a link destination as it was and
+  escaped it again, so `[papers](https://scholar.example/c?user=1&amp;hl=en)` published a link
+  to `…&amp;amp;hl=en`, the wrong URL. It now links to `…&hl=en`.
+- **Whitespace is written as authored.** A non-breaking space character (U+00A0, often pasted
+  from a CMS or a word processor) stays one, where Remarkable wrote a plain space, so the line no
+  longer breaks there, and a run of them now shows as written. The `&nbsp;` entity is unchanged:
+  both renderers kept it. A tab or a double space inside a paragraph is kept too; the browser
+  shows it as one space.
+- **`linkify: true` links bare URLs.** Under Remarkable the option did nothing.
+- **An image may have a `data:image/…` source** (`![x](data:image/png;base64,…)`), which
+  Remarkable rendered as text.
+- **Whitespace between tags moves** in tables, nested and loose lists, and indented code, which
+  keeps its last newline. A minified build does not show it.
+
+### Upgrading
+
+- **Replace `kiss.remarkable` with `kiss.markdown`.** Reading `kiss.remarkable` now gives
+  `undefined`, so a call on it throws a `TypeError` when the build script starts. A Remarkable
+  plugin does not work on markdown-it: find the markdown-it plugin that does the same job.
+- **Footnotes need a plugin.** Remarkable rendered `Text[^1].` with `[^1]: The note.` as
+  footnotes; markdown-it writes them as text. Install `markdown-it-footnote` and add it with
+  `kiss.markdown.use(footnote)` (GUIDE.md § Markdown options).
+- **`~~strikethrough~~` renders as `<s>`, not `<del>`.** Restyle any CSS that targets `del`.
+- **Look at any page with raw HTML on a line of its own in Markdown** (an `<img>`, a heading, any
+  tag Remarkable did not already treat as a block): it has lost the `<p>` around it, and with it
+  the paragraph's margin. Where the spacing
+  mattered, wrap the tag in a `<p>` in the source, or give it a margin in CSS. `kiss-ssg check`
+  will not report it.
+- **Look at text spaced with pasted non-breaking space characters.** Runs of them now show, so a
+  list a CMS editor indented with them is indented on the page.
+- **A Remarkable-only option in `config.markdown` is now ignored.** `typographer`, `linkify`,
+  `langPrefix` and the three defaults mean the same in markdown-it; check any other key against
+  [its options](https://github.com/markdown-it/markdown-it#init-with-presets-and-options).
+
+### For contributors
+
+- **The feature freeze.** `npm run gates` runs a sixth gate, `budgets`, which fails when any
+  number in `planning/budgets.json` grows (`node scripts/budgets.mjs --check`). The baseline was
+  recorded at the freeze.
+
 ## 2.16.0 — 2026-11-14
 
 `.md` partials are templates first. `{{link "x"}}`, `{{> "nav"}}` and hash arguments now

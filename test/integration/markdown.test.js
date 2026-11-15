@@ -21,7 +21,7 @@ is how prose is written in a file.`
 // rewrites the self-closed `<br />` to `<br>` whatever `xhtmlOut` said. The
 // typographer's substitutions are text, so they survive it. It is also an
 // option kiss has no opinion about, which is the point — the block is handed to
-// Remarkable as-is rather than being a fixed list of keys kiss knows.
+// markdown-it as-is rather than being a fixed list of keys kiss knows.
 const TYPOGRAPHY = '(c) 2026'
 
 const siteWith = (partial) => ({
@@ -116,5 +116,110 @@ describe('config.markdown', () => {
     const html = await site.read('public/index.html')
     expect(html).not.toContain('<span class="raw">')
     expect(html).toContain('&lt;span')
+  })
+})
+
+// 2.17 replaced Remarkable with markdown-it. Each test here pins one thing a
+// site can see change, and each is named in CHANGELOG.md's upgrade note.
+describe('the renderer is markdown-it', () => {
+  const build = async (files, config = {}, setup = () => {}) => {
+    site = await makeSite(files)
+    const kiss = new Kiss({
+      folders: site.folders,
+      logger: silentLogger,
+      ...config,
+    })
+    setup(kiss)
+    await kiss.scan().generate().complete()
+    return { kiss, html: await site.read('public/index.html') }
+  }
+
+  it('is kiss.markdown, and kiss.remarkable is gone', async () => {
+    const { kiss } = await build(siteWith('x'))
+    expect(typeof kiss.markdown.use).toBe('function')
+    expect(typeof kiss.markdown.render).toBe('function')
+    expect(kiss.remarkable).toBeUndefined()
+  })
+
+  it('takes a plugin with kiss.markdown.use(), in .md partials and the helper', async () => {
+    const plugin = (md) => {
+      md.renderer.rules.hr = () => '<hr class="from-plugin">'
+    }
+    const { html } = await build(
+      {
+        'src/partials/prose.md': '***',
+        'src/pages/index.hbs': '{{> "prose"}}{{{markdown "***"}}}',
+      },
+      {},
+      (kiss) => kiss.markdown.use(plugin),
+    )
+    expect(html.match(/<hr class="?from-plugin"?>/g)).toHaveLength(2)
+  })
+
+  it('starts an HTML block with a raw <h1>–<h6>, unwrapped', async () => {
+    const { html } = await build(siteWith('<h3 id="a">Heading</h3>\n\nText'))
+    expect(html).toContain('<h3 id="a">Heading</h3>')
+    // Remarkable wrapped it in a <p>, which the minifier left as an empty
+    // `<p></p>` before the heading.
+    expect(html).not.toMatch(/<p>\s*(<\/p>)?\s*<h3/)
+  })
+
+  // Found by the fleet check on diploma-msc with its CMS data (2026-11-14):
+  // Remarkable wrapped a lone <img> line in a <p>, as it did a heading.
+  it('starts an HTML block with any complete tag alone on its line', async () => {
+    const { html } = await build(
+      siteWith(
+        'Before.\n\n<img src="/logo.png" alt="Logo" width="150">\n\nAfter.',
+      ),
+    )
+    expect(html).toMatch(/<\/p>\s*<img src="?\/logo\.png"?/)
+  })
+
+  // The same fleet run: the CMS text held U+00A0, and Remarkable wrote a
+  // plain space in its place.
+  it('keeps a non-breaking space as written', async () => {
+    const { html } = await build(siteWith('Ophthalmology MSc is designed'))
+    expect(html).toContain('MSc is designed')
+  })
+
+  // The same fleet run: Remarkable left `&amp;` in a link's destination
+  // undecoded and escaped it again, so the published link carried
+  // `&amp;amp;` and pointed at the wrong URL.
+  it('decodes an entity in a link destination once', async () => {
+    const { html } = await build(
+      siteWith('[papers](https://scholar.example/c?user=1&amp;hl=en)'),
+    )
+    expect(html).toContain('href="https://scholar.example/c?user=1&amp;hl=en"')
+    expect(html).not.toContain('&amp;amp;')
+  })
+
+  // markdown-it allows a data: URL for an image of these four types only, and
+  // still refuses one for a link; Remarkable wrote the image as text.
+  it('renders a data:image source, and no data: link', async () => {
+    const { html } = await build(
+      siteWith(
+        '![dot](data:image/png;base64,AAAA)\n\n[x](data:text/html;base64,AAAA)',
+      ),
+    )
+    expect(html).toMatch(/<img src="?data:image\/png;base64,AAAA"?/)
+    expect(html).not.toContain('href="data:')
+  })
+
+  it('writes strikethrough as <s>', async () => {
+    const { html } = await build(siteWith('~~gone~~'))
+    expect(html).toContain('<s>gone</s>')
+  })
+
+  it('renders no footnotes without a plugin', async () => {
+    const { html } = await build(siteWith('Text[^1].\n\n[^1]: The note.'))
+    expect(html).toContain('[^1]: The note.')
+    expect(html).not.toContain('footnote')
+  })
+
+  it('links a bare URL under linkify: true', async () => {
+    const { html } = await build(siteWith('Visit https://example.com today.'), {
+      markdown: { linkify: true },
+    })
+    expect(html).toMatch(/<a href="?https:\/\/example\.com"?>/)
   })
 })

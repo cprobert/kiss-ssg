@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The roadmap's budgets as numbers, and which way each has moved since the
-// recorded baseline (planning/budgets.json). It reports; it does not fail the
-// gates. `--check` exits 1 when any number is worse, for Phase 1 to wire in.
+// recorded baseline (planning/budgets.json). `--check` exits 1 when any number
+// is worse, and `npm run gates` runs it: the feature freeze, since 2.17.
 //
 //   node scripts/budgets.mjs                  # table: key, baseline, now, verdict
 //   node scripts/budgets.mjs --record         # write planning/budgets.json

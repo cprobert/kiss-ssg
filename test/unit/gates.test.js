@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {
+  GATES,
   REQUIRED_PACKED,
   FORBIDDEN_PACKED,
   changedFiles,
@@ -453,5 +454,52 @@ describe('formatGate', () => {
     expect(result.ok).toBe(false)
     expect(result.output).toContain('fatal: bad revision')
     expect(calls).toEqual([])
+  })
+})
+
+// The feature freeze: a budget that grows fails `npm run gates`. The gate is
+// run for real against a small repository, through KISS_BUDGETS_ROOT, once at
+// its baseline and once after lib/ grew.
+describe('the budgets gate', () => {
+  const gate = GATES.find((g) => g.name === 'budgets')
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-gates-budgets-'))
+  const put = (file, text) => {
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+    fs.writeFileSync(path.join(dir, file), text)
+  }
+  const saved = process.env.KISS_BUDGETS_ROOT
+  afterAll(() => {
+    if (saved === undefined) delete process.env.KISS_BUDGETS_ROOT
+    else process.env.KISS_BUDGETS_ROOT = saved
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('is one of the gates, and fails when a budget grows', () => {
+    expect(gate).toBeDefined()
+    put('lib/kiss.js', 'export {}\n')
+    put('package.json', '{}')
+    put('CLAUDE.md', 'x')
+    put('llms.txt', 'x')
+    put(
+      'planning/budgets.json',
+      JSON.stringify({
+        coreLines: 1,
+        privateReach: 0,
+        anyAnnotations: 0,
+        runtimeDeps: 0,
+        testPrivateReach: 0,
+        claudeMdBytes: 1,
+        llmsTxtChars: 1,
+        msPerPage: null,
+        failureBoilerplate: 0,
+      }),
+    )
+    process.env.KISS_BUDGETS_ROOT = dir
+    expect(gate.run()).toMatchObject({ ok: true })
+
+    put('lib/kiss.js', 'export {}\nexport const grown = 1\n')
+    const grown = gate.run()
+    expect(grown.ok).toBe(false)
+    expect(grown.output).toMatch(/coreLines\s.*worse/)
   })
 })

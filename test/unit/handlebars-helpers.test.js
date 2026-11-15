@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import path from 'node:path'
 import Handlebars from 'handlebars'
-import { Remarkable } from 'remarkable'
+import MarkdownIt from 'markdown-it'
 import { registerHandlebarsHelpers } from '../../lib/handlebars-helpers.js'
 import { createAssetManifest } from '../../lib/asset-manifest.js'
 import { KissPage } from '../../lib/kiss-page.js'
@@ -23,7 +23,7 @@ const makeHbs = (config = {}, assets, lookupPage) => {
     {
       assets,
       lookupPage,
-      markdown: new Remarkable({ html: true, xhtmlOut: true, breaks: true }),
+      markdown: new MarkdownIt({ html: true, xhtmlOut: true, breaks: true }),
       logger: {
         ...silentLogger,
         warn: (...args) => warnings.push(args),

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { Remarkable } from 'remarkable'
+import MarkdownIt from 'markdown-it'
 import { linkTokens, targetPath } from '../../scripts/markdown-links.mjs'
 
-const parse = (text) => new Remarkable({ html: true }).parse(text, {})
+const parse = (text) => new MarkdownIt({ html: true }).parse(text, {})
 
 describe('linkTokens', () => {
   it('finds links and images at any depth, in order', () => {
@@ -29,13 +29,12 @@ describe('linkTokens', () => {
 describe('targetPath', () => {
   it('decodes the percent-encoding a parser applies', () => {
     const [token] = linkTokens(parse('[a](<two words.md>)'))
-    expect(token.href).toBe('two%20words.md')
+    expect(token.attrGet('href')).toBe('two%20words.md')
     expect(targetPath(token)).toBe('two words.md')
   })
 
   it('returns a target that does not decode as written', () => {
-    expect(targetPath({ type: 'link_open', href: 'bad%E0%A4%A.md' })).toBe(
-      'bad%E0%A4%A.md',
-    )
+    const token = { type: 'link_open', attrGet: () => 'bad%E0%A4%A.md' }
+    expect(targetPath(token)).toBe('bad%E0%A4%A.md')
   })
 })

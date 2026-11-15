@@ -155,10 +155,10 @@ export function redactFetchHeaders<T extends Record<string, any>>(config: T): T;
  */
 /**
  * The Markdown block (`config.markdown`): the options handed to this instance's
- * Remarkable, behind both `.md` partials and the `{{markdown}}` helper. Merged
+ * markdown-it, behind both `.md` partials and the `{{markdown}}` helper. Merged
  * exactly one level deep, and passed through as-is — the three keys below are
  * the ones kiss has a default for, not the ones it accepts, so any other
- * Remarkable option (`typographer`, `langPrefix`) reaches the renderer too.
+ * markdown-it option (`typographer`, `linkify`) reaches the renderer too.
  *
  * @typedef {Object} KissMarkdown
  * @property {boolean} html render raw HTML in the source rather than escaping it
@@ -581,10 +581,10 @@ export type KissAssets = {
 };
 /**
  * The Markdown block (`config.markdown`): the options handed to this instance's
- * Remarkable, behind both `.md` partials and the `{{markdown}}` helper. Merged
+ * markdown-it, behind both `.md` partials and the `{{markdown}}` helper. Merged
  * exactly one level deep, and passed through as-is — the three keys below are
  * the ones kiss has a default for, not the ones it accepts, so any other
- * Remarkable option (`typographer`, `langPrefix`) reaches the renderer too.
+ * markdown-it option (`typographer`, `linkify`) reaches the renderer too.
  */
 export type KissMarkdown = {
     /**

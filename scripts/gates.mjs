@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The gate battery /branch-close runs before opening a PR.
 //
-// Five gates, cheapest first, each printing one pass/fail line plus its whole
+// Six gates, each printing one pass/fail line plus its whole
 // output on failure. Exits non-zero if any fail. The same script runs locally from
 // /branch-close and in CI (.github/workflows/ci.yml), so green here is green
 // there.
@@ -265,7 +265,7 @@ export function formatGate(base, diff, run, bin) {
   }
 }
 
-const GATES = [
+export const GATES = [
   { name: 'test', fix: 'npm test', run: () => run('npx', ['vitest', 'run']) },
   { name: 'lint', fix: 'npm run lint', run: () => run('npx', ['eslint', '.']) },
   // Types are published, so they are worth checking rather than only emitting.
@@ -314,6 +314,19 @@ const GATES = [
         }
       return { ok: true, note: `${packed.length} files in tarball` }
     },
+  },
+  // The feature freeze (roadmap to 3.0, Phase 1): every budget in
+  // planning/budgets.json is a ceiling, so a branch that makes one worse fails
+  // here. Work that earns the growth re-records the baseline in its own diff,
+  // where the reviewer sees it.
+  {
+    name: 'budgets',
+    fix: 'shrink what grew, or `node scripts/budgets.mjs --record` with the reason in the commit',
+    run: () =>
+      run(process.execPath, [
+        path.join(import.meta.dirname, 'budgets.mjs'),
+        '--check',
+      ]),
   },
 ]
 

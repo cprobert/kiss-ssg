@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import vm from 'node:vm'
 import Handlebars from 'handlebars'
-import { Remarkable } from 'remarkable'
+import MarkdownIt from 'markdown-it'
 import { minify } from 'terser'
 import { scormBridgeScript } from '../../lib/scorm-bridge.js'
 import { registerHandlebarsHelpers } from '../../lib/handlebars-helpers.js'
@@ -1323,7 +1323,7 @@ describe('the scormBridge helper', () => {
       env,
       { dev: false, sass: { includePaths: [] } },
       {
-        markdown: new Remarkable(),
+        markdown: new MarkdownIt(),
         logger: { ...silentLogger, error: (...args) => errors.push(args) },
       },
     )

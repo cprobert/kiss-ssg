@@ -22,7 +22,7 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { Remarkable } from 'remarkable'
+import MarkdownIt from 'markdown-it'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -147,17 +147,17 @@ function skillFiles() {
     .sort()
 }
 
-const markdown = new Remarkable({ html: true })
+const markdown = new MarkdownIt({ html: true })
 
 function offences(file) {
   const text = fs.readFileSync(path.join(root, file), 'utf8')
   return markdown
     .parse(text, {})
-    .filter((t) => t.type === 'fence' && SHELLS.has(t.params.split(/\s/)[0]))
+    .filter((t) => t.type === 'fence' && SHELLS.has(t.info.split(/\s/)[0]))
     .flatMap((t) =>
       commandLines(t.content).flatMap((line) => {
         const why = verdict(line)
-        return why ? [`${file}:${t.lines[0] + 1}: ${why}: ${line.trim()}`] : []
+        return why ? [`${file}:${t.map[0] + 1}: ${why}: ${line.trim()}`] : []
       }),
     )
 }
