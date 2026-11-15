@@ -179,6 +179,29 @@ describe('buildSummary', () => {
     expect(text).toContain('audit: image-oversized 2')
   })
 
+  // `AIKB/last-build.json` keeps one row per check since 2.17.1, not the
+  // findings, and `issue` reads it when no `--report` is given.
+  it('counts the audit from a record’s rows per check', () => {
+    const text = buildSummary(
+      [
+        {
+          ok: true,
+          mode: 'check',
+          pages: [{}],
+          failures: [],
+          audit: {
+            checks: [
+              { check: 'image-oversized', findings: 2, pages: 1 },
+              { check: 'favicon-missing', findings: 1, pages: 0 },
+            ],
+          },
+        },
+      ],
+      'AIKB/last-build.json',
+    )
+    expect(text).toContain('audit: image-oversized 2, favicon-missing 1')
+  })
+
   it('says so when there is no report', () => {
     expect(buildSummary([], 'nothing')).toBe('No report given (nothing).')
   })

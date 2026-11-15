@@ -293,12 +293,11 @@
     "checked": 15,
     "ignored": [],
     "skipped": [],
-    "findings": []
+    "checks": []
   },
   "packages": null,
   "thirdParty": {
     "siteUrl": "https://asterandoak.example",
-    "pages": [],
     "origins": []
   },
   "consent": null,

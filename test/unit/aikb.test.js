@@ -1061,6 +1061,85 @@ describe('lastBuildRecord', () => {
     expect(report.duration).toBe(153)
     expect(report.pipeline[0].duration).toBe(420)
   })
+
+  // A record committed on every `aikb` must not grow with every finding:
+  // diploma-msc's held 11,868 of them, 2.2 MB of a 3.1 MB file (2026-11-15).
+  // One row per check keeps what a diff of the record should show (a check
+  // that started or stopped firing, and how widely); the findings themselves
+  // stay in `kiss.report()` and `check --json`.
+  it('keeps one row per audit check, in the report’s order, not every finding', () => {
+    const audited = {
+      ...report,
+      audit: {
+        checked: 3,
+        ignored: ['placeholder-left'],
+        skipped: [],
+        findings: [
+          { check: 'title-missing', page: './public/a.html', detail: null },
+          { check: 'title-missing', page: './public/b.html', detail: null },
+          {
+            check: 'img-alt-missing',
+            page: './public/a.html',
+            detail: 'x.jpg',
+          },
+          {
+            check: 'img-alt-missing',
+            page: './public/a.html',
+            detail: 'y.jpg',
+          },
+          { check: 'favicon-missing', page: null, detail: null },
+        ],
+      },
+    }
+    const record = lastBuildRecord(audited)
+    expect(record.audit).toEqual({
+      checked: 3,
+      ignored: ['placeholder-left'],
+      skipped: [],
+      checks: [
+        { check: 'title-missing', findings: 2, pages: 2 },
+        { check: 'img-alt-missing', findings: 2, pages: 1 },
+        { check: 'favicon-missing', findings: 1, pages: 0 },
+      ],
+    })
+    expect(audited.audit.findings).toHaveLength(5)
+  })
+
+  it('keeps each third-party origin with how many pages fetch it, not each page’s list', () => {
+    const fetched = {
+      ...report,
+      thirdParty: {
+        siteUrl: 'https://example.com',
+        pages: [
+          {
+            page: './public/a.html',
+            origins: [
+              { origin: 'https://cdn.example.net', kinds: ['script'] },
+              { origin: 'https://www.youtube.com', kinds: ['iframe'] },
+            ],
+          },
+          {
+            page: './public/b.html',
+            origins: [{ origin: 'https://cdn.example.net', kinds: ['style'] }],
+          },
+        ],
+        origins: ['https://cdn.example.net', 'https://www.youtube.com'],
+      },
+    }
+    expect(lastBuildRecord(fetched).thirdParty).toEqual({
+      siteUrl: 'https://example.com',
+      origins: [
+        { origin: 'https://cdn.example.net', pages: 2 },
+        { origin: 'https://www.youtube.com', pages: 1 },
+      ],
+    })
+  })
+
+  it('keeps a null audit and a null thirdParty null', () => {
+    const record = lastBuildRecord({ ...report, audit: null, thirdParty: null })
+    expect(record.audit).toBe(null)
+    expect(record.thirdParty).toBe(null)
+  })
 })
 
 describe('writeAikb', () => {
