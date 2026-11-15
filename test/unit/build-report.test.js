@@ -194,6 +194,7 @@ describe('buildReport', () => {
       'id',
       'canonical',
       'markdown',
+      'skipped',
     ])
     expect(report.ok).toBe(true)
     expect(report.mode).toBe('build')
@@ -207,6 +208,7 @@ describe('buildReport', () => {
         id: null,
         canonical: null,
         markdown: null,
+        skipped: false,
       },
     ])
     expect(report.failures).toEqual([])
@@ -253,6 +255,33 @@ describe('buildReport', () => {
     ])
   })
 
+  it('marks a page registered with generate: false as skipped, and only that page', () => {
+    const report = buildReport({
+      stack: [
+        {
+          ...page('about.hbs', './public/about.html', 'h1'),
+          page: { hash: 'h1', options: { generate: true } },
+        },
+        {
+          ...page('hidden.hbs', './public/hidden.html'),
+          page: { hash: null, options: { generate: false } },
+        },
+        page('failed.hbs', './public/failed.html'),
+      ],
+      failures: [failure('failed.hbs', './public/failed.html', 'boom')],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+
+    expect(
+      report.pages.map(({ view, ok, skipped }) => ({ view, ok, skipped })),
+    ).toEqual([
+      { view: 'about.hbs', ok: true, skipped: false },
+      { view: 'hidden.hbs', ok: true, skipped: true },
+      { view: 'failed.hbs', ok: false, skipped: false },
+    ])
+  })
+
   it('marks the failed page — and only that page — as not ok', () => {
     const report = buildReport({
       stack: [
@@ -276,6 +305,7 @@ describe('buildReport', () => {
         id: null,
         canonical: null,
         markdown: null,
+        skipped: false,
       },
       {
         view: 'about.hbs',
@@ -285,6 +315,7 @@ describe('buildReport', () => {
         id: null,
         canonical: null,
         markdown: null,
+        skipped: false,
       },
     ])
     expect(report.failures).toEqual([

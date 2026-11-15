@@ -187,6 +187,8 @@ describe('kiss-ssg check', () => {
         canonical: null,
         // Its Markdown copy, named against the real build folder too.
         markdown: './public/index.md',
+        // Written, not skipped with `generate: false` (2.17.1).
+        skipped: false,
       },
     ])
     expect(await temp.exists('public')).toBe(false)
@@ -218,6 +220,7 @@ describe('kiss-ssg check', () => {
       id: 'index',
       canonical: null,
       markdown: './public/index.md',
+      skipped: false,
     })
     // The page that failed wrote nothing, so it names no bytes.
     expect(report.pages.find((p) => p.view === 'missing.hbs')?.hash).toBeNull()
@@ -844,6 +847,7 @@ describe('kiss.report()', () => {
         canonical: null,
         // No `.llms()` in this build, so no copy (2.8.0).
         markdown: null,
+        skipped: false,
       },
     ])
     expect(report.assets).toEqual([

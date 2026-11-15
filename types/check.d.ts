@@ -148,6 +148,18 @@ export function defaultBaseline(reports?: import("./build-report.js").BuildRepor
  */
 export function recordedLine(report: import("./build-report.js").BuildReport): string;
 /**
+ * What a report's page is compared by: its hash, `'skipped'` for a page
+ * registered with `generate: false` (no sha1 is that word, so two skipped
+ * pages are equal and a skipped page never equals a written one), or `null`
+ * for a page with no bytes and no reason, which every comparison counts as
+ * changed. A record written before 2.17.1 has no `skipped`, so its skipped
+ * pages are `null` until the record is made again.
+ *
+ * @param {any} page one entry of a report's `pages`
+ * @returns {string|null}
+ */
+export function pageIdentity(page: any): string | null;
+/**
  * What this build did to the last one, per build folder — pure, so the whole
  * comparison is testable without a filesystem.
  *
@@ -158,9 +170,10 @@ export function recordedLine(report: import("./build-report.js").BuildReport): s
  * build that site, which is not the same as having removed its pages.
  *
  * A `null` hash on either side counts as changed rather than unchanged: a page
- * that failed, was skipped, or came from a report written before hashes existed
- * has no bytes to compare, and "unchanged" is the one answer that would be a
- * lie.
+ * that failed, or came from a report written before hashes existed, has no
+ * bytes to compare, and "unchanged" is the one answer that would be a lie. The
+ * exception is a page skipped with `generate: false` on both sides, which is
+ * unchanged (`pageIdentity`).
  *
  * @param {import('./build-report.js').BuildReport[]} [before]
  * @param {import('./build-report.js').BuildReport[]} [after]

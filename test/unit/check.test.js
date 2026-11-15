@@ -500,6 +500,44 @@ describe('diffReports', () => {
     expect(diff.unchanged).toBe(1)
   })
 
+  // A `generate: false` page has no hash on either side, and nothing about it
+  // changed: counted as changed, it showed as `~` on every diff of the site.
+  it('counts a page skipped on both sides as unchanged, and skipped on one side as changed', () => {
+    const page = (buildTo, hash, skipped) => ({
+      view: 'x.hbs',
+      buildTo,
+      ok: true,
+      hash,
+      skipped,
+    })
+    const before = {
+      buildDir: './public',
+      pages: [
+        page('./public/hidden.html', null, true),
+        page('./public/unhidden.html', null, true),
+        page('./public/hiding.html', 'aaa', false),
+        page('./public/unwritten.html', null, false),
+      ],
+    }
+    const after = {
+      buildDir: './public',
+      pages: [
+        page('./public/hidden.html', null, true),
+        page('./public/unhidden.html', 'bbb', false),
+        page('./public/hiding.html', null, true),
+        page('./public/unwritten.html', null, false),
+      ],
+    }
+
+    const [diff] = diffReports([before], [after])
+    expect(diff.changed).toEqual([
+      './public/hiding.html',
+      './public/unhidden.html',
+      './public/unwritten.html',
+    ])
+    expect(diff.unchanged).toBe(1)
+  })
+
   it('diffs a build folder the old file never saw as all added', () => {
     const before = built('./public/a', { './public/a/index.html': 'aaa' })
     const after = built('./public/b', { './public/b/index.html': 'bbb' })

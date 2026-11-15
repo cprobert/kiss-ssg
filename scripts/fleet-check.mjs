@@ -37,7 +37,12 @@ import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { isMain } from './is-main.mjs'
 import { resolveSiteEntry, splitEntry } from './bench.mjs'
-import { diffReports, formatDiff, readReportsFile } from '../lib/check.js'
+import {
+  diffReports,
+  formatDiff,
+  pageIdentity,
+  readReportsFile,
+} from '../lib/check.js'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -195,9 +200,10 @@ function diffIsEmpty(diff) {
 }
 
 /**
- * The page hashes of every report, compared one by one by output path. A null
- * hash on either side counts as changed, as `diffReports` counts it: a page
- * with no bytes is never "the same".
+ * The page hashes of every report, compared one by one by output path, by
+ * `pageIdentity`, the rule `diffReports` uses: a null hash on either side
+ * counts as changed, because a page with no bytes is never "the same", and a
+ * page skipped with `generate: false` on both sides is.
  *
  * @param {any[]} before
  * @param {any[]} after
@@ -208,7 +214,7 @@ export function compareHashes(before = [], after = []) {
     for (const report of reports)
       for (const page of report?.pages ?? [])
         if (typeof page?.buildTo === 'string')
-          map.set(page.buildTo, page.hash ?? null)
+          map.set(page.buildTo, pageIdentity(page))
     return map
   }
   const a = hashes(before)
