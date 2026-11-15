@@ -290,6 +290,17 @@ export function buildReport({ stack, failures, manifest, buildDir, stagingDir, m
  */
 export function auditLines(audit: BuildAudit | null | undefined): string[];
 /**
+ * What `kiss-ssg build` prints per build after the script has run: the
+ * summary line of `formatReport`, then one line per failure naming the page
+ * and nothing else. The engine logged each message when it happened, and the
+ * broken links and audit findings with them, so the verdict is the list of
+ * what failed, not a second copy of why.
+ *
+ * @param {BuildReport} report
+ * @returns {string}
+ */
+export function formatVerdict(report: BuildReport): string;
+/**
  * The one-line human rendering of a report, plus one line per failure — what
  * `kiss-ssg check --summary` prints in place of the JSON.
  *

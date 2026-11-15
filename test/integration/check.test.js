@@ -418,6 +418,24 @@ describe('kiss-ssg check', () => {
 
     const run = check(temp.root, ['check', 'build.js'])
 
+    // The engine says so, in the child, which exits 1 itself; the command's
+    // own "no build report" line is for a child that exited 0.
+    expect(run.status).toBe(1)
+    expect(run.stdout.trim()).toBe('')
+    expect(run.stderr).toContain('was built without complete()')
+    expect(run.stderr).not.toContain('no build report')
+  }, 60000)
+
+  it('says nothing is settled when a script exits 0 without settling', async () => {
+    temp = await makeSite({
+      'src/pages/index.hbs': '<p>hello</p>',
+      'build.js': site(
+        `new Kiss({ folders: { src: './src', build: './public' } })\nprocess.exit(0)`,
+      ),
+    })
+
+    const run = check(temp.root, ['check', 'build.js'])
+
     expect(run.status).toBe(1)
     expect(run.stdout.trim()).toBe('')
     expect(run.stderr).toContain('no build report')
@@ -510,11 +528,13 @@ describe('kiss-ssg check', () => {
     const help = check(repoRoot, ['--help'])
     expect(help.status).toBe(0)
     expect(help.stdout).toContain('kiss-ssg <command> [args…]')
-    expect(help.stdout).toContain('aikb <script>')
+    expect(help.stdout).toContain('aikb [script]')
+    expect(help.stdout).toContain('build [script]')
 
-    const wrong = check(repoRoot, ['build', 'site.js'])
+    // `dev` is unknown until the command that runs it exists.
+    const wrong = check(repoRoot, ['dev', 'site.js'])
     expect(wrong.status).toBe(1)
-    expect(wrong.stderr).toContain('unknown command: build')
+    expect(wrong.stderr).toContain('unknown command: dev')
   })
 })
 

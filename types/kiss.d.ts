@@ -447,6 +447,15 @@ declare class Kiss {
     static parseHtml: typeof parseHtml;
     static findTag: typeof findTag;
     /**
+     * What the command that started this process asked of kiss: `'build'`,
+     * `'dev'` or `'check'`, or `null` under a plain `node router.js`. Read it
+     * before `new Kiss` to decide what the script builds. After construction the
+     * answer is `kiss.config.dev`.
+     *
+     * @returns {'build'|'dev'|'check'|null}
+     */
+    static get mode(): "build" | "dev" | "check" | null;
+    /**
      * Resolves the config, sets up this instance's Handlebars environment,
      * Markdown renderer and asset manifest, creates the folders, queues the
      * asset copy, registers helpers and partials — and, in `dev` mode, starts the

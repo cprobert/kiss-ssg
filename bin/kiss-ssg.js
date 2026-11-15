@@ -25,7 +25,13 @@ import {
   recordedLine,
   subjectLines,
 } from '../lib/check.js'
-import { formatReport } from '../lib/build-report.js'
+import { formatReport, formatVerdict } from '../lib/build-report.js'
+import {
+  engineGate,
+  resolveScript,
+  runScript,
+  spawnPlan,
+} from '../lib/run-script.js'
 import { runSession } from '../lib/sessions.js'
 import { runBase } from '../lib/base.js'
 import { runIssue } from '../lib/issue.js'
@@ -115,6 +121,15 @@ if (process.argv[2] === 'images') {
     ;(args.error ? console.error : console.log)(IMAGES_HELP)
     process.exit(args.error ? 1 : 0)
   }
+  const script = resolveScript(
+    /** @type {string} */ (args.script),
+    process.cwd(),
+    'images',
+  )
+  if (script.error) {
+    console.error(`kiss-ssg: ${script.error}`)
+    process.exit(1)
+  }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-images-'))
   const reportFile = path.join(dir, 'reports.jsonl')
   const sweepFile = path.join(dir, 'images.jsonl')
@@ -130,20 +145,15 @@ if (process.argv[2] === 'images') {
       code = 1
       fs.rmSync(reportFile, { force: true })
       fs.rmSync(sweepFile, { force: true })
-      const run = spawnSync(
-        process.execPath,
-        [/** @type {string} */ (args.script), ...args.args],
-        {
-          cwd: process.cwd(),
-          env: {
-            ...process.env,
-            KISS_CHECK: '1',
-            KISS_REPORT: reportFile,
-            KISS_IMAGES: sweepFile,
-            ...(args.refresh ? { KISS_IMAGES_REFRESH: '1' } : {}),
-          },
-          stdio: [0, 2, 2],
-        },
+      const run = await runScript(
+        spawnPlan({
+          command: 'images',
+          script: /** @type {string} */ (script.file),
+          args: args.args,
+          reportFile,
+          imagesFile: sweepFile,
+          refresh: args.refresh,
+        }),
       )
       if (run.error) console.error(`kiss-ssg: ${run.error.message}`)
       const result = await sweepImages({
@@ -538,6 +548,18 @@ if (parsed.against) {
   }
 }
 
+// The script, found before anything runs: the name as typed, the way Node
+// resolves an entry point, or `router.js` when none was typed.
+const script = resolveScript(
+  /** @type {string} */ (parsed.script),
+  process.cwd(),
+  parsed.command,
+)
+if (script.error) {
+  console.error(`kiss-ssg: ${script.error}`)
+  process.exit(1)
+}
+
 const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiss-check-'))
 const reportFile = path.join(reportDir, 'reports.jsonl')
 try {
@@ -546,34 +568,36 @@ try {
   // the report, so stdout stays the report in both output modes. A link to a
   // working tree is the one thing an upgrade wants to know and npm does not
   // volunteer.
-  console.error(
-    engineLine(
-      describeEngine({
-        cwd: process.cwd(),
-        // From the script's folder: that is where Node resolves its imports.
-        from: path.dirname(path.resolve(parsed.script)),
-      }),
-    ),
-  )
-  const run = spawnSync(process.execPath, [parsed.script, ...parsed.args], {
-    // The caller's cwd, not the script's folder: a site resolves `folders`
-    // against the cwd it is normally run from, and moving it would check a
-    // different set of paths from the ones the site builds with.
+  const engine = describeEngine({
     cwd: process.cwd(),
-    env: {
-      ...process.env,
-      KISS_CHECK: '1',
-      KISS_REPORT: reportFile,
-      // The one difference between the two commands: `aikb` is the ceremony
-      // that lets the build write its knowledge base. A check never sets it,
-      // so no ordinary run of it can move the baseline the diff reads.
-      ...(parsed.command === 'aikb' ? { KISS_AIKB: '1' } : {}),
-    },
-    // The site's own build log goes to *our* stderr (fd 2 at the child's
-    // stdout too), so stdout carries nothing but the report and stays
-    // machine-readable while a person still sees the build.
-    stdio: [0, 2, 2],
+    // From the script's folder: that is where Node resolves its imports.
+    from: path.dirname(/** @type {string} */ (script.file)),
   })
+  console.error(engineLine(engine))
+  // `build` exports no alias, so an engine that cannot read the request is
+  // refused before it can build in the wrong mode.
+  const refusal =
+    parsed.command === 'build'
+      ? engineGate(engine, { cwd: process.cwd(), command: 'build' })
+      : null
+  if (refusal) {
+    console.error(refusal)
+    process.exit(1)
+  }
+  // The caller's cwd, not the script's folder: a site resolves `folders`
+  // against the cwd it is normally run from, and moving it would check a
+  // different set of paths from the ones the site builds with. The site's own
+  // build log goes to *our* stderr for check and aikb, so stdout carries
+  // nothing but the report and stays machine-readable while a person still
+  // sees the build.
+  const run = await runScript(
+    spawnPlan({
+      command: parsed.command,
+      script: /** @type {string} */ (script.file),
+      args: parsed.args,
+      reportFile,
+    }),
+  )
   if (run.error) console.error(`kiss-ssg: ${run.error.message}`)
 
   const text = fs.existsSync(reportFile)
@@ -608,11 +632,21 @@ try {
   // each under its own site's line by index.
   const diff = against ? diffReports(against, reports) : null
 
-  if (reports.length === 0)
-    console.error(
-      'kiss-ssg: no build report was written — the script never settled a build. Add `await kiss.complete()` to it.',
-    )
-  else if (parsed.subjects) {
+  // A script that exited non-zero has already said why (the engine's own
+  // warning, or its own error), so the command adds this line only to a run
+  // that exited 0 and settled nothing: a script that called `process.exit()`
+  // itself, or an engine that predates the warning.
+  if (parsed.command === 'build') {
+    if (reports.length === 0) {
+      if (run.status === 0)
+        console.error('kiss-ssg: the script exited without settling a build')
+    } else for (const report of reports) console.error(formatVerdict(report))
+  } else if (reports.length === 0) {
+    if (run.status === 0)
+      console.error(
+        'kiss-ssg: no build report was written — the script never settled a build. Add `await kiss.complete()` to it.',
+      )
+  } else if (parsed.subjects) {
     const lines = subjectLines(reports)
     if (lines) console.log(lines)
   } else if (parsed.summary)
