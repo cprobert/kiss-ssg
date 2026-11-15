@@ -5,12 +5,35 @@
 // them are thin and run only from the command line.
 import { describe, it, expect } from 'vitest'
 import {
+  dependencyPlan,
   exitCodeFor,
   outcomeOf,
   parseArgs,
   recordLine,
   vitestArgs,
 } from '../../scripts/red-first.mjs'
+
+// The base runs on its own dependencies whenever they differ from this
+// checkout's. Linking this checkout's node_modules into a base that still
+// imports a package the branch removed made every test fail there on the
+// import, not on the behaviour (2026-11-14, remarkable → markdown-it).
+describe('dependencyPlan', () => {
+  it('links this checkout’s node_modules when the lockfiles match', () => {
+    expect(dependencyPlan('{"a":1}\n', '{"a":1}\n')).toBe('link')
+  })
+
+  it('installs the base’s own when they differ', () => {
+    expect(dependencyPlan('{"a":1}\n', '{"a":2}\n')).toBe('install')
+  })
+
+  it('reads line endings as the same lockfile', () => {
+    expect(dependencyPlan('{\r\n"a":1\r\n}\r\n', '{\n"a":1\n}\n')).toBe('link')
+  })
+
+  it('links when the base has no lockfile to install from', () => {
+    expect(dependencyPlan(null, '{"a":1}\n')).toBe('link')
+  })
+})
 
 describe('parseArgs', () => {
   it('reads a test file and an optional test name', () => {
