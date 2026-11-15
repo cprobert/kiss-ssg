@@ -15,7 +15,7 @@ const render = (src, ctx = {}) => hbs.compile(src)(ctx)
 
 // A recording logger so the degrade-instead-of-throw paths can assert that the
 // template author was told, not just that nothing blew up.
-const makeHbs = (config = {}, assets, lookupPage) => {
+const makeHbs = (config = {}, assets, lookupPage, pageIds) => {
   const env = Handlebars.create()
   registerHandlebarsHelpers(
     env,
@@ -23,6 +23,7 @@ const makeHbs = (config = {}, assets, lookupPage) => {
     {
       assets,
       lookupPage,
+      pageIds,
       markdown: new MarkdownIt({ html: true, xhtmlOut: true, breaks: true }),
       logger: {
         ...silentLogger,
@@ -755,7 +756,9 @@ describe('link', () => {
   }
   const linkHbs = (pages, config = {}) => {
     const { lookup, asked } = registry(pages)
-    hbs = makeHbs(config, undefined, lookup)
+    const ids = () =>
+      Object.keys(pages).filter((id) => !Array.isArray(pages[id]))
+    hbs = makeHbs(config, undefined, lookup, ids)
     return asked
   }
   // A page context with the data frame `KissPage.generate()` fills, so a
@@ -960,8 +963,28 @@ describe('link', () => {
   it('throws for an unknown id, naming the id and the page that asked', () => {
     linkHbs({ about: 'about.html' })
     expect(() => renderIn('{{link "contact"}}')).toThrow(
-      'link: no page with id "contact" (asked by index.hbs / /)',
+      'link: no page with id "contact". This build has 1 ids; kiss-ssg check lists them. (asked by index.hbs / /)',
     )
+  })
+
+  it('suggests the nearest ids, nearest first, at most three', () => {
+    linkHbs({
+      about: 'about.html',
+      aboot: 'aboot.html',
+      abut: 'abut.html',
+      abuoit: 'abuoit.html',
+      contact: 'contact.html',
+    })
+    // Three at distance 1 (alphabetical among equals); "about" is at 2, and cut.
+    expect(() => renderIn('{{link "abuot"}}')).toThrow(
+      'link: no page with id "abuot". Did you mean "aboot", "abuoit", "abut"? (asked by index.hbs / /)',
+    )
+  })
+
+  it('gives the same hint as the dev warning', () => {
+    linkHbs({ about: 'about.html' }, { dev: true })
+    expect(renderIn('{{link "abuot"}}')).toBe('#')
+    expect(warnings[0][0]).toContain('Did you mean "about"?')
   })
 
   it('throws for a withdrawn default id, naming the pages that share it', () => {

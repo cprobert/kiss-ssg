@@ -84,6 +84,41 @@ describe("cleanBuild: 'atomic'", () => {
     expect(staging(site.root)).toEqual([])
   })
 
+  it('hands out failures whose buildTo is the build path, not the staging path', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'fine',
+      'src/pages/broken.hbs': '{{#nope 1}}x{{/nope}}',
+    })
+    kiss = new Kiss({
+      folders: site.folders,
+      cleanBuild: 'atomic',
+      logger: silentLogger,
+    })
+    kiss.scan().generate()
+
+    const err = await kiss.complete().catch((e) => e)
+    expect(err.failures[0].buildTo).toBe(`${site.build}/broken.html`)
+    expect(err.failures[0].buildTo).not.toContain('.kiss-staging-')
+  })
+
+  it('hands out the build path under check too', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': 'fine',
+      'src/pages/broken.hbs': '{{#nope 1}}x{{/nope}}',
+    })
+    vi.stubEnv('KISS_CHECK', '1')
+    try {
+      kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      kiss.scan().generate()
+
+      const err = await kiss.complete().catch((e) => e)
+      expect(err.failures[0].buildTo).toBe(`${site.build}/broken.html`)
+      expect(err.failures[0].buildTo).not.toContain('.kiss-staging-')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('promotes assets and sitemap.xml with the pages', async () => {
     site = await makeSite({
       'src/pages/index.hbs': 'i',

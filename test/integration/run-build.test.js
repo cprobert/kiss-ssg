@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import net from 'node:net'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
@@ -276,6 +277,117 @@ kiss.scan().generate()`,
     },
     60000,
   )
+
+  // One owner per diagnostic (spec § 5.2): the inner site that throws puts its
+  // context in the message, and the owner prints it once.
+  it('prints the cause of a page that cannot be written once', async () => {
+    temp = await makeSite({
+      ...PAGES,
+      'src/pages/x.hbs': '<p>x</p>',
+      // A folder where the page's file goes.
+      'src/assets/x.html/keep.txt': 'keep',
+      'build.mjs': FAILING,
+    })
+
+    const run = cli(temp.root, ['build', 'build.mjs'])
+
+    expect(run.status).toBe(1)
+    expect(count(run.stderr, 'Error creating')).toBe(1)
+    expect(count(run.stderr, 'EISDIR')).toBe(1)
+  }, 60000)
+
+  it('names the build path, never the staging folder, under check --summary', async () => {
+    temp = await makeSite({
+      ...PAGES,
+      'src/pages/x.hbs': '<p>x</p>',
+      'src/assets/x.html/keep.txt': 'keep',
+      'build.mjs': FAILING,
+    })
+
+    const run = cli(temp.root, ['check', 'build.mjs', '--summary'])
+
+    expect(run.status).toBe(1)
+    expect(`${run.stdout}${run.stderr}`).not.toContain('.kiss-staging-')
+    expect(run.stdout).toContain('Error creating ./public/x.html: EISDIR')
+  }, 60000)
+
+  it('prints the cause of a URL model that cannot be fetched once', async () => {
+    // A port that was free a moment ago and has nothing on it now: a refused
+    // connection, not a fetch that kiss itself refuses to make.
+    const port = await new Promise((resolve) => {
+      const probe = net.createServer().listen(0, '127.0.0.1', () => {
+        const { port: free } = probe.address()
+        probe.close(() => resolve(free))
+      })
+    })
+    const url = `http://127.0.0.1:${port}/data.json`
+    const URL_MODEL = `import Kiss from '${engine}'
+const kiss = new Kiss({ folders: { src: './src', build: './public' } })
+kiss.page({ view: 'item.hbs', model: '${url}' }).generate()
+await kiss.complete()
+`
+    temp = await makeSite({
+      'src/pages/item.hbs': '<p>item</p>',
+      'build.mjs': URL_MODEL,
+    })
+
+    const run = cli(temp.root, ['build', 'build.mjs'])
+
+    expect(run.status).toBe(1)
+    expect(count(run.stderr, 'Model fetch failed')).toBe(1)
+    expect(count(run.stderr, 'ECONNREFUSED')).toBe(1)
+    expect(count(run.stderr, `:${port}/data.json`)).toBe(1)
+  }, 60000)
+
+  const register = (call) => `import Kiss from '${engine}'
+const kiss = new Kiss({ folders: { src: './src', build: './public' } })
+${call}
+kiss.generate()
+await kiss.complete()
+`
+
+  it('prints the cause of a view that cannot be read once', async () => {
+    temp = await makeSite({
+      ...PAGES,
+      'build.mjs': register(`kiss.page({ view: 'gone.hbs' })`),
+    })
+
+    const run = cli(temp.root, ['build', 'build.mjs'])
+
+    expect(run.status).toBe(1)
+    expect(count(run.stderr, 'Error reading view')).toBe(1)
+    expect(count(run.stderr, 'ENOENT')).toBe(1)
+  }, 60000)
+
+  it('prints the cause of a model file that is missing once', async () => {
+    temp = await makeSite({
+      'src/pages/item.hbs': '<p>item</p>',
+      'build.mjs': register(
+        `kiss.page({ view: 'item.hbs', model: 'missing.json' })`,
+      ),
+    })
+
+    const run = cli(temp.root, ['build', 'build.mjs'])
+
+    expect(run.status).toBe(1)
+    expect(count(run.stderr, 'Model not found: missing.json')).toBe(1)
+    expect(count(run.stderr, 'missing.json')).toBe(1)
+  }, 60000)
+
+  it('prints the cause of a controller that throws once', async () => {
+    temp = await makeSite({
+      'src/pages/item.hbs': '<p>item</p>',
+      'build.mjs': register(
+        `kiss.page({ view: 'item.hbs', controller: () => { throw new Error('boom-in-controller') } })`,
+      ),
+    })
+
+    const run = cli(temp.root, ['build', 'build.mjs'])
+
+    expect(run.status).toBe(1)
+    expect(count(run.stderr, 'boom-in-controller')).toBe(1)
+    expect(run.stderr).toContain('Error in controller for item.hbs')
+  }, 60000)
 
   it('prints --help and exits 0', async () => {
     temp = await makeSite({})

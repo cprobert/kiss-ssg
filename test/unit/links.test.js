@@ -477,6 +477,33 @@ describe('checkLinks', () => {
     ])
   })
 
+  it('does not list a reference to a page that failed, and counts it', () => {
+    const result = checkLinks({
+      pages,
+      buildDir: './public',
+      siteUrl: 'https://site.example',
+      manifestTargets: ['css/site.css'],
+      failedPages: ['./public/gone.html', './public/other.html'],
+      exists,
+    })
+    expect(result.broken).toEqual([
+      { page: './public/shelf/item.html', href: '../missing.html' },
+    ])
+    expect(result.toFailed).toBe(1)
+    expect(result.checked).toBe(6)
+  })
+
+  it('counts nothing as left out when no page failed', () => {
+    const result = checkLinks({
+      pages,
+      buildDir: './public',
+      siteUrl: 'https://site.example',
+      manifestTargets: ['css/site.css'],
+      exists,
+    })
+    expect(result.toFailed).toBe(0)
+  })
+
   it('resolves a same-origin absolute URL against the pages this build wrote', () => {
     // `https://site.example/shelf/item` is `{{canonical}}` of the second page,
     // and it resolves because that page is in the stack — not because anything
@@ -535,7 +562,13 @@ describe('checkLinks', () => {
   it('reports nothing for a build with no pages, and does not throw on an empty manifest', () => {
     expect(
       checkLinks({ pages: [], buildDir: './public', manifestTargets: [] }),
-    ).toEqual({ checked: 0, hostServed: 0, broken: [], orphans: [] })
+    ).toEqual({
+      checked: 0,
+      hostServed: 0,
+      toFailed: 0,
+      broken: [],
+      orphans: [],
+    })
   })
 
   it('counts a reference the host serves instead of reporting it broken', () => {

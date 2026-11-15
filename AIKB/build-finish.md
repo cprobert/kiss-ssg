@@ -26,7 +26,7 @@ Each is the body of the `Kiss` private method named beside it:
 - `finishBuild(kiss)` — `_finishBuild()`; `reportInputs(kiss)` — `_reportInputs()`;
   `refreshReport(kiss)` — `_refreshReport()`.
 - `buildAikb(kiss)` — `_buildAikb()`.
-- `runLinkCheck(kiss, { quiet })` — `_checkLinks()`; `runAudit(kiss, { quiet })` — `_runAudit()`.
+- `runLinkCheck(kiss, { quiet })` — `_checkLinks()`; it hands `checkLinks` the `failedPages` option that `Kiss._checkLinks()` computes (the output paths of the stack entries that have a recorded page failure), so a link to a failed page is not a "broken link" line; `runAudit(kiss, { quiet })` — `_runAudit()`.
 - `writeAliasRedirects(kiss)` — `_writeRedirects()`; `findRedirectChanges(kiss)` —
   `_redirectFindings()`; `lastBuildRecord(kiss)` — `_lastBuildRecord()`.
   `findRedirectChanges` also records every alias `normaliseAlias` refused, from

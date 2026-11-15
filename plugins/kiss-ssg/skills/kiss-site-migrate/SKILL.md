@@ -39,7 +39,7 @@ If `npx kiss-ssg@latest upgrade --help` answers `unknown command`, npx ran a kis
 npx kiss-ssg check router.js --summary
 ```
 
-It builds staged and discards the result, so nothing published is touched. If the first line does not start `ok`, work the `failures` entries first, with the `kiss-build-check` skill: a page that fails to render is absent from the output, so it also turns every `{{link}}` to it into a `broken link:` finding, and fixing the failure clears those. Treat a new failure as a bug the upgrade surfaced, not one it caused: the notes say which releases made an old mistake fatal, and in each case the published output was already wrong.
+It builds staged and discards the result, so nothing published is touched. If the first line does not start `ok`, work the `failures` entries first, with the `kiss-build-check` skill: a page that fails to render is absent from the output, and the `{{link}}`s to it are left out of the broken-link list rather than listed (the build log counts them), so the failure itself is the one to fix. Treat a new failure as a bug the upgrade surfaced, not one it caused: the notes say which releases made an old mistake fatal, and in each case the published output was already wrong.
 
 ### 3. Work each note
 

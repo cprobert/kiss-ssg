@@ -1,6 +1,4 @@
-export function runController(options: any, controller: any, { logger }: {
-    logger: any;
-}): any;
+export function runController(options: any, controller: any): any;
 export function loadController(controllersDir: any, file: any, { logger, fresh }: {
     logger: any;
     fresh?: boolean;

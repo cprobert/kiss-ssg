@@ -33,6 +33,8 @@
  * instance and a watch replay builds a new stack. The default resolves nothing,
  * so a caller that registers helpers without a registry still gets every other
  * helper.
+ * @param {() => Iterable<string>} [deps.pageIds] the ids the registry holds, read
+ * at the call as `lookupPage` is, for the nearest ids an unknown one names
  * @param {(hash: string, text: string) => void} [deps.recordBanner] told each
  * consent banner's hash and the text it was taken from, for the banner
  * registry (`consent-banners.json`); the default records nothing
@@ -42,7 +44,7 @@
  * helper
  * @returns {typeof import('handlebars')} the same environment
  */
-export function registerHandlebarsHelpers(hbs: typeof import("handlebars"), config: import("./config.js").KissConfig, { markdown, logger, assets, lookupPage, recordBanner, images, }: {
+export function registerHandlebarsHelpers(hbs: typeof import("handlebars"), config: import("./config.js").KissConfig, { markdown, logger, assets, lookupPage, pageIds, recordBanner, images, }: {
     markdown: any;
     logger: ReturnType<typeof import("./logger.js").createLogger>;
     assets?: ReturnType<typeof createAssetManifest>;
@@ -52,6 +54,7 @@ export function registerHandlebarsHelpers(hbs: typeof import("handlebars"), conf
         withdrawn: true;
         views: string[];
     } | null);
+    pageIds?: () => Iterable<string>;
     recordBanner?: (hash: string, text: string) => void;
     images?: ImageDeps;
 }): typeof import("handlebars");

@@ -444,14 +444,15 @@ describe('{{link}} in a real site', () => {
     expect(links.checked).toBeGreaterThan(0)
   })
 
-  it('reports a link to a page that failed to render as broken', async () => {
+  it('does not list a link to a page that failed to render as broken', async () => {
     site = await makeSite({
       ...FILES,
       'src/pages/index.hbs':
         '<a href="{{link "about"}}">About</a><a href="{{link "gone"}}">Gone</a>',
       // The page exists in the registry and claims an id, but its view does
-      // not, so it writes no bytes — which is exactly what makes the link to it
-      // a finding rather than a lie.
+      // not, so it writes no bytes. Its own failure is the finding; a second
+      // "broken link" line for every page that links to it is the same
+      // finding again (spec § 5.2, § 6 b).
       'src/pages/about.hbs': '<p>about</p>',
     })
     kiss = new Kiss(config())
@@ -461,9 +462,8 @@ describe('{{link}} in a real site', () => {
       .generate()
 
     const error = await kiss.complete().catch((err) => err)
-    expect(error.report.links.broken).toEqual([
-      { page: `${site.build}/index.html`, href: '/gone.html' },
-    ])
+    expect(error.report.links.broken).toEqual([])
+    expect(error.failures.map((f) => f.view)).toEqual(['gone.hbs'])
   })
 })
 
@@ -499,6 +499,32 @@ describe('what can be linked', () => {
     const error = await kiss.complete().catch((err) => err)
     expect(error.failures[0].error.message).toContain(
       'link: no page with id "late"',
+    )
+  })
+
+  it('names the nearest id when the id is a typo', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '<a href="{{link "abuot"}}">About</a>',
+      'src/pages/about.hbs': '<p>about</p>',
+    })
+    kiss = new Kiss(config()).scan().generate()
+
+    const error = await kiss.complete().catch((err) => err)
+    expect(error.failures[0].error.message).toContain(
+      'link: no page with id "abuot". Did you mean "about"? (asked by index.hbs',
+    )
+  })
+
+  it('says how many ids the build has when none is close', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '<a href="{{link "zzzzzz"}}">Nowhere</a>',
+      'src/pages/about.hbs': '<p>about</p>',
+    })
+    kiss = new Kiss(config()).scan().generate()
+
+    const error = await kiss.complete().catch((err) => err)
+    expect(error.failures[0].error.message).toContain(
+      'This build has 2 ids; kiss-ssg check lists them.',
     )
   })
 

@@ -86,6 +86,30 @@ describe('broken internal links', () => {
     expect(report.links.checked).toBe(CHECKED)
   })
 
+  it('does not report a link to a page that failed, and says how many it left out', async () => {
+    site = await makeSite({
+      'src/pages/index.hbs': '<a href="/menu.html">Menu</a>',
+      'src/pages/about.hbs': '<a href="/menu.html">Menu</a>',
+      'src/pages/contact.hbs': '<a href="/menu.html">Menu</a>',
+      // Compiles, then throws at render time: this page writes nothing.
+      'src/pages/menu.hbs': '{{#nope 1}}x{{/nope}}',
+    })
+    const lines = []
+    const logger = {
+      ...silentLogger,
+      info: (...args) => lines.push(args.join(' ')),
+      notice: (...args) => lines.push(args.join(' ')),
+    }
+    kiss = new Kiss(siteConfig(site, { logger })).scan().generate()
+    await kiss.complete().catch(() => {})
+
+    expect(kiss.report().links.broken).toEqual([])
+    expect(lines.filter((line) => line.startsWith('broken link:'))).toEqual([])
+    expect(lines).toContain(
+      'Links: 3 internal references, none broken (3 to pages that failed are not listed)',
+    )
+  })
+
   it('resolves the shapes the engine own helpers emit', async () => {
     site = await makeSite(FILES)
     kiss = new Kiss(siteConfig(site)).scan().generate()

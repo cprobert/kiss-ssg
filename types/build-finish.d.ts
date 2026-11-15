@@ -37,10 +37,13 @@ export function refreshReport(kiss: any): void;
 export function buildAikb(kiss: any): Promise<import("./aikb.js").AikbResult>;
 /**
  * @param {any} kiss
- * @param {{ quiet?: boolean }} [options]
+ * @param {{ quiet?: boolean, failedPages?: string[] }} [options]
+ * `failedPages`: the output paths of the pages that failed, which `kiss`
+ * computes (`_checkLinks()`) and `checkLinks` leaves out of `broken`
  */
-export function runLinkCheck(kiss: any, { quiet }?: {
+export function runLinkCheck(kiss: any, { quiet, failedPages }?: {
     quiet?: boolean;
+    failedPages?: string[];
 }): any;
 /**
  * @param {any} kiss

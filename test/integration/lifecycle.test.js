@@ -68,6 +68,57 @@ describe('a bad model', () => {
     expect(await site.exists('public/index.html')).toBe(true)
   })
 
+  // The registry logs the whole error at `debug` (stack and cause): a path
+  // that did not exist before, so it is held to the redaction every other
+  // printed URL is.
+  it.each([
+    // Refused by the fetch policy before any connection: credentials in a URL.
+    ['a credential and a query value', 'user:SECRETPW99@', 'token=TOKENVAL77'],
+    // Refused by the network: nothing is listening.
+    ['a query value', '', 'token=TOKENVAL77'],
+  ])(
+    'prints no part of %s from a URL model, at debug either',
+    async (_l, userinfo, query) => {
+      const port = await new Promise((resolve) => {
+        const probe = net.createServer().listen(0, '127.0.0.1', () => {
+          const { port: free } = probe.address()
+          probe.close(() => resolve(free))
+        })
+      })
+      site = await makeSite({
+        'src/pages/index.hbs': 'ok',
+        'src/pages/remote.hbs': '{{model.title}}',
+      })
+      const lines = []
+      const record = (...args) => lines.push(args)
+      const logger = {
+        ...silentLogger,
+        error: record,
+        warn: record,
+        notice: record,
+        info: record,
+        debug: record,
+      }
+      const kiss = new Kiss({ folders: site.folders, logger })
+        .page({
+          view: 'remote.hbs',
+          model: `http://${userinfo}127.0.0.1:${port}/x?${query}`,
+        })
+        .generate()
+      const err = await kiss.complete().catch((e) => e)
+
+      const printed = inspect([lines, err.failures], { depth: Infinity })
+      // The failure was printed (so the assertions below are not vacuous), at
+      // `debug` as well as `error`: the stack and its cause both hold the text.
+      expect(printed).toContain('Model fetch failed')
+      expect(lines.filter((l) => String(l[0]).includes('    at ')).length).toBe(
+        1,
+      )
+      expect(printed).not.toContain('SECRETPW99')
+      expect(printed).not.toContain('TOKENVAL77')
+    },
+  )
+
   it('fails the build when a URL model answers 500, without printing its query', async () => {
     const TOKEN = 'QUERYSECRET42'
     const server = http.createServer((req, res) => {
@@ -659,7 +710,9 @@ describe('a bad item in a pages() fan-out', () => {
     expect(caught.failures).toHaveLength(1)
     expect(caught.failures[0].view).toMatch(/item\.hbs/)
     expect(caught.failures[0].view).toMatch(/item-2/)
-    expect(caught.failures[0].error.message).toBe('bad item: item-2')
+    expect(caught.failures[0].error.message).toBe(
+      'Error in controller for item.hbs: bad item: item-2',
+    )
     expect(await site.exists('public/item-1.html')).toBe(true)
     expect(await site.exists('public/item-2.html')).toBe(false)
     expect(await site.exists('public/item-3.html')).toBe(true)
@@ -680,8 +733,8 @@ describe('a bad item in a pages() fan-out', () => {
     }
     expect(caught.failures).toHaveLength(2)
     expect(caught.failures.map((f) => f.error.message)).toEqual([
-      'bad item: item-2',
-      'bad item: item-4',
+      'Error in controller for item.hbs: bad item: item-2',
+      'Error in controller for item.hbs: bad item: item-4',
     ])
     expect(await site.exists('public/item-1.html')).toBe(true)
     expect(await site.exists('public/item-3.html')).toBe(true)
