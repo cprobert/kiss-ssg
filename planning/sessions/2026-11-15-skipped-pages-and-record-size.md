@@ -59,6 +59,17 @@ scope: lib/build-report.js, lib/check.js, lib/aikb.js, lib/issue.js, lib/kiss.js
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-15** — Slice one `6a5a941` plus the Codex fix `25f4acd`; 0 commits behind `origin/main`; `scope-check` clean. Criterion 1 (skipped pages): **met**. The report's `skipped` key, `pageIdentity` and `identitiesByPath` are in `lib/check.js`, and fleet-check imports the rule. `npx vitest run`: 149 files, 5,048 passed.
+  - red-first: test/integration/generate-false.test.js -t "fails the page when generate" failed at main (ad7e137), 2026-11-15
+  - red-first: test/integration/generate-false.test.js -t "generate is undefined" failed at main (ad7e137), 2026-11-15
+  - red-first: test/unit/check.test.js -t "skipped on both sides as unchanged" failed at main (ad7e137), 2026-11-15
+  - red-first: test/unit/build-report.test.js -t "generate: false as skipped" failed at main (ad7e137), 2026-11-15
+  - red-first: test/unit/fleet-check.test.js -t "skipped on both sides as the same" failed at main (ad7e137), 2026-11-15
+  - red-first: test/unit/check.test.js -t "hide the written page" failed at 6a5a941 (6a5a941), 2026-11-15
+  - red-first: test/unit/fleet-check.test.js -t "hide the written page" failed at 6a5a941 (6a5a941), 2026-11-15. It passes at main, which over-reported (`null` is always changed), so the slice commit is the honest base, run through `KISS_BASE_BRANCH=6a5a941`.
+
+  Criterion 2 ("never rendered"): **met**. `generate: 0`, `''`, `null`, a string, or a spread `undefined` were the case; a parse-error view already failed. Fixed at registration and in the render test (Amendment above). Criteria 3–10: **not yet** (the record slice, size, fleet, red-first, docs and close are still to come). **Review (Codex, slice one):** one finding inside the threat model. A skipped page registered after a written page at the same path replaced its identity, so a change read as unchanged. It was reproduced before the fix (both tests red on the branch), fixed, and the fix diff (`identitiesByPath`) was shown to the operator. No second round: the agreed stop is one pass per slice, plus the close. **Eyeball: deferred** to `/branch-close` Step 5a. The artefact is metacarpus's scratch copy on the branch engine, `check --summary` after `aikb`, printing `= 101 unchanged` (on 2.17.0 its three skipped handbooks showed `~`). **Offer:** failing a non-boolean `generate` rather than coercing it. The operator asked "Explain more", got the four options in a table, and chose **keep**. Decision: continue, to the record slice.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
