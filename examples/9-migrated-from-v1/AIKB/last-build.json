@@ -10,7 +10,8 @@
       "hash": "273b595edb3546f0013729992161910c15557e0f",
       "id": "index",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "await-complete.hbs",
@@ -19,7 +20,8 @@
       "hash": "1cd0fa7029f296511767ec8e55553d085faf9203",
       "id": "await-complete",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "folders.hbs",
@@ -28,7 +30,8 @@
       "hash": "e7393cf834df289c3fcc7d3cb237d41f634921f2",
       "id": "folders",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "handlebars-instance.hbs",
@@ -37,7 +40,8 @@
       "hash": "5621ec8810e81a09156fb66c5aaaa805385e1010",
       "id": "handlebars-instance",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "dynamic-partials.hbs",
@@ -46,7 +50,8 @@
       "hash": "e3a9b1414d714c5ff60f53661a1c9ef9de9a02e0",
       "id": "dynamic-partials",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "duplicate-paths.hbs",
@@ -55,7 +60,8 @@
       "hash": "a3318ac69b13ba4200209c4efc8f37903d7cfa9e",
       "id": "duplicate-paths",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "pure-controllers.hbs",
@@ -64,7 +70,8 @@
       "hash": "02d00cd8f9fc01761cf466cc284ae49782409c50",
       "id": "pure-controllers",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "smaller-changes.hbs",
@@ -73,7 +80,8 @@
       "hash": "d7b07025415c185a43d596faafdd1fdfb0d4c4ea",
       "id": "smaller-changes",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "404.hbs",
@@ -82,7 +90,8 @@
       "hash": "6ce3a60c6d10c2f2324d5373ed2e48abb5a5de76",
       "id": "404",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "shelf/item.hbs",
@@ -91,7 +100,8 @@
       "hash": "0bba0b5b3205204f9bd0be8863ed884ec390f00c",
       "id": "shelf/item/arch-blend",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "shelf/item.hbs",
@@ -100,7 +110,8 @@
       "hash": "adbc44440e39662fc162395668e50e7ea6de0ec0",
       "id": "shelf/item/oak-cascara",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     },
     {
       "view": "shelf/item.hbs",
@@ -109,7 +120,8 @@
       "hash": "cd89ac203930e86179c8e24d8204ea700edb28a6",
       "id": "shelf/item/guji-uraga",
       "canonical": null,
-      "markdown": null
+      "markdown": null,
+      "skipped": false
     }
   ],
   "failures": [],
@@ -164,12 +176,11 @@
     "checked": 12,
     "ignored": [],
     "skipped": [],
-    "findings": []
+    "checks": []
   },
   "packages": null,
   "thirdParty": {
     "siteUrl": "https://asterandoak.example",
-    "pages": [],
     "origins": []
   },
   "consent": null,

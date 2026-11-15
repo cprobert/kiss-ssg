@@ -184,6 +184,32 @@ describe('compareHashes', () => {
       ).changed,
     ).toEqual(['docs/a.html'])
   })
+
+  // The rule `diffReports` uses, not a copy of it: a page skipped with
+  // `generate: false` on both sides is the same.
+  it('counts a page skipped on both sides as the same', () => {
+    const skipped = {
+      pages: [
+        { buildTo: 'docs/hidden.html', hash: null, skipped: true },
+        { buildTo: 'docs/failed.html', hash: null, skipped: false },
+      ],
+    }
+    expect(compareHashes([skipped], [skipped]).changed).toEqual([
+      'docs/failed.html',
+    ])
+  })
+
+  it('never lets a skipped page hide the written page that shares its path', () => {
+    const at = (hash) => ({
+      pages: [
+        { buildTo: 'docs/about.html', hash, skipped: false },
+        { buildTo: 'docs/about.html', hash: null, skipped: true },
+      ],
+    })
+    expect(compareHashes([at('aaa')], [at('bbb')]).changed).toEqual([
+      'docs/about.html',
+    ])
+  })
 })
 
 describe('compareReports', () => {

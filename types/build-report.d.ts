@@ -9,6 +9,7 @@
  * @property {string|null} id the page's identity, what `{{link "<id>"}}` resolves — `null` for an inline template, a `generate: false` page, and a default id two pages arrived at (which no page claims)
  * @property {string|null} canonical the URL the page named as its canonical, when it named one elsewhere — such a page is absent from `sitemap.xml`, `llms.txt` and the feed; `null` when `{{canonical}}` is derived from the page's own URL
  * @property {string|null} markdown the Markdown copy the page wrote beside itself (`config.markdownCopies`), against the real build folder; `null` when it wrote none
+ * @property {boolean} skipped `true` for a page registered with `generate: false`, which is `ok` and has no `hash` on purpose (2.17.1; absent from an older record)
  */
 /**
  * One file `.copyAssets()` put in the build, as the asset manifest records it.
@@ -337,6 +338,10 @@ export type BuildPage = {
      * the Markdown copy the page wrote beside itself (`config.markdownCopies`), against the real build folder; `null` when it wrote none
      */
     markdown: string | null;
+    /**
+     * `true` for a page registered with `generate: false`, which is `ok` and has no `hash` on purpose (2.17.1; absent from an older record)
+     */
+    skipped: boolean;
 };
 /**
  * One file `.copyAssets()` put in the build, as the asset manifest records it.

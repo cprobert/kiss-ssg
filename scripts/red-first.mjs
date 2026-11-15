@@ -6,8 +6,9 @@
 //
 // It resolves the base branch (`resolveBaseBranch`, the one every branch skill
 // uses), checks that base out into a temporary worktree in the OS temp, copies
-// ONLY the test file in, links this checkout's node_modules, runs the test
-// there, removes the worktree in a `finally` and prints one Markdown line for
+// ONLY the test file in, links this checkout's node_modules (or, when the
+// base's lockfile differs, installs the base's own with `npm ci`), runs the
+// test there, removes the worktree in a `finally` and prints one Markdown line for
 // the pulse log:
 //
 //   - red-first: test/unit/x.test.js failed at main (abc1234), 2026-11-10
@@ -133,6 +134,25 @@ export function vitestArgs(file, name) {
 }
 
 /**
+ * Whether the base runs on this checkout's node_modules (`'link'`) or on its
+ * own, installed from its lockfile (`'install'`). Its own whenever the two
+ * lockfiles differ: a base that still imports a package the branch removed
+ * would otherwise fail every test on the import, which is not the failure the
+ * test is meant to show. Line endings do not count; a base with no lockfile
+ * has nothing to install from, so it links.
+ *
+ * @param {string|null} baseLock the base's `package-lock.json`, or `null`
+ * @param {string|null} headLock this checkout's
+ * @returns {'link'|'install'}
+ */
+export function dependencyPlan(baseLock, headLock) {
+  if (baseLock === null) return 'link'
+  const same = (/** @type {string|null} */ text) =>
+    (text ?? '').replace(/\r\n/g, '\n')
+  return same(baseLock) === same(headLock) ? 'link' : 'install'
+}
+
+/**
  * Runs the test at the base and returns what happened. The worktree is always
  * removed, link first: removing a worktree that holds a link to node_modules
  * must never be allowed to follow it.
@@ -160,11 +180,41 @@ function runAtBase(args, base) {
     const sha = git(['rev-parse', '--short', 'HEAD'], { cwd: tree }).trim()
     fs.mkdirSync(path.dirname(path.join(tree, file)), { recursive: true })
     fs.copyFileSync(source, path.join(tree, file))
-    // A junction needs no privilege on Windows; elsewhere it is a plain
-    // directory symlink.
-    fs.symlinkSync(path.join(ROOT, 'node_modules'), link, 'junction')
-    linked = true
-    const bin = path.join(ROOT, 'node_modules', 'vitest', 'vitest.mjs')
+    const read = (/** @type {string} */ at) => {
+      try {
+        return fs.readFileSync(path.join(at, 'package-lock.json'), 'utf8')
+      } catch {
+        return null
+      }
+    }
+    const plan = dependencyPlan(read(tree), read(ROOT))
+    if (plan === 'install') {
+      console.error(
+        `red-first: ${base}'s package-lock.json differs from this checkout's; installing its own dependencies (npm ci)`,
+      )
+      // npm is npm.cmd on Windows, which Node spawns only through a shell.
+      const install = spawnSync(
+        'npm ci --ignore-scripts --no-audit --no-fund',
+        [],
+        {
+          cwd: tree,
+          encoding: 'utf8',
+          shell: true,
+          maxBuffer: 64 * 1024 * 1024,
+        },
+      )
+      if (install.status !== 0)
+        throw new Error(
+          `npm ci at ${base} failed (exit ${install.status})\n${install.stderr ?? ''}`,
+        )
+    } else {
+      // A junction needs no privilege on Windows; elsewhere it is a plain
+      // directory symlink.
+      fs.symlinkSync(path.join(ROOT, 'node_modules'), link, 'junction')
+      linked = true
+    }
+    const modules = plan === 'install' ? tree : ROOT
+    const bin = path.join(modules, 'node_modules', 'vitest', 'vitest.mjs')
     const run = spawnSync(
       process.execPath,
       [bin, ...vitestArgs(file, args.name).slice(1)],

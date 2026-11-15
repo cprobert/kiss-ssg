@@ -500,6 +500,89 @@ describe('diffReports', () => {
     expect(diff.unchanged).toBe(1)
   })
 
+  // A `generate: false` page has no hash on either side, and nothing about it
+  // changed: counted as changed, it showed as `~` on every diff of the site.
+  it('counts a page skipped on both sides as unchanged, and skipped on one side as changed', () => {
+    const page = (buildTo, hash, skipped) => ({
+      view: 'x.hbs',
+      buildTo,
+      ok: true,
+      hash,
+      skipped,
+    })
+    const before = {
+      buildDir: './public',
+      pages: [
+        page('./public/hidden.html', null, true),
+        page('./public/unhidden.html', null, true),
+        page('./public/hiding.html', 'aaa', false),
+        page('./public/unwritten.html', null, false),
+      ],
+    }
+    const after = {
+      buildDir: './public',
+      pages: [
+        page('./public/hidden.html', null, true),
+        page('./public/unhidden.html', 'bbb', false),
+        page('./public/hiding.html', null, true),
+        page('./public/unwritten.html', null, false),
+      ],
+    }
+
+    const [diff] = diffReports([before], [after])
+    expect(diff.changed).toEqual([
+      './public/hiding.html',
+      './public/unhidden.html',
+      './public/unwritten.html',
+    ])
+    expect(diff.unchanged).toBe(1)
+  })
+
+  // A skipped page claims no output path, so a written page can share its
+  // `buildTo` (registered before or after it). The skipped entry wrote
+  // nothing there: it must never stand in for the page that did (Codex,
+  // slice-one review, 2026-11-15).
+  it.each([
+    ['before', 'written first'],
+    ['after', 'skipped first'],
+  ])(
+    'never lets a skipped page hide the written page that shares its path (%s)',
+    (_, order) => {
+      const written = (hash) => ({
+        view: 'real.hbs',
+        buildTo: './public/about.html',
+        ok: true,
+        hash,
+        skipped: false,
+      })
+      const skipped = {
+        view: 'skipped.hbs',
+        buildTo: './public/about.html',
+        ok: true,
+        hash: null,
+        skipped: true,
+      }
+      const pages = (hash) =>
+        order === 'written first'
+          ? [written(hash), skipped]
+          : [skipped, written(hash)]
+      const report = (list) => ({ buildDir: './public', pages: list })
+
+      const [bytes] = diffReports(
+        [report(pages('aaa'))],
+        [report(pages('bbb'))],
+      )
+      expect(bytes.changed).toEqual(['./public/about.html'])
+
+      const [gone] = diffReports([report(pages('aaa'))], [report([skipped])])
+      expect(gone.changed).toEqual(['./public/about.html'])
+
+      const [same] = diffReports([report(pages('aaa'))], [report(pages('aaa'))])
+      expect(same.changed).toEqual([])
+      expect(same.unchanged).toBe(1)
+    },
+  )
+
   it('diffs a build folder the old file never saw as all added', () => {
     const before = built('./public/a', { './public/a/index.html': 'aaa' })
     const after = built('./public/b', { './public/b/index.html': 'bbb' })

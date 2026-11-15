@@ -59,6 +59,61 @@ describe('generate: false', () => {
     expect(xml).not.toContain('skipped')
   })
 
+  // The report says which pages were skipped, so a reader can tell a page
+  // left out on purpose from one that was meant to be written and was not:
+  // both have `ok: true` and no hash.
+  it('is reported as skipped, and a written page as not', async () => {
+    site = await makeSite({
+      'src/pages/real.hbs': 'REAL',
+      'src/pages/skipped.hbs': 'SKIPPED',
+    })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .page({ view: 'real.hbs' })
+      .page({ view: 'skipped.hbs', generate: false })
+      .generate()
+    await kiss.complete()
+    expect(
+      kiss.report().pages.map(({ view, ok, hash, skipped }) => ({
+        view,
+        ok,
+        written: hash !== null,
+        skipped,
+      })),
+    ).toEqual([
+      { view: 'real.hbs', ok: true, written: true, skipped: false },
+      { view: 'skipped.hbs', ok: true, written: false, skipped: true },
+    ])
+  })
+
+  // `generate: 0` (or '', or null) skipped the render but nothing else: the
+  // page kept its id, so `{{link}}` resolved to a file that was never written,
+  // and the build passed. Only `true` and `false` say what is meant.
+  it.each([0, '', null, 'no'])(
+    'fails the page when generate is %j, naming it',
+    async (value) => {
+      site = await makeSite({ 'src/pages/odd.hbs': 'ODD' })
+      const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+        .page({ view: 'odd.hbs', generate: value })
+        .generate()
+      await expect(kiss.complete()).rejects.toThrow()
+      expect(kiss.report().failures.map((f) => f.message)).toEqual([
+        `generate must be true or false, got ${JSON.stringify(value)} (odd.hbs)`,
+      ])
+      expect(await site.exists('public/odd.html')).toBe(false)
+    },
+  )
+
+  // A controller or record that spreads `generate: undefined` over the page
+  // means "not said", which is the default: written.
+  it('builds the page when generate is undefined', async () => {
+    site = await makeSite({ 'src/pages/plain.hbs': 'PLAIN' })
+    const kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+      .page({ view: 'plain.hbs', generate: undefined })
+      .generate()
+    await expect(kiss.complete()).resolves.toBeDefined()
+    expect(await site.read('public/plain.html')).toBe('PLAIN')
+  })
+
   // A `generate: false` page wrote nothing, so a replay has no stale output of
   // its own to sweep: the `fs.remove` was always a no-op, but the log line it
   // printed said a file had been removed on every single rebuild.
