@@ -168,10 +168,13 @@ export function identitiesByPath(reports?: any[]): Map<string, string | null>;
  * changed. A record written before 2.17.1 has no `skipped`, so its skipped
  * pages are `null` until the record is made again.
  *
- * @param {any} page one entry of a report's `pages`
+ * @param {{ hash?: string|null, skipped?: boolean }|null|undefined} page one entry of a report's `pages`
  * @returns {string|null}
  */
-export function pageIdentity(page: any): string | null;
+export function pageIdentity(page: {
+    hash?: string | null;
+    skipped?: boolean;
+} | null | undefined): string | null;
 /**
  * What this build did to the last one, per build folder — pure, so the whole
  * comparison is testable without a filesystem.
