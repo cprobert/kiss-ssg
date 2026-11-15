@@ -3,6 +3,41 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.17.1 — 2026-11-15
+
+A page skipped with `generate: false` no longer shows as changed in every `kiss-ssg check`
+diff, a page whose `generate` is not `true` or `false` now fails instead of quietly going
+missing, and `AIKB/last-build.json` stays small. On the operator's sites the record shrinks to
+about a tenth (medulla 3.2 MB to 362 KB, diploma-msc 3.1 MB to 306 KB), and every built page is
+byte for byte the same as on 2.17.0.
+
+- **A skipped page reads as skipped.** Each page in `report().pages` (and in `check`'s JSON)
+  gains `skipped`, `true` for a page registered with `generate: false`. `check` compares a page
+  skipped in both builds as unchanged; before, it had no hash on either side and showed as `~` on
+  every diff of a site that used `generate: false`. A page skipped in one build and written in
+  the other still shows as changed, and so does a page that failed.
+- **`generate` is `true`, `false` or left out.** Any other value (`0`, `''`, `null`, a string from
+  a CMS field) fails that page with `generate must be true or false, got … (<view>)`. Before, the
+  page was skipped but kept its id, so `{{link}}` to it resolved to a file that was never written
+  and the build passed. A controller or record that spreads `generate: undefined` over the page
+  now builds it, as leaving the option out always did.
+- **The committed record keeps summaries.** `AIKB/last-build.json` keeps the audit as one row per
+  check that fired, `{ check, findings, pages }`, instead of every finding, and the third parties
+  as each origin with how many pages fetch it, `{ origin, pages }`, instead of each page's list.
+  `report()` and `kiss-ssg check --json` keep both lists whole. `kiss-ssg issue` reads either
+  shape.
+
+### Upgrading
+
+- **Run `npx kiss-ssg aikb <script>` and commit the smaller `AIKB/last-build.json`.** The diff
+  removes the per-finding and per-page lists and adds `skipped` to each page. Until you record
+  again, a page skipped with `generate: false` shows as changed once against the old record.
+- **Tooling that read findings or third parties from `last-build.json` reads `check --json`
+  instead**, which keeps the whole lists. On the operator's sites none did.
+- **A page whose `generate` comes from data now fails if the value is not a boolean.** Run
+  `npx kiss-ssg check <script>`: a failure names the view. Make the value `true` or `false`, or
+  leave it out.
+
 ## 2.17.0 — 2026-11-14
 
 Markdown is rendered by [markdown-it](https://github.com/markdown-it/markdown-it) in place of
