@@ -63,6 +63,7 @@ scope: planning/**, lib/**, bin/**, test/**, types/**, examples/**, starter/**, 
 - **2026-11-15 — scope set at the open: the whole phase, design first** (operator's choice over the recommendation of preparation and design only). Reason given: fewer, larger branches.
 - **2026-11-15 — issue #90's message half joins** (operator's choice at the open). The convention half stays out (non-goal).
 - **2026-11-15 — opened before Phase 1 closed** (operator's choice). 2.17.1 is unpublished and the four Learna PRs (diploma-msc #504, learna-kiss #196, medulla #127, metacarpus #8) are open. The fleet baseline packs `main` from git, so it does not wait for them.
+- **2026-11-15 — the boilerplate count is 16, not 15.** `examples/4-layouts-and-partials/router.js` has the same handling inline in its `.catch`, without the name `reportBuildFailure` (read 2026-11-15), so the grep in the "no boilerplate ships" criterion misses it. That criterion is checked by reading the starter and all 15 example routers, not by the grep alone.
 - **Read-back:** "a claim stated before it was measured" recurs in the last three logs (2026-11-14 partial transforms, 2026-11-14 markdown-it, 2026-11-15 skipped pages). That is three, the trigger, so `/memory-consolidate` is recommended as its own beat between branches. This branch holds the lesson by marking every assumption measured or inferred, and by citing a URL for every peer-research answer.
 
 ## Pulse log
