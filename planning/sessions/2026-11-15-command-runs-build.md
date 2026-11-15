@@ -72,6 +72,8 @@ scope: planning/**, lib/**, bin/**, test/**, types/**, examples/**, starter/**, 
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-15** — Research and baselines landed (`5ab88b4`, `39ba512`); planning-only diff (4 files), so no tests run; 0 commits behind `origin/main`; `scope-check` exit 0. Criterion 1 (peer research): **partial**, all four questions answered with sources for the three tools, except Hugo's failed-build exit code and Astro's error output, which the note names as not found. Criterion 2 (fleet inventory): partial, measured in the Assumptions and not yet in a design. Criterion 3 (baselines): **met**. The Sonnet clean room was green and wrote 9 of 55 router lines of failure boilerplate; fleet-check `main` against the branch exited 0 on all six named sites, each log's end read by Claude. Criteria 4–12: not yet. No drift: fleet-check copying `.env` into its `--out` folder was noted as out of scope and left alone. **Eyeball: looked** — the operator read "What this settles for the design" in the research note, sent with `SendUserFile`: "reads right". **Offer:** site environments settled as positional pass-through (Eleventy's split) rather than a `--mode` flag; operator: keep. Decision: continue, to the Fable design brief.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
