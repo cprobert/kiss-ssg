@@ -92,6 +92,14 @@ scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUID
     - (2) The clean room ran on `c4ad2ab`, before `eb8e6e9` changed sections it read: **done here**, re-run on the final tarball before the close.
     - #90's convention half and the fleet migration: **out**, for the freeze and the release.
   - Decision: **continue**, to the clean-room re-run, then `/branch-close` when the operator asks.
+- **2026-11-16** — The clean room re-ran on the final tarball (`ae87355`, `stragglers2`, $0.28, 11 turns), re-checked by Claude. `check` exits 0 with 8 pages and 0 failed, and the router has 0 lines of failure handling. It ran `check` a second time without `--summary` "to confirm the exit code", which is the new GUIDE sentence doing its job. None of the four original guesses recurs.
+  - Its new guesses:
+    - Business facts and `host`: not docs gaps. The audit's `host-unset` names the host.
+    - "`folderMatch` … doesn't say that fits this case": answered by GUIDE.md:2356 and :2358 ("a section's nav item stays marked on every page inside it"). It chose correctly.
+    - The listing id `bakes`: a documented choice.
+  - **Criterion 6: met on the final tarball.**
+  - **Open items:** only (1), the two Codex reviews, are left, and they are **done here** at the close. The two **out** items are as before.
+  - Decision: **ready to close** once the operator asks for `/branch-close`. Its Step 7 runs the Codex reviews.
 
 ---
 
