@@ -1,7 +1,7 @@
 ---
 branch: fix/run-dev-stray-identity
 base: main
-status: open
+status: closed
 opened: 2026-11-16
 scope: test/integration/run-dev.test.js, test/integration/atomic-build.test.js, AIKB/testing.md, planning/**
 ---
@@ -56,3 +56,38 @@ scope: test/integration/run-dev.test.js, test/integration/atomic-build.test.js, 
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-11-16: run-dev's stray check names what it found
+
+**What we shipped:**
+
+- `run-dev.test.js`'s `afterEach` identifies a leftover by its command line: the case's site folder or its per-case tag (`ea8ef7a`, `aa02b36`, `8ee15e7`).
+- A test builds three times in one process and checks the run state is back where it started (`7f32d95`).
+- The roadmap's Phase 3 carries the four rules the operator adopted, and #90 moves to Phase 4 (`34fe3fe`).
+
+**Supervision:** planned, and the decisive steer was the operator's. At `/kiss-publish`, faced with red CI and an identical tree that had passed, they chose "Find the cause first" over a rerun. Fable's feedback ("find out whether Windows is a timing race in the test or a real leftover process") then set the bar for that answer. Level: **Agentic engineering lead**.
+
+- **Verification was the strong dimension.** The cause rests on three measurements, two of them under load, and is recorded as the best-supported cause, not one observed:
+  - 58 of 300 freed pids answered again within 10 s;
+  - the pipeline watch tool was alive at `close()` in 0 of 200 rounds, under load and without it;
+  - the case alone passed 30 of 30 runs, and the full suite 4 of 4.
+- **Each independent read found a real flaw in Claude's code:**
+  - the advisor: the first identity, `router.js|watch.js`, matched other test files' processes;
+  - Codex: the disconnect case's relative `router.js` was invisible to the new filter.
+- **One red-first was wrong at first.** It "failed" on an unrelated `TypeError` (the run state not yet created) and was caught before being recorded.
+- **No pulse ran on this branch.** At the close the eyeball was the advisor's read, at the operator's request. It found four wordings in the roadmap block that went beyond what the operator decided, and two of them became operator questions: the meaning of "the fleet on it" (the six sites installed on 2.18.0), and #90's phase (Phase 4).
+
+**Feedback for next time:**
+
+- **Claude — a test's identity of a process is its command line, not its pid.** And the identity must be unique to the case: a file name other test files use in parallel is not one. Prove it with a positive assertion, so a check that never matches cannot pass in silence.
+- **Claude — read a red-first failure before recording it.** "It failed at the base" proves the fix only when it failed on the assertion the fix changes.
+- **Claude — offer a pulse on a short branch too.** This one went from its first commit to `/branch-close` without one, so the eyeball fell back to the close.
+- **Process — a CI failure that an identical tree passed is still a finding.** Rerunning to green would have released 2.18.0 with this check able to SIGKILL an unrelated process on a developer's machine.
+
+**Did we achieve the objective?** **Met.**
+
+- [x] The `afterEach` names each leftover by its command line and kills only the case's own. An unreadable answer fails the check. It is proven positively under the real command and in the disconnect case.
+- [x] `run-dev.test.js` passes on Windows and on Linux (WSL), and the full suite passed 4 of 4 under load.
+- [ ] CI green on Windows and Ubuntu for the merged commit: due on this PR and on `main` after the merge, before `/kiss-publish`.
+
+The criteria held as written. The amendment added the twice-in-one-process test and the Phase 3 rules, both the operator's choice.
