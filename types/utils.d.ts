@@ -132,6 +132,17 @@ export function redactUrl(url: unknown): string;
  * @returns {string}
  */
 export function escapeRegExp(text: string): string;
+/**
+ * The candidates nearest a mistyped name: up to `limit` of them within edit
+ * distance `max(2, floor(name length / 3))`, nearest first, then by name.
+ * Named export only, not part of the public `utils` object.
+ *
+ * @param {string} name what was asked for
+ * @param {Iterable<string>} candidates what exists
+ * @param {number} [limit]
+ * @returns {string[]}
+ */
+export function nearestNames(name: string, candidates: Iterable<string>, limit?: number): string[];
 export function isInside(directory: string): (file: string) => boolean;
 /**
  * The word every redacted value is replaced with: a model URL's query

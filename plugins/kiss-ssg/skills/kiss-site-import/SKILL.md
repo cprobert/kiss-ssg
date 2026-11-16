@@ -177,7 +177,7 @@ Hand each section partial its own slice at the call site, so a partial only sees
 
 Things a converted site needs that nothing else will remind you of:
 
-- **`package.json` needs `"type": "module"`** and the four scripts (`build`, `dev`, `check`, `aikb`). `router.js` uses `import` and top-level `await`; with no type at all every run prints a `MODULE_TYPELESS_PACKAGE_JSON` warning and works anyway, which is how it ships unnoticed, and with `"commonjs"` it does not run. Step 1 checked it; check again if you rewrote `package.json`.
+- **`package.json` needs `"type": "module"`** and the four scripts (`build` and `dev`, which are `kiss-ssg build` and `kiss-ssg dev`, then `check` and `aikb`). `router.js` uses `import` and top-level `await`; with no type at all every run prints a `MODULE_TYPELESS_PACKAGE_JSON` warning and works anyway, which is how it ships unnoticed, and with `"commonjs"` it does not run. Step 1 checked it; check again if you rewrote `package.json`.
 - **Every page gets a real `title` and `description`**, which the layout reads (step 5). Where each one comes from — the page option, the model, or the slug for an untitled page — is `node_modules/kiss-ssg/GUIDE.md` § .page(). A page with neither still builds, titled after its slug — a converted home page ships as `<title>Index</title>`, which nothing catches: the audit only flags an absent title, and a body comparison never looks at `<head>`.
 - **`siteUrl`**, which `{{canonical}}`, `.sitemap()` and `.robots()` need. A live page usually states it: its `<link rel="canonical">` and `og:url`. An artifact rarely does.
 - **Chain `.sitemap()`, `.robots()`** and — if the page has dated content — `.feed()`.

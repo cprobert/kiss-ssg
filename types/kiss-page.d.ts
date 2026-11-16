@@ -22,14 +22,17 @@ export class KissPage {
     /**
      * @param {string} view a `.hbs` filename under `pagesDir`, or inline template
      *   source
-     * @param {{ hbs?: any, logger?: any, directory?: string, graph?: import('./dependency-graph.js').DependencyGraph, outputs?: import('./output-registry.js').OutputRegistry }} [deps]
+     * @param {{ hbs?: any, logger?: any, directory?: string, graph?: import('./dependency-graph.js').DependencyGraph, outputs?: import('./output-registry.js').OutputRegistry, reportedText?: (text: string) => string }} [deps]
+     * `reportedText` writes a staged build's paths as the report does (the
+     * identity when the build is not staged), for the messages this page throws
      */
-    constructor(view: string, { hbs, logger, graph, outputs, directory }?: {
+    constructor(view: string, { hbs, logger, graph, outputs, reportedText, directory, }?: {
         hbs?: any;
         logger?: any;
         directory?: string;
         graph?: import("./dependency-graph.js").DependencyGraph;
         outputs?: import("./output-registry.js").OutputRegistry;
+        reportedText?: (text: string) => string;
     });
     /** @private @type {string} */
     private _directory;
@@ -66,6 +69,7 @@ export class KissPage {
     pagesDir: string;
     /** @type {number} */
     livereloadPort: number;
+    _reportedText: (text: string) => string;
     hbs: any;
     logger: any;
     graph: import("./dependency-graph.js").DependencyGraph;

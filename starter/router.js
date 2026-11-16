@@ -4,19 +4,8 @@
 // node_modules/kiss-ssg/examples/.
 import Kiss from 'kiss-ssg'
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
+// `npx kiss-ssg build` sets the exit code if a page fails; `npx kiss-ssg dev`
+// previews the site and rebuilds on every edit.
 
 // No `folders` block: `src: './src'` and `build: './public'` are the defaults.
 // Any extra key reaches every view as `config.<key>`.
@@ -25,9 +14,8 @@ const kiss = new Kiss({
     name: 'My kiss site',
     description: 'A site built with kiss-ssg.',
   },
-  dev,
 })
   .scan()
   .generate()
 
-await kiss.complete().catch(reportBuildFailure)
+await kiss.complete()

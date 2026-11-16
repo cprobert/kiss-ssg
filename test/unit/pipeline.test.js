@@ -272,6 +272,27 @@ describe('createPipeline() watch processes', () => {
     expect(logger.error).not.toHaveBeenCalled()
   })
 
+  // `kiss-ssg dev` kills a child that will not stop, and a SIGKILL runs no
+  // exit guard: the command needs each watch group to end it itself.
+  it('reports each watch process it starts and each one that ends', async () => {
+    const reported = []
+    pipeline = createPipeline({
+      steps: [{ name: 'w', run: run('1'), watch: forever }],
+      logger,
+      dev: true,
+      report: (message) => reported.push(message),
+    })
+
+    await pipeline.run()
+    expect(reported).toHaveLength(1)
+    const pid = reported[0].watchGroup
+    expect(pid).toBeGreaterThan(0)
+
+    await pipeline.close()
+
+    expect(reported).toEqual([{ watchGroup: pid }, { watchGroupEnded: pid }])
+  })
+
   it('really ends the tool, not just the shell that started it', async () => {
     // The shell may fork rather than exec (dash does, for a command carrying
     // quotes), so killing the child alone leaves the real tool orphaned. The
@@ -328,6 +349,30 @@ describe('createPipeline() watch processes', () => {
     await pipeline.close()
 
     expect(process.listenerCount('SIGINT')).toBe(before)
+  })
+
+  it('ends its watch processes when the process exits, and stops listening with the signals', async () => {
+    // A process that ends without a signal (a crash, process.exit, a script
+    // that returns) would leave a --watch compiler behind.
+    const before = process.listenerCount('exit')
+    pipeline = createPipeline({
+      steps: [{ name: 'w', run: run('1'), watch: forever }],
+      logger,
+      dev: true,
+    })
+
+    await pipeline.run()
+    expect(process.listenerCount('exit')).toBe(before + 1)
+    const [exitGuard] = process.listeners('exit').slice(-1)
+    const pids = pipeline.watching()
+    expect(pids).toEqual(['w'])
+
+    exitGuard()
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    expect(pipeline.watching()).toEqual([])
+
+    await pipeline.close()
+    expect(process.listenerCount('exit')).toBe(before)
   })
 
   it('does not start a watch process for a step whose run failed', async () => {

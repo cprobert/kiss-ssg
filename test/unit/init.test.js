@@ -131,8 +131,8 @@ describe('planInit on an empty folder', () => {
       type: 'module',
       main: 'router.js',
       scripts: {
-        build: 'node router.js',
-        dev: 'node router.js --dev',
+        build: 'kiss-ssg build',
+        dev: 'kiss-ssg dev',
         check: 'kiss-ssg check router.js',
         aikb: 'kiss-ssg aikb router.js',
       },
@@ -243,7 +243,7 @@ describe('planInit never destroys anything', () => {
     expect(pkg.scripts).toEqual({
       build: 'node build.js',
       test: 'vitest',
-      dev: 'node router.js --dev',
+      dev: 'kiss-ssg dev',
       check: 'kiss-ssg check router.js',
       aikb: 'kiss-ssg aikb router.js',
     })
@@ -344,31 +344,43 @@ describe('planInit never destroys anything', () => {
   // A starter whose scripts are already ours (a folder init ran in once, then
   // lost its router.js) has nothing to add, but the type change still has to
   // be written: it was planned, reported, and then dropped with a `skip`.
-  it('writes the starter\'s "type" change even when every script is already there', () => {
-    const existing = JSON.stringify({
-      name: 'x',
-      type: 'commonjs',
-      main: 'router.js',
-      scripts: {
-        build: 'node router.js',
-        dev: 'node router.js --dev',
-        check: 'kiss-ssg check router.js',
-        aikb: 'kiss-ssg aikb router.js',
-      },
-    })
-    const action = byPath(
-      planInit(state({ files: { 'package.json': existing } })),
-      'package.json',
-    )
-    expect(action.kind).toBe('write')
-    expect(json(action).type).toBe('module')
-  })
+  // Before 2.18 init wrote `node router.js` and `node router.js --dev`: a
+  // folder it ran in then is still one of ours, not a site it did not write.
+  it.each([
+    ['are already there', 'kiss-ssg build', 'kiss-ssg dev'],
+    [
+      'are the ones an earlier init wrote',
+      'node router.js',
+      'node router.js --dev',
+    ],
+  ])(
+    'writes the starter\'s "type" change even when its scripts %s',
+    (_, build, dev) => {
+      const existing = JSON.stringify({
+        name: 'x',
+        type: 'commonjs',
+        main: 'router.js',
+        scripts: {
+          build,
+          dev,
+          check: 'kiss-ssg check router.js',
+          aikb: 'kiss-ssg aikb router.js',
+        },
+      })
+      const action = byPath(
+        planInit(state({ files: { 'package.json': existing } })),
+        'package.json',
+      )
+      expect(action.kind).toBe('write')
+      expect(json(action).type).toBe('module')
+    },
+  )
 
   it('keeps "type": "commonjs" beside a router.js that is not an ES module', () => {
     const existing = JSON.stringify({
       name: 'x',
       type: 'commonjs',
-      scripts: { build: 'node router.js' },
+      scripts: { build: 'kiss-ssg build' },
     })
     const action = byPath(
       planInit(state({ ...OTHER_SITE, files: { 'package.json': existing } })),
@@ -512,8 +524,8 @@ describe('planInit never destroys anything', () => {
       name: 'x',
       type: 'commonjs',
       scripts: {
-        build: 'node router.js',
-        dev: 'node router.js --dev',
+        build: 'kiss-ssg build',
+        dev: 'kiss-ssg dev',
         check: 'kiss-ssg check router.js',
         aikb: 'kiss-ssg aikb router.js',
       },
@@ -700,7 +712,7 @@ describe('planInit on a folder that already has things in it', () => {
     )
     expect(pkg.type).toBeUndefined()
     expect(pkg.main).toBeUndefined()
-    expect(pkg.scripts.build).toBe('node router.js')
+    expect(pkg.scripts.build).toBe('kiss-ssg build')
   })
 
   // Codex, at /branch-close: the create path lacked the guard the merge path had.
@@ -1108,7 +1120,8 @@ describe('the shipped starter', () => {
   // its port exited 0; awaited, it exits 1, and a free port keeps serving.
   it('awaits complete() in dev too, so a dev server that cannot start exits 1', () => {
     const router = fs.readFileSync(path.join(dir, 'router.js'), 'utf8')
-    expect(router).toContain('await kiss.complete().catch(reportBuildFailure)')
+    expect(router.trimEnd().endsWith('await kiss.complete()')).toBe(true)
     expect(router).not.toContain('if (!dev)')
+    expect(router).not.toMatch(/reportBuildFailure|process\.argv|\.catch\(/)
   })
 })

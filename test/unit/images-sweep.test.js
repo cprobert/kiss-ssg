@@ -75,8 +75,22 @@ describe('parseImagesArgs', () => {
     ).toMatchObject({ args: ['--season', '--write'], write: false })
   })
 
-  it('needs a script, refuses an unknown flag, and answers --help', () => {
-    expect(parseImagesArgs([]).error).toMatch(/needs the site's build script/)
+  it('takes router.js when no script is named, and the word after -- as the script', () => {
+    expect(parseImagesArgs([])).toMatchObject({
+      script: 'router.js',
+      error: null,
+    })
+    expect(parseImagesArgs(['--write'])).toMatchObject({
+      script: 'router.js',
+      write: true,
+    })
+    expect(parseImagesArgs(['--', 'r.js', 'x'])).toMatchObject({
+      script: 'r.js',
+      args: ['x'],
+    })
+  })
+
+  it('refuses an unknown flag, and answers --help', () => {
     expect(parseImagesArgs(['--nope', 'r.js']).error).toBe(
       'unknown option: --nope',
     )

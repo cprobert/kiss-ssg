@@ -9,8 +9,6 @@
 // project is, so you can copy one wholesale.
 import Kiss from 'kiss-ssg'
 
-const dev = process.argv.includes('--dev')
-
 // Facts the site states more than once. Any extra key on the config reaches
 // every view as `config.<key>`, which is how the layout gets the site name
 // without each page carrying it in a model.
@@ -27,7 +25,6 @@ const kiss = new Kiss({
     { id: 'index', label: 'The bar' },
     { id: 'stockists', label: 'Stockists' },
   ],
-  dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404
   // page, so the audit's checks for those three are turned off here, by name.
   audit: {
@@ -57,14 +54,4 @@ const kiss = new Kiss({
   })
   .generate()
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page missing. The recipe llms.txt shows.
-await kiss.complete().catch((err) => {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-})
+await kiss.complete()

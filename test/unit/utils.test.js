@@ -4,6 +4,7 @@ import {
   escapeXml,
   isInside,
   isUrlModel,
+  nearestNames,
   redactUrl,
   REDACTED,
 } from '../../lib/utils.js'
@@ -24,6 +25,33 @@ describe('escapeRegExp', () => {
     const text = String.raw`a.b*c+d?e^f$g{h}i(j)k|l[m]n\o/p-q`
     expect(new RegExp(`^${escapeRegExp(text)}$`).test(text)).toBe(true)
     expect(new RegExp(escapeRegExp('a*')).test('aaa')).toBe(false)
+  })
+})
+
+describe('nearestNames', () => {
+  it('returns the names within max(2, floor(length / 3)), nearest first', () => {
+    expect(nearestNames('abuot', ['contact', 'about', 'aboot'])).toEqual([
+      'aboot',
+      'about',
+    ])
+  })
+
+  it('widens the distance with the length of the name', () => {
+    // 'documentation' (13) allows 4: 'documentat' is 3 away, 'documents' 5.
+    expect(
+      nearestNames('documentation', ['documents', 'doc', 'documentat']),
+    ).toEqual(['documentat'])
+    // 'abc' (3) allows 2: 'abcxx' is 2 away, 'abcxxx' is 3.
+    expect(nearestNames('abc', ['abcxxx', 'abcxx'])).toEqual(['abcxx'])
+  })
+
+  it('cuts at the limit and returns nothing when none is close', () => {
+    expect(nearestNames('ab', ['aa', 'ac', 'ad', 'ae'])).toEqual([
+      'aa',
+      'ac',
+      'ad',
+    ])
+    expect(nearestNames('x', ['contact', 'about'])).toEqual([])
   })
 })
 

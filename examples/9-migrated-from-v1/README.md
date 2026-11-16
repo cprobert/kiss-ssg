@@ -8,9 +8,12 @@ page demonstrates the guarded v2 form rather than leaving a broken build behind.
 
 ```bash
 npm run eg9                     # from the repo root
-node router.js      # from examples/9-migrated-from-v1/
-node router.js --dev  # live preview on http://127.0.0.1:3009
+npx kiss-ssg build  # from examples/9-migrated-from-v1/
+npx kiss-ssg dev    # live preview on http://127.0.0.1:3009
 ```
+
+Inside this repository the build is `npm run eg9` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 Eleven pages, exit 0. One warning is expected and is the point of its recipe:
 `lookup: 'partial' is undefined in dynamic-partials.hbs`.

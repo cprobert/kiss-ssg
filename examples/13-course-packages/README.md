@@ -13,8 +13,10 @@ barista school has two lessons, each built the other way a lesson can be:
 
 ```bash
 npm run eg13        # from the repo root
-node router.js      # from examples/13-course-packages/
+npx kiss-ssg build  # from examples/13-course-packages/
 ```
+
+Inside this repository the build is `npm run eg13`.
 
 It writes the three pages into `public/`, and four zips into `public/packages/`, which the build
 log lists:

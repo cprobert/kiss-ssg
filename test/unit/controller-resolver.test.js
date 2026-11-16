@@ -79,6 +79,39 @@ describe('applyController', () => {
     )
   })
 
+  it('throws the context and the cause, logs nothing', async () => {
+    // One owner per diagnostic: `lib/page-registry.js` logs the message this
+    // throws, so an inner site that logged too printed every cause twice.
+    const logged = []
+    const logger = {
+      ...silentLogger,
+      error: (...a) => logged.push(a),
+      warn: (...a) => logged.push(a),
+    }
+    site = await makeSite({})
+    const original = new Error('x')
+    const failure = await applyController(
+      {
+        view: 'menu.hbs',
+        controller: () => {
+          throw original
+        },
+      },
+      { controllersDir: 'c', logger },
+    ).catch((e) => e)
+    expect(failure.message).toBe('Error in controller for menu.hbs: x')
+    expect(failure.cause).toBe(original)
+    await applyController(
+      { controller: 'nope.js' },
+      { controllersDir: `${site.root}/c`, logger },
+    ).catch(() => {})
+    await applyController(
+      { controller: 42 },
+      { controllersDir: 'c', logger },
+    ).catch(() => {})
+    expect(logged).toEqual([])
+  })
+
   it('rejects when the module does not export a function', async () => {
     // The sibling of the three paths above (W2-1b): a controller file that
     // loads but exports an object — or a falsy value, which the `if (fn)`

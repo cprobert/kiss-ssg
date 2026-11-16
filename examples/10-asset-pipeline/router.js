@@ -10,20 +10,6 @@ const site = {
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 // The tool this site builds its stylesheet with. In a real project this is
 // `npx @tailwindcss/cli -i src/styles/site.css -o src/assets/css/site.css
 // --minify` (and the same command with --watch); here it is a dependency-free
@@ -86,7 +72,6 @@ const kiss = new Kiss({
       },
     ],
   },
-  dev,
   port: 3010,
   livereloadPort: 35740,
 })
@@ -122,15 +107,13 @@ kiss
     // there as `[{ name, ok, duration }]`. Dev only: this logs how many pages
     // were queued and prepared (with `verbose: true` it would also write
     // debug.json, as example 2 shows).
-    if (dev) this.viewStats()
+    if (this.config.dev) this.viewStats()
   })
 
-await kiss
-  .complete(function () {
-    for (const step of this.report().pipeline) {
-      console.log(
-        `pipeline: ${step.name} ${step.ok ? 'ok' : 'FAILED'} in ${step.duration}ms`,
-      )
-    }
-  })
-  .catch(reportBuildFailure)
+await kiss.complete(function () {
+  for (const step of this.report().pipeline) {
+    console.log(
+      `pipeline: ${step.name} ${step.ok ? 'ok' : 'FAILED'} in ${step.duration}ms`,
+    )
+  }
+})

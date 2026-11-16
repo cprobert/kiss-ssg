@@ -150,28 +150,33 @@ export function resolveTarget(ref: string, { pageBuildTo, buildDir, extensionLes
  * template may legitimately have written
  * @param {string[]} [options.hostServed] `config.links.hostServed` — patterns
  * for paths the host serves that no build folder holds
+ * @param {string[]} [options.failedPages] where the pages that failed would
+ * have been written, as `pages[].buildTo` is: a reference resolving to one is
+ * counted in `toFailed`, not listed as broken
  * @param {(file: string) => boolean} [options.exists] injected for tests
  * @param {boolean} [options.trailingSlash] `config.links.trailingSlash`, so a
  * relative reference resolves against the page's served URL (a learning
  * package's pages always against their file's folder)
- * @returns {{ checked: number, hostServed: number, broken: { page: string, href: string }[], orphans: string[] }}
+ * @returns {{ checked: number, hostServed: number, toFailed: number, broken: { page: string, href: string }[], orphans: string[] }}
  * `checked` counts every reference classified internal; `hostServed` the ones
  * among them that resolved to nothing in the build but match a `hostServed`
  * pattern; `broken` is sorted by page, then href; `orphans` are the HTML
  * pages no other page links to, never the home page or `404.html`, sorted
  */
-export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, hostServed: patterns, exists, trailingSlash, }: {
+export function checkLinks({ pages, buildDir, siteUrl, extensionLess, manifestTargets, hostServed: patterns, failedPages, exists, trailingSlash, }: {
     pages: LinkPage[];
     buildDir: string;
     siteUrl?: string | null;
     extensionLess?: boolean;
     manifestTargets?: string[];
     hostServed?: string[];
+    failedPages?: string[];
     exists?: (file: string) => boolean;
     trailingSlash?: boolean;
 }): {
     checked: number;
     hostServed: number;
+    toFailed: number;
     broken: {
         page: string;
         href: string;

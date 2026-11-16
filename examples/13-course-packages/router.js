@@ -2,18 +2,6 @@
 // not code to lift out. See GUIDE.md § Learning packages.
 import Kiss from 'kiss-ssg'
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
 const kiss = new Kiss({
   site: { name: 'Aster & Oak Barista School' },
   // A learning package is opened by an LMS, never browsed or shared: no link
@@ -74,4 +62,4 @@ kiss.generate()
 
 // The build log lists each package (`Package: …`) and anything a package had to
 // leave out (`package outside: …`); `report().packages` has the same as data.
-await kiss.complete().catch(reportBuildFailure)
+await kiss.complete()

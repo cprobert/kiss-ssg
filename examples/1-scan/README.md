@@ -8,9 +8,12 @@ no line of script naming either. It is the whole of a conventional site: add a f
 
 ```bash
 npm run eg1            # from the repo root
-node router.js         # from examples/1-scan/
-node router.js --dev   # live preview on http://127.0.0.1:3001
+npx kiss-ssg build     # from examples/1-scan/
+npx kiss-ssg dev       # live preview on http://127.0.0.1:3001
 ```
+
+Inside this repository the build is `npm run eg1` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 ## What to copy
 

@@ -17,11 +17,14 @@ type kiss knows (`.md`), and two the site teaches it in `config.transforms` (`.c
 
 ```bash
 npm run eg15           # from the repo root
-node router.js         # from examples/15-partial-transforms/
-node router.js --dev   # live preview on http://127.0.0.1:3001
+npx kiss-ssg build     # from examples/15-partial-transforms/
+npx kiss-ssg dev       # live preview on http://127.0.0.1:3001
 ```
 
-Links are root-relative, so preview it served (`--dev`, or any static server rooted at
+Inside this repository the build is `npm run eg15` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
+
+Links are root-relative, so preview it served (`npx kiss-ssg dev`, or any static server rooted at
 `public/`), not opened off the file system.
 
 ## What to look at
@@ -47,4 +50,4 @@ Links are root-relative, so preview it served (`--dev`, or any static server roo
 A transform can also have a `setup`, awaited once before the first page renders: the place to
 load a library that starts asynchronously, such as a syntax highlighter. GUIDE.md § Partial
 transforms has an example. It runs once per process, so it is not the place to read the
-site's content: under `--dev` an edit to that file would not be seen.
+site's content: in dev an edit to that file would not be seen.

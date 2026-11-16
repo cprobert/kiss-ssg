@@ -3,6 +3,7 @@ import {
   auditLines,
   buildReport,
   formatReport,
+  formatVerdict,
   reportedPath,
 } from '../../lib/build-report.js'
 import { exitCodeFor } from '../../lib/check.js'
@@ -584,6 +585,34 @@ describe('buildReport', () => {
       startedAt: Date.now(),
     })
     expect(report.failures[0].message).toBe('just a string')
+  })
+})
+
+describe('formatVerdict', () => {
+  it('is the summary line alone for a build that passed', () => {
+    const report = buildReport({
+      stack: [page('index.hbs', './public/index.html')],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+    expect(formatVerdict(report)).toBe(formatReport(report))
+  })
+
+  it('names each failed page and never repeats the message', () => {
+    const report = buildReport({
+      stack: [page('index.hbs', './public/index.html')],
+      failures: [
+        failure('index.hbs', './public/index.html', 'boom'),
+        failure('<pipeline>', null, 'sass exited 1'),
+      ],
+      buildDir: './public',
+      startedAt: Date.now(),
+    })
+    const lines = formatVerdict(report).split('\n')
+    expect(lines[0]).toBe(formatReport(report).split('\n')[0])
+    expect(lines.slice(1)).toEqual(['  ./public/index.html', '  <pipeline>'])
+    expect(formatVerdict(report)).not.toContain('boom')
+    expect(formatVerdict(report)).not.toContain('sass exited 1')
   })
 })
 

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **`llms.txt`** is the LLM-facing **index** of the API ([llmstxt.org](https://llmstxt.org)). It ships, and `kiss-ssg init` `@`-imports it into every site's `CLAUDE.md`, so every character is loaded into every session of every consuming site. It names what exists, the shape to follow and the traps nothing reports, and points at the `GUIDE.md` section holding each rule. `test/aikb.test.js` caps it at 16,000 characters; raise the cap only by cutting something else ([history](planning/history/claude-md-rules.md#what-this-is)).
 - **The tarball** is `package.json`'s `files` whitelist: `bin/`, `lib/`, `types/`, `llms.txt`, `GUIDE.md`, `AIKB/`, `examples/`, `starter/`, `CHANGELOG.md`, plus `README.md`, `LICENSE` and `package.json`. `AIKB/`, `examples/` and `CHANGELOG.md` ship so an agent in a consuming project can read them; `starter/` ships its ignore file as `starter/gitignore`, because npm never packs a `.gitignore`. The whitelist overrides `.gitignore`, so a gitignored folder inside a whitelisted one ships unless `files` names it with `!` (`!examples/*/public`, `!examples/*/.converted`) and the `pack` gate's `FORBIDDEN_PACKED` names it too.
-- **`bin/kiss-ssg.js`** is the published command line (`init`, `check`, `aikb`, `upgrade`, `speed`, `css`, `images`, `session`, `base`, `issue`): thin wrappers whose decisions live in `lib/init.js`, `lib/check.js`, `lib/upgrade.js`, `lib/speed.js`, `lib/css-audit.js`, `lib/images-sweep.js`, `lib/sessions.js`, `lib/base.js` and `lib/issue.js`.
+- **`bin/kiss-ssg.js`** is the published command line (`init`, `build`, `dev`, `check`, `aikb`, `upgrade`, `speed`, `css`, `images`, `session`, `base`, `issue`): thin wrappers whose decisions live in `lib/init.js`, `lib/check.js`, `lib/run-script.js`, `lib/dev-supervisor.js`, `lib/upgrade.js`, `lib/speed.js`, `lib/css-audit.js`, `lib/images-sweep.js`, `lib/sessions.js`, `lib/base.js` and `lib/issue.js`.
 - **`plugins/kiss-ssg/skills/`** holds two kinds of skill, all in the one plugin. **Task skills** do a job on a site and are named thing-action (`kiss-site-new`, `kiss-page-add`); **domain skills** hold one area of web expertise and are named for it in plain words (`kiss-writing-for-the-web`, `kiss-information-architecture`, `kiss-seo`, `kiss-accessibility`, `kiss-front-end`, `kiss-design`, `kiss-legal-and-privacy`). A task skill is a thin handler: kiss mechanics plus a Markdown link to the domain skill's `SKILL.md` with an instruction to open it, never a second copy of a domain rule; `test/unit/skill-coverage.test.js` fails a bare name. A domain skill's review reports to `kiss-site-review/review-protocol.md` and looks through `kiss-site-review/browser-pass.md`. Design: `planning/plans/2026-10-30-domain-skills.md`.
 - **`src/`** is the source of this repo's docs site, not engine code. `docs.js` builds it into `docs/`, which is build output: git-ignored, built by the deploy workflow (`.github/workflows/static.yml`) from a clean checkout, never edited or committed. The guide pages are cut from `GUIDE.md`, one page per entry in `src/models/guide.json`: a new `##`/`###` section in `GUIDE.md` fails `node docs` until it has a page there or is named in `src/controllers/guide.js`'s `LEFT_OUT`.
 - **`planning/`** holds specs, plans, reviews, session logs and history, never `docs/`. **`scripts/`** is dev tooling that never ships. **`CONTRIBUTING.md`** holds a checklist each for a built-in helper, a config key and an audit check: read the one that applies before starting.
@@ -43,6 +43,7 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | Build report (the machine verdict)                  | `lib/build-report.js`        | `AIKB/build-report.md`        |
 | Settled build (report, links, redirects)            | `lib/build-finish.js`        | `AIKB/build-finish.md`        |
 | `kiss-ssg check` decision core                      | `lib/check.js`               | `AIKB/check.md`               |
+| `kiss-ssg dev` (servers, restart, stop)             | `lib/dev-supervisor.js`      | `AIKB/dev-supervisor.md`      |
 | `kiss-ssg session` (session logs)                   | `lib/sessions.js`            | `AIKB/sessions.md`            |
 | `kiss-ssg base` (the work's base branch)            | `lib/base.js`                | `AIKB/base.md`                |
 | `kiss-ssg issue` (report to kiss-ssg)               | `lib/issue.js`               | `AIKB/issue.md`               |
@@ -51,6 +52,9 @@ Detailed per-module notes live in `AIKB/` — read the relevant doc before chang
 | `kiss-ssg css` (CSS partition audit)                | `lib/css-audit.js`           | `AIKB/css-audit.md`           |
 | Git, asked one way (exact refs)                     | `lib/git.js`                 | `AIKB/git.md`                 |
 | `kiss-ssg init` plan                                | `lib/init.js`                | `AIKB/init.md`                |
+| Run state (request, live and unsettled sets)        | `lib/run-state.js`           | `AIKB/run-state.md`           |
+| Run preload (the child's first module)              | `lib/run-preload.js`         | `AIKB/run-preload.md`         |
+| Run script (spawn plan, engine gate, the child)     | `lib/run-script.js`          | `AIKB/run-script.md`          |
 | Logger                                              | `lib/logger.js`              | `AIKB/logger.md`              |
 | Config + folder derivation                          | `lib/config.js`              | `AIKB/config.md`              |
 | Consent config + decisions                          | `lib/consent.js`             | `AIKB/consent.md`             |
@@ -116,6 +120,8 @@ npm run format                             # Prettier, write; format:check to ve
 npm run gates                              # the six pre-PR gates: test, lint, typecheck, format, pack, budgets
 npm run types                              # regenerate types/ from lib/'s JSDoc (never hand-edit types/)
 npx kiss-ssg init                          # set a folder up for an agent; never overwrites
+npx kiss-ssg build [script] [args…]        # run a site's script (router.js by default); exit 1 if a build failed or none settled
+npx kiss-ssg dev [script] [args…]          # build, serve and watch; the command owns the servers and restarts the script on an edit; Ctrl-C to stop
 npx kiss-ssg check <script>                # dry-run a site's build: report it, publish nothing
 npx kiss-ssg aikb <script>                 # record the site's knowledge base; the only writer of that folder
 npx kiss-ssg@latest upgrade                # install that kiss-ssg into a site and print the upgrade notes since its version
@@ -125,7 +131,7 @@ npx kiss-ssg images <script>               # fill and prune the committed image 
 node scripts/base-branch.mjs               # the integration branch this work merges into
 node scripts/scope-check.mjs               # changed files outside the session file's scope:; exit 1 if any
 node scripts/red-first.mjs <test file>     # run a new test against the base; exit 0 = it failed there (wanted)
-node scripts/fleet-check.mjs <site> --base <ref>   # build a real site from the base and the branch; exit 1 if they differ
+node scripts/fleet-check.mjs <site> --base <ref> [--via command]   # build a real site from the base and the branch (the branch through `kiss-ssg build` under `--via command`); exit 1 if they or their build exit codes differ
 node scripts/budgets.mjs [--record|--check] [--bench <file>]   # the roadmap's budgets against planning/budgets.json
 node scripts/arms.mjs setup|run|summarise  # measure a skill: one headless arm on a site at a commit
 node scripts/sync-plugin-versions.mjs      # carry package.json's version into every plugin manifest (npm version runs it)
@@ -135,14 +141,14 @@ npm run bench                              # the benchmark harness; the /bench s
 npm run screenshot -- <build folder>       # shoot pages with Playwright; from Git Bash, run it from PowerShell
 node docs                                  # build the docs site into docs/ and exit
 npm run dev                                # docs live preview at http://127.0.0.1:3001; never exits (Ctrl-C)
-npm run eg1 … eg15                         # run an example from its own folder; --dev previews (not 7 or 13)
+npm run eg1 … eg15                         # build an example through kiss-ssg build, from its own folder; preview with node ../../bin/kiss-ssg.js dev there (not 7 or 13)
 ```
 
 `.nvmrc` holds the runtime floor, Node 22.23.4, and CI's `setup-node` reads it; a local machine on a newer Node passes the gates without proving the floor. Prettier config is in `.prettierrc` (no semicolons, single quotes); `.hbs` templates are not Prettier-formatted, because its Handlebars parser rejects `{{> "partial"}}`.
 
 ## Pipeline in one paragraph
 
-`new Kiss(config)` resolves config, makes its own Handlebars and markdown-it, queues `config.assets.pipeline`'s commands and then the asset copy on one queue, registers helpers and partials, and in dev starts the server, the watcher and each pipeline step's `watch` process. `.page()`, `.pages()` and `.scan()` each queue one caught promise on `_promises` that resolves the model, runs the controller and pushes a `KissPage` onto `_stack`; nothing renders until `.generate()`, and every page carries an `id` that `{{link}}` resolves live, failing the render on an id no page claims. `.complete()` settles (drain, render what the drain left, repeat until stable), runs the settle path — purge, image encode, redirects, consent files, cache headers, learning packages, link resolution, the audit — and rejects with an `AggregateError` if anything failed, or else resolves and, under `cleanBuild: 'atomic'`, promotes the staging folder. `.sitemap()`, `.llms()` (with each page's Markdown copy), `.feed()` and `.robots()` write from the same registry, and every URL the build emits goes through the one `config.links.trailingSlash` policy. Every settled build assembles one `BuildReport` (`kiss.report()`, `err.report`, `KISS_REPORT`, `last-build.json`), re-derived in place whenever a failure lands without a settle; `.watch()` sends each change through one serial rebuild queue, and `KISS_CHECK`/`KISS_AIKB` stage and discard the build for `kiss-ssg check` and `aikb`. Full detail: `AIKB/kiss.md`, `AIKB/build-finish.md`, `AIKB/build-report.md`, `AIKB/page-registry.md`, `AIKB/rebuild.md`, `AIKB/staging.md`, and [the history](planning/history/claude-md-rules.md#pipeline-in-one-paragraph).
+`new Kiss(config)` resolves config, makes its own Handlebars and markdown-it, queues `config.assets.pipeline`'s commands and then the asset copy on one queue, registers helpers and partials, and in dev starts the server, the watcher and each pipeline step's `watch` process. `.page()`, `.pages()` and `.scan()` each queue one caught promise on `_promises` that resolves the model, runs the controller and pushes a `KissPage` onto `_stack`; nothing renders until `.generate()`, and every page carries an `id` that `{{link}}` resolves live, failing the render on an id no page claims. `.complete()` settles (drain, render what the drain left, repeat until stable), runs the settle path — purge, image encode, redirects, consent files, cache headers, learning packages, link resolution, the audit — and rejects with an `AggregateError` if anything failed, or else resolves and, under `cleanBuild: 'atomic'`, promotes the staging folder. `.sitemap()`, `.llms()` (with each page's Markdown copy), `.feed()` and `.robots()` write from the same registry, and every URL the build emits goes through the one `config.links.trailingSlash` policy. Every settled build assembles one `BuildReport` (`kiss.report()`, `err.report`, `KISS_REPORT`, `last-build.json`), re-derived in place whenever a failure lands without a settle; `.watch()` sends each change through one serial rebuild queue, and a `check`/`aikb` run request (`currentRun()`) stages and discards the build. Full detail: `AIKB/kiss.md`, `AIKB/build-finish.md`, `AIKB/build-report.md`, `AIKB/page-registry.md`, `AIKB/rebuild.md`, `AIKB/staging.md`, and [the history](planning/history/claude-md-rules.md#pipeline-in-one-paragraph).
 
 ## Git workflow
 

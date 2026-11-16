@@ -9,9 +9,12 @@ own ports, so it can be served alongside another example.
 
 ```bash
 npm run eg5            # from the repo root
-node router.js      # from examples/5-helpers/
-node router.js --dev  # live preview on http://127.0.0.1:8080
+npx kiss-ssg build  # from examples/5-helpers/
+npx kiss-ssg dev    # live preview on http://127.0.0.1:8080
 ```
+
+Inside this repository the build is `npm run eg5` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 ## What to copy
 

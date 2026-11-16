@@ -11,7 +11,9 @@ Starts the dev-mode static file server (`connect` + `serve-static`) plus a `live
   - `livereload` — the `livereload` server instance. It watches no files.
   - `refresh(path)` — tells every connected browser to reload. `path` names what changed: livereload swaps a `.css` file in place (`applyCSSLive` is on by default), anything else reloads the page, and `'/'` is the generic "reload the page" call. This is the only way live reload is ever triggered — see the no-watcher bullet below.
   - `ready` — a `Promise` that resolves on the HTTP server's `'listening'` event, or rejects on a bind failure with the whole message already assembled (`Dev server could not bind <host>:<port> (<code>): the site is not being served`, original error on `cause`). It is the only report of that failure — the module logs nothing for it.
-  - `close()` — `Promise` that closes `livereload` then the HTTP server, resolving once both are down.
+  - `close()` — `Promise` that closes `livereload` then the HTTP server, resolving once both are down. It ends every open connection too (`closeAllConnections`). Without that, `server.close()` waits on any open socket, including the empty one a browser's preconnect holds, and Ctrl-C under `kiss-ssg dev` never returned (measured 2026-11-16, Codex finding on slice 3).
+
+- `linkDevServer({ root, port, host, livereloadPort }, { send, onMessage })` → `{ ready, refresh, close }`, the same handle for a child `kiss-ssg dev` started, whose servers are the command's (`AIKB/dev-supervisor.md`). It sends `{ serve }`; `ready` resolves on `{ serving: true }` and rejects with the command's message on `{ serveFailed }`, ignoring an answer that names another `host`/`port` (a script with two instances hears both). `refresh(path)` sends `{ reload: path }`. `close()` resolves at once and sends nothing: a restart or a stop must not take down servers the command keeps. `lib/kiss.js` takes it in place of `startDevServer` when the request's mode is `dev` and `process.send` exists.
 
 ## Depends on
 
@@ -19,7 +21,7 @@ Starts the dev-mode static file server (`connect` + `serve-static`) plus a `live
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/kiss.js`, `lib/dev-supervisor.js` (`startDevServer`).
 
 ## Non-obvious behavior
 

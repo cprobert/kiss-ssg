@@ -7,6 +7,7 @@ Watches the entry script, configured content folders, assets and helpers. Source
 ## Public interface
 
 - `createWatcher({ config, entry = process.argv[1], rebuildSite, onChange, assetsChanged, helpersChanged, logger })` → `{ ready, close }`.
+- `WRITE_SETTLE` — the `awaitWriteFinish` options every watcher role uses (below), exported for `lib/dev-supervisor.js`'s watch on the script.
 - `resolveEntry(entry)` → the entry script's file (`entry`, or `entry` plus `.js`/`.mjs`/`.cjs`), or `null` when none is a file.
   - `ready` — `Promise` that resolves once every underlying chokidar watcher has fired its own `'ready'` event.
   - `close()` — `async`; closes every watcher. Required for the Node process to be able to exit (chokidar watchers otherwise keep the event loop alive).
@@ -18,7 +19,7 @@ Watches the entry script, configured content folders, assets and helpers. Source
 
 ## Depended on by
 
-`lib/rebuild.js` (`createWatcher`, in `startWatching` — the body of `Kiss.watch()`).
+`lib/rebuild.js` (`createWatcher`, in `startWatching` — the body of `Kiss.watch()`); `lib/run-script.js` (`resolveEntry`); `lib/dev-supervisor.js` (`WRITE_SETTLE`, the settle its watch on the script waits).
 
 ## Non-obvious behavior
 

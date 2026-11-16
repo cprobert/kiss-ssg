@@ -141,6 +141,38 @@ anyway, on two grounds that are about kiss rather than about Node:
 evicts a module graph without registering a global hook. If it has, this becomes
 an implementation rather than a note.
 
+**The same limit decides how a command runs a site's script** (2.18,
+`lib/run-script.js`). A restart needs a fresh module graph, and Node cannot evict
+an ES module from the one it has (nodejs/modules#307; nodejs/node#61767 is open
+for it). So `kiss-ssg build` and its siblings start the script as a child
+process, `node --import <preload> <script>`, and a restart is a new child. The
+alternative, importing the script in-process, would have to rewrite
+`process.argv`, survive the script's own `process.exit()` and could never reload
+an ES module script. **Re-check:** whether nodejs/node#61767 has closed with an
+API that evicts a module and its graph without a global hook; if it has, an
+in-process reload is possible again and the spawn is a choice.
+
+### A rejected top-level `await` reaches `uncaughtException`, and a listener keeps Node's dump back
+
+**Observed:** Node 22.23.4, the floor (probed 2026-11-15, an ES module and a
+CommonJS entry). The design review measured the same on Node 24. **Effect:** a rejected
+top-level `await` in an ES module, and an unhandled rejection in a CommonJS
+script, each reach `process.on('uncaughtException', (err, origin) => …)` with
+`origin === 'unhandledRejection'` when that is the only listener installed, and
+the listener keeps Node from printing the rejection with its source excerpt and
+stack. With no listener Node prints that dump and exits 1. **What kiss does:**
+`lib/run-preload.js`, which runs only in a process the command owns, installs
+one listener: an error carrying `Symbol.for('kiss-ssg.buildFailure')` (the
+rejection of a failed `complete()`, already logged by the engine, with its
+verdict printed by the command) is swallowed and the exit code set to 1;
+anything else is printed with its stack and the process exits 1. Under plain
+`node router.js` there is no preload and no listener, so a script that does not
+catch `complete()` prints Node's dump and exits 1: loud, correct, not pretty.
+The engine installs no process-wide handler by itself. **Re-check:**
+`node --import ./probe-preload.mjs entry.mjs` with a preload that sets only
+that listener and an entry that does `await Promise.reject(new Error('x'))`;
+the output should be the listener's line and no stack dump, exit code 1.
+
 ### graceful-fs retries a locked rename on Windows for 60 seconds
 
 **Observed:** graceful-fs 4.2.11 (via fs-extra 11.4.0) wraps `fs.rename` on

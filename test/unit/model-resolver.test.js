@@ -33,6 +33,44 @@ describe('resolveModel', () => {
     ).rejects.toThrow('Model not found: nope.json')
   })
 
+  it('says a same-named .json exists when a missing model folder is asked for', async () => {
+    site = await makeSite({ 'm/bakes.json': [{ n: 1 }] })
+    const dir = `${site.root}/m`
+    await expect(resolveModel('bakes', deps(dir))).rejects.toThrow(
+      `Model folder empty or missing: bakes — ${dir}/bakes.json exists: write model: 'bakes.json' to read that file`,
+    )
+  })
+
+  it('says a same-named folder exists when a missing .json file is asked for', async () => {
+    site = await makeSite({ 'm/bakes/a.json': { n: 1 } })
+    const dir = `${site.root}/m`
+    await expect(resolveModel('bakes.json', deps(dir))).rejects.toThrow(
+      `Model not found: bakes.json — ${dir}/bakes/ is a folder: write model: 'bakes' to read the .json files in it`,
+    )
+  })
+
+  it('adds no hint when nothing of the other form exists', async () => {
+    site = await makeSite({ 'm/other.json': {} })
+    const dir = `${site.root}/m`
+    await expect(resolveModel('bakes', deps(dir))).rejects.toThrow(
+      /^Model folder empty or missing: bakes$/,
+    )
+    await expect(resolveModel('bakes.json', deps(dir))).rejects.toThrow(
+      /^Model not found: bakes\.json$/,
+    )
+  })
+
+  it('logs nothing when a model file is missing', async () => {
+    site = await makeSite({})
+    const logged = []
+    const logger = { ...silentLogger, error: (...a) => logged.push(a) }
+    await resolveModel('nope.json', {
+      modelsDir: `${site.root}/m`,
+      logger,
+    }).catch(() => {})
+    expect(logged).toEqual([])
+  })
+
   it('loads every json in a folder as an array', async () => {
     site = await makeSite({
       'm/team/a.json': { n: 'a' },
@@ -87,6 +125,8 @@ describe('resolveModel', () => {
       // it has.
       message:
         'Model fetch failed: http://x/ → an error kiss cannot describe (Error)',
+      error: { message: expect.stringContaining('Model fetch failed') },
+      cause: { message: expect.stringContaining('Model fetch failed') },
     })
   })
 
@@ -275,7 +315,7 @@ describe('resolveModel: a token in the query string', () => {
     expect(calls.map((c) => c.url)).toEqual([URL_WITH_TOKEN])
   })
 
-  it('logs and rejects with the URL redacted, the attached error too', async () => {
+  it('logs nothing and rejects with the URL redacted, the attached error too', async () => {
     const logged = []
     const logger = {
       ...silentLogger,
@@ -289,7 +329,9 @@ describe('resolveModel: a token in the query string', () => {
     } catch (e) {
       error = e
     }
-    expect(logged).toEqual([[`Error getting model from ${SHOWN}`]])
+    // The owner of the line is `lib/page-registry.js`; this site only throws.
+    expect(logged).toEqual([])
+    // The cause already names the URL, so no context is added to it.
     expect(error.message).toBe(`Model fetch failed: ${SHOWN} → 404 Not Found`)
     // What the page registry's catch prints: the message, then the attached
     // original error — with its stack and anything hanging off it.

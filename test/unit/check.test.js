@@ -171,7 +171,26 @@ describe('parseArgs', () => {
   })
 
   it('refuses an unknown command', () => {
-    expect(parseArgs(['build', 'site.js']).error).toBe('unknown command: build')
+    expect(parseArgs(['serve', 'site.js']).error).toBe('unknown command: serve')
+  })
+
+  it('dev: the script first, router.js with none, everything after it the script’s', () => {
+    expect(parseArgs(['dev'])).toMatchObject({
+      command: 'dev',
+      script: 'router.js',
+      args: [],
+      error: null,
+    })
+    expect(parseArgs(['dev', 'site.js', '--summary', 'x'])).toMatchObject({
+      command: 'dev',
+      script: 'site.js',
+      args: ['--summary', 'x'],
+      summary: false,
+    })
+    expect(parseArgs(['dev', '--help']).command).toBe('help')
+    expect(parseArgs(['dev', '--summary']).error).toContain(
+      'kiss-ssg dev router.js --summary',
+    )
   })
 
   it('refuses an unknown option rather than passing it to the script', () => {
@@ -180,11 +199,24 @@ describe('parseArgs', () => {
     )
   })
 
-  it('says what is missing when no script is named', () => {
+  it('takes router.js when no script is named', () => {
     const parsed = parseArgs(['check'])
     expect(parsed.command).toBe('check')
-    expect(parsed.script).toBeNull()
-    expect(parsed.error).toContain('build script')
+    expect(parsed.script).toBe('router.js')
+    expect(parsed.error).toBeNull()
+  })
+
+  it('takes router.js beside the command’s own options', () => {
+    expect(parseArgs(['check', '--summary'])).toMatchObject({
+      script: 'router.js',
+      summary: true,
+      args: [],
+    })
+    expect(parseArgs(['aikb', '--against', 'last.json'])).toMatchObject({
+      script: 'router.js',
+      against: 'last.json',
+    })
+    expect(parseArgs(['check', '--'])).toMatchObject({ script: 'router.js' })
   })
 
   it('parses the aikb command exactly as it parses check', () => {
@@ -218,19 +250,62 @@ describe('parseArgs', () => {
   })
 
   it('names the command it could not complete in its usage errors', () => {
-    expect(parseArgs(['aikb']).error).toBe(
-      "aikb needs the site's build script: kiss-ssg aikb <script>",
-    )
     expect(parseArgs(['aikb', '--against']).error).toContain(
       'kiss-ssg aikb --against <file> <script>',
     )
   })
 
-  it('documents both commands it parses', () => {
-    expect(HELP).toContain('check <script>')
-    expect(HELP).toContain('aikb <script>')
+  it('documents the commands it parses', () => {
+    expect(HELP).toContain('build [script]')
+    expect(HELP).toContain('check [script]')
+    expect(HELP).toContain('aikb [script]')
     expect(HELP).toContain('--summary')
     expect(HELP).toContain('--against <file>')
+  })
+})
+
+describe('parseArgs, build', () => {
+  it('takes router.js, and nothing after it, with no argument', () => {
+    expect(parseArgs(['build'])).toEqual({
+      command: 'build',
+      script: 'router.js',
+      args: [],
+      summary: false,
+      subjects: false,
+      against: null,
+      error: null,
+    })
+  })
+
+  it('keeps every word after the script for the script, check’s options included', () => {
+    expect(
+      parseArgs(['build', 'site.js', 'production', '--summary', '--', '-x']),
+    ).toMatchObject({
+      script: 'site.js',
+      args: ['production', '--summary', '--', '-x'],
+      summary: false,
+      error: null,
+    })
+  })
+
+  it('reads the word after a bare -- as the script', () => {
+    expect(parseArgs(['build', '--', '-weird.js', 'one'])).toMatchObject({
+      script: '-weird.js',
+      args: ['one'],
+    })
+  })
+
+  it('answers --help, and refuses an option before the script', () => {
+    expect(parseArgs(['build', '--help'])).toMatchObject({
+      command: 'help',
+      error: null,
+    })
+    const parsed = parseArgs(['build', '--atomic'])
+    expect(parsed.error).toContain('unknown option: --atomic')
+    expect(parsed.error).toContain('kiss-ssg build router.js --atomic')
+    expect(parseArgs(['build', '--summary']).error).toContain(
+      'unknown option: --summary',
+    )
   })
 })
 

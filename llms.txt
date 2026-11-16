@@ -10,7 +10,7 @@ Install: `npm install kiss-ssg --save-dev`; `import Kiss from 'kiss-ssg'`. One `
 
 ## The build script
 
-Name it `router.js` at the project root, with `"type": "module"`, `main` pointing at it, and `build`/`dev`/`check`/`aikb` scripts (`kiss-ssg init` writes them, with `CLAUDE.md`, `AGENTS.md` and the plugin settings). It is a router: `new Kiss(config)`, the `.page()`/`.pages()`/`.scan()` table, the `.generate()`/`.sitemap()`/`.llms()`/`.feed()`/`.robots()` chain, and `await kiss.complete().catch(reportBuildFailure)`. Anything else goes in a module beside it. Each extraction has its own yes/no trigger (GUIDE.md § The build script):
+Name it `router.js` at the project root, with `"type": "module"`, `main` pointing at it, and `build`/`dev`/`check`/`aikb` scripts (`kiss-ssg init` writes them). It is a router: `new Kiss(config)`, the `.page()`/`.pages()`/`.scan()` table, the `.generate()`/`.sitemap()`/`.llms()`/`.feed()`/`.robots()` chain, and `await kiss.complete()`. Anything else goes in a module beside it. Each extraction has its own yes/no trigger (GUIDE.md § The build script):
 
 - **Tier 0, one file:** no custom helpers, no fact stated twice. File length is never a trigger.
 - **Tier 1, `helpers/`:** at the **first** custom helper. Its `index.js` exports `registerHelpers(kiss)` and **kiss calls it** from `config.folders.helpers` (default `./helpers`): never register it in the router. Export the pure function; register a thin adapter over it.
@@ -136,7 +136,7 @@ Your own helpers: `helpers/index.js` exports `registerHelpers(kiss)`; read confi
 
 ## Checking a build
 
-`npx kiss-ssg check <script> [args…]` dry-runs the build (staged, discarded), prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the audit are advisory; a new site's audit lists `og-image-missing`, `favicon-missing`, `not-found-missing` until fixed. `aikb <script>` is the same run, recording `AIKB/` when it passes (§ Recording the knowledge base). GUIDE.md § Checking a build; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills: call them, never shell. `speed <folder>` (Lighthouse KPIs) and `css <folder>`: GUIDE.md § Measuring speed, § Auditing CSS.
+`npx kiss-ssg check [script] [args…]` dry-runs the build (staged, discarded), prints one JSON report per `Kiss` instance (`--summary`: one line each), and exits 1 on any failure. Links, redirects and the audit are advisory. `build [script] [args…]` runs the script (default `router.js`) and exits 1 on failure; `dev` serves, restarts on script edit. `Kiss.mode` is `build`, `dev`, `check` or `null`. `aikb [script]` is the same run, recording `AIKB/` when it passes (§ Recording the knowledge base). GUIDE.md § Checking a build; the `kiss-build-check` skill reads the report. `session` and `base` answer the kiss-memory skills: call them, never shell. `speed <folder>` (Lighthouse KPIs) and `css <folder>`: GUIDE.md § Measuring speed, § Auditing CSS.
 `npx kiss-ssg@latest upgrade` installs that release into the site, checks it landed, and prints the `CHANGELOG.md` upgrade notes since the site's version. Trap: run it by version; a site's own older bin has no `upgrade`. GUIDE.md § Upgrading a site; the `kiss-site-migrate` skill.
 
 ## Docs

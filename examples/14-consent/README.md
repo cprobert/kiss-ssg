@@ -10,11 +10,14 @@ are all made from that block. **Nothing third-party loads until the visitor allo
 
 ```bash
 npm run eg14           # from the repo root
-node router.js         # from examples/14-consent/
-node router.js --dev   # live preview on http://127.0.0.1:3001
+npx kiss-ssg build     # from examples/14-consent/
+npx kiss-ssg dev       # live preview on http://127.0.0.1:3001
 ```
 
-Links are root-relative, so preview it served (`--dev`, or any static server rooted at
+Inside this repository the build is `npm run eg14` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
+
+Links are root-relative, so preview it served (`npx kiss-ssg dev`, or any static server rooted at
 `public/`), not opened off the file system.
 
 ## What to look at

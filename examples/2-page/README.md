@@ -9,9 +9,12 @@ every page is registered by hand.
 
 ```bash
 npm run eg2            # from the repo root
-node router.js         # from examples/2-page/
-node router.js --dev   # live preview on http://127.0.0.1:3001
+npx kiss-ssg build     # from examples/2-page/
+npx kiss-ssg dev       # live preview on http://127.0.0.1:3001
 ```
+
+Inside this repository the build is `npm run eg2` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 ## What to copy
 

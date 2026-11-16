@@ -83,6 +83,8 @@ _Whoever opens the site in two years can follow what the agent wrote._
 
 _A verdict, not a log. Mistakes can't ship quietly._
 
+- **[`kiss-ssg build`](GUIDE.md#the-build-script) →** Runs your build script and exits with its verdict: one line per site on stderr, exit 1 if any build failed or none settled, `router.js` when you name no script.
+- **[`kiss-ssg dev`](GUIDE.md#the-build-script) →** Builds, serves and watches your build script: the command keeps the server up and restarts the script when you edit it, and Ctrl-C leaves no process behind.
 - **[`kiss-ssg check`](GUIDE.md#checking-a-build) →** A dry run of your build script: one JSON report per site, exit 1 on any failure, and the published output untouched.
 - **[Links by identity](GUIDE.md#helpers) →** `{{link "about"}}` turns a page's id into its served path, and a link to a page nobody made fails the build instead of emitting a URL nobody checked. In a nav, `{{#isActive}}` marks the section a page is in (`{{active}}`) and the page itself (`{{@current}}`, for `aria-current="page"`) from one call.
 - **[Broken links and missing assets](GUIDE.md#checking-a-build) →** Every `href` and `src` the build wrote is resolved against the files it wrote, and an `{{asset}}` on a path no copy emitted fails the build.

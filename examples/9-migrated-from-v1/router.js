@@ -17,20 +17,6 @@ const site = {
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 // Named once, because the page below reports it: under `npx kiss-ssg check` and
 // `npx kiss-ssg aikb` the engine builds into a staging sibling with a random
 // name, so `kiss.config.folders.build` is not the same string twice.
@@ -55,7 +41,6 @@ const kiss = new Kiss({
   // absolute URL — a scraper never resolves a relative one — and this is what
   // `absUrl` joins it onto; `{{canonical}}` reads it too.
   siteUrl: 'https://asterandoak.example',
-  dev,
   port: 3009,
   livereloadPort: 35739,
 })
@@ -241,12 +226,12 @@ kiss
     )
     // Dev only: logs how many pages were queued and prepared. With
     // `verbose: true` it also writes debug.json (example 2 shows it).
-    if (dev) this.viewStats()
+    if (this.config.dev) this.viewStats()
   })
 
-await kiss
-  .complete(() => finish('successful'))
-  .catch((err) => {
-    reportBuildFailure(err)
-    finish('failed')
-  })
+try {
+  await kiss.complete(() => finish('successful'))
+} catch (err) {
+  finish('failed')
+  throw err
+}

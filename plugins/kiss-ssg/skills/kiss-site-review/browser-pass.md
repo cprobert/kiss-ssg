@@ -4,9 +4,9 @@ How to look at a built kiss site in a browser. `kiss-site-new` uses it to look a
 
 ## Build it, then serve the build folder as the site root
 
-The audit reads markup. Whether the site looks finished needs eyes. `check` publishes nothing, so there is nothing on disk to look at yet: build the site for real first (`npm run build` on a site set up by `init`, or `node <site-script>`). That writes the build folder — including anything the audit flagged, such as a `debug.json` — so say in the report that you did, and remove it afterwards if it was not there when you started.
+The audit reads markup. Whether the site looks finished needs eyes. `check` publishes nothing, so there is nothing on disk to look at yet: build the site for real first (`npm run build` on a site set up by `init`, or `npx kiss-ssg build <site-script>`). That writes the build folder — including anything the audit flagged, such as a `debug.json` — so say in the report that you did, and remove it afterwards if it was not there when you started.
 
-Look at the built site **served with the build folder as the site root**: the site's own `--dev` preview (`npm run dev`), or any static server started in the build folder (`public/` by default). Never a server rooted above it — VS Code Live Server opened on the repo is the usual one — because every root-relative `{{link}}` then resolves outside the site and reads as broken when it is not.
+Look at the built site **served with the build folder as the site root**: the site's own preview (`npm run dev`, or `npx kiss-ssg dev`), or any static server started in the build folder (`public/` by default). Never a server rooted above it — VS Code Live Server opened on the repo is the usual one — because every root-relative `{{link}}` then resolves outside the site and reads as broken when it is not.
 
 ## Widths
 
@@ -20,6 +20,6 @@ A browser does not have to be a tool of the agent's own. A Playwright or Puppete
 
 - **Not `file://`.** Its decision tree sends static HTML to the file itself, and its example opens a `file://` URL. A kiss build is static HTML whose links are root-relative, so this pass is still served over HTTP with the build folder as the root.
 - **Not `with_server.py` on Windows.** It stops the shell it started, not the server under it: measured twice, `npm run dev` was still listening after it printed "Server 1 stopped", and the next run failed to bind. Start the server yourself in the background, or any static server in the build folder, and stop that process when the pass is done.
-- **Not port 3001 by assumption.** `--dev` listens where the site's `router.js` says, and prints the address when it binds; read it there. Example 11 uses 3011.
+- **Not port 3001 by assumption.** `kiss-ssg dev` listens where the site's `router.js` says, and prints the address when it binds; read it there. Example 11 uses 3011.
 
 **Without a browser, say that this pass did not run.** Do not infer the result from the templates: a layout that looks right in the source is exactly what this pass exists to check.

@@ -13,20 +13,6 @@ const site = {
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 const kiss = new Kiss({
   site,
   nav: [
@@ -35,7 +21,6 @@ const kiss = new Kiss({
   ],
   // No `folders` block: `src: './src'` and `build: './public'` are the
   // defaults, so a site laid out the ordinary way configures nothing.
-  dev,
   // A second site can run alongside the others as long as both ports differ.
   port: 8080,
   livereloadPort: 35730,
@@ -83,16 +68,8 @@ const kiss = new Kiss({
     console.log('generate: every page has been written')
   })
 
-// `.complete()` rejects once per build — dev and build-and-exit are mutually
-// exclusive branches, so each calls it at most once.
-if (dev) {
-  kiss.complete(() => {
-    console.log('complete: the build has finished draining')
-  })
-} else {
-  await kiss
-    .complete(() => {
-      console.log('complete: the build has finished draining')
-    })
-    .catch(reportBuildFailure)
-}
+// One statement serves both modes: `npx kiss-ssg build` sets the exit code if
+// the build failed, and `npx kiss-ssg dev` keeps the process alive afterwards.
+await kiss.complete(() => {
+  console.log('complete: the build has finished draining')
+})

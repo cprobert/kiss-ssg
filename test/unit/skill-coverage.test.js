@@ -29,6 +29,20 @@ const LEGAL_UK =
   'plugins/kiss-ssg/skills/kiss-legal-and-privacy/references/uk.md'
 
 const COVERAGE = [
+  // 2.18.0, the command runs the build: a new site's scripts are the commands
+  // themselves, and an older kiss-ssg is recognised by the command it lacks.
+  {
+    feature:
+      "a new site's build and dev scripts are `kiss-ssg build` and `kiss-ssg dev`",
+    pattern: /`kiss-ssg build`[^\n]*`kiss-ssg dev`/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
+  {
+    feature:
+      'an `unknown command` answer from `npx kiss-ssg build --help` means the installed kiss-ssg is too old',
+    pattern: /npx kiss-ssg build --help[^\n]*unknown command/,
+    skills: [skill('kiss-ssg', 'kiss-site-new')],
+  },
   // 2.16.0, partial transforms: the operator asked for the release to be
   // promoted, to new sites through the skills that build them and to
   // existing ones through the upgrade routine.
@@ -1651,6 +1665,17 @@ const CONTRADICTIONS = [
       /Only on a site without `config\.consent` is it a hand-built/,
       /uses a hand-built click-to-load facade instead/,
     ],
+  },
+  {
+    why: '2.18.0: `kiss-ssg build` and `kiss-ssg dev` run the script and own its failure and its mode, so a script ends with `await kiss.complete()`, passes no `dev` of its own and parses no `--dev`; a sentence sending an agent to the `reportBuildFailure` boilerplate or to `node router.js --dev` is the instruction that replaced',
+    patterns: [
+      /complete\(\)\.catch\(reportBuildFailure\)/,
+      /node router\.js --dev/,
+      /process\.argv\.includes\('--dev'\)/,
+    ],
+    // AIKB/init.md names the old scripts `init` still recognises as its own,
+    // and AIKB/upstream.md records a measured leftover process from one.
+    allowedIn: ['CHANGELOG.md', 'AIKB/init.md', 'AIKB/upstream.md'],
   },
 ]
 

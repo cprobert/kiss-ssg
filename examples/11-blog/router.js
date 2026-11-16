@@ -18,20 +18,6 @@ const site = {
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 // The default run is clean: every link on every page resolves, and
 // `npx kiss-ssg check router.js --summary` reports no findings at all. Pass
 // --broken and one post renders one link to a page this site does not build —
@@ -80,7 +66,6 @@ const kiss = new Kiss({
   // build with `aliases` writes only the IR and warns: kiss will
   // not guess a host and quietly emit a file yours does not read.
   redirects: { format: 'netlify' },
-  dev,
   port: 3011,
   livereloadPort: 35741,
 })
@@ -234,7 +219,7 @@ kiss
   .generate(function () {
     // Dev only: logs how many pages were queued and prepared. With
     // `verbose: true` it also writes debug.json (example 2 shows it).
-    if (dev) this.viewStats()
+    if (this.config.dev) this.viewStats()
   })
   .sitemap()
   // The third file derived from the same registry, and the reason the posts
@@ -261,5 +246,5 @@ kiss
   .robots()
 
 // Without this await a broken build exits 0 and ships a site with a hole in
-// it. reportBuildFailure prints each failure and sets the exit code.
-await kiss.complete().catch(reportBuildFailure)
+// it. `npx kiss-ssg build` prints each failure and sets the exit code.
+await kiss.complete()
