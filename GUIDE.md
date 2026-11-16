@@ -1529,7 +1529,9 @@ consent: {
 ```hbs
 {{consentScript 'chat'}}
 {{#consentScript 'visits'}}
-  <script>window.aoVisits = { path: location.pathname }</script>
+  <script>
+    window.aoVisits = { path: location.pathname }
+  </script>
   <script src='/{{asset "js/visits.js"}}'></script>
 {{/consentScript}}
 ```
