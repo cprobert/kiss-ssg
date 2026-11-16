@@ -3,7 +3,7 @@ branch: fix/run-dev-stray-identity
 base: main
 status: open
 opened: 2026-11-16
-scope: test/integration/run-dev.test.js, planning/**
+scope: test/integration/run-dev.test.js, test/integration/atomic-build.test.js, planning/**
 ---
 
 # Session — 2026-11-16: run-dev's stray check names what it found
@@ -37,6 +37,15 @@ scope: test/integration/run-dev.test.js, planning/**
 ### Amendments
 
 - **2026-11-16 — opened from the operator's choice** at `/kiss-publish`, after CI failed on `1409d13`: "Find the cause first". The release waits for this branch.
+- **2026-11-16 — the Phase 2 spec author's feedback joins (the operator's choices).**
+  - **Item 1, the cause, is a reused pid.** Measured under load while the full suite passed:
+    - 58 of 300 freed pids answered again within 10 s.
+    - The pipeline watch tool was alive at `close()` in 0 of 200 rounds, and 0 of 200 unloaded.
+    - 8880 itself cannot be identified after the fact, so the cause is the best-supported one, not one observed.
+    - The advisor found the first identity (`router.js|watch.js`) too loose. Fixed in `aa02b36` with the case's site folder and a per-case tag, plus a positive assertion. It passes on Windows and on Linux in WSL (the `ps` branch).
+  - **Item 4's test joins here**, widening the scope to `test/integration/atomic-build.test.js`. Red-first against the pre-fix commit, because `main` already has the fix: `- red-first: test/integration/atomic-build.test.js -t "builds several times in one process" failed at f43dbf0 (f43dbf0), 2026-11-16` (`live: 3` against `0`). The first attempt "failed" on an unrelated `TypeError` (the run state not yet created), which proved nothing. It was fixed with `runState()` and re-run.
+  - **Items 2, 3, 5 and item 4's design half** are adopted and written into the roadmap's Phase 3 section.
+  - **Item 6 (#90) was withdrawn by its author**: it waits for Phase 4.
 
 ## Pulse log
 

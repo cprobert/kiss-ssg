@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import fs from 'fs-extra'
 import fsp from 'node:fs/promises'
 import { silentLogger } from '../../lib/logger.js'
+import { runState } from '../../lib/run-state.js'
 import { makeSite, waitFor } from '../helpers/site.js'
 
 // Dev mode is asserted here too (atomic degrades to a plain clean build), and
@@ -237,6 +238,24 @@ describe("cleanBuild: 'atomic'", () => {
       await one.complete()
       expect(live().has(one)).toBe(false)
     }
+  })
+
+  // The run state is process-wide (lib/run-state.js), so a build script that
+  // builds several sites in one process must not leave each one behind: the
+  // live and unsettled sets end where they started. 2.18.0's first cut kept
+  // every settled instance (Codex, 2026-11-16: 20 of 20 after 20 builds).
+  it('builds several times in one process and leaves the run state as it found it', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'i' })
+    const run = runState()
+    const before = { live: run.live.size, unsettled: run.unsettled.size }
+    for (let i = 0; i < 3; i++) {
+      const build = new Kiss({ folders: site.folders, logger: silentLogger })
+      build.scan().generate()
+      await build.complete()
+    }
+    expect({ live: run.live.size, unsettled: run.unsettled.size }).toEqual(
+      before,
+    )
   })
 
   it('a released instance that starts watching is live again until closed', async () => {
