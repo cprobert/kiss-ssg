@@ -9,11 +9,14 @@ command line, run before the asset copy, and the copy picks up whatever it wrote
 
 ```bash
 npm run eg10                   # from the repo root
-node router.js      # from examples/10-asset-pipeline/
-node router.js --dev  # live preview on http://127.0.0.1:3010
+npx kiss-ssg build  # from examples/10-asset-pipeline/
+npx kiss-ssg dev    # live preview on http://127.0.0.1:3010
 ```
 
-With `--dev`, the step's `watch` command is started too — once, after `run` has succeeded —
+Inside this repository the build is `npm run eg10` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
+
+Under `npx kiss-ssg dev`, the step's `watch` command is started too — once, after `run` has succeeded —
 and kept for the session. Edit `styles/tokens.json` while it is up: the tool recompiles the
 stylesheet, kiss's assets watcher copies it into the build, and the browser reloads.
 Ctrl-C, or a `close()`, ends the watch process; nothing is left running.
@@ -48,7 +51,7 @@ and a protocol-relative `//host/…` were all once mistaken for build paths prec
 first two have no `//` and the third has no scheme.
 
 The sprite is the one shape with a runtime caveat, and it is the browser's rather than kiss's: an
-external `<use href="sprite.svg#id">` only resolves when the page is **served**. `--dev` serves it;
+external `<use href="sprite.svg#id">` only resolves when the page is **served**. `npx kiss-ssg dev` serves it;
 opened straight off the file system it silently draws nothing.
 
 ## What to copy

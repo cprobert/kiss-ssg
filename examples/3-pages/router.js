@@ -11,27 +11,12 @@ const site = {
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 const kiss = new Kiss({
   site,
   nav: [
     { href: 'index.html', label: 'Home' },
     { href: 'roasts/index.html', label: 'Roasts', folderMatch: true },
   ],
-  dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404
   // page, so the audit's checks for those three are turned off here, by name.
   audit: {
@@ -77,8 +62,8 @@ kiss
     }).generate(function () {
       // Dev only: logs how many pages were queued and prepared. With
       // `verbose: true` it also writes debug.json (example 2 shows it).
-      if (dev) this.viewStats()
+      if (this.config.dev) this.viewStats()
     })
   })
 
-await kiss.complete().catch(reportBuildFailure)
+await kiss.complete()

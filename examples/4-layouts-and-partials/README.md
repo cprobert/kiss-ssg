@@ -9,9 +9,12 @@ each page shows is chosen by its model and resolved at render time with a dynami
 
 ```bash
 npm run eg4                          # from the repo root
-node router.js       # from examples/4-layouts-and-partials/
-node router.js --dev # live preview on http://127.0.0.1:3001
+npx kiss-ssg build   # from examples/4-layouts-and-partials/
+npx kiss-ssg dev     # live preview on http://127.0.0.1:3001
 ```
+
+Inside this repository the build is `npm run eg4` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 ## What to copy
 

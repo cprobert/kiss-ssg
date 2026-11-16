@@ -14,9 +14,12 @@ it. `rota` is out of both files from the one `ignoreSitemap` on its page.
 
 ```bash
 npm run eg6            # from the repo root
-node router.js      # from examples/6-sitemap/
-node router.js --dev  # live preview on http://127.0.0.1:3001
+npx kiss-ssg build  # from examples/6-sitemap/
+npx kiss-ssg dev    # live preview on http://127.0.0.1:3001
 ```
+
+Inside this repository the build is `npm run eg6` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 ## What to copy
 

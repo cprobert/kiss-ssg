@@ -141,7 +141,7 @@ npm run bench                              # the benchmark harness; the /bench s
 npm run screenshot -- <build folder>       # shoot pages with Playwright; from Git Bash, run it from PowerShell
 node docs                                  # build the docs site into docs/ and exit
 npm run dev                                # docs live preview at http://127.0.0.1:3001; never exits (Ctrl-C)
-npm run eg1 … eg15                         # run an example from its own folder; --dev previews (not 7 or 13)
+npm run eg1 … eg15                         # build an example through kiss-ssg build, from its own folder; preview with node ../../bin/kiss-ssg.js dev there (not 7 or 13)
 ```
 
 `.nvmrc` holds the runtime floor, Node 22.23.4, and CI's `setup-node` reads it; a local machine on a newer Node passes the gates without proving the floor. Prettier config is in `.prettierrc` (no semicolons, single quotes); `.hbs` templates are not Prettier-formatted, because its Handlebars parser rejects `{{> "partial"}}`.

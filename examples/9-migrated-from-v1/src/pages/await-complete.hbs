@@ -45,16 +45,15 @@
     <pre><code>const finish = (outcome) =&gt;
   console.log(`post-build step ran after a ${outcome} build`)
 
-await kiss
-  .complete(() =&gt; finish('successful'))
-  .catch((err) =&gt; {
-    reportBuildFailure(err)
-    finish('failed')
-  })</code></pre>
+try {
+  await kiss.complete(() =&gt; finish('successful'))
+} catch (err) {
+  finish('failed')
+  throw err
+}</code></pre>
     <p class="meta">
-      <code>reportBuildFailure</code> is defined in this site&rsquo;s own <code>router.js</code>: it prints
-      each failure and sets <code>process.exitCode = 1</code>. Example 8 is the same shape with
-      a feed that really does fail.
+      The <code>throw</code> hands the failure on: <code>npx kiss-ssg build</code> prints each
+      failure and sets the exit code, so the script prints nothing itself.
     </p>
   </div>
   {{/content}}
@@ -62,8 +61,8 @@ await kiss
   {{#content "demo"}}
   <p>
     Run this example and the console prints
-    <code>post-build step ran after a successful build</code>. Run example 8 and the same line
-    reads <code>failed</code>, after the failure report — that is the whole recipe: one
+    <code>post-build step ran after a successful build</code>. Break a page and the same line
+    reads <code>failed</code>, before the command&rsquo;s <code>FAIL</code> line — that is the whole recipe: one
     function, called from both branches, so the exit code is the only difference.
   </p>
   {{/content}}

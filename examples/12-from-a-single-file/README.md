@@ -4,10 +4,12 @@
 
 ```sh
 cd examples/12-from-a-single-file
-node router.js
+npx kiss-ssg build
 ```
 
-Builds and exits. `node router.js --dev` serves it with live reload on <http://localhost:3001> and does **not** exit — Ctrl-C to stop.
+Inside this repository the build is `npm run eg12` and, to preview, `node ../../bin/kiss-ssg.js dev` from this folder.
+
+Builds and exits. `npx kiss-ssg dev` serves it with live reload on <http://localhost:3001> and does **not** exit — Ctrl-C to stop.
 
 ## What is here
 

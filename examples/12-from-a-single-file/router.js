@@ -8,18 +8,6 @@
 import Kiss from 'kiss-ssg'
 import { business, nav } from './config/site.js'
 
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 const kiss = new Kiss({
   business,
   nav,
@@ -28,7 +16,6 @@ const kiss = new Kiss({
   // redirect yet. When it grows a second page, `aliases` and
   // `redirects: { format: … }` are the pair to reach for — see example 11.
   links: { trailingSlash: true },
-  dev,
 })
   // `title` and `description` are page options, not model fields — the layout
   // reads `{{title}}`/`{{description}}`, and the audit reports a page that has
@@ -54,4 +41,4 @@ const kiss = new Kiss({
   .sitemap()
   .robots()
 
-await kiss.complete().catch(reportBuildFailure)
+await kiss.complete()

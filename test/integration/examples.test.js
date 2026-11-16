@@ -4,8 +4,10 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import vm from 'node:vm'
@@ -49,12 +51,45 @@ function countMatching(dir, pattern) {
 // Each example is run from its OWN folder, which is how a real site is run and
 // how `npm run egN` runs it — the router sits at the project root and its
 // relative folders resolve from there.
+//
+// Every example is built twice, through `node router.js` and through
+// `kiss-ssg build router.js`, and the two must agree: the same exit status and
+// the same files, byte for byte. A test's own assertions then run on the
+// folder the command left, which is therefore the folder the script alone
+// would have left too. The result handed back is the script's own run.
 function runExample(name, args = []) {
-  return spawnSync(process.execPath, ['router.js', ...args], {
-    cwd: path.join(examplesDir, name),
+  const cwd = path.join(examplesDir, name)
+  const direct = spawnSync(process.execPath, ['router.js', ...args], {
+    cwd,
     encoding: 'utf8',
     timeout: 60000,
   })
+  const directFiles = filesIn(outputDir(name))
+  cleanOutput(name)
+  const command = spawnSync(
+    process.execPath,
+    [path.join(repoRoot, 'bin/kiss-ssg.js'), 'build', 'router.js', ...args],
+    { cwd, encoding: 'utf8', timeout: 60000 },
+  )
+  expect(command.status, `kiss-ssg build: ${output(command)}`).toBe(
+    direct.status,
+  )
+  expect(filesIn(outputDir(name))).toEqual(directFiles)
+  return direct
+}
+
+// A folder as `{ relative path: sha1 }`, empty when it is not there.
+function filesIn(dir) {
+  const files = {}
+  if (!existsSync(dir)) return files
+  for (const entry of readdirSync(dir, { recursive: true }).sort()) {
+    const file = path.join(dir, entry)
+    if (statSync(file).isFile())
+      files[entry.replaceAll('\\', '/')] = createHash('sha1')
+        .update(readFileSync(file))
+        .digest('hex')
+  }
+  return files
 }
 
 const output = (r) => `${r.stdout ?? ''}${r.stderr ?? ''}`

@@ -16,10 +16,13 @@ for by identity with `{{link}}`, and there is a recipe for that below too.
 
 ```bash
 npm run eg11                  # from the repo root
-node router.js               # from examples/11-blog/
-node router.js --broken      # same site, one deliberately broken link
-node router.js --dev         # live preview on http://127.0.0.1:3011
+npx kiss-ssg build                   # from examples/11-blog/
+npx kiss-ssg build router.js --broken  # same site, one deliberately broken link
+npx kiss-ssg dev                     # live preview on http://127.0.0.1:3011
 ```
+
+Inside this repository the build is `npm run eg11` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 Fifteen pages, exit 0, no warnings. The check says the same thing in one line:
 
@@ -35,7 +38,7 @@ has a `404.html`. `= 15 unchanged` is the diff against `AIKB/last-build.json` �
 recorded, so the check compares this build against the last one that was committed without
 being asked to.
 
-It is previewed **served**, with the build folder as the site root — `node router.js --dev`, or
+It is previewed **served**, with the build folder as the site root — `npx kiss-ssg dev`, or
 any static server rooted at `public/`. Every link is root-relative (see "Linking by identity"),
 so opening `public/index.html` straight off the file system, or serving the repository from
 above `public/`, resolves every one of them outside the site.

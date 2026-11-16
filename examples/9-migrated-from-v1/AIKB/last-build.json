@@ -17,7 +17,7 @@
       "view": "await-complete.hbs",
       "buildTo": "./public/await-complete.html",
       "ok": true,
-      "hash": "1cd0fa7029f296511767ec8e55553d085faf9203",
+      "hash": "98c312ec0fd0b6c7ed85e63bb3dd57a78f44c7cb",
       "id": "await-complete",
       "canonical": null,
       "markdown": null,

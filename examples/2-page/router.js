@@ -11,20 +11,6 @@ const site = {
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 const kiss = new Kiss({
   site,
   nav: [
@@ -34,11 +20,10 @@ const kiss = new Kiss({
   // A debugging aid, and not for a real site's router: the other examples
   // leave it out. `verbose` logs the resolved config and kiss's debug lines,
   // and makes `viewStats()` below write debug.json (every page's options and
-  // model) into the build folder; with --dev it also writes
-  // dependency-graph.json there. Both land only under --dev here: the graph
+  // model) into the build folder; in dev it also writes
+  // dependency-graph.json there. Both land only in dev here: the graph
   // is dev-only, and `viewStats()` is called only then.
   verbose: true,
-  dev,
   // A teaching example, not a site: it publishes no share card, favicon or 404
   // page, so the audit's checks for those three are turned off here, by name.
   audit: {
@@ -96,7 +81,7 @@ const kiss = new Kiss({
     // Dev only: logs the page counts, and under `verbose` writes debug.json
     // (every page's options and model) into the build, which a published
     // site should not carry.
-    if (dev) this.viewStats()
+    if (this.config.dev) this.viewStats()
   })
 
-await kiss.complete().catch(reportBuildFailure)
+await kiss.complete()

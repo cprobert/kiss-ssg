@@ -12,20 +12,6 @@ const site = {
   tagline: 'Small-batch coffee, roasted in Bristol',
 }
 
-// A failed build must be loud: print each failing page and exit non-zero,
-// rather than exiting 0 with a page quietly missing. The recipe llms.txt shows.
-function reportBuildFailure(err) {
-  console.error(err.message)
-  for (const failure of err.failures ?? []) {
-    console.error(
-      `  ${failure.buildTo || failure.view}: ${failure.error.message}`,
-    )
-  }
-  process.exitCode = 1
-}
-
-const dev = process.argv.includes('--dev')
-
 // `'atomic'` is what a publishing pipeline wants — and it is why this run,
 // which fails one page on purpose, would publish nothing at all: a failed
 // build discards the staging folder and leaves the last good output untouched.
@@ -43,7 +29,6 @@ const kiss = new Kiss({
   // css/site.<hash>.css. No template changes when the policy does.
   assets: { hash: true },
   cleanBuild,
-  dev,
   port: 3008,
   livereloadPort: 35738,
 })
@@ -87,5 +72,5 @@ kiss
   .sitemap()
 
 // Without this await a broken feed exits 0 and ships a site with a hole in
-// it. reportBuildFailure prints each failure and sets the exit code.
-await kiss.complete().catch(reportBuildFailure)
+// it. `npx kiss-ssg build` prints each failure and sets the exit code.
+await kiss.complete()

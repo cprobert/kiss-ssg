@@ -9,9 +9,12 @@ is then built from the same array the fan-out already resolved, via `getModelByI
 
 ```bash
 npm run eg3            # from the repo root
-node router.js        # from examples/3-pages/
-node router.js --dev  # live preview on http://127.0.0.1:3001
+npx kiss-ssg build    # from examples/3-pages/
+npx kiss-ssg dev      # live preview on http://127.0.0.1:3001
 ```
+
+Inside this repository the build is `npm run eg3` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 ## What to copy
 

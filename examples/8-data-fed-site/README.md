@@ -9,10 +9,13 @@ exits 1 — which is what a real feed does to you, and what your deploy script h
 
 ```bash
 npm run eg8                       # from the repo root
-node router.js           # from examples/8-data-fed-site/
-node router.js --atomic  # same failure, published nothing
-node router.js --dev     # live preview on http://127.0.0.1:3008
+npx kiss-ssg build                    # from examples/8-data-fed-site/
+npx kiss-ssg build router.js --atomic  # same failure, published nothing
+npx kiss-ssg dev                      # live preview on http://127.0.0.1:3008
 ```
+
+Inside this repository the build is `npm run eg8` and, to preview, `node ../../bin/kiss-ssg.js dev`
+from this folder.
 
 ## The intended failure
 
@@ -40,8 +43,8 @@ The whole script, and `8-data-fed-site/controllers/stockist.js` with it:
   record that cannot make a correct page. A throw fails one item, not the fan-out.
 - **The shared validator** — the index imports the same check, so the listing can say which
   record is broken instead of quietly omitting it.
-- **The exit code** — `await kiss.complete().catch(reportBuildFailure)`. Without the await, a
-  broken feed exits 0 and the deploy ships a site with a hole in it.
+- **The exit code** — `await kiss.complete()`, run by `npx kiss-ssg build`. Without the await,
+  a broken feed exits 0 and the deploy ships a site with a hole in it.
 - **The atomic build** — for anything publishing over a live site.
 
 This example deliberately ships no `AIKB/` folder: `npx kiss-ssg aikb` records a site's knowledge
