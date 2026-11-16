@@ -146,6 +146,30 @@ scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-t
     - CI on both OS: **out** until `/branch-close` opens the PR.
   - **Offer: unanswered** (the operator is asleep). Reopened from turn 1, with a correction: whether GitHub marks #95 merged when this branch lands depends on the merge method, and recent `main` commits look squashed (inferred). If they are squashed, #95 will need closing by hand.
   - **Decision:** not ready to close (#88 is Asked). The loop ends here as agreed: push the branch, and the operator runs `/branch-close` after answering #88.
+- **2026-11-16, #88 resolved as TypeScript 6.0.3** — 0 commits behind `origin/main`.
+  - **The choice.** The operator first chose 7.0.2 ("future proofing"), then asked for a second opinion. `npm view typescript versions` lists 6.0.3. Measured on 6.0.3:
+    - The re-check marker gives 1, and `private _assetManifest` is kept.
+    - It needs `rootDir` (TS5011, as 7 does).
+    - With `rootDir` set, `typecheck` exit 0, `npm run types` then `git diff --quiet types` exit 0, and `types.test.js` 92 of 92.
+
+    Upstream (search snippets, inferred): typescript-go #3555 lists missing JSDoc comments in JS declaration emit as known, with PRs open. The operator chose "6.0.3 now" and "close #88 with a comment", both as recommended.
+
+  - **The change** (`884c291`): `typescript` `^5.9.3` → `^6.0.3`, `rootDir: "lib"` in `tsconfig.types.json`, and `AIKB/upstream.md` § TypeScript 7 updated. No `lib/` change. `types/` is unchanged and `package.json`'s `dependencies` are unchanged, so 2.18.1's "Nothing for a site to change" stands.
+  - **Gates:** `npm run gates` exit 0, on 6.0.3.
+  - **Codex** over `c1cfed4..HEAD` exit 0: "No actionable defects".
+  - **Scope:** `scope-check` exit 0.
+  - **Eyeball: looked** (the operator). They read #88's closing comment and answered "Looked: post it".
+  - **Offer:** `package.json` takes `^6.0.3`, not an exact pin. The operator answered **keep**.
+  - **Criteria:**
+    - 1, 2, 4 and 5 met.
+    - 3 (#88) met as amended: 6.0.3 in place of 7.0.2, with the comment approved.
+    - 6 (release) partial: CI on both OS waits for the PR.
+    - 7 partial: #88 is closed now; #95 and #89 close at the merge (by hand if it is squashed).
+  - **Open items:**
+    - Post the #88 comment and close it: **done here**, next step.
+    - The `PSEUDO_PART` guard: **out** (a non-goal).
+    - CI and #95/#89 closing: **out** until `/branch-close` and the merge.
+  - **Decision:** ready to close once #88 is closed and the branch is pushed. The operator runs `/branch-close`.
 
 ---
 
