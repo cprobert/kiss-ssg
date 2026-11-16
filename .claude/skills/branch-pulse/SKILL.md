@@ -135,6 +135,14 @@ If the remit has _legitimately_ expanded (adjacent, shares the theme), append a 
 
 State the call plainly, with its reason: **continue** (on track) / **adjust course** (re-steer, named correction) / **record amendment** (remit moved) / **ready to close** (criteria met, hand to `/branch-close`). This is the anti-rush, anti-abandon moment — the decision is deliberate, not drift.
 
+**Before every decision, and always before "ready to close", list the open items.** Read the session file's Amendments and Pulse log, plus every report this branch received (a review, a clean room, a sweep, a subagent's caveats). List each item that is promised, "not fixed", "deferred", "left alone", "not yet" or "still open" and has not since been done. List each one in this pulse's entry with what will happen to it:
+
+- **Done here**: the next step does it.
+- **Asked**: put to the operator with `AskUserQuestion`, with "fix it here" recommended for anything inside the branch's theme.
+- **Out**: a non-goal or a blocked item (waiting on a release, a freeze), named with its reason.
+
+"Ready to close" is decided only when the list is empty or holds only **out** items. Phase 2 reached "ready to close" and its PR with four straggling items. The PR carried them as "What's deferred", and the operator had to open a second branch after the merge (2026-11-16). An Amendment's promise was likewise missed by two pulses (2026-11-14).
+
 Then **offer one explanation**: name the single decision Claude took since the last pulse whose reasoning the operator is least likely to have seen — one sentence of what, one of why, one of what it would cost if wrong — and ask whether they want it explained further or overturned. One, not a digest. The operator was told twice to ask for an explanation (2026-09-05, 09-26) and did not; a lesson that depends on someone remembering to ask belongs in the beat that stops for them.
 
 **Ask it with `AskUserQuestion`** (keep / explain / overturn), never as a closing sentence of the pulse report. An offer written in prose went unanswered twice (2026-10-07, 10-12), because a sentence at the bottom of a report reads as finished. If the operator still does not answer, log `Offer: unanswered` in Step 7 and open the next pulse with the same decision.

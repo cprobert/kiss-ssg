@@ -1021,6 +1021,90 @@ describe('describeEngine', () => {
     expect(describeEngine({ cwd: nested }).version).toBe('2.5.0')
   })
 
+  describe('package self-reference', () => {
+    // Node resolves `import 'kiss-ssg'` from a script inside a package named
+    // kiss-ssg that has `exports` to that package itself, before it looks in
+    // any node_modules (PACKAGE_SELF_RESOLVE). The examples in this repo are
+    // built that way, and used to be told no engine was found.
+    const selfRepo = (extra = {}) => {
+      const root = consumer()
+      writeFileSync(
+        join(root, 'package.json'),
+        JSON.stringify({
+          name: 'kiss-ssg',
+          version: '2.18.0',
+          exports: './lib/kiss.js',
+          ...extra,
+        }),
+      )
+      const scriptDir = join(root, 'examples', 'one')
+      mkdirSync(scriptDir, { recursive: true })
+      return { root, scriptDir }
+    }
+
+    it('names the package itself when the script sits inside it', () => {
+      const { root, scriptDir } = selfRepo()
+      const engine = describeEngine({ cwd: scriptDir, from: scriptDir })
+      expect(engine).toMatchObject({
+        version: '2.18.0',
+        dir: '../..',
+        linked: false,
+        target: null,
+        self: true,
+      })
+      expect(engineLine(engine)).toBe(
+        'kiss-ssg 2.18.0 from ../.. (this package itself)',
+      )
+      expect(describeEngine({ cwd: root }).dir).toBe('.')
+      expect(engineLine(describeEngine({ cwd: root }))).toBe(
+        'kiss-ssg 2.18.0 from . (this package itself)',
+      )
+    })
+
+    it('prefers the package itself over a node_modules copy, as Node does', () => {
+      const { root, scriptDir } = selfRepo()
+      engineAt(join(root, 'node_modules', 'kiss-ssg'), '2.5.0')
+      expect(describeEngine({ cwd: scriptDir }).version).toBe('2.18.0')
+    })
+
+    it('does not self-reference without an exports field', () => {
+      const root = consumer()
+      writeFileSync(
+        join(root, 'package.json'),
+        JSON.stringify({ name: 'kiss-ssg', version: '2.18.0' }),
+      )
+      expect(describeEngine({ cwd: root })).toBeNull()
+    })
+
+    it('does not self-reference from a package of another name', () => {
+      const root = consumer()
+      writeFileSync(
+        join(root, 'package.json'),
+        JSON.stringify({ name: 'my-site', exports: './index.js' }),
+      )
+      engineAt(join(root, 'node_modules', 'kiss-ssg'), '2.5.0')
+      expect(describeEngine({ cwd: root })).toMatchObject({
+        version: '2.5.0',
+        self: false,
+      })
+    })
+
+    it('is not a site engine for upgrade: ownEngine ignores it', async () => {
+      const { ownEngine } = await import('../../lib/upgrade.js')
+      const { scriptDir } = selfRepo()
+      expect(ownEngine(describeEngine({ cwd: scriptDir }))).toBeNull()
+    })
+
+    it('stops at the nearest package.json, as Node does', () => {
+      const { scriptDir } = selfRepo()
+      writeFileSync(
+        join(scriptDir, 'package.json'),
+        JSON.stringify({ name: 'example', type: 'module' }),
+      )
+      expect(describeEngine({ cwd: scriptDir })).toBeNull()
+    })
+  })
+
   it('is honest when no kiss-ssg is installed at all', () => {
     const root = consumer()
     expect(describeEngine({ cwd: root })).toBeNull()
