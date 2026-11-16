@@ -3,6 +3,84 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.18.0 — 2026-11-16
+
+`kiss-ssg build` and `kiss-ssg dev` now run your build script for you. The command tells the
+script what it is (`Kiss.mode`), prints every failure once, and exits 1 if a build failed or
+none settled. `kiss-ssg dev` also keeps the dev server and the livereload socket up across an
+edit to the script, so the browser never loses its page. A script that awaits `complete()` and
+is run as `node router.js` works as before.
+
+- **`kiss-ssg build [script] [args…]`** runs the script (`router.js` when none is named) and
+  exits with its verdict: one line per `Kiss` instance on stderr, exit 1 if any build failed,
+  the script exited non-zero, or nothing settled.
+- **`kiss-ssg dev [script] [args…]`** builds, serves and watches. The command owns the HTTP and
+  livereload servers and the watch on the script. An edit to the script restarts the build,
+  and Ctrl-C stops everything it started.
+- **`Kiss.mode`** is `'build'`, `'dev'`, `'check'` or `null` (plain `node router.js`). Read it
+  before `new Kiss` to choose what the script builds.
+- **A script that ends without `complete()` now exits 1**, says
+  `./public was built without complete(), so nothing was settled`, and removes a staging
+  folder nothing promoted. Before, it exited 0.
+- **`err.failures[].buildTo` names the build folder**, never the staging folder (it did under
+  `check`, and with `cleanBuild: 'atomic'`).
+- **Messages that say more** (the message half of issue #90; its convention half is still
+  open).
+  - An unknown `{{link}}` id names up to three near ids:
+    `link: no page with id "abuot". Did you mean "about"? (asked by index.hbs / /)`. With none
+    close it says how many ids the build has and that `kiss-ssg check` lists them.
+  - A missing model folder says when a same-named `.json` exists:
+    `Model folder empty or missing: bakes — ./src/models/bakes.json exists: write model: 'bakes.json' to read that file`.
+    The mirror case (`Model not found: bakes.json — … is a folder: write model: 'bakes' …`)
+    says so as well.
+  - `Error creating <file>` and `Error getting model from <url>` now carry the cause.
+- **A page that failed is reported once.** The `broken link:` lines for links to a page that
+  itself failed are gone; the failure is the finding. The build's `Links:` line says how many
+  references were left out.
+- **`kiss-ssg init` writes `"build": "kiss-ssg build"` and `"dev": "kiss-ssg dev"`.**
+- Ctrl-C under `kiss-ssg dev` never waits on an open browser socket, and a script too busy to
+  stop is force-killed after five seconds (on Linux and macOS its pipeline watch tools are
+  ended with it).
+
+### Upgrading
+
+- **Nothing breaks a script that awaits `complete()`.** Run as `node router.js`, it behaves as
+  before. The rest of this note is for moving to the commands.
+- **Change the two npm scripts yourself.** `kiss-ssg init` counts an earlier init's
+  `node router.js` / `node router.js --dev` as its own, but never rewrites them. Per shape:
+  - A script that takes no arguments: `"build": "kiss-ssg build"`. For `dev`, while the script
+    still reads `--dev` itself, `"dev": "kiss-ssg dev router.js --dev"`; once it no longer
+    passes a `dev` key (below), `"dev": "kiss-ssg dev"`.
+  - An environment argument (`production`): `"build": "kiss-ssg build router.js production"`.
+    A script where no argument means the dev instance must be given the argument, or
+    `kiss-ssg build` refuses it (below).
+  - A script not named `router.js`: name it first, `kiss-ssg build new-cohort.js 2026-sept`.
+  - Steps chained with `&&` stay where they are:
+    `npm run get-data && kiss-ssg build router.js production`.
+- **A script with no `complete()` now exits 1.** Add `await kiss.complete()`.
+- **`kiss-ssg dev` refuses `dev: false` and `kiss-ssg build` refuses `dev: true`.** Either keep
+  passing the script's own flag (`kiss-ssg dev router.js --dev`) or make the one edit below.
+- **To drop the `dev` key, make one edit with two parts.** Remove `dev` from `new Kiss`, and
+  move any folder, `cleanBuild` or dev-lock choice the script made from that flag to
+  `const dev = Kiss.mode === 'dev'`, read before `new Kiss`. Removing the key alone would
+  serve a dev build from a folder that is deployed (a script that chose `./public` against
+  `./.kiss-dev` from its flag).
+- **Delete `reportBuildFailure` when moving to the command.** The command reports the
+  failures and sets the exit code, so the script ends with `await kiss.complete()`. Run as
+  plain `node router.js`, a script without it still exits 1 on a failed build, but prints the
+  error's stack.
+- **What a dev restart keeps.** The HTTP and livereload servers and the browser's page and
+  socket; the build folder is not emptied. It changes: the build, the watch on `src`, assets
+  and helpers, and the pipeline's `watch` processes (all restarted with the script).
+  - A script that fails to load leaves the folder untouched and reloads nothing.
+  - A script whose pages all render reloads once.
+  - A script where some pages fail leaves the folder mixed (new files for the pages that
+    rendered, the previous file for each page that failed) and reloads nothing.
+  - Output of a page the edit removed stays until the next `kiss-ssg dev` or `kiss-ssg build`.
+  - Only an edit to the script restarts; a module the script imports does not.
+- **`KISS_CHECK=1` keeps working until 3.0.** `kiss-ssg check` itself now passes its request
+  without it.
+
 ## 2.17.1 — 2026-11-15
 
 A page skipped with `generate: false` no longer shows as changed in every `kiss-ssg check`
