@@ -3,7 +3,7 @@ branch: chore/dependabot-round-2
 base: main
 status: closed
 opened: 2026-11-16
-scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-types.mjs, test/unit/types.test.js, types/**, AIKB/css-purge.md, AIKB/markdown-copy.md, AIKB/upstream.md, CHANGELOG.md, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json, planning/**
+scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-types.mjs, test/unit/types.test.js, types/**, AIKB/css-purge.md, AIKB/markdown-copy.md, AIKB/upstream.md, AIKB/rebuild.md, CHANGELOG.md, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json, planning/**
 ---
 
 # Session — 2026-11-16: Dependabot round 2 (#95, #89, #88)
@@ -57,6 +57,7 @@ scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-t
 - **2026-11-16 — the scope widens to `GUIDE.md`.** Prettier 3.10.1 (#95) reformats the inline `<script>` in § Consent's `consentScript` example across three lines (`fd3727a`), and the `format` gate fails without it. Whitespace only: the snippet builds to byte-identical HTML in both forms (below).
 - **2026-11-16 — the fleet check cannot see #95, so the fleet criterion proves purgecss alone** (found by the advisor at turn 2's eyeball, measured). `fleet-check` installs a packed tarball into the site's copy, and npm does not pack `package-lock.json`. The site keeps its own locked versions: a1k9training's copy ran sass 1.108.1, turndown 7.2.4 and glob 14.0.4 on both sides, read from its `node_modules`. What a site receives from this branch is `package.json`'s ranges, and the only one that moved is purgecss (`^8.0.0` → `^9.1.0`). oxford-medical and medulla stay in turn 4, but as fleet coverage, not as evidence for sass or turndown. #95's evidence is the examples, the docs and the gates. The changelog says that purgecss's range is the only dependency change a site receives.
 - **2026-11-16 — #88: the operator chose "Take it on this branch"**, against the recommendation to wait for upstream. Reason, verbatim: "My thought was we should be future proofing (while the fleet is small), but I'm worried I've made a bad choice at this junction." On the operator's question, Claude and the advisor both recommended keeping 7.0.2's emit out, and doing the TypeScript 7-compatible changes on 5.9 first, after measuring them. Nothing from #88 is merged. The choice goes back to the operator once a TypeScript 6.x, the upstream status and the prep have been measured.
+- **2026-11-16 — after the PR: CI's Windows job failed on a known watch flake, and the scope widens to `AIKB/rebuild.md`** (the operator's choice: "Record it, push, let CI re-run", as recommended). `watch.test.js` "copies new assets…" timed out at `:656`, the step after `fs.remove(src/assets)`, which the Known knowns register already holds for the Ubuntu runner. This was its first sighting on Windows. Ubuntu passed. The branch changed no `lib/` code and no watcher dependency. Locally the test passed 10 of 10 alone. The runner's trace printed no `Asset <event>:` lines, so which events arrived is unknown. The sighting is recorded in the entry, and the push re-runs CI. Under CLAUDE.md § Rules, investigating is the operator's call if it fails again.
 
 ## Pulse log
 
