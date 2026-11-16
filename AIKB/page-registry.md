@@ -37,7 +37,7 @@ that patches one on the instance is seen.
 
 ## Depends on
 
-`fs-extra` (`existsSync`, `outputJson`), `node:path`, `./utils.js` (the default object; `isUrlModel` and `redactUrl`, for the `No view specified` log), `./kiss-page.js`
+`fs-extra` (`existsSync`, `outputJson`), `node:path`, `node:util` (`inspect`, for the debug dump of a failure), `./staging.js` (`unstageText`), `./utils.js` (the default object; `isUrlModel` and `redactUrl`, for the `No view specified` log), `./kiss-page.js`
 (`KissPage`, `withoutConfig`), `./model-resolver.js`, `./controller-resolver.js`, `./aikb.js` (`pageOrigin`), `./config.js`
 (`resolveMarkdownCopies`, `redactFetchHeaders`); the
 `PageOptions` typedef from `./kiss.js`, as a type-only import.

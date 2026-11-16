@@ -31,7 +31,7 @@ Registers `kiss-ssg`'s built-in Handlebars helpers (`markdown`, `sass`, `offset`
 
 ## Depends on
 
-`node:path`; `./sass.js` (the resolved sass binding); `./asset-manifest.js` (`createAssetManifest`, for the empty default); `./utils.js` (`trimLines`, `toURLKey`, `toAbsoluteUrl`, `toCanonicalPath`, `toSlug`, `servedPathFor`); `./scorm-bridge.js`; `./embed.js` (`embedService`, `embedMarkup`) for `embed`; `./image-header.js` and `./images.js` for `image`; and, for the consent helpers, `./consent.js`, `./consent-client.js`, `./consent-gate.js` and `./consent-ui.js`.
+`node:path`; `./sass.js` (the resolved sass binding); `./asset-manifest.js` (`createAssetManifest`, for the empty default); `./utils.js` (`trimLines`, `toURLKey`, `toAbsoluteUrl`, `toCanonicalPath`, `toSlug`, `servedPathFor`, `nearestNames`); `./scorm-bridge.js`; `./embed.js` (`embedService`, `embedMarkup`) for `embed`; `./image-header.js` and `./images.js` for `image`; and, for the consent helpers, `./consent.js`, `./consent-client.js`, `./consent-gate.js` and `./consent-ui.js`.
 
 ## Depended on by
 

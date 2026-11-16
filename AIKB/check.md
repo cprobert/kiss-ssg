@@ -4,7 +4,7 @@
 
 The decision core of the `kiss-ssg` command line: what an argv asked for, what the reports file says, which baseline to diff against, and what to exit with. `bin/kiss-ssg.js` is the thin wrapper around it — it spawns the site's own build script, makes the temp file and prints; every answer it acts on comes from here.
 
-Three commands share the parse. `check [script]` runs the site's build staged and discarded and says what it built; `aikb [script]` runs the identical build and additionally asks the engine to write the site's knowledge base (`AIKB/aikb.md`). Same options, same exit code, one request key and one summary line apart. `build [script] [args…]` runs the script for real: it takes no option but `--help`, keeps every word after the script for the script, prints `formatVerdict` per report on stderr and exits by the same `exitCodeFor`. The script is `router.js` when none is named. The child is started by `lib/run-script.js`, which hands it the request the engine reads through `lib/run-state.js`.
+Four commands share the parse (`check`, `aikb`, `build` and `dev`). `check [script]` runs the site's build staged and discarded and says what it built; `aikb [script]` runs the identical build and additionally asks the engine to write the site's knowledge base (`AIKB/aikb.md`). Same options, same exit code, one request key and one summary line apart. `build [script] [args…]` runs the script for real: it takes no option but `--help`, keeps every word after the script for the script, prints `formatVerdict` per report on stderr and exits by the same `exitCodeFor`. The script is `router.js` when none is named. The child is started by `lib/run-script.js`, which hands it the request the engine reads through `lib/run-state.js`.
 
 ## Public interface
 
@@ -14,7 +14,7 @@ Three commands share the parse. `check [script]` runs the site's build staged an
   published output. The engine's side of the protocol the bin sets up; they moved here from
   `lib/kiss.js` (2026-10-02) when the method that reads `KISS_AIKB` left it for
   `lib/build-finish.js`, so that no module has to import `kiss.js`.
-- `HELP` — the usage text both `--help` and a usage error print; it documents both commands, and names `init` in one line, as it names `images` (`lib/images-sweep.js`, which the bin dispatches before `parseArgs`, with its own `IMAGES_HELP`) and `issue` (`lib/issue.js`, dispatched the same way, with `ISSUE_HELP`). `init` is not parsed here: the bin dispatches it to `lib/init.js` before `parseArgs` runs, because it takes no script and none of these options — so `parseArgs(['init'])` still answers `unknown command: init`, and `CheckArgs.command` stays `'check'|'aikb'|'help'`.
+- `HELP` — the usage text both `--help` and a usage error print; it documents `build`, `dev`, `check` and `aikb`, and names `init` in one line, as it names `images` (`lib/images-sweep.js`, which the bin dispatches before `parseArgs`, with its own `IMAGES_HELP`) and `issue` (`lib/issue.js`, dispatched the same way, with `ISSUE_HELP`). `init` is not parsed here: the bin dispatches it to `lib/init.js` before `parseArgs` runs, because it takes no script and none of these options — so `parseArgs(['init'])` still answers `unknown command: init`, and `CheckArgs.command` stays `'check'|'aikb'|'help'`.
 - `DEFAULT_SCRIPT` — `'router.js'`, the script every command runs when none is named (`parseImagesArgs` reads it too).
 - `parseArgs(argv)` → `{ command, script, args, summary, against, error }`. `command` is `'check'`, `'aikb'`, `'build'`, `'dev'` or `'help'` (`build --help` and `dev --help` answer `'help'`; `dev` parses as `build` does and takes no option but `--help`); `script` is the site's build script, `router.js` when no word names one, and `args` everything after it, less our own `--summary` (`build` keeps every word, `--summary` and a `--` included); `summary` is set by `--summary` on either side of the script; `against` is the report file `--against <file>` named, or `null`; `error` is a usage error (print it with `HELP` and exit 1), and it names the command it could not complete.
 - `readReports(text)` → the JSON Lines file `KISS_REPORT` collects, parsed into `BuildReport[]`. Blank lines are skipped; a malformed line throws.
@@ -38,7 +38,7 @@ Three commands share the parse. `check [script]` runs the site's build staged an
 ## Depended on by
 
 `bin/kiss-ssg.js`; `lib/upgrade.js` (`isWorkingTreeLink`); `scripts/fleet-check.mjs` (`diffReports`, `formatDiff`, `identitiesByPath`, `readReportsFile`). And the engine, for the other half of the protocol the bin starts:
-`lib/run-state.js` reads `checkModeRequested()` and `aikbRecordRequested()` for the alias half of `currentRun()`, which `lib/kiss.js` and `lib/build-finish.js` ask instead of the environment, and `lib/build-finish.js` reads `readReportsFile()` (the redirects baseline, read by the same code `check --against` uses). `lib/run-script.js` and `lib/images-sweep.js` import `DEFAULT_SCRIPT` and `describeEngine`'s answer.
+`lib/run-state.js` reads `checkModeRequested()` and `aikbRecordRequested()` for the alias half of `currentRun()`, which `lib/kiss.js` and `lib/build-finish.js` ask instead of the environment, and `lib/build-finish.js` reads `readReportsFile()` (the redirects baseline, read by the same code `check --against` uses). `lib/images-sweep.js` imports `DEFAULT_SCRIPT`; `lib/run-script.js` imports nothing from here and takes `describeEngine`'s answer from the bin as an argument.
 
 ## Non-obvious behavior
 
@@ -69,4 +69,4 @@ Three commands share the parse. `check [script]` runs the site's build staged an
 
 ## Types
 
-`types/check.d.ts` is emitted from the JSDoc here like every other `lib/` module, but nothing imports it: the CLI surface is the command, not the module. `CheckArgs` (whose `command` is `'check' | 'aikb' | 'help'`) and `CheckDiff` are documented for the reader of this file.
+`types/check.d.ts` is emitted from the JSDoc here like every other `lib/` module, but nothing imports it: the CLI surface is the command, not the module. `CheckArgs` (whose `command` is `'check' | 'aikb' | 'build' | 'dev' | 'help'`) and `CheckDiff` are documented for the reader of this file.

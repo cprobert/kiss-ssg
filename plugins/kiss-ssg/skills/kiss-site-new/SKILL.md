@@ -131,7 +131,7 @@ Build every page to the domain skills, each in its build mode. They own the rule
 
 Three mistakes real consumer sites made, all of which passed review before they bit:
 
-- **A chain that ends at `.generate()` exits 0 on a broken build.** Page failures surface only through `complete()`'s rejection. A deploy script that does not await it ships a half-built tree and reports success.
+- **A chain that ends at `.generate()` settles nothing.** It exits 1 with `built without complete()`, and no redirects, link check or audit ran. Page failures surface only through `complete()`'s rejection, so end the script with `await kiss.complete()`.
 - **Registering helpers on the global `handlebars` module renders nothing, silently.** Handlebars is per-instance in v2 — use `kiss.handlebars`. The symptom is an empty element where content should be, with a green build and no warning; nothing will tell you.
 - **Two pages claiming one output path fail the build** (`Page already processed`). If two sources can produce the same slug, dedupe before registering — do not rely on the engine to pick a winner.
 

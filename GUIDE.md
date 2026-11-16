@@ -636,8 +636,8 @@ Instead of (or in conjunction with) using the .scan() method you can pass a mode
 
 ```js
 import Kiss from 'kiss-ssg'
-const kiss = new Kiss({ dev: true })
-kiss
+const kiss = new Kiss()
+await kiss
   .page({
     view: 'index.hbs',
     model: 'index.json',
@@ -645,6 +645,7 @@ kiss
     title: 'My Page Title',
   })
   .generate()
+  .complete()
 ```
 
 **Note**: The file locations of the models, views, and controllers are relative to the folder locations defined in the kiss configuration. Alternatively, instead of passing a file location you can pass a native object for that setting.
@@ -2488,7 +2489,7 @@ The development watcher handles asset additions, edits, renames and deletions, r
     })
   ```
 
-  A failed build never runs `.complete()`'s own callback, so anything you did there — writing a sitemap, generating an index, kicking off a deploy — has to run again in the `catch`. And a chain that ends at `.generate()` with no `.complete()` never sees any of this: it keeps exiting 0 on a broken build, so every deploy script must `await kiss.complete()` (or otherwise attach a rejection handler) to catch a failure.
+  A failed build never runs `.complete()`'s own callback, so anything you did there — writing a sitemap, generating an index, kicking off a deploy — has to run again in the `catch`. And a chain that ends at `.generate()` with no `.complete()` never sees any of this: from 2.18 it exits 1 with `built without complete()` and settles nothing, so every script must `await kiss.complete()`.
 
 - Each `Kiss` instance has its own Handlebars environment. Register custom helpers on `kiss.handlebars` (as the docs always said), not on the global `handlebars` module. Partials live there too: a helper that reads `require('handlebars').partials` finds nothing in v2 — read `kiss.handlebars.partials`, or drop the helper and use Handlebars' native dynamic partial, `{{> (lookup this "partialName")}}`. Every entry of `kiss.handlebars.partials` is a function — a compiled template that also records which page invoked it — so a helper that renders one by name must accept a function, and must pass its own `options.data` through: `const p = kiss.handlebars.partials[name]; typeof p === 'function' ? p(ctx, { data: options.data }) : kiss.handlebars.compile(p)(ctx, { data: options.data })` (it was a string only until the partial's first render anyway). That data frame is how the page is recorded as using the partial: a bare `p(ctx)` renders correctly, but under `watch()` that page is not re-rendered when the partial changes (unless no page recorded it at all, when every page is).
 - `utils` moved from `kiss-ssg/libs/utils.js` to a named export: `import { utils } from 'kiss-ssg'`. The package's `exports` map has one entry, so any deep path into it (`kiss-ssg/lib/…`, `kiss-ssg/libs/…`) now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` rather than half-working — everything public is reachable from `'kiss-ssg'` itself.
