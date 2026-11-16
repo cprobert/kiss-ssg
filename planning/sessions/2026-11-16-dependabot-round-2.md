@@ -55,6 +55,7 @@ scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-t
   - **End:** after turn 4 is green, commit, push the branch and stop with a report. The operator runs `/branch-close`.
   - **Eyeball:** the operator is asleep ("I'm going to bed, so use the advisor"). Each pulse's look is the advisor's (Fable), against a stated question, recorded as "looked, by the advisor".
 - **2026-11-16 — the scope widens to `GUIDE.md`.** Prettier 3.10.1 (#95) reformats the inline `<script>` in § Consent's `consentScript` example across three lines (`fd3727a`), and the `format` gate fails without it. Whitespace only: the snippet builds to byte-identical HTML in both forms (below).
+- **2026-11-16 — the fleet check cannot see #95, so the fleet criterion proves purgecss alone** (found by the advisor at turn 2's eyeball, measured). `fleet-check` installs a packed tarball into the site's copy, and npm does not pack `package-lock.json`. The site keeps its own locked versions: a1k9training's copy ran sass 1.108.1, turndown 7.2.4 and glob 14.0.4 on both sides, read from its `node_modules`. What a site receives from this branch is `package.json`'s ranges, and the only one that moved is purgecss (`^8.0.0` → `^9.1.0`). oxford-medical and medulla stay in turn 4, but as fleet coverage, not as evidence for sass or turndown. #95's evidence is the examples, the docs and the gates. The changelog says that purgecss's range is the only dependency change a site receives.
 
 ## Pulse log
 
@@ -69,6 +70,21 @@ scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-t
   - **Open items:** criteria 2–7 not yet (turns 2–4). None asked or out.
   - **Offer: unanswered** (the operator is asleep). The decision: #95 was taken by merging Dependabot's commit (`git merge --no-ff`), not by re-running `npm update`. GitHub then marks #95 merged when this branch lands. It would cost little if wrong, since the lock is the same either way. The next pulse reopens it.
   - **Decision:** continue to turn 2 (#89).
+- **2026-11-16, turn 2 (#89)** — 0 commits behind `origin/main`.
+  - **#89: met.** Merged as `b505107` with no conflict. `npm install --package-lock-only` left the lock unchanged. The lock moves only purgecss 8.0.0 → 9.1.0 and commander 12.1.0 → 15.1.0, which its CLI uses. Release notes against `lib/css-purge.js`: every safelist entry reaches PurgeCSS as a `RegExp` (`greedyPattern`, `:298`) and `dynamicAttributes` are plain names, so v9's slash-delimited strings don't apply. kiss sets no `keyframes`, `fontFace` or `variables`. The one change that reaches kiss is that root-level pseudo-only selectors are kept.
+  - **Upstream re-check (`AIKB/upstream.md`, `2cd5184`).** With `standard: [PSEUDO_PART]` taken out (an edit, then `git checkout`, `git diff --quiet lib/` clean), `vitest -t "every element"` exits 0 on 9.1.0 (5 of 5). On 8.0.0 (`npm install --no-save`, then `npm ci` back to 9.1.0) it exits 1, failing 3 on `:focus-visible` and `:-moz-focusring:where(…)`.
+  - **Selector probe:** the shipped `purgeCss`, guard in place, over sixteen selector shapes, under 9.1.0 and then 8.0.0. `diff probe8.txt probe9.txt` differs only on the version line.
+  - **Examples and docs:** `build-all.sh` → `t2` against `base`. Same exit codes; `diff -rq` lists only turn 1's three explained files. No example and not the docs use `purge` (grep), so this says nothing about purgecss. The 51 `css-purge.test.js` tests pass.
+  - **Fleet, a1k9training** (it purges, and has no CMS): `fleet-check --base main` exit 0, identical (571 files, 20 page hashes, 0 differ). Both build logs say `Purged css/site.css: 72.0 KB → 53.5 KB (26% removed)`. The branch side ran purgecss 9.1.0, read from the copy's `node_modules`.
+  - **Gates:** `npm run gates` exit 0 at `b505107`.
+  - **Codex**, twice over `8d858a1..HEAD`, both exit 0: "no actionable regressions" at `b505107`, and "no actionable compatibility defects" at `2cd5184`. Green.
+  - **Scope:** `scope-check` exit 0.
+  - **Eyeball: looked, by the advisor.** The question: does a purgecss 9 change reach kiss's options without the tests or a1k9training exercising it? It named the pseudo-only selectors against kiss's `PSEUDO_PART` guard, which the probe and the re-check answered. It also found that the fleet check cannot see #95 (Amendment).
+  - **Open items:**
+    - Criteria 3–7 not yet (turns 3–4).
+    - The `PSEUDO_PART` guard is no longer needed on 9.1.0. Removing it is a `lib/` change outside this branch's non-goals: **out**, recorded in `AIKB/upstream.md` for the operator.
+  - **Offer: unanswered** (the operator is asleep). Reopened from turn 1: #95 was taken by merging Dependabot's commit.
+  - **Decision:** continue to turn 3 (#88).
 
 ---
 
