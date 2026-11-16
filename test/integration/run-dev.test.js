@@ -5,7 +5,7 @@ import net from 'node:net'
 import path from 'node:path'
 import { EventEmitter } from 'node:events'
 import { pathToFileURL } from 'node:url'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { superviseDev } from '../../lib/dev-supervisor.js'
 import { startDevServer } from '../../lib/dev-server.js'
 import { makeSite, waitFor } from '../helpers/site.js'
@@ -45,6 +45,45 @@ const alive = (pid) => {
     return false
   }
 }
+
+// The command line of each pid that is running, by pid. A pid answering
+// `kill(pid, 0)` is only *a* process: Windows hands a freed pid to the next
+// process quickly, so a pid this suite recorded minutes ago can belong to
+// something else on the machine by the time it is checked (main's CI, 1409d13,
+// 2026-11-16: a stray that the same tree had not shown on its PR run).
+const commandLines = (pids) => {
+  if (pids.length === 0) return new Map()
+  const result =
+    process.platform === 'win32'
+      ? spawnSync(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-Command',
+            `Get-CimInstance Win32_Process -Filter "${pids.map((pid) => `ProcessId=${pid}`).join(' OR ')}" | ForEach-Object { "$($_.ProcessId)\`t$($_.CommandLine)" }`,
+          ],
+          { encoding: 'utf8' },
+        )
+      : spawnSync('ps', ['-o', 'pid=,args=', '-p', pids.join(',')], {
+          encoding: 'utf8',
+        })
+  // An answer that could not be read must not read as "nothing stray". (`ps`
+  // exits 1 when none of the pids is running any more, which is an answer.)
+  if (result.error || (process.platform === 'win32' && result.status !== 0))
+    throw new Error(
+      `could not read command lines: ${result.error?.message ?? result.stderr}`,
+    )
+  const lines = new Map()
+  for (const line of (result.stdout ?? '').split(/\r?\n/)) {
+    const match = /^\s*(\d+)\s+(.*)$/.exec(line)
+    if (match) lines.set(Number(match[1]), match[2])
+  }
+  return lines
+}
+
+// What this suite starts: the site's script (`router.js`) and its pipeline
+// watch tool (`watch.js`). Anything else holding a recorded pid is not ours.
+const OURS = /router\.js|watch\.js/
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -203,19 +242,23 @@ afterEach(async () => {
   blocker = null
   if (site) {
     // Whatever a case left running is a failure of the stop sequence, and is
-    // ended here so the next case starts clean.
-    const stray = [
-      ...(await pidsIn(site, 'pids.txt')),
-      ...(await pidsIn(site, 'watch-pids.txt')),
-    ].filter(alive)
-    for (const pid of stray) {
+    // ended here so the next case starts clean. A recorded pid that now runs
+    // something else was reused, and is neither ours to kill nor a finding.
+    const running = commandLines(
+      [
+        ...(await pidsIn(site, 'pids.txt')),
+        ...(await pidsIn(site, 'watch-pids.txt')),
+      ].filter(alive),
+    )
+    const stray = [...running].filter(([, line]) => OURS.test(line))
+    for (const [pid] of stray) {
       try {
         process.kill(pid, 'SIGKILL')
       } catch {
         /* gone */
       }
     }
-    expect(stray).toEqual([])
+    expect(stray.map(([pid, line]) => `${pid} ${line}`)).toEqual([])
     for (const port of ports) expect(await canBind(port)).toBe(true)
     // Retried: Windows holds a folder a just-ended process had as its cwd.
     await rm(site.root, {
