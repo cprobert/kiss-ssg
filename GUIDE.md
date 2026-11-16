@@ -690,7 +690,7 @@ What the option list above leaves implicit:
 
 - A `model` given as a folder name loads every `*.json` in it as an array. A URL model whose response is not 2xx fails that page.
 - `ext` defaults to `html`. A leading `.` is stripped and the rest slugified, so an `ext` derived from model data cannot steer the output path (`'.xml'` → `xml`, `'../x'` → `x`).
-- `aliases` lists old URL paths this page now answers, each emitted as a `301` (see **Redirects**). On a `.pages()` fan-out the aliases belong to each **record**, never to the registration.
+- `aliases` lists old URL paths this page now answers, each emitted as a `301` (see **Redirects**); a leading `/` is optional, so `/menu` and `menu` write the same rule. On a `.pages()` fan-out the aliases belong to each **record**, never to the registration.
 - `config` overrides settings for this page only, including `extensionLess`: on an `extensionLess` site, `config: { extensionLess: false }` with `slug: '404'` writes `404.html` rather than `404/index.html`, which is the filename Netlify and Cloudflare Pages look for and will not fall back from.
 
 ### .pages()
@@ -712,6 +712,8 @@ kiss
 ```
 
 That writes `bakes/sourdough.html` and `bakes/rye.html`. **A record's own `slug` is ignored unless a controller returns it.** Without the `controller` line the same call writes `bakes/bakes-bake-1.html` and `bakes/bakes-bake-2.html` (the view's folder and name, then `-N`), and the build still passes. `title` follows the same rule: a record's `name` is not read, and without a `title` of its own the page is titled from its slug (`Bakes Bake 1`). And `.pages()` writes to the folder `path` names, and to the build root when there is none; it does not take the view's folder as `.page()` does.
+
+The listing page takes the same file: a `.page({ view: 'bakes/index.hbs', model: 'bakes.json', path: 'bakes', slug: 'index' })` sees the whole array as `model`, and links each record with `{{link "bakes/bake" slug=slug}}`. The id is the registration's route plus the slug the controller returned, so `slug=` must carry that value, not another field: `slug=name` on a record named `Sour Dough` fails the build with `no page with id "bakes/bake/sour-dough"` and names `bakes/bake/sourdough` as the near miss.
 
 You can also pass a option mapper to act as a controller to the .page() and .pages() methods:
 
@@ -1754,7 +1756,13 @@ await kiss.scan().generate().sitemap().complete()
 
 `.complete()` waits for every page you queued, not just the ones `.generate()` had reached when it ran. Pages queued from a `.generate()` callback count — whether the callback queues them straight away or after an `await` — and so does a page queued after the last `.generate()` call, or one whose model was still loading when it ran: `.complete()` renders whatever is left before it resolves, so a slow model cannot cost you a page in a build that reports success. (It renders nothing if you never called `.generate()`.) The one thing it cannot see is a page a _synchronous_ callback defers to a later tick with `setTimeout` — queue those synchronously, or from an `async` callback.
 
-If any page fails to render or write, the other pages still build but `.complete()` **rejects** with an `AggregateError`; `err.failures` lists them as `{ view, buildTo, error }`. That makes a broken build fail your script instead of silently shipping a site with a page missing:
+If any page fails to render or write, the other pages still build but `.complete()` **rejects** with an `AggregateError`; `err.failures` lists them as `{ view, buildTo, error }`. That makes a broken build fail your script instead of silently shipping a site with a page missing. Under `kiss-ssg build` and `dev` the script needs nothing more than the bare call, because the command prints each failed page and sets the exit code:
+
+```js
+await kiss.scan().generate().complete()
+```
+
+Run as a plain `node router.js`, the same script still exits 1 on a failed build, but Node prints the rejected `AggregateError` with its stack. A script that is run that way can catch it and print the one line:
 
 ```js
 try {
@@ -1927,7 +1935,7 @@ npx kiss-ssg check --against last.jsonl router.js  # diff against some other rep
 ]
 ```
 
-It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding: the build says so (`was built without complete()`) and exits 1, and a script that exits 0 having settled nothing gets the command's own line, `no build report was written`. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. Your site's own build log goes to stderr, so stdout is nothing but the JSON. `--summary` is the command's own flag and is read wherever you write it, so a site that needs that word for itself takes it after a bare `--` (`npx kiss-ssg check menu.js -- --summary`). Each page carries `hash`, the sha1 of the bytes it wrote — `null` for a page that failed or that you registered with `generate: false`.
+It exits **1** if any report is `ok: false`, if your script itself exited non-zero, or if no report was written at all — a script that never awaits `.complete()` reports nothing, which is itself the finding: the build says so (`was built without complete()`) and exits 1, and a script that exits 0 having settled nothing gets the command's own line, `no build report was written`. Exit 0 with `ok: true` everywhere is the only passing result, which makes it a one-line CI step. `--summary` changes only what is printed, never the exit code: `ok ./public (check)` means exit 0, a `FAIL` line means exit 1. Your site's own build log goes to stderr, so stdout is nothing but the JSON. `--summary` is the command's own flag and is read wherever you write it, so a site that needs that word for itself takes it after a bare `--` (`npx kiss-ssg check menu.js -- --summary`). Each page carries `hash`, the sha1 of the bytes it wrote — `null` for a page that failed or that you registered with `generate: false`.
 
 When the site has recorded a knowledge base (see [Recording the knowledge base](#recording-the-knowledge-base)), `check` diffs against its `AIKB/last-build.json` without being asked. `--against <file>` (before the script) names a different baseline: it reads a report an earlier build left behind — a `KISS_REPORT` JSON Lines file, the JSON array `check` itself prints, the `{ reports, diff }` object it prints once it diffs, or a single report object, all four read without you having to say which — and tells you which pages this build would add, remove or change. Pages are matched by output path and compared by `hash`, so it answers about the bytes a browser would receive rather than about which files you happened to touch; a page whose `hash` is `null` on either side counts as changed, except a page skipped with `generate: false` on both sides, which is unchanged. Reports are paired by `buildDir`, so a script that builds several sites gets one diff each, and a file holding several builds of one folder is compared against the newest. Under `--summary` the diff prints under that site's line:
 
@@ -2474,7 +2482,15 @@ The development watcher handles asset additions, edits, renames and deletions, r
 - **Node ≥22.23.4 first** (`package.json` `engines.node`) — check this before anything else here: v2 will not install or run below it. If your project pins a dev Node version the way this repo's own `.nvmrc` does, bump yours before touching any code.
 - v2 is ESM-only (`import Kiss from 'kiss-ssg'`). `require()` still works, and returns the class: the named exports are statics on it (`Kiss.utils`).
 - `folders.root` and `folders.static` are gone — no module in v1 ever read them, so a config still passing them gets nothing rather than a quiet no-op. Delete the keys; with `// @ts-check` on your build script they are now a typing error too. The six folders v2 derives from `folders.src` / `folders.build` unless you override them (`pages`, `assets`, `layouts`, `partials`, `models`, `controllers`) are listed under "Usage" above.
-- The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build. Failures don't surface through `.generate()`, though: v1 logged a page's render/write failure and resolved anyway, while v2's `.complete()` **rejects** with an `AggregateError` (`err.failures` = `[{ view, buildTo, error }]`). The v1 callback-style idiom — `kiss.generate(function () { this.complete(function () { ... }) })` — now leaves that rejection unhandled the first time a page fails, so give `.complete()` a `.catch`:
+- The `.generate()` callback now fires **after** the files are written (v1 fired it before). Use `await kiss.complete()` to await the whole build. Failures don't surface through `.generate()`, though: v1 logged a page's render/write failure and resolved anyway, while v2's `.complete()` **rejects** with an `AggregateError` (`err.failures` = `[{ view, buildTo, error }]`). The v1 callback-style idiom — `kiss.generate(function () { this.complete(function () { ... }) })` — now leaves that rejection unhandled the first time a page fails. Replace the callbacks with a bare await, which is all a script needs under `kiss-ssg build` and `dev`, because the command prints the failures and sets the exit code:
+
+  ```js
+  kiss.scan().generate()
+
+  await kiss.complete()
+  ```
+
+  A script still run as a plain `node router.js` can add a `.catch`, so a failed build prints one line per page instead of Node's stack:
 
   ```js
   kiss

@@ -18,7 +18,7 @@ Every decision behind `npx kiss-ssg images <script>`, the encode cache's mainten
 
 ## Depends on
 
-`node:fs`, `node:path`, `./check.js` (`CHECK_MODE_OFF`, `DEFAULT_SCRIPT`), `./image-header.js`, `sharp` (dynamic import, only under `--write`).
+`node:fs`, `node:path`, `node:crypto` (`randomBytes`), `./check.js` (`CHECK_MODE_OFF`, `DEFAULT_SCRIPT`), `./image-header.js` (`RASTER_EXTENSION`, `readImageHeader`), `./image-encode.js` (`isCacheFileName`), `./utils.js` (`isInside`), `sharp` (dynamic import, only under `--write`).
 
 ## Depended on by
 
