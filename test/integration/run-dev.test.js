@@ -81,9 +81,13 @@ const commandLines = (pids) => {
   return lines
 }
 
-// What this suite starts: the site's script (`router.js`) and its pipeline
-// watch tool (`watch.js`). Anything else holding a recorded pid is not ours.
-const OURS = /router\.js|watch\.js/
+// A command line is this case's when it names the case's site folder (the
+// script runs from it) or its tag (the watch tool is given it). Other test
+// files start a `router.js` and a watch tool too, in parallel workers, so the
+// file names alone are not an identity.
+const isOurs = (line) =>
+  line.includes(tag) ||
+  line.replace(/\\/g, '/').includes(path.basename(site.root))
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -122,6 +126,7 @@ const router = ({
   throwAtLoad = false,
   exitLater = false,
   blockLater = false,
+  tag,
   port,
   livereloadPort,
 }) => `import fs from 'node:fs'
@@ -135,7 +140,7 @@ const kiss = new Kiss({
   port: ${port},
   livereloadPort: ${livereloadPort},
   devHost: '127.0.0.1',
-  assets: { pipeline: [{ name: 'w', run: 'node -e 0', watch: 'node watch.js' }] },
+  assets: { pipeline: [{ name: 'w', run: 'node -e 0', watch: 'node watch.js ${tag}' }] },
 })
 kiss.scan().generate()
 await kiss.complete()
@@ -162,21 +167,26 @@ let commandProc = null
 let blocker = null
 let sockets = []
 let ports = []
+// This case's own mark: the watch tool carries it as an argument, and the
+// site's script runs from the site's own temp folder. A recorded pid whose
+// command line has neither belongs to something else now.
+let tag = ''
 
 const makeDevSite = async (overrides = {}) => {
   const port = await freePort()
   const livereloadPort = await freePort()
   ports = [port, livereloadPort]
+  tag = `kiss-run-dev-${process.pid}-${port}`
   site = await makeSite({
     'src/pages/c.hbs': 'c-ok',
     'watch.js': WATCH,
-    'router.js': router({ port, livereloadPort, ...overrides }),
+    'router.js': router({ port, livereloadPort, tag, ...overrides }),
   })
   return { port, livereloadPort }
 }
 
 const rewrite = (overrides, ports2) =>
-  site.touch('router.js', router({ ...ports2, ...overrides }))
+  site.touch('router.js', router({ ...ports2, tag, ...overrides }))
 
 // The supervisor in this process, with every real effect and a fake signal bus.
 // What the supervisor did to its servers, with times, so a failed request can
@@ -250,7 +260,7 @@ afterEach(async () => {
         ...(await pidsIn(site, 'watch-pids.txt')),
       ].filter(alive),
     )
-    const stray = [...running].filter(([, line]) => OURS.test(line))
+    const stray = [...running].filter(([, line]) => isOurs(line))
     for (const [pid] of stray) {
       try {
         process.kill(pid, 'SIGKILL')
@@ -347,6 +357,11 @@ describe('kiss-ssg dev, end to end', () => {
     const [child] = await pidsIn(site, 'pids.txt')
     const [watcher] = await pidsIn(site, 'watch-pids.txt')
     expect(alive(child)).toBe(true)
+    // The afterEach's identity holds for both, as the real command starts
+    // them: a stray check that never matched would pass for ever.
+    const lines = commandLines([child, watcher])
+    expect(isOurs(lines.get(child) ?? '')).toBe(true)
+    expect(isOurs(lines.get(watcher) ?? '')).toBe(true)
 
     commandProc.kill()
 
