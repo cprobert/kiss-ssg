@@ -1,7 +1,7 @@
 ---
 branch: feat/command-runs-build
 base: main
-status: open
+status: closed
 opened: 2026-11-15
 issue: 90
 scope: planning/**, lib/**, bin/**, test/**, types/**, examples/**, starter/**, scripts/**, AIKB/**, plugins/kiss-ssg/**, src/**, GUIDE.md, llms.txt, README.md, CHANGELOG.md, CONTRIBUTING.md, CLAUDE.md, package.json, package-lock.json, .claude/skills/secrets-scan/SKILL.md, .claude-plugin/marketplace.json, plugins/kiss-memory/.claude-plugin/plugin.json
@@ -95,3 +95,88 @@ scope: planning/**, lib/**, bin/**, test/**, types/**, examples/**, starter/**, 
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-16: Phase 2, the command line owns the process
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** kiss-ssg 2.18.0 on `feat/command-runs-build`. `kiss-ssg build|dev|check` run the site's script as a child (`lib/run-script.js`, `lib/run-preload.js`, `lib/run-state.js`), and `kiss-ssg dev` owns the servers and restarts the script (`lib/dev-supervisor.js`). The four messages are reworded. No shipped script carries failure boilerplate. Slices `85083b5`, `2ee918c`, `15fac7d`, `5fc6d69`, `498396a` and `24620d6`; the live-set fix `546940e`; the docs sweep `a07c732`; the bump `f37d07d`.
+
+## Reflect — what the session was
+
+**The shape was planned.** It sat at the "between" the Intent named, and it served the work. The destination was fixed by the roadmap, and the route was settled before any `lib/` edit:
+
+- peer research (`5ab88b4`) and baselines (`39ba512`);
+- a Fable spec, critiqued by a fresh-context agent and by Codex, then approved by the operator with eight decisions recorded (`fad6eeb`);
+- five standalone work orders (`0d65fce`).
+
+From there it ran as five Sonnet slices. Each was reviewed by Claude, followed by a pulse with evidence, and slice 3 also had a Codex round. The framing held. Twelve Amendments record where it moved, and none of them changed the objective. Most widened paths that a work order's own grep had missed (`lifecycle.test.js`, example 9's page, the plugin manifests). Two were operator decisions: criterion 1's Hugo gap was accepted, and the `.env` handling was deferred to Claude.
+
+The one thing the plan did not foresee came after the exit criteria were met. The operator ran `/codex:adversarial-review` of the whole branch unprompted. It found that the new `live` set held every settled build for the life of the process. Claude measured it at 20 of 20 after 20 builds, and 0 after the fix. The defect was the branch's own: `lib/run-state.js` does not exist on `main`. No gate could have seen it, because nothing in the suite builds twice in one process.
+
+## Evaluate — how the human supervised the AI
+
+**Verification & ownership: strong, and the operator added the decisive check.** The criteria were measurable from the open: a boilerplate grep with an expected 0, byte-identical fleet output through both paths, and a clean room against a recorded baseline of 9 of 55 lines. They were measured as such:
+
+- clean room: 0 lines of boilerplate, and green on its first run;
+- fleet: 12 of 12 identical;
+- `.env` cleanup: verified with a `find` that exited 0.
+
+The operator ran the Ctrl-C check in a real terminal on slice 3, the one thing no test could stand in for. After Claude had declared the branch ready to close, the operator still asked for one more independent review, and it found a real defect. The value here is that the operator did not take Claude's "ready to close" as the end of supervision.
+
+**Pushback & steering: precise, and once corrective of Claude.** The operator sent the clean room's `router.js` back: "You should be reviewing this not me." That was a correction of Claude's habit of handing generated code to the operator as the eyeball. Claude's own review of that router then found a template gap the operator would have had to dig for: the header never renders `{{active}}`. The lesson is saved as a memory, and the pulse protocol already allows "looked, by Claude". The operator chose against a recommendation only with a reason ("We're forging our own path at this point"), and deferred where they judged Claude better placed (`.env`: "I defer to your better judgment").
+
+**Iteration discipline: the strongest dimension on this branch.** It had seven pulses, one per slice, plus one after each review round:
+
+- every slice was red-first where `main` allowed it, and the pulse log says plainly when it did not (`main` lacks the modules);
+- each Codex round ran under an agreed stop rule (slice 1's threat model plus the parity rule, one round);
+- the live-set fix was scoped to "this finding and its class" before any code was written.
+
+There was no 14-round loop this time.
+
+**Harness leverage: good, and two-sided.** Fable wrote the design and Sonnet the slices, and the fleet runs and the docs sweep went to fresh agents. The operator reached for `/codex:adversarial-review` when the plain `/codex:review` with a typo exited on its unsupported argument. One small miss is Claude's: the `hign` argument should have been flagged before launching rather than after the failure.
+
+**Where the operator meant to supervise, against where they did.** They largely matched. The one gap ran the other way: the operator was being asked to supervise something that was Claude's to check (the clean room's code), and said so.
+
+**Competency level: Agentic engineering lead.** The operator set a contract-first plan with a design gate and measurable exits. They delegated across three models with a no-commit rule, steered with reasons, and added an independent check at the point where Claude would have stopped.
+
+## Feedback — recommendations for next session
+
+- **Process — put a sequential-builds case in the suite when a module adds process-global state.** The `live` leak shipped through 5265 green tests because no test built twice in one process. When a branch adds state at `globalThis` or module scope, its work order should name a test that constructs and settles N instances and asserts the state returns to empty. `test/integration/atomic-build.test.js`'s new `live()` assertion is the shape.
+- **Claude — validate a slash command's arguments before launching it.** `/codex:review hign` was launched as typed, and it failed. One line ("`hign` will be read as focus text, which `/codex:review` rejects; run it bare?") would have saved a round trip, and it would still respect "preserve the arguments".
+- **Claude — the docs sweep found 17 stale statements that five slices each believed they had swept.** Most were "Depends on" lists and import names. A work order that adds an import should name the `AIKB/` Depends on line it changes, the same way it names the test. Several slices updated their own module's doc but not the doc of the module they newly imported from.
+- **Operator — keep asking for the whole-branch adversarial review after "ready to close".** It is cheap and it found the only defect left. Consider making it a pulse habit at the exit, not only a close step, so its fix gets a pulse before the ritual starts.
+- **Both — record the review range honestly.** `fe87d92..HEAD` is docs and manifests only and had no independent review. Say that in the PR rather than implying the last review covered it.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** deliver Phase 2 (2.18). `kiss-ssg build`, `dev` and `check` run a site's script, so no shipped script carries failure boilerplate. The design is researched, critiqued and approved before any code.
+
+**Verdict: met.** Two gaps are recorded and accepted: criterion 1's Hugo exit code and Astro output, and #90's convention half as a non-goal.
+
+- [x] **Peer research:** met, with the gap accepted by the operator (Amendment, 2026-11-16). The note answers the four questions for each tool, with URLs (`5ab88b4`).
+- [x] **Fleet inventory in the design:** spec § 3, each site's command lines.
+- [x] **Baselines:** the Sonnet clean room on 2.17.1 (9 of 55 lines of boilerplate, three attempts to a green `check`), and the fleet baseline, identical on six sites (`39ba512`).
+- [x] **Design by Fable, critiqued, approved:** a fresh-context critique and a Codex review, then the operator's approval with eight decisions (`fad6eeb`), before the first `lib/` edit.
+- [x] **The command runs the build:** `run-build.test.js`, `run-dev.test.js` and `run-mode.test.js` end to end. `dev` restarts on an edit to the script, and Ctrl-C was seen by the operator in a terminal.
+- [x] **`node <script>` stays and gets loud:** `no-complete.test.js`. A script without `complete()` exits 1 with `built without complete()`.
+- [x] **Mode passed directly:** the preload's request, with `KISS_*` as aliases tested on both paths (`run-mode.test.js`, `two-copies.test.js`).
+- [x] **Four messages, red-first:** slice 2 (`2ee918c`).
+- [x] **No boilerplate ships:** the grep is empty, `failureBoilerplate` went from 15 to 0, and all fifteen examples build byte-identical output through both paths.
+- [x] **Clean-room exit:** green `check` on the first run, 0 lines of boilerplate, $0.24.
+- [x] **Fleet exit:** 12 of 12 identical through `node` and through `kiss-ssg build`, with equal exit codes.
+- [x] **Docs and release:** GUIDE, llms.txt, README, types, skills and the docs sweep (`a07c732`). CHANGELOG 2.18.0 has an `### Upgrading` note, and the version is bumped (`f37d07d`).
+
+**What is concretely better:**
+
+- A new site is `await kiss.complete()` plus `kiss-ssg build`, with no failure handling.
+- A forgotten `complete()` fails loudly instead of shipping a site that never settled.
+- `kiss-ssg dev` survives a script that throws and restarts on an edit.
+- Settled builds no longer accumulate in one process.
+
+**Still open:**
+
+- #90's convention half (3.0).
+- Moving the fleet sites to the commands, each as its own upgrade.
+- `/kiss-publish` after the merge.
+- `fe87d92..HEAD`: docs and manifests only, with no independent review.
