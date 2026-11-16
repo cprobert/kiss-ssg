@@ -296,7 +296,8 @@ describe('kiss-ssg dev, end to end', () => {
       [
         '--import',
         `${preload}?run=${encodeURIComponent(JSON.stringify(request))}`,
-        'router.js',
+        // Absolute, so the afterEach can tell this child is the case's own.
+        path.join(site.root, 'router.js'),
       ],
       { cwd: site.root, stdio: ['ignore', 'ignore', 'ignore', 'ipc'] },
     )
@@ -327,6 +328,9 @@ describe('kiss-ssg dev, end to end', () => {
       },
     ])
     expect(alive(child.pid)).toBe(true)
+    const lines = commandLines([child.pid, watcher])
+    expect(isOurs(lines.get(child.pid) ?? '')).toBe(true)
+    expect(isOurs(lines.get(watcher) ?? '')).toBe(true)
 
     child.disconnect()
 
