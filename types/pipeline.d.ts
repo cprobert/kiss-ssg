@@ -25,16 +25,24 @@ export function stepName(step: PipelineStep): string;
  * @param {PipelineStep[]} [options.steps] `config.assets.pipeline`
  * @param {any} options.logger the injected logger
  * @param {boolean} [options.dev] `config.dev` — the only mode that starts watch processes
+ * @param {(message: { watchGroup: number } | { watchGroupEnded: number }) => void} [options.report]
+ *   told each watch process's pid as it starts and as it ends: `kiss-ssg dev`
+ *   ends those groups itself when it has to kill a child that will not stop
  * @returns {{
  *   run: (env?: Record<string, string>) => Promise<PipelineResult[]>,
  *   close: () => Promise<void>,
  *   watching: () => string[],
  * }}
  */
-export function createPipeline({ steps, logger, dev }: {
+export function createPipeline({ steps, logger, dev, report }: {
     steps?: PipelineStep[];
     logger: any;
     dev?: boolean;
+    report?: (message: {
+        watchGroup: number;
+    } | {
+        watchGroupEnded: number;
+    }) => void;
 }): {
     run: (env?: Record<string, string>) => Promise<PipelineResult[]>;
     close: () => Promise<void>;

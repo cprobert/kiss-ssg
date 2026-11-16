@@ -14,6 +14,7 @@
  * @property {boolean} swept earlier children's unclaimed servers are retired
  * @property {Set<string>} asked the `host:port` pairs it has asked for
  * @property {number} before how many servers were up when it started
+ * @property {Set<number>} groups its pipeline watch processes still running, each a process group on POSIX
  * @property {Promise<void>} gone resolves on its exit
  */
 /**
@@ -100,6 +101,10 @@ export type ChildRecord = {
      * how many servers were up when it started
      */
     before: number;
+    /**
+     * its pipeline watch processes still running, each a process group on POSIX
+     */
+    groups: Set<number>;
     /**
      * resolves on its exit
      */

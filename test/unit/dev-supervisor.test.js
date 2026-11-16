@@ -356,6 +356,30 @@ describe('an edit to the script', () => {
     h.children[0].end(null, 'SIGKILL')
   })
 
+  // A SIGKILL runs no exit guard, and each watch tool is in a process group
+  // of its own: without this, one tool is left behind per restart.
+  it('and with it each pipeline watch group the child reported still running', async () => {
+    const h = harness({ exitOnStop: false })
+    h.children[0].emit('message', { watchGroup: 2001 })
+    h.children[0].emit('message', { watchGroup: 2002 })
+    h.children[0].emit('message', { watchGroupEnded: 2002 })
+    h.watcher.emit('change')
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    expect(h.killed).toEqual([
+      [1000, 'SIGKILL'],
+      [-2001, 'SIGKILL'],
+    ])
+    h.children[0].end(null, 'SIGKILL')
+  })
+
+  it('a child that stops when asked leaves its watch groups to itself', async () => {
+    const h = harness()
+    h.children[0].emit('message', { watchGroup: 2001 })
+    h.watcher.emit('change')
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    expect(h.killed).toEqual([])
+  })
+
   it('a watch error is logged and the session keeps going', () => {
     const h = harness()
     expect(() => h.watcher.emit('error', new Error('EPERM'))).not.toThrow()

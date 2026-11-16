@@ -82,6 +82,7 @@ const router = ({
   breakB = false,
   throwAtLoad = false,
   exitLater = false,
+  blockLater = false,
   port,
   livereloadPort,
 }) => `import fs from 'node:fs'
@@ -100,6 +101,7 @@ const kiss = new Kiss({
 kiss.scan().generate()
 await kiss.complete()
 ${exitLater ? 'await new Promise((resolve) => setTimeout(resolve, 1500))\nprocess.exit(3)' : ''}
+${blockLater ? 'setTimeout(() => { for (;;); }, 500)' : ''}
 `
 
 const WATCH = `import fs from 'node:fs'
@@ -496,6 +498,29 @@ describe('kiss-ssg dev, end to end', () => {
     await waitFor(() => !alive(watcher), { timeout: 10000 })
     // What the command was serving is still served.
     expect((await peek(ports2.port)).text).toBe('v1')
+  }, 90000)
+
+  // The child cannot hear `{ stop: true }`, so it is killed, and a kill runs no
+  // exit guard. On POSIX each watch tool has a process group of its own, so
+  // only the command can end it: one was left behind per restart (Codex,
+  // slice 3, measured in WSL 2026-11-16).
+  it('a child too busy to stop is killed after the wait, and its pipeline watch process goes with it', async () => {
+    const ports2 = await makeDevSite({ blockLater: true })
+    startSession()
+    await waitFor(
+      async () => (await pidsIn(site, 'watch-pids.txt')).length === 1,
+      { timeout: 30000 },
+    )
+    const [first] = await pidsIn(site, 'watch-pids.txt')
+    await sleep(1000)
+
+    await rewrite({ version: 2, blockLater: true }, ports2)
+    await waitFor(
+      async () => (await pidsIn(site, 'watch-pids.txt')).length === 2,
+      { timeout: 30000 },
+    )
+
+    await waitFor(() => !alive(first), { timeout: 5000 })
   }, 90000)
 
   it('after a stop no child and no pipeline watch process is alive, and the ports are free', async () => {

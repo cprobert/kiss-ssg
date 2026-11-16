@@ -79,6 +79,32 @@ describe('startDevServer', () => {
     await expect(second.close()).resolves.toBeUndefined()
     await first.close()
   })
+
+  // A browser's preconnect opens a socket and sends nothing; `server.close()`
+  // alone waits on it, so Ctrl-C under `kiss-ssg dev` never returned.
+  it.each([
+    ['a socket that sent nothing', ''],
+    ['a half-sent request', 'GET / HTTP/1.1\r\nHost: x\r\n'],
+  ])('closes promptly with %s held open', async (_, bytes) => {
+    const handle = startDevServer('public', 0, {
+      logger: silentLogger,
+      livereloadPort: 35804,
+      host: '127.0.0.1',
+    })
+    await handle.ready
+    const { port } = handle.server.address()
+    const socket = net.connect(port, '127.0.0.1')
+    socket.on('error', () => {})
+    await new Promise((resolve) => socket.once('connect', resolve))
+    if (bytes) socket.write(bytes)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    const outcome = await Promise.race([
+      handle.close().then(() => 'closed'),
+      new Promise((resolve) => setTimeout(() => resolve('pending'), 2000)),
+    ])
+    socket.destroy()
+    expect(outcome).toBe('closed')
+  })
 })
 
 // No livereload mock in this block: D-01 (an EADDRINUSE on the livereload port
