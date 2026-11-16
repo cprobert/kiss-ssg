@@ -331,6 +331,8 @@ literal again and run `npm run typecheck`.
 
 Both use PurgeCSS options, not patches. **Re-check:** after a PurgeCSS upgrade, comment out `standard: [PSEUDO_PART]` and run `npx vitest run test/unit/css-purge.test.js -t "every element"`. If it stays green, PurgeCSS keeps these itself and the guard can go. The extractor is kiss's for good: Tailwind's own class syntax is not PurgeCSS's to follow.
 
+**Re-checked 2026-11-16 on `purgecss` 9.1.0: part 1 is fixed upstream.** Without the guard, the re-check passes on 9.1.0 (5 of 5). On 8.0.0 it fails 3 of 5, on `:focus-visible` and `:-moz-focusring:where(…)`. With the guard in place, `purgeCss` gives identical CSS on both versions for sixteen selector shapes: root-level `:where`, `:is` and `:not`, `:root`, `:host`, a bare `:focus-visible`, nested `&:hover`, `@media` and pseudo-elements. The probe was the shipped function, once under each version. The guard stays for now. It is harmless on 9, and removing it is a `lib/` change of its own.
+
 ### turndown-plugin-gfm is unmaintained
 
 **Observed:** `turndown-plugin-gfm` 1.0.2, last published 2022 (npm
