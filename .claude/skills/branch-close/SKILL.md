@@ -62,6 +62,7 @@ The sequence follows two principles: **cheapest and most critical checks run fir
 - **Secrets scan (Step 2)** is the cheapest possible check and the hardest possible stop. If a real credential is in the diff, nothing else matters.
 - **Docs sweep (Step 3), version bump (Step 4a) and test coverage (Step 5)** all happen _before_ the gates so that documentation fixes, the bumped manifest, and any newly written tests are validated in the same gate pass — not in a second run.
 - **Confirm the pulse-time eyeball (Step 5a)** reads the `## Pulse log` for the look that `/branch-pulse` Step 4 asked for while the artefact was warm. It sits before the gates so that anything it surfaces is fixed and re-validated in the same pass, and it only waits on a person in the fallback case where no pulse ever asked.
+- **No open items (Step 5c)** comes after the sweeps and before the gates. The sweeps add to the list of open items, and anything it does is validated by the same gate pass.
 - **Gates (Step 6)** validate the complete final state: code, docs, tests, and the bumped version in one authoritative pass.
 - **Codex review (Step 7)** runs after the gates so expensive semantic review time is never spent on code a cheap gate would have rejected.
 - **Retrospective (Step 8)** runs last among the checks — there is no value in reflecting on a branch that does not pass.
@@ -187,6 +188,16 @@ node scripts/scope-check.mjs
 
 Show its result to the operator. It lists every changed file the session file's `scope:` line does not cover, exiting 1 when there is one; with no `scope:` line it says it checked nothing and exits 0; it exits 2 when it could not run. Each listed file is drift to undo or a widening of the scope: widen the `scope:` line and record the widening as an Amendment in the session file, then continue. Like Step 5a, a stop for an answer, not a gate that blocks the close.
 
+### Step 5c — No open items
+
+**This one blocks the close.** Make the same list `/branch-pulse` Step 6 makes. Read the session file's Amendments and Pulse log, plus every report the branch received and this ritual's own steps so far (the docs sweep's "left alone", the corpse collector, the secrets scan's follow-ups, a subagent's caveats). List every item that is promised, "not fixed", "deferred", "left alone", "not yet" or "still open". Then for each one:
+
+- **Do it now.** Commit it, then rerun `/branch-close` from Step 1, as for any finding fixed with new commits.
+- **Or ask** the operator with `AskUserQuestion`, with "fix it here" recommended for anything inside the branch's theme.
+- **Or name it out**, as a non-goal or blocked (waiting on a release, a freeze), with the reason.
+
+The close goes on only when every item is done or out. Only the **out** items may appear in the PR's "What's deferred", and each one carries its reason. Phase 2 opened PR #97 with four straggling items in that section, and the operator had to open a second branch to finish them after the merge (2026-11-16).
+
 ### Step 6 — Run the gates
 
 **Stop any preview or watcher over the repo first** — VS Code's Live Server, an example's `--dev`, `node docs --dev` (`npm run dev`). It holds build folders open on Windows, so example 7's atomic promote fails inside the test run (2026-09-27), and a build can overwrite the folder it is serving (2026-10-01). If one is running, ask before stopping it.
@@ -248,7 +259,7 @@ Fixes #<n> <one line per issue this work fixes: the session file's `issue:`, and
 
 ## What's deferred
 
-<if nothing, omit this section>
+<only Step 5c's **out** items: each a non-goal or blocked, with its reason; if none, omit this section>
 
 ## Test plan
 
