@@ -1,7 +1,7 @@
 ---
 branch: chore/dependabot-round-2
 base: main
-status: open
+status: closed
 opened: 2026-11-16
 scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-types.mjs, test/unit/types.test.js, types/**, AIKB/css-purge.md, AIKB/markdown-copy.md, AIKB/upstream.md, CHANGELOG.md, .claude-plugin/marketplace.json, plugins/*/.claude-plugin/plugin.json, planning/**
 ---
@@ -174,3 +174,78 @@ scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-t
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-16: Dependabot round 2, run overnight as a loop
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** 2.18.1 on `chore/dependabot-round-2`:
+
+- #95 (glob, sass, turndown, prettier) as `3bce7e7`, with prettier's `GUIDE.md` reformat in `fd3727a`.
+- #89 (purgecss 9) as `b505107`.
+- TypeScript 6.0.3 in place of #88's 7.0.2, as `884c291`.
+- Two `AIKB/upstream.md` entries: `2cd5184`, and `18d4c24` corrected in `867cc02`.
+- The bump, `8d79eda`, and the changelog correction, `6829e7e`.
+
+#88 was closed with a comment the operator approved.
+
+## Reflect — what the session was
+
+**Planned, then emergent at one point.** The brief was tight: three named Dependabot PRs, a fleet criterion naming four sites, and a patch release. Before going to bed, the operator settled how the night would run in four answers: what a turn is, what "green" means (no blocker or major in scope, with a stated threat model), where the loop stops (before `/branch-close`), and who looks (the advisor).
+
+The plan served for #95 and #89. #88 broke it in a useful way. TypeScript 7.0.2 rewrote all 67 shipped declaration files and dropped every typedef description, which no one had expected. The loop's own threat model named "emitted types", so the finding was in scope and could not be waved through. Holding #88 and asking was the plan doing its job.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering: strongest at the decision that mattered, and it came from the operator's doubt.** The operator chose "take TypeScript 7 on this branch" against the recommendation, then came back unprompted: "I'm worried I've made a bad choice at this junction. What do you think, what does the advisor recommend?" That question led to measuring TypeScript 6.0.3, which neither the first recommendation nor the operator's choice had considered. It turned out to give most of the future-proofing (the same `rootDir` requirement) with byte-identical `types/`. Neither "wait" nor "take 7" was the best answer. The reason given ("future proofing while the fleet is small") is recorded verbatim, and a sentence of doubt became a measurement and not a reversal.
+
+**Verification & ownership: carried by the advisor overnight, and it earned its keep four times out of four.** Each turn's look found something Claude's own check had passed:
+
+- **Turn 1:** "docs identical" had been measured before the `GUIDE.md` commit, and the reformatted snippet was never run through the engine.
+- **Turn 2:** the fleet check cannot see #95, because a site's lockfile pins sass, turndown and glob. That changed what the fleet criterion proves, and what the changelog may claim.
+- **Turn 3:** five statements in the TypeScript 7 entry outran the commands behind them, among them a re-check marker that was not typedef-only and a "5.9.3 gives 2" read from committed files.
+- **Turn 4:** four changelog sentences claimed more than two sites and sixteen selector shapes show.
+
+The CLAUDE.md rule sharpened earlier the same day ("a fact … is measured this session or marked inferred") was broken in all four first drafts and held in every fix. The rule names the failure, but in these four drafts the second reader caught it, not Claude's own discipline. The operator then looked at the one outward-facing artefact, #88's comment, themselves.
+
+**Iteration discipline: strong by construction.** Four turns, each ending in a commit, a pulse, a Codex round and an independent look. That is the cadence `/branch-pulse` exists for. Codex was green every time and caught none of the advisor's findings: it reviews code and config, and this branch's risks were in claims and evidence.
+
+**Harness leverage.** `/loop` and the advisor as the night-time eyeball were the operator's choices, and both fitted. The advisor also supplied process the rituals don't hold:
+
+- abort the merge rather than revert it;
+- unlink the scratch junction with `cmd /c rmdir`;
+- `npm version` must not tag;
+- stop the armed wakeup before ending.
+
+**Intended vs actual supervision.** The operator meant to be absent and delegated the look explicitly, so the advisor's looks are the supervision they intended, not Claude grading itself. The one place Claude's momentum could have run past a checkpoint was #88 at 22:08: merged, emitted, and one commit from shipping 67 changed declaration files. The threat model the operator agreed before bed is what stopped it.
+
+**Competency level: Agentic engineering lead.** The operator set the loop's rules and threat model before delegating, named a reader for the hours they could not look, overrode the recommendation on the one judgement call, and then questioned their own override and changed it on evidence.
+
+## Feedback — recommendations for next session
+
+- **Claude: draft a claim with its command beside it, before a reviewer asks.** The four advisor findings were all one shape: a sentence wider than the command behind it ("a site that purges", "5.9.3 gives 2", "union members reordered"). Write the command first and the sentence from its output.
+- **Claude: when a dependency major breaks something, look for the release between before choosing among the two ends.** TypeScript 6.0.3 was on npm all evening. One `npm view <pkg> versions` at the first sign of trouble would have offered it at 22:10, not after the operator had chosen.
+- **Operator: "I'm worried I made a bad choice, what do you think" is the steer to keep.** Asking for a second read after deciding, rather than before, found the option neither of you had. Do it whenever a choice against the recommendation still feels uneasy.
+- **Process: the fleet check measures a site's view of kiss's `package.json`, not kiss's lockfile.** A bump inside an existing range (#95) is invisible to it. A branch whose evidence for a runtime bump rests on the fleet should say what the fleet can and cannot see. The Amendment here is the model.
+- **Process: `/branch-open`'s Step 2a red-first question repeated a stale item.** Claude offered "install the base's dependencies" as open work when 2.17.1 had shipped it. This was caught in the same session and is retired now, but the read-back should check a work item against the code before offering it.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** take #95, #89 and #88 before Phase 3, and ship 2.18.1.
+
+**Verdict: met, with the objective amended for #88 by the operator's choice.** TypeScript 6.0.3 in place of 7.0.2 was good drift, since it achieved what #88 was for without shipping a regression.
+
+- [x] **#95 taken:** `3bce7e7`, read from `node_modules` after `npm ci`. Prettier's reformat is its own commit, `fd3727a`.
+- [x] **#89 taken:** release notes read against `lib/css-purge.js`, the upstream re-check run (red on 8.0.0, green on 9.1.0), and sixteen selector shapes identical.
+- [x] **#88, as amended:** TypeScript 6.0.3. `npm run types` leaves `types/` byte-identical, `typecheck` passes, and the `types.test.js` assertion needed no change (92 of 92). #88 is closed with an approved comment.
+- [x] **Examples and docs:** identical apart from the version string, the reformatted snippet and a timestamped intermediate.
+- [x] **Fleet:** four sites byte-identical at `8d79eda` (a1k9training, oxford-medical, and diploma-msc and medulla on live CMS data). It proves purgecss; it cannot see #95 (Amendment).
+- [ ] **Release:** the gates pass locally (`npm run gates`, all six). CI on both OS runs on the PR.
+- [ ] **#95 and #89 closed:** at the merge, by hand if it is squashed.
+
+**What is better now:** dependencies are current before Phase 3. The compiler is on TypeScript 7's bridge release with no change to anything a site sees. Two upstream entries carry re-check commands that were run, so the move to 7 is a measurement, not a guess.
+
+**Still open:**
+
+- The `PSEUDO_PART` guard, now redundant on purgecss 9: a `lib/` change for another branch.
+- The `AskUserQuestion` reminder hook, scheduled from the consolidation.
