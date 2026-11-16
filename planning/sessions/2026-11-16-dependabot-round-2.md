@@ -85,6 +85,29 @@ scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-t
     - The `PSEUDO_PART` guard is no longer needed on 9.1.0. Removing it is a `lib/` change outside this branch's non-goals: **out**, recorded in `AIKB/upstream.md` for the operator.
   - **Offer: unanswered** (the operator is asleep). Reopened from turn 1: #95 was taken by merging Dependabot's commit.
   - **Decision:** continue to turn 3 (#88).
+- **2026-11-16, turn 3 (#88): held, not merged** — 0 commits behind `origin/main`.
+  - **What TypeScript 7.0.2 does**, measured on an uncommitted merge:
+    - `npm run types` fails `TS5011` until `tsconfig.types.json` sets `rootDir`.
+    - `npm run typecheck` exits 1 with four `TS2810` in `lib/dev-server.js` (3) and `lib/pipeline.js` (1).
+    - With `rootDir` set, all 67 `types/*.d.ts` change.
+  - **Classified with TypeScript 5.9's parser** (scratchpad `compare-dts.cjs`, `typedef-docs.cjs`, `compare-norm.cjs`):
+    - All 114 described type aliases lose their description, with 0 kept and 0 aliases missing.
+    - `Kiss._assetManifest` loses `private`. Comparing the `Kiss` class's printed members, that is the only difference in 196.
+    - 115 lines in 26 files differ after normalising order, quotes, imports and exports. They stay unclassified.
+  - **The hold, on the advisor's read:**
+    - Shipping a types regression overnight is not a call to make without the operator, and taking it would move the impact surface to public API. So `git merge --abort`, then `types/` and `tsconfig.types.json` restored. The stray `types/lib/`, written at 22:08 by the failed first emit, was removed.
+    - `npm ci` brought TypeScript back to 5.9.3, and `git status` is clean. `typecheck` exit 0; `types.test.js` 92 of 92.
+    - PR #88 is left open. `lib/`, `tsconfig.types.json` and `.github/dependabot.yml` are untouched for it.
+  - **Recorded:** `AIKB/upstream.md` § TypeScript 7 (`18d4c24`, corrected in `867cc02` after the advisor's read). Its re-check command was run on both versions (`One file of a zip` count: 5.9.3 gives 1, 7.0.2 gives 0).
+  - **Codex** over `92fd20b..HEAD`, twice, both exit 0 and both "No actionable defects". It did not reproduce the TS 7 behaviour; the measurements above are that evidence. There is no code diff in this turn.
+  - **Scope:** `scope-check` exit 0.
+  - **Eyeball: looked, by the advisor.** The question: does the entry state only what was measured, and does its re-check run? Its reading: the core is measured and the command runs, but five statements outran their measurement (a marker that was not typedef-only, "5.9.3 gives 2" read from the committed `types/`, 115 being lines, the breaks being "found so far", and union membership not compared). All five are fixed in `867cc02`.
+  - **Open items:**
+    - **#88: Asked.** The operator chooses between accepting TypeScript 7's loss of typedef descriptions and waiting for upstream. It goes to them as the loop's last act. The criterion stays open.
+    - Criteria 4–7 (examples and docs for the whole branch, the fleet, the release, the PRs closing): turn 4.
+    - The `PSEUDO_PART` guard: **out**, as in turn 2.
+  - **Offer: unanswered** (the operator is asleep). The decision since the last pulse: #88 was held rather than taken. Taking it ships 114 lost hover descriptions; holding it costs one Dependabot PR left open.
+  - **Decision:** continue to turn 4.
 
 ---
 
