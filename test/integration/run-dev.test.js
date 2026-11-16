@@ -46,6 +46,69 @@ const alive = (pid) => {
   }
 }
 
+// The command line of each pid that is running, by pid. A pid answering
+// `kill(pid, 0)` is only *a* process: Windows hands a freed pid to the next
+// process quickly, so a pid this suite recorded minutes ago can belong to
+// something else on the machine by the time it is checked (main's CI, 1409d13,
+// 2026-11-16: a stray that the same tree had not shown on its PR run).
+// Asynchronous on purpose: on Windows one read takes about half a second
+// (measured, 506 to 597 ms over 10), and a synchronous one would freeze the
+// event loop a case's own request loop runs on.
+const commandLines = async (pids) => {
+  if (pids.length === 0) return new Map()
+  const [file, args] =
+    process.platform === 'win32'
+      ? [
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-Command',
+            `Get-CimInstance Win32_Process -Filter "${pids.map((pid) => `ProcessId=${pid}`).join(' OR ')}" | ForEach-Object { "$($_.ProcessId)\`t$($_.CommandLine)" }`,
+          ],
+        ]
+      : ['ps', ['-ww', '-o', 'pid=,args=', '-p', pids.join(',')]]
+  const result = await new Promise((resolve) => {
+    const proc = spawn(file, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    let stdout = ''
+    let stderr = ''
+    proc.stdout.on('data', (chunk) => (stdout += chunk))
+    proc.stderr.on('data', (chunk) => (stderr += chunk))
+    proc.once('error', (error) => resolve({ error, stdout, stderr }))
+    proc.once('close', (status) => resolve({ status, stdout, stderr }))
+  })
+  // An answer that could not be read must not read as "nothing stray". (`ps`
+  // exits 1 when none of the pids is running any more, which is an answer.)
+  if (result.error || (process.platform === 'win32' && result.status !== 0))
+    throw new Error(
+      `could not read command lines: ${result.error?.message ?? result.stderr}`,
+    )
+  const lines = new Map()
+  for (const line of (result.stdout ?? '').split(/\r?\n/)) {
+    const match = /^\s*(\d+)\s+(.*)$/.exec(line)
+    if (match) lines.set(Number(match[1]), match[2])
+  }
+  return lines
+}
+
+// A command line is this case's when it names the case's site folder (the
+// script runs from it) or its tag (the watch tool is given it). A live process
+// whose command line comes back empty reads as not ours: the query as a whole
+// fails loudly, but one blank answer in it cannot be told from a reused pid.
+// Other test files start a `router.js` and a watch tool too, in parallel
+// workers, so the file names alone are not an identity.
+const isOurs = (line) =>
+  line.includes(tag) ||
+  line.replace(/\\/g, '/').includes(path.basename(site.root))
+
+// Whether a process this case started has ended. A pid that still answers
+// `kill(pid, 0)` is gone when its command line is no longer the case's: a
+// reused pid runs something else, and a dead process waiting to be reaped (a
+// container whose pid 1 reaps slowly) shows as `[node] <defunct>`, with no
+// command line of its own. The command line is read only while the pid
+// answers, so a tight poll stays cheap once the process has gone.
+const gone = async (pid) =>
+  !alive(pid) || !isOurs((await commandLines([pid])).get(pid) ?? '')
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // A read that tolerates the one fault a rewrite in place causes: the served
@@ -83,6 +146,7 @@ const router = ({
   throwAtLoad = false,
   exitLater = false,
   blockLater = false,
+  tag,
   port,
   livereloadPort,
 }) => `import fs from 'node:fs'
@@ -96,7 +160,7 @@ const kiss = new Kiss({
   port: ${port},
   livereloadPort: ${livereloadPort},
   devHost: '127.0.0.1',
-  assets: { pipeline: [{ name: 'w', run: 'node -e 0', watch: 'node watch.js' }] },
+  assets: { pipeline: [{ name: 'w', run: 'node -e 0', watch: 'node watch.js ${tag}' }] },
 })
 kiss.scan().generate()
 await kiss.complete()
@@ -123,21 +187,26 @@ let commandProc = null
 let blocker = null
 let sockets = []
 let ports = []
+// This case's own mark: the watch tool carries it as an argument, and the
+// site's script runs from the site's own temp folder. A recorded pid whose
+// command line has neither belongs to something else now.
+let tag = ''
 
 const makeDevSite = async (overrides = {}) => {
   const port = await freePort()
   const livereloadPort = await freePort()
   ports = [port, livereloadPort]
+  tag = `kiss-run-dev-${process.pid}-${port}`
   site = await makeSite({
     'src/pages/c.hbs': 'c-ok',
     'watch.js': WATCH,
-    'router.js': router({ port, livereloadPort, ...overrides }),
+    'router.js': router({ port, livereloadPort, tag, ...overrides }),
   })
   return { port, livereloadPort }
 }
 
 const rewrite = (overrides, ports2) =>
-  site.touch('router.js', router({ ...ports2, ...overrides }))
+  site.touch('router.js', router({ ...ports2, tag, ...overrides }))
 
 // The supervisor in this process, with every real effect and a fake signal bus.
 // What the supervisor did to its servers, with times, so a failed request can
@@ -203,19 +272,23 @@ afterEach(async () => {
   blocker = null
   if (site) {
     // Whatever a case left running is a failure of the stop sequence, and is
-    // ended here so the next case starts clean.
-    const stray = [
-      ...(await pidsIn(site, 'pids.txt')),
-      ...(await pidsIn(site, 'watch-pids.txt')),
-    ].filter(alive)
-    for (const pid of stray) {
+    // ended here so the next case starts clean. A recorded pid that now runs
+    // something else was reused, and is neither ours to kill nor a finding.
+    const running = await commandLines(
+      [
+        ...(await pidsIn(site, 'pids.txt')),
+        ...(await pidsIn(site, 'watch-pids.txt')),
+      ].filter(alive),
+    )
+    const stray = [...running].filter(([, line]) => isOurs(line))
+    for (const [pid] of stray) {
       try {
         process.kill(pid, 'SIGKILL')
       } catch {
         /* gone */
       }
     }
-    expect(stray).toEqual([])
+    expect(stray.map(([pid, line]) => `${pid} ${line}`)).toEqual([])
     for (const port of ports) expect(await canBind(port)).toBe(true)
     // Retried: Windows holds a folder a just-ended process had as its cwd.
     await rm(site.root, {
@@ -243,7 +316,8 @@ describe('kiss-ssg dev, end to end', () => {
       [
         '--import',
         `${preload}?run=${encodeURIComponent(JSON.stringify(request))}`,
-        'router.js',
+        // Absolute, so the afterEach can tell this child is the case's own.
+        path.join(site.root, 'router.js'),
       ],
       { cwd: site.root, stdio: ['ignore', 'ignore', 'ignore', 'ipc'] },
     )
@@ -274,12 +348,18 @@ describe('kiss-ssg dev, end to end', () => {
       },
     ])
     expect(alive(child.pid)).toBe(true)
+    const lines = await commandLines([child.pid, watcher])
+    expect(isOurs(lines.get(child.pid) ?? '')).toBe(true)
+    expect(isOurs(lines.get(watcher) ?? '')).toBe(true)
 
     child.disconnect()
 
-    await waitFor(() => !alive(child.pid) && !alive(watcher), {
-      timeout: 30000,
-    })
+    await waitFor(
+      async () => (await gone(child.pid)) && (await gone(watcher)),
+      {
+        timeout: 30000,
+      },
+    )
   }, 90000)
 
   it('serves the built page on the port, and when the command is killed outright the child goes with it', async () => {
@@ -304,6 +384,11 @@ describe('kiss-ssg dev, end to end', () => {
     const [child] = await pidsIn(site, 'pids.txt')
     const [watcher] = await pidsIn(site, 'watch-pids.txt')
     expect(alive(child)).toBe(true)
+    // The afterEach's identity holds for both, as the real command starts
+    // them: a stray check that never matched would pass for ever.
+    const lines = await commandLines([child, watcher])
+    expect(isOurs(lines.get(child) ?? '')).toBe(true)
+    expect(isOurs(lines.get(watcher) ?? '')).toBe(true)
 
     commandProc.kill()
 
@@ -312,7 +397,7 @@ describe('kiss-ssg dev, end to end', () => {
     // child's own closes, and its pipeline watch process is left behind, as it
     // is when `node router.js` is killed. Recorded in AIKB/rebuild.md; ended
     // here so the case leaves nothing.
-    await waitFor(() => !alive(child), { timeout: 30000 })
+    await waitFor(() => gone(child), { timeout: 30000 })
     try {
       process.kill(watcher, 'SIGKILL')
     } catch {
@@ -359,8 +444,8 @@ describe('kiss-ssg dev, end to end', () => {
     // When the old child was gone, to the millisecond-ish.
     let oldGoneAt = 0
     await waitFor(
-      () => {
-        if (!alive(first)) oldGoneAt = Date.now()
+      async () => {
+        if (await gone(first)) oldGoneAt = Date.now()
         return oldGoneAt > 0
       },
       { timeout: 30000, interval: 5 },
@@ -378,7 +463,7 @@ describe('kiss-ssg dev, end to end', () => {
 
     const [, second] = await pidsIn(site, 'pids.txt')
     expect(second).not.toBe(first)
-    expect(alive(first)).toBe(false)
+    expect(await gone(first)).toBe(true)
     // The loop must have been asking throughout: requests between the edit and
     // the reload, and some after the old child had gone, before the new one
     // had reloaded the browser.
@@ -495,7 +580,7 @@ describe('kiss-ssg dev, end to end', () => {
     expect(lines.join('\n')).toContain('router.js exited (code 3)')
     const [watcher] = await pidsIn(site, 'watch-pids.txt')
     expect(watcher).toBeDefined()
-    await waitFor(() => !alive(watcher), { timeout: 10000 })
+    await waitFor(() => gone(watcher), { timeout: 10000 })
     // What the command was serving is still served.
     expect((await peek(ports2.port)).text).toBe('v1')
   }, 90000)
@@ -520,7 +605,7 @@ describe('kiss-ssg dev, end to end', () => {
       { timeout: 30000 },
     )
 
-    await waitFor(() => !alive(first), { timeout: 5000 })
+    await waitFor(() => gone(first), { timeout: 5000 })
   }, 90000)
 
   it('after a stop no child and no pipeline watch process is alive, and the ports are free', async () => {
@@ -546,8 +631,8 @@ describe('kiss-ssg dev, end to end', () => {
     await session.stop()
     session = null
 
-    expect(alive(child)).toBe(false)
-    expect(alive(watcher)).toBe(false)
+    expect(await gone(child)).toBe(true)
+    expect(await gone(watcher)).toBe(true)
     expect(await canBind(ports2.port)).toBe(true)
     expect(await canBind(ports2.livereloadPort)).toBe(true)
     // The graceful path ended it: well inside the five seconds before a kill.
