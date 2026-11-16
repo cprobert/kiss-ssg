@@ -1,7 +1,7 @@
 ---
 branch: chore/phase-2-stragglers
 base: main
-status: open
+status: closed
 opened: 2026-11-16
 scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUIDE.md, llms.txt, README.md, CHANGELOG.md, CLAUDE.md, plugins/kiss-ssg/**, .claude/skills/branch-pulse/SKILL.md, .claude/skills/branch-close/SKILL.md, .claude/skills/secrets-scan/SKILL.md, planning/**, types/check.d.ts, types/upgrade.d.ts
 ---
@@ -111,3 +111,76 @@ scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUID
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Reflection — 2026-11-16: Phase 2 stragglers, inside 2.18.0
+
+_A Claude Code session is supervised collaboration: Claude generates, the human directs and judges. The session's quality is set by how actively the human supervised it. This reflection reads that supervision, as CPD for both._
+
+**What we shipped:** The items Phase 2 (PR #97) left open, still under the unpublished 2.18.0:
+
+- `describeEngine` reports the package's own self-reference (`8b31ce3`);
+- the clean room's guesses are answered in GUIDE (`166f5c0`, `eb8e6e9`);
+- the docs sweep's leftovers are done;
+- `/branch-pulse` and `/branch-close` now refuse "ready to close" with open items (`6b5209d`);
+- the review of `fe87d92..2456b5e` found five false statements, now fixed (`63f7187`).
+
+## Reflect — what the session was
+
+**The branch existed because of a correction.** PR #97 had merged with four items listed as "What's deferred". The operator said: "We shouldn't have closed or called for a pull request where they were outstanding straggling actions." The shape was planned. The open items were already in the record, and the scope was settled in one multi-select question before `/branch-open`. The two blocked items (#90's convention half, the fleet migration) were named with their reasons rather than carried.
+
+Work ran as two Sonnet agents in parallel on separate files (the engine fix, the docs), with Claude changing the ritual in between. Two pulses followed: one after the slices, one after the clean-room re-run.
+
+**Each review found real defects in text that had already passed the previous one.**
+
+- The first docs agent's GUIDE text passed review by Claude.
+- The advisor, reading at the operator's request, found that it said `kiss-ssg dev` sets the exit code. It doesn't (measured: "Still serving ./public…"). The advisor also named three claims to probe, and two of them were wrong as well: the listing example's `path`/`slug`, and "`ok` means exit 0".
+- Codex, reviewing the range that merged unreviewed, then found the **same false `dev` claim** in the 2.18.0 changelog. It also found two more blocking errors: `check` still sets `KISS_CHECK`, and a POSIX stop is not a process-tree kill.
+
+None of these would have been seen by a test. All were in the text a site and its agent will read first.
+
+## Evaluate — how the human supervised the AI
+
+**Pushback & steering: the decisive move was the operator's, after the merge.** The operator refused to let "What's deferred" stand as an outcome. The correction was specific: no close or PR with stragglers, and the fix goes in under the same version. It produced the branch, the ritual change (Step 5c, and the pulse's open-items list) and the updated memory. That is steering at the level of the process, not of one diff.
+
+**Verification & ownership: delegated deliberately, and it held.** On mobile, the operator handed the GUIDE eyeball to the advisor ("Can you ask the advisor? I'm on my mobile."). They didn't wave it through. The advisor's read found a false claim that Claude's own diff review had passed. The operator also chose to re-run the clean room. Its second run confirmed the four guesses were gone, and the agent ran `check` a second time without `--summary` "to confirm the exit code", which is the new GUIDE sentence doing its job. The pulse records the eyeball honestly as "looked, by the advisor at the operator's request" and notes that the probes, not the read, are the confirmation.
+
+**Where the operator meant to supervise, against where they did.** They matched. The gap of the previous branch, a PR carrying open items, was the reason for this one. This time the open-items list ran at every pulse and blocked Step 5c, and the PR's deferred section carries only the two **out** items.
+
+**Harness leverage: good.** The session used:
+
+- parallel subagents on disjoint files;
+- the advisor as a reviewer when the operator couldn't look;
+- `arms.mjs` for the clean room, twice;
+- a read-only Codex `task` with the range named in the prompt, because `review --base` can only diff against HEAD.
+
+**Competency level: Agentic engineering lead.** The operator fixed the process that let the gap through, not only the gap. They chose every item and review point up front, and delegated the one look they couldn't do to an independent reviewer instead of skipping it.
+
+## Feedback — recommendations for next session
+
+- **Claude — a sentence about a command's exit code is measured for every command it names.** "Under `kiss-ssg build` and `dev` … sets the exit code" was probed under `build` only. The same false claim was written twice in GUIDE and once in the changelog, and passed Claude's review each time. Run the probe under each command named, or name only the one measured. This is the existing CLAUDE.md rule ("build and measure a sentence about behaviour across every case it covers"), which was broken three times on one claim.
+- **Claude — a review of docs reads the changelog with the same suspicion as GUIDE.** The 2.18.0 entry was written from a draft the operator had approved, and nothing checked it against `lib/` until Codex did. Before `/branch-close` Step 4a commits a changelog entry, give it the same fresh-agent check the docs sweep gives AIKB.
+- **Operator — "ask the advisor" worked as a stand-in for your eyeball, and you said so plainly.** Keep doing that when you can't look. It is better than "declined", because it puts an independent reader on the artefact.
+- **Process — `codex-companion review --base` cannot review a range that doesn't end at HEAD.** For an already-merged range, use a read-only `task` that names `git diff <a> <b>` in the prompt. That is what reviewed `fe87d92..2456b5e` here. `/branch-close` Step 7 could say so in a line.
+
+## Verdict — did we achieve the objective?
+
+**Brief:** finish Phase 2's open items before 2.18.0 is published, without a version bump, and change the ritual so a branch can't reach "ready to close" with items open. **Verdict: met.**
+
+- [x] **The egN line:** `npm run eg3` prints `kiss-ssg 2.18.0 from ../.. (this package itself)`. The installed site still prints `from node_modules/kiss-ssg`. Red-first at `main`.
+- [x] **The four guesses answered:** GUIDE, probed (`166f5c0`, `eb8e6e9`). `llms.txt` 15995→15994.
+- [x] **The sweep's leftovers:** GUIDE leads with the bare await, `llms.txt` names `kiss-ssg dev`, the four AIKB claims are settled, and `images-sweep.md` is complete.
+- [x] **The unreviewed range reviewed:** a Codex task, five findings, fixed (`63f7187`). Codex on `e6bb6bf..HEAD` was clean, and the operator's `/codex:review` of the branch was clean.
+- [x] **The ritual:** `/branch-pulse` Step 6 lists open items, and `/branch-close` Step 5c blocks on them. Used at this close: nothing open but the two **out** items.
+- [x] **Clean-room exit:** on the final tarball, `check` exits 0 and none of the four guesses recurs.
+- [x] **Release:** 2.18.0 is unchanged and untagged. The CHANGELOG entry is corrected in place, and all six gates pass.
+
+**What is better:**
+
+- The 2.18.0 that ships no longer tells sites that `dev` exits 1, or that `check` stopped setting `KISS_CHECK`.
+- A site's agent finds the listing, `slug=` and `--summary` answers where it reads.
+- The next branch cannot reach a PR with an item it recorded but did not do.
+
+**Out, with reasons:**
+
+- #90's convention half: the feature freeze, until 3.0.
+- The fleet migration: it waits for `/kiss-publish`.
