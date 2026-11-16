@@ -556,6 +556,25 @@ A socket closed before the headers gave `other side closed` 200 times of 200, wh
 
 **Re-check:** on a new Node, run `npx vitest run test/unit/fetch-policy.test.js`. The block "a failure's message is written by kiss" drives each shape it can through the real `fetch` and asserts the exact message, so a reworded cause turns its row red and says what the new text is; the self-signed row is a stub shaped as measured, so re-measure it with a local `https` server and a throwaway certificate (`openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=127.0.0.1`). For the `/drop` row, run the file twenty times in a loop and count the runs whose drop row reads `ECONNRESET`. A message ending `→ an error kiss cannot describe (TypeError)` in a real build's log is the same signal: measure that failure's `error.cause` and add its message to the list if it is a constant.
 
+### TypeScript 7 drops the description of every `@typedef` from the declarations it emits
+
+**Observed:** `typescript` 7.0.2 (2026-11-16, Dependabot #88), against the 5.9.3 that `npm run types` uses.
+
+**Effect:** `types/` ships, and an editor or an agent in a site reads it on hover. Under 7.0.2, all 114 type aliases whose JSDoc has a description lose it, with 0 kept. The aliases and their property comments are still emitted. So `KissFolders` keeps its keys' docs but loses "Where the engine reads and writes…". Three more differences come with it:
+
+- **`Kiss._assetManifest` is emitted public.** Its bare `/** @private */` is not honoured; the other 181 member names match.
+- **115 declarations differ after normalising order, quotes, grouped imports and export clauses.** They are unclassified. The shapes sampled: a `function` emitted as a `const` arrow, `const X: "lit"` as `const X = "lit"`, union members reordered, and the logger's `namespace` as an object type.
+- **Two more breaks.** `tsconfig.types.json` needs an explicit `rootDir` (TS5011). `npm run typecheck` fails four `TS2810`s (`new Promise()` with no JSDoc hint) in `lib/dev-server.js` and `lib/pipeline.js`.
+
+**What kiss does:** stays on TypeScript 5.9 until the operator decides. Dependabot #88 is left open, and nothing in `lib/`, `tsconfig.types.json` or `.github/dependabot.yml` has changed for it.
+
+**Re-check:** on a new TypeScript, emit into a scratch folder and count one typedef's description in `config.d.ts`. 5.9.3 gives 2, the typedef and the `folders` property that repeats it. 7.0.2 gives 1, the property alone.
+
+```bash
+npx -y -p typescript@<version> tsc -p tsconfig.types.json --rootDir lib --outDir <scratch folder>
+grep -c "Where the engine reads and writes. Every key" <scratch folder>/config.d.ts
+```
+
 ## Supported alternatives not used
 
 ### Codex project skills in `.agents/skills/`
